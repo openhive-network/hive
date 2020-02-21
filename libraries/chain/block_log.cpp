@@ -428,6 +428,12 @@ namespace steem { namespace chain {
             my->block_stream.read( (char*)&pos, sizeof( pos ) );
             my->index_stream.write( (char*)&pos, sizeof( pos ) );
          }
+
+         /// Flush and reopen to be sure that given index file has been saved.
+         /// Otherwise just executed replay, next stopped by ctrl+C can again corrupt this file. 
+         my->index_stream.flush();
+         my->index_stream.close();
+         my->index_stream.open(my->index_file.generic_string().c_str(), LOG_WRITE);
       }
       FC_LOG_AND_RETHROW()
    }

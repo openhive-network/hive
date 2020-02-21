@@ -443,9 +443,9 @@ public:
       /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
       options.IncreaseParallelism();
       options.OptimizeLevelStyleCompaction();
+      options.max_open_files = OPEN_FILE_LIMIT;
 
       DBOptions dbOptions(options);
-      options.max_open_files = OPEN_FILE_LIMIT;
 
       auto status = DB::Open(dbOptions, strPath, columnDefs, &_columnHandles, &storageDb);
 
@@ -1386,6 +1386,11 @@ void account_history_rocksdb_plugin::impl::importData(unsigned int blockLimit)
             ilog( "RocksDb data import stopped because of block limit reached.");
             return false;
          }
+
+         if(blockNo % 1000 == 0)
+           {
+           printReport(blockNo, "Executing data import has ");
+           }
       }
 
       auto impacted = getImpactedAccounts( op );
