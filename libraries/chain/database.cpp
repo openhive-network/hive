@@ -1430,11 +1430,14 @@ void database::adjust_witness_votes( const account_object& a, share_type delta )
          Therefore an idea is based on voting deferring. Default value is 30 days.
          This range of time is enough long to defeat/block potential malicious intention.
    */
-   if( !ALLOW_VOTE )
+   if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
    {
-      delayed_voting dv( *this );
-      dv.save_delayed_value( a, head_block_time(), delta.value );
-      return;
+      if( !ALLOW_VOTE )
+      {
+         delayed_voting dv( *this );
+         dv.save_delayed_value( a, head_block_time(), delta.value );
+         return;
+      }
    }
 
    const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
