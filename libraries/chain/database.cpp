@@ -30,6 +30,7 @@
 #include <steem/chain/util/rd_setup.hpp>
 #include <steem/chain/util/nai_generator.hpp>
 #include <steem/chain/util/sps_processor.hpp>
+#include <steem/chain/util/delayed_voting.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
@@ -1227,7 +1228,7 @@ std::pair< asset, asset > database::create_sbd( const account_object& to_account
 // Create vesting, then a caller-supplied callback after determining how many shares to create, but before
 // we modify the database.
 // This allows us to implement virtual op pre-notifications in the Before function.
-template< typename Before >
+template< bool ALLOW_VOTE, typename Before >
 asset create_vesting2( database& db, const account_object& to_account, asset liquid, bool to_reward_balance, Before&& before_vesting_callback )
 {
    try
@@ -1334,7 +1335,7 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
       } );
       // Update witness voting numbers.
       if( !to_reward_balance )
-         db.adjust_proxied_witness_votes( to_account, new_vesting.amount );
+         db.adjust_proxied_witness_votes< ALLOW_VOTE >( to_account, new_vesting.amount );
 
       return new_vesting;
    }
@@ -1345,9 +1346,10 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
  * @param to_account - the account to receive the new vesting shares
  * @param liquid     - STEEM or liquid SMT to be converted to vesting shares
  */
+template< bool ALLOW_VOTE >
 asset database::create_vesting( const account_object& to_account, asset liquid, bool to_reward_balance )
 {
-   return create_vesting2( *this, to_account, liquid, to_reward_balance, []( asset vests_created ) {} );
+   return create_vesting2< ALLOW_VOTE >( *this, to_account, liquid, to_reward_balance, []( asset vests_created ) {} );
 }
 
 fc::sha256 database::get_pow_target()const
@@ -1374,6 +1376,7 @@ uint32_t database::get_pow_summary_target()const
       return (0xFC00 - 0x0040 * dgp.num_pow_witnesses) << 0x10;
 }
 
+template< bool ALLOW_VOTE >
 void database::adjust_proxied_witness_votes( const account_object& a,
                                    const std::array< share_type, STEEM_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
                                    int depth )
@@ -1394,17 +1397,18 @@ void database::adjust_proxied_witness_votes( const account_object& a,
          }
       } );
 
-      adjust_proxied_witness_votes( proxy, delta, depth + 1 );
+      adjust_proxied_witness_votes< ALLOW_VOTE >( proxy, delta, depth + 1 );
    }
    else
    {
       share_type total_delta = 0;
       for( int i = STEEM_MAX_PROXY_RECURSION_DEPTH - depth; i >= 0; --i )
          total_delta += delta[i];
-      adjust_witness_votes( a, total_delta );
+      adjust_witness_votes< ALLOW_VOTE >( a, total_delta );
    }
 }
 
+template< bool ALLOW_VOTE >
 void database::adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth )
 {
    if( a.proxy != STEEM_PROXY_TO_SELF_ACCOUNT )
@@ -1420,16 +1424,32 @@ void database::adjust_proxied_witness_votes( const account_object& a, share_type
          a.proxied_vsf_votes[depth] += delta;
       } );
 
-      adjust_proxied_witness_votes( proxy, delta, depth + 1 );
+      adjust_proxied_witness_votes< ALLOW_VOTE >( proxy, delta, depth + 1 );
    }
    else
    {
-     adjust_witness_votes( a, delta );
+     adjust_witness_votes< ALLOW_VOTE >( a, delta );
    }
 }
 
+template< bool ALLOW_VOTE >
 void database::adjust_witness_votes( const account_object& a, share_type delta )
 {
+   /*
+      Regarding `ALLOW_VOTE`:
+         Besides `transfer_to_vesting` operation, voting is allowed - this is classical behaviour.
+         Voting immediately when `transfer_to_vesting` is executed is dangerous,
+         because malicious accounts would take over whole STEEM network.
+         Therefore an idea is based on voting deferring. Default value is 30 days.
+         This range of time is enough long to defeat/block potential malicious intention.
+   */
+   if( !ALLOW_VOTE )
+   {
+      delayed_voting dv( *this );
+      dv.save_delayed_value( a, head_block_time(), delta.value );
+      return;
+   }
+
    const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
    auto itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
    while( itr != vidx.end() && itr->account == a.name )
@@ -1911,6 +1931,15 @@ void database::process_proposals( const block_notification& note )
    }
 }
 
+void database::process_delayed_voting( const block_notification& note )
+{
+   if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
+   {
+      delayed_voting dv( *this );
+      dv.run( note );
+   }
+}
+
 /**
  * This method updates total_reward_shares2 on DGPO, and children_rshares2 on comments, when a comment's rshares2 changes
  * from old_rshares2 to new_rshares2.  Maintaining invariants that children_rshares2 is the sum of all descendants' rshares2,
@@ -1998,7 +2027,7 @@ void database::process_vesting_withdrawals()
                   a.vesting_shares.amount += to_deposit;
                });
 
-               adjust_proxied_witness_votes( to_account, to_deposit );
+               adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( to_account, to_deposit );
 
                post_push_virtual_operation( vop );
             }
@@ -2071,7 +2100,7 @@ void database::process_vesting_withdrawals()
       });
 
       if( to_withdraw > 0 )
-         adjust_proxied_witness_votes( from_account, -to_withdraw );
+         adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( from_account, -to_withdraw );
 
       post_push_virtual_operation( vop );
    }
@@ -2140,7 +2169,7 @@ share_type database::pay_curators( const comment_object& c, share_type& max_rewa
                unclaimed_rewards -= claim;
                const auto& voter = get( item->voter );
                operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), c.author, to_string( c.permlink ) );
-               create_vesting2( *this, voter, asset( claim, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
+               create_vesting2< true/*ALLOW_VOTE*/ >( *this, voter, asset( claim, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
                   [&]( const asset& reward )
                   {
                      vop.get< curation_reward_operation >().reward = reward;
@@ -2227,7 +2256,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
                   vop.steem_payout = sbd_payout.second; // STEEM portion
                }
 
-               create_vesting2( *this, get_account( b.account ), asset( benefactor_vesting_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
+               create_vesting2< true/*ALLOW_VOTE*/ >( *this, get_account( b.account ), asset( benefactor_vesting_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
                [&]( const asset& reward )
                {
                   vop.vesting_payout = reward;
@@ -2247,7 +2276,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             auto sbd_payout = create_sbd( author, asset( sbd_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ) );
             operation vop = author_reward_operation( comment.author, to_string( comment.permlink ), sbd_payout.first, sbd_payout.second, asset( 0, VESTS_SYMBOL ) );
 
-            create_vesting2( *this, author, asset( vesting_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
+            create_vesting2< true/*ALLOW_VOTE*/ >( *this, author, asset( vesting_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
                [&]( const asset& vesting_payout )
                {
                   vop.get< author_reward_operation >().vesting_payout = vesting_payout;
@@ -2535,7 +2564,7 @@ void database::process_funds()
       });
 
       operation vop = producer_reward_operation( cwit.owner, asset( 0, VESTS_SYMBOL ) );
-      create_vesting2( *this, get_account( cwit.owner ), asset( witness_reward, STEEM_SYMBOL ), false,
+      create_vesting2< true/*ALLOW_VOTE*/ >( *this, get_account( cwit.owner ), asset( witness_reward, STEEM_SYMBOL ), false,
          [&]( const asset& vesting_shares )
          {
             vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
@@ -2650,7 +2679,7 @@ asset database::get_producer_reward()
    {
       // const auto& witness_obj = get_witness( props.current_witness );
       operation vop = producer_reward_operation( witness_account.name, asset( 0, VESTS_SYMBOL ) );
-      create_vesting2( *this, witness_account, pay, false,
+      create_vesting2< true/*ALLOW_VOTE*/ >( *this, witness_account, pay, false,
          [&]( const asset& vesting_shares )
          {
             vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
@@ -2876,7 +2905,7 @@ void database::process_decline_voting_rights()
       delta[0] = -account.vesting_shares.amount;
       for( int i = 0; i < STEEM_MAX_PROXY_RECURSION_DEPTH; ++i )
          delta[i+1] = -account.proxied_vsf_votes[i];
-      adjust_proxied_witness_votes( account, delta );
+      adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( account, delta );
 
       clear_witness_votes( account );
 
@@ -3532,6 +3561,7 @@ void database::_apply_block( const signed_block& next_block )
    expire_escrow_ratification();
    process_decline_voting_rights();
    process_proposals( note );
+   process_delayed_voting( note );
 
    generate_required_actions();
    generate_optional_actions();
@@ -6072,5 +6102,11 @@ optional< chainbase::database::session >& database::pending_transaction_session(
 {
    return _pending_tx_session;
 }
+
+template asset database::create_vesting< true >( const account_object&, asset, bool );
+template asset database::create_vesting< false >( const account_object&, asset, bool );
+template void  database::adjust_proxied_witness_votes< true >( const account_object& a, const std::array< share_type, STEEM_MAX_PROXY_RECURSION_DEPTH+1 >&, int );
+template void  database::adjust_proxied_witness_votes< true >( const account_object&, share_type, int );
+template void  database::adjust_witness_votes< true >( const account_object&, share_type );
 
 } } //steem::chain

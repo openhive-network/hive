@@ -42,6 +42,9 @@
 /// Allows to limit number of total produced blocks.
 #define TESTNET_BLOCK_LIMIT                   (3000000)
 
+#define STEEM_DELAYED_VOTING_MAXIMUM_INTERVAL_DAYS    (60*30)// 30 minutes
+#define STEEM_DELAYED_VOTING_INTERVAL_SECONDS         (60*1)// 1 minute
+
 #else // IS LIVE STEEM NETWORK
 
 #define STEEM_BLOCKCHAIN_VERSION              ( version(0, 24, 0) )
@@ -71,6 +74,9 @@
 
 #define STEEM_INIT_SUPPLY                     int64_t(0)
 #define STEEM_SBD_INIT_SUPPLY                 int64_t(0)
+
+#define STEEM_DELAYED_VOTING_MAXIMUM_INTERVAL_DAYS    (60*60*24*30)//30 days
+#define STEEM_DELAYED_VOTING_INTERVAL_SECONDS         (60*60*24*1)// 1 day
 
 #endif
 
