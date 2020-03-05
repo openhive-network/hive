@@ -119,7 +119,7 @@ namespace steem { namespace chain {
          time_point_sec get_the_earliest_time() const
          {
             if( !delayed_votes.empty() )
-               return ( delayed_votes.begin() )->date;
+               return ( delayed_votes.begin() )->time;
             else
                return time_point_sec::maximum();
          }

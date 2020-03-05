@@ -4,14 +4,14 @@ namespace steem { namespace chain {
 
 struct delayed_votes_data
 {
-   time_point_sec    date;
+   time_point_sec    time;
    int64_t           val = 0;
 };
 
 struct delayed_voting_processor
 {
    template< typename COLLECTION_TYPE >
-   static void save_delayed_value( COLLECTION_TYPE& items, int64_t& sum, const time_point_sec& head_time, int64_t val )
+   static void add( COLLECTION_TYPE& items, int64_t& sum, const time_point_sec& head_time, int64_t val )
    {
       /*
          A collection is filled gradually - every item in `items` is created each STEEM_DELAY_VOTING_INTERVAL_SECONDS time.
@@ -38,8 +38,8 @@ struct delayed_voting_processor
       }
 
       auto front_obj = items.front();
-      FC_ASSERT( front_obj.date >= head_time, "head date must be greater or equals to last delayed voting data" );
-      if( head_time > front_obj.date + STEEM_DELAYED_VOTING_INTERVAL_SECONDS )
+      FC_ASSERT( front_obj.time >= head_time, "head date must be greater or equals to last delayed voting data" );
+      if( head_time > front_obj.time + STEEM_DELAYED_VOTING_INTERVAL_SECONDS )
       {
          items.emplace_back( delayed_votes_data{ head_time, val } );
       }
@@ -49,10 +49,16 @@ struct delayed_voting_processor
       }
    }
 
+   template< typename COLLECTION_TYPE >
+   static void erase_front( COLLECTION_TYPE& items )
+   {
+      items.erase( items.begin() );
+   }
+
 };
 
 } } // namespace steem::chain
 
 FC_REFLECT( steem::chain::delayed_votes_data,
-             (date)(val)
+             (time)(val)
           )
