@@ -388,17 +388,14 @@ namespace steem { namespace chain {
          asset       get_balance( const account_name_type& aname, asset_symbol_type symbol )const;
 
          /** this updates the votes for witnesses as a result of account voting proxy changing */
-         template< bool ALLOW_VOTE >
          void adjust_proxied_witness_votes( const account_object& a,
                                             const std::array< share_type, STEEM_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
                                             int depth = 0 );
 
          /** this updates the votes for all witnesses as a result of account VESTS changing */
-         template< bool ALLOW_VOTE >
          void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 );
 
          /** this is called by `adjust_proxied_witness_votes` when account proxy to self */
-         template< bool ALLOW_VOTE >
          void adjust_witness_votes( const account_object& a, share_type delta );
 
          /** this updates the vote of a single witness as a result of a vote being added or removed*/

@@ -1199,7 +1199,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
 
    _db.adjust_balance( from_account, -o.amount );
 
-   //The comment about `ALLOW_VOTE` is in `database::adjust_witness_votes` method
+   //The comment about `ALLOW_VOTE` is in `create_vesting2` method
    _db.create_vesting< false/*ALLOW_VOTE*/ >( to_account, o.amount );
 }
 
@@ -1362,7 +1362,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
    delta[0] = -account.vesting_shares.amount;
    for( int i = 0; i < STEEM_MAX_PROXY_RECURSION_DEPTH; ++i )
       delta[i+1] = -account.proxied_vsf_votes[i];
-   _db.adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( account, delta );
+   _db.adjust_proxied_witness_votes( account, delta );
 
    if( o.proxy.size() ) {
       const auto& new_proxy = _db.get_account( o.proxy );
@@ -1388,7 +1388,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
       /// add all new votes
       for( int i = 0; i <= STEEM_MAX_PROXY_RECURSION_DEPTH; ++i )
          delta[i] = -delta[i];
-      _db.adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( account, delta );
+      _db.adjust_proxied_witness_votes( account, delta );
    } else { /// we are clearing the proxy which means we simply update the account
       _db.modify( account, [&]( account_object& a ) {
           a.proxy = o.proxy;
@@ -1426,7 +1426,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
             _db.adjust_witness_vote( witness, voter.witness_vote_weight() );
          }
          else {
-            _db.adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( voter, voter.witness_vote_weight() );
+            _db.adjust_proxied_witness_votes( voter, voter.witness_vote_weight() );
          }
 
       } else {
@@ -1451,7 +1451,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
          if( _db.has_hardfork( STEEM_HARDFORK_0_3 ) )
             _db.adjust_witness_vote( witness, -voter.witness_vote_weight() );
          else
-            _db.adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( voter, -voter.witness_vote_weight() );
+            _db.adjust_proxied_witness_votes( voter, -voter.witness_vote_weight() );
       } else  {
          _db.modify( witness, [&]( witness_object& w ) {
              w.votes -= voter.witness_vote_weight();
@@ -3012,7 +3012,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
       gpo.pending_rewarded_vesting_steem -= reward_vesting_steem_to_move;
    });
 
-   _db.adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( acnt, op.reward_vests.amount );
+   _db.adjust_proxied_witness_votes( acnt, op.reward_vests.amount );
 }
 
 #ifdef STEEM_ENABLE_SMT
@@ -3067,7 +3067,7 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
                gpo.pending_rewarded_vesting_steem -= reward_vesting_steem_to_move;
             });
 
-            _db.adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( *a, token.amount );
+            _db.adjust_proxied_witness_votes( *a, token.amount );
          }
          else if( token.symbol == STEEM_SYMBOL || token.symbol == SBD_SYMBOL )
          {

@@ -1333,9 +1333,28 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
             props.total_vesting_shares += new_vesting;
          }
       } );
+
+      /*
+         Regarding `ALLOW_VOTE`:
+            Besides `transfer_to_vesting` operation, voting is allowed - this is classical behaviour.
+            Voting immediately when `transfer_to_vesting` is executed is dangerous,
+            because malicious accounts would take over whole STEEM network.
+            Therefore an idea is based on voting deferring. Default value is 30 days.
+            This range of time is enough long to defeat/block potential malicious intention.
+      */
+      if( db.has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
+      {
+         if( !ALLOW_VOTE )
+         {
+            delayed_voting dv( db );
+            dv.save_delayed_value( to_account, db.head_block_time(), new_vesting.amount.value );
+            return new_vesting;
+         }
+      }
+
       // Update witness voting numbers.
       if( !to_reward_balance )
-         db.adjust_proxied_witness_votes< ALLOW_VOTE >( to_account, new_vesting.amount );
+         db.adjust_proxied_witness_votes( to_account, new_vesting.amount );
 
       return new_vesting;
    }
@@ -1376,7 +1395,6 @@ uint32_t database::get_pow_summary_target()const
       return (0xFC00 - 0x0040 * dgp.num_pow_witnesses) << 0x10;
 }
 
-template< bool ALLOW_VOTE >
 void database::adjust_proxied_witness_votes( const account_object& a,
                                    const std::array< share_type, STEEM_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
                                    int depth )
@@ -1397,18 +1415,17 @@ void database::adjust_proxied_witness_votes( const account_object& a,
          }
       } );
 
-      adjust_proxied_witness_votes< ALLOW_VOTE >( proxy, delta, depth + 1 );
+      adjust_proxied_witness_votes( proxy, delta, depth + 1 );
    }
    else
    {
       share_type total_delta = 0;
       for( int i = STEEM_MAX_PROXY_RECURSION_DEPTH - depth; i >= 0; --i )
          total_delta += delta[i];
-      adjust_witness_votes< ALLOW_VOTE >( a, total_delta );
+      adjust_witness_votes( a, total_delta );
    }
 }
 
-template< bool ALLOW_VOTE >
 void database::adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth )
 {
    if( a.proxy != STEEM_PROXY_TO_SELF_ACCOUNT )
@@ -1424,35 +1441,16 @@ void database::adjust_proxied_witness_votes( const account_object& a, share_type
          a.proxied_vsf_votes[depth] += delta;
       } );
 
-      adjust_proxied_witness_votes< ALLOW_VOTE >( proxy, delta, depth + 1 );
+      adjust_proxied_witness_votes( proxy, delta, depth + 1 );
    }
    else
    {
-     adjust_witness_votes< ALLOW_VOTE >( a, delta );
+     adjust_witness_votes( a, delta );
    }
 }
 
-template< bool ALLOW_VOTE >
 void database::adjust_witness_votes( const account_object& a, share_type delta )
 {
-   /*
-      Regarding `ALLOW_VOTE`:
-         Besides `transfer_to_vesting` operation, voting is allowed - this is classical behaviour.
-         Voting immediately when `transfer_to_vesting` is executed is dangerous,
-         because malicious accounts would take over whole STEEM network.
-         Therefore an idea is based on voting deferring. Default value is 30 days.
-         This range of time is enough long to defeat/block potential malicious intention.
-   */
-   if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
-   {
-      if( !ALLOW_VOTE )
-      {
-         delayed_voting dv( *this );
-         dv.save_delayed_value( a, head_block_time(), delta.value );
-         return;
-      }
-   }
-
    const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
    auto itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
    while( itr != vidx.end() && itr->account == a.name )
@@ -2030,7 +2028,7 @@ void database::process_vesting_withdrawals()
                   a.vesting_shares.amount += to_deposit;
                });
 
-               adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( to_account, to_deposit );
+               adjust_proxied_witness_votes( to_account, to_deposit );
 
                post_push_virtual_operation( vop );
             }
@@ -2103,7 +2101,7 @@ void database::process_vesting_withdrawals()
       });
 
       if( to_withdraw > 0 )
-         adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( from_account, -to_withdraw );
+         adjust_proxied_witness_votes( from_account, -to_withdraw );
 
       post_push_virtual_operation( vop );
    }
@@ -2908,7 +2906,7 @@ void database::process_decline_voting_rights()
       delta[0] = -account.vesting_shares.amount;
       for( int i = 0; i < STEEM_MAX_PROXY_RECURSION_DEPTH; ++i )
          delta[i+1] = -account.proxied_vsf_votes[i];
-      adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( account, delta );
+      adjust_proxied_witness_votes( account, delta );
 
       clear_witness_votes( account );
 
@@ -6108,8 +6106,5 @@ optional< chainbase::database::session >& database::pending_transaction_session(
 
 template asset database::create_vesting< true >( const account_object&, asset, bool );
 template asset database::create_vesting< false >( const account_object&, asset, bool );
-template void  database::adjust_proxied_witness_votes< true >( const account_object& a, const std::array< share_type, STEEM_MAX_PROXY_RECURSION_DEPTH+1 >&, int );
-template void  database::adjust_proxied_witness_votes< true >( const account_object&, share_type, int );
-template void  database::adjust_witness_votes< true >( const account_object&, share_type );
 
 } } //steem::chain
