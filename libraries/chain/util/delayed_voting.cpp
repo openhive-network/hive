@@ -13,6 +13,7 @@ void delayed_voting::save_delayed_value( const account_object& account, const ti
    } );
 }
 
+//Question: To push virtual operation? What operation? What for?
 void delayed_voting::run( const block_notification& note )
 {
    auto head_time = note.block.timestamp;
@@ -22,26 +23,36 @@ void delayed_voting::run( const block_notification& note )
 
    while( current != idx.end() && ( head_time > ( current->get_the_earliest_time() + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ) ) )
    {
-      int64_t delayed_votes_sum = 0;
+      int64_t _sum = 0;
 
       while(
                !current->delayed_votes.empty() &&
                ( head_time > ( current->delayed_votes.begin()->time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ) )
            )
       {
-         delayed_votes_sum += current->delayed_votes.begin()->val;
+         _sum += current->delayed_votes.begin()->val;
 
+         /*
+            The operation `transfer_to_vesting` always adds elements to `delayed_votes` collection in `account_object`.
+            In terms of performance is necessary to hold size of `delayed_votes` not greater than `30`.
+            
+            Why `30`? STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS == 30
+
+            Solution:
+               The best solution is to add new record at the back and to remove at the front.
+         */
          db.modify( *current, [&]( account_object& a )
          {
-            delayed_voting_processor::erase_front( a.delayed_votes );
+            delayed_voting_processor::erase_front( a.delayed_votes, a.sum_delayed_votes );
          } );
-         //Question: To push virtual operation? What operation? What for?
       }
 
-      if( current->vesting_shares.amount >= delayed_votes_sum )
-         db.adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( *current, delayed_votes_sum );
+      if( current->vesting_shares.amount >= _sum )
+         db.adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( *current, _sum );
       else
          db.adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( *current, current->vesting_shares.amount );
+
+      ++current;
    }
 }
 

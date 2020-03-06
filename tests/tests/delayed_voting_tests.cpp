@@ -45,15 +45,74 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
    };
 
    int64_t sum = 0;
-   fc::time_point_sec time = fc::variant( "2000-00-00T00:00:00" ).as< fc::time_point_sec >();
+
+   fc::time_point_sec time = fc::variant( "2000-01-01T00:00:00" ).as< fc::time_point_sec >();
 
    {
-      time = time + fc::seconds( 50 );
-
-      delayed_voting_processor::add( dq, sum, time, 1/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ), 1/*val*/ );
       BOOST_REQUIRE( dq.size() == 1 );
       BOOST_REQUIRE( sum == 1 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time, 1 ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ), 1 ) );
+   }
+   {
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 1 ), 2/*val*/ );
+      BOOST_REQUIRE( dq.size() == 1 );
+      BOOST_REQUIRE( sum == 3 );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ), 3 ) );
+   }
+   {
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 24 ) - fc::seconds( 1 ), 3/*val*/ );
+      BOOST_REQUIRE( dq.size() == 1 );
+      BOOST_REQUIRE( sum == 6 );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ), 6 ) );
+   }
+   {
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 24 ), 4/*val*/ );
+      BOOST_REQUIRE( dq.size() == 2 );
+      BOOST_REQUIRE( sum == 10 );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ), 6 ) );
+      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 24 ), 4 ) );
+   }
+   {
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 5/*val*/ );
+      BOOST_REQUIRE( dq.size() == 3 );
+      BOOST_REQUIRE( sum == 15 );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ), 6 ) );
+      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 24 ), 4 ) );
+      BOOST_REQUIRE( cmp( 2/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 5 ) );
+   }
+   {
+      delayed_voting_processor::erase_front( dq, sum );
+      BOOST_REQUIRE( dq.size() == 2 );
+      BOOST_REQUIRE( sum == 9 );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 24 ), 4 ) );
+      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 5 ) );
+   }
+   {
+      delayed_voting_processor::erase_front( dq, sum );
+      BOOST_REQUIRE( dq.size() == 1 );
+      BOOST_REQUIRE( sum == 5 );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 5 ) );
+   }
+   {
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 2 ) + fc::hours( 2*24 ), 6/*val*/ );
+      BOOST_REQUIRE( dq.size() == 1 );
+      BOOST_REQUIRE( sum == 11 );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 11 ) );
+   }
+   {
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 3*24 ), 7/*val*/ );
+      BOOST_REQUIRE( dq.size() == 2 );
+      BOOST_REQUIRE( sum == 18 );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 11 ) );
+      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 3*24 ), 7 ) );
+   }
+   {
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 3*24 ) + fc::seconds( 3 ), 8/*val*/ );
+      BOOST_REQUIRE( dq.size() == 2 );
+      BOOST_REQUIRE( sum == 26 );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 11 ) );
+      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 3*24 ), 15 ) );
    }
 }
 
