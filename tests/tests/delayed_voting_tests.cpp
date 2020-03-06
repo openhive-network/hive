@@ -114,6 +114,57 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
       BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 11 ) );
       BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 3*24 ), 15 ) );
    }
+   {
+      delayed_voting_processor::erase_front( dq, sum );
+      BOOST_REQUIRE( dq.size() == 1 );
+      BOOST_REQUIRE( sum == 15 );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 3*24 ), 15 ) );
+   }
+   {
+      delayed_voting_processor::erase_front( dq, sum );
+      BOOST_REQUIRE( dq.size() == 0 );
+      BOOST_REQUIRE( sum == 0 );
+
+      delayed_voting_processor::erase_front( dq, sum );
+      BOOST_REQUIRE( dq.size() == 0 );
+      BOOST_REQUIRE( sum == 0 );
+
+      delayed_voting_processor::erase_front( dq, sum );
+      BOOST_REQUIRE( dq.size() == 0 );
+      BOOST_REQUIRE( sum == 0 );
+   }
+   {
+      //delayed_voting_messages::incorrect_sum_equal
+      sum = 1;
+      STEEM_REQUIRE_THROW( delayed_voting_processor::erase_front( dq, sum ), fc::exception );
+
+      sum = 0;
+      delayed_voting_processor::erase_front( dq, sum );
+      BOOST_REQUIRE( dq.size() == 0 );
+   }
+   {
+      delayed_voting_processor::add( dq, sum, time, 2/*val*/ );
+      --sum;
+      //delayed_voting_messages::incorrect_sum_greater_equal
+      STEEM_REQUIRE_THROW( delayed_voting_processor::erase_front( dq, sum ), fc::exception );
+
+      ++sum;
+      delayed_voting_processor::erase_front( dq, sum );
+      BOOST_REQUIRE( dq.size() == 0 );
+      BOOST_REQUIRE( sum == 0 );
+   }
+   {
+      delayed_voting_processor::add( dq, sum, time + fc::seconds( 30 ), 1000/*val*/ );
+      BOOST_REQUIRE( dq.size() == 1 );
+      BOOST_REQUIRE( sum == 1000 );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::seconds( 30 ), 1000 ) );
+
+      //delayed_voting_messages::incorrect_head_time
+      STEEM_REQUIRE_THROW( delayed_voting_processor::add( dq, sum, time + fc::seconds( 29 ), 1000/*val*/ ), fc::exception );
+
+      delayed_voting_processor::erase_front( dq, sum );
+      BOOST_REQUIRE( dq.size() == 0 );
+   }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -36,16 +36,19 @@ struct delayed_voting_processor
             items[1] = {2020-03-11,  6000}
             items[2] = {2020-03-12,  208000}
       */
-      sum += val;
 
       if( items.empty() )
       {
+         sum += val;
          items.emplace_back( delayed_votes_data{ head_time, val } );
          return;
       }
 
       delayed_votes_data& back_obj = items.back();
       FC_ASSERT( head_time >= back_obj.time, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_head_time ) );
+
+      sum += val;
+
       if( head_time >= back_obj.time + STEEM_DELAYED_VOTING_INTERVAL_SECONDS )
       {
          items.emplace_back( delayed_votes_data{ head_time, val } );
@@ -61,8 +64,11 @@ struct delayed_voting_processor
    {
       if( !items.empty() )
       {
-         sum -= items.begin()->val;
-         FC_ASSERT( sum >= 0, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_sum_greater_equal ) );
+         auto _begin = items.begin();
+
+         FC_ASSERT( ( sum - _begin->val ) >= 0, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_sum_greater_equal ) );
+
+         sum -= _begin->val;
          items.erase( items.begin() );
       }
       else
