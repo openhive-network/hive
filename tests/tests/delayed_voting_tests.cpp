@@ -30,7 +30,34 @@ using namespace steem::chain;
 using namespace steem::protocol;
 using fc::string;
 
-BOOST_FIXTURE_TEST_SUITE( delayed_voting_tests, clean_database_fixture )
+BOOST_FIXTURE_TEST_SUITE( delayed_voting_tests, delayed_vote_database_fixture )
+
+BOOST_AUTO_TEST_CASE( delayed_voting_processor_02 )
+{
+   try
+   {
+      // BOOST_TEST_MESSAGE( "Testing: delaying voting" );
+
+      // ACTORS( (alice)(bob)(w1) )
+      // generate_block();
+
+      // set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      // generate_block();
+
+      // auto start_time = db->head_block_time();
+
+      // FUND( "alice", ASSET( "10000.000 TESTS" ) );
+      // FUND( "w1", ASSET( "10000.000 TESTS" ) );
+
+      // witness_create( w1, w1_private_key, "url.w1", w1_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      // witness_vote( alice, w1, true/*approve*/, alice_private_key );
+
+      // vest( bob, alice, ASSET( "1000.000 TESTS" ), bob_private_key );
+
+      // validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
 
 BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
 {

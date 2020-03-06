@@ -114,7 +114,7 @@ namespace steem { namespace chain {
          share_type        pending_claimed_accounts = 0;
 
          t_deque< delayed_votes_data > delayed_votes; //holds VESTS per day - not used to voting
-         int64_t                       sum_delayed_votes;//total sum of VESTS - not used to voting ( helper variable for performance )
+         int64_t                       sum_delayed_votes = 0;//total sum of VESTS - not used to voting ( helper variable for performance )
 
          time_point_sec get_the_earliest_time() const
          {
