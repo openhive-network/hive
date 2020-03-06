@@ -368,6 +368,7 @@ struct sps_proposal_database_fixture_performance : public sps_proposal_database_
    }
 };
 
+
 struct hf23_database_fixture : public clean_database_fixture
 {
    private:
@@ -382,6 +383,17 @@ struct hf23_database_fixture : public clean_database_fixture
 
       void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
       void delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key );
+};
+
+struct delayed_vote_database_fixture : public clean_database_fixture
+{
+   delayed_vote_database_fixture( uint16_t shared_file_size_in_mb = 8 )
+                           : clean_database_fixture( shared_file_size_in_mb ){}
+   virtual ~delayed_vote_database_fixture(){}
+
+   void witness_vote( const std::string& account, const std::string& witness, bool approve, const fc::ecc::private_key& key );
+   void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
+
 };
 
 struct json_rpc_database_fixture : public database_fixture
