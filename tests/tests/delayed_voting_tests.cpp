@@ -32,29 +32,42 @@ using fc::string;
 
 BOOST_FIXTURE_TEST_SUITE( delayed_voting_tests, delayed_vote_database_fixture )
 
-BOOST_AUTO_TEST_CASE( delayed_voting_processor_02 )
+BOOST_AUTO_TEST_CASE( delayed_voting_01 )
 {
    try
    {
-      // BOOST_TEST_MESSAGE( "Testing: delaying voting" );
+      BOOST_TEST_MESSAGE( "Testing: delaying voting" );
 
-      // ACTORS( (alice)(bob)(w1) )
-      // generate_block();
+      ACTORS( (alice)(bob)(witness) )
+      generate_block();
 
-      // set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-      // generate_block();
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
 
-      // auto start_time = db->head_block_time();
+      //auto start_time = db->head_block_time();
 
-      // FUND( "alice", ASSET( "10000.000 TESTS" ) );
-      // FUND( "w1", ASSET( "10000.000 TESTS" ) );
+      FUND( "alice", ASSET( "10000.000 TESTS" ) );
+      FUND( "bob", ASSET( "10000.000 TESTS" ) );
+      FUND( "witness", ASSET( "10000.000 TESTS" ) );
 
-      // witness_create( w1, w1_private_key, "url.w1", w1_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
-      // witness_vote( alice, w1, true/*approve*/, alice_private_key );
+      //Prepare witnesses
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      witness_vote( "alice", "witness", true/*approve*/, alice_private_key );
+      int64_t basic_votes = get_votes( "witness" );
 
-      // vest( bob, alice, ASSET( "1000.000 TESTS" ), bob_private_key );
+      //Make some vests
+      vest( "bob", "alice", ASSET( "1000.000 TESTS" ), bob_private_key );
 
-      // validate_database();
+      int64_t votes_01 = get_votes( "witness" );
+      BOOST_REQUIRE_EQUAL( basic_votes, votes_01 );
+
+      generate_blocks( db->head_block_time() + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
+      generate_block();
+
+      int64_t votes_02 = get_votes( "witness" );
+      BOOST_REQUIRE_GT( votes_02, basic_votes );
+
+      validate_database();
    }
    FC_LOG_AND_RETHROW()
 }

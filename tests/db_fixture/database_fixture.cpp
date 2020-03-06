@@ -1053,6 +1053,17 @@ void hf23_database_fixture::delegate_vest( const string& delegator, const string
    push_transaction( op, key );
 }
 
+int64_t delayed_vote_database_fixture::get_votes( const string& witness_name )
+{
+   const auto& idx = db->get_index< witness_index >().indices().get< by_name >();
+   auto found = idx.find( witness_name );
+
+   if( found == idx.end() )
+      return std::numeric_limits< int64_t >::max();
+   else
+      return found->votes.value;
+}
+
 json_rpc_database_fixture::json_rpc_database_fixture()
 {
    try {
