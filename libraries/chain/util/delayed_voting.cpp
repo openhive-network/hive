@@ -23,19 +23,19 @@ void delayed_voting::run( const block_notification& note )
 
    while( current != idx.end() && ( head_time > ( current->get_the_earliest_time() + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ) ) )
    {
-      int64_t _sum = 0;
+      int64_t _val = 0;
 
-      while(
-               !current->delayed_votes.empty() &&
-               ( head_time > ( current->delayed_votes.begin()->time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ) )
-           )
+      if(
+            !current->delayed_votes.empty() &&
+            ( head_time > ( current->delayed_votes.begin()->time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ) )
+        )
       {
-         _sum += current->delayed_votes.begin()->val;
+         _val = current->delayed_votes.begin()->val;
 
          /*
             The operation `transfer_to_vesting` always adds elements to `delayed_votes` collection in `account_object`.
             In terms of performance is necessary to hold size of `delayed_votes` not greater than `30`.
-            
+
             Why `30`? STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS == 30
 
             Solution:
@@ -47,10 +47,9 @@ void delayed_voting::run( const block_notification& note )
          } );
       }
 
-      if( current->vesting_shares.amount >= _sum )
-         db.adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( *current, _sum );
-      else
-         db.adjust_proxied_witness_votes< true/*ALLOW_VOTE*/ >( *current, current->vesting_shares.amount );
+      int64_t _final_val = ( current->vesting_shares.amount.value >= _val ) ? _val : current->vesting_shares.amount.value;
+      if( _final_val > 0 )
+         db.adjust_proxied_witness_votes( *current, _final_val );
 
       ++current;
    }
