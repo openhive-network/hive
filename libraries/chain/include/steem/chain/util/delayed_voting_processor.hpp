@@ -2,6 +2,13 @@
 
 namespace steem { namespace chain {
 
+namespace delayed_voting_messages
+{
+   constexpr const char* incorrect_head_time             = "head time must be greater or equal to last delayed voting time";
+   constexpr const char* incorrect_sum_greater_equal     = "unexpected error: sum of delayed votings must be greater or equal to zero";
+   constexpr const char* incorrect_sum_equal             = "unexpected error: sum of delayed votings must be equal to zero";
+}
+
 struct delayed_votes_data
 {
    time_point_sec    time;
@@ -37,22 +44,29 @@ struct delayed_voting_processor
          return;
       }
 
-      auto front_obj = items.front();
-      FC_ASSERT( front_obj.time >= head_time, "head date must be greater or equals to last delayed voting data" );
-      if( head_time > front_obj.time + STEEM_DELAYED_VOTING_INTERVAL_SECONDS )
+      delayed_votes_data& back_obj = items.back();
+      FC_ASSERT( head_time >= back_obj.time, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_head_time ) );
+      if( head_time >= back_obj.time + STEEM_DELAYED_VOTING_INTERVAL_SECONDS )
       {
          items.emplace_back( delayed_votes_data{ head_time, val } );
       }
       else
       {
-         front_obj.val += val;
+         back_obj.val += val;
       }
    }
 
    template< typename COLLECTION_TYPE >
-   static void erase_front( COLLECTION_TYPE& items )
+   static void erase_front( COLLECTION_TYPE& items, int64_t& sum )
    {
-      items.erase( items.begin() );
+      if( !items.empty() )
+      {
+         sum -= items.begin()->val;
+         FC_ASSERT( sum >= 0, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_sum_greater_equal ) );
+         items.erase( items.begin() );
+      }
+      else
+         FC_ASSERT( sum == 0, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_sum_equal ) );
    }
 
 };
