@@ -21,35 +21,29 @@ void delayed_voting::run( const block_notification& note )
    const auto& idx = db.get_index< account_index, by_delayed_voting >();
    auto current = idx.begin();
 
-   while( current != idx.end() && ( head_time > ( current->get_the_earliest_time() + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ) ) )
-   {
-      int64_t _val = 0;
-
-      if(
-            !current->delayed_votes.empty() &&
-            ( head_time > ( current->delayed_votes.begin()->time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ) )
+   while( current != idx.end() &&
+          current->get_the_earliest_time() != time_point_sec::maximum() &&
+          head_time > ( current->get_the_earliest_time() + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
         )
+   {
+      int64_t _val = current->delayed_votes.begin()->val;
+
+      /*
+         The operation `transfer_to_vesting` always adds elements to `delayed_votes` collection in `account_object`.
+         In terms of performance is necessary to hold size of `delayed_votes` not greater than `30`.
+
+         Why `30`? STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS == 30
+
+         Solution:
+            The best solution is to add new record at the back and to remove at the front.
+      */
+      db.modify( *current, [&]( account_object& a )
       {
-         _val = current->delayed_votes.begin()->val;
+         delayed_voting_processor::erase_front( a.delayed_votes, a.sum_delayed_votes );
+      } );
 
-         /*
-            The operation `transfer_to_vesting` always adds elements to `delayed_votes` collection in `account_object`.
-            In terms of performance is necessary to hold size of `delayed_votes` not greater than `30`.
-
-            Why `30`? STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS == 30
-
-            Solution:
-               The best solution is to add new record at the back and to remove at the front.
-         */
-         db.modify( *current, [&]( account_object& a )
-         {
-            delayed_voting_processor::erase_front( a.delayed_votes, a.sum_delayed_votes );
-         } );
-      }
-
-      int64_t _final_val = ( current->vesting_shares.amount.value >= _val ) ? _val : current->vesting_shares.amount.value;
-      if( _final_val > 0 )
-         db.adjust_proxied_witness_votes( *current, _final_val );
+      if( current->vesting_shares.amount.value > _val )
+         db.adjust_proxied_witness_votes( *current, _val );
 
       ++current;
    }
