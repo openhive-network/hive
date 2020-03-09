@@ -405,6 +405,7 @@ struct count_operation_visitor
   void operator()( const delayed_voting_operation& ) const {}
   void operator()( const proposal_pay_operation& ) const {}
   void operator()( const sps_fund_operation& ) const {}
+  void operator()( const sps_convert_operation& ) const {}
   void operator()( const hardfork_hive_operation& ) const {}
   void operator()( const hardfork_hive_restore_operation& ) const {}
 

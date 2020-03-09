@@ -300,9 +300,14 @@ struct get_impacted_account_visitor
     _impacted.insert( op.voter );
   }
 
-  void operator()( const hardfork_operation& op )
-  {
-    _impacted.insert( HIVE_INIT_MINER_NAME );
+  void operator()( const sps_convert_operation& op )
+   {
+      _impacted.insert( STEEM_TREASURY_ACCOUNT );
+   }
+
+   void operator()( const hardfork_operation& op )
+   {
+      _impacted.insert( HIVE_INIT_MINER_NAME );
   }
 
   void operator()( const hardfork_hive_operation& op )
