@@ -52,16 +52,22 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
 
       //Prepare witnesses
       witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      generate_block();
+
+      auto start_time = db->head_block_time();
       witness_vote( "alice", "witness", true/*approve*/, alice_private_key );
+      generate_block();
+
       int64_t basic_votes = get_votes( "witness" );
 
       //Make some vests
       vest( "bob", "alice", ASSET( "1000.000 TESTS" ), bob_private_key );
+      generate_block();
 
       int64_t votes_01 = get_votes( "witness" );
       BOOST_REQUIRE_EQUAL( basic_votes, votes_01 );
 
-      generate_blocks( db->head_block_time() + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
+      generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
       generate_block();
 
       int64_t votes_02 = get_votes( "witness" );
