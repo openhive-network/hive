@@ -21,7 +21,7 @@ struct delayed_voting_processor
    static void add( COLLECTION_TYPE& items, int64_t& sum, const time_point_sec& head_time, int64_t val )
    {
       /*
-         A collection is filled gradually - every item in `items` is created each STEEM_DELAY_VOTING_INTERVAL_SECONDS time.
+         A collection is filled gradually - every item in `items` is created each STEEM_DELAYED_VOTING_INTERVAL_SECONDS time.
 
          Input data:
             2020-03-10 04:00:00 1000

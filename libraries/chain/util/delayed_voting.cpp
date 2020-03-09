@@ -28,6 +28,8 @@ void delayed_voting::run( const block_notification& note )
    {
       int64_t _val = current->delayed_votes.begin()->val;
 
+      db.adjust_proxied_witness_votes( *current, _val );
+
       /*
          The operation `transfer_to_vesting` always adds elements to `delayed_votes` collection in `account_object`.
          In terms of performance is necessary to hold size of `delayed_votes` not greater than `30`.
@@ -42,10 +44,7 @@ void delayed_voting::run( const block_notification& note )
          delayed_voting_processor::erase_front( a.delayed_votes, a.sum_delayed_votes );
       } );
 
-      if( current->vesting_shares.amount.value > _val )
-         db.adjust_proxied_witness_votes( *current, _val );
-
-      ++current;
+      current = idx.begin();
    }
 }
 

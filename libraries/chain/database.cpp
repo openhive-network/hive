@@ -1996,10 +1996,22 @@ void database::process_vesting_withdrawals()
       *  The user may withdraw  vT / V tokens
       */
       share_type to_withdraw;
+      share_type to_withdraw_vote_update = 0;
+
       if ( from_account.to_withdraw - from_account.withdrawn < from_account.vesting_withdraw_rate.amount )
          to_withdraw = std::min( from_account.vesting_shares.amount, from_account.to_withdraw % from_account.vesting_withdraw_rate.amount ).value;
       else
          to_withdraw = std::min( from_account.vesting_shares.amount, from_account.vesting_withdraw_rate.amount ).value;
+
+      if( to_withdraw >= from_account.sum_delayed_votes )
+      {
+         //remove whole queue
+         to_withdraw_vote_update = to_withdraw - from_account.sum_delayed_votes;
+      }
+      else
+      {
+         //remove last items equal to ( sum_delayed_votes - to_withdraw )
+      }
 
       share_type vests_deposited_as_steem = 0;
       share_type vests_deposited_as_vests = 0;
@@ -2013,12 +2025,13 @@ void database::process_vesting_withdrawals()
          if( itr->auto_vest )
          {
             share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / STEEM_100_PERCENT ).to_uint64();
+            share_type to_deposit_vote_update = ( ( fc::uint128_t ( to_withdraw_vote_update.value ) * itr->percent ) / STEEM_100_PERCENT ).to_uint64();
             vests_deposited_as_vests += to_deposit;
+
+            const auto& to_account = get< account_object, by_name >( itr->to_account );
 
             if( to_deposit > 0 )
             {
-               const auto& to_account = get< account_object, by_name >( itr->to_account );
-
                operation vop = fill_vesting_withdraw_operation( from_account.name, to_account.name, asset( to_deposit, VESTS_SYMBOL ), asset( to_deposit, VESTS_SYMBOL ) );
 
                pre_push_virtual_operation( vop );
@@ -2028,9 +2041,11 @@ void database::process_vesting_withdrawals()
                   a.vesting_shares.amount += to_deposit;
                });
 
-               adjust_proxied_witness_votes( to_account, to_deposit );
-
                post_push_virtual_operation( vop );
+            }
+            if( to_deposit_vote_update > 0 )
+            {
+               adjust_proxied_witness_votes( to_account, to_deposit_vote_update );
             }
          }
       }
