@@ -21,6 +21,43 @@ void delayed_voting::erase_delayed_value( const account_object& account, int64_t
    } );
 }
 
+void delayed_voting::add_votes( votes_update_data_items& items, bool withdraw_executer, int64_t val, const account_object& account )
+{
+   votes_update_data vud { withdraw_executer, val, &account };
+
+   auto found = items.find( vud );
+
+   if( found == items.end() )
+      items.emplace( vud );
+   else
+      found->val += val;
+}
+
+void delayed_voting::update_votes( const votes_update_data_items& items, const time_point_sec& head_time )
+{
+   for( auto& item : items )
+   {
+      FC_ASSERT(  ( !item.withdraw_executer && item.val > 0 ) ||
+                  ( item.withdraw_executer && item.val <= 0 ),
+                  "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_votes_update )
+               );
+
+      if( item.val == 0 )
+         continue;
+
+      if( item.val > 0 )
+         save_delayed_value( *item.account, head_time, item.val );
+      else
+      {
+         auto abs_val = std::abs( item.val );
+         if( abs_val >= item.account->sum_delayed_votes )
+            erase_delayed_value( *item.account, item.account->sum_delayed_votes );
+         else
+            erase_delayed_value( *item.account, abs_val );
+      }
+   }
+}
+
 //Question: To push virtual operation? What operation? What for?
 void delayed_voting::run( const block_notification& note )
 {
