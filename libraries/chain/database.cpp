@@ -1996,26 +1996,19 @@ void database::process_vesting_withdrawals()
       *  The user may withdraw  vT / V tokens
       */
       share_type to_withdraw;
-      share_type to_withdraw_vote_update = 0;
 
       if ( from_account.to_withdraw - from_account.withdrawn < from_account.vesting_withdraw_rate.amount )
          to_withdraw = std::min( from_account.vesting_shares.amount, from_account.to_withdraw % from_account.vesting_withdraw_rate.amount ).value;
       else
          to_withdraw = std::min( from_account.vesting_shares.amount, from_account.vesting_withdraw_rate.amount ).value;
 
-      if( to_withdraw >= from_account.sum_delayed_votes )
-      {
-         //remove whole queue
-         to_withdraw_vote_update = to_withdraw - from_account.sum_delayed_votes;
-      }
-      else
-      {
-         //remove last items equal to ( sum_delayed_votes - to_withdraw )
-      }
+      delayed_voting dv( *this );
+
+      delayed_voting::votes_update_data_items _votes_update_data_items;
 
       share_type vests_deposited = 0;
 
-      auto process_routing = [ this, &didx, &from_account, &vests_deposited, &to_withdraw, &cprops ]( bool auto_vest_mode )
+      auto process_routing = [ &, this ]( bool auto_vest_mode )
       {  
          for( auto itr = didx.upper_bound( boost::make_tuple( from_account.name, account_name_type() ) );
             itr != didx.end() && itr->from_account == from_account.name;
@@ -2046,7 +2039,15 @@ void database::process_vesting_withdrawals()
                         a.balance += routed;
                   });
 
-                  if( !auto_vest_mode )
+                  if( auto_vest_mode )
+                  {
+                     dv.add_votes( _votes_update_data_items,
+                                    to_account.id == from_account.id/*withdraw_executer*/,
+                                    routed.amount.value/*val*/,
+                                    to_account/*account*/
+                                 );
+                  }
+                  else
                   {
                      modify( cprops, [&]( dynamic_global_property_object& o )
                      {
@@ -2072,6 +2073,12 @@ void database::process_vesting_withdrawals()
       operation vop = fill_vesting_withdraw_operation( from_account.name, from_account.name, asset( to_convert, VESTS_SYMBOL ), converted_steem );
       pre_push_virtual_operation( vop );
 
+      dv.add_votes( _votes_update_data_items,
+                     true/*withdraw_executer*/,
+                     -to_withdraw.value/*val*/,
+                     from_account/*account*/
+                  );
+
       modify( from_account, [&]( account_object& a )
       {
          a.vesting_shares.amount -= to_withdraw;
@@ -2095,8 +2102,7 @@ void database::process_vesting_withdrawals()
          o.total_vesting_shares.amount -= to_convert;
       });
 
-      if( to_withdraw > 0 )
-         adjust_proxied_witness_votes( from_account, -to_withdraw );
+      dv.update_votes( _votes_update_data_items, head_block_time() );
 
       post_push_virtual_operation( vop );
    }
