@@ -17,7 +17,7 @@ void delayed_voting::erase_delayed_value( const account_object& account, int64_t
 {
    db.modify( account, [&]( account_object& a )
    {
-      delayed_voting_processor::erase_elements( account.delayed_votes, account.sum_delayed_votes, val );
+      delayed_voting_processor::erase_elements( a.delayed_votes, a.sum_delayed_votes, val );
    } );
 }
 

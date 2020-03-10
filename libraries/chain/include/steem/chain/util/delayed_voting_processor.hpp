@@ -93,12 +93,12 @@ struct delayed_voting_processor
          int64_t erased = 0;
          while( true )
          {
-            auto&  obj = item.back();
+            auto&  obj = items.back();
 
             if( ( count - erased ) >= obj.val )
             {
                erased += obj.val;
-               item.pop();
+               items.pop_back();
             }
             else
                break;
