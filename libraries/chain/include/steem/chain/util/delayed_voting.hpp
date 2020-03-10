@@ -39,8 +39,8 @@ class delayed_voting
 
       delayed_voting( chain::database& _db ) : db( _db ){}
 
-      void save_delayed_value( const account_object& account, const time_point_sec& head_time, int64_t val );
-      void erase_delayed_value( const account_object& account, int64_t val );
+      void save_delayed_value( const account_object& account, const time_point_sec& head_time, uint64_t val );
+      void erase_delayed_value( const account_object& account, uint64_t val );
       void add_votes( votes_update_data_items& items, bool withdraw_executer, int64_t val, const account_object& account );
       void update_votes( const votes_update_data_items& items, const time_point_sec& head_time );
 

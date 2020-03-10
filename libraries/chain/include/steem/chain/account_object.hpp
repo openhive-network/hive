@@ -114,17 +114,7 @@ namespace steem { namespace chain {
          share_type        pending_claimed_accounts = 0;
 
          t_deque< delayed_votes_data > delayed_votes; //holds VESTS per day - not used to voting
-         int64_t                       sum_delayed_votes = 0;//total sum of VESTS - not used to voting ( helper variable for performance )
-
-         asset get_real_vesting_shares() const
-         {
-            auto _val = vesting_shares.amount.value - sum_delayed_votes;
-
-            if( _val > 0 )
-               return asset( _val, VESTS_SYMBOL );
-            else
-               return asset( 0, VESTS_SYMBOL );
-         }
+         uint64_t                       sum_delayed_votes = 0;//total sum of VESTS - not used to voting ( helper variable for performance )
 
          time_point_sec get_the_earliest_time() const
          {

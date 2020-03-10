@@ -15,19 +15,19 @@ namespace delayed_voting_messages
 struct delayed_votes_data
 {
    time_point_sec    time;
-   int64_t           val = 0;
+   uint64_t          val = 0;
 };
 
 struct delayed_voting_processor
 {
    template< typename COLLECTION_TYPE >
-   static void add( COLLECTION_TYPE& items, int64_t& sum, const time_point_sec& head_time, int64_t val )
+   static void add( COLLECTION_TYPE& items, uint64_t& sum, const time_point_sec& head_time, uint64_t val )
    {
       /*
          A collection is filled gradually - every item in `items` is created each STEEM_DELAYED_VOTING_INTERVAL_SECONDS time.
 
          Input data:
-            2020-03-10 04:00:00 1000
+            2020-03-10 00:30:00 1000
             2020-03-10 05:00:00 2000
             2020-03-10 11:00:00 7000
             2020-03-11 01:00:00 6000
@@ -63,13 +63,13 @@ struct delayed_voting_processor
    }
 
    template< typename COLLECTION_TYPE >
-   static void erase_front( COLLECTION_TYPE& items, int64_t& sum )
+   static void erase_front( COLLECTION_TYPE& items, uint64_t& sum )
    {
       if( !items.empty() )
       {
          auto _begin = items.begin();
 
-         FC_ASSERT( ( sum - _begin->val ) >= 0, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_sum_greater_equal ) );
+         FC_ASSERT( sum >= _begin->val, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_sum_greater_equal ) );
 
          sum -= _begin->val;
          items.erase( items.begin() );
@@ -79,9 +79,9 @@ struct delayed_voting_processor
    }
 
    template< typename COLLECTION_TYPE >
-   static void erase_elements( COLLECTION_TYPE& items, int64_t& sum, int64_t count )
+   static void erase_elements( COLLECTION_TYPE& items, uint64_t& sum, uint64_t count )
    {
-      FC_ASSERT( count <= sum, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_erased_votes ) );
+      FC_ASSERT( count > 0 && count <= sum, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_erased_votes ) );
 
       if( sum == count )
       {
@@ -92,18 +92,20 @@ struct delayed_voting_processor
       {
          sum -= count;
 
-         int64_t erased = 0;
          while( true )
          {
             auto&  obj = items.back();
 
-            if( ( count - erased ) >= obj.val )
+            if( count >= obj.val )
             {
-               erased += obj.val;
+               count -= obj.val;
                items.pop_back();
             }
             else
+            {
+               obj.val -= count;
                break;
+            }
          }
       }
    }
