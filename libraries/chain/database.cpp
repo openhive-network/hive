@@ -1937,79 +1937,59 @@ void database::process_vesting_withdrawals()
          //remove last items equal to ( sum_delayed_votes - to_withdraw )
       }
 
-      share_type vests_deposited_as_steem = 0;
-      share_type vests_deposited_as_vests = 0;
-      asset total_steem_converted = asset( 0, STEEM_SYMBOL );
+      share_type vests_deposited = 0;
+
+      auto process_routing = [ this, &didx, &from_account, &vests_deposited, &to_withdraw, &cprops ]( bool auto_vest_mode )
+      {  
+         for( auto itr = didx.upper_bound( boost::make_tuple( from_account.name, account_name_type() ) );
+            itr != didx.end() && itr->from_account == from_account.name;
+            ++itr )
+         {
+            if( !( auto_vest_mode ^ itr->auto_vest ) )
+            {
+               share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / STEEM_100_PERCENT ).to_uint64();
+               vests_deposited += to_deposit;
+
+               const auto& to_account = get< account_object, by_name >( itr->to_account );
+
+               if( to_deposit > 0 )
+               {
+                  asset routed = auto_vest_mode ?
+                                 asset( to_deposit, VESTS_SYMBOL ) :
+                                 asset( to_deposit, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
+
+                  operation vop = fill_vesting_withdraw_operation( from_account.name, to_account.name, asset( to_deposit, VESTS_SYMBOL ), routed );
+
+                  pre_push_virtual_operation( vop );
+
+                  modify( to_account, [&]( account_object& a )
+                  {
+                     if( auto_vest_mode )
+                        a.vesting_shares += routed;
+                     else
+                        a.balance += routed;
+                  });
+
+                  if( !auto_vest_mode )
+                  {
+                     modify( cprops, [&]( dynamic_global_property_object& o )
+                     {
+                        o.total_vesting_fund_steem    -= routed;
+                        o.total_vesting_shares.amount -= to_deposit;
+                     });
+                  }
+
+                  post_push_virtual_operation( vop );
+               }
+            }
+         }
+      };
 
       // Do two passes, the first for vests, the second for steem. Try to maintain as much accuracy for vests as possible.
-      for( auto itr = didx.upper_bound( boost::make_tuple( from_account.name, account_name_type() ) );
-           itr != didx.end() && itr->from_account == from_account.name;
-           ++itr )
-      {
-         if( itr->auto_vest )
-         {
-            share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / STEEM_100_PERCENT ).to_uint64();
-            share_type to_deposit_vote_update = ( ( fc::uint128_t ( to_withdraw_vote_update.value ) * itr->percent ) / STEEM_100_PERCENT ).to_uint64();
-            vests_deposited_as_vests += to_deposit;
+      process_routing( true/*auto_vest_mode*/ );
+      process_routing( false/*auto_vest_mode*/ );
 
-            const auto& to_account = get< account_object, by_name >( itr->to_account );
-
-            if( to_deposit > 0 )
-            {
-               operation vop = fill_vesting_withdraw_operation( from_account.name, to_account.name, asset( to_deposit, VESTS_SYMBOL ), asset( to_deposit, VESTS_SYMBOL ) );
-
-               pre_push_virtual_operation( vop );
-
-               modify( to_account, [&]( account_object& a )
-               {
-                  a.vesting_shares.amount += to_deposit;
-               });
-
-               post_push_virtual_operation( vop );
-            }
-            if( to_deposit_vote_update > 0 )
-            {
-               adjust_proxied_witness_votes( to_account, to_deposit_vote_update );
-            }
-         }
-      }
-
-      for( auto itr = didx.upper_bound( boost::make_tuple( from_account.name, account_name_type() ) );
-           itr != didx.end() && itr->from_account == from_account.name;
-           ++itr )
-      {
-         if( !itr->auto_vest )
-         {
-            const auto& to_account = get< account_object, by_name >( itr->to_account );
-
-            share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / STEEM_100_PERCENT ).to_uint64();
-            vests_deposited_as_steem += to_deposit;
-            auto converted_steem = asset( to_deposit, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
-            total_steem_converted += converted_steem;
-
-            if( to_deposit > 0 )
-            {
-               operation vop = fill_vesting_withdraw_operation( from_account.name, to_account.name, asset( to_deposit, VESTS_SYMBOL), converted_steem );
-
-               pre_push_virtual_operation( vop );
-
-               modify( to_account, [&]( account_object& a )
-               {
-                  a.balance += converted_steem;
-               });
-
-               modify( cprops, [&]( dynamic_global_property_object& o )
-               {
-                  o.total_vesting_fund_steem -= converted_steem;
-                  o.total_vesting_shares.amount -= to_deposit;
-               });
-
-               post_push_virtual_operation( vop );
-            }
-         }
-      }
-
-      share_type to_convert = to_withdraw - vests_deposited_as_steem - vests_deposited_as_vests;
+      share_type to_convert = to_withdraw - vests_deposited;
       FC_ASSERT( to_convert >= 0, "Deposited more vests than were supposed to be withdrawn" );
 
       auto converted_steem = asset( to_convert, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
