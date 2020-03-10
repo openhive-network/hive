@@ -19,6 +19,7 @@ class delayed_voting
       delayed_voting( chain::database& _db ) : db( _db ){}
 
       void save_delayed_value( const account_object& account, const time_point_sec& head_time, int64_t val );
+      void erase_delayed_value( const account_object& account, int64_t val );
 
       void run( const block_notification& note );
 };

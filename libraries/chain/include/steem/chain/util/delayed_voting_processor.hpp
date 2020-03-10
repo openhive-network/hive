@@ -7,6 +7,7 @@ namespace delayed_voting_messages
    constexpr const char* incorrect_head_time             = "head time must be greater or equal to last delayed voting time";
    constexpr const char* incorrect_sum_greater_equal     = "unexpected error: sum of delayed votings must be greater or equal to zero";
    constexpr const char* incorrect_sum_equal             = "unexpected error: sum of delayed votings must be equal to zero";
+   constexpr const char* incorrect_erased_votes          = "unexpected error: number votes to be erased is greater than number of delayed votes";
 }
 
 struct delayed_votes_data
@@ -73,6 +74,36 @@ struct delayed_voting_processor
       }
       else
          FC_ASSERT( sum == 0, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_sum_equal ) );
+   }
+
+   template< typename COLLECTION_TYPE >
+   static void erase_elements( COLLECTION_TYPE& items, int64_t& sum, int64_t count )
+   {
+      FC_ASSERT( count <= sum, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_erased_votes ) );
+
+      if( sum == count )
+      {
+         sum = 0;
+         items.clear();
+      }
+      else
+      {
+         sum -= count;
+
+         int64_t erased = 0;
+         while( true )
+         {
+            auto&  obj = item.back();
+
+            if( ( count - erased ) >= obj.val )
+            {
+               erased += obj.val;
+               item.pop();
+            }
+            else
+               break;
+         }
+      }
    }
 
 };

@@ -13,6 +13,14 @@ void delayed_voting::save_delayed_value( const account_object& account, const ti
    } );
 }
 
+void delayed_voting::erase_delayed_value( const account_object& account, int64_t val )
+{
+   db.modify( account, [&]( account_object& a )
+   {
+      delayed_voting_processor::erase_elements( account.delayed_votes, account.sum_delayed_votes, val );
+   } );
+}
+
 //Question: To push virtual operation? What operation? What for?
 void delayed_voting::run( const block_notification& note )
 {
