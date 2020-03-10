@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
 {
    std::deque< delayed_votes_data > dq;
 
-   auto cmp = [ &dq ]( size_t idx, const fc::time_point_sec& time, int64_t val )
+   auto cmp = [ &dq ]( size_t idx, const fc::time_point_sec& time, uint64_t val )
    {
       if( idx >= dq.size() )
          return false;
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
          return ( dq[idx].time == time ) && ( dq[idx].val == val );
    };
 
-   int64_t sum = 0;
+   uint64_t sum = 0;
 
    fc::time_point_sec time = fc::variant( "2000-01-01T00:00:00" ).as< fc::time_point_sec >();
 
