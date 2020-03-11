@@ -73,7 +73,7 @@ uint64_t sps_processor::calculate_votes( const proposal_id_type& id )
       //If _voter has set proxy, then his votes aren't taken into consideration
       if( _voter.proxy == STEEM_PROXY_TO_SELF_ACCOUNT )
       {
-         auto sum = _voter.witness_vote_weight( db.has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) );
+         auto sum = _voter.witness_vote_weight();
          ret += sum.value;
       }
 

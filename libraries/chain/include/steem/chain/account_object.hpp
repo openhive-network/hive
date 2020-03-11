@@ -125,15 +125,24 @@ namespace steem { namespace chain {
                return time_point_sec::maximum();
          }
 
-         /// This function should be used only when the account votes for a witness directly
-         share_type        witness_vote_weight( bool is_delayed_votes_hardfork, bool delayed_votes_mode = true )const {
-            bool res = is_delayed_votes_hardfork && delayed_votes_mode;
+         asset get_real_vesting_shares() const
+         {
+            return asset( vesting_shares.amount.value - sum_delayed_votes, VESTS_SYMBOL );
+         }
 
+         /// This function should be used only when the account votes for a witness directly
+         share_type        total_witness_vote_weight()const {
             return std::accumulate( proxied_vsf_votes.begin(),
                                     proxied_vsf_votes.end(),
-                                    res ?
-                                       vesting_shares.amount - sum_delayed_votes :
-                                       vesting_shares.amount
+                                    vesting_shares.amount
+                                  );
+         }
+
+         /// This function should be used only when the account votes for a witness directly
+         share_type        witness_vote_weight()const {
+            return std::accumulate( proxied_vsf_votes.begin(),
+                                    proxied_vsf_votes.end(),
+                                    get_real_vesting_shares().amount
                                   );
          }
          share_type        proxied_vsf_votes_total()const {
