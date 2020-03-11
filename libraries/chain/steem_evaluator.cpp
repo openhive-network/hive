@@ -1359,7 +1359,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
    /// remove all current votes
    std::array<share_type, STEEM_MAX_PROXY_RECURSION_DEPTH+1> delta;
-   delta[0] = -account.vesting_shares.amount;
+   delta[0] = -account.get_real_vesting_shares().amount;
    for( int i = 0; i < STEEM_MAX_PROXY_RECURSION_DEPTH; ++i )
       delta[i+1] = -account.proxied_vsf_votes[i];
    _db.adjust_proxied_witness_votes( account, delta );
@@ -1410,8 +1410,6 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
    const auto& by_account_witness_idx = _db.get_index< witness_vote_index >().indices().get< by_account_witness >();
    auto itr = by_account_witness_idx.find( boost::make_tuple( voter.name, witness.owner ) );
 
-   auto has_dv_hardfork = _db.has_hardfork( STEEM_DELAYED_VOTING_HARDFORK );
-
    if( itr == by_account_witness_idx.end() ) {
       FC_ASSERT( o.approve, "Vote doesn't exist, user must indicate a desire to approve witness." );
 
@@ -1425,10 +1423,10 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
          });
 
          if( _db.has_hardfork( STEEM_HARDFORK_0_3 ) ) {
-            _db.adjust_witness_vote( witness, voter.witness_vote_weight( has_dv_hardfork ) );
+            _db.adjust_witness_vote( witness, voter.witness_vote_weight() );
          }
          else {
-            _db.adjust_proxied_witness_votes( voter, voter.witness_vote_weight( has_dv_hardfork ) );
+            _db.adjust_proxied_witness_votes( voter, voter.witness_vote_weight() );
          }
 
       } else {
@@ -1438,7 +1436,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
              v.account = voter.name;
          });
          _db.modify( witness, [&]( witness_object& w ) {
-             w.votes += voter.witness_vote_weight( has_dv_hardfork );
+             w.votes += voter.witness_vote_weight();
          });
 
       }
@@ -1451,12 +1449,12 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
       if (  _db.has_hardfork( STEEM_HARDFORK_0_2 ) ) {
          if( _db.has_hardfork( STEEM_HARDFORK_0_3 ) )
-            _db.adjust_witness_vote( witness, -voter.witness_vote_weight( has_dv_hardfork ) );
+            _db.adjust_witness_vote( witness, -voter.witness_vote_weight() );
          else
-            _db.adjust_proxied_witness_votes( voter, -voter.witness_vote_weight( has_dv_hardfork ) );
+            _db.adjust_proxied_witness_votes( voter, -voter.witness_vote_weight() );
       } else  {
          _db.modify( witness, [&]( witness_object& w ) {
-             w.votes -= voter.witness_vote_weight( has_dv_hardfork );
+             w.votes -= voter.witness_vote_weight();
          });
       }
       _db.modify( voter, [&]( account_object& a ) {

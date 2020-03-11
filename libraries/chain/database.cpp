@@ -2014,7 +2014,7 @@ void database::process_vesting_withdrawals()
       share_type vests_deposited = 0;
 
       auto process_routing = [ &, this ]( bool auto_vest_mode )
-      {  
+      {
          for( auto itr = didx.upper_bound( boost::make_tuple( from_account.name, account_name_type() ) );
             itr != didx.end() && itr->from_account == from_account.name;
             ++itr )
@@ -2053,6 +2053,10 @@ void database::process_vesting_withdrawals()
                                        routed.amount.value/*val*/,
                                        to_account/*account*/
                                     );
+                     }
+                     else
+                     {
+                        adjust_proxied_witness_votes( to_account, to_deposit );
                      }
                   }
                   else
@@ -2116,6 +2120,17 @@ void database::process_vesting_withdrawals()
       if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
       {
          dv->update_votes( _votes_update_data_items, head_block_time() );
+
+         //During searching `withdraw_executer` and `val` are irrelevant.
+         auto found = _votes_update_data_items->find( votes_update_data( { true/*withdraw_executer*/, 0/*val*/, &from_account } ) );
+         FC_ASSERT( found != _votes_update_data_items->end() && found->withdraw_executer, "Something strange: `from_account` disappeared" );
+         if( found->val < 0 )
+            adjust_proxied_witness_votes( from_account, found->val );
+      }
+      else
+      {
+         if( to_withdraw > 0 )
+            adjust_proxied_witness_votes( from_account, -to_withdraw );
       }
 
       post_push_virtual_operation( vop );
@@ -2918,7 +2933,7 @@ void database::process_decline_voting_rights()
 
       /// remove all current votes
       std::array<share_type, STEEM_MAX_PROXY_RECURSION_DEPTH+1> delta;
-      delta[0] = -account.vesting_shares.amount;
+      delta[0] = -account.get_real_vesting_shares().amount;
       for( int i = 0; i < STEEM_MAX_PROXY_RECURSION_DEPTH; ++i )
          delta[i+1] = -account.proxied_vsf_votes[i];
       adjust_proxied_witness_votes( account, delta );
@@ -5728,6 +5743,7 @@ void database::validate_invariants()const
       asset total_vesting = asset( 0, VESTS_SYMBOL );
       asset pending_vesting_steem = asset( 0, STEEM_SYMBOL );
       share_type total_vsf_votes = share_type( 0 );
+      share_type total_delayed_votes = share_type( 0 );
 
       auto gpo = get_dynamic_global_properties();
 
@@ -5748,10 +5764,11 @@ void database::validate_invariants()const
          total_vesting += itr->reward_vesting_balance;
          pending_vesting_steem += itr->reward_vesting_steem;
          total_vsf_votes += ( itr->proxy == STEEM_PROXY_TO_SELF_ACCOUNT ?
-                                 itr->witness_vote_weight( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ), false/*delayed_votes_mode*/ ) :
+                                 itr->total_witness_vote_weight() :
                                  ( STEEM_MAX_PROXY_RECURSION_DEPTH > 0 ?
                                       itr->proxied_vsf_votes[STEEM_MAX_PROXY_RECURSION_DEPTH - 1] :
                                       itr->vesting_shares.amount ) );
+         total_delayed_votes += itr->sum_delayed_votes;
       }
 
       const auto& convert_request_idx = get_index< convert_request_index >().indices();
@@ -5828,7 +5845,7 @@ void database::validate_invariants()const
       FC_ASSERT( gpo.current_supply == total_supply, "", ("gpo.current_supply",gpo.current_supply)("total_supply",total_supply) );
       FC_ASSERT( gpo.current_sbd_supply + gpo.init_sbd_supply == total_sbd, "", ("gpo.current_sbd_supply",gpo.current_sbd_supply)("total_sbd",total_sbd) );
       FC_ASSERT( gpo.total_vesting_shares + gpo.pending_rewarded_vesting_shares == total_vesting, "", ("gpo.total_vesting_shares",gpo.total_vesting_shares)("total_vesting",total_vesting) );
-      FC_ASSERT( gpo.total_vesting_shares.amount == total_vsf_votes, "", ("total_vesting_shares",gpo.total_vesting_shares)("total_vsf_votes",total_vsf_votes) );
+      FC_ASSERT( gpo.total_vesting_shares.amount == total_vsf_votes + total_delayed_votes, "", ("total_vesting_shares",gpo.total_vesting_shares)("total_vsf_votes + total_delayed_votes",total_vsf_votes + total_delayed_votes) );
       FC_ASSERT( gpo.pending_rewarded_vesting_steem == pending_vesting_steem, "", ("pending_rewarded_vesting_steem",gpo.pending_rewarded_vesting_steem)("pending_vesting_steem", pending_vesting_steem));
 
       FC_ASSERT( gpo.virtual_supply >= gpo.current_supply );
@@ -6079,7 +6096,7 @@ void database::retally_witness_votes()
       auto wit_itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
       while( wit_itr != vidx.end() && wit_itr->account == a.name )
       {
-         adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.witness_vote_weight( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) ) );
+         adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.witness_vote_weight() );
          ++wit_itr;
       }
    }
