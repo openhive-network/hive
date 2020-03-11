@@ -2119,13 +2119,10 @@ void database::process_vesting_withdrawals()
 
       if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
       {
-         dv->update_votes( _votes_update_data_items, head_block_time() );
-
-         //During searching `withdraw_executer` and `val` are irrelevant.
-         auto found = _votes_update_data_items->find( votes_update_data( { true/*withdraw_executer*/, 0/*val*/, &from_account } ) );
-         FC_ASSERT( found != _votes_update_data_items->end() && found->withdraw_executer, "Something strange: `from_account` disappeared" );
-         if( found->val < 0 )
-            adjust_proxied_witness_votes( from_account, found->val );
+         fc::optional< uint64_t > leftover = dv->update_votes( _votes_update_data_items, head_block_time() );
+         FC_ASSERT( leftover.valid(), "Something went wrong" );
+         if( leftover.valid() && ( *leftover ) != 0 )
+            adjust_proxied_witness_votes( from_account, -( *leftover ) );
       }
       else
       {
