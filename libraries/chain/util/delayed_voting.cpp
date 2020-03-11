@@ -36,10 +36,12 @@ void delayed_voting::add_votes( opt_votes_update_data_items& items, bool withdra
       found->val += val;
 }
 
-void delayed_voting::update_votes( const opt_votes_update_data_items& items, const time_point_sec& head_time )
+fc::optional< uint64_t > delayed_voting::update_votes( const opt_votes_update_data_items& items, const time_point_sec& head_time )
 {
    if( !items.valid() )
-      return;
+      return fc::optional< uint64_t >();
+
+   uint64_t res = 0;
 
    for( auto& item : *items )
    {
@@ -58,6 +60,7 @@ void delayed_voting::update_votes( const opt_votes_update_data_items& items, con
          uint64_t abs_val = std::abs( item.val );
          if( abs_val >= item.account->sum_delayed_votes )
          {
+            res = abs_val - item.account->sum_delayed_votes;
             if( item.account->sum_delayed_votes > 0 )
                erase_delayed_value( *item.account, item.account->sum_delayed_votes );
          }
@@ -65,6 +68,8 @@ void delayed_voting::update_votes( const opt_votes_update_data_items& items, con
             erase_delayed_value( *item.account, abs_val );
       }
    }
+
+   return res;
 }
 
 //Question: To push virtual operation? What operation? What for?
