@@ -30,6 +30,7 @@ class delayed_voting
    public:
 
       using votes_update_data_items = std::set< votes_update_data, votes_update_data_less >;
+      using opt_votes_update_data_items = fc::optional< votes_update_data_items >;
 
    private:
 
@@ -41,8 +42,8 @@ class delayed_voting
 
       void save_delayed_value( const account_object& account, const time_point_sec& head_time, uint64_t val );
       void erase_delayed_value( const account_object& account, uint64_t val );
-      void add_votes( votes_update_data_items& items, bool withdraw_executer, int64_t val, const account_object& account );
-      void update_votes( const votes_update_data_items& items, const time_point_sec& head_time );
+      void add_votes( opt_votes_update_data_items& items, bool withdraw_executer, int64_t val, const account_object& account );
+      void update_votes( const opt_votes_update_data_items& items, const time_point_sec& head_time );
 
       void run( const block_notification& note );
 };
