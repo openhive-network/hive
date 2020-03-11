@@ -113,8 +113,9 @@ namespace steem { namespace chain {
 
          share_type        pending_claimed_accounts = 0;
 
-         t_deque< delayed_votes_data > delayed_votes; //holds VESTS per day - not used to voting
-         uint64_t                       sum_delayed_votes = 0;//total sum of VESTS - not used to voting ( helper variable for performance )
+         using t_delayed_votes = t_deque< delayed_votes_data >;
+         t_delayed_votes   delayed_votes; //holds VESTS per day - not used to voting
+         uint64_t          sum_delayed_votes = 0;//total sum of VESTS - not used to voting ( helper variable for performance )
 
          time_point_sec get_the_earliest_time() const
          {
@@ -125,10 +126,15 @@ namespace steem { namespace chain {
          }
 
          /// This function should be used only when the account votes for a witness directly
-         share_type        witness_vote_weight()const {
+         share_type        witness_vote_weight( bool is_delayed_votes_hardfork, bool delayed_votes_mode = true )const {
+            bool res = is_delayed_votes_hardfork && delayed_votes_mode;
+
             return std::accumulate( proxied_vsf_votes.begin(),
                                     proxied_vsf_votes.end(),
-                                    vesting_shares.amount );
+                                    res ?
+                                       vesting_shares.amount - sum_delayed_votes :
+                                       vesting_shares.amount
+                                  );
          }
          share_type        proxied_vsf_votes_total()const {
             return std::accumulate( proxied_vsf_votes.begin(),
