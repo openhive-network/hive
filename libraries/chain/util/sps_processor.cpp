@@ -306,7 +306,7 @@ void sps_processor::run( const block_notification& note )
 {
   remove_old_proposals( note );
   record_funding( note );
-  convert_funding( note );
+  convert_funds( note );
   make_payments( note );
 }
 
