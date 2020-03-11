@@ -5748,7 +5748,7 @@ void database::validate_invariants()const
          total_vesting += itr->reward_vesting_balance;
          pending_vesting_steem += itr->reward_vesting_steem;
          total_vsf_votes += ( itr->proxy == STEEM_PROXY_TO_SELF_ACCOUNT ?
-                                 itr->witness_vote_weight() :
+                                 itr->witness_vote_weight( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ), false/*delayed_votes_mode*/ ) :
                                  ( STEEM_MAX_PROXY_RECURSION_DEPTH > 0 ?
                                       itr->proxied_vsf_votes[STEEM_MAX_PROXY_RECURSION_DEPTH - 1] :
                                       itr->vesting_shares.amount ) );
@@ -6079,7 +6079,7 @@ void database::retally_witness_votes()
       auto wit_itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
       while( wit_itr != vidx.end() && wit_itr->account == a.name )
       {
-         adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.witness_vote_weight() );
+         adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.witness_vote_weight( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) ) );
          ++wit_itr;
       }
    }
