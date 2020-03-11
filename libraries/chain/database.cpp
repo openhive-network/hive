@@ -1926,9 +1926,14 @@ void database::process_vesting_withdrawals()
       else
          to_withdraw = std::min( from_account.vesting_shares.amount, from_account.vesting_withdraw_rate.amount ).value;
 
-      delayed_voting dv( *this );
+      optional< delayed_voting > dv;
+      delayed_voting::opt_votes_update_data_items _votes_update_data_items;
 
-      delayed_voting::votes_update_data_items _votes_update_data_items;
+      if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
+      {
+         dv = delayed_voting( *this );
+         _votes_update_data_items = delayed_voting::votes_update_data_items();
+      }
 
       share_type vests_deposited = 0;
 
@@ -1965,11 +1970,14 @@ void database::process_vesting_withdrawals()
 
                   if( auto_vest_mode )
                   {
-                     dv.add_votes( _votes_update_data_items,
-                                    to_account.id == from_account.id/*withdraw_executer*/,
-                                    routed.amount.value/*val*/,
-                                    to_account/*account*/
-                                 );
+                     if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
+                     {
+                        dv->add_votes( _votes_update_data_items,
+                                       to_account.id == from_account.id/*withdraw_executer*/,
+                                       routed.amount.value/*val*/,
+                                       to_account/*account*/
+                                    );
+                     }
                   }
                   else
                   {
@@ -1997,11 +2005,14 @@ void database::process_vesting_withdrawals()
       operation vop = fill_vesting_withdraw_operation( from_account.name, from_account.name, asset( to_convert, VESTS_SYMBOL ), converted_steem );
       pre_push_virtual_operation( vop );
 
-      dv.add_votes( _votes_update_data_items,
-                     true/*withdraw_executer*/,
-                     -to_withdraw.value/*val*/,
-                     from_account/*account*/
-                  );
+      if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
+      {
+         dv->add_votes( _votes_update_data_items,
+                        true/*withdraw_executer*/,
+                        -to_withdraw.value/*val*/,
+                        from_account/*account*/
+                     );
+      }
 
       modify( from_account, [&]( account_object& a )
       {
@@ -2026,7 +2037,10 @@ void database::process_vesting_withdrawals()
          o.total_vesting_shares.amount -= to_convert;
       });
 
-      dv.update_votes( _votes_update_data_items, head_block_time() );
+      if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
+      {
+         dv->update_votes( _votes_update_data_items, head_block_time() );
+      }
 
       post_push_virtual_operation( vop );
    }

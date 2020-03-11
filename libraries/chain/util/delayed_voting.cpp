@@ -21,21 +21,27 @@ void delayed_voting::erase_delayed_value( const account_object& account, uint64_
    } );
 }
 
-void delayed_voting::add_votes( votes_update_data_items& items, bool withdraw_executer, int64_t val, const account_object& account )
+void delayed_voting::add_votes( opt_votes_update_data_items& items, bool withdraw_executer, int64_t val, const account_object& account )
 {
+   if( !items.valid() )
+      return;
+
    votes_update_data vud { withdraw_executer, val, &account };
 
-   auto found = items.find( vud );
+   auto found = items->find( vud );
 
-   if( found == items.end() )
-      items.emplace( vud );
+   if( found == items->end() )
+      items->emplace( vud );
    else
       found->val += val;
 }
 
-void delayed_voting::update_votes( const votes_update_data_items& items, const time_point_sec& head_time )
+void delayed_voting::update_votes( const opt_votes_update_data_items& items, const time_point_sec& head_time )
 {
-   for( auto& item : items )
+   if( !items.valid() )
+      return;
+
+   for( auto& item : *items )
    {
       FC_ASSERT(  ( !item.withdraw_executer && item.val > 0 ) ||
                   ( item.withdraw_executer && item.val <= 0 ),
