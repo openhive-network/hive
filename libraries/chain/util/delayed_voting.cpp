@@ -5,7 +5,7 @@ namespace steem { namespace chain {
 
 using steem::protocol::asset;
 
-void delayed_voting::save_delayed_value( const account_object& account, const time_point_sec& head_time, uint64_t val )
+void delayed_voting::add_delayed_value( const account_object& account, const time_point_sec& head_time, uint64_t val )
 {
    db.modify( account, [&]( account_object& a )
    {
@@ -17,7 +17,7 @@ void delayed_voting::erase_delayed_value( const account_object& account, uint64_
 {
    db.modify( account, [&]( account_object& a )
    {
-      delayed_voting_processor::erase_elements( a.delayed_votes, a.sum_delayed_votes, val );
+      delayed_voting_processor::erase( a.delayed_votes, a.sum_delayed_votes, val );
    } );
 }
 
@@ -54,7 +54,7 @@ fc::optional< uint64_t > delayed_voting::update_votes( const opt_votes_update_da
          continue;
 
       if( item.val > 0 )
-         save_delayed_value( *item.account, head_time, item.val );
+         add_delayed_value( *item.account, head_time, item.val );
       else
       {
          uint64_t abs_val = std::abs( item.val );
