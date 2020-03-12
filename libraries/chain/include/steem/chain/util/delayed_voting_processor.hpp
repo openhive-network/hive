@@ -79,7 +79,7 @@ struct delayed_voting_processor
    }
 
    template< typename COLLECTION_TYPE >
-   static void erase_elements( COLLECTION_TYPE& items, uint64_t& sum, uint64_t count )
+   static void erase( COLLECTION_TYPE& items, uint64_t& sum, uint64_t count )
    {
       FC_ASSERT( count > 0 && count <= sum, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_erased_votes ) );
 

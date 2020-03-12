@@ -1334,7 +1334,7 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
          if( !ALLOW_VOTE )
          {
             delayed_voting dv( db );
-            dv.save_delayed_value( to_account, db.head_block_time(), new_vesting.amount.value );
+            dv.add_delayed_value( to_account, db.head_block_time(), new_vesting.amount.value );
             return new_vesting;
          }
       }
