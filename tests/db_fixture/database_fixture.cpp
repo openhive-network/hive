@@ -1064,6 +1064,18 @@ int64_t delayed_vote_database_fixture::get_votes( const string& witness_name )
       return found->votes.value;
 }
 
+template< typename COLLECTION >
+bool delayed_vote_database_fixture::check_collection( const COLLECTION& collection, size_t idx, const fc::time_point_sec& time, uint64_t val )
+{
+   if( idx >= collection.size() )
+      return false;
+   else
+      return ( collection[idx].time == time ) && ( collection[idx].val == val );
+}
+
+using dvd_deque = std::deque< delayed_votes_data >;
+template bool delayed_vote_database_fixture::check_collection< dvd_deque >( const dvd_deque& collection, size_t idx, const fc::time_point_sec& time, uint64_t val );
+
 json_rpc_database_fixture::json_rpc_database_fixture()
 {
    try {
