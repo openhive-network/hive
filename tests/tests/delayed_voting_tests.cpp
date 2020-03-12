@@ -78,16 +78,91 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
    FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( delayed_voting_processor_02 )
+{
+   std::deque< delayed_votes_data > dq;
+
+   auto cmp = [ &dq, this ]( size_t idx, const fc::time_point_sec& time, uint64_t val )
+   {
+      return check_collection( dq, idx, time, val );
+   };
+
+   uint64_t sum = 0;
+
+   fc::time_point_sec time = fc::variant( "2020-01-02T03:04:05" ).as< fc::time_point_sec >();
+
+   const uint32_t _max = 10;
+   uint64_t calculated_sum = 0;
+
+   //dq={1,2,3,4,5,6,7,8,9,10}
+   for( uint32_t i = 0; i < _max; ++i )
+   {
+      calculated_sum += i + 1;
+      delayed_voting_processor::add( dq, sum, time + fc::days( i + 1 )/*time*/, i + 1/*val*/ );
+   }
+   BOOST_REQUIRE( dq.size() == _max );
+   BOOST_REQUIRE( sum == calculated_sum );
+
+   for( uint32_t i = 0; i < _max; ++i )
+      BOOST_REQUIRE( cmp( i/*idx*/, time + fc::days( i + 1 )/*time*/, i + 1/*val*/ ) );
+
+   //Decrease gradually last element by `1` in `dq`.
+   for( uint32_t cnt = 0; cnt < _max - 1; ++cnt )
+   {
+      idump( (cnt) );
+
+      delayed_voting_processor::erase( dq, sum, 1 );
+      BOOST_REQUIRE( dq.size() == _max );
+      BOOST_REQUIRE( sum == calculated_sum - ( cnt + 1 ) );
+
+      for( uint32_t i = 0; i < _max; ++i )
+      {
+         if( i == _max - 1 )
+            BOOST_REQUIRE( cmp( i/*idx*/, time + fc::days( i + 1 )/*time*/, i - cnt/*val*/ ) );
+         else
+            BOOST_REQUIRE( cmp( i/*idx*/, time + fc::days( i + 1 )/*time*/, i + 1/*val*/ ) );
+      }
+   }
+
+   //dq={1,2,3,4,5,6,7,8,9,1}
+   //Last element has only `1`, so after below operation last element should be removed
+   delayed_voting_processor::erase( dq, sum, 1 );
+   BOOST_REQUIRE( dq.size() == _max - 1 );
+   BOOST_REQUIRE( sum == calculated_sum - 10 );
+
+   //dq={1,2,3,4,5,6,7,8,9}
+   //Two last elements will disappear.
+   delayed_voting_processor::erase( dq, sum, 17 );
+   BOOST_REQUIRE( dq.size() == _max - 3 );
+   BOOST_REQUIRE( sum == calculated_sum - 27 );
+
+   //dq={1,2,3,4,5,6,7}
+   delayed_voting_processor::erase( dq, sum, 7 );
+   BOOST_REQUIRE( dq.size() == _max - 4 );
+   BOOST_REQUIRE( sum == calculated_sum - 34 );
+
+   //dq={1,2,3,4,5,6}
+   delayed_voting_processor::erase( dq, sum, 18 );
+   BOOST_REQUIRE( dq.size() == _max - 8 );
+   BOOST_REQUIRE( sum == calculated_sum - 52 );
+
+   //delayed_voting_messages::incorrect_erased_votes
+   //dq={1,2}
+   STEEM_REQUIRE_THROW( delayed_voting_processor::erase( dq, sum, 10 ), fc::exception );
+
+   //dq={1,2}
+   delayed_voting_processor::erase( dq, sum, 3 );
+   BOOST_REQUIRE( dq.size() == 0 );
+   BOOST_REQUIRE( sum == 0 );
+}
+
 BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
 {
    std::deque< delayed_votes_data > dq;
 
-   auto cmp = [ &dq ]( size_t idx, const fc::time_point_sec& time, uint64_t val )
+   auto cmp = [ &dq, this ]( size_t idx, const fc::time_point_sec& time, uint64_t val )
    {
-      if( idx >= dq.size() )
-         return false;
-      else
-         return ( dq[idx].time == time ) && ( dq[idx].val == val );
+      return check_collection( dq, idx, time, val );
    };
 
    uint64_t sum = 0;
@@ -95,76 +170,76 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
    fc::time_point_sec time = fc::variant( "2000-01-01T00:00:00" ).as< fc::time_point_sec >();
 
    {
-      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ), 1/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 )/*time*/, 1/*val*/ );
       BOOST_REQUIRE( dq.size() == 1 );
       BOOST_REQUIRE( sum == 1 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ), 1 ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 1/*val*/ ) );
    }
    {
-      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 1 ), 2/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 1 )/*time*/, 2/*val*/ );
       BOOST_REQUIRE( dq.size() == 1 );
       BOOST_REQUIRE( sum == 3 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ), 3 ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 3/*val*/ ) );
    }
    {
-      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 24 ) - fc::seconds( 1 ), 3/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 24 ) - fc::seconds( 1 )/*time*/, 3/*val*/ );
       BOOST_REQUIRE( dq.size() == 1 );
       BOOST_REQUIRE( sum == 6 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ), 6 ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 6/*val*/ ) );
    }
    {
-      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 24 ), 4/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 24 )/*time*/, 4/*val*/ );
       BOOST_REQUIRE( dq.size() == 2 );
       BOOST_REQUIRE( sum == 10 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ), 6 ) );
-      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 24 ), 4 ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 6/*val*/ ) );
+      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 24 )/*time*/, 4/*val*/ ) );
    }
    {
-      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 5/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 5/*val*/ );
       BOOST_REQUIRE( dq.size() == 3 );
       BOOST_REQUIRE( sum == 15 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ), 6 ) );
-      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 24 ), 4 ) );
-      BOOST_REQUIRE( cmp( 2/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 5 ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 6/*val*/ ) );
+      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 24 )/*time*/, 4/*val*/ ) );
+      BOOST_REQUIRE( cmp( 2/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, /*val*/5 ) );
    }
    {
       delayed_voting_processor::erase_front( dq, sum );
       BOOST_REQUIRE( dq.size() == 2 );
       BOOST_REQUIRE( sum == 9 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 24 ), 4 ) );
-      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 5 ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 24 )/*time*/, 4/*val*/ ) );
+      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 5/*val*/ ) );
    }
    {
       delayed_voting_processor::erase_front( dq, sum );
       BOOST_REQUIRE( dq.size() == 1 );
       BOOST_REQUIRE( sum == 5 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 5 ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 5/*val*/ ) );
    }
    {
-      delayed_voting_processor::add( dq, sum, time + fc::minutes( 2 ) + fc::hours( 2*24 ), 6/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 2 ) + fc::hours( 2*24 )/*time*/, 6/*val*/ );
       BOOST_REQUIRE( dq.size() == 1 );
       BOOST_REQUIRE( sum == 11 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 11 ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 11/*val*/ ) );
    }
    {
-      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 3*24 ), 7/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 3*24 )/*time*/, 7/*val*/ );
       BOOST_REQUIRE( dq.size() == 2 );
       BOOST_REQUIRE( sum == 18 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 11 ) );
-      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 3*24 ), 7 ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 11/*val*/ ) );
+      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 3*24 )/*time*/, 7/*val*/ ) );
    }
    {
-      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 3*24 ) + fc::seconds( 3 ), 8/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 3*24 ) + fc::seconds( 3 )/*time*/, 8/*val*/ );
       BOOST_REQUIRE( dq.size() == 2 );
       BOOST_REQUIRE( sum == 26 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 ), 11 ) );
-      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 3*24 ), 15 ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 11/*val*/ ) );
+      BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 3*24 )/*time*/, 15/*val*/ ) );
    }
    {
       delayed_voting_processor::erase_front( dq, sum );
       BOOST_REQUIRE( dq.size() == 1 );
       BOOST_REQUIRE( sum == 15 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 3*24 ), 15 ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 3*24 )/*time*/, 15/*val*/ ) );
    }
    {
       delayed_voting_processor::erase_front( dq, sum );
@@ -200,13 +275,13 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
       BOOST_REQUIRE( sum == 0 );
    }
    {
-      delayed_voting_processor::add( dq, sum, time + fc::seconds( 30 ), 1000/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::seconds( 30 )/*time*/, 1000/*val*/ );
       BOOST_REQUIRE( dq.size() == 1 );
       BOOST_REQUIRE( sum == 1000 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::seconds( 30 ), 1000 ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::seconds( 30 )/*time*/, 1000/*val*/ ) );
 
       //delayed_voting_messages::incorrect_head_time
-      STEEM_REQUIRE_THROW( delayed_voting_processor::add( dq, sum, time + fc::seconds( 29 ), 1000/*val*/ ), fc::exception );
+      STEEM_REQUIRE_THROW( delayed_voting_processor::add( dq, sum, time + fc::seconds( 29 )/*time*/, 1000/*val*/ ), fc::exception );
 
       delayed_voting_processor::erase_front( dq, sum );
       BOOST_REQUIRE( dq.size() == 0 );

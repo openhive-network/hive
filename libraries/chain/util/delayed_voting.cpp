@@ -82,7 +82,7 @@ void delayed_voting::run( const block_notification& note )
 
    while( current != idx.end() &&
           current->get_the_earliest_time() != time_point_sec::maximum() &&
-          head_time > ( current->get_the_earliest_time() + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
+          head_time >= ( current->get_the_earliest_time() + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
         )
    {
       int64_t _val = current->delayed_votes.begin()->val;
