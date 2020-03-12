@@ -5688,10 +5688,10 @@ void database::validate_invariants()const
          total_vesting += itr->reward_vesting_balance;
          pending_vesting_steem += itr->reward_vesting_steem;
          total_vsf_votes += ( itr->proxy == STEEM_PROXY_TO_SELF_ACCOUNT ?
-                                 itr->total_witness_vote_weight() :
+                                 itr->witness_vote_weight() :
                                  ( STEEM_MAX_PROXY_RECURSION_DEPTH > 0 ?
                                       itr->proxied_vsf_votes[STEEM_MAX_PROXY_RECURSION_DEPTH - 1] :
-                                      itr->vesting_shares.amount ) );
+                                      itr->get_real_vesting_shares().amount ) );
          total_delayed_votes += itr->sum_delayed_votes;
       }
 

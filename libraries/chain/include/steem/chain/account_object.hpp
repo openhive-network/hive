@@ -131,14 +131,6 @@ namespace steem { namespace chain {
          }
 
          /// This function should be used only when the account votes for a witness directly
-         share_type        total_witness_vote_weight()const {
-            return std::accumulate( proxied_vsf_votes.begin(),
-                                    proxied_vsf_votes.end(),
-                                    vesting_shares.amount
-                                  );
-         }
-
-         /// This function should be used only when the account votes for a witness directly
          share_type        witness_vote_weight()const {
             return std::accumulate( proxied_vsf_votes.begin(),
                                     proxied_vsf_votes.end(),
