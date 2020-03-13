@@ -2049,7 +2049,7 @@ void database::process_vesting_withdrawals()
                      if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
                      {
                         dv->add_votes( _votes_update_data_items,
-                                       to_account.id == from_account.id/*withdraw_executer*/,
+                                       to_account.id == from_account.id/*withdraw_executor*/,
                                        routed.amount.value/*val*/,
                                        to_account/*account*/
                                     );
@@ -2088,7 +2088,7 @@ void database::process_vesting_withdrawals()
       if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
       {
          dv->add_votes( _votes_update_data_items,
-                        true/*withdraw_executer*/,
+                        true/*withdraw_executor*/,
                         -to_withdraw.value/*val*/,
                         from_account/*account*/
                      );
