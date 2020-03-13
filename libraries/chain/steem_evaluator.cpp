@@ -1454,7 +1454,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
             _db.adjust_proxied_witness_votes( voter, -voter.witness_vote_weight() );
       } else  {
          _db.modify( witness, [&]( witness_object& w ) {
-             w.votes -= voter.witness_vote_weight();
+            w.votes -= voter.witness_vote_weight();
          });
       }
       _db.modify( voter, [&]( account_object& a ) {

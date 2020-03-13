@@ -49,7 +49,6 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
       FUND( "alice", ASSET( "10000.000 TESTS" ) );
       FUND( "bob", ASSET( "10000.000 TESTS" ) );
       FUND( "witness", ASSET( "10000.000 TESTS" ) );
-
       //Prepare witnesses
       witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
       generate_block();
@@ -72,6 +71,159 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
 
       int64_t votes_02 = get_votes( "witness" );
       BOOST_REQUIRE_GT( votes_02, basic_votes );
+
+      validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( delayed_voting_04 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Testing: delaying voting v4" );
+
+      ACTORS( (bob)(witness) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      //auto start_time = db->head_block_time();
+
+      FUND( "bob", ASSET( "10000.000 TESTS" ) );
+      FUND( "witness", ASSET( "10000.000 TESTS" ) );
+      
+      //Prepare witnesses
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      generate_block();
+
+      auto start_time = db->head_block_time();
+      const int64_t basic_votes = get_votes( "witness" );
+
+      //Make some vests
+      vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key );
+      generate_block();
+
+      witness_vote( "bob", "witness", true/*approve*/, bob_private_key );
+      generate_block();
+
+      BOOST_REQUIRE_EQUAL( basic_votes, get_votes( "witness" ) );
+      for(int i = 1; i < (STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS) - 1; i++)
+      {
+         generate_blocks( start_time + (i * STEEM_DELAYED_VOTING_INTERVAL_SECONDS) , true );
+         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes );
+      }
+      generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
+      generate_block();
+
+      BOOST_REQUIRE_GT( get_votes( "witness" ), basic_votes );
+
+      validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( delayed_voting_05 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Testing: delaying voting v5" );
+
+      ACTORS( (bob)(witness1)(witness2) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      //auto start_time = db->head_block_time();
+
+      FUND( "bob", ASSET( "10000.000 TESTS" ) );
+      FUND( "witness1", ASSET( "10000.000 TESTS" ) );
+      FUND( "witness2", ASSET( "10000.000 TESTS" ) );
+      
+      //Prepare witnesses
+      witness_create( "witness1", witness1_private_key, "url.witness1", witness1_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      generate_block();
+
+      auto start_time = db->head_block_time();
+      int64_t basic_votes_1 = get_votes( "witness1" );
+      int64_t basic_votes_2 = get_votes( "witness2" );
+
+      //Make some vests
+      vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key );
+      generate_block();
+
+      witness_vote( "bob", "witness1", true/*approve*/, bob_private_key );
+      generate_block();
+
+      int64_t votes_01_1 = get_votes( "witness1" );
+      int64_t votes_01_2 = get_votes( "witness2" );
+      BOOST_REQUIRE_EQUAL( basic_votes_1, votes_01_1 );
+      BOOST_REQUIRE_EQUAL( basic_votes_2, votes_01_2 );
+
+      constexpr int DAYS{ (STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS) };
+      for(int i = 1; i < DAYS - 1; i++)
+      {
+         generate_blocks( start_time + (i * STEEM_DELAYED_VOTING_INTERVAL_SECONDS) , true );
+         if( i == static_cast<int>( DAYS/2 )) witness_vote( "bob", "witness2", true/*approve*/, bob_private_key );
+         BOOST_REQUIRE_EQUAL( get_votes( "witness1" ), votes_01_1 );
+         BOOST_REQUIRE_EQUAL( get_votes( "witness2" ), votes_01_2 );
+      }
+      generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
+      generate_block();
+
+      BOOST_REQUIRE_GT( get_votes( "witness1" ), basic_votes_1 );
+      BOOST_REQUIRE_GT( get_votes( "witness2" ), basic_votes_2 );
+
+      validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( delayed_voting_06 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Testing: delaying voting v6" );
+
+      ACTORS( (bob)(witness) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      //auto start_time = db->head_block_time();
+
+      FUND( "bob", ASSET( "10000.000 TESTS" ) );
+      FUND( "witness", ASSET( "10000.000 TESTS" ) );
+      
+      //Prepare witnesses
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      generate_block();
+
+      auto start_time = db->head_block_time();
+      const int64_t basic_votes = get_votes( "witness" );
+
+      //Make some vests
+      vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key );
+      generate_block();
+
+      STEEM_REQUIRE_THROW( witness_vote( "bob", "witness", false/*approve*/, bob_private_key ), fc::assert_exception) ;
+      generate_block();
+      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes );
+
+      witness_vote( "bob", "witness", true/*approve*/, bob_private_key );
+      generate_block();
+      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes );
+
+      witness_vote( "bob", "witness", false/*approve*/, bob_private_key );
+      generate_block();
+      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes );
+
+      generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes );
 
       validate_database();
    }
