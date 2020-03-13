@@ -21,19 +21,22 @@ void delayed_voting::erase_delayed_value( const account_object& account, uint64_
    } );
 }
 
-void delayed_voting::add_votes( opt_votes_update_data_items& items, bool withdraw_executer, int64_t val, const account_object& account )
+void delayed_voting::add_votes( opt_votes_update_data_items& items, bool withdraw_executor, int64_t val, const account_object& account )
 {
-   if( !items.valid() )
+   if( !items.valid() || val == 0 )
       return;
 
-   votes_update_data vud { withdraw_executer, val, &account };
+   votes_update_data vud { withdraw_executor, val, &account };
 
    auto found = items->find( vud );
 
    if( found == items->end() )
       items->emplace( vud );
    else
+   {
+      FC_ASSERT( found->withdraw_executor == withdraw_executor, "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_withdraw_data ) );
       found->val += val;
+   }
 }
 
 fc::optional< uint64_t > delayed_voting::update_votes( const opt_votes_update_data_items& items, const time_point_sec& head_time )
@@ -45,8 +48,8 @@ fc::optional< uint64_t > delayed_voting::update_votes( const opt_votes_update_da
 
    for( auto& item : *items )
    {
-      FC_ASSERT(  ( !item.withdraw_executer && item.val > 0 ) ||
-                  ( item.withdraw_executer && item.val <= 0 ),
+      FC_ASSERT(  ( !item.withdraw_executor && item.val > 0 ) ||
+                  ( item.withdraw_executor && item.val <= 0 ),
                   "unexpected error: ${error}", ("error", delayed_voting_messages::incorrect_votes_update )
                );
 

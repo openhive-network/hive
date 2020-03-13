@@ -7,6 +7,7 @@
 #include <steem/chain/history_object.hpp>
 #include <steem/chain/steem_objects.hpp>
 #include <steem/chain/sps_objects.hpp>
+#include <steem/chain/util/delayed_voting.hpp>
 
 #include <steem/plugins/account_history/account_history_plugin.hpp>
 #include <steem/plugins/chain/chain_plugin.hpp>
@@ -1115,8 +1116,21 @@ bool delayed_vote_database_fixture::check_collection( const COLLECTION& collecti
       return ( collection[idx].time == time ) && ( collection[idx].val == val );
 }
 
+template< typename COLLECTION >
+bool delayed_vote_database_fixture::check_collection( const COLLECTION& collection, bool withdraw_executor, int64_t val, const account_object& obj )
+{
+   auto found = collection->find( { withdraw_executor, val, &obj } );
+   if( found == collection->end() )
+      return false;
+
+   if( !found->account )
+      return false;
+   return ( found->withdraw_executor == withdraw_executor ) && ( found->val == val ) && ( found->account->id == obj.id );
+}
+
 using dvd_deque = std::deque< delayed_votes_data >;
 template bool delayed_vote_database_fixture::check_collection< dvd_deque >( const dvd_deque& collection, size_t idx, const fc::time_point_sec& time, uint64_t val );
+template bool delayed_vote_database_fixture::check_collection< delayed_voting::opt_votes_update_data_items >( const delayed_voting::opt_votes_update_data_items& collection, bool withdraw_executor, int64_t val, const account_object& obj );
 
 json_rpc_database_fixture::json_rpc_database_fixture()
 {

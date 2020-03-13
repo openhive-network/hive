@@ -78,6 +78,125 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
    FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
+{
+   BOOST_TEST_MESSAGE( "Testing: `delayed_voting::run` method" );
+   //TODO
+}
+
+BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
+{
+   BOOST_TEST_MESSAGE( "Testing: `delayed_voting::update_votes` method" );
+   //TODO
+}
+
+BOOST_AUTO_TEST_CASE( delayed_voting_basic_01 )
+{
+   /*
+      The collection `items` stores `votes_update_data` structure. Below is the definition.
+         struct votes_update_data
+         {
+            bool                    withdraw_executor;
+            mutable int64_t         val;;
+            const account_object*   account;
+         };
+   */
+   delayed_voting::opt_votes_update_data_items items = delayed_voting::votes_update_data_items();
+
+   auto cmp = [ &items, this ]( bool withdraw_executor, int64_t val, const account_object& obj )
+   {
+      return check_collection( items, withdraw_executor, val, obj );
+   };
+
+   BOOST_TEST_MESSAGE( "Testing: `delayed_voting::add_votes` method" );
+
+   ACTORS( (alice)(bob)(celine) )
+
+   std::array< const account_object*, 3 > accs{ &db->get_account( "alice" ),
+                                                &db->get_account( "bob" ),
+                                                &db->get_account( "celine" )
+                                              };
+
+   delayed_voting dv = delayed_voting( *db );
+
+   {
+      delayed_voting::opt_votes_update_data_items _items;
+      dv.add_votes( _items, true/*withdraw_executor*/, 1/*val*/, *accs[0] );
+      BOOST_REQUIRE( !_items.valid() );
+   }
+   {
+      dv.add_votes( items, true/*withdraw_executor*/, 0/*val*/, *accs[0] );
+      BOOST_REQUIRE( items->size() == 0 );
+   }
+   {
+      dv.add_votes( items, true/*withdraw_executor*/, 1/*val*/, *accs[0] );
+      BOOST_REQUIRE( items->size() == 1 );
+      BOOST_REQUIRE( cmp( true, 1, *accs[0] ) );
+   }
+   {
+      //delayed_voting_messages::incorrect_withdraw_data
+      STEEM_REQUIRE_THROW( dv.add_votes( items, false/*withdraw_executor*/, 88/*val*/, *accs[0] ), fc::exception );
+   }
+   {
+      dv.add_votes( items, true/*withdraw_executor*/, 2/*val*/, *accs[1] );
+      BOOST_REQUIRE( items->size() == 2 );
+      BOOST_REQUIRE( cmp( true, 1, *accs[0] ) );
+      BOOST_REQUIRE( cmp( true, 2, *accs[1] ) );
+   }
+   {
+      dv.add_votes( items, true/*withdraw_executor*/, 3/*val*/, *accs[1] );
+      BOOST_REQUIRE( items->size() == 2 );
+      BOOST_REQUIRE( cmp( true, 1, *accs[0] ) );
+      BOOST_REQUIRE( cmp( true, 5, *accs[1] ) );
+   }
+   {
+      dv.add_votes( items, true/*withdraw_executor*/, 4/*val*/, *accs[2] );
+      BOOST_REQUIRE( items->size() == 3 );
+      BOOST_REQUIRE( cmp( true, 1, *accs[0] ) );
+      BOOST_REQUIRE( cmp( true, 5, *accs[1] ) );
+      BOOST_REQUIRE( cmp( true, 4, *accs[2] ) );
+   }
+   {
+      //delayed_voting_messages::incorrect_withdraw_data
+      STEEM_REQUIRE_THROW( dv.add_votes( items, false/*withdraw_executor*/, 4/*val*/, *accs[1] ), fc::exception );
+   }
+}
+
+BOOST_AUTO_TEST_CASE( delayed_voting_processor_03 )
+{
+   std::deque< delayed_votes_data > dq;
+
+   uint64_t sum = 0;
+
+   fc::time_point_sec time = fc::variant( "2020-02-02T03:04:05" ).as< fc::time_point_sec >();
+
+   {
+      //nothing to do
+      delayed_voting_processor::erase( dq, sum, 0 );
+      delayed_voting_processor::add( dq, sum, time/*time*/, 0/*val*/ );
+      delayed_voting_processor::erase_front( dq, sum );
+   }
+
+   {
+      BOOST_REQUIRE( dq.size() == 0 );
+      //delayed_voting_messages::incorrect_erased_votes
+      STEEM_REQUIRE_THROW( delayed_voting_processor::erase( dq, sum, 1 ), fc::exception );
+   }
+
+   {
+      delayed_voting_processor::add( dq, sum, time/*time*/, 666/*val*/ );
+      delayed_voting_processor::erase( dq, sum, 666 );
+      BOOST_REQUIRE( dq.size() == 0 );
+   }
+
+   {
+      delayed_voting_processor::add( dq, sum, time + fc::days( 1 )/*time*/, 22/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::days( 2 )/*time*/, 33/*val*/ );
+      delayed_voting_processor::erase( dq, sum, 55 );
+      BOOST_REQUIRE( dq.size() == 0 );
+   }
+}
+
 BOOST_AUTO_TEST_CASE( delayed_voting_processor_02 )
 {
    std::deque< delayed_votes_data > dq;
