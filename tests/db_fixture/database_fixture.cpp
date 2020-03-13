@@ -591,6 +591,7 @@ void database_fixture::proxy( const string& account, const string& proxy )
       op.account = account;
       op.proxy = proxy;
       trx.operations.push_back( op );
+      trx.set_expiration(db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION);
       db->push_transaction( trx, ~0 );
       trx.clear();
    } FC_CAPTURE_AND_RETHROW( (account)(proxy) )
