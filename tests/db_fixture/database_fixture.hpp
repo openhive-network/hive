@@ -226,6 +226,11 @@ struct database_fixture {
     */
    void generate_blocks(fc::time_point_sec timestamp, bool miss_intermediate_blocks = true);
 
+   void generate_days_blocks( uint32_t days );
+   void set_current_day( uint32_t day );
+   uint32_t get_current_day() const;
+   fc::string get_current_time_iso_string() const;
+
    const account_object& account_create(
       const string& name,
       const string& creator,
@@ -392,6 +397,7 @@ struct delayed_vote_database_fixture : public clean_database_fixture
 
    void witness_vote( const std::string& account, const std::string& witness, bool approve, const fc::ecc::private_key& key );
    void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
+   void withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key );
 
 };
 

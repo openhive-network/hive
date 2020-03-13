@@ -292,6 +292,33 @@ void database_fixture::generate_blocks(fc::time_point_sec timestamp, bool miss_i
    BOOST_REQUIRE( ( db->head_block_time() - timestamp ).to_seconds() < STEEM_BLOCK_INTERVAL );
 }
 
+void database_fixture::generate_days_blocks( uint32_t days )
+{
+   generate_blocks( days * STEEM_BLOCKS_PER_DAY );
+}
+
+void database_fixture::set_current_day( uint32_t day )
+{
+   auto current_block = db->head_block_num();
+   auto new_block = day * STEEM_BLOCKS_PER_DAY;
+
+   if ( new_block > current_block )
+      generate_blocks( new_block - current_block );
+}
+
+uint32_t database_fixture::get_current_day() const
+{
+   auto block_num = db->head_block_num();
+   uint32_t current_day = block_num / STEEM_BLOCKS_PER_DAY;
+   return current_day;
+}
+
+fc::string database_fixture::get_current_time_iso_string() const
+{
+   fc::time_point_sec current_time = db->head_block_time();
+   return current_time.to_iso_string();
+}
+
 const account_object& database_fixture::account_create(
    const string& name,
    const string& creator,
@@ -1051,6 +1078,21 @@ void hf23_database_fixture::delegate_vest( const string& delegator, const string
    op.delegatee = delegatee;
 
    push_transaction( op, key );
+}
+
+void delayed_vote_database_fixture::withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key )
+{
+   FC_ASSERT( amount.symbol == VESTS_SYMBOL, "Can only withdraw VESTS");
+
+   withdraw_vesting_operation op;
+   op.account = account;
+   op.vesting_shares = amount;
+
+   signed_transaction tx;
+   tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+   tx.operations.push_back( op );
+   sign( tx, key );
+   db->push_transaction( tx, 0 );
 }
 
 int64_t delayed_vote_database_fixture::get_votes( const string& witness_name )
