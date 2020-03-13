@@ -10,13 +10,18 @@ namespace delayed_voting_messages
    constexpr const char* incorrect_erased_votes          = "unexpected error: number votes to be erased must be greater or equal to sum of delayed votings";
    constexpr const char* object_is_null                  = "unexpected error: objects are empty";
    constexpr const char* incorrect_votes_update          = "unexpected error: votes updating is incorrect";
-   constexpr const char* incorrect_withdraw_data          = "unexpected error: withdraw data is inconsistent";
+   constexpr const char* incorrect_withdraw_data         = "unexpected error: withdraw data is inconsistent";
 }
 
 struct delayed_votes_data
 {
    time_point_sec    time;
    uint64_t          val = 0;
+
+   bool operator==( const delayed_votes_data& obj ) const
+   {
+      return ( time == obj.time ) && ( val == obj.val );
+   }
 };
 
 struct delayed_voting_processor
