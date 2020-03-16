@@ -1108,6 +1108,14 @@ int64_t delayed_vote_database_fixture::get_votes( const string& witness_name )
       return found->votes.value;
 }
 
+asset delayed_vote_database_fixture::to_vest( const asset& liquid, bool to_reward_balance )
+{
+   const auto& cprops = db->get_dynamic_global_properties();
+   price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price();
+
+   return liquid * ( vesting_share_price );
+}
+
 template< typename COLLECTION >
 bool delayed_vote_database_fixture::check_collection( const COLLECTION& collection, size_t idx, const fc::time_point_sec& time, uint64_t val )
 {

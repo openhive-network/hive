@@ -64,13 +64,14 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
       generate_block();
 
       int64_t votes_01 = get_votes( "witness" );
-      BOOST_REQUIRE_EQUAL( basic_votes, votes_01 );
+      BOOST_REQUIRE_EQUAL( votes_01, basic_votes );
 
       generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
       generate_block();
 
+      auto votes_power = db->get_account( "alice" ).vesting_shares;
       int64_t votes_02 = get_votes( "witness" );
-      BOOST_REQUIRE_GT( votes_02, basic_votes );
+      BOOST_REQUIRE_EQUAL( votes_02, basic_votes + votes_power.amount.value );
 
       validate_database();
    }
@@ -117,7 +118,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_04 )
       generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
       generate_block();
 
-      BOOST_REQUIRE_GT( get_votes( "witness" ), basic_votes );
+      auto votes_power = db->get_account( "bob" ).vesting_shares;
+      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes + votes_power.amount.value );
 
       validate_database();
    }
@@ -174,8 +176,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
       generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
       generate_block();
 
-      BOOST_REQUIRE_GT( get_votes( "witness1" ), basic_votes_1 );
-      BOOST_REQUIRE_GT( get_votes( "witness2" ), basic_votes_2 );
+      auto votes_power = db->get_account( "bob" ).vesting_shares;
+      BOOST_REQUIRE_EQUAL( get_votes( "witness1" ), basic_votes_1 + votes_power.amount.value );
+      BOOST_REQUIRE_EQUAL( get_votes( "witness2" ), basic_votes_2 + votes_power.amount.value );
 
       validate_database();
    }
