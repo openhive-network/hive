@@ -293,25 +293,11 @@ void database_fixture::generate_blocks(fc::time_point_sec timestamp, bool miss_i
    BOOST_REQUIRE( ( db->head_block_time() - timestamp ).to_seconds() < STEEM_BLOCK_INTERVAL );
 }
 
-void database_fixture::generate_days_blocks( uint32_t days )
+void database_fixture::generate_days_blocks( uint32_t days, bool skip_interm_blocks )
 {
-   generate_blocks( days * STEEM_BLOCKS_PER_DAY );
-}
-
-void database_fixture::set_current_day( uint32_t day )
-{
-   auto current_block = db->head_block_num();
-   auto new_block = day * STEEM_BLOCKS_PER_DAY;
-
-   if ( new_block > current_block )
-      generate_blocks( new_block - current_block );
-}
-
-uint32_t database_fixture::get_current_day() const
-{
-   auto block_num = db->head_block_num();
-   uint32_t current_day = block_num / STEEM_BLOCKS_PER_DAY;
-   return current_day;
+   fc::time_point_sec timestamp = db->head_block_time();
+   timestamp += fc::days(days);
+   generate_blocks( timestamp, skip_interm_blocks );
 }
 
 fc::string database_fixture::get_current_time_iso_string() const

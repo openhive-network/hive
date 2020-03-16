@@ -226,9 +226,7 @@ struct database_fixture {
     */
    void generate_blocks(fc::time_point_sec timestamp, bool miss_intermediate_blocks = true);
 
-   void generate_days_blocks( uint32_t days );
-   void set_current_day( uint32_t day );
-   uint32_t get_current_day() const;
+   void generate_days_blocks( uint32_t days, bool skip_interm_blocks = true );
    fc::string get_current_time_iso_string() const;
 
    const account_object& account_create(

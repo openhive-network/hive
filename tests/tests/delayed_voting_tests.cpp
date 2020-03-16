@@ -1,3 +1,5 @@
+#if defined(IS_TEST_NET)
+
 #include <boost/test/unit_test.hpp>
 
 #include <steem/chain/steem_fwd.hpp>
@@ -24,11 +26,22 @@
 #include <iostream>
 #include <stdexcept>
 #include <deque>
+#include <array>
 
 using namespace steem;
 using namespace steem::chain;
 using namespace steem::protocol;
 using fc::string;
+
+namespace
+{
+
+std::string asset_to_string( const asset& a )
+{
+   return steem::plugins::condenser_api::legacy_asset::from_asset( a ).to_string();
+}
+
+} // namespace
 
 BOOST_FIXTURE_TEST_SUITE( delayed_voting_tests, delayed_vote_database_fixture )
 
@@ -652,4 +665,454 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
    }
 }
 
+#define VOTING_POWER( account ) db->get_account( account ).witness_vote_weight().value
+#define PROXIED_VSF( account ) db->get_account( account ).proxied_vsf_votes_total().value
+
+#define ACCOUNT_REPORT( account ) \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << account << " has " << asset_to_string( db->get_account( account ).vesting_shares) ); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << account << " has " << asset_to_string( db->get_account( account ).balance) ); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << account << " has " << VOTING_POWER( account ) << " voting power" ); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << account << " has " << PROXIED_VSF( account ) << " proxied vsf" )
+
+#define WITNESS_VOTES( witness ) db->get_witness( witness ).votes.value
+
+#define DELAYED_VOTES( account ) db->get_account( account ).sum_delayed_votes
+
+#define DAY_REPORT( day ) \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: current day: " << day ); \
+   ACCOUNT_REPORT( "alice" ); \
+   ACCOUNT_REPORT( "alice0bp" ); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "alice0bp" << " has " << WITNESS_VOTES( "alice0bp" ) << " votes"); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "alice0bp" << " has " << DELAYED_VOTES( "alice0bp" ) << " delayed votes"); \
+   ACCOUNT_REPORT( "bob" ); \
+   ACCOUNT_REPORT( "bob0bp" ); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "bob0bp" << " has " << WITNESS_VOTES( "bob0bp" ) << " votes"); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "bob0bp" << " has " << DELAYED_VOTES( "bob0bp" ) << " delayed votes"); \
+   ACCOUNT_REPORT( "carol" )
+
+#define CHECK_ACCOUNT_VESTS( account ) \
+   BOOST_REQUIRE( db->get_account( #account ).vesting_shares == expected_ ## account ## _vests )
+
+#define CHECK_ACCOUNT_STEEM( account ) \
+   BOOST_REQUIRE( db->get_account( #account ).balance == expected_ ## account ## _steem )
+
+#define CHECK_ACCOUNT_VP( account ) \
+   BOOST_REQUIRE( VOTING_POWER( #account ) == expected_ ## account ## _vp )
+
+#define CHECK_WITNESS_VOTES( witness ) \
+   BOOST_REQUIRE( WITNESS_VOTES( #witness ) == expected_ ## witness ## _votes )
+
+// alice:     V + S
+// alice0bp:  V + VP
+// bob:       V
+// bob0bp:    V + VP
+// carol:     S
+#define DAY_CHECK \
+   /*CHECK_ACCOUNT_VESTS( alice ); \
+   CHECK_ACCOUNT_STEEM( alice ); \
+   CHECK_ACCOUNT_VESTS( alice0bp ); \
+   CHECK_ACCOUNT_VP( alice0bp ); \
+   CHECK_ACCOUNT_VESTS( bob ); \
+   CHECK_ACCOUNT_VESTS( bob0bp ); \
+   CHECK_ACCOUNT_VP( bob0bp ); \
+   CHECK_ACCOUNT_STEEM( carol )*/
+
+#define GOTO_DAY( day ) \
+   generate_days_blocks( day - today ); \
+   today = day
+
+BOOST_AUTO_TEST_CASE( abw_scenario_01 )
+{
+   try {
+
+   /*asset expected_alice_vests;
+   asset expected_alice_steem;
+   asset expected_alice0bp_vests;
+   int64_t expected_alice0bp_vp;
+   int64_t expected_alice0bp_votes;
+   asset expected_bob_vests;
+   asset expected_bob0bp_vests;
+   int64_t expected_bob0bp_vp;
+   int64_t expected_bob0bp_votes;
+   asset expected_carol_steem;*/
+
+/* https://gitlab.syncad.com/hive-group/steem/issues/5#note_24084
+
+  actors: alice, alice.bp (witness of alice choice), bob, bob.bp (witness of bob choice), carol
+*/
+   ACTORS( (alice)(alice0bp)(bob)(bob0bp)(carol) );
+   generate_block();
+
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: after account creation" );
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: alice has " << asset_to_string( db->get_account( "alice" ).vesting_shares) );
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: alice has " << asset_to_string( db->get_account( "alice" ).balance) );
+
+   //set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+   //generate_block();
+
+   witness_create( "alice0bp", alice0bp_private_key, "url.alice.bp", alice0bp_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+   witness_create( "bob0bp", bob0bp_private_key, "url.bob.bp", bob0bp_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+   generate_block();
+
+/*
+  For simplicity we are going to assume 1 vest == 1 STEEM at all times but in reality all conversions
+  are done using rate from the time when action is performed.
+  
+  Before test starts alice has 1300 STEEM in liquid form. She sets up vest route in the following way:
+  - to alice in vest form 25%
+  - to bob in vest form 25%
+  - to carol in liquid form 25%
+
+  leaving remaining 25% for herself in liquid form.
+*/
+   signed_transaction tx;
+   fund( "alice", ASSET( "1300.000 TESTS" ) );
+
+   {
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: Setting up alice destination" );
+   set_withdraw_vesting_route_operation op;
+   op.from_account = "alice";
+   op.to_account = "alice";
+   op.percent = STEEM_1_PERCENT * 25;
+   op.auto_vest = true;
+   tx.operations.push_back( op );
+   }
+
+   {
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: Setting up bob destination" );
+   set_withdraw_vesting_route_operation op;
+   op.from_account = "alice";
+   op.to_account = "bob";
+   op.percent = STEEM_1_PERCENT * 25;
+   op.auto_vest = true;
+   tx.operations.push_back( op );
+   }
+
+   {
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: Setting up carol destination" );
+   set_withdraw_vesting_route_operation op;
+   op.from_account = "alice";
+   op.to_account = "carol";
+   op.percent = STEEM_1_PERCENT * 25;
+   op.auto_vest = false;
+   tx.operations.push_back( op );
+   }
+
+   tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+   sign( tx, alice_private_key );
+   db->push_transaction( tx, 0 );
+   validate_database();
+
+   // set alice.bp as witness of alice choice
+   witness_vote( "alice", "alice0bp", true/*approve*/, alice_private_key );
+   // set bob.bp as witness of bob choice
+   witness_vote( "bob", "bob0bp", true/*approve*/, bob_private_key );
+
+   generate_block();
+
+/*
+  Day 0: alice powers up 1000 STEEM; she has 1000 vests, including delayed maturing on day 30 and 300 STEEM
+*/
+   uint32_t today = 0;
+   asset initial_alice_vests = db->get_account( "alice" ).vesting_shares;
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: day_zero = " << today );
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: head_block_num = " << db->head_block_num() );
+
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: alice powers up 1000" );
+   vest( "alice", "alice", ASSET( "1000.000 TESTS" ), alice_private_key );
+   validate_database();
+
+   DAY_REPORT( today );
+   //BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == ASSET ( "10000.000000 VESTS" ) );
+   BOOST_REQUIRE( db->get_account( "alice" ).balance == ASSET( "300.000 TESTS" ) );
+
+/*
+  Day 5: alice powers up 300 STEEM; she has 1300 vests, including delayed 1000 maturing on day 30 and 300 maturing on day 35, 0 STEEM
+*/
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: before set_current_day( 5 ): " << get_current_time_iso_string() );
+   GOTO_DAY( 5 );
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: after set_current_day( 5 ): " << get_current_time_iso_string() );
+
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: alice powers up 300" );
+   vest( "alice", "alice", ASSET( "300.000 TESTS" ), alice_private_key );
+   validate_database();
+
+   DAY_REPORT( today );
+   //BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == ASSET( "1300.000000 VESTS" ) );
+   BOOST_REQUIRE( db->get_account( "alice" ).balance == ASSET( "0.000 TESTS" ) );
+
+/*
+  Day 10: alice powers down 1300 vests; this schedules virtual PD actions on days 17, 24, 31, 38, 45, 52, 59, 66, 73, 80, 87, 94 and 101
+*/
+   GOTO_DAY( 10 );
+
+   asset new_vests = db->get_account( "alice" ).vesting_shares - initial_alice_vests;
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: new alice vests = " << asset_to_string( new_vests ) );
+
+   int64_t quarter = new_vests.amount.value / 4;
+   std::array<asset, STEEM_VESTING_WITHDRAW_INTERVALS> vests_portions;
+   std::array<asset, STEEM_VESTING_WITHDRAW_INTERVALS> tests_portions;
+
+   for (int i = 0; i < STEEM_VESTING_WITHDRAW_INTERVALS; ++i)
+   {
+      vests_portions[i] = asset( (quarter * (i + 1)) / STEEM_VESTING_WITHDRAW_INTERVALS, VESTS_SYMBOL );
+      BOOST_TEST_MESSAGE( "[abw_scenario_01]: vests_portions[" << i << "] = " << asset_to_string( vests_portions[i] ) );
+      tests_portions[i] = asset( 25 * (i + 1), STEEM_SYMBOL );
+   }
+
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: alice powers down all new vests" );
+   withdraw_vesting( "alice", new_vests, alice_private_key );
+   validate_database();
+
+   DAY_REPORT( today );
+   // ? BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == ASSET( "1300.000000 VESTS" ) );
+   BOOST_REQUIRE( db->get_account( "alice" ).balance == ASSET( "0.000 TESTS" ) );
+
+/*
+  Day 17: PD of 100 vests from alice gives 25 STEEM to carol, 25 STEEM to alice, powers up 25 vests to bob (maturing on day 47)
+  and ignores 25 vests of power down (power down canceled in 25% by vest route to alice);
+  since there is nonzero balance as delayed, 75 vests are subtracted from second record leaving 1000 (30day) + 225 (35day)
+  alice 25S+1225v=0+1000(30d)+225(35d); bob 25v=0+25(47d); carol 25S
+*/
+   /*expected_alice_vests = db->get_account( "alice" ).vesting_shares;
+   expected_alice_steem = db->get_account( "alice" ).balance;
+   expected_alice0bp_vests = db->get_account( "alice0bp" ).vesting_shares;
+   expected_alice0bp_vp = VOTING_POWER( "alice0bp" );
+   expected_alice0bp_votes = WITNESS_VOTES( "alice0bp" );
+   expected_bob_vests = db->get_account( "bob" ).vesting_shares;
+   expected_bob0bp_vests = db->get_account( "bob0bp" ).vesting_shares;
+   expected_bob0bp_vp = VOTING_POWER( "bob0bp");
+   expected_bob0bp_votes = WITNESS_VOTES( "bob0bp" );
+   expected_carol_steem = db->get_account( "carol" ).balance;*/
+
+   GOTO_DAY( 17 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+
+/*
+  Day 24: PD of 100 vests from alice split like above
+  alice 50S+1150v=0+1000(30d)+150(35d); bob 50v=0+25(47d)+25(54d); carol 50S
+*/
+   GOTO_DAY( 24 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+
+/*
+  Day 30: 1000 vests matures on alice, alice.bp receives 1000 vests of new voting power (1000v)
+  alice 50S+1150v=1000+150(35d); bob 50v=0+25(47d)+25(54d); carol 50S
+*/
+   GOTO_DAY( 30 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 31: PD of 100 vests from alice
+  alice 75S+1075v=1000+75(35d); bob 75v=0+25(47d)+25(54d)+25(61d); carol 75S
+*/
+   GOTO_DAY( 31 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 35: remaining 75 vests mature on alice, alice.bp receives 75 vests of new voting power (1075v)
+  alice 75S+1075v=1075; bob 75v=0+25(47d)+25(54d)+25(61d); carol 75S
+*/
+   GOTO_DAY( 35 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 38: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (1000v)
+  alice 100S+1000v=1000; bob 100v=0+25(47d)+25(54d)+25(61d)+25(68d); carol 100S
+*/
+   GOTO_DAY( 38 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 45: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (925v)
+  alice 125S+925v=925; bob 125v=0+25(47d)+25(54d)+25(61d)+25(68d)+25(75d); carol 125S
+*/
+   GOTO_DAY( 45 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 47: first 25 vests mature on bob, bob.bp receives 25 vests of new voting power (25v)
+  alice 125S+925v=925; bob 125v=25+25(54d)+25(61d)+25(68d)+25(75d); carol 125S
+*/
+   GOTO_DAY( 47 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 52: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (850v)
+  alice 150S+850v=850; bob 150v=25+25(54d)+25(61d)+25(68d)+25(75d)+25(82d); carol 150S
+*/
+   GOTO_DAY( 52 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 54: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (50v)
+  alice 150S+850v=850; bob 150v=50+25(61d)+25(68d)+25(75d)+25(82d); carol 150S
+*/
+   GOTO_DAY( 54 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 59: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (775v)
+  alice 175S+775v=775; bob 175v=50+25(61d)+25(68d)+25(75d)+25(82d)+25(89d); carol 175S
+*/
+   GOTO_DAY( 59 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 61: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (75v)
+  alice 175S+775v=775; bob 175v=75+25(68d)+25(75d)+25(82d)+25(89d); carol 175S
+*/
+   GOTO_DAY( 61 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 66: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (700v)
+  alice 200S+700v=700; bob 200v=75+25(68d)+25(75d)+25(82d)+25(89d)+25(96d); carol 200S
+*/
+   GOTO_DAY( 66 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 68: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (100v)
+  alice 200S+700v=700; bob 200v=100+25(75d)+25(82d)+25(89d)+25(96d); carol 200S
+*/
+   GOTO_DAY( 68 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 73: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (625v)
+  alice 225S+625v=625; bob 225v=100+25(75d)+25(82d)+25(89d)+25(96d)+25(103d); carol 225S
+*/
+   GOTO_DAY( 73 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 75: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (125v)
+  alice 225S+625v=625; bob 225v=125+25(82d)+25(89d)+25(96d)+25(103d); carol 225S
+*/
+   GOTO_DAY( 75 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 80: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (550v)
+  alice 250S+550v=550; bob 250v=125+25(82d)+25(89d)+25(96d)+25(103d)+25(110d); carol 250S
+*/
+   GOTO_DAY( 80 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 82: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (150v)
+  alice 250S+550v=550; bob 250v=150+25(89d)+25(96d)+25(103d)+25(110d); carol 250S
+*/
+   GOTO_DAY( 82 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 87: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (475v)
+  alice 275S+475v=475; bob 275v=150+25(89d)+25(96d)+25(103d)+25(110d)+25(117d); carol 275S
+*/
+   GOTO_DAY( 87 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 89: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (175v)
+  alice 275S+475v=475; bob 275v=175+25(96d)+25(103d)+25(110d)+25(117d); carol 275S
+*/
+   GOTO_DAY( 89 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 94: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (400v)
+  alice 300S+400v=400; bob 300v=175+25(96d)+25(103d)+25(110d)+25(117d)+25(124d); carol 300S
+*/
+   GOTO_DAY( 94 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 96: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (200v)
+  alice 300S+400v=400; bob 300v=200+25(103d)+25(110d)+25(117d)+25(124d); carol 300S
+*/
+   GOTO_DAY( 96 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 101: last scheduled PD of 100 vests from alice, alice.bp loses 75 vests of voting power (325v)
+  alice 325S+325v=325; bob 325v=200+25(103d)+25(110d)+25(117d)+25(124d)+25(131d); carol 325S
+*/
+   GOTO_DAY( 101 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 103: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (225v)
+  alice 325S+325v=325; bob 325v=225+25(110d)+25(117d)+25(124d)+25(131d); carol 325S
+*/
+   GOTO_DAY( 103 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 110: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (250v)
+  alice 325S+325v=325; bob 325v=250+25(117d)+25(124d)+25(131d); carol 325S
+*/
+   GOTO_DAY( 110 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 117: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (275v)
+  alice 325S+325v=325; bob 325v=275+25(124d)+25(131d); carol 325S
+*/
+   GOTO_DAY( 117 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 124: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (300v)
+  alice 325S+325v=325; bob 325v=300+25(131d); carol 325S
+*/
+   GOTO_DAY( 124 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+  
+/*
+  Day 131: last 25 vests mature on bob, bob.bp receives 25 vests of new voting power (325v)
+  alice 325S+325v=325; bob 325v=325; carol 325S
+*/
+   GOTO_DAY( 131 );
+   DAY_REPORT( today );
+   DAY_CHECK;
+
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+#undef ACCOUNT_REPORT
+#undef DAY_REPORT
+#undef GOTO_DAY
+
 BOOST_AUTO_TEST_SUITE_END()
+
+#endif // #if defined(IS_TEST_NET)
