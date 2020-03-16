@@ -102,3 +102,6 @@ build/
 build.*/
 build-*/
 build_*/
+/.vs
+/out/isenseconfig/Linux-Release
+
