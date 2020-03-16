@@ -164,6 +164,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
       FUND( "bob", ASSET( "10000.000 TESTS" ) );
       FUND( "witness", ASSET( "10000.000 TESTS" ) );
       //Prepare witnesses
+      
       witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
       generate_block();
 
@@ -317,10 +318,10 @@ BOOST_AUTO_TEST_CASE( delayed_voting_06 )
       FUND( "witness", ASSET( "10000.000 TESTS" ) );
       
       //Prepare witnesses
+      const auto start_time = db->head_block_time();
       witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
       generate_block();
 
-      auto start_time = db->head_block_time();
       const int64_t basic_votes = get_votes( "witness" );
 
       //Make some vests
@@ -349,8 +350,106 @@ BOOST_AUTO_TEST_CASE( delayed_voting_06 )
 
 BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
 {
-   BOOST_TEST_MESSAGE( "Testing: `delayed_voting::run` method" );
-   //TODO
+   try
+   {
+      // support function
+      const auto get_delayed_vote_count = [&]( const account_name_type& name = "bob", const std::vector<uint64_t>& data_to_compare )
+      {
+         const auto& idx = db->get_index< account_index, by_delayed_voting >();
+         for(const auto& usr : idx)
+            if(usr.name == name)
+               return std::equal(
+                        usr.delayed_votes.begin(), 
+                        usr.delayed_votes.end(), 
+                        data_to_compare.begin(), 
+                        data_to_compare.end(), 
+                        [](const delayed_votes_data& x, const uint64_t y){ return x.val == y; });
+         return false;
+      };
+
+      // user setup
+      BOOST_TEST_MESSAGE( "Testing: `delayed_voting::run` method" );
+      const auto start_time = db->head_block_time();
+      ACTORS( (alice)(celine)(bob)(witness) )
+      generate_block();
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+      FUND( "bob", ASSET( "100000.000 TESTS" ) );
+      FUND( "celine", ASSET( "100000.000 TESTS" ) );
+      FUND( "alice", ASSET( "100000.000 TESTS" ) );
+      FUND( "witness", ASSET( "100000.000 TESTS" ) );
+      
+      //Prepare witnesses
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      generate_block();
+      vest( "bob", "bob", ASSET( "100.000 TESTS" ), bob_private_key );
+      vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
+      vest( "celine", "celine", ASSET( "100.000 TESTS" ), celine_private_key );
+      generate_block();
+
+      // validation data
+      const int64_t basic_votes{ get_votes( "witness" ) };
+      std::vector<uint64_t> alice_values; alice_values.reserve(30);
+
+      // initial voting
+      witness_vote("bob", "witness", true, bob_private_key);
+      generate_block();
+      witness_vote("alice", "witness", true, alice_private_key);
+      generate_block();
+
+      // validation data pt 2
+      alice_values.push_back(db->get_account( "alice" ).vesting_shares.amount.value);
+      uint64_t last{ alice_values.back() };
+
+      // entry check
+      BOOST_REQUIRE_EQUAL( get_delayed_vote_count("bob", { { static_cast<uint64_t>(db->get_account( "bob" ).vesting_shares.amount.value) } }), true );
+      BOOST_REQUIRE_EQUAL( get_delayed_vote_count("alice", { { static_cast<uint64_t>(db->get_account( "alice" ).vesting_shares.amount.value)} }), true );
+
+      // check everyday for month
+      bool s = false;
+      constexpr int DAYS{ (STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS) };
+      for(int i = 1; i < DAYS - 1; i++)
+      {
+         // 1 day
+         generate_blocks( start_time + (i * STEEM_DELAYED_VOTING_INTERVAL_SECONDS) , true );
+
+         // base checks for witness, bob and celine
+         BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes );
+         BOOST_REQUIRE_EQUAL( get_delayed_vote_count("bob", { { static_cast<uint64_t>(db->get_account( "bob" ).vesting_shares.amount.value)} }), true );
+         BOOST_REQUIRE_EQUAL( get_delayed_vote_count("celine", { { static_cast<uint64_t>(db->get_account( "celine" ).vesting_shares.amount.value)} }), true );
+
+         // celine arythmia
+         s=!s;
+         witness_vote("celine", "witness", s, celine_private_key);
+
+         // alice tap
+         vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
+
+         // alice check
+         const uint64_t val = static_cast<uint64_t>(db->get_account( "alice" ).vesting_shares.amount.value);
+         alice_values.push_back(val - last);
+         last = val;
+         BOOST_REQUIRE_EQUAL( get_delayed_vote_count("alice", alice_values), true );
+      }
+
+      // check is bob ok
+      generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS, true );
+      BOOST_REQUIRE_EQUAL( get_delayed_vote_count("bob", {}), true );
+
+      // check is alice ok (after another month)
+      generate_blocks( start_time + (2 * STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS) , true );
+      BOOST_REQUIRE_EQUAL( get_delayed_vote_count("alice", {}), true );
+
+      // check is witness ok
+      const uint64_t alice_power = db->get_account( "alice" ).vesting_shares.amount.value;
+      const uint64_t bob_power = db->get_account( "bob" ).vesting_shares.amount.value;
+      const uint64_t celine_power = (s ? static_cast<uint64_t>(db->get_account( "celine" ).vesting_shares.amount.value) : 0ul);
+
+      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power + bob_power + celine_power);
+      validate_database();
+
+   }
+   FC_LOG_AND_RETHROW();
 }
 
 BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
