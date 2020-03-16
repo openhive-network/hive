@@ -1607,6 +1607,8 @@ void database::clear_null_account_balance()
       modify( null_account, [&]( account_object& a )
       {
          a.vesting_shares.amount = 0;
+         a.sum_delayed_votes = 0;
+         a.delayed_votes.clear();
       });
    }
 
@@ -5766,6 +5768,11 @@ void database::validate_invariants()const
                                       itr->proxied_vsf_votes[STEEM_MAX_PROXY_RECURSION_DEPTH - 1] :
                                       itr->get_real_vesting_shares().amount ) );
          total_delayed_votes += itr->sum_delayed_votes;
+         uint64_t sum_delayed_votes = 0;
+         for( auto& dv : itr->delayed_votes )
+            sum_delayed_votes += dv.val;
+         FC_ASSERT( sum_delayed_votes == itr->sum_delayed_votes, "", ("sum_delayed_votes",sum_delayed_votes)("itr->sum_delayed_votes",itr->sum_delayed_votes) );
+         FC_ASSERT( sum_delayed_votes <= itr->vesting_shares.amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->vesting_shares.amount) );
       }
 
       const auto& convert_request_idx = get_index< convert_request_index >().indices();
