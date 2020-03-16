@@ -45,6 +45,107 @@ std::string asset_to_string( const asset& a )
 
 BOOST_FIXTURE_TEST_SUITE( delayed_voting_tests, delayed_vote_database_fixture )
 
+BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Testing: Transferring vests many times from one person to another" );
+
+      ACTORS( (alice)(bob)(witness) )
+      generate_block();
+
+      {
+         BOOST_TEST_MESSAGE( "Preparing accounts..." );
+
+         set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+         generate_block();
+
+         FUND( "alice", ASSET( "10000.000 TESTS" ) );
+         FUND( "bob", ASSET( "10000.000 TESTS" ) );
+         FUND( "witness", ASSET( "10000.000 TESTS" ) );
+      }
+      {
+         BOOST_TEST_MESSAGE( "Preparing witnesses..." );
+
+         witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+         generate_block();
+      }
+
+      asset _one = ASSET( "1.000 TESTS" );
+
+      auto start_time = db->head_block_time();
+
+      int64_t votes_01 = get_votes( "witness" );
+
+      {
+         BOOST_TEST_MESSAGE( "Transform a few times TESTS->VESTS..." );
+
+         auto v_alice = db->get_account( "alice" ).vesting_shares;
+         auto v_bob = db->get_account( "bob" ).vesting_shares;
+         auto v_witness = db->get_account( "witness" ).vesting_shares;
+
+         asset v_alice_00 = asset( 0, VESTS_SYMBOL );
+         asset v_bob_00 = asset( 0, VESTS_SYMBOL );
+
+         for( int i = 0; i < 3; ++i )
+         {
+            vest( "bob", "bob", _one, bob_private_key );
+            v_bob_00 += to_vest( _one );
+
+            vest( "alice", "bob", _one, alice_private_key );
+            v_alice_00 += to_vest( _one );
+
+            vest( "bob", "alice", _one, bob_private_key );
+            v_bob_00 += to_vest( _one );
+
+            generate_block();
+         }
+
+         BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).vesting_shares.amount.value, ( v_alice + v_alice_00 ).amount.value );
+         BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).vesting_shares.amount.value, ( v_bob + v_bob_00 ).amount.value );
+         BOOST_REQUIRE_EQUAL( db->get_account( "witness" ).vesting_shares.amount.value, v_witness.amount.value );
+         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 );
+      }
+      {
+         BOOST_TEST_MESSAGE( "Witness voting..." );
+
+         auto v_alice = db->get_account( "alice" ).vesting_shares;
+         auto v_bob = db->get_account( "bob" ).vesting_shares;
+         auto v_witness = db->get_account( "witness" ).vesting_shares;
+
+         witness_vote( "alice", "witness", true/*approve*/, alice_private_key );
+         generate_block();
+         witness_vote( "bob", "witness", true/*approve*/, bob_private_key );
+         generate_block();
+         witness_vote( "bob", "witness", false/*approve*/, bob_private_key );
+         generate_block();
+         witness_vote( "bob", "witness", true/*approve*/, bob_private_key );
+         generate_block();
+
+         BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).vesting_shares.amount.value, v_alice.amount.value );
+         BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).vesting_shares.amount.value, v_bob.amount.value );
+         BOOST_REQUIRE_EQUAL( db->get_account( "witness" ).vesting_shares.amount.value, v_witness.amount.value );
+         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 );
+
+         generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
+
+         auto sum = v_alice + v_bob;
+         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 + sum.amount.value );
+
+         witness_vote( "bob", "witness", false/*approve*/, bob_private_key );
+         generate_block();
+         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 + v_alice.amount.value );
+
+         witness_vote( "alice", "witness", false/*approve*/, alice_private_key );
+         generate_block();
+         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 );
+      }
+
+      validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( delayed_voting_01 )
 {
    try
