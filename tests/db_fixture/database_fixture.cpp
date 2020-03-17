@@ -1076,11 +1076,17 @@ void delayed_vote_database_fixture::withdraw_vesting( const string& account, con
    op.account = account;
    op.vesting_shares = amount;
 
-   signed_transaction tx;
-   tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
-   tx.operations.push_back( op );
-   sign( tx, key );
-   db->push_transaction( tx, 0 );
+   push_transaction( op, key );
+}
+
+void delayed_vote_database_fixture::proxy( const string& account, const string& proxy, const fc::ecc::private_key& key )
+{
+   account_witness_proxy_operation op;
+   op.account = account;
+   op.proxy = proxy;
+   trx.operations.push_back( op );
+
+   push_transaction( op, key );
 }
 
 int64_t delayed_vote_database_fixture::get_votes( const string& witness_name )

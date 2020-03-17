@@ -1,4 +1,4 @@
-#if defined(IS_TEST_NET)
+//#if defined(IS_TEST_NET)
 
 #include <boost/test/unit_test.hpp>
 
@@ -44,6 +44,147 @@ std::string asset_to_string( const asset& a )
 } // namespace
 
 BOOST_FIXTURE_TEST_SUITE( delayed_voting_tests, delayed_vote_database_fixture )
+
+BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Testing: Setting proxy" );
+
+      ACTORS( (alice)(bob)(celine)(witness) )
+      generate_block();
+
+      {
+         BOOST_TEST_MESSAGE( "Preparing accounts..." );
+
+         set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+         generate_block();
+
+         FUND( "alice", ASSET( "10000.000 TESTS" ) );
+         FUND( "bob", ASSET( "10000.000 TESTS" ) );
+         FUND( "celine", ASSET( "10000.000 TESTS" ) );
+         FUND( "witness", ASSET( "10000.000 TESTS" ) );
+      }
+      {
+         BOOST_TEST_MESSAGE( "Preparing witnesses..." );
+
+         witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+         generate_block();
+      }
+
+      asset _1 = ASSET( "1.000 TESTS" );
+      asset _2 = ASSET( "2.000 TESTS" );
+      asset _3 = ASSET( "3.000 TESTS" );
+      asset _4 = ASSET( "4.000 TESTS" );
+
+      auto start_time = db->head_block_time();
+
+      int64_t votes_01 = get_votes( "witness" );
+
+      {
+         BOOST_TEST_MESSAGE( "Transform TESTS->VESTS for every account..." );
+
+         vest( "alice", "alice",    _1, alice_private_key );
+         vest( "alice", "bob",      _2, alice_private_key );
+         vest( "alice", "celine",   _3, alice_private_key );
+         vest( "alice", "witness",  _4, alice_private_key );
+      }
+      {
+         BOOST_TEST_MESSAGE( "Creating proxies..." );
+
+         auto v_alice   = db->get_account( "alice" ).vesting_shares;
+         auto v_bob     = db->get_account( "bob" ).vesting_shares;
+         auto v_celine  = db->get_account( "celine" ).vesting_shares;
+         auto v_witness = db->get_account( "witness" ).vesting_shares;
+
+         proxy( "alice", "celine", alice_private_key );
+         proxy( "bob", "celine", bob_private_key );
+
+         BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == v_alice );
+         BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares   == v_bob );
+         BOOST_REQUIRE( db->get_account( "celine" ).vesting_shares == v_celine );
+         BOOST_REQUIRE( db->get_account( "witness" ).vesting_shares == v_witness );
+         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 );
+      }
+      {
+         BOOST_TEST_MESSAGE( "Voting..." );
+
+         auto v_alice   = db->get_account( "alice" ).vesting_shares;
+         auto v_bob     = db->get_account( "bob" ).vesting_shares;
+         auto v_celine  = db->get_account( "celine" ).vesting_shares;
+         auto v_witness = db->get_account( "witness" ).vesting_shares;
+
+         witness_vote( "celine", "witness", true/*approve*/, celine_private_key );
+
+         BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == v_alice );
+         BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares == v_bob );
+         BOOST_REQUIRE( db->get_account( "celine" ).vesting_shares == v_celine );
+         BOOST_REQUIRE( db->get_account( "witness" ).vesting_shares == v_witness );
+         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 );
+      }
+      {
+         BOOST_TEST_MESSAGE( "Move time forward..." );
+
+         auto v_alice   = db->get_account( "alice" ).vesting_shares;
+         auto v_bob     = db->get_account( "bob" ).vesting_shares;
+         auto v_celine  = db->get_account( "celine" ).vesting_shares;
+         auto v_witness = db->get_account( "witness" ).vesting_shares;
+
+         generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
+
+         BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == v_alice );
+         BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares == v_bob );
+         BOOST_REQUIRE( db->get_account( "celine" ).vesting_shares == v_celine );
+         BOOST_REQUIRE( db->get_account( "witness" ).vesting_shares == v_witness );
+
+         auto sum = v_alice + v_bob + v_celine;
+         int64_t votes_02 = get_votes( "witness" );
+         BOOST_REQUIRE_EQUAL( votes_02, votes_01 + sum.amount.value );
+      }
+      {
+         BOOST_TEST_MESSAGE( "Remove account `alice` with proxy..." );
+
+         auto v_alice   = db->get_account( "alice" ).vesting_shares;
+         auto v_bob     = db->get_account( "bob" ).vesting_shares;
+         auto v_celine  = db->get_account( "celine" ).vesting_shares;
+         auto v_witness = db->get_account( "witness" ).vesting_shares;
+
+         proxy( "alice", "", alice_private_key );
+         generate_block();
+
+         BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == v_alice );
+         BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares == v_bob );
+         BOOST_REQUIRE( db->get_account( "celine" ).vesting_shares == v_celine );
+         BOOST_REQUIRE( db->get_account( "witness" ).vesting_shares == v_witness );
+
+         auto sum = v_bob + v_celine;
+         int64_t votes_02 = get_votes( "witness" );
+         BOOST_REQUIRE_EQUAL( votes_02, votes_01 + sum.amount.value );
+      }
+      {
+         BOOST_TEST_MESSAGE( "Remove account `bob` with proxy..." );
+
+         auto v_alice   = db->get_account( "alice" ).vesting_shares;
+         auto v_bob     = db->get_account( "bob" ).vesting_shares;
+         auto v_celine  = db->get_account( "celine" ).vesting_shares;
+         auto v_witness = db->get_account( "witness" ).vesting_shares;
+
+         proxy( "bob", "", bob_private_key );
+         generate_block();
+
+         BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == v_alice );
+         BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares == v_bob );
+         BOOST_REQUIRE( db->get_account( "celine" ).vesting_shares == v_celine );
+         BOOST_REQUIRE( db->get_account( "witness" ).vesting_shares == v_witness );
+
+         int64_t votes_02 = get_votes( "witness" );
+         BOOST_REQUIRE_EQUAL( votes_02, votes_01 + v_celine.amount.value );
+      }
+
+      validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
 
 BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
 {
@@ -1315,4 +1456,4 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#endif // #if defined(IS_TEST_NET)
+//#endif // #if defined(IS_TEST_NET)
