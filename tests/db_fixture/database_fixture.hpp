@@ -404,6 +404,7 @@ struct delayed_vote_database_fixture : public clean_database_fixture
       void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
       void withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key );
       void proxy( const string& account, const string& proxy, const fc::ecc::private_key& key );
+      void decline_voting_rights( const string& account, const bool decline, const fc::ecc::private_key& key );
 
 };
 
