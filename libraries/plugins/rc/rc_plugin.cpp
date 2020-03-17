@@ -759,6 +759,11 @@ struct pre_apply_operation_visitor
       regenerate( STEEM_NULL_ACCOUNT );
    }
 
+   void operator()( const delayed_voting_operation& op )const
+   {
+      regenerate( op.witness );
+   }
+
    void operator()( const pow_operation& op )const
    {
       regenerate< true >( op.worker_account );
@@ -949,6 +954,11 @@ struct post_apply_operation_visitor
    void operator()( const clear_null_account_balance_operation& op )const
    {
       _mod_accounts.emplace_back( STEEM_NULL_ACCOUNT );
+   }
+
+   void operator()( const delayed_voting_operation& op )const
+   {
+      _mod_accounts.emplace_back( op.witness );
    }
 
    void operator()( const create_proposal_operation& op )const
