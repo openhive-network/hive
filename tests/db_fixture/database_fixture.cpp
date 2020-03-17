@@ -1100,6 +1100,20 @@ int64_t delayed_vote_database_fixture::get_votes( const string& witness_name )
       return found->votes.value;
 }
 
+int32_t delayed_vote_database_fixture::get_user_voted_witness_count( const account_name_type& name )
+{
+   int32_t res = 0;
+
+   const auto& vidx = db->get_index< witness_vote_index >().indices().get<by_account_witness>();
+   auto itr = vidx.lower_bound( boost::make_tuple( name, account_name_type() ) );
+   while( itr != vidx.end() && itr->account == name )
+   {
+      ++itr;
+      ++res;
+   }
+   return res;
+}
+
 asset delayed_vote_database_fixture::to_vest( const asset& liquid, bool to_reward_balance )
 {
    const auto& cprops = db->get_dynamic_global_properties();

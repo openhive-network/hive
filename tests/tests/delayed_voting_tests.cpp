@@ -1006,6 +1006,256 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
    }
 }
 
+BOOST_AUTO_TEST_CASE( decline_voting_rights_01 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Testing: decline voting rights: casual use" );
+
+      ACTORS( (bob)(alice)(witness) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      // auto start_time = db->head_block_time();
+      FUND( "bob", ASSET( "10000.000 TESTS" ) );
+      FUND( "alice", ASSET( "10000.000 TESTS" ) );
+      FUND( "witness", ASSET( "10000.000 TESTS" ) );
+      
+      //Prepare witnesses
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      generate_block();
+
+      //Make some vests
+      const auto basic_votes = get_votes( "witness" );
+      vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key );
+      vest( "alice", "alice", ASSET( "1000.000 TESTS" ), alice_private_key );
+      generate_block();
+      
+      // alice - do
+      witness_vote( "alice", "witness", true/*approve*/, alice_private_key );
+      generate_block();
+
+      // alice - check
+      generate_days_blocks( 30, true );
+      const auto alice_power = db->get_account( "alice" ).vesting_shares.amount.value;
+      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power );
+
+      // blocked bob - do
+      decline_voting_rights("bob", true, bob_private_key);
+      generate_blocks( db->head_block_time() + STEEM_OWNER_AUTH_RECOVERY_PERIOD, true );
+      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, false );
+      STEEM_REQUIRE_THROW( witness_vote( "bob", "witness", true, bob_private_key ), fc::assert_exception );
+      generate_block();
+
+      // blocked bob - check
+      generate_days_blocks( 30, true );
+      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power );
+   }
+   FC_LOG_AND_RETHROW();
+}
+
+BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Testing: decline voting rights: casual use with spontaneus vote" );
+
+      ACTORS( (bob)(alice)(witness) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      FUND( "bob", ASSET( "10000.000 TESTS" ) );
+      FUND( "alice", ASSET( "10000.000 TESTS" ) );
+      FUND( "witness", ASSET( "10000.000 TESTS" ) );
+      
+      //Prepare witnesses
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      generate_block();
+
+      //Make some vests
+      const auto basic_votes = get_votes( "witness" );
+      vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key );
+      vest( "alice", "alice", ASSET( "1000.000 TESTS" ), alice_private_key );
+      generate_days_blocks( 30, true );
+      
+      // alice - do
+      witness_vote( "alice", "witness", true/*approve*/, alice_private_key );
+      generate_block();
+
+      // alice - check
+      const auto alice_power = db->get_account( "alice" ).vesting_shares.amount.value;
+      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power );
+
+      // bob block
+      decline_voting_rights("bob", true, bob_private_key);
+      generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true );
+
+      // bob check
+      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );
+      
+      // bob account is voting
+      witness_vote( "bob", "witness", true, bob_private_key );
+      generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 3), true );
+      
+      // bob check
+      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );
+      BOOST_REQUIRE_EQUAL( get_user_voted_witness_count( "bob" ), 1 );
+      const auto bob_power = db->get_account( "bob" ).vesting_shares.amount.value;
+      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power + bob_power );
+
+      // bobs block request is active
+      generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 3), true );
+      
+      // blocked bob - check
+      STEEM_REQUIRE_THROW( witness_vote( "bob", "witness", true, bob_private_key ), fc::assert_exception );
+      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power );
+      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, false );
+   }
+   FC_LOG_AND_RETHROW();
+}
+
+BOOST_AUTO_TEST_CASE( decline_voting_rights_03 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Testing: decline voting rights: casual use with cancel" );
+
+      const std::function<bool(const account_name_type)>  is_cancelled = [&](const account_name_type name)
+      {
+         const auto& request_idx = db->get_index< decline_voting_rights_request_index >().indices().get< by_account >();
+         return request_idx.find( name ) == request_idx.end();
+      };
+
+      ACTORS( (bob)(alice)(witness)(witness2) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      // auto start_time = db->head_block_time();
+      FUND( "bob", ASSET( "10000.000 TESTS" ) );
+      FUND( "alice", ASSET( "10000.000 TESTS" ) );
+      FUND( "witness", ASSET( "10000.000 TESTS" ) );
+      FUND( "witness2", ASSET( "10000.000 TESTS" ) );
+      
+      //Prepare witnesses
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      generate_block();
+
+      //Make some vests
+      const int64_t basic_votes = get_votes( "witness" );
+      const int64_t basic_votes2 = get_votes( "witness2" );
+      vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key );
+      vest( "alice", "alice", ASSET( "1000.000 TESTS" ), alice_private_key );
+      generate_days_blocks( 30, true );
+      
+      // alice - do
+      witness_vote( "alice", "witness", true/*approve*/, alice_private_key );
+      generate_block();
+
+      // alice - check
+      const auto alice_power = db->get_account( "alice" ).vesting_shares.amount.value;
+      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power );
+
+      // bob block
+      decline_voting_rights("bob", true, bob_private_key);
+      generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true );
+
+      // bob check
+      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );
+      
+      // bob account tries to vote
+      witness_vote( "bob", "witness", true, bob_private_key );
+      BOOST_REQUIRE_EQUAL( get_user_voted_witness_count( "bob" ), 1 );
+      const auto bob_power = db->get_account( "bob" ).vesting_shares.amount.value;
+      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power + bob_power );
+
+      // bob cancel block request
+      decline_voting_rights("bob", false, bob_private_key);
+      generate_block();
+
+      // check
+      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );
+      BOOST_REQUIRE_EQUAL( is_cancelled( "bob" ), true );
+
+      // bob account is voting again
+      witness_vote( "bob", "witness2", true, bob_private_key );
+      generate_block();
+
+      // check
+      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power + bob_power );
+      BOOST_REQUIRE_EQUAL( get_votes("witness2"), basic_votes2 + bob_power );
+   }
+   FC_LOG_AND_RETHROW();
+}
+
+BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Testing: decline voting rights: casual use with cancel" );
+
+      const std::function<bool(const account_name_type)>  is_cancelled = [&](const account_name_type name)
+      {
+         const auto& request_idx = db->get_index< decline_voting_rights_request_index >().indices().get< by_account >();
+         return request_idx.find( name ) == request_idx.end();
+      };
+
+      ACTORS( (bob)(alice)(witness) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      // auto start_time = db->head_block_time();
+      FUND( "bob", ASSET( "10000.000 TESTS" ) );
+      FUND( "alice", ASSET( "10000.000 TESTS" ) );
+      FUND( "witness", ASSET( "10000.000 TESTS" ) );
+      
+      //Prepare witnesses
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      generate_block();
+
+      //Make some vests
+      const int64_t basic_votes = get_votes( "witness" );
+      vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key ); 
+      witness_vote( "bob", "witness", true, bob_private_key );
+      generate_block();
+      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes );
+      generate_blocks( db->head_block_time() + ( STEEM_DELAYED_VOTING_INTERVAL_SECONDS * 29 ) , true ); // 120s
+      
+      // bob check
+      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );
+      BOOST_REQUIRE_EQUAL( get_user_voted_witness_count( "bob" ), 1 );
+      const auto bob_power = db->get_account( "bob" ).vesting_shares.amount.value;
+      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes );
+
+      // bob block
+      decline_voting_rights("bob", true, bob_private_key);
+      generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true ); 
+
+      // bob check
+      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );
+      BOOST_REQUIRE_EQUAL( get_user_voted_witness_count( "bob" ), 1 );
+      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes );
+
+
+      decline_voting_rights("bob", false, bob_private_key);
+
+      generate_blocks( db->head_block_time() + STEEM_DELAYED_VOTING_INTERVAL_SECONDS , true ); 
+
+      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + bob_power );
+      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );  // block has been cancelled
+      BOOST_REQUIRE_EQUAL( get_user_voted_witness_count( "bob" ), 1 );
+   }
+   FC_LOG_AND_RETHROW();
+}
+
 #define VOTING_POWER( account ) db->get_account( account ).witness_vote_weight().value
 #define PROXIED_VSF( account ) db->get_account( account ).proxied_vsf_votes_total().value
 
