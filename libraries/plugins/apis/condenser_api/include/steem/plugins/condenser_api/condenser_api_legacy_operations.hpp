@@ -74,6 +74,7 @@ namespace steem { namespace plugins { namespace condenser_api {
    typedef update_proposal_votes_operation        legacy_update_proposal_votes_operation;
    typedef remove_proposal_operation              legacy_remove_proposal_operation;
    typedef clear_null_account_balance_operation   legacy_clear_null_account_balance_operation;
+   typedef delayed_voting_operation               legacy_delayed_voting_operation;
 
    struct legacy_price
    {
@@ -1170,7 +1171,8 @@ namespace steem { namespace plugins { namespace condenser_api {
             legacy_clear_null_account_balance_operation,
             legacy_proposal_pay_operation,
             legacy_sps_fund_operation,
-           legacy_hardfork_hive_operation
+           legacy_hardfork_hive_operation,
+            legacy_delayed_voting_operation
          > legacy_operation;
 
    struct legacy_operation_conversion_visitor
@@ -1212,6 +1214,7 @@ namespace steem { namespace plugins { namespace condenser_api {
       bool operator()( const update_proposal_votes_operation& op )const          { l_op = op; return true; }
       bool operator()( const remove_proposal_operation& op )const                { l_op = op; return true; }
       bool operator()( const clear_null_account_balance_operation& op )const     { l_op = op; return true; }
+      bool operator()( const delayed_voting_operation& op )const                 { l_op = op; return true; }
 
       bool operator()( const transfer_operation& op )const
       {

@@ -75,7 +75,6 @@ fc::optional< uint64_t > delayed_voting::update_votes( const opt_votes_update_da
    return res;
 }
 
-//Question: To push virtual operation? What operation? What for?
 void delayed_voting::run( const block_notification& note )
 {
    auto head_time = note.block.timestamp;
@@ -88,7 +87,11 @@ void delayed_voting::run( const block_notification& note )
           head_time >= ( current->get_the_earliest_time() + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
         )
    {
-      int64_t _val = current->delayed_votes.begin()->val;
+      uint64_t _val = current->delayed_votes.begin()->val;
+
+      operation vop = delayed_voting_operation( current->name, _val );
+      /// Push vop to be recorded by other parts (like AH plugin etc.)
+      db.push_virtual_operation( vop );
 
       db.adjust_proxied_witness_votes( *current, _val );
 
