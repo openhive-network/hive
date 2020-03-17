@@ -389,13 +389,20 @@ struct hf23_database_fixture : public clean_database_fixture
 
 struct delayed_vote_database_fixture : public clean_database_fixture
 {
-   delayed_vote_database_fixture( uint16_t shared_file_size_in_mb = 8 )
-                           : clean_database_fixture( shared_file_size_in_mb ){}
-   virtual ~delayed_vote_database_fixture(){}
+   private:
 
-   void witness_vote( const std::string& account, const std::string& witness, bool approve, const fc::ecc::private_key& key );
-   void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
-   void withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key );
+      void push_transaction( const operation& op, const fc::ecc::private_key& key );
+
+   public:
+
+      delayed_vote_database_fixture( uint16_t shared_file_size_in_mb = 8 )
+                              : clean_database_fixture( shared_file_size_in_mb ){}
+      virtual ~delayed_vote_database_fixture(){}
+
+      void witness_vote( const std::string& account, const std::string& witness, bool approve, const fc::ecc::private_key& key );
+      void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
+      void withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key );
+      void proxy( const string& account, const string& proxy, const fc::ecc::private_key& key );
 
 };
 
