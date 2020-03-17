@@ -1252,7 +1252,10 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
          const auto& alice = db->get_account( "alice" );
 
          gpo = db->get_dynamic_global_properties();
-         fill_op = get_last_operations( 2 )[1].get< fill_vesting_withdraw_operation >();
+
+         //`delayed_voting_operation` is triggered for all witnesses + `alice` after `STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` ( 30 days )
+         const int shift = ( i == 4 ) ? ( STEEM_MAX_WITNESSES + 1/*alice*/ ) : 0;
+         fill_op = get_last_operations( 2 + shift )[ 1 + shift ].get< fill_vesting_withdraw_operation >();
 
          BOOST_REQUIRE( alice.vesting_shares.amount.value == ( vesting_shares - withdraw_rate ).amount.value );
          BOOST_REQUIRE( balance.amount.value + ( withdraw_rate * gpo.get_vesting_share_price() ).amount.value - alice.balance.amount.value <= 1 );
