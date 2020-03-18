@@ -1095,7 +1095,7 @@ int64_t delayed_vote_database_fixture::get_votes( const string& witness_name )
    auto found = idx.find( witness_name );
 
    if( found == idx.end() )
-      return std::numeric_limits< int64_t >::max();
+      return 0;
    else
       return found->votes.value;
 }
@@ -1128,7 +1128,11 @@ bool delayed_vote_database_fixture::check_collection( const COLLECTION& collecti
    if( idx >= collection.size() )
       return false;
    else
-      return ( collection[idx].time == time ) && ( collection[idx].val == val );
+   {
+      bool check_time = collection[idx].time == time;
+      bool check_val = collection[idx].val == val;
+      return check_time && check_val;
+   }
 }
 
 template< typename COLLECTION >
@@ -1144,7 +1148,9 @@ bool delayed_vote_database_fixture::check_collection( const COLLECTION& collecti
 }
 
 using dvd_deque = std::deque< delayed_votes_data >;
+using bip_dvd_deque = chainbase::t_deque< delayed_votes_data >;
 template bool delayed_vote_database_fixture::check_collection< dvd_deque >( const dvd_deque& collection, size_t idx, const fc::time_point_sec& time, uint64_t val );
+template bool delayed_vote_database_fixture::check_collection< bip_dvd_deque >( const bip_dvd_deque& collection, size_t idx, const fc::time_point_sec& time, uint64_t val );
 template bool delayed_vote_database_fixture::check_collection< delayed_voting::opt_votes_update_data_items >( const delayed_voting::opt_votes_update_data_items& collection, bool withdraw_executor, int64_t val, const account_object& obj );
 
 json_rpc_database_fixture::json_rpc_database_fixture()
