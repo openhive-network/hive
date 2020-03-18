@@ -529,7 +529,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
       generate_block();
 
       // validation data
-      const int64_t basic_votes{ get_votes( "witness" ) };
+      const auto basic_votes{ get_votes( "witness" ) };
       std::vector<uint64_t> alice_values; alice_values.reserve(30);
 
       // initial voting
@@ -582,9 +582,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
       BOOST_REQUIRE_EQUAL( get_delayed_vote_count("alice", {}), true );
 
       // check is witness ok
-      const uint64_t alice_power = db->get_account( "alice" ).vesting_shares.amount.value;
-      const uint64_t bob_power = db->get_account( "bob" ).vesting_shares.amount.value;
-      const uint64_t celine_power = (s ? static_cast<uint64_t>(db->get_account( "celine" ).vesting_shares.amount.value) : 0ul);
+      const auto alice_power = db->get_account( "alice" ).vesting_shares.amount.value;
+      const auto bob_power = db->get_account( "bob" ).vesting_shares.amount.value;
+      const auto celine_power = (s ? db->get_account( "celine" ).vesting_shares.amount.value : 0l);
 
       BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power + bob_power + celine_power);
       validate_database();
