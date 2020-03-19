@@ -393,7 +393,7 @@ BOOST_AUTO_TEST_CASE( sbd_test_01 )
 {
    try
    {
-      ACTORS( (alice)(bob) )
+      ACTORS( (alice) )
       generate_block();
 
       set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
@@ -440,8 +440,6 @@ BOOST_AUTO_TEST_CASE( sbd_test_02 )
       transfer.to = "bob";
       transfer.from = "alice";
       transfer.amount = ASSET( "1.000 TBD" );
-      tx.operations.clear();
-      tx.signatures.clear();
       tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
       tx.operations.push_back( transfer );
       sign( tx, alice_private_key );
@@ -469,6 +467,71 @@ BOOST_AUTO_TEST_CASE( sbd_test_02 )
 
       db->clear_account( db->get_account( "alice" ) );
       BOOST_REQUIRE( db->get_account( "alice" ).sbd_balance == ASSET( "0.000 TBD" ) );
+      database_fixture::validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( savings_test_01 )
+{
+   try
+   {
+      ACTORS( (alice) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      fund( "alice", ASSET( "1000.000 TBD" ) );
+      
+      signed_transaction tx;
+      transfer_to_savings_operation op;
+      op.from = "alice";
+      op.to = "alice";
+      op.amount = ASSET( "1000.000 TBD" );
+      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      sign( tx, alice_private_key );
+      db->push_transaction( tx, 0 );
+
+      BOOST_REQUIRE( db->get_account( "alice" ).savings_sbd_balance == ASSET( "1000.000 TBD" ) );
+      db->clear_account( db->get_account( "alice" ) );
+      BOOST_REQUIRE( db->get_account( "alice" ).savings_sbd_balance == ASSET( "0.000 TBD" ) );
+      database_fixture::validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( savings_test_02 )
+{
+   try
+   {
+      ACTORS( (alice)(bob) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      fund( "alice", ASSET( "1000.000 TBD" ) );
+
+      signed_transaction tx;
+      transfer_to_savings_operation op;
+      op.from = "alice";
+      op.to = "alice";
+      op.amount = ASSET( "1000.000 TBD" );
+      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      sign( tx, alice_private_key );
+      db->push_transaction( tx, 0 );
+
+      BOOST_REQUIRE( db->get_account( "alice" ).savings_sbd_balance == ASSET( "1000.000 TBD" ) );
+
+      generate_blocks( db->head_block_time() + fc::seconds( STEEM_SBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
+
+      BOOST_TEST_MESSAGE( "alice_savings_sbd before clear = " << asset_to_string( db->get_account( "alice" ).savings_sbd_balance ) ); // alice_savings_sbd before clear = 1000.000 TBD
+      db->clear_account( db->get_account( "alice" ) );
+      BOOST_TEST_MESSAGE( "alice_savings_sbd after clear = " << asset_to_string( db->get_account( "alice" ).savings_sbd_balance ) ); // alice_savings_sbd after clear = 8.219 TBD
+      BOOST_REQUIRE( db->get_account( "alice" ).savings_sbd_balance == ASSET( "0.000 TBD" ) );
       database_fixture::validate_database();
    }
    FC_LOG_AND_RETHROW()
