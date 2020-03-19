@@ -957,7 +957,6 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
 {
    try
    {
-
       // support function
       const auto get_delayed_vote_count = [&]( const account_name_type& name = "bob", const std::vector<uint64_t>& data_to_compare )
       {
