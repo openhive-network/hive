@@ -28,6 +28,9 @@
 #include <deque>
 #include <array>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+
 using namespace steem;
 using namespace steem::chain;
 using namespace steem::protocol;
@@ -1547,18 +1550,19 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
 
 #define WITNESS_VOTES( witness ) db->get_witness( witness ).votes.value
 
-#define DELAYED_VOTES( account ) db->get_account( account ).sum_delayed_votes
+#define DELAYED_VOTES( account ) static_cast<int64_t>(db->get_account( account ).sum_delayed_votes)
 
 #define DAY_REPORT( day ) \
    BOOST_TEST_MESSAGE( "[abw_scenario_01]: current day: " << day ); \
    ACCOUNT_REPORT( "alice" ); \
    ACCOUNT_REPORT( "alice0bp" ); \
-   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "alice0bp" << " has " << WITNESS_VOTES( "alice0bp" ) << " votes"); \
-   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "alice0bp" << " has " << DELAYED_VOTES( "alice0bp" ) << " delayed votes"); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "alice0bp" << " has " << WITNESS_VOTES( "alice0bp" ) << " votes" ); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "alice0bp" << " has " << DELAYED_VOTES( "alice0bp" ) << " delayed votes" ); \
    ACCOUNT_REPORT( "bob" ); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "expected_bob_vests = " << asset_to_string( expected_bob_vests ) ); \
    ACCOUNT_REPORT( "bob0bp" ); \
-   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "bob0bp" << " has " << WITNESS_VOTES( "bob0bp" ) << " votes"); \
-   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "bob0bp" << " has " << DELAYED_VOTES( "bob0bp" ) << " delayed votes"); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "bob0bp" << " has " << WITNESS_VOTES( "bob0bp" ) << " votes" ); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "bob0bp" << " has " << DELAYED_VOTES( "bob0bp" ) << " delayed votes" ); \
    ACCOUNT_REPORT( "carol" )
 
 #define CHECK_ACCOUNT_VESTS( account ) \
@@ -1573,20 +1577,17 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
 #define CHECK_WITNESS_VOTES( witness ) \
    BOOST_REQUIRE( WITNESS_VOTES( #witness ) == expected_ ## witness ## _votes )
 
-// alice:     V + S
-// alice0bp:  V + VP
-// bob:       V
-// bob0bp:    V + VP
-// carol:     S
 #define DAY_CHECK \
-   /*CHECK_ACCOUNT_VESTS( alice ); \
-   CHECK_ACCOUNT_STEEM( alice ); \
-   CHECK_ACCOUNT_VESTS( alice0bp ); \
-   CHECK_ACCOUNT_VP( alice0bp ); \
+   BOOST_REQUIRE( db->get_account( "alice" ).balance.amount.value != 0 ); \
+   BOOST_REQUIRE( db->get_account( "alice" ).balance == db->get_account( "carol" ).balance ); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "expected_alice_vests = " << asset_to_string( expected_alice_vests ) ); \
+   CHECK_ACCOUNT_VESTS( alice ); \
+   BOOST_REQUIRE( DELAYED_VOTES( "alice0bp" ) == expected_alice0bp_delayed_votes ); \
+   BOOST_REQUIRE( VOTING_POWER( "alice" ) == WITNESS_VOTES( "alice0bp" ) ); \
+   BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "expected_bob_vests = " << asset_to_string( expected_bob_vests ) ); \
    CHECK_ACCOUNT_VESTS( bob ); \
-   CHECK_ACCOUNT_VESTS( bob0bp ); \
-   CHECK_ACCOUNT_VP( bob0bp ); \
-   CHECK_ACCOUNT_STEEM( carol )*/
+   BOOST_REQUIRE( DELAYED_VOTES( "bob0bp" ) == expected_bob0bp_delayed_votes ); \
+   BOOST_REQUIRE( VOTING_POWER( "bob" ) == WITNESS_VOTES( "bob0bp" ) )
 
 #define GOTO_DAY( day ) \
    generate_days_blocks( day - today ); \
@@ -1596,16 +1597,29 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 {
    try {
 
-   /*asset expected_alice_vests;
-   asset expected_alice_steem;
+   asset initial_alice_vests;
+   asset initial_alice0bp_vests;
+   int64_t initial_alice0bp_vp;
+   int64_t initial_alice0bp_votes;
+   int64_t initial_alice0bp_delayed_votes;
+   asset initial_bob_vests;
+   asset initial_bob0bp_vests;
+   int64_t initial_bob0bp_vp;
+   int64_t initial_bob0bp_votes;
+   int64_t initial_bob0bp_delayed_votes;
+   asset initial_carol_steem;
+
+   asset expected_alice_vests = initial_alice_vests;
    asset expected_alice0bp_vests;
    int64_t expected_alice0bp_vp;
    int64_t expected_alice0bp_votes;
+   int64_t expected_alice0bp_delayed_votes;
    asset expected_bob_vests;
    asset expected_bob0bp_vests;
    int64_t expected_bob0bp_vp;
    int64_t expected_bob0bp_votes;
-   asset expected_carol_steem;*/
+   int64_t expected_bob0bp_delayed_votes;
+   asset expected_carol_steem;
 
 /* https://gitlab.syncad.com/hive-group/steem/issues/5#note_24084
 
@@ -1617,9 +1631,6 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
    BOOST_TEST_MESSAGE( "[abw_scenario_01]: after account creation" );
    BOOST_TEST_MESSAGE( "[abw_scenario_01]: alice has " << asset_to_string( db->get_account( "alice" ).vesting_shares) );
    BOOST_TEST_MESSAGE( "[abw_scenario_01]: alice has " << asset_to_string( db->get_account( "alice" ).balance) );
-
-   //set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-   //generate_block();
 
    witness_create( "alice0bp", alice0bp_private_key, "url.alice.bp", alice0bp_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
    witness_create( "bob0bp", bob0bp_private_key, "url.bob.bp", bob0bp_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
@@ -1685,7 +1696,7 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
   Day 0: alice powers up 1000 STEEM; she has 1000 vests, including delayed maturing on day 30 and 300 STEEM
 */
    uint32_t today = 0;
-   asset initial_alice_vests = db->get_account( "alice" ).vesting_shares;
+   asset origin_alice_vests = db->get_account( "alice" ).vesting_shares;
    BOOST_TEST_MESSAGE( "[abw_scenario_01]: day_zero = " << today );
    BOOST_TEST_MESSAGE( "[abw_scenario_01]: head_block_num = " << db->head_block_num() );
 
@@ -1694,7 +1705,6 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
    validate_database();
 
    DAY_REPORT( today );
-   //BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == ASSET ( "10000.000000 VESTS" ) );
    BOOST_REQUIRE( db->get_account( "alice" ).balance == ASSET( "300.000 TESTS" ) );
 
 /*
@@ -1709,7 +1719,6 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
    validate_database();
 
    DAY_REPORT( today );
-   //BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == ASSET( "1300.000000 VESTS" ) );
    BOOST_REQUIRE( db->get_account( "alice" ).balance == ASSET( "0.000 TESTS" ) );
 
 /*
@@ -1717,26 +1726,17 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 10 );
 
-   asset new_vests = db->get_account( "alice" ).vesting_shares - initial_alice_vests;
-   BOOST_TEST_MESSAGE( "[abw_scenario_01]: new alice vests = " << asset_to_string( new_vests ) );
+   int64_t new_vests = (db->get_account( "alice" ).vesting_shares - origin_alice_vests).amount.value;
+   int64_t new_vests_portion = new_vests / STEEM_VESTING_WITHDRAW_INTERVALS;
 
-   int64_t quarter = new_vests.amount.value / 4;
-   std::array<asset, STEEM_VESTING_WITHDRAW_INTERVALS> vests_portions;
-   std::array<asset, STEEM_VESTING_WITHDRAW_INTERVALS> tests_portions;
-
-   for (int i = 0; i < STEEM_VESTING_WITHDRAW_INTERVALS; ++i)
-   {
-      vests_portions[i] = asset( (quarter * (i + 1)) / STEEM_VESTING_WITHDRAW_INTERVALS, VESTS_SYMBOL );
-      BOOST_TEST_MESSAGE( "[abw_scenario_01]: vests_portions[" << i << "] = " << asset_to_string( vests_portions[i] ) );
-      tests_portions[i] = asset( 25 * (i + 1), STEEM_SYMBOL );
-   }
+   int64_t quarter = new_vests / 4;
+   int64_t portion = quarter / STEEM_VESTING_WITHDRAW_INTERVALS;
 
    BOOST_TEST_MESSAGE( "[abw_scenario_01]: alice powers down all new vests" );
-   withdraw_vesting( "alice", new_vests, alice_private_key );
+   withdraw_vesting( "alice", asset( new_vests, VESTS_SYMBOL ), alice_private_key );
    validate_database();
 
    DAY_REPORT( today );
-   // ? BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == ASSET( "1300.000000 VESTS" ) );
    BOOST_REQUIRE( db->get_account( "alice" ).balance == ASSET( "0.000 TESTS" ) );
 
 /*
@@ -1745,19 +1745,37 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
   since there is nonzero balance as delayed, 75 vests are subtracted from second record leaving 1000 (30day) + 225 (35day)
   alice 25S+1225v=0+1000(30d)+225(35d); bob 25v=0+25(47d); carol 25S
 */
-   /*expected_alice_vests = db->get_account( "alice" ).vesting_shares;
-   expected_alice_steem = db->get_account( "alice" ).balance;
-   expected_alice0bp_vests = db->get_account( "alice0bp" ).vesting_shares;
-   expected_alice0bp_vp = VOTING_POWER( "alice0bp" );
-   expected_alice0bp_votes = WITNESS_VOTES( "alice0bp" );
-   expected_bob_vests = db->get_account( "bob" ).vesting_shares;
-   expected_bob0bp_vests = db->get_account( "bob0bp" ).vesting_shares;
-   expected_bob0bp_vp = VOTING_POWER( "bob0bp");
-   expected_bob0bp_votes = WITNESS_VOTES( "bob0bp" );
-   expected_carol_steem = db->get_account( "carol" ).balance;*/
+   initial_alice_vests = db->get_account( "alice" ).vesting_shares;
+   initial_alice0bp_vests = db->get_account( "alice0bp" ).vesting_shares;
+   initial_alice0bp_vp = VOTING_POWER( "alice0bp" );
+   initial_alice0bp_votes = WITNESS_VOTES( "alice0bp" );
+   initial_alice0bp_delayed_votes = DELAYED_VOTES( "alice0bp" );
+   initial_bob_vests = db->get_account( "bob" ).vesting_shares;
+   initial_bob0bp_vests = db->get_account( "bob0bp" ).vesting_shares;
+   initial_bob0bp_vp = VOTING_POWER( "bob0bp");
+   initial_bob0bp_votes = WITNESS_VOTES( "bob0bp" );
+   initial_bob0bp_delayed_votes = DELAYED_VOTES( "bob0bp" );
+   initial_carol_steem = db->get_account( "carol" ).balance;
+
+   expected_alice_vests = initial_alice0bp_vests;
+   expected_alice0bp_vests = initial_alice0bp_vests;
+   expected_alice0bp_vp = initial_alice0bp_vp;
+   expected_alice0bp_votes = initial_alice0bp_votes;
+   expected_alice0bp_delayed_votes = initial_alice0bp_delayed_votes;
+   expected_bob_vests = initial_bob_vests;
+   expected_bob0bp_vests = initial_bob0bp_vests;
+   expected_bob0bp_vp = initial_bob0bp_vp;
+   expected_bob0bp_votes = initial_bob0bp_votes;
+   expected_bob0bp_delayed_votes = initial_bob0bp_delayed_votes;
+   expected_carol_steem = initial_carol_steem;
 
    GOTO_DAY( 17 );
    DAY_REPORT( today );
+
+   expected_alice_vests  = initial_alice_vests - asset( new_vests_portion + 1, VESTS_SYMBOL );
+   expected_alice_vests += asset( portion, VESTS_SYMBOL );
+   expected_bob_vests = initial_bob_vests + asset( portion, VESTS_SYMBOL );
+   expected_alice0bp_delayed_votes = db->get_account( "alice0bp" ).vesting_shares.amount.value;
    DAY_CHECK;
 
 /*
@@ -1766,6 +1784,10 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 24 );
    DAY_REPORT( today );
+
+   expected_alice_vests  = initial_alice_vests - asset( 2 * (new_vests_portion + 1), VESTS_SYMBOL );
+   expected_alice_vests += asset( 2 * portion, VESTS_SYMBOL );
+   expected_bob_vests = initial_bob_vests + asset( 2 * portion, VESTS_SYMBOL );
    DAY_CHECK;
 
 /*
@@ -1774,6 +1796,9 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 30 );
    DAY_REPORT( today );
+
+   expected_alice0bp_delayed_votes = 0;
+   expected_bob0bp_delayed_votes = 0;
    DAY_CHECK;
   
 /*
@@ -1782,6 +1807,10 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 31 );
    DAY_REPORT( today );
+
+   expected_alice_vests  = initial_alice_vests - asset( 3 * (new_vests_portion + 1), VESTS_SYMBOL );
+   expected_alice_vests += asset( 3 * portion, VESTS_SYMBOL );
+   expected_bob_vests = initial_bob_vests + asset( 3 * portion, VESTS_SYMBOL );
    DAY_CHECK;
   
 /*
@@ -1798,6 +1827,10 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 38 );
    DAY_REPORT( today );
+
+   expected_alice_vests  = initial_alice_vests - asset( 4 * (new_vests_portion + 1), VESTS_SYMBOL );
+   expected_alice_vests += asset( 4 * portion, VESTS_SYMBOL );
+   expected_bob_vests = initial_bob_vests + asset( 4 * portion, VESTS_SYMBOL );
    DAY_CHECK;
   
 /*
@@ -1806,6 +1839,10 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 45 );
    DAY_REPORT( today );
+
+   expected_alice_vests  = initial_alice_vests - asset( 5 * (new_vests_portion + 1), VESTS_SYMBOL );
+   expected_alice_vests += asset( 5 * portion, VESTS_SYMBOL );
+   expected_bob_vests = initial_bob_vests + asset( 5 * portion, VESTS_SYMBOL );
    DAY_CHECK;
   
 /*
@@ -1822,6 +1859,10 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 52 );
    DAY_REPORT( today );
+
+   expected_alice_vests  = initial_alice_vests - asset( 6 * (new_vests_portion + 1), VESTS_SYMBOL );
+   expected_alice_vests += asset( 6 * portion, VESTS_SYMBOL );
+   expected_bob_vests = initial_bob_vests + asset( 6 * portion, VESTS_SYMBOL );
    DAY_CHECK;
   
 /*
@@ -1838,6 +1879,10 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 59 );
    DAY_REPORT( today );
+
+   expected_alice_vests  = initial_alice_vests - asset( 7 * (new_vests_portion + 1), VESTS_SYMBOL );
+   expected_alice_vests += asset( 7 * portion, VESTS_SYMBOL );
+   expected_bob_vests = initial_bob_vests + asset( 7 * portion, VESTS_SYMBOL );
    DAY_CHECK;
   
 /*
@@ -1854,6 +1899,10 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 66 );
    DAY_REPORT( today );
+
+   expected_alice_vests  = initial_alice_vests - asset( 8 * (new_vests_portion + 1), VESTS_SYMBOL );
+   expected_alice_vests += asset( 8 * portion, VESTS_SYMBOL );
+   expected_bob_vests = initial_bob_vests + asset( 8 * portion, VESTS_SYMBOL );
    DAY_CHECK;
   
 /*
@@ -1870,6 +1919,10 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 73 );
    DAY_REPORT( today );
+
+   expected_alice_vests  = initial_alice_vests - asset( 9 * (new_vests_portion + 1), VESTS_SYMBOL );
+   expected_alice_vests += asset( 9 * portion, VESTS_SYMBOL );
+   expected_bob_vests = initial_bob_vests + asset( 9 * portion, VESTS_SYMBOL );
    DAY_CHECK;
   
 /*
@@ -1886,6 +1939,10 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 80 );
    DAY_REPORT( today );
+
+   expected_alice_vests  = initial_alice_vests - asset( 10 * (new_vests_portion + 1), VESTS_SYMBOL );
+   expected_alice_vests += asset( 10 * portion, VESTS_SYMBOL );
+   expected_bob_vests = initial_bob_vests + asset( 10 * portion, VESTS_SYMBOL );
    DAY_CHECK;
   
 /*
@@ -1902,6 +1959,10 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 87 );
    DAY_REPORT( today );
+
+   expected_alice_vests  = initial_alice_vests - asset( 11 * (new_vests_portion + 1), VESTS_SYMBOL );
+   expected_alice_vests += asset( 11 * portion, VESTS_SYMBOL );
+   expected_bob_vests = initial_bob_vests + asset( 11 * portion, VESTS_SYMBOL );
    DAY_CHECK;
   
 /*
@@ -1918,6 +1979,10 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 94 );
    DAY_REPORT( today );
+
+   expected_alice_vests  = initial_alice_vests - asset( 12 * (new_vests_portion + 1), VESTS_SYMBOL );
+   expected_alice_vests += asset( 12 * portion, VESTS_SYMBOL );
+   expected_bob_vests = initial_bob_vests + asset( 12 * portion, VESTS_SYMBOL );
    DAY_CHECK;
   
 /*
@@ -1934,6 +1999,11 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 */
    GOTO_DAY( 101 );
    DAY_REPORT( today );
+
+   expected_alice_vests  = initial_alice_vests - asset( new_vests, VESTS_SYMBOL );
+   expected_alice_vests += asset( quarter - 3, VESTS_SYMBOL );
+   expected_bob_vests = initial_bob_vests + asset( quarter - 3, VESTS_SYMBOL );
+   BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == db->get_account( "bob").vesting_shares );
    DAY_CHECK;
   
 /*
@@ -1980,10 +2050,21 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
    FC_LOG_AND_RETHROW()
 }
 
+#undef VOTING_POWER
+#undef PROXIED_VSF
 #undef ACCOUNT_REPORT
+#undef WITNESS_VOTES
+#undef DELAYED_VOTES
 #undef DAY_REPORT
+#undef CHECK_ACCOUNT_VESTS
+#undef CHECK_ACCOUNT_STEEM
+#undef CHECK_ACCOUNT_VP
+#undef CHECK_WITNESS_VOTES
+#undef DAY_CHECK
 #undef GOTO_DAY
 
 BOOST_AUTO_TEST_SUITE_END()
 
 //#endif // #if defined(IS_TEST_NET)
+
+#pragma GCC diagnostic pop
