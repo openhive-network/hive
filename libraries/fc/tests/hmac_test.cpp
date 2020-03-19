@@ -78,9 +78,9 @@ static void run_test( const fc::string& key, const fc::string& data, const fc::s
 {
 
     fc::array<char,N> key_arr;
-    BOOST_CHECK_EQUAL( fc::from_hex( key, key_arr.begin(), key_arr.size() ), N );
+    BOOST_CHECK_EQUAL( fc::from_hex( key, key_arr.begin(), key_arr.size() ), static_cast< size_t >( N ) );
     fc::array<char,M> data_arr;
-    BOOST_CHECK_EQUAL( fc::from_hex( data, data_arr.begin(), data_arr.size() ), M );
+    BOOST_CHECK_EQUAL( fc::from_hex( data, data_arr.begin(), data_arr.size() ), static_cast< size_t >( M ) );
 
     BOOST_CHECK_EQUAL( mac_224.digest( key_arr.begin(), N, data_arr.begin(), M ).str(), expect_224 );
     BOOST_CHECK_EQUAL( mac_256.digest( key_arr.begin(), N, data_arr.begin(), M ).str(), expect_256 );

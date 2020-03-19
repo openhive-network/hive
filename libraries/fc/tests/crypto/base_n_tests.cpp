@@ -25,7 +25,7 @@ static void test_16( const std::string& test, const std::string& expected )
 
     char out[32];
     int len = fc::from_hex( enc1, out, 32 );
-    BOOST_CHECK_EQUAL( test.size(), len );
+    BOOST_CHECK_EQUAL( test.size(), static_cast< size_t >( len ) );
     BOOST_CHECK( !memcmp( test.c_str(), out, len ) );
     if (len > 10) {
         BOOST_CHECK( fc::from_hex( enc1, out, 10 ) <= 10 );
