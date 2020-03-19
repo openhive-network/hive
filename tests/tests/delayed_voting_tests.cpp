@@ -11,6 +11,8 @@
 #include <steem/chain/database_exceptions.hpp>
 #include <steem/chain/steem_objects.hpp>
 
+#include <steem/chain/sps_objects.hpp>
+
 #include <steem/plugins/rc/rc_objects.hpp>
 #include <steem/plugins/rc/resource_count.hpp>
 
@@ -36,6 +38,8 @@ using namespace steem::chain;
 using namespace steem::protocol;
 using fc::string;
 
+constexpr int DAYS_FOR_DELAYED_VOTING{ (STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS) };
+
 namespace
 {
 
@@ -45,6 +49,184 @@ std::string asset_to_string( const asset& a )
 }
 
 } // namespace
+
+// Tests with combined delayed voting and proposals
+BOOST_FIXTURE_TEST_SUITE( delayed_voting_proposal_tests, delayed_vote_proposal_database_fixture )
+
+BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( R"(Scenario:
+
+   * create one proposal 
+   * carol vests
+   * carol sets `update_proposal_votes_operation`
+   * each hour check if votes are constant
+   * after 30 days proposal receives votes
+      )");
+
+      // const
+      const auto TESTS_1000 = ASSET( "1000.000 TESTS" );
+      const auto TBD_100 = ASSET( "100.000 TBD" );
+      
+      //setup
+      ACTORS( (alice)(bob)(carol) )
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      FUND( "alice", TESTS_1000 );
+      FUND( "bob",   TESTS_1000 );
+      FUND( "carol", TESTS_1000 );
+
+      FUND( "alice", TBD_100 );
+      FUND( "bob", TBD_100 );
+      FUND( "carol", TBD_100 );
+      generate_block();
+      
+      // create one proposal
+      create_proposal_data cpd(db->head_block_time());
+      cpd.end_date = cpd.start_date + fc::days( 2* DAYS_FOR_DELAYED_VOTING );
+      int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+      BOOST_REQUIRE(proposal_1 >= 0);
+
+      // carol vest
+      vest("carol", "carol", ASSET("10.000 TESTS"), carol_private_key);
+
+      // carol votes
+      vote_proposal("carol", { proposal_1 }, true, carol_private_key);
+
+      // check
+      for(int i = 0; i < (24*DAYS_FOR_DELAYED_VOTING) - 1; i++)
+      {
+         generate_blocks( db->head_block_time() + fc::hours(1).to_seconds());
+         auto * ptr = find_proposal(proposal_1);
+         BOOST_REQUIRE_NE( ptr, nullptr );
+         BOOST_REQUIRE_EQUAL( ptr->total_votes, 0ul );
+      }
+
+      generate_days_blocks( 1, true );
+      auto * ptr = find_proposal(proposal_1);
+      BOOST_REQUIRE_NE( ptr, nullptr );
+      BOOST_REQUIRE_EQUAL( static_cast<long>(ptr->total_votes), db->get_account("carol").vesting_shares.amount.value );
+
+      validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( R"(Scenario:
+
+   * create two proposals
+   * carol vests
+   * carol sets `update_proposal_votes_operation` for first proposal
+   * each hour check if votes are constant
+   * carol vests again and `update_proposal_votes_operation` for second proposal
+   * after 30 days first proposal receives votes
+   * after 15 days second one, too
+      )");
+
+      // const
+      const auto TESTS_1000 = ASSET( "1000.000 TESTS" );
+      const auto TBD_100 = ASSET( "100.000 TBD" );
+      
+      //setup
+      ACTORS( (alice)(bob)(carol) )
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      FUND( "alice", TESTS_1000 );
+      FUND( "bob",   TESTS_1000 );
+      FUND( "carol", TESTS_1000 );
+
+      FUND( "alice", TBD_100 );
+      FUND( "bob", TBD_100 );
+      FUND( "carol", TBD_100 );
+      generate_block();
+      
+      // create one proposal
+      create_proposal_data cpd1(db->head_block_time());
+      cpd1.end_date = cpd1.start_date + fc::days( 2* DAYS_FOR_DELAYED_VOTING );
+      int64_t proposal_1 = create_proposal( cpd1.creator, cpd1.receiver, cpd1.start_date, cpd1.end_date, cpd1.daily_pay, alice_private_key );
+      BOOST_REQUIRE(proposal_1 >= 0);
+
+      // create one proposal
+      create_proposal_data cpd2(db->head_block_time());
+      cpd2.end_date = cpd2.start_date + fc::days( 2* DAYS_FOR_DELAYED_VOTING );
+      int64_t proposal_2 = create_proposal( cpd2.creator, cpd2.receiver, cpd2.start_date, cpd2.end_date, cpd2.daily_pay, alice_private_key );
+      BOOST_REQUIRE(proposal_2 >= 0);
+
+      // carol vest
+      vest("carol", "carol", ASSET("10.000 TESTS"), carol_private_key);
+
+      // carol votes
+      vote_proposal("carol", { proposal_1 }, true, carol_private_key);
+      const auto carol_power_1 = db->get_account("carol").vesting_shares.amount.value;
+
+      auto * ptr = find_proposal(proposal_1); //<- just init
+
+      // check
+      for(int i = 0; i < (24*DAYS_FOR_DELAYED_VOTING) - 1; i++)
+      {
+         generate_blocks( db->head_block_time() + fc::hours(1).to_seconds());
+         ptr = find_proposal(proposal_1);
+         BOOST_REQUIRE_NE( ptr, nullptr );
+         BOOST_REQUIRE_EQUAL( ptr->total_votes, 0ul );
+
+         if( i == (12 * DAYS_FOR_DELAYED_VOTING))
+         {
+            vest("carol", "carol", ASSET("10.000 TESTS"), carol_private_key);
+            vote_proposal("carol", { proposal_1, proposal_2 }, true, carol_private_key);
+         }
+
+         if(i > (12 * DAYS_FOR_DELAYED_VOTING))
+         {
+            ptr = find_proposal(proposal_2);
+            BOOST_REQUIRE_NE( ptr, nullptr );
+            BOOST_REQUIRE_EQUAL( ptr->total_votes, 0ul );
+         }
+      }
+
+      generate_days_blocks( 1, true );
+      ptr = find_proposal(proposal_1);
+      BOOST_REQUIRE_NE( ptr, nullptr );
+      BOOST_REQUIRE_EQUAL( static_cast<long>(ptr->total_votes), carol_power_1 );
+      
+      ptr = find_proposal(proposal_2);
+      BOOST_REQUIRE_NE( ptr, nullptr );
+      BOOST_REQUIRE_EQUAL( static_cast<long>(ptr->total_votes), carol_power_1 );
+
+      for(int i = 0; i < ( 12 * ( DAYS_FOR_DELAYED_VOTING / 2 ) ) - 1; i++)
+      {
+         generate_blocks( db->head_block_time() + fc::hours(1).to_seconds());
+         ptr = find_proposal(proposal_2);
+         BOOST_REQUIRE_NE( ptr, nullptr );
+         BOOST_REQUIRE_EQUAL( static_cast<long>(ptr->total_votes), carol_power_1 );
+      }
+      
+      for(int _ = 0; _ < 8; _++ )
+      {
+         generate_days_blocks( 1, true );
+         ptr = find_proposal(proposal_2);
+      }
+      BOOST_REQUIRE_EQUAL( 
+         db->get_account("carol").vesting_shares.amount.value, 
+         static_cast<long>(ptr->total_votes)
+      );
+
+      validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
 
 BOOST_FIXTURE_TEST_SUITE( delayed_voting_tests, delayed_vote_database_fixture )
 
@@ -704,11 +886,10 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
       BOOST_REQUIRE_EQUAL( basic_votes_1, votes_01_1 );
       BOOST_REQUIRE_EQUAL( basic_votes_2, votes_01_2 );
 
-      constexpr int DAYS{ (STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS) };
-      for(int i = 1; i < DAYS - 1; i++)
+      for(int i = 1; i < DAYS_FOR_DELAYED_VOTING - 1; i++)
       {
          generate_blocks( start_time + (i * STEEM_DELAYED_VOTING_INTERVAL_SECONDS) , true );
-         if( i == static_cast<int>( DAYS/2 )) witness_vote( "bob", "witness2", true/*approve*/, bob_private_key );
+         if( i == static_cast<int>( DAYS_FOR_DELAYED_VOTING/2 )) witness_vote( "bob", "witness2", true/*approve*/, bob_private_key );
          BOOST_REQUIRE_EQUAL( get_votes( "witness1" ), votes_01_1 );
          BOOST_REQUIRE_EQUAL( get_votes( "witness2" ), votes_01_2 );
       }
@@ -776,6 +957,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
 {
    try
    {
+
       // support function
       const auto get_delayed_vote_count = [&]( const account_name_type& name = "bob", const std::vector<uint64_t>& data_to_compare )
       {
@@ -831,8 +1013,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
 
       // check everyday for month
       bool s = false;
-      constexpr int DAYS{ (STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS) };
-      for(int i = 1; i < DAYS - 1; i++)
+      for(int i = 1; i < DAYS_FOR_DELAYED_VOTING - 1; i++)
       {
          // 1 day
          generate_blocks( start_time + (i * STEEM_DELAYED_VOTING_INTERVAL_SECONDS) , true );

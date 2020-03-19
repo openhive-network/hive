@@ -1015,27 +1015,6 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
    FC_LOG_AND_RETHROW()
 }
 
-
-struct create_proposal_data {
-      std::string creator    ;
-      std::string receiver   ;
-      fc::time_point_sec start_date ;
-      fc::time_point_sec end_date   ;
-      steem::protocol::asset daily_pay ;
-      std::string subject ;
-      std::string url     ;
-
-      create_proposal_data(fc::time_point_sec _start) {
-         creator    = "alice";
-         receiver   = "bob";
-         start_date = _start     + fc::days( 1 );
-         end_date   = start_date + fc::days( 2 );
-         daily_pay  = asset( 100, SBD_SYMBOL );
-         subject    = "hello";
-         url        = "http:://something.html";
-      }
-};
-
 BOOST_AUTO_TEST_CASE( create_proposal_000 )
 {
    try {
