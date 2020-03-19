@@ -277,7 +277,7 @@ struct database_fixture {
 
 struct clean_database_fixture : public database_fixture
 {
-   clean_database_fixture( uint16_t shared_file_size_in_mb = 8 );
+   clean_database_fixture( uint16_t shared_file_size_in_mb = 512 );
    virtual ~clean_database_fixture();
 
    void resize_shared_mem( uint64_t size );
