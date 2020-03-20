@@ -5549,11 +5549,12 @@ void database::apply_hardfork( uint32_t hardfork )
          }
          
          // Reset TAPOS buffer to avoid replay attack
+         auto empty_block_id = block_id_type();
          const auto& bs_idx = get_index< block_summary_index, by_id >();
          for( auto itr = bs_idx.begin(); itr != bs_idx.end(); ++itr )
          {
             modify( *itr, [&](block_summary_object& p) {
-               p.block_id = block_id_type();
+               p.block_id = empty_block_id;
             });
          }
          break;
