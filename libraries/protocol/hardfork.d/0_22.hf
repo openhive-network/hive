@@ -350,7 +350,8 @@ inline static const std::set< std::string >& get_steemit_accounts()
     "palja",
     "ksheva1",
     "fadetoblack",
-    "autoway"
+    "autoway",
+    "ety001" // please block me: https://steemit.com/steem/@ety001/hive-chain-coming-is-a-shame-time-for-steem
    };
 
    return steemit_accounts;
