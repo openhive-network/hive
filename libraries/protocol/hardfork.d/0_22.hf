@@ -19,6 +19,7 @@ inline static const std::set< std::string >& get_steemit_accounts()
     // steemit accounts
     "ben",
     "bitdev100",
+    "dev365",
     "geos",
     "goku1",
     "hkdev404",
