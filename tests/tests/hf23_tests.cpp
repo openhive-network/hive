@@ -1,3 +1,5 @@
+#ifdef IS_TEST_NET
+
 #include <boost/test/unit_test.hpp>
 
 #include <steem/chain/steem_fwd.hpp>
@@ -87,14 +89,18 @@ BOOST_AUTO_TEST_CASE( basic_test_06 )
          BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
       }
       {
-         db->clear_account( db->get_account( "bob" ) );
+         const auto& _bob = db->get_account( "bob" );
+         db->clear_account( _bob );
+         clear_delayed_votes( _bob );
 
          const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
          BOOST_REQUIRE( idx.lower_bound( "alice" ) != idx.end() );
          BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
       }
       {
-         db->clear_account( db->get_account( "alice" ) );
+         const auto& _alice = db->get_account( "alice" );
+         db->clear_account( _alice );
+         clear_delayed_votes( _alice );
 
          const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
          BOOST_REQUIRE( idx.lower_bound( "alice" ) == idx.end() );
@@ -160,7 +166,9 @@ BOOST_AUTO_TEST_CASE( basic_test_05 )
          BOOST_REQUIRE( db->get_account( "carol" ).received_vesting_shares.amount.value == _1v.amount.value );
       }
       {
-         db->clear_account( db->get_account( "carol" ) );
+         const auto& _carol = db->get_account( "carol" );
+         db->clear_account( _carol );
+         clear_delayed_votes( _carol );
 
          BOOST_REQUIRE( db->get_account( "alice" ).delegated_vesting_shares.amount.value == _3v.amount.value );
          BOOST_REQUIRE( db->get_account( "carol" ).delegated_vesting_shares.amount.value == 0l );
@@ -169,7 +177,9 @@ BOOST_AUTO_TEST_CASE( basic_test_05 )
          BOOST_REQUIRE( db->get_account( "carol" ).received_vesting_shares.amount.value == _1v.amount.value );
       }
       {
-         db->clear_account( db->get_account( "alice" ) );
+         const auto& _alice = db->get_account( "alice" );
+         db->clear_account( _alice );
+         clear_delayed_votes( _alice );
 
          BOOST_REQUIRE( db->get_account( "alice" ).delegated_vesting_shares.amount.value == 0l );
          BOOST_REQUIRE( db->get_account( "bob" ).delegated_vesting_shares.amount.value == 0l );
@@ -236,7 +246,10 @@ BOOST_AUTO_TEST_CASE( basic_test_04 )
          BOOST_REQUIRE( db->get_account( "carol" ).received_vesting_shares.amount.value != 0l );
       }
       {
-         db->clear_account( db->get_account( "alice" ) );
+         const auto& _alice = db->get_account( "alice" );
+         db->clear_account( _alice );
+         clear_delayed_votes( _alice );
+
          BOOST_REQUIRE( db->get_account( "alice" ).delegated_vesting_shares.amount.value == 0l );
          BOOST_REQUIRE( db->get_account( "bob" ).delegated_vesting_shares.amount.value == 0l );
          BOOST_REQUIRE( db->get_account( "carol" ).delegated_vesting_shares.amount.value == 0l );
@@ -245,7 +258,10 @@ BOOST_AUTO_TEST_CASE( basic_test_04 )
          BOOST_REQUIRE( db->get_account( "bob" ).received_vesting_shares.amount.value == 0l );
          BOOST_REQUIRE( db->get_account( "carol" ).received_vesting_shares.amount.value == 0l );
 
-         db->clear_account( db->get_account( "bob" ) );
+         const auto& _bob = db->get_account( "bob" );
+         db->clear_account( _bob );
+         clear_delayed_votes( _bob );
+
          BOOST_REQUIRE( db->get_account( "alice" ).delegated_vesting_shares.amount.value == 0l );
          BOOST_REQUIRE( db->get_account( "bob" ).delegated_vesting_shares.amount.value == 0l );
          BOOST_REQUIRE( db->get_account( "carol" ).delegated_vesting_shares.amount.value == 0l );
@@ -295,17 +311,26 @@ BOOST_AUTO_TEST_CASE( basic_test_03 )
          auto vest_bob = db->get_account( "bob" ).vesting_shares.amount.value;
          auto vest_carol = db->get_account( "carol" ).vesting_shares.amount.value;
 
-         db->clear_account( db->get_account( "alice" ) );
+         const auto& _alice = db->get_account( "alice" );
+         db->clear_account( _alice );
+         clear_delayed_votes( _alice );
+
          BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares.amount.value == 0l );
          BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares.amount.value == vest_bob );
          BOOST_REQUIRE( db->get_account( "carol" ).vesting_shares.amount.value == vest_carol );
 
-         db->clear_account( db->get_account( "bob" ) );
+         const auto& _bob = db->get_account( "bob" );
+         db->clear_account( _bob );
+         clear_delayed_votes( _bob );
+
          BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares.amount.value == 0l );
          BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares.amount.value == 0l );
          BOOST_REQUIRE( db->get_account( "carol" ).vesting_shares.amount.value == vest_carol );
 
-         db->clear_account( db->get_account( "carol" ) );
+         const auto& _carol = db->get_account( "carol" );
+         db->clear_account( _carol );
+         clear_delayed_votes( _carol );
+
          BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares.amount.value == 0l );
          BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares.amount.value == 0l );
          BOOST_REQUIRE( db->get_account( "carol" ).vesting_shares.amount.value == 0l );
@@ -343,11 +368,17 @@ BOOST_AUTO_TEST_CASE( basic_test_02 )
       {
          auto vest_bob = db->get_account( "bob" ).vesting_shares.amount.value;
 
-         db->clear_account( db->get_account( "alice" ) );
+         const auto& _alice = db->get_account( "alice" );
+         db->clear_account( _alice );
+         clear_delayed_votes( _alice );
+
          BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares.amount.value == 0l );
          BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares.amount.value == vest_bob );
 
-         db->clear_account( db->get_account( "bob" ) );
+         const auto& _bob = db->get_account( "bob" );
+         db->clear_account( _bob );
+         clear_delayed_votes( _bob );
+
          BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares.amount.value == 0l );
          BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares.amount.value == 0l );
       }
@@ -366,16 +397,17 @@ BOOST_AUTO_TEST_CASE( basic_test_01 )
       ACTORS( (alice) )
       generate_block();
 
-      auto& _alice = db->get_account( "alice" );
-      db->clear_account( _alice );
+      const auto& _alice = db->get_account( "alice" );
 
-      /*
-         Original `clean_database_fixture::validate_database` checks `rc_plugin` as well.
-         Is it needed?
-      */
+      db->clear_account( _alice );
+      //`Delayed votes` algorithm was created later than HF 23 therefore must be a fix.
+      clear_delayed_votes( _alice );
+
       database_fixture::validate_database();
    }
    FC_LOG_AND_RETHROW()
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+#endif
