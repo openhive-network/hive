@@ -5773,7 +5773,7 @@ void database::validate_invariants()const
          for( auto& dv : itr->delayed_votes )
             sum_delayed_votes += dv.val;
          FC_ASSERT( sum_delayed_votes == itr->sum_delayed_votes, "", ("sum_delayed_votes",sum_delayed_votes)("itr->sum_delayed_votes",itr->sum_delayed_votes) );
-         FC_ASSERT( sum_delayed_votes <= itr->vesting_shares.amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->vesting_shares.amount) );
+         FC_ASSERT( sum_delayed_votes <= itr->vesting_shares.amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->vesting_shares.amount)("account",itr->name) );
       }
 
       const auto& convert_request_idx = get_index< convert_request_index >().indices();

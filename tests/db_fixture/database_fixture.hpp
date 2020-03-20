@@ -409,6 +409,8 @@ struct hf23_database_fixture : public clean_database_fixture
 
       void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
       void delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key );
+
+      void clear_delayed_votes( const account_object& account );
 };
 
 struct delayed_vote_database_fixture : public virtual clean_database_fixture
