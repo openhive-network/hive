@@ -1329,7 +1329,7 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
             Therefore an idea is based on voting deferring. Default value is 30 days.
             This range of time is enough long to defeat/block potential malicious intention.
       */
-      if( db.has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
+      if( db.has_hardfork( STEEM_HARDFORK_0_24 ) )
       {
          if( !ALLOW_VOTE )
          {
@@ -1860,7 +1860,7 @@ void database::process_proposals( const block_notification& note )
 
 void database::process_delayed_voting( const block_notification& note )
 {
-   if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
+   if( has_hardfork( STEEM_HARDFORK_0_24 ) )
    {
       delayed_voting dv( *this );
       dv.run( note );
@@ -1931,7 +1931,7 @@ void database::process_vesting_withdrawals()
       optional< delayed_voting > dv;
       delayed_voting::opt_votes_update_data_items _votes_update_data_items;
 
-      if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
+      if( has_hardfork( STEEM_HARDFORK_0_24 ) )
       {
          dv = delayed_voting( *this );
          _votes_update_data_items = delayed_voting::votes_update_data_items();
@@ -1972,7 +1972,7 @@ void database::process_vesting_withdrawals()
 
                   if( auto_vest_mode )
                   {
-                     if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
+                     if( has_hardfork( STEEM_HARDFORK_0_24 ) )
                      {
                         dv->add_votes( _votes_update_data_items,
                                        to_account.id == from_account.id/*withdraw_executor*/,
@@ -2011,7 +2011,7 @@ void database::process_vesting_withdrawals()
       operation vop = fill_vesting_withdraw_operation( from_account.name, from_account.name, asset( to_convert, VESTS_SYMBOL ), converted_steem );
       pre_push_virtual_operation( vop );
 
-      if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
+      if( has_hardfork( STEEM_HARDFORK_0_24 ) )
       {
          dv->add_votes( _votes_update_data_items,
                         true/*withdraw_executor*/,
@@ -2043,7 +2043,7 @@ void database::process_vesting_withdrawals()
          o.total_vesting_shares.amount -= to_convert;
       });
 
-      if( has_hardfork( STEEM_DELAYED_VOTING_HARDFORK ) )
+      if( has_hardfork( STEEM_HARDFORK_0_24 ) )
       {
          fc::optional< uint64_t > leftover = dv->update_votes( _votes_update_data_items, head_block_time() );
          FC_ASSERT( leftover.valid(), "Something went wrong" );
@@ -5180,10 +5180,13 @@ void database::init_hardforks()
    FC_ASSERT( STEEM_HARDFORK_0_23 == 23, "Invalid hardfork configuration" );
    _hardfork_versions.times[ STEEM_HARDFORK_0_23 ] = fc::time_point_sec( STEEM_HARDFORK_0_23_TIME );
    _hardfork_versions.versions[ STEEM_HARDFORK_0_23 ] = STEEM_HARDFORK_0_23_VERSION;
-#ifdef IS_TEST_NET
    FC_ASSERT( STEEM_HARDFORK_0_24 == 24, "Invalid hardfork configuration" );
    _hardfork_versions.times[ STEEM_HARDFORK_0_24 ] = fc::time_point_sec( STEEM_HARDFORK_0_24_TIME );
    _hardfork_versions.versions[ STEEM_HARDFORK_0_24 ] = STEEM_HARDFORK_0_24_VERSION;
+#ifdef IS_TEST_NET
+   FC_ASSERT( STEEM_HARDFORK_0_25 == 25, "Invalid hardfork configuration" );
+   _hardfork_versions.times[ STEEM_HARDFORK_0_25 ] = fc::time_point_sec( STEEM_HARDFORK_0_25_TIME );
+   _hardfork_versions.versions[ STEEM_HARDFORK_0_25 ] = STEEM_HARDFORK_0_25_VERSION;
 #endif
 
    const auto& hardforks = get_hardfork_property_object();
