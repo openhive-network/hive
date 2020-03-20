@@ -1068,6 +1068,47 @@ void hf23_database_fixture::delegate_vest( const string& delegator, const string
    push_transaction( op, key );
 }
 
+void delayed_vote_database_fixture::push_transaction( const operation& op, const fc::ecc::private_key& key )
+{
+   signed_transaction tx;
+   tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+   tx.operations.push_back( op );
+   sign( tx, key );
+   db->push_transaction( tx, 0 );
+}
+
+void delayed_vote_database_fixture::witness_vote( const std::string& account, const std::string& witness, bool approve, const fc::ecc::private_key& key )
+{
+   account_witness_vote_operation op;
+
+   op.account = account;
+   op.witness = witness;
+   op.approve = approve;
+
+   push_transaction( op, key );
+}
+
+void delayed_vote_database_fixture::vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )
+{
+   FC_ASSERT( amount.symbol == STEEM_SYMBOL, "Can only vest TESTS" );
+
+   transfer_to_vesting_operation op;
+   op.from = from;
+   op.to = to;
+   op.amount = amount;
+
+   push_transaction( op, key );
+}
+
+void delayed_vote_database_fixture::decline_voting_rights( const string& account, const bool decline, const fc::ecc::private_key& key )
+{
+   decline_voting_rights_operation op;
+   op.account = account;
+   op.decline = decline;
+
+   push_transaction( op, key );
+}
+
 void delayed_vote_database_fixture::withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key )
 {
    FC_ASSERT( amount.symbol == VESTS_SYMBOL, "Can only withdraw VESTS");

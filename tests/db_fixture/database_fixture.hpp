@@ -411,7 +411,7 @@ struct hf23_database_fixture : public clean_database_fixture
       void delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key );
 };
 
-struct delayed_vote_database_fixture : public clean_database_fixture
+struct delayed_vote_database_fixture : public virtual clean_database_fixture
 {
    private:
 
@@ -429,6 +429,16 @@ struct delayed_vote_database_fixture : public clean_database_fixture
       void proxy( const string& account, const string& proxy, const fc::ecc::private_key& key );
       void decline_voting_rights( const string& account, const bool decline, const fc::ecc::private_key& key );
 
+      int64_t get_votes( const string& witness_name );
+      int32_t get_user_voted_witness_count( const account_name_type& name );
+
+      asset to_vest( const asset& liquid, bool to_reward_balance = false );
+
+      template< typename COLLECTION >
+      bool check_collection( const COLLECTION& collection, size_t idx, const fc::time_point_sec& time, uint64_t val );
+
+      template< typename COLLECTION >
+      bool check_collection( const COLLECTION& collection, bool withdraw_executor, int64_t val, const account_object& obj );
 };
 
 struct delayed_vote_proposal_database_fixture 
