@@ -1,6 +1,6 @@
 # Preface
 
-After MIRAs initial development efforts we released the [Basic MIRA Configuration Guide](https://github.com/steemit/steem/blob/master/doc/mira.md) to help bootstrap users attempting to use MIRA enabled `steemd`. There is actually much more fine tuning that can be done to improve MIRA's performance. We will break up this process into three phases:
+After MIRAs initial development efforts we released the [Basic MIRA Configuration Guide](https://github.com/openhive-network/hive/blob/master/doc/mira.md) to help bootstrap users attempting to use MIRA enabled `steemd`. There is actually much more fine tuning that can be done to improve MIRA's performance. We will break up this process into three phases:
 
 * Phase 1: Gathering statistics
 * Phase 2: Analyzing statistics
@@ -124,7 +124,7 @@ Even though we did not specify `optimize_level_style_compaction` and `increase_p
 
 ## Available options
 
-Not every RocksDB option is made available to MIRA configurations. It is very possible that the RocksDB tool can recommend changing an option that is unavailable through MIRA. Feel free to add it and create a pull request, especially if it is improving your nodes performance. You can see a complete list of available options in the codebase in [libraries/mira/src/configuration.cpp](https://github.com/steemit/steem/blob/master/libraries/mira/src/configuration.cpp). View the recommended options and check the list; I tried to preserve the naming conventions during implementation to make this process easier.
+Not every RocksDB option is made available to MIRA configurations. It is very possible that the RocksDB tool can recommend changing an option that is unavailable through MIRA. Feel free to add it and create a pull request, especially if it is improving your nodes performance. You can see a complete list of available options in the codebase in [libraries/mira/src/configuration.cpp](https://github.com/openhive-network/hive/blob/master/libraries/mira/src/configuration.cpp). View the recommended options and check the list; I tried to preserve the naming conventions during implementation to make this process easier.
 
 # Conclusion
 
