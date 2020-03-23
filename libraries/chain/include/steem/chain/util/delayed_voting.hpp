@@ -36,12 +36,13 @@ class delayed_voting
 
       chain::database& db;
 
+      void erase_delayed_value( const account_object& account, uint64_t val );
+
    public:
 
       delayed_voting( chain::database& _db ) : db( _db ){}
 
       void add_delayed_value( const account_object& account, const time_point_sec& head_time, uint64_t val );
-      void erase_delayed_value( const account_object& account, uint64_t val );
       void add_votes( opt_votes_update_data_items& items, bool withdraw_executor, int64_t val, const account_object& account );
       fc::optional< uint64_t > update_votes( const opt_votes_update_data_items& items, const time_point_sec& head_time );
 

@@ -2047,7 +2047,7 @@ void database::process_vesting_withdrawals()
       {
          fc::optional< uint64_t > leftover = dv->update_votes( _votes_update_data_items, head_block_time() );
          FC_ASSERT( leftover.valid(), "Something went wrong" );
-         if( leftover.valid() && ( *leftover ) != 0 )
+         if( leftover.valid() && ( *leftover ) > 0 )
             adjust_proxied_witness_votes( from_account, -( *leftover ) );
       }
       else
