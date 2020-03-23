@@ -15,6 +15,9 @@ void delayed_voting::add_delayed_value( const account_object& account, const tim
 
 void delayed_voting::erase_delayed_value( const account_object& account, uint64_t val )
 {
+   if( account.sum_delayed_votes == 0 )
+      return;
+
    db.modify( account, [&]( account_object& a )
    {
       delayed_voting_processor::erase( a.delayed_votes, a.sum_delayed_votes, val );
@@ -64,8 +67,7 @@ fc::optional< uint64_t > delayed_voting::update_votes( const opt_votes_update_da
          if( abs_val >= item.account->sum_delayed_votes )
          {
             res = abs_val - item.account->sum_delayed_votes;
-            if( item.account->sum_delayed_votes > 0 )
-               erase_delayed_value( *item.account, item.account->sum_delayed_votes );
+            erase_delayed_value( *item.account, item.account->sum_delayed_votes );
          }
          else
             erase_delayed_value( *item.account, abs_val );

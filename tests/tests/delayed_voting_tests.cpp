@@ -1762,12 +1762,12 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
    BOOST_REQUIRE( db->get_account( "alice" ).balance == db->get_account( "carol" ).balance ); \
    BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "expected_alice_vests = " << asset_to_string( expected_alice_vests ) ); \
    CHECK_ACCOUNT_VESTS( alice ); \
-   BOOST_REQUIRE( DELAYED_VOTES( "alice0bp" ) == expected_alice0bp_delayed_votes ); \
-   BOOST_REQUIRE( VOTING_POWER( "alice" ) == WITNESS_VOTES( "alice0bp" ) ); \
+   BOOST_REQUIRE_EQUAL( DELAYED_VOTES( "alice0bp" ), expected_alice0bp_delayed_votes ); \
+   BOOST_REQUIRE_EQUAL( VOTING_POWER( "alice" ), WITNESS_VOTES( "alice0bp" ) ); \
    BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "expected_bob_vests = " << asset_to_string( expected_bob_vests ) ); \
    CHECK_ACCOUNT_VESTS( bob ); \
-   BOOST_REQUIRE( DELAYED_VOTES( "bob0bp" ) == expected_bob0bp_delayed_votes ); \
-   BOOST_REQUIRE( VOTING_POWER( "bob" ) == WITNESS_VOTES( "bob0bp" ) )
+   BOOST_REQUIRE_EQUAL( DELAYED_VOTES( "bob0bp" ), expected_bob0bp_delayed_votes ); \
+   BOOST_REQUIRE_EQUAL( VOTING_POWER( "bob" ), WITNESS_VOTES( "bob0bp" ) )
 
 #define GOTO_DAY( day ) \
    generate_days_blocks( day - today ); \
