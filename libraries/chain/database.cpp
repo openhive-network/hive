@@ -1950,15 +1950,14 @@ void database::process_vesting_withdrawals()
                share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / STEEM_100_PERCENT ).to_uint64();
                vests_deposited += to_deposit;
 
-               const auto& to_account = get< account_object, by_name >( itr->to_account );
-
                if( to_deposit > 0 )
                {
-                  asset routed = auto_vest_mode ?
-                                 asset( to_deposit, VESTS_SYMBOL ) :
-                                 asset( to_deposit, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
+                  const auto& to_account = get< account_object, by_name >( itr->to_account );
 
-                  operation vop = fill_vesting_withdraw_operation( from_account.name, to_account.name, asset( to_deposit, VESTS_SYMBOL ), routed );
+                  asset vests = asset( to_deposit, VESTS_SYMBOL );
+                  asset routed = auto_vest_mode ? vests : ( vests * cprops.get_vesting_share_price() );
+
+                  operation vop = fill_vesting_withdraw_operation( from_account.name, to_account.name, vests, routed );
 
                   pre_push_virtual_operation( vop );
 
