@@ -11,6 +11,7 @@
 #include <steem/chain/steem_objects.hpp>
 
 #include <steem/chain/util/reward.hpp>
+#include <steem/chain/util/hf23_helper.hpp>
 
 #include <steem/plugins/rc/rc_objects.hpp>
 #include <steem/plugins/rc/resource_count.hpp>
@@ -41,6 +42,233 @@ std::string asset_to_string( const asset& a )
 
 
 BOOST_FIXTURE_TEST_SUITE( hf23_tests, hf23_database_fixture )
+
+BOOST_AUTO_TEST_CASE( dump_test_03 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Creating incorrect json file" );
+
+      std::string content_00 = R"(
+                                 [{
+                                    "name": "alice",
+                                    "balance": {
+                                       "amount": "1000000",
+                                       "precision": 3,
+                                       "nai": "@@000000021"
+                                    }
+                                 }]
+                                 )";
+
+      std::string content_01 = R"([{
+                                    "name": "alice",
+                                    "balance": {
+                                       "amount": "1000000",
+                                       "precision": 3,
+                                       "nai": "@@000000021"
+                                    },
+                                    "savings_balancexxx": {
+                                       "amount": "0",
+                                       "precision": 3,
+                                       "nai": "@@000000021"
+                                    },
+                                    "savings_sbd_balance": {
+                                       "amount": "0",
+                                       "precision": 3,
+                                       "nai": "@@000000013"
+                                    },
+                                    "reward_sbd_balance": {
+                                       "amount": "0",
+                                       "precision": 3,
+                                       "nai": "@@000000013"
+                                    },
+                                    "reward_steem_balance": {
+                                       "amount": "0",
+                                       "precision": 3,
+                                       "nai": "@@000000021"
+                                    }
+                                 }])";
+
+      std::string content_02 = R"([{
+                                    "reward_sbd_balance": {
+                                       "amount": "0",
+                                       "precision": 3,
+                                       "nai": "@@000000013"
+                                    },
+                                    "reward_steem_balance": {
+                                       "amount": "0",
+                                       "precision": 3,
+                                       "nai": "@@000000021"
+                                    }
+                                 }])";
+
+      std::string content_03 = R"({ "test":{
+                                    "name": "alice",
+                                    "balance": {
+                                       "amount": "1000000",
+                                       "precision": 3,
+                                       "nai": "@@000000021"
+                                    },
+                                    "savings_balance": {
+                                       "amount": "0",
+                                       "precision": 3,
+                                       "nai": "@@000000021"
+                                    },
+                                    "sbd_balance": {
+                                       "amount": "20000",
+                                       "precision": 3,
+                                       "nai": "@@000000013"
+                                    },
+                                    "savings_sbd_balance": {
+                                       "amount": "0",
+                                       "precision": 3,
+                                       "nai": "@@000000013"
+                                    },
+                                    "reward_sbd_balance": {
+                                       "amount": "0",
+                                       "precision": 3,
+                                       "nai": "@@000000013"
+                                    },
+                                    "reward_steem_balance": {
+                                       "amount": "0",
+                                       "precision": 3,
+                                       "nai": "@@000000021"
+                                    }
+                                 }
+                                 })";
+
+      std::string content_04 = R"([ ])";
+
+      std::string content_05 = R"([ {} ])";
+
+      {
+
+         std::vector< std::string > contents{ content_00, content_01, content_02, content_03, content_04, content_05 };
+
+         const std::string path ="balances03.json";
+         fc::path _path( path.c_str() );
+
+         auto save_content = [ &_path ]( const std::string& content )
+         {
+            if( fc::exists( _path ) )
+               fc::remove( _path );
+
+            std::ofstream file( _path.string() );
+            file << content;
+            file.close();
+         };
+
+         for( auto& item : contents )
+         {
+            save_content( item );
+
+            hf23_helper::hf23_items balances = hf23_helper::restore_balances( path );
+            BOOST_REQUIRE_EQUAL( balances.size(), 0u );
+         }
+      }
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( dump_test_02 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Dumping and restoring one account balances" );
+
+      ACTORS( (alice) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      FUND( "alice", ASSET( "1000.000 TESTS" ) );
+      FUND( "alice", ASSET( "20.000 TBD" ) );
+
+      const std::string path ="balances02.json";
+      hf23_helper::hf23_items _hf23_items;
+
+      fc::path _path( path.c_str() );
+      if( fc::exists( _path ) )
+         fc::remove( _path );
+
+      const std::set< std::string > accounts{ "alice", "bob" };
+
+      {
+         hf23_helper::dump_balances( path, hf23_helper::hf23_items() );
+         hf23_helper::hf23_items balances = hf23_helper::restore_balances( path );
+         BOOST_REQUIRE_EQUAL( balances.size(), 0u );
+      }
+      {
+         hf23_helper::gather_balance( _hf23_items, "alice", db->get_account( "alice" ).balance, db->get_account( "alice" ).sbd_balance );
+         hf23_helper::dump_balances( path, _hf23_items );
+      }
+      {
+         hf23_helper::hf23_items balances = hf23_helper::restore_balances( path );
+         BOOST_REQUIRE_EQUAL( balances.size(), 1u );
+
+         auto alice_balances = hf23_helper::hf23_item::get_balances( db->get_account( "alice" ) );
+
+         hf23_helper::hf23_items cmp_balances = { alice_balances };
+
+         BOOST_REQUIRE_EQUAL( balances.size(), cmp_balances.size() );
+         BOOST_REQUIRE( balances[0] == cmp_balances[0] );
+      }
+
+      database_fixture::validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( dump_test_01 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Dumping and restoring accounts balances" );
+
+      ACTORS( (alice)(bob) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      FUND( "alice", ASSET( "1000.000 TESTS" ) );
+      FUND( "bob", ASSET( "2000.000 TESTS" ) );
+
+      FUND( "alice", ASSET( "20.000 TBD" ) );
+
+      const std::string path ="balances01.json";
+      const std::set< std::string > accounts{ "alice", "bob" };
+      hf23_helper::hf23_items _hf23_items;
+
+      {
+         vest( "alice", "alice", ASSET( "10.000 TESTS" ), alice_private_key );
+         vest( "bob", "bob", ASSET( "10.000 TESTS" ), bob_private_key );
+
+         hf23_helper::gather_balance( _hf23_items, "alice", db->get_account( "alice" ).balance, db->get_account( "alice" ).sbd_balance );
+         hf23_helper::gather_balance( _hf23_items, "bob", db->get_account( "bob" ).balance, db->get_account( "bob" ).sbd_balance );
+         hf23_helper::dump_balances( path, _hf23_items );
+      }
+      {
+         hf23_helper::hf23_items balances = hf23_helper::restore_balances( path );
+
+         auto alice_balances = hf23_helper::hf23_item::get_balances( db->get_account( "alice" ) );
+         auto bob_balances = hf23_helper::hf23_item::get_balances( db->get_account( "bob" ) );
+
+         hf23_helper::hf23_items cmp_balances = { alice_balances, bob_balances };
+
+         BOOST_REQUIRE_EQUAL( balances.size(), cmp_balances.size() );
+
+         for( uint32_t i = 0; i < cmp_balances.size(); ++i )
+         {
+            BOOST_REQUIRE( balances[i] == cmp_balances[i] );
+         }
+      }
+
+      database_fixture::validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
 
 BOOST_AUTO_TEST_CASE( basic_test_06 )
 {

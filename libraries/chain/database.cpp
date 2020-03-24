@@ -30,6 +30,7 @@
 #include <steem/chain/util/rd_setup.hpp>
 #include <steem/chain/util/nai_generator.hpp>
 #include <steem/chain/util/sps_processor.hpp>
+#include <steem/chain/util/hf23_helper.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
@@ -5227,6 +5228,8 @@ void database::apply_hardfork( uint32_t hardfork )
       elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", head_block_num()) );
    operation hardfork_vop = hardfork_operation( hardfork );
 
+   const std::string hf23_balances_path = "hf23_balances.json";
+
    pre_push_virtual_operation( hardfork_vop );
 
    switch( hardfork )
@@ -5559,6 +5562,8 @@ void database::apply_hardfork( uint32_t hardfork )
          break;
       case STEEM_HARDFORK_0_23:
       {
+         hf23_helper::hf23_items _hf23_items;
+
          for( auto account_name : hardforkprotect::get_steemit_accounts() )
          {
             const auto* account_ptr = find_account( account_name );
@@ -5568,10 +5573,19 @@ void database::apply_hardfork( uint32_t hardfork )
             asset total_transferred_sbd, total_transferred_steem, total_converted_vests, total_steem_from_vests;
             clear_account( *account_ptr, &total_transferred_sbd, &total_transferred_steem, &total_converted_vests, &total_steem_from_vests );
 
+            /*
+               Here is a bug.
+                  `total_transferred_steem` it's really transferred SBD
+                  `total_transferred_sbd` it's really transferred STEEM
+            */
+            hf23_helper::gather_balance( _hf23_items, account_name, total_transferred_sbd, total_transferred_steem );
+
             operation vop = hardfork_hive_operation( account_name, total_transferred_sbd, total_transferred_steem, total_converted_vests, total_steem_from_vests );
             push_virtual_operation( vop );
          }
          
+         hf23_helper::dump_balances( hf23_balances_path, _hf23_items );
+
          // Reset TAPOS buffer to avoid replay attack
          const auto& bs_idx = get_index< block_summary_index, by_id >();
          for( auto itr = bs_idx.begin(); itr != bs_idx.end(); ++itr )

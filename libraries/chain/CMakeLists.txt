@@ -32,6 +32,7 @@ add_library( steem_chain
              util/smt_token.cpp
              util/sps_processor.cpp
              util/sps_helper.cpp
+             util/hf23_helper.cpp
 
              ${HEADERS}
            )
