@@ -1775,6 +1775,11 @@ void database::clear_account( const account_object& account,
       remove( withdrawal );
    }
 
+   // touch HDB balances (to be sure all interests are added to balances)
+   adjust_balance( account, asset( 0, SBD_SYMBOL ) );
+   adjust_savings_balance( account, asset( 0, SBD_SYMBOL ) );
+   adjust_reward_balance( account, asset( 0, SBD_SYMBOL ) );
+
    // Remove remaining savings balances
    total_transferred_steem += account.savings_balance;
    total_transferred_sbd += account.savings_sbd_balance;
