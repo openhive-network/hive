@@ -102,13 +102,13 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
       {
          generate_blocks( db->head_block_time() + fc::hours(1).to_seconds());
          auto * ptr = find_proposal(proposal_1);
-         BOOST_REQUIRE_NE( ptr, nullptr );
+         BOOST_REQUIRE( ptr != nullptr );
          BOOST_REQUIRE_EQUAL( ptr->total_votes, 0ul );
       }
 
       generate_days_blocks( 1, true );
       auto * ptr = find_proposal(proposal_1);
-      BOOST_REQUIRE_NE( ptr, nullptr );
+      BOOST_REQUIRE( ptr != nullptr );
       BOOST_REQUIRE_EQUAL( static_cast<long>(ptr->total_votes), db->get_account("carol").vesting_shares.amount.value );
 
       validate_database();
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
       {
          generate_blocks( db->head_block_time() + fc::hours(1).to_seconds());
          ptr = find_proposal(proposal_1);
-         BOOST_REQUIRE_NE( ptr, nullptr );
+         BOOST_REQUIRE( ptr != nullptr );
          BOOST_REQUIRE_EQUAL( ptr->total_votes, 0ul );
 
          if( i == (12 * DAYS_FOR_DELAYED_VOTING))
@@ -188,25 +188,25 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
          if(i > (12 * DAYS_FOR_DELAYED_VOTING))
          {
             ptr = find_proposal(proposal_2);
-            BOOST_REQUIRE_NE( ptr, nullptr );
+            BOOST_REQUIRE( ptr != nullptr );
             BOOST_REQUIRE_EQUAL( ptr->total_votes, 0ul );
          }
       }
 
       generate_days_blocks( 1, true );
       ptr = find_proposal(proposal_1);
-      BOOST_REQUIRE_NE( ptr, nullptr );
+      BOOST_REQUIRE( ptr != nullptr );
       BOOST_REQUIRE_EQUAL( static_cast<long>(ptr->total_votes), carol_power_1 );
       
       ptr = find_proposal(proposal_2);
-      BOOST_REQUIRE_NE( ptr, nullptr );
+      BOOST_REQUIRE( ptr != nullptr );
       BOOST_REQUIRE_EQUAL( static_cast<long>(ptr->total_votes), carol_power_1 );
 
       for(int i = 0; i < ( 12 * ( DAYS_FOR_DELAYED_VOTING / 2 ) ) - 1; i++)
       {
          generate_blocks( db->head_block_time() + fc::hours(1).to_seconds());
          ptr = find_proposal(proposal_2);
-         BOOST_REQUIRE_NE( ptr, nullptr );
+         BOOST_REQUIRE( ptr != nullptr );
          BOOST_REQUIRE_EQUAL( static_cast<long>(ptr->total_votes), carol_power_1 );
       }
       
@@ -2245,6 +2245,6 @@ BOOST_AUTO_TEST_CASE( abw_scenario_01 )
 
 BOOST_AUTO_TEST_SUITE_END()
 
-//#endif // #if defined(IS_TEST_NET)
-
 #pragma GCC diagnostic pop
+
+//#endif // #if defined(IS_TEST_NET)
