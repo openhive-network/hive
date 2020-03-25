@@ -52,23 +52,23 @@ BOOST_AUTO_TEST_CASE( parse_size_test )
    BOOST_CHECK_THROW( fc::parse_size( "" ), fc::parse_error_exception );
    BOOST_CHECK_THROW( fc::parse_size( "k" ), fc::parse_error_exception );
 
-   BOOST_CHECK_EQUAL( fc::parse_size( "0" ), static_cast< size_t >( 0 ) );
-   BOOST_CHECK_EQUAL( fc::parse_size( "1" ), static_cast< size_t >( 1 ) );
-   BOOST_CHECK_EQUAL( fc::parse_size( "2" ), static_cast< size_t >( 2 ) );
-   BOOST_CHECK_EQUAL( fc::parse_size( "3" ), static_cast< size_t >( 3 ) );
-   BOOST_CHECK_EQUAL( fc::parse_size( "4" ), static_cast< size_t >( 4 ) );
+   BOOST_CHECK_EQUAL( fc::parse_size( "0" ), 0 );
+   BOOST_CHECK_EQUAL( fc::parse_size( "1" ), 1 );
+   BOOST_CHECK_EQUAL( fc::parse_size( "2" ), 2 );
+   BOOST_CHECK_EQUAL( fc::parse_size( "3" ), 3 );
+   BOOST_CHECK_EQUAL( fc::parse_size( "4" ), 4 );
 
-   BOOST_CHECK_EQUAL( fc::parse_size( "9" ),   static_cast< size_t >( 9 ) );
-   BOOST_CHECK_EQUAL( fc::parse_size( "10" ), static_cast< size_t >( 10 ) );
-   BOOST_CHECK_EQUAL( fc::parse_size( "11" ), static_cast< size_t >( 11 ) );
-   BOOST_CHECK_EQUAL( fc::parse_size( "12" ), static_cast< size_t >( 12 ) );
+   BOOST_CHECK_EQUAL( fc::parse_size( "9" ),   9 );
+   BOOST_CHECK_EQUAL( fc::parse_size( "10" ), 10 );
+   BOOST_CHECK_EQUAL( fc::parse_size( "11" ), 11 );
+   BOOST_CHECK_EQUAL( fc::parse_size( "12" ), 12 );
 
-   BOOST_CHECK_EQUAL( fc::parse_size( "314159265"), static_cast< size_t >( 314159265 ) );
-   BOOST_CHECK_EQUAL( fc::parse_size( "1k" ), static_cast< size_t >( 1024 ) );
+   BOOST_CHECK_EQUAL( fc::parse_size( "314159265"), 314159265 );
+   BOOST_CHECK_EQUAL( fc::parse_size( "1k" ), 1024 );
    BOOST_CHECK_THROW( fc::parse_size( "1a" ), fc::parse_error_exception );
-   BOOST_CHECK_EQUAL( fc::parse_size( "1kb" ), static_cast< size_t >( 1000 ) );
-   BOOST_CHECK_EQUAL( fc::parse_size( "1MiB" ), static_cast< size_t >( 1048576 ) );
-   BOOST_CHECK_EQUAL( fc::parse_size( "32G" ), static_cast< size_t >( 34359738368 ) );
+   BOOST_CHECK_EQUAL( fc::parse_size( "1kb" ), 1000 );
+   BOOST_CHECK_EQUAL( fc::parse_size( "1MiB" ), 1048576 );
+   BOOST_CHECK_EQUAL( fc::parse_size( "32G" ), 34359738368 );
 }
 
 /**

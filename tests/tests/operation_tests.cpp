@@ -7978,7 +7978,7 @@ BOOST_AUTO_TEST_CASE( claim_account_apply )
       block_id_type hbid = db->head_block_id();
       optional<signed_block> block = db->fetch_block_by_id(hbid);
       BOOST_REQUIRE( block.valid() );
-      BOOST_CHECK_EQUAL( block->transactions.size(), static_cast< size_t >( 1 ) );
+      BOOST_CHECK_EQUAL( block->transactions.size(), 1 );
       BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 3 );
 
       int64_t new_value = prev_c_subs - STEEM_ACCOUNT_SUBSIDY_PRECISION;     // Usage applied before decay

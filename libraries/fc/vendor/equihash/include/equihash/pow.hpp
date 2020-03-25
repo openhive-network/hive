@@ -72,7 +72,7 @@ namespace _POW{
     class Tuple {
     public:
         std::vector<uint32_t> blocks;
-        Input reference = 0;
+        Input reference;
         Tuple(unsigned i) { blocks.resize(i); }
         Tuple& operator=(const Tuple &r) {
             blocks = r.blocks;
