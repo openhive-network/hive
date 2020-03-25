@@ -51,6 +51,19 @@
 
 #include <stdlib.h>
 
+long hf24_time()
+  {
+  long hf24Time = 1585746000; // 2020-04-01 01:00:00
+  const char* value = getenv("STEEM_HF24_TIME");
+  if(value != nullptr)
+    {
+       hf24Time = atol(value);
+       ilog("STEEM_HF24_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hf24Time));
+    }
+
+  return hf24Time;
+  }
+
 long hf23_time()
   {
   long hf23Time = 1584712800; // Friday, 20 March 2020 14:00:00 GMT
@@ -5125,10 +5138,13 @@ void database::init_hardforks()
    FC_ASSERT( STEEM_HARDFORK_0_23 == 23, "Invalid hardfork configuration" );
    _hardfork_versions.times[ STEEM_HARDFORK_0_23 ] = fc::time_point_sec( STEEM_HARDFORK_0_23_TIME );
    _hardfork_versions.versions[ STEEM_HARDFORK_0_23 ] = STEEM_HARDFORK_0_23_VERSION;
-#ifdef IS_TEST_NET
    FC_ASSERT( STEEM_HARDFORK_0_24 == 24, "Invalid hardfork configuration" );
    _hardfork_versions.times[ STEEM_HARDFORK_0_24 ] = fc::time_point_sec( STEEM_HARDFORK_0_24_TIME );
    _hardfork_versions.versions[ STEEM_HARDFORK_0_24 ] = STEEM_HARDFORK_0_24_VERSION;
+#ifdef IS_TEST_NET
+   FC_ASSERT( STEEM_HARDFORK_0_25 == 25, "Invalid hardfork configuration" );
+   _hardfork_versions.times[ STEEM_HARDFORK_0_25 ] = fc::time_point_sec( STEEM_HARDFORK_0_25_TIME );
+   _hardfork_versions.versions[ STEEM_HARDFORK_0_25 ] = STEEM_HARDFORK_0_25_VERSION;
 #endif
 
    const auto& hardforks = get_hardfork_property_object();
@@ -5561,6 +5577,10 @@ void database::apply_hardfork( uint32_t hardfork )
                p.block_id = block_id_type();
             });
          }
+         break;
+      }
+      case STEEM_HARDFORK_0_24:
+      {
          break;
       }
       case STEEM_SMT_HARDFORK:
