@@ -1775,10 +1775,13 @@ void database::clear_account( const account_object& account,
       remove( withdrawal );
    }
 
-   // touch HDB balances (to be sure all interests are added to balances)
-   adjust_balance( account, asset( 0, SBD_SYMBOL ) );
-   adjust_savings_balance( account, asset( 0, SBD_SYMBOL ) );
-   adjust_reward_balance( account, asset( 0, SBD_SYMBOL ) );
+   // Touch SDB balances (to be sure all interests are added to balances)
+   if( has_hardfork( STEEM_HARDFORK_0_24 ) )
+   {
+      adjust_balance( account, asset( 0, SBD_SYMBOL ) );
+      adjust_savings_balance( account, asset( 0, SBD_SYMBOL ) );
+      adjust_reward_balance( account, asset( 0, SBD_SYMBOL ) );
+   }
 
    // Remove remaining savings balances
    total_transferred_steem += account.savings_balance;
@@ -5546,8 +5549,8 @@ void database::apply_hardfork( uint32_t hardfork )
             if( account_ptr == nullptr )
                continue;
 
-            asset total_transferred_steem, total_transferred_sbd, total_converted_vests, total_steem_from_vests;
-            clear_account( *account_ptr, &total_transferred_steem, &total_transferred_sbd, &total_converted_vests, &total_steem_from_vests );
+            asset total_transferred_sbd, total_transferred_steem, total_converted_vests, total_steem_from_vests;
+            clear_account( *account_ptr, &total_transferred_sbd, &total_transferred_steem, &total_converted_vests, &total_steem_from_vests );
 
             operation vop = hardfork_hive_operation( account_name, total_transferred_sbd, total_transferred_steem, total_converted_vests, total_steem_from_vests );
             push_virtual_operation( vop );
