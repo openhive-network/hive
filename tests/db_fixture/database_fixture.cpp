@@ -1068,15 +1068,6 @@ void hf23_database_fixture::delegate_vest( const string& delegator, const string
    push_transaction( op, key );
 }
 
-void hf23_database_fixture::clear_delayed_votes( const account_object& account )
-{
-   db->modify( account, [&]( account_object& a )
-   {
-      a.delayed_votes.clear();
-      a.sum_delayed_votes = 0;
-   } );
-}
-
 void delayed_vote_database_fixture::push_transaction( const operation& op, const fc::ecc::private_key& key )
 {
    signed_transaction tx;
