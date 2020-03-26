@@ -126,6 +126,10 @@ tests = [
       "params": ["temp","",10]
    },
    {
+      "method": "condenser_api.get_vesting_delegatees",
+      "params": ["temp","",10]
+   },
+   {
       "method": "condenser_api.get_expiring_vesting_delegations",
       "params": ["temp","2016-3-24T00:00:00",10]
    },

@@ -77,6 +77,7 @@ namespace detail
             (get_savings_withdraw_from)
             (get_savings_withdraw_to)
             (get_vesting_delegations)
+            (get_vesting_delegatees)
             (get_expiring_vesting_delegations)
             (get_witnesses)
             (get_conversion_requests)
@@ -1059,6 +1060,27 @@ namespace detail
 
       return result;
    }
+
+    DEFINE_API_IMPL( condenser_api_impl, get_vesting_delegatees )
+    {
+       FC_ASSERT( args.size() == 2 || args.size() == 3, "Expected 2-3 arguments, was ${n}", ("n", args.size()) );
+
+       database_api::list_vesting_delegations_args a;
+       account_name_type account = args[0].as< account_name_type >();
+       a.start = fc::variant( (vector< variant >){ args[0], args[1] } );
+       a.limit = args.size() == 3 ? args[2].as< uint32_t >() : 100;
+       a.order = database_api::by_delegation;
+
+       auto delegations = _database_api->list_vesting_delegations( a ).delegations;
+       get_vesting_delegatees_return result;
+
+       for( auto itr = delegations.begin(); itr != delegations.end() && itr->delegatee == account; ++itr )
+       {
+           result.push_back( api_vesting_delegation_object( *itr ) );
+       }
+
+       return result;
+    }
 
    DEFINE_API_IMPL( condenser_api_impl, get_expiring_vesting_delegations )
    {
@@ -2253,6 +2275,7 @@ DEFINE_READ_APIS( condenser_api,
    (get_savings_withdraw_from)
    (get_savings_withdraw_to)
    (get_vesting_delegations)
+   (get_vesting_delegatees)
    (get_expiring_vesting_delegations)
    (get_witnesses)
    (get_conversion_requests)
