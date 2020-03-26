@@ -1077,7 +1077,7 @@ void delayed_vote_database_fixture::push_transaction( const operation& op, const
    db->push_transaction( tx, 0 );
 }
 
-void delayed_vote_database_fixture::witness_vote( const std::string& account, const std::string& witness, bool approve, const fc::ecc::private_key& key )
+void delayed_vote_database_fixture::witness_vote( const std::string& account, const std::string& witness, const bool approve, const fc::ecc::private_key& key )
 {
    account_witness_vote_operation op;
 
@@ -1130,7 +1130,7 @@ void delayed_vote_database_fixture::proxy( const string& account, const string& 
    push_transaction( op, key );
 }
 
-int64_t delayed_vote_database_fixture::get_votes( const string& witness_name )
+signed_delayed_vote_count_type delayed_vote_database_fixture::get_votes( const string& witness_name )
 {
    const auto& idx = db->get_index< witness_index >().indices().get< by_name >();
    auto found = idx.find( witness_name );
@@ -1155,7 +1155,7 @@ int32_t delayed_vote_database_fixture::get_user_voted_witness_count( const accou
    return res;
 }
 
-asset delayed_vote_database_fixture::to_vest( const asset& liquid, bool to_reward_balance )
+asset delayed_vote_database_fixture::to_vest( const asset& liquid, const bool to_reward_balance )
 {
    const auto& cprops = db->get_dynamic_global_properties();
    price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price();
@@ -1186,7 +1186,7 @@ fc::optional< size_t > delayed_vote_database_fixture::get_position_in_delayed_vo
 }
 
 template< typename COLLECTION >
-bool delayed_vote_database_fixture::check_collection( const COLLECTION& collection, size_t idx, const fc::time_point_sec& time, uint64_t val )
+bool delayed_vote_database_fixture::check_collection( const COLLECTION& collection, size_t idx, const fc::time_point_sec& time, const delayed_vote_count_type val )
 {
    if( idx >= collection.size() )
       return false;
@@ -1199,7 +1199,7 @@ bool delayed_vote_database_fixture::check_collection( const COLLECTION& collecti
 }
 
 template< typename COLLECTION >
-bool delayed_vote_database_fixture::check_collection( const COLLECTION& collection, bool withdraw_executor, int64_t val, const account_object& obj )
+bool delayed_vote_database_fixture::check_collection( const COLLECTION& collection, const bool withdraw_executor, const signed_delayed_vote_count_type val, const account_object& obj )
 {
    auto found = collection->find( { withdraw_executor, val, &obj } );
    if( found == collection->end() )
@@ -1214,9 +1214,9 @@ using dvd_deque = std::deque< delayed_votes_data >;
 using bip_dvd_deque = chainbase::t_deque< delayed_votes_data >;
 
 template fc::optional< size_t > delayed_vote_database_fixture::get_position_in_delayed_voting_array< bip_dvd_deque >( const bip_dvd_deque& collection, size_t day );
-template bool delayed_vote_database_fixture::check_collection< dvd_deque >( const dvd_deque& collection, size_t idx, const fc::time_point_sec& time, uint64_t val );
-template bool delayed_vote_database_fixture::check_collection< bip_dvd_deque >( const bip_dvd_deque& collection, size_t idx, const fc::time_point_sec& time, uint64_t val );
-template bool delayed_vote_database_fixture::check_collection< delayed_voting::opt_votes_update_data_items >( const delayed_voting::opt_votes_update_data_items& collection, bool withdraw_executor, int64_t val, const account_object& obj );
+template bool delayed_vote_database_fixture::check_collection< dvd_deque >( const dvd_deque& collection, size_t idx, const fc::time_point_sec& time, const delayed_vote_count_type val );
+template bool delayed_vote_database_fixture::check_collection< bip_dvd_deque >( const bip_dvd_deque& collection, size_t idx, const fc::time_point_sec& time, const delayed_vote_count_type val );
+template bool delayed_vote_database_fixture::check_collection< delayed_voting::opt_votes_update_data_items >( const delayed_voting::opt_votes_update_data_items& collection, const bool withdraw_executor, const signed_delayed_vote_count_type val, const account_object& obj );
 
 json_rpc_database_fixture::json_rpc_database_fixture()
 {
