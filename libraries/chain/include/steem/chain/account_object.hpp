@@ -115,7 +115,7 @@ namespace steem { namespace chain {
 
          using t_delayed_votes = t_deque< delayed_votes_data >;
          t_delayed_votes   delayed_votes; //holds VESTS per day - not used to voting
-         uint64_t          sum_delayed_votes = 0;//total sum of VESTS - not used to voting ( helper variable for performance )
+         delayed_vote_count_type sum_delayed_votes = 0;//total sum of VESTS - not used to voting ( helper variable for performance )
 
          time_point_sec get_the_earliest_time() const
          {
