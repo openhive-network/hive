@@ -330,28 +330,33 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
          generate_block();
 
+         auto _v1 = vamount( _1 );
          vest( "alice", "alice",    _1, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_0, "alice", day, vamount( _1 ) ) );
+         BOOST_REQUIRE( cmp( proxy_0, "alice", day, _v1 ) );
          fill( proxy_0, "alice", day );
          generate_block();
 
+         auto _v2 = vamount( _2 );
          vest( "alice", "bob",      _2, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_0, "bob", day, vamount( _2 ) ) );
+         BOOST_REQUIRE( cmp( proxy_0, "bob", day, _v2 ) );
          fill( proxy_0, "bob", day );
          generate_block();
 
+         auto _v3 = vamount( _3 );
          vest( "alice", "celine",   _3, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_0, "celine", day, vamount( _3 ) ) );
+         BOOST_REQUIRE( cmp( proxy_0, "celine", day, _v3 ) );
          fill( proxy_0, "celine", day );
          generate_block();
 
+         auto _v4 = vamount( _4 );
          vest( "alice", "witness1",  _4, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_0, "witness1", day, vamount( _4 ) ) );
+         BOOST_REQUIRE( cmp( proxy_0, "witness1", day, _v4 ) );
          fill( proxy_0, "witness1", day );
          generate_block();
 
+         auto _v5 = vamount( _5 );
          vest( "alice", "witness2",  _5, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_0, "witness2", day, vamount( _5 ) ) );
+         BOOST_REQUIRE( cmp( proxy_0, "witness2", day, _v5 ) );
          fill( proxy_0, "witness2", day );
          generate_block();
 
@@ -411,35 +416,40 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          start_time += STEEM_DELAYED_VOTING_INTERVAL_SECONDS;
          generate_blocks( start_time, true );
 
+         auto _v1 = vamount( _1 );
          vest( "alice", "alice",    _1, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_1, "alice", day, vamount( _1 ) ) );
+         BOOST_REQUIRE( cmp( proxy_1, "alice", day, _v1 ) );
          fill( proxy_1, "alice", day );
          generate_block();
-         generate_blocks( start_time + fc::hours( 1 ), true );
+         generate_blocks( start_time + fc::minutes( 1 ), true );
 
+         auto _v2 = vamount( _2 );
          vest( "alice", "bob",      _2, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_1, "bob", day, vamount( _2 ) ) );
+         BOOST_REQUIRE( cmp( proxy_1, "bob", day, _v2 ) );
          fill( proxy_1, "bob", day );
          generate_block();
-         generate_blocks( start_time + fc::hours( 2 ), true );
+         generate_blocks( start_time + fc::minutes( 2 ), true );
 
+         _v1 = vamount( _1 );
          vest( "alice", "alice",    _1, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_1, "alice", day, vamount( _1 ) ) );
+         BOOST_REQUIRE( cmp( proxy_1, "alice", day, _v1 ) );
          fill( proxy_1, "alice", day );
          generate_block();
-         generate_blocks( start_time + fc::hours( 3 ), true );
+         generate_blocks( start_time + fc::minutes( 3 ), true );
 
+         _v2 = vamount( _2 );
          vest( "alice", "bob",      _2, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_1, "bob", day, vamount( _2 ) ) );
+         BOOST_REQUIRE( cmp( proxy_1, "bob", day, _v2 ) );
          fill( proxy_1, "bob", day );
          generate_block();
-         generate_blocks( start_time + fc::hours( 4 ), true );
+         generate_blocks( start_time + fc::minutes( 4 ), true );
 
+         _v1 = vamount( _1 );
          vest( "alice", "celine",   _1, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_1, "celine", day, vamount( _1 ) ) );
+         BOOST_REQUIRE( cmp( proxy_1, "celine", day, _v1 ) );
          fill( proxy_1, "celine", day );
          generate_block();
-         generate_blocks( start_time + fc::hours( 5 ), true );
+         generate_blocks( start_time + fc::minutes( 5 ), true );
 
          BOOST_REQUIRE( get_votes( "witness1" ) == votes_witness1 );
          BOOST_REQUIRE( get_votes( "witness2" ) == votes_witness2 );
@@ -454,17 +464,19 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          start_time += STEEM_DELAYED_VOTING_INTERVAL_SECONDS;
          generate_blocks( start_time, true );
 
+         auto _v5 = vamount( _5 );
          vest( "alice", "alice",    _5, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_2, "alice", day, vamount( _5 ) ) );
+         BOOST_REQUIRE( cmp( proxy_2, "alice", day, _v5 ) );
          fill( proxy_2, "alice", day );
          generate_block();
-         generate_blocks( start_time + fc::minutes( 10 ), true );
+         generate_blocks( start_time + fc::minutes( 6 ), true );
 
+         auto _v2 = vamount( _2 );
          vest( "alice", "celine",   _2, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_2, "celine", day, vamount( _2 ) ) );
+         BOOST_REQUIRE( cmp( proxy_2, "celine", day, _v2 ) );
          fill( proxy_2, "celine", day );
          generate_block();
-         generate_blocks( start_time + fc::hours( 15 ), true );
+         generate_blocks( start_time + fc::minutes( 7 ), true );
 
          BOOST_REQUIRE( get_votes( "witness1" ) == votes_witness1 );
          BOOST_REQUIRE( get_votes( "witness2" ) == votes_witness2 );
@@ -480,23 +492,26 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          start_time += 13 * STEEM_DELAYED_VOTING_INTERVAL_SECONDS;
          generate_blocks( start_time, true );
 
+         auto _v2 = vamount( _2 );
          vest( "alice", "alice",    _2, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_15, "alice", day, vamount( _2 ) ) );
+         BOOST_REQUIRE( cmp( proxy_15, "alice", day, _v2 ) );
          fill( proxy_15, "alice", day );
          generate_block();
-         generate_blocks( start_time + fc::minutes( 30 ), true );
+         generate_blocks( start_time + fc::minutes( 8 ), true );
 
+         auto _v3 = vamount( _3 );
          vest( "alice", "bob",   _3, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_15, "bob", day, vamount( _3 ) ) );
+         BOOST_REQUIRE( cmp( proxy_15, "bob", day, _v3 ) );
          fill( proxy_15, "bob", day );
          generate_block();
-         generate_blocks( start_time + fc::hours( 11 ), true );
+         generate_blocks( start_time + fc::minutes( 9 ), true );
 
+         auto _v4 = vamount( _4 );
          vest( "alice", "celine",   _4, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_15, "celine", day, vamount( _4 ) ) );
+         BOOST_REQUIRE( cmp( proxy_15, "celine", day, _v4 ) );
          fill( proxy_15, "celine", day );
          generate_block();
-         generate_blocks( start_time + fc::hours( 23 ), true );
+         generate_blocks( start_time + fc::minutes( 10 ), true );
 
          BOOST_REQUIRE( get_votes( "witness1" ) == votes_witness1 );
          BOOST_REQUIRE( get_votes( "witness2" ) == votes_witness2 );
@@ -582,6 +597,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
       }
 
       proxy_data proxy_30;
+
       {
          /*
             *****`+ 30 days 5h`*****
@@ -592,26 +608,70 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          auto _start_time = start_time + fc::hours( 5 );
          generate_blocks( _start_time, true );
 
+         auto _v5 = vamount( _5 );
          vest( "alice", "alice",    _5, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_30, "alice", day, vamount( _5 ) ) );
+         BOOST_REQUIRE( cmp( proxy_30, "alice", day, _v5 ) );
          fill( proxy_30, "alice", day );
          generate_block();
-         generate_blocks( _start_time + fc::minutes( 30 ), true );
+         generate_blocks( _start_time + fc::minutes( 11 ), true );
 
+         auto _v1 = vamount( _1 );
          vest( "alice", "bob",   _1, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_30, "bob", day, vamount( _1 ) ) );
+         BOOST_REQUIRE( cmp( proxy_30, "bob", day, _v1 ) );
          fill( proxy_30, "bob", day );
          generate_block();
-         generate_blocks( _start_time + fc::minutes( 31 ), true );
+         generate_blocks( _start_time + fc::minutes( 12 ), true );
 
+         auto _v2 = vamount( _2 );
          vest( "alice", "celine",   _2, alice_private_key );
-         BOOST_REQUIRE( cmp( proxy_30, "celine", day, vamount( _2 ) ) );
+         BOOST_REQUIRE( cmp( proxy_30, "celine", day, _v2 ) );
          fill( proxy_30, "celine", day );
          generate_block();
-         generate_blocks( _start_time + fc::minutes( 32 ), true );
+         generate_blocks( _start_time + fc::minutes( 13 ), true );
 
          BOOST_REQUIRE( get_votes( "witness1" ) == ( votes_witness1 + witness1_result_00 ) );
          BOOST_REQUIRE( get_votes( "witness2" ) == ( votes_witness2 + witness2_result_00 ) );
+      }
+
+      auto witness1_result_01 = calculate_votes( 1/*nr_day_after_30days_interval*/, "witness1" );
+      auto witness2_result_01 = calculate_votes( 1/*nr_day_after_30days_interval*/, "witness2" );
+
+      //Displaying diagnostic data.
+      for( auto& item : pd_map )
+      {
+         std::string str_day = "day: " +std::to_string( item.first/*day number*/ );
+         proxy_data& voters = item.second;//std::map< std::string, delayed_votes_data >;
+         std::string str_voters;
+         std::string c = std::string( " : " );
+         for( auto& voter : voters )
+            str_voters += std::string( "(" ) + voter.first + c + std::to_string( voter.second.val ) + c + voter.second.time.to_iso_string() + std::string( ")" );
+         std::string str = str_day + str_voters;
+         idump( (str) );
+      }
+
+      {
+         /*
+            *****`31 days lasted`*****
+         */
+         day = 31;
+         start_time += STEEM_DELAYED_VOTING_INTERVAL_SECONDS;
+         generate_blocks( start_time + fc::hours( 23 ) + fc::minutes( 59 ), true );
+
+         BOOST_REQUIRE_GT( witness1_result_01, 0 );
+         BOOST_REQUIRE_GT( witness2_result_01, 0 );
+
+         idump( (db->get_account( "alice" ).witness_vote_weight().value) );
+         idump( (db->get_account( "bob" ).witness_vote_weight().value) );
+         idump( (db->get_account( "celine" ).witness_vote_weight().value) );
+         idump( (votes_witness1) );
+         idump( (witness1_result_00) );
+         idump( (witness1_result_01) );
+         BOOST_REQUIRE_EQUAL( get_votes( "witness1" ), ( votes_witness1 + witness1_result_00 + witness1_result_01 ) );
+
+         idump( (votes_witness2) );
+         idump( (witness2_result_00) );
+         idump( (witness2_result_01) );
+         BOOST_REQUIRE_EQUAL( get_votes( "witness2" ), ( votes_witness2 + witness2_result_00 + witness2_result_01 ) );
       }
 
       validate_database();
@@ -621,11 +681,6 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
 /*
    ==============================TO DO==============================
-
-   *****`+ 30 days 5h`*****
-   `alice`  makes vests
-   `bob`    makes vests
-   `celine` makes vests
 
    *****`+ 31 days`*****
    all checks

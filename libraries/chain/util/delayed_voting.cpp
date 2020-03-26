@@ -91,6 +91,8 @@ void delayed_voting::run( const block_notification& note )
    {
       uint64_t _val = current->delayed_votes.begin()->val;
 
+      dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", current->name )( "dv", _val )( "time", current->delayed_votes.begin()->time.to_iso_string() ) );
+
       operation vop = delayed_voting_operation( current->name, _val );
       /// Push vop to be recorded by other parts (like AH plugin etc.)
       db.push_virtual_operation( vop );
