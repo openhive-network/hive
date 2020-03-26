@@ -8,9 +8,7 @@ namespace steem{ namespace plugins { namespace p2p {
 const std::vector< std::string > default_seeds;
 #else
 const std::vector< std::string > default_seeds = {
-   "seed-east.steemit.com:2001",          // steemit
-   "seed-central.steemit.com:2001",       // steemit
-   "seed-west.steemit.com:2001",          // steemit
+   "api.hive.blog:2001",                  // hive.blog
    "52.74.152.79:2001",                   // smooth.witness
    "anyx.io:2001",                        // anyx
    "seed.liondani.com:2016",              // liondani
@@ -21,7 +19,6 @@ const std::vector< std::string > default_seeds = {
    "seed.roelandp.nl:2001",               // roelandp
    "seed.timcliff.com:2001",              // timcliff
    "steemseed.clayop.com:2001",           // clayop
-   "seed.steemviz.com:2001",              // ausbitbank
    "steem-seed.lukestokes.info:2001",     // lukestokes
    "seed.steemian.info:2001",             // drakos
    "seed.followbtcnews.com:2001",         // followbtcnews
