@@ -101,3 +101,7 @@ tests/performance_test
 build/
 build.*/
 build-*/
+build_*/
+/.vs
+/out/isenseconfig/Linux-Release
+

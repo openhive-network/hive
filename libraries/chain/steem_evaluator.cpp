@@ -387,7 +387,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 
    if( !_db.has_hardfork( STEEM_HARDFORK_0_20__1762 ) && o.fee.amount > 0 )
    {
-      _db.create_vesting( new_account, o.fee );
+      _db.create_vesting< true/*ALLOW_VOTE*/ >( new_account, o.fee );
    }
 }
 
@@ -500,7 +500,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 
    if( !_db.has_hardfork( STEEM_HARDFORK_0_20__1762 ) && o.fee.amount > 0 )
    {
-      _db.create_vesting( new_account, o.fee );
+      _db.create_vesting< true/*ALLOW_VOTE*/ >( new_account, o.fee );
    }
 }
 
@@ -1198,7 +1198,9 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
    }
 
    _db.adjust_balance( from_account, -o.amount );
-   _db.create_vesting( to_account, o.amount );
+
+   //The comment about `ALLOW_VOTE` is in `create_vesting2` method
+   _db.create_vesting< false/*ALLOW_VOTE*/ >( to_account, o.amount );
 }
 
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
@@ -1357,7 +1359,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
    /// remove all current votes
    std::array<share_type, STEEM_MAX_PROXY_RECURSION_DEPTH+1> delta;
-   delta[0] = -account.vesting_shares.amount;
+   delta[0] = -account.get_real_vesting_shares().amount;
    for( int i = 0; i < STEEM_MAX_PROXY_RECURSION_DEPTH; ++i )
       delta[i+1] = -account.proxied_vsf_votes[i];
    _db.adjust_proxied_witness_votes( account, delta );
@@ -1452,7 +1454,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
             _db.adjust_proxied_witness_votes( voter, -voter.witness_vote_weight() );
       } else  {
          _db.modify( witness, [&]( witness_object& w ) {
-             w.votes -= voter.witness_vote_weight();
+            w.votes -= voter.witness_vote_weight();
          });
       }
       _db.modify( voter, [&]( account_object& a ) {
@@ -2396,7 +2398,7 @@ void pow_apply( database& db, Operation o )
    if( db.head_block_num() < STEEM_START_MINER_VOTING_BLOCK )
       db.adjust_balance( inc_witness, pow_reward );
    else
-      db.create_vesting( inc_witness, pow_reward );
+      db.create_vesting< true/*ALLOW_VOTE*/ >( inc_witness, pow_reward );
 }
 
 void pow_evaluator::do_apply( const pow_operation& o ) {
@@ -2496,7 +2498,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
       db.adjust_supply( inc_reward, true );
 
       const auto& inc_witness = db.get_account( dgp.current_witness );
-      db.create_vesting( inc_witness, inc_reward );
+      db.create_vesting< true/*ALLOW_VOTE*/ >( inc_witness, inc_reward );
    }
 }
 

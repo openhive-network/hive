@@ -82,7 +82,6 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       auto receiver = "bob";
 
       auto start_date = db->head_block_time();
-      auto end_date = start_date + fc::days( 2 );
 
       auto daily_pay = ASSET( "48.000 TBD" );
       auto hourly_pay = ASSET( "1.996 TBD" );// hourly_pay != ASSET( "2.000 TBD" ) because lack of rounding
@@ -92,6 +91,14 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       FUND( STEEM_TREASURY_ACCOUNT, ASSET( "5000.000 TBD" ) );
 
       auto voter_01 = "carol";
+
+      vest(STEEM_INIT_MINER_NAME, voter_01, ASSET( "1.000 TESTS" ));
+
+      //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
+      start_date += fc::seconds( STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+      generate_blocks( start_date );
+
+      auto end_date = start_date + fc::days( 2 );
       //=====================preparing=====================
 
       //Needed basic operations
@@ -99,9 +106,6 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       generate_blocks( 1 );
 
       vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
-      generate_blocks( 1 );
-
-      vest(STEEM_INIT_MINER_NAME, voter_01, ASSET( "1.000 TESTS" ));
       generate_blocks( 1 );
 
       //skipping interest generating is necessary
@@ -188,6 +192,11 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
 
       auto start_date = db->head_block_time();
       const auto end_time_shift = fc::hours( 5 );
+
+      //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
+      start_date += fc::seconds( STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+      generate_blocks( start_date );
+
       auto end_date = start_date + end_time_shift;
 
       auto daily_pay = ASSET( "24.000 TBD" );
@@ -375,6 +384,12 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       }
 
       auto start_date = db->head_block_time();
+
+      //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
+      start_date += fc::seconds( STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+      generate_blocks( start_date );
+      generate_block();
+
       uint16_t interval = 0;
       std::vector< fc::microseconds > end_time_shift = { fc::hours( 1 ), fc::hours( 2 ), fc::hours( 3 ), fc::hours( 4 ) };
       auto end_date = start_date + end_time_shift[ 3 ];
@@ -472,7 +487,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
          `tester02` - got payout, because voted for his proposal
       */
       ilog("");
-      payment_checker( { ASSET( "2.994 TBD" ), ASSET( "0.998 TBD" ), ASSET( "2082.368 TBD" ) } );
+      payment_checker( { ASSET( "2.994 TBD" ), ASSET( "0.998 TBD" ), ASSET( "2082.369 TBD" ) } );
       //ideally: ASSET( "3.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "2082.346 TBD" ) but there is lack of rounding
 
       {
@@ -495,7 +510,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
          `tester02` - got payout, because voted for his proposal
       */
       ilog("");
-      payment_checker( { ASSET( "2.994 TBD" ), ASSET( "0.998 TBD" ), ASSET( "4164.873 TBD" ) } );
+      payment_checker( { ASSET( "2.994 TBD" ), ASSET( "0.998 TBD" ), ASSET( "4164.874 TBD" ) } );
       //ideally: ASSET( "3.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "4164.824 TBD" ) but there is lack of rounding
 
       validate_database();
@@ -999,27 +1014,6 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
    }
    FC_LOG_AND_RETHROW()
 }
-
-
-struct create_proposal_data {
-      std::string creator    ;
-      std::string receiver   ;
-      fc::time_point_sec start_date ;
-      fc::time_point_sec end_date   ;
-      steem::protocol::asset daily_pay ;
-      std::string subject ;
-      std::string url     ;
-
-      create_proposal_data(fc::time_point_sec _start) {
-         creator    = "alice";
-         receiver   = "bob";
-         start_date = _start     + fc::days( 1 );
-         end_date   = start_date + fc::days( 2 );
-         daily_pay  = asset( 100, SBD_SYMBOL );
-         subject    = "hello";
-         url        = "http:://something.html";
-      }
-};
 
 BOOST_AUTO_TEST_CASE( create_proposal_000 )
 {
@@ -2916,6 +2910,9 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       }
 
       auto start_time = db->head_block_time();
+      //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
+      start_time += fc::seconds( STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+      generate_blocks( start_time );
 
       const auto start_time_shift = fc::hours( 10 );
       const auto end_time_shift = fc::hours( 1 );
@@ -2962,6 +2959,9 @@ BOOST_AUTO_TEST_CASE( generating_payments )
 
          auto after_tbd = account.sbd_balance;
          auto before_tbd = before_tbds[ item.account ];
+         idump( (before_tbd) );
+         idump( (after_tbd) );
+         idump( (paid) );
          BOOST_REQUIRE( before_tbd == after_tbd - paid );
       }
 
