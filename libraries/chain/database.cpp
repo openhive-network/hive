@@ -1785,6 +1785,12 @@ void database::clear_account( const account_object& account,
          a.next_vesting_withdrawal = fc::time_point_sec::maximum();
          a.to_withdraw = 0;
          a.withdrawn = 0;
+
+         if( has_hardfork( STEEM_HARDFORK_0_24 ) )
+         {
+            a.delayed_votes.clear();
+            a.sum_delayed_votes = 0;
+         }
       } );
 
       adjust_balance( treasury_account, asset( converted_steem, STEEM_SYMBOL ) );

@@ -209,8 +209,11 @@ struct database_fixture {
 #ifdef STEEM_ENABLE_SMT
    static asset_symbol_type get_new_smt_symbol( uint8_t token_decimal_places, chain::database* db );
 #endif
-   static const uint16_t minimum_shared_file_size_in_mb = 64;
-   void open_database( uint16_t shared_file_size_in_mb = minimum_shared_file_size_in_mb );
+
+   static const uint16_t shared_file_size_in_mb_64 = 64;
+   static const uint16_t shared_file_size_in_mb_512 = 512;
+
+   void open_database( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 );
    void generate_block(uint32_t skip = 0,
                                const fc::ecc::private_key& key = generate_private_key("init_key"),
                                int miss_blocks = 0);
@@ -278,7 +281,7 @@ struct database_fixture {
 
 struct clean_database_fixture : public database_fixture
 {
-   clean_database_fixture( uint16_t shared_file_size_in_mb = minimum_shared_file_size_in_mb );
+   clean_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
    virtual ~clean_database_fixture();
 
    void resize_shared_mem( uint64_t size );
@@ -337,7 +340,7 @@ using smt_database_fixture_for_plugin = t_smt_database_fixture< database_fixture
 
 struct sps_proposal_database_fixture : public virtual clean_database_fixture
 {
-   sps_proposal_database_fixture( uint16_t shared_file_size_in_mb = minimum_shared_file_size_in_mb )
+   sps_proposal_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
                            : clean_database_fixture( shared_file_size_in_mb ){}
    virtual ~sps_proposal_database_fixture(){}
 
@@ -403,14 +406,12 @@ struct hf23_database_fixture : public clean_database_fixture
 
    public:
 
-      hf23_database_fixture( uint16_t shared_file_size_in_mb = minimum_shared_file_size_in_mb )
+      hf23_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
                               : clean_database_fixture( shared_file_size_in_mb ){}
       virtual ~hf23_database_fixture(){}
 
       void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
       void delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key );
-
-      void clear_delayed_votes( const account_object& account );
 };
 
 struct delayed_vote_database_fixture : public virtual clean_database_fixture
