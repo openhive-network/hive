@@ -5,7 +5,7 @@ namespace steem { namespace chain {
 
 using steem::protocol::asset;
 
-void delayed_voting::add_delayed_value( const account_object& account, const time_point_sec& head_time, uint64_t val )
+void delayed_voting::add_delayed_value( const account_object& account, const time_point_sec& head_time, const delayed_vote_count_type val )
 {
    db.modify( account, [&]( account_object& a )
    {
@@ -13,7 +13,7 @@ void delayed_voting::add_delayed_value( const account_object& account, const tim
    } );
 }
 
-void delayed_voting::erase_delayed_value( const account_object& account, uint64_t val )
+void delayed_voting::erase_delayed_value( const account_object& account, const delayed_vote_count_type val )
 {
    if( account.sum_delayed_votes == 0 )
       return;
@@ -24,7 +24,7 @@ void delayed_voting::erase_delayed_value( const account_object& account, uint64_
    } );
 }
 
-void delayed_voting::add_votes( opt_votes_update_data_items& items, bool withdraw_executor, int64_t val, const account_object& account )
+void delayed_voting::add_votes( opt_votes_update_data_items& items, const bool withdraw_executor, const signed_delayed_vote_count_type val, const account_object& account )
 {
    if( !items.valid() || val == 0 )
       return;
@@ -42,12 +42,12 @@ void delayed_voting::add_votes( opt_votes_update_data_items& items, bool withdra
    }
 }
 
-fc::optional< uint64_t > delayed_voting::update_votes( const opt_votes_update_data_items& items, const time_point_sec& head_time )
+fc::optional< delayed_vote_count_type > delayed_voting::update_votes( const opt_votes_update_data_items& items, const time_point_sec& head_time )
 {
    if( !items.valid() )
-      return fc::optional< uint64_t >();
+      return fc::optional< delayed_vote_count_type >();
 
-   uint64_t res = 0;
+   delayed_vote_count_type res{ 0ul };
 
    for( auto& item : *items )
    {
@@ -63,7 +63,7 @@ fc::optional< uint64_t > delayed_voting::update_votes( const opt_votes_update_da
          add_delayed_value( *item.account, head_time, item.val );
       else
       {
-         uint64_t abs_val = std::abs( item.val );
+         const delayed_vote_count_type abs_val{ static_cast<delayed_vote_count_type>( std::abs( item.val ) ) };
          if( abs_val >= item.account->sum_delayed_votes )
          {
             res = abs_val - item.account->sum_delayed_votes;
@@ -89,11 +89,11 @@ void delayed_voting::run( const block_notification& note )
           head_time >= ( current->get_the_earliest_time() + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
         )
    {
-      uint64_t _val = current->delayed_votes.begin()->val;
+      const delayed_vote_count_type _val{ current->delayed_votes.begin()->val };
 
       dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", current->name )( "dv", _val )( "time", current->delayed_votes.begin()->time.to_iso_string() ) );
 
-      operation vop = delayed_voting_operation( current->name, _val );
+      const operation vop{ delayed_voting_operation( current->name, _val ) };
       /// Push vop to be recorded by other parts (like AH plugin etc.)
       db.push_virtual_operation( vop );
 

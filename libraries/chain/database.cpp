@@ -5726,7 +5726,7 @@ void database::validate_invariants()const
                                       itr->proxied_vsf_votes[STEEM_MAX_PROXY_RECURSION_DEPTH - 1] :
                                       itr->get_real_vesting_shares().amount ) );
          total_delayed_votes += itr->sum_delayed_votes;
-         uint64_t sum_delayed_votes = 0;
+         delayed_vote_count_type sum_delayed_votes{ 0ul };
          for( auto& dv : itr->delayed_votes )
             sum_delayed_votes += dv.val;
          FC_ASSERT( sum_delayed_votes == itr->sum_delayed_votes, "", ("sum_delayed_votes",sum_delayed_votes)("itr->sum_delayed_votes",itr->sum_delayed_votes) );

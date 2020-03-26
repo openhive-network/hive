@@ -426,7 +426,7 @@ struct delayed_vote_database_fixture : public virtual clean_database_fixture
                               : clean_database_fixture( shared_file_size_in_mb ){}
       virtual ~delayed_vote_database_fixture(){}
 
-      void witness_vote( const std::string& account, const std::string& witness, bool approve, const fc::ecc::private_key& key );
+      void witness_vote( const std::string& account, const std::string& witness, const bool approve, const fc::ecc::private_key& key );
       void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
       void withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key );
       void proxy( const string& account, const string& proxy, const fc::ecc::private_key& key );
@@ -435,16 +435,16 @@ struct delayed_vote_database_fixture : public virtual clean_database_fixture
       int64_t get_votes( const string& witness_name );
       int32_t get_user_voted_witness_count( const account_name_type& name );
 
-      asset to_vest( const asset& liquid, bool to_reward_balance = false );
+      asset to_vest( const asset& liquid, const bool to_reward_balance = false );
 
       template< typename COLLECTION >
       fc::optional< size_t > get_position_in_delayed_voting_array( const COLLECTION& collection, size_t day );
 
       template< typename COLLECTION >
-      bool check_collection( const COLLECTION& collection, size_t idx, const fc::time_point_sec& time, uint64_t val );
+      bool check_collection( const COLLECTION& collection, size_t idx, const fc::time_point_sec& time, const delayed_vote_count_type val );
 
       template< typename COLLECTION >
-      bool check_collection( const COLLECTION& collection, bool withdraw_executor, int64_t val, const account_object& obj );
+      bool check_collection( const COLLECTION& collection, const bool withdraw_executor, const signed_delayed_vote_count_type val, const account_object& obj );
 };
 
 struct delayed_vote_proposal_database_fixture 

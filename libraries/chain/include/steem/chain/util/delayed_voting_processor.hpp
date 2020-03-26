@@ -15,8 +15,8 @@ namespace delayed_voting_messages
 
 struct delayed_votes_data
 {
-   time_point_sec    time;
-   uint64_t          val = 0;
+   time_point_sec             time;
+   delayed_vote_count_type    val = 0;
 
    bool operator==( const delayed_votes_data& obj ) const
    {
@@ -27,7 +27,7 @@ struct delayed_votes_data
 struct delayed_voting_processor
 {
    template< typename COLLECTION_TYPE >
-   static void add( COLLECTION_TYPE& items, uint64_t& sum, const time_point_sec& head_time, uint64_t val )
+   static void add( COLLECTION_TYPE& items, delayed_vote_count_type& sum, const time_point_sec& head_time, const delayed_vote_count_type val )
    {
       /*
          A collection is filled gradually - every item in `items` is created each STEEM_DELAYED_VOTING_INTERVAL_SECONDS time.
@@ -71,7 +71,7 @@ struct delayed_voting_processor
    }
 
    template< typename COLLECTION_TYPE >
-   static void erase_front( COLLECTION_TYPE& items, uint64_t& sum )
+   static void erase_front( COLLECTION_TYPE& items, delayed_vote_count_type& sum )
    {
       if( !items.empty() )
       {
@@ -87,7 +87,7 @@ struct delayed_voting_processor
    }
 
    template< typename COLLECTION_TYPE >
-   static void erase( COLLECTION_TYPE& items, uint64_t& sum, uint64_t count )
+   static void erase( COLLECTION_TYPE& items, delayed_vote_count_type& sum, delayed_vote_count_type count )
    {
       if( count == 0 )
          return;
