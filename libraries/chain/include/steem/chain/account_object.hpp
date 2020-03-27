@@ -6,6 +6,7 @@
 #include <steem/protocol/authority.hpp>
 #include <steem/protocol/steem_operations.hpp>
 
+#include <steem/chain/balance.hpp>
 #include <steem/chain/steem_object_types.hpp>
 #include <steem/chain/witness_objects.hpp>
 #include <steem/chain/shared_authority.hpp>
