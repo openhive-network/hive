@@ -819,17 +819,6 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
    FC_LOG_AND_RETHROW()
 }
 
-/*
-   ==============================TO DO==============================
-
-   *****`+ 32 days 7h`*****
-   `alice` attach proxy `celine`
-   `alice` makes vests
-
-   *****`+ 45 days`*****
-   all checks
-*/
-
 BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
 {
    try
