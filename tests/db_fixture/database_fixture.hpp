@@ -438,7 +438,7 @@ struct delayed_vote_database_fixture : public virtual clean_database_fixture
       asset to_vest( const asset& liquid, const bool to_reward_balance = false );
 
       template< typename COLLECTION >
-      fc::optional< size_t > get_position_in_delayed_voting_array( const COLLECTION& collection, size_t day );
+      fc::optional< size_t > get_position_in_delayed_voting_array( const COLLECTION& collection, size_t day, size_t minutes );
 
       template< typename COLLECTION >
       bool check_collection( const COLLECTION& collection, size_t idx, const fc::time_point_sec& time, const delayed_vote_count_type val );
