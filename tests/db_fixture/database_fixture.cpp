@@ -1164,12 +1164,12 @@ asset delayed_vote_database_fixture::to_vest( const asset& liquid, const bool to
 }
 
 template< typename COLLECTION >
-fc::optional< size_t > delayed_vote_database_fixture::get_position_in_delayed_voting_array( const COLLECTION& collection, size_t day )
+fc::optional< size_t > delayed_vote_database_fixture::get_position_in_delayed_voting_array( const COLLECTION& collection, size_t day, size_t minutes )
 {
    if( collection.empty() )
       return fc::optional< size_t >();
 
-   auto time = collection[ 0 ].time + fc::days( day );
+   auto time = collection[ 0 ].time + fc::days( day ) + fc::minutes( minutes );
 
    size_t idx = 0;
    for( auto& item : collection )
@@ -1213,7 +1213,7 @@ bool delayed_vote_database_fixture::check_collection( const COLLECTION& collecti
 using dvd_deque = std::deque< delayed_votes_data >;
 using bip_dvd_deque = chainbase::t_deque< delayed_votes_data >;
 
-template fc::optional< size_t > delayed_vote_database_fixture::get_position_in_delayed_voting_array< bip_dvd_deque >( const bip_dvd_deque& collection, size_t day );
+template fc::optional< size_t > delayed_vote_database_fixture::get_position_in_delayed_voting_array< bip_dvd_deque >( const bip_dvd_deque& collection, size_t day, size_t minutes );
 template bool delayed_vote_database_fixture::check_collection< dvd_deque >( const dvd_deque& collection, size_t idx, const fc::time_point_sec& time, const delayed_vote_count_type val );
 template bool delayed_vote_database_fixture::check_collection< bip_dvd_deque >( const bip_dvd_deque& collection, size_t idx, const fc::time_point_sec& time, const delayed_vote_count_type val );
 template bool delayed_vote_database_fixture::check_collection< delayed_voting::opt_votes_update_data_items >( const delayed_voting::opt_votes_update_data_items& collection, const bool withdraw_executor, const signed_delayed_vote_count_type val, const account_object& obj );
