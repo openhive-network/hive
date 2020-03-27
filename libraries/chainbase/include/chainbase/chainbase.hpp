@@ -261,7 +261,7 @@ namespace chainbase {
          template<typename Modifier>
          void modify( const value_type& obj, Modifier&& m ) {
             on_modify( obj );
-            auto ok = _indices.modify( _indices.iterator_to( obj ), m );
+            auto ok = _indices.modify( _indices.iterator_to( obj ), std::forward<Modifier>( m ) );
             if( !ok ) BOOST_THROW_EXCEPTION( std::logic_error( "Could not modify object, most likely a uniqueness constraint was violated" ) );
          }
 
@@ -288,14 +288,14 @@ namespace chainbase {
 
          template<typename CompatibleKey>
          const value_type* find( CompatibleKey&& key )const {
-            auto itr = _indices.find( std::forward<CompatibleKey>(key) );
+            auto itr = _indices.find( std::forward<CompatibleKey>( key ) );
             if( itr != _indices.end() ) return &*itr;
             return nullptr;
          }
 
          template<typename CompatibleKey>
          const value_type& get( CompatibleKey&& key )const {
-            auto ptr = find( key );
+            auto ptr = find( std::forward<CompatibleKey>( key ) );
             if( !ptr ) BOOST_THROW_EXCEPTION( std::out_of_range("key not found") );
             return *ptr;
          }
@@ -1141,7 +1141,7 @@ namespace chainbase {
          {
              CHAINBASE_REQUIRE_WRITE_LOCK("modify", ObjectType);
              typedef typename get_index_type<ObjectType>::type index_type;
-             get_mutable_index<index_type>().modify( obj, m );
+             get_mutable_index<index_type>().modify( obj, std::forward<Modifier>( m ) );
          }
 
          template<typename ObjectType>
@@ -1157,7 +1157,7 @@ namespace chainbase {
          {
              CHAINBASE_REQUIRE_WRITE_LOCK("create", ObjectType);
              typedef typename get_index_type<ObjectType>::type index_type;
-             return get_mutable_index<index_type>().emplace( std::forward<Constructor>(con) );
+             return get_mutable_index<index_type>().emplace( std::forward<Constructor>( con ) );
          }
 
          template< typename ObjectType >
