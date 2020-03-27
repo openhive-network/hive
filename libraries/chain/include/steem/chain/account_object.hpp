@@ -49,7 +49,9 @@ namespace steem { namespace chain {
          util::manabar     voting_manabar;
          util::manabar     downvote_manabar;
 
-         asset             balance = asset( 0, STEEM_SYMBOL );  ///< total liquid shares held by this account
+         BALANCE( balance, STEEM_SYMBOL, get_balance ); ///< total liquid shares held by this account
+      public:
+         //asset             balance = asset( 0, STEEM_SYMBOL );  
          asset             savings_balance = asset( 0, STEEM_SYMBOL );  ///< total liquid shares held by this account
 
          /**
@@ -121,6 +123,8 @@ namespace steem { namespace chain {
                                     proxied_vsf_votes.end(),
                                     share_type() );
          }
+
+         friend class fc::reflector<account_object>;
    };
 
    class account_metadata_object : public object< account_metadata_object_type, account_metadata_object >

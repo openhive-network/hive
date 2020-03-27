@@ -266,6 +266,11 @@ struct database_fixture {
    void set_price_feed( const price& new_price );
    void set_witness_props( const flat_map< string, vector< char > >& new_props );
    const asset& get_balance( const string& account_name )const;
+   const asset& get_sbd_balance( const string& account_name )const;
+   const asset& get_savings( const string& account_name )const;
+   const asset& get_sbd_savings( const string& account_name )const;
+   const asset& get_rewards( const string& account_name )const;
+   const asset& get_sbd_rewards( const string& account_name )const;
    void sign( signed_transaction& trx, const fc::ecc::private_key& key );
 
    vector< operation > get_last_operations( uint32_t ops );

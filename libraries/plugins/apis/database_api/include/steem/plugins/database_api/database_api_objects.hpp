@@ -178,7 +178,7 @@ struct api_account_object
       can_vote( a.can_vote ),
       voting_manabar( a.voting_manabar ),
       downvote_manabar( a.downvote_manabar ),
-      balance( a.balance ),
+      balance( a.get_balance() ),
       savings_balance( a.savings_balance ),
       sbd_balance( a.sbd_balance ),
       sbd_seconds( a.sbd_seconds ),

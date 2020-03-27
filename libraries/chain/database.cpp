@@ -1494,9 +1494,9 @@ void database::clear_null_account_balance()
 
    asset vesting_shares_steem_value = asset( 0, STEEM_SYMBOL );
 
-   if( null_account.balance.amount > 0 )
+   if( null_account.get_balance().amount > 0 )
    {
-      total_steem += null_account.balance;
+      total_steem += null_account.get_balance();
    }
 
    if( null_account.savings_balance.amount > 0 )
@@ -1553,9 +1553,9 @@ void database::clear_null_account_balance()
 
    /////////////////////////////////////////////////////////////////////////////////////
 
-   if( null_account.balance.amount > 0 )
+   if( null_account.get_balance().amount > 0 )
    {
-      adjust_balance( null_account, -null_account.balance );
+      adjust_balance( null_account, -null_account.get_balance() );
    }
 
    if( null_account.savings_balance.amount > 0 )
@@ -1805,10 +1805,10 @@ void database::clear_account( const account_object& account,
    adjust_savings_balance( account, -account.savings_sbd_balance );
 
    // Remove SBD and STEEM balances
-   total_transferred_steem += account.balance;
+   total_transferred_steem += account.get_balance();
    total_transferred_sbd += account.sbd_balance;
-   adjust_balance( treasury_account, account.balance );
-   adjust_balance( account, -account.balance );
+   adjust_balance( treasury_account, account.get_balance() );
+   adjust_balance( account, -account.get_balance() );
    adjust_balance( treasury_account, account.sbd_balance );
    adjust_balance( account, -account.sbd_balance );
 
@@ -1971,7 +1971,7 @@ void database::process_vesting_withdrawals()
 
                modify( to_account, [&]( account_object& a )
                {
-                  a.balance += converted_steem;
+                  a.get_balance() += converted_steem;
                });
 
                modify( cprops, [&]( dynamic_global_property_object& o )
@@ -1995,7 +1995,7 @@ void database::process_vesting_withdrawals()
       modify( from_account, [&]( account_object& a )
       {
          a.vesting_shares.amount -= to_withdraw;
-         a.balance += converted_steem;
+         a.get_balance() += converted_steem;
          a.withdrawn += to_withdraw;
 
          if( a.withdrawn >= a.to_withdraw || a.vesting_shares.amount == 0 )
@@ -2607,7 +2607,7 @@ asset database::get_producer_reward()
    {
       modify( get_account( witness_account.name), [&]( account_object& a )
       {
-         a.balance += pay;
+         a.get_balance() += pay;
       } );
    }
 
@@ -3087,7 +3087,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t sbd_init_supply )
          {
             a.name = STEEM_INIT_MINER_NAME + ( i ? fc::to_string( i ) : std::string() );
             a.memo_key = init_public_key;
-            a.balance  = asset( i ? 0 : init_supply, STEEM_SYMBOL );
+            a.get_balance() = asset( i ? 0 : init_supply, STEEM_SYMBOL );
             a.sbd_balance = asset( i ? 0 : sbd_init_supply, SBD_SYMBOL );
          } );
 
@@ -4626,10 +4626,10 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
       switch( delta.symbol.asset_num )
       {
          case STEEM_ASSET_NUM_STEEM:
-            acnt.balance += delta;
+            acnt.get_balance() += delta;
             if( check_balance )
             {
-               FC_ASSERT( acnt.balance.amount.value >= 0, "Insufficient HIVE funds" );
+               FC_ASSERT( acnt.get_balance().amount.value >= 0, "Insufficient HIVE funds" );
             }
             break;
          case STEEM_ASSET_NUM_SBD:
@@ -4999,7 +4999,7 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
    switch( symbol.asset_num )
    {
       case STEEM_ASSET_NUM_STEEM:
-         return a.balance;
+         return a.get_balance();
       case STEEM_ASSET_NUM_SBD:
          return a.sbd_balance;
       default:
@@ -5647,7 +5647,7 @@ void database::validate_invariants()const
 
       for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
       {
-         total_supply += itr->balance;
+         total_supply += itr->get_balance();
          total_supply += itr->savings_balance;
          total_supply += itr->reward_steem_balance;
          total_sbd += itr->sbd_balance;

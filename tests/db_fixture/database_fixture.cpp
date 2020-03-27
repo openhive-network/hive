@@ -424,7 +424,7 @@ void database_fixture::fund(
          db.modify( db.get_account( account_name ), [&]( account_object& a )
          {
             if( amount.symbol == STEEM_SYMBOL )
-               a.balance += amount;
+               a.get_balance() += amount;
             else if( amount.symbol == SBD_SYMBOL )
             {
                a.sbd_balance += amount;
@@ -625,7 +625,32 @@ void database_fixture::set_witness_props( const flat_map< string, vector< char >
 
 const asset& database_fixture::get_balance( const string& account_name )const
 {
-  return db->get_account( account_name ).balance;
+  return db->get_account( account_name ).get_balance();
+}
+
+const asset& database_fixture::get_sbd_balance( const string& account_name )const
+{
+   return db->get_account( account_name ).sbd_balance;
+}
+
+const asset& database_fixture::get_savings( const string& account_name )const
+{
+   return db->get_account( account_name ).savings_balance;
+}
+
+const asset& database_fixture::get_sbd_savings( const string& account_name )const
+{
+   return db->get_account( account_name ).savings_sbd_balance;
+}
+
+const asset& database_fixture::get_rewards( const string& account_name )const
+{
+   return db->get_account( account_name ).reward_steem_balance;
+}
+
+const asset& database_fixture::get_sbd_rewards( const string& account_name )const
+{
+   return db->get_account( account_name ).reward_sbd_balance;
 }
 
 void database_fixture::sign(signed_transaction& trx, const fc::ecc::private_key& key)

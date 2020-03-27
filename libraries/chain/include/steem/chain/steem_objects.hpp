@@ -5,6 +5,7 @@
 #include <steem/protocol/steem_operations.hpp>
 #include <steem/protocol/misc_utilities.hpp>
 
+#include <steem/chain/balance.hpp>
 #include <steem/chain/steem_object_types.hpp>
 
 #include <boost/multiprecision/cpp_int.hpp>
@@ -63,12 +64,16 @@ namespace steem { namespace chain {
          time_point_sec    escrow_expiration;
          asset             sbd_balance;
          asset             steem_balance;
+         //BALANCE( steem_balance, STEEM_SYMBOL, get_steem_balance );
+      //public:
          asset             pending_fee;
          bool              to_approved = false;
          bool              agent_approved = false;
          bool              disputed = false;
 
          bool              is_approved()const { return to_approved && agent_approved; }
+
+         friend class fc::reflector<escrow_object>;
    };
 
 

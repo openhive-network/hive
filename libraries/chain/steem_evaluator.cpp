@@ -405,8 +405,8 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
    const auto& props = _db.get_dynamic_global_properties();
    const witness_schedule_object& wso = _db.get_witness_schedule_object();
 
-   FC_ASSERT( creator.balance >= o.fee, "Insufficient balance to create account.",
-               ( "creator.balance", creator.balance )
+   FC_ASSERT( creator.get_balance() >= o.fee, "Insufficient balance to create account.",
+               ( "creator.balance", creator.get_balance() )
                ( "required", o.fee ) );
 
    FC_ASSERT( creator.vesting_shares - creator.delegated_vesting_shares - asset( creator.to_withdraw - creator.withdrawn, VESTS_SYMBOL ) >= o.delegation, "Insufficient vesting shares to delegate to new account.",
@@ -453,7 +453,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 
    _db.modify( creator, [&]( account_object& c )
    {
-      c.balance -= o.fee;
+      c.get_balance() -= o.fee;
       c.delegated_vesting_shares += o.delegation;
    });
 
@@ -2623,7 +2623,8 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
    const auto& creator = _db.get_account( o.creator );
    const auto& wso = _db.get_witness_schedule_object();
 
-   FC_ASSERT( creator.balance >= o.fee, "Insufficient balance to create account.", ( "creator.balance", creator.balance )( "required", o.fee ) );
+   FC_ASSERT( creator.get_balance() >= o.fee, "Insufficient balance to create account.",
+      ( "creator.balance", creator.get_balance() )( "required", o.fee ) );
 
    if( o.fee.amount == 0 )
    {
@@ -2667,7 +2668,7 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
 
    _db.modify( creator, [&]( account_object& a )
    {
-      a.balance -= o.fee;
+      a.get_balance() -= o.fee;
       a.pending_claimed_accounts++;
    });
 }
