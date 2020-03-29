@@ -54,7 +54,7 @@ struct api_limit_order_object
       expiration( o.expiration ),
       seller( o.seller ),
       orderid( o.orderid ),
-      for_sale( o.for_sale ),
+      for_sale( o.amount_for_sale().amount ),
       sell_price( o.sell_price )
    {}
 
@@ -600,9 +600,9 @@ struct api_escrow_object
       agent( e.agent ),
       ratification_deadline( e.ratification_deadline ),
       escrow_expiration( e.escrow_expiration ),
-      sbd_balance( legacy_asset::from_asset( e.sbd_balance ) ),
-      steem_balance( legacy_asset::from_asset( e.steem_balance ) ),
-      pending_fee( legacy_asset::from_asset( e.pending_fee ) ),
+      sbd_balance( legacy_asset::from_asset( e.get_sbd_balance() ) ),
+      steem_balance( legacy_asset::from_asset( e.get_steem_balance() ) ),
+      pending_fee( legacy_asset::from_asset( e.get_fee() ) ),
       to_approved( e.to_approved ),
       disputed( e.disputed ),
       agent_approved( e.agent_approved )
@@ -687,7 +687,7 @@ struct api_convert_request_object
       id( c.id ),
       owner( c.owner ),
       requestid( c.requestid ),
-      amount( legacy_asset::from_asset( c.amount ) ),
+      amount( legacy_asset::from_asset( c.get_amount() ) ),
       conversion_date( c.conversion_date )
    {}
 

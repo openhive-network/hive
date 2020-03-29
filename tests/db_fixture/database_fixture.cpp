@@ -427,7 +427,7 @@ void database_fixture::fund(
                a.get_balance() += amount;
             else if( amount.symbol == SBD_SYMBOL )
             {
-               a.sbd_balance += amount;
+               a.get_sbd_balance() += amount;
                a.sbd_seconds_last_update = db.head_block_time();
             }
          });
@@ -630,27 +630,27 @@ const asset& database_fixture::get_balance( const string& account_name )const
 
 const asset& database_fixture::get_sbd_balance( const string& account_name )const
 {
-   return db->get_account( account_name ).sbd_balance;
+   return db->get_account( account_name ).get_sbd_balance();
 }
 
 const asset& database_fixture::get_savings( const string& account_name )const
 {
-   return db->get_account( account_name ).savings_balance;
+   return db->get_account( account_name ).get_savings();
 }
 
 const asset& database_fixture::get_sbd_savings( const string& account_name )const
 {
-   return db->get_account( account_name ).savings_sbd_balance;
+   return db->get_account( account_name ).get_sbd_savings();
 }
 
 const asset& database_fixture::get_rewards( const string& account_name )const
 {
-   return db->get_account( account_name ).reward_steem_balance;
+   return db->get_account( account_name ).get_rewards();
 }
 
 const asset& database_fixture::get_sbd_rewards( const string& account_name )const
 {
-   return db->get_account( account_name ).reward_sbd_balance;
+   return db->get_account( account_name ).get_sbd_rewards();
 }
 
 void database_fixture::sign(signed_transaction& trx, const fc::ecc::private_key& key)

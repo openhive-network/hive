@@ -137,12 +137,12 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
       for( const auto& author : authors )
       {
          const account_object& a = db->get_account(author.name);
-         ilog( "${n} : ${steem} ${sbd}", ("n", author.name)("steem", a.reward_steem_balance)("sbd", a.reward_sbd_balance) );
+         ilog( "${n} : ${steem} ${sbd}", ("n", author.name)("steem", a.get_rewards())("sbd", a.get_sbd_rewards()) );
       }
       for( const auto& voter : voters )
       {
          const account_object& a = db->get_account(voter.name);
-         ilog( "${n} : ${steem} ${sbd}", ("n", voter.name)("steem", a.reward_steem_balance)("sbd", a.reward_sbd_balance) );
+         ilog( "${n} : ${steem} ${sbd}", ("n", voter.name)("steem", a.get_rewards())("sbd", a.get_sbd_rewards()) );
       }
       */
 
@@ -150,9 +150,9 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
       const account_object& bob_account   = db->get_account("bob");
       const account_object& dave_account  = db->get_account("dave");
 
-      BOOST_CHECK( alice_account.reward_sbd_balance == ASSET( "6236.000 TBD" ) );
-      BOOST_CHECK( bob_account.reward_sbd_balance == ASSET( "0.000 TBD" ) );
-      BOOST_CHECK( dave_account.reward_sbd_balance == alice_account.reward_sbd_balance );
+      BOOST_CHECK( alice_account.get_sbd_rewards() == ASSET( "6236.000 TBD" ) );
+      BOOST_CHECK( bob_account.get_sbd_rewards() == ASSET( "0.000 TBD" ) );
+      BOOST_CHECK( dave_account.get_sbd_rewards() == alice_account.get_sbd_rewards() );
    }
    FC_LOG_AND_RETHROW()
 }
@@ -1536,7 +1536,7 @@ BOOST_AUTO_TEST_CASE( convert_delay )
 
       BOOST_REQUIRE( convert_request != convert_request_idx.end() );
       BOOST_REQUIRE( alice_2.get_balance().amount.value == 0 );
-      BOOST_REQUIRE( alice_2.sbd_balance.amount.value == ( start_balance - op.amount ).amount.value );
+      BOOST_REQUIRE( alice_2.get_sbd_balance().amount.value == ( start_balance - op.amount ).amount.value );
       validate_database();
 
       BOOST_TEST_MESSAGE( "Generate one more block" );
@@ -1549,7 +1549,7 @@ BOOST_AUTO_TEST_CASE( convert_delay )
       convert_request = convert_request_idx.find( boost::make_tuple( "alice", 2 ) );
       BOOST_REQUIRE( convert_request == convert_request_idx.end() );
       BOOST_REQUIRE( alice_3.get_balance().amount.value == 2500 );
-      BOOST_REQUIRE( alice_3.sbd_balance.amount.value == ( start_balance - op.amount ).amount.value );
+      BOOST_REQUIRE( alice_3.get_sbd_balance().amount.value == ( start_balance - op.amount ).amount.value );
       BOOST_REQUIRE( vop.owner == "alice" );
       BOOST_REQUIRE( vop.requestid == 2 );
       BOOST_REQUIRE( vop.amount_in.amount.value == ASSET( "2.000 TBD" ).amount.value );
@@ -2721,7 +2721,7 @@ BOOST_AUTO_TEST_CASE( sbd_stability )
       {
          db.modify( db.get_account( "sam" ), [&]( account_object& a )
          {
-            a.sbd_balance = sbd_balance;
+            a.get_sbd_balance() = sbd_balance;
          });
       }, database::skip_witness_signature );
 
@@ -2762,7 +2762,7 @@ BOOST_AUTO_TEST_CASE( sbd_stability )
       {
          db.modify( db.get_account( "sam" ), [&]( account_object& a )
          {
-            a.sbd_balance = asset( ( ( gpo.sbd_start_percent - 9 ) * sbd_balance.amount ) / gpo.sbd_stop_percent, SBD_SYMBOL );
+            a.get_sbd_balance() = asset( ( ( gpo.sbd_start_percent - 9 ) * sbd_balance.amount ) / gpo.sbd_stop_percent, SBD_SYMBOL );
          });
       }, database::skip_witness_signature );
 
@@ -2904,8 +2904,8 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
       {
          db.modify( db.get_account( STEEM_NULL_ACCOUNT ), [&]( account_object& a )
          {
-            a.reward_steem_balance = ASSET( "1.000 TESTS" );
-            a.reward_sbd_balance = ASSET( "1.000 TBD" );
+            a.get_rewards() = ASSET( "1.000 TESTS" );
+            a.get_sbd_rewards() = ASSET( "1.000 TBD" );
             a.reward_vesting_balance = ASSET( "1.000000 VESTS" );
             a.reward_vesting_steem = ASSET( "1.000 TESTS" );
          });

@@ -113,7 +113,7 @@ asset sps_processor::get_treasury_fund()
 {
    auto& treasury_account = db.get_account( STEEM_TREASURY_ACCOUNT );
 
-   return treasury_account.sbd_balance;
+   return treasury_account.get_sbd_balance();
 }
 
 asset sps_processor::get_daily_inflation()

@@ -122,20 +122,20 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       {
          BOOST_TEST_MESSAGE( "---Payment---" );
 
-         auto before_creator_sbd_balance = _creator.sbd_balance;
-         auto before_receiver_sbd_balance = _receiver.sbd_balance;
-         auto before_voter_01_sbd_balance = _voter_01.sbd_balance;
-         auto before_treasury_sbd_balance = _treasury.sbd_balance;
+         auto before_creator_sbd_balance = _creator.get_sbd_balance();
+         auto before_receiver_sbd_balance = _receiver.get_sbd_balance();
+         auto before_voter_01_sbd_balance = _voter_01.get_sbd_balance();
+         auto before_treasury_sbd_balance = _treasury.get_sbd_balance();
 
          auto next_block = get_nr_blocks_until_maintenance_block();
          generate_blocks( next_block - 1 );
          generate_blocks( 1 );
 
          auto treasury_sbd_inflation = dgpo.current_sbd_supply - old_sbd_supply;
-         auto after_creator_sbd_balance = _creator.sbd_balance;
-         auto after_receiver_sbd_balance = _receiver.sbd_balance;
-         auto after_voter_01_sbd_balance = _voter_01.sbd_balance;
-         auto after_treasury_sbd_balance = _treasury.sbd_balance;
+         auto after_creator_sbd_balance = _creator.get_sbd_balance();
+         auto after_receiver_sbd_balance = _receiver.get_sbd_balance();
+         auto after_voter_01_sbd_balance = _voter_01.get_sbd_balance();
+         auto after_treasury_sbd_balance = _treasury.get_sbd_balance();
 
          BOOST_REQUIRE( before_creator_sbd_balance == after_creator_sbd_balance );
          BOOST_REQUIRE( before_receiver_sbd_balance == after_receiver_sbd_balance - hourly_pay );
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
       for( auto item : inits )
       {
          const account_object& account = db->get_account( item.account );
-         before_tbds[ item.account ] = account.sbd_balance;
+         before_tbds[ item.account ] = account.get_sbd_balance();
       }
 
       generate_blocks( start_date + end_time_shift + fc::seconds( 10 ), false );
@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
       for( auto item : inits )
       {
          const account_object& account = db->get_account( item.account );
-         auto after_tbd = account.sbd_balance;
+         auto after_tbd = account.get_sbd_balance();
          auto before_tbd = before_tbds[ item.account ];
          BOOST_REQUIRE( before_tbd == after_tbd - paid );
       }
@@ -298,7 +298,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
          generate_block();
 
          const account_object& account = db->get_account( item.account );
-         before_tbds[ item.account ] = account.sbd_balance;
+         before_tbds[ item.account ] = account.get_sbd_balance();
       }
 
       generate_blocks( start_date, false );
@@ -323,7 +323,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
       for( auto item : inits )
       {
          const account_object& account = db->get_account( item.account );
-         auto after_tbd = account.sbd_balance;
+         auto after_tbd = account.get_sbd_balance();
          auto before_tbd = before_tbds[ item.account ];
          BOOST_REQUIRE( before_tbd == after_tbd );
       }
@@ -401,7 +401,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       for( auto item : inits )
       {
          const account_object& account = db->get_account( item.first );
-         before_tbds[ item.first ] = account.sbd_balance;
+         before_tbds[ item.first ] = account.get_sbd_balance();
       }
 
       auto payment_checker = [&]( const std::vector< asset >& payouts )
@@ -412,7 +412,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
          for( const auto& item : inits )
          {
             const account_object& account = db->get_account( item.first );
-            auto after_tbd = account.sbd_balance;
+            auto after_tbd = account.get_sbd_balance();
             auto before_tbd = before_tbds[ item.first ];
             idump( (before_tbd) );
             idump( (after_tbd) );
@@ -613,9 +613,9 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
       const account_object& before_alice_account = db->get_account( creator );
       const account_object& before_bob_account = db->get_account( receiver );
 
-      auto before_alice_sbd_balance = before_alice_account.sbd_balance;
-      auto before_bob_sbd_balance = before_bob_account.sbd_balance;
-      auto before_treasury_balance = before_treasury_account.sbd_balance;
+      auto before_alice_sbd_balance = before_alice_account.get_sbd_balance();
+      auto before_bob_sbd_balance = before_bob_account.get_sbd_balance();
+      auto before_treasury_balance = before_treasury_account.get_sbd_balance();
 
       create_proposal_operation op;
 
@@ -641,9 +641,9 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
       const account_object& after_alice_account = db->get_account( creator );
       const account_object& after_bob_account = db->get_account( receiver );
 
-      auto after_alice_sbd_balance = after_alice_account.sbd_balance;
-      auto after_bob_sbd_balance = after_bob_account.sbd_balance;
-      auto after_treasury_balance = after_treasury_account.sbd_balance;
+      auto after_alice_sbd_balance = after_alice_account.get_sbd_balance();
+      auto after_bob_sbd_balance = after_bob_account.get_sbd_balance();
+      auto after_treasury_balance = after_treasury_account.get_sbd_balance();
 
       BOOST_REQUIRE( before_alice_sbd_balance == after_alice_sbd_balance + fee );
       BOOST_REQUIRE( before_bob_sbd_balance == after_bob_sbd_balance );
@@ -2948,7 +2948,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       {
          auto item = inits[ i % inits.size() ];
          const account_object& account = db->get_account( item.account );
-         before_tbds[ item.account ] = account.sbd_balance;
+         before_tbds[ item.account ] = account.get_sbd_balance();
       }
 
       generate_blocks( start_time + ( start_time_shift - block_interval ) );
@@ -2960,7 +2960,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
          auto item = inits[ i % inits.size() ];
          const account_object& account = db->get_account( item.account );
 
-         auto after_tbd = account.sbd_balance;
+         auto after_tbd = account.get_sbd_balance();
          auto before_tbd = before_tbds[ item.account ];
          BOOST_REQUIRE( before_tbd == after_tbd - paid );
       }

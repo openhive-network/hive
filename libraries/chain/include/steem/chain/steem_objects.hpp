@@ -38,8 +38,11 @@ namespace steem { namespace chain {
 
          account_name_type owner;
          uint32_t          requestid = 0; ///< id set by owner, the owner,requestid pair must be unique
-         asset             amount;
+         BALANCE( amount, SBD_SYMBOL, get_amount );
+      public:
          time_point_sec    conversion_date; ///< at this time the feed_history_median_price * amount
+
+         friend class fc::reflector<convert_request_object>;
    };
 
 
@@ -62,11 +65,10 @@ namespace steem { namespace chain {
          account_name_type agent;
          time_point_sec    ratification_deadline;
          time_point_sec    escrow_expiration;
-         asset             sbd_balance;
-         asset             steem_balance;
-         //BALANCE( steem_balance, STEEM_SYMBOL, get_steem_balance );
-      //public:
-         asset             pending_fee;
+         BALANCE( sbd_balance, SBD_SYMBOL, get_sbd_balance );
+         BALANCE( steem_balance, STEEM_SYMBOL, get_steem_balance );
+         BALANCE( pending_fee, STEEM_SYMBOL, get_fee ); //fee can use HBD as well
+      public:
          bool              to_approved = false;
          bool              agent_approved = false;
          bool              disputed = false;
@@ -95,8 +97,11 @@ namespace steem { namespace chain {
          account_name_type to;
          shared_string     memo;
          uint32_t          request_id = 0;
-         asset             amount;
+         BALANCE( amount, STEEM_SYMBOL, get_amount ); //can also be expressed in HBD
+      public:
          time_point_sec    complete;
+
+         friend class fc::reflector<savings_withdraw_object>;
    };
 
 
@@ -204,7 +209,8 @@ namespace steem { namespace chain {
          time_point_sec    expiration;
          account_name_type seller;
          uint32_t          orderid = 0;
-         share_type        for_sale; ///< asset id is sell_price.base.symbol
+         BALANCE( for_sale, STEEM_SYMBOL, amount_for_sale ); ///< actual asset id equals sell_price.base.symbol
+      public:
          price             sell_price;
 
          pair< asset_symbol_type, asset_symbol_type > get_market()const
@@ -214,8 +220,9 @@ namespace steem { namespace chain {
                 std::make_pair( sell_price.quote.symbol, sell_price.base.symbol );
          }
 
-         asset amount_for_sale()const   { return asset( for_sale, sell_price.base.symbol ); }
          asset amount_to_receive()const { return amount_for_sale() * sell_price; }
+
+         friend class fc::reflector<limit_order_object>;
    };
 
 

@@ -5,7 +5,10 @@
 namespace steem { namespace chain {
 
 class account_object;
+class convert_request_object;
 class escrow_object;
+class limit_order_object;
+class savings_withdraw_object;
 
 /**
  * Balance object keeps existing tokens and only allows them to be moved to another balance.
@@ -118,7 +121,10 @@ class TBalance final : public ABalance
 
       //list all objects that have members that hold balance - other places should use TTempBalance
       friend class account_object;
+      friend class convert_request_object;
       friend class escrow_object;
+      friend class limit_order_object;
+      friend class savings_withdraw_object;
 };
 
 #define BALANCE( member_name, asset_symbol, getter_name )      \

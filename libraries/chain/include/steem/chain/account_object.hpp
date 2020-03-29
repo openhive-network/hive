@@ -50,9 +50,7 @@ namespace steem { namespace chain {
          util::manabar     downvote_manabar;
 
          BALANCE( balance, STEEM_SYMBOL, get_balance ); ///< total liquid shares held by this account
-      public:
-         //asset             balance = asset( 0, STEEM_SYMBOL );  
-         asset             savings_balance = asset( 0, STEEM_SYMBOL );  ///< total liquid shares held by this account
+         BALANCE( savings_balance, STEEM_SYMBOL, get_savings );  ///< total liquid shares held by this account
 
          /**
           *  HBD Deposits pay interest based upon the interest rate set by witnesses. The purpose of these
@@ -68,22 +66,25 @@ namespace steem { namespace chain {
           *  @defgroup sbd_data sbd Balance Data
           */
          ///@{
-         asset             sbd_balance = asset( 0, SBD_SYMBOL ); /// total sbd balance
-         uint128_t         sbd_seconds; ///< total sbd * how long it has been hel
+         BALANCE( sbd_balance, SBD_SYMBOL, get_sbd_balance ); /// total sbd balance
+      public:
+         uint128_t         sbd_seconds; ///< total sbd * how long it has been held
          time_point_sec    sbd_seconds_last_update; ///< the last time the sbd_seconds was updated
          time_point_sec    sbd_last_interest_payment; ///< used to pay interest at most once per month
 
 
-         asset             savings_sbd_balance = asset( 0, SBD_SYMBOL ); /// total sbd balance
-         uint128_t         savings_sbd_seconds; ///< total sbd * how long it has been hel
+         BALANCE( savings_sbd_balance, SBD_SYMBOL, get_sbd_savings ); /// total sbd balance
+      public:
+         uint128_t         savings_sbd_seconds; ///< total sbd * how long it has been held
          time_point_sec    savings_sbd_seconds_last_update; ///< the last time the sbd_seconds was updated
          time_point_sec    savings_sbd_last_interest_payment; ///< used to pay interest at most once per month
 
          uint8_t           savings_withdraw_requests = 0;
          ///@}
 
-         asset             reward_sbd_balance = asset( 0, SBD_SYMBOL );
-         asset             reward_steem_balance = asset( 0, STEEM_SYMBOL );
+         BALANCE( reward_sbd_balance, SBD_SYMBOL, get_sbd_rewards );
+         BALANCE( reward_steem_balance, STEEM_SYMBOL, get_rewards );
+      public:
          asset             reward_vesting_balance = asset( 0, VESTS_SYMBOL );
          asset             reward_vesting_steem = asset( 0, STEEM_SYMBOL );
 

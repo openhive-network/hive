@@ -1029,9 +1029,9 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
          esc.agent                  = o.agent;
          esc.ratification_deadline  = o.ratification_deadline;
          esc.escrow_expiration      = o.escrow_expiration;
-         esc.sbd_balance            = o.sbd_amount;
-         esc.steem_balance          = o.steem_amount;
-         esc.pending_fee            = o.fee;
+         esc.get_sbd_balance()      = o.sbd_amount;
+         esc.get_steem_balance()    = o.steem_amount;
+         esc.get_fee()              = o.fee;
       });
    }
    FC_CAPTURE_AND_RETHROW( (o) )
@@ -1077,19 +1077,19 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
 
       if( reject_escrow )
       {
-         _db.adjust_balance( o.from, escrow.steem_balance );
-         _db.adjust_balance( o.from, escrow.sbd_balance );
-         _db.adjust_balance( o.from, escrow.pending_fee );
+         _db.adjust_balance( o.from, escrow.get_steem_balance() );
+         _db.adjust_balance( o.from, escrow.get_sbd_balance() );
+         _db.adjust_balance( o.from, escrow.get_fee() );
 
          _db.remove( escrow );
       }
       else if( escrow.to_approved && escrow.agent_approved )
       {
-         _db.adjust_balance( o.agent, escrow.pending_fee );
+         _db.adjust_balance( o.agent, escrow.get_fee() );
 
          _db.modify( escrow, [&]( escrow_object& esc )
          {
-            esc.pending_fee.amount = 0;
+            esc.get_fee().amount = 0;
          });
       }
    }
@@ -1124,8 +1124,8 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
       _db.get_account(o.from); // Verify from account exists
 
       const auto& e = _db.get_escrow( o.from, o.escrow_id );
-      FC_ASSERT( e.steem_balance >= o.steem_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.steem_amount)("b", e.steem_balance) );
-      FC_ASSERT( e.sbd_balance >= o.sbd_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.sbd_amount)("b", e.sbd_balance) );
+      FC_ASSERT( e.get_steem_balance() >= o.steem_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.steem_amount)("b", e.get_steem_balance() ) );
+      FC_ASSERT( e.get_sbd_balance() >= o.sbd_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.sbd_amount)("b", e.get_sbd_balance() ) );
       FC_ASSERT( e.to == o.to, "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.to) );
       FC_ASSERT( e.agent == o.agent, "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.agent) );
       FC_ASSERT( o.receiver == e.from || o.receiver == e.to, "Funds must be released to 'from' (${f}) or 'to' (${t})", ("f", e.from)("t", e.to) );
@@ -1160,11 +1160,11 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
 
       _db.modify( e, [&]( escrow_object& esc )
       {
-         esc.steem_balance -= o.steem_amount;
-         esc.sbd_balance -= o.sbd_amount;
+         esc.get_steem_balance() -= o.steem_amount;
+         esc.get_sbd_balance() -= o.sbd_amount;
       });
 
-      if( e.steem_balance.amount == 0 && e.sbd_balance.amount == 0 )
+      if( e.get_steem_balance().amount == 0 && e.get_sbd_balance().amount == 0 )
       {
          _db.remove( e );
       }
@@ -2529,7 +2529,7 @@ void convert_evaluator::do_apply( const convert_operation& o )
   {
       obj.owner           = o.owner;
       obj.requestid       = o.requestid;
-      obj.amount          = o.amount;
+      obj.get_amount()    = o.amount;
       obj.conversion_date = _db.head_block_time() + steem_conversion_delay;
   });
 
@@ -2548,10 +2548,10 @@ void limit_order_create_evaluator::do_apply( const limit_order_create_operation&
 
    const auto& order = _db.create<limit_order_object>( [&]( limit_order_object& obj )
    {
-       obj.created    = _db.head_block_time();
-       obj.seller     = o.owner;
-       obj.orderid    = o.orderid;
-       obj.for_sale   = o.amount_to_sell.amount;
+       obj.created = _db.head_block_time();
+       obj.seller = o.owner;
+       obj.orderid = o.orderid;
+       obj.amount_for_sale() = o.amount_to_sell;
        obj.sell_price = o.get_price();
 
        FC_TODO( "Check past order expirations and cleanup after HF 20" )
@@ -2584,10 +2584,10 @@ void limit_order_create2_evaluator::do_apply( const limit_order_create2_operatio
 
    const auto& order = _db.create<limit_order_object>( [&]( limit_order_object& obj )
    {
-       obj.created    = _db.head_block_time();
-       obj.seller     = o.owner;
-       obj.orderid    = o.orderid;
-       obj.for_sale   = o.amount_to_sell.amount;
+       obj.created = _db.head_block_time();
+       obj.seller = o.owner;
+       obj.orderid = o.orderid;
+       obj.amount_for_sale() = o.amount_to_sell;
        obj.sell_price = o.exchange_rate;
 
        FC_TODO( "Check past order expirations and cleanup after HF 20" )
@@ -2882,9 +2882,9 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
    FC_ASSERT( _db.get_savings_balance( from, op.amount.symbol ) >= op.amount );
    _db.adjust_savings_balance( from, -op.amount );
    _db.create<savings_withdraw_object>( [&]( savings_withdraw_object& s ) {
-      s.from   = op.from;
-      s.to     = op.to;
-      s.amount = op.amount;
+      s.from = op.from;
+      s.to = op.to;
+      s.get_amount() = op.amount;
 #ifndef IS_LOW_MEM
       from_string( s.memo, op.memo );
 #endif
@@ -2901,7 +2901,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
 void cancel_transfer_from_savings_evaluator::do_apply( const cancel_transfer_from_savings_operation& op )
 {
    const auto& swo = _db.get_savings_withdraw( op.from, op.request_id );
-   _db.adjust_savings_balance( _db.get_account( swo.from ), swo.amount );
+   _db.adjust_savings_balance( _db.get_account( swo.from ), swo.get_amount() );
    _db.remove( swo );
 
    const auto& from = _db.get_account( op.from );
@@ -2971,10 +2971,10 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 {
    const auto& acnt = _db.get_account( op.account );
 
-   FC_ASSERT( op.reward_steem <= acnt.reward_steem_balance, "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
-      ("c", op.reward_steem)("a", acnt.reward_steem_balance) );
-   FC_ASSERT( op.reward_sbd <= acnt.reward_sbd_balance, "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
-      ("c", op.reward_sbd)("a", acnt.reward_sbd_balance) );
+   FC_ASSERT( op.reward_steem <= acnt.get_rewards(), "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
+      ("c", op.reward_steem)("a", acnt.get_rewards() ) );
+   FC_ASSERT( op.reward_sbd <= acnt.get_sbd_rewards(), "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
+      ("c", op.reward_sbd)("a", acnt.get_sbd_rewards() ) );
    FC_ASSERT( op.reward_vests <= acnt.reward_vesting_balance, "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
       ("c", op.reward_vests)("a", acnt.reward_vesting_balance) );
 
@@ -3070,10 +3070,10 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
          }
          else if( token.symbol == STEEM_SYMBOL || token.symbol == SBD_SYMBOL )
          {
-            FC_ASSERT( is_asset_type( token, STEEM_SYMBOL ) == false || token <= a->reward_steem_balance,
-                       "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}", ("c", token)("a", a->reward_steem_balance) );
-            FC_ASSERT( is_asset_type( token, SBD_SYMBOL ) == false || token <= a->reward_sbd_balance,
-                       "Cannot claim that much HBD. Claim: ${c} Actual: ${a}", ("c", token)("a", a->reward_sbd_balance) );
+            FC_ASSERT( is_asset_type( token, STEEM_SYMBOL ) == false || token <= a->get_rewards(),
+                       "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}", ("c", token)("a", a->get_rewards() ) );
+            FC_ASSERT( is_asset_type( token, SBD_SYMBOL ) == false || token <= a->get_sbd_rewards(),
+                       "Cannot claim that much HBD. Claim: ${c} Actual: ${a}", ("c", token)("a", a->get_sbd_rewards() ) );
             _db.adjust_reward_balance( *a, -token );
             _db.adjust_balance( *a, token );
          }

@@ -1499,19 +1499,19 @@ void database::clear_null_account_balance()
       total_steem += null_account.get_balance();
    }
 
-   if( null_account.savings_balance.amount > 0 )
+   if( null_account.get_savings().amount > 0 )
    {
-      total_steem += null_account.savings_balance;
+      total_steem += null_account.get_savings();
    }
 
-   if( null_account.sbd_balance.amount > 0 )
+   if( null_account.get_sbd_balance().amount > 0 )
    {
-      total_sbd += null_account.sbd_balance;
+      total_sbd += null_account.get_sbd_balance();
    }
 
-   if( null_account.savings_sbd_balance.amount > 0 )
+   if( null_account.get_sbd_savings().amount > 0 )
    {
-      total_sbd += null_account.savings_sbd_balance;
+      total_sbd += null_account.get_sbd_savings();
    }
 
    if( null_account.vesting_shares.amount > 0 )
@@ -1522,14 +1522,14 @@ void database::clear_null_account_balance()
       total_vests += null_account.vesting_shares;
    }
 
-   if( null_account.reward_steem_balance.amount > 0 )
+   if( null_account.get_rewards().amount > 0 )
    {
-      total_steem += null_account.reward_steem_balance;
+      total_steem += null_account.get_rewards();
    }
 
-   if( null_account.reward_sbd_balance.amount > 0 )
+   if( null_account.get_sbd_rewards().amount > 0 )
    {
-      total_sbd += null_account.reward_sbd_balance;
+      total_sbd += null_account.get_sbd_rewards();
    }
 
    if( null_account.reward_vesting_balance.amount > 0 )
@@ -1558,19 +1558,19 @@ void database::clear_null_account_balance()
       adjust_balance( null_account, -null_account.get_balance() );
    }
 
-   if( null_account.savings_balance.amount > 0 )
+   if( null_account.get_savings().amount > 0 )
    {
-      adjust_savings_balance( null_account, -null_account.savings_balance );
+      adjust_savings_balance( null_account, -null_account.get_savings() );
    }
 
-   if( null_account.sbd_balance.amount > 0 )
+   if( null_account.get_sbd_balance().amount > 0 )
    {
-      adjust_balance( null_account, -null_account.sbd_balance );
+      adjust_balance( null_account, -null_account.get_sbd_balance() );
    }
 
-   if( null_account.savings_sbd_balance.amount > 0 )
+   if( null_account.get_sbd_savings().amount > 0 )
    {
-      adjust_savings_balance( null_account, -null_account.savings_sbd_balance );
+      adjust_savings_balance( null_account, -null_account.get_sbd_savings() );
    }
 
    if( null_account.vesting_shares.amount > 0 )
@@ -1589,14 +1589,14 @@ void database::clear_null_account_balance()
       });
    }
 
-   if( null_account.reward_steem_balance.amount > 0 )
+   if( null_account.get_rewards().amount > 0 )
    {
-      adjust_reward_balance( null_account, -null_account.reward_steem_balance );
+      adjust_reward_balance( null_account, -null_account.get_rewards() );
    }
 
-   if( null_account.reward_sbd_balance.amount > 0 )
+   if( null_account.get_sbd_rewards().amount > 0 )
    {
-      adjust_reward_balance( null_account, -null_account.reward_sbd_balance );
+      adjust_reward_balance( null_account, -null_account.get_sbd_rewards() );
    }
 
    if( null_account.reward_vesting_balance.amount > 0 )
@@ -1725,9 +1725,9 @@ void database::clear_account( const account_object& account,
       auto& escrow = *escrow_itr;
       ++escrow_itr;
 
-      adjust_balance( account, escrow.steem_balance );
-      adjust_balance( account, escrow.sbd_balance );
-      adjust_balance( account, escrow.pending_fee );
+      adjust_balance( account, escrow.get_steem_balance() );
+      adjust_balance( account, escrow.get_sbd_balance() );
+      adjust_balance( account, escrow.get_fee() );
 
       remove( escrow );
    }
@@ -1751,7 +1751,7 @@ void database::clear_account( const account_object& account,
       auto& request = *request_itr;
       ++request_itr;
 
-      adjust_balance( account, request.amount );
+      adjust_balance( account, request.get_amount() );
       remove( request );
    }
 
@@ -1763,7 +1763,7 @@ void database::clear_account( const account_object& account,
       auto& withdrawal = *withdraw_from_itr;
       ++withdraw_from_itr;
 
-      adjust_balance( account, withdrawal.amount );
+      adjust_balance( account, withdrawal.get_amount() );
       modify( account, [&]( account_object& a )
       {
          a.savings_withdraw_requests--;
@@ -1779,7 +1779,7 @@ void database::clear_account( const account_object& account,
       auto& withdrawal = *withdraw_to_itr;
       ++withdraw_to_itr;
 
-      adjust_balance( account, withdrawal.amount );
+      adjust_balance( account, withdrawal.get_amount() );
       modify( get_account( withdrawal.from ), [&]( account_object& a )
       {
          a.savings_withdraw_requests--;
@@ -1797,28 +1797,28 @@ void database::clear_account( const account_object& account,
    }
 
    // Remove remaining savings balances
-   total_transferred_steem += account.savings_balance;
-   total_transferred_sbd += account.savings_sbd_balance;
-   adjust_balance( treasury_account, account.savings_balance );
-   adjust_savings_balance( account, -account.savings_balance );
-   adjust_balance( treasury_account, account.savings_sbd_balance );
-   adjust_savings_balance( account, -account.savings_sbd_balance );
+   total_transferred_steem += account.get_savings();
+   total_transferred_sbd += account.get_sbd_savings();
+   adjust_balance( treasury_account, account.get_savings() );
+   adjust_savings_balance( account, -account.get_savings() );
+   adjust_balance( treasury_account, account.get_sbd_savings() );
+   adjust_savings_balance( account, -account.get_sbd_savings() );
 
    // Remove SBD and STEEM balances
    total_transferred_steem += account.get_balance();
-   total_transferred_sbd += account.sbd_balance;
+   total_transferred_sbd += account.get_sbd_balance();
    adjust_balance( treasury_account, account.get_balance() );
    adjust_balance( account, -account.get_balance() );
-   adjust_balance( treasury_account, account.sbd_balance );
-   adjust_balance( account, -account.sbd_balance );
+   adjust_balance( treasury_account, account.get_sbd_balance() );
+   adjust_balance( account, -account.get_sbd_balance() );
 
    // Transfer reward balances
-   total_transferred_steem += account.reward_steem_balance;
-   total_transferred_sbd += account.reward_sbd_balance;
-   adjust_balance( treasury_account, account.reward_steem_balance );
-   adjust_reward_balance( account, -account.reward_steem_balance );
-   adjust_balance( treasury_account, account.reward_sbd_balance );
-   adjust_reward_balance( account, -account.reward_sbd_balance );
+   total_transferred_steem += account.get_rewards();
+   total_transferred_sbd += account.get_sbd_rewards();
+   adjust_balance( treasury_account, account.get_rewards() );
+   adjust_reward_balance( account, -account.get_rewards() );
+   adjust_balance( treasury_account, account.get_sbd_rewards() );
+   adjust_reward_balance( account, -account.get_sbd_rewards() );
 
    // Convert and transfer vesting rewards
    adjust_balance( treasury_account, account.reward_vesting_steem );
@@ -2519,14 +2519,14 @@ void database::process_savings_withdraws()
   while( itr != idx.end() ) {
      if( itr->complete > head_block_time() )
         break;
-     adjust_balance( get_account( itr->to ), itr->amount );
+     adjust_balance( get_account( itr->to ), itr->get_amount() );
 
      modify( get_account( itr->from ), [&]( account_object& a )
      {
         a.savings_withdraw_requests--;
      });
 
-     push_virtual_operation( fill_transfer_from_savings_operation( itr->from, itr->to, itr->amount, itr->request_id, to_string( itr->memo) ) );
+     push_virtual_operation( fill_transfer_from_savings_operation( itr->from, itr->to, itr->get_amount(), itr->request_id, to_string( itr->memo) ) );
 
      remove( *itr );
      itr = idx.begin();
@@ -2718,14 +2718,14 @@ void database::process_conversions()
 
    while( itr != request_by_date.end() && itr->conversion_date <= now )
    {
-      auto amount_to_issue = itr->amount * fhistory.current_median_history;
+      auto amount_to_issue = itr->get_amount() * fhistory.current_median_history;
 
       adjust_balance( itr->owner, amount_to_issue );
 
-      net_sbd   += itr->amount;
+      net_sbd   += itr->get_amount();
       net_steem += amount_to_issue;
 
-      push_virtual_operation( fill_convert_request_operation ( itr->owner, itr->requestid, itr->amount, amount_to_issue ) );
+      push_virtual_operation( fill_convert_request_operation ( itr->owner, itr->requestid, itr->get_amount(), amount_to_issue ) );
 
       remove( *itr );
       itr = request_by_date.begin();
@@ -2799,9 +2799,9 @@ void database::expire_escrow_ratification()
       const auto& old_escrow = *escrow_itr;
       ++escrow_itr;
 
-      adjust_balance( old_escrow.from, old_escrow.steem_balance );
-      adjust_balance( old_escrow.from, old_escrow.sbd_balance );
-      adjust_balance( old_escrow.from, old_escrow.pending_fee );
+      adjust_balance( old_escrow.from, old_escrow.get_steem_balance() );
+      adjust_balance( old_escrow.from, old_escrow.get_sbd_balance() );
+      adjust_balance( old_escrow.from, old_escrow.get_fee() );
 
       remove( old_escrow );
    }
@@ -3088,7 +3088,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t sbd_init_supply )
             a.name = STEEM_INIT_MINER_NAME + ( i ? fc::to_string( i ) : std::string() );
             a.memo_key = init_public_key;
             a.get_balance() = asset( i ? 0 : init_supply, STEEM_SYMBOL );
-            a.sbd_balance = asset( i ? 0 : sbd_init_supply, SBD_SYMBOL );
+            a.get_sbd_balance() = asset( i ? 0 : sbd_init_supply, SBD_SYMBOL );
          } );
 
          create< account_authority_object >( [&]( account_authority_object& auth )
@@ -4337,7 +4337,7 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
       STEEM_ASSERT( new_order.sell_price.base.symbol  == old_order.sell_price.quote.symbol,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-      STEEM_ASSERT( new_order.for_sale > 0 && old_order.for_sale > 0,
+      STEEM_ASSERT( new_order.amount_for_sale().amount > 0 && old_order.amount_for_sale().amount > 0,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
       STEEM_ASSERT( match_price.quote.symbol == new_order.sell_price.base.symbol,
@@ -4485,7 +4485,7 @@ bool database::fill_order( const limit_order_object& order, const asset& pays, c
 
          modify( order, [&]( limit_order_object& b )
          {
-            b.for_sale -= pays.amount;
+            b.amount_for_sale().amount -= pays.amount;
          } );
          /**
           *  There are times when the AMOUNT_FOR_SALE * SALE_PRICE == 0 which means that we
@@ -4635,7 +4635,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
          case STEEM_ASSET_NUM_SBD:
             if( a.sbd_seconds_last_update != head_block_time() )
             {
-               acnt.sbd_seconds += fc::uint128_t(a.sbd_balance.amount.value) * (head_block_time() - a.sbd_seconds_last_update).to_seconds();
+               acnt.sbd_seconds += fc::uint128_t(a.get_sbd_balance().amount.value) * (head_block_time() - a.sbd_seconds_last_update).to_seconds();
                acnt.sbd_seconds_last_update = head_block_time();
 
                if( acnt.sbd_seconds > 0 &&
@@ -4645,7 +4645,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
                   interest *= get_dynamic_global_properties().sbd_interest_rate;
                   interest /= STEEM_100_PERCENT;
                   asset interest_paid(interest.to_uint64(), SBD_SYMBOL);
-                  acnt.sbd_balance += interest_paid;
+                  acnt.get_sbd_balance() += interest_paid;
                   acnt.sbd_seconds = 0;
                   acnt.sbd_last_interest_payment = head_block_time();
 
@@ -4659,10 +4659,10 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
                   } );
                }
             }
-            acnt.sbd_balance += delta;
+            acnt.get_sbd_balance() += delta;
             if( check_balance )
             {
-               FC_ASSERT( acnt.sbd_balance.amount.value >= 0, "Insufficient HBD funds" );
+               FC_ASSERT( acnt.get_sbd_balance().amount.value >= 0, "Insufficient HBD funds" );
             }
             break;
          case STEEM_ASSET_NUM_VESTS:
@@ -4678,7 +4678,8 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
    } );
 }
 
-void database::modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta, bool check_balance )
+void database::modify_reward_balance( const account_object& a/*, TTempBalance* balance*/, const asset& value_delta,
+   const asset& share_delta, bool check_balance )
 {
    modify( a, [&]( account_object& acnt )
    {
@@ -4687,10 +4688,10 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
          case STEEM_ASSET_NUM_STEEM:
             if( share_delta.amount.value == 0 )
             {
-               acnt.reward_steem_balance += value_delta;
+               acnt.get_rewards() += value_delta;
                if( check_balance )
                {
-                  FC_ASSERT( acnt.reward_steem_balance.amount.value >= 0, "Insufficient reward HIVE funds" );
+                  FC_ASSERT( acnt.get_rewards().amount.value >= 0, "Insufficient reward HIVE funds" );
                }
             }
             else
@@ -4705,10 +4706,10 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
             break;
          case STEEM_ASSET_NUM_SBD:
             FC_ASSERT( share_delta.amount.value == 0 );
-            acnt.reward_sbd_balance += value_delta;
+            acnt.get_sbd_rewards() += value_delta;
             if( check_balance )
             {
-               FC_ASSERT( acnt.reward_sbd_balance.amount.value >= 0, "Insufficient reward HBD funds" );
+               FC_ASSERT( acnt.get_sbd_rewards().amount.value >= 0, "Insufficient reward HBD funds" );
             }
             break;
          default:
@@ -4792,7 +4793,7 @@ struct smt_reward_balance_operator
 };
 #endif
 
-void database::adjust_balance( const account_object& a, const asset& delta )
+void database::adjust_balance( const account_object& a/*, TTempBalance* balance*/, const asset& delta )
 {
    if ( delta.amount < 0 )
    {
@@ -4815,38 +4816,11 @@ void database::adjust_balance( const account_object& a, const asset& delta )
    else
 #endif
    {
-      modify_balance( a, delta, check_balance );
+      modify_balance( a/*, balance*/, delta, check_balance );
    }
 }
 
-void database::adjust_balance( const account_name_type& name, const asset& delta )
-{
-   if ( delta.amount < 0 )
-   {
-      asset available = get_balance( name, delta.symbol );
-      FC_ASSERT( available >= -delta,
-         "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
-            ("acc", name)("r", delta)("a", available) );
-   }
-
-   bool check_balance = has_hardfork( STEEM_HARDFORK_0_20__1811 );
-
-#ifdef STEEM_ENABLE_SMT
-   if( delta.symbol.space() == asset_symbol_type::smt_nai_space )
-   {
-      // No account object modification for SMT balance, hence separate handling here.
-      // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
-      smt_regular_balance_operator balance_operator( delta );
-      adjust_smt_balance< account_regular_balance_object >( name, delta, false/*check_account*/, balance_operator );
-   }
-   else
-#endif
-   {
-      modify_balance( get_account( name ), delta, check_balance );
-   }
-}
-
-void database::adjust_savings_balance( const account_object& a, const asset& delta )
+void database::adjust_savings_balance( const account_object& a/*, TTempBalance* balance*/, const asset& delta )
 {
    bool check_balance = has_hardfork( STEEM_HARDFORK_0_20__1811 );
 
@@ -4855,16 +4829,16 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
       switch( delta.symbol.asset_num )
       {
          case STEEM_ASSET_NUM_STEEM:
-            acnt.savings_balance += delta;
+            acnt.get_savings() += delta;
             if( check_balance )
             {
-               FC_ASSERT( acnt.savings_balance.amount.value >= 0, "Insufficient savings HIVE funds" );
+               FC_ASSERT( acnt.get_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
             }
             break;
          case STEEM_ASSET_NUM_SBD:
             if( a.savings_sbd_seconds_last_update != head_block_time() )
             {
-               acnt.savings_sbd_seconds += fc::uint128_t(a.savings_sbd_balance.amount.value) * (head_block_time() - a.savings_sbd_seconds_last_update).to_seconds();
+               acnt.savings_sbd_seconds += fc::uint128_t(a.get_sbd_savings().amount.value) * (head_block_time() - a.savings_sbd_seconds_last_update).to_seconds();
                acnt.savings_sbd_seconds_last_update = head_block_time();
 
                if( acnt.savings_sbd_seconds > 0 &&
@@ -4874,7 +4848,7 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
                   interest *= get_dynamic_global_properties().sbd_interest_rate;
                   interest /= STEEM_100_PERCENT;
                   asset interest_paid(interest.to_uint64(), SBD_SYMBOL);
-                  acnt.savings_sbd_balance += interest_paid;
+                  acnt.get_sbd_savings() += interest_paid;
                   acnt.savings_sbd_seconds = 0;
                   acnt.savings_sbd_last_interest_payment = head_block_time();
 
@@ -4888,10 +4862,10 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
                   } );
                }
             }
-            acnt.savings_sbd_balance += delta;
+            acnt.get_sbd_savings() += delta;
             if( check_balance )
             {
-               FC_ASSERT( acnt.savings_sbd_balance.amount.value >= 0, "Insufficient savings HBD funds" );
+               FC_ASSERT( acnt.get_sbd_savings().amount.value >= 0, "Insufficient savings HBD funds" );
             }
             break;
          default:
@@ -4900,7 +4874,7 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
    } );
 }
 
-void database::adjust_reward_balance( const account_object& a, const asset& value_delta,
+void database::adjust_reward_balance( const account_object& a/*, TTempBalance* balance*/, const asset& value_delta,
                                       const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
 {
    bool check_balance = has_hardfork( STEEM_HARDFORK_0_20__1811 );
@@ -4917,28 +4891,7 @@ void database::adjust_reward_balance( const account_object& a, const asset& valu
    }
 #endif
 
-   modify_reward_balance(a, value_delta, share_delta, check_balance);
-}
-
-void database::adjust_reward_balance( const account_name_type& name, const asset& value_delta,
-                                      const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
-{
-   bool check_balance = has_hardfork( STEEM_HARDFORK_0_20__1811 );
-   FC_ASSERT( value_delta.symbol.is_vesting() == false && share_delta.symbol.is_vesting() );
-
-#ifdef STEEM_ENABLE_SMT
-   // No account object modification for SMT balance, hence separate handling here.
-   // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
-   if( value_delta.symbol.space() == asset_symbol_type::smt_nai_space )
-   {
-      smt_reward_balance_operator balance_operator( value_delta, share_delta );
-      adjust_smt_balance< account_rewards_balance_object >( name, value_delta, true/*check_account*/, balance_operator );
-      return;
-   }
-#endif
-
-   const auto& a = get_account( name );
-   modify_reward_balance(a, value_delta, share_delta, check_balance);
+   modify_reward_balance( a/*, balance*/, value_delta, share_delta, check_balance );
 }
 
 void database::adjust_supply( const asset& delta, bool adjust_vesting )
@@ -5001,7 +4954,7 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
       case STEEM_ASSET_NUM_STEEM:
          return a.get_balance();
       case STEEM_ASSET_NUM_SBD:
-         return a.sbd_balance;
+         return a.get_sbd_balance();
       default:
       {
 #ifdef STEEM_ENABLE_SMT
@@ -5023,35 +4976,14 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
    }
 }
 
-asset database::get_balance( const account_name_type& name, asset_symbol_type symbol )const
-{
-#ifdef STEEM_ENABLE_SMT
-   if ( symbol.space() == asset_symbol_type::smt_nai_space )
-   {
-      auto key = boost::make_tuple( name, symbol.is_vesting() ? symbol.get_paired_symbol() : symbol );
-      const account_regular_balance_object* arbo = find< account_regular_balance_object, by_owner_liquid_symbol >( key );
-
-      if( arbo == nullptr )
-      {
-         return asset( 0, symbol );
-      }
-      else
-      {
-         return symbol.is_vesting() ? arbo->vesting : arbo->liquid;
-      }
-   }
-#endif
-   return get_balance( get_account( name ), symbol );
-}
-
 asset database::get_savings_balance( const account_object& a, asset_symbol_type symbol )const
 {
    switch( symbol.asset_num )
    {
       case STEEM_ASSET_NUM_STEEM:
-         return a.savings_balance;
+         return a.get_savings();
       case STEEM_ASSET_NUM_SBD:
-         return a.savings_sbd_balance;
+         return a.get_sbd_savings();
       default: // Note no savings balance for SMT per comments in issue 1682.
          FC_ASSERT( !"invalid symbol" );
    }
@@ -5648,11 +5580,11 @@ void database::validate_invariants()const
       for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
       {
          total_supply += itr->get_balance();
-         total_supply += itr->savings_balance;
-         total_supply += itr->reward_steem_balance;
-         total_sbd += itr->sbd_balance;
-         total_sbd += itr->savings_sbd_balance;
-         total_sbd += itr->reward_sbd_balance;
+         total_supply += itr->get_savings();
+         total_supply += itr->get_rewards();
+         total_sbd += itr->get_sbd_balance();
+         total_sbd += itr->get_sbd_savings();
+         total_sbd += itr->get_sbd_rewards();
          total_vesting += itr->vesting_shares;
          total_vesting += itr->reward_vesting_balance;
          pending_vesting_steem += itr->reward_vesting_steem;
@@ -5667,10 +5599,10 @@ void database::validate_invariants()const
 
       for( auto itr = convert_request_idx.begin(); itr != convert_request_idx.end(); ++itr )
       {
-         if( itr->amount.symbol == STEEM_SYMBOL )
-            total_supply += itr->amount;
-         else if( itr->amount.symbol == SBD_SYMBOL )
-            total_sbd += itr->amount;
+         if( itr->get_amount().symbol == STEEM_SYMBOL )
+            total_supply += itr->get_amount();
+         else if( itr->get_amount().symbol == SBD_SYMBOL )
+            total_sbd += itr->get_amount();
          else
             FC_ASSERT( false, "Encountered illegal symbol in convert_request_object" );
       }
@@ -5680,26 +5612,23 @@ void database::validate_invariants()const
       for( auto itr = limit_order_idx.begin(); itr != limit_order_idx.end(); ++itr )
       {
          if( itr->sell_price.base.symbol == STEEM_SYMBOL )
-         {
-            total_supply += asset( itr->for_sale, STEEM_SYMBOL );
-         }
+            total_supply += itr->amount_for_sale();
          else if ( itr->sell_price.base.symbol == SBD_SYMBOL )
-         {
-            total_sbd += asset( itr->for_sale, SBD_SYMBOL );
-         }
+            total_sbd += itr->amount_for_sale();
+         //note: limit orders handle SMT markets as well
       }
 
       const auto& escrow_idx = get_index< escrow_index >().indices().get< by_id >();
 
       for( auto itr = escrow_idx.begin(); itr != escrow_idx.end(); ++itr )
       {
-         total_supply += itr->steem_balance;
-         total_sbd += itr->sbd_balance;
+         total_supply += itr->get_steem_balance();
+         total_sbd += itr->get_sbd_balance();
 
-         if( itr->pending_fee.symbol == STEEM_SYMBOL )
-            total_supply += itr->pending_fee;
-         else if( itr->pending_fee.symbol == SBD_SYMBOL )
-            total_sbd += itr->pending_fee;
+         if( itr->get_fee().symbol == STEEM_SYMBOL )
+            total_supply += itr->get_fee();
+         else if( itr->get_fee().symbol == SBD_SYMBOL )
+            total_sbd += itr->get_fee();
          else
             FC_ASSERT( false, "found escrow pending fee that is not HBD or HIVE" );
       }
@@ -5708,10 +5637,10 @@ void database::validate_invariants()const
 
       for( auto itr = savings_withdraw_idx.begin(); itr != savings_withdraw_idx.end(); ++itr )
       {
-         if( itr->amount.symbol == STEEM_SYMBOL )
-            total_supply += itr->amount;
-         else if( itr->amount.symbol == SBD_SYMBOL )
-            total_sbd += itr->amount;
+         if( itr->get_amount().symbol == STEEM_SYMBOL )
+            total_supply += itr->get_amount();
+         else if( itr->get_amount().symbol == SBD_SYMBOL )
+            total_sbd += itr->get_amount();
          else
             FC_ASSERT( false, "found savings withdraw that is not HBD or HIVE" );
       }
@@ -5823,7 +5752,7 @@ void database::validate_smt_invariants()const
       {
          if( itr->sell_price.base.symbol.space() == asset_symbol_type::smt_nai_space )
          {
-            asset a( itr->for_sale, itr->sell_price.base.symbol );
+            asset a( itr->amount_for_sale(), itr->sell_price.base.symbol );
             FC_ASSERT( a.symbol.is_vesting() == false );
             asset zero_liquid = asset( 0, a.symbol );
             asset zero_vesting = asset( 0, a.symbol.get_paired_symbol() );
