@@ -77,10 +77,8 @@ fc::optional< delayed_vote_count_type > delayed_voting::update_votes( const opt_
    return res;
 }
 
-void delayed_voting::run( const block_notification& note )
+void delayed_voting::run( const fc::time_point_sec& head_time )
 {
-   auto head_time = note.block.timestamp;
-
    const auto& idx = db.get_index< account_index, by_delayed_voting >();
    auto current = idx.begin();
 
