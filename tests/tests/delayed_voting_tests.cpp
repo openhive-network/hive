@@ -2056,7 +2056,7 @@ BOOST_AUTO_TEST_CASE( sneak_test_01 )
       int64_t basic_votes = get_votes( "witness" );
 
       //First start timer with low, not suspicious amount of vests
-      vest( "alice", "alice", ASSET( "0.001 TESTS" ), bob_private_key );
+      vest( "alice", "alice", ASSET( "0.001 TESTS" ), alice_private_key );
       generate_block();
 
       int64_t votes_01 = get_votes( "witness" );
@@ -2065,18 +2065,19 @@ BOOST_AUTO_TEST_CASE( sneak_test_01 )
       generate_blocks( start_time + fc::days(DAYS_FOR_DELAYED_VOTING - 1) , true );
       generate_block();
 
-      vest( "alice", "alice", ASSET( "1000000.000 TESTS" ), bob_private_key );
-      int64_t votes_02 = get_votes( "witness" );
+      // just before lock down alice vests huge amount of TESTs
+      const auto alice_vp = db->get_account( "alice" ).vesting_shares.amount.value;
+      vest( "alice", "alice", ASSET( "1000000.000 TESTS" ), alice_private_key );
+      const auto alice_vp_2 = db->get_account( "alice" ).vesting_shares.amount.value;
       generate_block();
 
       generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
       generate_block();
 
-      auto votes_power = db->get_account( "alice" ).vesting_shares;
-      int64_t votes_03 = get_votes( "witness" );
-      BOOST_REQUIRE_EQUAL( votes_03, basic_votes + votes_power.amount.value );
-
+      // lock is working and alice doesn't have huge amount of votes in sneaky way
+      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes + alice_vp );
       generate_blocks( start_time + (2 * STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ) , true );
+      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes + alice_vp_2 );
 
 
       validate_database();
