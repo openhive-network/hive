@@ -2108,6 +2108,63 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
    FC_LOG_AND_RETHROW();
 }
 
+BOOST_AUTO_TEST_CASE( small_common_test_01 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Testing: simulation of trying to overcome system" );
+
+      ACTORS( (alice)(witness) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      //auto start_time = db->head_block_time();
+
+      FUND( "alice", ASSET( "1000000.001 TESTS" ) );
+      FUND( "witness", ASSET( "10000.000 TESTS" ) );
+      //Prepare witnesses
+      
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      generate_block();
+
+      auto start_time = db->head_block_time();
+      witness_vote( "alice", "witness", true/*approve*/, alice_private_key );
+      generate_block();
+
+      int64_t basic_votes = get_votes( "witness" );
+
+      //First start timer with low, not suspicious amount of vests
+      vest( "alice", "alice", ASSET( "0.001 TESTS" ), alice_private_key );
+      generate_block();
+
+      int64_t votes_01 = get_votes( "witness" );
+      BOOST_REQUIRE_EQUAL( votes_01, basic_votes );
+
+      generate_blocks( start_time + fc::days(DAYS_FOR_DELAYED_VOTING - 1) , true );
+      generate_block();
+
+      // just before lock down alice vests huge amount of TESTs
+      const auto alice_vp = db->get_account( "alice" ).vesting_shares.amount.value;
+      vest( "alice", "alice", ASSET( "1000000.000 TESTS" ), alice_private_key );
+      const auto alice_vp_2 = db->get_account( "alice" ).vesting_shares.amount.value;
+      generate_block();
+
+      generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
+      generate_block();
+
+      // lock is working and alice doesn't have huge amount of votes in sneaky way
+      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes + alice_vp );
+      generate_blocks( start_time + (2 * STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ) , true );
+      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes + alice_vp_2 );
+
+
+      validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
 #define VOTING_POWER( account ) db->get_account( account ).witness_vote_weight().value
 #define PROXIED_VSF( account ) db->get_account( account ).proxied_vsf_votes_total().value
 
