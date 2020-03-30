@@ -1365,6 +1365,86 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
    FC_LOG_AND_RETHROW();
 }
 
+BOOST_AUTO_TEST_CASE( delayed_voting_basic_04 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Complex scenario for `delayed_voting` class" );
+
+      ACTORS( (user0)(user1)(user2)(user3)(user4)(user5)(user6)(user7)(user8)(user9) )
+
+      std::array< std::string, 10 > accs{
+                                          "user0",
+                                          "user1",
+                                          "user2",
+                                          "user3",
+                                          "user4",
+                                          "user5",
+                                          "user6",
+                                          "user7",
+                                          "user8",
+                                          "user9"
+                                       };
+
+      delayed_voting dv = delayed_voting( *db );
+
+      auto start_time = db->head_block_time();
+
+      auto move_forward = [ &start_time, this ]( const fc::microseconds& time )
+      {
+         generate_blocks( db->head_block_time() + time );
+         start_time = db->head_block_time();
+      };
+
+      {
+         for( uint32_t i = 0; i < 36; ++i )
+         {
+            for( auto& item : accs )
+               dv.add_delayed_value( db->get_account( item ), start_time + fc::hours( i ), ( i + 1 ) * 1'000'000/*milion*/ );
+         }
+
+         move_forward( fc::days( 4 ) );
+      }
+      {
+         int64_t cnt = 0;
+         delayed_voting::opt_votes_update_data_items withdraw_items = delayed_voting::votes_update_data_items();
+
+         for( auto& item : accs )
+         {
+            bool withdraw_executor = cnt == accs.size() - 1;
+
+            dv.add_votes( withdraw_items, withdraw_executor, ( cnt + 1 ) * 10, db->get_account( item ) );
+
+            if( withdraw_executor )
+               dv.add_votes( withdraw_items, withdraw_executor, -8888, db->get_account( item ) );
+
+            ++cnt;
+         }
+         BOOST_REQUIRE_EQUAL( withdraw_items->size(), accs.size() );
+         dv.update_votes( withdraw_items, start_time );
+      }
+      {
+         for( uint32_t i = 0; i < 34; ++i )
+         {
+            move_forward( fc::days( 1 ) );
+
+            dv.run( start_time );
+
+            for( auto& item : accs )
+               BOOST_REQUIRE_GE( db->get_account( item ).sum_delayed_votes, 0 );
+         }
+
+         move_forward( fc::days( 1 ) );
+
+         for( auto& item : accs )
+            BOOST_REQUIRE_EQUAL( db->get_account( item ).sum_delayed_votes, 0 );
+      }
+
+      validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
 {
    auto vcmp = []( const std::deque< delayed_votes_data >& a, const account_object::t_delayed_votes& b )

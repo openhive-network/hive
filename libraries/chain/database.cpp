@@ -1945,7 +1945,7 @@ void database::process_delayed_voting( const block_notification& note )
    if( has_hardfork( STEEM_HARDFORK_0_24 ) )
    {
       delayed_voting dv( *this );
-      dv.run( note );
+      dv.run( note.block.timestamp );
    }
 }
 

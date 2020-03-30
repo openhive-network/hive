@@ -46,7 +46,7 @@ class delayed_voting
       void add_votes( opt_votes_update_data_items& items, const bool withdraw_executor, const signed_delayed_vote_count_type val, const account_object& account );
       fc::optional< delayed_vote_count_type > update_votes( const opt_votes_update_data_items& items, const time_point_sec& head_time );
 
-      void run( const block_notification& note );
+      void run( const fc::time_point_sec& head_time );
 };
 
 } } // namespace steem::chain
