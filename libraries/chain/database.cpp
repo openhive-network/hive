@@ -1627,6 +1627,43 @@ void database::clear_null_account_balance()
    post_push_virtual_operation( vop_op );
 }
 
+void database::restore_accounts( const hf23_helper::hf23_items& balances, const std::set< std::string >& restored_accounts )
+{
+   auto zero_steem = asset( 0 , STEEM_SYMBOL );
+   auto zero_sbd = asset( 0 , SBD_SYMBOL );
+
+   const auto& treasury_account = get_account( STEEM_TREASURY_ACCOUNT );
+
+   for( auto& name : restored_accounts )
+   {
+      auto found = balances.find( hf23_helper::hf23_item{ name, zero_steem, zero_sbd } );
+
+      if( found == balances.end() )
+      {
+         ilog( "The account ${acc} hadn't removed balances, balances can't be restored", ( "acc", name ) );
+         continue;
+      }
+
+      const auto* account_ptr = find_account( name );
+      if( account_ptr == nullptr )
+      {
+         ilog( "The account ${acc} doesn't exist at all, balances can't be restored", ( "acc", name ) );
+         continue;
+      }
+
+      adjust_balance( treasury_account, -found->sbd_balance );
+      adjust_balance( treasury_account, -found->balance );
+
+      adjust_balance( *account_ptr, found->sbd_balance );
+      adjust_balance( *account_ptr, found->balance );
+
+      operation vop = hardfork_hive_restore_operation( name, found->sbd_balance, found->balance );
+      push_virtual_operation( vop );
+
+      ilog( "Balances ${sbd} and ${steem} for the account ${acc} were restored", ( "sbd", found->sbd_balance )( "steem", found->balance )( "acc", name ) );
+   }
+}
+
 void database::clear_account( const account_object& account,
    asset* transferred_sbd_ptr, asset* transferred_steem_ptr,
    asset* converted_vests_ptr, asset* steem_from_vests_ptr )
@@ -5568,10 +5605,12 @@ void database::apply_hardfork( uint32_t hardfork )
             asset total_transferred_sbd, total_transferred_steem, total_converted_vests, total_steem_from_vests;
             clear_account( *account_ptr, &total_transferred_sbd, &total_transferred_steem, &total_converted_vests, &total_steem_from_vests );
 
+            hf23_helper::gather_balance( _hf23_items, account_name, total_transferred_steem, total_transferred_sbd );
+
             operation vop = hardfork_hive_operation( account_name, total_transferred_sbd, total_transferred_steem, total_converted_vests, total_steem_from_vests );
             push_virtual_operation( vop );
          }
-         
+
          // Reset TAPOS buffer to avoid replay attack
          const auto& bs_idx = get_index< block_summary_index, by_id >();
          for( auto itr = bs_idx.begin(); itr != bs_idx.end(); ++itr )
@@ -5584,6 +5623,7 @@ void database::apply_hardfork( uint32_t hardfork )
       }
       case STEEM_HARDFORK_0_24:
       {
+         restore_accounts( _hf23_items, hardforkprotect::get_restored_accounts() );
          break;
       }
       case STEEM_SMT_HARDFORK:

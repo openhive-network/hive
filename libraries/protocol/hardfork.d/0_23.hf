@@ -8,3 +8,20 @@ long hf23_time();
 #define STEEM_HARDFORK_0_23_VERSION hardfork_version( 0, 23 )
 
 #endif
+
+
+namespace hardforkprotect
+{
+
+inline static const std::set< std::string >& get_restored_accounts()
+{
+   static const std::set< std::string > restored_accounts
+   {
+      // HERE PUT ALL RESTORED ACCOUNTS
+      // accounts which should be restored
+   };
+
+   return restored_accounts;
+}
+
+}

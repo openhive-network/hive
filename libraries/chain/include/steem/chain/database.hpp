@@ -11,6 +11,7 @@
 
 #include <steem/chain/util/advanced_benchmark_dumper.hpp>
 #include <steem/chain/util/signal.hpp>
+#include <steem/chain/util/hf23_helper.hpp>
 
 #include <steem/protocol/protocol.hpp>
 #include <steem/protocol/hardfork.hpp>
@@ -518,6 +519,9 @@ namespace steem { namespace chain {
          ///@}
 #endif
 
+         //Restores balances for some accounts, which were cleared by mistake during HF23
+         void restore_accounts( const hf23_helper::hf23_items& balances, const std::set< std::string >& restored_accounts );
+
          //Clears all pending operations on account that involve balance, moves tokens to STEEM_TREASURY_ACCOUNT
          void clear_account( const account_object& account,
             asset* transferred_sbd_ptr = nullptr, asset* transferred_steem_ptr = nullptr,
@@ -654,6 +658,8 @@ namespace steem { namespace chain {
 
          util::advanced_benchmark_dumper  _benchmark_dumper;
          index_delegate_map            _index_delegate_map;
+
+         hf23_helper::hf23_items _hf23_items;
 
          fc::signal<void(const required_action_notification&)> _pre_apply_required_action_signal;
          fc::signal<void(const required_action_notification&)> _post_apply_required_action_signal;
