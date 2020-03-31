@@ -43,6 +43,90 @@ std::string asset_to_string( const asset& a )
 
 BOOST_FIXTURE_TEST_SUITE( hf23_tests, hf23_database_fixture )
 
+BOOST_AUTO_TEST_CASE( restore_accounts_02 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Saving during HF23 and restoring balances during HF24" );
+
+      ACTORS( (alice0)(alice1)(alice2)(alice3)(alice4)(dude) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      std::set< std::string > accounts{ "alice0", "alice1", "alice2", "alice3", "alice4" };
+
+      struct tmp_data
+      {
+         std::string name;
+
+         asset       balance;
+         asset       sbd_balance;
+      };
+      auto cmp = []( const tmp_data& a, const tmp_data& b )
+      {
+         return std::strcmp( a.name.c_str(), b.name.c_str() ) < 0;
+      };
+      std::set< tmp_data, decltype( cmp ) > old_balances( cmp );
+      hf23_helper::hf23_items _balances;
+
+      uint32_t cnt = 1;
+      for( auto& account : accounts )
+      {
+         FUND( account, asset( cnt * 1000,      STEEM_SYMBOL ) );
+         FUND( account, asset( cnt * 1000 + 1,  SBD_SYMBOL ) );
+         ++cnt;
+
+         old_balances.emplace( tmp_data{ account, db->get_account( account ).balance, db->get_account( account ).sbd_balance } );
+      }
+      {
+         FUND( "dude", asset( 68,   STEEM_SYMBOL ) );
+         FUND( "dude", asset( 78,   SBD_SYMBOL ) );
+         generate_block();
+      }
+      {
+         db->clear_accounts( _balances, accounts );
+
+         for( auto& account : accounts )
+         {
+            auto& _acc = db->get_account( account );
+
+            idump(( _acc.balance ));
+            idump(( _acc.sbd_balance ));
+            BOOST_REQUIRE( _acc.balance     == asset( 0, STEEM_SYMBOL ) );
+            BOOST_REQUIRE( _acc.sbd_balance == asset( 0, SBD_SYMBOL ) );
+         }
+         BOOST_REQUIRE( db->get_account( "dude" ).balance      == asset( 68, STEEM_SYMBOL ) );
+         BOOST_REQUIRE( db->get_account( "dude" ).sbd_balance  == asset( 78, SBD_SYMBOL ) );
+      }
+      {
+         auto accounts_ex = accounts;
+         accounts_ex.insert( "dude" );
+         accounts_ex.insert( "devil" );
+
+         db->restore_accounts( _balances, accounts_ex );
+
+         auto itr_old_balances = old_balances.begin();
+         for( auto& account : accounts )
+         {
+            auto& _acc = db->get_account( account );
+
+            BOOST_REQUIRE( account           == itr_old_balances->name );
+            BOOST_REQUIRE( _acc.balance      == itr_old_balances->balance );
+            BOOST_REQUIRE( _acc.sbd_balance  == itr_old_balances->sbd_balance );
+
+            ++itr_old_balances;
+         }
+         BOOST_REQUIRE( db->get_account( "dude" ).balance      == asset( 68, STEEM_SYMBOL ) );
+         BOOST_REQUIRE( db->get_account( "dude" ).sbd_balance  == asset( 78, SBD_SYMBOL ) );
+      }
+
+      database_fixture::validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( restore_accounts_01 )
 {
    try

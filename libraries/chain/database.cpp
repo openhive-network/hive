@@ -1664,6 +1664,24 @@ void database::restore_accounts( const hf23_helper::hf23_items& balances, const 
    }
 }
 
+void database::clear_accounts( hf23_helper::hf23_items& balances, const std::set< std::string >& cleared_accounts )
+{
+   for( auto account_name : cleared_accounts )
+   {
+      const auto* account_ptr = find_account( account_name );
+      if( account_ptr == nullptr )
+         continue;
+
+      asset total_transferred_sbd, total_transferred_steem, total_converted_vests, total_steem_from_vests;
+      clear_account( *account_ptr, &total_transferred_sbd, &total_transferred_steem, &total_converted_vests, &total_steem_from_vests );
+
+      hf23_helper::gather_balance( balances, account_name, total_transferred_steem, total_transferred_sbd );
+
+      operation vop = hardfork_hive_operation( account_name, total_transferred_sbd, total_transferred_steem, total_converted_vests, total_steem_from_vests );
+      push_virtual_operation( vop );
+   }
+}
+
 void database::clear_account( const account_object& account,
    asset* transferred_sbd_ptr, asset* transferred_steem_ptr,
    asset* converted_vests_ptr, asset* steem_from_vests_ptr )
@@ -5596,20 +5614,7 @@ void database::apply_hardfork( uint32_t hardfork )
          break;
       case STEEM_HARDFORK_0_23:
       {
-         for( auto account_name : hardforkprotect::get_steemit_accounts() )
-         {
-            const auto* account_ptr = find_account( account_name );
-            if( account_ptr == nullptr )
-               continue;
-
-            asset total_transferred_sbd, total_transferred_steem, total_converted_vests, total_steem_from_vests;
-            clear_account( *account_ptr, &total_transferred_sbd, &total_transferred_steem, &total_converted_vests, &total_steem_from_vests );
-
-            hf23_helper::gather_balance( _hf23_items, account_name, total_transferred_steem, total_transferred_sbd );
-
-            operation vop = hardfork_hive_operation( account_name, total_transferred_sbd, total_transferred_steem, total_converted_vests, total_steem_from_vests );
-            push_virtual_operation( vop );
-         }
+         clear_accounts( _hf23_items,hardforkprotect::get_steemit_accounts() );
 
          // Reset TAPOS buffer to avoid replay attack
          const auto& bs_idx = get_index< block_summary_index, by_id >();
