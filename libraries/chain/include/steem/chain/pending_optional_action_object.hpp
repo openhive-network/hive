@@ -11,11 +11,10 @@ using steem::protocol::optional_automated_action;
 
 class pending_optional_action_object : public object< pending_optional_action_object_type, pending_optional_action_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( pending_optional_action_object )
-
    public:
       template< typename Constructor, typename Allocator >
-      pending_optional_action_object( Constructor&& c, allocator< Allocator > a )
+      pending_optional_action_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }

@@ -23,12 +23,11 @@ class witness_custom_op_object : public object< witness_custom_op_object_type, w
 {
    public:
       template< typename Constructor, typename Allocator >
-      witness_custom_op_object( Constructor&& c, allocator< Allocator > a )
+      witness_custom_op_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      witness_custom_op_object() {}
 
       id_type              id;
       account_name_type    account;

@@ -35,12 +35,11 @@ class follow_object : public object< follow_object_type, follow_object >
 {
    public:
       template< typename Constructor, typename Allocator >
-      follow_object( Constructor&& c, allocator< Allocator > a )
+      follow_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      follow_object() {}
 
       id_type           id;
 
@@ -60,8 +59,8 @@ class feed_object : public object< feed_object_type, feed_object >
       typedef t_vector<account_name_type> t_reblogged_by_container;
 
       template< typename Constructor, typename Allocator >
-      feed_object( Constructor&& c, allocator< Allocator > a )
-      :reblogged_by( a )
+      feed_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id ), reblogged_by( a )
       {
          c( *this );
       }
@@ -83,7 +82,8 @@ class blog_object : public object< blog_object_type, blog_object >
 {
    public:
       template< typename Constructor, typename Allocator >
-      blog_object( Constructor&& c, allocator< Allocator > a )
+      blog_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
@@ -111,12 +111,11 @@ class blog_author_stats_object : public object< blog_author_stats_object_type, b
 {
    public:
       template< typename Constructor, typename Allocator >
-      blog_author_stats_object( Constructor&& c, allocator< Allocator > a )
+      blog_author_stats_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      blog_author_stats_object() {}
 
       id_type           id;
       account_name_type blogger;
@@ -132,12 +131,11 @@ class reputation_object : public object< reputation_object_type, reputation_obje
 {
    public:
       template< typename Constructor, typename Allocator >
-      reputation_object( Constructor&& c, allocator< Allocator > a )
+      reputation_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      reputation_object() {}
 
       id_type           id;
 
@@ -152,12 +150,11 @@ class follow_count_object : public object< follow_count_object_type, follow_coun
 {
    public:
       template< typename Constructor, typename Allocator >
-      follow_count_object( Constructor&& c, allocator< Allocator > a )
+      follow_count_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      follow_count_object() {}
 
       id_type           id;
 

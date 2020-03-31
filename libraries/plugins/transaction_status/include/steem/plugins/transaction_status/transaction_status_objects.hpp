@@ -30,12 +30,11 @@ class transaction_status_object : public object< transaction_status_object_type,
 {
 public:
    template< typename Constructor, typename Allocator >
-   transaction_status_object( Constructor&& c, allocator< Allocator > a )
+   transaction_status_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+      : id( _id )
    {
       c( *this );
    }
-
-   transaction_status_object() {}
 
    id_type                     id;
    transaction_id_type         transaction_id;

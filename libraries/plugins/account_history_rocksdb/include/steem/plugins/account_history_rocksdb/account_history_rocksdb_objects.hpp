@@ -25,8 +25,8 @@ class volatile_operation_object : public object< volatile_operation_object_type,
 
    public:
       template< typename Constructor, typename Allocator >
-      volatile_operation_object( Constructor&& c, allocator< Allocator > a )
-         :serialized_op( a ), impacted( a )
+      volatile_operation_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id ), serialized_op( a ), impacted( a )
       {
          c( *this );
       }

@@ -20,12 +20,10 @@ namespace steem { namespace chain {
     */
    class transaction_object : public object< transaction_object_type, transaction_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( transaction_object )
-
       public:
          template< typename Constructor, typename Allocator >
-         transaction_object( Constructor&& c, allocator< Allocator > a )
-            : packed_trx( a )
+         transaction_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+            : id( _id ), packed_trx( a )
          {
             c( *this );
          }

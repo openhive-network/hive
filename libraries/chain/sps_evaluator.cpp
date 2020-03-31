@@ -44,22 +44,7 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
          FC_ASSERT(commentObject != nullptr, "Proposal permlink must point to the article posted by creator or receiver");
       }
 
-      _db.create< proposal_object >( [&]( proposal_object& proposal )
-      {
-         proposal.proposal_id = proposal.id;
-
-         proposal.creator = o.creator;
-         proposal.receiver = o.receiver;
-
-         proposal.start_date = o.start_date;
-         proposal.end_date = o.end_date;
-
-         proposal.daily_pay = o.daily_pay;
-
-         proposal.subject = o.subject.c_str();
-
-         proposal.permlink = o.permlink.c_str();
-      });
+      _db.create< proposal_object >( o.creator, o.receiver, o.start_date, o.end_date, o.daily_pay, o.subject, o.permlink );
 
       _db.adjust_balance( owner_account, -fee_sbd );
       /// Fee shall be paid to the treasury
@@ -89,11 +74,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
          if( o.approve )
          {
             if( found == pvidx.end() )
-               _db.create< proposal_vote_object >( [&]( proposal_vote_object& proposal_vote )
-               {
-                  proposal_vote.voter = o.voter;
-                  proposal_vote.proposal_id = id;
-               } );
+               _db.create< proposal_vote_object >( o.voter, id );
          }
          else
          {

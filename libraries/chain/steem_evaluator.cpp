@@ -277,33 +277,24 @@ void verify_authority_accounts_exist(
    }
 }
 
-void initialize_account_object( account_object& acc, const account_name_type& name, const public_key_type& key,
-   const dynamic_global_property_object& props, bool mined, const account_name_type& recovery_account, uint32_t hardfork )
+const account_object& create_account( database& db, const account_name_type& name, const public_key_type& key,
+   const dynamic_global_property_object& props, bool mined, const account_name_type& recovery_account,
+   asset initial_delegation = asset( 0, VESTS_SYMBOL ) )
 {
-   acc.name = name;
-   acc.memo_key = key;
-   acc.created = props.time;
-   acc.voting_manabar.last_update_time = props.time.sec_since_epoch();
-   acc.downvote_manabar.last_update_time = props.time.sec_since_epoch();
-   acc.mined = mined;
-
-   if( hardfork < STEEM_HARDFORK_0_20__2539 )
-   {
-      acc.voting_manabar.current_mana = STEEM_100_PERCENT;
-   }
-
-   if( hardfork >= STEEM_HARDFORK_0_11 )
+   account_name_type actual_recovery_account;
+   if( db.has_hardfork( STEEM_HARDFORK_0_11 ) )
    {
       FC_TODO( "If after HF 20, there are no temp account creations, the HF check can be removed." )
-      if( ( hardfork < STEEM_HARDFORK_0_20__1782 ) || ( recovery_account != STEEM_TEMP_ACCOUNT ) )
-      {
-         acc.recovery_account = recovery_account;
-      }
+      if( !db.has_hardfork( STEEM_HARDFORK_0_20__1782 ) || ( recovery_account != STEEM_TEMP_ACCOUNT ) )
+         actual_recovery_account = recovery_account;
    }
    else
    {
-      acc.recovery_account = "steem";
+      actual_recovery_account = "steem";
    }
+
+   return db.create< account_object >( name, key, props.time, mined, actual_recovery_account,
+      !db.has_hardfork( STEEM_HARDFORK_0_20__2539 ) /*voting mana 100%*/, initial_delegation );
 }
 
 void account_create_evaluator::do_apply( const account_create_operation& o )
@@ -361,17 +352,10 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
       _db.adjust_balance( _db.get< account_object, by_name >( STEEM_NULL_ACCOUNT ), o.fee );
    }
 
-   const auto& new_account = _db.create< account_object >( [&]( account_object& acc )
-   {
-      initialize_account_object( acc, o.new_account_name, o.memo_key, props, false /*mined*/, o.creator, _db.get_hardfork() );
-   });
+   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props, false /*mined*/, o.creator );
 
 #ifndef IS_LOW_MEM
-   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-   {
-      meta.account = new_account.id;
-      from_string( meta.json_metadata, o.json_metadata );
-   });
+   _db.create< account_metadata_object >( new_account, o.json_metadata );
 #else
    FC_UNUSED( new_account );
 #endif
@@ -462,18 +446,10 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
       _db.adjust_balance( _db.get< account_object, by_name >( STEEM_NULL_ACCOUNT ), o.fee );
    }
 
-   const auto& new_account = _db.create< account_object >( [&]( account_object& acc )
-   {
-      initialize_account_object( acc, o.new_account_name, o.memo_key, props, false /*mined*/, o.creator, _db.get_hardfork() );
-      acc.received_vesting_shares = o.delegation;
-   });
+   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props, false /*mined*/, o.creator, o.delegation );
 
 #ifndef IS_LOW_MEM
-   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-   {
-      meta.account = new_account.id;
-      from_string( meta.json_metadata, o.json_metadata );
-   });
+   _db.create< account_metadata_object >( new_account, o.json_metadata );
 #else
    FC_UNUSED( new_account );
 #endif
@@ -489,13 +465,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 
    if( o.delegation.amount > 0 || !_db.has_hardfork( STEEM_HARDFORK_0_19__997 ) )
    {
-      _db.create< vesting_delegation_object >( [&]( vesting_delegation_object& vdo )
-      {
-         vdo.delegator = o.creator;
-         vdo.delegatee = o.new_account_name;
-         vdo.vesting_shares = o.delegation;
-         vdo.min_delegation_time = _db.head_block_time() + STEEM_CREATE_ACCOUNT_DELEGATION_TIME;
-      });
+      _db.create< vesting_delegation_object >( o.creator, o.new_account_name, o.delegation, _db.head_block_time() + STEEM_CREATE_ACCOUNT_DELEGATION_TIME );
    }
 
    if( !_db.has_hardfork( STEEM_HARDFORK_0_20__1762 ) && o.fee.amount > 0 )
@@ -1021,18 +991,7 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
       _db.adjust_balance( from_account, -steem_spent );
       _db.adjust_balance( from_account, -sbd_spent );
 
-      _db.create<escrow_object>([&]( escrow_object& esc )
-      {
-         esc.escrow_id              = o.escrow_id;
-         esc.from                   = o.from;
-         esc.to                     = o.to;
-         esc.agent                  = o.agent;
-         esc.ratification_deadline  = o.ratification_deadline;
-         esc.escrow_expiration      = o.escrow_expiration;
-         esc.get_sbd_balance()      = o.sbd_amount;
-         esc.get_steem_balance()    = o.steem_amount;
-         esc.get_fee()              = o.fee;
-      });
+      _db.create< escrow_object >( o.escrow_id, o.from, o.to, o.agent, o.steem_amount, o.sbd_amount, o.fee, o.ratification_deadline, o.escrow_expiration );
    }
    FC_CAPTURE_AND_RETHROW( (o) )
 }
@@ -2323,17 +2282,11 @@ void pow_apply( database& db, Operation o )
    auto itr = accounts_by_name.find(o.get_worker_account());
    if(itr == accounts_by_name.end())
    {
-      const auto& new_account = db.create< account_object >( [&]( account_object& acc )
-      {
-         initialize_account_object( acc, o.get_worker_account(), o.work.worker, dgp, true /*mined*/, account_name_type(), db.get_hardfork() );
+      const auto& new_account = create_account( db, o.get_worker_account(), o.work.worker, dgp, true /*mined*/, account_name_type() );
          // ^ empty recovery account parameter means highest voted witness at time of recovery
-      });
 
 #ifndef IS_LOW_MEM
-      db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-      {
-         meta.account = new_account.id;
-      });
+      db.create< account_metadata_object >( new_account, "" );
 #else
       FC_UNUSED( new_account );
 #endif
@@ -2445,17 +2398,11 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
    if(itr == accounts_by_name.end())
    {
       FC_ASSERT( o.new_owner_key.valid(), "New owner key is not valid." );
-      const auto& new_account = db.create< account_object >( [&]( account_object& acc )
-      {
-         initialize_account_object( acc, worker_account, *o.new_owner_key, dgp, true /*mined*/, account_name_type(), _db.get_hardfork() );
+      const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp, true /*mined*/, account_name_type() );
          // ^ empty recovery account parameter means highest voted witness at time of recovery
-      });
 
 #ifndef IS_LOW_MEM
-      db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-      {
-         meta.account = new_account.id;
-      });
+      db.create< account_metadata_object >( new_account, "" );
 #else
       FC_UNUSED( new_account );
 #endif
@@ -2470,10 +2417,10 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
 
       db.create<witness_object>( [&]( witness_object& w )
       {
-          w.owner             = worker_account;
-          copy_legacy_chain_properties< true >( w.props, o.props );
-          w.signing_key       = *o.new_owner_key;
-          w.pow_worker        = dgp.total_pow;
+         w.owner             = worker_account;
+         copy_legacy_chain_properties< true >( w.props, o.props );
+         w.signing_key       = *o.new_owner_key;
+         w.pow_worker        = dgp.total_pow;
       });
    }
    else
@@ -2516,23 +2463,16 @@ void feed_publish_evaluator::do_apply( const feed_publish_operation& o )
 
 void convert_evaluator::do_apply( const convert_operation& o )
 {
-  _db.adjust_balance( o.owner, -o.amount );
+   _db.adjust_balance( o.owner, -o.amount );
 
-  const auto& fhistory = _db.get_feed_history();
-  FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot convert HBD because there is no price feed." );
+   const auto& fhistory = _db.get_feed_history();
+   FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot convert HBD because there is no price feed." );
 
-  auto steem_conversion_delay = STEEM_CONVERSION_DELAY_PRE_HF_16;
-  if( _db.has_hardfork( STEEM_HARDFORK_0_16__551) )
-     steem_conversion_delay = STEEM_CONVERSION_DELAY;
+   auto steem_conversion_delay = STEEM_CONVERSION_DELAY_PRE_HF_16;
+   if( _db.has_hardfork( STEEM_HARDFORK_0_16__551 ) )
+      steem_conversion_delay = STEEM_CONVERSION_DELAY;
 
-  _db.create<convert_request_object>( [&]( convert_request_object& obj )
-  {
-      obj.owner           = o.owner;
-      obj.requestid       = o.requestid;
-      obj.get_amount()    = o.amount;
-      obj.conversion_date = _db.head_block_time() + steem_conversion_delay;
-  });
-
+   _db.create<convert_request_object>( o.owner, o.requestid, o.amount, _db.head_block_time() + steem_conversion_delay );
 }
 
 void limit_order_create_evaluator::do_apply( const limit_order_create_operation& o )
@@ -2546,25 +2486,15 @@ void limit_order_create_evaluator::do_apply( const limit_order_create_operation&
 
    _db.adjust_balance( o.owner, -o.amount_to_sell );
 
-   const auto& order = _db.create<limit_order_object>( [&]( limit_order_object& obj )
+   time_point_sec expiration = o.expiration;
+   FC_TODO( "Check past order expirations and cleanup after HF 20" )
+   if( !_db.has_hardfork( STEEM_HARDFORK_0_20__1449 ) )
    {
-       obj.created = _db.head_block_time();
-       obj.seller = o.owner;
-       obj.orderid = o.orderid;
-       obj.amount_for_sale() = o.amount_to_sell;
-       obj.sell_price = o.get_price();
+      uint32_t rand_offset = _db.head_block_id()._hash[ 4 ] % 86400;
+      expiration = std::min( o.expiration, fc::time_point_sec( STEEM_HARDFORK_0_20_TIME + STEEM_MAX_LIMIT_ORDER_EXPIRATION + rand_offset ) );
+   }
 
-       FC_TODO( "Check past order expirations and cleanup after HF 20" )
-       if( _db.has_hardfork( STEEM_HARDFORK_0_20__1449 ) )
-       {
-          obj.expiration = o.expiration;
-       }
-       else
-       {
-          uint32_t rand_offset = _db.head_block_id()._hash[4] % 86400;
-          obj.expiration = std::min( o.expiration, fc::time_point_sec( STEEM_HARDFORK_0_20_TIME + STEEM_MAX_LIMIT_ORDER_EXPIRATION + rand_offset ) );
-       }
-   });
+   const auto& order = _db.create<limit_order_object>( _db.head_block_time(), expiration, o.owner, o.orderid, o.amount_to_sell, o.get_price() );
 
    bool filled = _db.apply_order( order );
 
@@ -2582,24 +2512,14 @@ void limit_order_create2_evaluator::do_apply( const limit_order_create2_operatio
 
    _db.adjust_balance( o.owner, -o.amount_to_sell );
 
-   const auto& order = _db.create<limit_order_object>( [&]( limit_order_object& obj )
+   time_point_sec expiration = o.expiration;
+   FC_TODO( "Check past order expirations and cleanup after HF 20" )
+   if( !_db.has_hardfork( STEEM_HARDFORK_0_20__1449 ) )
    {
-       obj.created = _db.head_block_time();
-       obj.seller = o.owner;
-       obj.orderid = o.orderid;
-       obj.amount_for_sale() = o.amount_to_sell;
-       obj.sell_price = o.exchange_rate;
+      expiration = std::min( o.expiration, fc::time_point_sec( STEEM_HARDFORK_0_20_TIME + STEEM_MAX_LIMIT_ORDER_EXPIRATION ) );
+   }
 
-       FC_TODO( "Check past order expirations and cleanup after HF 20" )
-       if( _db.has_hardfork( STEEM_HARDFORK_0_20__1449 ) )
-       {
-          obj.expiration = o.expiration;
-       }
-       else
-       {
-          obj.expiration = std::min( o.expiration, fc::time_point_sec( STEEM_HARDFORK_0_20_TIME + STEEM_MAX_LIMIT_ORDER_EXPIRATION ) );
-       }
-   });
+   const auto& order = _db.create<limit_order_object>( _db.head_block_time(), expiration, o.owner, o.orderid, o.amount_to_sell, o.exchange_rate );
 
    bool filled = _db.apply_order( order );
 
@@ -2691,17 +2611,10 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
       a.pending_claimed_accounts--;
    });
 
-   const auto& new_account = _db.create< account_object >( [&]( account_object& acc )
-   {
-      initialize_account_object( acc, o.new_account_name, o.memo_key, props, false /*mined*/, o.creator, _db.get_hardfork() );
-   });
+   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props, false /*mined*/, o.creator );
 
 #ifndef IS_LOW_MEM
-   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-   {
-      meta.account = new_account.id;
-      from_string( meta.json_metadata, o.json_metadata );
-   });
+   _db.create< account_metadata_object >( new_account, o.json_metadata );
 #else
    FC_UNUSED( new_account );
 #endif
@@ -2752,12 +2665,7 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
          }
       }
 
-      _db.create< account_recovery_request_object >( [&]( account_recovery_request_object& req )
-      {
-         req.account_to_recover = o.account_to_recover;
-         req.new_owner_authority = o.new_owner_authority;
-         req.expires = _db.head_block_time() + STEEM_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD;
-      });
+      _db.create< account_recovery_request_object >( o.account_to_recover, o.new_owner_authority, _db.head_block_time() + STEEM_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
    }
    else if( o.new_owner_authority.weight_threshold == 0 ) // Cancel Request if authority is open
    {
@@ -2828,12 +2736,7 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
 
    if( request == change_recovery_idx.end() ) // New request
    {
-      _db.create< change_recovery_account_request_object >( [&]( change_recovery_account_request_object& req )
-      {
-         req.account_to_recover = o.account_to_recover;
-         req.recovery_account = o.new_recovery_account;
-         req.effective_on = _db.head_block_time() + STEEM_OWNER_AUTH_RECOVERY_PERIOD;
-      });
+      _db.create< change_recovery_account_request_object >( o.account_to_recover, o.new_recovery_account, _db.head_block_time() + STEEM_OWNER_AUTH_RECOVERY_PERIOD );
    }
    else if( account_to_recover.recovery_account != o.new_recovery_account ) // Change existing request
    {
@@ -2881,16 +2784,13 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
 
    FC_ASSERT( _db.get_savings_balance( from, op.amount.symbol ) >= op.amount );
    _db.adjust_savings_balance( from, -op.amount );
-   _db.create<savings_withdraw_object>( [&]( savings_withdraw_object& s ) {
-      s.from = op.from;
-      s.to = op.to;
-      s.get_amount() = op.amount;
+   _db.create<savings_withdraw_object>( op.from, op.to, op.amount,
 #ifndef IS_LOW_MEM
-      from_string( s.memo, op.memo );
+      op.memo,
+#else
+      "",
 #endif
-      s.request_id = op.request_id;
-      s.complete = _db.head_block_time() + STEEM_SAVINGS_WITHDRAW_TIME;
-   });
+      op.request_id, _db.head_block_time() + STEEM_SAVINGS_WITHDRAW_TIME );
 
    _db.modify( from, [&]( account_object& a )
    {
@@ -3181,13 +3081,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
          ("acc", op.delegator)("r", op.vesting_shares)("a", available_downvote_shares) );
       FC_ASSERT( op.vesting_shares >= min_delegation, "Account must delegate a minimum of ${v}", ("v", min_delegation) );
 
-      _db.create< vesting_delegation_object >( [&]( vesting_delegation_object& obj )
-      {
-         obj.delegator = op.delegator;
-         obj.delegatee = op.delegatee;
-         obj.vesting_shares = op.vesting_shares;
-         obj.min_delegation_time = _db.head_block_time();
-      });
+      _db.create< vesting_delegation_object >( op.delegator, op.delegatee, op.vesting_shares, _db.head_block_time() );
 
       _db.modify( delegator, [&]( account_object& a )
       {
@@ -3280,12 +3174,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
          FC_ASSERT( delegation->vesting_shares.amount > 0, "Delegation would set vesting_shares to zero, but it is already zero");
       }
 
-      _db.create< vesting_delegation_expiration_object >( [&]( vesting_delegation_expiration_object& obj )
-      {
-         obj.delegator = op.delegator;
-         obj.vesting_shares = delta;
-         obj.expiration = std::max( _db.head_block_time() + gpo.delegation_return_period, delegation->min_delegation_time );
-      });
+      _db.create< vesting_delegation_expiration_object >( op.delegator, delta, std::max( _db.head_block_time() + gpo.delegation_return_period, delegation->min_delegation_time ) );
 
       _db.modify( delegatee, [&]( account_object& a )
       {

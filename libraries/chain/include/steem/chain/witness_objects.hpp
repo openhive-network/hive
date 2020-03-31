@@ -62,8 +62,6 @@ namespace steem { namespace chain {
     */
    class witness_object : public object< witness_object_type, witness_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( witness_object )
-
       public:
          enum witness_schedule_type
          {
@@ -74,8 +72,8 @@ namespace steem { namespace chain {
          };
 
          template< typename Constructor, typename Allocator >
-         witness_object( Constructor&& c, allocator< Allocator > a )
-            :url( a )
+         witness_object( allocator< Allocator > a, int64_t _id, Constructor&& c  )
+            : id( _id ), url( a )
          {
             c( *this );
          }
@@ -162,12 +160,11 @@ namespace steem { namespace chain {
    {
       public:
          template< typename Constructor, typename Allocator >
-         witness_vote_object( Constructor&& c, allocator< Allocator > a )
+         witness_vote_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+            : id( _id )
          {
             c( *this );
          }
-
-         witness_vote_object(){}
 
          id_type           id;
 
@@ -179,25 +176,24 @@ namespace steem { namespace chain {
    {
       public:
          template< typename Constructor, typename Allocator >
-         witness_schedule_object( Constructor&& c, allocator< Allocator > a )
+         witness_schedule_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+            : id( _id )
          {
             c( *this );
          }
 
-         witness_schedule_object(){}
+         id_type                                             id;
 
-         id_type                                                           id;
-
-         fc::uint128                                                       current_virtual_time;
-         uint32_t                                                          next_shuffle_block_num = 1;
-         fc::array< account_name_type, STEEM_MAX_WITNESSES >             current_shuffled_witnesses;
-         uint8_t                                                           num_scheduled_witnesses = 1;
-         uint8_t                                                           elected_weight = 1;
-         uint8_t                                                           timeshare_weight = 5;
-         uint8_t                                                           miner_weight = 1;
-         uint32_t                                                          witness_pay_normalization_factor = 25;
-         chain_properties                                                  median_props;
-         version                                                           majority_version;
+         fc::uint128                                         current_virtual_time;
+         uint32_t                                            next_shuffle_block_num = 1;
+         fc::array< account_name_type, STEEM_MAX_WITNESSES > current_shuffled_witnesses;
+         uint8_t                                             num_scheduled_witnesses = 1;
+         uint8_t                                             elected_weight = 1;
+         uint8_t                                             timeshare_weight = 5;
+         uint8_t                                             miner_weight = 1;
+         uint32_t                                            witness_pay_normalization_factor = 25;
+         chain_properties                                    median_props;
+         version                                             majority_version;
 
          uint8_t max_voted_witnesses            = STEEM_MAX_VOTED_WITNESSES_HF0;
          uint8_t max_miner_witnesses            = STEEM_MAX_MINER_WITNESSES_HF0;

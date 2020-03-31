@@ -19,12 +19,11 @@ class key_lookup_object : public object< key_lookup_object_type, key_lookup_obje
 {
    public:
       template< typename Constructor, typename Allocator >
-      key_lookup_object( Constructor&& c, allocator< Allocator > a )
+      key_lookup_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      key_lookup_object() {}
 
       id_type           id;
 

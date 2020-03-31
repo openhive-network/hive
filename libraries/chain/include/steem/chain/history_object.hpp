@@ -15,12 +15,10 @@ namespace steem { namespace chain {
 
    class operation_object : public object< operation_object_type, operation_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( operation_object )
-
       public:
          template< typename Constructor, typename Allocator >
-         operation_object( Constructor&& c, allocator< Allocator > a )
-            :serialized_op( a )
+         operation_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+            : id( _id ), serialized_op( a )
          {
             c( *this );
          }
@@ -67,12 +65,11 @@ namespace steem { namespace chain {
    {
       public:
          template< typename Constructor, typename Allocator >
-         account_history_object( Constructor&& c, allocator< Allocator > a )
+         account_history_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+            : id( _id )
          {
             c( *this );
          }
-
-         account_history_object() {}
 
          id_type           id;
 

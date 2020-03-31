@@ -11,16 +11,18 @@ using steem::protocol::asset;
 
 class proposal_object : public object< proposal_object_type, proposal_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( proposal_object )
-
    public:
-
-      template<typename Constructor, typename Allocator>
-      proposal_object( Constructor&& c, allocator< Allocator > a )
-      : subject( a ), permlink( a )
+      template< typename Allocator >
+      proposal_object( allocator< Allocator > a, int64_t _id,
+         const account_name_type& _creator, const account_name_type& _receiver,
+         const time_point_sec& _start, const time_point_sec& _end, const asset& _daily_pay,
+         const string& _subject, const string& _permlink )
+         : id( _id ), proposal_id( _id ), creator( _creator ), receiver( _receiver ),
+         start_date( _start ), end_date( _end ), daily_pay( _daily_pay ), subject( a ), permlink( a )
       {
-         c(*this);
-      };
+         from_string( subject, _subject );
+         from_string( permlink, _permlink );
+      }
 
       //internal key
       id_type id;
@@ -65,15 +67,12 @@ class proposal_object : public object< proposal_object_type, proposal_object >
 
 class proposal_vote_object : public object< proposal_vote_object_type, proposal_vote_object>
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( proposal_vote_object )
-
    public:
-
-      template< typename Constructor, typename Allocator >
-      proposal_vote_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
+      template< typename Allocator >
+      proposal_vote_object( allocator< Allocator > a, int64_t _id,
+         const account_name_type& _voter, int64_t _proposal_id )
+         : id( _id ), voter( _voter ), proposal_id( _proposal_id )
+      {}
 
       //internal key
       id_type id;

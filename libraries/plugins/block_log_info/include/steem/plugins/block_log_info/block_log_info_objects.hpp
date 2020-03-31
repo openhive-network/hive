@@ -24,12 +24,11 @@ class block_log_hash_state_object : public object< block_log_hash_state_object_t
 {
    public:
       template< typename Constructor, typename Allocator >
-      block_log_hash_state_object( Constructor&& c, allocator< Allocator > a )
+      block_log_hash_state_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      block_log_hash_state_object() {}
 
       id_type                  id;
 
@@ -50,12 +49,11 @@ class block_log_pending_message_object : public object< block_log_pending_messag
 {
    public:
       template< typename Constructor, typename Allocator >
-      block_log_pending_message_object( Constructor&& c, allocator< Allocator > a )
+      block_log_pending_message_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      block_log_pending_message_object() {}
 
       id_type                  id;
 

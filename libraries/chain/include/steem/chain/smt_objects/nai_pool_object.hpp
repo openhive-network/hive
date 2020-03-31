@@ -10,11 +10,10 @@ namespace steem { namespace chain {
 
    class nai_pool_object : public object< nai_pool_object_type, nai_pool_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( nai_pool_object );
-
    public:
       template< typename Constructor, typename Allocator >
-      nai_pool_object( Constructor&& c, allocator< Allocator > a )
+      nai_pool_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }

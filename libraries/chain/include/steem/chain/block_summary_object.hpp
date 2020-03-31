@@ -17,13 +17,10 @@ namespace steem { namespace chain {
    class block_summary_object : public object< block_summary_object_type, block_summary_object >
    {
       public:
-         template< typename Constructor, typename Allocator >
-         block_summary_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
-
-         block_summary_object(){};
+         template< typename Allocator >
+         block_summary_object( allocator< Allocator > a, int64_t _id )
+            : id( _id )
+         {}
 
          id_type        id;
          block_id_type  block_id;

@@ -38,12 +38,11 @@ class rc_resource_param_object : public object< rc_resource_param_object_type, r
 {
    public:
       template< typename Constructor, typename Allocator >
-      rc_resource_param_object( Constructor&& c, allocator< Allocator > a )
+      rc_resource_param_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      rc_resource_param_object() {}
 
       id_type               id;
       fc::int_array< rc_resource_params, STEEM_NUM_RESOURCE_TYPES >
@@ -54,12 +53,11 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
 {
    public:
       template< typename Constructor, typename Allocator >
-      rc_pool_object( Constructor&& c, allocator< Allocator > a )
+      rc_pool_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      rc_pool_object() {}
 
       id_type               id;
       fc::int_array< int64_t, STEEM_NUM_RESOURCE_TYPES >
@@ -70,12 +68,11 @@ class rc_account_object : public object< rc_account_object_type, rc_account_obje
 {
    public:
       template< typename Constructor, typename Allocator >
-      rc_account_object( Constructor&& c, allocator< Allocator > a )
+      rc_account_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      rc_account_object() {}
 
       id_type               id;
 
@@ -95,12 +92,11 @@ class rc_delegation_pool_object : public object< rc_delegation_pool_object_type,
 {
    public:
       template< typename Constructor, typename Allocator >
-      rc_delegation_pool_object( Constructor&& c, allocator< Allocator > a )
+      rc_delegation_pool_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      rc_delegation_pool_object() {}
 
       id_type                       id;
 
@@ -115,12 +111,11 @@ class rc_indel_edge_object : public object< rc_indel_edge_object_type, rc_indel_
 {
    public:
       template< typename Constructor, typename Allocator >
-      rc_indel_edge_object( Constructor&& c, allocator< Allocator > a )
+      rc_indel_edge_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      rc_indel_edge_object() {}
 
       id_type                       id;
       account_name_type             from_account;
@@ -147,12 +142,11 @@ class rc_outdel_drc_edge_object : public object< rc_outdel_drc_edge_object_type,
 {
    public:
       template< typename Constructor, typename Allocator >
-      rc_outdel_drc_edge_object( Constructor&& c, allocator< Allocator > a )
+      rc_outdel_drc_edge_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      rc_outdel_drc_edge_object() {}
 
       id_type                       id;
       account_name_type             from_pool;

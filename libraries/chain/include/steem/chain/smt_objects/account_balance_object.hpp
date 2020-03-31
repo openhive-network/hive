@@ -14,11 +14,10 @@ namespace steem { namespace chain {
  */
 class account_regular_balance_object : public object< account_regular_balance_object_type, account_regular_balance_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( account_regular_balance_object );
-
 public:   
-   template <typename Constructor, typename Allocator>
-   account_regular_balance_object(Constructor&& c, allocator< Allocator > a)
+   template < typename Constructor, typename Allocator>
+   account_regular_balance_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+      : id( _id )
    {
       c( *this );
    }
@@ -62,11 +61,10 @@ public:
  */
 class account_rewards_balance_object : public object< account_rewards_balance_object_type, account_rewards_balance_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( account_rewards_balance_object );
-
 public:   
-   template <typename Constructor, typename Allocator>
-   account_rewards_balance_object(Constructor&& c, allocator< Allocator > a)
+   template < typename Constructor, typename Allocator >
+   account_rewards_balance_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+      : id( _id )
    {
       c( *this );
    }

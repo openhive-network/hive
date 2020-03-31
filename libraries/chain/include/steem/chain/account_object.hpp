@@ -20,13 +20,28 @@ namespace steem { namespace chain {
 
    class account_object : public object< account_object_type, account_object >
    {
-         STEEM_STD_ALLOCATOR_CONSTRUCTOR( account_object )
-
-         template<typename Constructor, typename Allocator>
-         account_object( Constructor&& c, allocator< Allocator > a )
+      public:
+         template< typename Allocator >
+         account_object( allocator< Allocator > a, int64_t _id,
+            const account_name_type& _name, const public_key_type& _key, const time_point_sec& _creation_time, bool _mined,
+            const account_name_type& _recovery_account, bool _fill_mana, const asset& incoming_delegation )
+            : id( _id ), name( _name ), memo_key( _key ), created( _creation_time ), mined( _mined ),
+            recovery_account( _recovery_account )
          {
-            c(*this);
-         };
+            received_vesting_shares += incoming_delegation;
+            voting_manabar.last_update_time = _creation_time.sec_since_epoch();
+            downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
+            if( _fill_mana )
+               voting_manabar.current_mana = STEEM_100_PERCENT;
+         }
+
+         //used for creation of accounts at genesis and in tests
+         template< typename Constructor, typename Allocator >
+         account_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+            : id( _id )
+         {
+            c( *this );
+         }
 
          id_type           id;
 
@@ -130,29 +145,28 @@ namespace steem { namespace chain {
 
    class account_metadata_object : public object< account_metadata_object_type, account_metadata_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( account_metadata_object )
+      public:
+         template< typename Allocator >
+         account_metadata_object( allocator< Allocator > a, int64_t _id,
+            const account_object& _account, const string& _metadata )
+            : id( _id ), json_metadata( a ), posting_json_metadata( a )
+         {
+            account = _account.id;
+            from_string( json_metadata, _metadata );
+         }
 
-      template< typename Constructor, typename Allocator >
-      account_metadata_object( Constructor&& c, allocator< Allocator > a )
-         : json_metadata( a ), posting_json_metadata( a )
-      {
-         c( *this );
-      }
-
-      id_type           id;
-      account_id_type   account;
-      shared_string     json_metadata;
-      shared_string     posting_json_metadata;
+         id_type           id;
+         account_id_type   account;
+         shared_string     json_metadata;
+         shared_string     posting_json_metadata;
    };
 
    class account_authority_object : public object< account_authority_object_type, account_authority_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( account_authority_object )
-
       public:
          template< typename Constructor, typename Allocator >
-         account_authority_object( Constructor&& c, allocator< Allocator > a )
-            : owner( a ), active( a ), posting( a )
+         account_authority_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+            : id( _id ), owner( a ), active( a ), posting( a )
          {
             c( *this );
          }
@@ -171,48 +185,48 @@ namespace steem { namespace chain {
    class vesting_delegation_object : public object< vesting_delegation_object_type, vesting_delegation_object >
    {
       public:
-         template< typename Constructor, typename Allocator >
-         vesting_delegation_object( Constructor&& c, allocator< Allocator > a )
+         template< typename Allocator >
+         vesting_delegation_object( allocator< Allocator > a, int64_t _id,
+            const account_name_type& _delegator, const account_name_type& _delegatee, const asset& _vests,
+            const time_point_sec& _delegation_time )
+            : id( _id ), delegator( _delegator ), delegatee( _delegatee ), min_delegation_time( _delegation_time )
          {
-            c( *this );
+            vesting_shares += _vests;
          }
-
-         vesting_delegation_object() {}
 
          id_type           id;
          account_name_type delegator;
          account_name_type delegatee;
-         asset             vesting_shares;
+         asset             vesting_shares = asset( 0, VESTS_SYMBOL );
          time_point_sec    min_delegation_time;
    };
 
    class vesting_delegation_expiration_object : public object< vesting_delegation_expiration_object_type, vesting_delegation_expiration_object >
    {
       public:
-         template< typename Constructor, typename Allocator >
-         vesting_delegation_expiration_object( Constructor&& c, allocator< Allocator > a )
+         template< typename Allocator >
+         vesting_delegation_expiration_object( allocator< Allocator > a, int64_t _id,
+            const account_name_type& _delegator, const asset& _delta, const time_point_sec& _expiration )
+            : id( _id ), delegator( _delegator ), expiration( _expiration )
          {
-            c( *this );
+            vesting_shares += _delta;
          }
-
-         vesting_delegation_expiration_object() {}
 
          id_type           id;
          account_name_type delegator;
-         asset             vesting_shares;
+         asset             vesting_shares = asset( 0, VESTS_SYMBOL );
          time_point_sec    expiration;
    };
 
    class owner_authority_history_object : public object< owner_authority_history_object_type, owner_authority_history_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( owner_authority_history_object )
-
       public:
-         template< typename Constructor, typename Allocator >
-         owner_authority_history_object( Constructor&& c, allocator< Allocator > a )
-            :previous_owner_authority( allocator< shared_authority >( a ) )
+         template< typename Allocator >
+         owner_authority_history_object( allocator< Allocator > a, int64_t _id,
+            const account_name_type& _account, const account_authority_object& _previous_authority, const time_point_sec& _now )
+            : id( _id ), account( _account ), previous_owner_authority( allocator< shared_authority >( a ) ), last_valid_time( _now )
          {
-            c( *this );
+            previous_owner_authority = _previous_authority.owner;
          }
 
          id_type           id;
@@ -224,14 +238,13 @@ namespace steem { namespace chain {
 
    class account_recovery_request_object : public object< account_recovery_request_object_type, account_recovery_request_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( account_recovery_request_object )
-
       public:
-         template< typename Constructor, typename Allocator >
-         account_recovery_request_object( Constructor&& c, allocator< Allocator > a )
-            :new_owner_authority( allocator< shared_authority >( a ) )
+         template< typename Allocator >
+         account_recovery_request_object( allocator< Allocator > a, int64_t _id,
+            const account_name_type& _account, const authority& _new_authority, const time_point_sec& _expires )
+            : id( _id ), account_to_recover( _account ), new_owner_authority( allocator< shared_authority >( a ) ), expires( _expires )
          {
-            c( *this );
+            new_owner_authority = _new_authority;
          }
 
          id_type           id;
@@ -243,14 +256,12 @@ namespace steem { namespace chain {
 
    class change_recovery_account_request_object : public object< change_recovery_account_request_object_type, change_recovery_account_request_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( change_recovery_account_request_object )
-
       public:
-         template< typename Constructor, typename Allocator >
-         change_recovery_account_request_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
+         template< typename Allocator >
+         change_recovery_account_request_object( allocator< Allocator > a, int64_t _id,
+            const account_name_type& _account, const account_name_type& _new_recovery_account, const time_point_sec& _effective_time )
+            : id( _id ), account_to_recover( _account ), recovery_account( _new_recovery_account ), effective_on( _effective_time )
+         {}
 
          id_type           id;
 

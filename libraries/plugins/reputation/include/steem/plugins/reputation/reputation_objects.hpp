@@ -26,12 +26,11 @@ class reputation_object : public object< reputation_object_type, reputation_obje
 {
    public:
       template< typename Constructor, typename Allocator >
-      reputation_object( Constructor&& c, allocator< Allocator > a )
+      reputation_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      reputation_object() {}
 
       id_type           id;
 

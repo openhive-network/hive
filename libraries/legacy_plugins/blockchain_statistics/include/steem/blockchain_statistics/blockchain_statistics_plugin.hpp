@@ -62,7 +62,8 @@ class blockchain_statistics_plugin : public steem::app::plugin
 struct bucket_object : public object< bucket_object_type, bucket_object >
 {
    template< typename Constructor, typename Allocator >
-   bucket_object( Constructor&& c, allocator< Allocator > a )
+   bucket_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+      : id( _id )
    {
       c( *this );
    }

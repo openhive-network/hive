@@ -59,7 +59,7 @@ using chainbase::allocator;
 struct book
 {
      template<typename Constructor, typename Allocator>
-     book( Constructor&& c, const Allocator& al )
+     book( const Allocator& al, int64_t _id, Constructor&& c )
      :name(al),author(al),pages(0),prize(0),
      auth( allocator<steem::chain::shared_authority >( al )),
      deq( allocator<shared_string>( al ) )
@@ -139,15 +139,19 @@ int main(int argc, char** argv, char** envp)
    //b.pages = pbc->size();
    //b.auth = steem::chain::authority( 1, "dan", pbc->size() );
 #ifndef ENABLE_MIRA
-   pbc->emplace( [&]( book& b ) {
-                 b.name = "emplace name";
-                 b.pages = pbc->size();
-                }, allocator<book>( seg.get_segment_manager() ) );
+   pbc->emplace( allocator<book>( seg.get_segment_manager() ), 0,
+      [&]( book& b )
+      {
+         b.name = "emplace name";
+         b.pages = pbc->size();
+      } );
 #else
-   pbc->emplace( [&]( book& b ) {
-                 b.name = "emplace name";
-                 b.pages = pbc->size();
-                }, allocator<book>() );
+   pbc->emplace( allocator<book>(), 0,
+      [ & ]( book& b )
+      {
+         b.name = "emplace name";
+         b.pages = pbc->size();
+      } );
 #endif
 
 #ifndef ENABLE_MIRA

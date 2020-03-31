@@ -1874,17 +1874,13 @@ void database::adjust_rshares2( const comment_object& c, fc::uint128_t old_rshar
 
 void database::update_owner_authority( const account_object& account, const authority& owner_authority )
 {
+   const auto& current_authority = get< account_authority_object, by_account >( account.name );
    if( head_block_num() >= STEEM_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
    {
-      create< owner_authority_history_object >( [&]( owner_authority_history_object& hist )
-      {
-         hist.account = account.name;
-         hist.previous_owner_authority = get< account_authority_object, by_account >( account.name ).owner;
-         hist.last_valid_time = head_block_time();
-      });
+      create< owner_authority_history_object >( account.name, current_authority, head_block_time() );
    }
 
-   modify( get< account_authority_object, by_account >( account.name ), [&]( account_authority_object& auth )
+   modify( current_authority, [&]( account_authority_object& auth )
    {
       auth.owner = owner_authority;
       auth.last_owner_update = head_block_time();
@@ -3136,7 +3132,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t sbd_init_supply )
 #endif
 
       for( int i = 0; i < 0x10000; i++ )
-         create< block_summary_object >( [&]( block_summary_object& ) {});
+         create< block_summary_object >();
       create< hardfork_property_object >( [&](hardfork_property_object& hpo )
       {
          hpo.processed_hardforks.push_back( STEEM_GENESIS_TIME );

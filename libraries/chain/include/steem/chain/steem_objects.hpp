@@ -26,13 +26,13 @@ namespace steem { namespace chain {
    class convert_request_object : public object< convert_request_object_type, convert_request_object >
    {
       public:
-         template< typename Constructor, typename Allocator >
-         convert_request_object( Constructor&& c, allocator< Allocator > a )
+         template< typename Allocator >
+         convert_request_object( allocator< Allocator > a, int64_t _id,
+            const account_name_type& _owner, uint32_t _requestid, const asset& _amount, const time_point_sec& _conversion_time )
+            : id( _id ), owner( _owner ), requestid( _requestid ), amount( _amount ), conversion_date( _conversion_time )
          {
-            c( *this );
+            FC_TODO( "Use balance object" ); //also create on_remove
          }
-
-         convert_request_object(){}
 
          id_type           id;
 
@@ -49,13 +49,17 @@ namespace steem { namespace chain {
    class escrow_object : public object< escrow_object_type, escrow_object >
    {
       public:
-         template< typename Constructor, typename Allocator >
-         escrow_object( Constructor&& c, allocator< Allocator > a )
+         template< typename Allocator >
+         escrow_object( allocator< Allocator > a, int64_t _id,
+            uint32_t _escrow_id, const account_name_type& _from, const account_name_type& _to, const account_name_type& _agent,
+            const asset& _steem_amount, const asset& _sbd_amount, const asset& _fee,
+            const time_point_sec& _ratification_deadline, const time_point_sec& _escrow_expiration )
+            : id( _id ), escrow_id( _escrow_id ), from( _from ), to( _to ), agent( _agent ),
+            ratification_deadline( _ratification_deadline ), escrow_expiration( _escrow_expiration ),
+            sbd_balance( _sbd_amount ), steem_balance( _steem_amount ), pending_fee( _fee )
          {
-            c( *this );
+            FC_TODO( "Use balance object" ); //also add on_remove
          }
-
-         escrow_object(){}
 
          id_type           id;
 
@@ -81,14 +85,16 @@ namespace steem { namespace chain {
 
    class savings_withdraw_object : public object< savings_withdraw_object_type, savings_withdraw_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( savings_withdraw_object )
-
       public:
-         template< typename Constructor, typename Allocator >
-         savings_withdraw_object( Constructor&& c, allocator< Allocator > a )
-            :memo( a )
+         template< typename Allocator >
+         savings_withdraw_object( allocator< Allocator > a, int64_t _id,
+            const account_name_type& _from, const account_name_type& _to, const asset& _amount,
+            const string& _memo, uint32_t _request_id, const time_point_sec& _time_of_completion )
+            : id( _id ), from( _from ), to( _to ), memo( a ), request_id( _request_id ),
+            amount( _amount ), complete( _time_of_completion )
          {
-            c( *this );
+            from_string( memo, _memo );
+            FC_TODO( "Use balance object" ); //also define on_remove
          }
 
          id_type           id;
@@ -120,12 +126,11 @@ namespace steem { namespace chain {
    {
       public:
          template< typename Constructor, typename Allocator >
-         liquidity_reward_balance_object( Constructor&& c, allocator< Allocator > a )
+         liquidity_reward_balance_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+            : id( _id )
          {
             c( *this );
          }
-
-         liquidity_reward_balance_object(){}
 
          id_type           id;
 
@@ -164,23 +169,21 @@ namespace steem { namespace chain {
     */
    class feed_history_object  : public object< feed_history_object_type, feed_history_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( feed_history_object )
-
       public:
          template< typename Constructor, typename Allocator >
-         feed_history_object( Constructor&& c, allocator< Allocator > a )
-            :price_history( a )
+         feed_history_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+            : id( _id ), price_history( a )
          {
             c( *this );
          }
 
-         id_type                                   id;
+         id_type id;
 
-         price                                     current_median_history; ///< the current median of the price history, used as the base for convert operations
+         price current_median_history; ///< the current median of the price history, used as the base for convert operations
 
          using t_price_history = t_deque< price >;
 
-         t_deque< price >   price_history; ///< tracks this last week of median_feed one per hour
+         t_deque< price > price_history; ///< tracks this last week of median_feed one per hour
    };
 
 
@@ -195,13 +198,15 @@ namespace steem { namespace chain {
    class limit_order_object : public object< limit_order_object_type, limit_order_object >
    {
       public:
-         template< typename Constructor, typename Allocator >
-         limit_order_object( Constructor&& c, allocator< Allocator > a )
+         template< typename Allocator >
+         limit_order_object( allocator< Allocator > a, int64_t _id,
+            const time_point_sec& _creation_time, const time_point_sec& _expiration_time, const account_name_type& _seller,
+            uint32_t _orderid, const asset& _amount_to_sell, const price& _sell_price )
+            : id( _id ), created( _creation_time ), expiration( _expiration_time ), seller( _seller ),
+            orderid( _orderid ), for_sale( _amount_to_sell ), sell_price( _sell_price )
          {
-            c( *this );
+            FC_TODO( "Use balance object" ); //also define on_remove
          }
-
-         limit_order_object(){}
 
          id_type           id;
 
@@ -233,7 +238,8 @@ namespace steem { namespace chain {
    {
       public:
          template< typename Constructor, typename Allocator >
-         withdraw_vesting_route_object( Constructor&& c, allocator< Allocator > a )
+         withdraw_vesting_route_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+            : id( _id )
          {
             c( *this );
          }
@@ -253,12 +259,11 @@ namespace steem { namespace chain {
    {
       public:
          template< typename Constructor, typename Allocator >
-         decline_voting_rights_request_object( Constructor&& c, allocator< Allocator > a )
+         decline_voting_rights_request_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+            : id( _id )
          {
             c( *this );
          }
-
-         decline_voting_rights_request_object(){}
 
          id_type           id;
 
@@ -270,14 +275,13 @@ namespace steem { namespace chain {
    {
       public:
          template< typename Constructor, typename Allocator >
-         reward_fund_object( Constructor&& c, allocator< Allocator > a )
+         reward_fund_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+            : id( _id )
          {
             c( *this );
          }
 
-         reward_fund_object() {}
-
-         reward_fund_id_type     id;
+         id_type                 id;
          reward_fund_name_type   name;
          asset                   reward_balance = asset( 0, STEEM_SYMBOL );
          fc::uint128_t           recent_claims = 0;
@@ -285,8 +289,8 @@ namespace steem { namespace chain {
          uint128_t               content_constant = 0;
          uint16_t                percent_curation_rewards = 0;
          uint16_t                percent_content_rewards = 0;
-         protocol::curve_id                author_reward_curve;
-         protocol::curve_id                curation_reward_curve;
+         protocol::curve_id      author_reward_curve;
+         protocol::curve_id      curation_reward_curve;
    };
 
    struct by_price;

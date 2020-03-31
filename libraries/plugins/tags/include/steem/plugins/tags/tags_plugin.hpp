@@ -63,12 +63,11 @@ class tag_object : public object< tag_object_type, tag_object >
 {
    public:
       template< typename Constructor, typename Allocator >
-      tag_object( Constructor&& c, allocator< Allocator > a )
+      tag_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      tag_object() {}
 
       id_type           id;
 
@@ -218,12 +217,11 @@ class tag_stats_object : public object< tag_stats_object_type, tag_stats_object 
 {
    public:
       template< typename Constructor, typename Allocator >
-      tag_stats_object( Constructor&& c, allocator< Allocator > )
+      tag_stats_object( allocator< Allocator >, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      tag_stats_object() {}
 
       id_type           id;
 
@@ -284,12 +282,11 @@ class author_tag_stats_object : public object< author_tag_stats_object_type, aut
 {
    public:
       template< typename Constructor, typename Allocator >
-      author_tag_stats_object( Constructor&& c, allocator< Allocator > )
+      author_tag_stats_object( allocator< Allocator >, int64_t _id, Constructor&& c )
+         : id( _id )
       {
          c( *this );
       }
-
-      author_tag_stats_object() {}
 
       id_type         id;
       account_id_type author;

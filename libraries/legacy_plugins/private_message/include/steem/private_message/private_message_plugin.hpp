@@ -77,8 +77,8 @@ class message_object : public object< message_object_type, message_object >
 {
    public:
       template< typename Constructor, typename Allocator >
-      message_object( Constructor&& c, allocator< Allocator > a ) :
-         encrypted_message( a )
+      message_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         : id( _id ), encrypted_message( a )
       {
          c( *this );
       }

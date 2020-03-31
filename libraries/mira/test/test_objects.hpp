@@ -70,12 +70,11 @@ enum test_object_type
 struct book : public chainbase::object< book_object_type, book > {
 
    template<typename Constructor, typename Allocator>
-   book( Constructor&& c, Allocator&& a )
+   book( Allocator&& a, int64_t _id, Constructor&& c )
+      : id( _id )
    {
       c(*this);
    }
-
-   book() = default;
 
    id_type id;
    int a = 0;
@@ -109,12 +108,11 @@ typedef mira::multi_index_adapter<
 struct single_index_object : public chainbase::object< single_index_object_type, single_index_object >
 {
    template< typename Constructor, typename Allocator >
-   single_index_object( Constructor&& c, Allocator&& a )
+   single_index_object( Allocator&& a, int64_t _id, Constructor&& c )
+      : id( _id )
    {
       c( *this );
    }
-
-   single_index_object() = default;
 
    id_type id;
 };
@@ -242,12 +240,11 @@ typedef steem::protocol::fixed_string<16> account_name_type;
 struct account_object : public chainbase::object< account_object_type, account_object >
 {
    template< typename Constructor, typename Allocator >
-   account_object( Constructor&& c, Allocator&& a )
+   account_object( Allocator&& a, int64_t _id, Constructor&& c )
+      : id( _id )
    {
       c( *this );
    }
-
-   account_object() = default;
 
    id_type id;
    account_name_type name;

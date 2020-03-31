@@ -84,7 +84,8 @@ struct bucket_object_details
 struct bucket_object : public object< bucket_object_type, bucket_object >
 {
    template< typename Constructor, typename Allocator >
-   bucket_object( Constructor&& c, allocator< Allocator > a )
+   bucket_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+      : id( _id )
    {
       c( *this );
    }
@@ -116,12 +117,11 @@ typedef oid< bucket_object > bucket_id_type;
 struct order_history_object : public object< order_history_object_type, order_history_object >
 {
    template< typename Constructor, typename Allocator >
-   order_history_object( Constructor&& c, allocator< Allocator > a )
+   order_history_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+      : id( _id )
    {
       c( *this );
    }
-
-   order_history_object() {}
 
    id_type                          id;
 

@@ -16,16 +16,16 @@ using namespace boost::multi_index;
 
 #ifndef ENABLE_MIRA
 
-struct book : public chainbase::object<0, book> {
+struct book : public chainbase::object<0, book>
+{
+   template< typename Allocator >
+   book( Allocator&& a, int64_t _id, int _a = 0, int _b = 1 )
+      : id( _id ), a( _a ), b( _b )
+   {}
 
-   template<typename Constructor, typename Allocator>
-    book(  Constructor&& c, Allocator&& a ) {
-       c(*this);
-    }
-
-    id_type id;
-    int a = 0;
-    int b = 1;
+   id_type id;
+   int a;
+   int b;
 };
 
 typedef multi_index_container<
@@ -63,10 +63,7 @@ BOOST_AUTO_TEST_CASE( open_and_create ) {
 
 
       BOOST_TEST_MESSAGE( "Creating book" );
-      const auto& new_book = db.create<book>( []( book& b ) {
-          b.a = 3;
-          b.b = 4;
-      } );
+      const auto& new_book = db.create<book>( 3, 4 );
       const auto& copy_new_book = db2.get( book::id_type(0) );
       BOOST_REQUIRE( &new_book != &copy_new_book ); ///< these are mapped to different address ranges
 
@@ -98,10 +95,7 @@ BOOST_AUTO_TEST_CASE( open_and_create ) {
 
       {
           auto session = db.start_undo_session();
-          const auto& book2 = db.create<book>( [&]( book& b ) {
-              b.a = 9;
-              b.b = 10;
-          });
+          const auto& book2 = db.create<book>( 9, 10 );
 
          BOOST_REQUIRE_EQUAL( new_book.a, 5 );
          BOOST_REQUIRE_EQUAL( new_book.b, 6 );

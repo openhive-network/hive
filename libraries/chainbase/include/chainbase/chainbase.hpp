@@ -125,7 +125,6 @@ namespace chainbase {
    {
       typedef oid<Derived> id_type;
       static const uint16_t type_id = TypeNumber;
-
    };
 
    /** this class is ment to be specified to enable lookup of index type by object type using
@@ -142,7 +141,7 @@ namespace chainbase {
 
    #define CHAINBASE_DEFAULT_CONSTRUCTOR( OBJECT_TYPE ) \
    template<typename Constructor, typename Allocator> \
-   OBJECT_TYPE( Constructor&& c, Allocator&&  ) { c(*this); }
+   OBJECT_TYPE( Allocator&& , int64_t _id, Constructor&& c ) : id( _id ) { c(*this); }
 
    template< typename value_type >
    class undo_state
@@ -235,16 +234,11 @@ namespace chainbase {
           * Construct a new element in the multi_index_container.
           * Set the ID to the next available ID, then increment _next_id and fire off on_create().
           */
-         template<typename Constructor>
-         const value_type& emplace( Constructor&& c ) {
+         template<typename ...Args>
+         const value_type& emplace( Args&&... args ) {
             auto new_id = _next_id;
 
-            auto constructor = [&]( value_type& v ) {
-               v.id = new_id;
-               c( v );
-            };
-
-            auto insert_result = _indices.emplace( constructor, _indices.get_allocator() );
+            auto insert_result = _indices.emplace( _indices.get_allocator(), new_id, std::forward<Args>( args )... );
 
             if( !insert_result.second ) {
                BOOST_THROW_EXCEPTION( std::logic_error("could not insert object, most likely a uniqueness constraint was violated") );
@@ -1152,12 +1146,12 @@ namespace chainbase {
              return get_mutable_index<index_type>().remove( obj );
          }
 
-         template<typename ObjectType, typename Constructor>
-         const ObjectType& create( Constructor&& con )
+         template<typename ObjectType, typename ... Args>
+         const ObjectType& create( Args&&... args )
          {
              CHAINBASE_REQUIRE_WRITE_LOCK("create", ObjectType);
              typedef typename get_index_type<ObjectType>::type index_type;
-             return get_mutable_index<index_type>().emplace( std::forward<Constructor>( con ) );
+             return get_mutable_index<index_type>().emplace( std::forward<Args>( args )... );
          }
 
          template< typename ObjectType >

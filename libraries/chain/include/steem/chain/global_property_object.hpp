@@ -25,7 +25,8 @@ namespace steem { namespace chain {
    {
       public:
          template< typename Constructor, typename Allocator >
-         dynamic_global_property_object( Constructor&& c, allocator< Allocator > a )
+         dynamic_global_property_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+            : id( _id )
          {
             c( *this );
          }

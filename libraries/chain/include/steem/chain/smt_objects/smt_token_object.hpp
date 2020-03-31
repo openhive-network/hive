@@ -25,8 +25,6 @@ enum class smt_phase : uint8_t
  */
 class smt_token_object : public object< smt_token_object_type, smt_token_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( smt_token_object );
-
 public:
 
    struct smt_market_maker_state
@@ -39,7 +37,8 @@ public:
 public:
 
    template< typename Constructor, typename Allocator >
-   smt_token_object( Constructor&& c, allocator< Allocator > a )
+   smt_token_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+      : id( _id )
    {
       c( *this );
    }
@@ -113,11 +112,10 @@ public:
 
 class smt_ico_object : public object< smt_ico_object_type, smt_ico_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( smt_ico_object );
-
 public:
    template< typename Constructor, typename Allocator >
-   smt_ico_object( Constructor&& c, allocator< Allocator > a )
+   smt_ico_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+      : id( _id )
    {
       c( *this );
    }
@@ -136,11 +134,10 @@ public:
 
 class smt_token_emissions_object : public object< smt_token_emissions_object_type, smt_token_emissions_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( smt_token_emissions_object );
-
 public:
    template< typename Constructor, typename Allocator >
-   smt_token_emissions_object( Constructor&& c, allocator< Allocator > a )
+   smt_token_emissions_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+      : id( _id )
    {
       c( *this );
    }
@@ -162,11 +159,10 @@ public:
 
 class smt_contribution_object : public object< smt_contribution_object_type, smt_contribution_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( smt_contribution_object );
-
 public:
    template< typename Constructor, typename Allocator >
-   smt_contribution_object( Constructor&& c, allocator< Allocator > a )
+   smt_contribution_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+      : id( _id )
    {
       c( *this );
    }
