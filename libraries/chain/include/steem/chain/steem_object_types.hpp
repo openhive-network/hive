@@ -41,6 +41,7 @@ using steem::protocol::transaction_id_type;
 using steem::protocol::chain_id_type;
 using steem::protocol::account_name_type;
 using steem::protocol::share_type;
+using steem::protocol::ushare_type;
 
 using chainbase::shared_string;
 
@@ -189,9 +190,6 @@ typedef oid< smt_ico_object                         > smt_ico_object_id_type;
 
 typedef oid< proposal_object > proposal_id_type;
 typedef oid< proposal_vote_object > proposal_vote_id_type;
-
-typedef uint64_t                                      delayed_vote_count_type;
-typedef int64_t                                       signed_delayed_vote_count_type;
 
 enum bandwidth_type
 {

@@ -186,10 +186,10 @@ namespace steem { namespace protocol {
    struct delayed_voting_operation : public virtual_operation
    {
       account_name_type    witness;
-      uint64_t             votes = 0;
+      ushare_type          votes = 0;
 
       delayed_voting_operation(){}
-      delayed_voting_operation( account_name_type _witness, const uint64_t _votes ) : witness( _witness ), votes( _votes ) {}
+      delayed_voting_operation( account_name_type _witness, const ushare_type _votes ) : witness( _witness ), votes( _votes ) {}
    };
 
    struct sps_fund_operation : public virtual_operation

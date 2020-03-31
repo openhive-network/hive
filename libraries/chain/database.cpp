@@ -2126,10 +2126,10 @@ void database::process_vesting_withdrawals()
 
       if( has_hardfork( STEEM_HARDFORK_0_24 ) )
       {
-         fc::optional< uint64_t > leftover = dv->update_votes( _votes_update_data_items, head_block_time() );
+         fc::optional< ushare_type > leftover = dv->update_votes( _votes_update_data_items, head_block_time() );
          FC_ASSERT( leftover.valid(), "Something went wrong" );
          if( leftover.valid() && ( *leftover ) > 0 )
-            adjust_proxied_witness_votes( from_account, -( *leftover ) );
+            adjust_proxied_witness_votes( from_account, -( ( *leftover ).value ) );
       }
       else
       {
@@ -5748,7 +5748,7 @@ void database::validate_invariants()const
       asset total_vesting = asset( 0, VESTS_SYMBOL );
       asset pending_vesting_steem = asset( 0, STEEM_SYMBOL );
       share_type total_vsf_votes = share_type( 0 );
-      share_type total_delayed_votes = share_type( 0 );
+      ushare_type total_delayed_votes = ushare_type( 0 );
 
       auto gpo = get_dynamic_global_properties();
 
@@ -5774,11 +5774,11 @@ void database::validate_invariants()const
                                       itr->proxied_vsf_votes[STEEM_MAX_PROXY_RECURSION_DEPTH - 1] :
                                       itr->get_real_vesting_shares().amount ) );
          total_delayed_votes += itr->sum_delayed_votes;
-         delayed_vote_count_type sum_delayed_votes{ 0ul };
+         ushare_type sum_delayed_votes{ 0ul };
          for( auto& dv : itr->delayed_votes )
             sum_delayed_votes += dv.val;
          FC_ASSERT( sum_delayed_votes == itr->sum_delayed_votes, "", ("sum_delayed_votes",sum_delayed_votes)("itr->sum_delayed_votes",itr->sum_delayed_votes) );
-         FC_ASSERT( sum_delayed_votes <= itr->vesting_shares.amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->vesting_shares.amount)("account",itr->name) );
+         FC_ASSERT( sum_delayed_votes.value <= itr->vesting_shares.amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->vesting_shares.amount)("account",itr->name) );
       }
 
       const auto& convert_request_idx = get_index< convert_request_index >().indices();
@@ -5855,7 +5855,7 @@ void database::validate_invariants()const
       FC_ASSERT( gpo.current_supply == total_supply, "", ("gpo.current_supply",gpo.current_supply)("total_supply",total_supply) );
       FC_ASSERT( gpo.current_sbd_supply + gpo.init_sbd_supply == total_sbd, "", ("gpo.current_sbd_supply",gpo.current_sbd_supply)("total_sbd",total_sbd) );
       FC_ASSERT( gpo.total_vesting_shares + gpo.pending_rewarded_vesting_shares == total_vesting, "", ("gpo.total_vesting_shares",gpo.total_vesting_shares)("total_vesting",total_vesting) );
-      FC_ASSERT( gpo.total_vesting_shares.amount == total_vsf_votes + total_delayed_votes, "", ("total_vesting_shares",gpo.total_vesting_shares)("total_vsf_votes + total_delayed_votes",total_vsf_votes + total_delayed_votes) );
+      FC_ASSERT( gpo.total_vesting_shares.amount == total_vsf_votes + total_delayed_votes.value, "", ("total_vesting_shares",gpo.total_vesting_shares)("total_vsf_votes + total_delayed_votes",total_vsf_votes + total_delayed_votes.value) );
       FC_ASSERT( gpo.pending_rewarded_vesting_steem == pending_vesting_steem, "", ("pending_rewarded_vesting_steem",gpo.pending_rewarded_vesting_steem)("pending_vesting_steem", pending_vesting_steem));
 
       FC_ASSERT( gpo.virtual_supply >= gpo.current_supply );

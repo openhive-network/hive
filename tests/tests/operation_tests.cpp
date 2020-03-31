@@ -2149,7 +2149,7 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
       db->push_transaction(tx, 0);
 
       BOOST_REQUIRE(_sam_witness.votes == 0);
-      BOOST_REQUIRE(_alice.vesting_shares.amount == _alice.sum_delayed_votes);
+      BOOST_REQUIRE(_alice.vesting_shares.amount == _alice.sum_delayed_votes.value);
       BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _alice.name)) != witness_vote_idx.end());
       validate_database();
       generate_blocks(db->head_block_time() + fc::seconds(STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS));

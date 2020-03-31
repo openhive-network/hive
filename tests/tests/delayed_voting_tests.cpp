@@ -103,13 +103,13 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
          generate_blocks( db->head_block_time() + fc::hours(1).to_seconds());
          auto * ptr = find_proposal(proposal_1);
          BOOST_REQUIRE( ptr != nullptr );
-         BOOST_REQUIRE_EQUAL( ptr->total_votes, 0ul );
+         BOOST_REQUIRE( ptr->total_votes == 0ul );
       }
 
       generate_days_blocks( 1, true );
       auto * ptr = find_proposal(proposal_1);
       BOOST_REQUIRE( ptr != nullptr );
-      BOOST_REQUIRE_EQUAL( static_cast<long>(ptr->total_votes), db->get_account("carol").vesting_shares.amount.value );
+      BOOST_REQUIRE( static_cast<long>( ptr->total_votes ) == db->get_account("carol").vesting_shares.amount.value );
 
       validate_database();
    }
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
          generate_blocks( db->head_block_time() + fc::hours(1).to_seconds());
          ptr = find_proposal(proposal_1);
          BOOST_REQUIRE( ptr != nullptr );
-         BOOST_REQUIRE_EQUAL( ptr->total_votes, 0ul );
+         BOOST_REQUIRE( ptr->total_votes == 0ul );
 
          if( i == (12 * DAYS_FOR_DELAYED_VOTING))
          {
@@ -189,25 +189,25 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
          {
             ptr = find_proposal(proposal_2);
             BOOST_REQUIRE( ptr != nullptr );
-            BOOST_REQUIRE_EQUAL( ptr->total_votes, 0ul );
+            BOOST_REQUIRE( ptr->total_votes == 0ul );
          }
       }
 
       generate_days_blocks( 1, true );
       ptr = find_proposal(proposal_1);
       BOOST_REQUIRE( ptr != nullptr );
-      BOOST_REQUIRE_EQUAL( static_cast<long>(ptr->total_votes), carol_power_1 );
+      BOOST_REQUIRE( static_cast<long>(ptr->total_votes) == carol_power_1 );
       
       ptr = find_proposal(proposal_2);
       BOOST_REQUIRE( ptr != nullptr );
-      BOOST_REQUIRE_EQUAL( static_cast<long>(ptr->total_votes), carol_power_1 );
+      BOOST_REQUIRE( static_cast<long>(ptr->total_votes) == carol_power_1 );
 
       for(int i = 0; i < ( 12 * ( DAYS_FOR_DELAYED_VOTING / 2 ) ) - 1; i++)
       {
          generate_blocks( db->head_block_time() + fc::hours(1).to_seconds());
          ptr = find_proposal(proposal_2);
          BOOST_REQUIRE( ptr != nullptr );
-         BOOST_REQUIRE_EQUAL( static_cast<long>(ptr->total_votes), carol_power_1 );
+         BOOST_REQUIRE( static_cast<long>(ptr->total_votes) == carol_power_1 );
       }
       
       for(int _ = 0; _ < 8; _++ )
@@ -215,10 +215,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
          generate_days_blocks( 1, true );
          ptr = find_proposal(proposal_2);
       }
-      BOOST_REQUIRE_EQUAL( 
-         db->get_account("carol").vesting_shares.amount.value, 
-         static_cast<long>(ptr->total_votes)
-      );
+      BOOST_REQUIRE(  db->get_account("carol").vesting_shares.amount.value == static_cast<long>(ptr->total_votes) );
 
       validate_database();
    }
@@ -304,8 +301,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          }
       };
 
-      int64_t votes_witness1 = get_votes( "witness1" );
-      int64_t votes_witness2 = get_votes( "witness2" );
+      share_type votes_witness1 = get_votes( "witness1" );
+      share_type votes_witness2 = get_votes( "witness2" );
 
       size_t day = 0;
 
@@ -569,7 +566,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
                            { "witness2", { "alice", "celine", "bob" } }
                         };
 
-      auto calculate_votes = [ &pd_map, &m_map ]( uint32_t nr_day_after_30days_interval, const std::string& witness ) -> int64_t
+      auto calculate_votes = [ &pd_map, &m_map ]( uint32_t nr_day_after_30days_interval, const std::string& witness ) -> ushare_type
       {
          auto found_proxy = pd_map.find( nr_day_after_30days_interval );
          if( found_proxy == pd_map.end() )
@@ -582,7 +579,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          proxy_data& proxy = found_proxy->second;
          name_items& voters = found_voters->second;
 
-         uint64_t res = 0;
+         ushare_type res = 0;
          for( auto& item : voters )
          {
             auto found_voter = proxy.find( item );
@@ -608,11 +605,11 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          day = 30;
          size_t diff = 1;//because `1` element in delayed_votes has been removed already
 
-         BOOST_REQUIRE_GT( witness1_result_00, 0 );
-         BOOST_REQUIRE_GT( witness2_result_00, 0 );
+         BOOST_REQUIRE( witness1_result_00 >= 0 );
+         BOOST_REQUIRE( witness2_result_00 >= 0 );
 
-         BOOST_REQUIRE( get_votes( "witness1" ) == ( votes_witness1 + witness1_result_00 ) );
-         BOOST_REQUIRE( get_votes( "witness2" ) == ( votes_witness2 + witness2_result_00 ) );
+         BOOST_REQUIRE( get_votes( "witness1" ) == ( votes_witness1 + witness1_result_00.value ) );
+         BOOST_REQUIRE( get_votes( "witness2" ) == ( votes_witness2 + witness2_result_00.value ) );
 
          ++minutes;
          generate_blocks( start_time + fc::minutes( minutes/*11*/ ), true );
@@ -650,7 +647,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          std::string str_voters;
          std::string c = std::string( " : " );
          for( auto& voter : voters )
-            str_voters += std::string( "(" ) + voter.first + c + std::to_string( voter.second.val ) + c + voter.second.time.to_iso_string() + std::string( ")" );
+            str_voters += std::string( "(" ) + voter.first + c + std::to_string( voter.second.val.value ) + c + voter.second.time.to_iso_string() + std::string( ")" );
          std::string str = str_day + str_voters;
          idump( (str) );
       }
@@ -680,8 +677,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          start_time += fc::hours( 23 ) + fc::minutes( 59 );
          generate_blocks( start_time, true );
 
-         BOOST_REQUIRE_GT( witness1_result_01, 0 );
-         BOOST_REQUIRE_GT( witness2_result_01, 0 );
+         BOOST_REQUIRE( witness1_result_01 > 0 );
+         BOOST_REQUIRE( witness2_result_01 > 0 );
 
          idump( (db->get_account( "alice" ).witness_vote_weight().value) );
          idump( (db->get_account( "bob" ).witness_vote_weight().value) );
@@ -689,12 +686,12 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          idump( (votes_witness1) );
          idump( (witness1_result_00) );
          idump( (witness1_result_01) );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness1" ), ( votes_witness1 + witness1_result_00 + witness1_result_01 ) );
+         BOOST_REQUIRE( get_votes( "witness1" ) == ( votes_witness1 + ( witness1_result_00 + witness1_result_01 ).value ) );
 
          idump( (votes_witness2) );
          idump( (witness2_result_00) );
          idump( (witness2_result_01) );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness2" ), ( votes_witness2 + witness2_result_00 + witness2_result_01 ) );
+         BOOST_REQUIRE( get_votes( "witness2" ) == ( votes_witness2 + ( witness2_result_00 + witness2_result_01 ).value ) );
 
          start_time += fc::minutes( 1 );
          generate_blocks( start_time, true );
@@ -710,8 +707,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          start_time += fc::hours( 23 ) + fc::minutes( 59 );
          generate_blocks( start_time, true );
 
-         BOOST_REQUIRE_GT( witness1_result_02, 0 );
-         BOOST_REQUIRE_GT( witness1_result_02, 0 );
+         BOOST_REQUIRE( witness1_result_02 > 0 );
+         BOOST_REQUIRE( witness1_result_02 > 0 );
 
          idump( (db->get_account( "alice" ).witness_vote_weight().value) );
          idump( (db->get_account( "bob" ).witness_vote_weight().value) );
@@ -720,13 +717,13 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          idump( (witness1_result_00) );
          idump( (witness1_result_01) );
          idump( (witness1_result_02) );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness1" ), ( votes_witness1 + witness1_result_00 + witness1_result_01 + witness1_result_02 ) );
+         BOOST_REQUIRE( get_votes( "witness1" ) == ( votes_witness1 + ( witness1_result_00 + witness1_result_01 + witness1_result_02 ).value ) );
 
          idump( (votes_witness2) );
          idump( (witness2_result_00) );
          idump( (witness2_result_01) );
          idump( (witness2_result_02) );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness2" ), ( votes_witness2 + witness2_result_00 + witness2_result_01 + witness2_result_02 ) );
+         BOOST_REQUIRE( get_votes( "witness2" ) == ( votes_witness2 + ( witness2_result_00 + witness2_result_01 + witness2_result_02 ).value ) );
 
          start_time += fc::minutes( 1 );
          generate_blocks( start_time, true );
@@ -738,8 +735,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          start_time += 8 * STEEM_DELAYED_VOTING_INTERVAL_SECONDS;
          generate_blocks( start_time, true );
 
-         BOOST_REQUIRE_EQUAL( get_votes( "witness1" ), ( votes_witness1 + witness1_result_00 + witness1_result_01 + witness1_result_02 ) );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness2" ), ( votes_witness2 + witness2_result_00 + witness2_result_01 + witness2_result_02 ) );
+         BOOST_REQUIRE( get_votes( "witness1" ) == ( votes_witness1 + ( witness1_result_00 + witness1_result_01 + witness1_result_02 ).value ) );
+         BOOST_REQUIRE( get_votes( "witness2" ) == ( votes_witness2 + ( witness2_result_00 + witness2_result_01 + witness2_result_02 ).value ) );
 
          proxy( "alice", "", alice_private_key );
          generate_block();
@@ -761,14 +758,14 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          auto witness1_result_no_proxy_02 = calculate_votes( 2/*nr_day_after_30days_interval*/, "witness1" );
          auto witness2_result_no_proxy_02 = calculate_votes( 2/*nr_day_after_30days_interval*/, "witness2" );
 
-         BOOST_REQUIRE_EQUAL( get_votes( "witness1" ), ( votes_witness1 + witness1_result_no_proxy_00 + witness1_result_no_proxy_01 + witness1_result_no_proxy_02 ) );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness2" ), ( votes_witness2 + witness2_result_no_proxy_00 + witness2_result_no_proxy_01 + witness2_result_no_proxy_02 ) );
+         BOOST_REQUIRE( get_votes( "witness1" ) == ( votes_witness1 + ( witness1_result_no_proxy_00 + witness1_result_no_proxy_01 + witness1_result_no_proxy_02 ).value ) );
+         BOOST_REQUIRE( get_votes( "witness2" ) == ( votes_witness2 + ( witness2_result_no_proxy_00 + witness2_result_no_proxy_01 + witness2_result_no_proxy_02 ).value ) );
 
          proxy( "alice", "celine", alice_private_key );
          generate_block();
 
-         BOOST_REQUIRE_EQUAL( get_votes( "witness1" ), ( votes_witness1 + witness1_result_00 + witness1_result_01 + witness1_result_02 ) );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness2" ), ( votes_witness2 + witness2_result_00 + witness2_result_01 + witness2_result_02 ) );
+         BOOST_REQUIRE( get_votes( "witness1" ) == ( votes_witness1 + ( witness1_result_00 + witness1_result_01 + witness1_result_02 ).value ) );
+         BOOST_REQUIRE( get_votes( "witness2" ) == ( votes_witness2 + ( witness2_result_00 + witness2_result_01 + witness2_result_02 ).value  ) );
 
          m_map = _copy_m_map;
       }
@@ -810,8 +807,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
             return v_0 + v_1 + v_2 + v_15 + v_30 + v_31;
          };
 
-         BOOST_REQUIRE_EQUAL( get_votes( "witness1" ), ( votes_witness1 + calculate_total( "witness1" ) ) );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness2" ), ( votes_witness2 + calculate_total( "witness2" ) ) );
+         BOOST_REQUIRE( get_votes( "witness1" ) == ( votes_witness1 + calculate_total( "witness1" ).value ) );
+         BOOST_REQUIRE( get_votes( "witness2" ) == ( votes_witness2 + calculate_total( "witness2" ).value ) );
       }
 
       validate_database();
@@ -853,7 +850,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
 
       auto start_time = db->head_block_time();
 
-      int64_t votes_01 = get_votes( "witness" );
+      share_type votes_01 = get_votes( "witness" );
 
       {
          BOOST_TEST_MESSAGE( "Transform TESTS->VESTS for every account..." );
@@ -878,7 +875,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
          BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares   == v_bob );
          BOOST_REQUIRE( db->get_account( "celine" ).vesting_shares == v_celine );
          BOOST_REQUIRE( db->get_account( "witness" ).vesting_shares == v_witness );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 );
+         BOOST_REQUIRE( get_votes( "witness" ) == votes_01 );
       }
       {
          BOOST_TEST_MESSAGE( "Voting..." );
@@ -894,7 +891,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
          BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares == v_bob );
          BOOST_REQUIRE( db->get_account( "celine" ).vesting_shares == v_celine );
          BOOST_REQUIRE( db->get_account( "witness" ).vesting_shares == v_witness );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 );
+         BOOST_REQUIRE( get_votes( "witness" ) == votes_01 );
       }
       {
          BOOST_TEST_MESSAGE( "Move time forward..." );
@@ -912,8 +909,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
          BOOST_REQUIRE( db->get_account( "witness" ).vesting_shares == v_witness );
 
          auto sum = v_alice + v_bob + v_celine;
-         int64_t votes_02 = get_votes( "witness" );
-         BOOST_REQUIRE_EQUAL( votes_02, votes_01 + sum.amount.value );
+         share_type votes_02 = get_votes( "witness" );
+         BOOST_REQUIRE( votes_02 == votes_01 + sum.amount.value );
       }
       {
          BOOST_TEST_MESSAGE( "Remove account `alice` with proxy..." );
@@ -932,8 +929,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
          BOOST_REQUIRE( db->get_account( "witness" ).vesting_shares == v_witness );
 
          auto sum = v_bob + v_celine;
-         int64_t votes_02 = get_votes( "witness" );
-         BOOST_REQUIRE_EQUAL( votes_02, votes_01 + sum.amount.value );
+         share_type votes_02 = get_votes( "witness" );
+         BOOST_REQUIRE( votes_02 == votes_01 + sum.amount.value );
       }
       {
          BOOST_TEST_MESSAGE( "Remove account `bob` with proxy..." );
@@ -951,8 +948,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
          BOOST_REQUIRE( db->get_account( "celine" ).vesting_shares == v_celine );
          BOOST_REQUIRE( db->get_account( "witness" ).vesting_shares == v_witness );
 
-         int64_t votes_02 = get_votes( "witness" );
-         BOOST_REQUIRE_EQUAL( votes_02, votes_01 + v_celine.amount.value );
+         share_type votes_02 = get_votes( "witness" );
+         BOOST_REQUIRE( votes_02 == votes_01 + v_celine.amount.value );
       }
 
       validate_database();
@@ -990,7 +987,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
 
       auto start_time = db->head_block_time();
 
-      int64_t votes_01 = get_votes( "witness" );
+      share_type votes_01 = get_votes( "witness" );
 
       {
          BOOST_TEST_MESSAGE( "Transform a few times TESTS->VESTS..." );
@@ -1016,10 +1013,10 @@ BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
             generate_block();
          }
 
-         BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).vesting_shares.amount.value, ( v_alice + v_alice_00 ).amount.value );
-         BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).vesting_shares.amount.value, ( v_bob + v_bob_00 ).amount.value );
-         BOOST_REQUIRE_EQUAL( db->get_account( "witness" ).vesting_shares.amount.value, v_witness.amount.value );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 );
+         BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares.amount.value == ( v_alice + v_alice_00 ).amount.value );
+         BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares.amount.value == ( v_bob + v_bob_00 ).amount.value );
+         BOOST_REQUIRE( db->get_account( "witness" ).vesting_shares.amount.value == v_witness.amount.value );
+         BOOST_REQUIRE( get_votes( "witness" ) == votes_01 );
       }
       {
          BOOST_TEST_MESSAGE( "Witness voting..." );
@@ -1037,23 +1034,23 @@ BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
          witness_vote( "bob", "witness", true/*approve*/, bob_private_key );
          generate_block();
 
-         BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).vesting_shares.amount.value, v_alice.amount.value );
-         BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).vesting_shares.amount.value, v_bob.amount.value );
-         BOOST_REQUIRE_EQUAL( db->get_account( "witness" ).vesting_shares.amount.value, v_witness.amount.value );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 );
+         BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares.amount.value == v_alice.amount.value );
+         BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares.amount.value == v_bob.amount.value );
+         BOOST_REQUIRE( db->get_account( "witness" ).vesting_shares.amount.value == v_witness.amount.value );
+         BOOST_REQUIRE( get_votes( "witness" ) == votes_01 );
 
          generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
 
          auto sum = v_alice + v_bob;
-         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 + sum.amount.value );
+         BOOST_REQUIRE( get_votes( "witness" ) == votes_01 + sum.amount.value );
 
          witness_vote( "bob", "witness", false/*approve*/, bob_private_key );
          generate_block();
-         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 + v_alice.amount.value );
+         BOOST_REQUIRE( get_votes( "witness" ) == votes_01 + v_alice.amount.value );
 
          witness_vote( "alice", "witness", false/*approve*/, alice_private_key );
          generate_block();
-         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), votes_01 );
+         BOOST_REQUIRE( get_votes( "witness" ) == votes_01 );
       }
 
       validate_database();
@@ -1087,21 +1084,21 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
       witness_vote( "alice", "witness", true/*approve*/, alice_private_key );
       generate_block();
 
-      int64_t basic_votes = get_votes( "witness" );
+      share_type basic_votes = get_votes( "witness" );
 
       //Make some vests
       vest( "bob", "alice", ASSET( "1000.000 TESTS" ), bob_private_key );
       generate_block();
 
-      int64_t votes_01 = get_votes( "witness" );
-      BOOST_REQUIRE_EQUAL( votes_01, basic_votes );
+      share_type votes_01 = get_votes( "witness" );
+      BOOST_REQUIRE( votes_01 == basic_votes );
 
       generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
       generate_block();
 
       auto votes_power = db->get_account( "alice" ).vesting_shares;
-      int64_t votes_02 = get_votes( "witness" );
-      BOOST_REQUIRE_EQUAL( votes_02, basic_votes + votes_power.amount.value );
+      share_type votes_02 = get_votes( "witness" );
+      BOOST_REQUIRE( votes_02 == basic_votes + votes_power.amount.value );
 
       validate_database();
    }
@@ -1130,7 +1127,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_04 )
       generate_block();
 
       auto start_time = db->head_block_time();
-      const int64_t basic_votes = get_votes( "witness" );
+      const share_type basic_votes = get_votes( "witness" );
 
       //Make some vests
       vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key );
@@ -1139,17 +1136,17 @@ BOOST_AUTO_TEST_CASE( delayed_voting_04 )
       witness_vote( "bob", "witness", true/*approve*/, bob_private_key );
       generate_block();
 
-      BOOST_REQUIRE_EQUAL( basic_votes, get_votes( "witness" ) );
+      BOOST_REQUIRE( basic_votes == get_votes( "witness" ) );
       for(int i = 1; i < (STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS) - 1; i++)
       {
          generate_blocks( start_time + (i * STEEM_DELAYED_VOTING_INTERVAL_SECONDS) , true );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes );
+         BOOST_REQUIRE( get_votes( "witness" ) == basic_votes );
       }
       generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
       generate_block();
 
       auto votes_power = db->get_account( "bob" ).vesting_shares;
-      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes + votes_power.amount.value );
+      BOOST_REQUIRE( get_votes( "witness" ) == basic_votes + votes_power.amount.value );
 
       validate_database();
    }
@@ -1180,8 +1177,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
       generate_block();
 
       auto start_time = db->head_block_time();
-      int64_t basic_votes_1 = get_votes( "witness1" );
-      int64_t basic_votes_2 = get_votes( "witness2" );
+      share_type basic_votes_1 = get_votes( "witness1" );
+      share_type basic_votes_2 = get_votes( "witness2" );
 
       //Make some vests
       vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key );
@@ -1190,24 +1187,24 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
       witness_vote( "bob", "witness1", true/*approve*/, bob_private_key );
       generate_block();
 
-      int64_t votes_01_1 = get_votes( "witness1" );
-      int64_t votes_01_2 = get_votes( "witness2" );
-      BOOST_REQUIRE_EQUAL( basic_votes_1, votes_01_1 );
-      BOOST_REQUIRE_EQUAL( basic_votes_2, votes_01_2 );
+      share_type votes_01_1 = get_votes( "witness1" );
+      share_type votes_01_2 = get_votes( "witness2" );
+      BOOST_REQUIRE( basic_votes_1 == votes_01_1 );
+      BOOST_REQUIRE( basic_votes_2 == votes_01_2 );
 
       for(int i = 1; i < DAYS_FOR_DELAYED_VOTING - 1; i++)
       {
          generate_blocks( start_time + (i * STEEM_DELAYED_VOTING_INTERVAL_SECONDS) , true );
          if( i == static_cast<int>( DAYS_FOR_DELAYED_VOTING/2 )) witness_vote( "bob", "witness2", true/*approve*/, bob_private_key );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness1" ), votes_01_1 );
-         BOOST_REQUIRE_EQUAL( get_votes( "witness2" ), votes_01_2 );
+         BOOST_REQUIRE( get_votes( "witness1" ) == votes_01_1 );
+         BOOST_REQUIRE( get_votes( "witness2" ) == votes_01_2 );
       }
       generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
       generate_block();
 
       auto votes_power = db->get_account( "bob" ).vesting_shares;
-      BOOST_REQUIRE_EQUAL( get_votes( "witness1" ), basic_votes_1 + votes_power.amount.value );
-      BOOST_REQUIRE_EQUAL( get_votes( "witness2" ), basic_votes_2 + votes_power.amount.value );
+      BOOST_REQUIRE( get_votes( "witness1" ) == basic_votes_1 + votes_power.amount.value );
+      BOOST_REQUIRE( get_votes( "witness2" ) == basic_votes_2 + votes_power.amount.value );
 
       validate_database();
    }
@@ -1236,7 +1233,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_06 )
       witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
       generate_block();
 
-      const int64_t basic_votes = get_votes( "witness" );
+      const share_type basic_votes = get_votes( "witness" );
 
       //Make some vests
       vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key );
@@ -1244,18 +1241,18 @@ BOOST_AUTO_TEST_CASE( delayed_voting_06 )
 
       STEEM_REQUIRE_THROW( witness_vote( "bob", "witness", false/*approve*/, bob_private_key ), fc::assert_exception) ;
       generate_block();
-      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes );
+      BOOST_REQUIRE( get_votes( "witness" ) == basic_votes );
 
       witness_vote( "bob", "witness", true/*approve*/, bob_private_key );
       generate_block();
-      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes );
+      BOOST_REQUIRE( get_votes( "witness" ) == basic_votes );
 
       witness_vote( "bob", "witness", false/*approve*/, bob_private_key );
       generate_block();
-      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes );
+      BOOST_REQUIRE( get_votes( "witness" ) == basic_votes );
 
       generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
-      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes );
+      BOOST_REQUIRE( get_votes( "witness" ) == basic_votes );
 
       validate_database();
    }
@@ -1316,8 +1313,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
       uint64_t last{ alice_values.back() };
 
       // entry check
-      BOOST_REQUIRE_EQUAL( get_delayed_vote_count("bob", { { static_cast<uint64_t>(db->get_account( "bob" ).vesting_shares.amount.value) } }), true );
-      BOOST_REQUIRE_EQUAL( get_delayed_vote_count("alice", { { static_cast<uint64_t>(db->get_account( "alice" ).vesting_shares.amount.value)} }), true );
+      BOOST_REQUIRE( get_delayed_vote_count("bob", { { static_cast<uint64_t>(db->get_account( "bob" ).vesting_shares.amount.value) } }) );
+      BOOST_REQUIRE( get_delayed_vote_count("alice", { { static_cast<uint64_t>(db->get_account( "alice" ).vesting_shares.amount.value)} }) );
 
       // check everyday for month
       bool s = false;
@@ -1327,9 +1324,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
          generate_blocks( start_time + (i * STEEM_DELAYED_VOTING_INTERVAL_SECONDS) , true );
 
          // base checks for witness, bob and celine
-         BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes );
-         BOOST_REQUIRE_EQUAL( get_delayed_vote_count("bob", { { static_cast<uint64_t>(db->get_account( "bob" ).vesting_shares.amount.value)} }), true );
-         BOOST_REQUIRE_EQUAL( get_delayed_vote_count("celine", { { static_cast<uint64_t>(db->get_account( "celine" ).vesting_shares.amount.value)} }), true );
+         BOOST_REQUIRE( get_votes("witness") == basic_votes );
+         BOOST_REQUIRE( get_delayed_vote_count("bob", { { static_cast<uint64_t>(db->get_account( "bob" ).vesting_shares.amount.value)} }) );
+         BOOST_REQUIRE( get_delayed_vote_count("celine", { { static_cast<uint64_t>(db->get_account( "celine" ).vesting_shares.amount.value)} }) );
 
          // celine arythmia
          s=!s;
@@ -1342,23 +1339,23 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
          const uint64_t val = static_cast<uint64_t>(db->get_account( "alice" ).vesting_shares.amount.value);
          alice_values.push_back(val - last);
          last = val;
-         BOOST_REQUIRE_EQUAL( get_delayed_vote_count("alice", alice_values), true );
+         BOOST_REQUIRE( get_delayed_vote_count("alice", alice_values) );
       }
 
       // check is bob ok
       generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS, true );
-      BOOST_REQUIRE_EQUAL( get_delayed_vote_count("bob", {}), true );
+      BOOST_REQUIRE( get_delayed_vote_count("bob", {}) );
 
       // check is alice ok (after another month)
       generate_blocks( start_time + (2 * STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS) , true );
-      BOOST_REQUIRE_EQUAL( get_delayed_vote_count("alice", {}), true );
+      BOOST_REQUIRE( get_delayed_vote_count("alice", {}) );
 
       // check is witness ok
       const auto alice_power = db->get_account( "alice" ).vesting_shares.amount.value;
       const auto bob_power = db->get_account( "bob" ).vesting_shares.amount.value;
       const auto celine_power = (s ? db->get_account( "celine" ).vesting_shares.amount.value : 0l);
 
-      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power + bob_power + celine_power);
+      BOOST_REQUIRE( get_votes("witness") == basic_votes + alice_power + bob_power + celine_power);
       validate_database();
 
    }
@@ -1420,7 +1417,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_04 )
 
             ++cnt;
          }
-         BOOST_REQUIRE_EQUAL( withdraw_items->size(), accs.size() );
+         BOOST_REQUIRE( withdraw_items->size() == accs.size() );
          dv.update_votes( withdraw_items, start_time );
       }
       {
@@ -1431,13 +1428,13 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_04 )
             dv.run( start_time );
 
             for( auto& item : accs )
-               BOOST_REQUIRE_GE( db->get_account( item ).sum_delayed_votes, 0 );
+               BOOST_REQUIRE( db->get_account( item ).sum_delayed_votes >= 0 );
          }
 
          move_forward( fc::days( 1 ) );
 
          for( auto& item : accs )
-            BOOST_REQUIRE_EQUAL( db->get_account( item ).sum_delayed_votes, 0 );
+            BOOST_REQUIRE( db->get_account( item ).sum_delayed_votes == 0 );
       }
 
       validate_database();
@@ -1617,13 +1614,13 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_03 )
 {
    std::deque< delayed_votes_data > dq;
 
-   uint64_t sum = 0;
+   ushare_type sum = 0;
 
    fc::time_point_sec time = fc::variant( "2020-02-02T03:04:05" ).as< fc::time_point_sec >();
 
    {
       //nothing to do
-      delayed_voting_processor::erase( dq, sum, 0 );
+      delayed_voting_processor::erase( dq, sum, 0ul );
       delayed_voting_processor::add( dq, sum, time/*time*/, 0/*val*/ );
       delayed_voting_processor::erase_front( dq, sum );
    }
@@ -1635,14 +1632,14 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_03 )
    }
 
    {
-      delayed_voting_processor::add( dq, sum, time/*time*/, 666/*val*/ );
-      delayed_voting_processor::erase( dq, sum, 666 );
+      delayed_voting_processor::add( dq, sum, time/*time*/, 666ul/*val*/ );
+      delayed_voting_processor::erase( dq, sum, 666ul );
       BOOST_REQUIRE( dq.size() == 0 );
    }
 
    {
-      delayed_voting_processor::add( dq, sum, time + fc::days( 1 )/*time*/, 22/*val*/ );
-      delayed_voting_processor::add( dq, sum, time + fc::days( 2 )/*time*/, 33/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::days( 1 )/*time*/, 22ul/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::days( 2 )/*time*/, 33ul/*val*/ );
       delayed_voting_processor::erase( dq, sum, 55 );
       BOOST_REQUIRE( dq.size() == 0 );
    }
@@ -1652,32 +1649,32 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_02 )
 {
    std::deque< delayed_votes_data > dq;
 
-   auto cmp = [ &dq, this ]( size_t idx, const fc::time_point_sec& time, uint64_t val )
+   auto cmp = [ &dq, this ]( ushare_type idx, const fc::time_point_sec& time, ushare_type val )
    {
       return check_collection( dq, idx, time, val );
    };
 
-   uint64_t sum = 0;
+   ushare_type sum = 0;
 
    fc::time_point_sec time = fc::variant( "2020-01-02T03:04:05" ).as< fc::time_point_sec >();
 
-   const uint32_t _max = 10;
-   uint64_t calculated_sum = 0;
+   const ushare_type _max = 10;
+   ushare_type calculated_sum = 0;
 
    //dq={1,2,3,4,5,6,7,8,9,10}
-   for( uint32_t i = 0; i < _max; ++i )
+   for( ushare_type i = 0; i < _max; ++i )
    {
       calculated_sum += i + 1;
-      delayed_voting_processor::add( dq, sum, time + fc::days( i + 1 )/*time*/, i + 1/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::days( ( i + 1 ).value )/*time*/, i + 1/*val*/ );
    }
    BOOST_REQUIRE( dq.size() == _max );
    BOOST_REQUIRE( sum == calculated_sum );
 
-   for( uint32_t i = 0; i < _max; ++i )
-      BOOST_REQUIRE( cmp( i/*idx*/, time + fc::days( i + 1 )/*time*/, i + 1/*val*/ ) );
+   for( ushare_type i = 0; i < _max; ++i )
+      BOOST_REQUIRE( cmp( i/*idx*/, time + fc::days( ( i + 1 ).value )/*time*/, i + 1/*val*/ ) );
 
    //Decrease gradually last element by `1` in `dq`.
-   for( uint32_t cnt = 0; cnt < _max - 1; ++cnt )
+   for( ushare_type cnt = 0; cnt < _max - 1; ++cnt )
    {
       idump( (cnt) );
 
@@ -1685,43 +1682,43 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_02 )
       BOOST_REQUIRE( dq.size() == _max );
       BOOST_REQUIRE( sum == calculated_sum - ( cnt + 1 ) );
 
-      for( uint32_t i = 0; i < _max; ++i )
+      for( ushare_type i = 0; i < _max; ++i )
       {
          if( i == _max - 1 )
-            BOOST_REQUIRE( cmp( i/*idx*/, time + fc::days( i + 1 )/*time*/, i - cnt/*val*/ ) );
+            BOOST_REQUIRE( cmp( i/*idx*/, time + fc::days( ( i + 1 ).value )/*time*/, i - cnt/*val*/ ) );
          else
-            BOOST_REQUIRE( cmp( i/*idx*/, time + fc::days( i + 1 )/*time*/, i + 1/*val*/ ) );
+            BOOST_REQUIRE( cmp( i/*idx*/, time + fc::days( ( i + 1 ).value )/*time*/, i + 1/*val*/ ) );
       }
    }
 
    //dq={1,2,3,4,5,6,7,8,9,1}
    //Last element has only `1`, so after below operation last element should be removed
-   delayed_voting_processor::erase( dq, sum, 1 );
+   delayed_voting_processor::erase( dq, sum, 1ul );
    BOOST_REQUIRE( dq.size() == _max - 1 );
    BOOST_REQUIRE( sum == calculated_sum - 10 );
 
    //dq={1,2,3,4,5,6,7,8,9}
    //Two last elements will disappear.
-   delayed_voting_processor::erase( dq, sum, 17 );
+   delayed_voting_processor::erase( dq, sum, 17ul );
    BOOST_REQUIRE( dq.size() == _max - 3 );
    BOOST_REQUIRE( sum == calculated_sum - 27 );
 
    //dq={1,2,3,4,5,6,7}
-   delayed_voting_processor::erase( dq, sum, 7 );
+   delayed_voting_processor::erase( dq, sum, 7ul );
    BOOST_REQUIRE( dq.size() == _max - 4 );
    BOOST_REQUIRE( sum == calculated_sum - 34 );
 
    //dq={1,2,3,4,5,6}
-   delayed_voting_processor::erase( dq, sum, 18 );
+   delayed_voting_processor::erase( dq, sum, 18ul );
    BOOST_REQUIRE( dq.size() == _max - 8 );
    BOOST_REQUIRE( sum == calculated_sum - 52 );
 
    //delayed_voting_messages::incorrect_erased_votes
    //dq={1,2}
-   STEEM_REQUIRE_THROW( delayed_voting_processor::erase( dq, sum, 10 ), fc::exception );
+   STEEM_REQUIRE_THROW( delayed_voting_processor::erase( dq, sum, 10ul ), fc::exception );
 
    //dq={1,2}
-   delayed_voting_processor::erase( dq, sum, 3 );
+   delayed_voting_processor::erase( dq, sum, 3ul );
    BOOST_REQUIRE( dq.size() == 0 );
    BOOST_REQUIRE( sum == 0 );
 }
@@ -1735,37 +1732,37 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
       return check_collection( dq, idx, time, val );
    };
 
-   uint64_t sum = 0;
+   ushare_type sum = 0;
 
    fc::time_point_sec time = fc::variant( "2000-01-01T00:00:00" ).as< fc::time_point_sec >();
 
    {
-      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 )/*time*/, 1/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 )/*time*/, 1ul/*val*/ );
       BOOST_REQUIRE( dq.size() == 1 );
       BOOST_REQUIRE( sum == 1 );
-      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 1/*val*/ ) );
+      BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 1ul/*val*/ ) );
    }
    {
-      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 1 )/*time*/, 2/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 1 )/*time*/, 2ul/*val*/ );
       BOOST_REQUIRE( dq.size() == 1 );
       BOOST_REQUIRE( sum == 3 );
       BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 3/*val*/ ) );
    }
    {
-      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 24 ) - fc::seconds( 1 )/*time*/, 3/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 24 ) - fc::seconds( 1 )/*time*/, 3ul/*val*/ );
       BOOST_REQUIRE( dq.size() == 1 );
       BOOST_REQUIRE( sum == 6 );
       BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 6/*val*/ ) );
    }
    {
-      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 24 )/*time*/, 4/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 24 )/*time*/, 4ul/*val*/ );
       BOOST_REQUIRE( dq.size() == 2 );
       BOOST_REQUIRE( sum == 10 );
       BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 6/*val*/ ) );
       BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 24 )/*time*/, 4/*val*/ ) );
    }
    {
-      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 5/*val*/ );
+      delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 5ul/*val*/ );
       BOOST_REQUIRE( dq.size() == 3 );
       BOOST_REQUIRE( sum == 15 );
       BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 6/*val*/ ) );
@@ -1880,7 +1877,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_01 )
       generate_block();
 
       //Make some vests
-      const auto basic_votes = get_votes( "witness" );
+      const share_type basic_votes = get_votes( "witness" );
       vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key );
       vest( "alice", "alice", ASSET( "1000.000 TESTS" ), alice_private_key );
       generate_block();
@@ -1892,18 +1889,18 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_01 )
       // alice - check
       generate_days_blocks( 30, true );
       const auto alice_power = db->get_account( "alice" ).vesting_shares.amount.value;
-      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power );
+      BOOST_REQUIRE( get_votes("witness") == basic_votes + alice_power );
 
       // blocked bob - do
       decline_voting_rights("bob", true, bob_private_key);
       generate_blocks( db->head_block_time() + STEEM_OWNER_AUTH_RECOVERY_PERIOD, true );
-      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, false );
+      BOOST_REQUIRE( db->get_account("bob").can_vote == false );
       STEEM_REQUIRE_THROW( witness_vote( "bob", "witness", true, bob_private_key ), fc::assert_exception );
       generate_block();
 
       // blocked bob - check
       generate_days_blocks( 30, true );
-      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power );
+      BOOST_REQUIRE( get_votes("witness") == basic_votes + alice_power );
    }
    FC_LOG_AND_RETHROW();
 }
@@ -1929,7 +1926,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
       generate_block();
 
       //Make some vests
-      const auto basic_votes = get_votes( "witness" );
+      const share_type basic_votes = get_votes( "witness" );
       vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key );
       vest( "alice", "alice", ASSET( "1000.000 TESTS" ), alice_private_key );
       generate_days_blocks( 30, true );
@@ -1940,32 +1937,32 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
 
       // alice - check
       const auto alice_power = db->get_account( "alice" ).vesting_shares.amount.value;
-      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power );
+      BOOST_REQUIRE( get_votes("witness") == basic_votes + alice_power );
 
       // bob block
       decline_voting_rights("bob", true, bob_private_key);
       generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true );
 
       // bob check
-      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );
+      BOOST_REQUIRE( db->get_account("bob").can_vote );
       
       // bob account is voting
       witness_vote( "bob", "witness", true, bob_private_key );
       generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 3), true );
       
       // bob check
-      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );
-      BOOST_REQUIRE_EQUAL( get_user_voted_witness_count( "bob" ), 1 );
+      BOOST_REQUIRE( db->get_account("bob").can_vote );
+      BOOST_REQUIRE( get_user_voted_witness_count( "bob" ) == 1 );
       const auto bob_power = db->get_account( "bob" ).vesting_shares.amount.value;
-      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power + bob_power );
+      BOOST_REQUIRE( get_votes("witness") == basic_votes + alice_power + bob_power );
 
       // bobs block request is active
       generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 3), true );
       
       // blocked bob - check
       STEEM_REQUIRE_THROW( witness_vote( "bob", "witness", true, bob_private_key ), fc::assert_exception );
-      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power );
-      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, false );
+      BOOST_REQUIRE( get_votes("witness") == basic_votes + alice_power );
+      BOOST_REQUIRE( db->get_account("bob").can_vote == false );
    }
    FC_LOG_AND_RETHROW();
 }
@@ -2000,8 +1997,8 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_03 )
       generate_block();
 
       //Make some vests
-      const int64_t basic_votes = get_votes( "witness" );
-      const int64_t basic_votes2 = get_votes( "witness2" );
+      const share_type basic_votes = get_votes( "witness" );
+      const share_type basic_votes2 = get_votes( "witness2" );
       vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key );
       vest( "alice", "alice", ASSET( "1000.000 TESTS" ), alice_private_key );
       generate_days_blocks( 30, true );
@@ -2012,36 +2009,36 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_03 )
 
       // alice - check
       const auto alice_power = db->get_account( "alice" ).vesting_shares.amount.value;
-      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power );
+      BOOST_REQUIRE( get_votes("witness") == basic_votes + alice_power );
 
       // bob block
       decline_voting_rights("bob", true, bob_private_key);
       generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true );
 
       // bob check
-      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );
+      BOOST_REQUIRE( db->get_account("bob").can_vote );
       
       // bob account tries to vote
       witness_vote( "bob", "witness", true, bob_private_key );
-      BOOST_REQUIRE_EQUAL( get_user_voted_witness_count( "bob" ), 1 );
+      BOOST_REQUIRE( get_user_voted_witness_count( "bob" ) == 1 );
       const auto bob_power = db->get_account( "bob" ).vesting_shares.amount.value;
-      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power + bob_power );
+      BOOST_REQUIRE( get_votes("witness") == basic_votes + alice_power + bob_power );
 
       // bob cancel block request
       decline_voting_rights("bob", false, bob_private_key);
       generate_block();
 
       // check
-      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );
-      BOOST_REQUIRE_EQUAL( is_cancelled( "bob" ), true );
+      BOOST_REQUIRE( db->get_account("bob").can_vote );
+      BOOST_REQUIRE( is_cancelled( "bob" ) );
 
       // bob account is voting again
       witness_vote( "bob", "witness2", true, bob_private_key );
       generate_block();
 
       // check
-      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + alice_power + bob_power );
-      BOOST_REQUIRE_EQUAL( get_votes("witness2"), basic_votes2 + bob_power );
+      BOOST_REQUIRE( get_votes("witness") == basic_votes + alice_power + bob_power );
+      BOOST_REQUIRE( get_votes("witness2") == basic_votes2 + bob_power );
    }
    FC_LOG_AND_RETHROW();
 }
@@ -2074,36 +2071,36 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
       generate_block();
 
       //Make some vests
-      const int64_t basic_votes = get_votes( "witness" );
+      const share_type basic_votes = get_votes( "witness" );
       vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key ); 
       witness_vote( "bob", "witness", true, bob_private_key );
       generate_block();
-      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes );
+      BOOST_REQUIRE( get_votes("witness") == basic_votes );
       generate_blocks( db->head_block_time() + ( STEEM_DELAYED_VOTING_INTERVAL_SECONDS * 29 ) , true ); // 120s
       
       // bob check
-      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );
-      BOOST_REQUIRE_EQUAL( get_user_voted_witness_count( "bob" ), 1 );
+      BOOST_REQUIRE( db->get_account("bob").can_vote );
+      BOOST_REQUIRE( get_user_voted_witness_count( "bob" ) == 1 );
       const auto bob_power = db->get_account( "bob" ).vesting_shares.amount.value;
-      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes );
+      BOOST_REQUIRE( get_votes("witness") == basic_votes );
 
       // bob block
       decline_voting_rights("bob", true, bob_private_key);
       generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true ); 
 
       // bob check
-      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );
-      BOOST_REQUIRE_EQUAL( get_user_voted_witness_count( "bob" ), 1 );
-      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes );
+      BOOST_REQUIRE( db->get_account("bob").can_vote );
+      BOOST_REQUIRE( get_user_voted_witness_count( "bob" ) == 1 );
+      BOOST_REQUIRE( get_votes("witness") == basic_votes );
 
 
       decline_voting_rights("bob", false, bob_private_key);
 
       generate_blocks( db->head_block_time() + STEEM_DELAYED_VOTING_INTERVAL_SECONDS , true ); 
 
-      BOOST_REQUIRE_EQUAL( get_votes("witness"), basic_votes + bob_power );
-      BOOST_REQUIRE_EQUAL( db->get_account("bob").can_vote, true );  // block has been cancelled
-      BOOST_REQUIRE_EQUAL( get_user_voted_witness_count( "bob" ), 1 );
+      BOOST_REQUIRE( get_votes("witness") == basic_votes + bob_power );
+      BOOST_REQUIRE( db->get_account("bob").can_vote == true );  // block has been cancelled
+      BOOST_REQUIRE( get_user_voted_witness_count( "bob" ) == 1 );
    }
    FC_LOG_AND_RETHROW();
 }
@@ -2133,14 +2130,14 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
       witness_vote( "alice", "witness", true/*approve*/, alice_private_key );
       generate_block();
 
-      int64_t basic_votes = get_votes( "witness" );
+      share_type basic_votes = get_votes( "witness" );
 
       //First start timer with low, not suspicious amount of vests
       vest( "alice", "alice", ASSET( "0.001 TESTS" ), alice_private_key );
       generate_block();
 
-      int64_t votes_01 = get_votes( "witness" );
-      BOOST_REQUIRE_EQUAL( votes_01, basic_votes );
+      share_type votes_01 = get_votes( "witness" );
+      BOOST_REQUIRE( votes_01 == basic_votes );
 
       generate_blocks( start_time + fc::days(DAYS_FOR_DELAYED_VOTING - 1) , true );
       generate_block();
@@ -2155,9 +2152,9 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
       generate_block();
 
       // lock is working and alice doesn't have huge amount of votes in sneaky way
-      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes + alice_vp );
+      BOOST_REQUIRE( get_votes( "witness" ) == basic_votes + alice_vp );
       generate_blocks( start_time + (2 * STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ) , true );
-      BOOST_REQUIRE_EQUAL( get_votes( "witness" ), basic_votes + alice_vp_2 );
+      BOOST_REQUIRE( get_votes( "witness" ) == basic_votes + alice_vp_2 );
 
 
       validate_database();
@@ -2176,7 +2173,7 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
 
 #define WITNESS_VOTES( witness ) db->get_witness( witness ).votes.value
 
-#define DELAYED_VOTES( account ) static_cast<int64_t>(db->get_account( account ).sum_delayed_votes)
+#define DELAYED_VOTES( account ) static_cast<int64_t>(db->get_account( account ).sum_delayed_votes.value)
 
 #define DAY_REPORT( day ) \
    BOOST_TEST_MESSAGE( "[abw_scenario_01]: current day: " << day ); \
@@ -2208,12 +2205,12 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
    BOOST_REQUIRE( db->get_account( "alice" ).balance == db->get_account( "carol" ).balance ); \
    BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "expected_alice_vests = " << asset_to_string( expected_alice_vests ) ); \
    CHECK_ACCOUNT_VESTS( alice ); \
-   BOOST_REQUIRE_EQUAL( DELAYED_VOTES( "alice0bp" ), expected_alice0bp_delayed_votes ); \
-   BOOST_REQUIRE_EQUAL( VOTING_POWER( "alice" ), WITNESS_VOTES( "alice0bp" ) ); \
+   BOOST_REQUIRE( DELAYED_VOTES( "alice0bp" ) == expected_alice0bp_delayed_votes ); \
+   BOOST_REQUIRE( VOTING_POWER( "alice" ) == WITNESS_VOTES( "alice0bp" ) ); \
    BOOST_TEST_MESSAGE( "[abw_scenario_01]: " << "expected_bob_vests = " << asset_to_string( expected_bob_vests ) ); \
    CHECK_ACCOUNT_VESTS( bob ); \
-   BOOST_REQUIRE_EQUAL( DELAYED_VOTES( "bob0bp" ), expected_bob0bp_delayed_votes ); \
-   BOOST_REQUIRE_EQUAL( VOTING_POWER( "bob" ), WITNESS_VOTES( "bob0bp" ) )
+   BOOST_REQUIRE( DELAYED_VOTES( "bob0bp" ) == expected_bob0bp_delayed_votes ); \
+   BOOST_REQUIRE( VOTING_POWER( "bob" ) == WITNESS_VOTES( "bob0bp" ) )
 
 #define GOTO_DAY( day ) \
    generate_days_blocks( day - today ); \
