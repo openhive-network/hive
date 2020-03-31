@@ -1104,6 +1104,29 @@ namespace steem { namespace plugins { namespace condenser_api {
             legacy_asset      total_steem_from_vests;
          };
 
+   struct legacy_hardfork_hive_restore_operation
+   {
+      legacy_hardfork_hive_restore_operation() {}
+      legacy_hardfork_hive_restore_operation( const hardfork_hive_restore_operation& op ) :
+      account( op.account ),
+      sbd_transferred( legacy_asset::from_asset( op.sbd_transferred ) ),
+      steem_transferred( legacy_asset::from_asset( op.steem_transferred ) )
+            {}
+
+      operator hardfork_hive_restore_operation()const
+      {
+         legacy_hardfork_hive_restore_operation op;
+         op.account = account;
+         op.sbd_transferred = sbd_transferred;
+         op.steem_transferred = steem_transferred;
+         return op;
+      }
+
+      account_name_type account;
+      legacy_asset      sbd_transferred;
+      legacy_asset      steem_transferred;
+   };
+
    typedef fc::static_variant<
             legacy_vote_operation,
             legacy_comment_operation,
@@ -1170,7 +1193,8 @@ namespace steem { namespace plugins { namespace condenser_api {
             legacy_clear_null_account_balance_operation,
             legacy_proposal_pay_operation,
             legacy_sps_fund_operation,
-           legacy_hardfork_hive_operation
+           legacy_hardfork_hive_operation,
+           legacy_hardfork_hive_restore_operation
          > legacy_operation;
 
    struct legacy_operation_conversion_visitor
@@ -1423,6 +1447,12 @@ namespace steem { namespace plugins { namespace condenser_api {
          return true;
       }
 
+      bool operator()( const hardfork_hive_restore_operation& op )const
+      {
+         l_op = legacy_hardfork_hive_restore_operation( op );
+         return true;
+      }
+
       // Should only be SMT ops
       template< typename T >
       bool operator()( const T& )const { return false; }
@@ -1609,6 +1639,11 @@ struct convert_from_legacy_operation_visitor
       return operation( hardfork_hive_operation( op ) );
    }
 
+   operation operator()( const legacy_hardfork_hive_restore_operation& op )const
+   {
+      return operation( hardfork_hive_restore_operation( op ) );
+   }
+
    template< typename T >
    operation operator()( const T& t )const
    {
@@ -1735,5 +1770,6 @@ FC_REFLECT( steem::plugins::condenser_api::legacy_proposal_pay_operation, (recei
 FC_REFLECT( steem::plugins::condenser_api::legacy_sps_fund_operation, (additional_funds) )
 FC_REFLECT( steem::plugins::condenser_api::legacy_create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink) )
 FC_REFLECT( steem::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(sbd_transferred)(steem_transferred)(vests_converted)(total_steem_from_vests) )
+FC_REFLECT( steem::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(sbd_transferred)(steem_transferred) )
 
 FC_REFLECT_TYPENAME( steem::plugins::condenser_api::legacy_operation )

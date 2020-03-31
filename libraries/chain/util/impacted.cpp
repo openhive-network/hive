@@ -290,6 +290,12 @@ struct get_impacted_account_visitor
       _impacted.insert( op.account );
    }
 
+   void operator()( const hardfork_hive_restore_operation& op )
+   {
+      _impacted.insert( STEEM_TREASURY_ACCOUNT );
+      _impacted.insert( op.account );
+   }
+
    //void operator()( const operation& op ){}
 };
 

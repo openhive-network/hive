@@ -102,7 +102,8 @@ namespace steem { namespace protocol {
             clear_null_account_balance_operation,
             proposal_pay_operation,
             sps_fund_operation,
-            hardfork_hive_operation
+            hardfork_hive_operation,
+            hardfork_hive_restore_operation
          > operation;
 
    /*void operation_get_required_authorities( const operation& op,

@@ -11,6 +11,7 @@
 #include <steem/chain/steem_objects.hpp>
 
 #include <steem/chain/util/reward.hpp>
+#include <steem/chain/util/hf23_helper.hpp>
 
 #include <steem/plugins/rc/rc_objects.hpp>
 #include <steem/plugins/rc/resource_count.hpp>
@@ -41,6 +42,235 @@ std::string asset_to_string( const asset& a )
 
 
 BOOST_FIXTURE_TEST_SUITE( hf23_tests, hf23_database_fixture )
+
+BOOST_AUTO_TEST_CASE( restore_accounts_01 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Saving during HF23 and restoring balances during HF24" );
+
+      ACTORS( (alice)(bob)(carol) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      FUND( "alice", ASSET( "1000.000 TESTS" ) );
+      FUND( "alice", ASSET( "20.000 TBD" ) );
+      FUND( "bob", ASSET( "900.000 TESTS" ) );
+      FUND( "bob", ASSET( "10.000 TBD" ) );
+      FUND( "carol", ASSET( "3600.000 TESTS" ) );
+      FUND( "carol", ASSET( "3500.000 TBD" ) );
+
+      hf23_helper::hf23_items _hf23_items;
+
+      const std::set< std::string > accounts{ "alice", "bob" };
+
+      {
+         auto& _alice   = db->get_account( "alice" );
+         auto& _bob     = db->get_account( "bob" );
+
+         auto alice_balance      = _alice.balance;
+         auto alice_sbd_balance  = _alice.sbd_balance;
+         auto bob_balance        = _bob.balance;
+         auto bob_sbd_balance    = _bob.sbd_balance;
+
+         {
+            hf23_helper::gather_balance( _hf23_items, _alice.name, _alice.balance, _alice.sbd_balance );
+            db->adjust_balance( "steem.dao", _alice.balance );
+            db->adjust_balance( "steem.dao", _alice.sbd_balance );
+            db->adjust_balance( "alice", -_alice.balance );
+            db->adjust_balance( "alice", -_alice.sbd_balance );
+         }
+         {
+            hf23_helper::gather_balance( _hf23_items, _bob.name, _bob.balance, _bob.sbd_balance );
+            db->adjust_balance( "steem.dao", _bob.balance );
+            db->adjust_balance( "steem.dao", _bob.sbd_balance );
+            db->adjust_balance( "bob", -_bob.balance );
+            db->adjust_balance( "bob", -_bob.sbd_balance );
+         }
+
+         asset _2000 = ASSET( "2000.000 TESTS" );
+         asset _10   = ASSET( "10.000 TBD" );
+         asset _800  = ASSET( "800.000 TESTS" );
+         asset _70   = ASSET( "70.000 TBD" );
+         asset _5000 = ASSET( "5000.000 TESTS" );
+         asset _4000 = ASSET( "4000.000 TBD" );
+
+         {
+            //Create another balances for `alice`
+            db->adjust_balance( "carol", -_2000 );
+            db->adjust_balance( "carol", -_10 );
+            db->adjust_balance( "alice", _2000 );
+            db->adjust_balance( "alice", _10 );
+
+            generate_block();
+
+            BOOST_REQUIRE( db->get_account( "alice" ).balance     == _2000 );
+            BOOST_REQUIRE( db->get_account( "alice" ).sbd_balance == _10 );
+         }
+         {
+            //Create another balances for `bob`
+            db->adjust_balance( "carol", -_800 );
+            db->adjust_balance( "carol", -_70 );
+            db->adjust_balance( "bob", _800 );
+            db->adjust_balance( "bob", _70 );
+
+            generate_block();
+
+            BOOST_REQUIRE( db->get_account( "bob" ).balance       == _800 );
+            BOOST_REQUIRE( db->get_account( "bob" ).sbd_balance   == _70 );
+         }
+
+         std::set< std::string > restored_accounts = { "bob", "alice", "carol" };
+
+         auto treasury_balance_start      = db->get_account( STEEM_TREASURY_ACCOUNT ).balance;
+         auto treasury_sbd_balance_start  = db->get_account( STEEM_TREASURY_ACCOUNT ).sbd_balance;
+
+         {
+            auto last_supply = db->get_dynamic_global_properties().current_sbd_supply;
+
+            FUND( "steem.dao", _5000 );
+            FUND( "steem.dao", _4000 );
+
+            generate_block();
+
+            auto interest = db->get_dynamic_global_properties().current_sbd_supply - last_supply - _4000;
+
+            BOOST_REQUIRE( db->get_account( STEEM_TREASURY_ACCOUNT ).balance     == _5000 + treasury_balance_start );
+            BOOST_REQUIRE( db->get_account( STEEM_TREASURY_ACCOUNT ).sbd_balance == _4000 + treasury_sbd_balance_start + interest );
+
+            treasury_balance_start     += _5000;
+            treasury_sbd_balance_start += _4000 + interest;
+         }
+
+         database_fixture::validate_database();
+
+         db->restore_accounts( _hf23_items, restored_accounts );
+
+         auto& _alice2           = db->get_account( "alice" );
+         auto& _bob2             = db->get_account( "bob" );
+         const auto& _treasury2 = db->get_account( STEEM_TREASURY_ACCOUNT );
+
+         BOOST_REQUIRE( _alice2.balance      == _2000 + alice_balance );
+         BOOST_REQUIRE( _alice2.sbd_balance  == _10 + alice_sbd_balance );
+         BOOST_REQUIRE( _bob2.balance        == _800 + bob_balance );
+         BOOST_REQUIRE( _bob2.sbd_balance    == _70 + bob_sbd_balance );
+
+         BOOST_REQUIRE( _treasury2.balance     == treasury_balance_start     - ( alice_balance + bob_balance ) );
+         BOOST_REQUIRE( _treasury2.sbd_balance == treasury_sbd_balance_start - ( alice_sbd_balance + bob_sbd_balance ) );
+      }
+
+      database_fixture::validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+hf23_helper::hf23_item get_balances( const account_object& obj )
+{
+   hf23_helper::hf23_item res;
+
+   res.name          = obj.name;
+
+   res.balance       = obj.balance;
+   res.sbd_balance   = obj.sbd_balance;
+
+   return res;
+}
+
+bool cmp_hf23_item( const hf23_helper::hf23_item& a, const hf23_helper::hf23_item& b )
+{
+   return a.name == b.name && a.balance == b.balance && a.sbd_balance == b.sbd_balance;
+}
+
+BOOST_AUTO_TEST_CASE( save_test_02 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Saving one account balances" );
+
+      ACTORS( (alice) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      FUND( "alice", ASSET( "1000.000 TESTS" ) );
+      FUND( "alice", ASSET( "20.000 TBD" ) );
+
+      hf23_helper::hf23_items _hf23_items;
+
+      const std::set< std::string > accounts{ "alice", "bob" };
+
+      {
+         hf23_helper::gather_balance( _hf23_items, "alice", db->get_account( "alice" ).balance, db->get_account( "alice" ).sbd_balance );
+      }
+      {
+         BOOST_REQUIRE_EQUAL( _hf23_items.size(), 1u );
+
+         auto alice_balances = get_balances( db->get_account( "alice" ) );
+
+         hf23_helper::hf23_items cmp_balances = { alice_balances };
+
+         BOOST_REQUIRE_EQUAL( _hf23_items.size(), cmp_balances.size() );
+         BOOST_REQUIRE( cmp_hf23_item( *_hf23_items.begin(), *cmp_balances.begin() ) );
+      }
+
+      database_fixture::validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( save_test_01 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Saving accounts balances" );
+
+      ACTORS( (alice)(bob) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      FUND( "alice", ASSET( "1000.000 TESTS" ) );
+      FUND( "bob", ASSET( "2000.000 TESTS" ) );
+
+      FUND( "alice", ASSET( "20.000 TBD" ) );
+
+      const std::set< std::string > accounts{ "alice", "bob" };
+      hf23_helper::hf23_items _hf23_items;
+
+      {
+         vest( "alice", "alice", ASSET( "10.000 TESTS" ), alice_private_key );
+         vest( "bob", "bob", ASSET( "10.000 TESTS" ), bob_private_key );
+
+         hf23_helper::gather_balance( _hf23_items, "alice", db->get_account( "alice" ).balance, db->get_account( "alice" ).sbd_balance );
+         hf23_helper::gather_balance( _hf23_items, "bob", db->get_account( "bob" ).balance, db->get_account( "bob" ).sbd_balance );
+      }
+      {
+         auto alice_balances = get_balances( db->get_account( "alice" ) );
+         auto bob_balances = get_balances( db->get_account( "bob" ) );
+
+         hf23_helper::hf23_items cmp_balances = { alice_balances, bob_balances };
+
+         BOOST_REQUIRE_EQUAL( _hf23_items.size(), cmp_balances.size() );
+
+         auto iter = _hf23_items.begin();
+         auto cmp_iter = cmp_balances.begin();
+
+         for( uint32_t i = 0; i < cmp_balances.size(); ++i )
+         {
+            BOOST_REQUIRE( cmp_hf23_item( *iter, *cmp_iter ) );
+            ++iter;
+            ++cmp_iter;
+         }
+      }
+
+      database_fixture::validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
 
 BOOST_AUTO_TEST_CASE( basic_test_06 )
 {
