@@ -1,5 +1,7 @@
 #pragma once
 
+#include <steem/chain/steem_object_types.hpp>
+
 namespace steem { namespace chain {
 
 namespace delayed_voting_messages
@@ -15,8 +17,8 @@ namespace delayed_voting_messages
 
 struct delayed_votes_data
 {
-   time_point_sec             time;
-   delayed_vote_count_type    val = 0;
+   time_point_sec time;
+   ushare_type    val = 0;
 
    bool operator==( const delayed_votes_data& obj ) const
    {
@@ -27,7 +29,7 @@ struct delayed_votes_data
 struct delayed_voting_processor
 {
    template< typename COLLECTION_TYPE >
-   static void add( COLLECTION_TYPE& items, delayed_vote_count_type& sum, const time_point_sec& head_time, const delayed_vote_count_type val )
+   static void add( COLLECTION_TYPE& items, ushare_type& sum, const time_point_sec& head_time, const ushare_type val )
    {
       /*
          A collection is filled gradually - every item in `items` is created each STEEM_DELAYED_VOTING_INTERVAL_SECONDS time.
@@ -71,7 +73,7 @@ struct delayed_voting_processor
    }
 
    template< typename COLLECTION_TYPE >
-   static void erase_front( COLLECTION_TYPE& items, delayed_vote_count_type& sum )
+   static void erase_front( COLLECTION_TYPE& items, ushare_type& sum )
    {
       if( !items.empty() )
       {
@@ -87,7 +89,7 @@ struct delayed_voting_processor
    }
 
    template< typename COLLECTION_TYPE >
-   static void erase( COLLECTION_TYPE& items, delayed_vote_count_type& sum, delayed_vote_count_type count )
+   static void erase( COLLECTION_TYPE& items, ushare_type& sum, ushare_type count )
    {
       if( count == 0 )
          return;
