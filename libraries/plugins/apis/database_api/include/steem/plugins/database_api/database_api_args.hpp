@@ -170,7 +170,13 @@ struct get_active_witnesses_return
 
 /* Account */
 
-typedef list_object_args_type list_accounts_args;
+struct list_accounts_args
+{
+   fc::variant       start;
+   uint32_t          limit;
+   sort_order_type   order;
+   bool              delayed_votes_active = true;
+};
 
 struct list_accounts_return
 {
@@ -181,6 +187,7 @@ struct list_accounts_return
 struct find_accounts_args
 {
    vector< account_name_type > accounts;
+   bool                        delayed_votes_active = true;
 };
 
 typedef list_accounts_return find_accounts_return;
@@ -675,6 +682,9 @@ FC_REFLECT_ENUM( steem::plugins::database_api::order_direction_type,
 FC_REFLECT( steem::plugins::database_api::list_object_args_type,
    (start)(limit)(order) )
 
+FC_REFLECT( steem::plugins::database_api::list_accounts_args,
+   (start)(limit)(order)(delayed_votes_active) )
+
 FC_REFLECT( steem::plugins::database_api::get_reward_funds_return,
    (funds) )
 
@@ -694,7 +704,7 @@ FC_REFLECT( steem::plugins::database_api::list_accounts_return,
    (accounts) )
 
 FC_REFLECT( steem::plugins::database_api::find_accounts_args,
-   (accounts) )
+   (accounts)(delayed_votes_active) )
 
 FC_REFLECT( steem::plugins::database_api::list_owner_histories_args,
    (start)(limit) )
