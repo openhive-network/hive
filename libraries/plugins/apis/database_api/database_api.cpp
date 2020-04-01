@@ -364,7 +364,7 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
             args.start.as< protocol::account_name_type >(),
             result.accounts,
             args.limit,
-            [&]( const account_object& a ){ return api_account_object( a, _db ); },
+            [&]( const account_object& a ){ return api_account_object( a, _db, args.delayed_votes_active ); },
             &database_api_impl::filter_default< account_object > );
          break;
       }
@@ -375,7 +375,7 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
             boost::make_tuple( key.first, key.second ),
             result.accounts,
             args.limit,
-            [&]( const account_object& a ){ return api_account_object( a, _db ); },
+            [&]( const account_object& a ){ return api_account_object( a, _db, args.delayed_votes_active ); },
             &database_api_impl::filter_default< account_object > );
          break;
       }
@@ -386,7 +386,7 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
             boost::make_tuple( key.first, key.second ),
             result.accounts,
             args.limit,
-            [&]( const account_object& a ){ return api_account_object( a, _db ); },
+            [&]( const account_object& a ){ return api_account_object( a, _db, args.delayed_votes_active ); },
             &database_api_impl::filter_default< account_object > );
          break;
       }
@@ -406,7 +406,7 @@ DEFINE_API_IMPL( database_api_impl, find_accounts )
    {
       auto acct = _db.find< chain::account_object, chain::by_name >( a );
       if( acct != nullptr )
-         result.accounts.push_back( api_account_object( *acct, _db ) );
+         result.accounts.push_back( api_account_object( *acct, _db, args.delayed_votes_active ) );
    }
 
    return result;
