@@ -523,6 +523,7 @@ namespace steem { namespace chain {
          void restore_accounts( const hf23_helper::hf23_items& balances, const std::set< std::string >& restored_accounts );
 
          //Clears all pending operations on account that involve balance, moves tokens to STEEM_TREASURY_ACCOUNT
+         void clear_accounts( hf23_helper::hf23_items& balances, const std::set< std::string >& cleared_accounts );
          void clear_account( const account_object& account,
             asset* transferred_sbd_ptr = nullptr, asset* transferred_steem_ptr = nullptr,
             asset* converted_vests_ptr = nullptr, asset* steem_from_vests_ptr = nullptr );
