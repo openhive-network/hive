@@ -54,7 +54,7 @@
 
 long hf24_time()
   {
-  long hf24Time = 1585746000; // 2020-04-01 01:00:00
+  long hf24Time = 1585702800; // 2020-04-01 01:00:00 AM
   const char* value = getenv("STEEM_HF24_TIME");
   if(value != nullptr)
     {
