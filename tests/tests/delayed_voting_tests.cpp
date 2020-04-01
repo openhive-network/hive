@@ -1362,6 +1362,75 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
    FC_LOG_AND_RETHROW();
 }
 
+BOOST_AUTO_TEST_CASE( delayed_voting_basic_05 )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Complex scenario for `delayed_voting` class" );
+
+      ACTORS( (user0)(user1)(user2)(user3)(user4)(user5)(user6)(user7)(user8)(user9) )
+
+      std::array< std::string, 10 > accs{
+                                          "user0",
+                                          "user1",
+                                          "user2",
+                                          "user3",
+                                          "user4",
+                                          "user5",
+                                          "user6",
+                                          "user7",
+                                          "user8",
+                                          "user9"
+                                       };
+
+      delayed_voting dv = delayed_voting( *db );
+
+      auto start_time = db->head_block_time();
+
+      auto move_forward = [ &start_time, this ]( const fc::microseconds& time )
+      {
+         generate_blocks( db->head_block_time() + time );
+         start_time = db->head_block_time();
+      };
+
+      {
+         delayed_voting::opt_votes_update_data_items withdraw_items = delayed_voting::votes_update_data_items();
+
+         for( uint32_t i = 0; i < DAYS_FOR_DELAYED_VOTING - 1; ++i )
+            for( auto& item : accs )
+            {
+               const bool withdraw_executo{ cnt == accs.size() - 1 };
+               dv.add_delayed_value( db->get_account( item ), start_time + fc::hours( i ), ( i + 1 ) * 10'000/*milion*/ );
+               dv.add_votes( withdraw_items, withdraw_executor, 1000, db->get_account( item ) );
+               if( withdraw_executor )
+                  dv.add_votes( withdraw_items, withdraw_executor, -1001, db->get_account( item ) );
+               
+               move_forward( fc::days( 1 ) );
+            }
+
+         for(const auto& acc : accs)
+            BOOST_REQUIRE_EQUAL( DAYS_FOR_DELAYED_VOTING - 1, db->get_account( acc ).delayed_votes.size()   );// hehe
+         dv.update_votes( withdraw_items, start_time );
+      }
+      {
+         for( uint32_t i = 0; i < 34; ++i )
+         {
+
+            for( auto& item : accs )
+               BOOST_REQUIRE( db->get_account( item ).sum_delayed_votes >= 0 );
+         }
+
+         move_forward( fc::days( 1 ) );
+
+         for( auto& item : accs )
+            BOOST_REQUIRE( db->get_account( item ).sum_delayed_votes == 0 );
+      }
+
+      validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( delayed_voting_basic_04 )
 {
    try
@@ -1424,8 +1493,6 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_04 )
          for( uint32_t i = 0; i < 34; ++i )
          {
             move_forward( fc::days( 1 ) );
-
-            dv.run( start_time );
 
             for( auto& item : accs )
                BOOST_REQUIRE( db->get_account( item ).sum_delayed_votes >= 0 );
