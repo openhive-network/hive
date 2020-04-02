@@ -133,21 +133,21 @@ namespace steem { namespace chain {
                return time_point_sec::maximum();
          }
 
-         asset get_real_vesting_shares() const
+         share_type get_real_vesting_shares() const
          {
             FC_ASSERT( sum_delayed_votes.value <= vesting_shares.amount, "",
                         ( "sum_delayed_votes",     sum_delayed_votes )
                         ( "vesting_shares.amount", vesting_shares.amount )
                         ( "account",               name ) );
   
-            return asset( vesting_shares.amount - sum_delayed_votes.value, VESTS_SYMBOL );
+            return asset( vesting_shares.amount - sum_delayed_votes.value, VESTS_SYMBOL ).amount;
          }
 
          /// This function should be used only when the account votes for a witness directly
          share_type        witness_vote_weight()const {
             return std::accumulate( proxied_vsf_votes.begin(),
                                     proxied_vsf_votes.end(),
-                                    get_real_vesting_shares().amount
+                                    get_real_vesting_shares()
                                   );
          }
          share_type        proxied_vsf_votes_total()const {

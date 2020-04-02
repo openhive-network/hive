@@ -2943,7 +2943,7 @@ void database::process_decline_voting_rights()
 
       /// remove all current votes
       std::array<share_type, STEEM_MAX_PROXY_RECURSION_DEPTH+1> delta;
-      delta[0] = -account.get_real_vesting_shares().amount;
+      delta[0] = -account.get_real_vesting_shares();
       for( int i = 0; i < STEEM_MAX_PROXY_RECURSION_DEPTH; ++i )
          delta[i+1] = -account.proxied_vsf_votes[i];
       adjust_proxied_witness_votes( account, delta );
@@ -5778,7 +5778,7 @@ void database::validate_invariants()const
                                  itr->witness_vote_weight() :
                                  ( STEEM_MAX_PROXY_RECURSION_DEPTH > 0 ?
                                       itr->proxied_vsf_votes[STEEM_MAX_PROXY_RECURSION_DEPTH - 1] :
-                                      itr->get_real_vesting_shares().amount ) );
+                                      itr->get_real_vesting_shares() ) );
          total_delayed_votes += itr->sum_delayed_votes;
          ushare_type sum_delayed_votes{ 0ul };
          for( auto& dv : itr->delayed_votes )
