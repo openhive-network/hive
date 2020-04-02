@@ -12,14 +12,14 @@ if __name__ == "__main__":
         wallet = CliWallet( args.path,
                             args.server_rpc_endpoint,
                             args.cert_auth,
-                            #args.rpc_endpoint,
                             args.rpc_tls_endpoint,
                             args.rpc_tls_cert,
                             args.rpc_http_endpoint,
                             args.deamon, 
                             args.rpc_allowip,
                             args.wallet_file,
-                            args.chain_id  )
+                            args.chain_id,
+                            args.wif )
         wallet.set_and_run_wallet()
 
         id_sets = [ [1], [2], [3], [1,2], [1,2,3], [2,3], [3,4], [4,5], [1,2,3,4,5,6,7]]
