@@ -114,8 +114,16 @@ namespace steem { namespace chain {
          share_type        pending_claimed_accounts = 0;
 
          using t_delayed_votes = t_deque< delayed_votes_data >;
-         t_delayed_votes   delayed_votes; //holds VESTS per day - not used to voting
-         ushare_type       sum_delayed_votes = 0;//total sum of VESTS - not used to voting ( helper variable for performance )
+         /*
+            Holds sum of VESTS per day.
+            VESTS from day `X` will be matured after `X` + 30 days ( because `STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )
+         */
+         t_delayed_votes   delayed_votes;
+         /*
+            Total sum of VESTS from `delayed_votes` collection.
+            It's a helper variable needed for better performance.
+         */
+         ushare_type       sum_delayed_votes = 0;
 
          time_point_sec get_the_earliest_time() const
          {
