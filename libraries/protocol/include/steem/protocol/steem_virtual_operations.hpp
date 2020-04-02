@@ -185,11 +185,11 @@ namespace steem { namespace protocol {
 
    struct delayed_voting_operation : public virtual_operation
    {
-      account_name_type    witness;
+      account_name_type    voter;
       ushare_type          votes = 0;
 
       delayed_voting_operation(){}
-      delayed_voting_operation( account_name_type _witness, const ushare_type _votes ) : witness( _witness ), votes( _votes ) {}
+      delayed_voting_operation( account_name_type _voter, const ushare_type _votes ) : voter( _voter ), votes( _votes ) {}
    };
 
    struct sps_fund_operation : public virtual_operation
@@ -232,6 +232,6 @@ FC_REFLECT( steem::protocol::return_vesting_delegation_operation, (account)(vest
 FC_REFLECT( steem::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(sbd_payout)(steem_payout)(vesting_payout) )
 FC_REFLECT( steem::protocol::producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( steem::protocol::clear_null_account_balance_operation, (total_cleared) )
-FC_REFLECT( steem::protocol::delayed_voting_operation, (witness)(votes) )
+FC_REFLECT( steem::protocol::delayed_voting_operation, (voter)(votes) )
 FC_REFLECT( steem::protocol::sps_fund_operation, (additional_funds) )
 FC_REFLECT( steem::protocol::hardfork_hive_operation, (account)(sbd_transferred)(steem_transferred)(vests_converted)(total_steem_from_vests) )

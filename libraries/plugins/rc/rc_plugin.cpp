@@ -761,7 +761,7 @@ struct pre_apply_operation_visitor
 
    void operator()( const delayed_voting_operation& op )const
    {
-      regenerate( op.witness );
+      regenerate( op.voter );
    }
 
    void operator()( const pow_operation& op )const
@@ -958,7 +958,7 @@ struct post_apply_operation_visitor
 
    void operator()( const delayed_voting_operation& op )const
    {
-      _mod_accounts.emplace_back( op.witness );
+      _mod_accounts.emplace_back( op.voter );
    }
 
    void operator()( const create_proposal_operation& op )const

@@ -281,7 +281,7 @@ struct get_impacted_account_visitor
 
    void operator()( const delayed_voting_operation& op )
    {
-      _impacted.insert( op.witness );
+      _impacted.insert( op.voter );
    }
 
    void operator()( const hardfork_operation& op )

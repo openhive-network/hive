@@ -1997,6 +1997,8 @@ void database::process_vesting_withdrawals()
                   {
                      if( has_hardfork( STEEM_HARDFORK_0_24 ) )
                      {
+                        FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
+
                         dv->add_votes( _votes_update_data_items,
                                        to_account.id == from_account.id/*withdraw_executor*/,
                                        routed.amount.value/*val*/,
@@ -2036,6 +2038,8 @@ void database::process_vesting_withdrawals()
 
       if( has_hardfork( STEEM_HARDFORK_0_24 ) )
       {
+         FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
+
          dv->add_votes( _votes_update_data_items,
                         true/*withdraw_executor*/,
                         -to_withdraw.value/*val*/,
@@ -2068,6 +2072,8 @@ void database::process_vesting_withdrawals()
 
       if( has_hardfork( STEEM_HARDFORK_0_24 ) )
       {
+         FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
+
          fc::optional< ushare_type > leftover = dv->update_votes( _votes_update_data_items, head_block_time() );
          FC_ASSERT( leftover.valid(), "Something went wrong" );
          if( leftover.valid() && ( *leftover ) > 0 )
