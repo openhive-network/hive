@@ -26,16 +26,23 @@ class ConfigObject(NamedTuple):
   binary_args : list
   data_dir :str
   plugins : list
-  apis : list
   p2p_endpoint : str
+  http_endpoint : str
   rpc_endpoint : str
+  witness : str
+  private_key : str
 
 def make_config_ini(config_object : ConfigObject):
   return "# Simple config file\n" \
+    + "shared-file-size = 1G\n" \
+    + "enable-stale-production = true\n" \
     + "p2p-endpoint = {}\n".format(config_object.p2p_endpoint) \
-    + "rpc-endpoint = {}\n".format(config_object.rpc_endpoint) \
+    + "webserver-http-endpoint = {}\n".format(config_object.http_endpoint) \
+    + "webserver-ws-endpoint = {}\n".format(config_object.rpc_endpoint) \
     + "enable-plugin = witness debug_node {}\n".format(" ".join(config_object.plugins)) \
-    + "public-api = database_api login_api debug_node_api {}\n".format(" ".join(config_object.apis))
+    + "witness = \"{}\"\n".format(config_object.witness) \
+    + "private-key = {}\n".format(config_object.private_key) \
+    + "required-participation = 0"
 
 class HiveNode(object):
   hived_binary = None
@@ -85,33 +92,49 @@ class HiveNode(object):
       raise Exception("Error during starting node")
 
   def __exit__(self, exc, value, tb):
+    logger.info("Closing node")
     from signal import SIGINT, SIGTERM
     from time import sleep
 
     if self.hived_process is not None:
       self.hived_process.poll()
-      if not self.hived_process.returncode:
+      if self.hived_process.returncode != 0:
         self.hived_process.send_signal(SIGINT)
         sleep(7)
         self.hived_process.poll()
-        if not self.hived_process.returncode:
+        if self.hived_process.returncode != 0:
           self.hived_process.send_signal(SIGTERM)
           sleep(7)
           self.hived_process.poll()
-          if not self.hived_process.returncode:
+          if self.hived_process.returncode != 0:
             raise Exception("Error during stopping node. Manual intervention required.")
     self.hived_process = None
     self.hived_lock.release()
 
+KEEP_GOING = True
+
+def sigint_handler(signum, frame):
+  logger.info("Shutting down...")
+  global KEEP_GOING
+  from time import sleep
+  KEEP_GOING = False
+  sleep(3)
+  sys.exit(0)
+
 if __name__ == "__main__":
+  import signal
+  signal.signal(signal.SIGINT, sigint_handler)
+
   c = ConfigObject(
     "/home/dariusz-work/Builds/hive/programs/steemd/steemd",
     [],
     "/home/dariusz-work/hive-data",
-    [],
-    [],
+    ["chain","p2p","database_api","webserver","network_broadcast_api","block_api","json_rpc"],
     "127.0.0.1:2001",
-    "127.0.0.1:8095"
+    "127.0.0.1:8095",
+    "127.0.0.1:8096",
+    "initminer",
+    "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
   )
 
   print(make_config_ini(c))
@@ -119,8 +142,7 @@ if __name__ == "__main__":
   node = HiveNode(c, True)
   from time import sleep
   with node:
-    print("Starting node")
-    while(True):
+    while(KEEP_GOING):
       sleep(1)
 
 
