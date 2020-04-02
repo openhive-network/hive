@@ -111,39 +111,42 @@ class HiveNode(object):
     self.hived_process = None
     self.hived_lock.release()
 
-KEEP_GOING = True
-
-def sigint_handler(signum, frame):
-  logger.info("Shutting down...")
-  global KEEP_GOING
-  from time import sleep
-  KEEP_GOING = False
-  sleep(3)
-  sys.exit(0)
-
 if __name__ == "__main__":
-  import signal
-  signal.signal(signal.SIGINT, sigint_handler)
+  KEEP_GOING = True
 
-  c = ConfigObject(
-    "/home/dariusz-work/Builds/hive/programs/steemd/steemd",
-    [],
-    "/home/dariusz-work/hive-data",
-    ["chain","p2p","database_api","webserver","network_broadcast_api","block_api","json_rpc"],
-    "127.0.0.1:2001",
-    "127.0.0.1:8095",
-    "127.0.0.1:8096",
-    "initminer",
-    "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
-  )
+  def sigint_handler(signum, frame):
+    logger.info("Shutting down...")
+    global KEEP_GOING
+    from time import sleep
+    KEEP_GOING = False
+    sleep(3)
+    sys.exit(0)
 
-  print(make_config_ini(c))
+  def main():
+    import signal
+    signal.signal(signal.SIGINT, sigint_handler)
 
-  node = HiveNode(c, True)
-  from time import sleep
-  with node:
-    while(KEEP_GOING):
-      sleep(1)
+    c = ConfigObject(
+      "/home/dariusz-work/Builds/hive/programs/steemd/steemd",
+      [],
+      "/home/dariusz-work/hive-data",
+      ["chain","p2p","database_api","webserver","network_broadcast_api","block_api","json_rpc"],
+      "127.0.0.1:2001",
+      "127.0.0.1:8095",
+      "127.0.0.1:8096",
+      "initminer",
+      "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
+    )
+
+    print(make_config_ini(c))
+
+    node = HiveNode(c, True)
+    from time import sleep
+    with node:
+      while(KEEP_GOING):
+        sleep(1)
+  
+  main()
 
 
 
