@@ -55,11 +55,11 @@ RUN \
 
 ADD . /usr/local/src/steem
 
-RUN \
-    if [ "$CI_BUILD" ] ; then \
-        pip3 install awscli --user && \
-        aws s3 cp s3://steemit-dev-ci/steemd-CTestCostData.txt /usr/local/src/steem/CTestCostData.txt ; \
-    fi
+#RUN \
+#    if [ "$CI_BUILD" ] ; then \
+#        pip3 install awscli --user && \
+#        aws s3 cp s3://steemit-dev-ci/steemd-CTestCostData.txt /usr/local/src/steem/CTestCostData.txt ; \
+#    fi
 
 RUN \
     if [ "$BUILD_STEP" = "1" ] || [ ! "$BUILD_STEP" ] ; then \
@@ -75,22 +75,22 @@ RUN \
         -DSKIP_BY_TX_ID=ON \
         -DENABLE_MIRA=ON \
         .. && \
-    make -j$(nproc) chain_test mira_test test_fixed_string plugin_test && \
-    if [ "$CI_BUILD" ] ; then \
-        mkdir -p build/tests/Testing/Temporary && \
-        cp /usr/local/src/steem/CTestCostData.txt build/tests/Testing/Temporary ; \
-    fi && \
-    cd tests && \
-    ctest -j$(nproc) --output-on-failure && \
-    ./chain_test -t basic_tests/curation_weight_test && \
-    cd .. && \
-    ./libraries/mira/test/mira_test && \
-    ./programs/util/test_fixed_string && \
+#    make -j$(nproc) chain_test mira_test test_fixed_string plugin_test && \
+#    if [ "$CI_BUILD" ] ; then \
+#        mkdir -p build/tests/Testing/Temporary && \
+#        cp /usr/local/src/steem/CTestCostData.txt build/tests/Testing/Temporary ; \
+#    fi && \
+#    cd tests && \
+#    ctest -j$(nproc) --output-on-failure && \
+#    ./chain_test -t basic_tests/curation_weight_test && \
+#    cd .. && \
+#    ./libraries/mira/test/mira_test && \
+#    ./programs/util/test_fixed_string && \
     cd /usr/local/src/steem && \
     doxygen && \
-    PYTHONPATH=programs/build_helpers \
-    python3 -m steem_build_helpers.check_reflect && \
-    programs/build_helpers/get_config_check.sh && \
+#    PYTHONPATH=programs/build_helpers \
+#    python3 -m steem_build_helpers.check_reflect && \
+#    programs/build_helpers/get_config_check.sh && \
     rm -rf /usr/local/src/steem/build ; \
     fi
 
@@ -111,25 +111,25 @@ RUN \
         -DENABLE_SMT_SUPPORT=ON \
         -DSTEEM_STATIC_BUILD=${STEEM_STATIC_BUILD} \
         .. && \
-    make -j$(nproc) chain_test test_fixed_string plugin_test && \
-    make install && \
-    if [ "$CI_BUILD" ] ; then \
-        mkdir -p build/tests/Testing/Temporary && \
-        cp /usr/local/src/steem/CTestCostData.txt build/tests/Testing/Temporary ; \
-    fi && \
-    cd tests && \
-    ctest -j$(nproc) --output-on-failure && \
-    cd .. && \
-    ./programs/util/test_fixed_string && \
+#    make -j$(nproc) chain_test test_fixed_string plugin_test && \
+#    make install && \
+#    if [ "$CI_BUILD" ] ; then \
+#        mkdir -p build/tests/Testing/Temporary && \
+#        cp /usr/local/src/steem/CTestCostData.txt build/tests/Testing/Temporary ; \
+#    fi && \
+#    cd tests && \
+#    ctest -j$(nproc) --output-on-failure && \
+#    cd .. && \
+#    ./programs/util/test_fixed_string && \
     cd /usr/local/src/steem && \
     doxygen && \
-    PYTHONPATH=programs/build_helpers \
-    python3 -m steem_build_helpers.check_reflect && \
-    programs/build_helpers/get_config_check.sh && \
-    if [ "$CI_BUILD" ] ; then \
-        aws s3 cp s3://steemit-dev-ci/steemd-CTestCostData.txt s3://steemit-dev-ci/steemd-CTestCostData.txt.bk && \
-        aws s3 cp build/tests/Testing/Temporary/CTestCostData.txt s3://steemit-dev-ci/steemd-CTestCostData.txt; \
-    fi && \
+#    PYTHONPATH=programs/build_helpers \
+#    python3 -m steem_build_helpers.check_reflect && \
+#    programs/build_helpers/get_config_check.sh && \
+#    if [ "$CI_BUILD" ] ; then \
+#        aws s3 cp s3://steemit-dev-ci/steemd-CTestCostData.txt s3://steemit-dev-ci/steemd-CTestCostData.txt.bk && \
+#        aws s3 cp build/tests/Testing/Temporary/CTestCostData.txt s3://steemit-dev-ci/steemd-CTestCostData.txt; \
+#    fi && \
     rm -rf /usr/local/src/steem/build ; \
     fi
 
@@ -149,17 +149,17 @@ RUN \
         -DENABLE_MIRA=ON \
         -DCHAINBASE_CHECK_LOCKING=OFF \
         .. && \
-    make -j$(nproc) chain_test plugin_test && \
-    if [ "$CI_BUILD" ] ; then \
-        mkdir -p build/tests/Testing/Temporary && \
-        cp /usr/local/src/steem/CTestCostData.txt build/tests/Testing/Temporary ; \
-    fi && \
-    cd tests && \
-    ctest -j$(nproc) --output-on-failure && \
-    cd .. && \
-    mkdir -p /var/cobertura && \
-    gcovr --object-directory="../" --root=../ --xml-pretty --gcov-exclude=".*tests.*" --gcov-exclude=".*fc.*" --gcov-exclude=".*app*" --gcov-exclude=".*net*" --gcov-exclude=".*plugins*" --gcov-exclude=".*schema*" --gcov-exclude=".*time*" --gcov-exclude=".*utilities*" --gcov-exclude=".*wallet*" --gcov-exclude=".*programs*" --gcov-exclude=".*vendor*" --output="/var/cobertura/coverage.xml" && \
-    cd /usr/local/src/steem && \
+#    make -j$(nproc) chain_test plugin_test && \
+#    if [ "$CI_BUILD" ] ; then \
+#        mkdir -p build/tests/Testing/Temporary && \
+#        cp /usr/local/src/steem/CTestCostData.txt build/tests/Testing/Temporary ; \
+#    fi && \
+#    cd tests && \
+#    ctest -j$(nproc) --output-on-failure && \
+#    cd .. && \
+#    mkdir -p /var/cobertura && \
+#    gcovr --object-directory="../" --root=../ --xml-pretty --gcov-exclude=".*tests.*" --gcov-exclude=".*fc.*" --gcov-exclude=".*app*" --gcov-exclude=".*net*" --gcov-exclude=".*plugins*" --gcov-exclude=".*schema*" --gcov-exclude=".*time*" --gcov-exclude=".*utilities*" --gcov-exclude=".*wallet*" --gcov-exclude=".*programs*" --gcov-exclude=".*vendor*" --output="/var/cobertura/coverage.xml" && \
+#    cd /usr/local/src/steem && \
     rm -rf /usr/local/src/steem/build ; \
     fi
 
