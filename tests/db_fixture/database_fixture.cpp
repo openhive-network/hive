@@ -1210,12 +1210,12 @@ bool delayed_vote_database_fixture::check_collection( const COLLECTION& collecti
    return ( found->withdraw_executor == withdraw_executor ) && ( found->val == val ) && ( found->account->id == obj.id );
 }
 
-using dvd_deque = std::deque< delayed_votes_data >;
-using bip_dvd_deque = chainbase::t_deque< delayed_votes_data >;
+using dvd_vector = std::vector< delayed_votes_data >;
+using bip_dvd_vector = chainbase::t_vector< delayed_votes_data >;
 
-template fc::optional< size_t > delayed_vote_database_fixture::get_position_in_delayed_voting_array< bip_dvd_deque >( const bip_dvd_deque& collection, size_t day, size_t minutes );
-template bool delayed_vote_database_fixture::check_collection< dvd_deque >( const dvd_deque& collection, ushare_type idx, const fc::time_point_sec& time, const ushare_type val );
-template bool delayed_vote_database_fixture::check_collection< bip_dvd_deque >( const bip_dvd_deque& collection, ushare_type idx, const fc::time_point_sec& time, const ushare_type val );
+template fc::optional< size_t > delayed_vote_database_fixture::get_position_in_delayed_voting_array< bip_dvd_vector >( const bip_dvd_vector& collection, size_t day, size_t minutes );
+template bool delayed_vote_database_fixture::check_collection< dvd_vector >( const dvd_vector& collection, ushare_type idx, const fc::time_point_sec& time, const ushare_type val );
+template bool delayed_vote_database_fixture::check_collection< bip_dvd_vector >( const bip_dvd_vector& collection, ushare_type idx, const fc::time_point_sec& time, const ushare_type val );
 template bool delayed_vote_database_fixture::check_collection< delayed_voting::opt_votes_update_data_items >( const delayed_voting::opt_votes_update_data_items& collection, const bool withdraw_executor, const share_type val, const account_object& obj );
 
 json_rpc_database_fixture::json_rpc_database_fixture()

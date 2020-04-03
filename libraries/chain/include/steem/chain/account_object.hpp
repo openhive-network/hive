@@ -17,7 +17,7 @@
 
 namespace steem { namespace chain {
 
-   using chainbase::t_deque;
+   using chainbase::t_vector;
    using steem::protocol::authority;
 
    class account_object : public object< account_object_type, account_object >
@@ -113,7 +113,7 @@ namespace steem { namespace chain {
 
          share_type        pending_claimed_accounts = 0;
 
-         using t_delayed_votes = t_deque< delayed_votes_data >;
+         using t_delayed_votes = t_vector< delayed_votes_data >;
          /*
             Holds sum of VESTS per day.
             VESTS from day `X` will be matured after `X` + 30 days ( because `STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )

@@ -1444,7 +1444,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_04 )
 
 BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
 {
-   auto vcmp = []( const std::deque< delayed_votes_data >& a, const account_object::t_delayed_votes& b )
+   auto vcmp = []( const std::vector< delayed_votes_data >& a, const account_object::t_delayed_votes& b )
    {
       return std::equal( a.begin(), a.end(), b.begin() );
    };
@@ -1612,7 +1612,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_01 )
 
 BOOST_AUTO_TEST_CASE( delayed_voting_processor_03 )
 {
-   std::deque< delayed_votes_data > dq;
+   std::vector< delayed_votes_data > dq;
 
    ushare_type sum = 0;
 
@@ -1647,7 +1647,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_03 )
 
 BOOST_AUTO_TEST_CASE( delayed_voting_processor_02 )
 {
-   std::deque< delayed_votes_data > dq;
+   std::vector< delayed_votes_data > dq;
 
    auto cmp = [ &dq, this ]( ushare_type idx, const fc::time_point_sec& time, ushare_type val )
    {
@@ -1725,7 +1725,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_02 )
 
 BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
 {
-   std::deque< delayed_votes_data > dq;
+   std::vector< delayed_votes_data > dq;
 
    auto cmp = [ &dq, this ]( size_t idx, const fc::time_point_sec& time, uint64_t val )
    {
