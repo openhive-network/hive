@@ -33,16 +33,7 @@ class ConfigObject(NamedTuple):
   private_key : str
 
 def make_config_ini(config_object : ConfigObject):
-  return "# Simple config file\n" \
-    + "shared-file-size = 1G\n" \
-    + "enable-stale-production = true\n" \
-    + "p2p-endpoint = {}\n".format(config_object.p2p_endpoint) \
-    + "webserver-http-endpoint = {}\n".format(config_object.http_endpoint) \
-    + "webserver-ws-endpoint = {}\n".format(config_object.rpc_endpoint) \
-    + "enable-plugin = witness debug_node {}\n".format(" ".join(config_object.plugins)) \
-    + "witness = \"{}\"\n".format(config_object.witness) \
-    + "private-key = {}\n".format(config_object.private_key) \
-    + "required-participation = 0"
+  return 
 
 class HiveNode(object):
   hived_binary = None
@@ -51,26 +42,22 @@ class HiveNode(object):
   hived_data_dir = None
   hived_args = list()
 
-  def __init__(self, config_object : ConfigObject, create_config_ini = False):
+  def __init__(self, binary_path : str, working_dir : str, binary_args : list):
     logger.info("New hive node")
-    if not os.path.exists(config_object.path_to_binary):
+    if not os.path.exists(binary_path):
       raise ValueError("Path to hived binary is not valid.")
-    if not os.path.isfile(config_object.path_to_binary):
+    if not os.path.isfile(binary_path):
       raise ValueError("Path to hived binary must point to file")
-    self.hived_binary = config_object.path_to_binary
+    self.hived_binary = binary_path
 
-    if not os.path.exists(config_object.data_dir):
+    if not os.path.exists(working_dir):
       raise ValueError("Path to data directory is not valid")
-    if not os.path.isdir(config_object.data_dir):
+    if not os.path.isdir(working_dir):
       raise ValueError("Data directory is not valid directory")
-    self.hived_data_dir = config_object.data_dir
+    self.hived_data_dir = working_dir
 
-    if create_config_ini:
-      with open(self.hived_data_dir + "/config.ini", "w") as confg_file:
-        confg_file.write(make_config_ini(config_object))
-
-    if config_object.binary_args:
-      self.hived_args.extend(config_object.binary_args)
+    if binary_args:
+      self.hived_args.extend(binary_args)
 
   def __enter__(self):
     self.hived_lock.acquire()
@@ -123,28 +110,38 @@ if __name__ == "__main__":
     sys.exit(0)
 
   def main():
-    import signal
-    signal.signal(signal.SIGINT, sigint_handler)
+    try:
+      import signal
+      signal.signal(signal.SIGINT, sigint_handler)
 
-    c = ConfigObject(
-      "/home/dariusz-work/Builds/hive/programs/steemd/steemd",
-      [],
-      "/home/dariusz-work/hive-data",
-      ["chain","p2p","database_api","webserver","network_broadcast_api","block_api","json_rpc"],
-      "127.0.0.1:2001",
-      "127.0.0.1:8095",
-      "127.0.0.1:8096",
-      "initminer",
-      "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
-    )
+      plugins = ["chain","p2p","database_api","webserver","network_broadcast_api","block_api","json_rpc"]
+      config = "# Simple config file\n" \
+        + "shared-file-size = 1G\n" \
+        + "enable-stale-production = true\n" \
+        + "p2p-endpoint = 127.0.0.1:2001\n" \
+        + "webserver-http-endpoint = 127.0.0.1:8095\n" \
+        + "webserver-ws-endpoint = 127.0.0.1:8096\n" \
+        + "enable-plugin = witness debug_node {}\n".format(" ".join(plugins)) \
+        + "witness = \"initminer\"\n" \
+        + "private-key = 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n\n" \
+        + "required-participation = 0"
 
-    print(make_config_ini(c))
+      binary_path = "/home/dariusz-work/Builds/hive/programs/steemd/steemd"
+      work_dir = "/home/dariusz-work/hive-data"
 
-    node = HiveNode(c, True)
-    from time import sleep
-    with node:
-      while(KEEP_GOING):
-        sleep(1)
+      print(config)
+
+      with open(work_dir + "/config.ini", "w") as conf_file:
+        conf_file.write(config)
+
+      node = HiveNode(binary_path, work_dir, [])
+      from time import sleep
+      with node:
+        while(KEEP_GOING):
+          sleep(1)
+    except Exception as ex:
+      logger.exception("Exception: {}".format(ex))
+      sys.exit(1)
   
   main()
 
