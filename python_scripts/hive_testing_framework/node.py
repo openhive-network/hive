@@ -21,20 +21,6 @@ logger.addHandler(ch)
 
 from typing import NamedTuple
 
-class ConfigObject(NamedTuple):
-  path_to_binary : str
-  binary_args : list
-  data_dir :str
-  plugins : list
-  p2p_endpoint : str
-  http_endpoint : str
-  rpc_endpoint : str
-  witness : str
-  private_key : str
-
-def make_config_ini(config_object : ConfigObject):
-  return 
-
 class HiveNode(object):
   hived_binary = None
   hived_process = None
@@ -114,14 +100,15 @@ if __name__ == "__main__":
       import signal
       signal.signal(signal.SIGINT, sigint_handler)
 
-      plugins = ["chain","p2p","database_api","webserver","network_broadcast_api","block_api","json_rpc"]
+      plugins = ["chain","p2p","webserver","json_rpc","debug_node"]
       config = "# Simple config file\n" \
         + "shared-file-size = 1G\n" \
         + "enable-stale-production = true\n" \
         + "p2p-endpoint = 127.0.0.1:2001\n" \
         + "webserver-http-endpoint = 127.0.0.1:8095\n" \
         + "webserver-ws-endpoint = 127.0.0.1:8096\n" \
-        + "enable-plugin = witness debug_node {}\n".format(" ".join(plugins)) \
+        + "plugin = witness debug_node {}\n".format(" ".join(plugins)) \
+        + "plugin = database_api debug_node_api block_api\n" \
         + "witness = \"initminer\"\n" \
         + "private-key = 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n\n" \
         + "required-participation = 0"
@@ -136,7 +123,12 @@ if __name__ == "__main__":
 
       node = HiveNode(binary_path, work_dir, [])
       from time import sleep
+      from common import wait_n_blocks, debug_generate_blocks
       with node:
+        print("Waiting 10 blocks")
+        wait_n_blocks("http://127.0.0.1:8095", 10)
+        print("Done...")
+        print(debug_generate_blocks("http://127.0.0.1:8095", "5JHNbFNDg834SFj8CMArV6YW7td4zrPzXveqTfaShmYVuYNeK69", 100))
         while(KEEP_GOING):
           sleep(1)
     except Exception as ex:
