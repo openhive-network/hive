@@ -1224,12 +1224,7 @@ std::pair< asset, asset > database::create_sbd( const account_object& to_account
    return assets;
 }
 
-
-// Create vesting, then a caller-supplied callback after determining how many shares to create, but before
-// we modify the database.
-// This allows us to implement virtual op pre-notifications in the Before function.
-template< bool ALLOW_VOTE, typename Before >
-asset create_vesting2( database& db, const account_object& to_account, asset liquid, bool to_reward_balance, Before&& before_vesting_callback )
+asset database::adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
 {
    try
    {
@@ -1292,7 +1287,7 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
       FC_ASSERT( liquid.symbol == STEEM_SYMBOL );
       // ^ A novelty, needed but risky in case someone managed to slip SBD/TESTS here in blockchain history.
       // Get share price.
-      const auto& cprops = db.get_dynamic_global_properties();
+      const auto& cprops = get_dynamic_global_properties();
       price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price();
       // Calculate new vesting from provided liquid using share price.
       asset new_vesting = calculate_new_vesting( vesting_share_price );
@@ -1300,27 +1295,27 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
       // Add new vesting to owner's balance.
       if( to_reward_balance )
       {
-         db.adjust_reward_balance( to_account, liquid, new_vesting );
+         adjust_reward_balance( to_account, liquid, new_vesting );
       }
       else
       {
-         if( db.has_hardfork( STEEM_HARDFORK_0_20__2539 ) )
+         if( has_hardfork( STEEM_HARDFORK_0_20__2539 ) )
          {
-            db.modify( to_account, [&]( account_object& a )
+            modify( to_account, [&]( account_object& a )
             {
                util::update_manabar(
                   cprops,
                   a,
-                  db.has_hardfork( STEEM_HARDFORK_0_21__3336 ),
-                  db.head_block_num() > STEEM_HF_21_STALL_BLOCK,
+                  has_hardfork( STEEM_HARDFORK_0_21__3336 ),
+                  head_block_num() > STEEM_HF_21_STALL_BLOCK,
                   new_vesting.amount.value );
             });
          }
 
-         db.adjust_balance( to_account, new_vesting );
+         adjust_balance( to_account, new_vesting );
       }
       // Update global vesting pool numbers.
-      db.modify( cprops, [&]( dynamic_global_property_object& props )
+      modify( cprops, [&]( dynamic_global_property_object& props )
       {
          if( to_reward_balance )
          {
@@ -1334,23 +1329,20 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
          }
       } );
 
-      /*
-         Regarding `ALLOW_VOTE`:
-            Besides `transfer_to_vesting` operation, voting is allowed - this is classical behaviour.
-            Voting immediately when `transfer_to_vesting` is executed is dangerous,
-            because malicious accounts would take over whole STEEM network.
-            Therefore an idea is based on voting deferring. Default value is 30 days.
-            This range of time is enough long to defeat/block potential malicious intention.
-      */
-      if( db.has_hardfork( STEEM_HARDFORK_0_24 ) )
-      {
-         if( !ALLOW_VOTE )
-         {
-            delayed_voting dv( db );
-            dv.add_delayed_value( to_account, db.head_block_time(), new_vesting.amount.value );
-            return new_vesting;
-         }
-      }
+      return new_vesting;
+   }
+   FC_CAPTURE_AND_RETHROW( (to_account.name)(liquid) )
+}
+
+// Create vesting, then a caller-supplied callback after determining how many shares to create, but before
+// we modify the database.
+// This allows us to implement virtual op pre-notifications in the Before function.
+template< typename Before >
+asset create_vesting2( database& db, const account_object& to_account, asset liquid, bool to_reward_balance, Before&& before_vesting_callback )
+{
+   try
+   {
+      asset new_vesting = db.adjust_account_vesting_balance( to_account, liquid, to_reward_balance, before_vesting_callback );
 
       // Update witness voting numbers.
       if( !to_reward_balance )
@@ -1365,10 +1357,9 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
  * @param to_account - the account to receive the new vesting shares
  * @param liquid     - STEEM or liquid SMT to be converted to vesting shares
  */
-template< bool ALLOW_VOTE >
 asset database::create_vesting( const account_object& to_account, asset liquid, bool to_reward_balance )
 {
-   return create_vesting2< ALLOW_VOTE >( *this, to_account, liquid, to_reward_balance, []( asset vests_created ) {} );
+   return create_vesting2( *this, to_account, liquid, to_reward_balance, []( asset vests_created ) {} );
 }
 
 fc::sha256 database::get_pow_target()const
@@ -2210,7 +2201,7 @@ share_type database::pay_curators( const comment_object& c, share_type& max_rewa
                unclaimed_rewards -= claim;
                const auto& voter = get( item->voter );
                operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), c.author, to_string( c.permlink ) );
-               create_vesting2< true/*ALLOW_VOTE*/ >( *this, voter, asset( claim, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
+               create_vesting2( *this, voter, asset( claim, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
                   [&]( const asset& reward )
                   {
                      vop.get< curation_reward_operation >().reward = reward;
@@ -2297,7 +2288,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
                   vop.steem_payout = sbd_payout.second; // STEEM portion
                }
 
-               create_vesting2< true/*ALLOW_VOTE*/ >( *this, get_account( b.account ), asset( benefactor_vesting_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
+               create_vesting2( *this, get_account( b.account ), asset( benefactor_vesting_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
                [&]( const asset& reward )
                {
                   vop.vesting_payout = reward;
@@ -2317,7 +2308,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             auto sbd_payout = create_sbd( author, asset( sbd_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ) );
             operation vop = author_reward_operation( comment.author, to_string( comment.permlink ), sbd_payout.first, sbd_payout.second, asset( 0, VESTS_SYMBOL ) );
 
-            create_vesting2< true/*ALLOW_VOTE*/ >( *this, author, asset( vesting_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
+            create_vesting2( *this, author, asset( vesting_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
                [&]( const asset& vesting_payout )
                {
                   vop.get< author_reward_operation >().vesting_payout = vesting_payout;
@@ -2605,7 +2596,7 @@ void database::process_funds()
       });
 
       operation vop = producer_reward_operation( cwit.owner, asset( 0, VESTS_SYMBOL ) );
-      create_vesting2< true/*ALLOW_VOTE*/ >( *this, get_account( cwit.owner ), asset( witness_reward, STEEM_SYMBOL ), false,
+      create_vesting2( *this, get_account( cwit.owner ), asset( witness_reward, STEEM_SYMBOL ), false,
          [&]( const asset& vesting_shares )
          {
             vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
@@ -2720,7 +2711,7 @@ asset database::get_producer_reward()
    {
       // const auto& witness_obj = get_witness( props.current_witness );
       operation vop = producer_reward_operation( witness_account.name, asset( 0, VESTS_SYMBOL ) );
-      create_vesting2< true/*ALLOW_VOTE*/ >( *this, witness_account, pay, false,
+      create_vesting2( *this, witness_account, pay, false,
          [&]( const asset& vesting_shares )
          {
             vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
@@ -6151,8 +6142,5 @@ optional< chainbase::database::session >& database::pending_transaction_session(
 {
    return _pending_tx_session;
 }
-
-template asset database::create_vesting< true >( const account_object&, asset, bool );
-template asset database::create_vesting< false >( const account_object&, asset, bool );
 
 } } //steem::chain

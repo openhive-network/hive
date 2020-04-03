@@ -9,6 +9,7 @@
 
 #include <steem/chain/util/reward.hpp>
 #include <steem/chain/util/manabar.hpp>
+#include <steem/chain/util/delayed_voting.hpp>
 
 #include <fc/macros.hpp>
 
@@ -387,7 +388,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 
    if( !_db.has_hardfork( STEEM_HARDFORK_0_20__1762 ) && o.fee.amount > 0 )
    {
-      _db.create_vesting< true/*ALLOW_VOTE*/ >( new_account, o.fee );
+      _db.create_vesting( new_account, o.fee );
    }
 }
 
@@ -500,7 +501,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 
    if( !_db.has_hardfork( STEEM_HARDFORK_0_20__1762 ) && o.fee.amount > 0 )
    {
-      _db.create_vesting< true/*ALLOW_VOTE*/ >( new_account, o.fee );
+      _db.create_vesting( new_account, o.fee );
    }
 }
 
@@ -1199,8 +1200,23 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
 
    _db.adjust_balance( from_account, -o.amount );
 
-   //The comment about `ALLOW_VOTE` is in `create_vesting2` method
-   _db.create_vesting< false/*ALLOW_VOTE*/ >( to_account, o.amount );
+   /*
+      Voting immediately when `transfer_to_vesting` is executed is dangerous,
+      because malicious accounts would take over whole STEEM network.
+      Therefore an idea is based on voting deferring. Default value is 30 days.
+      This range of time is enough long to defeat/block potential malicious intention.
+   */
+   if( _db.has_hardfork( STEEM_HARDFORK_0_24 ) )
+   {
+      asset new_vesting = _db.adjust_account_vesting_balance( to_account, o.amount, false/*to_reward_balance*/, []( asset vests_created ) {} );
+
+      delayed_voting dv( _db );
+      dv.add_delayed_value( to_account, _db.head_block_time(), new_vesting.amount.value );
+   }
+   else
+   {
+      _db.create_vesting( to_account, o.amount );   
+   }
 }
 
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
@@ -2398,7 +2414,7 @@ void pow_apply( database& db, Operation o )
    if( db.head_block_num() < STEEM_START_MINER_VOTING_BLOCK )
       db.adjust_balance( inc_witness, pow_reward );
    else
-      db.create_vesting< true/*ALLOW_VOTE*/ >( inc_witness, pow_reward );
+      db.create_vesting( inc_witness, pow_reward );
 }
 
 void pow_evaluator::do_apply( const pow_operation& o ) {
@@ -2498,7 +2514,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
       db.adjust_supply( inc_reward, true );
 
       const auto& inc_witness = db.get_account( dgp.current_witness );
-      db.create_vesting< true/*ALLOW_VOTE*/ >( inc_witness, inc_reward );
+      db.create_vesting( inc_witness, inc_reward );
    }
 }
 

@@ -366,7 +366,9 @@ namespace steem { namespace chain {
          /** @return the sbd created and deposited to_account, may return STEEM if there is no median feed */
          std::pair< asset, asset > create_sbd( const account_object& to_account, asset steem, bool to_reward_balance=false );
 
-         template< bool ALLOW_VOTE >
+         using Before = std::function< void( const asset& ) >;
+         asset adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
+
          asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false );
 
          void adjust_total_payout( const comment_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value );
