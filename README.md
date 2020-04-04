@@ -3,7 +3,7 @@
 Welcome to the official repository for Hive, the blockchain that will revolutionize the web, and soon the blockchain for Smart Media Tokens!
 
 
-Hife is a fork of the Steem blockchain which was the first blockchain to introduce the "Proof of Brain" social consensus algorithm for token allocation.
+Hive is a [fork of the Steem blockchain](https://medium.com/@hiveblocks/press-release-the-new-hive-blockchain-is-launching-heres-everything-you-need-to-know-b95b05d30c7c) which was the first blockchain to introduce the "Proof of Brain" social consensus algorithm for token allocation.
 
 Being one of the most actively developed blockchain projects currently in existence, it's become fertile soil for entrepreneurial pursuits. It has also become home for many cryptocurrency centric projects.
 
@@ -12,9 +12,11 @@ Hive aims to be the preferred blockchain for dApp development with Smart Media T
 
 ## Documents
 
-* Whitepaper: [steem.io/SteemWhitepaper.pdf](https://steem.io/SteemWhitePaper.pdf)
-* Bluepaper: [steem.io/SteemBluepaper.pdf](https://steem.io/steem-bluepaper.pdf)
-* SMT Whitepaper: [steem.io/SMTWhitepaper.pdf](https://smt.steem.io/smt-whitepaper.pdf) (*not final*)
+* Website: [hive.io](https://hive.io)
+* Signup: [signup.hive.io](https://signup.hive.io)
+* Whitepaper: [hive.io/whitepaper.pdf](https://hive.io/whitepaper.pdf)
+* Bluepaper: [hive.io/bluepaper.pdf](https://hive.io/bluepaper.pdf)
+* SMT Whitepaper: [hive.io/smt-whitepaper.pdf](https://hive.io/smt-whitepaper.pdf) (*not final*)
 * Developer Portal: https://developers.hive.io/
 
 ## Advantages
