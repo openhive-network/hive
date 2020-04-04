@@ -1,40 +1,38 @@
-# Steem - The Blockchain That Will Tokenize The Web
+# Hive - The Blockchain That Will Tokenize The Web
 
-Welcome to the official repository for Steem, the blockchain that will revolutionize the web, and soon the blockchain for Smart Media Tokens!
+Welcome to the official repository for Hive, the blockchain that will revolutionize the web, and soon the blockchain for Smart Media Tokens!
 
 
-
-Steem is the first blockchain which introduced the "Proof of Brain" social consensus algorithm for token allocation.
+Hife is a fork of the Steem blockchain which was the first blockchain to introduce the "Proof of Brain" social consensus algorithm for token allocation.
 
 Being one of the most actively developed blockchain projects currently in existence, it's become fertile soil for entrepreneurial pursuits. It has also become home for many cryptocurrency centric projects.
 
-Steem aims to be the preferred blockchain for dApp development with Smart Media Tokens at its core. With SMTs, everyone can leverage the power of Steem.
+Hive aims to be the preferred blockchain for dApp development with Smart Media Tokens at its core. With SMTs, everyone can leverage the power of Hive.
 
-Originally, Steem was announced on the [Bitcointalk forum](https://bitcointalk.org/index.php?topic=1410943.new) prior to the start of any mining. (Steem is currently not mineable)
 
 ## Documents
 
 * Whitepaper: [steem.io/SteemWhitepaper.pdf](https://steem.io/SteemWhitePaper.pdf)
 * Bluepaper: [steem.io/SteemBluepaper.pdf](https://steem.io/steem-bluepaper.pdf)
 * SMT Whitepaper: [steem.io/SMTWhitepaper.pdf](https://smt.steem.io/smt-whitepaper.pdf) (*not final*)
-* Developer Portal: https://developers.steem.io/
+* Developer Portal: https://developers.hive.io/
 
 ## Advantages
 
 * Free Transactions (Resource Credits = Freemium Model)
 * Fast Block Confirmations (3 seconds)
-* Time Delay Security (Vested Steem & Savings)
+* Time Delay Security (Vested Hive & Savings)
 * Hierarchical Role Based Permissions (Keys)
 * Integrated Token Allocation
 * Smart Media Tokens (**soon**)
 * Lowest Entry-Barrier for User Adoption in the market
-* Dozens of dApps already built on Steem and many more to come
+* Dozens of dApps already built on Hive and many more to come
 
 ## Technical Details
 
 
-* Currency symbol STEEM
-* SBD - Steem's very own stable coin with a one-way peg
+* Currency symbol HIVE
+* HBD - Hive's very own stable coin with a one-way peg
 * Delegated Proof-of-Stake Consensus (DPOS)
 * 10% APR inflation narrowing to 1% APR over 20 years
     * 75% of inflation to "Proof of Brain" social consensus algorithm.
@@ -43,17 +41,17 @@ Originally, Steem was announced on the [Bitcointalk forum](https://bitcointalk.o
 
 # Installation
 
-Getting started with Steem is fairly simple. You can either choose to use docker-images, build with docker manually or build from source directly. All steps have been documented and while many different OS are supported, the easiest one is Ubuntu 16.04.
+Getting started with Hive is fairly simple. You can either choose to use docker-images, build with docker manually or build from source directly. All steps have been documented and while many different OS are supported, the easiest one is Ubuntu 16.04.
 
 ## Quickstart
 
-Just want to get up and running quickly? We have pre-built Docker images for your convenience. More details are in our [Quickstart Guide](https://github.com/steemit/steem/blob/master/doc/exchangequickstart.md).
+Just want to get up and running quickly? We have pre-built Docker images for your convenience. More details are in our [Quickstart Guide](doc/exchangequickstart.md).
 
 ## Building
 
-We **strongly** recommend using one of our pre-built Docker images or using Docker to build Steem. Both of these processes are described in the [Quickstart Guide](https://github.com/steemit/steem/blob/master/doc/exchangequickstart.md).
+We **strongly** recommend using one of our pre-built Docker images or using Docker to build Hive. Both of these processes are described in the [Quickstart Guide](doc/exchangequickstart.md).
 
-But if you would still like to build from source, we also have [build instructions](https://github.com/steemit/steem/blob/master/doc/building.md) for Linux (Ubuntu LTS) and macOS.
+But if you would still like to build from source, we also have [build instructions](doc/building.md) for Linux (Ubuntu LTS) and macOS.
 
 ## Dockerized P2P Node
 
@@ -123,7 +121,7 @@ Steemd now supports a PaaS mode (platform as a service) that currently works wit
 
 ## System Requirements
 
-For a full web node, you need at least 110GB of disk space available. Steemd uses a memory mapped file which currently holds 56GB of data and by default is set to use up to 80GB. The block log of the blockchain itself is a little over 27GB. It's highly recommended to run steemd on a fast disk such as an SSD or by placing the shared memory files in a ramdisk and using the `--shared-file-dir=/path` command line option to specify where. At least 16GB of memory is required for a full web node. Seed nodes (p2p mode) can run with as little as 4GB of memory with a 24 GB state file. Any CPU with decent single core performance should be sufficient. Steemd is constantly growing. As of August 2017, these numbers were accurate, but you may find you need more disk space to run a full node. We are also constantly working on optimizing Steem's use of disk space.
+For a full web node, you need at least 110GB of disk space available. Steemd uses a memory mapped file which currently holds 56GB of data and by default is set to use up to 80GB. The block log of the blockchain itself is a little over 27GB. It's highly recommended to run steemd on a fast disk such as an SSD or by placing the shared memory files in a ramdisk and using the `--shared-file-dir=/path` command line option to specify where. At least 16GB of memory is required for a full web node. Seed nodes (p2p mode) can run with as little as 4GB of memory with a 24 GB state file. Any CPU with decent single core performance should be sufficient. Steemd is constantly growing. As of August 2017, these numbers were accurate, but you may find you need more disk space to run a full node. We are also constantly working on optimizing Hive's use of disk space.
 
 On Linux use the following Virtual Memory configuration for the initial sync and subsequent replays. It is not needed for normal operation.
 
