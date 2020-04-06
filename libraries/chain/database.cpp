@@ -30,6 +30,7 @@
 #include <steem/chain/util/rd_setup.hpp>
 #include <steem/chain/util/nai_generator.hpp>
 #include <steem/chain/util/sps_processor.hpp>
+#include <steem/chain/util/delayed_voting.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
@@ -1223,12 +1224,7 @@ std::pair< asset, asset > database::create_sbd( const account_object& to_account
    return assets;
 }
 
-
-// Create vesting, then a caller-supplied callback after determining how many shares to create, but before
-// we modify the database.
-// This allows us to implement virtual op pre-notifications in the Before function.
-template< typename Before >
-asset create_vesting2( database& db, const account_object& to_account, asset liquid, bool to_reward_balance, Before&& before_vesting_callback )
+asset database::adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
 {
    try
    {
@@ -1291,7 +1287,7 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
       FC_ASSERT( liquid.symbol == STEEM_SYMBOL );
       // ^ A novelty, needed but risky in case someone managed to slip SBD/TESTS here in blockchain history.
       // Get share price.
-      const auto& cprops = db.get_dynamic_global_properties();
+      const auto& cprops = get_dynamic_global_properties();
       price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price();
       // Calculate new vesting from provided liquid using share price.
       asset new_vesting = calculate_new_vesting( vesting_share_price );
@@ -1299,27 +1295,27 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
       // Add new vesting to owner's balance.
       if( to_reward_balance )
       {
-         db.adjust_reward_balance( to_account, liquid, new_vesting );
+         adjust_reward_balance( to_account, liquid, new_vesting );
       }
       else
       {
-         if( db.has_hardfork( STEEM_HARDFORK_0_20__2539 ) )
+         if( has_hardfork( STEEM_HARDFORK_0_20__2539 ) )
          {
-            db.modify( to_account, [&]( account_object& a )
+            modify( to_account, [&]( account_object& a )
             {
                util::update_manabar(
                   cprops,
                   a,
-                  db.has_hardfork( STEEM_HARDFORK_0_21__3336 ),
-                  db.head_block_num() > STEEM_HF_21_STALL_BLOCK,
+                  has_hardfork( STEEM_HARDFORK_0_21__3336 ),
+                  head_block_num() > STEEM_HF_21_STALL_BLOCK,
                   new_vesting.amount.value );
             });
          }
 
-         db.adjust_balance( to_account, new_vesting );
+         adjust_balance( to_account, new_vesting );
       }
       // Update global vesting pool numbers.
-      db.modify( cprops, [&]( dynamic_global_property_object& props )
+      modify( cprops, [&]( dynamic_global_property_object& props )
       {
          if( to_reward_balance )
          {
@@ -1332,6 +1328,22 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
             props.total_vesting_shares += new_vesting;
          }
       } );
+
+      return new_vesting;
+   }
+   FC_CAPTURE_AND_RETHROW( (to_account.name)(liquid) )
+}
+
+// Create vesting, then a caller-supplied callback after determining how many shares to create, but before
+// we modify the database.
+// This allows us to implement virtual op pre-notifications in the Before function.
+template< typename Before >
+asset create_vesting2( database& db, const account_object& to_account, asset liquid, bool to_reward_balance, Before&& before_vesting_callback )
+{
+   try
+   {
+      asset new_vesting = db.adjust_account_vesting_balance( to_account, liquid, to_reward_balance, before_vesting_callback );
+
       // Update witness voting numbers.
       if( !to_reward_balance )
          db.adjust_proxied_witness_votes( to_account, new_vesting.amount );
@@ -1586,6 +1598,8 @@ void database::clear_null_account_balance()
       modify( null_account, [&]( account_object& a )
       {
          a.vesting_shares.amount = 0;
+         a.sum_delayed_votes = 0;
+         a.delayed_votes.clear();
       });
    }
 
@@ -1762,6 +1776,12 @@ void database::clear_account( const account_object& account,
          a.next_vesting_withdrawal = fc::time_point_sec::maximum();
          a.to_withdraw = 0;
          a.withdrawn = 0;
+
+         if( has_hardfork( STEEM_HARDFORK_0_24 ) )
+         {
+            a.delayed_votes.clear();
+            a.sum_delayed_votes = 0;
+         }
       } );
 
       adjust_balance( treasury_account, asset( converted_steem, STEEM_SYMBOL ) );
@@ -1911,6 +1931,15 @@ void database::process_proposals( const block_notification& note )
    }
 }
 
+void database::process_delayed_voting( const block_notification& note )
+{
+   if( has_hardfork( STEEM_HARDFORK_0_24 ) )
+   {
+      delayed_voting dv( *this );
+      dv.run( note.block.timestamp );
+   }
+}
+
 /**
  * This method updates total_reward_shares2 on DGPO, and children_rshares2 on comments, when a comment's rshares2 changes
  * from old_rshares2 to new_rshares2.  Maintaining invariants that children_rshares2 is the sum of all descendants' rshares2,
@@ -1966,86 +1995,106 @@ void database::process_vesting_withdrawals()
       *  The user may withdraw  vT / V tokens
       */
       share_type to_withdraw;
+
       if ( from_account.to_withdraw - from_account.withdrawn < from_account.vesting_withdraw_rate.amount )
          to_withdraw = std::min( from_account.vesting_shares.amount, from_account.to_withdraw % from_account.vesting_withdraw_rate.amount ).value;
       else
          to_withdraw = std::min( from_account.vesting_shares.amount, from_account.vesting_withdraw_rate.amount ).value;
 
-      share_type vests_deposited_as_steem = 0;
-      share_type vests_deposited_as_vests = 0;
-      asset total_steem_converted = asset( 0, STEEM_SYMBOL );
+      optional< delayed_voting > dv;
+      delayed_voting::opt_votes_update_data_items _votes_update_data_items;
+
+      if( has_hardfork( STEEM_HARDFORK_0_24 ) )
+      {
+         dv = delayed_voting( *this );
+         _votes_update_data_items = delayed_voting::votes_update_data_items();
+      }
+
+      share_type vests_deposited = 0;
+
+      auto process_routing = [ &, this ]( bool auto_vest_mode )
+      {
+         for( auto itr = didx.upper_bound( boost::make_tuple( from_account.name, account_name_type() ) );
+            itr != didx.end() && itr->from_account == from_account.name;
+            ++itr )
+         {
+            if( !( auto_vest_mode ^ itr->auto_vest ) )
+            {
+               share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / STEEM_100_PERCENT ).to_uint64();
+               vests_deposited += to_deposit;
+
+               if( to_deposit > 0 )
+               {
+                  const auto& to_account = get< account_object, by_name >( itr->to_account );
+
+                  asset vests = asset( to_deposit, VESTS_SYMBOL );
+                  asset routed = auto_vest_mode ? vests : ( vests * cprops.get_vesting_share_price() );
+
+                  operation vop = fill_vesting_withdraw_operation( from_account.name, to_account.name, vests, routed );
+
+                  pre_push_virtual_operation( vop );
+
+                  modify( to_account, [&]( account_object& a )
+                  {
+                     if( auto_vest_mode )
+                        a.vesting_shares += routed;
+                     else
+                        a.balance += routed;
+                  });
+
+                  if( auto_vest_mode )
+                  {
+                     if( has_hardfork( STEEM_HARDFORK_0_24 ) )
+                     {
+                        FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
+
+                        dv->add_votes( _votes_update_data_items,
+                                       to_account.id == from_account.id/*withdraw_executor*/,
+                                       routed.amount.value/*val*/,
+                                       to_account/*account*/
+                                    );
+                     }
+                     else
+                     {
+                        adjust_proxied_witness_votes( to_account, to_deposit );
+                     }
+                  }
+                  else
+                  {
+                     modify( cprops, [&]( dynamic_global_property_object& o )
+                     {
+                        o.total_vesting_fund_steem    -= routed;
+                        o.total_vesting_shares.amount -= to_deposit;
+                     });
+                  }
+
+                  post_push_virtual_operation( vop );
+               }
+            }
+         }
+      };
 
       // Do two passes, the first for vests, the second for steem. Try to maintain as much accuracy for vests as possible.
-      for( auto itr = didx.upper_bound( boost::make_tuple( from_account.name, account_name_type() ) );
-           itr != didx.end() && itr->from_account == from_account.name;
-           ++itr )
-      {
-         if( itr->auto_vest )
-         {
-            share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / STEEM_100_PERCENT ).to_uint64();
-            vests_deposited_as_vests += to_deposit;
+      process_routing( true/*auto_vest_mode*/ );
+      process_routing( false/*auto_vest_mode*/ );
 
-            if( to_deposit > 0 )
-            {
-               const auto& to_account = get< account_object, by_name >( itr->to_account );
-
-               operation vop = fill_vesting_withdraw_operation( from_account.name, to_account.name, asset( to_deposit, VESTS_SYMBOL ), asset( to_deposit, VESTS_SYMBOL ) );
-
-               pre_push_virtual_operation( vop );
-
-               modify( to_account, [&]( account_object& a )
-               {
-                  a.vesting_shares.amount += to_deposit;
-               });
-
-               adjust_proxied_witness_votes( to_account, to_deposit );
-
-               post_push_virtual_operation( vop );
-            }
-         }
-      }
-
-      for( auto itr = didx.upper_bound( boost::make_tuple( from_account.name, account_name_type() ) );
-           itr != didx.end() && itr->from_account == from_account.name;
-           ++itr )
-      {
-         if( !itr->auto_vest )
-         {
-            const auto& to_account = get< account_object, by_name >( itr->to_account );
-
-            share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / STEEM_100_PERCENT ).to_uint64();
-            vests_deposited_as_steem += to_deposit;
-            auto converted_steem = asset( to_deposit, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
-            total_steem_converted += converted_steem;
-
-            if( to_deposit > 0 )
-            {
-               operation vop = fill_vesting_withdraw_operation( from_account.name, to_account.name, asset( to_deposit, VESTS_SYMBOL), converted_steem );
-
-               pre_push_virtual_operation( vop );
-
-               modify( to_account, [&]( account_object& a )
-               {
-                  a.balance += converted_steem;
-               });
-
-               modify( cprops, [&]( dynamic_global_property_object& o )
-               {
-                  o.total_vesting_fund_steem -= converted_steem;
-                  o.total_vesting_shares.amount -= to_deposit;
-               });
-
-               post_push_virtual_operation( vop );
-            }
-         }
-      }
-
-      share_type to_convert = to_withdraw - vests_deposited_as_steem - vests_deposited_as_vests;
+      share_type to_convert = to_withdraw - vests_deposited;
       FC_ASSERT( to_convert >= 0, "Deposited more vests than were supposed to be withdrawn" );
 
       auto converted_steem = asset( to_convert, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
       operation vop = fill_vesting_withdraw_operation( from_account.name, from_account.name, asset( to_convert, VESTS_SYMBOL ), converted_steem );
       pre_push_virtual_operation( vop );
+
+      if( has_hardfork( STEEM_HARDFORK_0_24 ) )
+      {
+         FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
+
+         dv->add_votes( _votes_update_data_items,
+                        true/*withdraw_executor*/,
+                        -to_withdraw.value/*val*/,
+                        from_account/*account*/
+                     );
+      }
 
       modify( from_account, [&]( account_object& a )
       {
@@ -2070,8 +2119,20 @@ void database::process_vesting_withdrawals()
          o.total_vesting_shares.amount -= to_convert;
       });
 
-      if( to_withdraw > 0 )
-         adjust_proxied_witness_votes( from_account, -to_withdraw );
+      if( has_hardfork( STEEM_HARDFORK_0_24 ) )
+      {
+         FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
+
+         fc::optional< ushare_type > leftover = dv->update_votes( _votes_update_data_items, head_block_time() );
+         FC_ASSERT( leftover.valid(), "Something went wrong" );
+         if( leftover.valid() && ( *leftover ) > 0 )
+            adjust_proxied_witness_votes( from_account, -( ( *leftover ).value ) );
+      }
+      else
+      {
+         if( to_withdraw > 0 )
+            adjust_proxied_witness_votes( from_account, -to_withdraw );
+      }
 
       post_push_virtual_operation( vop );
    }
@@ -2873,7 +2934,7 @@ void database::process_decline_voting_rights()
 
       /// remove all current votes
       std::array<share_type, STEEM_MAX_PROXY_RECURSION_DEPTH+1> delta;
-      delta[0] = -account.vesting_shares.amount;
+      delta[0] = -account.get_real_vesting_shares();
       for( int i = 0; i < STEEM_MAX_PROXY_RECURSION_DEPTH; ++i )
          delta[i+1] = -account.proxied_vsf_votes[i];
       adjust_proxied_witness_votes( account, delta );
@@ -3532,6 +3593,7 @@ void database::_apply_block( const signed_block& next_block )
    expire_escrow_ratification();
    process_decline_voting_rights();
    process_proposals( note );
+   process_delayed_voting( note );
 
    generate_required_actions();
    generate_optional_actions();
@@ -5617,11 +5679,12 @@ void database::apply_hardfork( uint32_t hardfork )
          clear_accounts( _hf23_items,hardforkprotect::get_steemit_accounts() );
 
          // Reset TAPOS buffer to avoid replay attack
+         auto empty_block_id = block_id_type();
          const auto& bs_idx = get_index< block_summary_index, by_id >();
          for( auto itr = bs_idx.begin(); itr != bs_idx.end(); ++itr )
          {
             modify( *itr, [&](block_summary_object& p) {
-               p.block_id = block_id_type();
+               p.block_id = empty_block_id;
             });
          }
          break;
@@ -5682,6 +5745,7 @@ void database::validate_invariants()const
       asset total_vesting = asset( 0, VESTS_SYMBOL );
       asset pending_vesting_steem = asset( 0, STEEM_SYMBOL );
       share_type total_vsf_votes = share_type( 0 );
+      ushare_type total_delayed_votes = ushare_type( 0 );
 
       auto gpo = get_dynamic_global_properties();
 
@@ -5705,7 +5769,13 @@ void database::validate_invariants()const
                                  itr->witness_vote_weight() :
                                  ( STEEM_MAX_PROXY_RECURSION_DEPTH > 0 ?
                                       itr->proxied_vsf_votes[STEEM_MAX_PROXY_RECURSION_DEPTH - 1] :
-                                      itr->vesting_shares.amount ) );
+                                      itr->get_real_vesting_shares() ) );
+         total_delayed_votes += itr->sum_delayed_votes;
+         ushare_type sum_delayed_votes{ 0ul };
+         for( auto& dv : itr->delayed_votes )
+            sum_delayed_votes += dv.val;
+         FC_ASSERT( sum_delayed_votes == itr->sum_delayed_votes, "", ("sum_delayed_votes",sum_delayed_votes)("itr->sum_delayed_votes",itr->sum_delayed_votes) );
+         FC_ASSERT( sum_delayed_votes.value <= itr->vesting_shares.amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->vesting_shares.amount)("account",itr->name) );
       }
 
       const auto& convert_request_idx = get_index< convert_request_index >().indices();
@@ -5782,7 +5852,7 @@ void database::validate_invariants()const
       FC_ASSERT( gpo.current_supply == total_supply, "", ("gpo.current_supply",gpo.current_supply)("total_supply",total_supply) );
       FC_ASSERT( gpo.current_sbd_supply + gpo.init_sbd_supply == total_sbd, "", ("gpo.current_sbd_supply",gpo.current_sbd_supply)("total_sbd",total_sbd) );
       FC_ASSERT( gpo.total_vesting_shares + gpo.pending_rewarded_vesting_shares == total_vesting, "", ("gpo.total_vesting_shares",gpo.total_vesting_shares)("total_vesting",total_vesting) );
-      FC_ASSERT( gpo.total_vesting_shares.amount == total_vsf_votes, "", ("total_vesting_shares",gpo.total_vesting_shares)("total_vsf_votes",total_vsf_votes) );
+      FC_ASSERT( gpo.total_vesting_shares.amount == total_vsf_votes + total_delayed_votes.value, "", ("total_vesting_shares",gpo.total_vesting_shares)("total_vsf_votes + total_delayed_votes",total_vsf_votes + total_delayed_votes.value) );
       FC_ASSERT( gpo.pending_rewarded_vesting_steem == pending_vesting_steem, "", ("pending_rewarded_vesting_steem",gpo.pending_rewarded_vesting_steem)("pending_vesting_steem", pending_vesting_steem));
 
       FC_ASSERT( gpo.virtual_supply >= gpo.current_supply );

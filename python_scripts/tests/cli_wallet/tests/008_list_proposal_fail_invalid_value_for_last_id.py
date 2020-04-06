@@ -18,7 +18,8 @@ if __name__ == "__main__":
                             args.deamon, 
                             args.rpc_allowip,
                             args.wallet_file,
-                            args.chain_id  )
+                            args.chain_id,
+                            args.wif )
         wallet.set_and_run_wallet()
 
         error_msg_x  = "The value `x` for `_last_id` argument is invalid, it should be integer type."

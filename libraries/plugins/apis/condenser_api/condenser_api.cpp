@@ -230,7 +230,7 @@ namespace detail
 
          if( part[0].size() && part[0][0] == '@' ) {
             auto acnt = part[0].substr(1);
-            _state.accounts[acnt] = extended_account( database_api::api_account_object( _db.get_account( acnt ), _db ) );
+            _state.accounts[acnt] = extended_account( database_api::api_account_object( _db.get_account( acnt ), _db, false/*delayed_votes_active*/ ) );
 
             if( _tags_api )
                _state.accounts[acnt].tags_usage = _tags_api->get_tags_used_by_author( { acnt } ).tags;
@@ -690,7 +690,7 @@ namespace detail
          for( const auto& a : accounts )
          {
             _state.accounts.erase("");
-            _state.accounts[a] = extended_account( database_api::api_account_object( _db.get_account( a ), _db ) );
+            _state.accounts[a] = extended_account( database_api::api_account_object( _db.get_account( a ), _db, false/*delayed_votes_active*/ ) );
 
             if( _follow_api )
             {
@@ -851,8 +851,12 @@ namespace detail
 
    DEFINE_API_IMPL( condenser_api_impl, get_accounts )
    {
-      CHECK_ARG_SIZE(1)
+      FC_ASSERT( args.size() == 1 || args.size() == 2, "Expected 1-2 arguments, was ${n}", ("n", args.size()) );
       vector< account_name_type > names = args[0].as< vector< account_name_type > >();
+
+      bool delayed_votes_active = true;
+      if( args.size() == 2 )
+         delayed_votes_active = args[1].as< bool >();
 
       const auto& idx  = _db.get_index< account_index >().indices().get< by_name >();
       const auto& vidx = _db.get_index< witness_vote_index >().indices().get< by_account_witness >();
@@ -864,7 +868,7 @@ namespace detail
          auto itr = idx.find( name );
          if ( itr != idx.end() )
          {
-            results.emplace_back( extended_account( database_api::api_account_object( *itr, _db ) ) );
+            results.emplace_back( extended_account( database_api::api_account_object( *itr, _db, delayed_votes_active ) ) );
 
             if( _follow_api )
             {
@@ -893,9 +897,13 @@ namespace detail
 
    DEFINE_API_IMPL( condenser_api_impl, lookup_account_names )
    {
-      CHECK_ARG_SIZE( 1 )
+      FC_ASSERT( args.size() == 1 || args.size() == 2, "Expected 1-2 arguments, was ${n}", ("n", args.size()) );
       vector< account_name_type > account_names = args[0].as< vector< account_name_type > >();
 
+      bool delayed_votes_active = true;
+      if( args.size() == 2 )
+         delayed_votes_active = args[1].as< bool >();
+      
       vector< optional< api_account_object > > result;
       result.reserve( account_names.size() );
 
@@ -905,7 +913,7 @@ namespace detail
 
          if( itr )
          {
-            result.push_back( api_account_object( database_api::api_account_object( *itr, _db ) ) );
+            result.push_back( api_account_object( database_api::api_account_object( *itr, _db, delayed_votes_active ) ) );
          }
          else
          {

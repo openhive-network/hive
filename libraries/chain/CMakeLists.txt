@@ -33,6 +33,7 @@ add_library( steem_chain
              util/sps_processor.cpp
              util/sps_helper.cpp
              util/hf23_helper.cpp
+             util/delayed_voting.cpp
 
              ${HEADERS}
            )

@@ -12,7 +12,7 @@ class ArgsCheckException(Exception):
         return self.message
 
 user_name = list("aaaaaaaaaaaa")
-
+creator = "initminer"
 
 def unifie_to_string(_arg):
     if not isinstance(_arg, str):
@@ -126,12 +126,12 @@ def make_user_for_tests(_cli_wallet, _value_for_vesting = None,  _value_for_tran
     value_for_transfer_tests    = _value_for_transfer_tests if _value_for_transfer_tests else "20.000 TESTS"
     value_for_transfer_tbd      = _value_for_transfer_tbd   if _value_for_transfer_tbd else "20.000 TBD"
 
-    creator = get_valid_steem_account_name()
-    _cli_wallet.create_account( args.creator, creator, "", "true")
     receiver = get_valid_steem_account_name()
-    _cli_wallet.create_account( args.creator, receiver, "", "true")
 
-    _cli_wallet.transfer_to_vesting( args.creator, creator, value_for_vesting, "true")
-    _cli_wallet.transfer( args.creator, creator, value_for_transfer_tests, "initial transfer", "true" )
-    _cli_wallet.transfer( args.creator, creator, value_for_transfer_tbd, "initial transfer", "true")
+    _cli_wallet.create_account( creator, receiver, "{}", "true")
+
+    _cli_wallet.transfer_to_vesting(    creator, receiver, value_for_vesting, "true")
+    _cli_wallet.transfer(               creator, receiver, value_for_transfer_tests, "initial transfer", "true" )
+    _cli_wallet.transfer(               creator, receiver, value_for_transfer_tbd, "initial transfer", "true")
+
     return creator, receiver
