@@ -41,6 +41,7 @@ using steem::protocol::transaction_id_type;
 using steem::protocol::chain_id_type;
 using steem::protocol::account_name_type;
 using steem::protocol::share_type;
+using steem::protocol::ushare_type;
 
 using chainbase::shared_string;
 

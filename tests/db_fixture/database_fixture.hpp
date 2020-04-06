@@ -209,8 +209,11 @@ struct database_fixture {
 #ifdef STEEM_ENABLE_SMT
    static asset_symbol_type get_new_smt_symbol( uint8_t token_decimal_places, chain::database* db );
 #endif
-   static const uint16_t minimum_shared_file_size_in_mb = 64;
-   void open_database( uint16_t shared_file_size_in_mb = minimum_shared_file_size_in_mb );
+
+   static const uint16_t shared_file_size_in_mb_64 = 64;
+   static const uint16_t shared_file_size_in_mb_512 = 512;
+
+   void open_database( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 );
    void generate_block(uint32_t skip = 0,
                                const fc::ecc::private_key& key = generate_private_key("init_key"),
                                int miss_blocks = 0);
@@ -226,6 +229,9 @@ struct database_fixture {
     * @param timestamp target time to generate blocks until
     */
    void generate_blocks(fc::time_point_sec timestamp, bool miss_intermediate_blocks = true);
+
+   void generate_days_blocks( uint32_t days, bool skip_interm_blocks = true );
+   fc::string get_current_time_iso_string() const;
 
    const account_object& account_create(
       const string& name,
@@ -275,7 +281,7 @@ struct database_fixture {
 
 struct clean_database_fixture : public database_fixture
 {
-   clean_database_fixture( uint16_t shared_file_size_in_mb = minimum_shared_file_size_in_mb );
+   clean_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
    virtual ~clean_database_fixture();
 
    void resize_shared_mem( uint64_t size );
@@ -332,9 +338,9 @@ using smt_database_fixture_for_plugin = t_smt_database_fixture< database_fixture
 
 #endif
 
-struct sps_proposal_database_fixture : public clean_database_fixture
+struct sps_proposal_database_fixture : public virtual clean_database_fixture
 {
-   sps_proposal_database_fixture( uint16_t shared_file_size_in_mb = minimum_shared_file_size_in_mb )
+   sps_proposal_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
                            : clean_database_fixture( shared_file_size_in_mb ){}
    virtual ~sps_proposal_database_fixture(){}
 
@@ -356,6 +362,29 @@ struct sps_proposal_database_fixture : public clean_database_fixture
    uint64_t get_nr_blocks_until_maintenance_block();
 
    void post_comment( std::string _authro, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key);
+
+   struct create_proposal_data 
+   {
+      std::string creator    ;
+      std::string receiver   ;
+      fc::time_point_sec start_date ;
+      fc::time_point_sec end_date   ;
+      steem::protocol::asset daily_pay ;
+      std::string subject ;
+      std::string url     ;
+
+      create_proposal_data(fc::time_point_sec _start) 
+      {
+         creator    = "alice";
+         receiver   = "bob";
+         start_date = _start     + fc::days( 1 );
+         end_date   = start_date + fc::days( 2 );
+         daily_pay  = asset( 100, SBD_SYMBOL );
+         subject    = "hello";
+         url        = "http:://something.html";
+      }
+   };
+
 };
 
 struct sps_proposal_database_fixture_performance : public sps_proposal_database_fixture
@@ -368,6 +397,7 @@ struct sps_proposal_database_fixture_performance : public sps_proposal_database_
    }
 };
 
+
 struct hf23_database_fixture : public clean_database_fixture
 {
    private:
@@ -376,12 +406,55 @@ struct hf23_database_fixture : public clean_database_fixture
 
    public:
 
-      hf23_database_fixture( uint16_t shared_file_size_in_mb = minimum_shared_file_size_in_mb )
+      hf23_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
                               : clean_database_fixture( shared_file_size_in_mb ){}
       virtual ~hf23_database_fixture(){}
 
       void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
       void delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key );
+};
+
+struct delayed_vote_database_fixture : public virtual clean_database_fixture
+{
+   private:
+
+      void push_transaction( const operation& op, const fc::ecc::private_key& key );
+
+   public:
+
+      delayed_vote_database_fixture( uint16_t shared_file_size_in_mb = 8 )
+                              : clean_database_fixture( shared_file_size_in_mb ){}
+      virtual ~delayed_vote_database_fixture(){}
+
+      void witness_vote( const std::string& account, const std::string& witness, const bool approve, const fc::ecc::private_key& key );
+      void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
+      void withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key );
+      void proxy( const string& account, const string& proxy, const fc::ecc::private_key& key );
+      void decline_voting_rights( const string& account, const bool decline, const fc::ecc::private_key& key );
+
+      share_type get_votes( const string& witness_name );
+      int32_t get_user_voted_witness_count( const account_name_type& name );
+
+      asset to_vest( const asset& liquid, const bool to_reward_balance = false );
+
+      template< typename COLLECTION >
+      fc::optional< size_t > get_position_in_delayed_voting_array( const COLLECTION& collection, size_t day, size_t minutes );
+
+      template< typename COLLECTION >
+      bool check_collection( const COLLECTION& collection, ushare_type idx, const fc::time_point_sec& time, const ushare_type val );
+
+      template< typename COLLECTION >
+      bool check_collection( const COLLECTION& collection, const bool withdraw_executor, const share_type val, const account_object& obj );
+};
+
+struct delayed_vote_proposal_database_fixture 
+   :  public delayed_vote_database_fixture,
+      public sps_proposal_database_fixture
+{
+   delayed_vote_proposal_database_fixture( uint16_t shared_file_size_in_mb = 8 )
+                              :  delayed_vote_database_fixture( shared_file_size_in_mb ),
+                                 sps_proposal_database_fixture( shared_file_size_in_mb ) {}
+   virtual ~delayed_vote_proposal_database_fixture(){}
 };
 
 struct json_rpc_database_fixture : public database_fixture

@@ -11,10 +11,13 @@
 #include <steem/chain/shared_authority.hpp>
 #include <steem/chain/util/manabar.hpp>
 
+#include <steem/chain/util/delayed_voting_processor.hpp>
+
 #include <numeric>
 
 namespace steem { namespace chain {
 
+   using chainbase::t_vector;
    using steem::protocol::authority;
 
    class account_object : public object< account_object_type, account_object >
@@ -23,6 +26,7 @@ namespace steem { namespace chain {
 
          template<typename Constructor, typename Allocator>
          account_object( Constructor&& c, allocator< Allocator > a )
+         : delayed_votes( a )
          {
             c(*this);
          };
@@ -109,11 +113,42 @@ namespace steem { namespace chain {
 
          share_type        pending_claimed_accounts = 0;
 
+         using t_delayed_votes = t_vector< delayed_votes_data >;
+         /*
+            Holds sum of VESTS per day.
+            VESTS from day `X` will be matured after `X` + 30 days ( because `STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )
+         */
+         t_delayed_votes   delayed_votes;
+         /*
+            Total sum of VESTS from `delayed_votes` collection.
+            It's a helper variable needed for better performance.
+         */
+         ushare_type       sum_delayed_votes = 0;
+
+         time_point_sec get_the_earliest_time() const
+         {
+            if( !delayed_votes.empty() )
+               return ( delayed_votes.begin() )->time;
+            else
+               return time_point_sec::maximum();
+         }
+
+         share_type get_real_vesting_shares() const
+         {
+            FC_ASSERT( sum_delayed_votes.value <= vesting_shares.amount, "",
+                        ( "sum_delayed_votes",     sum_delayed_votes )
+                        ( "vesting_shares.amount", vesting_shares.amount )
+                        ( "account",               name ) );
+  
+            return asset( vesting_shares.amount - sum_delayed_votes.value, VESTS_SYMBOL ).amount;
+         }
+
          /// This function should be used only when the account votes for a witness directly
          share_type        witness_vote_weight()const {
             return std::accumulate( proxied_vsf_votes.begin(),
                                     proxied_vsf_votes.end(),
-                                    vesting_shares.amount );
+                                    get_real_vesting_shares()
+                                  );
          }
          share_type        proxied_vsf_votes_total()const {
             return std::accumulate( proxied_vsf_votes.begin(),
@@ -255,7 +290,7 @@ namespace steem { namespace chain {
 
    struct by_proxy;
    struct by_next_vesting_withdrawal;
-
+   struct by_delayed_voting;
    /**
     * @ingroup object_index
     */
@@ -277,6 +312,12 @@ namespace steem { namespace chain {
                member< account_object, time_point_sec, &account_object::next_vesting_withdrawal >,
                member< account_object, account_name_type, &account_object::name >
             > /// composite key by_next_vesting_withdrawal
+         >,
+         ordered_unique< tag< by_delayed_voting >,
+            composite_key< account_object,
+               const_mem_fun< account_object, time_point_sec, &account_object::get_the_earliest_time >,
+               member< account_object, account_id_type, &account_object::id >
+            >
          >
       >,
       allocator< account_object >
@@ -453,6 +494,8 @@ FC_REFLECT( steem::chain::account_object,
              (proxied_vsf_votes)(witnesses_voted_for)
              (last_post)(last_root_post)(last_post_edit)(last_vote_time)(post_bandwidth)
              (pending_claimed_accounts)
+             (delayed_votes)
+             (sum_delayed_votes)
           )
 
 CHAINBASE_SET_INDEX_TYPE( steem::chain::account_object, steem::chain::account_index )

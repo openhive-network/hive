@@ -2018,7 +2018,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
 
       db->push_transaction( tx, 0 );
 
-      BOOST_REQUIRE( sam_witness.votes == alice.vesting_shares.amount );
+      BOOST_REQUIRE( sam_witness.votes == alice.get_real_vesting_shares() );
       BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, alice.name ) ) != witness_vote_idx.end() );
       validate_database();
 
@@ -2050,7 +2050,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
 
       db->push_transaction( tx, 0 );
 
-      BOOST_REQUIRE( sam_witness.votes == ( bob.proxied_vsf_votes_total() + bob.vesting_shares.amount ) );
+      BOOST_REQUIRE( sam_witness.votes == ( bob.proxied_vsf_votes_total() + bob.get_real_vesting_shares() ) );
       BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, bob.name ) ) != witness_vote_idx.end() );
       BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, alice.name ) ) == witness_vote_idx.end() );
 
@@ -2062,7 +2062,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
       sign( tx, alice_private_key );
       STEEM_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), fc::exception );
 
-      BOOST_REQUIRE( sam_witness.votes == ( bob.proxied_vsf_votes_total() + bob.vesting_shares.amount ) );
+      BOOST_REQUIRE( sam_witness.votes == ( bob.proxied_vsf_votes_total() + bob.get_real_vesting_shares() ) );
       BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, bob.name ) ) != witness_vote_idx.end() );
       BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, alice.name ) ) == witness_vote_idx.end() );
 
@@ -2099,6 +2099,146 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
       sign( tx, bob_private_key );
 
       STEEM_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+      validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
+{
+   //copy of account_witness_vote_apply with extra checks to account for delayed voting effect
+   //note that call to generate_block() invalidates everything that was done by push_transaction,
+   //in particular local variables like `alice` and `sam_witness` that point to objects created
+   //by push_transaction (and thus present inside pending block state) become invalid;
+   //generate_block call first calls `undo` on pending block, then reapplies all transactions,
+   //so all the objects are present in chain, but have to be acquired again from final state
+   try
+   {
+      BOOST_TEST_MESSAGE("Testing: account_witness_vote_apply_delay");
+
+      ACTORS((alice)(bob)(sam))
+      fund("alice", 5000);
+      vest("alice", 5000);
+      //vests are going to vote after STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS
+      //note that account creation also vests a bit for new account
+      fund("sam", 1000);
+
+      private_key_type sam_witness_key = generate_private_key("sam_key");
+      witness_create("sam", sam_private_key, "foo.bar", sam_witness_key.get_public_key(), 1000);
+
+      generate_block();
+      //above variables: alice/bob/sam are invalid past that point
+      //they need to be reacquired from chain
+      const account_object& _alice = db->get_account("alice");
+      const account_object& _bob = db->get_account("bob");
+      //const account_object& _sam = db->get_account("sam");
+      const witness_object& _sam_witness = db->get_witness("sam");
+      const auto& witness_vote_idx = db->get_index< witness_vote_index >().indices().get< by_witness_account >();
+
+      BOOST_TEST_MESSAGE("--- Test normal vote");
+      account_witness_vote_operation op;
+      op.account = "alice";
+      op.witness = "sam";
+      op.approve = true;
+
+      signed_transaction tx;
+      tx.set_expiration(db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION);
+      tx.operations.push_back(op);
+      sign(tx, alice_private_key);
+
+      db->push_transaction(tx, 0);
+
+      BOOST_REQUIRE(_sam_witness.votes == 0);
+      BOOST_REQUIRE(_alice.vesting_shares.amount == _alice.sum_delayed_votes.value);
+      BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _alice.name)) != witness_vote_idx.end());
+      validate_database();
+      generate_blocks(db->head_block_time() + fc::seconds(STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS));
+      BOOST_REQUIRE(_sam_witness.votes == _alice.vesting_shares.amount);
+      BOOST_REQUIRE(_alice.sum_delayed_votes == 0);
+      validate_database();
+
+      BOOST_TEST_MESSAGE("--- Test revoke vote");
+      tx.set_expiration(db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION);
+      op.approve = false;
+      tx.operations.clear();
+      tx.signatures.clear();
+      tx.operations.push_back(op);
+      sign(tx, alice_private_key);
+
+      db->push_transaction(tx, 0);
+      BOOST_REQUIRE(_sam_witness.votes.value == 0);
+      BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _alice.name)) == witness_vote_idx.end());
+
+      BOOST_TEST_MESSAGE("--- Test failure when attempting to revoke a non-existent vote");
+
+      STEEM_REQUIRE_THROW(db->push_transaction(tx, database::skip_transaction_dupe_check), fc::exception);
+      BOOST_REQUIRE(_sam_witness.votes.value == 0);
+      BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _alice.name)) == witness_vote_idx.end());
+
+      BOOST_TEST_MESSAGE("--- Test proxied vote");
+      proxy("alice", "bob");
+      tx.operations.clear();
+      tx.signatures.clear();
+      op.approve = true;
+      op.account = "bob";
+      tx.operations.push_back(op);
+      sign(tx, bob_private_key);
+
+      db->push_transaction(tx, 0);
+
+      //since all vests are already mature voting has immediate effect
+      BOOST_REQUIRE(_alice.vesting_shares.amount == _bob.proxied_vsf_votes_total());
+      BOOST_REQUIRE(_sam_witness.votes == (_alice.vesting_shares.amount + _bob.vesting_shares.amount));
+      BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _bob.name)) != witness_vote_idx.end());
+      BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _alice.name)) == witness_vote_idx.end());
+      validate_database();
+
+      BOOST_TEST_MESSAGE("--- Test vote from a proxied account");
+      tx.operations.clear();
+      tx.signatures.clear();
+      op.account = "alice";
+      tx.operations.push_back(op);
+      sign(tx, alice_private_key);
+      STEEM_REQUIRE_THROW(db->push_transaction(tx, database::skip_transaction_dupe_check), fc::exception);
+
+      BOOST_REQUIRE(_alice.vesting_shares.amount == _bob.proxied_vsf_votes_total());
+      BOOST_REQUIRE(_sam_witness.votes == (_alice.vesting_shares.amount + _bob.vesting_shares.amount));
+      BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _bob.name)) != witness_vote_idx.end());
+      BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _alice.name)) == witness_vote_idx.end());
+
+      BOOST_TEST_MESSAGE("--- Test revoke proxied vote");
+      tx.operations.clear();
+      tx.signatures.clear();
+      op.account = "bob";
+      op.approve = false;
+      tx.operations.push_back(op);
+      sign(tx, bob_private_key);
+
+      db->push_transaction(tx, 0);
+
+      BOOST_REQUIRE(_sam_witness.votes.value == 0);
+      BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _bob.name)) == witness_vote_idx.end());
+      BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _alice.name)) == witness_vote_idx.end());
+
+      BOOST_TEST_MESSAGE("--- Test failure when voting for a non-existent account");
+      tx.operations.clear();
+      tx.signatures.clear();
+      op.witness = "dave";
+      op.approve = true;
+      tx.operations.push_back(op);
+      sign(tx, bob_private_key);
+
+      STEEM_REQUIRE_THROW(db->push_transaction(tx, 0), fc::exception);
+      validate_database();
+
+      BOOST_TEST_MESSAGE("--- Test failure when voting for an account that is not a witness");
+      tx.operations.clear();
+      tx.signatures.clear();
+      op.witness = "alice";
+      tx.operations.push_back(op);
+      sign(tx, bob_private_key);
+
+      STEEM_REQUIRE_THROW(db->push_transaction(tx, 0), fc::exception);
       validate_database();
    }
    FC_LOG_AND_RETHROW()
@@ -2198,7 +2338,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
       BOOST_REQUIRE( bob.proxy == "alice" );
       BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
       BOOST_REQUIRE( alice.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
-      BOOST_REQUIRE( alice.proxied_vsf_votes_total() == bob.vesting_shares.amount );
+      BOOST_REQUIRE( alice.proxied_vsf_votes_total() == bob.get_real_vesting_shares() );
       validate_database();
 
       BOOST_TEST_MESSAGE( "--- Test changing proxy" );
@@ -2216,7 +2356,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
       BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
       BOOST_REQUIRE( alice.proxied_vsf_votes_total().value == 0 );
       BOOST_REQUIRE( sam.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
-      BOOST_REQUIRE( sam.proxied_vsf_votes_total().value == bob.vesting_shares.amount );
+      BOOST_REQUIRE( sam.proxied_vsf_votes_total().value == bob.get_real_vesting_shares() );
       validate_database();
 
       BOOST_TEST_MESSAGE( "--- Test failure when changing proxy to existing proxy" );
@@ -2226,7 +2366,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
       BOOST_REQUIRE( bob.proxy == "sam" );
       BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
       BOOST_REQUIRE( sam.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
-      BOOST_REQUIRE( sam.proxied_vsf_votes_total() == bob.vesting_shares.amount );
+      BOOST_REQUIRE( sam.proxied_vsf_votes_total() == bob.get_real_vesting_shares() );
       validate_database();
 
       BOOST_TEST_MESSAGE( "--- Test adding a grandparent proxy" );
@@ -2244,9 +2384,9 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
       BOOST_REQUIRE( bob.proxy == "sam" );
       BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
       BOOST_REQUIRE( sam.proxy == "dave" );
-      BOOST_REQUIRE( sam.proxied_vsf_votes_total() == bob.vesting_shares.amount );
+      BOOST_REQUIRE( sam.proxied_vsf_votes_total() == bob.get_real_vesting_shares() );
       BOOST_REQUIRE( dave.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
-      BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.vesting_shares + bob.vesting_shares ).amount );
+      BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_real_vesting_shares() + bob.get_real_vesting_shares() ) );
       validate_database();
 
       BOOST_TEST_MESSAGE( "--- Test adding a grandchild proxy" );
@@ -2268,9 +2408,9 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
       BOOST_REQUIRE( bob.proxy == "sam" );
       BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
       BOOST_REQUIRE( sam.proxy == "dave" );
-      BOOST_REQUIRE( sam.proxied_vsf_votes_total() == ( bob.vesting_shares + alice.vesting_shares ).amount );
+      BOOST_REQUIRE( sam.proxied_vsf_votes_total() == ( bob.get_real_vesting_shares() + alice.get_real_vesting_shares() ) );
       BOOST_REQUIRE( dave.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
-      BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.vesting_shares + bob.vesting_shares + alice.vesting_shares ).amount );
+      BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_real_vesting_shares() + bob.get_real_vesting_shares() + alice.get_real_vesting_shares() ) );
       validate_database();
 
       BOOST_TEST_MESSAGE( "--- Test removing a grandchild proxy" );
@@ -2290,9 +2430,9 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
       BOOST_REQUIRE( bob.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
       BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
       BOOST_REQUIRE( sam.proxy == "dave" );
-      BOOST_REQUIRE( sam.proxied_vsf_votes_total() == alice.vesting_shares.amount );
+      BOOST_REQUIRE( sam.proxied_vsf_votes_total() == alice.get_real_vesting_shares() );
       BOOST_REQUIRE( dave.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
-      BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.vesting_shares + alice.vesting_shares ).amount );
+      BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_real_vesting_shares() + alice.get_real_vesting_shares() ) );
       validate_database();
 
       BOOST_TEST_MESSAGE( "--- Test votes are transferred when a proxy is added" );
@@ -2315,7 +2455,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
 
       db->push_transaction( tx, 0 );
 
-      BOOST_REQUIRE( db->get_witness( STEEM_INIT_MINER_NAME ).votes == ( alice.vesting_shares + bob.vesting_shares ).amount );
+      BOOST_REQUIRE( db->get_witness( STEEM_INIT_MINER_NAME ).votes == ( alice.get_real_vesting_shares() + bob.get_real_vesting_shares() ) );
       validate_database();
 
       BOOST_TEST_MESSAGE( "--- Test votes are removed when a proxy is removed" );
@@ -2327,7 +2467,191 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
 
       db->push_transaction( tx, 0 );
 
-      BOOST_REQUIRE( db->get_witness( STEEM_INIT_MINER_NAME ).votes == bob.vesting_shares.amount );
+      BOOST_REQUIRE( db->get_witness( STEEM_INIT_MINER_NAME ).votes == bob.get_real_vesting_shares() );
+      validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( account_witness_proxy_apply_delay )
+{
+   //copy of account_witness_proxy_apply with extra checks to account for delayed voting effect
+   //see comment in account_witness_vote_apply_delay
+   try
+   {
+      BOOST_TEST_MESSAGE( "Testing: account_witness_proxy_apply_delay" );
+
+      ACTORS( (alice)(bob)(sam)(dave) )
+      fund( "alice", 1000 );
+      vest( "alice", 1000 );
+      //vests are going to vote after STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS
+      //note that account creation also vests a bit for new account
+      fund( "bob", 3000 );
+      vest( "bob", 3000 );
+      fund( "sam", 5000 );
+      vest( "sam", 5000 );
+      fund( "dave", 7000 );
+      vest( "dave", 7000 );
+
+      generate_block();
+      //above variables: alice etc. are invalid past that point
+      //they need to be reacquired from chain
+      const account_object& _alice = db->get_account("alice");
+      const account_object& _bob = db->get_account("bob");
+      const account_object& _sam = db->get_account("sam");
+      const account_object& _dave = db->get_account("dave");
+
+      BOOST_TEST_MESSAGE( "--- Test setting proxy to another account from self." );
+      // bob -> alice
+
+      account_witness_proxy_operation op;
+      op.account = "bob";
+      op.proxy = "alice";
+
+      signed_transaction tx;
+      tx.operations.push_back( op );
+      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      sign( tx, bob_private_key );
+
+      db->push_transaction( tx, 0 );
+
+      BOOST_REQUIRE( _bob.proxy == "alice" );
+      BOOST_REQUIRE( _bob.proxied_vsf_votes_total().value == 0 );
+      BOOST_REQUIRE( _alice.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
+      BOOST_REQUIRE( _alice.proxied_vsf_votes_total().value == 0 );
+      validate_database();
+      generate_blocks(db->head_block_time() + fc::seconds(STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS));
+      BOOST_REQUIRE(_alice.proxied_vsf_votes_total() == _bob.vesting_shares.amount);
+
+      BOOST_TEST_MESSAGE( "--- Test changing proxy" );
+      // bob->sam
+
+      tx.set_expiration(db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION);
+      tx.operations.clear();
+      tx.signatures.clear();
+      op.proxy = "sam";
+      tx.operations.push_back( op );
+      sign( tx, bob_private_key );
+
+      db->push_transaction( tx, 0 );
+
+      BOOST_REQUIRE( _bob.proxy == "sam" );
+      BOOST_REQUIRE( _bob.proxied_vsf_votes_total().value == 0 );
+      BOOST_REQUIRE( _alice.proxied_vsf_votes_total().value == 0 );
+      BOOST_REQUIRE( _sam.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
+      //all vests are now mature so changes in voting power are immediate
+      BOOST_REQUIRE( _sam.proxied_vsf_votes_total().value == _bob.vesting_shares.amount );
+      validate_database();
+
+      BOOST_TEST_MESSAGE( "--- Test failure when changing proxy to existing proxy" );
+
+      STEEM_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), fc::exception );
+
+      BOOST_REQUIRE( _bob.proxy == "sam" );
+      BOOST_REQUIRE( _bob.proxied_vsf_votes_total().value == 0 );
+      BOOST_REQUIRE( _sam.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
+      BOOST_REQUIRE( _sam.proxied_vsf_votes_total() == _bob.vesting_shares.amount );
+      validate_database();
+
+      BOOST_TEST_MESSAGE( "--- Test adding a grandparent proxy" );
+      // bob->sam->dave
+
+      tx.operations.clear();
+      tx.signatures.clear();
+      op.proxy = "dave";
+      op.account = "sam";
+      tx.operations.push_back( op );
+      sign( tx, sam_private_key );
+
+      db->push_transaction( tx, 0 );
+
+      BOOST_REQUIRE( _bob.proxy == "sam" );
+      BOOST_REQUIRE( _bob.proxied_vsf_votes_total().value == 0 );
+      BOOST_REQUIRE( _sam.proxy == "dave" );
+      BOOST_REQUIRE( _sam.proxied_vsf_votes_total() == _bob.vesting_shares.amount );
+      BOOST_REQUIRE( _dave.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
+      BOOST_REQUIRE( _dave.proxied_vsf_votes_total() == ( _sam.vesting_shares + _bob.vesting_shares ).amount );
+      validate_database();
+
+      BOOST_TEST_MESSAGE( "--- Test adding a grandchild proxy" );
+      //       alice
+      //         |
+      // bob->  sam->dave
+
+      tx.operations.clear();
+      tx.signatures.clear();
+      op.proxy = "sam";
+      op.account = "alice";
+      tx.operations.push_back( op );
+      sign( tx, alice_private_key );
+
+      db->push_transaction( tx, 0 );
+
+      BOOST_REQUIRE( _alice.proxy == "sam" );
+      BOOST_REQUIRE( _alice.proxied_vsf_votes_total().value == 0 );
+      BOOST_REQUIRE( _bob.proxy == "sam" );
+      BOOST_REQUIRE( _bob.proxied_vsf_votes_total().value == 0 );
+      BOOST_REQUIRE( _sam.proxy == "dave" );
+      BOOST_REQUIRE( _sam.proxied_vsf_votes_total() == ( _bob.vesting_shares + _alice.vesting_shares ).amount );
+      BOOST_REQUIRE( _dave.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
+      BOOST_REQUIRE( _dave.proxied_vsf_votes_total() == ( _sam.vesting_shares + _bob.vesting_shares + _alice.vesting_shares ).amount );
+      validate_database();
+
+      BOOST_TEST_MESSAGE( "--- Test removing a grandchild proxy" );
+      // alice->sam->dave
+
+      tx.operations.clear();
+      tx.signatures.clear();
+      op.proxy = STEEM_PROXY_TO_SELF_ACCOUNT;
+      op.account = "bob";
+      tx.operations.push_back( op );
+      sign( tx, bob_private_key );
+
+      db->push_transaction( tx, 0 );
+
+      BOOST_REQUIRE( _alice.proxy == "sam" );
+      BOOST_REQUIRE( _alice.proxied_vsf_votes_total().value == 0 );
+      BOOST_REQUIRE( _bob.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
+      BOOST_REQUIRE( _bob.proxied_vsf_votes_total().value == 0 );
+      BOOST_REQUIRE( _sam.proxy == "dave" );
+      BOOST_REQUIRE( _sam.proxied_vsf_votes_total() == _alice.vesting_shares.amount );
+      BOOST_REQUIRE( _dave.proxy == STEEM_PROXY_TO_SELF_ACCOUNT );
+      BOOST_REQUIRE( _dave.proxied_vsf_votes_total() == ( _sam.vesting_shares + _alice.vesting_shares ).amount );
+      validate_database();
+
+      BOOST_TEST_MESSAGE( "--- Test votes are transferred when a proxy is added" );
+      account_witness_vote_operation vote;
+      vote.account= "bob";
+      vote.witness = STEEM_INIT_MINER_NAME;
+      tx.operations.clear();
+      tx.signatures.clear();
+      tx.operations.push_back( vote );
+      sign( tx, bob_private_key );
+
+      db->push_transaction( tx, 0 );
+
+      tx.operations.clear();
+      tx.signatures.clear();
+      op.account = "alice";
+      op.proxy = "bob";
+      tx.operations.push_back( op );
+      sign( tx, alice_private_key );
+
+      db->push_transaction( tx, 0 );
+
+      BOOST_REQUIRE( db->get_witness( STEEM_INIT_MINER_NAME ).votes == ( _alice.vesting_shares + _bob.vesting_shares ).amount );
+      validate_database();
+
+      BOOST_TEST_MESSAGE( "--- Test votes are removed when a proxy is removed" );
+      op.proxy = STEEM_PROXY_TO_SELF_ACCOUNT;
+      tx.signatures.clear();
+      tx.operations.clear();
+      tx.operations.push_back( op );
+      sign( tx, alice_private_key );
+
+      db->push_transaction( tx, 0 );
+
+      BOOST_REQUIRE( db->get_witness( STEEM_INIT_MINER_NAME ).votes == _bob.vesting_shares.amount );
       validate_database();
    }
    FC_LOG_AND_RETHROW()

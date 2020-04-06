@@ -9,6 +9,7 @@
 
 #include <steem/chain/util/reward.hpp>
 #include <steem/chain/util/manabar.hpp>
+#include <steem/chain/util/delayed_voting.hpp>
 
 #include <fc/macros.hpp>
 
@@ -1198,7 +1199,24 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
    }
 
    _db.adjust_balance( from_account, -o.amount );
-   _db.create_vesting( to_account, o.amount );
+
+   /*
+      Voting immediately when `transfer_to_vesting` is executed is dangerous,
+      because malicious accounts would take over whole STEEM network.
+      Therefore an idea is based on voting deferring. Default value is 30 days.
+      This range of time is enough long to defeat/block potential malicious intention.
+   */
+   if( _db.has_hardfork( STEEM_HARDFORK_0_24 ) )
+   {
+      asset new_vesting = _db.adjust_account_vesting_balance( to_account, o.amount, false/*to_reward_balance*/, []( asset vests_created ) {} );
+
+      delayed_voting dv( _db );
+      dv.add_delayed_value( to_account, _db.head_block_time(), new_vesting.amount.value );
+   }
+   else
+   {
+      _db.create_vesting( to_account, o.amount );   
+   }
 }
 
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
@@ -1357,7 +1375,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
    /// remove all current votes
    std::array<share_type, STEEM_MAX_PROXY_RECURSION_DEPTH+1> delta;
-   delta[0] = -account.vesting_shares.amount;
+   delta[0] = -account.get_real_vesting_shares();
    for( int i = 0; i < STEEM_MAX_PROXY_RECURSION_DEPTH; ++i )
       delta[i+1] = -account.proxied_vsf_votes[i];
    _db.adjust_proxied_witness_votes( account, delta );
@@ -1452,7 +1470,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
             _db.adjust_proxied_witness_votes( voter, -voter.witness_vote_weight() );
       } else  {
          _db.modify( witness, [&]( witness_object& w ) {
-             w.votes -= voter.witness_vote_weight();
+            w.votes -= voter.witness_vote_weight();
          });
       }
       _db.modify( voter, [&]( account_object& a ) {

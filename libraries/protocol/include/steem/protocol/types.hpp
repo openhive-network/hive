@@ -78,6 +78,7 @@ namespace steem {
       typedef fc::sha256                  digest_type;
       typedef fc::ecc::compact_signature  signature_type;
       typedef safe<int64_t>               share_type;
+      typedef safe<uint64_t>              ushare_type;
       typedef uint16_t                    weight_type;
       typedef uint32_t                    contribution_id_type;
       typedef fixed_string<32>            custom_id_type;
@@ -173,5 +174,6 @@ FC_REFLECT( steem::protocol::extended_private_key_type, (key_data) )
 FC_REFLECT( steem::protocol::extended_private_key_type::binary_key, (check)(data) )
 
 FC_REFLECT_TYPENAME( steem::protocol::share_type )
+FC_REFLECT_TYPENAME( steem::protocol::ushare_type )
 
 FC_REFLECT( steem::void_t, )

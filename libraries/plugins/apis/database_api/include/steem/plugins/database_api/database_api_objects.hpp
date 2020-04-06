@@ -161,7 +161,7 @@ struct api_comment_vote_object
 
 struct api_account_object
 {
-   api_account_object( const account_object& a, const database& db ) :
+   api_account_object( const account_object& a, const database& db, bool delayed_votes_active ) :
       id( a.id ),
       name( a.name ),
       memo_key( a.memo_key ),
@@ -235,6 +235,9 @@ struct api_account_object
       auto smt_obj_itr = by_control_account_index.find( name );
       is_smt = smt_obj_itr != by_control_account_index.end();
 #endif
+
+      if( delayed_votes_active )
+         delayed_votes = vector< delayed_votes_data >{ a.delayed_votes.begin(), a.delayed_votes.end() };
    }
 
 
@@ -312,6 +315,8 @@ struct api_account_object
    share_type        pending_claimed_accounts = 0;
 
    bool              is_smt = false;
+
+   fc::optional< vector< delayed_votes_data > >  delayed_votes;
 };
 
 struct api_owner_authority_history_object
@@ -668,6 +673,7 @@ FC_REFLECT( steem::plugins::database_api::api_account_object,
              (last_post)(last_root_post)(last_post_edit)(last_vote_time)
              (post_bandwidth)(pending_claimed_accounts)
              (is_smt)
+	     (delayed_votes)
           )
 
 FC_REFLECT( steem::plugins::database_api::api_owner_authority_history_object,

@@ -31,7 +31,8 @@ class CliWallet(object):
                        _deamon,
                        _rpc_allowip,
                        _wallet_file,
-                       _chain_id ):
+                       _chain_id,
+                       _wif ):
             self.path = _path_to_executable+'/cli_wallet'
             self.server_rpc_endpoint = _server_rpc_endpoint
             self.cert_auth = _cert_auth
@@ -43,6 +44,7 @@ class CliWallet(object):
             self.rpc_allowip = _rpc_allowip
             self.wallet_file = _wallet_file
             self.chain_id  = _chain_id
+            self.wif  = _wif
 
         def args_to_list(self):
             test_args = []
@@ -74,11 +76,12 @@ class CliWallet(object):
                        _deamon=False,  
                        _rpc_allowip=[],
                        _wallet_file="wallet.json", 
-                       _chain_id="18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e"):
+                       _chain_id="18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e",
+                       _wif = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"):
 
         self.cli_args = CliWallet.CliWalletArgs(_path_to_executable, _server_rpc_endpoint, _cert_auth, #_rpc_endpoint,
                                       _rpc_tls_endpoint, _rpc_tls_cert, 
-                                      _rpc_http_endpoint, _deamon, _rpc_allowip, _wallet_file, _chain_id  )
+                                      _rpc_http_endpoint, _deamon, _rpc_allowip, _wallet_file, _chain_id, _wif )
         self.cli_proc = None
         self.response = ""
         self.q = queue.Queue()
@@ -113,7 +116,7 @@ class CliWallet(object):
             self.t.start()
             self.set_password("{0}".format("testpassword"))
             self.unlock("{0}".format("testpassword"))
-            self.import_key("{0}".format(args.wif))
+            self.import_key("{0}".format(self.cli_args.wif))
         except Exception as _ex:
             log.exception("Exception `{0}` occuress while while running cli_wallet.".format(str(_ex)))
 

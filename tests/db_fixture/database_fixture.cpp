@@ -7,6 +7,7 @@
 #include <steem/chain/history_object.hpp>
 #include <steem/chain/steem_objects.hpp>
 #include <steem/chain/sps_objects.hpp>
+#include <steem/chain/util/delayed_voting.hpp>
 
 #include <steem/plugins/account_history/account_history_plugin.hpp>
 #include <steem/plugins/chain/chain_plugin.hpp>
@@ -292,6 +293,19 @@ void database_fixture::generate_blocks(fc::time_point_sec timestamp, bool miss_i
    BOOST_REQUIRE( ( db->head_block_time() - timestamp ).to_seconds() < STEEM_BLOCK_INTERVAL );
 }
 
+void database_fixture::generate_days_blocks( uint32_t days, bool skip_interm_blocks )
+{
+   fc::time_point_sec timestamp = db->head_block_time();
+   timestamp += fc::days(days);
+   generate_blocks( timestamp, skip_interm_blocks );
+}
+
+fc::string database_fixture::get_current_time_iso_string() const
+{
+   fc::time_point_sec current_time = db->head_block_time();
+   return current_time.to_iso_string();
+}
+
 const account_object& database_fixture::account_create(
    const string& name,
    const string& creator,
@@ -563,6 +577,7 @@ void database_fixture::proxy( const string& account, const string& proxy )
       op.account = account;
       op.proxy = proxy;
       trx.operations.push_back( op );
+      trx.set_expiration(db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION);
       db->push_transaction( trx, ~0 );
       trx.clear();
    } FC_CAPTURE_AND_RETHROW( (account)(proxy) )
@@ -1052,6 +1067,156 @@ void hf23_database_fixture::delegate_vest( const string& delegator, const string
 
    push_transaction( op, key );
 }
+
+void delayed_vote_database_fixture::push_transaction( const operation& op, const fc::ecc::private_key& key )
+{
+   signed_transaction tx;
+   tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+   tx.operations.push_back( op );
+   sign( tx, key );
+   db->push_transaction( tx, 0 );
+}
+
+void delayed_vote_database_fixture::witness_vote( const std::string& account, const std::string& witness, const bool approve, const fc::ecc::private_key& key )
+{
+   account_witness_vote_operation op;
+
+   op.account = account;
+   op.witness = witness;
+   op.approve = approve;
+
+   push_transaction( op, key );
+}
+
+void delayed_vote_database_fixture::vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )
+{
+   FC_ASSERT( amount.symbol == STEEM_SYMBOL, "Can only vest TESTS" );
+
+   transfer_to_vesting_operation op;
+   op.from = from;
+   op.to = to;
+   op.amount = amount;
+
+   push_transaction( op, key );
+}
+
+void delayed_vote_database_fixture::decline_voting_rights( const string& account, const bool decline, const fc::ecc::private_key& key )
+{
+   decline_voting_rights_operation op;
+   op.account = account;
+   op.decline = decline;
+
+   push_transaction( op, key );
+}
+
+void delayed_vote_database_fixture::withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key )
+{
+   FC_ASSERT( amount.symbol == VESTS_SYMBOL, "Can only withdraw VESTS");
+
+   withdraw_vesting_operation op;
+   op.account = account;
+   op.vesting_shares = amount;
+
+   push_transaction( op, key );
+}
+
+void delayed_vote_database_fixture::proxy( const string& account, const string& proxy, const fc::ecc::private_key& key )
+{
+   account_witness_proxy_operation op;
+   op.account = account;
+   op.proxy = proxy;
+   trx.operations.push_back( op );
+
+   push_transaction( op, key );
+}
+
+share_type delayed_vote_database_fixture::get_votes( const string& witness_name )
+{
+   const auto& idx = db->get_index< witness_index >().indices().get< by_name >();
+   auto found = idx.find( witness_name );
+
+   if( found == idx.end() )
+      return 0;
+   else
+      return found->votes.value;
+}
+
+int32_t delayed_vote_database_fixture::get_user_voted_witness_count( const account_name_type& name )
+{
+   int32_t res = 0;
+
+   const auto& vidx = db->get_index< witness_vote_index >().indices().get<by_account_witness>();
+   auto itr = vidx.lower_bound( boost::make_tuple( name, account_name_type() ) );
+   while( itr != vidx.end() && itr->account == name )
+   {
+      ++itr;
+      ++res;
+   }
+   return res;
+}
+
+asset delayed_vote_database_fixture::to_vest( const asset& liquid, const bool to_reward_balance )
+{
+   const auto& cprops = db->get_dynamic_global_properties();
+   price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price();
+
+   return liquid * ( vesting_share_price );
+}
+
+template< typename COLLECTION >
+fc::optional< size_t > delayed_vote_database_fixture::get_position_in_delayed_voting_array( const COLLECTION& collection, size_t day, size_t minutes )
+{
+   if( collection.empty() )
+      return fc::optional< size_t >();
+
+   auto time = collection[ 0 ].time + fc::days( day ) + fc::minutes( minutes );
+
+   size_t idx = 0;
+   for( auto& item : collection )
+   {
+      auto end_of_day = item.time + fc::days( 1 );
+
+      if( end_of_day > time )
+         return idx;
+
+      ++idx;
+   }
+
+   return fc::optional< size_t >();
+}
+
+template< typename COLLECTION >
+bool delayed_vote_database_fixture::check_collection( const COLLECTION& collection, ushare_type idx, const fc::time_point_sec& time, const ushare_type val )
+{
+   if( idx.value >= collection.size() )
+      return false;
+   else
+   {
+      bool check_time = collection[ idx.value ].time == time;
+      bool check_val = collection[ idx.value ].val == val;
+      return check_time && check_val;
+   }
+}
+
+template< typename COLLECTION >
+bool delayed_vote_database_fixture::check_collection( const COLLECTION& collection, const bool withdraw_executor, const share_type val, const account_object& obj )
+{
+   auto found = collection->find( { withdraw_executor, val, &obj } );
+   if( found == collection->end() )
+      return false;
+
+   if( !found->account )
+      return false;
+   return ( found->withdraw_executor == withdraw_executor ) && ( found->val == val ) && ( found->account->id == obj.id );
+}
+
+using dvd_vector = std::vector< delayed_votes_data >;
+using bip_dvd_vector = chainbase::t_vector< delayed_votes_data >;
+
+template fc::optional< size_t > delayed_vote_database_fixture::get_position_in_delayed_voting_array< bip_dvd_vector >( const bip_dvd_vector& collection, size_t day, size_t minutes );
+template bool delayed_vote_database_fixture::check_collection< dvd_vector >( const dvd_vector& collection, ushare_type idx, const fc::time_point_sec& time, const ushare_type val );
+template bool delayed_vote_database_fixture::check_collection< bip_dvd_vector >( const bip_dvd_vector& collection, ushare_type idx, const fc::time_point_sec& time, const ushare_type val );
+template bool delayed_vote_database_fixture::check_collection< delayed_voting::opt_votes_update_data_items >( const delayed_voting::opt_votes_update_data_items& collection, const bool withdraw_executor, const share_type val, const account_object& obj );
 
 json_rpc_database_fixture::json_rpc_database_fixture()
 {

@@ -152,6 +152,9 @@ struct api_account_object
    {
       voting_power = _compute_voting_power(a);
       proxied_vsf_votes.insert( proxied_vsf_votes.end(), a.proxied_vsf_votes.begin(), a.proxied_vsf_votes.end() );
+
+      if( a.delayed_votes.valid() )
+         delayed_votes = vector< delayed_votes_data >{ a.delayed_votes->begin(), a.delayed_votes->end() };
    }
 
    api_account_object(){}
@@ -228,6 +231,8 @@ struct api_account_object
    uint32_t          post_bandwidth = 0;
 
    share_type        pending_claimed_accounts = 0;
+
+   fc::optional< vector< delayed_votes_data > > delayed_votes;
 };
 
 struct extended_account : public api_account_object
@@ -1214,6 +1219,7 @@ FC_REFLECT( steem::plugins::condenser_api::api_account_object,
              (proxied_vsf_votes)(witnesses_voted_for)
              (last_post)(last_root_post)(last_vote_time)
              (post_bandwidth)(pending_claimed_accounts)
+             (delayed_votes)
           )
 
 FC_REFLECT_DERIVED( steem::plugins::condenser_api::extended_account, (steem::plugins::condenser_api::api_account_object),

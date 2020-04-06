@@ -122,6 +122,9 @@
 #define STEEM_VOTE_DUST_THRESHOLD             (50000000)
 #define STEEM_DOWNVOTE_POOL_PERCENT_HF21      (25*STEEM_1_PERCENT)
 
+#define STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS   (60*60*24*30)//30 days
+#define STEEM_DELAYED_VOTING_INTERVAL_SECONDS         (60*60*24*1)// 1 day
+
 #define STEEM_MIN_ROOT_COMMENT_INTERVAL       (fc::seconds(60*5)) // 5 minutes
 #define STEEM_MIN_REPLY_INTERVAL              (fc::seconds(20)) // 20 seconds
 #define STEEM_MIN_REPLY_INTERVAL_HF20         (fc::seconds(3)) // 3 seconds
