@@ -25,8 +25,6 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
       */
       FC_ASSERT(o.end_date > _db.head_block_time(), "Can't create inactive proposals...");
 
-      asset fee_sbd( STEEM_TREASURY_FEE, SBD_SYMBOL );
-
       //treasury account must exist, also we need it later to change its balance
       const auto& treasury_account =_db.get_account( STEEM_TREASURY_ACCOUNT );
 
@@ -46,9 +44,10 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
 
       _db.create< proposal_object >( o.creator, o.receiver, o.start_date, o.end_date, o.daily_pay, o.subject, o.permlink );
 
-      _db.adjust_balance( owner_account, -fee_sbd );
+      TTempBalance fee_balance( SBD_SYMBOL );
+      _db.adjust_balance( owner_account, &fee_balance, -STEEM_TREASURY_FEE );
       /// Fee shall be paid to the treasury
-      _db.adjust_balance(treasury_account, fee_sbd );
+      _db.adjust_balance(treasury_account, &fee_balance, STEEM_TREASURY_FEE );
    }
    FC_CAPTURE_AND_RETHROW( (o) )
 }

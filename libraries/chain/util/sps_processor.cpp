@@ -119,7 +119,8 @@ asset sps_processor::get_treasury_fund()
 asset sps_processor::get_daily_inflation()
 {
    FC_TODO( "to invent how to get inflation needed for HIVE_TREASURY_ACCOUNT" )
-   return asset( 0, SBD_SYMBOL );
+   return asset( 0, SBD_SYMBOL ); //ABW: if you change it to nonzero you'd need to actually issue that asset and use balance object to transfer it;
+     //for now that code is cut out to reduce amount of changes
 }
 
 asset sps_processor::calculate_maintenance_budget( const time_point_sec& head_time )
@@ -165,8 +166,8 @@ void sps_processor::transfer_daily_inflation_to_treasury( const asset& daily_inf
 #ifdef IS_TEST_NET
    if( daily_inflation.amount.value > 0 )
    {
-      const auto& treasury_account = db.get_account( STEEM_TREASURY_ACCOUNT );
-      db.adjust_balance( treasury_account, daily_inflation );
+      //const auto& treasury_account = db.get_account( STEEM_TREASURY_ACCOUNT );
+      //db.adjust_balance( treasury_account, daily_inflation ); //ABW: see get_daily_inflation()
    }
 #endif
 }
@@ -189,8 +190,9 @@ void sps_processor::transfer_payments( const time_point_sec& head_time, asset& m
       /// Push vop to be recorded by other parts (like AH plugin etc.)
       db.push_virtual_operation(vop);
       /// Virtual ops have no evaluators, so operation must be immediately "evaluated"
-      db.adjust_balance( treasury_account, -payment );
-      db.adjust_balance( receiver_account, payment );
+      TTempBalance payment_balance( payment.symbol );
+      db.adjust_balance( treasury_account, &payment_balance, -payment.amount.value );
+      db.adjust_balance( receiver_account, &payment_balance, payment.amount.value );
    };
 
    for( auto& item : proposals )

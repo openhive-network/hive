@@ -1266,7 +1266,7 @@ void exp_rc_data::to_variant( fc::variant& v )const
 
 int64_t get_maximum_rc( const account_object& account, const rc_account_object& rc_account )
 {
-   int64_t result = account.vesting_shares.amount.value;
+   int64_t result = account.get_vesting_shares().amount.value;
    result = fc::signed_sat_sub( result, account.delegated_vesting_shares.amount.value );
    result = fc::signed_sat_add( result, account.received_vesting_shares.amount.value );
    result = fc::signed_sat_add( result, rc_account.max_rc_creation_adjustment.amount.value );

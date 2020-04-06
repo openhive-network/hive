@@ -99,7 +99,7 @@ template< typename T >
 int64_t get_effective_vesting_shares( const T& account )
 {
    int64_t effective_vesting_shares =
-        account.vesting_shares.amount.value              // base vesting shares
+        account.get_vesting_shares().amount.value        // base vesting shares
       + account.received_vesting_shares.amount.value     // incoming delegations
       - account.delegated_vesting_shares.amount.value;   // outgoing delegations
 

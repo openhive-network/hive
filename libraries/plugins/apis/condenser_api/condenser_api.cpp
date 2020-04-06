@@ -2012,9 +2012,9 @@ namespace detail
 
       asset pot;
       if( _db.has_hardfork( STEEM_HARDFORK_0_17__774 ) )
-         pot = _db.get_reward_fund( _db.get_comment( d.author, d.permlink ) ).reward_balance;
+         pot = _db.get_reward_fund( _db.get_comment( d.author, d.permlink ) ).get_reward_balance();
       else
-         pot = props.total_reward_fund_steem;
+         pot = props.get_total_reward_fund_steem();
 
       if( !hist.current_median_history.is_null() ) pot = pot * hist.current_median_history;
 

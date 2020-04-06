@@ -6,9 +6,12 @@ namespace steem { namespace chain {
 
 class account_object;
 class convert_request_object;
+class dynamic_global_property_object;
 class escrow_object;
 class limit_order_object;
+class reward_fund_object;
 class savings_withdraw_object;
+class smt_contribution_object;
 
 /**
  * Balance object keeps existing tokens and only allows them to be moved to another balance.
@@ -22,9 +25,12 @@ class ABalance
    public:
       const protocol::asset& as_asset() const { return WrappedAsset; }
       operator const protocol::asset& () const { return as_asset(); }
+      int64_t get_value() const { return WrappedAsset.amount.value; }
 
       // Forces empty balance
       void check_empty() const { FC_ASSERT( WrappedAsset.amount == 0 ); }
+      // Tells if balance is valid (non-negative)
+      bool is_valid() const { return WrappedAsset.amount >= 0; }
 
       // Moves value from given source balance to current one
       void transfer_from( ABalance* source, int64_t value )
@@ -32,14 +38,14 @@ class ABalance
          FC_ASSERT( WrappedAsset.symbol == source->WrappedAsset.symbol, "Can't change asset type when transfering balance." );
          WrappedAsset.amount += value;
          source->WrappedAsset.amount -= value;
-         FC_ASSERT( WrappedAsset.amount >= 0 && source->WrappedAsset.amount >= 0, "Insufficient funds to complete transfer." );
+         FC_ASSERT( is_valid() && source->is_valid(), "Insufficient funds to complete transfer." );
       }
       // Moves whole given balance to current one
-      void transfer_from( ABalance* source ) { transfer_from( source, source->WrappedAsset.amount.value ); }
+      void transfer_from( ABalance* source ) { transfer_from( source, source->get_value() ); }
       // Moves value from current balance to given one
-      void transfer_to( ABalance* destination, int64_t value ) { destination->transfer_from( this, -value ); }
+      void transfer_to( ABalance* destination, int64_t value ) { destination->transfer_from( this, value ); }
       // Moves whole current balance to given one
-      void transfer_to( ABalance* destination ) { destination->transfer_from( this, -destination->WrappedAsset.amount.value ); }
+      void transfer_to( ABalance* destination ) { destination->transfer_from( this, get_value() ); }
 
    protected:
       ABalance( protocol::asset& wrapped_asset ) : WrappedAsset( wrapped_asset ) {}
@@ -71,8 +77,17 @@ class ABalance
 class TTempBalance final : public ABalance
 {
    public:
-      TTempBalance( protocol::asset_symbol_type id = STEEM_SYMBOL ) : ABalance( Asset ), Asset( 0, id ) {}
-      ~TTempBalance() { check_empty(); }
+      TTempBalance( protocol::asset_symbol_type id ) : ABalance( Asset ), Asset( 0, id ) {}
+      ~TTempBalance()
+      {
+         if( !std::uncaught_exception() ) //don't check - this is follow-up error caused by unwinding already in progress
+           check_empty();
+      }
+
+   private:
+      // copying of balance is forbidden, it would create tokens out of thin air
+      TTempBalance( const TTempBalance& ) = delete;
+      TTempBalance& operator= ( const TTempBalance& ) = delete;
 
       /**
        * Allows creation of new tokens into current balance.
@@ -94,12 +109,9 @@ class TTempBalance final : public ABalance
          Asset -= a;
       }
 
-   private:
-      // copying of balance is forbidden, it would create tokens out of thin air
-      TTempBalance( const TTempBalance& ) = delete;
-      TTempBalance& operator= ( const TTempBalance& ) = delete;
-
       protocol::asset Asset;
+
+      friend class dynamic_global_property_object; //only that class can issue or burn tokens as it contains total supply counters
 };
 
 /**
@@ -110,7 +122,7 @@ class TBalance final : public ABalance
 {
    public:
       TBalance( TBalance&& b ) : ABalance( std::move( b ) ) {}
-      TBalance& operator= ( TBalance&& b ) { move_balance( std::move( b ) ); return *this; }
+      TBalance& operator= ( ABalance&& b ) { move_balance( std::move( b ) ); return *this; }
 
    private:
       TBalance( protocol::asset& balance_variable ) : ABalance( balance_variable ) {}
@@ -122,17 +134,22 @@ class TBalance final : public ABalance
       //list all objects that have members that hold balance - other places should use TTempBalance
       friend class account_object;
       friend class convert_request_object;
+      friend class dynamic_global_property_object;
       friend class escrow_object;
       friend class limit_order_object;
+      friend class reward_fund_object;
       friend class savings_withdraw_object;
+      friend class smt_contribution_object;
 };
 
-#define BALANCE( member_name, asset_symbol, getter_name )      \
+#define BALANCE( member_name, getter_name )                    \
    public:                                                     \
       const asset& getter_name() const { return member_name; } \
-      asset& getter_name() { return member_name; }             \
+      TBalance getter_name() { return member_name; }           \
    private:                                                    \
-      asset member_name = asset( 0, asset_symbol )
-   
+      asset member_name
+#define HIVE_BALANCE( member_name, getter_name ) BALANCE( member_name, getter_name ) = asset( 0, STEEM_SYMBOL )
+#define HBD_BALANCE( member_name, getter_name ) BALANCE( member_name, getter_name ) = asset( 0, SBD_SYMBOL )
+#define VEST_BALANCE( member_name, getter_name ) BALANCE( member_name, getter_name ) = asset( 0, VESTS_SYMBOL )
 
 } } // namespace steem::chain

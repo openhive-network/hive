@@ -25,13 +25,98 @@ namespace steem { namespace chain {
    {
       public:
          template< typename Constructor, typename Allocator >
-         dynamic_global_property_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
+         dynamic_global_property_object( allocator< Allocator > a, int64_t _id,
+            TTempBalance* created_initial_supply, TTempBalance* created_initial_sbd_supply, Constructor&& c )
             : id( _id )
          {
             c( *this );
+            created_initial_supply->issue_asset( get_full_steem_supply() );
+            created_initial_sbd_supply->issue_asset( get_full_sbd_supply() );
          }
 
-         dynamic_global_property_object(){}
+         dynamic_global_property_object(){} //ABW: used by json_rpc_plugin
+
+         void on_remove() const
+         {
+            FC_ASSERT( ( total_vesting_fund_steem.amount == 0 ) && ( total_reward_fund_steem.amount == 0 ) &&
+               ( pending_rewarded_vesting_steem.amount == 0 ), "HIVE tokens not transfered out before dynamic_global_property_object removal." );
+         }
+
+         // all HIVE in circulation
+         asset get_full_steem_supply() const { return current_supply; }
+         // creates new HIVE tokens
+         void issue_steem( TTempBalance* balance, const asset& amount )
+         {
+            current_supply += amount;
+            balance->issue_asset( amount );
+         }
+         // removes existing HIVE tokens
+         void burn_steem( TTempBalance* balance, const asset& amount )
+         {
+            current_supply -= amount;
+            balance->burn_asset( amount );
+         }
+
+         /**
+          * all HBD in circulation
+          * Note: initial supply does not take part in interest calculation, that's why it is separate from current_sbd_supply
+          */
+         asset get_full_sbd_supply() const
+         {
+            return current_sbd_supply + init_sbd_supply;
+         }
+         // creates new HBD tokens
+         void issue_sbd( TTempBalance* balance, const asset& amount )
+         {
+            current_sbd_supply += amount;
+            balance->issue_asset( amount );
+         }
+         // removes existing HIVE tokens
+         void burn_sbd( TTempBalance* balance, const asset& amount )
+         {
+            current_sbd_supply -= amount;
+            balance->burn_asset( amount );
+         }
+
+         /**
+          * all VESTS in circulation
+          * Note: the counters used here act as a counterweight for total_vesting_fund_steem and pending_rewarded_vesting_steem
+          * pool balances respectively, that's why they are not a single counter
+          */
+         asset get_full_vest_supply() const
+         {
+            return total_vesting_shares + pending_rewarded_vesting_shares;
+         }
+         // creates new VESTS taking liquid HIVE to the pool
+         void issue_vests( TTempBalance* balance, const asset& amount, TTempBalance* liquid, const asset& liquid_amount, bool to_reward = false )
+         {
+            if( to_reward )
+            {
+               pending_rewarded_vesting_shares += amount;
+               get_pending_rewarded_vesting_steem().transfer_from( liquid, liquid_amount.amount.value );
+            }
+            else
+            {
+               total_vesting_shares += amount;
+               get_total_vesting_fund_steem().transfer_from( liquid, liquid_amount.amount.value );
+            }
+            balance->issue_asset( amount );
+         }
+         // removes existing VESTS and gives out liquid HIVE from the pool
+         void burn_vests( TTempBalance* balance, const asset& amount, TTempBalance* liquid, const asset& liquid_amount, bool from_reward = false )
+         {
+            if( from_reward )
+            {
+               pending_rewarded_vesting_shares -= amount;
+               get_pending_rewarded_vesting_steem().transfer_to( liquid, liquid_amount.amount.value );
+            }
+            else
+            {
+               total_vesting_shares -= amount;
+               get_total_vesting_fund_steem().transfer_to( liquid, liquid_amount.amount.value );
+            }
+            balance->burn_asset( amount );
+         }
 
          id_type           id;
 
@@ -58,12 +143,15 @@ namespace steem { namespace chain {
          asset       init_sbd_supply            = asset( 0, SBD_SYMBOL );
          asset       current_sbd_supply         = asset( 0, SBD_SYMBOL );
          asset       confidential_sbd_supply    = asset( 0, SBD_SYMBOL ); ///< total asset held in confidential balances
-         asset       total_vesting_fund_steem   = asset( 0, STEEM_SYMBOL );
-         asset       total_vesting_shares       = asset( 0, VESTS_SYMBOL );
-         asset       total_reward_fund_steem    = asset( 0, STEEM_SYMBOL );
+         HIVE_BALANCE( total_vesting_fund_steem, get_total_vesting_fund_steem );
+      public:
+         asset       total_vesting_shares       = asset( 0, VESTS_SYMBOL ); //ABW: count be just number - counterweight for total_vesting_fund_steem
+         HIVE_BALANCE( total_reward_fund_steem, get_total_reward_fund_steem );
+      public:
          fc::uint128 total_reward_shares2; ///< the running total of REWARD^2
-         asset       pending_rewarded_vesting_shares = asset( 0, VESTS_SYMBOL );
-         asset       pending_rewarded_vesting_steem  = asset( 0, STEEM_SYMBOL );
+         asset       pending_rewarded_vesting_shares = asset( 0, VESTS_SYMBOL ); //ABW: count be just number - counterweight for pending_rewarded_vesting_steem balance
+         HIVE_BALANCE( pending_rewarded_vesting_steem, get_pending_rewarded_vesting_steem );
+      public:
 
          price       get_vesting_share_price() const
          {
@@ -151,6 +239,7 @@ namespace steem { namespace chain {
 #ifdef STEEM_ENABLE_SMT
          asset smt_creation_fee = asset( 1000, SBD_SYMBOL );
 #endif
+         friend class fc::reflector<dynamic_global_property_object>;
    };
 
    typedef multi_index_container<

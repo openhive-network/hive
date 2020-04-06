@@ -17,6 +17,9 @@
 namespace steem { namespace chain {
 
    using steem::protocol::authority;
+   class account_object;
+   class database;
+   void split_vesting_shares( database&, const account_object&, uint32_t );
 
    class account_object : public object< account_object_type, account_object >
    {
@@ -43,6 +46,35 @@ namespace steem { namespace chain {
             c( *this );
          }
 
+         void on_remove() const
+         {
+            FC_ASSERT( ( balance.amount == 0 ) && ( savings_balance.amount == 0 ) && ( reward_steem_balance.amount == 0 ),
+               "HIVE tokens not transfered out before account_object removal." );
+            FC_ASSERT( ( sbd_balance.amount == 0 ) && ( savings_sbd_balance.amount == 0 ) && ( reward_sbd_balance.amount == 0 ),
+               "HBD tokens not transfered out before account_object removal." );
+            FC_ASSERT( ( vesting_shares.amount == 0 ) && ( reward_vesting_balance.amount == 0 ),
+               "VESTS not transfered out before account_object removal." );
+         }
+
+         /**
+          * how much VESTS that account has that can still be delegated.
+          * Note: that is total amount of VESTS minus those that are already delegated (note that received vests cannot be delegated further)
+          * further reduced by those that are in the process of withdrawal.
+          */
+         asset get_vesting_shares_available_for_delegation() const
+         {
+            return vesting_shares - delegated_vesting_shares - asset( to_withdraw - withdrawn, VESTS_SYMBOL );
+         }
+         /**
+          * how much VESTS that account has that can be withdrawn.
+          * Note: that is total amount of VESTS minus those that are currently delegated (have to be undelegated first to withdraw);
+          * those that are in the process of withdrawal can be withdrawn as new withdrawal schedule overrides previous one.
+          */
+         asset get_vesting_shares_available_for_withdraw() const
+         {
+            return vesting_shares - delegated_vesting_shares;
+         }
+
          id_type           id;
 
          account_name_type name;
@@ -64,8 +96,8 @@ namespace steem { namespace chain {
          util::manabar     voting_manabar;
          util::manabar     downvote_manabar;
 
-         BALANCE( balance, STEEM_SYMBOL, get_balance ); ///< total liquid shares held by this account
-         BALANCE( savings_balance, STEEM_SYMBOL, get_savings );  ///< total liquid shares held by this account
+         HIVE_BALANCE( balance, get_balance ); ///< total liquid shares held by this account
+         HIVE_BALANCE( savings_balance, get_savings );  ///< total liquid shares held by this account
 
          /**
           *  HBD Deposits pay interest based upon the interest rate set by witnesses. The purpose of these
@@ -81,14 +113,14 @@ namespace steem { namespace chain {
           *  @defgroup sbd_data sbd Balance Data
           */
          ///@{
-         BALANCE( sbd_balance, SBD_SYMBOL, get_sbd_balance ); /// total sbd balance
+         HBD_BALANCE( sbd_balance, get_sbd_balance ); /// total sbd balance
       public:
          uint128_t         sbd_seconds; ///< total sbd * how long it has been held
          time_point_sec    sbd_seconds_last_update; ///< the last time the sbd_seconds was updated
          time_point_sec    sbd_last_interest_payment; ///< used to pay interest at most once per month
 
 
-         BALANCE( savings_sbd_balance, SBD_SYMBOL, get_sbd_savings ); /// total sbd balance
+         HBD_BALANCE( savings_sbd_balance, get_sbd_savings ); /// total sbd balance
       public:
          uint128_t         savings_sbd_seconds; ///< total sbd * how long it has been held
          time_point_sec    savings_sbd_seconds_last_update; ///< the last time the sbd_seconds was updated
@@ -97,20 +129,21 @@ namespace steem { namespace chain {
          uint8_t           savings_withdraw_requests = 0;
          ///@}
 
-         BALANCE( reward_sbd_balance, SBD_SYMBOL, get_sbd_rewards );
-         BALANCE( reward_steem_balance, STEEM_SYMBOL, get_rewards );
+         HBD_BALANCE( reward_sbd_balance, get_sbd_rewards );
+         HIVE_BALANCE( reward_steem_balance, get_rewards );
+         VEST_BALANCE( reward_vesting_balance, get_vest_rewards );
       public:
-         asset             reward_vesting_balance = asset( 0, VESTS_SYMBOL );
-         asset             reward_vesting_steem = asset( 0, STEEM_SYMBOL );
+         asset             reward_vesting_steem = asset( 0, STEEM_SYMBOL ); //ABW: could be just number since it represents counterweight for reward_vesting_balance
 
          share_type        curation_rewards = 0;
          share_type        posting_rewards = 0;
 
-         asset             vesting_shares = asset( 0, VESTS_SYMBOL ); ///< total vesting shares held by this account, controls its voting power
-         asset             delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
-         asset             received_vesting_shares = asset( 0, VESTS_SYMBOL );
+         VEST_BALANCE( vesting_shares, get_vesting_shares ); ///< total vesting shares held by this account, controls its voting power
+      public:
+         asset             delegated_vesting_shares = asset( 0, VESTS_SYMBOL ); //ABW: could be just value
+         asset             received_vesting_shares = asset( 0, VESTS_SYMBOL ); //ABW: could be just value
 
-         asset             vesting_withdraw_rate = asset( 0, VESTS_SYMBOL ); ///< at the time this is updated it can be at most vesting_shares/104
+         asset             vesting_withdraw_rate = asset( 0, VESTS_SYMBOL ); ///< at the time this is updated it can be at most vesting_shares/104 //ABW: could be just value
          time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
          share_type        withdrawn = 0; /// Track how many shares have been withdrawn
          share_type        to_withdraw = 0; /// Might be able to look this up with operation history.
@@ -141,6 +174,7 @@ namespace steem { namespace chain {
          }
 
          friend class fc::reflector<account_object>;
+         friend void split_vesting_shares( database&, const account_object&, uint32_t );
    };
 
    class account_metadata_object : public object< account_metadata_object_type, account_metadata_object >

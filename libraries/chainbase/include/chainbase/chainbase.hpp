@@ -125,6 +125,20 @@ namespace chainbase {
    {
       typedef oid<Derived> id_type;
       static const uint16_t type_id = TypeNumber;
+
+      /**
+       * Called AFTER modification of the object.
+       * Redefine in concrete serializable object to add extra validation or logging.
+       */
+      void on_modify() const {}
+
+      /**
+       * Called BEFORE object is removed.
+       * Redefine in concrete serializable object to add extra validation or logging.
+       * Example: used by objects containing BALANCE() members to verify if balances
+       * were cleared prior to removal.
+       */
+      void on_remove() const {}
    };
 
    /** this class is ment to be specified to enable lookup of index type by object type using
@@ -255,11 +269,14 @@ namespace chainbase {
          template<typename Modifier>
          void modify( const value_type& obj, Modifier&& m ) {
             on_modify( obj );
-            auto ok = _indices.modify( _indices.iterator_to( obj ), std::forward<Modifier>( m ) );
+            auto itr = _indices.iterator_to( obj );
+            auto ok = _indices.modify( itr, std::forward<Modifier>( m ) );
             if( !ok ) BOOST_THROW_EXCEPTION( std::logic_error( "Could not modify object, most likely a uniqueness constraint was violated" ) );
+            obj.on_modify();
          }
 
          void remove( const value_type& obj ) {
+            obj.on_remove();
             on_remove( obj );
             _indices.erase( _indices.iterator_to( obj ) );
          }
@@ -268,6 +285,7 @@ namespace chainbase {
 //((bip::managed_mapped_file*)nullptr)
          template< typename ByIndex, typename IterType >
          IterType erase( IterType objI ) {
+            objI->on_remove();
             on_remove( *objI );
             return _indices.template mutable_get< ByIndex >().erase( objI );
          }
@@ -275,7 +293,8 @@ namespace chainbase {
          template< typename ByIndex >
          typename MultiIndexType::template index_iterator<ByIndex>::type erase(typename MultiIndexType::template index_iterator<ByIndex>::type objI) {
             auto& idx = _indices.template get< ByIndex >();
-            on_remove(*objI);
+            objI->on_remove();
+            on_remove( *objI );
             return idx.erase(objI);
          }
 #endif

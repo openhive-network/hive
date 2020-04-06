@@ -191,11 +191,11 @@ struct api_account_object
       savings_withdraw_requests( a.savings_withdraw_requests ),
       reward_sbd_balance( a.get_sbd_rewards() ),
       reward_steem_balance( a.get_rewards() ),
-      reward_vesting_balance( a.reward_vesting_balance ),
+      reward_vesting_balance( a.get_vest_rewards() ),
       reward_vesting_steem( a.reward_vesting_steem ),
       curation_rewards( a.curation_rewards ),
       posting_rewards( a.posting_rewards ),
-      vesting_shares( a.vesting_shares ),
+      vesting_shares( a.get_vesting_shares() ),
       delegated_vesting_shares( a.delegated_vesting_shares ),
       received_vesting_shares( a.received_vesting_shares ),
       vesting_withdraw_rate( a.vesting_withdraw_rate ),
@@ -291,6 +291,7 @@ struct api_account_object
    share_type        posting_rewards;
 
    asset             vesting_shares;
+   asset             get_vesting_shares() const { return vesting_shares; }
    asset             delegated_vesting_shares;
    asset             received_vesting_shares;
    asset             vesting_withdraw_rate;

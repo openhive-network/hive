@@ -413,31 +413,32 @@ void database_fixture::fund(
    {
       db_plugin->debug_update( [=]( database& db)
       {
+         TTempBalance balance( amount.symbol );
          if( amount.symbol.space() == asset_symbol_type::smt_nai_space )
          {
-            db.adjust_balance(account_name, amount);
-            db.adjust_supply(amount);
+            db.adjust_supply( &balance, amount.amount.value );
             // Note that SMT have no equivalent of SBD, hence no virtual supply, hence no need to update it.
+            db.adjust_balance(account_name, &balance, balance.get_value() );
             return;
          }
+
+         db.modify( db.get_dynamic_global_properties(), [ & ]( dynamic_global_property_object& gpo )
+         {
+            if( amount.symbol == STEEM_SYMBOL )
+               gpo.issue_steem( &balance, amount );
+            else if( amount.symbol == SBD_SYMBOL )
+               gpo.issue_sbd( &balance, amount );
+         } );
 
          db.modify( db.get_account( account_name ), [&]( account_object& a )
          {
             if( amount.symbol == STEEM_SYMBOL )
-               a.get_balance() += amount;
+               a.get_balance().transfer_from( &balance );
             else if( amount.symbol == SBD_SYMBOL )
             {
-               a.get_sbd_balance() += amount;
+               a.get_sbd_balance().transfer_from( &balance );
                a.sbd_seconds_last_update = db.head_block_time();
             }
-         });
-
-         db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
-         {
-            if( amount.symbol == STEEM_SYMBOL )
-               gpo.current_supply += amount;
-            else if( amount.symbol == SBD_SYMBOL )
-               gpo.current_sbd_supply += amount;
          });
 
          if( amount.symbol == SBD_SYMBOL )
@@ -462,19 +463,21 @@ void database_fixture::convert(
 {
    try
    {
+      TTempBalance steem_balance( STEEM_SYMBOL );
+      TTempBalance sbd_balance( SBD_SYMBOL );
       if ( amount.symbol == STEEM_SYMBOL )
       {
-         db->adjust_balance( account_name, -amount );
-         db->adjust_balance( account_name, db->to_sbd( amount ) );
-         db->adjust_supply( -amount );
-         db->adjust_supply( db->to_sbd( amount ) );
+         db->adjust_balance( account_name, &steem_balance, -amount.amount.value );
+         db->adjust_supply( &steem_balance, -steem_balance.get_value() );
+         db->adjust_supply( &sbd_balance, db->to_sbd( amount ).amount.value );
+         db->adjust_balance( account_name, &sbd_balance, sbd_balance.get_value() );
       }
       else if ( amount.symbol == SBD_SYMBOL )
       {
-         db->adjust_balance( account_name, -amount );
-         db->adjust_balance( account_name, db->to_steem( amount ) );
-         db->adjust_supply( -amount );
-         db->adjust_supply( db->to_steem( amount ) );
+         db->adjust_balance( account_name, &sbd_balance, -amount.amount.value );
+         db->adjust_supply( &sbd_balance, -sbd_balance.get_value() );
+         db->adjust_supply( &steem_balance, db->to_steem( amount ).amount.value );
+         db->adjust_balance( account_name, &steem_balance, steem_balance.get_value() );
       }
    } FC_CAPTURE_AND_RETHROW( (account_name)(amount) )
 }

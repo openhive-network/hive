@@ -365,26 +365,24 @@ namespace steem { namespace chain {
 
          /** @return the sbd created and deposited to_account, may return STEEM if there is no median feed */
          std::pair< asset, asset > create_sbd( const account_object& to_account, asset steem, bool to_reward_balance=false );
-         asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false );
+         asset create_vesting( const account_object& to_account, TTempBalance&& _liquid, bool to_reward_balance = false );
          void adjust_total_payout( const comment_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value );
 
          void adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_bid );
-         void adjust_balance( const account_object& a/*, TTempBalance* balance*/, const asset& delta );
-         void adjust_balance( const account_name_type& name/*, TTempBalance* balance*/, const asset& delta )
+         void adjust_balance( const account_object& a, TTempBalance* _balance, int64_t delta );
+         void adjust_balance( const account_name_type& name, TTempBalance* _balance, int64_t delta )
          {
-            adjust_balance( get_account( name )/*, balance*/, delta );
+            adjust_balance( get_account( name ), _balance, delta );
          }
 
-         void adjust_savings_balance( const account_object& a/*, TTempBalance* balance*/, const asset& delta );
-         void adjust_reward_balance( const account_object& a/*, TTempBalance* balance*/, const asset& value_delta,
-            const asset& share_delta = asset(0,VESTS_SYMBOL) );
-         void adjust_reward_balance( const account_name_type& name/*, TTempBalance* balance*/, const asset& value_delta,
-            const asset& share_delta = asset(0,VESTS_SYMBOL) )
+         void adjust_savings_balance( const account_object& a, TTempBalance* _balance, int64_t delta );
+         void adjust_reward_balance( const account_object& a, TTempBalance* _balance, int64_t value_delta, int64_t share_delta = 0 );
+         void adjust_reward_balance( const account_name_type& name, TTempBalance* _balance, int64_t value_delta, int64_t share_delta = 0 )
          {
-            adjust_reward_balance( get_account( name )/*, balance*/, value_delta, share_delta );
+            adjust_reward_balance( get_account( name ), _balance, value_delta, share_delta );
          }
 
-         void adjust_supply( const asset& delta, bool adjust_vesting = false );
+         void adjust_supply( TTempBalance* _balance, int64_t delta, bool adjust_vesting = false );
          void adjust_rshares2( const comment_object& comment, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 );
          void update_owner_authority( const account_object& account, const authority& owner_authority );
 
@@ -423,6 +421,7 @@ namespace steem { namespace chain {
          void process_savings_withdraws();
          void process_subsidized_accounts();
          void account_recovery_processing();
+         void cancel_escrow( const escrow_object& escrow );
          void expire_escrow_ratification();
          void process_decline_voting_rights();
          void update_median_feed();
@@ -435,7 +434,8 @@ namespace steem { namespace chain {
 
          uint16_t get_curation_rewards_percent( const comment_object& c ) const;
 
-         share_type pay_reward_funds( share_type reward );
+         share_type calculate_reward_funds( share_type reward );
+         void pay_reward_funds( TTempBalance* reward_balance, share_type reward );
 
          void  pay_liquidity_reward();
 
@@ -476,7 +476,7 @@ namespace steem { namespace chain {
          vector< signed_transaction >           _pending_tx;
 
          bool apply_order( const limit_order_object& new_order_object );
-         bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
+         bool fill_order( const limit_order_object& order, const asset& pays, TTempBalance&& receives );
          void cancel_order( const limit_order_object& obj );
          int  match( const limit_order_object& bid, const limit_order_object& ask, const price& trade_price );
 
@@ -583,9 +583,8 @@ namespace steem { namespace chain {
          void adjust_smt_balance( const account_name_type& name, const asset& delta, bool check_account,
                                   balance_operator_type balance_operator );
 #endif
-         void modify_balance( const account_object& a/*, TTempBalance* balance*/, const asset& delta, bool check_balance );
-         void modify_reward_balance( const account_object& a/*, TTempBalance* balance*/, const asset& value_delta,
-            const asset& share_delta, bool check_balance );
+         void modify_balance( const account_object& a, TTempBalance* _balance, int64_t delta, bool check_balance );
+         void modify_reward_balance( const account_object& a, TTempBalance* _balance, int64_t value_delta, int64_t share_delta, bool check_balance );
 
          operation_notification create_operation_notification( const operation& op )const
          {

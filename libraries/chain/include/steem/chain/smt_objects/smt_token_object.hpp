@@ -167,11 +167,18 @@ public:
       c( *this );
    }
 
+   void on_remove() const
+   {
+      FC_ASSERT( contribution.amount == 0, "HIVE tokens not transfered out before smt_contribution_object removal." );
+   }
+
    id_type                               id;
    asset_symbol_type                     symbol;
    account_name_type                     contributor;
    uint32_t                              contribution_id;
-   asset                                 contribution;
+   HIVE_BALANCE( contribution, get_contribution() );
+
+   friend class fc::reflector<smt_contribution_object>;
 };
 
 struct by_symbol_contributor;

@@ -28,17 +28,22 @@ namespace steem { namespace chain {
       public:
          template< typename Allocator >
          convert_request_object( allocator< Allocator > a, int64_t _id,
-            const account_name_type& _owner, uint32_t _requestid, const asset& _amount, const time_point_sec& _conversion_time )
-            : id( _id ), owner( _owner ), requestid( _requestid ), amount( _amount ), conversion_date( _conversion_time )
+            const account_name_type& _owner, uint32_t _requestid, TTempBalance&& _amount, const time_point_sec& _conversion_time )
+            : id( _id ), owner( _owner ), requestid( _requestid ), conversion_date( _conversion_time )
          {
-            FC_TODO( "Use balance object" ); //also create on_remove
+            get_amount().transfer_from( &_amount );
+         }
+
+         void on_remove() const
+         {
+            FC_ASSERT( amount.amount == 0, "HBD tokens not transfered out before convert_request_object removal." );
          }
 
          id_type           id;
 
          account_name_type owner;
          uint32_t          requestid = 0; ///< id set by owner, the owner,requestid pair must be unique
-         BALANCE( amount, SBD_SYMBOL, get_amount );
+         HBD_BALANCE( amount, get_amount );
       public:
          time_point_sec    conversion_date; ///< at this time the feed_history_median_price * amount
 
@@ -52,13 +57,20 @@ namespace steem { namespace chain {
          template< typename Allocator >
          escrow_object( allocator< Allocator > a, int64_t _id,
             uint32_t _escrow_id, const account_name_type& _from, const account_name_type& _to, const account_name_type& _agent,
-            const asset& _steem_amount, const asset& _sbd_amount, const asset& _fee,
+            TTempBalance&& _steem_amount, TTempBalance&& _sbd_amount, TTempBalance&& _fee,
             const time_point_sec& _ratification_deadline, const time_point_sec& _escrow_expiration )
             : id( _id ), escrow_id( _escrow_id ), from( _from ), to( _to ), agent( _agent ),
-            ratification_deadline( _ratification_deadline ), escrow_expiration( _escrow_expiration ),
-            sbd_balance( _sbd_amount ), steem_balance( _steem_amount ), pending_fee( _fee )
+            ratification_deadline( _ratification_deadline ), escrow_expiration( _escrow_expiration )
          {
-            FC_TODO( "Use balance object" ); //also add on_remove
+            get_steem_balance().transfer_from( &_steem_amount );
+            get_sbd_balance().transfer_from( &_sbd_amount );
+            get_fee() = std::move( _fee );
+         }
+
+         void on_remove() const
+         {
+            FC_ASSERT( ( sbd_balance.amount == 0 ) && ( steem_balance.amount == 0 ) && ( pending_fee.amount == 0 ),
+               "HIVE/HBD tokens not transfered out before escrow_object removal." );
          }
 
          id_type           id;
@@ -69,9 +81,9 @@ namespace steem { namespace chain {
          account_name_type agent;
          time_point_sec    ratification_deadline;
          time_point_sec    escrow_expiration;
-         BALANCE( sbd_balance, SBD_SYMBOL, get_sbd_balance );
-         BALANCE( steem_balance, STEEM_SYMBOL, get_steem_balance );
-         BALANCE( pending_fee, STEEM_SYMBOL, get_fee ); //fee can use HBD as well
+         HBD_BALANCE( sbd_balance, get_sbd_balance );
+         HIVE_BALANCE( steem_balance, get_steem_balance );
+         BALANCE( pending_fee, get_fee ); //fee can use HIVE or HBD
       public:
          bool              to_approved = false;
          bool              agent_approved = false;
@@ -88,13 +100,18 @@ namespace steem { namespace chain {
       public:
          template< typename Allocator >
          savings_withdraw_object( allocator< Allocator > a, int64_t _id,
-            const account_name_type& _from, const account_name_type& _to, const asset& _amount,
+            const account_name_type& _from, const account_name_type& _to, TTempBalance&& _amount,
             const string& _memo, uint32_t _request_id, const time_point_sec& _time_of_completion )
             : id( _id ), from( _from ), to( _to ), memo( a ), request_id( _request_id ),
-            amount( _amount ), complete( _time_of_completion )
+            complete( _time_of_completion )
          {
             from_string( memo, _memo );
-            FC_TODO( "Use balance object" ); //also define on_remove
+            get_amount() = std::move( _amount );
+         }
+
+         void on_remove() const
+         {
+            FC_ASSERT( amount.amount == 0, "HIVE/HBD tokens not transfered out before savings_withdraw_object removal." );
          }
 
          id_type           id;
@@ -103,7 +120,7 @@ namespace steem { namespace chain {
          account_name_type to;
          shared_string     memo;
          uint32_t          request_id = 0;
-         BALANCE( amount, STEEM_SYMBOL, get_amount ); //can also be expressed in HBD
+         BALANCE( amount, get_amount ); //can be expressed in HIVE or HBD
       public:
          time_point_sec    complete;
 
@@ -201,11 +218,17 @@ namespace steem { namespace chain {
          template< typename Allocator >
          limit_order_object( allocator< Allocator > a, int64_t _id,
             const time_point_sec& _creation_time, const time_point_sec& _expiration_time, const account_name_type& _seller,
-            uint32_t _orderid, const asset& _amount_to_sell, const price& _sell_price )
+            uint32_t _orderid, TTempBalance&& _amount_to_sell, const price& _sell_price )
             : id( _id ), created( _creation_time ), expiration( _expiration_time ), seller( _seller ),
-            orderid( _orderid ), for_sale( _amount_to_sell ), sell_price( _sell_price )
+            orderid( _orderid ), sell_price( _sell_price )
          {
-            FC_TODO( "Use balance object" ); //also define on_remove
+            FC_ASSERT( _amount_to_sell.as_asset().symbol == _sell_price.base.symbol );
+            amount_for_sale() = std::move( _amount_to_sell );
+         }
+
+         void on_remove() const
+         {
+            FC_ASSERT( for_sale.amount == 0, "Tokens not transfered out before limit_order_object removal." );
          }
 
          id_type           id;
@@ -214,7 +237,7 @@ namespace steem { namespace chain {
          time_point_sec    expiration;
          account_name_type seller;
          uint32_t          orderid = 0;
-         BALANCE( for_sale, STEEM_SYMBOL, amount_for_sale ); ///< actual asset id equals sell_price.base.symbol
+         BALANCE( for_sale, amount_for_sale ); ///< actual asset id equals sell_price.base.symbol
       public:
          price             sell_price;
 
@@ -281,9 +304,15 @@ namespace steem { namespace chain {
             c( *this );
          }
 
+         void on_remove() const
+         {
+            FC_ASSERT( reward_balance.amount == 0, "HIVE tokens not transfered out before reward_fund_object removal." );
+         }
+
          id_type                 id;
          reward_fund_name_type   name;
-         asset                   reward_balance = asset( 0, STEEM_SYMBOL );
+         HIVE_BALANCE( reward_balance, get_reward_balance );
+      public:
          fc::uint128_t           recent_claims = 0;
          time_point_sec          last_update;
          uint128_t               content_constant = 0;
@@ -291,6 +320,8 @@ namespace steem { namespace chain {
          uint16_t                percent_content_rewards = 0;
          protocol::curve_id      author_reward_curve;
          protocol::curve_id      curation_reward_curve;
+
+         friend class fc::reflector<reward_fund_object>;
    };
 
    struct by_price;

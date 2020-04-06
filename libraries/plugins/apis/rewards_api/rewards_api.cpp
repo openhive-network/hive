@@ -73,7 +73,7 @@ DEFINE_API_IMPL( rewards_api_impl, simulate_curve_payouts )
    simulated_recent_claims = fc::uint128_t( static_cast< int64_t >( simulated_recent_claims_u256 >> 64 ), static_cast< uint64_t >( simulated_recent_claims_u256 ) );
 
 
-   auto rf = chain::util::to256( reward_fund_object.reward_balance.amount.value );
+   auto rf = chain::util::to256( reward_fund_object.get_reward_balance().get_value() );
    auto total_claims = chain::util::to256( simulated_recent_claims );
 
    for ( std::size_t i = 0; i < ret.payouts.size(); ++i )
