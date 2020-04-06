@@ -58,7 +58,6 @@ class CliWallet(object):
             args["rpc_allowip"]       = self.rpc_allowip
             args["wallet_file"]       = self.wallet_file
             args["chain_id"]          = self.chain_id
-            args["wif"]               = self.wif
             for key, val in args.items():
                 if val :
                     test_args.append("--"+key.replace("_","-")+ " ")
@@ -117,7 +116,7 @@ class CliWallet(object):
             self.t.start()
             self.set_password("{0}".format("testpassword"))
             self.unlock("{0}".format("testpassword"))
-            self.import_key("{0}".format(args.wif))
+            self.import_key("{0}".format(self.cli_args.wif))
         except Exception as _ex:
             log.exception("Exception `{0}` occuress while while running cli_wallet.".format(str(_ex)))
 
