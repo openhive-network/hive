@@ -1109,6 +1109,28 @@ void delayed_vote_database_fixture::decline_voting_rights( const string& account
    push_transaction( op, key );
 }
 
+time_point_sec delayed_vote_database_fixture::move_forward_with_update( const fc::microseconds& time, delayed_voting::opt_votes_update_data_items& items )
+{
+   std::vector<std::pair<account_name_type,votes_update_data> > tmp;
+   tmp.reserve( items->size() );
+
+   for(const votes_update_data& var : *items)
+      tmp.emplace_back(var.account->name, var);
+
+   items->clear();
+
+   generate_blocks( db->head_block_time() + time );
+
+   for(const auto& var : tmp)
+   {
+      auto x = var.second;
+      x.account = &db->get_account(var.first);
+      items->insert(x);
+   }
+
+    return db->head_block_time();
+};
+
 void delayed_vote_database_fixture::withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key )
 {
    FC_ASSERT( amount.symbol == VESTS_SYMBOL, "Can only withdraw VESTS");
