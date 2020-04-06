@@ -292,34 +292,34 @@ BOOST_AUTO_TEST_CASE( basic_test_03 )
       FUND( "bob", _1000 );
       FUND( "carol", _1000 );
 
-      BOOST_REQUIRE( db->get_account( "alice" ).get_vesting_shares() == db->get_account( "bob" ).get_vesting_shares() );
-      BOOST_REQUIRE( db->get_account( "bob" ).get_vesting_shares() == db->get_account( "carol" ).get_vesting_shares() );
+      BOOST_REQUIRE( get_vesting( "alice" ) == get_vesting( "bob" ) );
+      BOOST_REQUIRE( get_vesting( "bob" ) == get_vesting( "carol" ) );
 
       {
          vest( "alice", "bob", _1, alice_private_key );
          vest( "bob", "carol", _2, bob_private_key );
          vest( "carol", "alice", _3, carol_private_key );
-         BOOST_REQUIRE_GT( db->get_account( "alice" ).get_vesting_shares().amount.value, db->get_account( "carol" ).get_vesting_shares().amount.value );
-         BOOST_REQUIRE_GT( db->get_account( "carol" ).get_vesting_shares().amount.value, db->get_account( "bob" ).get_vesting_shares().amount.value );
+         BOOST_REQUIRE_GT( get_vesting( "alice" ).amount.value, get_vesting( "carol" ).amount.value );
+         BOOST_REQUIRE_GT( get_vesting( "carol" ).amount.value, get_vesting( "bob" ).amount.value );
       }
       {
-         auto vest_bob = db->get_account( "bob" ).get_vesting_shares().amount.value;
-         auto vest_carol = db->get_account( "carol" ).get_vesting_shares().amount.value;
+         auto vest_bob = get_vesting( "bob" ).amount.value;
+         auto vest_carol = get_vesting( "carol" ).amount.value;
 
          db->clear_account( db->get_account( "alice" ) );
-         BOOST_REQUIRE( db->get_account( "alice" ).get_vesting_shares().amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).get_vesting_shares().amount.value == vest_bob );
-         BOOST_REQUIRE( db->get_account( "carol" ).get_vesting_shares().amount.value == vest_carol );
+         BOOST_REQUIRE( get_vesting( "alice" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "bob" ).amount.value == vest_bob );
+         BOOST_REQUIRE( get_vesting( "carol" ).amount.value == vest_carol );
 
          db->clear_account( db->get_account( "bob" ) );
-         BOOST_REQUIRE( db->get_account( "alice" ).get_vesting_shares().amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).get_vesting_shares().amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).get_vesting_shares().amount.value == vest_carol );
+         BOOST_REQUIRE( get_vesting( "alice" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "bob" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "carol" ).amount.value == vest_carol );
 
          db->clear_account( db->get_account( "carol" ) );
-         BOOST_REQUIRE( db->get_account( "alice" ).get_vesting_shares().amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).get_vesting_shares().amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).get_vesting_shares().amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "alice" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "bob" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "carol" ).amount.value == 0l );
       }
 
       database_fixture::validate_database();
@@ -345,22 +345,22 @@ BOOST_AUTO_TEST_CASE( basic_test_02 )
       FUND( "alice", _1000 );
       FUND( "bob", _1000 );
 
-      BOOST_REQUIRE( db->get_account( "alice" ).get_vesting_shares() == db->get_account( "bob" ).get_vesting_shares() );
+      BOOST_REQUIRE( get_vesting( "alice" ) == get_vesting( "bob" ) );
 
       {
          vest( "alice", "alice", _1, alice_private_key );
-         BOOST_REQUIRE_GT( db->get_account( "alice" ).get_vesting_shares().amount.value, db->get_account( "bob" ).get_vesting_shares().amount.value );
+         BOOST_REQUIRE_GT( get_vesting( "alice" ).amount.value, get_vesting( "bob" ).amount.value );
       }
       {
-         auto vest_bob = db->get_account( "bob" ).get_vesting_shares().amount.value;
+         auto vest_bob = get_vesting( "bob" ).amount.value;
 
          db->clear_account( db->get_account( "alice" ) );
-         BOOST_REQUIRE( db->get_account( "alice" ).get_vesting_shares().amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).get_vesting_shares().amount.value == vest_bob );
+         BOOST_REQUIRE( get_vesting( "alice" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "bob" ).amount.value == vest_bob );
 
          db->clear_account( db->get_account( "bob" ) );
-         BOOST_REQUIRE( db->get_account( "alice" ).get_vesting_shares().amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).get_vesting_shares().amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "alice" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "bob" ).amount.value == 0l );
       }
 
       database_fixture::validate_database();

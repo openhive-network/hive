@@ -983,7 +983,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
          sign( tx, alice_private_key );
          db->push_transaction( tx, 0 );
 
-         int64_t new_rshares = ( ( fc::uint128_t( db->get_account( "alice" ).get_vesting_shares().amount.value ) * used_power ) / STEEM_100_PERCENT ).to_uint64() - STEEM_VOTE_DUST_THRESHOLD;
+         int64_t new_rshares = ( ( fc::uint128_t( get_vesting( "alice" ).amount.value ) * used_power ) / STEEM_100_PERCENT ).to_uint64() - STEEM_VOTE_DUST_THRESHOLD;
 
          BOOST_REQUIRE( db->get_comment( "alice", string( "foo" ) ).cashout_time == db->get_comment( "alice", string( "foo" ) ).created + STEEM_CASHOUT_WINDOW_SECONDS );
 
@@ -1765,7 +1765,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
 
       BOOST_TEST_MESSAGE( "--- Test withdrawing minimal VESTS" );
       op.account = "bob";
-      op.vesting_shares = db->get_account( "bob" ).get_vesting_shares();
+      op.vesting_shares = get_vesting( "bob" );
       tx.clear();
       tx.operations.push_back( op );
       sign( tx, bob_private_key );
@@ -6409,7 +6409,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
 
       auto alice_steem = get_balance( "alice" );
       auto alice_sbd = get_sbd_balance( "alice" );
-      auto alice_vests = db->get_account( "alice" ).get_vesting_shares();
+      auto alice_vests = get_vesting( "alice" );
 
 
       BOOST_TEST_MESSAGE( "--- Attempting to claim more HIVE than exists in the reward balance." );
@@ -6441,7 +6441,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
       BOOST_REQUIRE( get_rewards( "alice" ) == ASSET( "10.000 TESTS" ) );
       BOOST_REQUIRE( get_sbd_balance( "alice" ) == alice_sbd + op.reward_sbd );
       BOOST_REQUIRE( get_sbd_rewards( "alice" ) == ASSET( "10.000 TBD" ) );
-      BOOST_REQUIRE( db->get_account( "alice" ).get_vesting_shares() == alice_vests + op.reward_vests );
+      BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + op.reward_vests );
       BOOST_REQUIRE( db->get_account( "alice" ).get_vest_rewards() == ASSET( "5.000000 VESTS" ) );
       BOOST_REQUIRE( db->get_account( "alice" ).reward_vesting_steem == ASSET( "5.000 TESTS" ) );
       validate_database();
@@ -6462,7 +6462,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
       BOOST_REQUIRE( get_rewards( "alice" ) == ASSET( "0.000 TESTS" ) );
       BOOST_REQUIRE( get_sbd_balance( "alice" ) == alice_sbd + op.reward_sbd );
       BOOST_REQUIRE( get_sbd_rewards( "alice" ) == ASSET( "0.000 TBD" ) );
-      BOOST_REQUIRE( db->get_account( "alice" ).get_vesting_shares() == alice_vests + op.reward_vests );
+      BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + op.reward_vests );
       BOOST_REQUIRE( db->get_account( "alice" ).get_vest_rewards() == ASSET( "0.000000 VESTS" ) );
       BOOST_REQUIRE( db->get_account( "alice" ).reward_vesting_steem == ASSET( "0.000 TESTS" ) );
             validate_database();
@@ -6695,7 +6695,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
 
       generate_block();
 
-      auto sam_vest = db->get_account( "sam" ).get_vesting_shares();
+      auto sam_vest = get_vesting( "sam" );
 
       BOOST_TEST_MESSAGE( "--- Test failure when delegating 0 VESTS" );
       tx.clear();

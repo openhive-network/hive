@@ -116,60 +116,21 @@ asset sps_processor::get_treasury_fund()
    return treasury_account.get_sbd_balance();
 }
 
-asset sps_processor::get_daily_inflation()
-{
-   FC_TODO( "to invent how to get inflation needed for HIVE_TREASURY_ACCOUNT" )
-   return asset( 0, SBD_SYMBOL ); //ABW: if you change it to nonzero you'd need to actually issue that asset and use balance object to transfer it;
-     //for now that code is cut out to reduce amount of changes
-}
-
 asset sps_processor::calculate_maintenance_budget( const time_point_sec& head_time )
 {
    //Get funds from 'treasury' account ( treasury_fund )
    asset treasury_fund = get_treasury_fund();
-
-   //Get daily proposal inflation ( daily_proposal_inflation )
-   asset daily_inflation = get_daily_inflation();
-
-   FC_ASSERT( treasury_fund.symbol == daily_inflation.symbol, "symbols must be the same" );
+   FC_ASSERT( treasury_fund.symbol == SBD_SYMBOL );
 
    //Calculate budget for given maintenance period
    uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().last_budget_time ).to_seconds();
 
    //Calculate daily_budget_limit
-   int64_t daily_budget_limit = treasury_fund.amount.value / total_amount_divider + daily_inflation.amount.value;
+   int64_t daily_budget_limit = treasury_fund.amount.value / total_amount_divider;
 
    daily_budget_limit = ( ( uint128_t( passed_time_seconds ) * daily_budget_limit ) / daily_seconds ).to_uint64();
 
-   //Transfer daily_proposal_inflation to `treasury account`
-   transfer_daily_inflation_to_treasury( daily_inflation );
-
    return asset( daily_budget_limit, treasury_fund.symbol );
-}
-
-void sps_processor::transfer_daily_inflation_to_treasury( const asset& daily_inflation )
-{
-   /*
-      Now `daily_inflation` is always zero. Take a look at `get_daily_inflation`
-
-      Comment from Michael Vandeberg:
-
-         Is this printing new SBD?
-
-         That's not how we have handled inflation in the past.
-         Either inflation should be paid, per block,
-         in to the treasury account in database::process_funds or added to a temp fund in the dgpo
-         that is then transferred in to the treasury account during maintenance.
-   */
-   FC_TODO( "to choose how to transfer inflation into HIVE_TREASURY_ACCOUNT" )
-   // Ifdeffing this out so that no inflation is accidentally created on main net.
-#ifdef IS_TEST_NET
-   if( daily_inflation.amount.value > 0 )
-   {
-      //const auto& treasury_account = db.get_account( STEEM_TREASURY_ACCOUNT );
-      //db.adjust_balance( treasury_account, daily_inflation ); //ABW: see get_daily_inflation()
-   }
-#endif
 }
 
 void sps_processor::transfer_payments( const time_point_sec& head_time, asset& maintenance_budget_limit, const t_proposals& proposals )

@@ -656,6 +656,11 @@ const asset& database_fixture::get_sbd_rewards( const string& account_name )cons
    return db->get_account( account_name ).get_sbd_rewards();
 }
 
+const asset& database_fixture::get_vesting( const string& account_name )const
+{
+   return db->get_account( account_name ).get_vesting_shares();
+}
+
 void database_fixture::sign(signed_transaction& trx, const fc::ecc::private_key& key)
 {
    trx.sign( key, db->get_chain_id(), default_sig_canon );
