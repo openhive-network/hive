@@ -1177,52 +1177,52 @@ uint32_t database::get_slot_at_time(fc::time_point_sec when)const
  *  Converts STEEM into sbd and adds it to to_account while reducing the STEEM supply
  *  by STEEM and increasing the sbd supply by the specified amount.
  */
-std::pair< asset, asset > database::create_sbd( const account_object& to_account, asset steem, bool to_reward_balance )
+std::pair< asset, asset > database::create_sbd( const account_object& to_account, TTempBalance* steem_balance,
+   int64_t steem_to_convert, bool to_reward_balance )
 {
    std::pair< asset, asset > assets( asset( 0, SBD_SYMBOL ), asset( 0, STEEM_SYMBOL ) );
-   /*ABWTODO
+
    try
    {
-      if( steem.amount == 0 )
+      if( steem_to_convert == 0 )
          return assets;
 
       const auto& median_price = get_feed_history().current_median_history;
-      const auto& gpo = get_dynamic_global_properties();
-
       if( !median_price.is_null() )
       {
-         auto to_sbd = ( gpo.sbd_print_rate * steem.amount ) / STEEM_100_PERCENT;
-         auto to_steem = steem.amount - to_sbd;
+         const auto& gpo = get_dynamic_global_properties();
+         auto to_sbd = ( gpo.sbd_print_rate * steem_to_convert ) / STEEM_100_PERCENT;
+         auto to_steem = steem_to_convert - to_sbd;
 
          auto sbd = asset( to_sbd, STEEM_SYMBOL ) * median_price;
+         TTempBalance sbd_balance( SBD_SYMBOL );
+         adjust_supply( &sbd_balance, sbd.amount.value );
+         adjust_supply( steem_balance, -to_sbd );
 
          if( to_reward_balance )
          {
-            adjust_reward_balance( to_account, sbd );
-            adjust_reward_balance( to_account, asset( to_steem, STEEM_SYMBOL ) );
+            adjust_reward_balance( to_account, &sbd_balance, sbd_balance.get_value() );
+            adjust_reward_balance( to_account, steem_balance, to_steem );
          }
          else
          {
-            adjust_balance( to_account, sbd );
-            adjust_balance( to_account, asset( to_steem, STEEM_SYMBOL ) );
+            adjust_balance( to_account, &sbd_balance, sbd_balance.get_value() );
+            adjust_balance( to_account, steem_balance, to_steem );
          }
-
-         adjust_supply( asset( -to_sbd, STEEM_SYMBOL ) );
-         adjust_supply( sbd );
+         
          assets.first = sbd;
          assets.second = asset( to_steem, STEEM_SYMBOL );
       }
       else
       {
-         adjust_balance( to_account, steem );
-         assets.second = steem;
+         adjust_balance( to_account, steem_balance, steem_to_convert );
+         assets.second.amount.value = steem_to_convert;
       }
    }
-   FC_CAPTURE_LOG_AND_RETHROW( (to_account.name)(steem) )
-   ABWTODO*/
+   FC_CAPTURE_LOG_AND_RETHROW( (to_account.name)(steem_to_convert) )
+
    return assets;
 }
-
 
 // Create vesting, then a caller-supplied callback after determining how many shares to create, but before
 // we modify the database.
@@ -2182,7 +2182,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
                {
                   auto benefactor_sbd_steem = ( benefactor_tokens * comment.percent_steem_dollars ) / ( 2 * STEEM_100_PERCENT ) ;
                   benefactor_vesting_steem  = benefactor_tokens - benefactor_sbd_steem;
-                  auto sbd_payout           = create_sbd( get_account( b.account ), asset( benefactor_sbd_steem, STEEM_SYMBOL ), true );
+                  auto sbd_payout           = create_sbd( get_account( b.account ), &<steem_balance>, benefactor_sbd_steem.value, true );
 
                   vop.sbd_payout   = sbd_payout.first; // SBD portion
                   vop.steem_payout = sbd_payout.second; // STEEM portion
@@ -2205,7 +2205,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             auto vesting_steem = author_tokens - sbd_steem;
 
             const auto& author = get_account( comment.author );
-            auto sbd_payout = create_sbd( author, asset( sbd_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ) );
+            auto sbd_payout = create_sbd( author, &<steem_balance>, sbd_steem.value, has_hardfork( STEEM_HARDFORK_0_17__659 ) );
             operation vop = author_reward_operation( comment.author, to_string( comment.permlink ), sbd_payout.first, sbd_payout.second, asset( 0, VESTS_SYMBOL ) );
 
             create_vesting2( *this, author, asset( vesting_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
