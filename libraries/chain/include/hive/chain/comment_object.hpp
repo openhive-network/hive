@@ -51,7 +51,7 @@ namespace hive { namespace chain {
       public:
          template< typename Constructor, typename Allocator >
          comment_object( Constructor&& c, allocator< Allocator > a )
-            :category( a ), parent_permlink( a ), permlink( a ), beneficiaries( a )
+            :category( a ), parent_permlink( a ), permlink( a )
 #ifdef HIVE_ENABLE_SMT
             , allowed_vote_assets( a )
 #endif
@@ -69,10 +69,37 @@ namespace hive { namespace chain {
 
          time_point_sec    last_update;
          time_point_sec    created;
+         uint16_t          depth = 0;
+
+         id_type           root_comment;
+
+         bool              allow_replies = true;      /// allows a post to disable replies.
+   };
+
+   /*
+      Helper class related to `comment_object` - members needed for payout calculation.
+
+      Objects of this class can be removed, it depends on `cashout_time`
+      when `cashout_time == fc::time_point_sec::maximum()`
+   */
+   class comment_cashout_object : public object < comment_cashout_object_type, comment_cashout_object >
+   {
+      STEEM_STD_ALLOCATOR_CONSTRUCTOR( comment_cashout_object )
+
+      public:
+
+         template< typename Constructor, typename Allocator >
+         comment_cashout_object( Constructor&& c, allocator< Allocator > a )
+            : beneficiaries( a )
+         {
+            c( *this );
+         }
+
+         id_type           id;
+
          time_point_sec    active; ///< the last time this post was "touched" by voting or reply
          time_point_sec    last_payout;
 
-         uint16_t          depth = 0; ///< used to track max nested depth
          uint32_t          children = 0; ///< used to track the total number of children, grandchildren, etc...
 
          /// index on pending_payout for "things happning now... needs moderation"
@@ -97,11 +124,8 @@ namespace hive { namespace chain {
 
          int32_t           net_votes = 0;
 
-         id_type           root_comment;
-
          greedy_SBD_asset  max_accepted_payout = asset( 1000000000, HBD_SYMBOL );       /// SBD value of the maximum payout this post will receive
          uint16_t          percent_steem_dollars = HIVE_100_PERCENT; /// the percent of Steem Dollars to key, unkept amounts will be received as Steem Power
-         bool              allow_replies = true;      /// allows a post to disable replies.
          bool              allow_votes   = true;      /// allows a post to receive votes;
          bool              allow_curation_rewards = true;
 
@@ -183,7 +207,6 @@ namespace hive { namespace chain {
    > comment_vote_index;
 
 
-   struct by_cashout_time; /// cashout_time
    struct by_permlink; /// author, perm
    struct by_root;
    struct by_parent;
@@ -198,12 +221,6 @@ namespace hive { namespace chain {
       indexed_by<
          /// CONSENSUS INDICES - used by evaluators
          ordered_unique< tag< by_id >, member< comment_object, comment_id_type, &comment_object::id > >,
-         ordered_unique< tag< by_cashout_time >,
-            composite_key< comment_object,
-               member< comment_object, time_point_sec, &comment_object::cashout_time>,
-               member< comment_object, comment_id_type, &comment_object::id >
-            >
-         >,
          ordered_unique< tag< by_permlink >, /// used by consensus to find posts referenced in ops
             composite_key< comment_object,
                member< comment_object, account_name_type, &comment_object::author >,
@@ -249,6 +266,22 @@ namespace hive { namespace chain {
       allocator< comment_object >
    > comment_index;
 
+   struct by_cashout_time; /// cashout_time
+
+   typedef multi_index_container<
+      comment_cashout_object,
+      indexed_by<
+         ordered_unique< tag< by_id >, member< comment_cashout_object, comment_cashout_id_type, &comment_cashout_object::id > >,
+         ordered_unique< tag< by_cashout_time >,
+            composite_key< comment_cashout_object,
+               member< comment_cashout_object, time_point_sec, &comment_cashout_object::cashout_time>,
+               member< comment_cashout_object, comment_cashout_id_type, &comment_cashout_object::id >
+            >
+         >
+      >,
+      allocator< comment_cashout_object >
+   > comment_cashout_index;
+
    struct by_comment;
 
    typedef multi_index_container<
@@ -271,21 +304,29 @@ template<> struct is_static_length< hive::chain::comment_vote_object > : public 
 #endif
 
 FC_REFLECT( hive::chain::comment_object,
-             (id)(author)(permlink)
-             (category)(parent_author)(parent_permlink)
-             (last_update)(created)(active)(last_payout)
-             (depth)(children)
+             (id)(category)
+             (parent_author)(parent_permlink)(author)(permlink)
+             (last_update)(created)(depth)(root_comment)(allow_replies)
+          )
+
+CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_object, hive::chain::comment_index )
+
+FC_REFLECT( hive::chain::comment_cashout_object,
+             (id)
+             (active)(last_payout)
+             (children)
              (net_rshares)(abs_rshares)(vote_rshares)
              (children_abs_rshares)(cashout_time)(max_cashout_time)
-             (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(beneficiary_payout_value)(author_rewards)(net_votes)(root_comment)
-             (max_accepted_payout)(percent_steem_dollars)(allow_replies)(allow_votes)(allow_curation_rewards)
+             (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(beneficiary_payout_value)
+             (author_rewards)(net_votes)
+             (max_accepted_payout)(percent_steem_dollars)(allow_votes)(allow_curation_rewards)
              (beneficiaries)
 #ifdef HIVE_ENABLE_SMT
              (allowed_vote_assets)
 #endif
           )
 
-CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_object, hive::chain::comment_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_cashout_object, hive::chain::comment_cashout_index )
 
 FC_REFLECT( hive::chain::comment_content_object,
             (id)(comment)(title)(body)(json_metadata) )
@@ -305,10 +346,6 @@ namespace helpers
    {
    public:
       typedef hive::chain::comment_index IndexType;
-      typedef typename hive::chain::comment_object::t_beneficiaries t_beneficiaries;
-#ifdef HIVE_ENABLE_SMT
-      typedef typename hive::chain::comment_object::t_votable_assets t_votable_assets;
-#endif
       index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
       {
          index_statistic_info info;
@@ -321,6 +358,31 @@ namespace helpers
                info._item_additional_allocation += o.category.capacity()*sizeof(shared_string::value_type);
                info._item_additional_allocation += o.parent_permlink.capacity()*sizeof(shared_string::value_type);
                info._item_additional_allocation += o.permlink.capacity()*sizeof(shared_string::value_type);
+            }
+         }
+
+         return info;
+      }
+   };
+
+   template <>
+   class index_statistic_provider<hive::chain::comment_cashout_index>
+   {
+   public:
+      typedef hive::chain::comment_cashout_index IndexType;
+      typedef typename hive::chain::comment_cashout_object::t_beneficiaries t_beneficiaries;
+#ifdef STEEM_ENABLE_SMT
+      typedef typename hive::chain::comment_cashout_object::t_votable_assets t_votable_assets;
+#endif
+      index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
+      {
+         index_statistic_info info;
+         gather_index_static_data(index, &info);
+
+         if(onlyStaticInfo == false)
+         {
+            for(const auto& o : index)
+            {
                info._item_additional_allocation += o.beneficiaries.capacity()*sizeof(t_beneficiaries::value_type);
 #ifdef HIVE_ENABLE_SMT
                info._item_additional_allocation += o.allowed_vote_assets.capacity()*sizeof(t_votable_assets::value_type);

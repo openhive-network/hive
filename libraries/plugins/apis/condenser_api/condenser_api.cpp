@@ -2015,7 +2015,7 @@ namespace detail
 
       asset pot;
       if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-         pot = _db.get_reward_fund( _db.get_comment( d.author, d.permlink ) ).reward_balance;
+         pot = _db.get_reward_fund().reward_balance;
       else
          pot = props.total_reward_fund_steem;
 
@@ -2023,7 +2023,7 @@ namespace detail
 
       u256 total_r2 = 0;
       if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-         total_r2 = chain::util::to256( _db.get_reward_fund( _db.get_comment( d.author, d.permlink ) ).recent_claims );
+         total_r2 = chain::util::to256( _db.get_reward_fund().recent_claims );
       else
          total_r2 = chain::util::to256( props.total_reward_shares2 );
 
@@ -2032,7 +2032,7 @@ namespace detail
          uint128_t vshares;
          if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
          {
-            const auto& rf = _db.get_reward_fund( _db.get_comment( d.author, d.permlink ) );
+            const auto& rf = _db.get_reward_fund();
             vshares = d.net_rshares.value > 0 ? chain::util::evaluate_reward_curve( d.net_rshares.value, rf.author_reward_curve, rf.content_constant ) : 0;
          }
          else

@@ -179,8 +179,10 @@ comment_metadata tags_plugin_impl::filter_tags( const comment_object& c, const c
       lower_tags.insert( fc::to_lower( tag ) );
    }
 
+   const comment_cashout_object* comment_cashout = _db.get_comment_cashout( c );
+
    /// the universal tag applies to everything safe for work or nsfw with a non-negative payout
-   if( c.net_rshares >= 0 )
+   if( comment_cashout &&  comment_cashout->net_rshares >= 0 )
    {
       lower_tags.insert( string() ); /// add it to the universal tag
    }
@@ -195,13 +197,16 @@ void tags_plugin_impl::update_tag( const tag_object& current, const comment_obje
     const auto& stats = get_stats( current.tag );
     remove_stats( current, stats );
 
-    if( comment.cashout_time != fc::time_point_sec::maximum() ) {
+   const comment_cashout_object* comment_cashout = _db.get_comment_cashout( comment );
+
+    if( comment_cashout ) {
+
        _db.modify( current, [&]( tag_object& obj ) {
-          obj.active            = comment.active;
+          obj.active            = comment_cashout->active;
           obj.cashout           = _db.calculate_discussion_payout_time( comment );
-          obj.children          = comment.children;
-          obj.net_rshares       = comment.net_rshares.value;
-          obj.net_votes         = comment.net_votes;
+          obj.children          = comment_cashout->children;
+          obj.net_rshares       = comment_cashout->net_rshares.value;
+          obj.net_votes         = comment_cashout->net_votes;
           obj.hot               = hot;
           obj.trending          = trending;
           if( obj.cashout == fc::time_point_sec() )
@@ -221,17 +226,19 @@ void tags_plugin_impl::create_tag( const string& tag, const comment_object& comm
    if( comment.parent_author.size() )
       parent = _db.get_comment( comment.parent_author, comment.parent_permlink ).id;
 
+   const comment_cashout_object* cc = _db.get_comment_cashout( comment );
+
    const auto& tag_obj = _db.create<tag_object>( [&]( tag_object& obj )
    {
        obj.tag               = tag;
        obj.comment           = comment.id;
        obj.parent            = parent;
        obj.created           = comment.created;
-       obj.active            = comment.active;
-       obj.cashout           = comment.cashout_time;
-       obj.net_votes         = comment.net_votes;
-       obj.children          = comment.children;
-       obj.net_rshares       = comment.net_rshares.value;
+       obj.active            = cc ? cc->active : fc::time_point_sec();
+       obj.cashout           = cc ? cc->cashout_time : fc::time_point_sec::maximum();
+       obj.net_votes         = cc ? cc->net_votes : 0;
+       obj.children          = cc ? cc->children : 0;
+       obj.net_rshares       = cc ? cc->net_rshares.value : 0;
        obj.author            = author;
        obj.hot               = hot;
        obj.trending          = trending;
@@ -264,8 +271,11 @@ void tags_plugin_impl::update_tags( const comment_object& c, bool parse_tags )co
 {
    try {
 
-   auto hot = calculate_hot( c.net_rshares, c.created );
-   auto trending = calculate_trending( c.net_rshares, c.created );
+   const comment_cashout_object* comment_cashout = _db.get_comment_cashout( c );
+   auto net_rshares = comment_cashout ? comment_cashout->net_rshares : 0;
+
+   auto hot = calculate_hot( net_rshares, c.created );
+   auto trending = calculate_trending( net_rshares, c.created );
 
    const auto& comment_idx = _db.get_index< tag_index >().indices().get< by_comment >();
 
@@ -522,10 +532,11 @@ void tags_plugin::plugin_initialize(const boost::program_options::variables_map&
          my->_db.with_write_lock( [this]()
          {
             // for each comment that has not been paid, update tags
-            const auto& comment_idx = my->_db.get_index< comment_index, by_cashout_time >();
+            const auto& comment_idx = my->_db.get_index< comment_cashout_index >().indices().get< by_cashout_time >();
             for( auto itr = comment_idx.begin(); itr != comment_idx.end() && itr->cashout_time != fc::time_point_sec::maximum(); ++itr )
             {
-               my->update_tags( *itr, true );
+               const comment_object& comment = my->_db.get_comment( *itr );
+               my->update_tags( comment, true );
             }
          });
       });

@@ -25,8 +25,7 @@ DEFINE_API_IMPL( rewards_api_impl, simulate_curve_payouts )
 {
    simulate_curve_payouts_return ret;
 
-   const auto& cidx = _db.get_index< chain::comment_index, chain::by_cashout_time >();
-
+   const auto& cidx = _db.get_index< chain::comment_cashout_index >().indices().get< chain::by_cashout_time >();
    auto current = cidx.begin();
 
    fc::uint128_t sum_current_curve_vshares = 0;
@@ -46,9 +45,11 @@ DEFINE_API_IMPL( rewards_api_impl, simulate_curve_payouts )
          continue;
       }
 
+      const chain::comment_object& comment = _db.get_comment( *current );
+
       simulate_curve_payouts_element e;
-      e.author = current->author;
-      e.permlink = chain::to_string( current->permlink );
+      e.author = comment.author;
+      e.permlink = chain::to_string( comment.permlink );
 
       auto new_curve_vshares = chain::util::evaluate_reward_curve( current->net_rshares.value, args.curve, var1 );
       sum_simulated_vshares = sum_simulated_vshares + new_curve_vshares;

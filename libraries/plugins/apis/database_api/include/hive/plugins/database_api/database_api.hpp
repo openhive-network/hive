@@ -89,7 +89,6 @@ class database_api
          //////////////
          // Comments //
          //////////////
-         (list_comments)
          (find_comments)
          (list_votes)
          (find_votes)

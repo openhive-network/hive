@@ -61,7 +61,6 @@ class database_api_impl
          (find_sbd_conversion_requests)
          (list_decline_voting_rights_requests)
          (find_decline_voting_rights_requests)
-         (list_comments)
          (find_comments)
          (list_votes)
          (find_votes)
@@ -991,166 +990,6 @@ DEFINE_API_IMPL( database_api_impl, find_decline_voting_rights_requests )
 
 /* Comments */
 
-DEFINE_API_IMPL( database_api_impl, list_comments )
-{
-   FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
-
-   list_comments_return result;
-   result.comments.reserve( args.limit );
-
-   switch( args.order )
-   {
-      case( by_cashout_time ):
-      {
-         auto key = args.start.as< vector< fc::variant > >();
-         FC_ASSERT( key.size() == 3, "by_cashout_time start requires 3 values. (time_point_sec, account_name_type, string)" );
-
-         auto author = key[1].as< account_name_type >();
-         auto permlink = key[2].as< string >();
-         comment_id_type comment_id;
-
-         if( author != account_name_type() || permlink.size() )
-         {
-            auto comment = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( author, permlink ) );
-            FC_ASSERT( comment != nullptr, "Could not find comment ${a}/${p}.", ("a", author)("p", permlink) );
-            comment_id = comment->id;
-         }
-
-         iterate_results< chain::comment_index, chain::by_cashout_time >(
-            boost::make_tuple( key[0].as< fc::time_point_sec >(), comment_id ),
-            result.comments,
-            args.limit,
-            [&]( const comment_object& c ){ return api_comment_object( c, _db ); },
-            &database_api_impl::filter_default< comment_object > );
-         break;
-      }
-      case( by_permlink ):
-      {
-         auto key = args.start.as< std::pair< account_name_type, string > >();
-         iterate_results< chain::comment_index, chain::by_permlink >(
-            boost::make_tuple( key.first, key.second ),
-            result.comments,
-            args.limit,
-            [&]( const comment_object& c ){ return api_comment_object( c, _db ); },
-            &database_api_impl::filter_default< comment_object > );
-         break;
-      }
-      case( by_root ):
-      {
-         auto key = args.start.as< vector< fc::variant > >();
-         FC_ASSERT( key.size() == 4, "by_root start requires 4 values. (account_name_type, string, account_name_type, string)" );
-
-         auto root_author = key[0].as< account_name_type >();
-         auto root_permlink = key[1].as< string >();
-         comment_id_type root_id;
-
-         if( root_author != account_name_type() || root_permlink.size() )
-         {
-            auto root = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( root_author, root_permlink ) );
-            FC_ASSERT( root != nullptr, "Could not find comment ${a}/${p}.", ("a", root_author)("p", root_permlink) );
-            root_id = root->id;
-         }
-
-         auto child_author = key[2].as< account_name_type >();
-         auto child_permlink = key[3].as< string >();
-         comment_id_type child_id;
-
-         if( child_author != account_name_type() || child_permlink.size() )
-         {
-            auto child = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( child_author, child_permlink ) );
-            FC_ASSERT( child != nullptr, "Could not find comment ${a}/${p}.", ("a", child_author)("p", child_permlink) );
-            child_id = child->id;
-         }
-
-         iterate_results< chain::comment_index, chain::by_root >(
-            boost::make_tuple( root_id, child_id ),
-            result.comments,
-            args.limit,
-            [&]( const comment_object& c ){ return api_comment_object( c, _db ); },
-            &database_api_impl::filter_default< comment_object > );
-         break;
-      }
-      case( by_parent ):
-      {
-         auto key = args.start.as< vector< fc::variant > >();
-         FC_ASSERT( key.size() == 4, "by_parent start requires 4 values. (account_name_type, string, account_name_type, string)" );
-
-         auto child_author = key[2].as< account_name_type >();
-         auto child_permlink = key[3].as< string >();
-         comment_id_type child_id;
-
-         if( child_author != account_name_type() || child_permlink.size() )
-         {
-            auto child = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( child_author, child_permlink ) );
-            FC_ASSERT( child != nullptr, "Could not find comment ${a}/${p}.", ("a", child_author)("p", child_permlink) );
-            child_id = child->id;
-         }
-
-         iterate_results< chain::comment_index, chain::by_parent >(
-            boost::make_tuple( key[0].as< account_name_type >(), key[1].as< string >(), child_id ),
-            result.comments,
-            args.limit,
-            [&]( const comment_object& c ){ return api_comment_object( c, _db ); },
-            &database_api_impl::filter_default< comment_object > );
-         break;
-      }
-#ifndef IS_LOW_MEM
-      case( by_last_update ):
-      {
-         auto key = args.start.as< vector< fc::variant > >();
-         FC_ASSERT( key.size() == 4, "by_last_update start requires 4 values. (account_name_type, time_point_sec, account_name_type, string)" );
-
-         auto child_author = key[2].as< account_name_type >();
-         auto child_permlink = key[3].as< string >();
-         comment_id_type child_id;
-
-         if( child_author != account_name_type() || child_permlink.size() )
-         {
-            auto child = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( child_author, child_permlink ) );
-            FC_ASSERT( child != nullptr, "Could not find comment ${a}/${p}.", ("a", child_author)("p", child_permlink) );
-            child_id = child->id;
-         }
-
-         iterate_results< chain::comment_index, chain::by_last_update >(
-            boost::make_tuple( key[0].as< account_name_type >(), key[1].as< fc::time_point_sec >(), child_id ),
-            result.comments,
-            args.limit,
-            [&]( const comment_object& c ){ return api_comment_object( c, _db ); },
-            &database_api_impl::filter_default< comment_object > );
-         break;
-      }
-      case( by_author_last_update ):
-      {
-         auto key = args.start.as< vector< fc::variant > >();
-         FC_ASSERT( key.size() == 4, "by_author_last_update start requires 4 values. (account_name_type, time_point_sec, account_name_type, string)" );
-
-         auto author = key[2].as< account_name_type >();
-         auto permlink = key[3].as< string >();
-         comment_id_type comment_id;
-
-         if( author != account_name_type() || permlink.size() )
-         {
-            auto comment = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( author, permlink ) );
-            FC_ASSERT( comment != nullptr, "Could not find comment ${a}/${p}.", ("a", author)("p", permlink) );
-            comment_id = comment->id;
-         }
-
-         iterate_results< chain::comment_index, chain::by_last_update >(
-            boost::make_tuple( key[0].as< account_name_type >(), key[1].as< fc::time_point_sec >(), comment_id ),
-            result.comments,
-            args.limit,
-            [&]( const comment_object& c ){ return api_comment_object( c, _db ); },
-            &database_api_impl::filter_default< comment_object > );
-         break;
-      }
-#endif
-      default:
-         FC_ASSERT( false, "Unknown or unsupported sort order" );
-   }
-
-   return result;
-}
-
 DEFINE_API_IMPL( database_api_impl, find_comments )
 {
    FC_ASSERT( args.comments.size() <= DATABASE_API_SINGLE_QUERY_LIMIT );
@@ -1980,7 +1819,6 @@ DEFINE_READ_APIS( database_api,
    (find_sbd_conversion_requests)
    (list_decline_voting_rights_requests)
    (find_decline_voting_rights_requests)
-   (list_comments)
    (find_comments)
    (list_votes)
    (find_votes)

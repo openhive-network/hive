@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
       tx.clear();
 
       asset initial_treasury_balance = db->get_treasury().get_hbd_balance();
-      generate_blocks( db->get_comment( "alice", string( "test" ) ).cashout_time );
+      generate_blocks( db->get_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time );
       BOOST_REQUIRE_EQUAL( get_hbd_balance( OLD_STEEM_TREASURY_ACCOUNT ).amount.value, 0 );
       BOOST_REQUIRE_EQUAL( db->get_treasury().get_hbd_balance().amount.value, 1150 + initial_treasury_balance.amount.value );
 

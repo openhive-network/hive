@@ -740,17 +740,81 @@ const hardfork_property_object& database::get_hardfork_property_object()const
    return get< hardfork_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
-const time_point_sec database::calculate_discussion_payout_time( const comment_object& comment )const
+const comment_object& database::find_comment_for_payout_time( const comment_object& comment )const
 {
    if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || comment.parent_author == HIVE_ROOT_POST_PARENT )
-      return comment.cashout_time;
+      return comment;
    else
-      return get< comment_object >( comment.root_comment ).cashout_time;
+      return get< comment_object >( comment.root_comment );
 }
 
-const reward_fund_object& database::get_reward_fund( const comment_object& c ) const
+const time_point_sec database::calculate_discussion_payout_time( const comment_object& comment )const
+{
+   const comment_object& _comment = find_comment_for_payout_time( comment );
+
+   const comment_cashout_object* comment_cashout = get_comment_cashout( _comment );
+   if( comment_cashout )
+      return comment_cashout->cashout_time;
+   else
+      return time_point_sec::maximum();
+}
+
+const time_point_sec database::calculate_discussion_payout_time( const comment_cashout_object& comment_cashout )const
+{
+   const comment_object& comment = get_comment( comment_cashout );
+   const comment_object& _comment = find_comment_for_payout_time( comment );
+
+   if( _comment.id == comment.id )
+   {
+      return comment_cashout.cashout_time;
+   }
+   else
+   {
+      const comment_cashout_object* _comment_cashout = get_comment_cashout( _comment );
+      if( _comment_cashout )
+         return _comment_cashout->cashout_time;
+      else
+         return time_point_sec::maximum();
+   }
+}
+
+const reward_fund_object& database::get_reward_fund() const
 {
    return get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
+}
+
+const comment_cashout_object* database::get_comment_cashout( const comment_object& comment ) const
+{
+   const auto& idx = get_index< comment_cashout_index >().indices().get< by_id >();
+   auto found = idx.find( comment.id._id );
+
+   if( found == idx.end() )
+      return nullptr;
+   else
+      return &( *found );
+}
+
+const comment_object& database::get_comment( const comment_cashout_object& comment_cashout ) const
+{
+   const auto& idx = get_index< comment_index >().indices().get< by_id >();
+   auto found = idx.find( comment_cashout.id._id );
+
+   FC_ASSERT( found != idx.end() );
+
+   return *found;
+}
+
+void database::remove_old_comments()
+{
+   const auto& idx = get_index< comment_cashout_index >().indices().get< by_cashout_time >();
+   auto itr = idx.find( fc::time_point_sec::maximum() );
+
+   while( itr != idx.end() )
+   {
+      const auto& current = *itr;
+      ++itr;
+      remove( current );
+   }
 }
 
 asset database::get_effective_vesting_shares( const account_object& account, asset_symbol_type vested_symbol )const
@@ -2117,7 +2181,7 @@ void database::process_delayed_voting( const block_notification& note )
  * from old_rshares2 to new_rshares2.  Maintaining invariants that children_rshares2 is the sum of all descendants' rshares2,
  * and dgpo.total_reward_shares2 is the total number of rshares2 outstanding.
  */
-void database::adjust_rshares2( const comment_object& c, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 )
+void database::adjust_rshares2( fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 )
 {
 
    const auto& dgpo = get_dynamic_global_properties();
@@ -2310,9 +2374,9 @@ void database::process_vesting_withdrawals()
    }
 }
 
-void database::adjust_total_payout( const comment_object& cur, const asset& sbd_created, const asset& curator_sbd_value, const asset& beneficiary_value )
+void database::adjust_total_payout( const comment_cashout_object& cur, const asset& sbd_created, const asset& curator_sbd_value, const asset& beneficiary_value )
 {
-   modify( cur, [&]( comment_object& c )
+   modify( cur, [&]( comment_cashout_object& c )
    {
       // input assets should be in sbd
       c.total_payout_value += sbd_created;
@@ -2328,7 +2392,7 @@ void database::adjust_total_payout( const comment_object& cur, const asset& sbd_
  *
  *  @returns unclaimed rewards.
  */
-share_type database::pay_curators( const comment_object& c, share_type& max_rewards )
+share_type database::pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout, share_type& max_rewards )
 {
    struct cmp
    {
@@ -2343,22 +2407,22 @@ share_type database::pay_curators( const comment_object& c, share_type& max_rewa
 
    try
    {
-      uint128_t total_weight( c.total_vote_weight );
+      uint128_t total_weight( comment_cashout.total_vote_weight );
       //edump( (total_weight)(max_rewards) );
       share_type unclaimed_rewards = max_rewards;
 
-      if( !c.allow_curation_rewards )
+      if( !comment_cashout.allow_curation_rewards )
       {
          unclaimed_rewards = 0;
          max_rewards = 0;
       }
-      else if( c.total_vote_weight > 0 )
+      else if( comment_cashout.total_vote_weight > 0 )
       {
          const auto& cvidx = get_index<comment_vote_index>().indices().get<by_comment_voter>();
-         auto itr = cvidx.lower_bound( c.id );
+         auto itr = cvidx.lower_bound( comment.id );
 
          std::set< const comment_vote_object*, cmp > proxy_set;
-         while( itr != cvidx.end() && itr->comment == c.id )
+         while( itr != cvidx.end() && itr->comment == comment.id )
          {
             proxy_set.insert( &( *itr ) );
             ++itr;
@@ -2372,7 +2436,7 @@ share_type database::pay_curators( const comment_object& c, share_type& max_rewa
             {
                unclaimed_rewards -= claim;
                const auto& voter = get( item->voter );
-               operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), c.author, to_string( c.permlink ) );
+               operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment.author, to_string( comment.permlink ) );
                create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
                   [&]( const asset& reward )
                   {
@@ -2396,26 +2460,26 @@ share_type database::pay_curators( const comment_object& c, share_type& max_rewa
    } FC_CAPTURE_AND_RETHROW( (max_rewards) )
 }
 
-void fill_comment_reward_context_local_state( util::comment_reward_context& ctx, const comment_object& comment )
+void fill_comment_reward_context_local_state( util::comment_reward_context& ctx, const comment_cashout_object& comment_cashout )
 {
-   ctx.rshares = comment.net_rshares;
-   ctx.reward_weight = comment.reward_weight;
-   ctx.max_sbd = comment.max_accepted_payout;
+   ctx.rshares = comment_cashout.net_rshares;
+   ctx.reward_weight = comment_cashout.reward_weight;
+   ctx.max_sbd = comment_cashout.max_accepted_payout;
 }
 
-share_type database::cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment, bool forward_curation_remainder )
+share_type database::cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment, const comment_cashout_object& comment_cashout, bool forward_curation_remainder )
 {
    try
    {
       share_type claimed_reward = 0;
 
-      if( comment.net_rshares > 0 )
+      if( comment_cashout.net_rshares > 0 )
       {
-         fill_comment_reward_context_local_state( ctx, comment );
+         fill_comment_reward_context_local_state( ctx, comment_cashout );
 
          if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
          {
-            const auto rf = get_reward_fund( comment );
+            const auto rf = get_reward_fund();
             ctx.reward_curve = rf.author_reward_curve;
             ctx.content_constant = rf.content_constant;
          }
@@ -2425,10 +2489,10 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
          if( reward_tokens > 0 )
          {
-            share_type curation_tokens = ( ( reward_tokens * get_curation_rewards_percent( comment ) ) / HIVE_100_PERCENT ).to_uint64();
+            share_type curation_tokens = ( ( reward_tokens * get_curation_rewards_percent() ) / HIVE_100_PERCENT ).to_uint64();
             share_type author_tokens = reward_tokens.to_uint64() - curation_tokens;
 
-            share_type curation_remainder = pay_curators( comment, curation_tokens );
+            share_type curation_remainder = pay_curators( comment, comment_cashout, curation_tokens );
 
             if( forward_curation_remainder )
                author_tokens += curation_remainder;
@@ -2436,7 +2500,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             share_type total_beneficiary = 0;
             claimed_reward = author_tokens + curation_tokens;
 
-            for( auto& b : comment.beneficiaries )
+            for( auto& b : comment_cashout.beneficiaries )
             {
                auto benefactor_tokens = ( author_tokens * b.weight ) / HIVE_100_PERCENT;
                auto benefactor_vesting_steem = benefactor_tokens;
@@ -2452,7 +2516,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
                }
                else if( has_hardfork( HIVE_HARDFORK_0_20__2022 ) )
                {
-                  auto benefactor_sbd_steem = ( benefactor_tokens * comment.percent_steem_dollars ) / ( 2 * HIVE_100_PERCENT ) ;
+                  auto benefactor_sbd_steem = ( benefactor_tokens * comment_cashout.percent_steem_dollars ) / ( 2 * HIVE_100_PERCENT ) ;
                   benefactor_vesting_steem  = benefactor_tokens - benefactor_sbd_steem;
                   auto sbd_payout           = create_sbd( get_account( b.account ), asset( benefactor_sbd_steem, HIVE_SYMBOL ), true );
 
@@ -2473,7 +2537,9 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
             author_tokens -= total_beneficiary;
 
-            auto sbd_steem     = ( author_tokens * comment.percent_steem_dollars ) / ( 2 * HIVE_100_PERCENT ) ;
+
+            auto sbd_steem     = ( author_tokens * comment_cashout.percent_steem_dollars ) / ( 2 * HIVE_100_PERCENT ) ;
+
             auto vesting_steem = author_tokens - sbd_steem;
 
             const auto& author = get_account( comment.author );
@@ -2487,7 +2553,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
                   pre_push_virtual_operation( vop );
                } );
 
-            adjust_total_payout( comment, sbd_payout.first + to_sbd( sbd_payout.second + asset( vesting_steem, HIVE_SYMBOL ) ), to_sbd( asset( curation_tokens, HIVE_SYMBOL ) ), to_sbd( asset( total_beneficiary, HIVE_SYMBOL ) ) );
+            adjust_total_payout( comment_cashout, sbd_payout.first + to_sbd( sbd_payout.second + asset( vesting_steem, HIVE_SYMBOL ) ), to_sbd( asset( curation_tokens, HIVE_SYMBOL ) ), to_sbd( asset( total_beneficiary, HIVE_SYMBOL ) ) );
 
             post_push_virtual_operation( vop );
             vop = comment_reward_operation( comment.author, to_string( comment.permlink ), to_sbd( asset( claimed_reward, HIVE_SYMBOL ) ) );
@@ -2495,7 +2561,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             post_push_virtual_operation( vop );
 
             #ifndef IS_LOW_MEM
-               modify( comment, [&]( comment_object& c )
+               modify( comment_cashout, [&]( comment_cashout_object& c )
                {
                   c.author_rewards += author_tokens;
                });
@@ -2509,10 +2575,10 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
          }
 
          if( !has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-            adjust_rshares2( comment, util::evaluate_reward_curve( comment.net_rshares.value ), 0 );
+            adjust_rshares2( util::evaluate_reward_curve( comment_cashout.net_rshares.value ), 0 );
       }
 
-      modify( comment, [&]( comment_object& c )
+      modify( comment_cashout, [&]( comment_cashout_object& c )
       {
          /**
          * A payout is only made for positive rshares, negative rshares hang around
@@ -2530,7 +2596,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
          {
             c.cashout_time = fc::time_point_sec::maximum();
          }
-         else if( c.parent_author == HIVE_ROOT_POST_PARENT )
+         else if( comment.parent_author == HIVE_ROOT_POST_PARENT )
          {
             if( has_hardfork( HIVE_HARDFORK_0_12__177 ) && c.last_payout == fc::time_point_sec::min() )
                c.cashout_time = head_block_time() + HIVE_SECOND_CASHOUT_WINDOW;
@@ -2549,7 +2615,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       {
          const auto& cur_vote = *vote_itr;
          ++vote_itr;
-         if( !has_hardfork( HIVE_HARDFORK_0_12__177 ) || calculate_discussion_payout_time( comment ) != fc::time_point_sec::maximum() )
+         if( !has_hardfork( HIVE_HARDFORK_0_12__177 ) || calculate_discussion_payout_time( comment_cashout ) != fc::time_point_sec::maximum() )
          {
             modify( cur_vote, [&]( comment_vote_object& cvo )
             {
@@ -2565,7 +2631,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       }
 
       return claimed_reward;
-   } FC_CAPTURE_AND_RETHROW( (comment)(ctx) )
+   } FC_CAPTURE_AND_RETHROW( (comment)(comment_cashout)(ctx) )
 }
 
 void database::process_comment_cashout()
@@ -2611,7 +2677,7 @@ void database::process_comment_cashout()
       funds.push_back( rf_ctx );
    }
 
-   const auto& cidx        = get_index< comment_index >().indices().get< by_cashout_time >();
+   const auto& cidx        = get_index< comment_cashout_index >().indices().get< by_cashout_time >();
    const auto& com_by_root = get_index< comment_index >().indices().get< by_root >();
 
    auto current = cidx.begin();
@@ -2622,7 +2688,7 @@ void database::process_comment_cashout()
       {
          if( current->net_rshares > 0 )
          {
-            const auto& rf = get_reward_fund( *current );
+            const auto& rf = get_reward_fund();
             funds[ rf.id._id ].recent_claims += util::evaluate_reward_curve( current->net_rshares.value, rf.author_reward_curve, rf.content_constant );
          }
 
@@ -2647,26 +2713,30 @@ void database::process_comment_cashout()
     */
    while( current != cidx.end() && current->cashout_time <= head_block_time() )
    {
+      const comment_object& _comment = get_comment( *current );
+
       if( has_hardfork( HIVE_HARDFORK_0_17__771 ) )
       {
-         auto fund_id = get_reward_fund( *current ).id._id;
+         auto fund_id = get_reward_fund().id._id;
          ctx.total_reward_shares2 = funds[ fund_id ].recent_claims;
          ctx.total_reward_fund_steem = funds[ fund_id ].reward_balance;
 
          bool forward_curation_remainder = !has_hardfork( HIVE_HARDFORK_0_20__1877 );
 
-         funds[ fund_id ].steem_awarded += cashout_comment_helper( ctx, *current, forward_curation_remainder );
+         funds[ fund_id ].steem_awarded += cashout_comment_helper( ctx, _comment, *current, forward_curation_remainder );
       }
       else
       {
-         auto itr = com_by_root.lower_bound( current->root_comment );
-         while( itr != com_by_root.end() && itr->root_comment == current->root_comment )
+         auto itr = com_by_root.lower_bound( _comment.root_comment._id );
+         while( itr != com_by_root.end() && itr->root_comment == _comment.root_comment )
          {
             const auto& comment = *itr; ++itr;
             ctx.total_reward_shares2 = gpo.total_reward_shares2;
             ctx.total_reward_fund_steem = gpo.total_reward_fund_steem;
 
-            auto reward = cashout_comment_helper( ctx, comment );
+            const comment_cashout_object* current = get_comment_cashout( comment );
+            FC_ASSERT( current );
+            auto reward = cashout_comment_helper( ctx, comment, *current );
 
             if( reward > 0 )
             {
@@ -2676,6 +2746,12 @@ void database::process_comment_cashout()
                });
             }
          }
+      }
+
+      if( has_hardfork( HIVE_HARDFORK_0_19__876 ) )
+      {
+         if( current->cashout_time == fc::time_point_sec::maximum() )
+            remove( *current );
       }
 
       current = cidx.begin();
@@ -2952,10 +3028,10 @@ void database::pay_liquidity_reward()
    }
 }
 
-uint16_t database::get_curation_rewards_percent( const comment_object& c ) const
+uint16_t database::get_curation_rewards_percent() const
 {
    if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-      return get_reward_fund( c ).percent_curation_rewards;
+      return get_reward_fund().percent_curation_rewards;
    else if( has_hardfork( HIVE_HARDFORK_0_8__116 ) )
       return HIVE_1_PERCENT * 25;
    else
@@ -5573,19 +5649,20 @@ void database::apply_hardfork( uint32_t hardfork )
          break;
       case HIVE_HARDFORK_0_12:
          {
-            const auto& comment_idx = get_index< comment_index >().indices();
+            const auto& comment_idx = get_index< comment_cashout_index >().indices();
 
             for( auto itr = comment_idx.begin(); itr != comment_idx.end(); ++itr )
             {
                // At the hardfork time, all new posts with no votes get their cashout time set to +12 hrs from head block time.
                // All posts with a payout get their cashout time set to +30 days. This hardfork takes place within 30 days
                // initial payout so we don't have to handle the case of posts that should be frozen that aren't
-               if( itr->parent_author == HIVE_ROOT_POST_PARENT )
+               const comment_object& comment = get_comment( *itr );
+               if( comment.parent_author == HIVE_ROOT_POST_PARENT )
                {
                   // Post has not been paid out and has no votes (cashout_time == 0 === net_rshares == 0, under current semmantics)
                   if( itr->last_payout == fc::time_point_sec::min() && itr->cashout_time == fc::time_point_sec::maximum() )
                   {
-                     modify( *itr, [&]( comment_object & c )
+                     modify( *itr, [&]( comment_cashout_object & c )
                      {
                         c.cashout_time = head_block_time() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
                      });
@@ -5593,7 +5670,7 @@ void database::apply_hardfork( uint32_t hardfork )
                   // Has been paid out, needs to be on second cashout window
                   else if( itr->last_payout > fc::time_point_sec() )
                   {
-                     modify( *itr, [&]( comment_object& c )
+                     modify( *itr, [&]( comment_cashout_object& c )
                      {
                         c.cashout_time = c.last_payout + HIVE_SECOND_CASHOUT_WINDOW;
                      });
@@ -5690,36 +5767,39 @@ void database::apply_hardfork( uint32_t hardfork )
             * the min cashout time for each child in the discussion. Then iterate over the children and set
             * their cashout time in a similar way, grabbing the root post as their inherent cashout time.
             */
-            const auto& comment_idx = get_index< comment_index, by_cashout_time >();
+            const auto& comment_idx = get_index< comment_cashout_index, by_cashout_time >();
             const auto& by_root_idx = get_index< comment_index, by_root >();
-            vector< const comment_object* > root_posts;
+            vector< const comment_cashout_object* > root_posts;
             root_posts.reserve( HIVE_HF_17_NUM_POSTS );
-            vector< const comment_object* > replies;
+            vector< std::pair< const comment_cashout_object*, fc::time_point_sec > > replies;
             replies.reserve( HIVE_HF_17_NUM_REPLIES );
 
             for( auto itr = comment_idx.begin(); itr != comment_idx.end() && itr->cashout_time < fc::time_point_sec::maximum(); ++itr )
             {
                root_posts.push_back( &(*itr) );
 
-               for( auto reply_itr = by_root_idx.lower_bound( itr->id ); reply_itr != by_root_idx.end() && reply_itr->root_comment == itr->id; ++reply_itr )
+               for( auto reply_itr = by_root_idx.lower_bound( itr->id._id ); reply_itr != by_root_idx.end() && reply_itr->root_comment == itr->id; ++reply_itr )
                {
-                  replies.push_back( &(*reply_itr) );
+                  const comment_cashout_object* comment_cashout = get_comment_cashout( *reply_itr );
+                  replies.push_back( std::make_pair( comment_cashout, reply_itr->created ) );
                }
             }
 
             for( const auto& itr : root_posts )
             {
-               modify( *itr, [&]( comment_object& c )
+               const comment_object& comment = get_comment( *itr );
+
+               modify( *itr, [&]( comment_cashout_object& c )
                {
-                  c.cashout_time = std::max( c.created + HIVE_CASHOUT_WINDOW_SECONDS, c.cashout_time );
+                  c.cashout_time = std::max( comment.created + HIVE_CASHOUT_WINDOW_SECONDS, c.cashout_time );
                });
             }
 
             for( const auto& itr : replies )
             {
-               modify( *itr, [&]( comment_object& c )
+               modify( *( itr.first ), [&]( comment_cashout_object& c )
                {
-                  c.cashout_time = std::max( calculate_discussion_payout_time( c ), c.created + HIVE_CASHOUT_WINDOW_SECONDS );
+                  c.cashout_time = std::max( calculate_discussion_payout_time( c ), itr.second + HIVE_CASHOUT_WINDOW_SECONDS );
                });
             }
          }
@@ -5759,6 +5839,8 @@ void database::apply_hardfork( uint32_t hardfork )
             {
                remove( *delegation_ptr );
             }
+
+            remove_old_comments();
          }
          break;
       case HIVE_HARDFORK_0_20:
@@ -6194,10 +6276,10 @@ void database::perform_vesting_share_split( uint32_t magnitude )
          } );
       }
 
-      const auto& comments = get_index< comment_index >().indices();
+      const auto& comments = get_index< comment_cashout_index >().indices();
       for( const auto& comment : comments )
       {
-         modify( comment, [&]( comment_object& c )
+         modify( comment, [&]( comment_cashout_object& c )
          {
             c.net_rshares       *= magnitude;
             c.abs_rshares       *= magnitude;
@@ -6208,7 +6290,7 @@ void database::perform_vesting_share_split( uint32_t magnitude )
       for( const auto& c : comments )
       {
          if( c.net_rshares.value > 0 )
-            adjust_rshares2( c, 0, util::evaluate_reward_curve( c.net_rshares.value ) );
+            adjust_rshares2( 0, util::evaluate_reward_curve( c.net_rshares.value ) );
       }
 
    }
@@ -6217,35 +6299,45 @@ void database::perform_vesting_share_split( uint32_t magnitude )
 
 void database::retally_comment_children()
 {
-   const auto& cidx = get_index< comment_index >().indices();
+   const auto& cidx = get_index< comment_cashout_index >().indices();
+   const auto& cidx2 = get_index< comment_index >().indices();
 
    // Clear children counts
    for( auto itr = cidx.begin(); itr != cidx.end(); ++itr )
    {
-      modify( *itr, [&]( comment_object& c )
+      modify( *itr, [&]( comment_cashout_object& c )
       {
          c.children = 0;
       });
    }
 
-   for( auto itr = cidx.begin(); itr != cidx.end(); ++itr )
+   for( auto itr = cidx2.begin(); itr != cidx2.end(); ++itr )
    {
       if( itr->parent_author != HIVE_ROOT_POST_PARENT )
       {
 // Low memory nodes only need immediate child count, full nodes track total children
 #ifdef IS_LOW_MEM
-         modify( get_comment( itr->parent_author, itr->parent_permlink ), [&]( comment_object& c )
+         const comment_cashout_object* comment_cashout = get_comment_cashout( get_comment( itr->parent_author, itr->parent_permlink ) );
+         if( comment_cashout )
          {
-            c.children++;
-         });
+            modify( *comment_cashout, [&]( comment_cashout_object& c )
+            {
+               c.children++;
+            });
+         }
 #else
          const comment_object* parent = &get_comment( itr->parent_author, itr->parent_permlink );
          while( parent )
          {
-            modify( *parent, [&]( comment_object& c )
+            const comment_cashout_object* comment_cashout = get_comment_cashout( *parent );
+
+            if( comment_cashout )
             {
-               c.children++;
-            });
+               modify( *comment_cashout, [&]( comment_cashout_object& c )
+               {
+                  c.children++;
+               });
+            }
 
             if( parent->parent_author != HIVE_ROOT_POST_PARENT )
                parent = &get_comment( parent->parent_author, parent->parent_permlink );

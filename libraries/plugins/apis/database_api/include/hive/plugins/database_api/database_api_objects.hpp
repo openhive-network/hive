@@ -40,31 +40,37 @@ struct api_comment_object
       permlink( to_string( o.permlink ) ),
       last_update( o.last_update ),
       created( o.created ),
-      active( o.active ),
-      last_payout( o.last_payout ),
       depth( o.depth ),
-      children( o.children ),
-      net_rshares( o.net_rshares ),
-      abs_rshares( o.abs_rshares ),
-      vote_rshares( o.vote_rshares ),
-      children_abs_rshares( o.children_abs_rshares ),
-      cashout_time( o.cashout_time ),
-      max_cashout_time( o.max_cashout_time ),
-      total_vote_weight( o.total_vote_weight ),
-      reward_weight( o.reward_weight ),
-      total_payout_value( o.total_payout_value ),
-      curator_payout_value( o.curator_payout_value ),
-      author_rewards( o.author_rewards ),
-      net_votes( o.net_votes ),
-      max_accepted_payout( o.max_accepted_payout ),
-      percent_steem_dollars( o.percent_steem_dollars ),
-      allow_replies( o.allow_replies ),
-      allow_votes( o.allow_votes ),
-      allow_curation_rewards( o.allow_curation_rewards )
+      allow_replies( o.allow_replies )
    {
-      for( auto& route : o.beneficiaries )
+      const comment_cashout_object* cc = db.get_comment_cashout( o );
+      if( cc )
       {
-         beneficiaries.push_back( route );
+         total_vote_weight       = cc->total_vote_weight;
+         reward_weight           = cc->reward_weight;
+         total_payout_value      = cc->total_payout_value;
+         curator_payout_value    = cc->curator_payout_value;
+         author_rewards          = cc->author_rewards;
+         net_votes               = cc->net_votes;
+         active                  = cc->active;
+         last_payout             = cc->last_payout;
+         children                = cc->children;
+         net_rshares             = cc->net_rshares;
+         abs_rshares             = cc->abs_rshares;
+         vote_rshares            = cc->vote_rshares;
+         children_abs_rshares    = cc->children_abs_rshares;
+         cashout_time            = cc->cashout_time;
+         max_cashout_time        = cc->max_cashout_time;
+         max_accepted_payout     = cc->max_accepted_payout;
+         percent_steem_dollars   = cc->percent_steem_dollars;
+         allow_votes             = cc->allow_votes;
+         allow_curation_rewards  = cc->allow_curation_rewards;
+
+         for( auto& route : cc->beneficiaries )
+         {
+            beneficiaries.push_back( route );
+         }
+
       }
 
       const auto root = db.find( o.root_comment );

@@ -87,6 +87,7 @@ enum object_type
    pending_optional_action_object_type,
    proposal_object_type,
    proposal_vote_object_type,
+   comment_cashout_object_type,
 #ifdef HIVE_ENABLE_SMT
    // SMT objects
    smt_token_object_type,
@@ -131,6 +132,7 @@ class vesting_delegation_object;
 class vesting_delegation_expiration_object;
 class pending_required_action_object;
 class pending_optional_action_object;
+class comment_cashout_object;
 
 #ifdef HIVE_ENABLE_SMT
 class smt_token_object;
@@ -177,6 +179,7 @@ typedef oid< vesting_delegation_object              > vesting_delegation_id_type
 typedef oid< vesting_delegation_expiration_object   > vesting_delegation_expiration_id_type;
 typedef oid< pending_required_action_object         > pending_required_action_id_type;
 typedef oid< pending_optional_action_object         > pending_optional_action_id_type;
+typedef oid< comment_cashout_object                 > comment_cashout_id_type;
 
 #ifdef HIVE_ENABLE_SMT
 typedef oid< smt_token_object                       > smt_token_id_type;
@@ -389,6 +392,7 @@ FC_REFLECT_ENUM( hive::chain::object_type,
                  (pending_optional_action_object_type)
                  (proposal_object_type)
                  (proposal_vote_object_type)
+                 (comment_cashout_object_type)
 
 #ifdef HIVE_ENABLE_SMT
                  (smt_token_object_type)

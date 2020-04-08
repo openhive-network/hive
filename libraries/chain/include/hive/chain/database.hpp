@@ -237,8 +237,19 @@ namespace hive { namespace chain {
          const witness_schedule_object&         get_witness_schedule_object()const;
          const hardfork_property_object&        get_hardfork_property_object()const;
 
+      private:
+
+         const comment_object&                  find_comment_for_payout_time( const comment_object& comment )const;
+
+      public:
+
          const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const;
-         const reward_fund_object&              get_reward_fund( const comment_object& c )const;
+         const time_point_sec                   calculate_discussion_payout_time( const comment_cashout_object& comment_cashout )const;
+         const reward_fund_object&              get_reward_fund()const;
+
+         const comment_cashout_object* get_comment_cashout( const comment_object& comment ) const;
+         const comment_object& get_comment( const comment_cashout_object& comment_cashout ) const;
+         void remove_old_comments();
 
          asset get_effective_vesting_shares( const account_object& account, asset_symbol_type vested_symbol )const;
 
@@ -379,7 +390,7 @@ namespace hive { namespace chain {
 
          asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false );
 
-         void adjust_total_payout( const comment_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value );
+         void adjust_total_payout( const comment_cashout_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value );
 
          void        adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_bid );
          void        adjust_balance( const account_object& a, const asset& delta );
@@ -390,7 +401,7 @@ namespace hive { namespace chain {
          void        adjust_reward_balance( const account_name_type& name, const asset& value_delta,
                                             const asset& share_delta = asset(0,VESTS_SYMBOL) );
          void        adjust_supply( const asset& delta, bool adjust_vesting = false );
-         void        adjust_rshares2( const comment_object& comment, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 );
+         void        adjust_rshares2( fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 );
          void        update_owner_authority( const account_object& account, const authority& owner_authority );
 
          asset       get_balance( const account_object& a, asset_symbol_type symbol )const;
@@ -417,8 +428,8 @@ namespace hive { namespace chain {
           */
          void clear_witness_votes( const account_object& a );
          void process_vesting_withdrawals();
-         share_type pay_curators( const comment_object& c, share_type& max_rewards );
-         share_type cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment, bool forward_curation_remainder = true );
+         share_type pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout, share_type& max_rewards );
+         share_type cashout_comment_helper(  util::comment_reward_context& ctx, const comment_object& comment, const comment_cashout_object& comment_cashout, bool forward_curation_remainder = true );
          void process_comment_cashout();
          void process_funds();
          void process_conversions();
@@ -435,7 +446,7 @@ namespace hive { namespace chain {
          asset get_curation_reward()const;
          asset get_pow_reward()const;
 
-         uint16_t get_curation_rewards_percent( const comment_object& c ) const;
+         uint16_t get_curation_rewards_percent() const;
 
          share_type pay_reward_funds( share_type reward );
 

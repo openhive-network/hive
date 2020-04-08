@@ -59,6 +59,7 @@ void initialize_core_indexes( database& db )
 #endif
    STEEM_ADD_CORE_INDEX(db, proposal_index);
    STEEM_ADD_CORE_INDEX(db, proposal_vote_index);
+   STEEM_ADD_CORE_INDEX(db, comment_cashout_index);
 }
 
 index_info::index_info() {}
