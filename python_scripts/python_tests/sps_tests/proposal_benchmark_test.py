@@ -3,35 +3,36 @@
 #example A:
 #"/home/a/steemd" Path to steemd exe
 # "/home/a/data"  Path to blockchain directory
-# "./steem_utils/resources/config.ini.in" Path to config.ini.in - usually ./steem_utils/resources/config.ini.in
+# "../../hive_utils/resources/config.ini.in" Path to config.ini.in - usually ./steem_utils/resources/config.ini.in
 #  1 - number of proposals for every account
 #  200 - number of accounts
 #  200000.000- number of STEEM's for every account
 #  30000.000- number of SBD's for every account
 #  100000.000- number of VEST's for every account
 # finally is created 200(1*200) proposals and 200 votes for every proposals -> 40200 objects are created
-#  ./proposal_benchmark_test.py "/home/a/steemd" "/home/a/data" "./steem_utils/resources/config.ini.in" initminer 1 200 200000.000 30000.000 100000.000
+#  ./proposal_benchmark_test.py "/home/a/steemd" "/home/a/data" "../../hive_utils/resources/config.ini.in" initminer 1 200 200000.000 30000.000 100000.000
 
 #example B:
 #"/home/a/steemd" Path to steemd exe
 # "/home/a/data"  Path to blockchain directory
-# "./steem_utils/resources/config.ini.in" Path to config.ini.in - usually ./steem_utils/resources/config.ini.in
+# "../../hive_utils/resources/config.ini.in" Path to config.ini.in - usually ./steem_utils/resources/config.ini.in
 #  2 - number of proposals for every account
 #  300 - number of accounts
 #  200000.000- number of STEEM's for every account
 #  30000.000- number of SBD's for every account
 #  100000.000- number of VEST's for every account
 # finally is created 600(2*300) proposals and 300 votes for every proposals -> 180600 objects are created
-#  ./proposal_benchmark_test.py "/home/a/steemd" "/home/a/data" "./steem_utils/resources/config.ini.in" initminer 2 300 200000.000 30000.000 100000.000
+#  ./proposal_benchmark_test.py "/home/a/steemd" "/home/a/data" "../../hive_utils/resources/config.ini.in" initminer 2 300 200000.000 30000.000 100000.000
 
 #Time[ms] is saved in `r_advanced_benchmark.json` ( position{"op_name": "sps_processor"} ) in directory where this script is called
+
+import sys
+sys.path.append("../../")
+import hive_utils
 
 from uuid import uuid4
 from time import sleep
 import logging
-import sys
-import steem_utils.steem_runner
-import steem_utils.steem_tools
 import dateutil.parser
 
 data_size = 100
@@ -44,7 +45,7 @@ LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
 MAIN_LOG_PATH = "./sps_benchmark_test.log"
 
-MODULE_NAME = "SPS-Tester-via-steempy"
+MODULE_NAME = "SPS-Tester"
 logger = logging.getLogger(MODULE_NAME)
 logger.setLevel(LOG_LEVEL)
 
@@ -61,9 +62,9 @@ if not logger.hasHandlers():
   logger.addHandler(fh)
 
 try:
-    from steem import Steem
+    from beem import Hive
 except Exception as ex:
-    logger.error("SteemPy library is not installed.")
+    logger.error("beem library is not installed.")
     sys.exit(1)
 
 
@@ -85,7 +86,7 @@ def create_accounts(node, creator, accounts):
             store_keys = False,
             creator=creator,
             asset='TESTS')
-    steem_utils.steem_tools.wait_for_blocks_produced(delayed_blocks, node.url)
+    hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
 
 # transfer_to_vesting initminer pychol "310.000 TESTS" true
@@ -94,7 +95,7 @@ def transfer_to_vesting(node, from_account, accounts, vests ):
         logger.info("Transfer to vesting from {} to {} amount {} {}".format(from_account, acnt['name'], vests, "TESTS"))
         node.commit.transfer_to_vesting(vests, to = acnt['name'], 
             account = from_account, asset='TESTS')
-    steem_utils.steem_tools.wait_for_blocks_produced(delayed_blocks, node.url)
+    hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
 
 # transfer initminer pychol "399.000 TESTS" "initial transfer" true
@@ -103,11 +104,11 @@ def transfer_assets_to_accounts(node, from_account, accounts, steems, sbds):
     for acnt in accounts:
         logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt['name'], steems, "TESTS"))
         node.commit.transfer(acnt['name'], steems, "TESTS", memo = "initial transfer", account = from_account)
-    steem_utils.steem_tools.wait_for_blocks_produced(delayed_blocks, node.url)
+     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
     for acnt in accounts:
         logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt['name'], sbds, "TBD"))
         node.commit.transfer(acnt['name'], sbds, "TBD", memo = "initial transfer", account = from_account)
-    steem_utils.steem_tools.wait_for_blocks_produced(delayed_blocks, node.url)
+    hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
 def create_permlink( node, account ):
    return "steempy-proposal-title-{}".format( account )
@@ -126,7 +127,7 @@ def create_posts(node, accounts):
             steem_utils.steem_tools.wait_for_blocks_produced(delayed_blocks_ex, node.url)
             print_progress( i, len( accounts ) )
 
-    steem_utils.steem_tools.wait_for_blocks_produced(delayed_blocks, node.url)
+    hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
 def generate_dates( node ):
     logger.info("Generating dates...")
@@ -172,12 +173,12 @@ def create_proposals(node, accounts, start_date, end_date, nr_proposals):
                 steem_utils.steem_tools.wait_for_blocks_produced(delayed_blocks_ex, node.url)
                 print_progress( i, nr_proposals * len( accounts ) )
 
-    steem_utils.steem_tools.wait_for_blocks_produced(delayed_blocks, node.url)
+     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
 def list_proposals(node, ids, limit ):
     logger.info("Listing proposals...")
 
-    cnt = 0;
+    cnt = 0
     start = ""
     last_id = None
     while cnt < limit:
@@ -187,7 +188,7 @@ def list_proposals(node, ids, limit ):
             ids.append( proposal["id"] )
 
         if len( proposals ) == 0:
-            break;
+            break
         cnt += len( proposals )
         last_proposal = proposals[ len( proposals ) - 1 ]
         start = last_proposal["creator"]
@@ -197,7 +198,7 @@ def list_voter_proposals(node, limit ):
     logger.info("Listing voter proposals...")
 
     res = 0
-    cnt = 0;
+    cnt = 0
     start = ""
     while cnt < limit:
         nr_proposals = ( limit - cnt if limit - cnt <= SPS_API_SINGLE_QUERY_LIMIT else SPS_API_SINGLE_QUERY_LIMIT )
@@ -205,7 +206,7 @@ def list_voter_proposals(node, limit ):
         res += len( voter_proposals )
 
         if len( voter_proposals ) == 0:
-            break;
+            break
         cnt += len( voter_proposals )
         start = voter_proposals[ len( voter_proposals ) - 1 ]["creator"]
     return res
@@ -230,11 +231,11 @@ def vote_proposals(node, ids, accounts ):
                 i += 1
                 i_real += len( proposal_set )
                 if ( i % data_size ) == 0:
-                    steem_utils.steem_tools.wait_for_blocks_produced(delayed_blocks, node.url)
+                     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
                     print_progress( i_real, len( ids ) * len( accounts ) )
             proposal_set = []
 
-    steem_utils.steem_tools.wait_for_blocks_produced(delayed_blocks, node.url)
+     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
 def generate_blocks( node, time, wif ):
     logger.info("Generating blocks ...")
@@ -272,7 +273,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    node = steem_utils.steem_runner.SteemNode( args.path, args.dir, args.ini )
+    node = hive_utils.hive_node.HiveNodeInScreen( args.path, args.dir, args.ini )
     node_url = node.get_node_url()
     wif = node.get_from_config('private-key')[0]
 
@@ -288,10 +289,10 @@ if __name__ == '__main__':
     #for account in accounts:
     keys.append(accounts[0]["private_key"])
     
-    node.run_steem_node(["--enable-stale-production"])
+    node.run_hive_node(["--enable-stale-production"])
     try:
         if node.is_running():
-            node_client = Steem(nodes = [node_url], no_broadcast = False, keys = keys)
+            node_client = Hive(node = [node_url], no_broadcast = False, keys = keys)
 
             create_accounts(node_client, args.creator, accounts)
             transfer_to_vesting(node_client, args.creator, accounts, args.vests )
@@ -327,10 +328,10 @@ if __name__ == '__main__':
             else:
                 print( "***There are %i proposals/votes. All proposals should be removed - test failed***" % ( len( ids ) + total_votes ) )
 
-            node.stop_steem_node()
+            node.stop_hive_node()
             sys.exit(0)
         sys.exit(1)
     except Exception as ex:
         logger.error("Exception: {}".format(ex))
-        node.stop_steem_node()
+        node.stop_hive_node()
         sys.exit(1)

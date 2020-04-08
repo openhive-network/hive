@@ -8,7 +8,7 @@ log-logger = {"name":"default","level":"all","appender":"stderr"} {"name":"p2p",
 backtrace = yes
 
 # Plugin(s) to enable, may be specified multiple times
-plugin = witness database_api account_by_key_api network_broadcast_api tags_api follow_api condenser_api block_api sps_api transaction_status_api debug_node_api
+plugin = witness database_api account_by_key_api network_broadcast_api tags_api follow_api condenser_api block_api transaction_status_api debug_node_api
 
 # Disables automatic account history trimming
 history-disable-pruning = 0
@@ -53,7 +53,7 @@ market-history-bucket-size = [15,60,300,3600,86400]
 market-history-buckets-per-size = 5760
 
 # The IP address and port of a remote peer to sync with.
-p2p-seed-node = 
+p2p-seed-node = 127.0.0.1:2001
 
 # Skip rejecting transactions when account has insufficient RCs. This is not recommended.
 rc-skip-reject-not-enough-rc = 0
@@ -95,7 +95,7 @@ required-participation = 0
 witness = "initminer"
 
 # WIF PRIVATE KEY to be used by one or more witnesses or miners
-private-key = 
+private-key = 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
 
 # Skip enforcing bandwidth restrictions. Default is true in favor of rc_plugin.
 witness-skip-enforce-bandwidth = 1

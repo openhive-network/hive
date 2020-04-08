@@ -1,18 +1,18 @@
 #!/usr/bin/python3
+import sys
+sys.path.append("../../")
 
 from uuid import uuid4
 from time import sleep
 import logging
-import sys
-import steem_utils.steem_runner
-import steem_utils.steem_tools
+import hive_utils
 import threading
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
 MAIN_LOG_PATH = "./sps_id_collision_test.log"
 
-MODULE_NAME = "SPS-Tester-via-steempy"
+MODULE_NAME = "SPS-Tester"
 logger = logging.getLogger(MODULE_NAME)
 logger.setLevel(LOG_LEVEL)
 
@@ -29,9 +29,9 @@ if not logger.hasHandlers():
   logger.addHandler(fh)
 
 try:
-    from steem import Steem
+    from beem import Hive
 except Exception as ex:
-    logger.error("SteemPy library is not installed.")
+    logger.error("beem library is not installed.")
     sys.exit(1)
 
 # we would like to test ID conflict problem and I'd like to have python scripts 
@@ -48,7 +48,7 @@ class ProposalsCreatorThread(threading.Thread):
         self.private_key = private_key
         self.delay = delay
         self.log = logging.getLogger(MODULE_NAME + ".ProposalsCreatorThread." + self.node_url)
-        self.node_client = Steem(nodes = [self.node_url], keys = [self.private_key])
+        self.node_client = Hive(node = [self.node_url], keys = [self.private_key])
 
 
     def run(self):
@@ -84,7 +84,7 @@ def list_proposals_by_node(creator, private_key, nodes, subjects):
     for idx in range(0, len(nodes)):
         node = nodes[idx]
         logger.info("Listing proposals using node at {}".format(node))
-        s = Steem(nodes = [node], keys = [private_key])
+        s = Hive(node = [node], keys = [private_key])
         proposals = s.list_proposals(creator, "by_creator", "direction_ascending", 1000, "all")
         for subject in subjects:
             msg = "Looking for id of proposal with subject {}".format(subject)
@@ -109,9 +109,7 @@ if __name__ == "__main__":
 
     logger.info("Performing ID collision test with nodes {}".format(args.nodes_url))
 
-    import steem_utils.steem_tools
-
-    node_client = Steem(nodes = args.nodes_url, keys = [args.wif])
+    node_client = Hive(node = args.nodes_url, keys = [args.wif])
     logger.info("New post ==> ({},{},{},{},{})".format(
         "Steempy proposal title [{}]".format(args.creator), 
         "Steempy proposal body [{}]".format(args.creator), 
@@ -127,7 +125,7 @@ if __name__ == "__main__":
         tags = "proposals"
     )
 
-    steem_utils.steem_tools.wait_for_blocks_produced(5, args.nodes_url[0])
+    hive_utils.common.wait_n_blocks(args.nodes_url[0], 5)
 
     workers = []
 
@@ -186,7 +184,7 @@ if __name__ == "__main__":
     results = {}
     for idx in range(0, len(node_subjects)):
         node = args.nodes_url[idx]
-        s = Steem(nodes = [node], keys = [args.wif])
+        s = Hive(node = [node], keys = [args.wif])
         proposals = s.list_proposals(args.creator, "by_creator", "direction_ascending", 1000, "all")
         for subject in node_subjects[idx]:
             for proposal in proposals:
@@ -200,7 +198,7 @@ if __name__ == "__main__":
     logger.info("Checking for all transaction IDs by querying all nodes, IDs should match those gathered from nodes where we send the transactions")
     list_proposals_by_node(args.creator, args.wif, args.nodes_url, only_subjects)
 
-    steem_utils.steem_tools.wait_for_blocks_produced(5, args.nodes_url[0])
+    hive_utils.common.wait_n_blocks(args.nodes_url[0], 5)
     logger.info("Checking for all transaction IDs by querying all nodes (after some blocks produced)")
     list_proposals_by_node(args.creator, args.wif, args.nodes_url, only_subjects)
 

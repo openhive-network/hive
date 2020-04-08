@@ -1,19 +1,20 @@
 #!/usr/bin/python3
 
+import sys
+sys.path.append("../../")
+import hive_utils
+
 from uuid import uuid4
 from time import sleep
 import logging
-import sys
-import steem_utils.steem_runner
-import steem_utils.steem_tools
 import test_utils
 
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
-MAIN_LOG_PATH = "./sps_proposal_payment_003.log"
+MAIN_LOG_PATH = "./sps_proposal_payment_005.log"
 
-MODULE_NAME = "SPS-Tester-via-steempy"
+MODULE_NAME = "SPS-Tester"
 logger = logging.getLogger(MODULE_NAME)
 logger.setLevel(LOG_LEVEL)
 
@@ -30,15 +31,15 @@ if not logger.hasHandlers():
   logger.addHandler(fh)
 
 try:
-    from steem import Steem
+    from beem import Hive
 except Exception as ex:
-    logger.error("SteemPy library is not installed.")
+    logger.error("beem library is not installed.")
     sys.exit(1)
 
 # Greedy baby scenario
 # 0. In this scenario we have one proposal with huge daily pay and couple with low daily pay
 #    all proposals have the same number of votes, greedy proposal is first
-# 1. create few proposals - in this scenario proposals have the same starting and ending dates
+# 1. create few proposals - in this scenario proposals have different starting and ending dates
 # 2. vote on them to show differences in asset distribution (depending on collected votes)
 # 3. wait for proposal payment phase
 # 4. verify (using account history and by checking regular account balance) that given accounts have been correctly paid.
@@ -56,7 +57,7 @@ if __name__ == '__main__':
     parser.add_argument("--node-url", dest="node_url", default="http://127.0.0.1:8090", help="Url of working steem node")
     parser.add_argument("--run-steemd", dest="steemd_path", help = "Path to steemd executable. Warning: using this option will erase contents of selected steemd working directory.")
     parser.add_argument("--working_dir", dest="steemd_working_dir", default="/tmp/steemd-data/", help = "Path to steemd working directory")
-    parser.add_argument("--config_path", dest="steemd_config_path", default="./steem_utils/resources/config.ini.in",help = "Path to source config.ini file")
+    parser.add_argument("--config_path", dest="steemd_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
     parser.add_argument("--no-erase-proposal", action='store_false', dest = "no_erase_proposal", help = "Do not erase proposal created with this test")
 
 
@@ -70,7 +71,7 @@ if __name__ == '__main__':
             args.steemd_config_path)
         )
         
-        node = steem_utils.steem_runner.SteemNode(
+        node = hive_utils.hive_node.HiveNodeInScreen(
             args.steemd_path, 
             args.steemd_working_dir, 
             args.steemd_config_path
@@ -88,7 +89,11 @@ if __name__ == '__main__':
 
     accounts = [
         # place accounts here in the format: {'name' : name, 'private_key' : private-key, 'public_key' : public-key}
-        ]
+        {"name" : "tester001", "private_key" : "5KQeu7SdzxT1DiUzv7jaqwkwv1V8Fi7N8NBZtHugWYXqVFH1AFa", "public_key" : "TST8VfiahQsfS1TLcnBfp4NNfdw67uWweYbbUXymbNiDXVDrzUs7J"},
+        {"name" : "tester002", "private_key" : "5KgfcV9bgEen3v9mxkoGw6Rhuf2giDRZTHZjzwisjkrpF4FUh3N", "public_key" : "TST5gQPYm5bs9dRPHpqBy6dU32M8FcoKYFdF4YWEChUarc9FdYHzn"},
+        {"name" : "tester003", "private_key" : "5Jz3fcrrgKMbL8ncpzTdQmdRVHdxMhi8qScoxSR3TnAFUcdyD5N", "public_key" : "TST57wy5bXyJ4Z337Bo6RbinR6NyTRJxzond5dmGsP4gZ51yN6Zom"},
+        {"name" : "tester004", "private_key" : "5KcmobLVMSAVzETrZxfEGG73Zvi5SKTgJuZXtNgU3az2VK3Krye", "public_key" : "TST8dPte853xAuLMDV7PTVmiNMRwP6itMyvSmaht7J5tVczkDLa5K"},
+    ]
 
     if not accounts:
         logger.error("Accounts array is empty, please add accounts in a form {\"name\" : name, \"private_key\" : private_key, \"public_key\" : public_key}")
@@ -99,10 +104,10 @@ if __name__ == '__main__':
         keys.append(account["private_key"])
     
     if node is not None:
-        node.run_steem_node(["--enable-stale-production"])
+        node.run_hive_node(["--enable-stale-production"])
     try:
         if node is None or node.is_running():
-            node_client = Steem(nodes = [node_url], no_broadcast = False, 
+            node_client = Hive(node = [node_url], no_broadcast = False, 
                 keys = keys
             )
 
@@ -125,10 +130,6 @@ if __name__ == '__main__':
             test_utils.print_balance(node_client, accounts)
             # transfer assets to treasury
             test_utils.transfer_assets_to_treasury(node_client, args.creator, args.treasury, 
-                "1000000.000", "TESTS"
-            )
-
-            test_utils.transfer_assets_to_treasury(node_client, args.creator, args.treasury, 
                 "1000000.000", "TBD"
             )
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
@@ -143,9 +144,9 @@ if __name__ == '__main__':
 
             proposal_data = [
                 ['tester001', 1 + 0, 3, '240000.000 TBD'], # starts 1 day from now and lasts 3 days
-                ['tester002', 1 + 0, 3, '24.000 TBD'], # starts 1 day from now and lasts 3 days
-                ['tester003', 1 + 0, 3, '24.000 TBD'], # starts 1 days from now and lasts 3 day
-                ['tester004', 1 + 0, 3, '24.000 TBD']  # starts 1 days from now and lasts 3 day
+                ['tester002', 1 + 0, 1, '24.000 TBD'], # starts 1 day from now and lasts 1 days
+                ['tester003', 1 + 1, 1, '24.000 TBD'], # starts 2 days from now and lasts 1 day
+                ['tester004', 1 + 2, 1, '24.000 TBD']  # starts 3 days from now and lasts 1 day
             ]
 
             proposals = [
@@ -183,21 +184,21 @@ if __name__ == '__main__':
             balances = test_utils.print_balance(node_client, accounts)
             for balance in balances:
                 #should be 390.000 TBD for all
-                assert balance == '390.000 TBD', "All balances should be equal to 390.000 TBD"
+                assert balance == '390000', "All balances should be equal to 390.000 TBD"
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
 
             # move forward in time to see if proposals are paid
             # moving is made in 1h increments at a time, after each 
             # increment balance is printed
             logger.info("Moving to date: {}".format(test_start_date_iso))
-            node_client.debug_generate_blocks_until(wif, test_start_date_iso, False)
+            hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_start_date_iso, False)
             current_date = test_start_date
             while current_date < test_end_date:
                 current_date = current_date + datetime.timedelta(hours = 1)
                 current_date_iso = test_utils.date_to_iso(current_date)
 
                 logger.info("Moving to date: {}".format(current_date_iso))
-                node_client.debug_generate_blocks_until(wif, current_date_iso, False)
+                hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, current_date_iso, False)
 
                 logger.info("Balances for accounts at time: {}".format(current_date_iso))
                 test_utils.print_balance(node_client, accounts)
@@ -209,15 +210,17 @@ if __name__ == '__main__':
 
             # move additional hour to ensure that all proposals ended
             logger.info("Moving to date: {}".format(test_end_date_iso))
-            node_client.debug_generate_blocks_until(wif, test_end_date_iso, False)
+            hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_end_date_iso, False)
             logger.info("Balances for accounts at time: {}".format(test_end_date_iso))
             balances = test_utils.print_balance(node_client, accounts)
-            # it should 29951.682 be but its 29905.081 due to the roundin implementation
+            # it should be '29951.682 TBD', '390.000 TBD', '390.000 TBD', '390.000 TBD',
+            # but but because of rounding implementation it is 29905.081 TBD,390.000 TBD,390.000 TBD,390.000 TBD
+
             test_balances = [
-                '29905.081 TBD',
-                '390.000 TBD',
-                '390.000 TBD',
-                '390.000 TBD',
+                '29905081',
+                '390000',
+                '390000',
+                '390000',
             ]
             for idx in range(0, len(test_balances)):
                 assert balances[idx] == test_balances[idx], "Balances dont match {} != {}".format(balances[idx], test_balances[idx])
@@ -225,11 +228,11 @@ if __name__ == '__main__':
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
 
             if node is not None:
-                node.stop_steem_node()
+                node.stop_hive_node()
             sys.exit(0)
         sys.exit(1)
     except Exception as ex:
         logger.error("Exception: {}".format(ex))
         if node is not None: 
-            node.stop_steem_node()
+            node.stop_hive_node()
         sys.exit(1)
