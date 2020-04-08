@@ -54,6 +54,7 @@ class ProposalsCreatorThread(threading.Thread):
     def run(self):
         self.log.info("Sending proposals to node at: {} with delay {}".format(self.node_url, self.delay))
         sleep(self.delay)
+        from beembase.operations import Create_proposal
         for proposal in self.proposals:
             self.log.info("New proposal ==> ({},{},{},{},{},{},{})".format(
                 proposal['creator'],
@@ -64,16 +65,18 @@ class ProposalsCreatorThread(threading.Thread):
                 proposal['subject'],
                 proposal['permlink']
             ))
-
-            self.node_client.commit.create_proposal(
-                proposal['creator'],
-                proposal['receiver'],
-                proposal['start_date'],
-                proposal['end_date'],
-                proposal['daily_pay'],
-                proposal['subject'],
-                proposal['permlink']
+            op = Create_proposal(
+                **{
+                    'creator' : proposal['creator'],
+                    'receiver' : proposal['receiver'],
+                    'start_date' : proposal['start_date'],
+                    'end_date' : proposal['end_date'],
+                    'daily_pay' : proposal['daily_pay'],
+                    'subject' : proposal['subject'],
+                    'permlink' : proposal['permlink']
+                }
             )
+            self.node_client.finalizeOp(op, proposal['creator'], "active")
 
 
 def get_permlink(account):
@@ -85,7 +88,7 @@ def list_proposals_by_node(creator, private_key, nodes, subjects):
         node = nodes[idx]
         logger.info("Listing proposals using node at {}".format(node))
         s = Hive(node = [node], keys = [private_key])
-        proposals = s.list_proposals(creator, "by_creator", "direction_ascending", 1000, "all")
+        proposals = s.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
         for subject in subjects:
             msg = "Looking for id of proposal with subject {}".format(subject)
             for proposal in proposals:
@@ -118,7 +121,7 @@ if __name__ == "__main__":
         "proposals"
     ))
 
-    node_client.commit.post("Steempy proposal title [{}]".format(args.creator), 
+    node_client.post("Steempy proposal title [{}]".format(args.creator), 
         "Steempy proposal body [{}]".format(args.creator), 
         args.creator, 
         permlink = get_permlink(args.creator), 
@@ -185,7 +188,7 @@ if __name__ == "__main__":
     for idx in range(0, len(node_subjects)):
         node = args.nodes_url[idx]
         s = Hive(node = [node], keys = [args.wif])
-        proposals = s.list_proposals(args.creator, "by_creator", "direction_ascending", 1000, "all")
+        proposals = s.rpc.list_proposals([args.creator], 1000, "by_creator", "ascending", "all")
         for subject in node_subjects[idx]:
             for proposal in proposals:
                 msg = "Looking for id of proposal sent to {} with subject {}".format(node, subject)

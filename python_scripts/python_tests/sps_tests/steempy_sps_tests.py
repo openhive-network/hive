@@ -46,30 +46,33 @@ def test_create_proposal(node, creator_account, receiver_account, wif, subject):
 
     start_date, end_date = test_utils.get_start_and_end_date(now, 10, 2)
 
-    from steem.account import Account
+    from beem.account import Account
     try:
-        creator = Account(creator_account)
+        creator = Account(creator_account, hive_instance=s)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(creator_account, ex))
         sys.exit(1)
     
     try:
-        receiver = Account(receiver_account)
+        receiver = Account(receiver_account, hive_instance=s)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(receiver_account, ex))
         sys.exit(1)
 
-    ret = s.commit.post("Steempy proposal title", "Steempy proposal body", creator["name"], permlink = "steempy-proposal-title", tags = "proposals")
-
-    ret = s.commit.create_proposal(
-      creator["name"], 
-      receiver["name"], 
-      start_date, 
-      end_date,
-      "16.000 TBD",
-      subject,
-      "steempy-proposal-title"
+    ret = s.post("Steempy proposal title", "Steempy proposal body", creator["name"], permlink = "steempy-proposal-title", tags = "proposals")
+    from beembase.operations import Create_proposal
+    op = Create_proposal(
+        **{
+            "creator" : creator["name"], 
+            "receiver" : receiver["name"], 
+            "start_date" : start_date, 
+            "end_date" : end_date,
+            "daily_pay" : "16.000 TBD",
+            "subject" : subject,
+            "permlink" : "steempy-proposal-title"
+        }
     )
+    ret = s.finalizeOp(op, creator["name"], "active")
 
     assert ret["operations"][0][1]["creator"] == creator["name"]
     assert ret["operations"][0][1]["receiver"] == receiver["name"]
@@ -83,7 +86,7 @@ def test_list_proposals(node, account, wif, subject):
     logger.info("Testing: list_proposals")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
     # list inactive proposals, our proposal shoud be here
-    proposals = s.list_proposals(account, "by_creator", "direction_ascending", 1000, "inactive")
+    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
     found = None
     for proposal in proposals:
         if proposal["subject"] == subject:
@@ -92,7 +95,7 @@ def test_list_proposals(node, account, wif, subject):
     assert found is not None
     
     # list active proposals, our proposal shouldnt be here
-    proposals = s.list_proposals(account, "by_creator", "direction_ascending", 1000, "active")
+    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "active")
     found = None
     for proposal in proposals:
         if proposal["subject"] == subject:
@@ -101,7 +104,7 @@ def test_list_proposals(node, account, wif, subject):
     assert found is None
 
     # list all proposals, our proposal should be here
-    proposals = s.list_proposals(account, "by_creator", "direction_ascending", 1000, "all")
+    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "all")
 
     found = None
     for proposal in proposals:
@@ -114,7 +117,7 @@ def test_find_proposals(node, account, wif, subject):
     logger.info("Testing: find_proposals")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
     # first we will find our special proposal and get its id
-    proposals = s.list_proposals(account, "by_creator", "direction_ascending", 1000, "inactive")
+    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
     found = None
     for proposal in proposals:
@@ -124,14 +127,14 @@ def test_find_proposals(node, account, wif, subject):
     assert found is not None
     proposal_id = int(found["id"])
 
-    ret = s.find_proposals([proposal_id])
+    ret = s.rpc.find_proposals([proposal_id])
     assert ret[0]["subject"] == found["subject"]
 
 def test_vote_proposal(node, account, wif, subject):
     logger.info("Testing: vote_proposal")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
     # first we will find our special proposal and get its id
-    proposals = s.list_proposals(account, "by_creator", "direction_ascending", 1000, "inactive")
+    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
     found = None
     for proposal in proposals:
@@ -142,22 +145,29 @@ def test_vote_proposal(node, account, wif, subject):
     proposal_id = int(found["id"])
 
     # now lets vote
-    ret = s.commit.update_proposal_votes(account, [proposal_id], True)
+    from beembase.operations import Update_proposal_votes
+    op = Update_proposal_votes(
+        **{
+            "voter" : account,
+            "proposal_ids" : [proposal_id],
+            "approve" : True
+        }
+    )
+    ret = s.finalizeOp(op, account, "active")
     assert ret["operations"][0][1]["voter"] == account
     assert ret["operations"][0][1]["proposal_ids"][0] == proposal_id
     assert ret["operations"][0][1]["approve"] == True
-    steem_utils.steem_tools.wait_for_blocks_produced(2, node)
+    hive_utils.common.wait_n_blocks(s.rpc.url, 2)
 
 def test_list_voter_proposals(node, account, wif, subject):
     logger.info("Testing: list_voter_proposals")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
-    voter_proposals = s.list_voter_proposals(account, "by_creator", "direction_ascending", 1000, "inactive")
+    voter_proposals = s.rpc.list_proposal_votes([account], 1000, "by_voter_proposal", "ascending", "inactive")
 
     found = None
-    for voter, proposals in voter_proposals.items():
-        for proposal in proposals:
-            if proposal["subject"] == subject:
-                found = proposal
+    for proposals in voter_proposals:
+        if proposals["proposal"]["subject"] == subject:
+            found = proposals
     
     assert found is not None
 
@@ -165,30 +175,41 @@ def test_remove_proposal(node, account, wif, subject):
     logger.info("Testing: remove_proposal")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
     # first we will find our special proposal and get its id
-    proposals = s.list_proposals(account, "by_creator", "direction_ascending", 1000, "inactive")
+    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
     found = None
     for proposal in proposals:
         if proposal["subject"] == subject:
             found = proposal
     
-    assert found is not None
+    assert found is not None, "Not found"
     proposal_id = int(found["id"])
 
     # remove proposal
-    s.commit.remove_proposal(account, [proposal_id])
+    print(account)
+    from beembase.operations import Remove_proposal
+    op = Remove_proposal(
+        **{
+            'voter' : account,
+            'proposal_owner' : account,
+            'proposal_ids' : [proposal_id]
+        }
+    )
+    s.finalizeOp(op, account, "active")
 
     # try to find our special proposal
-    proposals = s.list_proposals(account, "by_creator", "direction_ascending", 1000, "inactive")
+    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
     found = None
     for proposal in proposals:
         if proposal["subject"] == subject:
             found = proposal
     
-    assert found is None
+    assert found is None, "Not found"
 
-
+## WARNING!
+# THIS TEST WILL NOT WORK BECAUSE SOMEBODY REMOVED LAST_ID FUNCTIONALITY !!!!
+###
 def test_iterate_results_test(node, creator_account, receiver_account, wif, subject, remove):
     logger.info("Testing: test_iterate_results_test")
     # test for iterate prosals
@@ -200,15 +221,15 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
     # 4 then we will use newly introduced last_id field, we should see diferent set of proposals
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
 
-    from steem.account import Account
+    from beem.account import Account
     try:
-        creator = Account(creator_account)
+        creator = Account(creator_account, hive_instance=s)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(creator_account, ex))
         sys.exit(1)
     
     try:
-        receiver = Account(receiver_account)
+        receiver = Account(receiver_account, hive_instance=s)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(receiver_account, ex))
         sys.exit(1)
@@ -230,24 +251,27 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
         [6,9]
     ]
 
+    from beembase.operations import Create_proposal
     for start_end_pair in start_end_pairs:
         start_date, end_date = test_utils.get_start_and_end_date(now, start_end_pair[0], start_end_pair[1])
-
-        s.commit.create_proposal(
-            creator["name"], 
-            receiver["name"], 
-            start_date, 
-            end_date,
-            "16.000 TBD",
-            subject,
-            "steempy-proposal-title"
-            )
-    steem_utils.steem_tools.wait_for_blocks_produced(5, node)
+        op = Create_proposal(
+            **{
+                'creator' : creator["name"], 
+                'receiver' : receiver["name"], 
+                'start_date' : start_date, 
+                'end_date' :end_date,
+                'daily_pay' : "16.000 TBD",
+                'subject' : subject,
+                'permlink' : "steempy-proposal-title"
+            }
+        )
+        s.finalizeOp(op, creator["name"], "active")
+    hive_utils.common.wait_n_blocks(node, 5)
 
     start_date = test_utils.date_to_iso(now + datetime.timedelta(days = 5))
 
     # 2 then we will list proposals starting from kth proposal with limit set to m < k
-    proposals = s.list_proposals(start_date, "by_start_date", "direction_descending", 3, "all")
+    proposals = s.rpc.list_proposals([start_date], 3, "by_start_date", "descending", "all")
     assert len(proposals) == 3, "Expected {} elements got {}".format(3, len(proposals))
     ids = []
     for proposal in proposals:
@@ -256,7 +280,7 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
     assert len(ids) == 3, "Expected {} elements got {}".format(3, len(ids))
 
     # 3 we list proposals again with the same conditiona as in 2, we should get the same set of results
-    proposals = s.list_proposals(start_date, "by_start_date", "direction_descending", 3, "all")
+    proposals = s.rpc.list_proposals([start_date], 3, "by_start_date", "descending", "all")
     assert len(proposals) == 3, "Expected {} elements got {}".format(3, len(proposals))
     oids = []
     for proposal in proposals:
@@ -269,7 +293,7 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
         assert id in oids, "Id not found in expected results array {}".format(id)
 
     # 4 then we will use newly introduced last_id field, we should see diferent set of proposals
-    proposals = s.list_proposals(start_date, "by_start_date", "direction_descending", 3, "all", oids[-1])
+    proposals = s.rpc.list_proposals([start_date], 3, "by_start_date", "descending", "all", oids[-1])
 
     start_date, end_date = test_utils.get_start_and_end_date(now, 5, 4)
 
@@ -277,15 +301,23 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
     assert proposals[-1]["end_date"] == end_date, "Expected end_date do not match {} != {}".format(end_date, proposals[-1]["end_date"])
 
     # remove all created proposals
+    from beembase.operations import Remove_proposal
     if remove:
         start_date = test_utils.date_to_iso(now + datetime.timedelta(days = 6))
-        for a in range(0, 2):
-            proposals = s.list_proposals(start_date, "by_start_date", "direction_descending", 5, "all")
+        for _ in range(0, 2):
+            proposals = s.list_proposals([start_date], 5, "by_start_date", "descending", "all")
             ids = []
             for proposal in proposals:
                 ids.append(int(proposal['id']))
-            s.commit.remove_proposal(creator["name"], ids)
-            steem_utils.steem_tools.wait_for_blocks_produced(3, node)
+            
+            op = Remove_proposal(
+                **{
+                    "voter" : creator["name"],
+                    "proposal_ids" : ids
+                }
+            )
+            s.finalizeOp(op, creator["name"], "active")
+            hive_utils.common.wait_n_blocks(node, 3)
 
 
 if __name__ == '__main__':
@@ -299,7 +331,7 @@ if __name__ == '__main__':
     parser.add_argument("--run-steemd", dest="steemd_path", help = "Path to steemd executable. Warning: using this option will erase contents of selected steemd working directory.")
     parser.add_argument("--working_dir", dest="steemd_working_dir", default="/tmp/steemd-data/", help = "Path to steemd working directory")
     parser.add_argument("--config_path", dest="steemd_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
-    parser.add_argument("--no-erase-proposal", action='store_false', dest = "no_erase_proposal", help = "Do not erase proposal created with this test")
+    parser.add_argument("--no-erase-proposal", action='store_true', dest = "no_erase_proposal", help = "Do not erase proposal created with this test")
 
     args = parser.parse_args()
 
@@ -330,16 +362,16 @@ if __name__ == '__main__':
     try:
         if node is None or node.is_running():
             test_create_proposal(node_url, args.creator, args.receiver, wif, subject)
-            steem_utils.steem_tools.wait_for_blocks_produced(2, node_url)
+            hive_utils.common.wait_n_blocks(node_url, 3)
             test_list_proposals(node_url, args.creator, wif, subject)
             test_find_proposals(node_url, args.creator, wif, subject)
             test_vote_proposal(node_url, args.creator, wif, subject)
             test_list_voter_proposals(node_url, args.creator, wif, subject)
-            steem_utils.steem_tools.wait_for_blocks_produced(2, node_url)
+            hive_utils.common.wait_n_blocks(node_url, 3)
             if args.no_erase_proposal:
                 test_remove_proposal(node_url, args.creator, wif, subject)
-            test_iterate_results_test(node_url, args.creator, args.receiver, args.wif, str(uuid4()), args.no_erase_proposal)
-            steem_utils.steem_tools.wait_for_blocks_produced(2, node_url)
+            #test_iterate_results_test(node_url, args.creator, args.receiver, args.wif, str(uuid4()), args.no_erase_proposal)
+            hive_utils.common.wait_n_blocks(node_url, 3)
             if node is not None:
                 node.stop_hive_node()
             sys.exit(0)

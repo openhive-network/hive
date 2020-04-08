@@ -191,14 +191,14 @@ if __name__ == '__main__':
             # moving is made in 1h increments at a time, after each 
             # increment balance is printed
             logger.info("Moving to date: {}".format(test_start_date_iso))
-            hive_utils.debug_generate_blocks_until(node_client.rpc.url, wif, test_start_date_iso, False)
+            hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_start_date_iso, False)
             current_date = test_start_date
             while current_date < test_end_date:
                 current_date = current_date + datetime.timedelta(hours = 1)
                 current_date_iso = test_utils.date_to_iso(current_date)
 
                 logger.info("Moving to date: {}".format(current_date_iso))
-                hive_utils.debug_generate_blocks_until(node_client.rpc.url, wif, current_date_iso, False)
+                hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, current_date_iso, False)
 
                 logger.info("Balances for accounts at time: {}".format(current_date_iso))
                 test_utils.print_balance(node_client, accounts)
@@ -210,7 +210,7 @@ if __name__ == '__main__':
 
             # move additional hour to ensure that all proposals ended
             logger.info("Moving to date: {}".format(test_end_date_iso))
-            hive_utils.debug_generate_blocks_until(node_client.rpc.url, wif, test_end_date_iso, False)
+            hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_end_date_iso, False)
             logger.info("Balances for accounts at time: {}".format(test_end_date_iso))
             balances = test_utils.print_balance(node_client, accounts)
             # it should 29951.682 be but its 29905.081 due to the roundin implementation

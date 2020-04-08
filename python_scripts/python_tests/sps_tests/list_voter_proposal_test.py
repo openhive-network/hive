@@ -38,10 +38,9 @@ except Exception as ex:
     logger.error("beem library is not installed.")
     sys.exit(1)
 
-# create_account "initminer" "pychol" "" true
 def create_accounts(node, creator, account):
     logger.info("Creating account: {}".format(account['name']))
-    node.commit.create_account(account['name'], 
+    node.create_account(account['name'], 
         owner_key=account['public_key'], 
         active_key=account['public_key'], 
         posting_key=account['public_key'],
@@ -50,39 +49,34 @@ def create_accounts(node, creator, account):
         creator=creator,
         asset='TESTS'
     )
-    hive_utils.common.wait_n_blocks(node.url, 5)
-
+    hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
 # transfer_to_vesting initminer pychol "310.000 TESTS" true
 def transfer_to_vesting(node, from_account, account, amount, asset):
+    from beem.account import Account
     logger.info("Transfer to vesting from {} to {} amount {} {}".format(
         from_account, account['name'], amount, asset)
     )
-    
-    node.commit.transfer_to_vesting(amount, to = account['name'], 
-        account = from_account, asset = asset
-    )
-    hive_utils.common.wait_n_blocks(node.url, 5)
+    acc = Account(from_account, hive_instance=node)
+    acc.transfer_to_vesting(amount, to = account['name'], asset = asset)
+    hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
 
 # transfer initminer pychol "399.000 TESTS" "initial transfer" true
 # transfer initminer pychol "398.000 TBD" "initial transfer" true
 def transfer_assets_to_accounts(node, from_account, account, amount, asset):
+    from beem.account import Account
     logger.info("Transfer from {} to {} amount {} {}".format(from_account, 
         account['name'], amount, asset)
     )
-    node.commit.transfer(account['name'], amount, asset, 
-        memo = "initial transfer", account = from_account
-    )
-    hive_utils.common.wait_n_blocks(node.url, 5)
-
-
-def get_permlink(account):
-    return "steempy-proposal-title-{}".format(account)
+    acc = Account(from_account, hive_instance=node)
+    acc.transfer(account['name'], amount, asset, memo = "initial transfer")
+    hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
 
 def create_posts(node, account):
     logger.info("Creating posts...")
+    from test_utils import get_permlink
     logger.info("New post ==> ({},{},{},{},{})".format(
         "Steempy proposal title [{}]".format(account['name']), 
         "Steempy proposal body [{}]".format(account['name']), 
@@ -90,16 +84,18 @@ def create_posts(node, account):
         get_permlink(account['name']), 
         "proposals"
     ))
-    node.commit.post("Steempy proposal title [{}]".format(account['name']), 
+    node.post("Steempy proposal title [{}]".format(account['name']), 
         "Steempy proposal body [{}]".format(account['name']), 
         account['name'], 
         permlink = get_permlink(account['name']), 
         tags = "proposals")
-    hive_utils.common.wait_n_blocks(node.url, 5)
+    hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
 
 def create_proposals(node, account, start_date, end_date, proposal_count):
     logger.info("Creating proposals...")
+    from beembase.operations import Create_proposal
+    from test_utils import get_permlink
     for idx in range(0, proposal_count):
         logger.info("New proposal ==> ({},{},{},{},{},{},{})".format(
             account['name'], 
@@ -110,20 +106,24 @@ def create_proposals(node, account, start_date, end_date, proposal_count):
             "Proposal from account {} {}/{}".format(account['name'], idx, proposal_count),
             get_permlink(account['name'])
         ))
-        node.commit.create_proposal(
-            account['name'], 
-            account['name'], 
-            start_date, 
-            end_date,
-            "24.000 TBD",
-            "Proposal from account {} {}/{}".format(account['name'], idx, proposal_count),
-            get_permlink(account['name'])
+        op = Create_proposal(
+            **{
+                'creator' : account['name'], 
+                'receiver' : account['name'], 
+                'start_date' : start_date, 
+                'end_date' : end_date,
+                'daily_pay' : "24.000 TBD",
+                'subject' : "Proposal from account {}".format(account['name']),
+                'permlink' : get_permlink(account['name'])
+            }
         )
-    hive_utils.common.wait_n_blocks(node.url, 5)
+        node.finalizeOp(op, account['name'], "active")
+        hive_utils.common.wait_n_blocks(node.rpc.url, 1)
+    hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
 
 def list_proposals(node, account):
-    proposals = node.list_proposals(account['name'], "by_creator", "direction_ascending", 1000, 'all')
+    proposals = node.rpc.list_proposals([account['name']], 1000, "by_creator", "ascending", 'all')
     ids = []
     for proposal in proposals:
         ids.append(int(proposal.get('id', -1)))
@@ -133,17 +133,27 @@ def list_proposals(node, account):
 
 def vote_proposals(node, account, ids):
     logger.info("Voting proposals...")
-    node.commit.update_proposal_votes(account['name'], ids, True)
-    hive_utils.common.wait_n_blocks(node.url, 5)
+    from beembase.operations import Update_proposal_votes
+    op = Update_proposal_votes(
+        **{
+            'voter' : account["name"],
+            'proposal_ids' : ids,
+            'approve' : True
+        }
+    )
+    node.finalizeOp(op, account["name"], "active")
+    hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
 
 def list_voter_proposals(node, account, limit = 1000, last_id = None):
     logger.info("List voted proposals...")
-    voter_proposals = node.list_voter_proposals(account['name'], 'by_creator', 'direction_ascending', limit, 'all', last_id)
-    proposals = voter_proposals.get(account['name'], None)
+    # last_id is not supported!!!!
+    #voter_proposals = node.rpc.list_proposal_votes([account['name']], limit, 'by_voter_proposal', 'ascending', 'all', last_id)
+    voter_proposals = node.rpc.list_proposal_votes([account['name']], limit, 'by_voter_proposal', 'ascending', 'all')
     ids = []
-    for proposal in proposals:
-        ids.append(int(proposal['id']))
+    for proposal in voter_proposals:
+        if proposal["voter"] == account['name']:
+            ids.append(int(proposal['proposal']['proposal_id']))
     return ids
 
 
@@ -186,8 +196,9 @@ if __name__ == '__main__':
     logger.info("Using node at: {}".format(node_url))
     logger.info("Using private-key: {}".format(wif))
 
-    account = {"name" : "tester001", "private_key" : "", "public_key" : ""}
-
+    #account = {"name" : "tester001", "private_key" : "", "public_key" : ""}
+    account = {"name" : "tester001", "private_key" : "5KQeu7SdzxT1DiUzv7jaqwkwv1V8Fi7N8NBZtHugWYXqVFH1AFa", "public_key" : "TST8VfiahQsfS1TLcnBfp4NNfdw67uWweYbbUXymbNiDXVDrzUs7J"}
+    
     assert len(account["private_key"]) != 0, "Private key is empty"
 
     keys = [wif]
@@ -255,13 +266,14 @@ if __name__ == '__main__':
             proposals_ids = list_voter_proposals(node_client, account, 3)
             logger.info(proposals_ids)
 
-            logger.info("Rest")
-            proposals_ids = list_voter_proposals(node_client, account, 100, proposals_ids[-1])
-            logger.info(proposals_ids)
+            # last_id not supported!!!
+            #logger.info("Rest")
+            #proposals_ids = list_voter_proposals(node_client, account, 100, proposals_ids[-1])
+            #logger.info(proposals_ids)
 
             assert len(proposals_ids) == 3, "Expecting 3 proposals"
-            assert proposals_ids[0] == 2, "Expecting id = 2"
-            assert proposals_ids[-1] == 4, "Expecting id = 4"
+            assert proposals_ids[0] == 0, "Expecting id = 0"
+            assert proposals_ids[-1] == 2, "Expecting id = 2"
     
             if node is not None:
                 node.stop_hive_node()

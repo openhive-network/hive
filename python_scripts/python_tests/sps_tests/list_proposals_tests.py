@@ -56,42 +56,45 @@ def create_proposals(node_client, creator_account, receiver_account):
 
     start_date, end_date = hive_utils.common.get_isostr_start_end_date(now, 10, 2)
 
-    from steem.account import Account
+    from beem.account import Account
     try:
-        creator = Account(creator_account)
+        creator = Account(creator_account, hive_instance=node_client)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(creator_account, ex))
         sys.exit(1)
     
     try:
-        receiver = Account(receiver_account)
+        receiver = Account(receiver_account, hive_instance=node_client)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(receiver_account, ex))
         sys.exit(1)
 
     logger.info("Creating initial post...")
-    node_client.commit.post("Steempy proposal title", "Steempy proposal body", creator["name"], permlink = "steempy-proposal-title", tags = "proposals")
+    node_client.post("Steempy proposal title", "Steempy proposal body", creator["name"], permlink = "steempy-proposal-title", tags = "proposals")
 
     logger.info("Creating proposals...")
+    from beembase.operations import Create_proposal
     for start_end_subject in START_END_SUBJECTS:
         start_date, end_date = hive_utils.common.get_isostr_start_end_date(now, start_end_subject[0], start_end_subject[1])
-
-        node_client.commit.create_proposal(
-            creator["name"], 
-            receiver["name"], 
-            start_date, 
-            end_date,
-            "16.000 TBD",
-            start_end_subject[2],
-            "steempy-proposal-title"
-            )
-        sleep(3)
-    sleep(6)
+        op = Create_proposal(
+            **{
+                'creator' : creator["name"],
+                'receiver' : receiver["name"],
+                'start_date' : start_date,
+                'end_date' : end_date,
+                'daily_pay' : "16.000 TBD",
+                'subject' : start_end_subject[2],
+                'permlink' : "steempy-proposal-title"
+            }
+        )
+        node_client.finalizeOp(op, creator["name"], "active")
+        hive_utils.common.wait_n_blocks(node_client.rpc.url, 1)
+    hive_utils.common.wait_n_blocks(node_client.rpc.url, 2)
 
 
 def list_proposals_test(node_client, creator):
     logger.info("Testing direction ascending with start field given")
-    proposals = node_client.list_proposals(creator, "by_creator", "direction_ascending", 1000, "all")
+    proposals = node_client.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
     # we should get len(START_END_SUBJECTS) proposals with wirs proposal with subject Subject001
     # and last with subject Subject009
     assert len(proposals) == len(START_END_SUBJECTS), "Proposals count do not match assumed proposal count {}!={}".format(len(proposals), len(START_END_SUBJECTS))
@@ -102,7 +105,7 @@ def list_proposals_test(node_client, creator):
     id_last  = proposals[-1]['id']
 
     logger.info("Testing direction descending with start field given")
-    proposals = node_client.list_proposals(creator, "by_creator", "direction_descending", 1000, "all")
+    proposals = node_client.rpc.list_proposals([creator], 1000, "by_creator", "descending", "all")
     # we should get len(START_END_SUBJECTS) proposals with first proposal with subject Subject009
     # and last with subject Subject001
     assert len(proposals) == len(START_END_SUBJECTS), "Proposals count do not match assumed proposal count {}!={}".format(len(proposals), len(START_END_SUBJECTS))
@@ -112,55 +115,55 @@ def list_proposals_test(node_client, creator):
     # if all pass we can proceed with other tests
     # first we will test empty start string in defferent directions
     logger.info("Testing empty start string and ascending direction")
-    proposals = node_client.list_proposals("", "by_start_date", "direction_ascending", 1, "all")
+    proposals = node_client.rpc.list_proposals([""], 1, "by_start_date", "ascending", "all")
     # we shoud get proposal with Subject001
     assert proposals[0]['subject'] == START_END_SUBJECTS[0][2], "Subject of the proposal does not match with assumed proposal subject {}!={}".format(proposals[0]['subject'], START_END_SUBJECTS[0][2])
     
     # now we will test empty start string in descending
     logger.info("Testing empty start string and descending direction")
-    proposals = node_client.list_proposals("", "by_start_date", "direction_descending", 1, "all")
+    proposals = node_client.rpc.list_proposals([""], 1, "by_start_date", "descending", "all")
     assert proposals[0]['subject'] == START_END_SUBJECTS[-1][2], "Subject of the proposal does not match with assumed proposal subject {}!={}".format(proposals[-1]['subject'], START_END_SUBJECTS[-1][2])
     
     # now we will test empty start string with ascending order and last_id set
     logger.info("Testing empty start string and ascenging direction and last_id set")
-    proposals = node_client.list_proposals("", "by_start_date", "direction_ascending", 100, "all", 5)
+    proposals = node_client.rpc.list_proposals([""], 100, "by_start_date", "ascending", "all", 5)
     assert proposals[0]['id'] == 5, "First proposal should have id == 5, has {}".format(proposals[0]['id'])
     assert proposals[-1]['subject'] == START_END_SUBJECTS[-1][2], "Subject of the proposal does not match with assumed proposal subject {}!={}".format(proposals[-1]['subject'], START_END_SUBJECTS[-1][2])
     
     # now we will test empty start string with descending order and last_id set
     logger.info("Testing empty start string and descending direction and last_id set")
-    proposals = node_client.list_proposals("", "by_start_date", "direction_descending", 100, "all", 5)
+    proposals = node_client.rpc.list_proposals([""], 100, "by_start_date", "descending", "all", 5)
     assert proposals[0]['id'] == 5, "First proposal should have id == 5, has {}".format(proposals[0]['id'])
     assert proposals[-1]['subject'] == START_END_SUBJECTS[0][2], "Subject of the proposal does not match with assumed proposal subject {}!={}".format(proposals[-1]['subject'], START_END_SUBJECTS[0][2])
 
     # now we will test empty start string with ascending order and last_id set
     logger.info("Testing not empty start string and ascenging direction and last_id set")
-    proposals = node_client.list_proposals(creator, "by_creator", "direction_ascending", 100, "all", 5)
+    proposals = node_client.rpc.list_proposals([creator], 100, "by_creator", "ascending", "all", 5)
     assert proposals[0]['id'] == 5, "First proposal should have id == 5, has {}".format(proposals[0]['id'])
     assert proposals[-1]['subject'] == START_END_SUBJECTS[-1][2], "Subject of the proposal does not match with assumed proposal subject {}!={}".format(proposals[-1]['subject'], START_END_SUBJECTS[-1][2])
 
     # now we will test empty start string with descending order and last_id set
     logger.info("Testing not empty start string and descending direction and last_id set")
-    proposals = node_client.list_proposals(creator, "by_creator", "direction_descending", 100, "all", 5)
+    proposals = node_client.rpc.list_proposals([creator], 100, "by_creator", "descending", "all", 5)
     assert proposals[0]['id'] == 5, "First proposal should have id == 5, has {}".format(proposals[0]['id'])
     assert proposals[-1]['subject'] == START_END_SUBJECTS[0][2], "Subject of the proposal does not match with assumed proposal subject {}!={}".format(proposals[-1]['subject'], START_END_SUBJECTS[0][2])
 
     logger.info("Testing not empty start string and ascending direction and last_id set to the last element")
-    proposals = node_client.list_proposals(creator, "by_creator", "direction_ascending", 100, "all", id_last)
+    proposals = node_client.rpc.list_proposals([creator], 100, "by_creator", "ascending", "all", id_last)
     assert len(proposals) == 1
     assert proposals[0]['id'] == id_last
 
     logger.info("Testing not empty start string and descending direction and last_id set to the first element")
-    proposals = node_client.list_proposals(creator, "by_creator", "direction_descending", 100, "all", id_first)
+    proposals = node_client.rpc.list_proposals([creator], 100, "by_creator", "descending", "all", id_first)
     assert len(proposals) == 1
     assert proposals[0]['id'] == id_first
 
     logger.info("Testing not empty start string and ascending direction and last_id set to the first element")
-    proposals = node_client.list_proposals(creator, "by_creator", "direction_ascending", 100, "all", id_first)
+    proposals = node_client.rpc.list_proposals([creator], 100, "by_creator", "ascending", "all", id_first)
     assert len(proposals) == len(START_END_SUBJECTS)
 
     logger.info("Testing not empty start string and descending direction and last_id set to the last element")
-    proposals = node_client.list_proposals(creator, "by_creator", "direction_descending", 100, "all", id_last)
+    proposals = node_client.rpc.list_proposals([creator], 100, "by_creator", "descending", "all", id_last)
     assert len(proposals) == len(START_END_SUBJECTS)
 
 
