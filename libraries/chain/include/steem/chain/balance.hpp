@@ -78,6 +78,8 @@ class TTempBalance final : public ABalance
 {
    public:
       TTempBalance( protocol::asset_symbol_type id ) : ABalance( Asset ), Asset( 0, id ) {}
+      TTempBalance( TTempBalance&& source ) : TTempBalance( source.Asset.symbol ) { move_balance( std::move( source ) ); }
+      TTempBalance& operator= ( TTempBalance&& source ) { move_balance( std::move( source ) ); return *this; }
       ~TTempBalance()
       {
          if( !std::uncaught_exception() ) //don't check - this is follow-up error caused by unwinding already in progress

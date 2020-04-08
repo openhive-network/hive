@@ -111,9 +111,11 @@ using boost::container::flat_set;
 
 struct reward_fund_context
 {
-   uint128_t   recent_claims = 0;
-   asset       reward_balance = asset( 0, STEEM_SYMBOL );
-   share_type  steem_awarded = 0;
+   reward_fund_context() : reward_balance( STEEM_SYMBOL ) {}
+   uint128_t    recent_claims = 0;
+   asset        initial_reward_balance = asset( 0, STEEM_SYMBOL );
+   TTempBalance reward_balance;
+   share_type   steem_awarded = 0;
 };
 
 class database_impl
@@ -1266,7 +1268,7 @@ asset create_vesting2( database& db, const account_object& to_account, TTempBala
          before_vesting_callback( new_vesting );
          // Add new vesting to owner's balance.
          if( to_reward_balance )
-            db.adjust_reward_balance( to_account, liquid, new_vesting ); //ABW: balance expressed in vests
+            db.adjust_reward_balance( to_account, liquid, new_vesting<tokens converted to vests>, <vests> ); //ABW: balance expressed in vests
          else
             db.adjust_balance( to_account, new_vesting );
          // Update global vesting pool numbers.
@@ -1300,14 +1302,15 @@ asset create_vesting2( database& db, const account_object& to_account, TTempBala
       before_vesting_callback( new_vesting );
       // Update global vesting pool numbers "issuing" new vests.
       TTempBalance vest_balance( VESTS_SYMBOL );
+      asset to_vest_steem = _liquid;
       db.modify( cprops, [&]( dynamic_global_property_object& props )
       {
-         props.issue_vests( &vest_balance, new_vesting, &_liquid, _liquid.as_asset(), to_reward_balance );
+         props.issue_vests( &vest_balance, new_vesting, &_liquid, _liquid, to_reward_balance );
       } );
       // Add new vesting to owner's balance.
       if( to_reward_balance )
       {
-         db.adjust_reward_balance( to_account, &vest_balance, new_vesting.amount.value );
+         db.adjust_reward_balance( to_account, &vest_balance, to_vest_steem.amount.value, vest_balance.get_value() );
       }
       else
       {
@@ -1324,7 +1327,7 @@ asset create_vesting2( database& db, const account_object& to_account, TTempBala
             });
          }
 
-         db.adjust_balance( to_account, &vest_balance, new_vesting.amount.value );
+         db.adjust_balance( to_account, &vest_balance, vest_balance.get_value() );
       }
       
       // Update witness voting numbers.
@@ -2054,7 +2057,7 @@ void database::adjust_total_payout( const comment_object& cur, const asset& sbd_
  *
  *  @returns unclaimed rewards.
  */
-share_type database::pay_curators( const comment_object& c, share_type& max_rewards )
+share_type database::pay_curators( const comment_object& c, TTempBalance* reward_balance, share_type& max_rewards )
 {
    struct cmp
    {
@@ -2070,7 +2073,6 @@ share_type database::pay_curators( const comment_object& c, share_type& max_rewa
    try
    {
       share_type unclaimed_rewards = max_rewards;
-      /*ABWTODO
       uint128_t total_weight( c.total_vote_weight );
       //edump( (total_weight)(max_rewards) );
 
@@ -2100,7 +2102,9 @@ share_type database::pay_curators( const comment_object& c, share_type& max_rewa
                unclaimed_rewards -= claim;
                const auto& voter = get( item->voter );
                operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), c.author, to_string( c.permlink ) );
-               create_vesting2( *this, voter, asset( claim, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
+               TTempBalance claim_balance( STEEM_SYMBOL );
+               claim_balance.transfer_from( reward_balance, claim );
+               create_vesting2( *this, voter, std::move( claim_balance ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
                   [&]( const asset& reward )
                   {
                      vop.get< curation_reward_operation >().reward = reward;
@@ -2119,7 +2123,6 @@ share_type database::pay_curators( const comment_object& c, share_type& max_rewa
       }
       max_rewards -= unclaimed_rewards;
 
-      ABWTODO*/
       return unclaimed_rewards;
    } FC_CAPTURE_AND_RETHROW( (max_rewards) )
 }
@@ -2131,12 +2134,13 @@ void fill_comment_reward_context_local_state( util::comment_reward_context& ctx,
    ctx.max_sbd = comment.max_accepted_payout;
 }
 
-share_type database::cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment, bool forward_curation_remainder )
+share_type database::cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment,
+   TTempBalance* reward_balance, bool forward_curation_remainder )
 {
    try
    {
       share_type claimed_reward = 0;
-      /*ABWTODO
+
       if( comment.net_rshares > 0 )
       {
          fill_comment_reward_context_local_state( ctx, comment );
@@ -2156,44 +2160,48 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             share_type curation_tokens = ( ( reward_tokens * get_curation_rewards_percent( comment ) ) / STEEM_100_PERCENT ).to_uint64();
             share_type author_tokens = reward_tokens.to_uint64() - curation_tokens;
 
-            share_type curation_remainder = pay_curators( comment, curation_tokens );
+            share_type curation_remainder = pay_curators( comment, reward_balance, curation_tokens );
 
             if( forward_curation_remainder )
                author_tokens += curation_remainder;
 
             share_type total_beneficiary = 0;
             claimed_reward = author_tokens + curation_tokens;
-
+            
             for( auto& b : comment.beneficiaries )
             {
                auto benefactor_tokens = ( author_tokens * b.weight ) / STEEM_100_PERCENT;
                auto benefactor_vesting_steem = benefactor_tokens;
-               auto vop = comment_benefactor_reward_operation( b.account, comment.author, to_string( comment.permlink ), asset( 0, SBD_SYMBOL ), asset( 0, STEEM_SYMBOL ), asset( 0, VESTS_SYMBOL ) );
+               auto vop = comment_benefactor_reward_operation( b.account, comment.author, to_string( comment.permlink ),
+                  asset( 0, SBD_SYMBOL ), asset( 0, STEEM_SYMBOL ), asset( 0, VESTS_SYMBOL ) );
 
                if( has_hardfork( STEEM_HARDFORK_0_21__3343 ) && b.account == STEEM_TREASURY_ACCOUNT )
                {
                   benefactor_vesting_steem = 0;
                   vop.sbd_payout = asset( benefactor_tokens, STEEM_SYMBOL ) * get_feed_history().current_median_history;
-                  adjust_balance( get_account( STEEM_TREASURY_ACCOUNT ), vop.sbd_payout );
-                  adjust_supply( asset( -benefactor_tokens, STEEM_SYMBOL ) );
-                  adjust_supply( vop.sbd_payout );
+                  TTempBalance sbd_benefactor_balance( SBD_SYMBOL );
+                  adjust_supply( reward_balance, -benefactor_tokens.value );
+                  adjust_supply( &sbd_benefactor_balance, vop.sbd_payout.amount.value );
+                  adjust_balance( get_account( STEEM_TREASURY_ACCOUNT ), &sbd_benefactor_balance, sbd_benefactor_balance.get_value() );
                }
                else if( has_hardfork( STEEM_HARDFORK_0_20__2022 ) )
                {
                   auto benefactor_sbd_steem = ( benefactor_tokens * comment.percent_steem_dollars ) / ( 2 * STEEM_100_PERCENT ) ;
                   benefactor_vesting_steem  = benefactor_tokens - benefactor_sbd_steem;
-                  auto sbd_payout           = create_sbd( get_account( b.account ), &<steem_balance>, benefactor_sbd_steem.value, true );
+                  auto sbd_payout           = create_sbd( get_account( b.account ), reward_balance, benefactor_sbd_steem.value, true );
 
                   vop.sbd_payout   = sbd_payout.first; // SBD portion
                   vop.steem_payout = sbd_payout.second; // STEEM portion
                }
 
-               create_vesting2( *this, get_account( b.account ), asset( benefactor_vesting_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
-               [&]( const asset& reward )
+               TTempBalance to_vest_balance( STEEM_SYMBOL );
+               to_vest_balance.transfer_from( reward_balance, benefactor_vesting_steem.value );
+               create_vesting2( *this, get_account( b.account ), std::move( to_vest_balance ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
+                  [&]( const asset& reward )
                {
                   vop.vesting_payout = reward;
                   pre_push_virtual_operation( vop );
-               });
+               } );
 
                post_push_virtual_operation( vop );
                total_beneficiary += benefactor_tokens;
@@ -2205,15 +2213,17 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             auto vesting_steem = author_tokens - sbd_steem;
 
             const auto& author = get_account( comment.author );
-            auto sbd_payout = create_sbd( author, &<steem_balance>, sbd_steem.value, has_hardfork( STEEM_HARDFORK_0_17__659 ) );
+            auto sbd_payout = create_sbd( author, reward_balance, sbd_steem.value, has_hardfork( STEEM_HARDFORK_0_17__659 ) );
             operation vop = author_reward_operation( comment.author, to_string( comment.permlink ), sbd_payout.first, sbd_payout.second, asset( 0, VESTS_SYMBOL ) );
 
-            create_vesting2( *this, author, asset( vesting_steem, STEEM_SYMBOL ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
+            TTempBalance to_vest_balance( STEEM_SYMBOL );
+            to_vest_balance.transfer_from( reward_balance, vesting_steem.value );
+            create_vesting2( *this, author, std::move( to_vest_balance ), has_hardfork( STEEM_HARDFORK_0_17__659 ),
                [&]( const asset& vesting_payout )
-               {
-                  vop.get< author_reward_operation >().vesting_payout = vesting_payout;
-                  pre_push_virtual_operation( vop );
-               } );
+            {
+               vop.get< author_reward_operation >().vesting_payout = vesting_payout;
+               pre_push_virtual_operation( vop );
+            } );
 
             adjust_total_payout( comment, sbd_payout.first + to_sbd( sbd_payout.second + asset( vesting_steem, STEEM_SYMBOL ) ), to_sbd( asset( curation_tokens, STEEM_SYMBOL ) ), to_sbd( asset( total_beneficiary, STEEM_SYMBOL ) ) );
 
@@ -2233,7 +2243,6 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
                   a.posting_rewards += author_tokens;
                });
             #endif
-
          }
 
          if( !has_hardfork( STEEM_HARDFORK_0_17__774 ) )
@@ -2242,10 +2251,10 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
       modify( comment, [&]( comment_object& c )
       {
-         / **
+         /**
          * A payout is only made for positive rshares, negative rshares hang around
          * for the next time this post might get an upvote.
-         * /
+         */
          if( c.net_rshares > 0 )
             c.net_rshares = 0;
          c.children_abs_rshares = 0;
@@ -2291,14 +2300,13 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 #endif
          }
       }
-      ABWTODO*/
+      
       return claimed_reward;
    } FC_CAPTURE_AND_RETHROW( (comment)(ctx) )
 }
 
 void database::process_comment_cashout()
 {
-   /*ABWTODO
    /// don't allow any content to get paid out until the website is ready to launch
    /// and people have had a week to start posting.  The first cashout will be the biggest because it
    /// will represent 2+ months of rewards.
@@ -2316,6 +2324,8 @@ void database::process_comment_cashout()
    // Decay recent rshares of each fund
    for( auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr )
    {
+      reward_fund_context rf_ctx;
+
       // Add all reward funds to the local cache and decay their recent rshares
       modify( *itr, [&]( reward_fund_object& rfo )
       {
@@ -2328,16 +2338,17 @@ void database::process_comment_cashout()
 
          rfo.recent_claims -= ( rfo.recent_claims * ( head_block_time() - rfo.last_update ).to_seconds() ) / decay_time.to_seconds();
          rfo.last_update = head_block_time();
-      });
 
-      reward_fund_context rf_ctx;
-      rf_ctx.recent_claims = itr->recent_claims;
-      rf_ctx.reward_balance = itr->reward_balance;
+         rf_ctx.recent_claims = rfo.recent_claims;
+         rf_ctx.initial_reward_balance = rfo.get_reward_balance();
+         //transfer reward funds to temporary storage
+         rfo.get_reward_balance().transfer_to( &rf_ctx.reward_balance );
+      } );
 
       // The index is by ID, so the ID should be the current size of the vector (0, 1, 2, etc...)
       assert( funds.size() == static_cast<size_t>(itr->id._id) );
 
-      funds.push_back( rf_ctx );
+      funds.emplace_back( std::move( rf_ctx ) );
    }
 
    const auto& cidx        = get_index< comment_index >().indices().get< by_cashout_time >();
@@ -2361,7 +2372,7 @@ void database::process_comment_cashout()
       current = cidx.begin();
    }
 
-   / *
+   /*
     * Payout all comments
     *
     * Each payout follows a similar pattern, but for a different reason.
@@ -2373,18 +2384,18 @@ void database::process_comment_cashout()
     * the comment is entitled to. Prior to hardfork 17, all payouts are done against
     * the global state updated each payout. After the hardfork, each payout is done
     * against a reward fund state that is snapshotted before all payouts in the block.
-    * /
+    */
    while( current != cidx.end() && current->cashout_time <= head_block_time() )
    {
       if( has_hardfork( STEEM_HARDFORK_0_17__771 ) )
       {
          auto fund_id = get_reward_fund( *current ).id._id;
          ctx.total_reward_shares2 = funds[ fund_id ].recent_claims;
-         ctx.total_reward_fund_steem = funds[ fund_id ].reward_balance;
+         ctx.total_reward_fund_steem = funds[ fund_id ].initial_reward_balance; //note: every comment uses the same base value for reward calculations
 
          bool forward_curation_remainder = !has_hardfork( STEEM_HARDFORK_0_20__1877 );
 
-         funds[ fund_id ].steem_awarded += cashout_comment_helper( ctx, *current, forward_curation_remainder );
+         funds[ fund_id ].steem_awarded += cashout_comment_helper( ctx, *current, &funds[ fund_id ].reward_balance, forward_curation_remainder );
       }
       else
       {
@@ -2393,24 +2404,28 @@ void database::process_comment_cashout()
          {
             const auto& comment = *itr; ++itr;
             ctx.total_reward_shares2 = gpo.total_reward_shares2;
-            ctx.total_reward_fund_steem = gpo.total_reward_fund_steem;
+            ctx.total_reward_fund_steem = gpo.get_total_reward_fund_steem(); //note: comments rewarded later use reduced base value for reward calculations
 
-            auto reward = cashout_comment_helper( ctx, comment );
-
-            if( reward > 0 )
+            //take reward funds to temporary storage
+            TTempBalance reward_balance( STEEM_SYMBOL );
+            modify( gpo, [&]( dynamic_global_property_object& p )
             {
-               modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& p )
-               {
-                  p.total_reward_fund_steem.amount -= reward;
-               });
-            }
+               p.get_total_reward_fund_steem().transfer_to( &reward_balance );
+            } );
+
+            cashout_comment_helper( ctx, comment, &reward_balance );
+
+            //put remainder of reward funds back to global balance
+            modify( gpo, [&]( dynamic_global_property_object& p )
+            {
+               p.get_total_reward_fund_steem().transfer_from( &reward_balance );
+            } );
          }
       }
-
       current = cidx.begin();
    }
 
-   // Write the cached fund state back to the database
+   // Write the cached fund state back to the database (put back remaining funds to proper fund balance)
    if( funds.size() )
    {
       for( size_t i = 0; i < funds.size(); i++ )
@@ -2418,11 +2433,10 @@ void database::process_comment_cashout()
          modify( get< reward_fund_object, by_id >( reward_fund_id_type( i ) ), [&]( reward_fund_object& rfo )
          {
             rfo.recent_claims = funds[ i ].recent_claims;
-            rfo.reward_balance -= asset( funds[ i ].steem_awarded, STEEM_SYMBOL );
+            rfo.get_reward_balance().transfer_from( &funds[ i ].reward_balance );
          });
       }
    }
-   ABWTODO*/
 }
 
 /**
@@ -4990,7 +5004,7 @@ void database::adjust_savings_balance( const account_object& a, TTempBalance* _b
 void database::adjust_reward_balance( const account_object& a, TTempBalance* _balance, int64_t value_delta, int64_t share_delta )
 {
    asset_symbol_type symbol = _balance->as_asset().symbol;
-   FC_ASSERT( symbol.is_vesting() == ( share_delta != 0 ) );
+   FC_ASSERT( ( share_delta == 0 ) || symbol.is_vesting() );
 
    bool check_balance = has_hardfork( STEEM_HARDFORK_0_20__1811 );
 
