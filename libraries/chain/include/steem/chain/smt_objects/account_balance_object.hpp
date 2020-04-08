@@ -15,43 +15,35 @@ namespace steem { namespace chain {
 class account_regular_balance_object : public object< account_regular_balance_object_type, account_regular_balance_object >
 {
 public:   
-   template < typename Constructor, typename Allocator>
-   account_regular_balance_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
-      : id( _id )
+   template < typename Allocator>
+   account_regular_balance_object( allocator< Allocator > a, int64_t _id,
+      const account_name_type& _owner, asset_symbol_type liquid_symbol )
+      : id( _id ), owner( _owner ), liquid( 0, liquid_symbol ), vesting( 0, liquid_symbol.get_paired_symbol() )
+   {}
+
+   void on_remove() const
    {
-      c( *this );
+      FC_ASSERT( is_empty(), "SMTs not transfered out before account_regular_balance_object removal." );
+   }
+
+   bool is_empty() const
+   {
+      return ( liquid.amount == 0 ) && ( vesting.amount == 0 );
+   }
+
+   asset_symbol_type get_liquid_symbol() const
+   {
+      return liquid.symbol;
    }
 
    // id_type is actually oid<account_regular_balance_object>
    id_type             id;
    /// Name of the account, the balance is held for.
    account_name_type   owner;
-   asset               liquid;   /// 'balance' for STEEM
-   asset               vesting;  /// 'vesting_shares' for VESTS
-
-   /** Set of simple methods that allow unification of
-    *  regular and rewards balance manipulation code.
-    */
-   ///@{
-   asset_symbol_type get_liquid_symbol() const
-   {
-      return liquid.symbol;
-   }
-   void clear_balance( asset_symbol_type liquid_symbol )
-   {
-      owner = "";
-      liquid = asset( 0, liquid_symbol);
-      vesting = asset( 0, liquid_symbol.get_paired_symbol() );
-   }
-   void add_vesting( const asset& vesting_shares, const asset& vesting_value )
-   {
-      // There's no need to store vesting value (in liquid SMT variant) in regular balance.
-      vesting += vesting_shares;
-   }
-   ///@}
-
-   bool validate() const
-   { return liquid.symbol == vesting.symbol.get_paired_symbol(); }
+   BALANCE( liquid, get_liquid ); /// 'balance' for STEEM
+   BALANCE( vesting, get_vesting ); /// 'vesting_shares' for VESTS
+   
+   friend class fc::reflector<account_regular_balance_object>;
 };
 
 /**
@@ -62,48 +54,38 @@ public:
 class account_rewards_balance_object : public object< account_rewards_balance_object_type, account_rewards_balance_object >
 {
 public:   
-   template < typename Constructor, typename Allocator >
-   account_rewards_balance_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
-      : id( _id )
+   template < typename Allocator >
+   account_rewards_balance_object( allocator< Allocator > a, int64_t _id,
+      const account_name_type& _owner, asset_symbol_type liquid_symbol )
+      : id( _id ), owner( _owner ), pending_liquid( 0, liquid_symbol ),
+      pending_vesting_shares( 0, liquid_symbol.get_paired_symbol() ), pending_vesting_value( 0, liquid_symbol )
+   {}
+
+   void on_remove() const
    {
-      c( *this );
+      FC_ASSERT( is_empty(), "SMTs not transfered out before account_rewards_balance_object removal." );
    }
 
-   // id_type is actually oid<account_rewards_balance_object>
-   id_type             id;
-   /// Name of the account, the balance is held for.
-   account_name_type   owner;
-   asset               pending_liquid;          /// 'reward_steem_balance' for pending STEEM
-   asset               pending_vesting_shares;  /// 'reward_vesting_balance' for pending VESTS
-   asset               pending_vesting_value;   /// 'reward_vesting_steem' for pending VESTS
+   bool is_empty() const
+   {
+      return ( pending_liquid.amount == 0 ) && ( pending_vesting_shares.amount == 0 );
+   }
 
-   /** Set of simple methods that allow unification of
-    *  regular and rewards balance manipulation code.
-    */
-   ///@{
    asset_symbol_type get_liquid_symbol() const
    {
       return pending_liquid.symbol;
    }
-   void clear_balance( asset_symbol_type liquid_symbol )
-   {
-      owner = "";
-      pending_liquid = asset( 0, liquid_symbol);
-      pending_vesting_shares = asset( 0, liquid_symbol.get_paired_symbol() );
-      pending_vesting_value = asset( 0, liquid_symbol);
-   }
-   void add_vesting( const asset& vesting_shares, const asset& vesting_value )
-   {
-      pending_vesting_shares += vesting_shares;
-      pending_vesting_value += vesting_value;
-   }
-   ///@}
 
-   bool validate() const
-   {
-      return pending_liquid.symbol == pending_vesting_shares.symbol.get_paired_symbol() &&
-             pending_liquid.symbol == pending_vesting_value.symbol;
-   }
+   // id_type is actually oid<account_rewards_balance_object>
+   id_type id;
+   /// Name of the account, the balance is held for.
+   account_name_type owner;
+   BALANCE( pending_liquid, get_pending_liquid ); /// 'reward_steem_balance' for pending STEEM
+   BALANCE( pending_vesting_shares, get_pending_vesting_shares ); /// 'reward_vesting_balance' for pending VESTS
+public:
+   asset pending_vesting_value;   /// 'reward_vesting_steem' for pending VESTS
+
+   friend class fc::reflector<account_rewards_balance_object>;
 };
 
 struct by_owner_liquid_symbol;

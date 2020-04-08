@@ -726,7 +726,7 @@ asset database::get_effective_vesting_shares( const account_object& account, ass
    if( bo == nullptr )
       return asset( 0, vested_symbol );
 
-   return bo->vesting;
+   return bo->get_vesting();
 #else
    FC_ASSERT( false, "Invalid symbol" );
 #endif
@@ -1254,37 +1254,31 @@ asset create_vesting2( database& db, const account_object& to_account, TTempBala
          return new_vesting;
          };
 
+      auto liquid_symbol = _liquid.as_asset().symbol;
 #ifdef STEEM_ENABLE_SMT
       FC_TODO( "Use balance object for SMT" );
-      if( liquid.symbol.space() == asset_symbol_type::smt_nai_space )
+      if( liquid_symbol.space() == asset_symbol_type::smt_nai_space )
       {
-         FC_ASSERT( liquid.symbol.is_vesting() == false );
+         FC_ASSERT( liquid_symbol.is_vesting() == false );
          // Get share price.
-         const auto& smt = db.get< smt_token_object, by_symbol >( liquid.symbol );
+         const auto& smt = db.get< smt_token_object, by_symbol >( liquid_symbol );
          FC_ASSERT( smt.allow_voting == to_reward_balance, "No voting - no rewards" );
          price vesting_share_price = to_reward_balance ? smt.get_reward_vesting_share_price() : smt.get_vesting_share_price();
          // Calculate new vesting from provided liquid using share price.
          asset new_vesting = calculate_new_vesting( vesting_share_price );
          before_vesting_callback( new_vesting );
-         // Add new vesting to owner's balance.
-         if( to_reward_balance )
-            db.adjust_reward_balance( to_account, liquid, new_vesting<tokens converted to vests>, <vests> ); //ABW: balance expressed in vests
-         else
-            db.adjust_balance( to_account, new_vesting );
-         // Update global vesting pool numbers.
+         // Convert liquid SMTs to vesting
+         TTempBalance vest_balance( liquid_symbol.get_paired_symbol() );
+         asset to_vest_smt = _liquid;
          db.modify( smt, [&]( smt_token_object& smt_object )
          {
-            if( to_reward_balance )
-            {
-               smt_object.pending_rewarded_vesting_shares += new_vesting.amount;
-               smt_object.pending_rewarded_vesting_smt += liquid.amount;
-            }
-            else
-            {
-               smt_object.total_vesting_fund_smt += liquid.amount;
-               smt_object.total_vesting_shares += new_vesting.amount;
-            }
+            smt_object.issue_vests( &vest_balance, new_vesting, &_liquid, _liquid, to_reward_balance );
          } );
+         // Add new vesting to owner's balance.
+         if( to_reward_balance )
+            db.adjust_reward_balance( to_account, &vest_balance, to_vest_smt.amount.value, vest_balance.get_value() );
+         else
+            db.adjust_balance( to_account, &vest_balance, vest_balance.get_value() );
 
          // NOTE that SMT vesting does not impact witness voting.
 
@@ -1292,7 +1286,7 @@ asset create_vesting2( database& db, const account_object& to_account, TTempBala
       }
 #endif
 
-      FC_ASSERT( _liquid.as_asset().symbol == STEEM_SYMBOL );
+      FC_ASSERT( liquid_symbol == STEEM_SYMBOL );
       // ^ A novelty, needed but risky in case someone managed to slip SBD/TESTS here in blockchain history.
       // Get share price.
       const auto& cprops = db.get_dynamic_global_properties();
@@ -1447,7 +1441,8 @@ void database::adjust_witness_vote( const witness_object& witness, share_type de
 
       w.virtual_last_update = wso.current_virtual_time;
       w.votes += delta;
-      FC_ASSERT( w.votes <= get_dynamic_global_properties().total_vesting_shares.amount, "", ("w.votes", w.votes)("props",get_dynamic_global_properties().total_vesting_shares) );
+      FC_ASSERT( w.votes <= get_dynamic_global_properties().get_total_vesting_shares().amount, "",
+         ("w.votes", w.votes)("props",get_dynamic_global_properties().get_total_vesting_shares()) );
 
       if( has_hardfork( STEEM_HARDFORK_0_2 ) )
          w.virtual_scheduled_time = w.virtual_last_update + (STEEM_VIRTUAL_SCHEDULE_LAP_LENGTH2 - w.virtual_position)/(w.votes.value+1);
@@ -3188,16 +3183,13 @@ void database::init_genesis( uint64_t init_supply, uint64_t sbd_init_supply )
 
       TTempBalance init_supply_balance( STEEM_SYMBOL );
       TTempBalance init_sbd_supply_balance( SBD_SYMBOL );
-      create< dynamic_global_property_object >( &init_supply_balance, &init_sbd_supply_balance, [&]( dynamic_global_property_object& p )
+      create< dynamic_global_property_object >( &init_supply_balance, init_supply, &init_sbd_supply_balance, sbd_init_supply,
+         [&]( dynamic_global_property_object& p )
       {
          p.current_witness = STEEM_INIT_MINER_NAME;
          p.time = STEEM_GENESIS_TIME;
          p.recent_slots_filled = fc::uint128::max_value();
          p.participation_count = 128;
-         p.current_supply = asset( init_supply, STEEM_SYMBOL );
-         p.init_sbd_supply = asset( sbd_init_supply, SBD_SYMBOL );
-         // supplement constructor if you change here to create initial vests
-         p.virtual_supply = p.current_supply;
          p.maximum_block_size = STEEM_MAX_BLOCK_SIZE;
          p.reverse_auction_seconds = STEEM_REVERSE_AUCTION_WINDOW_SECONDS_HF6;
          p.sbd_stop_percent = STEEM_SBD_STOP_PERCENT_HF14;
@@ -3727,9 +3719,9 @@ try {
 
                const auto& gpo = get_dynamic_global_properties();
 
-               if( gpo.current_sbd_supply.amount > 0 )
+               if( gpo.get_current_sbd_supply().amount > 0 )
                {
-                  price min_price( asset( 9 * gpo.current_sbd_supply.amount, SBD_SYMBOL ), gpo.current_supply );
+                  price min_price( asset( 9 * gpo.get_current_sbd_supply().amount, SBD_SYMBOL ), gpo.get_current_supply() );
 
                   if( min_price > fho.current_median_history )
                      fho.current_median_history = min_price;
@@ -4234,8 +4226,8 @@ void database::update_virtual_supply()
 { try {
    modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgp )
    {
-      dgp.virtual_supply = dgp.current_supply
-         + ( get_feed_history().current_median_history.is_null() ? asset( 0, STEEM_SYMBOL ) : dgp.current_sbd_supply * get_feed_history().current_median_history );
+      dgp.virtual_supply = dgp.get_current_supply()
+         + ( get_feed_history().current_median_history.is_null() ? asset( 0, STEEM_SYMBOL ) : dgp.get_current_sbd_supply() * get_feed_history().current_median_history );
 
       auto median_price = get_feed_history().current_median_history;
 
@@ -4245,12 +4237,12 @@ void database::update_virtual_supply()
 
          if( has_hardfork( STEEM_HARDFORK_0_21 ) )
          {
-            percent_sbd = uint16_t( ( ( fc::uint128_t( ( dgp.current_sbd_supply * get_feed_history().current_median_history ).amount.value ) * STEEM_100_PERCENT + dgp.virtual_supply.amount.value/2 )
+            percent_sbd = uint16_t( ( ( fc::uint128_t( ( dgp.get_current_sbd_supply() * get_feed_history().current_median_history ).amount.value ) * STEEM_100_PERCENT + dgp.virtual_supply.amount.value/2 )
                / dgp.virtual_supply.amount.value ).to_uint64() );
          }
          else
          {
-            percent_sbd = uint16_t( ( ( fc::uint128_t( ( dgp.current_sbd_supply * get_feed_history().current_median_history ).amount.value ) * STEEM_100_PERCENT )
+            percent_sbd = uint16_t( ( ( fc::uint128_t( ( dgp.get_current_sbd_supply() * get_feed_history().current_median_history ).amount.value ) * STEEM_100_PERCENT )
             / dgp.virtual_supply.amount.value ).to_uint64() );
          }
 
@@ -4668,9 +4660,8 @@ void database::clear_expired_delegations()
    } FC_CAPTURE_AND_RETHROW( (vop) ) }
 }
 #ifdef STEEM_ENABLE_SMT
-template< typename smt_balance_object_type, class balance_operator_type >
-void database::adjust_smt_balance( const account_name_type& name, const asset& delta, bool check_account,
-   balance_operator_type balance_operator )
+template< typename smt_balance_object_type, typename modifier_type >
+void database::adjust_smt_balance( const account_name_type& name, const asset& delta, modifier_type&& modifier )
 {
    asset_symbol_type liquid_symbol = delta.symbol.is_vesting() ? delta.symbol.get_paired_symbol() : delta.symbol;
    const smt_balance_object_type* bo = find< smt_balance_object_type, by_owner_liquid_symbol >( boost::make_tuple( name, liquid_symbol ) );
@@ -4683,38 +4674,16 @@ void database::adjust_smt_balance( const account_name_type& name, const asset& d
       if( delta.amount.value == 0 )
          return;
 
-      if( check_account )
-         get_account( name );
-
-      create< smt_balance_object_type >( [&]( smt_balance_object_type& smt_balance )
-      {
-         smt_balance.clear_balance( liquid_symbol );
-         smt_balance.owner = name;
-         balance_operator.add_to_balance( smt_balance );
-         smt_balance.validate();
-      } );
+      auto& new_sbot = create< smt_balance_object_type >( name, liquid_symbol );
+      bo = &new_sbot;
    }
-   else
-   {
-      bool is_all_zero = false;
-      int64_t result = balance_operator.get_combined_balance( bo, &is_all_zero );
-      // Check result to avoid negative balance storing.
-      FC_ASSERT( result >= 0, "Insufficient SMT ${smt} funds", ( "smt", delta.symbol ) );
 
-      // Exit if whole balance becomes zero.
-      if( is_all_zero )
-      {
-         // Zero balance is the same as non object balance at all.
-         // Remove balance object if both liquid and vesting balances are zero.
-         remove( *bo );
-      }
-      else
-      {
-         modify( *bo, [&]( smt_balance_object_type& smt_balance )
-         {
-            balance_operator.add_to_balance( smt_balance );
-         } );
-      }
+   modify( *bo, std::move( modifier ) );
+   if( bo->is_empty() )
+   {
+      // Zero balance is the same as non object balance at all.
+      // Remove balance object if both liquid and vesting balances are zero.
+      remove( *bo );
    }
 }
 #endif
@@ -4855,61 +4824,6 @@ const index_delegate_map& database::index_delegates()
    return _index_delegate_map;
 }
 
-#ifdef STEEM_ENABLE_SMT
-struct smt_regular_balance_operator
-{
-   smt_regular_balance_operator( const asset& delta ) : delta(delta), is_vesting(delta.symbol.is_vesting()) {}
-
-   void add_to_balance( account_regular_balance_object& smt_balance )
-   {
-      if( is_vesting )
-         smt_balance.vesting += delta;
-      else
-         smt_balance.liquid += delta;
-   }
-   int64_t get_combined_balance( const account_regular_balance_object* bo, bool* is_all_zero )
-   {
-      asset result = is_vesting ? bo->vesting + delta : bo->liquid + delta;
-      *is_all_zero = result.amount.value == 0 && (is_vesting ? bo->liquid.amount.value : bo->vesting.amount.value) == 0;
-      return result.amount.value;
-   }
-
-   asset delta;
-   bool  is_vesting;
-};
-
-struct smt_reward_balance_operator
-{
-   smt_reward_balance_operator( const asset& value_delta, const asset& share_delta )
-      : value_delta(value_delta), share_delta(share_delta), is_vesting(share_delta.amount.value != 0)
-   {
-       FC_ASSERT( value_delta.symbol.is_vesting() == false && share_delta.symbol.is_vesting() );
-   }
-
-   void add_to_balance( account_rewards_balance_object& smt_balance )
-   {
-      if( is_vesting )
-      {
-         smt_balance.pending_vesting_value += value_delta;
-         smt_balance.pending_vesting_shares += share_delta;
-      }
-      else
-         smt_balance.pending_liquid += value_delta;
-   }
-   int64_t get_combined_balance( const account_rewards_balance_object* bo, bool* is_all_zero )
-   {
-      asset result = is_vesting ? bo->pending_vesting_value + value_delta : bo->pending_liquid + value_delta;
-      *is_all_zero = result.amount.value == 0 &&
-                     (is_vesting ? bo->pending_liquid.amount.value : bo->pending_vesting_value.amount.value) == 0;
-      return result.amount.value;
-   }
-
-   asset value_delta;
-   asset share_delta;
-   bool  is_vesting;
-};
-#endif
-
 void database::adjust_balance( const account_object& a, TTempBalance* _balance, int64_t delta )
 {
    asset_symbol_type symbol = _balance->as_asset().symbol;
@@ -4928,10 +4842,15 @@ void database::adjust_balance( const account_object& a, TTempBalance* _balance, 
    {
       // No account object modification for SMT balance, hence separate handling here.
       // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
-      asset delta_asset( delta, symbol );
-      smt_regular_balance_operator balance_operator( delta_asset );
-      adjust_smt_balance< account_regular_balance_object >( a.name, delta_asset, false/*check_account*/, balance_operator );
-      FC_TODO( "Make SMT use balance object as well" );
+      adjust_smt_balance< account_regular_balance_object >( a.name, asset( delta, symbol ), [&]( account_regular_balance_object& bo )
+      {
+         if( symbol.is_vesting() )
+            bo.get_vesting().transfer_from( _balance, delta );
+         else
+            bo.get_liquid().transfer_from( _balance, delta );
+         // Check result to avoid negative balance storing.
+         //FC_ASSERT( result >= 0, "Insufficient SMT ${smt} funds", ( "smt", symbol ) ); //ABW: redundant with balance and check at start
+      } );
    }
    else
 #endif
@@ -5013,14 +4932,27 @@ void database::adjust_reward_balance( const account_object& a, TTempBalance* _ba
    // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
    if( symbol.space() == asset_symbol_type::smt_nai_space )
    {
-      smt_reward_balance_operator balance_operator( value_delta, share_delta );
-      adjust_smt_balance< account_rewards_balance_object >( a.name, value_delta, false/*check_account*/, balance_operator );
-      FC_TODO( "Make SMT use balance object as well" );
-      return;
+      adjust_smt_balance< account_rewards_balance_object >( a.name, asset( symbol.is_vesting() ? share_delta : value_delta, symbol ),
+         [&]( account_rewards_balance_object& bo )
+      {
+         if( symbol.is_vesting() )
+         {
+            bo.pending_vesting_value.amount += value_delta;
+            bo.get_pending_vesting_shares().transfer_from( _balance, share_delta );
+         }
+         else
+         {
+            bo.get_pending_liquid().transfer_from( _balance, value_delta );
+         }
+         // Check result to avoid negative balance storing.
+         //FC_ASSERT( result >= 0, "Insufficient SMT ${smt} funds", ( "smt", delta.symbol ) ); //ABW: redundant with balance
+      } );
    }
+   else
 #endif
-
-   modify_reward_balance( a, _balance, value_delta, share_delta, check_balance );
+   {
+      modify_reward_balance( a, _balance, value_delta, share_delta, check_balance );
+   }
 }
 
 void database::adjust_supply( TTempBalance* _balance, int64_t delta, bool adjust_vesting )
@@ -5030,13 +4962,13 @@ void database::adjust_supply( TTempBalance* _balance, int64_t delta, bool adjust
    if( symbol.space() == asset_symbol_type::smt_nai_space )
    {
       const auto& smt = get< smt_token_object, by_symbol >( symbol );
-      auto smt_new_supply = smt.current_supply + delta;
-      FC_ASSERT( smt_new_supply >= 0 );
-      modify( smt, [smt_new_supply]( smt_token_object& smt )
+      modify( smt, [&]( smt_token_object& smt )
       {
-         smt.current_supply = smt_new_supply;
-      });
-      FC_TODO( "Make SMT use balance object as well" );
+         if( delta >= 0 )
+            smt.issue_liquid( _balance, asset( delta, symbol ) );
+         else
+            smt.burn_liquid( _balance, asset( -delta, symbol ) );
+      } );
       return;
    }
 #endif
@@ -5063,7 +4995,7 @@ void database::adjust_supply( TTempBalance* _balance, int64_t delta, bool adjust
             props.get_total_vesting_fund_steem().transfer_from( _balance, new_vesting );
             if( check_supply )
             {
-               FC_ASSERT( props.current_supply.amount.value >= 0 );
+               FC_ASSERT( props.get_current_supply().amount.value >= 0 );
             }
             break;
          }
@@ -5072,10 +5004,10 @@ void database::adjust_supply( TTempBalance* _balance, int64_t delta, bool adjust
                props.issue_sbd( _balance, asset( delta, SBD_SYMBOL ) );
             else
                props.burn_sbd( _balance, asset( -delta, SBD_SYMBOL ) );
-            props.virtual_supply = props.current_sbd_supply * get_feed_history().current_median_history + props.current_supply;
+            props.virtual_supply = props.get_current_sbd_supply() * get_feed_history().current_median_history + props.get_current_supply();
             if( check_supply )
             {
-               FC_ASSERT( props.current_sbd_supply.amount.value >= 0 );
+               FC_ASSERT( props.get_current_sbd_supply().amount.value >= 0 );
             }
             break;
          default:
@@ -5104,7 +5036,7 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
          }
          else
          {
-            return symbol.is_vesting() ? arbo->vesting : arbo->liquid;
+            return symbol.is_vesting() ? arbo->get_vesting() : arbo->get_liquid();
          }
 #else
          FC_ASSERT( false, "Invalid symbol: ${s}", ("s", symbol) );
@@ -5711,7 +5643,7 @@ void database::validate_invariants()const
       /// verify no witness has too many votes
       const auto& witness_idx = get_index< witness_index >().indices();
       for( auto itr = witness_idx.begin(); itr != witness_idx.end(); ++itr )
-         FC_ASSERT( itr->votes <= gpo.total_vesting_shares.amount, "", ("itr",*itr) );
+         FC_ASSERT( itr->votes <= gpo.get_total_vesting_shares().amount, "", ("itr",*itr) );
 
       for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
       {
@@ -5802,14 +5734,14 @@ void database::validate_invariants()const
       FC_ASSERT( gpo.get_full_steem_supply() == total_supply, "", ("gpo.get_full_steem_supply()",gpo.get_full_steem_supply())("total_supply",total_supply) );
       FC_ASSERT( gpo.get_full_sbd_supply() == total_sbd, "", ("gpo.get_full_sbd_supply()",gpo.get_full_sbd_supply())("total_sbd",total_sbd) );
       FC_ASSERT( gpo.get_full_vest_supply() == total_vesting, "", ("gpo.get_full_vest_supply()",gpo.get_full_vest_supply())("total_vesting",total_vesting) );
-      FC_ASSERT( gpo.total_vesting_shares.amount == total_vsf_votes, "", ("total_vesting_shares",gpo.total_vesting_shares)("total_vsf_votes",total_vsf_votes) );
+      FC_ASSERT( gpo.get_total_vesting_shares().amount == total_vsf_votes, "", ("total_vesting_shares",gpo.get_total_vesting_shares())("total_vsf_votes",total_vsf_votes) );
       FC_ASSERT( gpo.get_pending_rewarded_vesting_steem() == pending_vesting_steem, "", ("pending_rewarded_vesting_steem",gpo.get_pending_rewarded_vesting_steem())("pending_vesting_steem", pending_vesting_steem));
 
-      FC_ASSERT( gpo.virtual_supply >= gpo.current_supply );
+      FC_ASSERT( gpo.virtual_supply >= gpo.get_current_supply() );
       if ( !get_feed_history().current_median_history.is_null() )
       {
-         FC_ASSERT( gpo.current_sbd_supply * get_feed_history().current_median_history + gpo.current_supply
-            == gpo.virtual_supply, "", ("gpo.current_sbd_supply",gpo.current_sbd_supply)("get_feed_history().current_median_history",get_feed_history().current_median_history)("gpo.current_supply",gpo.current_supply)("gpo.virtual_supply",gpo.virtual_supply) );
+         FC_ASSERT( gpo.get_current_sbd_supply() * get_feed_history().current_median_history + gpo.get_current_supply()
+            == gpo.virtual_supply, "", ("gpo.current_sbd_supply",gpo.get_current_sbd_supply())("get_feed_history().current_median_history",get_feed_history().current_median_history)("gpo.current_supply",gpo.get_current_supply())("gpo.virtual_supply",gpo.virtual_supply) );
       }
    }
    FC_CAPTURE_LOG_AND_RETHROW( (head_block_num()) );
@@ -5853,15 +5785,15 @@ void database::validate_smt_invariants()const
       const auto& balance_idx = get_index< account_regular_balance_index, by_id >();
       add_from_balance_index( balance_idx, [ &theMap ] ( const account_regular_balance_object& regular )
       {
-         asset zero_liquid = asset( 0, regular.liquid.symbol );
-         asset zero_vesting = asset( 0, regular.vesting.symbol );
-         auto insertInfo = theMap.emplace( regular.liquid.symbol,
-            TCombinedBalance( { regular.liquid, regular.vesting, zero_liquid, zero_vesting, zero_liquid } ) );
+         asset zero_liquid = asset( 0, regular.get_liquid().symbol );
+         asset zero_vesting = asset( 0, regular.get_vesting().symbol );
+         auto insertInfo = theMap.emplace( regular.get_liquid().symbol,
+            TCombinedBalance( { regular.get_liquid(), regular.get_vesting(), zero_liquid, zero_vesting, zero_liquid } ) );
          if( insertInfo.second == false )
             {
             TCombinedBalance& existing_balance = insertInfo.first->second;
-            existing_balance.liquid += regular.liquid;
-            existing_balance.vesting += regular.vesting;
+            existing_balance.liquid += regular.get_liquid();
+            existing_balance.vesting += regular.get_vesting();
             }
       });
 
@@ -5870,14 +5802,14 @@ void database::validate_smt_invariants()const
       add_from_balance_index( rewards_balance_idx, [ &theMap ] ( const account_rewards_balance_object& rewards )
       {
          asset zero_liquid = asset( 0, rewards.pending_vesting_value.symbol );
-         asset zero_vesting = asset( 0, rewards.pending_vesting_shares.symbol );
-         auto insertInfo = theMap.emplace( rewards.pending_liquid.symbol, TCombinedBalance( { zero_liquid, zero_vesting,
-            rewards.pending_liquid, rewards.pending_vesting_shares, rewards.pending_vesting_value } ) );
+         asset zero_vesting = asset( 0, rewards.get_pending_vesting_shares().symbol );
+         auto insertInfo = theMap.emplace( rewards.get_pending_liquid().symbol, TCombinedBalance( { zero_liquid, zero_vesting,
+            rewards.get_pending_liquid(), rewards.get_pending_vesting_shares(), rewards.pending_vesting_value } ) );
          if( insertInfo.second == false )
             {
             TCombinedBalance& existing_balance = insertInfo.first->second;
-            existing_balance.pending_liquid += rewards.pending_liquid;
-            existing_balance.pending_vesting_shares += rewards.pending_vesting_shares;
+            existing_balance.pending_liquid += rewards.get_pending_liquid();
+            existing_balance.pending_vesting_shares += rewards.get_pending_vesting_shares();
             existing_balance.pending_vesting_value += rewards.pending_vesting_value;
             }
       });
@@ -5914,67 +5846,59 @@ void database::validate_smt_invariants()const
          // Check liquid SMT supply.
          asset total_liquid_supply = totalIt == theMap.end() ? asset(0, smt.liquid_symbol) :
             ( totalIt->second.liquid + totalIt->second.pending_liquid );
-         total_liquid_supply += asset( smt.total_vesting_fund_smt, smt.liquid_symbol )
-                             /*+ gpo.total_reward_fund_steem */
-                             + asset( smt.pending_rewarded_vesting_smt, smt.liquid_symbol );
+         total_liquid_supply += smt.get_total_vesting_fund_smt() + smt.get_pending_rewarded_vesting_smt();
 #pragma message( "TODO: Supplement ^ once SMT rewards are implemented" )
-         FC_ASSERT( asset(smt.current_supply, smt.liquid_symbol) == total_liquid_supply,
-                    "", ("smt current_supply",smt.current_supply)("total_liquid_supply",total_liquid_supply) );
+         FC_ASSERT( smt.get_full_liquid_supply() == total_liquid_supply,
+                    "", ("smt current_supply",smt.get_full_liquid_supply())("total_liquid_supply",total_liquid_supply) );
          // Check vesting SMT supply.
          asset total_vesting_supply = totalIt == theMap.end() ? asset(0, vesting_symbol) :
             ( totalIt->second.vesting + totalIt->second.pending_vesting_shares );
-         asset smt_vesting_supply = asset(smt.total_vesting_shares + smt.pending_rewarded_vesting_shares, vesting_symbol);
-         FC_ASSERT( smt_vesting_supply == total_vesting_supply,
-                    "", ("smt vesting supply",smt_vesting_supply)("total_vesting_supply",total_vesting_supply) );
+         FC_ASSERT( smt.get_full_vest_supply() == total_vesting_supply,
+                    "", ("smt vesting supply",smt.get_full_vest_supply())("total_vesting_supply",total_vesting_supply) );
          // Check pending_vesting_value
          asset pending_vesting_value = totalIt == theMap.end() ? asset(0, smt.liquid_symbol) : totalIt->second.pending_vesting_value;
-         FC_ASSERT( asset(smt.pending_rewarded_vesting_smt, smt.liquid_symbol) == pending_vesting_value, "",
-            ("smt pending_rewarded_vesting_smt", smt.pending_rewarded_vesting_smt)("pending_vesting_value", pending_vesting_value));
+         FC_ASSERT( smt.get_pending_rewarded_vesting_smt() == pending_vesting_value, "",
+            ("smt pending_rewarded_vesting_smt", smt.get_pending_rewarded_vesting_smt())("pending_vesting_value", pending_vesting_value));
       }
    }
    FC_CAPTURE_LOG_AND_RETHROW( (head_block_num()) );
 }
 #endif
 
-void split_vesting_shares( database& _db, const account_object& account, uint32_t magnitude )
-{
-   if( _db.has_hardfork( STEEM_HARDFORK_0_2 ) )
-      return;
-   //see database::perform_vesting_share_split
-
-   _db.modify( account, [&]( account_object& a )
-   {
-      a.vesting_shares.amount *= magnitude;
-      a.withdrawn *= magnitude;
-      a.to_withdraw *= magnitude;
-      a.vesting_withdraw_rate = asset( a.to_withdraw / STEEM_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
-      if( a.vesting_withdraw_rate.amount == 0 )
-         a.vesting_withdraw_rate.amount = 1;
-
-      for( uint32_t i = 0; i < STEEM_MAX_PROXY_RECURSION_DEPTH; ++i )
-         a.proxied_vsf_votes[ i ] *= magnitude;
-   } );
-}
-
 void database::perform_vesting_share_split( uint32_t magnitude )
 {
-   if( has_hardfork( STEEM_HARDFORK_0_2 ) )
+   if( has_hardfork( STEEM_HARDFORK_0_2 ) || magnitude == 0 )
       return;
    //if this routine was to be used past hardfork it was designed for, it needs to be supplemented;
    //note that now it does not touch all existing VESTS, most notably pending rewards
 
    try
    {
+      TTempBalance multiplied_vests( VESTS_SYMBOL );
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
       {
-         d.total_vesting_shares.amount *= magnitude;
+         TTempBalance dummy( STEEM_SYMBOL );
+         asset new_vests = d.get_total_vesting_shares();
+         new_vests.amount *= magnitude - 1;
+         d.issue_vests( &multiplied_vests, new_vests, &dummy, dummy );
          d.total_reward_shares2 = 0;
       } );
 
-      // Need to update all VESTS in accounts and the total VESTS in the dgpo
       for( const auto& account : get_index< account_index, by_id >() )
       {
-         split_vesting_shares( *this, account, magnitude );
+         modify( account, [&]( account_object& a )
+         {
+            auto new_vests = a.get_vesting_shares().get_value() * ( magnitude - 1 );
+            a.get_vesting_shares().transfer_from( &multiplied_vests, new_vests );
+            a.withdrawn *= magnitude;
+            a.to_withdraw *= magnitude;
+            a.vesting_withdraw_rate = asset( a.to_withdraw / STEEM_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
+            if( a.vesting_withdraw_rate.amount == 0 )
+               a.vesting_withdraw_rate.amount = 1;
+
+            for( uint32_t i = 0; i < STEEM_MAX_PROXY_RECURSION_DEPTH; ++i )
+               a.proxied_vsf_votes[ i ] *= magnitude;
+         } );
       }
 
       const auto& comments = get_index< comment_index >().indices();

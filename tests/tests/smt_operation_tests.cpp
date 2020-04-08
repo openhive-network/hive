@@ -434,7 +434,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
       BOOST_TEST_MESSAGE( "--- Test filling limit order with better order when partial order is worse." );
 
       //auto gpo = db->get_dynamic_global_properties();
-      //auto start_sbd = gpo.current_sbd_supply;
+      //auto start_sbd = gpo.get_current_sbd_supply();
 
       op.owner = "alice";
       op.orderid = 5;
@@ -909,7 +909,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
       BOOST_TEST_MESSAGE( "--- Test filling limit order with better order when partial order is worse." );
 
       //auto gpo = db->get_dynamic_global_properties();
-      //auto start_sbd = gpo.current_sbd_supply;
+      //auto start_sbd = gpo.get_current_sbd_supply();
 
       op.owner = "alice";
       op.orderid = 5;
@@ -1118,21 +1118,22 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
 
       db_plugin->debug_update( []( database& db )
       {
-         db.modify( db.get_account( "alice" ), []( account_object& a )
+         TTempBalance steem_balance( STEEM_SYMBOL );
+         TTempBalance sbd_balance( SBD_SYMBOL );
+         TTempBalance vest_balance( VESTS_SYMBOL );
+         db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
          {
-            a.get_sbd_rewards() = ASSET( "10.000 TBD" );
-            a.get_rewards() = ASSET( "10.000 TESTS" );
-            a.reward_vesting_balance = ASSET( "10.000000 VESTS" );
+            gpo.issue_steem( &steem_balance, ASSET( "20.000 TESTS" ) );
+            gpo.virtual_supply += steem_balance;
+            gpo.issue_sbd( &sbd_balance, ASSET( "10.000 TBD" ) );
+            gpo.issue_vests( &vest_balance, ASSET( "10.000000 VESTS" ), &steem_balance, ASSET( "10.000 TESTS" ), true );
+         } );
+         db.modify( db.get_account( "alice" ), [&]( account_object& a )
+         {
+            a.get_rewards().transfer_from( &steem_balance, ASSET( "10.000 TESTS" ).amount.value );
+            a.get_sbd_rewards().transfer_from( &sbd_balance, ASSET( "10.000 TBD" ).amount.value );
+            a.get_vest_rewards().transfer_from( &vest_balance, ASSET( "10.000000 VESTS" ).amount.value );
             a.reward_vesting_steem = ASSET( "10.000 TESTS" );
-         });
-
-         db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
-         {
-            gpo.current_sbd_supply += ASSET( "10.000 TBD" );
-            gpo.current_supply += ASSET( "20.000 TESTS" );
-            gpo.virtual_supply += ASSET( "20.000 TESTS" );
-            gpo.pending_rewarded_vesting_shares += ASSET( "10.000000 VESTS" );
-            gpo.pending_rewarded_vesting_steem += ASSET( "10.000 TESTS" );
          });
       });
 
@@ -1141,7 +1142,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
 
       auto alice_steem = get_balance( "alice" );
       auto alice_sbd = get_sbd_balance( "alice" );
-      auto alice_vests = db->get_account( "alice" ).vesting_shares;
+      auto alice_vests = get_vesting( "alice" );
       auto alice_smt1 = db->get_balance( "alice", smt1 );
       auto alice_smt2 = db->get_balance( "alice", smt2 );
       auto alice_smt3 = db->get_balance( "alice", smt3 );
@@ -1174,8 +1175,8 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
       BOOST_REQUIRE( get_rewards( "alice" ) == ASSET( "10.000 TESTS" ) );
       BOOST_REQUIRE( get_sbd_balance( "alice" ) == alice_sbd + ASSET( "0.000 TBD" ) );
       BOOST_REQUIRE( get_sbd_rewards( "alice" ) == ASSET( "10.000 TBD" ) );
-      BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == alice_vests + partial_vests );
-      BOOST_REQUIRE( db->get_account( "alice" ).reward_vesting_balance == ASSET( "5.000000 VESTS" ) );
+      BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + partial_vests );
+      BOOST_REQUIRE( get_vest_rewards( "alice" ) == ASSET( "5.000000 VESTS" ) );
       BOOST_REQUIRE( db->get_account( "alice" ).reward_vesting_steem == ASSET( "5.000 TESTS" ) );
       validate_database();
       alice_vests += partial_vests;
@@ -1205,8 +1206,8 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
       BOOST_REQUIRE( get_rewards( "alice" ) == ASSET( "0.000 TESTS" ) );
       BOOST_REQUIRE( get_sbd_balance( "alice" ) == alice_sbd + full_sbd );
       BOOST_REQUIRE( get_sbd_rewards( "alice" ) == ASSET( "0.000 TBD" ) );
-      BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == alice_vests + partial_vests );
-      BOOST_REQUIRE( db->get_account( "alice" ).reward_vesting_balance == ASSET( "0.000000 VESTS" ) );
+      BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + partial_vests );
+      BOOST_REQUIRE( get_vest_rewards( "alice" ) == ASSET( "0.000000 VESTS" ) );
       BOOST_REQUIRE( db->get_account( "alice" ).reward_vesting_steem == ASSET( "0.000 TESTS" ) );
       validate_database();
       op.reward_tokens.clear();
@@ -1295,8 +1296,8 @@ BOOST_AUTO_TEST_CASE( smt_transfer_to_vesting_apply )
          FC_ASSERT( db->get_balance( "alice", liquid_smt ).amount == 10000, "SMT balance adjusting error" );
          FC_ASSERT( db->get_balance( "alice", vesting_smt ).amount == 0, "SMT balance adjusting error" );
 
-         auto smt_shares = asset( smt_object.total_vesting_shares, vesting_smt );
-         auto smt_vests = asset( smt_object.total_vesting_fund_smt, liquid_smt );
+         auto smt_shares = asset( smt_object.get_total_vesting_shares(), vesting_smt );
+         auto smt_vests = smt_object.total_vesting_fund_smt();
          auto smt_share_price = smt_object.get_vesting_share_price();
          auto alice_smt_shares = db->get_balance( "alice", vesting_smt );
          auto bob_smt_shares = db->get_balance( "bob", vesting_smt );;
@@ -1315,8 +1316,8 @@ BOOST_AUTO_TEST_CASE( smt_transfer_to_vesting_apply )
 
          BOOST_REQUIRE( db->get_balance( "alice", liquid_smt ) == asset( 2500, liquid_smt ) );
          BOOST_REQUIRE( db->get_balance( "alice", vesting_smt ) == alice_smt_shares );
-         BOOST_REQUIRE( smt_object.total_vesting_fund_smt.value == smt_vests.amount.value );
-         BOOST_REQUIRE( smt_object.total_vesting_shares.value == smt_shares.amount.value );
+         BOOST_REQUIRE( smt_object.get_total_vesting_fund_smt().amount.value == smt_vests.amount.value );
+         BOOST_REQUIRE( smt_object.get_total_vesting_shares().value == smt_shares.amount.value );
          validate_database();
          smt_share_price = smt_object.get_vesting_share_price();
 
@@ -1334,8 +1335,8 @@ BOOST_AUTO_TEST_CASE( smt_transfer_to_vesting_apply )
          BOOST_REQUIRE( db->get_balance( "alice", vesting_smt ) == alice_smt_shares );
          BOOST_REQUIRE( db->get_balance( "bob", liquid_smt ) == asset( 0, liquid_smt ) );
          BOOST_REQUIRE( db->get_balance( "bob", vesting_smt ) == bob_smt_shares );
-         BOOST_REQUIRE( smt_object.total_vesting_fund_smt.value == smt_vests.amount.value );
-         BOOST_REQUIRE( smt_object.total_vesting_shares.value == smt_shares.amount.value );
+         BOOST_REQUIRE( smt_object.get_total_vesting_fund_smt().amount.value == smt_vests.amount.value );
+         BOOST_REQUIRE( smt_object.get_total_vesting_shares().value == smt_shares.amount.value );
          validate_database();
       };
 
@@ -1715,11 +1716,7 @@ BOOST_AUTO_TEST_CASE( smt_create_reset )
 
       db_plugin->debug_update( [=]( database& db )
       {
-         db.create< smt_token_object >( [&]( smt_token_object& o )
-         {
-            o.control_account = "alice";
-            o.liquid_symbol = alice_symbol;
-         });
+         db.create< smt_token_object >( alice_symbol, "alice" );
       });
 
       generate_block();
@@ -2635,11 +2632,7 @@ BOOST_AUTO_TEST_CASE( smt_set_runtime_parameters_apply )
 
       db_plugin->debug_update( [=](database& db)
       {
-         db.create< smt_token_object >( [&]( smt_token_object& o )
-         {
-            o.control_account = "alice";
-            o.liquid_symbol = alice_symbol;
-         });
+         db.create< smt_token_object >( alice_symbol, "alice" );
       });
 
       smt_set_runtime_parameters_operation op;
@@ -2801,11 +2794,7 @@ BOOST_AUTO_TEST_CASE( smt_contribute_apply )
 
       db_plugin->debug_update( [=] ( database& db )
       {
-         db.create< smt_token_object >( [&]( smt_token_object& o )
-         {
-            o.control_account = "alice";
-            o.liquid_symbol = alice_symbol;
-         } );
+         db.create< smt_token_object >( alice_symbol, "alice" );
 
          db.create< smt_ico_object >( [&]( smt_ico_object& o )
          {
@@ -2963,7 +2952,7 @@ BOOST_AUTO_TEST_CASE( smt_contribute_apply )
       auto itr = idx.lower_bound( boost::make_tuple( alice_symbol, account_name_type( "alice" ), 0 ) );
       while( itr != idx.end() && itr->contributor == account_name_type( "alice" ) )
       {
-         alices_contributions += itr->contribution;
+         alices_contributions += itr->get_contribution();
          alices_num_contributions++;
          ++itr;
       }
@@ -2971,7 +2960,7 @@ BOOST_AUTO_TEST_CASE( smt_contribute_apply )
       itr = idx.lower_bound( boost::make_tuple( alice_symbol, account_name_type( "bob" ), 0 ) );
       while( itr != idx.end() && itr->contributor == account_name_type( "bob" ) )
       {
-         bobs_contributions += itr->contribution;
+         bobs_contributions += itr->get_contribution();
          bobs_num_contributions++;
          ++itr;
       }
@@ -2979,7 +2968,7 @@ BOOST_AUTO_TEST_CASE( smt_contribute_apply )
       itr = idx.lower_bound( boost::make_tuple( alice_symbol, account_name_type( "sam" ), 0 ) );
       while( itr != idx.end() && itr->contributor == account_name_type( "sam" ) )
       {
-         sams_contributions += itr->contribution;
+         sams_contributions += itr->get_contribution();
          sams_num_contributions++;
          ++itr;
       }

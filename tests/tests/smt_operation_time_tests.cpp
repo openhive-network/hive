@@ -271,8 +271,8 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
 
       generate_blocks( db->head_block_time() + fc::seconds( STEEM_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10.to_seconds() / 2 ), true );
 
-      ops = get_last_operations( 3 );
-      fill_order_op = ops[2].get< fill_order_operation >();
+      ops = get_last_operations( 4 );
+      fill_order_op = ops[3].get< fill_order_operation >();
 
       BOOST_REQUIRE( fill_order_op.open_owner == "alice" );
       BOOST_REQUIRE( fill_order_op.open_orderid == 6 );
@@ -558,10 +558,10 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
       BOOST_REQUIRE( reward->steem_volume == dave_steem_volume );
       BOOST_CHECK( reward->last_update == dave_reward_last_update );*/
 
-      auto alice_balance = db->get_account( "alice" ).balance;
-      auto bob_balance = db->get_account( "bob" ).balance;
-      auto sam_balance = db->get_account( "sam" ).balance;
-      auto dave_balance = db->get_account( "dave" ).balance;
+      auto alice_balance = get_balance( "alice" );
+      auto bob_balance = get_balance( "bob" );
+      auto sam_balance = get_balance( "sam" );
+      auto dave_balance = get_balance( "dave" );
 
       BOOST_TEST_MESSAGE( "Generating Blocks to trigger liquidity rewards" );
 
@@ -569,19 +569,19 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
       generate_blocks( STEEM_LIQUIDITY_REWARD_BLOCKS - ( db->head_block_num() % STEEM_LIQUIDITY_REWARD_BLOCKS ) - 1 );
 
       BOOST_REQUIRE( db->head_block_num() % STEEM_LIQUIDITY_REWARD_BLOCKS == STEEM_LIQUIDITY_REWARD_BLOCKS - 1 );
-      BOOST_REQUIRE( db->get_account( "alice" ).balance.amount.value == alice_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "bob" ).balance.amount.value == bob_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "sam" ).balance.amount.value == sam_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "dave" ).balance.amount.value == dave_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "alice" ).amount.value == alice_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "bob" ).amount.value == bob_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "sam" ).amount.value == sam_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "dave" ).amount.value == dave_balance.amount.value );
 
       generate_block();
 
       //alice_balance += STEEM_MIN_LIQUIDITY_REWARD;
 
-      BOOST_REQUIRE( db->get_account( "alice" ).balance.amount.value == alice_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "bob" ).balance.amount.value == bob_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "sam" ).balance.amount.value == sam_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "dave" ).balance.amount.value == dave_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "alice" ).amount.value == alice_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "bob" ).amount.value == bob_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "sam" ).amount.value == sam_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "dave" ).amount.value == dave_balance.amount.value );
 
       ops = get_last_operations( 1 );
 
@@ -592,10 +592,10 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
 
       //bob_balance += STEEM_MIN_LIQUIDITY_REWARD;
 
-      BOOST_REQUIRE( db->get_account( "alice" ).balance.amount.value == alice_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "bob" ).balance.amount.value == bob_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "sam" ).balance.amount.value == sam_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "dave" ).balance.amount.value == dave_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "alice" ).amount.value == alice_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "bob" ).amount.value == bob_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "sam" ).amount.value == sam_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "dave" ).amount.value == dave_balance.amount.value );
 
       ops = get_last_operations( 1 );
 

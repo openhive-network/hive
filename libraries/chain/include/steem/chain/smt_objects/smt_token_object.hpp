@@ -29,46 +29,111 @@ public:
 
    struct smt_market_maker_state
    {
-      asset    steem_balance;
-      asset    token_balance;
+      asset    steem_balance; //ABW: will probably need to be a BALANCE object once it is actually used
+      asset    token_balance; //ABW: will probably need to be a BALANCE object once it is actually used
       uint32_t reserve_ratio = 0;
    };
 
 public:
 
-   template< typename Constructor, typename Allocator >
-   smt_token_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
-      : id( _id )
+   template< typename Allocator >
+   smt_token_object( allocator< Allocator > a, int64_t _id,
+      asset_symbol_type _liquid_symbol, const account_name_type& _control_account )
+      : id( _id ), liquid_symbol( _liquid_symbol ), control_account( _control_account ),
+      current_supply( 0, _liquid_symbol ), total_vesting_fund_smt( 0, _liquid_symbol ),
+      total_vesting_shares( 0, _liquid_symbol.get_paired_symbol() ), pending_rewarded_vesting_shares( 0, _liquid_symbol.get_paired_symbol() ),
+      pending_rewarded_vesting_smt( 0, _liquid_symbol )
    {
-      c( *this );
+      market_maker.token_balance = asset( 0, liquid_symbol );
    }
 
-   price    one_vesting_to_one_liquid() const
+   void on_remove() const
+   {
+      FC_ASSERT( ( total_vesting_fund_smt.amount == 0 ) && ( pending_rewarded_vesting_smt.amount == 0 ),
+         "SMT tokens not transfered out before smt_token_object removal." );
+   }
+
+   // all liquid SMT of this kind in circulation
+   asset get_full_liquid_supply() const { return current_supply; }
+   // creates new liquid SMTs
+   void issue_liquid( TTempBalance* balance, const asset& amount )
+   {
+      current_supply += amount;
+      balance->issue_asset( amount );
+   }
+   // removes existing liquid SMTs
+   void burn_liquid( TTempBalance* balance, const asset& amount )
+   {
+      current_supply -= amount;
+      balance->burn_asset( amount );
+   }
+
+   /**
+    * all vesting SMTs of this kind in circulation
+    * Note: the counters used here act as a counterweight for total_vesting_fund_smt and pending_rewarded_vesting_smt
+    * pool balances respectively, that's why they are not a single counter
+    */
+   asset get_full_vest_supply() const
+   {
+      return total_vesting_shares + pending_rewarded_vesting_shares;
+   }
+   // creates new vesting SMTs taking liquid SMTs to the pool
+   void issue_vests( TTempBalance* balance, const asset& amount, TTempBalance* liquid, const asset& liquid_amount, bool to_reward = false )
+   {
+      if( to_reward )
+      {
+         pending_rewarded_vesting_shares += amount;
+         get_pending_rewarded_vesting_smt().transfer_from( liquid, liquid_amount.amount.value );
+      }
+      else
+      {
+         total_vesting_shares += amount;
+         get_total_vesting_fund_smt().transfer_from( liquid, liquid_amount.amount.value );
+      }
+      balance->issue_asset( amount );
+   }
+   // removes existing vesting SMTs and gives out liquid SMTs from the pool
+   void burn_vests( TTempBalance* balance, const asset& amount, TTempBalance* liquid, const asset& liquid_amount, bool from_reward = false )
+   {
+      if( from_reward )
+      {
+         pending_rewarded_vesting_shares -= amount;
+         get_pending_rewarded_vesting_smt().transfer_to( liquid, liquid_amount.amount.value );
+      }
+      else
+      {
+         total_vesting_shares -= amount;
+         get_total_vesting_fund_smt().transfer_to( liquid, liquid_amount.amount.value );
+      }
+      balance->burn_asset( amount );
+   }
+
+   price one_vesting_to_one_liquid() const
    {
       int64_t one_smt = std::pow(10, liquid_symbol.decimals());
       return price ( asset( one_smt, liquid_symbol.get_paired_symbol() ), asset( one_smt, liquid_symbol ) );
       // ^ On the assumption that liquid and vesting SMT have the same precision. See issue 2212
    }
 
-   price    get_vesting_share_price() const
+   price get_vesting_share_price() const
    {
-      if ( total_vesting_fund_smt == 0 || total_vesting_shares == 0 )
+      if ( total_vesting_fund_smt.amount == 0 || total_vesting_shares.amount == 0 )
          return one_vesting_to_one_liquid();
          // ^ In original method of globa_property_object it was one liquid to one vesting which seems to be a bug.
 
-      return price( asset( total_vesting_shares, liquid_symbol.get_paired_symbol() ), asset( total_vesting_fund_smt, liquid_symbol ) );
+      return price( total_vesting_shares, total_vesting_fund_smt );
    }
 
-   price    get_reward_vesting_share_price() const
+   price get_reward_vesting_share_price() const
    {
-      share_type reward_vesting_shares = total_vesting_shares + pending_rewarded_vesting_shares;
-      share_type reward_vesting_smt = total_vesting_fund_smt + pending_rewarded_vesting_smt;
+      asset reward_vesting_shares = total_vesting_shares + pending_rewarded_vesting_shares;
+      asset reward_vesting_smt = total_vesting_fund_smt + pending_rewarded_vesting_smt;
 
-      if( reward_vesting_shares == 0 || reward_vesting_smt == 0 )
+      if( reward_vesting_shares.amount == 0 || reward_vesting_smt.amount == 0 )
           return one_vesting_to_one_liquid();
       // ^ Additional check not found in original get_reward_vesting_share_price. See issue 2212
 
-      return price( asset( reward_vesting_shares, liquid_symbol.get_paired_symbol() ), asset( reward_vesting_smt, liquid_symbol ) );
+      return price( reward_vesting_shares, reward_vesting_smt );
    }
 
    // id_type is actually oid<smt_token_object>
@@ -81,12 +146,13 @@ public:
    account_name_type    control_account;
    smt_phase            phase = smt_phase::account_elevated;
 
-   share_type           current_supply = 0;
-   share_type           total_vesting_fund_smt = 0;
-   share_type           total_vesting_shares = 0;
-   share_type           pending_rewarded_vesting_shares = 0;
-   share_type           pending_rewarded_vesting_smt = 0;
-
+   BALANCE_COUNTER( current_supply, get_current_supply );
+   BALANCE( total_vesting_fund_smt, get_total_vesting_fund_smt );
+public:
+   BALANCE_COUNTER( total_vesting_shares, get_total_vesting_shares );
+   BALANCE_COUNTER( pending_rewarded_vesting_shares, get_pending_rewarded_vesting_shares );
+   BALANCE( pending_rewarded_vesting_smt, get_pending_rewarded_vesting_smt );
+public:
    smt_market_maker_state  market_maker;
 
    /// set_setup_parameters
@@ -107,7 +173,9 @@ public:
    bool                 allow_downvotes = true;
 
    ///parameters for 'smt_setup_operation'
-   int64_t                       max_supply = 0;
+   int64_t              max_supply = 0;
+
+   friend class fc::reflector<smt_token_object>;
 };
 
 class smt_ico_object : public object< smt_ico_object_type, smt_ico_object >
@@ -176,7 +244,7 @@ public:
    asset_symbol_type                     symbol;
    account_name_type                     contributor;
    uint32_t                              contribution_id;
-   HIVE_BALANCE( contribution, get_contribution() );
+   HIVE_BALANCE( contribution, get_contribution );
 
    friend class fc::reflector<smt_contribution_object>;
 };

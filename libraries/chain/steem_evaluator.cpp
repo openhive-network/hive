@@ -2945,12 +2945,8 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 
    _db.modify( _db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
    {
-      TTempBalance steem_balance( STEEM_SYMBOL );
-      gpo.get_pending_rewarded_vesting_steem().transfer_to( &steem_balance, reward_vesting_steem_to_move.amount.value );
-      gpo.pending_rewarded_vesting_shares -= op.reward_vests;
-      gpo.get_total_vesting_fund_steem().transfer_from( &steem_balance );
-      gpo.total_vesting_shares += op.reward_vests;
-   });
+      gpo.move_vests_from_reward( op.reward_vests, reward_vesting_steem_to_move );
+   } );
 
    _db.adjust_proxied_witness_votes( acnt, op.reward_vests.amount );
 }
@@ -2967,8 +2963,9 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
 
       if( token.symbol.space() == asset_symbol_type::smt_nai_space )
       {
-         _db.adjust_reward_balance( op.account, -token );
-         _db.adjust_balance( op.account, token );
+         TTempBalance balance( token.symbol );
+         _db.adjust_reward_balance( op.account, &balance, -token.amount.value );
+         _db.adjust_balance( op.account, &balance, token.amount.value );
       }
       else
       {
@@ -2981,31 +2978,28 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
 
          if( token.symbol == VESTS_SYMBOL)
          {
-            FC_ASSERT( token <= a->reward_vesting_balance, "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
-               ("c", token)("a", a->reward_vesting_balance) );
+            FC_ASSERT( token <= a->get_vest_rewards(), "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
+               ("c", token)("a", a->get_vest_rewards()) );
 
             asset reward_vesting_steem_to_move = asset( 0, STEEM_SYMBOL );
-            if( token == a->reward_vesting_balance )
+            if( token == a->get_vest_rewards() )
                reward_vesting_steem_to_move = a->reward_vesting_steem;
             else
                reward_vesting_steem_to_move = asset( ( ( uint128_t( token.amount.value ) * uint128_t( a->reward_vesting_steem.amount.value ) )
-                  / uint128_t( a->reward_vesting_balance.amount.value ) ).to_uint64(), STEEM_SYMBOL );
+                  / uint128_t( a->get_vest_rewards().amount.value ) ).to_uint64(), STEEM_SYMBOL );
 
             _db.modify( *a, [&]( account_object& a )
             {
-               a.vesting_shares += token;
-               a.reward_vesting_balance -= token;
+               TTempBalance vest_balance( VESTS_SYMBOL );
+               a.get_vest_rewards().transfer_to( &vest_balance, token.amount.value );
+               a.get_vesting_shares().transfer_from( &vest_balance );
                a.reward_vesting_steem -= reward_vesting_steem_to_move;
             });
 
             _db.modify( _db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
             {
-               gpo.total_vesting_shares += token;
-               gpo.total_vesting_fund_steem += reward_vesting_steem_to_move;
-
-               gpo.pending_rewarded_vesting_shares -= token;
-               gpo.pending_rewarded_vesting_steem -= reward_vesting_steem_to_move;
-            });
+               gpo.move_vests_from_reward( token, reward_vesting_steem_to_move );
+            } );
 
             _db.adjust_proxied_witness_votes( *a, token.amount );
          }
@@ -3015,8 +3009,9 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
                        "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}", ("c", token)("a", a->get_rewards() ) );
             FC_ASSERT( is_asset_type( token, SBD_SYMBOL ) == false || token <= a->get_sbd_rewards(),
                        "Cannot claim that much HBD. Claim: ${c} Actual: ${a}", ("c", token)("a", a->get_sbd_rewards() ) );
-            _db.adjust_reward_balance( *a, -token );
-            _db.adjust_balance( *a, token );
+            TTempBalance balance( token.symbol );
+            _db.adjust_reward_balance( *a, &balance, -token.amount.value );
+            _db.adjust_balance( *a, &balance, token.amount.value );
          }
          else
             FC_ASSERT( false, "Unknown asset symbol" );

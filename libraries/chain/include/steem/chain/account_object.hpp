@@ -17,10 +17,7 @@
 namespace steem { namespace chain {
 
    using steem::protocol::authority;
-   class account_object;
-   class database;
-   void split_vesting_shares( database&, const account_object&, uint32_t );
-
+   
    class account_object : public object< account_object_type, account_object >
    {
       public:
@@ -174,7 +171,6 @@ namespace steem { namespace chain {
          }
 
          friend class fc::reflector<account_object>;
-         friend void split_vesting_shares( database&, const account_object&, uint32_t );
    };
 
    class account_metadata_object : public object< account_metadata_object_type, account_metadata_object >

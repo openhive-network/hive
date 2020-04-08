@@ -1506,7 +1506,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
 
       BOOST_REQUIRE( alice.get_balance() == ASSET( "10.000 TESTS" ) );
 
-      auto shares = asset( gpo.total_vesting_shares.amount, VESTS_SYMBOL );
+      auto shares = asset( gpo.get_total_vesting_shares().amount, VESTS_SYMBOL );
       auto vests = asset( gpo.get_total_vesting_fund_steem().amount, STEEM_SYMBOL );
       auto alice_shares = alice.get_vesting_shares();
       auto bob_shares = bob.get_vesting_shares();
@@ -1536,7 +1536,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
       BOOST_REQUIRE( alice.get_balance().amount.value == ASSET( "2.500 TESTS" ).amount.value );
       BOOST_REQUIRE( alice.get_vesting_shares().amount.value == alice_shares.amount.value );
       BOOST_REQUIRE( gpo.get_total_vesting_fund_steem().amount.value == vests.amount.value );
-      BOOST_REQUIRE( gpo.total_vesting_shares.amount.value == shares.amount.value );
+      BOOST_REQUIRE( gpo.get_total_vesting_shares().amount.value == shares.amount.value );
       validate_database();
 
       op.to = "bob";
@@ -1558,7 +1558,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
       BOOST_REQUIRE( bob.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
       BOOST_REQUIRE( bob.get_vesting_shares().amount.value == bob_shares.amount.value );
       BOOST_REQUIRE( gpo.get_total_vesting_fund_steem().amount.value == vests.amount.value );
-      BOOST_REQUIRE( gpo.total_vesting_shares.amount.value == shares.amount.value );
+      BOOST_REQUIRE( gpo.get_total_vesting_shares().amount.value == shares.amount.value );
       validate_database();
 
       STEEM_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), fc::exception );
@@ -1568,7 +1568,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
       BOOST_REQUIRE( bob.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
       BOOST_REQUIRE( bob.get_vesting_shares().amount.value == bob_shares.amount.value );
       BOOST_REQUIRE( gpo.get_total_vesting_fund_steem().amount.value == vests.amount.value );
-      BOOST_REQUIRE( gpo.total_vesting_shares.amount.value == shares.amount.value );
+      BOOST_REQUIRE( gpo.get_total_vesting_shares().amount.value == shares.amount.value );
       validate_database();
    }
    FC_LOG_AND_RETHROW()
@@ -3106,7 +3106,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
       BOOST_TEST_MESSAGE( "--- Test filling limit order with better order when partial order is worse." );
 
       //auto gpo = db->get_dynamic_global_properties();
-      //auto start_sbd = gpo.current_sbd_supply;
+      //auto start_sbd = gpo.get_current_sbd_supply();
 
       op.owner = "alice";
       op.orderid = 5;
@@ -3471,7 +3471,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
       BOOST_TEST_MESSAGE( "--- Test filling limit order with better order when partial order is worse." );
 
       //auto gpo = db->get_dynamic_global_properties();
-      //auto start_sbd = gpo.current_sbd_supply;
+      //auto start_sbd = gpo.get_current_sbd_supply();
 
 
       op.owner = "alice";
@@ -6442,7 +6442,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
       BOOST_REQUIRE( get_sbd_balance( "alice" ) == alice_sbd + op.reward_sbd );
       BOOST_REQUIRE( get_sbd_rewards( "alice" ) == ASSET( "10.000 TBD" ) );
       BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + op.reward_vests );
-      BOOST_REQUIRE( db->get_account( "alice" ).get_vest_rewards() == ASSET( "5.000000 VESTS" ) );
+      BOOST_REQUIRE( get_vest_rewards( "alice" ) == ASSET( "5.000000 VESTS" ) );
       BOOST_REQUIRE( db->get_account( "alice" ).reward_vesting_steem == ASSET( "5.000 TESTS" ) );
       validate_database();
 
@@ -6463,7 +6463,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
       BOOST_REQUIRE( get_sbd_balance( "alice" ) == alice_sbd + op.reward_sbd );
       BOOST_REQUIRE( get_sbd_rewards( "alice" ) == ASSET( "0.000 TBD" ) );
       BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + op.reward_vests );
-      BOOST_REQUIRE( db->get_account( "alice" ).get_vest_rewards() == ASSET( "0.000000 VESTS" ) );
+      BOOST_REQUIRE( get_vest_rewards( "alice" ) == ASSET( "0.000000 VESTS" ) );
       BOOST_REQUIRE( db->get_account( "alice" ).reward_vesting_steem == ASSET( "0.000 TESTS" ) );
             validate_database();
    }

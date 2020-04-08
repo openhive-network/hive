@@ -359,16 +359,14 @@ struct extended_dynamic_global_properties
       total_pow( o.total_pow ),
       num_pow_witnesses( o.num_pow_witnesses ),
       virtual_supply( legacy_asset::from_asset( o.virtual_supply ) ),
-      current_supply( legacy_asset::from_asset( o.current_supply ) ),
-      confidential_supply( legacy_asset::from_asset( o.confidential_supply ) ),
-      init_sbd_supply( legacy_asset::from_asset( o.init_sbd_supply ) ),
-      current_sbd_supply( legacy_asset::from_asset( o.current_sbd_supply ) ),
-      confidential_sbd_supply( legacy_asset::from_asset( o.confidential_sbd_supply ) ),
+      current_supply( legacy_asset::from_asset( o.get_current_supply() ) ),
+      init_sbd_supply( legacy_asset::from_asset( o.get_init_sbd_supply() ) ),
+      current_sbd_supply( legacy_asset::from_asset( o.get_current_sbd_supply() ) ),
       total_vesting_fund_steem( legacy_asset::from_asset( o.get_total_vesting_fund_steem() ) ),
-      total_vesting_shares( legacy_asset::from_asset( o.total_vesting_shares ) ),
+      total_vesting_shares( legacy_asset::from_asset( o.get_total_vesting_shares() ) ),
       total_reward_fund_steem( legacy_asset::from_asset( o.get_total_reward_fund_steem() ) ),
       total_reward_shares2( o.total_reward_shares2 ),
-      pending_rewarded_vesting_shares( legacy_asset::from_asset( o.pending_rewarded_vesting_shares ) ),
+      pending_rewarded_vesting_shares( legacy_asset::from_asset( o.get_pending_rewarded_vesting_shares() ) ),
       pending_rewarded_vesting_steem( legacy_asset::from_asset( o.get_pending_rewarded_vesting_steem() ) ),
       sbd_interest_rate( o.sbd_interest_rate ),
       sbd_print_rate( o.sbd_print_rate ),
@@ -404,7 +402,7 @@ struct extended_dynamic_global_properties
 
    legacy_asset      virtual_supply;
    legacy_asset      current_supply;
-   legacy_asset      confidential_supply;
+   legacy_asset      confidential_supply = legacy_asset::from_asset( asset( 0, STEEM_SYMBOL ) );
    legacy_asset      init_sbd_supply = legacy_asset::from_asset( asset( 0, SBD_SYMBOL ) );
    legacy_asset      current_sbd_supply = legacy_asset::from_asset( asset( 0, SBD_SYMBOL ) );
    legacy_asset      confidential_sbd_supply = legacy_asset::from_asset( asset( 0, SBD_SYMBOL ) );

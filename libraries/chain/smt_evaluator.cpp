@@ -91,8 +91,9 @@ void smt_create_evaluator::do_apply( const smt_create_operation& o )
       FC_ASSERT( creation_fee == dgpo.smt_creation_fee,
          "Fee of ${ef} does not match the creation fee of ${sf}", ("ef", creation_fee)("sf", dgpo.smt_creation_fee) );
 
-      _db.adjust_balance( o.control_account , -o.smt_creation_fee );
-      _db.adjust_balance( STEEM_NULL_ACCOUNT,  o.smt_creation_fee );
+      TTempBalance fee_balance( o.smt_creation_fee.symbol );
+      _db.adjust_balance( o.control_account, &fee_balance, -o.smt_creation_fee.amount.value );
+      _db.adjust_balance( STEEM_NULL_ACCOUNT, &fee_balance, o.smt_creation_fee.amount.value );
    }
    else // Reset case
    {
@@ -105,12 +106,7 @@ void smt_create_evaluator::do_apply( const smt_create_operation& o )
    }
 
    // Create SMT object common to both liquid and vesting variants of SMT.
-   _db.create< smt_token_object >( [&]( smt_token_object& token )
-   {
-      token.liquid_symbol = o.symbol;
-      token.control_account = o.control_account;
-      token.market_maker.token_balance = asset( 0, token.liquid_symbol );
-   });
+   _db.create< smt_token_object >( o.symbol, o.control_account );
 
    remove_from_nai_pool( _db, o.symbol );
 
@@ -151,7 +147,7 @@ void smt_setup_evaluator::do_apply( const smt_setup_operation& o )
       token.max_supply = o.max_supply;
    } );
 
-   auto token_ico = _db.create< smt_ico_object >( [&] ( smt_ico_object& token_ico_obj )
+   auto& token_ico = _db.create< smt_ico_object >( [&] ( smt_ico_object& token_ico_obj )
    {
       token_ico_obj.symbol = _token->liquid_symbol;
       token_ico_obj.contribution_begin_time = o.contribution_begin_time;
@@ -311,14 +307,15 @@ void smt_contribute_evaluator::do_apply( const smt_contribute_operation& o )
       auto contrib_ptr = _db.find< smt_contribution_object, by_symbol_contributor >( key );
       FC_ASSERT( contrib_ptr == nullptr, "The provided contribution ID must be unique. Current: ${id}", ("id", o.contribution_id) );
 
-      _db.adjust_balance( o.contributor, -o.contribution );
+      TTempBalance contribution_balance( STEEM_SYMBOL );
+      _db.adjust_balance( o.contributor, &contribution_balance, -o.contribution.amount.value );
 
       _db.create< smt_contribution_object >( [&] ( smt_contribution_object& obj )
       {
          obj.contributor = o.contributor;
          obj.symbol = o.symbol;
          obj.contribution_id = o.contribution_id;
-         obj.contribution = o.contribution;
+         obj.get_contribution().transfer_from( &contribution_balance );
       } );
 
       _db.modify( *token_ico, [&]( smt_ico_object& ico )

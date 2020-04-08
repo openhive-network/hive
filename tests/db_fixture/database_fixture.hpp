@@ -147,10 +147,14 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
 
 // To be incorporated into fund() method if deemed appropriate.
 // 'SMT' would be dropped from the name then.
-#define FUND_SMT_REWARDS( account_name, amount ) \
-   db->adjust_reward_balance( account_name, amount ); \
-   db->adjust_supply( amount ); \
-   generate_block();
+#define FUND_SMT_REWARDS( account_name, _amount ) \
+   { \
+      asset a = _amount; \
+      TTempBalance balance( a.symbol ); \
+      db->adjust_supply( &balance, a.amount.value ); \
+      db->adjust_reward_balance( account_name, &balance, balance.get_value() ); \
+      generate_block(); \
+   }
 
 #define OP2TX(OP,TX,KEY) \
 TX.operations.push_back( OP ); \
@@ -272,6 +276,7 @@ struct database_fixture {
    const asset& get_rewards( const string& account_name )const;
    const asset& get_sbd_rewards( const string& account_name )const;
    const asset& get_vesting( const string& account_name )const;
+   const asset& get_vest_rewards( const string& account_name )const;
    void sign( signed_transaction& trx, const fc::ecc::private_key& key );
 
    vector< operation > get_last_operations( uint32_t ops );

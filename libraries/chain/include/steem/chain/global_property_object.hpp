@@ -26,8 +26,10 @@ namespace steem { namespace chain {
       public:
          template< typename Constructor, typename Allocator >
          dynamic_global_property_object( allocator< Allocator > a, int64_t _id,
-            TTempBalance* created_initial_supply, TTempBalance* created_initial_sbd_supply, Constructor&& c )
-            : id( _id )
+            TTempBalance* created_initial_supply, uint64_t initial_supply,
+            TTempBalance* created_initial_sbd_supply, uint64_t initial_sbd_supply, Constructor&& c )
+            : id( _id ), virtual_supply( initial_supply, STEEM_SYMBOL ), current_supply( initial_supply, STEEM_SYMBOL ),
+            init_sbd_supply( initial_sbd_supply, SBD_SYMBOL )
          {
             c( *this );
             created_initial_supply->issue_asset( get_full_steem_supply() );
@@ -117,6 +119,29 @@ namespace steem { namespace chain {
             }
             balance->burn_asset( amount );
          }
+         // moves reward balance to regular balance
+         void move_vests_from_reward( const asset& amount, const asset& liquid_amount )
+         {
+            TTempBalance steem_balance( STEEM_SYMBOL );
+            pending_rewarded_vesting_shares -= amount;
+            get_pending_rewarded_vesting_steem().transfer_to( &steem_balance, liquid_amount.amount.value );
+            total_vesting_shares += amount;
+            get_total_vesting_fund_steem().transfer_from( &steem_balance );
+         }
+
+         price get_vesting_share_price() const
+         {
+            if( total_vesting_fund_steem.amount == 0 || total_vesting_shares.amount == 0 )
+               return price( asset( 1000, STEEM_SYMBOL ), asset( 1000000, VESTS_SYMBOL ) );
+
+            return price( total_vesting_shares, total_vesting_fund_steem );
+         }
+
+         price get_reward_vesting_share_price() const
+         {
+            return price( total_vesting_shares + pending_rewarded_vesting_shares,
+               total_vesting_fund_steem + pending_rewarded_vesting_steem );
+         }
 
          id_type           id;
 
@@ -124,7 +149,6 @@ namespace steem { namespace chain {
          block_id_type     head_block_id;
          time_point_sec    time;
          account_name_type current_witness;
-
 
          /**
           *  The total POW accumulated, aka the sum of num_pow_witness at the time new POW is added
@@ -138,34 +162,17 @@ namespace steem { namespace chain {
          uint32_t num_pow_witnesses = 0;
 
          asset       virtual_supply             = asset( 0, STEEM_SYMBOL );
-         asset       current_supply             = asset( 0, STEEM_SYMBOL );
-         asset       confidential_supply        = asset( 0, STEEM_SYMBOL ); ///< total asset held in confidential balances
-         asset       init_sbd_supply            = asset( 0, SBD_SYMBOL );
-         asset       current_sbd_supply         = asset( 0, SBD_SYMBOL );
-         asset       confidential_sbd_supply    = asset( 0, SBD_SYMBOL ); ///< total asset held in confidential balances
+         HIVE_BALANCE_COUNTER( current_supply, get_current_supply );
+         HBD_BALANCE_COUNTER( init_sbd_supply, get_init_sbd_supply );
+         HBD_BALANCE_COUNTER( current_sbd_supply, get_current_sbd_supply );
          HIVE_BALANCE( total_vesting_fund_steem, get_total_vesting_fund_steem );
-      public:
-         asset       total_vesting_shares       = asset( 0, VESTS_SYMBOL ); //ABW: count be just number - counterweight for total_vesting_fund_steem
+         VEST_BALANCE_COUNTER( total_vesting_shares, get_total_vesting_shares ); //counterweight for total_vesting_fund_steem
          HIVE_BALANCE( total_reward_fund_steem, get_total_reward_fund_steem );
       public:
          fc::uint128 total_reward_shares2; ///< the running total of REWARD^2
-         asset       pending_rewarded_vesting_shares = asset( 0, VESTS_SYMBOL ); //ABW: count be just number - counterweight for pending_rewarded_vesting_steem balance
+         VEST_BALANCE_COUNTER( pending_rewarded_vesting_shares, get_pending_rewarded_vesting_shares ); //counterweight for pending_rewarded_vesting_steem balance
          HIVE_BALANCE( pending_rewarded_vesting_steem, get_pending_rewarded_vesting_steem );
       public:
-
-         price       get_vesting_share_price() const
-         {
-            if ( total_vesting_fund_steem.amount == 0 || total_vesting_shares.amount == 0 )
-               return price ( asset( 1000, STEEM_SYMBOL ), asset( 1000000, VESTS_SYMBOL ) );
-
-            return price( total_vesting_shares, total_vesting_fund_steem );
-         }
-
-         price get_reward_vesting_share_price() const
-         {
-            return price( total_vesting_shares + pending_rewarded_vesting_shares,
-               total_vesting_fund_steem + pending_rewarded_vesting_steem );
-         }
 
          /**
           *  This property defines the interest rate that HBD deposits receive.
@@ -271,10 +278,8 @@ FC_REFLECT( steem::chain::dynamic_global_property_object,
              (num_pow_witnesses)
              (virtual_supply)
              (current_supply)
-             (confidential_supply)
              (init_sbd_supply)
              (current_sbd_supply)
-             (confidential_sbd_supply)
              (total_vesting_fund_steem)
              (total_vesting_shares)
              (total_reward_fund_steem)

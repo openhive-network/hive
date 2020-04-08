@@ -5,6 +5,8 @@
 namespace steem { namespace chain {
 
 class account_object;
+class account_regular_balance_object;
+class account_rewards_balance_object;
 class convert_request_object;
 class dynamic_global_property_object;
 class escrow_object;
@@ -12,6 +14,7 @@ class limit_order_object;
 class reward_fund_object;
 class savings_withdraw_object;
 class smt_contribution_object;
+class smt_token_object;
 
 /**
  * Balance object keeps existing tokens and only allows them to be moved to another balance.
@@ -114,6 +117,7 @@ class TTempBalance final : public ABalance
       protocol::asset Asset;
 
       friend class dynamic_global_property_object; //only that class can issue or burn tokens as it contains total supply counters
+      friend class smt_token_object; //only that class can issue or burn SMTs as it contains their total supply counters
 };
 
 /**
@@ -135,6 +139,8 @@ class TBalance final : public ABalance
 
       //list all objects that have members that hold balance - other places should use TTempBalance
       friend class account_object;
+      friend class account_regular_balance_object;
+      friend class account_rewards_balance_object;
       friend class convert_request_object;
       friend class dynamic_global_property_object;
       friend class escrow_object;
@@ -142,8 +148,14 @@ class TBalance final : public ABalance
       friend class reward_fund_object;
       friend class savings_withdraw_object;
       friend class smt_contribution_object;
+      friend class smt_token_object;
 };
 
+/**
+ * balance member of the chain class
+ * member can only be modified inside database modify() call through TBalance interface
+ * which prevents tokens from getting out of nowhere or leaking into void
+ */
 #define BALANCE( member_name, getter_name )                    \
    public:                                                     \
       const asset& getter_name() const { return member_name; } \
@@ -153,5 +165,18 @@ class TBalance final : public ABalance
 #define HIVE_BALANCE( member_name, getter_name ) BALANCE( member_name, getter_name ) = asset( 0, STEEM_SYMBOL )
 #define HBD_BALANCE( member_name, getter_name ) BALANCE( member_name, getter_name ) = asset( 0, SBD_SYMBOL )
 #define VEST_BALANCE( member_name, getter_name ) BALANCE( member_name, getter_name ) = asset( 0, VESTS_SYMBOL )
+
+/**
+ * balance total counter - member of class containing total counters (like dynamic_global_property_object or smt_token_object)
+ * counter can only be modified inside those classes, preferably within routines with explicit "issue" or "burn" names
+ */
+#define BALANCE_COUNTER( member_name, getter_name )            \
+   public:                                                     \
+      const asset& getter_name() const { return member_name; } \
+   private:                                                    \
+      asset member_name
+#define HIVE_BALANCE_COUNTER( member_name, getter_name ) BALANCE_COUNTER( member_name, getter_name ) = asset( 0, STEEM_SYMBOL )
+#define HBD_BALANCE_COUNTER( member_name, getter_name ) BALANCE_COUNTER( member_name, getter_name ) = asset( 0, SBD_SYMBOL )
+#define VEST_BALANCE_COUNTER( member_name, getter_name ) BALANCE_COUNTER( member_name, getter_name ) = asset( 0, VESTS_SYMBOL )
 
 } } // namespace steem::chain

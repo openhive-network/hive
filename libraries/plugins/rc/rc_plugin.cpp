@@ -317,7 +317,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
    if( before_first_block() )
       return;
 
-   int64_t rc_regen = (gpo.total_vesting_shares.amount.value / (STEEM_RC_REGEN_TIME / STEEM_BLOCK_INTERVAL));
+   int64_t rc_regen = (gpo.get_total_vesting_shares().amount.value / (STEEM_RC_REGEN_TIME / STEEM_BLOCK_INTERVAL));
 
    rc_transaction_info tx_info;
 
@@ -424,7 +424,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
    }
    */
 
-   if( gpo.total_vesting_shares.amount <= 0 )
+   if( gpo.get_total_vesting_shares().amount <= 0 )
    {
       return;
    }
@@ -503,7 +503,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
                double k = 27.027027027027028;
                double a = double(params.pool_eq - pool);
                a /= k*double(pool);
-               dlog( "a=${a}   aR=${aR}", ("a", a)("aR", a*gpo.total_vesting_shares.amount.value/STEEM_RC_REGEN_TIME) );
+               dlog( "a=${a}   aR=${aR}", ("a", a)("aR", a*gpo.get_total_vesting_shares().amount.value/STEEM_RC_REGEN_TIME) );
             }
          }
          if( debug_print )
@@ -1064,7 +1064,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
    update_modified_accounts( _db, modified_accounts );
 
    // There is no transaction equivalent for actions, so post apply transaction logic for actions go here.
-   int64_t rc_regen = (gpo.total_vesting_shares.amount.value / (STEEM_RC_REGEN_TIME / STEEM_BLOCK_INTERVAL));
+   int64_t rc_regen = (gpo.get_total_vesting_shares().amount.value / (STEEM_RC_REGEN_TIME / STEEM_BLOCK_INTERVAL));
 
    rc_optional_action_info opt_action_info;
 

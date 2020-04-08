@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       generate_block( 5 );
 
       const auto& dgpo = db->get_dynamic_global_properties();
-      auto old_sbd_supply = dgpo.current_sbd_supply;
+      auto old_sbd_supply = dgpo.get_current_sbd_supply();
 
 
       const account_object& _creator = db->get_account( creator );
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
          generate_blocks( next_block - 1 );
          generate_blocks( 1 );
 
-         auto treasury_sbd_inflation = dgpo.current_sbd_supply - old_sbd_supply;
+         auto treasury_sbd_inflation = dgpo.get_current_sbd_supply() - old_sbd_supply;
          auto after_creator_sbd_balance = _creator.get_sbd_balance();
          auto after_receiver_sbd_balance = _receiver.get_sbd_balance();
          auto after_voter_01_sbd_balance = _voter_01.get_sbd_balance();
