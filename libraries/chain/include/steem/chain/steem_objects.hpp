@@ -25,6 +25,7 @@ namespace steem { namespace chain {
     */
    class convert_request_object : public object< convert_request_object_type, convert_request_object >
    {
+      CHAINBASE_OBJECT( convert_request_object );
       public:
          template< typename Allocator >
          convert_request_object( allocator< Allocator > a, int64_t _id,
@@ -46,13 +47,12 @@ namespace steem { namespace chain {
          HBD_BALANCE( amount, get_amount );
       public:
          time_point_sec    conversion_date; ///< at this time the feed_history_median_price * amount
-
-         friend class fc::reflector<convert_request_object>;
    };
 
 
    class escrow_object : public object< escrow_object_type, escrow_object >
    {
+      CHAINBASE_OBJECT( escrow_object );
       public:
          template< typename Allocator >
          escrow_object( allocator< Allocator > a, int64_t _id,
@@ -90,13 +90,12 @@ namespace steem { namespace chain {
          bool              disputed = false;
 
          bool              is_approved()const { return to_approved && agent_approved; }
-
-         friend class fc::reflector<escrow_object>;
    };
 
 
    class savings_withdraw_object : public object< savings_withdraw_object_type, savings_withdraw_object >
    {
+      CHAINBASE_OBJECT( savings_withdraw_object );
       public:
          template< typename Allocator >
          savings_withdraw_object( allocator< Allocator > a, int64_t _id,
@@ -123,8 +122,6 @@ namespace steem { namespace chain {
          BALANCE( amount, get_amount ); //can be expressed in HIVE or HBD
       public:
          time_point_sec    complete;
-
-         friend class fc::reflector<savings_withdraw_object>;
    };
 
 
@@ -141,6 +138,7 @@ namespace steem { namespace chain {
     */
    class liquidity_reward_balance_object : public object< liquidity_reward_balance_object_type, liquidity_reward_balance_object >
    {
+      CHAINBASE_OBJECT( liquidity_reward_balance_object );
       public:
          template< typename Constructor, typename Allocator >
          liquidity_reward_balance_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -184,8 +182,9 @@ namespace steem { namespace chain {
    /**
     *  This object gets updated once per hour, on the hour
     */
-   class feed_history_object  : public object< feed_history_object_type, feed_history_object >
+   class feed_history_object : public object< feed_history_object_type, feed_history_object >
    {
+      CHAINBASE_OBJECT( feed_history_object );
       public:
          template< typename Constructor, typename Allocator >
          feed_history_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -214,6 +213,7 @@ namespace steem { namespace chain {
     */
    class limit_order_object : public object< limit_order_object_type, limit_order_object >
    {
+      CHAINBASE_OBJECT( limit_order_object );
       public:
          template< typename Allocator >
          limit_order_object( allocator< Allocator > a, int64_t _id,
@@ -249,8 +249,6 @@ namespace steem { namespace chain {
          }
 
          asset amount_to_receive()const { return amount_for_sale() * sell_price; }
-
-         friend class fc::reflector<limit_order_object>;
    };
 
 
@@ -259,6 +257,7 @@ namespace steem { namespace chain {
     */
    class withdraw_vesting_route_object : public object< withdraw_vesting_route_object_type, withdraw_vesting_route_object >
    {
+      CHAINBASE_OBJECT( withdraw_vesting_route_object, true );
       public:
          template< typename Constructor, typename Allocator >
          withdraw_vesting_route_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -266,8 +265,6 @@ namespace steem { namespace chain {
          {
             c( *this );
          }
-
-         withdraw_vesting_route_object(){}
 
          id_type  id;
 
@@ -280,6 +277,7 @@ namespace steem { namespace chain {
 
    class decline_voting_rights_request_object : public object< decline_voting_rights_request_object_type, decline_voting_rights_request_object >
    {
+      CHAINBASE_OBJECT( decline_voting_rights_request_object );
       public:
          template< typename Constructor, typename Allocator >
          decline_voting_rights_request_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -296,6 +294,7 @@ namespace steem { namespace chain {
 
    class reward_fund_object : public object< reward_fund_object_type, reward_fund_object >
    {
+      CHAINBASE_OBJECT( reward_fund_object );
       public:
          template< typename Constructor, typename Allocator >
          reward_fund_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -320,8 +319,6 @@ namespace steem { namespace chain {
          uint16_t                percent_content_rewards = 0;
          protocol::curve_id      author_reward_curve;
          protocol::curve_id      curation_reward_curve;
-
-         friend class fc::reflector<reward_fund_object>;
    };
 
    struct by_price;

@@ -11,6 +11,7 @@ namespace steem { namespace chain {
 
    class hardfork_property_object : public object< hardfork_property_object_type, hardfork_property_object >
    {
+      CHAINBASE_OBJECT( hardfork_property_object );
       public:
          template< typename Constructor, typename Allocator >
          hardfork_property_object( allocator< Allocator > a, int64_t _id, Constructor&& c )

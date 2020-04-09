@@ -16,6 +16,7 @@ namespace steem { namespace chain {
     */
    class block_summary_object : public object< block_summary_object_type, block_summary_object >
    {
+      CHAINBASE_OBJECT( block_summary_object );
       public:
          template< typename Allocator >
          block_summary_object( allocator< Allocator > a, int64_t _id )

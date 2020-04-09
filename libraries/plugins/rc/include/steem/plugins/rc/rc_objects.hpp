@@ -36,6 +36,7 @@ enum rc_object_types
 
 class rc_resource_param_object : public object< rc_resource_param_object_type, rc_resource_param_object >
 {
+   CHAINBASE_OBJECT( rc_resource_param_object );
    public:
       template< typename Constructor, typename Allocator >
       rc_resource_param_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -51,6 +52,7 @@ class rc_resource_param_object : public object< rc_resource_param_object_type, r
 
 class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
 {
+   CHAINBASE_OBJECT( rc_pool_object );
    public:
       template< typename Constructor, typename Allocator >
       rc_pool_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -66,6 +68,7 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
 
 class rc_account_object : public object< rc_account_object_type, rc_account_object >
 {
+   CHAINBASE_OBJECT( rc_account_object );
    public:
       template< typename Constructor, typename Allocator >
       rc_account_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -90,6 +93,7 @@ class rc_account_object : public object< rc_account_object_type, rc_account_obje
  */
 class rc_delegation_pool_object : public object< rc_delegation_pool_object_type, rc_delegation_pool_object >
 {
+   CHAINBASE_OBJECT( rc_delegation_pool_object );
    public:
       template< typename Constructor, typename Allocator >
       rc_delegation_pool_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -109,6 +113,7 @@ class rc_delegation_pool_object : public object< rc_delegation_pool_object_type,
  */
 class rc_indel_edge_object : public object< rc_indel_edge_object_type, rc_indel_edge_object >
 {
+   CHAINBASE_OBJECT( rc_indel_edge_object );
    public:
       template< typename Constructor, typename Allocator >
       rc_indel_edge_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -140,6 +145,7 @@ class rc_indel_edge_object : public object< rc_indel_edge_object_type, rc_indel_
  */
 class rc_outdel_drc_edge_object : public object< rc_outdel_drc_edge_object_type, rc_outdel_drc_edge_object >
 {
+   CHAINBASE_OBJECT( rc_outdel_drc_edge_object );
    public:
       template< typename Constructor, typename Allocator >
       rc_outdel_drc_edge_object( allocator< Allocator > a, int64_t _id, Constructor&& c )

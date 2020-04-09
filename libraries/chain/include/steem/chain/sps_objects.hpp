@@ -11,6 +11,7 @@ using steem::protocol::asset;
 
 class proposal_object : public object< proposal_object_type, proposal_object >
 {
+   CHAINBASE_OBJECT( proposal_object );
    public:
       template< typename Allocator >
       proposal_object( allocator< Allocator > a, int64_t _id,
@@ -67,6 +68,7 @@ class proposal_object : public object< proposal_object_type, proposal_object >
 
 class proposal_vote_object : public object< proposal_vote_object_type, proposal_vote_object>
 {
+   CHAINBASE_OBJECT( proposal_vote_object );
    public:
       template< typename Allocator >
       proposal_vote_object( allocator< Allocator > a, int64_t _id,

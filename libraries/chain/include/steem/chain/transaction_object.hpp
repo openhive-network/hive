@@ -20,6 +20,7 @@ namespace steem { namespace chain {
     */
    class transaction_object : public object< transaction_object_type, transaction_object >
    {
+      CHAINBASE_OBJECT( transaction_object );
       public:
          template< typename Constructor, typename Allocator >
          transaction_object( allocator< Allocator > a, int64_t _id, Constructor&& c )

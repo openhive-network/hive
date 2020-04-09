@@ -28,6 +28,8 @@ enum transaction_status
 
 class transaction_status_object : public object< transaction_status_object_type, transaction_status_object >
 {
+   CHAINBASE_OBJECT( transaction_status_object );
+
 public:
    template< typename Constructor, typename Allocator >
    transaction_status_object( allocator< Allocator > a, int64_t _id, Constructor&& c )

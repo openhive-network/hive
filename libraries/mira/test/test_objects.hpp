@@ -76,6 +76,8 @@ struct book : public chainbase::object< book_object_type, book > {
       c(*this);
    }
 
+   book() = default;
+
    id_type id;
    int a = 0;
    int b = 1;
@@ -114,6 +116,8 @@ struct single_index_object : public chainbase::object< single_index_object_type,
       c( *this );
    }
 
+   single_index_object() = default;
+
    id_type id;
 };
 
@@ -128,13 +132,7 @@ typedef mira::multi_index_adapter<
 struct test_object : public chainbase::object< test_object_type, test_object >
 {
    template <class Constructor, class Allocator>
-   test_object(Constructor&& c, Allocator a ) : id( 0 ), val( 0 ), name( a )
-   {
-      c(*this);
-   }
-
-   template <class Constructor, class Allocator>
-   test_object(Constructor&& c, int64_t _id, Allocator a ) : id( _id ), val( 0 ), name( a )
+   test_object( Allocator a, int64_t _id, Constructor&& c ) : id( _id ), val( 0 ), name( a )
    {
       c(*this);
    }
@@ -166,7 +164,7 @@ typedef mira::multi_index_adapter<
 struct test_object2 : public chainbase::object< test_object2_type, test_object2 >
 {
    template <class Constructor, class Allocator>
-   test_object2(Constructor&& c, Allocator a ) : id( 0 ), val( 0 )
+   test_object2( Allocator a, int64_t _id, Constructor&& c ) : id( _id ), val( 0 )
    {
       c(*this);
    }
@@ -197,7 +195,7 @@ typedef mira::multi_index_adapter<
 struct test_object3 : public chainbase::object< test_object3_type, test_object3 >
 {
    template <class Constructor, class Allocator>
-   test_object3(Constructor&& c, Allocator a ) : id( 0 ), val( 0 ), val2( 0 ), val3( 0 )
+   test_object3( Allocator a, int64_t _id, Constructor&& c ) : id( _id ), val( 0 ), val2( 0 ), val3( 0 )
    {
       c(*this);
    }
@@ -245,6 +243,8 @@ struct account_object : public chainbase::object< account_object_type, account_o
    {
       c( *this );
    }
+
+   account_object() = default;
 
    id_type id;
    account_name_type name;

@@ -62,6 +62,7 @@ namespace steem { namespace chain {
     */
    class witness_object : public object< witness_object_type, witness_object >
    {
+      CHAINBASE_OBJECT( witness_object );
       public:
          enum witness_schedule_type
          {
@@ -158,6 +159,7 @@ namespace steem { namespace chain {
 
    class witness_vote_object : public object< witness_vote_object_type, witness_vote_object >
    {
+      CHAINBASE_OBJECT( witness_vote_object );
       public:
          template< typename Constructor, typename Allocator >
          witness_vote_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -174,6 +176,7 @@ namespace steem { namespace chain {
 
    class witness_schedule_object : public object< witness_schedule_object_type, witness_schedule_object >
    {
+      CHAINBASE_OBJECT( witness_schedule_object );
       public:
          template< typename Constructor, typename Allocator >
          witness_schedule_object( allocator< Allocator > a, int64_t _id, Constructor&& c )

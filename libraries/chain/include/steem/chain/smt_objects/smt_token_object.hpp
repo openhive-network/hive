@@ -25,8 +25,9 @@ enum class smt_phase : uint8_t
  */
 class smt_token_object : public object< smt_token_object_type, smt_token_object >
 {
-public:
+   CHAINBASE_OBJECT( smt_token_object );
 
+public:
    struct smt_market_maker_state
    {
       asset    steem_balance; //ABW: will probably need to be a BALANCE object once it is actually used
@@ -174,12 +175,12 @@ public:
 
    ///parameters for 'smt_setup_operation'
    int64_t              max_supply = 0;
-
-   friend class fc::reflector<smt_token_object>;
 };
 
 class smt_ico_object : public object< smt_ico_object_type, smt_ico_object >
 {
+   CHAINBASE_OBJECT( smt_ico_object );
+
 public:
    template< typename Constructor, typename Allocator >
    smt_ico_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -202,6 +203,8 @@ public:
 
 class smt_token_emissions_object : public object< smt_token_emissions_object_type, smt_token_emissions_object >
 {
+   CHAINBASE_OBJECT( smt_token_emissions_object );
+
 public:
    template< typename Constructor, typename Allocator >
    smt_token_emissions_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -227,6 +230,8 @@ public:
 
 class smt_contribution_object : public object< smt_contribution_object_type, smt_contribution_object >
 {
+   CHAINBASE_OBJECT( smt_contribution_object );
+
 public:
    template< typename Constructor, typename Allocator >
    smt_contribution_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -245,8 +250,6 @@ public:
    account_name_type                     contributor;
    uint32_t                              contribution_id;
    HIVE_BALANCE( contribution, get_contribution );
-
-   friend class fc::reflector<smt_contribution_object>;
 };
 
 struct by_symbol_contributor;

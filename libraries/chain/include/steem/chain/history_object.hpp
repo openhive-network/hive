@@ -15,6 +15,7 @@ namespace steem { namespace chain {
 
    class operation_object : public object< operation_object_type, operation_object >
    {
+      CHAINBASE_OBJECT( operation_object );
       public:
          template< typename Constructor, typename Allocator >
          operation_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -63,6 +64,7 @@ namespace steem { namespace chain {
 
    class account_history_object : public object< account_history_object_type, account_history_object >
    {
+      CHAINBASE_OBJECT( account_history_object );
       public:
          template< typename Constructor, typename Allocator >
          account_history_object( allocator< Allocator > a, int64_t _id, Constructor&& c )

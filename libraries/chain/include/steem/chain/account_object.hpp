@@ -20,6 +20,7 @@ namespace steem { namespace chain {
    
    class account_object : public object< account_object_type, account_object >
    {
+      CHAINBASE_OBJECT( account_object );
       public:
          template< typename Allocator >
          account_object( allocator< Allocator > a, int64_t _id,
@@ -169,12 +170,11 @@ namespace steem { namespace chain {
                                     proxied_vsf_votes.end(),
                                     share_type() );
          }
-
-         friend class fc::reflector<account_object>;
    };
 
    class account_metadata_object : public object< account_metadata_object_type, account_metadata_object >
    {
+      CHAINBASE_OBJECT( account_metadata_object );
       public:
          template< typename Allocator >
          account_metadata_object( allocator< Allocator > a, int64_t _id,
@@ -193,6 +193,7 @@ namespace steem { namespace chain {
 
    class account_authority_object : public object< account_authority_object_type, account_authority_object >
    {
+      CHAINBASE_OBJECT( account_authority_object );
       public:
          template< typename Constructor, typename Allocator >
          account_authority_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -214,6 +215,7 @@ namespace steem { namespace chain {
 
    class vesting_delegation_object : public object< vesting_delegation_object_type, vesting_delegation_object >
    {
+      CHAINBASE_OBJECT( vesting_delegation_object );
       public:
          template< typename Allocator >
          vesting_delegation_object( allocator< Allocator > a, int64_t _id,
@@ -233,6 +235,7 @@ namespace steem { namespace chain {
 
    class vesting_delegation_expiration_object : public object< vesting_delegation_expiration_object_type, vesting_delegation_expiration_object >
    {
+      CHAINBASE_OBJECT( vesting_delegation_expiration_object );
       public:
          template< typename Allocator >
          vesting_delegation_expiration_object( allocator< Allocator > a, int64_t _id,
@@ -250,6 +253,7 @@ namespace steem { namespace chain {
 
    class owner_authority_history_object : public object< owner_authority_history_object_type, owner_authority_history_object >
    {
+      CHAINBASE_OBJECT( owner_authority_history_object );
       public:
          template< typename Allocator >
          owner_authority_history_object( allocator< Allocator > a, int64_t _id,
@@ -268,6 +272,7 @@ namespace steem { namespace chain {
 
    class account_recovery_request_object : public object< account_recovery_request_object_type, account_recovery_request_object >
    {
+      CHAINBASE_OBJECT( account_recovery_request_object );
       public:
          template< typename Allocator >
          account_recovery_request_object( allocator< Allocator > a, int64_t _id,
@@ -286,6 +291,7 @@ namespace steem { namespace chain {
 
    class change_recovery_account_request_object : public object< change_recovery_account_request_object_type, change_recovery_account_request_object >
    {
+      CHAINBASE_OBJECT( change_recovery_account_request_object );
       public:
          template< typename Allocator >
          change_recovery_account_request_object( allocator< Allocator > a, int64_t _id,

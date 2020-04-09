@@ -33,6 +33,9 @@ enum account_statistics_plugin_object_types
 
 struct account_stats_bucket_object : public object< account_stats_bucket_object_type, account_stats_bucket_object >
 {
+   CHAINBASE_OBJECT( account_stats_bucket_object );
+
+public:
    template< typename Constructor, typename Allocator >
    account_stats_bucket_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
       : id( _id )
@@ -110,6 +113,9 @@ typedef account_stats_bucket_object::id_type account_stats_bucket_id_type;
 
 struct account_activity_bucket_object : public object< account_activity_bucket_object_type, account_activity_bucket_object >
 {
+   CHAINBASE_OBJECT( account_activity_bucket_object );
+
+public:
    template< typename Constructor, typename Allocator >
    account_activity_bucket_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
       : id( _id )

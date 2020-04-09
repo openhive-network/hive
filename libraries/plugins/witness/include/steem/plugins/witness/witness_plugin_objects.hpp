@@ -21,6 +21,7 @@ enum witness_object_types
 
 class witness_custom_op_object : public object< witness_custom_op_object_type, witness_custom_op_object >
 {
+   CHAINBASE_OBJECT( witness_custom_op_object );
    public:
       template< typename Constructor, typename Allocator >
       witness_custom_op_object( allocator< Allocator > a, int64_t _id, Constructor&& c )

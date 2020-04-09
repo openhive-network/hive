@@ -22,6 +22,7 @@ enum block_log_info_object_types
 
 class block_log_hash_state_object : public object< block_log_hash_state_object_type, block_log_hash_state_object >
 {
+   CHAINBASE_OBJECT( block_log_hash_state_object );
    public:
       template< typename Constructor, typename Allocator >
       block_log_hash_state_object( allocator< Allocator > a, int64_t _id, Constructor&& c )
@@ -47,6 +48,7 @@ struct block_log_message_data
 
 class block_log_pending_message_object : public object< block_log_pending_message_object_type, block_log_pending_message_object >
 {
+   CHAINBASE_OBJECT( block_log_pending_message_object );
    public:
       template< typename Constructor, typename Allocator >
       block_log_pending_message_object( allocator< Allocator > a, int64_t _id, Constructor&& c )

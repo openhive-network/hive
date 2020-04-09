@@ -23,6 +23,7 @@ namespace steem { namespace chain {
     */
    class dynamic_global_property_object : public object< dynamic_global_property_object_type, dynamic_global_property_object>
    {
+      CHAINBASE_OBJECT( dynamic_global_property_object, true );
       public:
          template< typename Constructor, typename Allocator >
          dynamic_global_property_object( allocator< Allocator > a, int64_t _id,
@@ -35,8 +36,6 @@ namespace steem { namespace chain {
             created_initial_supply->issue_asset( get_full_steem_supply() );
             created_initial_sbd_supply->issue_asset( get_full_sbd_supply() );
          }
-
-         dynamic_global_property_object(){} //ABW: used by json_rpc_plugin
 
          void on_remove() const
          {
@@ -246,7 +245,6 @@ namespace steem { namespace chain {
 #ifdef STEEM_ENABLE_SMT
          asset smt_creation_fee = asset( 1000, SBD_SYMBOL );
 #endif
-         friend class fc::reflector<dynamic_global_property_object>;
    };
 
    typedef multi_index_container<

@@ -24,6 +24,7 @@ enum reputation_plugin_object_type
 
 class reputation_object : public object< reputation_object_type, reputation_object >
 {
+   CHAINBASE_OBJECT( reputation_object );
    public:
       template< typename Constructor, typename Allocator >
       reputation_object( allocator< Allocator > a, int64_t _id, Constructor&& c )

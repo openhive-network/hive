@@ -14,6 +14,8 @@ namespace steem { namespace chain {
  */
 class account_regular_balance_object : public object< account_regular_balance_object_type, account_regular_balance_object >
 {
+   CHAINBASE_OBJECT( account_regular_balance_object );
+
 public:   
    template < typename Allocator>
    account_regular_balance_object( allocator< Allocator > a, int64_t _id,
@@ -42,8 +44,6 @@ public:
    account_name_type   owner;
    BALANCE( liquid, get_liquid ); /// 'balance' for STEEM
    BALANCE( vesting, get_vesting ); /// 'vesting_shares' for VESTS
-   
-   friend class fc::reflector<account_regular_balance_object>;
 };
 
 /**
@@ -53,6 +53,8 @@ public:
  */
 class account_rewards_balance_object : public object< account_rewards_balance_object_type, account_rewards_balance_object >
 {
+   CHAINBASE_OBJECT( account_rewards_balance_object );
+
 public:   
    template < typename Allocator >
    account_rewards_balance_object( allocator< Allocator > a, int64_t _id,
@@ -84,8 +86,6 @@ public:
    BALANCE( pending_vesting_shares, get_pending_vesting_shares ); /// 'reward_vesting_balance' for pending VESTS
 public:
    asset pending_vesting_value;   /// 'reward_vesting_steem' for pending VESTS
-
-   friend class fc::reflector<account_rewards_balance_object>;
 };
 
 struct by_owner_liquid_symbol;

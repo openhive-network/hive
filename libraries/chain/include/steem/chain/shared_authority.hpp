@@ -21,9 +21,9 @@ namespace steem { namespace chain {
     */
    struct shared_authority
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( shared_authority )
-
-      public:
+#ifdef ENABLE_MIRA
+      shared_authority() {}
+#endif
 
       template< typename Allocator >
       shared_authority( const authority& a, const Allocator& alloc ) :
