@@ -909,7 +909,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
       _db.create< comment_cashout_object >( new_comment, cashout_time, reward_weight );
 
-   #ifndef IS_LOW_MEM
+   #if !defined(IS_LOW_MEM) && defined(STORE_COMMENT_CONTENT)
       _db.create< comment_content_object >( [&]( comment_content_object& con )
       {
          con.comment = new_comment.get_id();
@@ -997,7 +997,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
       {
          a.last_post_edit = _now;
       });
-   #ifndef IS_LOW_MEM
+   #if !defined(IS_LOW_MEM) && defined(STORE_COMMENT_CONTENT)
       _db.modify( _db.get< comment_content_object, by_comment >( comment.get_id() ), [&]( comment_content_object& con )
       {
          if( o.title.size() )

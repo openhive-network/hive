@@ -82,7 +82,7 @@ struct api_comment_object
          root_author = db.get_account(root->author_id).name;
          root_permlink = to_string( root->permlink );
       }
-#ifndef IS_LOW_MEM
+#if !defined(IS_LOW_MEM) && defined(STORE_COMMENT_CONTENT)
       const auto& con = db.get< chain::comment_content_object, chain::by_comment >( o.get_id() );
       title = to_string( con.title );
       body = to_string( con.body );
