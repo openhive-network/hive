@@ -1,16 +1,18 @@
-
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/block_data_export/block_data_export_plugin.hpp>
 
+#include <hive/plugins/rc/rc_config.hpp>
 #include <hive/plugins/rc/rc_curve.hpp>
 #include <hive/plugins/rc/rc_export_objects.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
 #include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/rc_operations.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/generic_custom_operation_interpreter.hpp>
 #include <hive/chain/index.hpp>
 
 #include <hive/jsonball/jsonball.hpp>
@@ -38,6 +40,7 @@ namespace detail {
 
 using chain::plugin_exception;
 using hive::chain::util::manabar_params;
+using hive::chain::util::manabar;
 
 class rc_plugin_impl
 {
@@ -59,8 +62,17 @@ class rc_plugin_impl
     void on_post_apply_transaction( const transaction_notification& note );
     void on_pre_apply_operation( const operation_notification& note );
     void on_post_apply_operation( const operation_notification& note );
-    void on_pre_apply_optional_action( const optional_action_notification& note );
+    void on_pre_apply_required_action( const required_action_notification& note );
+      void on_post_apply_required_action( const required_action_notification& note );
+      void on_pre_apply_optional_action( const optional_action_notification& note );
     void on_post_apply_optional_action( const optional_action_notification& note );
+      void on_pre_apply_custom_operation( const custom_operation_notification& note );
+      void on_post_apply_custom_operation( const custom_operation_notification& note );
+
+      template< typename OpType >
+      void pre_apply_custom_op_type( const custom_operation_notification& note );
+      template< typename OpType >
+      void post_apply_custom_op_type( const custom_operation_notification& note );
 
     void on_first_block();
     void validate_database();
@@ -77,6 +89,9 @@ class rc_plugin_impl
     std::map< account_name_type, int64_t > _account_to_max_rc;
     uint32_t                      _enable_at_block = 1;
 
+      std::shared_ptr< generic_custom_operation_interpreter< hive::plugins::rc::rc_plugin_operation > >
+                                    _custom_operation_interpreter;
+
 #ifdef IS_TEST_NET
     std::set< account_name_type > _whitelist;
 #endif
@@ -88,8 +103,12 @@ class rc_plugin_impl
     boost::signals2::connection   _post_apply_transaction_conn;
     boost::signals2::connection   _pre_apply_operation_conn;
     boost::signals2::connection   _post_apply_operation_conn;
-    boost::signals2::connection   _pre_apply_optional_action_conn;
+    boost::signals2::connection   _pre_apply_required_action_conn;
+      boost::signals2::connection   _post_apply_required_action_conn;
+      boost::signals2::connection   _pre_apply_optional_action_conn;
     boost::signals2::connection   _post_apply_optional_action_conn;
+      boost::signals2::connection   _pre_apply_custom_operation_conn;
+      boost::signals2::connection   _post_apply_custom_operation_conn;
 };
 
 inline int64_t get_next_vesting_withdrawal( const account_object& account )
@@ -102,7 +121,7 @@ inline int64_t get_next_vesting_withdrawal( const account_object& account )
 }
 
 template< bool account_may_exist = false >
-void create_rc_account( database& db, uint32_t now, const account_object& account, asset max_rc_creation_adjustment )
+void create_rc_account( database& db, uint32_t now, const account_object& account, asset max_rc_creation_adjustment, const account_name_type& creator )
 {
   // ilog( "create_rc_account( ${a} )", ("a", account.name) );
   if( account_may_exist )
@@ -131,19 +150,33 @@ void create_rc_account( database& db, uint32_t now, const account_object& accoun
   db.create< rc_account_object >( [&]( rc_account_object& rca )
   {
     rca.account = account.name;
-    rca.rc_manabar.last_update_time = now;
-    rca.max_rc_creation_adjustment = max_rc_creation_adjustment;
-    int64_t max_rc = get_maximum_rc( account, rca );
-    rca.rc_manabar.current_mana = max_rc;
-    rca.last_max_rc = max_rc;
-  } );
+    rca.creator = creator;
+      rca.rc_manabar.last_update_time = now;
+      rca.max_rc_creation_adjustment = max_rc_creation_adjustment;
+      int64_t max_rc = get_maximum_rc( account, rca );
+      rca.rc_manabar.current_mana = max_rc;
+      rca.last_max_rc = max_rc;
+
+      rca.indel_slots[ HIVE_RC_CREATOR_SLOT_NUM ] = creator;
+
+      // Make sure that we don't have the same accoun twice (null is okay)
+      if (creator != account.recovery_account)
+         rca.indel_slots[ HIVE_RC_RECOVERY_SLOT_NUM ] = account.recovery_account;
+      else
+         rca.indel_slots[ HIVE_RC_RECOVERY_SLOT_NUM ] = HIVE_NULL_ACCOUNT;
+
+      for( int i = HIVE_RC_USER_SLOT_NUM; i < HIVE_RC_MAX_SLOTS; i++ )
+      {
+         rca.indel_slots[ i ] = HIVE_NULL_ACCOUNT;
+      }
+   } );
 }
 
 template< bool account_may_exist = false >
-void create_rc_account( database& db, uint32_t now, const account_name_type& account_name, asset max_rc_creation_adjustment )
+void create_rc_account( database& db, uint32_t now, const account_name_type& account_name, asset max_rc_creation_adjustment, const account_name_type& creator )
 {
   const account_object& account = db.get< account_object, by_name >( account_name );
-  create_rc_account< account_may_exist >( db, now, account, max_rc_creation_adjustment );
+  create_rc_account< account_may_exist >( db, now, account, max_rc_creation_adjustment, creator );
 }
 
 std::vector< std::pair< int64_t, account_name_type > > dump_all_accounts( const database& db )
@@ -205,6 +238,13 @@ struct get_resource_user_visitor
       return account;
     return account_name_type();
   }
+
+#ifdef HIVE_ENABLE_SMT
+   account_name_type operator()( const smt_token_emission_action& a )const
+   {
+      return a.symbol.to_nai_string();
+   }
+#endif
 };
 
 account_name_type get_resource_user( const signed_transaction& tx )
@@ -256,111 +296,193 @@ void use_account_rcs(
 #endif
 
   // ilog( "use_account_rcs( ${n}, ${rc} )", ("n", account_name)("rc", rc) );
-  const account_object& account = db.get< account_object, by_name >( account_name );
+  //const account_object& account = db.get< account_object, by_name >( account_name );
   const rc_account_object& rc_account = db.get< rc_account_object, by_name >( account_name );
 
+  int64_t total_rc_available = 0;
+  int64_t delta = 0;
+  int64_t rcs_left_to_pay = 0;
+  std::array< manabar, HIVE_RC_MAX_SLOTS > drc_manabars;
+  std::array< manabar, HIVE_RC_MAX_SLOTS > pool_manabars;
   manabar_params mbparams;
-  mbparams.max_mana = get_maximum_rc( account, rc_account );
   mbparams.regen_time = HIVE_RC_REGEN_TIME;
+  auto now = gpo.time.sec_since_epoch();
 
-  try{
+  // Get account rc first
+  if( is_destination_nai( account_name ) )
+    mbparams.max_mana = 0;
+  else
+    mbparams.max_mana = get_maximum_rc( db.get< account_object, by_name >( account_name ), rc_account );
+
+  manabar rca_manabar = rc_account.rc_manabar;
+  rca_manabar.regenerate_mana< true >( mbparams, now );
+  int64_t rc_available = rca_manabar.current_mana;
+  total_rc_available += rc_available;
+
+  delta = rc_available - rc;
+
+  // If we don't have enough or exactly enough, use all RC
+  if (delta <= 0) {
+    rca_manabar.use_mana(rc_available);
+    rcs_left_to_pay = rc - rc_available;
+  } else {
+    rca_manabar.use_mana(rc);
+  }
+  //ilog( "rc : ${rc} rc_available ${ra} rcs_left_to_pay: ${rcs_left_to_pay}, delta ${d})",("rc", rc) ("ra", rc_available) ("rcs_left_to_pay", rcs_left_to_pay) ("d", delta));
+
+  // If the account doesn't have enough RC, pull from delegated RC to the account
+  for (int i = 0; i < HIVE_RC_MAX_SLOTS; i++) {
+    const auto *drc_edge = db.find<rc_outdel_drc_edge_object, by_edge>(
+            boost::make_tuple(rc_account.indel_slots[i], account_name, VESTS_SYMBOL));
+
+    if (drc_edge == nullptr) continue;
+
+    //ilog( "id : ${id} slot : ${slot} from_pool: ${pool} to_account: ${acc} ", ("id",  drc_edge->id) ("slot", rc_account.indel_slots[i]) ("pool", drc_edge->from_pool) ("acc", drc_edge->to_account));
+
+    mbparams.max_mana = drc_edge->drc_max_mana;
+    drc_manabars[i] = drc_edge->drc_manabar;
+    drc_manabars[i].regenerate_mana<true>(mbparams, now);
+
+    const auto &pool = db.get<rc_delegation_pool_object, by_account_symbol>(
+            boost::make_tuple(rc_account.indel_slots[i], VESTS_SYMBOL));
+    mbparams.max_mana = pool.max_rc;
+    pool_manabars[i] = pool.rc_pool_manabar;
+    pool_manabars[i].regenerate_mana<true>(mbparams, now);
+
+    // Get the smallest amount between the rc delegated and the pool's content
+    int64_t delegated_rc_available = std::min(drc_manabars[i].current_mana, pool_manabars[i].current_mana);
+    total_rc_available += delegated_rc_available;
+    delta = delegated_rc_available - rcs_left_to_pay;
+    //ilog( "i : ${i}, acc: ${acc} delegated_rc_avail ${dra} rcs_left_to_pay: ${rcs_left_to_pay}, delta ${d})", ("i", i) ("acc", pool.account) ("dra", delegated_rc_available) ("rcs_left_to_pay", rcs_left_to_pay) ("d", delta));
+
+    // Don't use rc if we already paid the full rc cost
+    if (rcs_left_to_pay <= 0) continue;
+
+    // If we don't have enough or exactly enough, use all RC
+    if (delta <= 0) {
+      drc_manabars[i].use_mana(delegated_rc_available);
+      pool_manabars[i].use_mana(delegated_rc_available);
+      rcs_left_to_pay -= delegated_rc_available;
+    } else {
+      drc_manabars[i].use_mana(rcs_left_to_pay);
+      pool_manabars[i].use_mana(rcs_left_to_pay);
+      rcs_left_to_pay = 0;
+    }
+  }
+
+  bool has_rc = rcs_left_to_pay <= 0;
+
+  //ilog( "data ( rcs_left_to_pay: ${rcs_left_to_pay})", ("rcs_left_to_pay", rcs_left_to_pay));
 
   db.modify( rc_account, [&]( rc_account_object& rca )
   {
-    rca.rc_manabar.regenerate_mana< true >( mbparams, gpo.time.sec_since_epoch() );
-
-    bool has_mana = rca.rc_manabar.has_mana( rc );
-
     if( (!skip.skip_reject_not_enough_rc) && db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     {
       if( db.is_producing() )
       {
-        HIVE_ASSERT( has_mana, plugin_exception,
-          "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
-          ("account", account_name)
-          ("rc_needed", rc)
-          ("rc_current", rca.rc_manabar.current_mana)
-          );
+        HIVE_ASSERT(has_rc, plugin_exception,
+                    "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
+                    ("account", account_name)
+                            ("rc_needed", rc)
+                            ("rc_current", total_rc_available)
+        );
       }
       else
       {
-        if( !has_mana )
+        if( !has_rc )
         {
           const dynamic_global_property_object& gpo = db.get_dynamic_global_properties();
           ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
-            ("account", account_name)
-            ("rc_needed", rc)
-            ("rc_current", rca.rc_manabar.current_mana)
-            ("b", gpo.head_block_number)
-            ("w", gpo.current_witness)
-            );
+                ("account", account_name)
+                        ("rc_needed", rc)
+                        ("rc_current", rca.rc_manabar.current_mana)
+                        ("b", gpo.head_block_number)
+                        ("w", gpo.current_witness)
+          );
         }
       }
     }
 
-    if( (!has_mana) && ( skip.skip_negative_rc_balance || (gpo.time.sec_since_epoch() <= 1538211600) ) )
+    if((!has_rc) && (skip.skip_negative_rc_balance || (gpo.time.sec_since_epoch() <= 1538211600) ) )
       return;
 
     if( skip.skip_deduct_rc )
       return;
 
-    int64_t min_mana = -1 * ( HIVE_RC_MAX_NEGATIVE_PERCENT * mbparams.max_mana ) / HIVE_100_PERCENT;
-
-    rca.rc_manabar.use_mana( rc, min_mana );
+    rca.rc_manabar = rca_manabar;
   } );
-  }FC_CAPTURE_AND_RETHROW( (account)(rc_account)(mbparams.max_mana) )
+
+  for( int i = 0; i < HIVE_RC_MAX_SLOTS; i++ )
+  {
+    const auto* drc_edge = db.find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( rc_account.indel_slots[i], account_name, VESTS_SYMBOL ) );
+
+    if( drc_edge == nullptr ) continue;
+
+    db.modify( *drc_edge, [&]( rc_outdel_drc_edge_object& edge )
+    {
+      edge.drc_manabar = drc_manabars[i];
+    });
+
+    const auto& dpool = db.get< rc_delegation_pool_object, by_account_symbol >( boost::make_tuple( rc_account.indel_slots[i], VESTS_SYMBOL ) );
+
+    db.modify( dpool, [&]( rc_delegation_pool_object& pool )
+    {
+      pool.rc_pool_manabar = pool_manabars[i];
+    });
+  }
 }
 
 void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& note )
-{ try {
-  const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
-  if( before_first_block() )
-    return;
+{
+  try {
+    const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
+    if( before_first_block() )
+      return;
 
-  int64_t rc_regen = (gpo.total_vesting_shares.amount.value / (HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL));
+    int64_t rc_regen = (gpo.total_vesting_shares.amount.value / (HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL));
 
-  rc_transaction_info tx_info;
+    rc_transaction_info tx_info;
 
-  // How many resources does the transaction use?
-  count_resources( note.transaction, tx_info.usage );
+    // How many resources does the transaction use?
+    count_resources( note.transaction, tx_info.usage );
 
-  // How many RC does this transaction cost?
-  const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
-  const rc_pool_object& pool_obj = _db.get< rc_pool_object, by_id >( rc_pool_id_type() );
+    // How many RC does this transaction cost?
+    const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
+    const rc_pool_object& pool_obj = _db.get< rc_pool_object, by_id >( rc_pool_id_type() );
 
-  int64_t total_cost = 0;
+    int64_t total_cost = 0;
 
-  // When rc_regen is 0, everything is free
-  if( rc_regen > 0 )
-  {
-    for( size_t i=0; i<HIVE_NUM_RESOURCE_TYPES; i++ )
+    // When rc_regen is 0, everything is free
+    if( rc_regen > 0 )
     {
-      const rc_resource_params& params = params_obj.resource_param_array[i];
-      int64_t pool = pool_obj.pool_array[i];
+      for( size_t i=0; i<HIVE_NUM_RESOURCE_TYPES; i++ )
+      {
+        const rc_resource_params& params = params_obj.resource_param_array[i];
+        int64_t pool = pool_obj.pool_array[i];
 
-      // TODO:  Move this multiplication to resource_count.cpp
-      tx_info.usage.resource_count[i] *= int64_t( params.resource_dynamics_params.resource_unit );
-      tx_info.cost[i] = compute_rc_cost_of_resource( params.price_curve_params, pool, tx_info.usage.resource_count[i], rc_regen );
-      total_cost += tx_info.cost[i];
+        // TODO:  Move this multiplication to resource_count.cpp
+        tx_info.usage.resource_count[i] *= int64_t( params.resource_dynamics_params.resource_unit );
+        tx_info.cost[i] = compute_rc_cost_of_resource( params.price_curve_params, pool, tx_info.usage.resource_count[i], rc_regen );
+        total_cost += tx_info.cost[i];
+      }
     }
-  }
 
-  tx_info.resource_user = get_resource_user( note.transaction );
-  use_account_rcs( _db, gpo, tx_info.resource_user, total_cost, _skip
+    tx_info.resource_user = get_resource_user( note.transaction );
+    use_account_rcs( _db, gpo, tx_info.resource_user, total_cost, _skip
 #ifdef IS_TEST_NET
-  ,
+            ,
   _whitelist
 #endif
-  );
+    );
 
-  std::shared_ptr< exp_rc_data > export_data =
-    hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
-  if( (gpo.head_block_number % 10000) == 0 )
-  {
-    dlog( "${t} : ${i}", ("t", gpo.time)("i", tx_info) );
-  }
-  if( export_data )
-    export_data->tx_info.push_back( tx_info );
+    std::shared_ptr< exp_rc_data > export_data =
+            hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
+    if( (gpo.head_block_number % 10000) == 0 )
+    {
+      dlog( "${t} : ${i}", ("t", gpo.time)("i", tx_info) );
+    }
+    if( export_data )
+      export_data->tx_info.push_back( tx_info );
 } FC_CAPTURE_AND_RETHROW( (note.transaction) ) }
 
 struct block_extensions_count_resources_visitor
@@ -558,7 +680,7 @@ void rc_plugin_impl::on_first_block()
   const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
   for( auto it=idx.begin(); it!=idx.end(); ++it )
   {
-    create_rc_account( _db, now.sec_since_epoch(), *it, asset( HIVE_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT, VESTS_SYMBOL ) );
+    create_rc_account( _db, now.sec_since_epoch(), *it, asset( HIVE_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT, VESTS_SYMBOL ), it->name );
   }
 
   return;
@@ -711,25 +833,35 @@ struct pre_apply_operation_visitor
 
   void operator()( const fill_vesting_withdraw_operation& op )const
   {
-    regenerate( op.from_account );
-    regenerate( op.to_account );
-  }
+    FC_TODO( "Reduce delegations to pools as necessary to enforce get_maximum_rc() >= 0" );
+      regenerate( op.from_account );
+      regenerate( op.to_account );
+   }
 
   void operator()( const claim_reward_balance_operation& op )const
   {
     regenerate( op.account );
   }
-
 #ifdef HIVE_ENABLE_SMT
   void operator()( const claim_reward_balance2_operation& op )const
   {
     regenerate( op.account );
   }
-#endif
 
-  void operator()( const hardfork_operation& op )const
-  {
-    if( op.hardfork_id == HIVE_HARDFORK_0_1 )
+   void operator()( const smt_contributor_payout_action& op )const
+   {
+      regenerate( op.contributor );
+   }
+
+   void operator()( const smt_founder_payout_action& op )const
+   {
+      for ( auto& e : op.account_payouts )
+         regenerate( e.first );
+   }
+#endif
+   void operator()( const hardfork_operation& op )const
+   {
+      if( op.hardfork_id == HIVE_HARDFORK_0_1 )
     {
       const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
       for( auto it=idx.begin(); it!=idx.end(); ++it )
@@ -799,8 +931,14 @@ struct pre_apply_operation_visitor
     regenerate( op.proposal_owner );
   }
 
-  template< typename Op >
-  void operator()( const Op& op )const {}
+  void operator()( const delegate_to_pool_operation& op )const
+   {
+      // ilog( "Regenerating ${acct}", ("acct", op.from_account) );
+      regenerate( op.from_account );
+   }
+
+   template< typename Op >
+   void operator()( const Op& op )const {}
 };
 
 typedef pre_apply_operation_visitor pre_apply_optional_action_vistor;
@@ -833,26 +971,104 @@ struct post_apply_operation_visitor
     ) : _mod_accounts(ma), _db(db), _current_time(t), _current_block_number(b), _current_witness(w)
   {}
 
-  void operator()( const account_create_operation& op )const
-  {
-    create_rc_account( _db, _current_time, op.new_account_name, op.fee );
+  void update_outdel_overflow( const account_name_type& account, const asset& amount ) const
+   {
+      if( amount.symbol != VESTS_SYMBOL ) return;
+
+      const auto& rc_acc = _db.get< rc_account_object, by_name >( account );
+
+      int64_t new_max_mana = get_maximum_rc( _db.get< account_object, by_name >( account ), rc_acc );
+      int64_t pool_del_delta = 0;
+      int64_t returned_rcs = 0;
+      vector< const rc_indel_edge_object* > edges_to_remove;
+
+      if( new_max_mana < rc_acc.max_rc_creation_adjustment.amount.value )
+      {
+         int64_t needed_rcs = rc_acc.max_rc_creation_adjustment.amount.value - new_max_mana;
+         pool_del_delta = needed_rcs;
+
+         const auto& rc_del_idx = _db.get_index< rc_indel_edge_index, by_edge >();
+         auto rc_del_itr = rc_del_idx.lower_bound( boost::make_tuple( account, VESTS_SYMBOL ) );
+
+         while( needed_rcs > 0 && rc_del_itr != rc_del_idx.end() && rc_del_itr->from_account == account )
+         {
+            int64_t edge_delta_rc = std::min( needed_rcs, rc_del_itr->amount.amount.value );
+
+            const auto& rc_pool = _db.get< rc_delegation_pool_object, by_account_symbol >( boost::make_tuple( rc_del_itr->to_pool, VESTS_SYMBOL ) );
+            auto pool_manabar = rc_pool.rc_pool_manabar;
+
+            if( pool_manabar.last_update_time < _db.head_block_time().sec_since_epoch() )
+            {
+               manabar_params mbparams;
+               mbparams.max_mana = rc_pool.max_rc;
+               mbparams.regen_time = HIVE_RC_REGEN_TIME;
+               pool_manabar.regenerate_mana< true >( mbparams, _db.head_block_time() );
+            }
+
+            if( pool_manabar.current_mana > 0 )
+            {
+               int64_t delta_pool_rc = std::min( pool_manabar.current_mana, edge_delta_rc );
+               pool_manabar.current_mana -= delta_pool_rc;
+               returned_rcs += delta_pool_rc;
+            }
+
+            needed_rcs -= edge_delta_rc;
+
+            _db.modify( rc_pool, [&]( rc_delegation_pool_object& pool )
+            {
+               pool.max_rc -= edge_delta_rc;
+               pool.rc_pool_manabar = pool_manabar;
+            });
+
+            if( rc_del_itr->amount.amount.value > edge_delta_rc )
+            {
+               _db.modify( *rc_del_itr, [&]( rc_indel_edge_object& indel )
+               {
+                  indel.amount.amount.value -= edge_delta_rc;
+               });
+            }
+            else
+            {
+               edges_to_remove.push_back( &(*rc_del_itr) );
+            }
+
+            ++rc_del_itr;
+         }
+
+         for( const rc_indel_edge_object* edge_ptr : edges_to_remove )
+         {
+            _db.remove( *edge_ptr );
+         }
+      }
+
+      _db.modify( rc_acc, [&]( rc_account_object& rca )
+      {
+         rca.rc_manabar.current_mana += returned_rcs;
+         rca.vests_delegated_to_pools.amount.value -= pool_del_delta;
+         rca.out_delegations -= edges_to_remove.size();
+      });
+   }
+
+   void operator()( const account_create_operation& op )const
+   {
+      create_rc_account( _db, _current_time, op.new_account_name, op.fee, op.creator );
   }
 
   void operator()( const account_create_with_delegation_operation& op )const
   {
-    create_rc_account( _db, _current_time, op.new_account_name, op.fee );
+    create_rc_account( _db, _current_time, op.new_account_name, op.fee, op.creator );
     _mod_accounts.emplace_back( op.creator );
   }
 
   void operator()( const create_claimed_account_operation& op )const
   {
-    create_rc_account( _db, _current_time, op.new_account_name, _db.get_witness_schedule_object().median_props.account_creation_fee );
+    create_rc_account( _db, _current_time, op.new_account_name, _db.get_witness_schedule_object().median_props.account_creation_fee, op.creator );
   }
 
   void operator()( const pow_operation& op )const
   {
     // ilog( "handling post-apply pow_operation" );
-    create_rc_account< true >( _db, _current_time, op.worker_account, asset( 0, HIVE_SYMBOL ) );
+    create_rc_account< true >( _db, _current_time, op.worker_account, asset( 0, HIVE_SYMBOL ), op.worker_account );
     _mod_accounts.emplace_back( op.worker_account );
     _mod_accounts.emplace_back( _current_witness );
   }
@@ -860,7 +1076,7 @@ struct post_apply_operation_visitor
   void operator()( const pow2_operation& op )const
   {
     auto worker_name = get_worker_name( op.work );
-    create_rc_account< true >( _db, _current_time, worker_name, asset( 0, HIVE_SYMBOL ) );
+    create_rc_account< true >( _db, _current_time, worker_name, asset( 0, HIVE_SYMBOL ), worker_name );
     _mod_accounts.emplace_back( worker_name );
     _mod_accounts.emplace_back( _current_witness );
   }
@@ -871,16 +1087,21 @@ struct post_apply_operation_visitor
     _mod_accounts.emplace_back( target );
   }
 
-  void operator()( const withdraw_vesting_operation& op )const
-  {
-    _mod_accounts.emplace_back( op.account, false );
-  }
+   void operator()( const withdraw_vesting_operation& op )const
+   {
+      _mod_accounts.emplace_back( op.account, false );
 
-  void operator()( const delegate_vesting_shares_operation& op )const
-  {
-    _mod_accounts.emplace_back( op.delegator );
-    _mod_accounts.emplace_back( op.delegatee );
-  }
+      update_outdel_overflow( op.account, op.vesting_shares );
+   }
+
+   void operator()( const delegate_vesting_shares_operation& op )const
+   {
+      _mod_accounts.emplace_back( op.delegator );
+      _mod_accounts.emplace_back( op.delegatee );
+
+      update_outdel_overflow( op.delegator, op.vesting_shares );
+      update_outdel_overflow( op.delegatee, op.vesting_shares );
+   }
 
   void operator()( const author_reward_operation& op )const
   {
@@ -898,27 +1119,38 @@ struct post_apply_operation_visitor
     _mod_accounts.emplace_back( op.author );
   }
 
-  void operator()( const fill_vesting_withdraw_operation& op )const
-  {
-    _mod_accounts.emplace_back( op.from_account );
-    _mod_accounts.emplace_back( op.to_account );
-  }
+   void operator()( const fill_vesting_withdraw_operation& op )const
+   {
+      _mod_accounts.emplace_back( op.from_account );
+      _mod_accounts.emplace_back( op.to_account );
+
+      update_outdel_overflow( op.from_account, op.withdrawn );
+   }
 
   void operator()( const claim_reward_balance_operation& op )const
   {
     _mod_accounts.emplace_back( op.account );
   }
-
 #ifdef HIVE_ENABLE_SMT
   void operator()( const claim_reward_balance2_operation& op )const
   {
     _mod_accounts.emplace_back( op.account );
   }
-#endif
 
-  void operator()( const hardfork_operation& op )const
-  {
-    if( op.hardfork_id == HIVE_HARDFORK_0_1 )
+   void operator()( const smt_contributor_payout_action& op )const
+   {
+      _mod_accounts.emplace_back( op.contributor );
+   }
+
+   void operator()( const smt_founder_payout_action& op )const
+   {
+      for ( auto& e : op.account_payouts )
+         _mod_accounts.emplace_back( e.first );
+   }
+#endif
+   void operator()( const hardfork_operation& op )const
+   {
+      if( op.hardfork_id == HIVE_HARDFORK_0_1 )
     {
       const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
       for( auto it=idx.begin(); it!=idx.end(); ++it )
@@ -986,16 +1218,61 @@ struct post_apply_operation_visitor
     _mod_accounts.emplace_back( op.proposal_owner );
   }
 
-  template< typename Op >
-  void operator()( const Op& op )const
-  {
-    // ilog( "handling post-apply operation default" );
-  }
+  void operator()( const delegate_to_pool_operation& op )const
+   {
+      _mod_accounts.emplace_back( op.from_account );
+   }
+#ifdef HIVE_ENABLE_SMT
+   void operator()( const smt_token_launch_action& op )const
+   {
+      account_name_type nai = op.symbol.to_nai_string();
+      int32_t now = _db.head_block_time().sec_since_epoch();
+
+      _db.create< rc_account_object >( [&]( rc_account_object& rca )
+      {
+         rca.account = nai;
+         rca.creator = op.control_account;
+         rca.rc_manabar.last_update_time = now;
+         rca.max_rc_creation_adjustment = asset( 0, HIVE_SYMBOL );
+         int64_t max_rc = 0;
+         rca.rc_manabar.current_mana = max_rc;
+         rca.last_max_rc = max_rc;
+
+         rca.indel_slots[ HIVE_RC_CREATOR_SLOT_NUM ] = nai;
+         for( int i = HIVE_RC_RECOVERY_SLOT_NUM; i < HIVE_RC_MAX_SLOTS; i++ )
+         {
+            rca.indel_slots[ i ] = HIVE_NULL_ACCOUNT;
+         }
+      });
+   }
+#endif
+   template< typename Op >
+   void operator()( const Op& op )const
+   {
+      // ilog( "handling post-apply operation default" );
+   }
 };
 
 typedef post_apply_operation_visitor post_apply_optional_action_visitor;
 
+void rc_plugin_impl::on_pre_apply_required_action( const required_action_notification& note )
+{
+   if( before_first_block() )
+      return;
 
+   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
+   pre_apply_operation_visitor vtor( _db );
+
+   // TODO: Add issue number to HF constant
+   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+      vtor._vesting_share_price = gpo.get_vesting_share_price();
+
+   vtor._current_witness = gpo.current_witness;
+   vtor._skip = _skip;
+
+   // ilog( "Calling pre-vtor on ${op}", ("op", note.op) );
+   note.action.visit( vtor );
+}
 
 void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note )
 { try {
@@ -1017,6 +1294,32 @@ void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note 
   } FC_CAPTURE_AND_RETHROW( (note.op) )
 }
 
+template< typename OpType >
+void rc_plugin_impl::pre_apply_custom_op_type( const custom_operation_notification& note )
+{
+   const OpType* op = note.maybe_get_op< OpType >();
+   if( !op )
+      return;
+
+   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
+   pre_apply_operation_visitor vtor( _db );
+
+   // TODO: Add issue number to HF constant
+   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+      vtor._vesting_share_price = gpo.get_vesting_share_price();
+
+   vtor._current_witness = gpo.current_witness;
+   vtor._skip = _skip;
+
+   op->visit( vtor );
+}
+
+void rc_plugin_impl::on_pre_apply_custom_operation( const custom_operation_notification& note )
+{
+   pre_apply_custom_op_type< rc_plugin_operation >( note );
+   // If we wanted to pre-handle other plugin operations, we could put pre_apply_custom_op_type< other_plugin_operation >( note )
+}
+
 void update_modified_accounts( database& db, const std::vector< account_regen_info >& modified_accounts )
 {
   for( const account_regen_info& regen_info : modified_accounts )
@@ -1036,6 +1339,23 @@ void update_modified_accounts( database& db, const std::vector< account_regen_in
   }
 }
 
+void rc_plugin_impl::on_post_apply_required_action( const required_action_notification& note )
+{
+   if( before_first_block() )
+      return;
+
+   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
+   const uint32_t now = gpo.time.sec_since_epoch();
+
+   vector< account_regen_info > modified_accounts;
+
+   // ilog( "Calling post-vtor on ${op}", ("op", note.op) );
+   post_apply_operation_visitor vtor( modified_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
+   note.action.visit( vtor );
+
+   update_modified_accounts( _db, modified_accounts );
+}
+
 void rc_plugin_impl::on_post_apply_operation( const operation_notification& note )
 { try {
   if( before_first_block() )
@@ -1052,6 +1372,30 @@ void rc_plugin_impl::on_post_apply_operation( const operation_notification& note
 
   update_modified_accounts( _db, modified_accounts );
 } FC_CAPTURE_AND_RETHROW( (note.op) ) }
+
+template< typename OpType >
+void rc_plugin_impl::post_apply_custom_op_type( const custom_operation_notification& note )
+{
+   const OpType* op = note.maybe_get_op< OpType >();
+   if( !op )
+      return;
+
+   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
+   const uint32_t now = gpo.time.sec_since_epoch();
+
+   vector< account_regen_info > modified_accounts;
+
+   // ilog( "Calling post-vtor on ${op}", ("op", note.op) );
+   post_apply_operation_visitor vtor( modified_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
+   op->visit( vtor );
+
+   update_modified_accounts( _db, modified_accounts );
+}
+
+void rc_plugin_impl::on_post_apply_custom_operation( const custom_operation_notification& note )
+{
+   post_apply_custom_op_type< rc_plugin_operation >( note );
+}
 
 void rc_plugin_impl::on_pre_apply_optional_action( const optional_action_notification& note )
 {
@@ -1135,14 +1479,16 @@ void rc_plugin_impl::validate_database()
 
   for( const rc_account_object& rc_account : rc_idx )
   {
-    const account_object& account = _db.get< account_object, by_name >( rc_account.account );
-    int64_t max_rc = get_maximum_rc( account, rc_account );
+    const auto account = _db.find< account_object, by_name >( rc_account.account );
+      if( account != nullptr )
+      {
+         int64_t max_rc = get_maximum_rc( *account, rc_account );
 
-    assert( max_rc == rc_account.last_max_rc );
-    FC_ASSERT( max_rc == rc_account.last_max_rc,
-      "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b} in validate_database()",
-      ("a", account.name)("old", rc_account.last_max_rc)("new", max_rc)("b", _db.head_block_num()) );
-  }
+         FC_ASSERT( max_rc == rc_account.last_max_rc,
+            "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b} in validate_database()",
+            ("a", account->name)("old", rc_account.last_max_rc)("new", max_rc)("b", _db.head_block_num()) );
+      }
+   }
 }
 
 } // detail
@@ -1198,14 +1544,26 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
       { try { my->on_pre_apply_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_operation_conn = db.add_post_apply_operation_handler( [&]( const operation_notification& note )
       { try { my->on_post_apply_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
-    my->_pre_apply_optional_action_conn = db.add_pre_apply_optional_action_handler( [&]( const optional_action_notification& note )
-      { try { my->on_pre_apply_optional_action( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
-    my->_post_apply_optional_action_conn = db.add_post_apply_optional_action_handler( [&]( const optional_action_notification& note )
-      { try { my->on_post_apply_optional_action( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
+    my->_pre_apply_required_action_conn = db.add_pre_apply_required_action_handler( [&]( const required_action_notification& note )
+         { try { my->on_pre_apply_required_action( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
+      my->_post_apply_required_action_conn = db.add_post_apply_required_action_handler( [&]( const required_action_notification& note )
+         { try { my->on_post_apply_required_action( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
+      my->_pre_apply_optional_action_conn = db.add_pre_apply_optional_action_handler( [&]( const optional_action_notification& note )
+         { try { my->on_pre_apply_optional_action( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
+      my->_post_apply_optional_action_conn = db.add_post_apply_optional_action_handler( [&]( const optional_action_notification& note )
+         { try { my->on_post_apply_optional_action( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
+      my->_pre_apply_custom_operation_conn = db.add_pre_apply_custom_operation_handler( [&]( const custom_operation_notification& note )
+         { try { my->on_pre_apply_custom_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
+      my->_post_apply_custom_operation_conn = db.add_post_apply_custom_operation_handler( [&]( const custom_operation_notification& note )
+         { try { my->on_post_apply_custom_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
 
     HIVE_ADD_PLUGIN_INDEX(db, rc_resource_param_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_pool_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_account_index);
+    HIVE_ADD_PLUGIN_INDEX(db, rc_delegation_pool_index);
+    HIVE_ADD_PLUGIN_INDEX(db, rc_delegation_from_account_index);
+    HIVE_ADD_PLUGIN_INDEX(db, rc_indel_edge_index);
+    HIVE_ADD_PLUGIN_INDEX(db, rc_outdel_drc_edge_index);
 
     fc::mutable_variant_object state_opts;
 
@@ -1240,9 +1598,20 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 
     appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
 
-    ilog( "RC's will be computed starting at block ${b}", ("b", my->_enable_at_block) );
-  }
-  FC_CAPTURE_AND_RETHROW()
+    // Each plugin needs its own evaluator registry.
+      my->_custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< hive::plugins::rc::rc_plugin_operation > >( my->_db, name() );
+
+      // Add each operation evaluator to the registry
+      my->_custom_operation_interpreter->register_evaluator< delegate_to_pool_evaluator >( this );
+      my->_custom_operation_interpreter->register_evaluator< delegate_drc_from_pool_evaluator >( this );
+      my->_custom_operation_interpreter->register_evaluator< set_slot_delegator_evaluator >( this );
+
+      // Add the registry to the database so the database can delegate custom ops to the plugin
+      my->_db.register_custom_operation_interpreter( my->_custom_operation_interpreter );
+
+      ilog( "RC's will be computed starting at block ${b}", ("b", my->_enable_at_block) );
+   }
+   FC_CAPTURE_AND_RETHROW()
 }
 
 void rc_plugin::plugin_startup() {}
@@ -1258,6 +1627,7 @@ void rc_plugin::plugin_shutdown()
   chain::util::disconnect_signal( my->_post_apply_operation_conn );
   chain::util::disconnect_signal( my->_pre_apply_optional_action_conn );
   chain::util::disconnect_signal( my->_post_apply_optional_action_conn );
+   chain::util::disconnect_signal( my->_pre_apply_custom_operation_conn );
 }
 
 void rc_plugin::set_rc_plugin_skip_flags( rc_plugin_skip_flags skip )
@@ -1289,7 +1659,8 @@ int64_t get_maximum_rc( const account_object& account, const rc_account_object& 
   result = fc::signed_sat_sub( result, account.delegated_vesting_shares.amount.value );
   result = fc::signed_sat_add( result, account.received_vesting_shares.amount.value );
   result = fc::signed_sat_add( result, rc_account.max_rc_creation_adjustment.amount.value );
-  result = fc::signed_sat_sub( result, detail::get_next_vesting_withdrawal( account ) );
+  result = fc::signed_sat_sub( result, rc_account.vests_delegated_to_pools.amount.value );
+   result = fc::signed_sat_sub( result, detail::get_next_vesting_withdrawal( account ) );
   return result;
 }
 

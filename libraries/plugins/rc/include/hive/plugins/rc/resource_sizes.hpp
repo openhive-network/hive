@@ -22,6 +22,7 @@
 #define STATE_TRANSACTION_BYTE_SIZE               174
 #define STATE_TRANSFER_FROM_SAVINGS_BYTE_SIZE     229
 #define STATE_LIMIT_ORDER_BYTE_SIZE              1940
+#define STATE_TMP_OBJ_BYTE_SIZE                  1940
 #define STATE_COMMENT_VOTE_BYTE_SIZE              525
 
 #define EXEC_FOLLOW_CUSTOM_OP_SCALE                20

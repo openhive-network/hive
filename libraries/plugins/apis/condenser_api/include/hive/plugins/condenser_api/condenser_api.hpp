@@ -11,6 +11,7 @@
 #include <hive/plugins/reputation_api/reputation_api.hpp>
 #include <hive/plugins/market_history_api/market_history_api.hpp>
 #include <hive/plugins/condenser_api/condenser_api_legacy_objects.hpp>
+#include <hive/plugins/rc_api/rc_api.hpp>
 
 #include <fc/optional.hpp>
 #include <fc/variant.hpp>
@@ -914,6 +915,12 @@ DEFINE_API_ARGS( is_known_transaction,                   vector< variant >,   bo
 DEFINE_API_ARGS( list_proposals,                         vector< variant >,   vector< api_proposal_object > )
 DEFINE_API_ARGS( find_proposals,                         vector< variant >,   vector< api_proposal_object > )
 DEFINE_API_ARGS( list_proposal_votes,                    vector< variant >,   vector< database_api::api_proposal_vote_object > )
+DEFINE_API_ARGS( find_rc_accounts,                       vector< variant >,   vector< rc::rc_account_api_object > )
+DEFINE_API_ARGS( list_rc_accounts,                       vector< variant >,   vector< rc::rc_account_api_object > )
+DEFINE_API_ARGS( find_rc_delegation_pools,               vector< variant >,   vector< rc::rc_delegation_pool_api_object > )
+DEFINE_API_ARGS( list_rc_delegation_pools,               vector< variant >,   vector< rc::rc_delegation_pool_api_object > )
+DEFINE_API_ARGS( find_rc_delegations,                    vector< variant >,   vector< rc::rc_indel_edge_api_object > )
+DEFINE_API_ARGS( list_rc_delegations,                    vector< variant >,   vector< rc::rc_indel_edge_api_object > )
 
 #undef DEFINE_API_ARGS
 
@@ -1012,6 +1019,12 @@ public:
     (list_proposals)
     (find_proposals)
     (list_proposal_votes)
+    (find_rc_accounts)
+    (list_rc_accounts)
+    (find_rc_delegation_pools)
+    (list_rc_delegation_pools)
+    (find_rc_delegations)
+    (list_rc_delegations)
   )
 
   private:

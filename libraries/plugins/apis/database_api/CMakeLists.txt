@@ -8,7 +8,8 @@ add_library( database_api_plugin
 
 target_link_libraries( database_api_plugin chain_plugin json_rpc_plugin )
 target_include_directories( database_api_plugin
-                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
+                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
 
 if( CLANG_TIDY_EXE )
    set_target_properties(
@@ -24,3 +25,4 @@ install( TARGETS
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
+install( FILES ${HEADERS} DESTINATION "include/hive/plugins/database_api" )

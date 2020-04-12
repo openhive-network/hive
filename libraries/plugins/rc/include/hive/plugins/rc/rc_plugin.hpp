@@ -2,6 +2,8 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <appbase/application.hpp>
 
+#include <hive/chain/database.hpp>
+
 #include <hive/plugins/chain/chain_plugin.hpp>
 
 namespace hive { namespace plugins { namespace rc {
@@ -43,5 +45,22 @@ class rc_plugin : public appbase::plugin< rc_plugin >
   private:
     std::unique_ptr< detail::rc_plugin_impl > my;
 };
+
+#ifdef IS_TEST_NET
+
+namespace detail {
+
+void use_account_rcs(
+ chain::database& db,
+ const chain::dynamic_global_property_object& gpo,
+ const chain::account_name_type& account_name,
+ int64_t rc,
+ rc_plugin_skip_flags skip,
+ set< chain::account_name_type > whitelist
+);
+
+}
+#endif
+
 
 } } } // hive::plugins::rc

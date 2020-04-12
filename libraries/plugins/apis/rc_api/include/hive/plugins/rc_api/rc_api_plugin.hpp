@@ -10,8 +10,6 @@
 
 namespace hive { namespace plugins { namespace rc {
 
-using namespace appbase;
-
 class rc_api_plugin : public appbase::plugin< rc_api_plugin >
 {
 public:
