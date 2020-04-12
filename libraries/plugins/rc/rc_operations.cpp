@@ -94,6 +94,7 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
    rc_pool_manabar_params.regen_time = STEEM_RC_REGEN_TIME;
    if( !to_pool )
    {
+#ifdef STEEM_ENABLE_SMT
       if( is_destination_nai( op.to_pool ) )
       {
          asset_symbol_type smt_symbol = asset_symbol_type::from_nai_string( std::string( op.to_pool ).c_str(), 0 );
@@ -106,9 +107,12 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
       }
       else
       {
+#endif
          const account_object* to_pool_account = _db.find< account_object, by_name >( op.to_pool );
          FC_ASSERT( to_pool_account, "Account ${a} does not exist", ("a", op.to_pool) );
+#ifdef STEEM_ENABLE_SMT
       }
+#endif
 
       rc_pool_manabar.current_mana = 0;
       rc_pool_manabar.last_update_time = now;
@@ -229,6 +233,7 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
 
 void delegate_drc_from_pool_evaluator::do_apply( const delegate_drc_from_pool_operation& op )
 {
+   // TODO: Replace with RC delegation hard fork
    if( !_db.has_hardfork( STEEM_SMT_HARDFORK ) ) return;
 
    const auto& to_rca = _db.get< rc_account_object, by_name >( op.to_account );
