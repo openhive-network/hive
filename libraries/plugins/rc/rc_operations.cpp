@@ -79,7 +79,8 @@ void maybe_cleanup_rc_pool( const rc_delegation_pool_object& pool, database& db 
 
 void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op )
 {
-   if( !_db.has_hardfork( STEEM_SMT_HARDFORK ) ) return;
+   // TODO: Replace with RC delegation hard fork (probably hf25)
+   if( !_db.has_hardfork( STEEM_HARDFORK_0_23 ) ) return;
 
    const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
    uint32_t now = gpo.time.sec_since_epoch();
@@ -233,8 +234,8 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
 
 void delegate_drc_from_pool_evaluator::do_apply( const delegate_drc_from_pool_operation& op )
 {
-   // TODO: Replace with RC delegation hard fork
-   if( !_db.has_hardfork( STEEM_SMT_HARDFORK ) ) return;
+   // TODO: Replace with RC delegation hard fork (probably hf25)
+   if( !_db.has_hardfork( STEEM_HARDFORK_0_23 ) ) return;
 
    const auto& to_rca = _db.get< rc_account_object, by_name >( op.to_account );
 
@@ -308,7 +309,8 @@ void delegate_drc_from_pool_evaluator::do_apply( const delegate_drc_from_pool_op
 
 void set_slot_delegator_evaluator::do_apply( const set_slot_delegator_operation& op )
 {
-   if( !_db.has_hardfork( STEEM_SMT_HARDFORK ) ) return;
+   // TODO: Replace with RC delegation hard fork (probably hf25)
+   if( !_db.has_hardfork( STEEM_HARDFORK_0_23 ) ) return;
 
    const auto& to_account = _db.get_account( op.to_account );
    const auto& from_account = _db.get_account( op.from_pool );
