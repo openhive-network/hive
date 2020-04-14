@@ -469,7 +469,6 @@ namespace steem { namespace chain {
 #ifdef ENABLE_MIRA
 namespace mira {
 
-template<> struct is_static_length< steem::chain::account_object > : public boost::true_type {};
 template<> struct is_static_length< steem::chain::vesting_delegation_object > : public boost::true_type {};
 template<> struct is_static_length< steem::chain::vesting_delegation_expiration_object > : public boost::true_type {};
 template<> struct is_static_length< steem::chain::change_recovery_account_request_object > : public boost::true_type {};
@@ -531,3 +530,31 @@ FC_REFLECT( steem::chain::change_recovery_account_request_object,
              (id)(account_to_recover)(recovery_account)(effective_on)
           )
 CHAINBASE_SET_INDEX_TYPE( steem::chain::change_recovery_account_request_object, steem::chain::change_recovery_account_request_index )
+
+namespace helpers
+{
+   template <>
+   class index_statistic_provider<steem::chain::account_index>
+   {
+   public:
+      typedef steem::chain::account_index IndexType;
+      typedef typename steem::chain::account_object::t_delayed_votes t_delayed_votes;
+
+      index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
+      {
+         index_statistic_info info;
+         gather_index_static_data(index, &info);
+
+         if(onlyStaticInfo == false)
+         {
+            for(const auto& o : index)
+            {
+               info._item_additional_allocation += o.delayed_votes.capacity()*sizeof(t_delayed_votes::value_type);
+            }
+         }
+
+         return info;
+      }
+   };
+
+} /// namespace helpers
