@@ -91,6 +91,12 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
 {
    FC_ASSERT( args.accounts.size() <= RC_API_SINGLE_QUERY_LIMIT );
 
+
+   find_rc_accounts_return result;
+   result.rc_accounts.reserve( args.accounts.size() );
+
+   printf("\n %zu \n", args.accounts.size());
+
    find_rc_accounts_return result;
    result.rc_accounts.reserve( args.accounts.size() );
 
@@ -104,6 +110,7 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
       }
    }
 
+   printf("\nYeyetes\n");
    return result;
 }
 
@@ -149,6 +156,94 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_delegation_pools )
       {
          result.rc_delegation_pools.push_back( *pool );
       }
+   }
+
+   return result;
+}
+
+DEFINE_API_IMPL( rc_api_impl, list_rc_delegation_pools )
+{
+   FC_ASSERT( args.limit <= RC_API_SINGLE_QUERY_LIMIT );
+
+   list_rc_delegation_pools_return result;
+   result.rc_delegation_pools.reserve( args.limit );
+
+   switch( args.order )
+   {
+      case( sort_order_type::by_name ):
+      {
+         iterate_results(
+            _db.get_index< rc_delegation_pool_index, by_account_symbol >(),
+            boost::make_tuple( args.start.as< account_name_type >(), VESTS_SYMBOL ),
+            result.rc_delegation_pools,
+            args.limit,
+            &on_push_default< rc_delegation_pool_object >,
+            &filter_default< rc_delegation_pool_object > );
+         break;
+      }
+      default:
+         FC_ASSERT( false, "Unknown or unsupported sort order" );
+   }
+
+   return result;
+}
+
+DEFINE_API_IMPL( rc_api_impl, find_rc_delegations )
+{
+   static_assert( STEEM_RC_MAX_INDEL <= RC_API_SINGLE_QUERY_LIMIT, "STEEM_RC_MAX_INDEL exceeds RC_API_SINGLE_QUERY_LIMIT" );
+
+   find_rc_delegations_return result;
+   result.rc_delegations.reserve( STEEM_RC_MAX_INDEL );
+
+   const auto& del_idx = _db.get_index< rc_indel_edge_index, by_edge >();
+
+   for( auto itr = del_idx.lower_bound( args.account ); itr != del_idx.end() && itr->from_account == args.account; ++itr )
+   {
+      result.rc_delegations.push_back( *itr );
+   }
+
+   return result;
+}
+
+DEFINE_API_IMPL( rc_api_impl, list_rc_delegations )
+{
+   FC_ASSERT( args.limit <= RC_API_SINGLE_QUERY_LIMIT );
+
+   list_rc_delegations_return result;
+   result.rc_delegations.reserve( args.limit );
+
+   switch( args.order )
+   {
+      case( sort_order_type::by_edge ):
+      {
+         auto key = args.start.as< vector< fc::variant > >();
+         FC_ASSERT( key.size() == 2, "by_edge start requires 2 values. (from_account, pool_name)" );
+
+         iterate_results(
+            _db.get_index< rc_indel_edge_index, by_edge >(),
+            boost::make_tuple( key[0].as< account_name_type >(), VESTS_SYMBOL, key[1].as< account_name_type >() ),
+            result.rc_delegations,
+            args.limit,
+            &on_push_default< rc_indel_edge_api_object >,
+            &filter_default< rc_indel_edge_api_object > );
+         break;
+      }
+      case( sort_order_type::by_pool ):
+      {
+         auto key = args.start.as< vector< fc::variant > >();
+         FC_ASSERT( key.size() == 2, "by_edge start requires 2 values. (from_account, pool_name)" );
+
+         iterate_results(
+            _db.get_index< rc_indel_edge_index, by_pool >(),
+            boost::make_tuple( key[0].as< account_name_type >(), VESTS_SYMBOL, key[1].as< account_name_type >() ),
+            result.rc_delegations,
+            args.limit,
+            &on_push_default< rc_indel_edge_api_object >,
+            &filter_default< rc_indel_edge_api_object > );
+         break;
+      }
+      default:
+         FC_ASSERT( false, "Unknown or unsupported sort order" );
    }
 
    return result;
