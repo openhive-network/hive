@@ -5746,13 +5746,25 @@ void database::validate_invariants()const
       asset pending_vesting_steem = asset( 0, STEEM_SYMBOL );
       share_type total_vsf_votes = share_type( 0 );
       ushare_type total_delayed_votes = ushare_type( 0 );
+      
+      uint64_t witness_no = 0;
+      uint64_t account_no = 0;
+      uint64_t convert_no = 0;
+      uint64_t order_no = 0;
+      uint64_t escrow_no = 0;
+      uint64_t withdrawal_no = 0;
+      uint64_t reward_fund_no = 0;
+      uint64_t contribution_no = 0;
 
       auto gpo = get_dynamic_global_properties();
 
       /// verify no witness has too many votes
       const auto& witness_idx = get_index< witness_index >().indices();
       for( auto itr = witness_idx.begin(); itr != witness_idx.end(); ++itr )
+      {
          FC_ASSERT( itr->votes <= gpo.total_vesting_shares.amount, "", ("itr",*itr) );
+         ++witness_no;
+      }
 
       for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
       {
@@ -5776,6 +5788,7 @@ void database::validate_invariants()const
             sum_delayed_votes += dv.val;
          FC_ASSERT( sum_delayed_votes == itr->sum_delayed_votes, "", ("sum_delayed_votes",sum_delayed_votes)("itr->sum_delayed_votes",itr->sum_delayed_votes) );
          FC_ASSERT( sum_delayed_votes.value <= itr->vesting_shares.amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->vesting_shares.amount)("account",itr->name) );
+         ++account_no;
       }
 
       const auto& convert_request_idx = get_index< convert_request_index >().indices();
@@ -5788,6 +5801,7 @@ void database::validate_invariants()const
             total_sbd += itr->amount;
          else
             FC_ASSERT( false, "Encountered illegal symbol in convert_request_object" );
+         ++convert_no;
       }
 
       const auto& limit_order_idx = get_index< limit_order_index >().indices();
@@ -5802,6 +5816,7 @@ void database::validate_invariants()const
          {
             total_sbd += asset( itr->for_sale, SBD_SYMBOL );
          }
+         ++order_no;
       }
 
       const auto& escrow_idx = get_index< escrow_index >().indices().get< by_id >();
@@ -5817,6 +5832,7 @@ void database::validate_invariants()const
             total_sbd += itr->pending_fee;
          else
             FC_ASSERT( false, "found escrow pending fee that is not HBD or HIVE" );
+         ++escrow_no;
       }
 
       const auto& savings_withdraw_idx = get_index< savings_withdraw_index >().indices().get< by_id >();
@@ -5829,6 +5845,7 @@ void database::validate_invariants()const
             total_sbd += itr->amount;
          else
             FC_ASSERT( false, "found savings withdraw that is not HBD or HIVE" );
+         ++withdrawal_no;
       }
 
       const auto& reward_idx = get_index< reward_fund_index, by_id >();
@@ -5836,6 +5853,7 @@ void database::validate_invariants()const
       for( auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr )
       {
          total_supply += itr->reward_balance;
+         ++reward_fund_no;
       }
 
 #ifdef STEEM_ENABLE_SMT
@@ -5844,6 +5862,7 @@ void database::validate_invariants()const
       for ( auto itr = smt_contribution_idx.begin(); itr != smt_contribution_idx.end(); ++itr )
       {
          total_supply += itr->contribution;
+         ++contribution_no;
       }
 #endif
 
@@ -5861,6 +5880,14 @@ void database::validate_invariants()const
          FC_ASSERT( gpo.current_sbd_supply * get_feed_history().current_median_history + gpo.current_supply
             == gpo.virtual_supply, "", ("gpo.current_sbd_supply",gpo.current_sbd_supply)("get_feed_history().current_median_history",get_feed_history().current_median_history)("gpo.current_supply",gpo.current_supply)("gpo.virtual_supply",gpo.virtual_supply) );
       }
+
+      ilog( "validate_invariants @${b}:", ( "b", head_block_num() ) );
+      ilog( "successful scan of ${p} witnesses, ${a} accounts, ${c} convert requests, ${o} limit orders, ${e} escrow transfers, ${w} saving withdrawals, ${r} reward funds and ${s} SMT contributions.",
+         ( "p", witness_no )( "a", account_no )( "c", convert_no )( "o", order_no )( "e", escrow_no )( "w", withdrawal_no )( "r", reward_fund_no )( "s", contribution_no ) );
+      ilog( "HIVE supply: ${h}", ( "h", gpo.current_supply.amount.value ) );
+      ilog( "HBD supply: ${s} ( + ${i} initial )", ( "s", gpo.current_sbd_supply.amount.value )( "i", gpo.init_sbd_supply.amount.value ) );
+      ilog( "virtual supply (HIVE): ${w}", ( "w", gpo.virtual_supply.amount.value ) );
+      ilog( "VESTS: ${v} ( + ${p} pending ) worth (HIVE): ${x} ( + ${y} )", ( "v", gpo.total_vesting_shares.amount.value )( "p", gpo.pending_rewarded_vesting_shares.amount.value )( "x", gpo.total_vesting_fund_steem.amount.value )( "y", gpo.pending_rewarded_vesting_steem.amount.value ) );
    }
    FC_CAPTURE_LOG_AND_RETHROW( (head_block_num()) );
 }
