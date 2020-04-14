@@ -1252,7 +1252,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
       {
          FC_ASSERT( liquid.symbol.is_vesting() == false );
          // Get share price.
-         const auto& smt = db.get< smt_token_object, by_symbol >( liquid.symbol );
+         const auto& smt = get< smt_token_object, by_symbol >( liquid.symbol );
          FC_ASSERT( smt.allow_voting == to_reward_balance, "No voting - no rewards" );
          price vesting_share_price = to_reward_balance ? smt.get_reward_vesting_share_price() : smt.get_vesting_share_price();
          // Calculate new vesting from provided liquid using share price.
@@ -1260,11 +1260,11 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
          before_vesting_callback( new_vesting );
          // Add new vesting to owner's balance.
          if( to_reward_balance )
-            db.adjust_reward_balance( to_account, liquid, new_vesting );
+            adjust_reward_balance( to_account, liquid, new_vesting );
          else
-            db.adjust_balance( to_account, new_vesting );
+            adjust_balance( to_account, new_vesting );
          // Update global vesting pool numbers.
-         db.modify( smt, [&]( smt_token_object& smt_object )
+         modify( smt, [&]( smt_token_object& smt_object )
          {
             if( to_reward_balance )
             {
