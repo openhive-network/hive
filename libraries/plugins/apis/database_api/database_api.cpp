@@ -1219,7 +1219,7 @@ namespace last_votes_misc
       else if( SORTORDERTYPE == by_voter_comment )
       {
          iterate_results(
-                 _impl._db.get_index< chain::comment_vote_index, chain::by_comment_voter >(),
+                 _impl._db.get_index< chain::comment_vote_index, chain::by_voter_comment >(),
                  boost::make_tuple( voter_id, comment_id ),
                  c,
                  limit,

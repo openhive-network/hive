@@ -31,20 +31,6 @@ struct list_object_args_type
    sort_order_type   order;
 };
 
-enum sort_order_type
-{
-   by_name,
-   by_edge,
-   by_pool
-};
-
-struct list_object_args_type
-{
-   fc::variant       start;
-   uint32_t          limit;
-   sort_order_type   order;
-};
-
 using plugins::json_rpc::void_type;
 
 typedef void_type get_resource_params_args;
