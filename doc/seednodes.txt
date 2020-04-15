@@ -5,10 +5,11 @@ hived.splinterlands.com:2001 # aggroed
 hiveseed-se.privex.io:2001 # privex (SE)
 node.mahdiyari.info:2001 # mahdiyari
 seed.buildteam.io:2001 # thecryptodrive
+seed.chitty.me:2001 # chitty
 seed.hivekings.com:2001 # drakos
 seed.liondani.com:2016 # liondani
 seed.openhive.network:2001 # gtg
 seed.roelandp.nl:2001 # roelandp
 
 # One-liner for the config.ini
-p2p-seed-node = anyx.io:2001 hive-seed.arcange.eu:2001 hive-seed.lukestokes.info:2001 hived.splinterlands.com:2001 hiveseed-se.privex.io:2001 node.mahdiyari.info:2001 seed.buildteam.io:2001 seed.hivekings.com:2001 seed.liondani.com:2016 seed.openhive.network:2001 seed.roelandp.nl:2001
+p2p-seed-node = anyx.io:2001 hive-seed.arcange.eu:2001 hive-seed.lukestokes.info:2001 hived.splinterlands.com:2001 hiveseed-se.privex.io:2001 node.mahdiyari.info:2001 seed.buildteam.io:2001 seed.chitty.me:2001 seed.hivekings.com:2001 seed.liondani.com:2016 seed.openhive.network:2001 seed.roelandp.nl:2001
