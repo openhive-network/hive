@@ -2,6 +2,7 @@
 
 #include <appbase/application.hpp>
 #include <steem/chain/database.hpp>
+#include <steem/chain/util/delayed_voting.hpp>
 #include <fc/io/json.hpp>
 #include <fc/smart_ref_impl.hpp>
 
@@ -436,6 +437,7 @@ struct delayed_vote_database_fixture : public virtual clean_database_fixture
       int32_t get_user_voted_witness_count( const account_name_type& name );
 
       asset to_vest( const asset& liquid, const bool to_reward_balance = false );
+      time_point_sec move_forward_with_update( const fc::microseconds& time, delayed_voting::opt_votes_update_data_items& items );
 
       template< typename COLLECTION >
       fc::optional< size_t > get_position_in_delayed_voting_array( const COLLECTION& collection, size_t day, size_t minutes );
