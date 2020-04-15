@@ -2,9 +2,9 @@
 
 #include <chainbase/allocators.hpp>
 
+#include <steem/chain/account_object.hpp>
 #include <steem/chain/database.hpp>
 #include <steem/chain/index.hpp>
-#include <steem/chain/account_object.hpp>
 
 namespace steem { namespace chain {
 
