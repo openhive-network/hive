@@ -73,7 +73,7 @@ RUN \
         -DLOW_MEMORY_NODE=OFF \
         -DCLEAR_VOTES=ON \
         -DSKIP_BY_TX_ID=ON \
-        -DENABLE_MIRA=ON \
+        -DENABLE_MIRA=OFF \
         .. && \
 #    make -j$(nproc) chain_test mira_test test_fixed_string plugin_test && \
 #    if [ "$CI_BUILD" ] ; then \
@@ -107,7 +107,7 @@ RUN \
         -DLOW_MEMORY_NODE=OFF \
         -DCLEAR_VOTES=ON \
         -DSKIP_BY_TX_ID=ON \
-        -DENABLE_MIRA=ON \
+        -DENABLE_MIRA=OFF \
         -DENABLE_SMT_SUPPORT=ON \
         -DSTEEM_STATIC_BUILD=${STEEM_STATIC_BUILD} \
         .. && \
@@ -146,7 +146,7 @@ RUN \
         -DLOW_MEMORY_NODE=OFF \
         -DCLEAR_VOTES=ON \
         -DSKIP_BY_TX_ID=ON \
-        -DENABLE_MIRA=ON \
+        -DENABLE_MIRA=OFF \
         -DCHAINBASE_CHECK_LOCKING=OFF \
         .. && \
 #    make -j$(nproc) chain_test plugin_test && \
@@ -176,7 +176,7 @@ RUN \
         -DCLEAR_VOTES=ON \
         -DSKIP_BY_TX_ID=OFF \
         -DBUILD_STEEM_TESTNET=OFF \
-        -DENABLE_MIRA=ON \
+        -DENABLE_MIRA=OFF \
         -DSTEEM_STATIC_BUILD=${STEEM_STATIC_BUILD} \
         .. \
     && \
@@ -200,7 +200,7 @@ RUN \
         -DCLEAR_VOTES=OFF \
         -DSKIP_BY_TX_ID=ON \
         -DBUILD_STEEM_TESTNET=OFF \
-        -DENABLE_MIRA=ON \
+        -DENABLE_MIRA=OFF \
         -DSTEEM_STATIC_BUILD=${STEEM_STATIC_BUILD} \
         .. \
     && \
