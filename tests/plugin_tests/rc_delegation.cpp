@@ -1,4 +1,4 @@
-#ifdef IS_TEST_NET
+//#ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
 #include <steem/chain/account_object.hpp>
@@ -22,7 +22,7 @@ BOOST_FIXTURE_TEST_SUITE( rc_delegation, clean_database_fixture )
 BOOST_AUTO_TEST_CASE( rc_delegate_to_pool_validate )
 {
    try{
-      SMT_SYMBOL( alice, 3, db );
+
 
       delegate_to_pool_operation op;
       op.from_account = "alice";
@@ -36,14 +36,17 @@ BOOST_AUTO_TEST_CASE( rc_delegate_to_pool_validate )
       op.amount.symbol = SBD_SYMBOL;
       BOOST_REQUIRE_THROW( op.validate(), fc::assert_exception );
 
+      op.amount.symbol = VESTS_SYMBOL;
+      op.to_pool = "bob-";
+      BOOST_REQUIRE_THROW( op.validate(), fc::assert_exception );
+
+#ifdef STEEM_ENABLE_SMT
+      SMT_SYMBOL( alice, 3, db );
+
       op.amount.symbol = alice_symbol;
       BOOST_REQUIRE_THROW( op.validate(), fc::assert_exception );
 
       op.amount.symbol = alice_symbol.get_paired_symbol();
-      BOOST_REQUIRE_THROW( op.validate(), fc::assert_exception );
-
-      op.amount.symbol = VESTS_SYMBOL;
-      op.to_pool = "bob-";
       BOOST_REQUIRE_THROW( op.validate(), fc::assert_exception );
 
       op.to_pool = "@@";
@@ -61,6 +64,7 @@ BOOST_AUTO_TEST_CASE( rc_delegate_to_pool_validate )
       op.to_pool = "bob";
       op.from_account = alice_symbol.to_nai_string();
       BOOST_REQUIRE_THROW( op.validate(), fc::assert_exception );
+#endif
    }
    FC_LOG_AND_RETHROW()
 }
@@ -76,7 +80,7 @@ BOOST_AUTO_TEST_CASE( rc_delegate_to_pool_apply )
       vest( STEEM_INIT_MINER_NAME, "bob", ASSET( "10.000 TESTS" ) );
 
       int64_t alice_vests = alice.vesting_shares.amount.value;
-      int64_t bob_vests = bob.vesting_shares.amount.value;
+
       signed_transaction tx;
 
       delegate_to_pool_operation op;
@@ -153,6 +157,8 @@ BOOST_AUTO_TEST_CASE( rc_delegate_to_pool_apply )
       BOOST_REQUIRE( edge->amount.amount.value == vests_to_dave - 1 );
 
       generate_block();
+#ifdef STEEM_ENABLE_SMT
+      int64_t bob_vests = bob.vesting_shares.amount.value;
       auto alice_symbol = create_smt( "alice", alice_private_key, 3 );
       SMT_SYMBOL( bob, 3, db );
       generate_block();
@@ -254,7 +260,7 @@ BOOST_AUTO_TEST_CASE( rc_delegate_to_pool_apply )
       edge = db->find< rc_indel_edge_object, by_edge >( boost::make_tuple( account_name_type( "bob" ), VESTS_SYMBOL, account_name_type( alice_symbol.to_nai_string() ) ) );
       BOOST_REQUIRE( edge != nullptr );
       BOOST_REQUIRE( edge->amount.amount.value == op.amount.amount.value );
-
+#endif
    }
    FC_LOG_AND_RETHROW()
 }
@@ -695,4 +701,4 @@ BOOST_AUTO_TEST_CASE( rc_drc_pool_consumption )
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#endif
+//#endif
