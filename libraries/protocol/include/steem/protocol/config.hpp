@@ -339,7 +339,7 @@
 /// Represents the canonical root post parent account
 #define STEEM_ROOT_POST_PARENT                (account_name_type())
 /// Represents the account with NO authority which holds resources for payouts according to given proposals
-#define STEEM_TREASURY_ACCOUNT                "steem.dao"
+//#define STEEM_TREASURY_ACCOUNT                "steem.dao" //no longer constant, changed in HF24 - use database::get_treasury_name() instead
 ///@}
 
 /// STEEM PROPOSAL SYSTEM support

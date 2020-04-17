@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
 
       FUND( creator, ASSET( "160.000 TESTS" ) );
       FUND( creator, ASSET( "80.000 TBD" ) );
-      FUND( STEEM_TREASURY_ACCOUNT, ASSET( "5000.000 TBD" ) );
+      FUND( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
 
       auto voter_01 = "carol";
 
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       //skipping interest generating is necessary
       transfer( STEEM_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ));
       generate_block( 5 );
-      transfer( STEEM_INIT_MINER_NAME, STEEM_TREASURY_ACCOUNT, ASSET( "0.001 TBD" ) );
+      transfer( STEEM_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 TBD" ) );
       generate_block( 5 );
 
       const auto& dgpo = db->get_dynamic_global_properties();
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       const account_object& _creator = db->get_account( creator );
       const account_object& _receiver = db->get_account( receiver );
       const account_object& _voter_01 = db->get_account( voter_01 );
-      const account_object& _treasury = db->get_account( STEEM_TREASURY_ACCOUNT );
+      const account_object& _treasury = db->get_treasury();
 
       {
          BOOST_TEST_MESSAGE( "---Payment---" );
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
       auto daily_pay = ASSET( "24.000 TBD" );
       auto paid = ASSET( "4.990 TBD" );// paid != ASSET( "5.000 TBD" ) because lack of rounding
 
-      FUND( STEEM_TREASURY_ACCOUNT, ASSET( "5000000.000 TBD" ) );
+      FUND( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
       //=====================preparing=====================
       for( int32_t i = 0; i < nr_proposals; ++i )
       {
@@ -294,7 +294,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
 
       const auto block_interval = fc::seconds( STEEM_BLOCK_INTERVAL );
 
-      FUND( STEEM_TREASURY_ACCOUNT, ASSET( "5000000.000 TBD" ) );
+      FUND( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
       //=====================preparing=====================
       auto item_creator = inits[ 0 ];
       create_proposal( item_creator.account, item_creator.account, start_date, end_date, ASSET( "24.000 TBD" ), item_creator.key );
@@ -397,7 +397,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       auto huge_daily_pay = ASSET( "50000001.000 TBD" );
       auto daily_pay = ASSET( "24.000 TBD" );
 
-      FUND( STEEM_TREASURY_ACCOUNT, ASSET( "5000000.000 TBD" ) );
+      FUND( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
       //=====================preparing=====================
       uint16_t i = 0;
       for( auto item : inits )
@@ -624,7 +624,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
 
       signed_transaction tx;
 
-      const account_object& before_treasury_account = db->get_account(STEEM_TREASURY_ACCOUNT);
+      const account_object& before_treasury_account = db->get_treasury();
       const account_object& before_alice_account = db->get_account( creator );
       const account_object& before_bob_account = db->get_account( receiver );
 
@@ -652,7 +652,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
       tx.operations.clear();
       tx.signatures.clear();
 
-      const auto& after_treasury_account = db->get_account(STEEM_TREASURY_ACCOUNT);
+      const auto& after_treasury_account = db->get_treasury();
       const account_object& after_alice_account = db->get_account( creator );
       const account_object& after_bob_account = db->get_account( receiver );
 
@@ -1838,7 +1838,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
       generate_block();
 
       //=====================preparing=====================
-      auto receiver = "steem.dao";
+      auto receiver = db->get_treasury_name();
 
       auto start_time = db->head_block_time();
 
@@ -1924,7 +1924,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
       generate_block();
 
       //=====================preparing=====================
-      auto receiver = "steem.dao";
+      auto receiver = db->get_treasury_name();
 
       auto start_time = db->head_block_time();
 
@@ -2028,7 +2028,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
       generate_block();
 
       //=====================preparing=====================
-      auto receiver = "steem.dao";
+      auto receiver = db->get_treasury_name();
 
       auto start_time = db->head_block_time();
 
@@ -2126,7 +2126,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
       generate_block();
 
       //=====================preparing=====================
-      auto receiver = "steem.dao";
+      auto receiver = db->get_treasury_name();
 
       auto start_time = db->head_block_time();
 
@@ -2370,7 +2370,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       generate_block();
 
       //=====================preparing=====================
-      auto receiver = "steem.dao";
+      auto receiver = db->get_treasury_name();
 
       auto start_time = db->head_block_time();
 
@@ -2779,7 +2779,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
       generate_block();
 
       //=====================preparing=====================
-      auto receiver = "steem.dao";
+      auto receiver = db->get_treasury_name();
 
       auto start_time = db->head_block_time();
 
@@ -2924,7 +2924,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       auto daily_pay = ASSET( "24.000 TBD" );
       auto paid = ASSET( "1.000 TBD" );//because only 1 hour
 
-      FUND( STEEM_TREASURY_ACCOUNT, ASSET( "5000000.000 TBD" ) );
+      FUND( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
       //=====================preparing=====================
       for( int32_t i = 0; i < nr_proposals; ++i )
       {

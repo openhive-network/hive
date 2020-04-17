@@ -203,6 +203,10 @@ namespace steem { namespace chain {
          const witness_object&  get_witness(  const account_name_type& name )const;
          const witness_object*  find_witness( const account_name_type& name )const;
 
+         /// Represents the account with NO authority which holds resources for payouts according to given proposals
+         std::string            get_treasury_name()const;
+         const account_object&  get_treasury()const;
+         
          const account_object&  get_account(  const account_name_type& name )const;
          const account_object*  find_account( const account_name_type& name )const;
 
@@ -527,7 +531,7 @@ namespace steem { namespace chain {
          //Restores balances for some accounts, which were cleared by mistake during HF23
          void restore_accounts( const hf23_helper::hf23_items& balances, const std::set< std::string >& restored_accounts );
 
-         //Clears all pending operations on account that involve balance, moves tokens to STEEM_TREASURY_ACCOUNT
+         //Clears all pending operations on account that involve balance, moves tokens to treasury account
          void clear_accounts( hf23_helper::hf23_items& balances, const std::set< std::string >& cleared_accounts );
          void clear_account( const account_object& account,
             asset* transferred_sbd_ptr = nullptr, asset* transferred_steem_ptr = nullptr,

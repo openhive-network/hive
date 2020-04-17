@@ -111,7 +111,7 @@ void sps_processor::sort_by_votes( t_proposals& proposals )
 
 asset sps_processor::get_treasury_fund()
 {
-   auto& treasury_account = db.get_account( STEEM_TREASURY_ACCOUNT );
+   auto& treasury_account = db.get_treasury();
 
    return treasury_account.sbd_balance;
 }
@@ -165,7 +165,7 @@ void sps_processor::transfer_daily_inflation_to_treasury( const asset& daily_inf
 #ifdef IS_TEST_NET
    if( daily_inflation.amount.value > 0 )
    {
-      const auto& treasury_account = db.get_account( STEEM_TREASURY_ACCOUNT );
+      const auto& treasury_account = db.get_treasury();
       db.adjust_balance( treasury_account, daily_inflation );
    }
 #endif
@@ -176,7 +176,7 @@ void sps_processor::transfer_payments( const time_point_sec& head_time, asset& m
    if( maintenance_budget_limit.amount.value == 0 )
       return;
 
-   const auto& treasury_account = db.get_account(STEEM_TREASURY_ACCOUNT);
+   const auto& treasury_account = db.get_treasury();
 
    uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().last_budget_time ).to_seconds();
    uint128_t ratio = ( passed_time_seconds * STEEM_100_PERCENT ) / daily_seconds;
@@ -185,7 +185,7 @@ void sps_processor::transfer_payments( const time_point_sec& head_time, asset& m
    {
       const auto& receiver_account = db.get_account( _item.receiver );
 
-      operation vop = proposal_pay_operation( _item.receiver, payment, db.get_current_trx(), db.get_current_op_in_trx() );
+      operation vop = proposal_pay_operation( _item.receiver, db.get_treasury_name(), payment, db.get_current_trx(), db.get_current_op_in_trx() );
       /// Push vop to be recorded by other parts (like AH plugin etc.)
       db.push_virtual_operation(vop);
       /// Virtual ops have no evaluators, so operation must be immediately "evaluated"
@@ -309,7 +309,7 @@ void sps_processor::record_funding( const block_notification& note )
    if ( props.sps_interval_ledger.amount.value <= 0 )
       return;
 
-   operation vop = sps_fund_operation( props.sps_interval_ledger );
+   operation vop = sps_fund_operation( db.get_treasury_name(), props.sps_interval_ledger );
    db.push_virtual_operation( vop );
 
    db.modify( props, []( dynamic_global_property_object& dgpo )
