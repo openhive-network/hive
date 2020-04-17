@@ -6,7 +6,7 @@
 
 namespace steem { namespace protocol {
 
-fc::variant_object get_config()
+fc::variant_object get_config( const std::string& treasury_name )
 {
    fc::mutable_variant_object result;
 
@@ -233,7 +233,7 @@ fc::variant_object get_config()
    result["HIVE_DECAY_BACKSTOP_PERCENT"] = STEEM_DECAY_BACKSTOP_PERCENT;
    result["HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT"] = STEEM_BLOCK_GENERATION_POSTPONED_TX_LIMIT;
    result["HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT"] = STEEM_PENDING_TRANSACTION_EXECUTION_LIMIT;
-   result["HIVE_TREASURY_ACCOUNT"] = STEEM_TREASURY_ACCOUNT;
+   result["HIVE_TREASURY_ACCOUNT"] = treasury_name;
    result["HIVE_TREASURY_FEE"] = STEEM_TREASURY_FEE;
    result["HIVE_PROPOSAL_MAINTENANCE_PERIOD"] = STEEM_PROPOSAL_MAINTENANCE_PERIOD;
    result["HIVE_PROPOSAL_MAINTENANCE_CLEANUP"] = STEEM_PROPOSAL_MAINTENANCE_CLEANUP;

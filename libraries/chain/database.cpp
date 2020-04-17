@@ -604,6 +604,19 @@ const witness_object* database::find_witness( const account_name_type& name ) co
    return find< witness_object, by_name >( name );
 }
 
+std::string database::get_treasury_name() const
+{
+   FC_TODO("Apply HF24 switch after new treasury name is decided.");
+   //the new account has to be created and configured prior to putting it here or in dgpo, otherwise someone
+   //might block HF24 or steal treasury funds by creating his own account with the same name
+   return "steem.dao";
+}
+
+const account_object& database::get_treasury() const
+{
+   return get_account( get_treasury_name() );
+}
+
 const account_object& database::get_account( const account_name_type& name )const
 { try {
    return get< account_object, by_name >( name );
@@ -1646,7 +1659,8 @@ void database::restore_accounts( const hf23_helper::hf23_items& balances, const 
    auto zero_steem = asset( 0 , STEEM_SYMBOL );
    auto zero_sbd = asset( 0 , SBD_SYMBOL );
 
-   const auto& treasury_account = get_account( STEEM_TREASURY_ACCOUNT );
+   const auto& treasury_account = get_treasury();
+   auto treasury_name = get_treasury_name();
 
    for( auto& name : restored_accounts )
    {
@@ -1671,7 +1685,7 @@ void database::restore_accounts( const hf23_helper::hf23_items& balances, const 
       adjust_balance( *account_ptr, found->sbd_balance );
       adjust_balance( *account_ptr, found->balance );
 
-      operation vop = hardfork_hive_restore_operation( name, found->sbd_balance, found->balance );
+      operation vop = hardfork_hive_restore_operation( name, treasury_name, found->sbd_balance, found->balance );
       push_virtual_operation( vop );
 
       ilog( "Balances ${sbd} and ${steem} for the account ${acc} were restored", ( "sbd", found->sbd_balance )( "steem", found->balance )( "acc", name ) );
@@ -1680,6 +1694,7 @@ void database::restore_accounts( const hf23_helper::hf23_items& balances, const 
 
 void database::clear_accounts( hf23_helper::hf23_items& balances, const std::set< std::string >& cleared_accounts )
 {
+   auto treasury_name = get_treasury_name();
    for( auto account_name : cleared_accounts )
    {
       const auto* account_ptr = find_account( account_name );
@@ -1691,7 +1706,8 @@ void database::clear_accounts( hf23_helper::hf23_items& balances, const std::set
 
       hf23_helper::gather_balance( balances, account_name, total_transferred_steem, total_transferred_sbd );
 
-      operation vop = hardfork_hive_operation( account_name, total_transferred_sbd, total_transferred_steem, total_converted_vests, total_steem_from_vests );
+      operation vop = hardfork_hive_operation( account_name, treasury_name,
+         total_transferred_sbd, total_transferred_steem, total_converted_vests, total_steem_from_vests );
       push_virtual_operation( vop );
    }
 }
@@ -1701,9 +1717,9 @@ void database::clear_account( const account_object& account,
    asset* converted_vests_ptr, asset* steem_from_vests_ptr )
 {
    const auto& account_name = account.name;
-   FC_ASSERT( account_name != STEEM_TREASURY_ACCOUNT, "Can't clear treasury account" );
+   FC_ASSERT( account_name != get_treasury_name(), "Can't clear treasury account" );
 
-   const auto& treasury_account = get_account( STEEM_TREASURY_ACCOUNT );
+   const auto& treasury_account = get_treasury();
    const auto& cprops = get_dynamic_global_properties();
 
    asset total_transferred_steem = asset( 0, STEEM_SYMBOL );
@@ -2270,11 +2286,11 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
                auto benefactor_vesting_steem = benefactor_tokens;
                auto vop = comment_benefactor_reward_operation( b.account, comment.author, to_string( comment.permlink ), asset( 0, SBD_SYMBOL ), asset( 0, STEEM_SYMBOL ), asset( 0, VESTS_SYMBOL ) );
 
-               if( has_hardfork( STEEM_HARDFORK_0_21__3343 ) && b.account == STEEM_TREASURY_ACCOUNT )
+               if( has_hardfork( STEEM_HARDFORK_0_21__3343 ) && b.account == get_treasury_name() )
                {
                   benefactor_vesting_steem = 0;
                   vop.sbd_payout = asset( benefactor_tokens, STEEM_SYMBOL ) * get_feed_history().current_median_history;
-                  adjust_balance( get_account( STEEM_TREASURY_ACCOUNT ), vop.sbd_payout );
+                  adjust_balance( get_treasury(), vop.sbd_payout );
                   adjust_supply( asset( -benefactor_tokens, STEEM_SYMBOL ) );
                   adjust_supply( vop.sbd_payout );
                }
@@ -2579,7 +2595,7 @@ void database::process_funds()
       if( sps_fund.value )
       {
          new_sbd = asset( sps_fund, STEEM_SYMBOL ) * feed.current_median_history;
-         adjust_balance( STEEM_TREASURY_ACCOUNT, new_sbd );
+         adjust_balance( get_treasury_name(), new_sbd );
       }
 
       new_steem = content_reward + vesting_reward + witness_reward;
@@ -3182,7 +3198,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t sbd_init_supply )
 #ifdef IS_TEST_NET
       create< account_object >( [&]( account_object& a )
       {
-         a.name = STEEM_TREASURY_ACCOUNT;
+         a.name = get_treasury_name();
       } );
 #endif
 
@@ -5625,11 +5641,11 @@ void database::apply_hardfork( uint32_t hardfork )
             gpo.reverse_auction_seconds = STEEM_REVERSE_AUCTION_WINDOW_SECONDS_HF21;
          });
 
-         auto account_auth = find< account_authority_object, by_account >( STEEM_TREASURY_ACCOUNT );
+         auto account_auth = find< account_authority_object, by_account >( get_treasury_name() );
          if( account_auth == nullptr )
             create< account_authority_object >( [&]( account_authority_object& auth )
             {
-               auth.account = STEEM_TREASURY_ACCOUNT;
+               auth.account = get_treasury_name();
                auth.owner.weight_threshold = 1;
                auth.active.weight_threshold = 1;
                auth.posting.weight_threshold = 1;
@@ -5647,16 +5663,16 @@ void database::apply_hardfork( uint32_t hardfork )
                auth.posting.clear();
             });
 
-         modify( get_account( STEEM_TREASURY_ACCOUNT ), [&]( account_object& a )
+         modify( get_treasury(), [&]( account_object& a )
          {
-            a.recovery_account = STEEM_TREASURY_ACCOUNT;
+            a.recovery_account = get_treasury_name();
          });
 
-         auto rec_req = find< account_recovery_request_object, by_account >( STEEM_TREASURY_ACCOUNT );
+         auto rec_req = find< account_recovery_request_object, by_account >( get_treasury_name() );
          if( rec_req )
             remove( *rec_req );
 
-         auto change_request = find< change_recovery_account_request_object, by_account >( STEEM_TREASURY_ACCOUNT );
+         auto change_request = find< change_recovery_account_request_object, by_account >( get_treasury_name() );
          if( change_request )
             remove( *change_request );
 
@@ -5691,6 +5707,7 @@ void database::apply_hardfork( uint32_t hardfork )
       }
       case STEEM_HARDFORK_0_24:
       {
+         FC_TODO("Change of treasury has to be performed prior to restore_accounts"); //it is because at this point we are already in HF24
          restore_accounts( _hf23_items, hardforkprotect::get_restored_accounts() );
          break;
       }

@@ -185,18 +185,19 @@ namespace steem { namespace protocol {
 
    struct delayed_voting_operation : public virtual_operation
    {
+      delayed_voting_operation(){}
+      delayed_voting_operation( const account_name_type& _voter, const ushare_type _votes ) : voter( _voter ), votes( _votes ) {}
+
       account_name_type    voter;
       ushare_type          votes = 0;
-
-      delayed_voting_operation(){}
-      delayed_voting_operation( account_name_type _voter, const ushare_type _votes ) : voter( _voter ), votes( _votes ) {}
    };
 
    struct sps_fund_operation : public virtual_operation
    {
       sps_fund_operation() {}
-      sps_fund_operation( const asset& v ) : additional_funds( v ) {}
+      sps_fund_operation( const account_name_type& _fund, const asset& v ) : fund_account( _fund ), additional_funds( v ) {}
 
+      account_name_type fund_account;
       asset additional_funds;
    };
 
@@ -204,10 +205,13 @@ namespace steem { namespace protocol {
    struct hardfork_hive_operation : public virtual_operation
    {
       hardfork_hive_operation() {}
-      hardfork_hive_operation( const account_name_type& acc, const asset& s, const asset& st, const asset& v, const asset& cs )
-              : account( acc ), sbd_transferred( s ), steem_transferred( st ), vests_converted( v ), total_steem_from_vests(cs) {}
+      hardfork_hive_operation( const account_name_type& acc, const account_name_type& _treasury,
+         const asset& s, const asset& st, const asset& v, const asset& cs )
+         : account( acc ), treasury( _treasury ), sbd_transferred( s ), steem_transferred( st ), vests_converted( v ), total_steem_from_vests(cs)
+      {}
 
       account_name_type account;
+      account_name_type treasury;
       asset             sbd_transferred;
       asset             steem_transferred;
       asset             vests_converted; // Amount of converted vests
@@ -217,10 +221,11 @@ namespace steem { namespace protocol {
    struct hardfork_hive_restore_operation : public virtual_operation
    {
       hardfork_hive_restore_operation() {}
-      hardfork_hive_restore_operation( const account_name_type& acc, const asset& s, const asset& st )
-              : account( acc ), sbd_transferred( s ), steem_transferred( st ) {}
+      hardfork_hive_restore_operation( const account_name_type& acc, const account_name_type& _treasury, const asset& s, const asset& st )
+         : account( acc ), treasury( _treasury ), sbd_transferred( s ), steem_transferred( st ) {}
 
       account_name_type account;
+      account_name_type treasury;
       asset             sbd_transferred;
       asset             steem_transferred;
    };
@@ -244,6 +249,6 @@ FC_REFLECT( steem::protocol::comment_benefactor_reward_operation, (benefactor)(a
 FC_REFLECT( steem::protocol::producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( steem::protocol::clear_null_account_balance_operation, (total_cleared) )
 FC_REFLECT( steem::protocol::delayed_voting_operation, (voter)(votes) )
-FC_REFLECT( steem::protocol::sps_fund_operation, (additional_funds) )
-FC_REFLECT( steem::protocol::hardfork_hive_operation, (account)(sbd_transferred)(steem_transferred)(vests_converted)(total_steem_from_vests) )
-FC_REFLECT( steem::protocol::hardfork_hive_restore_operation, (account)(sbd_transferred)(steem_transferred) )
+FC_REFLECT( steem::protocol::sps_fund_operation, (fund_account)(additional_funds) )
+FC_REFLECT( steem::protocol::hardfork_hive_operation, (account)(treasury)(sbd_transferred)(steem_transferred)(vests_converted)(total_steem_from_vests) )
+FC_REFLECT( steem::protocol::hardfork_hive_restore_operation, (account)(treasury)(sbd_transferred)(steem_transferred) )
