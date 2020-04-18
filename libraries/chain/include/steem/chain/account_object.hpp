@@ -379,6 +379,7 @@ namespace steem { namespace chain {
    > account_authority_index;
 
    struct by_delegation;
+   struct by_incoming_delegation;
 
    typedef multi_index_container <
       vesting_delegation_object,
@@ -391,10 +392,18 @@ namespace steem { namespace chain {
                member< vesting_delegation_object, account_name_type, &vesting_delegation_object::delegatee >
             >,
             composite_key_compare< std::less< account_name_type >, std::less< account_name_type > >
+         >,
+         ordered_unique< tag< by_incoming_delegation >,
+            composite_key< vesting_delegation_object,
+               member< vesting_delegation_object, account_name_type, &vesting_delegation_object::delegatee >,
+               member< vesting_delegation_object, account_name_type, &vesting_delegation_object::delegator >
+            >,
+            composite_key_compare< std::less< account_name_type >, std::less< account_name_type > >
          >
       >,
       allocator< vesting_delegation_object >
    > vesting_delegation_index;
+
 
    struct by_expiration;
    struct by_account_expiration;

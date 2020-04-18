@@ -791,6 +791,17 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegations )
             &database_api_impl::filter_default< vesting_delegation_object > );
          break;
       }
+      case( by_incoming_delegation ):
+      {
+         auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+         iterate_results< chain::vesting_delegation_index, chain::by_incoming_delegation >(
+                 boost::make_tuple( key.first, key.second ),
+                 result.delegations,
+                 args.limit,
+                 &database_api_impl::on_push_default< api_vesting_delegation_object >,
+                 &database_api_impl::filter_default< vesting_delegation_object > );
+         break;
+      }
       default:
          FC_ASSERT( false, "Unknown or unsupported sort order" );
    }
