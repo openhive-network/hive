@@ -88,18 +88,20 @@ class HiveNode(object):
     self.hived_lock.release()
 
 class HiveNodeInScreen(object):
-  def __init__(self, steem_executable, working_dir, config_src_path):
+  def __init__(self, steem_executable, working_dir, config_src_path, run_using_existing_data = False):
     self.steem_executable = steem_executable
     self.working_dir = working_dir
     self.config_src_path = config_src_path
 
-    from shutil import rmtree, copy
-    # remove old data from node
-    if os.path.exists(self.working_dir):
-      rmtree(self.working_dir)
-    os.makedirs(self.working_dir+"/blockchain")
-    # copy config file to working dir
-    copy(self.config_src_path, self.working_dir + "/config.ini")
+    # usefull when we want to do a replay
+    if not run_using_existing_data:
+      from shutil import rmtree, copy
+      # remove old data from node
+      if os.path.exists(self.working_dir):
+        rmtree(self.working_dir)
+      os.makedirs(self.working_dir+"/blockchain")
+      # copy config file to working dir
+      copy(self.config_src_path, self.working_dir + "/config.ini")
 
     self.steem_config = self.parse_node_config_file(self.working_dir + "/config.ini")
     self.ip_address, self.port = self.steem_config["webserver-http-endpoint"][0].split(":")
@@ -175,10 +177,13 @@ class HiveNodeInScreen(object):
     try:
       subprocess.Popen(parameters)
       save_pid_file(self.pid_file_name, "steem", self.port, current_time_str)
-      if wait_for_blocks:
-        wait_n_blocks("{}:{}".format(self.ip_address, self.port), 5)
+      if "--replay-blockchain" in parameters:
+        wait_for_string_in_file(log_file_name, "start listening for ws requests", None)
       else:
-        wait_for_string_in_file(log_file_name, "start listening for ws requests", 240.)
+        if wait_for_blocks:
+          wait_n_blocks("{}:{}".format(self.ip_address, self.port), 5)
+        else:
+          wait_for_string_in_file(log_file_name, "start listening for ws requests", 240.)
       self.node_running = True
       logger.info("Node at {0}:{1} in {2} is up and running...".format(self.ip_address, self.port, self.working_dir))
     except Exception as ex:

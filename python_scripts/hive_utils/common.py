@@ -183,7 +183,7 @@ def wait_for_string_in_file(log_file_name, string, timeout):
   while True:
     sleep(step)
     to_timeout = to_timeout + step
-    if to_timeout > timeout:
+    if timeout is not None and to_timeout > timeout:
       msg = "Timeout during wait for string {0}".format(string)
       logger.error(msg)
       raise TimeoutError(msg)
