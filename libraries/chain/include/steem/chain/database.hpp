@@ -203,9 +203,12 @@ namespace steem { namespace chain {
          const witness_object&  get_witness(  const account_name_type& name )const;
          const witness_object*  find_witness( const account_name_type& name )const;
 
-         /// Represents the account with NO authority which holds resources for payouts according to given proposals
-         std::string            get_treasury_name()const;
-         const account_object&  get_treasury()const;
+         /// Gives name of account with NO authority which holds resources for payouts according to proposals (at a time of given hardfork)
+         std::string            get_treasury_name( uint32_t hardfork )const;
+         std::string            get_treasury_name()const { return get_treasury_name( get_hardfork() ); }
+         const account_object&  get_treasury()const { return get_account( get_treasury_name() ); }
+         /// Returns true for any account name that was ever a treasury account
+         bool                   is_treasury( const account_name_type& name )const;
          
          const account_object&  get_account(  const account_name_type& name )const;
          const account_object*  find_account( const account_name_type& name )const;
@@ -559,7 +562,13 @@ namespace steem { namespace chain {
          const witness_object& validate_block_header( uint32_t skip, const signed_block& next_block )const;
          void create_block_summary(const signed_block& next_block);
 
+         //calculates sum of all balances stored on given account, returns true if any is nonzero
+         bool collect_account_total_balance( const account_object& account, asset* total_steem, asset* total_sbd,
+            asset* total_vests, asset* vesting_shares_steem_value );
+         //removes (burns) balances held on null account
          void clear_null_account_balance();
+         //moves balances from old treasury account to current one
+         void consolidate_treasury_balance();
 
          void process_proposals( const block_notification& note );
 

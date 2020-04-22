@@ -104,7 +104,8 @@ namespace steem { namespace protocol {
             sps_fund_operation,
             hardfork_hive_operation,
             hardfork_hive_restore_operation,
-            delayed_voting_operation
+            delayed_voting_operation,
+            consolidate_treasury_balance_operation
          > operation;
 
    /*void operation_get_required_authorities( const operation& op,

@@ -604,17 +604,17 @@ const witness_object* database::find_witness( const account_name_type& name ) co
    return find< witness_object, by_name >( name );
 }
 
-std::string database::get_treasury_name() const
+std::string database::get_treasury_name( uint32_t hardfork ) const
 {
-   FC_TODO("Apply HF24 switch after new treasury name is decided.");
-   //the new account has to be created and configured prior to putting it here or in dgpo, otherwise someone
-   //might block HF24 or steal treasury funds by creating his own account with the same name
-   return "steem.dao";
+   if( hardfork >= STEEM_DAO_RENAME )
+     return NEW_HIVE_TREASURY_ACCOUNT;
+   else
+     return OLD_STEEM_TREASURY_ACCOUNT;
 }
 
-const account_object& database::get_treasury() const
+bool database::is_treasury( const account_name_type& name )const
 {
-   return get_account( get_treasury_name() );
+   return ( name == NEW_HIVE_TREASURY_ACCOUNT ) || ( name == OLD_STEEM_TREASURY_ACCOUNT );
 }
 
 const account_object& database::get_account( const account_name_type& name )const
@@ -1508,62 +1508,36 @@ void database::clear_witness_votes( const account_object& a )
       });
 }
 
+bool database::collect_account_total_balance( const account_object& account, asset* total_steem, asset* total_sbd,
+   asset* total_vests, asset* vesting_shares_steem_value )
+{
+   const auto& gpo = get_dynamic_global_properties();
+
+   *vesting_shares_steem_value = account.vesting_shares * gpo.get_vesting_share_price();
+   *total_steem = *vesting_shares_steem_value;
+   *total_vests = account.vesting_shares;
+   *total_steem += account.reward_vesting_steem;
+   *total_vests += account.reward_vesting_balance;
+
+   *total_steem += account.balance;
+   *total_steem += account.savings_balance;
+   *total_steem += account.reward_steem_balance;
+
+   *total_sbd = account.sbd_balance;
+   *total_sbd += account.savings_sbd_balance;
+   *total_sbd += account.reward_sbd_balance;
+
+   return ( total_steem->amount.value != 0 ) || ( total_sbd->amount.value != 0 ) || ( total_vests->amount.value != 0 );
+}
+
 void database::clear_null_account_balance()
 {
    if( !has_hardfork( STEEM_HARDFORK_0_14__327 ) ) return;
 
    const auto& null_account = get_account( STEEM_NULL_ACCOUNT );
-   asset total_steem( 0, STEEM_SYMBOL );
-   asset total_sbd( 0, SBD_SYMBOL );
-   asset total_vests( 0, VESTS_SYMBOL );
+   asset total_steem, total_sbd, total_vests, vesting_shares_steem_value;
 
-   asset vesting_shares_steem_value = asset( 0, STEEM_SYMBOL );
-
-   if( null_account.balance.amount > 0 )
-   {
-      total_steem += null_account.balance;
-   }
-
-   if( null_account.savings_balance.amount > 0 )
-   {
-      total_steem += null_account.savings_balance;
-   }
-
-   if( null_account.sbd_balance.amount > 0 )
-   {
-      total_sbd += null_account.sbd_balance;
-   }
-
-   if( null_account.savings_sbd_balance.amount > 0 )
-   {
-      total_sbd += null_account.savings_sbd_balance;
-   }
-
-   if( null_account.vesting_shares.amount > 0 )
-   {
-      const auto& gpo = get_dynamic_global_properties();
-      vesting_shares_steem_value = null_account.vesting_shares * gpo.get_vesting_share_price();
-      total_steem += vesting_shares_steem_value;
-      total_vests += null_account.vesting_shares;
-   }
-
-   if( null_account.reward_steem_balance.amount > 0 )
-   {
-      total_steem += null_account.reward_steem_balance;
-   }
-
-   if( null_account.reward_sbd_balance.amount > 0 )
-   {
-      total_sbd += null_account.reward_sbd_balance;
-   }
-
-   if( null_account.reward_vesting_balance.amount > 0 )
-   {
-      total_steem += null_account.reward_vesting_steem;
-      total_vests += null_account.reward_vesting_balance;
-   }
-
-   if( (total_steem.amount.value == 0) && (total_sbd.amount.value == 0) && (total_vests.amount.value == 0) )
+   if( !( collect_account_total_balance( null_account, &total_steem, &total_sbd, &total_vests, &vesting_shares_steem_value ) ) )
       return;
 
    operation vop_op = clear_null_account_balance_operation();
@@ -1650,6 +1624,116 @@ void database::clear_null_account_balance()
 
    if( total_sbd.amount > 0 )
       adjust_supply( -total_sbd );
+
+   post_push_virtual_operation( vop_op );
+}
+
+void database::consolidate_treasury_balance()
+{
+   if( !has_hardfork( STEEM_DAO_RENAME ) )
+      return;
+
+   auto treasury_name = get_treasury_name();
+   auto old_treasury_name = get_treasury_name( STEEM_DAO_RENAME - 1 );
+
+   const auto& old_treasury_account = get_account( old_treasury_name );
+   asset total_steem, total_sbd, total_vests, vesting_shares_steem_value;
+
+   if( treasury_name == old_treasury_name || //ABW: once we actually include change of treasury in HF24 that part of condition can be removed
+      !( collect_account_total_balance( old_treasury_account, &total_steem, &total_sbd, &total_vests, &vesting_shares_steem_value ) ) )
+      return;
+
+   const auto& treasury_account = get_treasury();
+
+   operation vop_op = consolidate_treasury_balance_operation();
+   consolidate_treasury_balance_operation& vop = vop_op.get< consolidate_treasury_balance_operation >();
+   if( total_steem.amount.value > 0 )
+      vop.total_moved.push_back( total_steem );
+   if( total_vests.amount.value > 0 )
+      vop.total_moved.push_back( total_vests );
+   if( total_sbd.amount.value > 0 )
+      vop.total_moved.push_back( total_sbd );
+   pre_push_virtual_operation( vop_op );
+
+   /////////////////////////////////////////////////////////////////////////////////////
+
+   if( old_treasury_account.balance.amount > 0 )
+   {
+      adjust_balance( treasury_account, old_treasury_account.balance );
+      adjust_balance( old_treasury_account, -old_treasury_account.balance );
+   }
+
+   if( old_treasury_account.savings_balance.amount > 0 )
+   {
+      adjust_savings_balance( treasury_account, old_treasury_account.savings_balance );
+      adjust_savings_balance( old_treasury_account, -old_treasury_account.savings_balance );
+   }
+
+   if( old_treasury_account.sbd_balance.amount > 0 )
+   {
+      adjust_balance( treasury_account, old_treasury_account.sbd_balance );
+      adjust_balance( old_treasury_account, -old_treasury_account.sbd_balance );
+   }
+
+   if( old_treasury_account.savings_sbd_balance.amount > 0 )
+   {
+      adjust_savings_balance( treasury_account, old_treasury_account.savings_sbd_balance );
+      adjust_savings_balance( old_treasury_account, -old_treasury_account.savings_sbd_balance );
+   }
+
+   if( old_treasury_account.vesting_shares.amount > 0 )
+   {
+      //note that if we wanted to move vests in vested form it would complicate delayed_votes part;
+      //not that treasury could gain anything from vests anyway, so it is better to liquify them
+      adjust_balance( treasury_account, vesting_shares_steem_value );
+
+      const auto& gpo = get_dynamic_global_properties();
+      modify( gpo, [&]( dynamic_global_property_object& g )
+      {
+         g.total_vesting_shares -= old_treasury_account.vesting_shares;
+         g.total_vesting_fund_steem -= vesting_shares_steem_value;
+      } );
+
+      modify( old_treasury_account, [&]( account_object& a )
+      {
+         a.vesting_shares.amount = 0;
+         a.sum_delayed_votes = 0;
+         a.delayed_votes.clear();
+      } );
+   }
+
+   if( old_treasury_account.reward_steem_balance.amount > 0 )
+   {
+      adjust_reward_balance( treasury_account, old_treasury_account.reward_steem_balance );
+      adjust_reward_balance( old_treasury_account, -old_treasury_account.reward_steem_balance );
+   }
+
+   if( old_treasury_account.reward_sbd_balance.amount > 0 )
+   {
+      adjust_reward_balance( treasury_account, old_treasury_account.reward_sbd_balance );
+      adjust_reward_balance( old_treasury_account, -old_treasury_account.reward_sbd_balance );
+   }
+
+   if( old_treasury_account.reward_vesting_balance.amount > 0 )
+   {
+      //see above handling of regular vests
+      adjust_balance( treasury_account, old_treasury_account.reward_vesting_steem );
+
+      const auto& gpo = get_dynamic_global_properties();
+      modify( gpo, [ & ]( dynamic_global_property_object& g )
+      {
+         g.pending_rewarded_vesting_shares -= old_treasury_account.reward_vesting_balance;
+         g.pending_rewarded_vesting_steem -= old_treasury_account.reward_vesting_steem;
+      } );
+
+      modify( old_treasury_account, [&]( account_object& a )
+      {
+         a.reward_vesting_steem.amount = 0;
+         a.reward_vesting_balance.amount = 0;
+      } );
+   }
+
+   //////////////////////////////////////////////////////////////
 
    post_push_virtual_operation( vop_op );
 }
@@ -2286,7 +2370,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
                auto benefactor_vesting_steem = benefactor_tokens;
                auto vop = comment_benefactor_reward_operation( b.account, comment.author, to_string( comment.permlink ), asset( 0, SBD_SYMBOL ), asset( 0, STEEM_SYMBOL ), asset( 0, VESTS_SYMBOL ) );
 
-               if( has_hardfork( STEEM_HARDFORK_0_21__3343 ) && b.account == get_treasury_name() )
+               if( has_hardfork( STEEM_HARDFORK_0_21__3343 ) && is_treasury( b.account ) )
                {
                   benefactor_vesting_steem = 0;
                   vop.sbd_payout = asset( benefactor_tokens, STEEM_SYMBOL ) * get_feed_history().current_median_history;
@@ -3198,7 +3282,19 @@ void database::init_genesis( uint64_t init_supply, uint64_t sbd_init_supply )
 #ifdef IS_TEST_NET
       create< account_object >( [&]( account_object& a )
       {
-         a.name = get_treasury_name();
+         a.name = OLD_STEEM_TREASURY_ACCOUNT;
+      } );
+      create< account_object >( [&]( account_object& a )
+      {
+         a.name = NEW_HIVE_TREASURY_ACCOUNT;
+      } );
+      //authority for old treasury is created in one of hardforks
+      create< account_authority_object >( [&]( account_authority_object& auth )
+      {
+         auth.account = NEW_HIVE_TREASURY_ACCOUNT;
+         auth.owner.weight_threshold = 1;
+         auth.active.weight_threshold = 1;
+         auth.posting.weight_threshold = 1;
       } );
 #endif
 
@@ -3596,6 +3692,7 @@ void database::_apply_block( const signed_block& next_block )
    update_virtual_supply();
 
    clear_null_account_balance();
+   consolidate_treasury_balance();
    process_funds();
    process_conversions();
    process_comment_cashout();
@@ -5633,6 +5730,7 @@ void database::apply_hardfork( uint32_t hardfork )
          break;
       case STEEM_HARDFORK_0_21:
       {
+         auto treasury_name = get_treasury_name();
          modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
          {
             gpo.sps_fund_percent = STEEM_PROPOSAL_FUND_PERCENT_HF21;
@@ -5641,11 +5739,11 @@ void database::apply_hardfork( uint32_t hardfork )
             gpo.reverse_auction_seconds = STEEM_REVERSE_AUCTION_WINDOW_SECONDS_HF21;
          });
 
-         auto account_auth = find< account_authority_object, by_account >( get_treasury_name() );
+         auto account_auth = find< account_authority_object, by_account >( treasury_name );
          if( account_auth == nullptr )
             create< account_authority_object >( [&]( account_authority_object& auth )
             {
-               auth.account = get_treasury_name();
+               auth.account = treasury_name;
                auth.owner.weight_threshold = 1;
                auth.active.weight_threshold = 1;
                auth.posting.weight_threshold = 1;
@@ -5665,14 +5763,14 @@ void database::apply_hardfork( uint32_t hardfork )
 
          modify( get_treasury(), [&]( account_object& a )
          {
-            a.recovery_account = get_treasury_name();
+            a.recovery_account = treasury_name;
          });
 
-         auto rec_req = find< account_recovery_request_object, by_account >( get_treasury_name() );
+         auto rec_req = find< account_recovery_request_object, by_account >( treasury_name );
          if( rec_req )
             remove( *rec_req );
 
-         auto change_request = find< change_recovery_account_request_object, by_account >( get_treasury_name() );
+         auto change_request = find< change_recovery_account_request_object, by_account >( treasury_name );
          if( change_request )
             remove( *change_request );
 
@@ -5707,7 +5805,6 @@ void database::apply_hardfork( uint32_t hardfork )
       }
       case STEEM_HARDFORK_0_24:
       {
-         FC_TODO("Change of treasury has to be performed prior to restore_accounts"); //it is because at this point we are already in HF24
          restore_accounts( _hf23_items, hardforkprotect::get_restored_accounts() );
          break;
       }
@@ -5736,6 +5833,14 @@ void database::apply_hardfork( uint32_t hardfork )
       hfp.current_hardfork_version = _hardfork_versions.versions[ hardfork ];
       FC_ASSERT( hfp.processed_hardforks[ hfp.last_hardfork ] == _hardfork_versions.times[ hfp.last_hardfork ], "Hardfork processing failed sanity check..." );
    } );
+
+   if( hardfork == STEEM_DAO_RENAME )
+   {
+      //that routine can only be called effectively after hardfork was marked as applied
+      //we could wait for regular call in _apply_block(), however it could hinder future changes, most notably use of treasury in future
+      //hardfork code with assumption of nonzero balance
+      consolidate_treasury_balance();
+   }
 
    post_push_virtual_operation( hardfork_vop );
 }

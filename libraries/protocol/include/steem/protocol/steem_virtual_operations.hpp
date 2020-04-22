@@ -183,6 +183,11 @@ namespace steem { namespace protocol {
       vector< asset >   total_cleared;
    };
 
+   struct consolidate_treasury_balance_operation : public virtual_operation
+   {
+      vector< asset >   total_moved;
+   };
+
    struct delayed_voting_operation : public virtual_operation
    {
       delayed_voting_operation(){}
@@ -248,6 +253,7 @@ FC_REFLECT( steem::protocol::return_vesting_delegation_operation, (account)(vest
 FC_REFLECT( steem::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(sbd_payout)(steem_payout)(vesting_payout) )
 FC_REFLECT( steem::protocol::producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( steem::protocol::clear_null_account_balance_operation, (total_cleared) )
+FC_REFLECT( steem::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
 FC_REFLECT( steem::protocol::delayed_voting_operation, (voter)(votes) )
 FC_REFLECT( steem::protocol::sps_fund_operation, (fund_account)(additional_funds) )
 FC_REFLECT( steem::protocol::hardfork_hive_operation, (account)(treasury)(sbd_transferred)(steem_transferred)(vests_converted)(total_steem_from_vests) )
