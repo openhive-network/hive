@@ -1,14 +1,14 @@
 # Hive - The Blockchain That Will Tokenize The Web
 
-Welcome to the official repository for Hive, the blockchain that will revolutionize the web, and soon the blockchain for Smart Media Tokens!
+![Hive](https://files.peakd.com/file/peakd-hive/netuoso/jMHldwMV-horizontal.png)
 
+Hive is a Graphene based, social blockchain that was created as a fork of Steem and born on the core idea of decentralization. Originally, Hive was announced on the [Steem blockchain](https://peakd.com/communityfork/@hiveio/announcing-the-launch-of-hive-blockchain) prior to the initial token airdrop. Hive did not have any ICO or mining period.
 
 Hive is a [fork of the Steem blockchain](https://medium.com/@hiveblocks/press-release-the-new-hive-blockchain-is-launching-heres-everything-you-need-to-know-b95b05d30c7c) which was the first blockchain to introduce the "Proof of Brain" social consensus algorithm for token allocation.
 
-Being one of the most actively developed blockchain projects currently in existence, it's become fertile soil for entrepreneurial pursuits. It has also become home for many cryptocurrency centric projects.
-
 Hive aims to be the preferred blockchain for dApp development with Smart Media Tokens at its core. With SMTs, everyone can leverage the power of Hive.
 
+Hive aims to be the preferred blockchain for dApp development with Smart Media Tokens at its core. With SMTs, everyone can leverage the power of Hive.
 
 ## Documents
 
@@ -21,6 +21,8 @@ Hive aims to be the preferred blockchain for dApp development with Smart Media T
 
 ## Advantages
 
+* Hive Fund
+* Truly Decentralized Community
 * Free Transactions (Resource Credits = Freemium Model)
 * Fast Block Confirmations (3 seconds)
 * Time Delay Security (Vested Hive & Savings)
@@ -32,18 +34,18 @@ Hive aims to be the preferred blockchain for dApp development with Smart Media T
 
 ## Technical Details
 
-
 * Currency symbol HIVE
 * HBD - Hive's very own stable coin with a one-way peg
-* Delegated Proof-of-Stake Consensus (DPOS)
+* Delegated Proof-of-Stake Consensus (DPoS)
 * 10% APR inflation narrowing to 1% APR over 20 years
-    * 75% of inflation to "Proof of Brain" social consensus algorithm.
+    * 65% of inflation to authors/curators.
     * 15% of inflation to stakeholders.
     * 10% of inflation to block producers.
+    * 10% of inflation to Hive Fund.
 
 # Installation
 
-Getting started with Hive is fairly simple. You can either choose to use docker-images, build with docker manually or build from source directly. All steps have been documented and while many different OS are supported, the easiest one is Ubuntu 16.04.
+Getting started with Hive is fairly simple. You can either choose to use docker-images, build with docker manually or build from source directly. All steps have been documented and while many different OS are supported, the easiest one is Ubuntu 18.04.
 
 ## Quickstart
 
@@ -60,10 +62,10 @@ But if you would still like to build from source, we also have [build instructio
 To run a p2p node (ca. 2GB of memory is required at the moment):
 
     docker run \
-        -d -p 2001:2001 -p 8090:8090 --name steemd-default \
-        steemit/steem
+        -d -p 2001:2001 -p 8090:8090 --name hived-default \
+        openhive-network/hive
 
-    docker logs -f steemd-default  # follow along
+    docker logs -f hived-default  # follow along
 
 ## Dockerized Full Node
 
@@ -72,10 +74,10 @@ ca. 14GB of memory, and growing, is required:
 
     docker run \
         --env USE_WAY_TOO_MUCH_RAM=1 --env USE_FULL_WEB_NODE=1 \
-        -d -p 2001:2001 -p 8090:8090 --name steemd-full \
-        steemit/steem
+        -d -p 2001:2001 -p 8090:8090 --name hived-full \
+        openhive-network/hive
 
-    docker logs -f steemd-full
+    docker logs -f hived-full
 
 ## CLI Wallet
 
@@ -114,7 +116,7 @@ There are quite a few environment variables that can be set to run steemd in dif
 
 ## PaaS mode
 
-Steemd now supports a PaaS mode (platform as a service) that currently works with Amazon's Elastic Beanstalk service. It can be launched using the following environment variables:
+Hived now supports a PaaS mode (platform as a service) that currently works with Amazon's Elastic Beanstalk service. It can be launched using the following environment variables:
 
 * `USE_PAAS` - if set to true, steemd will launch in a format that works with AWS EB. Containers will exit upon failure so that they can be relaunched automatically by ECS. This mode assumes `USE_WAY_TOO_MUCH_RAM` and `USE_FULL_WEB_NODE`, they do not need to be also set.
 * `S3_BUCKET` - set this to the name of the S3 bucket where you will store shared memory files for steemd in Amazon S3. They will be stored compressed in bz2 format with the file name `blockchain-$VERSION-latest.tar.bz2`, where $VERSION is the release number followed by the git short commit hash stored in each docker image at `/etc/steemdversion`.
@@ -123,7 +125,7 @@ Steemd now supports a PaaS mode (platform as a service) that currently works wit
 
 ## System Requirements
 
-For a full web node, you need at least 110GB of disk space available. Steemd uses a memory mapped file which currently holds 56GB of data and by default is set to use up to 80GB. The block log of the blockchain itself is a little over 27GB. It's highly recommended to run steemd on a fast disk such as an SSD or by placing the shared memory files in a ramdisk and using the `--shared-file-dir=/path` command line option to specify where. At least 16GB of memory is required for a full web node. Seed nodes (p2p mode) can run with as little as 4GB of memory with a 24 GB state file. Any CPU with decent single core performance should be sufficient. Steemd is constantly growing. As of August 2017, these numbers were accurate, but you may find you need more disk space to run a full node. We are also constantly working on optimizing Hive's use of disk space.
+[To Be Added]
 
 On Linux use the following Virtual Memory configuration for the initial sync and subsequent replays. It is not needed for normal operation.
 
