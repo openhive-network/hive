@@ -360,6 +360,13 @@ void set_slot_delegator_evaluator::do_apply( const set_slot_delegator_operation&
 
    FC_ASSERT( to_rca.indel_slots[ op.to_slot ] != op.from_pool, "The slot must change." );
 
+   for (int i = 0; i < STEEM_RC_MAX_SLOTS; i++) {
+      if (i == op.to_slot)
+         continue;
+
+      FC_ASSERT( to_rca.indel_slots[i] != op.from_pool, "Already have slot ${slot} tied to account ${acc}", ("slot", i) ("acc", op.from_pool) );
+   }
+
    const auto* edge = _db.find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( op.from_pool, op.to_account, VESTS_SYMBOL ) );
 
    if( edge )

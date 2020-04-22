@@ -159,7 +159,13 @@ void create_rc_account( database& db, uint32_t now, const account_object& accoun
       rca.last_max_rc = max_rc;
 
       rca.indel_slots[ STEEM_RC_CREATOR_SLOT_NUM ] = creator;
-      rca.indel_slots[ STEEM_RC_RECOVERY_SLOT_NUM ] = account.recovery_account;
+
+      // Make sure that we don't have the same accoun twice (null is okay)
+      if (creator != account.recovery_account)
+         rca.indel_slots[ STEEM_RC_RECOVERY_SLOT_NUM ] = account.recovery_account;
+      else
+         rca.indel_slots[ STEEM_RC_RECOVERY_SLOT_NUM ] = STEEM_NULL_ACCOUNT;
+
       for( int i = STEEM_RC_USER_SLOT_NUM; i < STEEM_RC_MAX_SLOTS; i++ )
       {
          rca.indel_slots[ i ] = STEEM_NULL_ACCOUNT;
@@ -294,67 +300,108 @@ void use_account_rcs(
    //const account_object& account = db.get< account_object, by_name >( account_name );
    const rc_account_object& rc_account = db.get< rc_account_object, by_name >( account_name );
 
-   int64_t total_mana_available = 0;
+   int64_t total_rc_available = 0;
+   int64_t delta = 0;
+   int64_t rcs_left_to_pay = 0;
    std::array< manabar, STEEM_RC_MAX_SLOTS > drc_manabars;
    std::array< manabar, STEEM_RC_MAX_SLOTS > pool_manabars;
+   std::array< uint16_t, STEEM_RC_MAX_SLOTS > indel_ids;
    manabar_params mbparams;
    mbparams.regen_time = STEEM_RC_REGEN_TIME;
    auto now = gpo.time.sec_since_epoch();
 
-   for( int i = 0; i < STEEM_RC_MAX_SLOTS; i++ )
-   {
-      const auto* drc_edge = db.find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( rc_account.indel_slots[i], account_name, VESTS_SYMBOL ) );
-
-      if( drc_edge == nullptr ) continue;
-
-      mbparams.max_mana = drc_edge->drc_max_mana;
-      drc_manabars[i] = drc_edge->drc_manabar;
-      drc_manabars[i].regenerate_mana< true >( mbparams, now );
-
-      const auto& pool = db.get< rc_delegation_pool_object, by_account_symbol >( boost::make_tuple( rc_account.indel_slots[i], VESTS_SYMBOL ) );
-      mbparams.max_mana = pool.max_rc;
-      pool_manabars[i] = pool.rc_pool_manabar;
-      pool_manabars[i].regenerate_mana< true >( mbparams, now );
-
-      int64_t consumed_rc = std::min( drc_manabars[i].current_mana, pool_manabars[i].current_mana );
-      consumed_rc = std::min( consumed_rc, rc - total_mana_available );
-      drc_manabars[i].use_mana( consumed_rc );
-      pool_manabars[i].use_mana( consumed_rc );
-
-      total_mana_available += consumed_rc;
-   }
-
+   // Get account rc first
    if( is_destination_nai( account_name ) )
       mbparams.max_mana = 0;
    else
       mbparams.max_mana = get_maximum_rc( db.get< account_object, by_name >( account_name ), rc_account );
-
    manabar rca_manabar = rc_account.rc_manabar;
    rca_manabar.regenerate_mana< true >( mbparams, now );
-   int64_t consumed_rc = std::min( rca_manabar.current_mana, rc - total_mana_available );
-   int64_t total_mana_delegated = total_mana_available;
-   total_mana_available += consumed_rc;
+   int64_t rc_available = rca_manabar.current_mana;
+   total_rc_available += rc_available;
 
-   bool has_mana = total_mana_available >= rc;
+   delta = rc_available - rc;
+
+   // If we don't have enough or exactly enough, use all RC
+   if (delta <= 0) {
+      rca_manabar.use_mana(rc_available);
+      rcs_left_to_pay = rc - rc_available;
+   } else {
+      rca_manabar.use_mana(rc);
+   }
+   ilog( "rc : ${rc} rc_available ${ra} rcs_left_to_pay: ${rcs_left_to_pay}, delta ${d})",("rc", rc) ("ra", rc_available) ("rcs_left_to_pay", rcs_left_to_pay) ("d", delta));
+
+   // If the account doesn't have enough RC, pull from delegated RC to the account
+   for (int i = 0; i < STEEM_RC_MAX_SLOTS; i++) {
+      const auto *drc_edge = db.find<rc_outdel_drc_edge_object, by_edge>(
+              boost::make_tuple(rc_account.indel_slots[i], account_name, VESTS_SYMBOL));
+
+      ilog( "slot : ${slot}", ("slot", rc_account.indel_slots[i]));
+      if (drc_edge == nullptr) continue;
+
+      // If that indel has already been calculated, don't fetch it again
+      bool already_calculated = false;
+      for (int k = 0; k < i; k++) {
+         if (indel_ids[k] == (uint16_t)drc_edge->id)
+            already_calculated = true;
+      }
+      if (already_calculated) {
+         continue;
+      }
+      indel_ids[i] = (uint16_t)drc_edge->id;
+
+      ilog( "id : ${id} slot : ${slot} from_pool: ${pool} to_account: ${acc} ", ("id",  drc_edge->id) ("slot", rc_account.indel_slots[i]) ("pool", drc_edge->from_pool) ("acc", drc_edge->to_account));
+
+      mbparams.max_mana = drc_edge->drc_max_mana;
+      drc_manabars[i] = drc_edge->drc_manabar;
+      drc_manabars[i].regenerate_mana<true>(mbparams, now);
+
+      const auto &pool = db.get<rc_delegation_pool_object, by_account_symbol>(
+              boost::make_tuple(rc_account.indel_slots[i], VESTS_SYMBOL));
+      mbparams.max_mana = pool.max_rc;
+      pool_manabars[i] = pool.rc_pool_manabar;
+      pool_manabars[i].regenerate_mana<true>(mbparams, now);
+
+      // Get the smallest amount between the rc delegated and the pool's content
+      int64_t delegated_rc_available = std::min(drc_manabars[i].current_mana, pool_manabars[i].current_mana);
+      total_rc_available += delegated_rc_available;
+      delta = delegated_rc_available - rcs_left_to_pay;
+      ilog( "i : ${i}, acc: ${acc} delegated_rc_avail ${dra} rcs_left_to_pay: ${rcs_left_to_pay}, delta ${d})", ("i", i) ("acc", pool.account) ("dra", delegated_rc_available) ("rcs_left_to_pay", rcs_left_to_pay) ("d", delta));
+
+      // Don't use rc if we already paid the full rc cost
+      if (rcs_left_to_pay <= 0) continue;
+
+      // If we don't have enough or exactly enough, use all RC
+      if (delta <= 0) {
+         drc_manabars[i].use_mana(delegated_rc_available);
+         pool_manabars[i].use_mana(delegated_rc_available);
+         rcs_left_to_pay -= delegated_rc_available;
+      } else {
+         drc_manabars[i].use_mana(rcs_left_to_pay);
+         pool_manabars[i].use_mana(rcs_left_to_pay);
+      }
+   }
+
+   bool has_rc = rcs_left_to_pay <= 0;
+
+   ilog( "data ( rcs_left_to_pay: ${rcs_left_to_pay})", ("rcs_left_to_pay", rcs_left_to_pay));
 
    db.modify( rc_account, [&]( rc_account_object& rca )
    {
-      rca.rc_manabar = rca_manabar;
-
       if( (!skip.skip_reject_not_enough_rc) && db.has_hardfork( STEEM_HARDFORK_0_20 ) )
       {
          if( db.is_producing() )
          {
-            STEEM_ASSERT( has_mana, plugin_exception,
-               "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
-               ("account", account_name)
-               ("rc_needed", rc)
-               ("rc_current", total_mana_available)
-               );
+            STEEM_ASSERT(has_rc, plugin_exception,
+                         "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
+                         ("account", account_name)
+                                 ("rc_needed", rc)
+                                 ("rc_current", total_rc_available)
+            );
          }
          else
          {
-            if( !has_mana )
+            if( !has_rc )
             {
                const dynamic_global_property_object& gpo = db.get_dynamic_global_properties();
                ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
@@ -368,15 +415,13 @@ void use_account_rcs(
          }
       }
 
-      if( (!has_mana) && ( skip.skip_negative_rc_balance || (gpo.time.sec_since_epoch() <= 1538211600) ) )
+      if((!has_rc) && (skip.skip_negative_rc_balance || (gpo.time.sec_since_epoch() <= 1538211600) ) )
          return;
 
       if( skip.skip_deduct_rc )
          return;
 
-      int64_t min_mana = -1 * ( STEEM_RC_MAX_NEGATIVE_PERCENT * mbparams.max_mana ) / STEEM_100_PERCENT;
-
-      rca.rc_manabar.use_mana( rc - total_mana_delegated, min_mana );
+      rca.rc_manabar = rca_manabar;
    } );
 
    for( int i = 0; i < STEEM_RC_MAX_SLOTS; i++ )
