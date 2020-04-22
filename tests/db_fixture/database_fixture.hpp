@@ -415,6 +415,14 @@ struct hf23_database_fixture : public clean_database_fixture
       void delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key );
 };
 
+struct hf24_database_fixture : public clean_database_fixture
+{
+   hf24_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
+      : clean_database_fixture( shared_file_size_in_mb )
+   {}
+   virtual ~hf24_database_fixture() {}
+};
+
 struct delayed_vote_database_fixture : public virtual clean_database_fixture
 {
    private:
