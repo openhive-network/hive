@@ -305,7 +305,6 @@ void use_account_rcs(
    int64_t rcs_left_to_pay = 0;
    std::array< manabar, STEEM_RC_MAX_SLOTS > drc_manabars;
    std::array< manabar, STEEM_RC_MAX_SLOTS > pool_manabars;
-   std::array< uint16_t, STEEM_RC_MAX_SLOTS > indel_ids;
    manabar_params mbparams;
    mbparams.regen_time = STEEM_RC_REGEN_TIME;
    auto now = gpo.time.sec_since_epoch();
@@ -336,19 +335,7 @@ void use_account_rcs(
       const auto *drc_edge = db.find<rc_outdel_drc_edge_object, by_edge>(
               boost::make_tuple(rc_account.indel_slots[i], account_name, VESTS_SYMBOL));
 
-      ilog( "slot : ${slot}", ("slot", rc_account.indel_slots[i]));
       if (drc_edge == nullptr) continue;
-
-      // If that indel has already been calculated, don't fetch it again
-      bool already_calculated = false;
-      for (int k = 0; k < i; k++) {
-         if (indel_ids[k] == (uint16_t)drc_edge->id)
-            already_calculated = true;
-      }
-      if (already_calculated) {
-         continue;
-      }
-      indel_ids[i] = (uint16_t)drc_edge->id;
 
       ilog( "id : ${id} slot : ${slot} from_pool: ${pool} to_account: ${acc} ", ("id",  drc_edge->id) ("slot", rc_account.indel_slots[i]) ("pool", drc_edge->from_pool) ("acc", drc_edge->to_account));
 
@@ -379,6 +366,7 @@ void use_account_rcs(
       } else {
          drc_manabars[i].use_mana(rcs_left_to_pay);
          pool_manabars[i].use_mana(rcs_left_to_pay);
+         rcs_left_to_pay = 0;
       }
    }
 
