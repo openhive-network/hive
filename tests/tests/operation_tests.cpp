@@ -7407,8 +7407,8 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
 
       b.beneficiaries.clear();
       b.beneficiaries.push_back( beneficiary_route_type( account_name_type( "bob" ), 25 * STEEM_1_PERCENT ) );
-      b.beneficiaries.push_back( beneficiary_route_type( account_name_type( "sam" ), 50 * STEEM_1_PERCENT ) );
       b.beneficiaries.push_back( beneficiary_route_type( account_name_type( db->get_treasury_name() ), 10 * STEEM_1_PERCENT ) );
+      b.beneficiaries.push_back( beneficiary_route_type( account_name_type( "sam" ), 50 * STEEM_1_PERCENT ) );
       op.extensions.clear();
       op.extensions.insert( b );
 
