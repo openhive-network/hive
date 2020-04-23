@@ -570,6 +570,9 @@ namespace steem { namespace chain {
          //moves balances from old treasury account to current one
          void consolidate_treasury_balance();
 
+         //locks given account by clearing its authorizations and removing pending recovery [account change] request (used for treasury in HF code)
+         void lock_account( const account_object& account );
+
          void process_proposals( const block_notification& note );
 
          void process_delayed_voting(const block_notification& note );

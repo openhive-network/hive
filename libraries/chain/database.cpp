@@ -1738,6 +1738,48 @@ void database::consolidate_treasury_balance()
    post_push_virtual_operation( vop_op );
 }
 
+void database::lock_account( const account_object& account )
+{
+   auto* account_auth = find< account_authority_object, by_account >( account.name );
+   if( account_auth == nullptr )
+   {
+      create< account_authority_object >( [&]( account_authority_object& auth )
+      {
+         auth.account = account.name;
+         auth.owner.weight_threshold = 1;
+         auth.active.weight_threshold = 1;
+         auth.posting.weight_threshold = 1;
+      } );
+   }
+   else
+   {
+      modify( *account_auth, []( account_authority_object& auth )
+      {
+         auth.owner.weight_threshold = 1;
+         auth.owner.clear();
+
+         auth.active.weight_threshold = 1;
+         auth.active.clear();
+
+         auth.posting.weight_threshold = 1;
+         auth.posting.clear();
+      } );
+   }
+
+   modify( account, []( account_object& a )
+   {
+      a.recovery_account = a.name;
+   } );
+
+   auto rec_req = find< account_recovery_request_object, by_account >( account.name );
+   if( rec_req )
+      remove( *rec_req );
+
+   auto change_request = find< change_recovery_account_request_object, by_account >( account.name );
+   if( change_request )
+      remove( *change_request );
+}
+
 void database::restore_accounts( const hf23_helper::hf23_items& balances, const std::set< std::string >& restored_accounts )
 {
    auto zero_steem = asset( 0 , STEEM_SYMBOL );
@@ -3287,14 +3329,6 @@ void database::init_genesis( uint64_t init_supply, uint64_t sbd_init_supply )
       create< account_object >( [&]( account_object& a )
       {
          a.name = NEW_HIVE_TREASURY_ACCOUNT;
-      } );
-      //authority for old treasury is created in one of hardforks
-      create< account_authority_object >( [&]( account_authority_object& auth )
-      {
-         auth.account = NEW_HIVE_TREASURY_ACCOUNT;
-         auth.owner.weight_threshold = 1;
-         auth.active.weight_threshold = 1;
-         auth.posting.weight_threshold = 1;
       } );
 #endif
 
@@ -5730,7 +5764,6 @@ void database::apply_hardfork( uint32_t hardfork )
          break;
       case STEEM_HARDFORK_0_21:
       {
-         auto treasury_name = get_treasury_name();
          modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
          {
             gpo.sps_fund_percent = STEEM_PROPOSAL_FUND_PERCENT_HF21;
@@ -5739,40 +5772,7 @@ void database::apply_hardfork( uint32_t hardfork )
             gpo.reverse_auction_seconds = STEEM_REVERSE_AUCTION_WINDOW_SECONDS_HF21;
          });
 
-         auto account_auth = find< account_authority_object, by_account >( treasury_name );
-         if( account_auth == nullptr )
-            create< account_authority_object >( [&]( account_authority_object& auth )
-            {
-               auth.account = treasury_name;
-               auth.owner.weight_threshold = 1;
-               auth.active.weight_threshold = 1;
-               auth.posting.weight_threshold = 1;
-            });
-         else
-            modify( *account_auth, [&]( account_authority_object& auth )
-            {
-               auth.owner.weight_threshold = 1;
-               auth.owner.clear();
-
-               auth.active.weight_threshold = 1;
-               auth.active.clear();
-
-               auth.posting.weight_threshold = 1;
-               auth.posting.clear();
-            });
-
-         modify( get_treasury(), [&]( account_object& a )
-         {
-            a.recovery_account = treasury_name;
-         });
-
-         auto rec_req = find< account_recovery_request_object, by_account >( treasury_name );
-         if( rec_req )
-            remove( *rec_req );
-
-         auto change_request = find< change_recovery_account_request_object, by_account >( treasury_name );
-         if( change_request )
-            remove( *change_request );
+         lock_account( get_treasury() );
 
          modify( get< reward_fund_object, by_name >( STEEM_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
          {
@@ -5836,7 +5836,8 @@ void database::apply_hardfork( uint32_t hardfork )
 
    if( hardfork == STEEM_DAO_RENAME )
    {
-      //that routine can only be called effectively after hardfork was marked as applied
+      lock_account( get_treasury() );
+      //the following routine can only be called effectively after hardfork was marked as applied
       //we could wait for regular call in _apply_block(), however it could hinder future changes, most notably use of treasury in future
       //hardfork code with assumption of nonzero balance
       consolidate_treasury_balance();
