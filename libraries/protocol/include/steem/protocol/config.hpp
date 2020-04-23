@@ -339,7 +339,15 @@
 /// Represents the canonical root post parent account
 #define STEEM_ROOT_POST_PARENT                (account_name_type())
 /// Represents the account with NO authority which holds resources for payouts according to given proposals
-#define STEEM_TREASURY_ACCOUNT                "steem.dao"
+//#define STEEM_TREASURY_ACCOUNT                "steem.dao" //no longer constant, changed in HF24 - use database::get_treasury_name() instead
+//note that old account is still considered a treasury (cannot be reused for other purposes), just all funds and actions are redirected to new one
+//DO NOT USE the following constants anywhere other than inside database::get_treasury_name()
+#define OLD_STEEM_TREASURY_ACCOUNT            "steem.dao"
+#ifdef IS_TEST_NET
+#define NEW_HIVE_TREASURY_ACCOUNT             "test.treasury"
+#else
+#define NEW_HIVE_TREASURY_ACCOUNT             OLD_STEEM_TREASURY_ACCOUNT //until we have new account created
+#endif
 ///@}
 
 /// STEEM PROPOSAL SYSTEM support

@@ -163,15 +163,15 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
 
          {
             hf23_helper::gather_balance( _hf23_items, _alice.name, _alice.balance, _alice.sbd_balance );
-            db->adjust_balance( "steem.dao", _alice.balance );
-            db->adjust_balance( "steem.dao", _alice.sbd_balance );
+            db->adjust_balance( db->get_treasury_name(), _alice.balance );
+            db->adjust_balance( db->get_treasury_name(), _alice.sbd_balance );
             db->adjust_balance( "alice", -_alice.balance );
             db->adjust_balance( "alice", -_alice.sbd_balance );
          }
          {
             hf23_helper::gather_balance( _hf23_items, _bob.name, _bob.balance, _bob.sbd_balance );
-            db->adjust_balance( "steem.dao", _bob.balance );
-            db->adjust_balance( "steem.dao", _bob.sbd_balance );
+            db->adjust_balance( db->get_treasury_name(), _bob.balance );
+            db->adjust_balance( db->get_treasury_name(), _bob.sbd_balance );
             db->adjust_balance( "bob", -_bob.balance );
             db->adjust_balance( "bob", -_bob.sbd_balance );
          }
@@ -210,21 +210,21 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
 
          std::set< std::string > restored_accounts = { "bob", "alice", "carol" };
 
-         auto treasury_balance_start      = db->get_account( STEEM_TREASURY_ACCOUNT ).balance;
-         auto treasury_sbd_balance_start  = db->get_account( STEEM_TREASURY_ACCOUNT ).sbd_balance;
+         auto treasury_balance_start      = db->get_treasury().balance;
+         auto treasury_sbd_balance_start  = db->get_treasury().sbd_balance;
 
          {
             auto last_supply = db->get_dynamic_global_properties().current_sbd_supply;
 
-            FUND( "steem.dao", _5000 );
-            FUND( "steem.dao", _4000 );
+            FUND( db->get_treasury_name(), _5000 );
+            FUND( db->get_treasury_name(), _4000 );
 
             generate_block();
 
             auto interest = db->get_dynamic_global_properties().current_sbd_supply - last_supply - _4000;
 
-            BOOST_REQUIRE( db->get_account( STEEM_TREASURY_ACCOUNT ).balance     == _5000 + treasury_balance_start );
-            BOOST_REQUIRE( db->get_account( STEEM_TREASURY_ACCOUNT ).sbd_balance == _4000 + treasury_sbd_balance_start + interest );
+            BOOST_REQUIRE( db->get_treasury().balance     == _5000 + treasury_balance_start );
+            BOOST_REQUIRE( db->get_treasury().sbd_balance == _4000 + treasury_sbd_balance_start + interest );
 
             treasury_balance_start     += _5000;
             treasury_sbd_balance_start += _4000 + interest;
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
 
          auto& _alice2           = db->get_account( "alice" );
          auto& _bob2             = db->get_account( "bob" );
-         const auto& _treasury2 = db->get_account( STEEM_TREASURY_ACCOUNT );
+         const auto& _treasury2 = db->get_treasury();
 
          BOOST_REQUIRE( _alice2.balance      == _2000 + alice_balance );
          BOOST_REQUIRE( _alice2.sbd_balance  == _10 + alice_sbd_balance );
@@ -736,7 +736,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
    BOOST_REQUIRE( db->get_account("alice").member == ASSET( alice " " asset ) ); \
    BOOST_REQUIRE( db->get_account("bob").member == ASSET( bob " " asset ) ); \
    BOOST_REQUIRE( db->get_account("carol").member == ASSET( carol " " asset ) ); \
-   BOOST_REQUIRE( db->get_account(STEEM_TREASURY_ACCOUNT).member == ASSET( treasury " " asset ) )
+   BOOST_REQUIRE( db->get_treasury().member == ASSET( treasury " " asset ) )
 
    try
    {
@@ -988,7 +988,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
 #define REQUIRE_BALANCE( alice, bob, treasury, member, asset ) \
    BOOST_REQUIRE( db->get_account("alice").member == ASSET( alice " " asset ) ); \
    BOOST_REQUIRE( db->get_account("bob").member == ASSET( bob " " asset ) ); \
-   BOOST_REQUIRE( db->get_account(STEEM_TREASURY_ACCOUNT).member == ASSET( treasury " " asset ) )
+   BOOST_REQUIRE( db->get_treasury().member == ASSET( treasury " " asset ) )
 
    try
    {
@@ -1114,7 +1114,7 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
 
 #define REQUIRE_BALANCE( alice, treasury, member, asset ) \
    BOOST_REQUIRE( db->get_account("alice").member == ASSET( alice " " asset ) ); \
-   BOOST_REQUIRE( db->get_account(STEEM_TREASURY_ACCOUNT).member == ASSET( treasury " " asset ) )
+   BOOST_REQUIRE( db->get_treasury().member == ASSET( treasury " " asset ) )
 
    try
    {
@@ -1207,7 +1207,7 @@ BOOST_AUTO_TEST_CASE( sbd_test_02 )
       fund( "alice", ASSET( "1000.000 TBD" ) );
       auto start_time = db->get_account( "alice" ).sbd_seconds_last_update;
       auto alice_sbd = db->get_account( "alice" ).sbd_balance;
-      BOOST_TEST_MESSAGE( "treasury_sbd = " << asset_to_string( db->get_account( STEEM_TREASURY_ACCOUNT ).sbd_balance ) );
+      BOOST_TEST_MESSAGE( "treasury_sbd = " << asset_to_string( db->get_treasury().sbd_balance ) );
       BOOST_TEST_MESSAGE( "alice_sbd = " << asset_to_string( alice_sbd ) );
       BOOST_REQUIRE( alice_sbd == ASSET( "1000.000 TBD" ) );
 

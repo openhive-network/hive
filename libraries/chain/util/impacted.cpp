@@ -255,7 +255,7 @@ struct get_impacted_account_visitor
    void operator()(const proposal_pay_operation& op)
    {
       _impacted.insert(op.receiver);
-      _impacted.insert(STEEM_TREASURY_ACCOUNT);
+      _impacted.insert(op.payer);
    }
 
    void operator()( const create_proposal_operation& op )
@@ -276,7 +276,7 @@ struct get_impacted_account_visitor
 
    void operator()( const sps_fund_operation& op )
    {
-      _impacted.insert( STEEM_TREASURY_ACCOUNT );
+      _impacted.insert( op.fund_account );
    }
 
    void operator()( const delayed_voting_operation& op )
@@ -291,13 +291,13 @@ struct get_impacted_account_visitor
 
    void operator()( const hardfork_hive_operation& op )
    {
-      _impacted.insert( STEEM_TREASURY_ACCOUNT );
+      _impacted.insert( op.treasury );
       _impacted.insert( op.account );
    }
 
    void operator()( const hardfork_hive_restore_operation& op )
    {
-      _impacted.insert( STEEM_TREASURY_ACCOUNT );
+      _impacted.insert( op.treasury );
       _impacted.insert( op.account );
    }
 

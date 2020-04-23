@@ -1,5 +1,6 @@
 #ifndef STEEM_HARDFORK_0_24
 #define STEEM_HARDFORK_0_24 24
+#define STEEM_DAO_RENAME STEEM_HARDFORK_0_24
 
 long hf24_time();
 

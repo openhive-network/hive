@@ -28,7 +28,7 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
       asset fee_sbd( STEEM_TREASURY_FEE, SBD_SYMBOL );
 
       //treasury account must exist, also we need it later to change its balance
-      const auto& treasury_account =_db.get_account( STEEM_TREASURY_ACCOUNT );
+      const auto& treasury_account =_db.get_treasury();
 
       const auto& owner_account = _db.get_account( o.creator );
       const auto* receiver_account = _db.find_account( o.receiver );

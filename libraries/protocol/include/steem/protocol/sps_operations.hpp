@@ -69,11 +69,14 @@ struct remove_proposal_operation : public base_operation
 struct proposal_pay_operation : public virtual_operation
 {
    proposal_pay_operation() = default;
-   proposal_pay_operation(const account_name_type r, const asset& p, transaction_id_type _trx_id, uint16_t _op_in_trx )
-                     : receiver(r), payment(p), trx_id(_trx_id), op_in_trx(_op_in_trx) {}
+   proposal_pay_operation( const account_name_type _receiver, const account_name_type _treasury, const asset& _payment,
+      transaction_id_type _trx_id, uint16_t _op_in_trx )
+      : receiver( _receiver ), payer( _treasury ), payment( _payment ), trx_id( _trx_id ), op_in_trx( _op_in_trx ) {}
 
    /// Name of the account which is paid for
    account_name_type receiver;
+   /// Name of the treasury account that is source of payment
+   account_name_type payer;
    /// Amount of SBDs paid.
    asset             payment;
 
@@ -131,5 +134,5 @@ FC_REFLECT( steem::protocol::create_proposal_operation, (creator)(receiver)(star
 FC_REFLECT( steem::protocol::update_proposal_votes_operation, (voter)(proposal_ids)(approve)(extensions) )
 FC_REFLECT( steem::protocol::remove_proposal_operation, (proposal_owner)(proposal_ids)(extensions) )
 
-FC_REFLECT(steem::protocol::proposal_pay_operation, (receiver)(payment)(trx_id)(op_in_trx))
+FC_REFLECT(steem::protocol::proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx))
 

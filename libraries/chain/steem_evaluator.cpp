@@ -1178,8 +1178,8 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
    FC_TODO( "Remove is producing after HF 21" );
    if( _db.is_producing() || _db.has_hardfork( STEEM_HARDFORK_0_21__3343 ) )
    {
-      FC_ASSERT( o.amount.symbol == SBD_SYMBOL || o.to != STEEM_TREASURY_ACCOUNT,
-         "Can only transfer HBD to ${s}", ("s", STEEM_TREASURY_ACCOUNT) );
+      FC_ASSERT( o.amount.symbol == SBD_SYMBOL || !_db.is_treasury( o.to ),
+         "Can only transfer HBD to ${s}", ("s", o.to ) );
    }
 
    _db.adjust_balance( o.from, -o.amount );
@@ -1194,8 +1194,8 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
    FC_TODO( "Remove is producing after HF 21" );
    if( _db.is_producing() || _db.has_hardfork( STEEM_HARDFORK_0_21__3343 ) )
    {
-      FC_ASSERT( o.amount.symbol == SBD_SYMBOL || o.to != STEEM_TREASURY_ACCOUNT,
-         "Can only transfer HBD to ${s}", ("s", STEEM_TREASURY_ACCOUNT) );
+      FC_ASSERT( o.amount.symbol == SBD_SYMBOL || !_db.is_treasury( o.to ),
+         "Can only transfer HBD to ${s}", ("s", o.to ) );
    }
 
    _db.adjust_balance( from_account, -o.amount );
@@ -1310,8 +1310,7 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
    FC_TODO( "Remove is producing after HF 21" );
    if( _db.is_producing() || _db.has_hardfork( STEEM_HARDFORK_0_21__3343 ) )
    {
-      FC_ASSERT( o.to_account != STEEM_TREASURY_ACCOUNT,
-         "Cannot withdraw vesting to ${s}", ("s", STEEM_TREASURY_ACCOUNT) );
+      FC_ASSERT( !_db.is_treasury( o.to_account ), "Cannot withdraw vesting to ${s}", ("s", o.to_account ) );
    }
 
    if( itr == wd_idx.end() )
@@ -2874,8 +2873,7 @@ void transfer_to_savings_evaluator::do_apply( const transfer_to_savings_operatio
    FC_TODO( "Remove is producing after HF 21" );
    if( _db.is_producing() || _db.has_hardfork( STEEM_HARDFORK_0_21__3343 ) )
    {
-      FC_ASSERT( op.to != STEEM_TREASURY_ACCOUNT,
-         "Cannot transfer savings to ${s}", ("s", STEEM_TREASURY_ACCOUNT) );
+      FC_ASSERT( !_db.is_treasury( op.to ), "Cannot transfer savings to ${s}", ("s", op.to ) );
    }
 
    _db.adjust_balance( from, -op.amount );
@@ -2892,8 +2890,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
    FC_TODO( "Remove is producing after HF 21" );
    if( _db.is_producing() || _db.has_hardfork( STEEM_HARDFORK_0_21__3343 ) )
    {
-      FC_ASSERT( op.amount.symbol == SBD_SYMBOL || op.to != STEEM_TREASURY_ACCOUNT,
-         "Can only transfer HBD to ${s}", ("s", STEEM_TREASURY_ACCOUNT) );
+      FC_ASSERT( op.amount.symbol == SBD_SYMBOL || !_db.is_treasury( op.to ), "Can only transfer HBD to ${s}", ("s", op.to ) );
    }
 
    FC_ASSERT( _db.get_savings_balance( from, op.amount.symbol ) >= op.amount );

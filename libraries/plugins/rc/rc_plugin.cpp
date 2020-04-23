@@ -759,6 +759,8 @@ struct pre_apply_operation_visitor
       regenerate( STEEM_NULL_ACCOUNT );
    }
 
+   //void operator()( const consolidate_treasury_balance_operation& op )const //not needed for treasury accounts, leave default
+
    void operator()( const delayed_voting_operation& op )const
    {
       regenerate( op.voter );
@@ -955,6 +957,8 @@ struct post_apply_operation_visitor
    {
       _mod_accounts.emplace_back( STEEM_NULL_ACCOUNT );
    }
+
+   //void operator()( const consolidate_treasury_balance_operation& op )const //not needed for treasury accounts, leave default
 
    void operator()( const delayed_voting_operation& op )const
    {

@@ -74,6 +74,7 @@ namespace steem { namespace plugins { namespace condenser_api {
    typedef update_proposal_votes_operation        legacy_update_proposal_votes_operation;
    typedef remove_proposal_operation              legacy_remove_proposal_operation;
    typedef clear_null_account_balance_operation   legacy_clear_null_account_balance_operation;
+   typedef consolidate_treasury_balance_operation legacy_consolidate_treasury_balance_operation;
    typedef delayed_voting_operation               legacy_delayed_voting_operation;
 
    struct legacy_price
@@ -1038,6 +1039,7 @@ namespace steem { namespace plugins { namespace condenser_api {
       legacy_proposal_pay_operation() {}
       legacy_proposal_pay_operation( const proposal_pay_operation& op ) :
          receiver( op.receiver ),
+         payer( op.payer ),
          payment( legacy_asset::from_asset( op.payment ) ),
          trx_id( op.trx_id ),
          op_in_trx( op.op_in_trx )
@@ -1047,6 +1049,7 @@ namespace steem { namespace plugins { namespace condenser_api {
       {
          proposal_pay_operation op;
          op.receiver = receiver;
+         op.payer = payer;
          op.payment = payment;
          op.trx_id = trx_id;
          op.op_in_trx = op_in_trx;
@@ -1054,6 +1057,7 @@ namespace steem { namespace plugins { namespace condenser_api {
       }
 
       account_name_type    receiver;
+      account_name_type    payer;
       legacy_asset         payment;
       transaction_id_type  trx_id;
       uint16_t             op_in_trx = 0;
@@ -1063,16 +1067,18 @@ namespace steem { namespace plugins { namespace condenser_api {
    {
       legacy_sps_fund_operation() {}
       legacy_sps_fund_operation( const sps_fund_operation& op ) :
-         additional_funds( legacy_asset::from_asset( op.additional_funds ) )
+         fund_account( op.fund_account ), additional_funds( legacy_asset::from_asset( op.additional_funds ) )
       {}
 
       operator sps_fund_operation()const
       {
          sps_fund_operation op;
+         op.fund_account = fund_account;
          op.additional_funds = additional_funds;
          return op;
       }
 
+      account_name_type fund_account;
       legacy_asset additional_funds;
    };
 
@@ -1080,50 +1086,54 @@ namespace steem { namespace plugins { namespace condenser_api {
    {
       legacy_hardfork_hive_operation() {}
       legacy_hardfork_hive_operation( const hardfork_hive_operation& op ) :
-      account( op.account ),
-      sbd_transferred( legacy_asset::from_asset( op.sbd_transferred ) ),
-      steem_transferred( legacy_asset::from_asset( op.steem_transferred ) ),
-      vests_converted( legacy_asset::from_asset( op.vests_converted ) ),
-      total_steem_from_vests( legacy_asset::from_asset( op.total_steem_from_vests ) )
-            {}
+         account( op.account ), treasury( op.treasury ),
+         sbd_transferred( legacy_asset::from_asset( op.sbd_transferred ) ),
+         steem_transferred( legacy_asset::from_asset( op.steem_transferred ) ),
+         vests_converted( legacy_asset::from_asset( op.vests_converted ) ),
+         total_steem_from_vests( legacy_asset::from_asset( op.total_steem_from_vests ) )
+      {}
 
-            operator hardfork_hive_operation()const
-            {
-               legacy_hardfork_hive_operation op;
-               op.account = account;
-               op.sbd_transferred = sbd_transferred;
-               op.steem_transferred = steem_transferred;
-               op.vests_converted = vests_converted;
-               op.total_steem_from_vests = total_steem_from_vests;
-               return op;
-            }
+      operator hardfork_hive_operation()const
+      {
+         legacy_hardfork_hive_operation op;
+         op.account = account;
+         op.treasury = treasury;
+         op.sbd_transferred = sbd_transferred;
+         op.steem_transferred = steem_transferred;
+         op.vests_converted = vests_converted;
+         op.total_steem_from_vests = total_steem_from_vests;
+         return op;
+      }
 
-            account_name_type account;
-            legacy_asset      sbd_transferred;
-            legacy_asset      steem_transferred;
-            legacy_asset      vests_converted;
-            legacy_asset      total_steem_from_vests;
-         };
+      account_name_type account;
+      account_name_type treasury;
+      legacy_asset      sbd_transferred;
+      legacy_asset      steem_transferred;
+      legacy_asset      vests_converted;
+      legacy_asset      total_steem_from_vests;
+   };
 
    struct legacy_hardfork_hive_restore_operation
    {
       legacy_hardfork_hive_restore_operation() {}
       legacy_hardfork_hive_restore_operation( const hardfork_hive_restore_operation& op ) :
-      account( op.account ),
-      sbd_transferred( legacy_asset::from_asset( op.sbd_transferred ) ),
-      steem_transferred( legacy_asset::from_asset( op.steem_transferred ) )
-            {}
+         account( op.account ), treasury( op.treasury ),
+         sbd_transferred( legacy_asset::from_asset( op.sbd_transferred ) ),
+         steem_transferred( legacy_asset::from_asset( op.steem_transferred ) )
+      {}
 
       operator hardfork_hive_restore_operation()const
       {
          legacy_hardfork_hive_restore_operation op;
          op.account = account;
+         op.treasury = treasury;
          op.sbd_transferred = sbd_transferred;
          op.steem_transferred = steem_transferred;
          return op;
       }
 
       account_name_type account;
+      account_name_type treasury;
       legacy_asset      sbd_transferred;
       legacy_asset      steem_transferred;
    };
@@ -1194,9 +1204,10 @@ namespace steem { namespace plugins { namespace condenser_api {
             legacy_clear_null_account_balance_operation,
             legacy_proposal_pay_operation,
             legacy_sps_fund_operation,
-           legacy_hardfork_hive_operation,
-           legacy_hardfork_hive_restore_operation,
-            legacy_delayed_voting_operation
+            legacy_hardfork_hive_operation,
+            legacy_hardfork_hive_restore_operation,
+            legacy_delayed_voting_operation,
+            legacy_consolidate_treasury_balance_operation
          > legacy_operation;
 
    struct legacy_operation_conversion_visitor
@@ -1238,6 +1249,7 @@ namespace steem { namespace plugins { namespace condenser_api {
       bool operator()( const update_proposal_votes_operation& op )const          { l_op = op; return true; }
       bool operator()( const remove_proposal_operation& op )const                { l_op = op; return true; }
       bool operator()( const clear_null_account_balance_operation& op )const     { l_op = op; return true; }
+      bool operator()( const consolidate_treasury_balance_operation& op )const   { l_op = op; return true; }
       bool operator()( const delayed_voting_operation& op )const                 { l_op = op; return true; }
 
       bool operator()( const transfer_operation& op )const
@@ -1769,10 +1781,10 @@ FC_REFLECT( steem::plugins::condenser_api::legacy_return_vesting_delegation_oper
 FC_REFLECT( steem::plugins::condenser_api::legacy_comment_benefactor_reward_operation, (benefactor)(author)(permlink)(sbd_payout)(steem_payout)(vesting_payout) )
 FC_REFLECT( steem::plugins::condenser_api::legacy_producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( steem::plugins::condenser_api::legacy_claim_account_operation, (creator)(fee)(extensions) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_proposal_pay_operation, (receiver)(payment)(trx_id)(op_in_trx) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_sps_fund_operation, (additional_funds) )
+FC_REFLECT( steem::plugins::condenser_api::legacy_proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx) )
+FC_REFLECT( steem::plugins::condenser_api::legacy_sps_fund_operation, (fund_account)(additional_funds) )
 FC_REFLECT( steem::plugins::condenser_api::legacy_create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(sbd_transferred)(steem_transferred)(vests_converted)(total_steem_from_vests) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(sbd_transferred)(steem_transferred) )
+FC_REFLECT( steem::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(sbd_transferred)(steem_transferred)(vests_converted)(total_steem_from_vests) )
+FC_REFLECT( steem::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(sbd_transferred)(steem_transferred) )
 
 FC_REFLECT_TYPENAME( steem::plugins::condenser_api::legacy_operation )
