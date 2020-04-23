@@ -281,3 +281,4 @@ if(MSVC)
 endif(MSVC)
 
 #add_subdirectory( generate_empty_blocks )
+add_subdirectory(api_tests)
