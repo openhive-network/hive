@@ -7,8 +7,11 @@
 #include <steem/chain/steem_object_types.hpp>
 #include <steem/chain/witness_objects.hpp>
 
+#include <steem/chain/util/greedy_asset.hpp>
 
 namespace steem { namespace chain {
+
+   using greedy_SBD_asset = greedy_asset<STEEM_ASSET_NUM_SBD>;
 
    using protocol::beneficiary_route_type;
    using chainbase::t_vector;
@@ -88,9 +91,9 @@ namespace steem { namespace chain {
          uint16_t          reward_weight = 0;
 
          /** tracks the total payout this comment has received over time, measured in HBD */
-         asset             total_payout_value = asset(0, SBD_SYMBOL);
-         asset             curator_payout_value = asset(0, SBD_SYMBOL);
-         asset             beneficiary_payout_value = asset( 0, SBD_SYMBOL );
+         greedy_SBD_asset  total_payout_value = asset(0, SBD_SYMBOL);
+         greedy_SBD_asset  curator_payout_value = asset(0, SBD_SYMBOL);
+         greedy_SBD_asset  beneficiary_payout_value = asset( 0, SBD_SYMBOL );
 
          share_type        author_rewards = 0;
 
@@ -98,7 +101,7 @@ namespace steem { namespace chain {
 
          id_type           root_comment;
 
-         asset             max_accepted_payout = asset( 1000000000, SBD_SYMBOL );       /// SBD value of the maximum payout this post will receive
+         greedy_SBD_asset  max_accepted_payout = asset( 1000000000, SBD_SYMBOL );       /// SBD value of the maximum payout this post will receive
          uint16_t          percent_steem_dollars = STEEM_100_PERCENT; /// the percent of Steem Dollars to key, unkept amounts will be received as Steem Power
          bool              allow_replies = true;      /// allows a post to disable replies.
          bool              allow_votes   = true;      /// allows a post to receive votes;
@@ -268,6 +271,8 @@ template<> struct is_static_length< steem::chain::comment_vote_object > : public
 
 } // mira
 #endif
+
+FC_REFLECT( steem::chain::greedy_SBD_asset, (value) )
 
 FC_REFLECT( steem::chain::comment_object,
              (id)(author)(permlink)
