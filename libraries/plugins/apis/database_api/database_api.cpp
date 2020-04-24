@@ -1135,7 +1135,7 @@ DEFINE_API_IMPL( database_api_impl, list_comments )
             comment_id = comment->id;
          }
 
-         iterate_results< chain::comment_index, chain::by_last_update >(
+         iterate_results< chain::comment_index, chain::by_author_last_update >(
             boost::make_tuple( key[0].as< account_name_type >(), key[1].as< fc::time_point_sec >(), comment_id ),
             result.comments,
             args.limit,
