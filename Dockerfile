@@ -1,3 +1,5 @@
+#Usage: DOCKER_BUILDKIT=1 docker build --no-cache  --target=testnet_node_builder .
+
 ARG LOW_MEMORY_NODE=ON
 ARG CLEAR_VOTES=ON
 ARG BUILD_STEEM_TESTNET=OFF
@@ -16,11 +18,6 @@ WORKDIR ${src_dir}
 ###################################################################################################
 
 FROM builder AS consensus_node_builder
-
-ENV LOW_MEMORY_NODE=ON
-ENV CLEAR_VOTES=ON
-ENV BUILD_STEEM_TESTNET=OFF
-ENV ENABLE_MIRA=OFF
 
 RUN \
   cd ${src_dir} && \
