@@ -58,7 +58,7 @@ development-build:
 
   cache: {}
   tags:
-    - $CI_RUNNER_TAGS
+    - hive-hive-runner
 
   allow_failure: false
   when: manual
