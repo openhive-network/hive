@@ -1,0 +1,71 @@
+stages:
+  - build
+
+before_script:
+  - docker info
+  - which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )
+  - eval $(ssh-agent -s)
+  - ssh-add <(echo "$SSH_PRIVATE_KEY")
+  - echo "Working for branch" $CI_COMMIT_REF_NAME " and environment " $CI_ENVIRONMENT_SLUG
+  - rm -rf ~/ci/hive/$CI_ENVIRONMENT_SLUG/$CI_COMMIT_REF_NAME
+  - git clone git@gitlab.syncad.com:hive/hive.git ~/ci/hive/$CI_ENVIRONMENT_SLUG/$CI_COMMIT_REF_NAME
+  - cd ~/ci/hive/$CI_ENVIRONMENT_SLUG/$CI_COMMIT_REF_NAME
+  - git checkout $CI_COMMIT_REF_NAME
+  - git status
+  - git submodule sync --recursive
+  - git submodule update --init --recursive
+
+after_script:
+ - echo "Repository for this pipeline located on" ~/ci/hive/$CI_ENVIRONMENT_SLUG/$CI_COMMIT_REF_NAME
+ - echo "Build for this pipeline located on" ~/ci/hive/$CI_ENVIRONMENT_SLUG/$CI_COMMIT_REF_NAME/build
+
+staging-build:
+  stage: build
+  variables:
+    DOCKER_BUILDKIT: 1
+    LC_ALL: "C"
+    GIT_STRATEGY: none
+    GIT_SUBMODULE_STRATEGY: recursive
+    
+  script:
+    - docker build --no-cache --target consensus_node .
+    - docker build --no-cache --target fat_node .
+    - docker build --no-cache --target testnet_node_builder .
+
+  cache: {}
+  tags:
+    - $CI_RUNNER_TAGS
+  allow_failure: false
+  only:
+   - 0.23.0
+   - 0.24.0
+  environment:
+    name: staging
+    url: http://192.168.6.144:8888/v1/chain/get_info
+   
+
+development-build:
+  stage: build
+  variables:
+    LC_ALL: "C"
+    GIT_STRATEGY: none
+    GIT_SUBMODULE_STRATEGY: recursive
+
+  script:
+    - docker build --no-cache --target consensus_node .
+    - docker build --no-cache --target fat_node .
+    - docker build --no-cache --target testnet_node_builder .
+
+  cache: {}
+  tags:
+    - hive-hive-runner
+
+  allow_failure: false
+  when: manual
+  except:
+   - 0.23.0
+   - 0.24.0
+  environment:  
+    name: development
+    url: http://192.168.6.144:8888/v1/chain/get_info
+
