@@ -638,9 +638,54 @@ void database_fixture::set_witness_props( const flat_map< string, vector< char >
    FC_ASSERT( false, "Couldn't apply properties in ${n} blocks", ("n", 2*STEEM_MAX_WITNESSES+1) );
 }
 
+account_id_type database_fixture::get_account_id( const string& account_name )const
+{
+   return db->get_account( account_name ).id;
+}
+
 const asset& database_fixture::get_balance( const string& account_name )const
 {
   return db->get_account( account_name ).balance;
+}
+
+const asset& database_fixture::get_hbd_balance( const string& account_name )const
+{
+   return db->get_account( account_name ).sbd_balance;
+}
+
+const asset& database_fixture::get_savings( const string& account_name )const
+{
+   return db->get_account( account_name ).savings_balance;
+}
+
+const asset& database_fixture::get_hbd_savings( const string& account_name )const
+{
+   return db->get_account( account_name ).savings_sbd_balance;
+}
+
+const asset& database_fixture::get_rewards( const string& account_name )const
+{
+   return db->get_account( account_name ).reward_steem_balance;
+}
+
+const asset& database_fixture::get_hbd_rewards( const string& account_name )const
+{
+   return db->get_account( account_name ).reward_sbd_balance;
+}
+
+const asset& database_fixture::get_vesting( const string& account_name )const
+{
+   return db->get_account( account_name ).vesting_shares;
+}
+
+const asset& database_fixture::get_vest_rewards( const string& account_name )const
+{
+   return db->get_account( account_name ).reward_vesting_balance;
+}
+
+const asset& database_fixture::get_vest_rewards_as_hive( const string& account_name )const
+{
+   return db->get_account( account_name ).reward_vesting_steem;
 }
 
 void database_fixture::sign(signed_transaction& trx, const fc::ecc::private_key& key)

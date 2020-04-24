@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
          db->push_transaction( tx, 0 );
-         BOOST_REQUIRE( db->get_account( "alice" ).savings_balance == ASSET( "1.000 TESTS" ) );
+         BOOST_REQUIRE( get_savings( "alice" ) == ASSET( "1.000 TESTS" ) );
       }
       tx.clear();
 
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
 
       asset initial_treasury_balance = db->get_treasury().sbd_balance;
       generate_blocks( db->get_comment( "alice", string( "test" ) ).cashout_time );
-      BOOST_REQUIRE_EQUAL( db->get_account( OLD_STEEM_TREASURY_ACCOUNT ).sbd_balance.amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( get_hbd_balance( OLD_STEEM_TREASURY_ACCOUNT ).amount.value, 0 );
       BOOST_REQUIRE_EQUAL( db->get_treasury().sbd_balance.amount.value, 1150 + initial_treasury_balance.amount.value );
 
       database_fixture::validate_database();

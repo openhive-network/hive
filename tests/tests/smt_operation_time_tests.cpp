@@ -122,16 +122,16 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
       const auto& liquidity_idx = db->get_index< liquidity_reward_balance_index >().indices().get< by_owner >();
       const auto& limit_order_idx = db->get_index< limit_order_index >().indices().get< by_account >();
 
-      auto reward = liquidity_idx.find( db->get_account( "alice" ).id );
+      auto reward = liquidity_idx.find( get_account_id( "alice" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "alice" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
       BOOST_REQUIRE( reward->sbd_volume == alice_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == alice_steem_volume );
       BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "bob" ).id );
+      reward = liquidity_idx.find( get_account_id( "bob" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "bob" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
       BOOST_REQUIRE( reward->sbd_volume == bob_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == bob_steem_volume );
       BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
@@ -221,23 +221,23 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
       BOOST_REQUIRE( fill_order_op.current_orderid == 5 );
       BOOST_REQUIRE( fill_order_op.current_pays.amount.value == asset( alice_smt.amount.value / 20, any_smt_symbol ).amount.value );
 
-      reward = liquidity_idx.find( db->get_account( "alice" ).id );
+      reward = liquidity_idx.find( get_account_id( "alice" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "alice" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
       BOOST_REQUIRE( reward->sbd_volume == alice_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == alice_steem_volume );
       BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "bob" ).id );
+      reward = liquidity_idx.find( get_account_id( "bob" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "bob" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
       BOOST_REQUIRE( reward->sbd_volume == bob_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == bob_steem_volume );
       BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "sam" ).id );
+      reward = liquidity_idx.find( get_account_id( "sam" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "sam" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
       BOOST_REQUIRE( reward->sbd_volume == sam_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == sam_steem_volume );
       BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
@@ -281,23 +281,23 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
       BOOST_REQUIRE( fill_order_op.current_orderid == 7 );
       BOOST_REQUIRE( fill_order_op.current_pays.amount.value == asset( alice_smt.amount.value / 20, STEEM_SYMBOL ).amount.value );
 
-      reward = liquidity_idx.find( db->get_account( "alice" ).id );
+      reward = liquidity_idx.find( get_account_id( "alice" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "alice" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
       BOOST_REQUIRE( reward->sbd_volume == alice_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == alice_steem_volume );
       BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "bob" ).id );
+      reward = liquidity_idx.find( get_account_id( "bob" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "bob" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
       BOOST_REQUIRE( reward->sbd_volume == bob_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == bob_steem_volume );
       BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "sam" ).id );
+      reward = liquidity_idx.find( get_account_id( "sam" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "sam" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
       BOOST_REQUIRE( reward->sbd_volume == sam_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == sam_steem_volume );
       BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
@@ -329,23 +329,23 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
       BOOST_REQUIRE( fill_order_op.current_orderid == 8 );
       BOOST_REQUIRE( fill_order_op.current_pays.amount.value == asset( alice_smt.amount.value / 20, STEEM_SYMBOL ).amount.value );
 
-      reward = liquidity_idx.find( db->get_account( "alice" ).id );
+      reward = liquidity_idx.find( get_account_id( "alice" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "alice" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
       BOOST_REQUIRE( reward->sbd_volume == alice_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == alice_steem_volume );
       BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "bob" ).id );
+      reward = liquidity_idx.find( get_account_id( "bob" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "bob" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
       BOOST_REQUIRE( reward->sbd_volume == bob_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == bob_steem_volume );
       BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "sam" ).id );
+      reward = liquidity_idx.find( get_account_id( "sam" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "sam" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
       BOOST_REQUIRE( reward->sbd_volume == sam_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == sam_steem_volume );
       BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
@@ -402,30 +402,30 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
       BOOST_REQUIRE( fill_order_op.current_orderid == 10 );
       BOOST_REQUIRE( fill_order_op.current_pays.amount.value == 7 * ( alice_smt.amount.value / 20 ) );
 
-      reward = liquidity_idx.find( db->get_account( "alice" ).id );
+      reward = liquidity_idx.find( get_account_id( "alice" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "alice" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
       BOOST_REQUIRE( reward->sbd_volume == alice_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == alice_steem_volume );
       BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "bob" ).id );
+      reward = liquidity_idx.find( get_account_id( "bob" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "bob" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
       BOOST_REQUIRE( reward->sbd_volume == bob_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == bob_steem_volume );
       BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "sam" ).id );
+      reward = liquidity_idx.find( get_account_id( "sam" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "sam" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
       BOOST_REQUIRE( reward->sbd_volume == sam_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == sam_steem_volume );
       BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "dave" ).id );
+      reward = liquidity_idx.find( get_account_id( "dave" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "dave" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "dave" ) );
       BOOST_REQUIRE( reward->sbd_volume == dave_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == dave_steem_volume );
       BOOST_CHECK( reward->last_update == dave_reward_last_update );*/
@@ -455,30 +455,30 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
       BOOST_REQUIRE( fill_order_op.current_orderid == 11 );
       BOOST_REQUIRE( fill_order_op.current_pays.amount.value == alice_smt.amount.value / 20 );
 
-      reward = liquidity_idx.find( db->get_account( "alice" ).id );
+      reward = liquidity_idx.find( get_account_id( "alice" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "alice" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
       BOOST_REQUIRE( reward->sbd_volume == alice_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == alice_steem_volume );
       BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "bob" ).id );
+      reward = liquidity_idx.find( get_account_id( "bob" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "bob" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
       BOOST_REQUIRE( reward->sbd_volume == bob_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == bob_steem_volume );
       BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "sam" ).id );
+      reward = liquidity_idx.find( get_account_id( "sam" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "sam" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
       BOOST_REQUIRE( reward->sbd_volume == sam_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == sam_steem_volume );
       BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "dave" ).id );
+      reward = liquidity_idx.find( get_account_id( "dave" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "dave" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "dave" ) );
       BOOST_REQUIRE( reward->sbd_volume == dave_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == dave_steem_volume );
       BOOST_CHECK( reward->last_update == dave_reward_last_update );*/
@@ -530,38 +530,38 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
       BOOST_REQUIRE( fill_order_op.current_orderid == 13 );
       BOOST_REQUIRE( fill_order_op.current_pays.amount.value == 3 * ( alice_smt.amount.value / 40 ) );
 
-      reward = liquidity_idx.find( db->get_account( "alice" ).id );
+      reward = liquidity_idx.find( get_account_id( "alice" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "alice" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
       BOOST_REQUIRE( reward->sbd_volume == alice_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == alice_steem_volume );
       BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "bob" ).id );
+      reward = liquidity_idx.find( get_account_id( "bob" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "bob" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
       BOOST_REQUIRE( reward->sbd_volume == bob_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == bob_steem_volume );
       BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "sam" ).id );
+      reward = liquidity_idx.find( get_account_id( "sam" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "sam" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
       BOOST_REQUIRE( reward->sbd_volume == sam_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == sam_steem_volume );
       BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
 
-      reward = liquidity_idx.find( db->get_account( "dave" ).id );
+      reward = liquidity_idx.find( get_account_id( "dave" ) );
       BOOST_REQUIRE( reward == liquidity_idx.end() );
-      /*BOOST_REQUIRE( reward->owner == db->get_account( "dave" ).id );
+      /*BOOST_REQUIRE( reward->owner == get_account_id( "dave" ) );
       BOOST_REQUIRE( reward->sbd_volume == dave_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == dave_steem_volume );
       BOOST_CHECK( reward->last_update == dave_reward_last_update );*/
 
-      auto alice_balance = db->get_account( "alice" ).balance;
-      auto bob_balance = db->get_account( "bob" ).balance;
-      auto sam_balance = db->get_account( "sam" ).balance;
-      auto dave_balance = db->get_account( "dave" ).balance;
+      auto alice_balance = get_balance( "alice" );
+      auto bob_balance = get_balance( "bob" );
+      auto sam_balance = get_balance( "sam" );
+      auto dave_balance = get_balance( "dave" );
 
       BOOST_TEST_MESSAGE( "Generating Blocks to trigger liquidity rewards" );
 
@@ -569,19 +569,19 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
       generate_blocks( STEEM_LIQUIDITY_REWARD_BLOCKS - ( db->head_block_num() % STEEM_LIQUIDITY_REWARD_BLOCKS ) - 1 );
 
       BOOST_REQUIRE( db->head_block_num() % STEEM_LIQUIDITY_REWARD_BLOCKS == STEEM_LIQUIDITY_REWARD_BLOCKS - 1 );
-      BOOST_REQUIRE( db->get_account( "alice" ).balance.amount.value == alice_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "bob" ).balance.amount.value == bob_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "sam" ).balance.amount.value == sam_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "dave" ).balance.amount.value == dave_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "alice" ).amount.value == alice_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "bob" ).amount.value == bob_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "sam" ).amount.value == sam_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "dave" ).amount.value == dave_balance.amount.value );
 
       generate_block();
 
       //alice_balance += STEEM_MIN_LIQUIDITY_REWARD;
 
-      BOOST_REQUIRE( db->get_account( "alice" ).balance.amount.value == alice_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "bob" ).balance.amount.value == bob_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "sam" ).balance.amount.value == sam_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "dave" ).balance.amount.value == dave_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "alice" ).amount.value == alice_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "bob" ).amount.value == bob_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "sam" ).amount.value == sam_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "dave" ).amount.value == dave_balance.amount.value );
 
       ops = get_last_operations( 1 );
 
@@ -592,10 +592,10 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
 
       //bob_balance += STEEM_MIN_LIQUIDITY_REWARD;
 
-      BOOST_REQUIRE( db->get_account( "alice" ).balance.amount.value == alice_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "bob" ).balance.amount.value == bob_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "sam" ).balance.amount.value == sam_balance.amount.value );
-      BOOST_REQUIRE( db->get_account( "dave" ).balance.amount.value == dave_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "alice" ).amount.value == alice_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "bob" ).amount.value == bob_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "sam" ).amount.value == sam_balance.amount.value );
+      BOOST_REQUIRE( get_balance( "dave" ).amount.value == dave_balance.amount.value );
 
       ops = get_last_operations( 1 );
 
@@ -624,9 +624,9 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
 
       generate_blocks( db->head_block_time() + ( STEEM_BLOCK_INTERVAL / 2 ) + STEEM_LIQUIDITY_TIMEOUT_SEC, true );
 
-      reward = liquidity_idx.find( db->get_account( "sam" ).id );
+      reward = liquidity_idx.find( get_account_id( "sam" ) );
       /*BOOST_REQUIRE( reward == liquidity_idx.end() );
-      BOOST_REQUIRE( reward->owner == db->get_account( "sam" ).id );
+      BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
       BOOST_REQUIRE( reward->sbd_volume == sam_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == sam_steem_volume );
       BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
@@ -648,9 +648,9 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
       sam_steem_volume = 0;
       sam_reward_last_update = db->head_block_time();
 
-      reward = liquidity_idx.find( db->get_account( "sam" ).id );
+      reward = liquidity_idx.find( get_account_id( "sam" ) );
       /*BOOST_REQUIRE( reward == liquidity_idx.end() );
-      BOOST_REQUIRE( reward->owner == db->get_account( "sam" ).id );
+      BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
       BOOST_REQUIRE( reward->sbd_volume == sam_smt_volume );
       BOOST_REQUIRE( reward->steem_volume == sam_steem_volume );
       BOOST_CHECK( reward->last_update == sam_reward_last_update );*/

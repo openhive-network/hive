@@ -272,7 +272,16 @@ struct database_fixture {
    void proxy( const string& account, const string& proxy );
    void set_price_feed( const price& new_price );
    void set_witness_props( const flat_map< string, vector< char > >& new_props );
+   account_id_type get_account_id( const string& account_name )const;
    const asset& get_balance( const string& account_name )const;
+   const asset& get_hbd_balance( const string& account_name )const;
+   const asset& get_savings( const string& account_name )const;
+   const asset& get_hbd_savings( const string& account_name )const;
+   const asset& get_rewards( const string& account_name )const;
+   const asset& get_hbd_rewards( const string& account_name )const;
+   const asset& get_vesting( const string& account_name )const;
+   const asset& get_vest_rewards( const string& account_name )const;
+   const asset& get_vest_rewards_as_hive( const string& account_name )const;
    void sign( signed_transaction& trx, const fc::ecc::private_key& key );
 
    vector< operation > get_last_operations( uint32_t ops );
