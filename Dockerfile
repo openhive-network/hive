@@ -4,7 +4,7 @@ ARG LOW_MEMORY_NODE=ON
 ARG CLEAR_VOTES=ON
 ARG BUILD_STEEM_TESTNET=OFF
 ARG ENABLE_MIRA=OFF
-FROM hive/hive-baseenv:latest AS builder
+FROM registry.gitlab.syncad.com/hive/hive/hive-baseenv:latest AS builder
 
 ENV src_dir="/usr/local/src/hive"
 ENV install_base_dir="/usr/local/hive"
