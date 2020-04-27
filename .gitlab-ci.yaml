@@ -3,21 +3,20 @@ stages:
 
 before_script:
   - docker info
-  - which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )
-  - eval $(ssh-agent -s)
-  - ssh-add <(echo "$SSH_PRIVATE_KEY")
+  - echo $CI_PROJECT_DIR
+  - mkdir -p $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME
   - echo "Working for branch" $CI_COMMIT_REF_NAME " and environment " $CI_ENVIRONMENT_SLUG
-  - rm -rf ~/ci/hive/$CI_ENVIRONMENT_SLUG/$CI_COMMIT_REF_NAME
-  - git clone git@gitlab.syncad.com:hive/hive.git ~/ci/hive/$CI_ENVIRONMENT_SLUG/$CI_COMMIT_REF_NAME
-  - cd ~/ci/hive/$CI_ENVIRONMENT_SLUG/$CI_COMMIT_REF_NAME
+  - rm -rf $CI_BUILDS_DIR/hive/$CI_COMMIT_REF_NAME
+  - git clone https://$CI_DEPLOY_USER:$CI_DEPLOY_PASSWORD@gitlab.syncad.com/hive/hive.git $CI_BUILDS_DIR/hive/$CI_COMMIT_REF_NAME
+  - cd $CI_BUILDS_DIR/hive/$CI_COMMIT_REF_NAME
   - git checkout $CI_COMMIT_REF_NAME
   - git status
   - git submodule sync --recursive
   - git submodule update --init --recursive
 
 after_script:
- - echo "Repository for this pipeline located on" ~/ci/hive/$CI_ENVIRONMENT_SLUG/$CI_COMMIT_REF_NAME
- - echo "Build for this pipeline located on" ~/ci/hive/$CI_ENVIRONMENT_SLUG/$CI_COMMIT_REF_NAME/build
+ - echo "Repository for this pipeline located on" $CI_BUILDS_DIR/hive/$CI_COMMIT_REF_NAME
+ - echo "Build for this pipeline located on" $CI_BUILDS_DIR/hive/$CI_COMMIT_REF_NAME/build
 
 staging-build:
   stage: build
@@ -26,35 +25,53 @@ staging-build:
     LC_ALL: "C"
     GIT_STRATEGY: none
     GIT_SUBMODULE_STRATEGY: recursive
-    
+
   script:
-    - docker build --no-cache --target consensus_node .
-    - docker build --no-cache --target fat_node .
-    - docker build --no-cache --target testnet_node_builder .
+    - (docker build --no-cache --target consensus_node .) 2>&1 2> $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/consensus_node_build.log || { tail -n 50 $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/consensus_node_build.log; exit 1; }
+    - (docker build --no-cache --target fat_node .) 2>&1 2> $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/fat_node_build.log || { tail -n 50 $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/fat_node_build.log; exit 2; }
+    - (docker build --no-cache --target testnet_node_builder .) 2>&1 2> $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/testnet_node_build.log || { tail -n 50 $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/testnet_node_build.log; exit 3; }
+  artifacts:
+    paths:
+# Warning: artifact paths *must* be subdirectory of $CI_PROJECT_DIR
+    - $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/consensus_node_build.log
+    - $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/fat_node_build.log
+    - $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/testnet_node_build.log
+    when: always
+    expire_in: 1 week
 
   cache: {}
   tags:
-    - $CI_RUNNER_TAGS
+    - hive-hive-runner
   allow_failure: false
   only:
    - 0.23.0
    - 0.24.0
-  environment:
-    name: staging
-    url: http://192.168.6.144:8888/v1/chain/get_info
+#  environment:
+#    name: staging
+#    url: http://192.168.6.144:8888/v1/chain/get_info
    
 
 development-build:
   stage: build
   variables:
     LC_ALL: "C"
+    DOCKER_BUILDKIT: 1
     GIT_STRATEGY: none
     GIT_SUBMODULE_STRATEGY: recursive
 
   script:
-    - docker build --no-cache --target consensus_node .
-    - docker build --no-cache --target fat_node .
-    - docker build --no-cache --target testnet_node_builder .
+    - (docker build --no-cache --target consensus_node .) 2>&1 2> $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/consensus_node_build.log || { tail -n 50 $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/consensus_node_build.log; exit 1; }
+    - (docker build --no-cache --target fat_node .) 2>&1 2> $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/fat_node_build.log || { tail -n 50 $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/fat_node_build.log; exit 2; }
+    - (docker build --no-cache --target testnet_node_builder .) 2>&1 2> $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/testnet_node_build.log || { tail -n 50 $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/testnet_node_build.log; exit 3; }
+
+  artifacts:
+    paths:
+# Warning: artifact paths *must* be subdirectory of $CI_PROJECT_DIR
+    - $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/consensus_node_build.log
+    - $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/fat_node_build.log
+    - $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/testnet_node_build.log
+    when: always
+    expire_in: 1 week
 
   cache: {}
   tags:
@@ -65,7 +82,7 @@ development-build:
   except:
    - 0.23.0
    - 0.24.0
-  environment:  
-    name: development
-    url: http://192.168.6.144:8888/v1/chain/get_info
+#  environment:  
+#    name: development
+#    url: http://192.168.6.144:8888/v1/chain/get_info
 
