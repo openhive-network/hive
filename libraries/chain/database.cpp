@@ -1,6 +1,7 @@
 #include <steem/chain/steem_fwd.hpp>
 
 #include <steem/protocol/steem_operations.hpp>
+#include <steem/protocol/get_config.hpp>
 
 #include <steem/chain/block_summary_object.hpp>
 #include <steem/chain/compound.hpp>
@@ -195,6 +196,14 @@ void database::open( const open_args& args )
          init_hardforks(); // Writes to local state, but reads from db
       });
 
+      with_read_lock( [&]()
+      {
+         const auto& hardforks = get_hardfork_property_object();
+         ilog("Loaded blockchain which had already processed hardfork 24, setting Hive chain id");
+         if (hardforks.last_hardfork >= STEEM_HARDFORK_0_24)
+            set_chain_id(HIVE_CHAIN_ID);
+      });
+         
       if (args.benchmark.first)
       {
          args.benchmark.second(0, get_abstract_index_cntr());
@@ -5806,6 +5815,7 @@ void database::apply_hardfork( uint32_t hardfork )
       case STEEM_HARDFORK_0_24:
       {
          restore_accounts( _hf23_items, hardforkprotect::get_restored_accounts() );
+         set_chain_id(HIVE_CHAIN_ID);
          break;
       }
       case STEEM_SMT_HARDFORK:

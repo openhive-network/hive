@@ -6,7 +6,7 @@
 
 namespace steem { namespace protocol {
 
-fc::variant_object get_config( const std::string& treasury_name )
+fc::variant_object get_config( const std::string& treasury_name, const fc::sha256& chain_id )
 {
    fc::mutable_variant_object result;
 
@@ -60,7 +60,7 @@ fc::variant_object get_config( const std::string& treasury_name )
    result["HIVE_CASHOUT_WINDOW_SECONDS"] = STEEM_CASHOUT_WINDOW_SECONDS;
    result["HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12"] = STEEM_CASHOUT_WINDOW_SECONDS_PRE_HF12;
    result["HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17"] = STEEM_CASHOUT_WINDOW_SECONDS_PRE_HF17;
-   result["HIVE_CHAIN_ID"] = STEEM_CHAIN_ID;
+   result["HIVE_CHAIN_ID"] = chain_id;
    result["HIVE_COMMENT_REWARD_FUND_NAME"] = STEEM_COMMENT_REWARD_FUND_NAME;
    result["HIVE_COMMENT_TITLE_LIMIT"] = STEEM_COMMENT_TITLE_LIMIT;
    result["HIVE_CONTENT_APR_PERCENT"] = STEEM_CONTENT_APR_PERCENT;

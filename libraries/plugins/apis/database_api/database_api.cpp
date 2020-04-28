@@ -163,7 +163,7 @@ database_api_impl::~database_api_impl() {}
 
 DEFINE_API_IMPL( database_api_impl, get_config )
 {
-   return steem::protocol::get_config( _db.get_treasury_name() );
+   return steem::protocol::get_config( _db.get_treasury_name(), _db.get_chain_id() );
 }
 
 DEFINE_API_IMPL( database_api_impl, get_version )
