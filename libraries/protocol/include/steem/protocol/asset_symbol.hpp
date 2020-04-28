@@ -3,33 +3,33 @@
 #include <fc/io/raw.hpp>
 #include <steem/protocol/types_fwd.hpp>
 
-#define STEEM_ASSET_SYMBOL_PRECISION_BITS    4
-#define STEEM_ASSET_CONTROL_BITS             1
-#define STEEM_NAI_SHIFT                      ( STEEM_ASSET_SYMBOL_PRECISION_BITS + STEEM_ASSET_CONTROL_BITS )
+#define HIVE_ASSET_SYMBOL_PRECISION_BITS     4
+#define HIVE_ASSET_CONTROL_BITS              1
+#define HIVE_NAI_SHIFT                       ( HIVE_ASSET_SYMBOL_PRECISION_BITS + HIVE_ASSET_CONTROL_BITS )
 #define SMT_MAX_NAI                          99999999
 #define SMT_MIN_NAI                          1
 #define SMT_MIN_NON_RESERVED_NAI             10000000
-#define STEEM_ASSET_SYMBOL_NAI_LENGTH        10
-#define STEEM_ASSET_SYMBOL_NAI_STRING_LENGTH ( STEEM_ASSET_SYMBOL_NAI_LENGTH + 2 )
+#define HIVE_ASSET_SYMBOL_NAI_LENGTH         10
+#define HIVE_ASSET_SYMBOL_NAI_STRING_LENGTH  ( HIVE_ASSET_SYMBOL_NAI_LENGTH + 2 )
 #define SMT_MAX_NAI_POOL_COUNT               10
 #define SMT_MAX_NAI_GENERATION_TRIES         100
 
-#define STEEM_PRECISION_SBD   (3)
-#define STEEM_PRECISION_STEEM (3)
-#define STEEM_PRECISION_VESTS (6)
+#define HIVE_PRECISION_HBD    (3)
+#define HIVE_PRECISION_HIVE   (3)
+#define HIVE_PRECISION_VESTS  (6)
 
 // One's place is used for check digit, which means NAI 0-9 all have NAI data of 0 which is invalid
 // This space is safe to use because it would alwasys result in failure to convert from NAI
-#define STEEM_NAI_SBD   (1)
-#define STEEM_NAI_STEEM (2)
-#define STEEM_NAI_VESTS (3)
+#define HIVE_NAI_HBD    (1)
+#define HIVE_NAI_HIVE   (2)
+#define HIVE_NAI_VESTS  (3)
 
-#define STEEM_ASSET_NUM_SBD \
-  (uint32_t(((SMT_MAX_NAI + STEEM_NAI_SBD)   << STEEM_NAI_SHIFT) | STEEM_PRECISION_SBD))
-#define STEEM_ASSET_NUM_STEEM \
-  (uint32_t(((SMT_MAX_NAI + STEEM_NAI_STEEM) << STEEM_NAI_SHIFT) | STEEM_PRECISION_STEEM))
-#define STEEM_ASSET_NUM_VESTS \
-  (uint32_t(((SMT_MAX_NAI + STEEM_NAI_VESTS) << STEEM_NAI_SHIFT) | STEEM_PRECISION_VESTS))
+#define STEEM_ASSET_NUM_SBD   (uint32_t(((SMT_MAX_NAI + HIVE_NAI_HBD)   << HIVE_NAI_SHIFT) | HIVE_PRECISION_HBD))
+#define HIVE_ASSET_NUM_HBD    (uint32_t(((SMT_MAX_NAI + HIVE_NAI_HBD)   << HIVE_NAI_SHIFT) | HIVE_PRECISION_HBD))
+#define STEEM_ASSET_NUM_STEEM (uint32_t(((SMT_MAX_NAI + HIVE_NAI_HIVE)  << HIVE_NAI_SHIFT) | HIVE_PRECISION_HIVE))
+#define HIVE_ASSET_NUM_HIVE   (uint32_t(((SMT_MAX_NAI + HIVE_NAI_HIVE)  << HIVE_NAI_SHIFT) | HIVE_PRECISION_HIVE))
+#define STEEM_ASSET_NUM_VESTS (uint32_t(((SMT_MAX_NAI + HIVE_NAI_VESTS) << HIVE_NAI_SHIFT) | HIVE_PRECISION_VESTS))
+#define HIVE_ASSET_NUM_VESTS  (uint32_t(((SMT_MAX_NAI + HIVE_NAI_VESTS) << HIVE_NAI_SHIFT) | HIVE_PRECISION_VESTS))
 
 #ifdef IS_TEST_NET
 
@@ -52,7 +52,7 @@
 #define STEEM_SYMBOL_SER  (uint64_t(3) | (STEEM_SYMBOL_U64 << 8)) ///< STEEM|TESTS with 3 digits of precision
 #define SBD_SYMBOL_SER    (uint64_t(3) |   (SBD_SYMBOL_U64 << 8)) ///< SBD|TBD with 3 digits of precision
 
-#define STEEM_ASSET_MAX_DECIMALS 12
+#define HIVE_ASSET_MAX_DECIMALS  12
 
 #define SMT_ASSET_NUM_PRECISION_MASK   0xF
 #define SMT_ASSET_NUM_CONTROL_MASK     0x10
@@ -89,7 +89,7 @@ class asset_symbol_type
       void to_nai_string( char* buf )const;
       std::string to_nai_string()const
       {
-         char buf[ STEEM_ASSET_SYMBOL_NAI_STRING_LENGTH ];
+         char buf[ HIVE_ASSET_SYMBOL_NAI_STRING_LENGTH ];
          to_nai_string( buf );
          return std::string( buf );
       }
@@ -242,8 +242,8 @@ inline void from_variant( const fc::variant& var, steem::protocol::asset_symbol_
       auto decimals = o.find( ASSET_SYMBOL_DECIMALS_KEY );
       FC_ASSERT( decimals != o.end(), "Expected key '${key}'.", ("key", ASSET_SYMBOL_DECIMALS_KEY) );
       FC_ASSERT( decimals->value().is_uint64(), "Expected an unsigned integer type for value '${key}'.", ("key", ASSET_SYMBOL_DECIMALS_KEY) );
-      FC_ASSERT( decimals->value().as_uint64() <= STEEM_ASSET_MAX_DECIMALS,
-         "Expected decimals to be less than or equal to ${num}", ("num", STEEM_ASSET_MAX_DECIMALS) );
+      FC_ASSERT( decimals->value().as_uint64() <= HIVE_ASSET_MAX_DECIMALS,
+         "Expected decimals to be less than or equal to ${num}", ("num", HIVE_ASSET_MAX_DECIMALS) );
 
       sym = asset_symbol_type::from_nai_string( nai->value().as_string().c_str(), decimals->value().as< uint8_t >() );
    } FC_CAPTURE_AND_RETHROW()

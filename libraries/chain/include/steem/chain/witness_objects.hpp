@@ -80,6 +80,11 @@ namespace steem { namespace chain {
             c( *this );
          }
 
+         //HBD to HIVE ratio proposed by the witness
+         const price& get_hbd_exchange_rate() const { return sbd_exchange_rate; }
+         //time when HBD/HIVE price ratio was last confirmed (TODO: add routine to check if price feed is valid)
+         const time_point_sec& get_last_hbd_exchange_update() const { return last_sbd_exchange_update; }
+
          id_type           id;
 
          /** the account that has authority over this witness */

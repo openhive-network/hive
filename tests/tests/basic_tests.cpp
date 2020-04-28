@@ -338,25 +338,25 @@ BOOST_AUTO_TEST_CASE( adjust_balance_test )
    BOOST_TEST_MESSAGE( "Testing adjust_balance" );
 
    BOOST_TEST_MESSAGE( " --- Testing adding HIVE_SYMBOL" );
-   db->adjust_balance( "alice", asset( 50000, STEEM_SYMBOL ) );
-   BOOST_REQUIRE( db->get_balance( "alice", STEEM_SYMBOL ) == asset( 50000, STEEM_SYMBOL ) );
+   db->adjust_balance( "alice", asset( 50000, HIVE_SYMBOL ) );
+   BOOST_REQUIRE( db->get_balance( "alice", HIVE_SYMBOL ) == asset( 50000, HIVE_SYMBOL ) );
 
    BOOST_TEST_MESSAGE( " --- Testing deducting HIVE_SYMBOL" );
-   STEEM_REQUIRE_THROW( db->adjust_balance( "alice", asset( -50001, STEEM_SYMBOL ) ), fc::assert_exception );
-   db->adjust_balance( "alice", asset( -30000, STEEM_SYMBOL ) );
-   db->adjust_balance( "alice", asset( -20000, STEEM_SYMBOL ) );
-   BOOST_REQUIRE( db->get_balance( "alice", STEEM_SYMBOL ) == asset( 0, STEEM_SYMBOL ) );
+   HIVE_REQUIRE_THROW( db->adjust_balance( "alice", asset( -50001, HIVE_SYMBOL ) ), fc::assert_exception );
+   db->adjust_balance( "alice", asset( -30000, HIVE_SYMBOL ) );
+   db->adjust_balance( "alice", asset( -20000, HIVE_SYMBOL ) );
+   BOOST_REQUIRE( db->get_balance( "alice", HIVE_SYMBOL ) == asset( 0, HIVE_SYMBOL ) );
 
    BOOST_TEST_MESSAGE( " --- Testing adding HBD_SYMBOL" );
-   db->adjust_balance( "alice", asset( 100000, SBD_SYMBOL ) );
-   BOOST_REQUIRE( db->get_balance( "alice", SBD_SYMBOL ) == asset( 100000, SBD_SYMBOL ) );
+   db->adjust_balance( "alice", asset( 100000, HBD_SYMBOL ) );
+   BOOST_REQUIRE( db->get_balance( "alice", HBD_SYMBOL ) == asset( 100000, HBD_SYMBOL ) );
 
    BOOST_TEST_MESSAGE( " --- Testing deducting HBD_SYMBOL" );
-   STEEM_REQUIRE_THROW( db->adjust_balance( "alice", asset( -100001, SBD_SYMBOL ) ), fc::assert_exception );
-   db->adjust_balance( "alice", asset( -50000, SBD_SYMBOL ) );
-   db->adjust_balance( "alice", asset( -25000, SBD_SYMBOL ) );
-   db->adjust_balance( "alice", asset( -25000, SBD_SYMBOL ) );
-   BOOST_REQUIRE( db->get_balance( "alice", SBD_SYMBOL ) == asset( 0, SBD_SYMBOL ) );
+   HIVE_REQUIRE_THROW( db->adjust_balance( "alice", asset( -100001, HBD_SYMBOL ) ), fc::assert_exception );
+   db->adjust_balance( "alice", asset( -50000, HBD_SYMBOL ) );
+   db->adjust_balance( "alice", asset( -25000, HBD_SYMBOL ) );
+   db->adjust_balance( "alice", asset( -25000, HBD_SYMBOL ) );
+   BOOST_REQUIRE( db->get_balance( "alice", HBD_SYMBOL ) == asset( 0, HBD_SYMBOL ) );
 }
 
 uint8_t find_msb( const uint128_t& u )

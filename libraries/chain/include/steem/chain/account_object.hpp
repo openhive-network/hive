@@ -29,7 +29,33 @@ namespace steem { namespace chain {
          : delayed_votes( a )
          {
             c(*this);
-         };
+         }
+
+         //liquid HIVE balance
+         const asset& get_balance() const { return balance; }
+         //HIVE balance in savings
+         const asset& get_savings() const { return savings_balance; }
+         //unclaimed HIVE rewards
+         const asset& get_rewards() const { return reward_steem_balance; }
+
+         //liquid HBD balance
+         const asset& get_hbd_balance() const { return sbd_balance; }
+         //HBD balance in savings
+         const asset& get_hbd_savings() const { return savings_sbd_balance; }
+         //unclaimed HBD rewards
+         const asset& get_hbd_rewards() const { return reward_sbd_balance; }
+
+         //all VESTS held by the account - use other routines to get active VESTS for specific uses
+         const asset& get_vesting() const { return vesting_shares; }
+         //VESTS that were delegated to other accounts
+         const asset& get_delegated_vesting() const { return delegated_vesting_shares; }
+         //VESTS that were borrowed from other accounts
+         const asset& get_received_vesting() const { return received_vesting_shares; }
+         //TODO: add routines for specific uses, f.e. get_witness_voting_power, get_proposal_voting_power, get_post_voting_power...
+         //unclaimed VESTS rewards
+         const asset& get_vest_rewards() const { return reward_vesting_balance; }
+         //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
+         const asset& get_vest_rewards_as_hive() const { return reward_vesting_steem; }
 
          id_type           id;
 
@@ -208,6 +234,9 @@ namespace steem { namespace chain {
 
          vesting_delegation_object() {}
 
+         //amount of delegated VESTS
+         const asset& get_vesting() const { return vesting_shares; }
+
          id_type           id;
          account_name_type delegator;
          account_name_type delegatee;
@@ -225,6 +254,9 @@ namespace steem { namespace chain {
          }
 
          vesting_delegation_expiration_object() {}
+
+         //amount of expiring delegated VESTS
+         const asset& get_vesting() const { return vesting_shares; }
 
          id_type           id;
          account_name_type delegator;

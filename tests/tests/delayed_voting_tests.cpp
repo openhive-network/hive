@@ -38,7 +38,7 @@ using namespace steem::chain;
 using namespace steem::protocol;
 using fc::string;
 
-constexpr int DAYS_FOR_DELAYED_VOTING{ (STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS) };
+constexpr int DAYS_FOR_DELAYED_VOTING{ (HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / HIVE_DELAYED_VOTING_INTERVAL_SECONDS) };
 
 #define VOTING_POWER( account ) db->get_account( account ).witness_vote_weight().value
 #define PROXIED_VSF( account ) db->get_account( account ).proxied_vsf_votes_total().value
@@ -331,8 +331,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          FUND( "witness1", ASSET( "10000.000 TESTS" ) );
          FUND( "witness2", ASSET( "10000.000 TESTS" ) );
 
-         witness_create( "witness1", witness1_private_key, "url.witness1", witness1_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
-         witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+         witness_create( "witness1", witness1_private_key, "url.witness1", witness1_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+         witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
          generate_block();
 
          auto _v1 = vamount( _1 );
@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
             `bob`    makes vests
             `celine` makes vests
          */
-         start_time += STEEM_DELAYED_VOTING_INTERVAL_SECONDS;
+         start_time += HIVE_DELAYED_VOTING_INTERVAL_SECONDS;
          generate_blocks( start_time, true );
          day = 1;
 
@@ -473,7 +473,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
             `alice`  makes vests
             `celine` makes vests
          */
-         start_time += STEEM_DELAYED_VOTING_INTERVAL_SECONDS;
+         start_time += HIVE_DELAYED_VOTING_INTERVAL_SECONDS;
          generate_blocks( start_time, true );
          day = 2;
 
@@ -503,7 +503,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
                `bob`    makes vests
                `celine` makes vests
          */
-         start_time += 13 * STEEM_DELAYED_VOTING_INTERVAL_SECONDS;
+         start_time += 13 * HIVE_DELAYED_VOTING_INTERVAL_SECONDS;
          generate_blocks( start_time, true );
          day = 15;
 
@@ -538,7 +538,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          /*
             *****`30 days - 1 block`*****
          */
-         start_time += 15 * STEEM_DELAYED_VOTING_INTERVAL_SECONDS - STEEM_BLOCK_INTERVAL;
+         start_time += 15 * HIVE_DELAYED_VOTING_INTERVAL_SECONDS - HIVE_BLOCK_INTERVAL;
          generate_blocks( start_time, true );
 
          BOOST_REQUIRE( get_votes( "witness1" ) == votes_witness1 );
@@ -605,7 +605,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
             `bob`    makes vests
             `celine` makes vests
          */
-         start_time += STEEM_BLOCK_INTERVAL;
+         start_time += HIVE_BLOCK_INTERVAL;
          generate_blocks( start_time, true );
          day = 30;
          size_t diff = 1;//because `1` element in delayed_votes has been removed already
@@ -662,7 +662,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
             *****`+ 31 days`*****
             `celine` makes vests
          */
-         start_time += fc::seconds( STEEM_DELAYED_VOTING_INTERVAL_SECONDS ) ;
+         start_time += fc::seconds( HIVE_DELAYED_VOTING_INTERVAL_SECONDS ) ;
          generate_blocks( start_time, true );
          day = 31;
          size_t diff = 2;//because `2` elements in delayed_votes have been removed already
@@ -737,7 +737,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          /*
             *****`lasted 40 days`*****
          */
-         start_time += 8 * STEEM_DELAYED_VOTING_INTERVAL_SECONDS;
+         start_time += 8 * HIVE_DELAYED_VOTING_INTERVAL_SECONDS;
          generate_blocks( start_time, true );
 
          BOOST_REQUIRE( get_votes( "witness1" ) == ( votes_witness1 + ( witness1_result_00 + witness1_result_01 + witness1_result_02 ).value ) );
@@ -782,7 +782,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
          /*
             *****`lasted 80 days`*****
          */
-         start_time += 40 * STEEM_DELAYED_VOTING_INTERVAL_SECONDS;
+         start_time += 40 * HIVE_DELAYED_VOTING_INTERVAL_SECONDS;
          generate_blocks( start_time, true );
 
          idump( ( VOTING_POWER( "alice" ) ) );
@@ -844,7 +844,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
       {
          BOOST_TEST_MESSAGE( "Preparing witnesses..." );
 
-         witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+         witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
          generate_block();
       }
 
@@ -906,7 +906,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
          auto v_celine  = get_vesting( "celine" );
          auto v_witness = get_vesting( "witness" );
 
-         generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
+         generate_blocks( start_time + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
 
          BOOST_REQUIRE( get_vesting( "alice" ) == v_alice );
          BOOST_REQUIRE( get_vesting( "bob" ) == v_bob );
@@ -984,7 +984,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
       {
          BOOST_TEST_MESSAGE( "Preparing witnesses..." );
 
-         witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+         witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
          generate_block();
       }
 
@@ -1044,7 +1044,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
          BOOST_REQUIRE( get_vesting( "witness" ).amount.value == v_witness.amount.value );
          BOOST_REQUIRE( get_votes( "witness" ) == votes_01 );
 
-         generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
+         generate_blocks( start_time + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
 
          auto sum = v_alice + v_bob;
          BOOST_REQUIRE( get_votes( "witness" ) == votes_01 + sum.amount.value );
@@ -1082,7 +1082,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
       FUND( "witness", ASSET( "10000.000 TESTS" ) );
       //Prepare witnesses
       
-      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
       generate_block();
 
       auto start_time = db->head_block_time();
@@ -1098,7 +1098,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
       share_type votes_01 = get_votes( "witness" );
       BOOST_REQUIRE( votes_01 == basic_votes );
 
-      generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
+      generate_blocks( start_time + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
       generate_block();
 
       auto votes_power = get_vesting( "alice" );
@@ -1128,7 +1128,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_04 )
       FUND( "witness", ASSET( "10000.000 TESTS" ) );
       
       //Prepare witnesses
-      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
       generate_block();
 
       auto start_time = db->head_block_time();
@@ -1142,12 +1142,12 @@ BOOST_AUTO_TEST_CASE( delayed_voting_04 )
       generate_block();
 
       BOOST_REQUIRE( basic_votes == get_votes( "witness" ) );
-      for(int i = 1; i < (STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS) - 1; i++)
+      for(int i = 1; i < (HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / HIVE_DELAYED_VOTING_INTERVAL_SECONDS) - 1; i++)
       {
-         generate_blocks( start_time + (i * STEEM_DELAYED_VOTING_INTERVAL_SECONDS) , true );
+         generate_blocks( start_time + (i * HIVE_DELAYED_VOTING_INTERVAL_SECONDS) , true );
          BOOST_REQUIRE( get_votes( "witness" ) == basic_votes );
       }
-      generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
+      generate_blocks( start_time + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
       generate_block();
 
       auto votes_power = get_vesting( "bob" );
@@ -1177,8 +1177,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
       FUND( "witness2", ASSET( "10000.000 TESTS" ) );
       
       //Prepare witnesses
-      witness_create( "witness1", witness1_private_key, "url.witness1", witness1_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
-      witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness1", witness1_private_key, "url.witness1", witness1_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
       generate_block();
 
       auto start_time = db->head_block_time();
@@ -1199,12 +1199,12 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
 
       for(int i = 1; i < DAYS_FOR_DELAYED_VOTING - 1; i++)
       {
-         generate_blocks( start_time + (i * STEEM_DELAYED_VOTING_INTERVAL_SECONDS) , true );
+         generate_blocks( start_time + (i * HIVE_DELAYED_VOTING_INTERVAL_SECONDS) , true );
          if( i == static_cast<int>( DAYS_FOR_DELAYED_VOTING/2 )) witness_vote( "bob", "witness2", true/*approve*/, bob_private_key );
          BOOST_REQUIRE( get_votes( "witness1" ) == votes_01_1 );
          BOOST_REQUIRE( get_votes( "witness2" ) == votes_01_2 );
       }
-      generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
+      generate_blocks( start_time + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
       generate_block();
 
       auto votes_power = get_vesting( "bob" );
@@ -1235,7 +1235,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_06 )
       
       //Prepare witnesses
       const auto start_time = db->head_block_time();
-      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
       generate_block();
 
       const share_type basic_votes = get_votes( "witness" );
@@ -1244,7 +1244,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_06 )
       vest( "bob", "bob", ASSET( "1000.000 TESTS" ), bob_private_key );
       generate_block();
 
-      STEEM_REQUIRE_THROW( witness_vote( "bob", "witness", false/*approve*/, bob_private_key ), fc::assert_exception) ;
+      HIVE_REQUIRE_THROW( witness_vote( "bob", "witness", false/*approve*/, bob_private_key ), fc::assert_exception) ;
       generate_block();
       BOOST_REQUIRE( get_votes( "witness" ) == basic_votes );
 
@@ -1256,7 +1256,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_06 )
       generate_block();
       BOOST_REQUIRE( get_votes( "witness" ) == basic_votes );
 
-      generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+      generate_blocks( start_time + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
       BOOST_REQUIRE( get_votes( "witness" ) == basic_votes );
 
       validate_database();
@@ -1429,7 +1429,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
       FUND( "witness", ASSET( "100000.000 TESTS" ) );
       
       //Prepare witnesses
-      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
       generate_block();
       vest( "bob", "bob", ASSET( "100.000 TESTS" ), bob_private_key );
       vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
@@ -1459,7 +1459,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
       for(int i = 1; i < DAYS_FOR_DELAYED_VOTING - 1; i++)
       {
          // 1 day
-         generate_blocks( start_time + (i * STEEM_DELAYED_VOTING_INTERVAL_SECONDS) , true );
+         generate_blocks( start_time + (i * HIVE_DELAYED_VOTING_INTERVAL_SECONDS) , true );
 
          // base checks for witness, bob and celine
          BOOST_REQUIRE( get_votes("witness") == basic_votes );
@@ -1481,11 +1481,11 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
       }
 
       // check is bob ok
-      generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS, true );
+      generate_blocks( start_time + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS, true );
       BOOST_REQUIRE( get_delayed_vote_count("bob", {}) );
 
       // check is alice ok (after another month)
-      generate_blocks( start_time + (2 * STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS) , true );
+      generate_blocks( start_time + (2 * HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS) , true );
       BOOST_REQUIRE( get_delayed_vote_count("alice", {}) );
 
       // check is witness ok
@@ -1644,12 +1644,12 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
    {
       dv.add_votes( items, false/*withdraw_executor*/, -5/*val*/, db->get_account( "alice" ) );
       //delayed_voting_messages::incorrect_votes_update
-      STEEM_REQUIRE_THROW( dv.update_votes( items, time ), fc::exception );
+      HIVE_REQUIRE_THROW( dv.update_votes( items, time ), fc::exception );
       items->clear();
 
       dv.add_votes( items, true/*withdraw_executor*/, 1/*val*/, db->get_account( "alice" ) );
       //delayed_voting_messages::incorrect_votes_update
-      STEEM_REQUIRE_THROW( dv.update_votes( items, time ), fc::exception );
+      HIVE_REQUIRE_THROW( dv.update_votes( items, time ), fc::exception );
       items->clear();
    }
    {
@@ -1719,7 +1719,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_01 )
    }
    {
       //delayed_voting_messages::incorrect_withdraw_data
-      STEEM_REQUIRE_THROW( dv.add_votes( items, false/*withdraw_executor*/, 88/*val*/, *accs[0] ), fc::exception );
+      HIVE_REQUIRE_THROW( dv.add_votes( items, false/*withdraw_executor*/, 88/*val*/, *accs[0] ), fc::exception );
    }
    {
       dv.add_votes( items, true/*withdraw_executor*/, 2/*val*/, *accs[1] );
@@ -1742,7 +1742,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_01 )
    }
    {
       //delayed_voting_messages::incorrect_withdraw_data
-      STEEM_REQUIRE_THROW( dv.add_votes( items, false/*withdraw_executor*/, 4/*val*/, *accs[1] ), fc::exception );
+      HIVE_REQUIRE_THROW( dv.add_votes( items, false/*withdraw_executor*/, 4/*val*/, *accs[1] ), fc::exception );
    }
 }
 
@@ -1764,7 +1764,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_03 )
    {
       BOOST_REQUIRE( dq.size() == 0 );
       //delayed_voting_messages::incorrect_erased_votes
-      STEEM_REQUIRE_THROW( delayed_voting_processor::erase( dq, sum, 1 ), fc::exception );
+      HIVE_REQUIRE_THROW( delayed_voting_processor::erase( dq, sum, 1 ), fc::exception );
    }
 
    {
@@ -1851,7 +1851,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_02 )
 
    //delayed_voting_messages::incorrect_erased_votes
    //dq={1,2}
-   STEEM_REQUIRE_THROW( delayed_voting_processor::erase( dq, sum, 10ul ), fc::exception );
+   HIVE_REQUIRE_THROW( delayed_voting_processor::erase( dq, sum, 10ul ), fc::exception );
 
    //dq={1,2}
    delayed_voting_processor::erase( dq, sum, 3ul );
@@ -1960,7 +1960,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
    {
       //delayed_voting_messages::incorrect_sum_equal
       sum = 1;
-      STEEM_REQUIRE_THROW( delayed_voting_processor::erase_front( dq, sum ), fc::exception );
+      HIVE_REQUIRE_THROW( delayed_voting_processor::erase_front( dq, sum ), fc::exception );
 
       sum = 0;
       delayed_voting_processor::erase_front( dq, sum );
@@ -1970,7 +1970,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
       delayed_voting_processor::add( dq, sum, time, 2/*val*/ );
       --sum;
       //delayed_voting_messages::incorrect_sum_greater_equal
-      STEEM_REQUIRE_THROW( delayed_voting_processor::erase_front( dq, sum ), fc::exception );
+      HIVE_REQUIRE_THROW( delayed_voting_processor::erase_front( dq, sum ), fc::exception );
 
       ++sum;
       delayed_voting_processor::erase_front( dq, sum );
@@ -1984,7 +1984,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
       BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::seconds( 30 )/*time*/, 1000/*val*/ ) );
 
       //delayed_voting_messages::incorrect_head_time
-      STEEM_REQUIRE_THROW( delayed_voting_processor::add( dq, sum, time + fc::seconds( 29 )/*time*/, 1000/*val*/ ), fc::exception );
+      HIVE_REQUIRE_THROW( delayed_voting_processor::add( dq, sum, time + fc::seconds( 29 )/*time*/, 1000/*val*/ ), fc::exception );
 
       delayed_voting_processor::erase_front( dq, sum );
       BOOST_REQUIRE( dq.size() == 0 );
@@ -2009,7 +2009,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_01 )
       FUND( "witness", ASSET( "10000.000 TESTS" ) );
       
       //Prepare witnesses
-      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
       generate_block();
 
       //Make some vests
@@ -2029,9 +2029,9 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_01 )
 
       // blocked bob - do
       decline_voting_rights("bob", true, bob_private_key);
-      generate_blocks( db->head_block_time() + STEEM_OWNER_AUTH_RECOVERY_PERIOD, true );
+      generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD, true );
       BOOST_REQUIRE( CAN_VOTE("bob") == false );
-      STEEM_REQUIRE_THROW( witness_vote( "bob", "witness", true, bob_private_key ), fc::assert_exception );
+      HIVE_REQUIRE_THROW( witness_vote( "bob", "witness", true, bob_private_key ), fc::assert_exception );
       generate_block();
 
       // blocked bob - check
@@ -2058,7 +2058,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
       FUND( "witness", ASSET( "10000.000 TESTS" ) );
       
       //Prepare witnesses
-      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
       generate_block();
 
       //Make some vests
@@ -2077,14 +2077,14 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
 
       // bob block
       decline_voting_rights("bob", true, bob_private_key);
-      generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true );
+      generate_blocks( db->head_block_time() + (HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true );
 
       // bob check
       BOOST_REQUIRE( CAN_VOTE("bob") );
       
       // bob account is voting
       witness_vote( "bob", "witness", true, bob_private_key );
-      generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 3), true );
+      generate_blocks( db->head_block_time() + (HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 3), true );
       
       // bob check
       BOOST_REQUIRE( CAN_VOTE("bob") );
@@ -2093,10 +2093,10 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
       BOOST_REQUIRE( get_votes("witness") == basic_votes + alice_power + bob_power );
 
       // bobs block request is active
-      generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 3), true );
+      generate_blocks( db->head_block_time() + (HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 3), true );
       
       // blocked bob - check
-      STEEM_REQUIRE_THROW( witness_vote( "bob", "witness", true, bob_private_key ), fc::assert_exception );
+      HIVE_REQUIRE_THROW( witness_vote( "bob", "witness", true, bob_private_key ), fc::assert_exception );
       BOOST_REQUIRE( get_votes("witness") == basic_votes + alice_power );
       BOOST_REQUIRE( CAN_VOTE("bob") == false );
    }
@@ -2128,8 +2128,8 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_03 )
       FUND( "witness2", ASSET( "10000.000 TESTS" ) );
       
       //Prepare witnesses
-      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
-      witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
       generate_block();
 
       //Make some vests
@@ -2149,7 +2149,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_03 )
 
       // bob block
       decline_voting_rights("bob", true, bob_private_key);
-      generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true );
+      generate_blocks( db->head_block_time() + (HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true );
 
       // bob check
       BOOST_REQUIRE( CAN_VOTE("bob") );
@@ -2203,7 +2203,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
       FUND( "witness", ASSET( "10000.000 TESTS" ) );
       
       //Prepare witnesses
-      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
       generate_block();
 
       //Make some vests
@@ -2212,7 +2212,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
       witness_vote( "bob", "witness", true, bob_private_key );
       generate_block();
       BOOST_REQUIRE( get_votes("witness") == basic_votes );
-      generate_blocks( db->head_block_time() + ( STEEM_DELAYED_VOTING_INTERVAL_SECONDS * 29 ) , true ); // 120s
+      generate_blocks( db->head_block_time() + ( HIVE_DELAYED_VOTING_INTERVAL_SECONDS * 29 ) , true ); // 120s
       
       // bob check
       BOOST_REQUIRE( CAN_VOTE("bob") );
@@ -2222,7 +2222,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
 
       // bob block
       decline_voting_rights("bob", true, bob_private_key);
-      generate_blocks( db->head_block_time() + (STEEM_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true ); 
+      generate_blocks( db->head_block_time() + (HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true ); 
 
       // bob check
       BOOST_REQUIRE( CAN_VOTE("bob") );
@@ -2232,7 +2232,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
 
       decline_voting_rights("bob", false, bob_private_key);
 
-      generate_blocks( db->head_block_time() + STEEM_DELAYED_VOTING_INTERVAL_SECONDS , true ); 
+      generate_blocks( db->head_block_time() + HIVE_DELAYED_VOTING_INTERVAL_SECONDS , true ); 
 
       BOOST_REQUIRE( get_votes("witness") == basic_votes + bob_power );
       BOOST_REQUIRE( CAN_VOTE("bob") );  // block has been cancelled
@@ -2259,7 +2259,7 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
       FUND( "witness", ASSET( "10000.000 TESTS" ) );
       //Prepare witnesses
       
-      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
       generate_block();
 
       auto start_time = db->head_block_time();
@@ -2284,12 +2284,12 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
       const auto alice_vp_2 = get_vesting( "alice" ).amount.value;
       generate_block();
 
-      generate_blocks( start_time + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
+      generate_blocks( start_time + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
       generate_block();
 
       // lock is working and alice doesn't have huge amount of votes in sneaky way
       BOOST_REQUIRE( get_votes( "witness" ) == basic_votes + alice_vp );
-      generate_blocks( start_time + (2 * STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ) , true );
+      generate_blocks( start_time + (2 * HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ) , true );
       BOOST_REQUIRE( get_votes( "witness" ) == basic_votes + alice_vp_2 );
 
 
@@ -2322,8 +2322,8 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
 #define CHECK_ACCOUNT_VESTS( account ) \
    BOOST_REQUIRE( get_vesting( #account ) == expected_ ## account ## _vests )
 
-#define CHECK_ACCOUNT_STEEM( account ) \
-   BOOST_REQUIRE( get_balance( #account ) == expected_ ## account ## _steem )
+#define CHECK_ACCOUNT_HIVE( account ) \
+   BOOST_REQUIRE( get_balance( #account ) == expected_ ## account ## _hive )
 
 #define CHECK_ACCOUNT_VP( account ) \
    BOOST_REQUIRE( VOTING_POWER( #account ) == expected_ ## account ## _vp )
@@ -2361,7 +2361,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
    int64_t initial_bob0bp_vp;
    int64_t initial_bob0bp_votes;
    int64_t initial_bob0bp_delayed_votes;
-   asset initial_carol_steem;
+   asset initial_carol_hive;
 
    asset expected_alice_vests = initial_alice_vests;
    asset expected_alice0bp_vests;
@@ -2373,7 +2373,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
    int64_t expected_bob0bp_vp;
    int64_t expected_bob0bp_votes;
    int64_t expected_bob0bp_delayed_votes;
-   asset expected_carol_steem;
+   asset expected_carol_hive;
 
 /* https://gitlab.syncad.com/hive-group/steem/issues/5#note_24084
 
@@ -2386,15 +2386,15 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
    BOOST_TEST_MESSAGE( "[scenario_01]: alice has " << asset_to_string( get_vesting( "alice" )) );
    BOOST_TEST_MESSAGE( "[scenario_01]: alice has " << asset_to_string( get_balance( "alice" )) );
 
-   witness_create( "alice0bp", alice0bp_private_key, "url.alice.bp", alice0bp_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
-   witness_create( "bob0bp", bob0bp_private_key, "url.bob.bp", bob0bp_private_key.get_public_key(), STEEM_MIN_PRODUCER_REWARD.amount );
+   witness_create( "alice0bp", alice0bp_private_key, "url.alice.bp", alice0bp_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+   witness_create( "bob0bp", bob0bp_private_key, "url.bob.bp", bob0bp_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
    generate_block();
 
 /*
-  For simplicity we are going to assume 1 vest == 1 STEEM at all times but in reality all conversions
+  For simplicity we are going to assume 1 vest == 1 HIVE at all times but in reality all conversions
   are done using rate from the time when action is performed.
   
-  Before test starts alice has 1300 STEEM in liquid form. She sets up vest route in the following way:
+  Before test starts alice has 1300 HIVE in liquid form. She sets up vest route in the following way:
   - to alice in vest form 25%
   - to bob in vest form 25%
   - to carol in liquid form 25%
@@ -2409,7 +2409,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
    set_withdraw_vesting_route_operation op;
    op.from_account = "alice";
    op.to_account = "alice";
-   op.percent = STEEM_1_PERCENT * 25;
+   op.percent = HIVE_1_PERCENT * 25;
    op.auto_vest = true;
    tx.operations.push_back( op );
    }
@@ -2419,7 +2419,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
    set_withdraw_vesting_route_operation op;
    op.from_account = "alice";
    op.to_account = "bob";
-   op.percent = STEEM_1_PERCENT * 25;
+   op.percent = HIVE_1_PERCENT * 25;
    op.auto_vest = true;
    tx.operations.push_back( op );
    }
@@ -2429,12 +2429,12 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
    set_withdraw_vesting_route_operation op;
    op.from_account = "alice";
    op.to_account = "carol";
-   op.percent = STEEM_1_PERCENT * 25;
+   op.percent = HIVE_1_PERCENT * 25;
    op.auto_vest = false;
    tx.operations.push_back( op );
    }
 
-   tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
    sign( tx, alice_private_key );
    db->push_transaction( tx, 0 );
    validate_database();
@@ -2447,7 +2447,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
    generate_block();
 
 /*
-  Day 0: alice powers up 1000 STEEM; she has 1000 vests, including delayed maturing on day 30 and 300 STEEM
+  Day 0: alice powers up 1000 HIVE; she has 1000 vests, including delayed maturing on day 30 and 300 HIVE
 */
    uint32_t today = 0;
    asset origin_alice_vests = get_vesting( "alice" );
@@ -2462,7 +2462,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
    BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "300.000 TESTS" ) );
 
 /*
-  Day 5: alice powers up 300 STEEM; she has 1300 vests, including delayed 1000 maturing on day 30 and 300 maturing on day 35, 0 STEEM
+  Day 5: alice powers up 300 HIVE; she has 1300 vests, including delayed 1000 maturing on day 30 and 300 maturing on day 35, 0 HIVE
 */
    BOOST_TEST_MESSAGE( "[scenario_01]: before set_current_day( 5 ): " << get_current_time_iso_string() );
    GOTO_DAY( 5 );
@@ -2481,10 +2481,10 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
    GOTO_DAY( 10 );
 
    int64_t new_vests = (get_vesting( "alice" ) - origin_alice_vests).amount.value;
-   int64_t new_vests_portion = new_vests / STEEM_VESTING_WITHDRAW_INTERVALS;
+   int64_t new_vests_portion = new_vests / HIVE_VESTING_WITHDRAW_INTERVALS;
 
    int64_t quarter = new_vests / 4;
-   int64_t portion = quarter / STEEM_VESTING_WITHDRAW_INTERVALS;
+   int64_t portion = quarter / HIVE_VESTING_WITHDRAW_INTERVALS;
 
    BOOST_TEST_MESSAGE( "[scenario_01]: alice powers down all new vests" );
    withdraw_vesting( "alice", asset( new_vests, VESTS_SYMBOL ), alice_private_key );
@@ -2494,7 +2494,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
    BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
 
 /*
-  Day 17: PD of 100 vests from alice gives 25 STEEM to carol, 25 STEEM to alice, powers up 25 vests to bob (maturing on day 47)
+  Day 17: PD of 100 vests from alice gives 25 HIVE to carol, 25 HIVE to alice, powers up 25 vests to bob (maturing on day 47)
   and ignores 25 vests of power down (power down canceled in 25% by vest route to alice);
   since there is nonzero balance as delayed, 75 vests are subtracted from second record leaving 1000 (30day) + 225 (35day)
   alice 25S+1225v=0+1000(30d)+225(35d); bob 25v=0+25(47d); carol 25S
@@ -2509,7 +2509,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
    initial_bob0bp_vp = VOTING_POWER( "bob0bp");
    initial_bob0bp_votes = WITNESS_VOTES( "bob0bp" );
    initial_bob0bp_delayed_votes = DELAYED_VOTES( "bob0bp" );
-   initial_carol_steem = get_balance( "carol" );
+   initial_carol_hive = get_balance( "carol" );
 
    expected_alice_vests = initial_alice0bp_vests;
    expected_alice0bp_vests = initial_alice0bp_vests;
@@ -2521,7 +2521,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
    expected_bob0bp_vp = initial_bob0bp_vp;
    expected_bob0bp_votes = initial_bob0bp_votes;
    expected_bob0bp_delayed_votes = initial_bob0bp_delayed_votes;
-   expected_carol_steem = initial_carol_steem;
+   expected_carol_hive = initial_carol_hive;
 
    GOTO_DAY( 17 );
    DAY_REPORT( today );
@@ -2811,7 +2811,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 #undef DELAYED_VOTES
 #undef DAY_REPORT
 #undef CHECK_ACCOUNT_VESTS
-#undef CHECK_ACCOUNT_STEEM
+#undef CHECK_ACCOUNT_HIVE
 #undef CHECK_ACCOUNT_VP
 #undef CHECK_WITNESS_VOTES
 #undef DAY_CHECK

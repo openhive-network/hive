@@ -32,7 +32,7 @@ class hf23_helper
 
    public:
 
-      static void gather_balance( hf23_items& source, const std::string& name, const asset& balance, const asset& sbd_balance );
+      static void gather_balance( hf23_items& source, const std::string& name, const asset& balance, const asset& hbd_balance );
 };
 
 } } // namespace steem::chain

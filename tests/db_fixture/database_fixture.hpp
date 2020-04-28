@@ -21,9 +21,9 @@
 #include <iostream>
 
 #define INITIAL_TEST_SUPPLY (10000000000ll)
-#define SBD_INITIAL_TEST_SUPPLY (300000000ll)
+#define HBD_INITIAL_TEST_SUPPLY (300000000ll)
 
-extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
+extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
 
 #define PUSH_TX \
    steem::chain::test::_push_transaction
@@ -48,7 +48,7 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
    db.push_transaction( trx, ~0 ); \
 }
 
-/*#define STEEM_REQUIRE_THROW( expr, exc_type )          \
+/*#define HIVE_REQUIRE_THROW( expr, exc_type )            \
 {                                                         \
    std::string req_throw_info = fc::json::to_string(      \
       fc::mutable_variant_object()                        \
@@ -58,18 +58,18 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
       ("exc_type", #exc_type)                             \
       );                                                  \
    if( fc::enable_record_assert_trip )                    \
-      std::cout << "STEEM_REQUIRE_THROW begin "        \
+      std::cout << "HIVE_REQUIRE_THROW begin "            \
          << req_throw_info << std::endl;                  \
    BOOST_REQUIRE_THROW( expr, exc_type );                 \
    if( fc::enable_record_assert_trip )                    \
-      std::cout << "STEEM_REQUIRE_THROW end "          \
+      std::cout << "HIVE_REQUIRE_THROW end "              \
          << req_throw_info << std::endl;                  \
 }*/
 
-#define STEEM_REQUIRE_THROW( expr, exc_type )          \
+#define HIVE_REQUIRE_THROW( expr, exc_type )              \
    BOOST_REQUIRE_THROW( expr, exc_type );
 
-#define STEEM_CHECK_THROW( expr, exc_type )            \
+#define HIVE_CHECK_THROW( expr, exc_type )                \
 {                                                         \
    std::string req_throw_info = fc::json::to_string(      \
       fc::mutable_variant_object()                        \
@@ -79,11 +79,11 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
       ("exc_type", #exc_type)                             \
       );                                                  \
    if( fc::enable_record_assert_trip )                    \
-      std::cout << "STEEM_CHECK_THROW begin "          \
+      std::cout << "HIVE_CHECK_THROW begin "              \
          << req_throw_info << std::endl;                  \
    BOOST_CHECK_THROW( expr, exc_type );                   \
    if( fc::enable_record_assert_trip )                    \
-      std::cout << "STEEM_CHECK_THROW end "            \
+      std::cout << "HIVE_CHECK_THROW end "                \
          << req_throw_info << std::endl;                  \
 }
 
@@ -91,7 +91,7 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
 { \
    const auto temp = op.field; \
    op.field = value; \
-   STEEM_REQUIRE_THROW( op.validate(), exc_type ); \
+   HIVE_REQUIRE_THROW( op.validate(), exc_type ); \
    op.field = temp; \
 }
 #define REQUIRE_OP_VALIDATION_FAILURE( op, field, value ) \
@@ -103,7 +103,7 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
    op.field = value; \
    trx.operations.back() = op; \
    op.field = bak; \
-   STEEM_REQUIRE_THROW(db.push_transaction(trx, ~0), exc_type); \
+   HIVE_REQUIRE_THROW(db.push_transaction(trx, ~0), exc_type); \
 }
 
 #define REQUIRE_THROW_WITH_VALUE( op, field, value ) \
@@ -155,7 +155,7 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
 
 #define OP2TX(OP,TX,KEY) \
 TX.operations.push_back( OP ); \
-TX.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION ); \
+TX.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION ); \
 TX.sign( KEY, db->get_chain_id(), fc::ecc::bip_0062 );
 
 #define PUSH_OP(OP,KEY) \
@@ -177,7 +177,7 @@ TX.sign( KEY, db->get_chain_id(), fc::ecc::bip_0062 );
 { \
    signed_transaction tx; \
    OP2TX(OP,tx,KEY) \
-   STEEM_REQUIRE_THROW( db->push_transaction( tx, 0 ), EXCEPTION ); \
+   HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), EXCEPTION ); \
 }
 
 namespace steem { namespace chain {
@@ -332,7 +332,7 @@ struct t_smt_database_fixture : public T
    void create_conflicting_smt( const asset_symbol_type existing_smt, const char* control_account_name, const fc::ecc::private_key& key );
 
    //smt_setup_operation
-   smt_generation_unit get_generation_unit ( const units& steem_unit = units(), const units& token_unit = units() );
+   smt_generation_unit get_generation_unit ( const units& hive_unit = units(), const units& token_unit = units() );
    smt_capped_generation_policy get_capped_generation_policy
    (
       const smt_generation_unit& pre_soft_cap_unit = smt_generation_unit(),
@@ -389,7 +389,7 @@ struct sps_proposal_database_fixture : public virtual clean_database_fixture
          receiver   = "bob";
          start_date = _start     + fc::days( 1 );
          end_date   = start_date + fc::days( 2 );
-         daily_pay  = asset( 100, SBD_SYMBOL );
+         daily_pay  = asset( 100, HBD_SYMBOL );
          subject    = "hello";
          url        = "http:://something.html";
       }

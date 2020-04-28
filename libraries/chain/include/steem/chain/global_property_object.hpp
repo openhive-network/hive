@@ -32,6 +32,31 @@ namespace steem { namespace chain {
 
          dynamic_global_property_object(){}
 
+         //main HIVE token counter (see also get_full_hive_supply)
+         const asset& get_current_supply() const { return current_supply; }
+
+         //initial amount of HBD issued (see also get_full_hbd_supply)
+         const asset& get_init_hbd_supply() const { return init_sbd_supply; }
+         //main HBD token counter (see also get_full_hbd_supply)
+         const asset& get_current_hbd_supply() const { return current_sbd_supply; }
+         //rate of interest for holding HBD (in BPS - basis points)
+         uint16_t get_hbd_interest_rate() const { return sbd_interest_rate; }
+         //percentage of HIVE being converted to HBD during payouts (in BPS - basis points)
+         uint16_t get_hbd_print_rate() const { return sbd_print_rate; }
+
+         //pool of HIVE tokens vested normally
+         const asset& get_total_vesting_fund_hive() const { return total_vesting_fund_steem; }
+         //amount of VESTS produced from HIVE held in normal vested fund
+         const asset& get_total_vesting_shares() const { return total_vesting_shares; }
+
+         //pool of HIVE tokens for pending (liquid) rewards
+         const asset& get_total_reward_fund_hive() const { return total_reward_fund_steem; }
+
+         //pool of HIVE tokens for pending (vested) rewards
+         const asset& get_pending_rewarded_vesting_hive() const { return pending_rewarded_vesting_steem; }
+         //amount of VESTS produced from HIVE held in pending reward vested fund
+         const asset& get_pending_rewarded_vesting_shares() const { return pending_rewarded_vesting_shares; }
+
          id_type           id;
 
          uint32_t          head_block_number = 0;

@@ -33,6 +33,9 @@ namespace steem { namespace chain {
 
          convert_request_object(){}
 
+         //amount of HBD to be converted to HIVE
+         const asset& get_convert_amount() const { return amount; }
+
          id_type           id;
 
          account_name_type owner;
@@ -52,6 +55,13 @@ namespace steem { namespace chain {
          }
 
          escrow_object(){}
+
+         //HIVE portion of transfer balance
+         const asset& get_hive_balance() const { return steem_balance; }
+         //HBD portion of transfer balance
+         const asset& get_hbd_balance() const { return sbd_balance; }
+         //fee offered to escrow (can be either in HIVE or HBD)
+         const asset& get_fee() const { return pending_fee; }
 
          id_type           id;
 
@@ -83,6 +93,9 @@ namespace steem { namespace chain {
          {
             c( *this );
          }
+
+         //amount of savings to withdraw (HIVE or HBD)
+         const asset& get_withdraw_amount() const { return amount; }
 
          id_type           id;
 
@@ -116,6 +129,9 @@ namespace steem { namespace chain {
          }
 
          liquidity_reward_balance_object(){}
+
+         int64_t get_hive_volume() const { return steem_volume; }
+         int64_t get_hbd_volume() const { return sbd_volume; }
 
          id_type           id;
 
@@ -265,6 +281,9 @@ namespace steem { namespace chain {
 
          reward_fund_object() {}
 
+         //amount of HIVE in reward fund
+         const asset& get_reward_balance() const { return reward_balance; }
+
          reward_fund_id_type     id;
          reward_fund_name_type   name;
          asset                   reward_balance = asset( 0, STEEM_SYMBOL );
@@ -273,8 +292,8 @@ namespace steem { namespace chain {
          uint128_t               content_constant = 0;
          uint16_t                percent_curation_rewards = 0;
          uint16_t                percent_content_rewards = 0;
-         protocol::curve_id                author_reward_curve;
-         protocol::curve_id                curation_reward_curve;
+         protocol::curve_id      author_reward_curve;
+         protocol::curve_id      curation_reward_curve;
    };
 
    struct by_price;

@@ -10,30 +10,40 @@
 
 #ifdef IS_TEST_NET
 #define STEEM_BLOCKCHAIN_VERSION              ( version(0, 25, 0) )
+#define HIVE_BLOCKCHAIN_VERSION               ( version(0, 25, 0) )
 
 #define STEEM_INIT_PRIVATE_KEY                (fc::ecc::private_key::regenerate(fc::sha256::hash(std::string("init_key"))))
+#define HIVE_INIT_PRIVATE_KEY                 (fc::ecc::private_key::regenerate(fc::sha256::hash(std::string("init_key"))))
 #define STEEM_INIT_PUBLIC_KEY_STR             (std::string( steem::protocol::public_key_type(STEEM_INIT_PRIVATE_KEY.get_public_key()) ))
 #define STEEM_CHAIN_ID (fc::sha256::hash("testnet"))
 #define STEEM_ADDRESS_PREFIX                  "TST"
 
 #define STEEM_GENESIS_TIME                    (fc::time_point_sec(1451606400))
+#define HIVE_GENESIS_TIME                     (fc::time_point_sec(1451606400))
 #define STEEM_MINING_TIME                     (fc::time_point_sec(1451606400))
 #define STEEM_CASHOUT_WINDOW_SECONDS          (60*60) /// 1 hr
+#define HIVE_CASHOUT_WINDOW_SECONDS           (60*60) /// 1 hr
 #define STEEM_CASHOUT_WINDOW_SECONDS_PRE_HF12 (STEEM_CASHOUT_WINDOW_SECONDS)
 #define STEEM_CASHOUT_WINDOW_SECONDS_PRE_HF17 (STEEM_CASHOUT_WINDOW_SECONDS)
 #define STEEM_SECOND_CASHOUT_WINDOW           (60*60*24*3) /// 3 days
 #define STEEM_MAX_CASHOUT_WINDOW_SECONDS      (60*60*24) /// 1 day
 #define STEEM_UPVOTE_LOCKOUT_HF7              (fc::minutes(1))
 #define STEEM_UPVOTE_LOCKOUT_SECONDS          (60*5)    /// 5 minutes
+#define HIVE_UPVOTE_LOCKOUT_SECONDS           (60*5)    /// 5 minutes
 #define STEEM_UPVOTE_LOCKOUT_HF17             (fc::minutes(5))
+#define HIVE_UPVOTE_LOCKOUT_HF17              (fc::minutes(5))
 
 
 #define STEEM_MIN_ACCOUNT_CREATION_FEE          0
+#define HIVE_MIN_ACCOUNT_CREATION_FEE           0
 #define STEEM_MAX_ACCOUNT_CREATION_FEE          int64_t(1000000000)
 
 #define STEEM_OWNER_AUTH_RECOVERY_PERIOD                  fc::seconds(60)
+#define HIVE_OWNER_AUTH_RECOVERY_PERIOD                   fc::seconds(60)
 #define STEEM_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD  fc::seconds(12)
+#define HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   fc::seconds(12)
 #define STEEM_OWNER_UPDATE_LIMIT                          fc::seconds(0)
+#define HIVE_OWNER_UPDATE_LIMIT                           fc::seconds(0)
 #define STEEM_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM 1
 
 #define STEEM_INIT_SUPPLY                     (int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 ))
@@ -45,28 +55,37 @@
 #else // IS LIVE STEEM NETWORK
 
 #define STEEM_BLOCKCHAIN_VERSION              ( version(0, 24, 0) )
+#define HIVE_BLOCKCHAIN_VERSION               ( version(0, 24, 0) )
 
 #define STEEM_INIT_PUBLIC_KEY_STR             "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
 #define STEEM_CHAIN_ID fc::sha256()
 #define STEEM_ADDRESS_PREFIX                  "STM"
 
 #define STEEM_GENESIS_TIME                    (fc::time_point_sec(1458835200))
+#define HIVE_GENESIS_TIME                     (fc::time_point_sec(1458835200))
 #define STEEM_MINING_TIME                     (fc::time_point_sec(1458838800))
 #define STEEM_CASHOUT_WINDOW_SECONDS_PRE_HF12 (60*60*24)    /// 1 day
 #define STEEM_CASHOUT_WINDOW_SECONDS_PRE_HF17 (60*60*12)    /// 12 hours
 #define STEEM_CASHOUT_WINDOW_SECONDS          (60*60*24*7)  /// 7 days
+#define HIVE_CASHOUT_WINDOW_SECONDS           (60*60*24*7)  /// 7 days
 #define STEEM_SECOND_CASHOUT_WINDOW           (60*60*24*30) /// 30 days
 #define STEEM_MAX_CASHOUT_WINDOW_SECONDS      (60*60*24*14) /// 2 weeks
 #define STEEM_UPVOTE_LOCKOUT_HF7              (fc::minutes(1))
 #define STEEM_UPVOTE_LOCKOUT_SECONDS          (60*60*12)    /// 12 hours
+#define HIVE_UPVOTE_LOCKOUT_SECONDS           (60*60*12)    /// 12 hours
 #define STEEM_UPVOTE_LOCKOUT_HF17             (fc::hours(12))
+#define HIVE_UPVOTE_LOCKOUT_HF17              (fc::hours(12))
 
-#define STEEM_MIN_ACCOUNT_CREATION_FEE           1
-#define STEEM_MAX_ACCOUNT_CREATION_FEE           int64_t(1000000000)
+#define STEEM_MIN_ACCOUNT_CREATION_FEE        1
+#define HIVE_MIN_ACCOUNT_CREATION_FEE         1
+#define STEEM_MAX_ACCOUNT_CREATION_FEE        int64_t(1000000000)
 
 #define STEEM_OWNER_AUTH_RECOVERY_PERIOD                  fc::days(30)
+#define HIVE_OWNER_AUTH_RECOVERY_PERIOD                   fc::days(30)
 #define STEEM_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD  fc::days(1)
+#define HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   fc::days(1)
 #define STEEM_OWNER_UPDATE_LIMIT                          fc::minutes(60)
+#define HIVE_OWNER_UPDATE_LIMIT                           fc::minutes(60)
 #define STEEM_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM 3186477
 
 #define STEEM_INIT_SUPPLY                     int64_t(0)
@@ -76,24 +95,36 @@
 
 #define VESTS_SYMBOL  (steem::protocol::asset_symbol_type::from_asset_num( STEEM_ASSET_NUM_VESTS ) )
 #define STEEM_SYMBOL  (steem::protocol::asset_symbol_type::from_asset_num( STEEM_ASSET_NUM_STEEM ) )
+#define HIVE_SYMBOL   (steem::protocol::asset_symbol_type::from_asset_num( STEEM_ASSET_NUM_STEEM ) )
 #define SBD_SYMBOL    (steem::protocol::asset_symbol_type::from_asset_num( STEEM_ASSET_NUM_SBD ) )
+#define HBD_SYMBOL    SBD_SYMBOL
 
 #define STEEM_BLOCKCHAIN_HARDFORK_VERSION     ( hardfork_version( STEEM_BLOCKCHAIN_VERSION ) )
 
 #define STEEM_100_PERCENT                     10000
+#define HIVE_100_PERCENT                      10000
 #define STEEM_1_PERCENT                       (STEEM_100_PERCENT/100)
+#define HIVE_1_PERCENT                        (HIVE_100_PERCENT/100)
 
 #define STEEM_BLOCK_INTERVAL                  3
+#define HIVE_BLOCK_INTERVAL                   3
 #define STEEM_BLOCKS_PER_YEAR                 (365*24*60*60/STEEM_BLOCK_INTERVAL)
+#define HIVE_BLOCKS_PER_YEAR                  (365*24*60*60/HIVE_BLOCK_INTERVAL)
 #define STEEM_BLOCKS_PER_DAY                  (24*60*60/STEEM_BLOCK_INTERVAL)
+#define HIVE_BLOCKS_PER_DAY                   (24*60*60/HIVE_BLOCK_INTERVAL)
 #define STEEM_START_VESTING_BLOCK             (STEEM_BLOCKS_PER_DAY * 7)
+#define HIVE_START_VESTING_BLOCK              (HIVE_BLOCKS_PER_DAY * 7)
 #define STEEM_START_MINER_VOTING_BLOCK        (STEEM_BLOCKS_PER_DAY * 30)
+#define HIVE_START_MINER_VOTING_BLOCK         (HIVE_BLOCKS_PER_DAY * 30)
 
 #define STEEM_INIT_MINER_NAME                 "initminer"
+#define HIVE_INIT_MINER_NAME                  "initminer"
 #define STEEM_NUM_INIT_MINERS                 1
+#define HIVE_NUM_INIT_MINERS                  1
 #define STEEM_INIT_TIME                       (fc::time_point_sec());
 
 #define STEEM_MAX_WITNESSES                   21
+#define HIVE_MAX_WITNESSES                    21
 
 #define STEEM_MAX_VOTED_WITNESSES_HF0         19
 #define STEEM_MAX_MINER_WITNESSES_HF0         1
@@ -105,27 +136,40 @@
 
 #define STEEM_HARDFORK_REQUIRED_WITNESSES     17 // 17 of the 21 dpos witnesses (20 elected and 1 virtual time) required for hardfork. This guarantees 75% participation on all subsequent rounds.
 #define STEEM_MAX_TIME_UNTIL_EXPIRATION       (60*60) // seconds,  aka: 1 hour
+#define HIVE_MAX_TIME_UNTIL_EXPIRATION        (60*60) // seconds,  aka: 1 hour
 #define STEEM_MAX_MEMO_SIZE                   2048
+#define HIVE_MAX_MEMO_SIZE                    2048
 #define STEEM_MAX_PROXY_RECURSION_DEPTH       4
 #define STEEM_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 104
 #define STEEM_VESTING_WITHDRAW_INTERVALS      13
+#define HIVE_VESTING_WITHDRAW_INTERVALS       13
 #define STEEM_VESTING_WITHDRAW_INTERVAL_SECONDS (60*60*24*7) /// 1 week per interval
+#define HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS (60*60*24*7) /// 1 week per interval
 #define STEEM_MAX_WITHDRAW_ROUTES             10
-#define STEEM_SAVINGS_WITHDRAW_TIME        	(fc::days(3))
+#define STEEM_SAVINGS_WITHDRAW_TIME        	 (fc::days(3))
+#define HIVE_SAVINGS_WITHDRAW_TIME            (fc::days(3))
 #define STEEM_SAVINGS_WITHDRAW_REQUEST_LIMIT  100
+#define HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT   100
 #define STEEM_VOTING_MANA_REGENERATION_SECONDS (5*60*60*24) // 5 day
+#define HIVE_VOTING_MANA_REGENERATION_SECONDS (5*60*60*24) // 5 day
 #define STEEM_MAX_VOTE_CHANGES                5
 #define STEEM_REVERSE_AUCTION_WINDOW_SECONDS_HF6 (60*30) /// 30 minutes
 #define STEEM_REVERSE_AUCTION_WINDOW_SECONDS_HF20 (60*15) /// 15 minutes
+#define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20 (60*15) /// 15 minutes
 #define STEEM_REVERSE_AUCTION_WINDOW_SECONDS_HF21 (60*5) /// 5 minutes
 #define STEEM_MIN_VOTE_INTERVAL_SEC           3
+#define HIVE_MIN_VOTE_INTERVAL_SEC            3
 #define STEEM_VOTE_DUST_THRESHOLD             (50000000)
+#define HIVE_VOTE_DUST_THRESHOLD              (50000000)
 #define STEEM_DOWNVOTE_POOL_PERCENT_HF21      (25*STEEM_1_PERCENT)
 
 #define STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS   (60*60*24*30)//30 days
+#define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS    (60*60*24*30)//30 days
 #define STEEM_DELAYED_VOTING_INTERVAL_SECONDS         (60*60*24*1)// 1 day
+#define HIVE_DELAYED_VOTING_INTERVAL_SECONDS          (60*60*24*1)// 1 day
 
 #define STEEM_MIN_ROOT_COMMENT_INTERVAL       (fc::seconds(60*5)) // 5 minutes
+#define HIVE_MIN_ROOT_COMMENT_INTERVAL        (fc::seconds(60*5)) // 5 minutes
 #define STEEM_MIN_REPLY_INTERVAL              (fc::seconds(20)) // 20 seconds
 #define STEEM_MIN_REPLY_INTERVAL_HF20         (fc::seconds(3)) // 3 seconds
 #define STEEM_MIN_COMMENT_EDIT_INTERVAL       (fc::seconds(3)) // 3 seconds
@@ -161,21 +205,31 @@
 #define STEEM_MAX_RESERVE_RATIO               (20000)
 
 #define STEEM_CREATE_ACCOUNT_WITH_STEEM_MODIFIER 30
+#define HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER   30
 #define STEEM_CREATE_ACCOUNT_DELEGATION_RATIO    5
 #define STEEM_CREATE_ACCOUNT_DELEGATION_TIME     fc::days(30)
 
 #define STEEM_MINING_REWARD                   asset( 1000, STEEM_SYMBOL )
+#define HIVE_MINING_REWARD                    asset( 1000, HIVE_SYMBOL )
 #define STEEM_EQUIHASH_N                      140
 #define STEEM_EQUIHASH_K                      6
 
 #define STEEM_LIQUIDITY_TIMEOUT_SEC           (fc::seconds(60*60*24*7)) // After one week volume is set to 0
+#define HIVE_LIQUIDITY_TIMEOUT_SEC            (fc::seconds(60*60*24*7)) // After one week volume is set to 0
 #define STEEM_MIN_LIQUIDITY_REWARD_PERIOD_SEC (fc::seconds(60)) // 1 minute required on books to receive volume
+#define HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC  (fc::seconds(60)) // 1 minute required on books to receive volume
 #define STEEM_LIQUIDITY_REWARD_PERIOD_SEC     (60*60)
+#define HIVE_LIQUIDITY_REWARD_PERIOD_SEC      (60*60)
 #define STEEM_LIQUIDITY_REWARD_BLOCKS         (STEEM_LIQUIDITY_REWARD_PERIOD_SEC/STEEM_BLOCK_INTERVAL)
+#define HIVE_LIQUIDITY_REWARD_BLOCKS          (HIVE_LIQUIDITY_REWARD_PERIOD_SEC/HIVE_BLOCK_INTERVAL)
 #define STEEM_MIN_LIQUIDITY_REWARD            (asset( 1000*STEEM_LIQUIDITY_REWARD_BLOCKS, STEEM_SYMBOL )) // Minumum reward to be paid out to liquidity providers
+#define HIVE_MIN_LIQUIDITY_REWARD             (asset( 1000*HIVE_LIQUIDITY_REWARD_BLOCKS, HIVE_SYMBOL )) // Minumum reward to be paid out to liquidity providers
 #define STEEM_MIN_CONTENT_REWARD              STEEM_MINING_REWARD
+#define HIVE_MIN_CONTENT_REWARD               HIVE_MINING_REWARD
 #define STEEM_MIN_CURATE_REWARD               STEEM_MINING_REWARD
+#define HIVE_MIN_CURATE_REWARD                HIVE_MINING_REWARD
 #define STEEM_MIN_PRODUCER_REWARD             STEEM_MINING_REWARD
+#define HIVE_MIN_PRODUCER_REWARD              HIVE_MINING_REWARD
 #define STEEM_MIN_POW_REWARD                  STEEM_MINING_REWARD
 
 #define STEEM_ACTIVE_CHALLENGE_FEE            asset( 2000, STEEM_SYMBOL )
@@ -184,10 +238,14 @@
 #define STEEM_OWNER_CHALLENGE_COOLDOWN        fc::days(1)
 
 #define STEEM_POST_REWARD_FUND_NAME           ("post")
+#define HIVE_POST_REWARD_FUND_NAME            ("post")
 #define STEEM_COMMENT_REWARD_FUND_NAME        ("comment")
-#define STEEM_RECENT_RSHARES_DECAY_TIME_HF17    (fc::days(30))
-#define STEEM_RECENT_RSHARES_DECAY_TIME_HF19    (fc::days(15))
+#define HIVE_COMMENT_REWARD_FUND_NAME         ("comment")
+#define STEEM_RECENT_RSHARES_DECAY_TIME_HF17  (fc::days(30))
+#define STEEM_RECENT_RSHARES_DECAY_TIME_HF19  (fc::days(15))
+#define HIVE_RECENT_RSHARES_DECAY_TIME_HF19   (fc::days(15))
 #define STEEM_CONTENT_CONSTANT_HF0            (uint128_t(uint64_t(2000000000000ll)))
+#define HIVE_CONTENT_CONSTANT_HF0             (uint128_t(uint64_t(2000000000000ll)))
 // note, if redefining these constants make sure calculate_claims doesn't overflow
 
 // 5ccc e802 de5f
@@ -233,6 +291,7 @@
 #define STEEM_SBD_START_PERCENT_HF20          (9*STEEM_1_PERCENT) // Start reducing printing of SBD at 9% Market Cap
 
 #define STEEM_MIN_ACCOUNT_NAME_LENGTH          3
+#define HIVE_MIN_ACCOUNT_NAME_LENGTH           3
 #define STEEM_MAX_ACCOUNT_NAME_LENGTH         16
 
 #define STEEM_MIN_PERMLINK_LENGTH             0
@@ -240,33 +299,46 @@
 #define STEEM_MAX_WITNESS_URL_LENGTH          2048
 
 #define STEEM_MAX_SHARE_SUPPLY                int64_t(1000000000000000ll)
+#define HIVE_MAX_SHARE_SUPPLY                 int64_t(1000000000000000ll)
 #define STEEM_MAX_SATOSHIS                    int64_t(4611686018427387903ll)
+#define HIVE_MAX_SATOSHIS                     int64_t(4611686018427387903ll)
 #define STEEM_MAX_SIG_CHECK_DEPTH             2
 #define STEEM_MAX_SIG_CHECK_ACCOUNTS          125
 
 #define STEEM_MIN_TRANSACTION_SIZE_LIMIT      1024
 #define STEEM_SECONDS_PER_YEAR                (uint64_t(60*60*24*365ll))
+#define HIVE_SECONDS_PER_YEAR                 (uint64_t(60*60*24*365ll))
 
 #define STEEM_SBD_INTEREST_COMPOUND_INTERVAL_SEC  (60*60*24*30)
+#define HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC   (60*60*24*30)
 #define STEEM_MAX_TRANSACTION_SIZE            (1024*64)
+#define HIVE_MAX_TRANSACTION_SIZE             (1024*64)
 #define STEEM_MIN_BLOCK_SIZE_LIMIT            (STEEM_MAX_TRANSACTION_SIZE)
+#define HIVE_MIN_BLOCK_SIZE_LIMIT             (HIVE_MAX_TRANSACTION_SIZE)
 #define STEEM_MAX_BLOCK_SIZE                  (STEEM_MAX_TRANSACTION_SIZE*STEEM_BLOCK_INTERVAL*2000)
 #define STEEM_SOFT_MAX_BLOCK_SIZE             (2*1024*1024)
 #define STEEM_MIN_BLOCK_SIZE                  115
+#define HIVE_MIN_BLOCK_SIZE                   115
 #define STEEM_BLOCKS_PER_HOUR                 (60*60/STEEM_BLOCK_INTERVAL)
+#define HIVE_BLOCKS_PER_HOUR                  (60*60/HIVE_BLOCK_INTERVAL)
 #define STEEM_FEED_INTERVAL_BLOCKS            (STEEM_BLOCKS_PER_HOUR)
 #define STEEM_FEED_HISTORY_WINDOW_PRE_HF_16   (24*7) /// 7 days * 24 hours per day
 #define STEEM_FEED_HISTORY_WINDOW             (12*7) // 3.5 days
 #define STEEM_MAX_FEED_AGE_SECONDS            (60*60*24*7) // 7 days
+#define HIVE_MAX_FEED_AGE_SECONDS             (60*60*24*7) // 7 days
 #define STEEM_MIN_FEEDS                       (STEEM_MAX_WITNESSES/3) /// protects the network from conversions before price has been established
 #define STEEM_CONVERSION_DELAY_PRE_HF_16      (fc::days(7))
 #define STEEM_CONVERSION_DELAY                (fc::hours(STEEM_FEED_HISTORY_WINDOW)) //3.5 day conversion
+#define HIVE_CONVERSION_DELAY                 (fc::hours(STEEM_FEED_HISTORY_WINDOW)) //3.5 day conversion
 
 #define STEEM_MIN_UNDO_HISTORY                10
+#define HIVE_MIN_UNDO_HISTORY                 10
 #define STEEM_MAX_UNDO_HISTORY                10000
 
 #define STEEM_MIN_TRANSACTION_EXPIRATION_LIMIT (STEEM_BLOCK_INTERVAL * 5) // 5 transactions per block
+#define HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT (HIVE_BLOCK_INTERVAL * 5) // 5 transactions per block
 #define STEEM_BLOCKCHAIN_PRECISION            uint64_t( 1000 )
+#define HIVE_BLOCKCHAIN_PRECISION             uint64_t( 1000 )
 
 #define STEEM_BLOCKCHAIN_PRECISION_DIGITS     3
 #define STEEM_MAX_INSTANCE_ID                 (uint64_t(-1)>>16)
@@ -284,12 +356,15 @@
 #define STEEM_REDUCED_VOTE_POWER_RATE (10)
 
 #define STEEM_MAX_LIMIT_ORDER_EXPIRATION     (60*60*24*28) // 28 days
+#define HIVE_MAX_LIMIT_ORDER_EXPIRATION      (60*60*24*28) // 28 days
 #define STEEM_DELEGATION_RETURN_PERIOD_HF0   (STEEM_CASHOUT_WINDOW_SECONDS)
 #define STEEM_DELEGATION_RETURN_PERIOD_HF20  (STEEM_VOTING_MANA_REGENERATION_SECONDS)
+#define HIVE_DELEGATION_RETURN_PERIOD_HF20   (HIVE_VOTING_MANA_REGENERATION_SECONDS)
 
 #define STEEM_RD_MIN_DECAY_BITS               6
 #define STEEM_RD_MAX_DECAY_BITS              32
 #define STEEM_RD_DECAY_DENOM_SHIFT           36
+#define HIVE_RD_DECAY_DENOM_SHIFT            36
 #define STEEM_RD_MAX_POOL_BITS               64
 #define STEEM_RD_MAX_BUDGET_1                ((uint64_t(1) << (STEEM_RD_MAX_POOL_BITS + STEEM_RD_MIN_DECAY_BITS - STEEM_RD_DECAY_DENOM_SHIFT))-1)
 #define STEEM_RD_MAX_BUDGET_2                ((uint64_t(1) << (64-STEEM_RD_DECAY_DENOM_SHIFT))-1)
@@ -300,6 +375,7 @@
 #define STEEM_RD_MAX_DECAY                   (uint32_t(0xFFFFFFFF))
 
 #define STEEM_ACCOUNT_SUBSIDY_PRECISION      (STEEM_100_PERCENT)
+#define HIVE_ACCOUNT_SUBSIDY_PRECISION       (HIVE_100_PERCENT)
 
 // We want the global subsidy to run out first in normal (Poisson)
 // conditions, so we boost the per-witness subsidy a little.
@@ -332,12 +408,16 @@
 #define STEEM_MINER_ACCOUNT                   "miners"
 /// Represents the canonical account with NO authority (nobody can access funds in null account)
 #define STEEM_NULL_ACCOUNT                    "null"
+#define HIVE_NULL_ACCOUNT                     "null"
 /// Represents the canonical account with WILDCARD authority (anybody can access funds in temp account)
 #define STEEM_TEMP_ACCOUNT                    "temp"
+#define HIVE_TEMP_ACCOUNT                     "temp"
 /// Represents the canonical account for specifying you will vote for directly (as opposed to a proxy)
 #define STEEM_PROXY_TO_SELF_ACCOUNT           ""
+#define HIVE_PROXY_TO_SELF_ACCOUNT            ""
 /// Represents the canonical root post parent account
 #define STEEM_ROOT_POST_PARENT                (account_name_type())
+#define HIVE_ROOT_POST_PARENT                 (account_name_type())
 /// Represents the account with NO authority which holds resources for payouts according to given proposals
 //#define STEEM_TREASURY_ACCOUNT                "steem.dao" //no longer constant, changed in HF24 - use database::get_treasury_name() instead
 //note that old account is still considered a treasury (cannot be reused for other purposes), just all funds and actions are redirected to new one
@@ -349,11 +429,14 @@
 /// STEEM PROPOSAL SYSTEM support
 
 #define STEEM_TREASURY_FEE                         (10 * STEEM_BLOCKCHAIN_PRECISION)
+#define HIVE_TREASURY_FEE                          (10 * HIVE_BLOCKCHAIN_PRECISION)
 #define STEEM_PROPOSAL_MAINTENANCE_PERIOD          3600
 #define STEEM_PROPOSAL_MAINTENANCE_CLEANUP         (60*60*24*1) /// 1 day
+#define HIVE_PROPOSAL_MAINTENANCE_CLEANUP          (60*60*24*1) /// 1 day
 #define STEEM_PROPOSAL_SUBJECT_MAX_LENGTH          80
 /// Max number of IDs passed at once to the update_proposal_voter_operation or remove_proposal_operation.
 #define STEEM_PROPOSAL_MAX_IDS_NUMBER              5
+#define HIVE_PROPOSAL_MAX_IDS_NUMBER               5
 
 #ifdef STEEM_ENABLE_SMT
 

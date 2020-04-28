@@ -14,6 +14,8 @@
 
 #ifdef IS_TEST_NET
 #define STEEM_NUM_HARDFORKS 25
+#define HIVE_NUM_HARDFORKS 25
 #else
 #define STEEM_NUM_HARDFORKS 24
+#define HIVE_NUM_HARDFORKS 24
 #endif
