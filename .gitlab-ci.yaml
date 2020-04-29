@@ -3,6 +3,7 @@ stages:
 
 before_script:
   - docker info
+  - echo $CI_REPOSITORY_URL
   - echo $CI_PROJECT_DIR
   - mkdir -p $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME
   - echo "Working for branch" $CI_COMMIT_REF_NAME " and environment " $CI_ENVIRONMENT_SLUG
