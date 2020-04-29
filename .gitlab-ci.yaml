@@ -8,7 +8,7 @@ before_script:
   - mkdir -p $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME
   - echo "Working for branch" $CI_COMMIT_REF_NAME " and environment " $CI_ENVIRONMENT_SLUG
   - rm -rf $CI_BUILDS_DIR/hive/$CI_COMMIT_REF_NAME
-  - git clone https://$CI_DEPLOY_USER:$CI_DEPLOY_PASSWORD@gitlab.syncad.com/hive/hive.git $CI_BUILDS_DIR/hive/$CI_COMMIT_REF_NAME
+  - git clone $CI_REPOSITORY_URL $CI_BUILDS_DIR/hive/$CI_COMMIT_REF_NAME
   - cd $CI_BUILDS_DIR/hive/$CI_COMMIT_REF_NAME
   - git checkout $CI_COMMIT_REF_NAME
   - git status
