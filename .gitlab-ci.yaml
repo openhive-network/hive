@@ -42,8 +42,7 @@ staging-build:
 
   cache: {}
   tags:
-    - hive-hive-runner
-    - blocktrades-hive-runner
+    - secure-runner
     
   allow_failure: false
   only:
@@ -78,8 +77,7 @@ development-build:
 
   cache: {}
   tags:
-    - hive-hive-runner
-    - blocktrades-hive-runner
+    - secure-runner
 
   allow_failure: false
   when: manual
