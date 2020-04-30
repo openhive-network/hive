@@ -643,47 +643,47 @@ account_id_type database_fixture::get_account_id( const string& account_name )co
    return db->get_account( account_name ).id;
 }
 
-const asset& database_fixture::get_balance( const string& account_name )const
+asset database_fixture::get_balance( const string& account_name )const
 {
-  return db->get_account( account_name ).get_balance();
+   return db->get_account( account_name ).get_balance();
 }
 
-const asset& database_fixture::get_hbd_balance( const string& account_name )const
+asset database_fixture::get_hbd_balance( const string& account_name )const
 {
    return db->get_account( account_name ).get_hbd_balance();
 }
 
-const asset& database_fixture::get_savings( const string& account_name )const
+asset database_fixture::get_savings( const string& account_name )const
 {
    return db->get_account( account_name ).get_savings();
 }
 
-const asset& database_fixture::get_hbd_savings( const string& account_name )const
+asset database_fixture::get_hbd_savings( const string& account_name )const
 {
    return db->get_account( account_name ).get_hbd_savings();
 }
 
-const asset& database_fixture::get_rewards( const string& account_name )const
+asset database_fixture::get_rewards( const string& account_name )const
 {
    return db->get_account( account_name ).get_rewards();
 }
 
-const asset& database_fixture::get_hbd_rewards( const string& account_name )const
+asset database_fixture::get_hbd_rewards( const string& account_name )const
 {
    return db->get_account( account_name ).get_hbd_rewards();
 }
 
-const asset& database_fixture::get_vesting( const string& account_name )const
+asset database_fixture::get_vesting( const string& account_name )const
 {
    return db->get_account( account_name ).get_vesting();
 }
 
-const asset& database_fixture::get_vest_rewards( const string& account_name )const
+asset database_fixture::get_vest_rewards( const string& account_name )const
 {
    return db->get_account( account_name ).get_vest_rewards();
 }
 
-const asset& database_fixture::get_vest_rewards_as_hive( const string& account_name )const
+asset database_fixture::get_vest_rewards_as_hive( const string& account_name )const
 {
    return db->get_account( account_name ).get_vest_rewards_as_hive();
 }

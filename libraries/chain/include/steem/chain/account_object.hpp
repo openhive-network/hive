@@ -12,6 +12,7 @@
 #include <steem/chain/util/manabar.hpp>
 
 #include <steem/chain/util/delayed_voting_processor.hpp>
+#include <steem/chain/util/greedy_asset.hpp>
 
 #include <numeric>
 
@@ -32,30 +33,30 @@ namespace steem { namespace chain {
          }
 
          //liquid HIVE balance
-         const asset& get_balance() const { return balance; }
+         asset get_balance() const { return balance; }
          //HIVE balance in savings
-         const asset& get_savings() const { return savings_balance; }
+         asset get_savings() const { return savings_balance; }
          //unclaimed HIVE rewards
-         const asset& get_rewards() const { return reward_steem_balance; }
+         asset get_rewards() const { return reward_steem_balance; }
 
          //liquid HBD balance
-         const asset& get_hbd_balance() const { return sbd_balance; }
+         asset get_hbd_balance() const { return sbd_balance; }
          //HBD balance in savings
-         const asset& get_hbd_savings() const { return savings_sbd_balance; }
+         asset get_hbd_savings() const { return savings_sbd_balance; }
          //unclaimed HBD rewards
-         const asset& get_hbd_rewards() const { return reward_sbd_balance; }
+         asset get_hbd_rewards() const { return reward_sbd_balance; }
 
          //all VESTS held by the account - use other routines to get active VESTS for specific uses
-         const asset& get_vesting() const { return vesting_shares; }
+         asset get_vesting() const { return vesting_shares; }
          //VESTS that were delegated to other accounts
-         const asset& get_delegated_vesting() const { return delegated_vesting_shares; }
+         asset get_delegated_vesting() const { return delegated_vesting_shares; }
          //VESTS that were borrowed from other accounts
-         const asset& get_received_vesting() const { return received_vesting_shares; }
+         asset get_received_vesting() const { return received_vesting_shares; }
          //TODO: add routines for specific uses, f.e. get_witness_voting_power, get_proposal_voting_power, get_post_voting_power...
          //unclaimed VESTS rewards
-         const asset& get_vest_rewards() const { return reward_vesting_balance; }
+         asset get_vest_rewards() const { return reward_vesting_balance; }
          //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
-         const asset& get_vest_rewards_as_hive() const { return reward_vesting_steem; }
+         asset get_vest_rewards_as_hive() const { return reward_vesting_steem; }
 
          id_type           id;
 
@@ -78,8 +79,8 @@ namespace steem { namespace chain {
          util::manabar     voting_manabar;
          util::manabar     downvote_manabar;
 
-         asset             balance = asset( 0, STEEM_SYMBOL );  ///< total liquid shares held by this account
-         asset             savings_balance = asset( 0, STEEM_SYMBOL );  ///< total liquid shares held by this account
+         greedy_STEEM_asset balance = asset( 0, STEEM_SYMBOL );  ///< total liquid shares held by this account
+         greedy_STEEM_asset savings_balance = asset( 0, STEEM_SYMBOL );  ///< total liquid shares held by this account
 
          /**
           *  HBD Deposits pay interest based upon the interest rate set by witnesses. The purpose of these
@@ -95,13 +96,13 @@ namespace steem { namespace chain {
           *  @defgroup sbd_data sbd Balance Data
           */
          ///@{
-         asset             sbd_balance = asset( 0, SBD_SYMBOL ); /// total sbd balance
+         greedy_SBD_asset  sbd_balance = asset( 0, SBD_SYMBOL ); /// total sbd balance
          uint128_t         sbd_seconds; ///< total sbd * how long it has been hel
          time_point_sec    sbd_seconds_last_update; ///< the last time the sbd_seconds was updated
          time_point_sec    sbd_last_interest_payment; ///< used to pay interest at most once per month
 
 
-         asset             savings_sbd_balance = asset( 0, SBD_SYMBOL ); /// total sbd balance
+         greedy_SBD_asset  savings_sbd_balance = asset( 0, SBD_SYMBOL ); /// total sbd balance
          uint128_t         savings_sbd_seconds; ///< total sbd * how long it has been hel
          time_point_sec    savings_sbd_seconds_last_update; ///< the last time the sbd_seconds was updated
          time_point_sec    savings_sbd_last_interest_payment; ///< used to pay interest at most once per month
@@ -109,19 +110,19 @@ namespace steem { namespace chain {
          uint8_t           savings_withdraw_requests = 0;
          ///@}
 
-         asset             reward_sbd_balance = asset( 0, SBD_SYMBOL );
-         asset             reward_steem_balance = asset( 0, STEEM_SYMBOL );
-         asset             reward_vesting_balance = asset( 0, VESTS_SYMBOL );
-         asset             reward_vesting_steem = asset( 0, STEEM_SYMBOL );
+         greedy_SBD_asset   reward_sbd_balance = asset( 0, SBD_SYMBOL );
+         greedy_STEEM_asset reward_steem_balance = asset( 0, STEEM_SYMBOL );
+         greedy_VEST_asset  reward_vesting_balance = asset( 0, VESTS_SYMBOL );
+         greedy_STEEM_asset reward_vesting_steem = asset( 0, STEEM_SYMBOL );
 
          share_type        curation_rewards = 0;
          share_type        posting_rewards = 0;
 
-         asset             vesting_shares = asset( 0, VESTS_SYMBOL ); ///< total vesting shares held by this account, controls its voting power
-         asset             delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
-         asset             received_vesting_shares = asset( 0, VESTS_SYMBOL );
+         greedy_VEST_asset vesting_shares = asset( 0, VESTS_SYMBOL ); ///< total vesting shares held by this account, controls its voting power
+         greedy_VEST_asset delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
+         greedy_VEST_asset received_vesting_shares = asset( 0, VESTS_SYMBOL );
 
-         asset             vesting_withdraw_rate = asset( 0, VESTS_SYMBOL ); ///< at the time this is updated it can be at most vesting_shares/104
+         greedy_VEST_asset vesting_withdraw_rate = asset( 0, VESTS_SYMBOL ); ///< at the time this is updated it can be at most vesting_shares/104
          time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
          share_type        withdrawn = 0; /// Track how many shares have been withdrawn
          share_type        to_withdraw = 0; /// Might be able to look this up with operation history.

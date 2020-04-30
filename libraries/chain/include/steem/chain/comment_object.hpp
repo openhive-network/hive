@@ -11,8 +11,6 @@
 
 namespace steem { namespace chain {
 
-   using greedy_SBD_asset = greedy_asset<STEEM_ASSET_NUM_SBD>;
-
    using protocol::beneficiary_route_type;
    using chainbase::t_vector;
    using chainbase::t_pair;
@@ -271,8 +269,6 @@ template<> struct is_static_length< steem::chain::comment_vote_object > : public
 
 } // mira
 #endif
-
-FC_REFLECT( steem::chain::greedy_SBD_asset, (value) )
 
 FC_REFLECT( steem::chain::comment_object,
              (id)(author)(permlink)

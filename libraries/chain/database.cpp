@@ -726,7 +726,7 @@ const reward_fund_object& database::get_reward_fund( const comment_object& c ) c
 asset database::get_effective_vesting_shares( const account_object& account, asset_symbol_type vested_symbol )const
 {
    if( vested_symbol == VESTS_SYMBOL )
-      return account.vesting_shares - account.delegated_vesting_shares + account.received_vesting_shares;
+      return static_cast<asset>(account.vesting_shares) - account.delegated_vesting_shares + account.received_vesting_shares;
 
 #ifdef STEEM_ENABLE_SMT
    FC_ASSERT( vested_symbol.space() == asset_symbol_type::smt_nai_space );
