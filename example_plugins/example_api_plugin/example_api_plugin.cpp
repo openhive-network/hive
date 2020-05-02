@@ -5,7 +5,7 @@
 
 #define STEEM_EXAMPLE_API_PLUGIN_NAME "example_api"
 
-namespace steem { namespace example_api_plugin {
+namespace hive { namespace example_api_plugin {
 
    using namespace appbase;
 
@@ -82,9 +82,9 @@ namespace steem { namespace example_api_plugin {
       return echo_return{ args.call };
    }
 
-} } // steem::example_api_plugin
+} } // hive::example_api_plugin
 
 // Args and return types need to be reflected. hello_world_args does not because it is a typedef of a reflected type
-FC_REFLECT( steem::example_api_plugin::hello_world_return, (message) )
-FC_REFLECT( steem::example_api_plugin::echo_args, (call) )
-FC_REFLECT( steem::example_api_plugin::echo_return, (response) )
+FC_REFLECT( hive::example_api_plugin::hello_world_return, (message) )
+FC_REFLECT( hive::example_api_plugin::echo_args, (call) )
+FC_REFLECT( hive::example_api_plugin::echo_return, (response) )

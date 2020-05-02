@@ -24,9 +24,9 @@
 #include <iostream>
 #include <stdexcept>
 
-using namespace steem;
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive;
+using namespace hive::chain;
+using namespace hive::protocol;
 using fc::string;
 
 #define VOTING_MANABAR( account ) db->get_account( account ).voting_manabar
@@ -584,7 +584,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
 
       db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& o)
       {
-         o.total_reward_shares2 = steem::chain::util::evaluate_reward_curve( 10 );
+         o.total_reward_shares2 = hive::chain::util::evaluate_reward_curve( 10 );
       });
 
       tx.signatures.clear();

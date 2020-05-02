@@ -7,7 +7,7 @@
 #include <steem/plugins/json_rpc/utility.hpp>
 #include <steem/plugins/transaction_status/transaction_status_objects.hpp>
 
-namespace steem { namespace plugins { namespace transaction_status_api {
+namespace hive { namespace plugins { namespace transaction_status_api {
 
 struct find_transaction_args
 {
@@ -21,7 +21,7 @@ struct find_transaction_return
    fc::optional< uint32_t > block_num;
 };
 
-} } } // steem::transaction_status_api
+} } } // hive::transaction_status_api
 
-FC_REFLECT( steem::plugins::transaction_status_api::find_transaction_args, (transaction_id)(expiration) )
-FC_REFLECT( steem::plugins::transaction_status_api::find_transaction_return, (status)(block_num) )
+FC_REFLECT( hive::plugins::transaction_status_api::find_transaction_args, (transaction_id)(expiration) )
+FC_REFLECT( hive::plugins::transaction_status_api::find_transaction_return, (status)(block_num) )

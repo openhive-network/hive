@@ -8,12 +8,12 @@
 #define STEEM_REPUTATION_PLUGIN_NAME "reputation"
 
 
-namespace steem { namespace plugins{ namespace reputation {
+namespace hive { namespace plugins{ namespace reputation {
 
 namespace detail { class reputation_plugin_impl; }
 
 using namespace appbase;
-using steem::chain::generic_custom_operation_interpreter;
+using hive::chain::generic_custom_operation_interpreter;
 
 class reputation_plugin : public appbase::plugin< reputation_plugin >
 {
@@ -21,7 +21,7 @@ class reputation_plugin : public appbase::plugin< reputation_plugin >
       reputation_plugin();
       virtual ~reputation_plugin();
 
-      APPBASE_PLUGIN_REQUIRES( (steem::plugins::chain::chain_plugin) )
+      APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
       static const std::string& name() { static std::string name = STEEM_REPUTATION_PLUGIN_NAME; return name; }
 
@@ -36,4 +36,4 @@ class reputation_plugin : public appbase::plugin< reputation_plugin >
       std::unique_ptr< detail::reputation_plugin_impl > my;
 };
 
-} } } //steem::reputation
+} } } //hive::reputation

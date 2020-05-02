@@ -6,7 +6,7 @@
 #include <steem/chain/database.hpp>
 #include <steem/chain/index.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 struct votes_update_data
 {
@@ -49,4 +49,4 @@ class delayed_voting
       void run( const fc::time_point_sec& head_time );
 };
 
-} } // namespace steem::chain
+} } // namespace hive::chain

@@ -1,7 +1,7 @@
 
 #include <steem/utilities/benchmark_dumper.hpp>
 
-namespace steem { namespace utilities {
+namespace hive { namespace utilities {
 
 #define PROC_STATUS_LINE_LENGTH 1028
 

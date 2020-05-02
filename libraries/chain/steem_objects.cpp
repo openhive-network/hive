@@ -3,6 +3,6 @@
 
 #include <fc/uint128.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
-} } // steem::chain
+} } // hive::chain

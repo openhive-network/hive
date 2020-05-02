@@ -39,7 +39,7 @@ data_size = 100
 delayed_blocks = 1
 delayed_blocks_ex = 3
 SPS_API_SINGLE_QUERY_LIMIT = 1000
-STEEM_PROPOSAL_MAX_IDS_NUMBER = 5
+HIVE_PROPOSAL_MAX_IDS_NUMBER = 5
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
@@ -138,7 +138,7 @@ def generate_dates( node ):
 
     start_date = now + datetime.timedelta(hours = 2)
     end_date = start_date + datetime.timedelta(hours = 1)
-    #because of STEEM_PROPOSAL_MAINTENANCE_CLEANUP
+    #because of HIVE_PROPOSAL_MAINTENANCE_CLEANUP
     end_date_delay = end_date + datetime.timedelta(days = 1)
 
     start_date = start_date.replace(microsecond=0).isoformat()
@@ -214,7 +214,7 @@ def list_voter_proposals(node, limit ):
 def vote_proposals(node, ids, accounts ):
     logger.info("Voting proposals for %i proposals..." % ( len( ids ) ) )
 
-    proposal_limit = STEEM_PROPOSAL_MAX_IDS_NUMBER
+    proposal_limit = HIVE_PROPOSAL_MAX_IDS_NUMBER
 
     i = 0
     i_real = 0

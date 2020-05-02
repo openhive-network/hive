@@ -23,9 +23,9 @@
 #define STEEM_BLOCKCHAIN_STATISTICS_PLUGIN_NAME "chain_stats"
 #endif
 
-namespace steem { namespace blockchain_statistics {
+namespace hive { namespace blockchain_statistics {
 
-using namespace steem::chain;
+using namespace hive::chain;
 using app::application;
 
 enum blockchain_statistics_object_type
@@ -38,7 +38,7 @@ namespace detail
    class blockchain_statistics_plugin_impl;
 }
 
-class blockchain_statistics_plugin : public steem::app::plugin
+class blockchain_statistics_plugin : public hive::app::plugin
 {
    public:
       blockchain_statistics_plugin( application* app );
@@ -134,9 +134,9 @@ typedef multi_index_container<
    allocator< bucket_object >
 > bucket_index;
 
-} } // steem::blockchain_statistics
+} } // hive::blockchain_statistics
 
-FC_REFLECT( steem::blockchain_statistics::bucket_object,
+FC_REFLECT( hive::blockchain_statistics::bucket_object,
    (id)
    (open)
    (seconds)
@@ -184,4 +184,4 @@ FC_REFLECT( steem::blockchain_statistics::bucket_object,
    (total_pow)
    (estimated_hashpower)
 )
-CHAINBASE_SET_INDEX_TYPE( steem::blockchain_statistics::bucket_object, steem::blockchain_statistics::bucket_index )
+CHAINBASE_SET_INDEX_TYPE( hive::blockchain_statistics::bucket_object, hive::blockchain_statistics::bucket_index )

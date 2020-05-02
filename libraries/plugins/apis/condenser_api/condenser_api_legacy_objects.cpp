@@ -2,12 +2,12 @@
 
 namespace fc {
 
-void to_variant( const steem::plugins::condenser_api::legacy_block_header_extensions& sv, fc::variant& v )
+void to_variant( const hive::plugins::condenser_api::legacy_block_header_extensions& sv, fc::variant& v )
 {
    old_sv_to_variant( sv, v );
 }
 
-void from_variant( const fc::variant& v, steem::plugins::condenser_api::legacy_block_header_extensions& sv )
+void from_variant( const fc::variant& v, hive::plugins::condenser_api::legacy_block_header_extensions& sv )
 {
    old_sv_from_variant( v, sv );
 }

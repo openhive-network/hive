@@ -8,7 +8,7 @@
 #define STEEM_DEBUG_NODE_API_PLUGIN_NAME "debug_node_api"
 
 
-namespace steem { namespace plugins { namespace debug_node {
+namespace hive { namespace plugins { namespace debug_node {
 
 using namespace appbase;
 
@@ -16,8 +16,8 @@ class debug_node_api_plugin : public appbase::plugin< debug_node_api_plugin >
 {
 public:
    APPBASE_PLUGIN_REQUIRES(
-      (steem::plugins::debug_node::debug_node_plugin)
-      (steem::plugins::json_rpc::json_rpc_plugin)
+      (hive::plugins::debug_node::debug_node_plugin)
+      (hive::plugins::json_rpc::json_rpc_plugin)
    )
 
    debug_node_api_plugin();
@@ -34,4 +34,4 @@ public:
    std::shared_ptr< class debug_node_api > api;
 };
 
-} } } // steem::plugins::debug_node
+} } } // hive::plugins::debug_node

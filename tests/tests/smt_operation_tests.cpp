@@ -1,6 +1,6 @@
 #include <fc/macros.hpp>
 
-#if defined IS_TEST_NET && defined STEEM_ENABLE_SMT
+#if defined IS_TEST_NET && defined HIVE_ENABLE_SMT
 
 #include <boost/test/unit_test.hpp>
 
@@ -21,8 +21,8 @@
 
 #include <fc/uint128.hpp>
 
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive::chain;
+using namespace hive::protocol;
 using fc::string;
 using fc::uint128_t;
 using boost::container::flat_set;

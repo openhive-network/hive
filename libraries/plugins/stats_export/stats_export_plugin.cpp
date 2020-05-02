@@ -13,20 +13,20 @@
 #include <iostream>
 #include <sstream>
 
-namespace steem { namespace plugins { namespace stats_export {
+namespace hive { namespace plugins { namespace stats_export {
 
-using steem::chain::block_notification;
-using steem::chain::database;
-using steem::chain::dynamic_global_property_object;
+using hive::chain::block_notification;
+using hive::chain::database;
+using hive::chain::dynamic_global_property_object;
 
-using steem::protocol::account_name_type;
-using steem::protocol::authority;
-using steem::protocol::signed_transaction;
+using hive::protocol::account_name_type;
+using hive::protocol::authority;
+using hive::protocol::signed_transaction;
 
-using steem::plugins::block_data_export::block_data_export_plugin;
-using steem::plugins::block_data_export::exportable_block_data;
+using hive::plugins::block_data_export::block_data_export_plugin;
+using hive::plugins::block_data_export::exportable_block_data;
 
-using steem::plugins::chain::chain_plugin;
+using hive::plugins::chain::chain_plugin;
 
 namespace detail {
 
@@ -55,10 +55,10 @@ class api_stats_export_data_object
 
 } } } }
 
-FC_REFLECT( steem::plugins::stats_export::detail::api_stats_transaction_data_object, (user)(size) )
-FC_REFLECT( steem::plugins::stats_export::detail::api_stats_export_data_object, (global_properties)(transaction_stats)(free_memory) )
+FC_REFLECT( hive::plugins::stats_export::detail::api_stats_transaction_data_object, (user)(size) )
+FC_REFLECT( hive::plugins::stats_export::detail::api_stats_export_data_object, (global_properties)(transaction_stats)(free_memory) )
 
-namespace steem { namespace plugins { namespace stats_export { namespace detail {
+namespace hive { namespace plugins { namespace stats_export { namespace detail {
 
 class stats_export_plugin_impl
 {
@@ -152,4 +152,4 @@ void stats_export_plugin::plugin_shutdown()
    chain::util::disconnect_signal( my->_post_apply_block_conn );
 }
 
-} } } // steem::plugins::stats_export
+} } } // hive::plugins::stats_export

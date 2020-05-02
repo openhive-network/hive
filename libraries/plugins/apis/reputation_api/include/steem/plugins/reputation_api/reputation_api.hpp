@@ -9,9 +9,9 @@
 #include <fc/variant.hpp>
 #include <fc/vector.hpp>
 
-namespace steem { namespace plugins { namespace reputation {
+namespace hive { namespace plugins { namespace reputation {
 
-using steem::protocol::account_name_type;
+using hive::protocol::account_name_type;
 
 namespace detail
 {
@@ -21,7 +21,7 @@ namespace detail
 struct account_reputation
 {
    account_name_type             account;
-   steem::protocol::share_type   reputation;
+   hive::protocol::share_type   reputation;
 };
 
 struct get_account_reputations_args
@@ -49,13 +49,13 @@ class reputation_api
       std::unique_ptr< detail::reputation_api_impl > my;
 };
 
-} } } // steem::plugins::reputation
+} } } // hive::plugins::reputation
 
-FC_REFLECT( steem::plugins::reputation::account_reputation,
+FC_REFLECT( hive::plugins::reputation::account_reputation,
             (account)(reputation) );
 
-FC_REFLECT( steem::plugins::reputation::get_account_reputations_args,
+FC_REFLECT( hive::plugins::reputation::get_account_reputations_args,
             (account_lower_bound)(limit) );
 
-FC_REFLECT( steem::plugins::reputation::get_account_reputations_return,
+FC_REFLECT( hive::plugins::reputation::get_account_reputations_return,
             (reputations) );

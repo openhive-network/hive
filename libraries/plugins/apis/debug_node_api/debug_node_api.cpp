@@ -12,7 +12,7 @@
 
 #include <steem/utilities/key_conversion.hpp>
 
-namespace steem { namespace plugins { namespace debug_node {
+namespace hive { namespace plugins { namespace debug_node {
 
 namespace detail {
 
@@ -129,7 +129,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_get_hardfork_property_object )
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_set_hardfork )
 {
-   if( args.hardfork_id > STEEM_NUM_HARDFORKS )
+   if( args.hardfork_id > HIVE_NUM_HARDFORKS )
       return {};
 
    _debug_node.debug_update( [=]( chain::database& db )
@@ -171,4 +171,4 @@ DEFINE_LOCKLESS_APIS( debug_node_api,
    (debug_get_json_schema)
 )
 
-} } } // steem::plugins::debug_node
+} } } // hive::plugins::debug_node

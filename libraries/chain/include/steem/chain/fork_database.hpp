@@ -7,10 +7,10 @@
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
-   using steem::protocol::signed_block;
-   using steem::protocol::block_id_type;
+   using hive::protocol::signed_block;
+   using hive::protocol::block_id_type;
 
    struct fork_item
    {
@@ -104,4 +104,4 @@ namespace steem { namespace chain {
          shared_ptr<fork_item>    _head;
    };
 
-} } // steem::chain
+} } // hive::chain

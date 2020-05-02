@@ -18,7 +18,7 @@ int main( int argc, char** argv, char** envp )
 
       uint32_t maxBlock = atoi(maxBlockNumber);
 
-      steem::chain::block_log log;
+      hive::chain::block_log log;
 
       ilog("Trying to open input block_log file: `${i}'", ("i", blockLogPath));
       ilog("Truncated block_log will be saved into file: `${i}'", ("i", outputBlockLogPath));

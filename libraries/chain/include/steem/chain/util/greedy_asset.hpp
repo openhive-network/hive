@@ -2,7 +2,7 @@
 
 #include <steem/chain/steem_object_types.hpp>
 
-namespace steem
+namespace hive
 {
 	namespace chain
 	{
@@ -31,9 +31,9 @@ namespace steem
 			void	check(const asset& val) const	{ FC_ASSERT(val.symbol.asset_num == _SYMBOL); }
 		};
 
-		using greedy_SBD_asset		= greedy_asset<	STEEM_ASSET_NUM_SBD		>;
-		using greedy_STEEM_asset	= greedy_asset<	STEEM_ASSET_NUM_STEEM	>;
-		using greedy_VEST_asset		= greedy_asset<	STEEM_ASSET_NUM_VESTS	>;
+		using greedy_SBD_asset		= greedy_asset<	HIVE_ASSET_NUM_HBD		>;
+		using greedy_STEEM_asset	= greedy_asset<	HIVE_ASSET_NUM_HIVE	>;
+		using greedy_VEST_asset		= greedy_asset<	HIVE_ASSET_NUM_VESTS	>;
 
 		template<uint32_t _SYMBOL>
 		bool operator==(const greedy_asset<_SYMBOL>& obj1, const greedy_asset<_SYMBOL>& obj2 ) { return obj1.to_asset() == obj2.to_asset(); }
@@ -47,6 +47,6 @@ namespace steem
 	}
 }
 
-FC_REFLECT( steem::chain::greedy_SBD_asset,			(amount) )
-FC_REFLECT( steem::chain::greedy_STEEM_asset,		(amount) )
-FC_REFLECT( steem::chain::greedy_VEST_asset,		(amount) )
+FC_REFLECT( hive::chain::greedy_SBD_asset,			(amount) )
+FC_REFLECT( hive::chain::greedy_STEEM_asset,		(amount) )
+FC_REFLECT( hive::chain::greedy_VEST_asset,		(amount) )

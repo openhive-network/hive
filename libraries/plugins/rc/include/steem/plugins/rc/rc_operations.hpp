@@ -3,7 +3,7 @@
 
 #include <steem/chain/evaluator.hpp>
 
-namespace steem { namespace plugins { namespace rc {
+namespace hive { namespace plugins { namespace rc {
 
 struct delegate_to_pool_operation : base_operation
 {
@@ -34,19 +34,19 @@ typedef fc::static_variant<
 STEEM_DEFINE_PLUGIN_EVALUATOR( rc_plugin, rc_plugin_operation, delegate_to_pool_operation );
 STEEM_DEFINE_PLUGIN_EVALUATOR( rc_plugin, rc_plugin_operation, delegate_drc_from_pool_operation );
 
-} } } // steem::plugins::rc
+} } } // hive::plugins::rc
 
-FC_REFLECT( steem::plugins::rc::delegate_to_pool_operation,
+FC_REFLECT( hive::plugins::rc::delegate_to_pool_operation,
    (from_account)
    (to_pool)
    (amount)
    )
-FC_REFLECT( steem::plugins::rc::delegate_drc_from_pool_operation,
+FC_REFLECT( hive::plugins::rc::delegate_drc_from_pool_operation,
    (from_pool)
    (to_account)
    (mana_change)
    (drc_max_mana)
    )
 
-STEEM_DECLARE_OPERATION_TYPE( steem::plugins::rc::rc_plugin_operation )
-FC_REFLECT_TYPENAME( steem::plugins::rc::rc_plugin_operation )
+STEEM_DECLARE_OPERATION_TYPE( hive::plugins::rc::rc_plugin_operation )
+FC_REFLECT_TYPENAME( hive::plugins::rc::rc_plugin_operation )

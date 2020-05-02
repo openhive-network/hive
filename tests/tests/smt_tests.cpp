@@ -1,6 +1,6 @@
 #include <fc/macros.hpp>
 
-#if defined IS_TEST_NET && defined STEEM_ENABLE_SMT
+#if defined IS_TEST_NET && defined HIVE_ENABLE_SMT
 
 FC_TODO(Extend testing scenarios to support multiple NAIs per account)
 
@@ -20,8 +20,8 @@ FC_TODO(Extend testing scenarios to support multiple NAIs per account)
 
 #include "../db_fixture/database_fixture.hpp"
 
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive::chain;
+using namespace hive::protocol;
 using fc::string;
 using boost::container::flat_set;
 using boost::container::flat_map;

@@ -8,7 +8,7 @@
 
 #include "StatsdClient.hpp"
 
-namespace steem { namespace plugins { namespace statsd {
+namespace hive { namespace plugins { namespace statsd {
 
 using namespace Statsd;
 
@@ -260,4 +260,4 @@ void statsd_plugin::timing( const std::string& ns, const std::string& stat, cons
    my->timing( ns, stat, key, ms, frequency );
 }
 
-} } } // steem::plugins::statsd
+} } } // hive::plugins::statsd

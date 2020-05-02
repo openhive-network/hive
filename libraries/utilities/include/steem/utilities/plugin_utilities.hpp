@@ -1,6 +1,6 @@
 #include <fc/io/json.hpp>
 
-namespace steem { namespace plugins {
+namespace hive { namespace plugins {
 
 template<typename T>
 T dejsonify(const std::string& s) {
@@ -16,4 +16,4 @@ if( options.count(name) ) { \
 }
 #endif
 
-} } // steem::plugins
+} } // hive::plugins

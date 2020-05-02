@@ -8,9 +8,9 @@
 
 //#include <boost/multi_index/hashed_index.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
-   using steem::protocol::signed_transaction;
+   using hive::protocol::signed_transaction;
    using chainbase::t_vector;
 
    /**
@@ -56,19 +56,19 @@ namespace steem { namespace chain {
       allocator< transaction_object >
    > transaction_index;
 
-} } // steem::chain
+} } // hive::chain
 
-FC_REFLECT( steem::chain::transaction_object, (id)(packed_trx)(trx_id)(expiration) )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::transaction_object, steem::chain::transaction_index )
+FC_REFLECT( hive::chain::transaction_object, (id)(packed_trx)(trx_id)(expiration) )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::transaction_object, hive::chain::transaction_index )
 
 namespace helpers
 {
    template <>
-   class index_statistic_provider<steem::chain::transaction_index>
+   class index_statistic_provider<hive::chain::transaction_index>
    {
    public:
-      typedef steem::chain::transaction_index IndexType;
-      typedef typename steem::chain::transaction_object::t_packed_trx t_packed_trx;
+      typedef hive::chain::transaction_index IndexType;
+      typedef typename hive::chain::transaction_object::t_packed_trx t_packed_trx;
 
       index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
       {

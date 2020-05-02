@@ -17,7 +17,7 @@
 #include <fc/vector.hpp>
 #include <fc/api.hpp>
 
-namespace steem { namespace plugins { namespace condenser_api {
+namespace hive { namespace plugins { namespace condenser_api {
 
 using std::vector;
 using fc::variant;
@@ -335,8 +335,8 @@ struct api_comment_object
 
    uint16_t          reward_weight = 0;
 
-   legacy_asset      total_payout_value = legacy_asset::from_asset( asset( 0, SBD_SYMBOL ) );
-   legacy_asset      curator_payout_value = legacy_asset::from_asset( asset( 0, SBD_SYMBOL ) );
+   legacy_asset      total_payout_value = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
+   legacy_asset      curator_payout_value = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
 
    share_type        author_rewards;
 
@@ -345,7 +345,7 @@ struct api_comment_object
    account_name_type root_author;
    string            root_permlink;
 
-   legacy_asset      max_accepted_payout = legacy_asset::from_asset( asset( 0, SBD_SYMBOL ) );
+   legacy_asset      max_accepted_payout = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
    uint16_t          percent_steem_dollars = 0;
    bool              allow_replies = false;
    bool              allow_votes = false;
@@ -410,9 +410,9 @@ struct extended_dynamic_global_properties
    legacy_asset      virtual_supply;
    legacy_asset      current_supply;
    legacy_asset      confidential_supply;
-   legacy_asset      init_sbd_supply = legacy_asset::from_asset( asset( 0, SBD_SYMBOL ) );
-   legacy_asset      current_sbd_supply = legacy_asset::from_asset( asset( 0, SBD_SYMBOL ) );
-   legacy_asset      confidential_sbd_supply = legacy_asset::from_asset( asset( 0, SBD_SYMBOL ) );
+   legacy_asset      init_sbd_supply = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
+   legacy_asset      current_sbd_supply = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
+   legacy_asset      confidential_sbd_supply = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
    legacy_asset      total_vesting_fund_steem;
    legacy_asset      total_vesting_shares;
    legacy_asset      total_reward_fund_steem;
@@ -421,7 +421,7 @@ struct extended_dynamic_global_properties
    legacy_asset      pending_rewarded_vesting_steem;
 
    uint16_t          sbd_interest_rate = 0;
-   uint16_t          sbd_print_rate = STEEM_100_PERCENT;
+   uint16_t          sbd_print_rate = HIVE_100_PERCENT;
 
    uint32_t          maximum_block_size = 0;
    uint16_t          required_actions_partition_percent = 0;
@@ -431,8 +431,8 @@ struct extended_dynamic_global_properties
 
    uint32_t          last_irreversible_block_num = 0;
 
-   uint32_t          vote_power_reserve_rate = STEEM_INITIAL_VOTE_POWER_RATE;
-   uint32_t          delegation_return_period = STEEM_DELEGATION_RETURN_PERIOD_HF0;
+   uint32_t          vote_power_reserve_rate = HIVE_INITIAL_VOTE_POWER_RATE;
+   uint32_t          delegation_return_period = HIVE_DELEGATION_RETURN_PERIOD_HF0;
 
    uint64_t          reverse_auction_seconds = 0;
 
@@ -444,11 +444,11 @@ struct extended_dynamic_global_properties
    time_point_sec    next_maintenance_time;
    time_point_sec    last_budget_time;
 
-   uint16_t          content_reward_percent = STEEM_CONTENT_REWARD_PERCENT_HF16;
-   uint16_t          vesting_reward_percent = STEEM_VESTING_FUND_PERCENT_HF16;
-   uint16_t          sps_fund_percent = STEEM_PROPOSAL_FUND_PERCENT_HF0;
+   uint16_t          content_reward_percent = HIVE_CONTENT_REWARD_PERCENT_HF16;
+   uint16_t          vesting_reward_percent = HIVE_VESTING_FUND_PERCENT_HF16;
+   uint16_t          sps_fund_percent = HIVE_PROPOSAL_FUND_PERCENT_HF0;
 
-   legacy_asset      sps_interval_ledger = legacy_asset::from_asset( asset( 0, SBD_SYMBOL ) );
+   legacy_asset      sps_interval_ledger = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
 
    uint16_t          downvote_pool_percent = 0;
 };
@@ -499,7 +499,7 @@ struct api_witness_object
    digest_type             last_work;
    version                 running_version;
    hardfork_version        hardfork_version_vote;
-   time_point_sec          hardfork_time_vote = STEEM_GENESIS_TIME;
+   time_point_sec          hardfork_time_vote = HIVE_GENESIS_TIME;
    int64_t                 available_witness_account_subsidies = 0;
 };
 
@@ -539,10 +539,10 @@ struct api_witness_schedule_object
    uint32_t                      witness_pay_normalization_factor = 25;
    api_chain_properties          median_props;
    version                       majority_version;
-   uint8_t                       max_voted_witnesses           = STEEM_MAX_VOTED_WITNESSES_HF0;
-   uint8_t                       max_miner_witnesses           = STEEM_MAX_MINER_WITNESSES_HF0;
-   uint8_t                       max_runner_witnesses          = STEEM_MAX_RUNNER_WITNESSES_HF0;
-   uint8_t                       hardfork_required_witnesses   = STEEM_HARDFORK_REQUIRED_WITNESSES;
+   uint8_t                       max_voted_witnesses           = HIVE_MAX_VOTED_WITNESSES_HF0;
+   uint8_t                       max_miner_witnesses           = HIVE_MAX_MINER_WITNESSES_HF0;
+   uint8_t                       max_runner_witnesses          = HIVE_MAX_RUNNER_WITNESSES_HF0;
+   uint8_t                       hardfork_required_witnesses   = HIVE_HARDFORK_REQUIRED_WITNESSES;
 
    rd_dynamics_params            account_subsidy_rd;
    rd_dynamics_params            account_subsidy_witness_rd;
@@ -757,12 +757,12 @@ struct discussion : public api_comment_object
 
    string                        url; /// /category/@rootauthor/root_permlink#author/permlink
    string                        root_title;
-   legacy_asset                  pending_payout_value = legacy_asset::from_asset( asset( 0, SBD_SYMBOL ) ); ///< sbd
-   legacy_asset                  total_pending_payout_value = legacy_asset::from_asset( asset( 0, SBD_SYMBOL ) ); ///< sbd including replies
+   legacy_asset                  pending_payout_value = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) ); ///< sbd
+   legacy_asset                  total_pending_payout_value = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) ); ///< sbd including replies
    vector< tags::vote_state >    active_votes;
    vector< string >              replies; ///< author/slug mapping
    share_type                    author_reputation = 0;
-   legacy_asset                  promoted = legacy_asset::from_asset( asset( 0, SBD_SYMBOL ) );
+   legacy_asset                  promoted = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
    uint32_t                      body_length = 0;
    vector< account_name_type >   reblogged_by;
    optional< account_name_type > first_reblogged_by;
@@ -1176,24 +1176,24 @@ public:
       std::unique_ptr< detail::condenser_api_impl > my;
 };
 
-} } } // steem::plugins::condenser_api
+} } } // hive::plugins::condenser_api
 
-FC_REFLECT( steem::plugins::condenser_api::discussion_index,
+FC_REFLECT( hive::plugins::condenser_api::discussion_index,
             (category)(trending)(payout)(payout_comments)(trending30)(updated)(created)(responses)(active)(votes)(maturing)(best)(hot)(promoted)(cashout) )
 
-FC_REFLECT( steem::plugins::condenser_api::api_tag_object,
+FC_REFLECT( hive::plugins::condenser_api::api_tag_object,
             (name)(total_payouts)(net_votes)(top_posts)(comments)(trending) )
 
-FC_REFLECT( steem::plugins::condenser_api::state,
+FC_REFLECT( hive::plugins::condenser_api::state,
             (current_route)(props)(tag_idx)(tags)(content)(accounts)(witnesses)(discussion_idx)(witness_schedule)(feed_price)(error) )
 
-FC_REFLECT( steem::plugins::condenser_api::api_limit_order_object,
+FC_REFLECT( hive::plugins::condenser_api::api_limit_order_object,
             (id)(created)(expiration)(seller)(orderid)(for_sale)(sell_price)(real_price)(rewarded) )
 
-FC_REFLECT( steem::plugins::condenser_api::api_operation_object,
+FC_REFLECT( hive::plugins::condenser_api::api_operation_object,
              (trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(op) )
 
-FC_REFLECT( steem::plugins::condenser_api::api_account_object,
+FC_REFLECT( hive::plugins::condenser_api::api_account_object,
              (id)(name)(owner)(active)(posting)(memo_key)(json_metadata)(posting_json_metadata)
              (proxy)(last_owner_update)(last_account_update)
              (created)(mined)
@@ -1213,10 +1213,10 @@ FC_REFLECT( steem::plugins::condenser_api::api_account_object,
              (delayed_votes)
           )
 
-FC_REFLECT_DERIVED( steem::plugins::condenser_api::extended_account, (steem::plugins::condenser_api::api_account_object),
+FC_REFLECT_DERIVED( hive::plugins::condenser_api::extended_account, (hive::plugins::condenser_api::api_account_object),
             (vesting_balance)(reputation)(transfer_history)(market_history)(post_history)(vote_history)(other_history)(witness_votes)(tags_usage)(guest_bloggers)(open_orders)(comments)(feed)(blog)(recent_replies)(recommended) )
 
-FC_REFLECT( steem::plugins::condenser_api::api_comment_object,
+FC_REFLECT( hive::plugins::condenser_api::api_comment_object,
              (id)(author)(permlink)
              (category)(parent_author)(parent_permlink)
              (title)(body)(json_metadata)(last_update)(created)(active)(last_payout)
@@ -1229,7 +1229,7 @@ FC_REFLECT( steem::plugins::condenser_api::api_comment_object,
              (beneficiaries)
           )
 
-FC_REFLECT( steem::plugins::condenser_api::extended_dynamic_global_properties,
+FC_REFLECT( hive::plugins::condenser_api::extended_dynamic_global_properties,
             (head_block_number)(head_block_id)(time)
             (current_witness)(total_pow)(num_pow_witnesses)
             (virtual_supply)(current_supply)(confidential_supply)(init_sbd_supply)(current_sbd_supply)(confidential_sbd_supply)
@@ -1241,7 +1241,7 @@ FC_REFLECT( steem::plugins::condenser_api::extended_dynamic_global_properties,
             (next_maintenance_time)(last_budget_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)(sps_interval_ledger)(downvote_pool_percent)
           )
 
-FC_REFLECT( steem::plugins::condenser_api::api_witness_object,
+FC_REFLECT( hive::plugins::condenser_api::api_witness_object,
              (id)
              (owner)
              (created)
@@ -1255,7 +1255,7 @@ FC_REFLECT( steem::plugins::condenser_api::api_witness_object,
              (available_witness_account_subsidies)
           )
 
-FC_REFLECT( steem::plugins::condenser_api::api_witness_schedule_object,
+FC_REFLECT( hive::plugins::condenser_api::api_witness_schedule_object,
              (id)
              (current_virtual_time)
              (next_shuffle_block_num)
@@ -1276,13 +1276,13 @@ FC_REFLECT( steem::plugins::condenser_api::api_witness_schedule_object,
              (min_witness_account_subsidy_decay)
           )
 
-FC_REFLECT( steem::plugins::condenser_api::api_feed_history_object,
+FC_REFLECT( hive::plugins::condenser_api::api_feed_history_object,
              (id)
              (current_median_history)
              (price_history)
           )
 
-FC_REFLECT( steem::plugins::condenser_api::api_reward_fund_object,
+FC_REFLECT( hive::plugins::condenser_api::api_reward_fund_object,
             (id)
             (name)
             (reward_balance)
@@ -1295,13 +1295,13 @@ FC_REFLECT( steem::plugins::condenser_api::api_reward_fund_object,
             (curation_reward_curve)
          )
 
-FC_REFLECT( steem::plugins::condenser_api::api_escrow_object,
+FC_REFLECT( hive::plugins::condenser_api::api_escrow_object,
              (id)(escrow_id)(from)(to)(agent)
              (ratification_deadline)(escrow_expiration)
              (sbd_balance)(steem_balance)(pending_fee)
              (to_approved)(agent_approved)(disputed) )
 
-FC_REFLECT( steem::plugins::condenser_api::api_savings_withdraw_object,
+FC_REFLECT( hive::plugins::condenser_api::api_savings_withdraw_object,
              (id)
              (from)
              (to)
@@ -1311,54 +1311,54 @@ FC_REFLECT( steem::plugins::condenser_api::api_savings_withdraw_object,
              (complete)
           )
 
-FC_REFLECT( steem::plugins::condenser_api::api_vesting_delegation_object,
+FC_REFLECT( hive::plugins::condenser_api::api_vesting_delegation_object,
             (id)(delegator)(delegatee)(vesting_shares)(min_delegation_time) )
 
-FC_REFLECT( steem::plugins::condenser_api::api_vesting_delegation_expiration_object,
+FC_REFLECT( hive::plugins::condenser_api::api_vesting_delegation_expiration_object,
             (id)(delegator)(vesting_shares)(expiration) )
 
-FC_REFLECT( steem::plugins::condenser_api::api_convert_request_object,
+FC_REFLECT( hive::plugins::condenser_api::api_convert_request_object,
              (id)(owner)(requestid)(amount)(conversion_date) )
 
-FC_REFLECT( steem::plugins::condenser_api::api_proposal_object,
+FC_REFLECT( hive::plugins::condenser_api::api_proposal_object,
              (id)(proposal_id)(creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink)(total_votes) )
 
-FC_REFLECT_DERIVED( steem::plugins::condenser_api::discussion, (steem::plugins::condenser_api::api_comment_object),
+FC_REFLECT_DERIVED( hive::plugins::condenser_api::discussion, (hive::plugins::condenser_api::api_comment_object),
              (url)(root_title)(pending_payout_value)(total_pending_payout_value)
              (active_votes)(replies)(author_reputation)(promoted)
              (body_length)(reblogged_by)(first_reblogged_by)(first_reblogged_on)
           )
 
-FC_REFLECT( steem::plugins::condenser_api::scheduled_hardfork,
+FC_REFLECT( hive::plugins::condenser_api::scheduled_hardfork,
             (hf_version)(live_time) )
 
-FC_REFLECT( steem::plugins::condenser_api::account_vote,
+FC_REFLECT( hive::plugins::condenser_api::account_vote,
             (authorperm)(weight)(rshares)(percent)(time) )
 
-FC_REFLECT( steem::plugins::condenser_api::tag_index, (trending) )
+FC_REFLECT( hive::plugins::condenser_api::tag_index, (trending) )
 
-FC_REFLECT_ENUM( steem::plugins::condenser_api::withdraw_route_type, (incoming)(outgoing)(all) )
+FC_REFLECT_ENUM( hive::plugins::condenser_api::withdraw_route_type, (incoming)(outgoing)(all) )
 
-FC_REFLECT( steem::plugins::condenser_api::broadcast_transaction_synchronous_return,
+FC_REFLECT( hive::plugins::condenser_api::broadcast_transaction_synchronous_return,
             (id)(block_num)(trx_num)(expired) )
 
-FC_REFLECT( steem::plugins::condenser_api::comment_feed_entry,
+FC_REFLECT( hive::plugins::condenser_api::comment_feed_entry,
             (comment)(reblog_by)(reblog_on)(entry_id) )
 
-FC_REFLECT( steem::plugins::condenser_api::comment_blog_entry,
+FC_REFLECT( hive::plugins::condenser_api::comment_blog_entry,
             (comment)(blog)(reblog_on)(entry_id) )
 
-FC_REFLECT( steem::plugins::condenser_api::ticker,
+FC_REFLECT( hive::plugins::condenser_api::ticker,
             (latest)(lowest_ask)(highest_bid)(percent_change)(steem_volume)(sbd_volume) )
 
-FC_REFLECT( steem::plugins::condenser_api::volume,
+FC_REFLECT( hive::plugins::condenser_api::volume,
             (steem_volume)(sbd_volume) )
 
-FC_REFLECT( steem::plugins::condenser_api::order,
+FC_REFLECT( hive::plugins::condenser_api::order,
             (order_price)(real_price)(steem)(sbd)(created) )
 
-FC_REFLECT( steem::plugins::condenser_api::order_book,
+FC_REFLECT( hive::plugins::condenser_api::order_book,
             (bids)(asks) )
 
-FC_REFLECT( steem::plugins::condenser_api::market_trade,
+FC_REFLECT( hive::plugins::condenser_api::market_trade,
             (date)(current_pays)(open_pays) )

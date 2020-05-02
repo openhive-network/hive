@@ -41,9 +41,9 @@
 #include <algorithm>
 #include <random>
 
-using namespace steem;
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive;
+using namespace hive::chain;
+using namespace hive::protocol;
 
 BOOST_FIXTURE_TEST_SUITE( basic_tests, clean_database_fixture )
 

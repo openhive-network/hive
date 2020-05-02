@@ -11,9 +11,9 @@
 #include <steem/chain/witness_objects.hpp>
 #include <steem/chain/database.hpp>
 
-namespace steem { namespace plugins { namespace database_api {
+namespace hive { namespace plugins { namespace database_api {
 
-using namespace steem::chain;
+using namespace hive::chain;
 
 typedef change_recovery_account_request_object api_change_recovery_account_request_object;
 typedef block_summary_object                   api_block_summary_object;
@@ -230,7 +230,7 @@ struct api_account_object
       }
 #endif
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
       const auto& by_control_account_index = db.get_index<smt_token_index>().indices().get<by_control_account>();
       auto smt_obj_itr = by_control_account_index.find( name );
       is_smt = smt_obj_itr != by_control_account_index.end();
@@ -545,7 +545,7 @@ struct api_hardfork_property_object
    fc::time_point_sec            next_hardfork_time;
 };
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 
 struct api_smt_token_object
 {
@@ -637,9 +637,9 @@ struct order_book
    vector< order >      bids;
 };
 
-} } } // steem::plugins::database_api
+} } } // hive::plugins::database_api
 
-FC_REFLECT( steem::plugins::database_api::api_comment_object,
+FC_REFLECT( hive::plugins::database_api::api_comment_object,
              (id)(author)(permlink)
              (category)(parent_author)(parent_permlink)
              (title)(body)(json_metadata)(last_update)(created)(active)(last_payout)
@@ -652,11 +652,11 @@ FC_REFLECT( steem::plugins::database_api::api_comment_object,
              (beneficiaries)
           )
 
-FC_REFLECT( steem::plugins::database_api::api_comment_vote_object,
+FC_REFLECT( hive::plugins::database_api::api_comment_vote_object,
              (id)(voter)(author)(permlink)(weight)(rshares)(vote_percent)(last_update)(num_changes)
           )
 
-FC_REFLECT( steem::plugins::database_api::api_account_object,
+FC_REFLECT( hive::plugins::database_api::api_account_object,
              (id)(name)(owner)(active)(posting)(memo_key)(json_metadata)(posting_json_metadata)(proxy)(last_owner_update)(last_account_update)
              (created)(mined)
              (recovery_account)(last_account_recovery)(reset_account)
@@ -676,21 +676,21 @@ FC_REFLECT( steem::plugins::database_api::api_account_object,
 	     (delayed_votes)
           )
 
-FC_REFLECT( steem::plugins::database_api::api_owner_authority_history_object,
+FC_REFLECT( hive::plugins::database_api::api_owner_authority_history_object,
              (id)
              (account)
              (previous_owner_authority)
              (last_valid_time)
           )
 
-FC_REFLECT( steem::plugins::database_api::api_account_recovery_request_object,
+FC_REFLECT( hive::plugins::database_api::api_account_recovery_request_object,
              (id)
              (account_to_recover)
              (new_owner_authority)
              (expires)
           )
 
-FC_REFLECT( steem::plugins::database_api::api_savings_withdraw_object,
+FC_REFLECT( hive::plugins::database_api::api_savings_withdraw_object,
              (id)
              (from)
              (to)
@@ -700,13 +700,13 @@ FC_REFLECT( steem::plugins::database_api::api_savings_withdraw_object,
              (complete)
           )
 
-FC_REFLECT( steem::plugins::database_api::api_feed_history_object,
+FC_REFLECT( hive::plugins::database_api::api_feed_history_object,
              (id)
              (current_median_history)
              (price_history)
           )
 
-FC_REFLECT( steem::plugins::database_api::api_witness_object,
+FC_REFLECT( hive::plugins::database_api::api_witness_object,
              (id)
              (owner)
              (created)
@@ -720,7 +720,7 @@ FC_REFLECT( steem::plugins::database_api::api_witness_object,
              (available_witness_account_subsidies)
           )
 
-FC_REFLECT( steem::plugins::database_api::api_witness_schedule_object,
+FC_REFLECT( hive::plugins::database_api::api_witness_schedule_object,
              (id)
              (current_virtual_time)
              (next_shuffle_block_num)
@@ -741,13 +741,13 @@ FC_REFLECT( steem::plugins::database_api::api_witness_schedule_object,
              (min_witness_account_subsidy_decay)
           )
 
-FC_REFLECT_DERIVED( steem::plugins::database_api::api_signed_block_object, (steem::protocol::signed_block),
+FC_REFLECT_DERIVED( hive::plugins::database_api::api_signed_block_object, (hive::protocol::signed_block),
                      (block_id)
                      (signing_key)
                      (transaction_ids)
                   )
 
-FC_REFLECT( steem::plugins::database_api::api_hardfork_property_object,
+FC_REFLECT( hive::plugins::database_api::api_hardfork_property_object,
             (id)
             (processed_hardforks)
             (last_hardfork)
@@ -756,16 +756,16 @@ FC_REFLECT( steem::plugins::database_api::api_hardfork_property_object,
             (next_hardfork_time)
           )
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 
-FC_REFLECT( steem::plugins::database_api::api_smt_token_object,
+FC_REFLECT( hive::plugins::database_api::api_smt_token_object,
    (token)
    (ico)
 )
 
 #endif
 
-FC_REFLECT_ENUM( steem::plugins::database_api::proposal_status,
+FC_REFLECT_ENUM( hive::plugins::database_api::proposal_status,
                   (all)
                   (inactive)
                   (active)
@@ -773,7 +773,7 @@ FC_REFLECT_ENUM( steem::plugins::database_api::proposal_status,
                   (votable)
                )
 
-FC_REFLECT( steem::plugins::database_api::api_proposal_object,
+FC_REFLECT( hive::plugins::database_api::api_proposal_object,
             (id)
             (proposal_id)
             (creator)
@@ -787,12 +787,12 @@ FC_REFLECT( steem::plugins::database_api::api_proposal_object,
             (status)
           )
 
-FC_REFLECT( steem::plugins::database_api::api_proposal_vote_object,
+FC_REFLECT( hive::plugins::database_api::api_proposal_vote_object,
             (id)
             (voter)
             (proposal)
           )
 
-FC_REFLECT( steem::plugins::database_api::order, (order_price)(real_price)(steem)(sbd)(created) );
+FC_REFLECT( hive::plugins::database_api::order, (order_price)(real_price)(steem)(sbd)(created) );
 
-FC_REFLECT( steem::plugins::database_api::order_book, (asks)(bids) );
+FC_REFLECT( hive::plugins::database_api::order_book, (asks)(bids) );

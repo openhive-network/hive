@@ -39,7 +39,7 @@
 
 #define JSON_RPC_REGISTER_API( API_NAME )                                                       \
 {                                                                                               \
-   steem::plugins::json_rpc::detail::register_api_method_visitor vtor( API_NAME );              \
+   hive::plugins::json_rpc::detail::register_api_method_visitor vtor( API_NAME );              \
    for_each_api( vtor );                                                                        \
 }
 
@@ -53,7 +53,7 @@
 #define JSON_RPC_PARSE_PARAMS_ERROR (-32002)
 #define JSON_RPC_ERROR_DURING_CALL  (-32003)
 
-namespace steem { namespace plugins { namespace json_rpc {
+namespace hive { namespace plugins { namespace json_rpc {
 
 using namespace appbase;
 
@@ -114,7 +114,7 @@ namespace detail {
       public:
          register_api_method_visitor( const std::string& api_name )
             : _api_name( api_name ),
-              _json_rpc_plugin( appbase::app().get_plugin< steem::plugins::json_rpc::json_rpc_plugin >() )
+              _json_rpc_plugin( appbase::app().get_plugin< hive::plugins::json_rpc::json_rpc_plugin >() )
          {}
 
          template< typename Plugin, typename Method, typename Args, typename Ret >
@@ -135,11 +135,11 @@ namespace detail {
 
       private:
          std::string _api_name;
-         steem::plugins::json_rpc::json_rpc_plugin& _json_rpc_plugin;
+         hive::plugins::json_rpc::json_rpc_plugin& _json_rpc_plugin;
    };
 
 }
 
-} } } // steem::plugins::json_rpc
+} } } // hive::plugins::json_rpc
 
-FC_REFLECT( steem::plugins::json_rpc::api_method_signature, (args)(ret) )
+FC_REFLECT( hive::plugins::json_rpc::api_method_signature, (args)(ret) )

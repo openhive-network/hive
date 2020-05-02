@@ -5,9 +5,9 @@
 #include <steem/chain/comment_object.hpp>
 
 
-namespace steem { namespace plugins { namespace tags {
+namespace hive { namespace plugins { namespace tags {
 
-using namespace steem::chain;
+using namespace hive::chain;
 
 using namespace appbase;
 
@@ -228,7 +228,7 @@ class tag_stats_object : public object< tag_stats_object_type, tag_stats_object 
       id_type           id;
 
       tag_name_type     tag;
-      asset             total_payout = asset( 0, SBD_SYMBOL );
+      asset             total_payout = asset( 0, HBD_SYMBOL );
       int32_t           net_votes = 0;
       uint32_t          top_posts = 0;
       uint32_t          comments  = 0;
@@ -294,7 +294,7 @@ class author_tag_stats_object : public object< author_tag_stats_object_type, aut
       id_type         id;
       account_id_type author;
       tag_name_type   tag;
-      asset           total_rewards = asset( 0, SBD_SYMBOL );
+      asset           total_rewards = asset( 0, HBD_SYMBOL );
       uint32_t        total_posts = 0;
 };
 typedef oid< author_tag_stats_object > author_tag_stats_id_type;
@@ -345,7 +345,7 @@ class tags_plugin : public plugin< tags_plugin >
       tags_plugin();
       virtual ~tags_plugin();
 
-      APPBASE_PLUGIN_REQUIRES( (steem::plugins::chain::chain_plugin) )
+      APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
       static const std::string& name() { static std::string name = STEEM_TAGS_PLUGIN_NAME; return name; }
 
@@ -382,17 +382,17 @@ class tag_api : public std::enable_shared_from_this<tag_api> {
 */
 
 
-} } } //steem::plugins::tags
+} } } //hive::plugins::tags
 
-FC_REFLECT( steem::plugins::tags::tag_object,
+FC_REFLECT( hive::plugins::tags::tag_object,
    (id)(tag)(created)(active)(cashout)(net_rshares)(net_votes)(hot)(trending)(promoted_balance)(children)(author)(parent)(comment) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::tags::tag_object, steem::plugins::tags::tag_index )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::tags::tag_object, hive::plugins::tags::tag_index )
 
-FC_REFLECT( steem::plugins::tags::tag_stats_object,
+FC_REFLECT( hive::plugins::tags::tag_stats_object,
    (id)(tag)(total_payout)(net_votes)(top_posts)(comments)(total_trending) );
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::tags::tag_stats_object, steem::plugins::tags::tag_stats_index )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::tags::tag_stats_object, hive::plugins::tags::tag_stats_index )
 
-FC_REFLECT( steem::plugins::tags::comment_metadata, (tags) );
+FC_REFLECT( hive::plugins::tags::comment_metadata, (tags) );
 
-FC_REFLECT( steem::plugins::tags::author_tag_stats_object, (id)(author)(tag)(total_posts)(total_rewards) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::tags::author_tag_stats_object, steem::plugins::tags::author_tag_stats_index )
+FC_REFLECT( hive::plugins::tags::author_tag_stats_object, (id)(author)(tag)(total_posts)(total_rewards) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::tags::author_tag_stats_object, hive::plugins::tags::author_tag_stats_index )

@@ -10,10 +10,10 @@
 #include <fc/variant.hpp>
 #include <fc/vector.hpp>
 
-namespace steem { namespace plugins { namespace follow {
+namespace hive { namespace plugins { namespace follow {
 
-using steem::protocol::account_name_type;
-using steem::plugins::reputation::account_reputation;
+using hive::protocol::account_name_type;
+using hive::plugins::reputation::account_reputation;
 
 namespace detail
 {
@@ -188,64 +188,64 @@ class follow_api
       std::unique_ptr< detail::follow_api_impl > my;
 };
 
-} } } // steem::plugins::follow
+} } } // hive::plugins::follow
 
-FC_REFLECT( steem::plugins::follow::feed_entry,
+FC_REFLECT( hive::plugins::follow::feed_entry,
             (author)(permlink)(reblog_by)(reblog_on)(entry_id) );
 
-FC_REFLECT( steem::plugins::follow::comment_feed_entry,
+FC_REFLECT( hive::plugins::follow::comment_feed_entry,
             (comment)(reblog_by)(reblog_on)(entry_id) );
 
-FC_REFLECT( steem::plugins::follow::blog_entry,
+FC_REFLECT( hive::plugins::follow::blog_entry,
             (author)(permlink)(blog)(reblog_on)(entry_id) );
 
-FC_REFLECT( steem::plugins::follow::comment_blog_entry,
+FC_REFLECT( hive::plugins::follow::comment_blog_entry,
             (comment)(blog)(reblog_on)(entry_id) );
 
-FC_REFLECT( steem::plugins::follow::api_follow_object,
+FC_REFLECT( hive::plugins::follow::api_follow_object,
             (follower)(following)(what) );
 
-FC_REFLECT( steem::plugins::follow::reblog_count,
+FC_REFLECT( hive::plugins::follow::reblog_count,
             (author)(count) );
 
-FC_REFLECT( steem::plugins::follow::get_followers_args,
+FC_REFLECT( hive::plugins::follow::get_followers_args,
             (account)(start)(type)(limit) );
 
-FC_REFLECT( steem::plugins::follow::get_followers_return,
+FC_REFLECT( hive::plugins::follow::get_followers_return,
             (followers) );
 
-FC_REFLECT( steem::plugins::follow::get_following_return,
+FC_REFLECT( hive::plugins::follow::get_following_return,
             (following) );
 
-FC_REFLECT( steem::plugins::follow::get_follow_count_args,
+FC_REFLECT( hive::plugins::follow::get_follow_count_args,
             (account) );
 
-FC_REFLECT( steem::plugins::follow::get_follow_count_return,
+FC_REFLECT( hive::plugins::follow::get_follow_count_return,
             (account)(follower_count)(following_count) );
 
-FC_REFLECT( steem::plugins::follow::get_feed_entries_args,
+FC_REFLECT( hive::plugins::follow::get_feed_entries_args,
             (account)(start_entry_id)(limit) );
 
-FC_REFLECT( steem::plugins::follow::get_feed_entries_return,
+FC_REFLECT( hive::plugins::follow::get_feed_entries_return,
             (feed) );
 
-FC_REFLECT( steem::plugins::follow::get_feed_return,
+FC_REFLECT( hive::plugins::follow::get_feed_return,
             (feed) );
 
-FC_REFLECT( steem::plugins::follow::get_blog_entries_return,
+FC_REFLECT( hive::plugins::follow::get_blog_entries_return,
             (blog) );
 
-FC_REFLECT( steem::plugins::follow::get_blog_return,
+FC_REFLECT( hive::plugins::follow::get_blog_return,
             (blog) );
 
-FC_REFLECT( steem::plugins::follow::get_reblogged_by_args,
+FC_REFLECT( hive::plugins::follow::get_reblogged_by_args,
             (author)(permlink) );
 
-FC_REFLECT( steem::plugins::follow::get_reblogged_by_return,
+FC_REFLECT( hive::plugins::follow::get_reblogged_by_return,
             (accounts) );
 
-FC_REFLECT( steem::plugins::follow::get_blog_authors_args,
+FC_REFLECT( hive::plugins::follow::get_blog_authors_args,
             (blog_account) );
 
-FC_REFLECT( steem::plugins::follow::get_blog_authors_return,
+FC_REFLECT( hive::plugins::follow::get_blog_authors_return,
             (blog_authors) );

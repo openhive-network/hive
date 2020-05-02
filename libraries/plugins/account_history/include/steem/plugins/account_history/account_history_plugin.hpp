@@ -4,12 +4,12 @@
 
 #define STEEM_ACCOUNT_HISTORY_PLUGIN_NAME "account_history"
 
-namespace steem { namespace plugins { namespace account_history {
+namespace hive { namespace plugins { namespace account_history {
 
 namespace detail { class account_history_plugin_impl; }
 
 using namespace appbase;
-using steem::protocol::account_name_type;
+using hive::protocol::account_name_type;
 
 //
 // Plugins should #define their SPACE_ID's so plugins with
@@ -35,7 +35,7 @@ class account_history_plugin : public plugin< account_history_plugin >
       account_history_plugin();
       virtual ~account_history_plugin();
 
-      APPBASE_PLUGIN_REQUIRES( (steem::plugins::chain::chain_plugin) )
+      APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
       static const std::string& name() { static std::string name = STEEM_ACCOUNT_HISTORY_PLUGIN_NAME; return name; }
 
@@ -52,5 +52,5 @@ class account_history_plugin : public plugin< account_history_plugin >
       std::unique_ptr< detail::account_history_plugin_impl > my;
 };
 
-} } } //steem::plugins::account_history
+} } } //hive::plugins::account_history
 

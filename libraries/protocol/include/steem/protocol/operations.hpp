@@ -8,7 +8,7 @@
 #include <steem/protocol/smt_operations.hpp>
 #include <steem/protocol/sps_operations.hpp>
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
    /** NOTE: do not change the order of any operations prior to the virtual operations
     * or it will trigger a hardfork.
@@ -71,7 +71,7 @@ namespace steem { namespace protocol {
             update_proposal_votes_operation,
             remove_proposal_operation,
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
             /// SMT operations
             claim_reward_balance2_operation,
 
@@ -120,12 +120,12 @@ namespace steem { namespace protocol {
 
    bool is_virtual_operation( const operation& op );
 
-} } // steem::protocol
+} } // hive::protocol
 
 /*namespace fc {
-    void to_variant( const steem::protocol::operation& var,  fc::variant& vo );
-    void from_variant( const fc::variant& var,  steem::protocol::operation& vo );
+    void to_variant( const hive::protocol::operation& var,  fc::variant& vo );
+    void from_variant( const fc::variant& var,  hive::protocol::operation& vo );
 }*/
 
-STEEM_DECLARE_OPERATION_TYPE( steem::protocol::operation )
-FC_REFLECT_TYPENAME( steem::protocol::operation )
+STEEM_DECLARE_OPERATION_TYPE( hive::protocol::operation )
+FC_REFLECT_TYPENAME( hive::protocol::operation )

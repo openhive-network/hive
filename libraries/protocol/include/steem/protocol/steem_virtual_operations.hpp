@@ -5,7 +5,7 @@
 
 #include <fc/utf8.hpp>
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
    struct author_reward_operation : public virtual_operation {
       author_reward_operation(){}
@@ -57,7 +57,7 @@ namespace steem { namespace protocol {
 
    struct interest_operation : public virtual_operation
    {
-      interest_operation( const string& o = "", const asset& i = asset(0,SBD_SYMBOL) )
+      interest_operation( const string& o = "", const asset& i = asset(0,HBD_SYMBOL) )
          :owner(o),interest(i){}
 
       account_name_type owner;
@@ -235,26 +235,26 @@ namespace steem { namespace protocol {
       asset             steem_transferred;
    };
 
-} } //steem::protocol
+} } //hive::protocol
 
-FC_REFLECT( steem::protocol::author_reward_operation, (author)(permlink)(sbd_payout)(steem_payout)(vesting_payout) )
-FC_REFLECT( steem::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink) )
-FC_REFLECT( steem::protocol::comment_reward_operation, (author)(permlink)(payout) )
-FC_REFLECT( steem::protocol::fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
-FC_REFLECT( steem::protocol::liquidity_reward_operation, (owner)(payout) )
-FC_REFLECT( steem::protocol::interest_operation, (owner)(interest) )
-FC_REFLECT( steem::protocol::fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
-FC_REFLECT( steem::protocol::shutdown_witness_operation, (owner) )
-FC_REFLECT( steem::protocol::fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
-FC_REFLECT( steem::protocol::fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
-FC_REFLECT( steem::protocol::hardfork_operation, (hardfork_id) )
-FC_REFLECT( steem::protocol::comment_payout_update_operation, (author)(permlink) )
-FC_REFLECT( steem::protocol::return_vesting_delegation_operation, (account)(vesting_shares) )
-FC_REFLECT( steem::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(sbd_payout)(steem_payout)(vesting_payout) )
-FC_REFLECT( steem::protocol::producer_reward_operation, (producer)(vesting_shares) )
-FC_REFLECT( steem::protocol::clear_null_account_balance_operation, (total_cleared) )
-FC_REFLECT( steem::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
-FC_REFLECT( steem::protocol::delayed_voting_operation, (voter)(votes) )
-FC_REFLECT( steem::protocol::sps_fund_operation, (fund_account)(additional_funds) )
-FC_REFLECT( steem::protocol::hardfork_hive_operation, (account)(treasury)(sbd_transferred)(steem_transferred)(vests_converted)(total_steem_from_vests) )
-FC_REFLECT( steem::protocol::hardfork_hive_restore_operation, (account)(treasury)(sbd_transferred)(steem_transferred) )
+FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(sbd_payout)(steem_payout)(vesting_payout) )
+FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink) )
+FC_REFLECT( hive::protocol::comment_reward_operation, (author)(permlink)(payout) )
+FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
+FC_REFLECT( hive::protocol::liquidity_reward_operation, (owner)(payout) )
+FC_REFLECT( hive::protocol::interest_operation, (owner)(interest) )
+FC_REFLECT( hive::protocol::fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
+FC_REFLECT( hive::protocol::shutdown_witness_operation, (owner) )
+FC_REFLECT( hive::protocol::fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
+FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
+FC_REFLECT( hive::protocol::hardfork_operation, (hardfork_id) )
+FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink) )
+FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesting_shares) )
+FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(sbd_payout)(steem_payout)(vesting_payout) )
+FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares) )
+FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared) )
+FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
+FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
+FC_REFLECT( hive::protocol::sps_fund_operation, (fund_account)(additional_funds) )
+FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(sbd_transferred)(steem_transferred)(vests_converted)(total_steem_from_vests) )
+FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(sbd_transferred)(steem_transferred) )

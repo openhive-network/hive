@@ -24,7 +24,7 @@
 #include <steem/utilities/string_escape.hpp>
 #include <sstream>
 
-namespace steem { namespace utilities {
+namespace hive { namespace utilities {
 
   std::string escape_string_for_c_source_code(const std::string& input)
   {
@@ -69,5 +69,5 @@ namespace steem { namespace utilities {
     return escaped_string.str();
   }
 
-} } // end namespace steem::utilities
+} } // end namespace hive::utilities
 

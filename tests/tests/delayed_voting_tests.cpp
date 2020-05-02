@@ -33,9 +33,9 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 
-using namespace steem;
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive;
+using namespace hive::chain;
+using namespace hive::protocol;
 using fc::string;
 
 constexpr int DAYS_FOR_DELAYED_VOTING{ (HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / HIVE_DELAYED_VOTING_INTERVAL_SECONDS) };
@@ -50,7 +50,7 @@ namespace
 
 std::string asset_to_string( const asset& a )
 {
-   return steem::plugins::condenser_api::legacy_asset::from_asset( a ).to_string();
+   return hive::plugins::condenser_api::legacy_asset::from_asset( a ).to_string();
 }
 
 } // namespace

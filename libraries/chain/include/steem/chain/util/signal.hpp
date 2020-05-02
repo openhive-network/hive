@@ -2,7 +2,7 @@
 
 #include <fc/signals.hpp>
 
-namespace steem { namespace chain { namespace util {
+namespace hive { namespace chain { namespace util {
 
 inline void disconnect_signal( boost::signals2::connection& signal )
 {

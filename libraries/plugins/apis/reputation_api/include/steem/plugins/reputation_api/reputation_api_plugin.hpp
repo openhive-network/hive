@@ -9,7 +9,7 @@
 #define STEEM_REPUTATION_API_PLUGIN_NAME "reputation_api"
 
 
-namespace steem { namespace plugins { namespace reputation {
+namespace hive { namespace plugins { namespace reputation {
 
 using namespace appbase;
 
@@ -17,8 +17,8 @@ class reputation_api_plugin : public appbase::plugin< reputation_api_plugin >
 {
 public:
    APPBASE_PLUGIN_REQUIRES(
-      (steem::plugins::reputation::reputation_plugin)
-      (steem::plugins::json_rpc::json_rpc_plugin)
+      (hive::plugins::reputation::reputation_plugin)
+      (hive::plugins::json_rpc::json_rpc_plugin)
    )
 
    reputation_api_plugin();
@@ -35,4 +35,4 @@ public:
    std::shared_ptr< class reputation_api > api;
 };
 
-} } } // steem::plugins::reputation
+} } } // hive::plugins::reputation

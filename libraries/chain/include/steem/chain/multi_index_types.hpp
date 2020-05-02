@@ -23,7 +23,7 @@
 #include <type_traits>
 #include <typeinfo>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 #ifndef ENABLE_MIRA
 using boost::multi_index::multi_index_container;
@@ -74,4 +74,4 @@ inline Iterator make_reverse_iterator( Iterator iterator )
 
 #endif
 
-} } // steem::chain
+} } // hive::chain

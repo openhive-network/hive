@@ -25,20 +25,20 @@
 #include <functional>
 #include <map>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
-   using steem::protocol::signed_transaction;
-   using steem::protocol::operation;
-   using steem::protocol::authority;
-   using steem::protocol::asset;
-   using steem::protocol::asset_symbol_type;
-   using steem::protocol::price;
+   using hive::protocol::signed_transaction;
+   using hive::protocol::operation;
+   using hive::protocol::authority;
+   using hive::protocol::asset;
+   using hive::protocol::asset_symbol_type;
+   using hive::protocol::price;
    using abstract_plugin = appbase::abstract_plugin;
 
    struct hardfork_versions
    {
-      fc::time_point_sec         times[ STEEM_NUM_HARDFORKS + 1 ];
-      protocol::hardfork_version versions[ STEEM_NUM_HARDFORKS + 1 ];
+      fc::time_point_sec         times[ HIVE_NUM_HARDFORKS + 1 ];
+      protocol::hardfork_version versions[ HIVE_NUM_HARDFORKS + 1 ];
    };
 
    class database;
@@ -119,8 +119,8 @@ namespace steem { namespace chain {
          {
             fc::path data_dir;
             fc::path shared_mem_dir;
-            uint64_t initial_supply = STEEM_INIT_SUPPLY;
-            uint64_t sbd_initial_supply = STEEM_SBD_INIT_SUPPLY;
+            uint64_t initial_supply = HIVE_INIT_SUPPLY;
+            uint64_t sbd_initial_supply = HIVE_HBD_INIT_SUPPLY;
             uint64_t shared_file_size = 0;
             uint16_t shared_file_full_threshold = 0;
             uint16_t shared_file_scale_rate = 0;
@@ -183,7 +183,7 @@ namespace steem { namespace chain {
          const signed_transaction   get_recent_transaction( const transaction_id_type& trx_id )const;
          std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
-         chain_id_type steem_chain_id = STEEM_CHAIN_ID;
+         chain_id_type steem_chain_id = HIVE_CHAIN_ID;
          chain_id_type get_chain_id() const;
          void set_chain_id( const chain_id_type& chain_id );
 
@@ -398,7 +398,7 @@ namespace steem { namespace chain {
 
          /** this updates the votes for witnesses as a result of account voting proxy changing */
          void adjust_proxied_witness_votes( const account_object& a,
-                                            const std::array< share_type, STEEM_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
+                                            const std::array< share_type, HIVE_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
                                             int depth = 0 );
 
          /** this updates the votes for all witnesses as a result of account VESTS changing */
@@ -463,7 +463,7 @@ namespace steem { namespace chain {
          /// Reset the object graph in-memory
          void initialize_indexes();
          void init_schema();
-         void init_genesis(uint64_t initial_supply = STEEM_INIT_SUPPLY, uint64_t sbd_initial_supply = STEEM_SBD_INIT_SUPPLY );
+         void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t sbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
 
          /**
           *  This method validates transactions without adding it to the pending state.
@@ -524,7 +524,7 @@ namespace steem { namespace chain {
          bool disable_low_mem_warning = true;
 #endif
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
          ///Smart Media Tokens related methods
          ///@{
          void validate_smt_invariants()const;
@@ -594,7 +594,7 @@ namespace steem { namespace chain {
          void apply_hardfork( uint32_t hardfork );
 
          ///@}
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
          template< typename smt_balance_object_type, class balance_operator_type >
          void adjust_smt_balance( const account_name_type& name, const asset& delta, bool check_account,
                                   balance_operator_type balance_operator );

@@ -1,6 +1,6 @@
 #include <steem/protocol/types.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 inline static const map< uint32_t, checksum_type >& get_shared_db_merkle()
 {
@@ -19,4 +19,4 @@ inline static const map< uint32_t, checksum_type >& get_shared_db_merkle()
    return shared_db_merkle;
 }
 
-} } //steem::chain
+} } //hive::chain

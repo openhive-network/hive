@@ -4,7 +4,7 @@
 
 #include <appbase/application.hpp>
 
-namespace steem { namespace plugins { namespace transaction_status {
+namespace hive { namespace plugins { namespace transaction_status {
 
 #define STEEM_TRANSACTION_STATUS_PLUGIN_NAME "transaction_status"
 
@@ -16,7 +16,7 @@ class transaction_status_plugin : public appbase::plugin< transaction_status_plu
       transaction_status_plugin();
       virtual ~transaction_status_plugin();
 
-      APPBASE_PLUGIN_REQUIRES( (steem::plugins::chain::chain_plugin) )
+      APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
       static const std::string& name() { static std::string name = STEEM_TRANSACTION_STATUS_PLUGIN_NAME; return name; }
 
@@ -36,4 +36,4 @@ class transaction_status_plugin : public appbase::plugin< transaction_status_plu
       std::unique_ptr< detail::transaction_status_impl > my;
 };
 
-} } } // steem::plugins::transaction_status
+} } } // hive::plugins::transaction_status

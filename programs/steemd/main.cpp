@@ -30,15 +30,15 @@
 #include <vector>
 
 namespace bpo = boost::program_options;
-using steem::protocol::version;
+using hive::protocol::version;
 using std::string;
 using std::vector;
 
 string& version_string()
 {
    static string v_str =
-      "hive_blockchain_version: " + fc::string( STEEM_BLOCKCHAIN_VERSION ) + "\n" +
-      "hive_git_revision:       " + fc::string( steem::utilities::git_revision_sha ) + "\n" +
+      "hive_blockchain_version: " + fc::string( HIVE_BLOCKCHAIN_VERSION ) + "\n" +
+      "hive_git_revision:       " + fc::string( hive::utilities::git_revision_sha ) + "\n" +
       "fc_git_revision:          " + fc::string( fc::git_revision_sha ) + "\n";
    return v_str;
 }
@@ -49,10 +49,10 @@ void info()
       std::cerr << "------------------------------------------------------\n\n";
       std::cerr << "            STARTING TEST NETWORK\n\n";
       std::cerr << "------------------------------------------------------\n";
-      auto initminer_private_key = steem::utilities::key_to_wif( STEEM_INIT_PRIVATE_KEY );
-      std::cerr << "initminer public key: " << STEEM_INIT_PUBLIC_KEY_STR << "\n";
+      auto initminer_private_key = hive::utilities::key_to_wif( HIVE_INIT_PRIVATE_KEY );
+      std::cerr << "initminer public key: " << HIVE_INIT_PUBLIC_KEY_STR << "\n";
       std::cerr << "initminer private key: " << initminer_private_key << "\n";
-      std::cerr << "blockchain version: " << fc::string( STEEM_BLOCKCHAIN_VERSION ) << "\n";
+      std::cerr << "blockchain version: " << fc::string( HIVE_BLOCKCHAIN_VERSION ) << "\n";
       std::cerr << "------------------------------------------------------\n";
 #else
       std::cerr << "------------------------------------------------------\n\n";      
@@ -73,9 +73,9 @@ void info()
       std::cerr << "                @@     @@@@@&    @@@@@@               \n\n";
       std::cerr << "                STARTING HIVE NETWORK\n\n";
       std::cerr << "------------------------------------------------------\n";
-      std::cerr << "initminer public key: " << STEEM_INIT_PUBLIC_KEY_STR << "\n";
-      std::cerr << "chain id: " << std::string( STEEM_CHAIN_ID ) << "\n";
-      std::cerr << "blockchain version: " << fc::string( STEEM_BLOCKCHAIN_VERSION ) << "\n";
+      std::cerr << "initminer public key: " << HIVE_INIT_PUBLIC_KEY_STR << "\n";
+      std::cerr << "chain id: " << std::string( HIVE_CHAIN_ID ) << "\n";
+      std::cerr << "blockchain version: " << fc::string( HIVE_BLOCKCHAIN_VERSION ) << "\n";
       std::cerr << "------------------------------------------------------\n";
 #endif
 }
@@ -87,29 +87,29 @@ int main( int argc, char** argv )
       // Setup logging config
       bpo::options_description options;
 
-      steem::utilities::set_logging_program_options( options );
+      hive::utilities::set_logging_program_options( options );
       options.add_options()
          ("backtrace", bpo::value< string >()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" );
 
       appbase::app().add_program_options( bpo::options_description(), options );
 
-      steem::plugins::register_plugins();
+      hive::plugins::register_plugins();
 
       appbase::app().set_version_string( version_string() );
       appbase::app().set_app_name( "steemd" );
 
       // These plugins are included in the default config
       appbase::app().set_default_plugins<
-         steem::plugins::witness::witness_plugin,
-         steem::plugins::account_by_key::account_by_key_plugin,
-         steem::plugins::account_by_key::account_by_key_api_plugin,
-         steem::plugins::condenser_api::condenser_api_plugin >();
+         hive::plugins::witness::witness_plugin,
+         hive::plugins::account_by_key::account_by_key_plugin,
+         hive::plugins::account_by_key::account_by_key_api_plugin,
+         hive::plugins::condenser_api::condenser_api_plugin >();
 
       // These plugins are loaded regardless of the config
       bool initialized = appbase::app().initialize<
-            steem::plugins::chain::chain_plugin,
-            steem::plugins::p2p::p2p_plugin,
-            steem::plugins::webserver::webserver_plugin >
+            hive::plugins::chain::chain_plugin,
+            hive::plugins::p2p::p2p_plugin,
+            hive::plugins::webserver::webserver_plugin >
             ( argc, argv );
 
       info();
@@ -121,7 +121,7 @@ int main( int argc, char** argv )
 
       try
       {
-         fc::optional< fc::logging_config > logging_config = steem::utilities::load_logging_config( args, appbase::app().data_dir() );
+         fc::optional< fc::logging_config > logging_config = hive::utilities::load_logging_config( args, appbase::app().data_dir() );
          if( logging_config )
             fc::configure_logging( *logging_config );
       }

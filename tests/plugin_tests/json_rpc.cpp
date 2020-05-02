@@ -8,8 +8,8 @@
 
 #include "../db_fixture/database_fixture.hpp"
 
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive::chain;
+using namespace hive::protocol;
 
 BOOST_FIXTURE_TEST_SUITE( json_rpc, json_rpc_database_fixture )
 

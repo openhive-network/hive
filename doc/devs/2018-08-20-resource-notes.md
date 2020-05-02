@@ -116,8 +116,8 @@ How much users actually transact is something that is impossible to predict, but
 Currently, the only witness configurable resource is subsidized accounts.  Two parameters are set:
 
 - `account_subsidy_budget` is the per-block budget.
-- A value of 10,000 (`STEEM_ACCOUNT_SUBSIDY_PRECISION`) represents a budget of one subsidized account per block.
-- `account_subsidy_decay` is the per-block decay rate.  A value of `2^36` (`STEEM_RD_DECAY_DENOM_SHIFT`) represents 100% decay rate.
+- A value of 10,000 (`HIVE_ACCOUNT_SUBSIDY_PRECISION`) represents a budget of one subsidized account per block.
+- `account_subsidy_decay` is the per-block decay rate.  A value of `2^36` (`HIVE_RD_DECAY_DENOM_SHIFT`) represents 100% decay rate.
 
 Here is a Python script to convert from half-life, measured in days, to an appropriately scaled per-block decay rate:
 
@@ -126,12 +126,12 @@ Here is a Python script to convert from half-life, measured in days, to an appro
 
 import math
 
-STEEM_BLOCKS_PER_DAY = 20*60*24
-STEEM_RD_DECAY_DENOM_SHIFT = 36
-STEEM_MAX_WITNESSES = 21
-STEEM_MAX_VOTED_WITNESSES_HF17 = 20
+HIVE_BLOCKS_PER_DAY = 20*60*24
+HIVE_RD_DECAY_DENOM_SHIFT = 36
+HIVE_MAX_WITNESSES = 21
+HIVE_MAX_VOTED_WITNESSES_HF17 = 20
 
-f = lambda d : int(0.5 + (1 << STEEM_RD_DECAY_DENOM_SHIFT) * (-math.expm1(-math.log(2.0) / (STEEM_BLOCKS_PER_DAY * d * STEEM_MAX_VOTED_WITNESSES_HF17 / STEEM_MAX_WITNESSES))))
+f = lambda d : int(0.5 + (1 << HIVE_RD_DECAY_DENOM_SHIFT) * (-math.expm1(-math.log(2.0) / (HIVE_BLOCKS_PER_DAY * d * HIVE_MAX_VOTED_WITNESSES_HF17 / HIVE_MAX_WITNESSES))))
 print("A 5-day half-life corresponds to a decay constant of", f(5))
 ```
 

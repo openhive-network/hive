@@ -4,7 +4,7 @@
 
 #include <steem/plugins/chain/chain_plugin.hpp>
 
-namespace steem { namespace plugins { namespace rc {
+namespace hive { namespace plugins { namespace rc {
 
 namespace detail { class rc_plugin_impl; }
 
@@ -26,7 +26,7 @@ class rc_plugin : public appbase::plugin< rc_plugin >
       rc_plugin();
       virtual ~rc_plugin();
 
-      APPBASE_PLUGIN_REQUIRES( (steem::plugins::chain::chain_plugin) )
+      APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
       static const std::string& name() { static std::string name = STEEM_RC_PLUGIN_NAME; return name; }
 
@@ -44,4 +44,4 @@ class rc_plugin : public appbase::plugin< rc_plugin >
       std::unique_ptr< detail::rc_plugin_impl > my;
 };
 
-} } } // steem::plugins::rc
+} } } // hive::plugins::rc

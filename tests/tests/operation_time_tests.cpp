@@ -23,10 +23,10 @@
 
 #include <cmath>
 
-using namespace steem;
-using namespace steem::chain;
-using namespace steem::chain::util;
-using namespace steem::protocol;
+using namespace hive;
+using namespace hive::chain;
+using namespace hive::chain::util;
+using namespace hive::protocol;
 
 BOOST_FIXTURE_TEST_SUITE( operation_time_tests, clean_database_fixture )
 

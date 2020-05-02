@@ -7,7 +7,7 @@
 
 #define DATABASE_API_SINGLE_QUERY_LIMIT 1000
 
-namespace steem { namespace plugins { namespace database_api {
+namespace hive { namespace plugins { namespace database_api {
 
 class database_api_impl;
 
@@ -145,7 +145,7 @@ class database_api
           */
          (verify_signatures)
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
          /**
          * @return array of Numeric Asset Identifier (NAI) available to be used for new SMT to be created.
          */
@@ -166,5 +166,5 @@ class database_api
       std::unique_ptr< database_api_impl > my;
 };
 
-} } } //steem::plugins::database_api
+} } } //hive::plugins::database_api
 

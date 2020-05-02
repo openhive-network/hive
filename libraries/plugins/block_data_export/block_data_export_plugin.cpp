@@ -18,12 +18,12 @@
 #include <queue>
 #include <sstream>
 
-namespace steem { namespace plugins { namespace block_data_export {
+namespace hive { namespace plugins { namespace block_data_export {
 
-using steem::chain::block_notification;
-using steem::chain::database;
+using hive::chain::block_notification;
+using hive::chain::database;
 
-using steem::protocol::block_id_type;
+using hive::protocol::block_id_type;
 
 namespace detail {
 
@@ -44,9 +44,9 @@ struct api_export_data_object
 
 } } } }
 
-FC_REFLECT( steem::plugins::block_data_export::detail::api_export_data_object, (block_id)(previous)(export_data) )
+FC_REFLECT( hive::plugins::block_data_export::detail::api_export_data_object, (block_id)(previous)(export_data) )
 
-namespace steem { namespace plugins { namespace block_data_export { namespace detail {
+namespace hive { namespace plugins { namespace block_data_export { namespace detail {
 
 struct work_item
 {
@@ -59,7 +59,7 @@ class block_data_export_plugin_impl
 {
    public:
       block_data_export_plugin_impl( block_data_export_plugin& _plugin ) :
-         _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ),
+         _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
          _self( _plugin ),
          _data_queue( _max_queue_size ),
          _output_queue( _max_queue_size ) {}
@@ -304,4 +304,4 @@ void block_data_export_plugin::plugin_shutdown()
 exportable_block_data::exportable_block_data() {}
 exportable_block_data::~exportable_block_data() {}
 
-} } } // steem::plugins::block_data_export
+} } } // hive::plugins::block_data_export

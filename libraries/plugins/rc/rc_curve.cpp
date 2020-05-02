@@ -8,7 +8,7 @@
 
 #include <cstdint>
 
-namespace steem { namespace plugins { namespace rc {
+namespace hive { namespace plugins { namespace rc {
 
 void rc_curve_gen_params::validate()const
 {
@@ -97,4 +97,4 @@ void generate_rc_curve_params(
    price_curve_params.coeff_b = u128_B.to_uint64();
 }
 
-} } } //steed::plugins::rc
+} } } //hive::plugins::rc

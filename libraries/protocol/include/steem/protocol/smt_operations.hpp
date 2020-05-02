@@ -4,7 +4,7 @@
 #include <steem/protocol/asset.hpp>
 #include <steem/protocol/misc_utilities.hpp>
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 
 #define SMT_MAX_UNIT_ROUTES            10
 #define SMT_MAX_UNIT_COUNT             20
@@ -15,7 +15,7 @@
 #define SMT_MIN_SOFT_CAP_STEEM_UNITS   1000
 #define SMT_MIN_SOFT_CAP_HIVE_UNITS    1000
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
 
 /**
@@ -76,7 +76,7 @@ struct smt_setup_operation : public base_operation
    account_name_type control_account;
    asset_symbol_type symbol;
 
-   int64_t                 max_supply = STEEM_MAX_SHARE_SUPPLY;
+   int64_t                 max_supply = HIVE_MAX_SHARE_SUPPLY;
 
    smt_generation_policy   initial_generation_policy;
 
@@ -141,13 +141,13 @@ typedef static_variant<
 
 struct smt_param_windows_v1
 {
-   uint32_t cashout_window_seconds = 0;                // STEEM_CASHOUT_WINDOW_SECONDS
+   uint32_t cashout_window_seconds = 0;                // HIVE_CASHOUT_WINDOW_SECONDS
    uint32_t reverse_auction_window_seconds = 0;        // STEEM_REVERSE_AUCTION_WINDOW_SECONDS
 };
 
 struct smt_param_vote_regeneration_period_seconds_v1
 {
-   uint32_t vote_regeneration_period_seconds = 0;      // STEEM_VOTING_MANA_REGENERATION_SECONDS
+   uint32_t vote_regeneration_period_seconds = 0;      // HIVE_VOTING_MANA_REGENERATION_SECONDS
    uint32_t votes_per_regeneration_period = 0;
 };
 
@@ -213,7 +213,7 @@ struct smt_contribute_operation : public base_operation
 } }
 
 FC_REFLECT(
-   steem::protocol::smt_create_operation,
+   hive::protocol::smt_create_operation,
    (control_account)
    (symbol)
    (smt_creation_fee)
@@ -221,7 +221,7 @@ FC_REFLECT(
 )
 
 FC_REFLECT(
-   steem::protocol::smt_setup_operation,
+   hive::protocol::smt_setup_operation,
    (control_account)
    (symbol)
    (max_supply)
@@ -235,14 +235,14 @@ FC_REFLECT(
    )
 
 FC_REFLECT(
-   steem::protocol::smt_generation_unit,
+   hive::protocol::smt_generation_unit,
    (steem_unit)
    (token_unit)
    )
 
 
 FC_REFLECT(
-   steem::protocol::smt_capped_generation_policy,
+   hive::protocol::smt_capped_generation_policy,
    (pre_soft_cap_unit)
    (post_soft_cap_unit)
    (soft_cap_percent)
@@ -252,12 +252,12 @@ FC_REFLECT(
    )
 
 FC_REFLECT(
-   steem::protocol::smt_emissions_unit,
+   hive::protocol::smt_emissions_unit,
    (token_unit)
    )
 
 FC_REFLECT(
-   steem::protocol::smt_setup_emissions_operation,
+   hive::protocol::smt_setup_emissions_operation,
    (control_account)
    (symbol)
    (schedule_time)
@@ -276,26 +276,26 @@ FC_REFLECT(
    )
 
 FC_REFLECT(
-   steem::protocol::smt_param_allow_voting,
+   hive::protocol::smt_param_allow_voting,
    (value)
    )
 
-FC_REFLECT_TYPENAME( steem::protocol::smt_setup_parameter )
+FC_REFLECT_TYPENAME( hive::protocol::smt_setup_parameter )
 
 FC_REFLECT(
-   steem::protocol::smt_param_windows_v1,
+   hive::protocol::smt_param_windows_v1,
    (cashout_window_seconds)
    (reverse_auction_window_seconds)
    )
 
 FC_REFLECT(
-   steem::protocol::smt_param_vote_regeneration_period_seconds_v1,
+   hive::protocol::smt_param_vote_regeneration_period_seconds_v1,
    (vote_regeneration_period_seconds)
    (votes_per_regeneration_period)
    )
 
 FC_REFLECT(
-   steem::protocol::smt_param_rewards_v1,
+   hive::protocol::smt_param_rewards_v1,
    (content_constant)
    (percent_curation_rewards)
    (author_reward_curve)
@@ -303,16 +303,16 @@ FC_REFLECT(
    )
 
 FC_REFLECT(
-   steem::protocol::smt_param_allow_downvotes,
+   hive::protocol::smt_param_allow_downvotes,
    (value)
 )
 
 FC_REFLECT_TYPENAME(
-   steem::protocol::smt_runtime_parameter
+   hive::protocol::smt_runtime_parameter
    )
 
 FC_REFLECT(
-   steem::protocol::smt_set_setup_parameters_operation,
+   hive::protocol::smt_set_setup_parameters_operation,
    (control_account)
    (symbol)
    (setup_parameters)
@@ -320,7 +320,7 @@ FC_REFLECT(
    )
 
 FC_REFLECT(
-   steem::protocol::smt_set_runtime_parameters_operation,
+   hive::protocol::smt_set_runtime_parameters_operation,
    (control_account)
    (symbol)
    (runtime_parameters)
@@ -328,7 +328,7 @@ FC_REFLECT(
    )
 
 FC_REFLECT(
-   steem::protocol::smt_contribute_operation,
+   hive::protocol::smt_contribute_operation,
    (contributor)
    (symbol)
    (contribution_id)

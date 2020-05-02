@@ -6,7 +6,7 @@
 
 #include <boost/container/flat_map.hpp>
 
-namespace steem { namespace schema { namespace detail {
+namespace hive { namespace schema { namespace detail {
 
 //////////////////////////////////////////////
 // flat_map                                 //

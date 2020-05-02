@@ -2,7 +2,7 @@
 
 #include <steem/chain/evaluator.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 template< typename OperationType >
 class evaluator_registry

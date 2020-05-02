@@ -2,16 +2,16 @@
 #include <steem/protocol/sign_state.hpp>
 #include <steem/protocol/exceptions.hpp>
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
 template< typename AuthContainerType >
 void verify_authority( const vector<AuthContainerType>& auth_containers, const flat_set<public_key_type>& sigs,
                        const authority_getter& get_active,
                        const authority_getter& get_owner,
                        const authority_getter& get_posting,
-                       uint32_t max_recursion_depth = STEEM_MAX_SIG_CHECK_DEPTH,
-                       uint32_t max_membership = STEEM_MAX_AUTHORITY_MEMBERSHIP,
-                       uint32_t max_account_auths = STEEM_MAX_SIG_CHECK_ACCOUNTS,
+                       uint32_t max_recursion_depth = HIVE_MAX_SIG_CHECK_DEPTH,
+                       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
+                       uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
                        bool allow_committe = false,
                        const flat_set< account_name_type >& active_approvals = flat_set< account_name_type >(),
                        const flat_set< account_name_type >& owner_approvals = flat_set< account_name_type >(),
@@ -102,4 +102,4 @@ void verify_authority( const vector<AuthContainerType>& auth_containers, const f
       );
 } FC_CAPTURE_AND_RETHROW( (auth_containers)(sigs) ) }
 
-} } // steem::protocol
+} } // hive::protocol

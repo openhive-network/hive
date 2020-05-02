@@ -7,15 +7,15 @@
 #include <string>
 #include <vector>
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 struct signed_block;
 } }
 
-namespace steem { namespace plugin { namespace block_info {
+namespace hive { namespace plugin { namespace block_info {
 
-using steem::app::application;
+using hive::app::application;
 
-class block_info_plugin : public steem::app::plugin
+class block_info_plugin : public hive::app::plugin
 {
    public:
       block_info_plugin( application* app );

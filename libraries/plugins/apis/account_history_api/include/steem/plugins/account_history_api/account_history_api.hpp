@@ -9,7 +9,7 @@
 #include <fc/variant.hpp>
 #include <fc/vector.hpp>
 
-namespace steem { namespace plugins { namespace account_history {
+namespace hive { namespace plugins { namespace account_history {
 
 
 namespace detail { class abstract_account_history_api_impl; }
@@ -26,16 +26,16 @@ struct api_operation_object
       virtual_op( op_obj.virtual_op ),
       timestamp( op_obj.timestamp )
    {
-      op = fc::raw::unpack_from_buffer< steem::protocol::operation >( op_obj.serialized_op );
+      op = fc::raw::unpack_from_buffer< hive::protocol::operation >( op_obj.serialized_op );
    }
 
-   steem::protocol::transaction_id_type trx_id;
+   hive::protocol::transaction_id_type trx_id;
    uint32_t                               block = 0;
    uint32_t                               trx_in_block = 0;
    uint32_t                               op_in_trx = 0;
    uint32_t                               virtual_op = 0;
    fc::time_point_sec                     timestamp;
-   steem::protocol::operation             op;
+   hive::protocol::operation             op;
 
    bool operator<( const api_operation_object& obj ) const
    {
@@ -58,15 +58,15 @@ struct get_ops_in_block_return
 
 struct get_transaction_args
 {
-   steem::protocol::transaction_id_type id;
+   hive::protocol::transaction_id_type id;
 };
 
-typedef steem::protocol::annotated_signed_transaction get_transaction_return;
+typedef hive::protocol::annotated_signed_transaction get_transaction_return;
 
 
 struct get_account_history_args
 {
-   steem::protocol::account_name_type   account;
+   hive::protocol::account_name_type   account;
    uint64_t                               start = -1;
    uint32_t                               limit = 1000;
 };
@@ -110,28 +110,28 @@ class account_history_api
       std::unique_ptr< detail::abstract_account_history_api_impl > my;
 };
 
-} } } // steem::plugins::account_history
+} } } // hive::plugins::account_history
 
-FC_REFLECT( steem::plugins::account_history::api_operation_object,
+FC_REFLECT( hive::plugins::account_history::api_operation_object,
    (trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(op) )
 
-FC_REFLECT( steem::plugins::account_history::get_ops_in_block_args,
+FC_REFLECT( hive::plugins::account_history::get_ops_in_block_args,
    (block_num)(only_virtual) )
 
-FC_REFLECT( steem::plugins::account_history::get_ops_in_block_return,
+FC_REFLECT( hive::plugins::account_history::get_ops_in_block_return,
    (ops) )
 
-FC_REFLECT( steem::plugins::account_history::get_transaction_args,
+FC_REFLECT( hive::plugins::account_history::get_transaction_args,
    (id) )
 
-FC_REFLECT( steem::plugins::account_history::get_account_history_args,
+FC_REFLECT( hive::plugins::account_history::get_account_history_args,
    (account)(start)(limit) )
 
-FC_REFLECT( steem::plugins::account_history::get_account_history_return,
+FC_REFLECT( hive::plugins::account_history::get_account_history_return,
    (history) )
 
-FC_REFLECT( steem::plugins::account_history::enum_virtual_ops_args,
+FC_REFLECT( hive::plugins::account_history::enum_virtual_ops_args,
    (block_range_begin)(block_range_end) )
 
-FC_REFLECT( steem::plugins::account_history::enum_virtual_ops_return,
+FC_REFLECT( hive::plugins::account_history::enum_virtual_ops_return,
    (ops)(next_block_range_begin) )

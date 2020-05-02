@@ -16,10 +16,10 @@
 
 #include <numeric>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
    using chainbase::t_vector;
-   using steem::protocol::authority;
+   using hive::protocol::authority;
 
    class account_object : public object< account_object_type, account_object >
    {
@@ -69,7 +69,7 @@ namespace steem { namespace chain {
          time_point_sec    created;
          bool              mined = true;
          account_name_type recovery_account;
-         account_name_type reset_account = STEEM_NULL_ACCOUNT;
+         account_name_type reset_account = HIVE_NULL_ACCOUNT;
          time_point_sec    last_account_recovery;
          uint32_t          comment_count = 0;
          uint32_t          lifetime_vote_count = 0;
@@ -79,8 +79,8 @@ namespace steem { namespace chain {
          util::manabar     voting_manabar;
          util::manabar     downvote_manabar;
 
-         greedy_STEEM_asset balance = asset( 0, STEEM_SYMBOL );  ///< total liquid shares held by this account
-         greedy_STEEM_asset savings_balance = asset( 0, STEEM_SYMBOL );  ///< total liquid shares held by this account
+         greedy_STEEM_asset balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
+         greedy_STEEM_asset savings_balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
 
          /**
           *  HBD Deposits pay interest based upon the interest rate set by witnesses. The purpose of these
@@ -96,13 +96,13 @@ namespace steem { namespace chain {
           *  @defgroup sbd_data sbd Balance Data
           */
          ///@{
-         greedy_SBD_asset  sbd_balance = asset( 0, SBD_SYMBOL ); /// total sbd balance
+         greedy_SBD_asset  sbd_balance = asset( 0, HBD_SYMBOL ); /// total sbd balance
          uint128_t         sbd_seconds; ///< total sbd * how long it has been hel
          time_point_sec    sbd_seconds_last_update; ///< the last time the sbd_seconds was updated
          time_point_sec    sbd_last_interest_payment; ///< used to pay interest at most once per month
 
 
-         greedy_SBD_asset  savings_sbd_balance = asset( 0, SBD_SYMBOL ); /// total sbd balance
+         greedy_SBD_asset  savings_sbd_balance = asset( 0, HBD_SYMBOL ); /// total sbd balance
          uint128_t         savings_sbd_seconds; ///< total sbd * how long it has been hel
          time_point_sec    savings_sbd_seconds_last_update; ///< the last time the sbd_seconds was updated
          time_point_sec    savings_sbd_last_interest_payment; ///< used to pay interest at most once per month
@@ -110,10 +110,10 @@ namespace steem { namespace chain {
          uint8_t           savings_withdraw_requests = 0;
          ///@}
 
-         greedy_SBD_asset   reward_sbd_balance = asset( 0, SBD_SYMBOL );
-         greedy_STEEM_asset reward_steem_balance = asset( 0, STEEM_SYMBOL );
+         greedy_SBD_asset   reward_sbd_balance = asset( 0, HBD_SYMBOL );
+         greedy_STEEM_asset reward_steem_balance = asset( 0, HIVE_SYMBOL );
          greedy_VEST_asset  reward_vesting_balance = asset( 0, VESTS_SYMBOL );
-         greedy_STEEM_asset reward_vesting_steem = asset( 0, STEEM_SYMBOL );
+         greedy_STEEM_asset reward_vesting_steem = asset( 0, HIVE_SYMBOL );
 
          share_type        curation_rewards = 0;
          share_type        posting_rewards = 0;
@@ -128,7 +128,7 @@ namespace steem { namespace chain {
          share_type        to_withdraw = 0; /// Might be able to look this up with operation history.
          uint16_t          withdraw_routes = 0;
 
-         fc::array<share_type, STEEM_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes;// = std::vector<share_type>( STEEM_MAX_PROXY_RECURSION_DEPTH, 0 ); ///< the total VFS votes proxied to this account
+         fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes;// = std::vector<share_type>( HIVE_MAX_PROXY_RECURSION_DEPTH, 0 ); ///< the total VFS votes proxied to this account
 
          uint16_t          witnesses_voted_for = 0;
 
@@ -143,7 +143,7 @@ namespace steem { namespace chain {
          using t_delayed_votes = t_vector< delayed_votes_data >;
          /*
             Holds sum of VESTS per day.
-            VESTS from day `X` will be matured after `X` + 30 days ( because `STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )
+            VESTS from day `X` will be matured after `X` + 30 days ( because `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )
          */
          t_delayed_votes   delayed_votes;
          /*
@@ -502,14 +502,14 @@ namespace steem { namespace chain {
 #ifdef ENABLE_MIRA
 namespace mira {
 
-template<> struct is_static_length< steem::chain::vesting_delegation_object > : public boost::true_type {};
-template<> struct is_static_length< steem::chain::vesting_delegation_expiration_object > : public boost::true_type {};
-template<> struct is_static_length< steem::chain::change_recovery_account_request_object > : public boost::true_type {};
+template<> struct is_static_length< hive::chain::vesting_delegation_object > : public boost::true_type {};
+template<> struct is_static_length< hive::chain::vesting_delegation_expiration_object > : public boost::true_type {};
+template<> struct is_static_length< hive::chain::change_recovery_account_request_object > : public boost::true_type {};
 
 } // mira
 #endif
 
-FC_REFLECT( steem::chain::account_object,
+FC_REFLECT( hive::chain::account_object,
              (id)(name)(memo_key)(proxy)(last_account_update)
              (created)(mined)
              (recovery_account)(last_account_recovery)(reset_account)
@@ -530,48 +530,48 @@ FC_REFLECT( steem::chain::account_object,
              (sum_delayed_votes)
           )
 
-CHAINBASE_SET_INDEX_TYPE( steem::chain::account_object, steem::chain::account_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::account_object, hive::chain::account_index )
 
-FC_REFLECT( steem::chain::account_metadata_object,
+FC_REFLECT( hive::chain::account_metadata_object,
              (id)(account)(json_metadata)(posting_json_metadata) )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::account_metadata_object, steem::chain::account_metadata_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::account_metadata_object, hive::chain::account_metadata_index )
 
-FC_REFLECT( steem::chain::account_authority_object,
+FC_REFLECT( hive::chain::account_authority_object,
              (id)(account)(owner)(active)(posting)(last_owner_update)
 )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::account_authority_object, steem::chain::account_authority_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::account_authority_object, hive::chain::account_authority_index )
 
-FC_REFLECT( steem::chain::vesting_delegation_object,
+FC_REFLECT( hive::chain::vesting_delegation_object,
             (id)(delegator)(delegatee)(vesting_shares)(min_delegation_time) )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::vesting_delegation_object, steem::chain::vesting_delegation_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::vesting_delegation_object, hive::chain::vesting_delegation_index )
 
-FC_REFLECT( steem::chain::vesting_delegation_expiration_object,
+FC_REFLECT( hive::chain::vesting_delegation_expiration_object,
             (id)(delegator)(vesting_shares)(expiration) )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::vesting_delegation_expiration_object, steem::chain::vesting_delegation_expiration_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::vesting_delegation_expiration_object, hive::chain::vesting_delegation_expiration_index )
 
-FC_REFLECT( steem::chain::owner_authority_history_object,
+FC_REFLECT( hive::chain::owner_authority_history_object,
              (id)(account)(previous_owner_authority)(last_valid_time)
           )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::owner_authority_history_object, steem::chain::owner_authority_history_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::owner_authority_history_object, hive::chain::owner_authority_history_index )
 
-FC_REFLECT( steem::chain::account_recovery_request_object,
+FC_REFLECT( hive::chain::account_recovery_request_object,
              (id)(account_to_recover)(new_owner_authority)(expires)
           )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::account_recovery_request_object, steem::chain::account_recovery_request_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::account_recovery_request_object, hive::chain::account_recovery_request_index )
 
-FC_REFLECT( steem::chain::change_recovery_account_request_object,
+FC_REFLECT( hive::chain::change_recovery_account_request_object,
              (id)(account_to_recover)(recovery_account)(effective_on)
           )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::change_recovery_account_request_object, steem::chain::change_recovery_account_request_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::change_recovery_account_request_object, hive::chain::change_recovery_account_request_index )
 
 namespace helpers
 {
    template <>
-   class index_statistic_provider<steem::chain::account_index>
+   class index_statistic_provider<hive::chain::account_index>
    {
    public:
-      typedef steem::chain::account_index IndexType;
-      typedef typename steem::chain::account_object::t_delayed_votes t_delayed_votes;
+      typedef hive::chain::account_index IndexType;
+      typedef typename hive::chain::account_object::t_delayed_votes t_delayed_votes;
 
       index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
       {

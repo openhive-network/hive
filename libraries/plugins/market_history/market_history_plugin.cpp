@@ -11,17 +11,17 @@
 #define MH_BUCKET_SIZE "market-history-bucket-size"
 #define MH_BUCKETS_PER_SIZE "market-history-buckets-per-size"
 
-namespace steem { namespace plugins { namespace market_history {
+namespace hive { namespace plugins { namespace market_history {
 
 namespace detail {
 
-using steem::protocol::fill_order_operation;
+using hive::protocol::fill_order_operation;
 
 class market_history_plugin_impl
 {
    public:
       market_history_plugin_impl() :
-         _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ) {}
+         _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
       virtual ~market_history_plugin_impl() {}
 
       /**
@@ -68,21 +68,21 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
                b.open = open;
                b.seconds = bucket;
 
-               b.steem.fill( ( op.open_pays.symbol == STEEM_SYMBOL ) ? op.open_pays.amount : op.current_pays.amount );
-#ifdef STEEM_ENABLE_SMT
-                  b.symbol = ( op.open_pays.symbol == STEEM_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
+               b.steem.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.open_pays.amount : op.current_pays.amount );
+#ifdef HIVE_ENABLE_SMT
+                  b.symbol = ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
 #endif
-                  b.non_steem.fill( ( op.open_pays.symbol == STEEM_SYMBOL ) ? op.current_pays.amount : op.open_pays.amount );
+                  b.non_steem.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.amount : op.open_pays.amount );
             });
          }
          else
          {
             _db.modify( *itr, [&]( bucket_object& b )
             {
-#ifdef STEEM_ENABLE_SMT
-               b.symbol = ( op.open_pays.symbol == STEEM_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
+#ifdef HIVE_ENABLE_SMT
+               b.symbol = ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
 #endif
-               if( op.open_pays.symbol == STEEM_SYMBOL )
+               if( op.open_pays.symbol == HIVE_SYMBOL )
                {
                   b.steem.volume += op.open_pays.amount;
                   b.steem.close = op.open_pays.amount;
@@ -212,4 +212,4 @@ uint32_t market_history_plugin::get_max_history_per_bucket() const
    return my->_maximum_history_per_bucket_size;
 }
 
-} } } // steem::plugins::market_history
+} } } // hive::plugins::market_history

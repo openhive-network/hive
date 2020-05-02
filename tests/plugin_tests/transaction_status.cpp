@@ -10,8 +10,8 @@
 
 #include "../db_fixture/database_fixture.hpp"
 
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive::chain;
+using namespace hive::protocol;
 
 #define TRANSCATION_STATUS_TRACK_AFTER_BLOCK 1300
 #define TRANSCATION_STATUS_TRACK_AFTER_BLOCK_STR BOOST_PP_STRINGIZE( TRANSCATION_STATUS_TRACK_AFTER_BLOCK )
@@ -22,7 +22,7 @@ BOOST_FIXTURE_TEST_SUITE( transaction_status, database_fixture );
 
 BOOST_AUTO_TEST_CASE( transaction_status_test )
 {
-   using namespace steem::plugins::transaction_status;
+   using namespace hive::plugins::transaction_status;
 
    try
    {
@@ -39,8 +39,8 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       }
 
       appbase::app().register_plugin< transaction_status_plugin >();
-      appbase::app().register_plugin< steem::plugins::transaction_status_api::transaction_status_api_plugin >();
-      db_plugin = &appbase::app().register_plugin< steem::plugins::debug_node::debug_node_plugin >();
+      appbase::app().register_plugin< hive::plugins::transaction_status_api::transaction_status_api_plugin >();
+      db_plugin = &appbase::app().register_plugin< hive::plugins::debug_node::debug_node_plugin >();
       init_account_pub_key = init_account_priv_key.get_public_key();
 
       // We create an argc/argv so that the transaction_status plugin can be initialized with a reasonable block depth
@@ -53,16 +53,16 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
       db_plugin->logging = false;
       appbase::app().initialize<
-         steem::plugins::transaction_status_api::transaction_status_api_plugin,
-         steem::plugins::debug_node::debug_node_plugin >( test_argc, (char**)test_argv );
+         hive::plugins::transaction_status_api::transaction_status_api_plugin,
+         hive::plugins::debug_node::debug_node_plugin >( test_argc, (char**)test_argv );
 
-      db = &appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db();
+      db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
       BOOST_REQUIRE( db );
 
-      auto tx_status_api = &appbase::app().get_plugin< steem::plugins::transaction_status_api::transaction_status_api_plugin >();
+      auto tx_status_api = &appbase::app().get_plugin< hive::plugins::transaction_status_api::transaction_status_api_plugin >();
       BOOST_REQUIRE( tx_status_api );
 
-      auto tx_status = &appbase::app().get_plugin< steem::plugins::transaction_status::transaction_status_plugin >();
+      auto tx_status = &appbase::app().get_plugin< hive::plugins::transaction_status::transaction_status_plugin >();
       BOOST_REQUIRE( tx_status );
 
       open_database();

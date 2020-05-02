@@ -2,9 +2,9 @@
 #include <steem/chain/steem_object_types.hpp>
 #include <steem/protocol/transaction.hpp>
 
-namespace steem { namespace plugins { namespace transaction_status {
+namespace hive { namespace plugins { namespace transaction_status {
 
-using namespace steem::chain;
+using namespace hive::chain;
 
 #ifndef STEEM_TRANSACTION_STATUS_SPACE_ID
 #define STEEM_TRANSACTION_STATUS_SPACE_ID 18
@@ -66,9 +66,9 @@ typedef multi_index_container<
 
 
 
-} } } // steem::plugins::transaction_status
+} } } // hive::plugins::transaction_status
 
-FC_REFLECT_ENUM( steem::plugins::transaction_status::transaction_status,
+FC_REFLECT_ENUM( hive::plugins::transaction_status::transaction_status,
                 (unknown)
                 (within_mempool)
                 (within_reversible_block)
@@ -77,5 +77,5 @@ FC_REFLECT_ENUM( steem::plugins::transaction_status::transaction_status,
                 (expired_irreversible)
                 (too_old) )
 
-FC_REFLECT( steem::plugins::transaction_status::transaction_status_object, (id)(transaction_id)(block_num) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::transaction_status::transaction_status_object, steem::plugins::transaction_status::transaction_status_index )
+FC_REFLECT( hive::plugins::transaction_status::transaction_status_object, (id)(transaction_id)(block_num) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::transaction_status::transaction_status_object, hive::plugins::transaction_status::transaction_status_index )

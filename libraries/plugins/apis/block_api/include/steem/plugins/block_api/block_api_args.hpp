@@ -7,7 +7,7 @@
 
 #include <steem/plugins/json_rpc/utility.hpp>
 
-namespace steem { namespace plugins { namespace block_api {
+namespace hive { namespace plugins { namespace block_api {
 
 /* get_block_header */
 
@@ -32,17 +32,17 @@ struct get_block_return
    optional< api_signed_block_object > block;
 };
 
-} } } // steem::block_api
+} } } // hive::block_api
 
-FC_REFLECT( steem::plugins::block_api::get_block_header_args,
+FC_REFLECT( hive::plugins::block_api::get_block_header_args,
    (block_num) )
 
-FC_REFLECT( steem::plugins::block_api::get_block_header_return,
+FC_REFLECT( hive::plugins::block_api::get_block_header_return,
    (header) )
 
-FC_REFLECT( steem::plugins::block_api::get_block_args,
+FC_REFLECT( hive::plugins::block_api::get_block_args,
    (block_num) )
 
-FC_REFLECT( steem::plugins::block_api::get_block_return,
+FC_REFLECT( hive::plugins::block_api::get_block_return,
    (block) )
 

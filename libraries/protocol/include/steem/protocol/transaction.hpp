@@ -5,7 +5,7 @@
 
 #include <numeric>
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
 using fc::ecc::canonical_signature_type;
 
@@ -65,9 +65,9 @@ using fc::ecc::canonical_signature_type;
          const authority_getter& get_active,
          const authority_getter& get_owner,
          const authority_getter& get_posting,
-         uint32_t max_recursion = STEEM_MAX_SIG_CHECK_DEPTH,
-         uint32_t max_membership = STEEM_MAX_AUTHORITY_MEMBERSHIP,
-         uint32_t max_account_auths = STEEM_MAX_SIG_CHECK_ACCOUNTS,
+         uint32_t max_recursion = HIVE_MAX_SIG_CHECK_DEPTH,
+         uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
+         uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
          canonical_signature_type canon_type = fc::ecc::fc_canonical
          )const;
 
@@ -76,9 +76,9 @@ using fc::ecc::canonical_signature_type;
          const authority_getter& get_active,
          const authority_getter& get_owner,
          const authority_getter& get_posting,
-         uint32_t max_recursion/* = STEEM_MAX_SIG_CHECK_DEPTH*/,
-         uint32_t max_membership = STEEM_MAX_AUTHORITY_MEMBERSHIP,
-         uint32_t max_account_auths = STEEM_MAX_SIG_CHECK_ACCOUNTS,
+         uint32_t max_recursion/* = HIVE_MAX_SIG_CHECK_DEPTH*/,
+         uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
+         uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
          canonical_signature_type canon_type = fc::ecc::fc_canonical
          )const;
 
@@ -88,9 +88,9 @@ using fc::ecc::canonical_signature_type;
          const authority_getter& get_active,
          const authority_getter& get_owner,
          const authority_getter& get_posting,
-         uint32_t max_recursion = STEEM_MAX_SIG_CHECK_DEPTH,
-         uint32_t max_membership = STEEM_MAX_AUTHORITY_MEMBERSHIP,
-         uint32_t max_account_auths = STEEM_MAX_SIG_CHECK_ACCOUNTS,
+         uint32_t max_recursion = HIVE_MAX_SIG_CHECK_DEPTH,
+         uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
+         uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
          canonical_signature_type canon_type = fc::ecc::fc_canonical
          ) const;
 
@@ -116,8 +116,8 @@ using fc::ecc::canonical_signature_type;
 
    /// @} transactions group
 
-} } // steem::protocol
+} } // hive::protocol
 
-FC_REFLECT( steem::protocol::transaction, (ref_block_num)(ref_block_prefix)(expiration)(operations)(extensions) )
-FC_REFLECT_DERIVED( steem::protocol::signed_transaction, (steem::protocol::transaction), (signatures) )
-FC_REFLECT_DERIVED( steem::protocol::annotated_signed_transaction, (steem::protocol::signed_transaction), (transaction_id)(block_num)(transaction_num) );
+FC_REFLECT( hive::protocol::transaction, (ref_block_num)(ref_block_prefix)(expiration)(operations)(extensions) )
+FC_REFLECT_DERIVED( hive::protocol::signed_transaction, (hive::protocol::transaction), (signatures) )
+FC_REFLECT_DERIVED( hive::protocol::annotated_signed_transaction, (hive::protocol::signed_transaction), (transaction_id)(block_num)(transaction_num) );

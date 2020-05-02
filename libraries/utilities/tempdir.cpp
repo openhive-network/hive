@@ -26,7 +26,7 @@
 
 #include <cstdlib>
 
-namespace steem { namespace utilities {
+namespace hive { namespace utilities {
 
 fc::path temp_directory_path()
 {
@@ -36,4 +36,4 @@ fc::path temp_directory_path()
    return fc::temp_directory_path() / "steem-tmp";
 }
 
-} } // steem::utilities
+} } // hive::utilities

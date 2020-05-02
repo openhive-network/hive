@@ -237,7 +237,7 @@ typedef mira::multi_index_adapter<
 > test_object3_index;
 
 
-typedef steem::protocol::fixed_string<16> account_name_type;
+typedef hive::protocol::fixed_string<16> account_name_type;
 
 struct account_object : public chainbase::object< account_object_type, account_object >
 {

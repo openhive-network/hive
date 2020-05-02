@@ -18,7 +18,7 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/algorithm/string.hpp>
 
-namespace steem { namespace plugins { namespace tags {
+namespace hive { namespace plugins { namespace tags {
 
 /**
  * https://medium.com/hacking-and-gonzo/how-reddit-ranking-algorithms-work-ef111e33d0d9#.lcbj6auuw
@@ -50,7 +50,7 @@ inline double calculate_trending( const share_type& score, const time_point_sec&
 
 namespace detail {
 
-using namespace steem::protocol;
+using namespace hive::protocol;
 
 class tags_plugin_impl
 {
@@ -79,7 +79,7 @@ class tags_plugin_impl
 };
 
 tags_plugin_impl::tags_plugin_impl() :
-   _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ) {}
+   _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
 tags_plugin_impl::~tags_plugin_impl() {}
 
@@ -384,7 +384,7 @@ struct operation_visitor
 
    void operator()( const transfer_operation& op )const
    {
-      if( _my._db.head_block_time() >= _my._promoted_start_time && op.to == STEEM_NULL_ACCOUNT && op.amount.symbol == SBD_SYMBOL )
+      if( _my._db.head_block_time() >= _my._promoted_start_time && op.to == HIVE_NULL_ACCOUNT && op.amount.symbol == HBD_SYMBOL )
       {
          vector<string> part; part.reserve(4);
          auto path = op.memo;
@@ -559,4 +559,4 @@ void tags_plugin::plugin_startup()
    chain::util::disconnect_signal( my->_post_apply_operation_conn );
 }
 
-} } } /// steem::plugins::tags
+} } } /// hive::plugins::tags

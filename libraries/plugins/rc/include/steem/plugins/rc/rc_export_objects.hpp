@@ -9,10 +9,10 @@
 
 #include <vector>
 
-namespace steem { namespace plugins { namespace rc {
+namespace hive { namespace plugins { namespace rc {
 
-using steem::plugins::block_data_export::exportable_block_data;
-using steem::protocol::account_name_type;
+using hive::plugins::block_data_export::exportable_block_data;
+using hive::protocol::account_name_type;
 
 struct rc_transaction_info
 {
@@ -47,15 +47,15 @@ struct exp_rc_data
    std::vector< rc_optional_action_info > opt_action_info;
 };
 
-} } } // steem::plugins::rc
+} } } // hive::plugins::rc
 
-FC_REFLECT( steem::plugins::rc::rc_transaction_info,
+FC_REFLECT( hive::plugins::rc::rc_transaction_info,
    (resource_user)
    (usage)
    (cost)
 )
 
-FC_REFLECT( steem::plugins::rc::rc_block_info,
+FC_REFLECT( hive::plugins::rc::rc_block_info,
    (dt)
    (decay)
    (budget)
@@ -64,7 +64,7 @@ FC_REFLECT( steem::plugins::rc::rc_block_info,
    (pool)
 )
 
-FC_REFLECT( steem::plugins::rc::exp_rc_data,
+FC_REFLECT( hive::plugins::rc::exp_rc_data,
    (block_info)
    (tx_info)
    (opt_action_info)

@@ -5,7 +5,7 @@
 
 #include <boost/algorithm/string.hpp>
 
-using namespace steem::protocol;
+using namespace hive::protocol;
 using boost::container::flat_map;
 using std::string;
 using std::vector;

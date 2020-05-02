@@ -26,7 +26,7 @@
 #include <steem/wallet/wallet.hpp>
 #include <steem/wallet/api_documentation.hpp>
 
-namespace steem { namespace wallet {
+namespace hive { namespace wallet {
    namespace detail {
       namespace
       {
@@ -88,4 +88,4 @@ namespace steem { namespace wallet {
                 std::inserter(method_descriptions, method_descriptions.end()));
    }
 
-} } // end namespace steem::wallet
+} } // end namespace hive::wallet

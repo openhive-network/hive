@@ -13,7 +13,7 @@
 #include <steem/chain/transaction_object.hpp>
 #include <steem/chain/witness_schedule.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 void initialize_core_indexes( database& db )
 {
@@ -48,7 +48,7 @@ void initialize_core_indexes( database& db )
    STEEM_ADD_CORE_INDEX(db, vesting_delegation_expiration_index);
    STEEM_ADD_CORE_INDEX(db, pending_required_action_index);
    STEEM_ADD_CORE_INDEX(db, pending_optional_action_index);
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
    STEEM_ADD_CORE_INDEX(db, smt_token_index);
    STEEM_ADD_CORE_INDEX(db, account_regular_balance_index);
    STEEM_ADD_CORE_INDEX(db, account_rewards_balance_index);

@@ -37,14 +37,14 @@
  *      see `plugin_initialize`
  */
 
-namespace steem { namespace plugins { namespace transaction_status {
+namespace hive { namespace plugins { namespace transaction_status {
 
 namespace detail {
 
 class transaction_status_impl
 {
 public:
-   transaction_status_impl() : _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ) {}
+   transaction_status_impl() : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
    virtual ~transaction_status_impl() {}
 
    void on_post_apply_transaction( const transaction_notification& note );
@@ -282,10 +282,10 @@ void transaction_status_plugin::plugin_initialize( const boost::program_options:
 
       // We need to begin tracking 1 hour of blocks prior to the user provided track after block
       // A value of 0 indicates we should start tracking immediately
-      my->actual_track_after_block = std::max< int64_t >( 0, int64_t( my->nominal_track_after_block ) - int64_t( STEEM_MAX_TIME_UNTIL_EXPIRATION / STEEM_BLOCK_INTERVAL ) );
+      my->actual_track_after_block = std::max< int64_t >( 0, int64_t( my->nominal_track_after_block ) - int64_t( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL ) );
 
       // We need to track 1 hour of blocks in addition to the depth the user would like us to track
-      my->actual_block_depth = my->nominal_block_depth + ( STEEM_MAX_TIME_UNTIL_EXPIRATION / STEEM_BLOCK_INTERVAL );
+      my->actual_block_depth = my->nominal_block_depth + ( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL );
 
       dlog( "transaction status initializing" );
       dlog( "  -> nominal block depth: ${block_depth}", ("block_depth", my->nominal_block_depth) );
@@ -357,4 +357,4 @@ void transaction_status_plugin::rebuild_state()
 
 #endif
 
-} } } // steem::plugins::transaction_status
+} } } // hive::plugins::transaction_status

@@ -2,13 +2,13 @@
 #include <steem/chain/database.hpp>
 #include <steem/protocol/asset_symbol.hpp>
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
    void replenish_nai_pool( database& db );
    void remove_from_nai_pool( database &db, const asset_symbol_type& a );
 
-} } // steem::chain
+} } // hive::chain
 
 #endif

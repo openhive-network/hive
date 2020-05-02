@@ -1,11 +1,11 @@
-#ifndef STEEM_HARDFORK_0_23
-#define STEEM_HARDFORK_0_23 23
+#ifndef HIVE_HARDFORK_0_23
+#define HIVE_HARDFORK_0_23 23
 
 long hf23_time();
 
-#define STEEM_HARDFORK_0_23_TIME        hf23_time()
+#define HIVE_HARDFORK_0_23_TIME        hf23_time()
 
-#define STEEM_HARDFORK_0_23_VERSION hardfork_version( 0, 23 )
+#define HIVE_HARDFORK_0_23_VERSION hardfork_version( 0, 23 )
 
 #endif
 

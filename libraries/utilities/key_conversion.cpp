@@ -25,7 +25,7 @@
 #include <fc/crypto/base58.hpp>
 #include <fc/variant.hpp>
 
-namespace steem { namespace utilities {
+namespace hive { namespace utilities {
 
 std::string key_to_wif(const fc::sha256& secret )
 {
@@ -69,4 +69,4 @@ fc::optional<fc::ecc::private_key> wif_to_key( const std::string& wif_key )
   return fc::optional<fc::ecc::private_key>();
 }
 
-} } // end namespace steem::utilities
+} } // end namespace hive::utilities

@@ -31,7 +31,7 @@
 #include <fc/thread/future.hpp>
 #include <fc/api.hpp>
 
-namespace steem { namespace private_message {
+namespace hive { namespace private_message {
 using namespace chain;
 using app::application;
 
@@ -167,7 +167,7 @@ typedef multi_index_container<
  *   by the posting key.
  *
  */
-class private_message_plugin : public steem::app::plugin
+class private_message_plugin : public hive::app::plugin
 {
    public:
       private_message_plugin( application* app );
@@ -206,15 +206,15 @@ class private_message_api : public std::enable_shared_from_this<private_message_
       app::application* _app = nullptr;
 };
 
-} } //steem::private_message
+} } //hive::private_message
 
-FC_API( steem::private_message::private_message_api, (get_inbox)(get_outbox) );
+FC_API( hive::private_message::private_message_api, (get_inbox)(get_outbox) );
 
-FC_REFLECT( steem::private_message::message_body, (thread_start)(subject)(body)(json_meta)(cc) );
+FC_REFLECT( hive::private_message::message_body, (thread_start)(subject)(body)(json_meta)(cc) );
 
-FC_REFLECT( steem::private_message::message_object, (id)(from)(to)(from_memo_key)(to_memo_key)(sent_time)(receive_time)(checksum)(encrypted_message) );
-CHAINBASE_SET_INDEX_TYPE( steem::private_message::message_object, steem::private_message::message_index );
+FC_REFLECT( hive::private_message::message_object, (id)(from)(to)(from_memo_key)(to_memo_key)(sent_time)(receive_time)(checksum)(encrypted_message) );
+CHAINBASE_SET_INDEX_TYPE( hive::private_message::message_object, hive::private_message::message_index );
 
-FC_REFLECT( steem::private_message::message_api_obj, (id)(from)(to)(from_memo_key)(to_memo_key)(sent_time)(receive_time)(checksum)(encrypted_message) );
+FC_REFLECT( hive::private_message::message_api_obj, (id)(from)(to)(from_memo_key)(to_memo_key)(sent_time)(receive_time)(checksum)(encrypted_message) );
 
-FC_REFLECT_DERIVED( steem::private_message::extended_message_object, (steem::private_message::message_api_obj), (message) );
+FC_REFLECT_DERIVED( hive::private_message::extended_message_object, (hive::private_message::message_api_obj), (message) );

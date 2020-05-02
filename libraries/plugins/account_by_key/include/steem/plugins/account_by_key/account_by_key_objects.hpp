@@ -1,10 +1,10 @@
 #pragma once
 #include <steem/chain/steem_object_types.hpp>
 
-namespace steem { namespace plugins { namespace account_by_key {
+namespace hive { namespace plugins { namespace account_by_key {
 
 using namespace std;
-using namespace steem::chain;
+using namespace hive::chain;
 
 #ifndef STEEM_ACCOUNT_BY_KEY_SPACE_ID
 #define STEEM_ACCOUNT_BY_KEY_SPACE_ID 11
@@ -50,8 +50,8 @@ typedef multi_index_container<
    allocator< key_lookup_object >
 > key_lookup_index;
 
-} } } // steem::plugins::account_by_key
+} } } // hive::plugins::account_by_key
 
 
-FC_REFLECT( steem::plugins::account_by_key::key_lookup_object, (id)(key)(account) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::account_by_key::key_lookup_object, steem::plugins::account_by_key::key_lookup_index )
+FC_REFLECT( hive::plugins::account_by_key::key_lookup_object, (id)(key)(account) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::account_by_key::key_lookup_object, hive::plugins::account_by_key::key_lookup_index )

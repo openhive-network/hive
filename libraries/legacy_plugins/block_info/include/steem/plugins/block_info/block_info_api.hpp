@@ -5,11 +5,11 @@
 
 #include <steem/plugins/block_info/block_info.hpp>
 
-namespace steem { namespace app {
+namespace hive { namespace app {
    struct api_context;
 } }
 
-namespace steem { namespace plugin { namespace block_info {
+namespace hive { namespace plugin { namespace block_info {
 
 namespace detail {
 class block_info_api_impl;
@@ -24,7 +24,7 @@ struct get_block_info_args
 class block_info_api
 {
    public:
-      block_info_api( const steem::app::api_context& ctx );
+      block_info_api( const hive::app::api_context& ctx );
 
       void on_api_startup();
 
@@ -37,12 +37,12 @@ class block_info_api
 
 } } }
 
-FC_REFLECT( steem::plugin::block_info::get_block_info_args,
+FC_REFLECT( hive::plugin::block_info::get_block_info_args,
    (start_block_num)
    (count)
    )
 
-FC_API( steem::plugin::block_info::block_info_api,
+FC_API( hive::plugin::block_info::block_info_api,
    (get_block_info)
    (get_blocks_with_info)
    )

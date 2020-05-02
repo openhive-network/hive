@@ -6,7 +6,7 @@
 
 #include <fc/time.hpp>
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
    struct base_operation
    {
@@ -32,6 +32,6 @@ namespace steem { namespace protocol {
    typedef flat_set<future_extensions> extensions_type;
 
 
-} } // steem::protocol
+} } // hive::protocol
 
-FC_REFLECT_TYPENAME( steem::protocol::future_extensions )
+FC_REFLECT_TYPENAME( hive::protocol::future_extensions )

@@ -7,14 +7,14 @@
 
 #define STEEM_CONDENSER_API_PLUGIN_NAME "condenser_api"
 
-namespace steem { namespace plugins { namespace condenser_api {
+namespace hive { namespace plugins { namespace condenser_api {
 
 using namespace appbase;
 
 class condenser_api_plugin : public appbase::plugin< condenser_api_plugin >
 {
 public:
-   APPBASE_PLUGIN_REQUIRES( (steem::plugins::json_rpc::json_rpc_plugin)(steem::plugins::database_api::database_api_plugin) )
+   APPBASE_PLUGIN_REQUIRES( (hive::plugins::json_rpc::json_rpc_plugin)(hive::plugins::database_api::database_api_plugin) )
 
    condenser_api_plugin();
    virtual ~condenser_api_plugin();
@@ -30,4 +30,4 @@ public:
    std::shared_ptr< class condenser_api > api;
 };
 
-} } } // steem::plugins::condenser_api
+} } } // hive::plugins::condenser_api

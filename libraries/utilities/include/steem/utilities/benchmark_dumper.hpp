@@ -8,7 +8,7 @@
 
 #include <sys/time.h>
 
-namespace steem { namespace utilities {
+namespace hive { namespace utilities {
 
 /**
  * Time and memory usage measuring tool.
@@ -178,18 +178,18 @@ private:
    TAllData       _all_data;
 };
 
-} } // steem::utilities
+} } // hive::utilities
 
-FC_REFLECT( steem::utilities::benchmark_dumper::index_memory_details_t,
+FC_REFLECT( hive::utilities::benchmark_dumper::index_memory_details_t,
             (index_name)(index_size)(item_sizeof)(item_additional_allocation)
             (additional_container_allocation)(total_index_mem_usage)
           )
 
-FC_REFLECT( steem::utilities::benchmark_dumper::database_object_sizeof_t,
+FC_REFLECT( hive::utilities::benchmark_dumper::database_object_sizeof_t,
             (object_name)(object_size) )
 
-FC_REFLECT( steem::utilities::benchmark_dumper::measurement,
+FC_REFLECT( hive::utilities::benchmark_dumper::measurement,
             (block_number)(real_ms)(cpu_ms)(current_mem)(peak_mem)(index_memory_details_cntr) )
 
-FC_REFLECT( steem::utilities::benchmark_dumper::TAllData,
+FC_REFLECT( hive::utilities::benchmark_dumper::TAllData,
             (database_object_sizeofs)(measurements)(total_measurement) )

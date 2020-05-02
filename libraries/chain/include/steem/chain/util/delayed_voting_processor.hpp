@@ -2,7 +2,7 @@
 
 #include <steem/chain/steem_object_types.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 namespace delayed_voting_messages
 {
@@ -32,7 +32,7 @@ struct delayed_voting_processor
    static void add( COLLECTION_TYPE& items, ushare_type& sum, const time_point_sec& head_time, const ushare_type val )
    {
       /*
-         A collection is filled gradually - every item in `items` is created each STEEM_DELAYED_VOTING_INTERVAL_SECONDS time.
+         A collection is filled gradually - every item in `items` is created each HIVE_DELAYED_VOTING_INTERVAL_SECONDS time.
 
          Input data:
             2020-03-10 00:30:00 1000
@@ -62,7 +62,7 @@ struct delayed_voting_processor
 
       sum += val;
 
-      if( head_time >= back_obj.time + STEEM_DELAYED_VOTING_INTERVAL_SECONDS )
+      if( head_time >= back_obj.time + HIVE_DELAYED_VOTING_INTERVAL_SECONDS )
       {
          items.emplace_back( delayed_votes_data{ head_time, val } );
       }
@@ -125,8 +125,8 @@ struct delayed_voting_processor
 
 };
 
-} } // namespace steem::chain
+} } // namespace hive::chain
 
-FC_REFLECT( steem::chain::delayed_votes_data,
+FC_REFLECT( hive::chain::delayed_votes_data,
              (time)(val)
           )

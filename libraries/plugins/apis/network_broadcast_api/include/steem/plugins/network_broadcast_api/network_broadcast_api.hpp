@@ -11,16 +11,16 @@
 
 #include <boost/thread/mutex.hpp>
 
-namespace steem { namespace plugins { namespace network_broadcast_api {
+namespace hive { namespace plugins { namespace network_broadcast_api {
 
 using std::vector;
 using fc::variant;
 using fc::optional;
-using steem::plugins::json_rpc::void_type;
+using hive::plugins::json_rpc::void_type;
 
-using steem::protocol::signed_transaction;
-using steem::protocol::transaction_id_type;
-using steem::protocol::signed_block;
+using hive::protocol::signed_transaction;
+using hive::protocol::transaction_id_type;
+using hive::protocol::signed_block;
 
 struct broadcast_transaction_args
 {
@@ -54,10 +54,10 @@ class network_broadcast_api
       std::unique_ptr< detail::network_broadcast_api_impl > my;
 };
 
-} } } // steem::plugins::network_broadcast_api
+} } } // hive::plugins::network_broadcast_api
 
-FC_REFLECT( steem::plugins::network_broadcast_api::broadcast_transaction_args,
+FC_REFLECT( hive::plugins::network_broadcast_api::broadcast_transaction_args,
    (trx)(max_block_age) )
 
-FC_REFLECT( steem::plugins::network_broadcast_api::broadcast_block_args,
+FC_REFLECT( hive::plugins::network_broadcast_api::broadcast_block_args,
    (block) )

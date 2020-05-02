@@ -9,7 +9,7 @@
 #include <functional>
 #include <memory>
 
-namespace steem {
+namespace hive {
 
 namespace plugins { namespace account_history_rocksdb {
 
@@ -20,7 +20,7 @@ namespace bfs = boost::filesystem;
 class account_history_rocksdb_plugin final : public appbase::plugin< account_history_rocksdb_plugin >
 {
 public:
-   APPBASE_PLUGIN_REQUIRES((steem::plugins::chain::chain_plugin))
+   APPBASE_PLUGIN_REQUIRES((hive::plugins::chain::chain_plugin))
 
    account_history_rocksdb_plugin();
    virtual ~account_history_rocksdb_plugin();
@@ -54,4 +54,4 @@ private:
 };
 
 
-} } } // steem::plugins::account_history_rocksdb
+} } } // hive::plugins::account_history_rocksdb

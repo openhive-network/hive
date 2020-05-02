@@ -8,7 +8,7 @@
 
 #include <vector>
 
-namespace steem { namespace utilities {
+namespace hive { namespace utilities {
 
 using std::string;
 using std::vector;

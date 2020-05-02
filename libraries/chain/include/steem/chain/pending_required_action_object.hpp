@@ -5,9 +5,9 @@
 
 #include <steem/chain/steem_object_types.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
-using steem::protocol::required_automated_action;
+using hive::protocol::required_automated_action;
 
 class pending_required_action_object : public object< pending_required_action_object_type, pending_required_action_object >
 {
@@ -42,8 +42,8 @@ typedef multi_index_container<
    allocator< pending_required_action_object >
 > pending_required_action_index;
 
-} } //steem::chain
+} } //hive::chain
 
-FC_REFLECT( steem::chain::pending_required_action_object,
+FC_REFLECT( hive::chain::pending_required_action_object,
             (id)(execution_time)(action) )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::pending_required_action_object, steem::chain::pending_required_action_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::pending_required_action_object, hive::chain::pending_required_action_index )

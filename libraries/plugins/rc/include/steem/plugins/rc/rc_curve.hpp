@@ -6,7 +6,7 @@
 
 #include <fc/time.hpp>
 
-namespace steem { namespace plugins { namespace rc {
+namespace hive { namespace plugins { namespace rc {
 
 struct rc_curve_gen_params
 {
@@ -26,9 +26,9 @@ void generate_rc_curve_params(
    const rc_curve_gen_params& curve_gen_params
    );
 
-} } } // steem::plugins::rc
+} } } // hive::plugins::rc
 
-FC_REFLECT( steem::plugins::rc::rc_curve_gen_params,
+FC_REFLECT( hive::plugins::rc::rc_curve_gen_params,
    (inelasticity_threshold_num)
    (inelasticity_threshold_denom)
    (a_point_num)

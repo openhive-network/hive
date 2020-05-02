@@ -28,16 +28,16 @@
 
 #include "database_fixture.hpp"
 
-//using namespace steem::chain::test;
+//using namespace hive::chain::test;
 
 uint32_t HIVE_TESTING_GENESIS_TIMESTAMP = 1431700000;
 
-using namespace steem::plugins::webserver;
-using namespace steem::plugins::database_api;
-using namespace steem::plugins::block_api;
-using steem::plugins::condenser_api::condenser_api_plugin;
+using namespace hive::plugins::webserver;
+using namespace hive::plugins::database_api;
+using namespace hive::plugins::block_api;
+using hive::plugins::condenser_api::condenser_api_plugin;
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 using std::cout;
 using std::cerr;
@@ -56,27 +56,27 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb 
          std::cout << "running test " << boost::unit_test::framework::current_test_case().p_name << std::endl;
    }
 
-   appbase::app().register_plugin< steem::plugins::account_history::account_history_plugin >();
-   db_plugin = &appbase::app().register_plugin< steem::plugins::debug_node::debug_node_plugin >();
-   appbase::app().register_plugin< steem::plugins::rc::rc_plugin >();
-   appbase::app().register_plugin< steem::plugins::witness::witness_plugin >();
+   appbase::app().register_plugin< hive::plugins::account_history::account_history_plugin >();
+   db_plugin = &appbase::app().register_plugin< hive::plugins::debug_node::debug_node_plugin >();
+   appbase::app().register_plugin< hive::plugins::rc::rc_plugin >();
+   appbase::app().register_plugin< hive::plugins::witness::witness_plugin >();
 
    db_plugin->logging = false;
    appbase::app().initialize<
-      steem::plugins::account_history::account_history_plugin,
-      steem::plugins::debug_node::debug_node_plugin,
-      steem::plugins::rc::rc_plugin,
-      steem::plugins::witness::witness_plugin
+      hive::plugins::account_history::account_history_plugin,
+      hive::plugins::debug_node::debug_node_plugin,
+      hive::plugins::rc::rc_plugin,
+      hive::plugins::witness::witness_plugin
       >( argc, argv );
 
-   steem::plugins::rc::rc_plugin_skip_flags rc_skip;
+   hive::plugins::rc::rc_plugin_skip_flags rc_skip;
    rc_skip.skip_reject_not_enough_rc = 1;
    rc_skip.skip_deduct_rc = 0;
    rc_skip.skip_negative_rc_balance = 1;
    rc_skip.skip_reject_unknown_delta_vests = 0;
-   appbase::app().get_plugin< steem::plugins::rc::rc_plugin >().set_rc_plugin_skip_flags( rc_skip );
+   appbase::app().get_plugin< hive::plugins::rc::rc_plugin >().set_rc_plugin_skip_flags( rc_skip );
 
-   db = &appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db();
+   db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
    BOOST_REQUIRE( db );
 
    init_account_pub_key = init_account_priv_key.get_public_key();
@@ -126,7 +126,7 @@ clean_database_fixture::~clean_database_fixture()
 void clean_database_fixture::validate_database()
 {
    database_fixture::validate_database();
-   appbase::app().get_plugin< steem::plugins::rc::rc_plugin >().validate_database();
+   appbase::app().get_plugin< hive::plugins::rc::rc_plugin >().validate_database();
 }
 
 void clean_database_fixture::resize_shared_mem( uint64_t size )
@@ -151,7 +151,7 @@ void clean_database_fixture::resize_shared_mem( uint64_t size )
       args.initial_supply = INITIAL_TEST_SUPPLY;
       args.sbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
       args.shared_file_size = size;
-      args.database_cfg = steem::utilities::default_database_configuration();
+      args.database_cfg = hive::utilities::default_database_configuration();
       db->open( args );
    }
 
@@ -186,19 +186,19 @@ live_database_fixture::live_database_fixture()
       _chain_dir = fc::current_path() / "test_blockchain";
       FC_ASSERT( fc::exists( _chain_dir ), "Requires blockchain to test on in ./test_blockchain" );
 
-      appbase::app().register_plugin< steem::plugins::account_history::account_history_plugin >();
+      appbase::app().register_plugin< hive::plugins::account_history::account_history_plugin >();
       appbase::app().initialize<
-         steem::plugins::account_history::account_history_plugin
+         hive::plugins::account_history::account_history_plugin
          >( argc, argv );
 
-      db = &appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db();
+      db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
       BOOST_REQUIRE( db );
 
       {
          database::open_args args;
          args.data_dir = _chain_dir;
          args.shared_mem_dir = args.data_dir;
-         args.database_cfg = steem::utilities::default_database_configuration();
+         args.database_cfg = hive::utilities::default_database_configuration();
          db->open( args );
       }
 
@@ -237,7 +237,7 @@ fc::ecc::private_key database_fixture::generate_private_key(string seed)
    return fc::ecc::private_key::regenerate( fc::sha256::hash( seed ) );
 }
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 asset_symbol_type database_fixture::get_new_smt_symbol( uint8_t token_decimal_places, chain::database* db )
 {
    // The list of available nais is not dependent on SMT desired precision (token_decimal_places).
@@ -254,7 +254,7 @@ void database_fixture::open_database( uint16_t shared_file_size_in_mb )
 {
    if( !data_dir )
    {
-      data_dir = fc::temp_directory( steem::utilities::temp_directory_path() );
+      data_dir = fc::temp_directory( hive::utilities::temp_directory_path() );
       db->_log_hardforks = false;
 
       idump( (data_dir->path()) );
@@ -265,7 +265,7 @@ void database_fixture::open_database( uint16_t shared_file_size_in_mb )
       args.initial_supply = INITIAL_TEST_SUPPLY;
       args.sbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
       args.shared_file_size = 1024 * 1024 * shared_file_size_in_mb; // 8MB(default) or more:  file for testing
-      args.database_cfg = steem::utilities::default_database_configuration();
+      args.database_cfg = hive::utilities::default_database_configuration();
       args.sps_remove_threshold = 20;
       db->open(args);
    }
@@ -278,7 +278,7 @@ void database_fixture::open_database( uint16_t shared_file_size_in_mb )
 void database_fixture::generate_block(uint32_t skip, const fc::ecc::private_key& key, int miss_blocks)
 {
    skip |= default_skip;
-   db_plugin->debug_generate_blocks( steem::utilities::key_to_wif( key ), 1, skip, miss_blocks );
+   db_plugin->debug_generate_blocks( hive::utilities::key_to_wif( key ), 1, skip, miss_blocks );
 }
 
 void database_fixture::generate_blocks( uint32_t block_count )
@@ -706,7 +706,7 @@ vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
       std::vector<char> serialized_op;
       serialized_op.reserve( _serialized_op.size() );
       std::copy( _serialized_op.begin(), _serialized_op.end(), std::back_inserter( serialized_op ) );
-      ops.push_back( fc::raw::unpack_from_vector< steem::chain::operation >( serialized_op ) );
+      ops.push_back( fc::raw::unpack_from_vector< hive::chain::operation >( serialized_op ) );
    }
 
    return ops;
@@ -717,14 +717,14 @@ void database_fixture::validate_database()
    try
    {
       db->validate_invariants();
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
       db->validate_smt_invariants();
 #endif
    }
    FC_LOG_AND_RETHROW();
 }
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 
 template< typename T >
 asset_symbol_type t_smt_database_fixture< T >::create_smt_with_nai( const string& account_name, const fc::ecc::private_key& key,
@@ -933,15 +933,15 @@ void sps_proposal_database_fixture::plugin_prepare()
          std::cout << "running test " << boost::unit_test::framework::current_test_case().p_name << std::endl;
    }
 
-   db_plugin = &appbase::app().register_plugin< steem::plugins::debug_node::debug_node_plugin >();
+   db_plugin = &appbase::app().register_plugin< hive::plugins::debug_node::debug_node_plugin >();
    init_account_pub_key = init_account_priv_key.get_public_key();
 
    db_plugin->logging = false;
    appbase::app().initialize<
-      steem::plugins::debug_node::debug_node_plugin
+      hive::plugins::debug_node::debug_node_plugin
    >( argc, argv );
 
-   db = &appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db();
+   db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
    BOOST_REQUIRE( db );
 
    open_database();
@@ -1301,27 +1301,27 @@ json_rpc_database_fixture::json_rpc_database_fixture()
          std::cout << "running test " << boost::unit_test::framework::current_test_case().p_name << std::endl;
    }
 
-   appbase::app().register_plugin< steem::plugins::account_history::account_history_plugin >();
-   db_plugin = &appbase::app().register_plugin< steem::plugins::debug_node::debug_node_plugin >();
-   appbase::app().register_plugin< steem::plugins::witness::witness_plugin >();
-   rpc_plugin = &appbase::app().register_plugin< steem::plugins::json_rpc::json_rpc_plugin >();
-   appbase::app().register_plugin< steem::plugins::block_api::block_api_plugin >();
-   appbase::app().register_plugin< steem::plugins::database_api::database_api_plugin >();
-   appbase::app().register_plugin< steem::plugins::condenser_api::condenser_api_plugin >();
+   appbase::app().register_plugin< hive::plugins::account_history::account_history_plugin >();
+   db_plugin = &appbase::app().register_plugin< hive::plugins::debug_node::debug_node_plugin >();
+   appbase::app().register_plugin< hive::plugins::witness::witness_plugin >();
+   rpc_plugin = &appbase::app().register_plugin< hive::plugins::json_rpc::json_rpc_plugin >();
+   appbase::app().register_plugin< hive::plugins::block_api::block_api_plugin >();
+   appbase::app().register_plugin< hive::plugins::database_api::database_api_plugin >();
+   appbase::app().register_plugin< hive::plugins::condenser_api::condenser_api_plugin >();
 
    db_plugin->logging = false;
    appbase::app().initialize<
-      steem::plugins::account_history::account_history_plugin,
-      steem::plugins::debug_node::debug_node_plugin,
-      steem::plugins::json_rpc::json_rpc_plugin,
-      steem::plugins::block_api::block_api_plugin,
-      steem::plugins::database_api::database_api_plugin,
-      steem::plugins::condenser_api::condenser_api_plugin
+      hive::plugins::account_history::account_history_plugin,
+      hive::plugins::debug_node::debug_node_plugin,
+      hive::plugins::json_rpc::json_rpc_plugin,
+      hive::plugins::block_api::block_api_plugin,
+      hive::plugins::database_api::database_api_plugin,
+      hive::plugins::condenser_api::condenser_api_plugin
       >( argc, argv );
 
-   appbase::app().get_plugin< steem::plugins::condenser_api::condenser_api_plugin >().plugin_startup();
+   appbase::app().get_plugin< hive::plugins::condenser_api::condenser_api_plugin >().plugin_startup();
 
-   db = &appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db();
+   db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
    BOOST_REQUIRE( db );
 
    init_account_pub_key = init_account_priv_key.get_public_key();
@@ -1482,6 +1482,6 @@ void _push_transaction( database& db, const signed_transaction& tx, uint32_t ski
    db.push_transaction( tx, skip_flags );
 } FC_CAPTURE_AND_RETHROW((tx)) }
 
-} // steem::chain::test
+} // hive::chain::test
 
-} } // steem::chain
+} } // hive::chain

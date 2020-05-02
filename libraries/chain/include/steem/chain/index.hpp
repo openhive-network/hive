@@ -8,9 +8,9 @@
 
 #include <steem/chain/database.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
-using steem::schema::abstract_schema;
+using hive::schema::abstract_schema;
 
 struct index_info
    : public chainbase::index_extension
@@ -27,7 +27,7 @@ struct index_info_impl
    typedef typename MultiIndexType::value_type value_type;
 
    index_info_impl()
-      : _schema( steem::schema::get_schema_for_type< value_type >() ) {}
+      : _schema( hive::schema::get_schema_for_type< value_type >() ) {}
    virtual ~index_info_impl() {}
 
    virtual std::shared_ptr< abstract_schema > get_schema() override
@@ -63,8 +63,8 @@ void add_plugin_index( database& db )
 
 #define STEEM_ADD_CORE_INDEX(db, index_name)                                                                 \
    do {                                                                                                      \
-      steem::chain::add_core_index< index_name >( db );                                                      \
-      steem::chain::index_delegate delegate;                                                                 \
+      hive::chain::add_core_index< index_name >( db );                                                      \
+      hive::chain::index_delegate delegate;                                                                 \
       delegate.set_index_type =                                                                              \
          []( database& _db, mira::index_type type, const boost::filesystem::path& p, const boost::any& cfg ) \
             { _db.get_mutable_index< index_name >().mutable_indices().set_index_type( type, p, cfg ); };     \
@@ -73,8 +73,8 @@ void add_plugin_index( database& db )
 
 #define STEEM_ADD_PLUGIN_INDEX(db, index_name)                                                               \
    do {                                                                                                      \
-      steem::chain::add_plugin_index< index_name >( db );                                                    \
-      steem::chain::index_delegate delegate;                                                                 \
+      hive::chain::add_plugin_index< index_name >( db );                                                    \
+      hive::chain::index_delegate delegate;                                                                 \
       delegate.set_index_type =                                                                              \
          []( database& _db, mira::index_type type, const boost::filesystem::path& p, const boost::any& cfg ) \
             { _db.get_mutable_index< index_name >().mutable_indices().set_index_type( type, p, cfg ); };     \
@@ -85,15 +85,15 @@ void add_plugin_index( database& db )
 
 #define STEEM_ADD_CORE_INDEX(db, index_name)                                                                 \
    do {                                                                                                      \
-      steem::chain::add_core_index< index_name >( db );                                                      \
-      steem::chain::index_delegate delegate;                                                                 \
+      hive::chain::add_core_index< index_name >( db );                                                      \
+      hive::chain::index_delegate delegate;                                                                 \
       db.set_index_delegate( #index_name, std::move( delegate ) );                                           \
    } while( false )
 
 #define STEEM_ADD_PLUGIN_INDEX(db, index_name)                                                               \
    do {                                                                                                      \
-      steem::chain::add_plugin_index< index_name >( db );                                                    \
-      steem::chain::index_delegate delegate;                                                                 \
+      hive::chain::add_plugin_index< index_name >( db );                                                    \
+      hive::chain::index_delegate delegate;                                                                 \
       db.set_index_delegate( #index_name, std::move( delegate ) );                                           \
    } while( false )
 

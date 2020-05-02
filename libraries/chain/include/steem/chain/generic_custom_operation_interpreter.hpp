@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 using protocol::operation;
 using protocol::authority;
@@ -220,9 +220,9 @@ class generic_custom_operation_interpreter
          FC_CAPTURE_AND_RETHROW( (outer_o) )
       }
 
-      virtual std::shared_ptr< steem::schema::abstract_schema > get_operation_schema() override
+      virtual std::shared_ptr< hive::schema::abstract_schema > get_operation_schema() override
       {
-         return steem::schema::get_schema_for_type< CustomOperationType >();
+         return hive::schema::get_schema_for_type< CustomOperationType >();
       }
 
       virtual custom_id_type get_custom_id() override

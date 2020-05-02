@@ -5,9 +5,9 @@
 #include <boost/multi_index/composite_key.hpp>
 #include <steem/protocol/asset.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
-using steem::protocol::asset;
+using hive::protocol::asset;
 
 class proposal_object : public object< proposal_object_type, proposal_object >
 {
@@ -57,7 +57,7 @@ class proposal_object : public object< proposal_object_type, proposal_object >
       time_point_sec get_end_date_with_delay() const
       {
          time_point_sec ret = end_date;
-         ret += STEEM_PROPOSAL_MAINTENANCE_CLEANUP;
+         ret += HIVE_PROPOSAL_MAINTENANCE_CLEANUP;
 
          return ret;
       }
@@ -151,18 +151,18 @@ typedef multi_index_container<
    allocator< proposal_vote_object >
 > proposal_vote_index;
 
-} } // steem::chain
+} } // hive::chain
 
 #ifdef ENABLE_STD_ALLOCATOR
 namespace mira {
 
-template<> struct is_static_length< steem::chain::proposal_vote_object > : public boost::true_type {};
+template<> struct is_static_length< hive::chain::proposal_vote_object > : public boost::true_type {};
 
 } // mira
 #endif
 
-FC_REFLECT( steem::chain::proposal_object, (id)(proposal_id)(creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink)(total_votes)(removed) )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::proposal_object, steem::chain::proposal_index )
+FC_REFLECT( hive::chain::proposal_object, (id)(proposal_id)(creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink)(total_votes)(removed) )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::proposal_object, hive::chain::proposal_index )
 
-FC_REFLECT( steem::chain::proposal_vote_object, (id)(voter)(proposal_id) )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::proposal_vote_object, steem::chain::proposal_vote_index )
+FC_REFLECT( hive::chain::proposal_vote_object, (id)(voter)(proposal_id) )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::proposal_vote_object, hive::chain::proposal_vote_index )

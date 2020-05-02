@@ -19,7 +19,7 @@ index : field
    7  : \0
 */
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
 std::string asset_symbol_type::to_string()const
 {
@@ -320,10 +320,10 @@ DEFINE_PRICE_COMPARISON_OPERATOR( >= )
       } FC_CAPTURE_AND_RETHROW( (base)(quote) ) }
 
 
-} } // steem::protocol
+} } // hive::protocol
 
 namespace fc {
-   void to_variant( const steem::protocol::asset& var, fc::variant& vo )
+   void to_variant( const hive::protocol::asset& var, fc::variant& vo )
    {
       try
       {
@@ -334,7 +334,7 @@ namespace fc {
       } FC_CAPTURE_AND_RETHROW()
    }
 
-   void from_variant( const fc::variant& var, steem::protocol::asset& vo )
+   void from_variant( const fc::variant& var, hive::protocol::asset& vo )
    {
       try
       {
@@ -353,7 +353,7 @@ namespace fc {
          FC_ASSERT( v_object.contains( ASSET_NAI_KEY ), "NAI field doesn't exist." );
          FC_ASSERT( v_object[ ASSET_NAI_KEY ].is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_NAI_KEY) );
 
-         vo.symbol = steem::protocol::asset_symbol_type::from_nai_string( v_object[ ASSET_NAI_KEY ].as< std::string >().c_str(), v_object[ ASSET_PRECISION_KEY ].as< uint8_t >() );
+         vo.symbol = hive::protocol::asset_symbol_type::from_nai_string( v_object[ ASSET_NAI_KEY ].as< std::string >().c_str(), v_object[ ASSET_PRECISION_KEY ].as< uint8_t >() );
       } FC_CAPTURE_AND_RETHROW()
    }
 }

@@ -60,9 +60,9 @@
 #endif
 
 
-using namespace steem::utilities;
-using namespace steem::chain;
-using namespace steem::wallet;
+using namespace hive::utilities;
+using namespace hive::chain;
+using namespace hive::wallet;
 using namespace std;
 namespace bpo = boost::program_options;
 
@@ -83,7 +83,7 @@ int main( int argc, char** argv )
          ("rpc-http-allowip", bpo::value<vector<string>>()->multitoken(), "Allows only specified IPs to connect to the HTTP endpoint" )
          ("wallet-file,w", bpo::value<string>()->implicit_value("wallet.json"), "wallet to load")
 #ifdef IS_TEST_NET
-         ("chain-id", bpo::value< std::string >()->default_value( STEEM_CHAIN_ID ), "chain ID to connect to")
+         ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
 #endif
          ;
       vector<string> allowed_ips;
@@ -102,7 +102,7 @@ int main( int argc, char** argv )
          wdump((allowed_ips));
       }
 
-      steem::protocol::chain_id_type _steem_chain_id;
+      hive::protocol::chain_id_type _steem_chain_id;
 
 #ifdef IS_TEST_NET
       if( options.count("chain-id") )
@@ -170,7 +170,7 @@ int main( int argc, char** argv )
       auto con  = client.connect( wdata.ws_server );
       auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
 
-      auto remote_api = apic->get_remote_api< steem::wallet::remote_node_api >( 0, "condenser_api" );
+      auto remote_api = apic->get_remote_api< hive::wallet::remote_node_api >( 0, "condenser_api" );
 
       auto wapiptr = std::make_shared<wallet_api>( wdata, _steem_chain_id, remote_api );
       wapiptr->set_wallet_filename( wallet_file.generic_string() );

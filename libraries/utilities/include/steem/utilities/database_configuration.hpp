@@ -1,8 +1,8 @@
 #pragma once
 #include <fc/variant.hpp>
 
-namespace steem { namespace utilities {
+namespace hive { namespace utilities {
 
 fc::variant default_database_configuration();
 
-} } // steem::utilities
+} } // hive::utilities

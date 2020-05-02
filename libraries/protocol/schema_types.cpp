@@ -4,7 +4,7 @@
 
 #include <steem/protocol/schema_types.hpp>
 
-namespace steem { namespace schema { namespace detail {
+namespace hive { namespace schema { namespace detail {
 
 //////////////////////////////////////////////
 // account_name_type                        //

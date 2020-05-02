@@ -3,9 +3,9 @@
 #include <steem/chain/steem_object_types.hpp>
 #include <steem/protocol/smt_operations.hpp>
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 /**
  * Class responsible for holding regular (i.e. non-reward) balance of SMT for given account.
@@ -142,16 +142,16 @@ typedef multi_index_container <
    allocator< account_rewards_balance_object >
 > account_rewards_balance_index;
 
-} } // namespace steem::chain
+} } // namespace hive::chain
 
-FC_REFLECT( steem::chain::account_regular_balance_object,
+FC_REFLECT( hive::chain::account_regular_balance_object,
    (id)
    (owner)
    (liquid)
    (vesting)
 )
 
-FC_REFLECT( steem::chain::account_rewards_balance_object,
+FC_REFLECT( hive::chain::account_rewards_balance_object,
    (id)
    (owner)
    (pending_liquid)
@@ -159,7 +159,7 @@ FC_REFLECT( steem::chain::account_rewards_balance_object,
    (pending_vesting_value)
 )
 
-CHAINBASE_SET_INDEX_TYPE( steem::chain::account_regular_balance_object, steem::chain::account_regular_balance_index )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::account_rewards_balance_object, steem::chain::account_rewards_balance_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::account_regular_balance_object, hive::chain::account_regular_balance_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::account_rewards_balance_object, hive::chain::account_rewards_balance_index )
 
 #endif

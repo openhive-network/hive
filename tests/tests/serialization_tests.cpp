@@ -40,9 +40,9 @@
 
 #include <cmath>
 
-using namespace steem;
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive;
+using namespace hive::chain;
+using namespace hive::protocol;
 
 BOOST_FIXTURE_TEST_SUITE( serialization_tests, clean_database_fixture )
 
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE( legacy_asset_test )
 {
    try
    {
-      using steem::plugins::condenser_api::legacy_asset;
+      using hive::plugins::condenser_api::legacy_asset;
 
       BOOST_CHECK_EQUAL( legacy_asset().symbol.decimals(), 3 );
       BOOST_CHECK_EQUAL( legacy_asset().to_string(), "0.000 TESTS" );
@@ -502,7 +502,7 @@ BOOST_AUTO_TEST_CASE( min_block_size )
 
 BOOST_AUTO_TEST_CASE( legacy_signed_transaction )
 {
-   using steem::plugins::condenser_api::legacy_signed_transaction;
+   using hive::plugins::condenser_api::legacy_signed_transaction;
 
    signed_transaction tx;
    vote_operation op;
@@ -570,7 +570,7 @@ BOOST_AUTO_TEST_CASE( legacy_operation_test )
    try
    {
       auto v = fc::json::from_string( "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST1111111111111111111111111111111114T1Anm\", \"props\": {\"account_creation_fee\": \"0.500 TESTS\", \"maximum_block_size\": 65536, \"sbd_interest_rate\": 0}, \"fee\": \"0.000 TESTS\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}" );
-      auto ls = v.as< steem::plugins::condenser_api::legacy_signed_transaction >();
+      auto ls = v.as< hive::plugins::condenser_api::legacy_signed_transaction >();
       // not throwing an error here is success
    }
    FC_LOG_AND_RETHROW()

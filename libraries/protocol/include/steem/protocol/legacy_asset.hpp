@@ -8,7 +8,7 @@
 #define STEEM_SYMBOL_LEGACY_SER_4   (uint64_t(3) | (uint64_t('0') << 8) | (uint64_t('.') << 16) | (uint64_t('0') << 24) | (uint64_t('0') << 32) | (uint64_t('1') << 40))
 #define STEEM_SYMBOL_LEGACY_SER_5   (uint64_t(3) | (uint64_t('6') << 8) | (uint64_t('.') << 16) | (uint64_t('0') << 24) | (uint64_t('0') << 32) | (uint64_t('0') << 40))
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
 class legacy_steem_asset_symbol_type
 {
@@ -33,7 +33,7 @@ struct legacy_steem_asset
          {
             FC_ASSERT( symbol.is_canon(), "Must use canonical HIVE symbol serialization" );
          }
-         return asset( amount, STEEM_SYMBOL );
+         return asset( amount, HIVE_SYMBOL );
       }
 
       static legacy_steem_asset from_amount( share_type amount )
@@ -45,7 +45,7 @@ struct legacy_steem_asset
 
       static legacy_steem_asset from_asset( const asset& a )
       {
-         FC_ASSERT( a.symbol == STEEM_SYMBOL );
+         FC_ASSERT( a.symbol == HIVE_SYMBOL );
          return from_amount( a.amount );
       }
 
@@ -58,7 +58,7 @@ struct legacy_steem_asset
 namespace fc { namespace raw {
 
 template< typename Stream >
-inline void pack( Stream& s, const steem::protocol::legacy_steem_asset_symbol_type& sym )
+inline void pack( Stream& s, const hive::protocol::legacy_steem_asset_symbol_type& sym )
 {
    switch( sym.ser )
    {
@@ -77,7 +77,7 @@ inline void pack( Stream& s, const steem::protocol::legacy_steem_asset_symbol_ty
 }
 
 template< typename Stream >
-inline void unpack( Stream& s, steem::protocol::legacy_steem_asset_symbol_type& sym, uint32_t depth )
+inline void unpack( Stream& s, hive::protocol::legacy_steem_asset_symbol_type& sym, uint32_t depth )
 {
    //  994240:        "account_creation_fee": "0.1 HIVE"
    // 1021529:        "account_creation_fee": "10.0 HIVE"
@@ -109,30 +109,30 @@ inline void unpack( Stream& s, steem::protocol::legacy_steem_asset_symbol_type& 
 
 } // fc::raw
 
-inline void to_variant( const steem::protocol::legacy_steem_asset& leg, fc::variant& v )
+inline void to_variant( const hive::protocol::legacy_steem_asset& leg, fc::variant& v )
 {
    to_variant( leg.to_asset<false>(), v );
 }
 
-inline void from_variant( const fc::variant& v, steem::protocol::legacy_steem_asset& leg )
+inline void from_variant( const fc::variant& v, hive::protocol::legacy_steem_asset& leg )
 {
-   steem::protocol::asset a;
+   hive::protocol::asset a;
    from_variant( v, a );
-   leg = steem::protocol::legacy_steem_asset::from_asset( a );
+   leg = hive::protocol::legacy_steem_asset::from_asset( a );
 }
 
 template<>
-struct get_typename< steem::protocol::legacy_steem_asset_symbol_type >
+struct get_typename< hive::protocol::legacy_steem_asset_symbol_type >
 {
    static const char* name()
    {
-      return "steem::protocol::legacy_steem_asset_symbol_type";
+      return "hive::protocol::legacy_steem_asset_symbol_type";
    }
 };
 
 } // fc
 
-FC_REFLECT( steem::protocol::legacy_steem_asset,
+FC_REFLECT( hive::protocol::legacy_steem_asset,
    (amount)
    (symbol)
    )

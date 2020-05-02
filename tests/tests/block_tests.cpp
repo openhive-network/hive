@@ -42,10 +42,10 @@
 
 #include "../db_fixture/database_fixture.hpp"
 
-using namespace steem;
-using namespace steem::chain;
-using namespace steem::protocol;
-using namespace steem::plugins;
+using namespace hive;
+using namespace hive::chain;
+using namespace hive::protocol;
+using namespace hive::plugins;
 
 #define TEST_SHARED_MEM_SIZE (1024 * 1024 * 8)
 
@@ -59,7 +59,7 @@ void open_test_database( database& db, const fc::path& dir )
    args.initial_supply = INITIAL_TEST_SUPPLY;
    args.sbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
    args.shared_file_size = TEST_SHARED_MEM_SIZE;
-   args.database_cfg = steem::utilities::default_database_configuration();
+   args.database_cfg = hive::utilities::default_database_configuration();
    db.open( args );
 }
 
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
 {
    try {
       fc::time_point_sec now( HIVE_TESTING_GENESIS_TIMESTAMP );
-      fc::temp_directory data_dir( steem::utilities::temp_directory_path() );
+      fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
       signed_block b;
 
       // TODO:  Don't generate this here
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
 BOOST_AUTO_TEST_CASE( undo_block )
 {
    try {
-      fc::temp_directory data_dir( steem::utilities::temp_directory_path() );
+      fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
       {
          database db;
          witness::block_producer bp( db );
@@ -187,8 +187,8 @@ BOOST_AUTO_TEST_CASE( undo_block )
 BOOST_AUTO_TEST_CASE( fork_blocks )
 {
    try {
-      fc::temp_directory data_dir1( steem::utilities::temp_directory_path() );
-      fc::temp_directory data_dir2( steem::utilities::temp_directory_path() );
+      fc::temp_directory data_dir1( hive::utilities::temp_directory_path() );
+      fc::temp_directory data_dir2( hive::utilities::temp_directory_path() );
 
       //TODO This test needs 6-7 ish witnesses prior to fork
 
@@ -256,8 +256,8 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
 BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
 {
    try {
-      fc::temp_directory dir1( steem::utilities::temp_directory_path() ),
-                         dir2( steem::utilities::temp_directory_path() );
+      fc::temp_directory dir1( hive::utilities::temp_directory_path() ),
+                         dir2( hive::utilities::temp_directory_path() );
       database db1,
                db2;
       witness::block_producer bp1( db1 ),
@@ -317,8 +317,8 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
 BOOST_AUTO_TEST_CASE( duplicate_transactions )
 {
    try {
-      fc::temp_directory dir1( steem::utilities::temp_directory_path() ),
-                         dir2( steem::utilities::temp_directory_path() );
+      fc::temp_directory dir1( hive::utilities::temp_directory_path() ),
+                         dir2( hive::utilities::temp_directory_path() );
       database db1,
                db2;
       witness::block_producer bp1( db1 );
@@ -372,7 +372,7 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
 BOOST_AUTO_TEST_CASE( tapos )
 {
    try {
-      fc::temp_directory dir1( steem::utilities::temp_directory_path() );
+      fc::temp_directory dir1( hive::utilities::temp_directory_path() );
       database db1;
       witness::block_producer bp1( db1 );
       db1._log_hardforks = false;
@@ -752,16 +752,16 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
          if( arg == "--show-test-names" )
             std::cout << "running test " << boost::unit_test::framework::current_test_case().p_name << std::endl;
       }
-      appbase::app().register_plugin< steem::plugins::account_history::account_history_plugin >();
-      db_plugin = &appbase::app().register_plugin< steem::plugins::debug_node::debug_node_plugin >();
+      appbase::app().register_plugin< hive::plugins::account_history::account_history_plugin >();
+      db_plugin = &appbase::app().register_plugin< hive::plugins::debug_node::debug_node_plugin >();
       init_account_pub_key = init_account_priv_key.get_public_key();
 
       appbase::app().initialize<
-         steem::plugins::account_history::account_history_plugin,
-         steem::plugins::debug_node::debug_node_plugin
+         hive::plugins::account_history::account_history_plugin,
+         hive::plugins::debug_node::debug_node_plugin
       >( argc, argv );
 
-      db = &appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db();
+      db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
       BOOST_REQUIRE( db );
 
 
@@ -788,13 +788,13 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
 
       BOOST_TEST_MESSAGE( "Check hardfork not applied at genesis" );
       BOOST_REQUIRE( db->has_hardfork( 0 ) );
-      BOOST_REQUIRE( !db->has_hardfork( STEEM_HARDFORK_0_1 ) );
+      BOOST_REQUIRE( !db->has_hardfork( HIVE_HARDFORK_0_1 ) );
 
       BOOST_TEST_MESSAGE( "Generate blocks up to the hardfork time and check hardfork still not applied" );
-      generate_blocks( fc::time_point_sec( STEEM_HARDFORK_0_1_TIME - HIVE_BLOCK_INTERVAL ), true );
+      generate_blocks( fc::time_point_sec( HIVE_HARDFORK_0_1_TIME - HIVE_BLOCK_INTERVAL ), true );
 
       BOOST_REQUIRE( db->has_hardfork( 0 ) );
-      BOOST_REQUIRE( !db->has_hardfork( STEEM_HARDFORK_0_1 ) );
+      BOOST_REQUIRE( !db->has_hardfork( HIVE_HARDFORK_0_1 ) );
 
       BOOST_TEST_MESSAGE( "Generate a block and check hardfork is applied" );
       generate_block();
@@ -804,8 +804,8 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
       itr--;
 
       BOOST_REQUIRE( db->has_hardfork( 0 ) );
-      BOOST_REQUIRE( db->has_hardfork( STEEM_HARDFORK_0_1 ) );
-      operation hardfork_vop = hardfork_operation( STEEM_HARDFORK_0_1 );
+      BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_0_1 ) );
+      operation hardfork_vop = hardfork_operation( HIVE_HARDFORK_0_1 );
 
       BOOST_REQUIRE( get_last_operations( 1 )[0] == hardfork_vop );
       BOOST_REQUIRE( db->get(itr->op).timestamp == db->head_block_time() );
@@ -817,7 +817,7 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
       itr--;
 
       BOOST_REQUIRE( db->has_hardfork( 0 ) );
-      BOOST_REQUIRE( db->has_hardfork( STEEM_HARDFORK_0_1 ) );
+      BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_0_1 ) );
       BOOST_REQUIRE( get_last_operations( 1 )[0] == hardfork_vop );
       BOOST_REQUIRE( db->get(itr->op).timestamp == db->head_block_time() - HIVE_BLOCK_INTERVAL );
 

@@ -1,14 +1,14 @@
 #pragma once
 #include <steem/chain/steem_object_types.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 struct by_account;
 } }
 
-namespace steem { namespace plugins { namespace reputation {
+namespace hive { namespace plugins { namespace reputation {
 
 using namespace std;
-using namespace steem::chain;
+using namespace hive::chain;
 
 using chainbase::t_vector;
 
@@ -50,8 +50,8 @@ typedef multi_index_container<
    allocator< reputation_object >
 > reputation_index;
 
-} } } // steem::plugins::reputation
+} } } // hive::plugins::reputation
 
 
-FC_REFLECT( steem::plugins::reputation::reputation_object, (id)(account)(reputation) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::reputation::reputation_object, steem::plugins::reputation::reputation_index )
+FC_REFLECT( hive::plugins::reputation::reputation_object, (id)(account)(reputation) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::reputation::reputation_object, hive::plugins::reputation::reputation_index )

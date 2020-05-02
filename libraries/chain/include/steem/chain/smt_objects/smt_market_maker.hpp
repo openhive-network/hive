@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 
 #include <cstdint>
 #include <utility>
@@ -8,7 +8,7 @@
 
 #include <fc/reflect/reflect.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 struct rational_u64
 {
@@ -24,7 +24,7 @@ const std::vector< rational_u64 >& get_mm_ticks();
 
 } }
 
-FC_REFLECT( steem::chain::rational_u64,
+FC_REFLECT( hive::chain::rational_u64,
    (numerator)
    (denominator)
    )

@@ -2,11 +2,11 @@
 #include <steem/protocol/exceptions.hpp>
 #include <steem/protocol/operations.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 class database;
 
-template< typename OperationType=steem::protocol::operation >
+template< typename OperationType=hive::protocol::operation >
 class evaluator
 {
    public:
@@ -17,7 +17,7 @@ class evaluator
       virtual std::string get_name( const OperationType& op ) = 0;
 };
 
-template< typename EvaluatorType, typename OperationType=steem::protocol::operation >
+template< typename EvaluatorType, typename OperationType=hive::protocol::operation >
 class evaluator_impl : public evaluator<OperationType>
 {
    public:
@@ -54,39 +54,39 @@ class evaluator_impl : public evaluator<OperationType>
 } }
 
 #define STEEM_DEFINE_EVALUATOR( X ) \
-class X ## _evaluator : public steem::chain::evaluator_impl< X ## _evaluator > \
+class X ## _evaluator : public hive::chain::evaluator_impl< X ## _evaluator > \
 {                                                                           \
    public:                                                                  \
       typedef X ## _operation operation_type;                               \
                                                                             \
       X ## _evaluator( database& db )                                       \
-         : steem::chain::evaluator_impl< X ## _evaluator >( db )          \
+         : hive::chain::evaluator_impl< X ## _evaluator >( db )          \
       {}                                                                    \
                                                                             \
       void do_apply( const X ## _operation& o );                            \
 };
 
 #define STEEM_DEFINE_ACTION_EVALUATOR( X, ACTION )                               \
-class X ## _evaluator : public steem::chain::evaluator_impl< X ## _evaluator, ACTION > \
+class X ## _evaluator : public hive::chain::evaluator_impl< X ## _evaluator, ACTION > \
 {                                                                                \
    public:                                                                       \
       typedef X ## _action operation_type;                                       \
                                                                                  \
       X ## _evaluator( database& db )                                            \
-         : steem::chain::evaluator_impl< X ## _evaluator, ACTION >( db )        \
+         : hive::chain::evaluator_impl< X ## _evaluator, ACTION >( db )        \
       {}                                                                         \
                                                                                  \
       void do_apply( const X ## _action& o );                                    \
 };
 
 #define STEEM_DEFINE_PLUGIN_EVALUATOR( PLUGIN, OPERATION, X )               \
-class X ## _evaluator : public steem::chain::evaluator_impl< X ## _evaluator, OPERATION > \
+class X ## _evaluator : public hive::chain::evaluator_impl< X ## _evaluator, OPERATION > \
 {                                                                           \
    public:                                                                  \
       typedef X ## _operation operation_type;                               \
                                                                             \
-      X ## _evaluator( steem::chain::database& db, PLUGIN* plugin )       \
-         : steem::chain::evaluator_impl< X ## _evaluator, OPERATION >( db ), \
+      X ## _evaluator( hive::chain::database& db, PLUGIN* plugin )       \
+         : hive::chain::evaluator_impl< X ## _evaluator, OPERATION >( db ), \
            _plugin( plugin )                                                \
       {}                                                                    \
                                                                             \

@@ -14,7 +14,7 @@
 
 #define WITNESS_CUSTOM_OP_BLOCK_LIMIT 5
 
-namespace steem { namespace plugins { namespace witness {
+namespace hive { namespace plugins { namespace witness {
 
 namespace detail { class witness_plugin_impl; }
 
@@ -39,9 +39,9 @@ class witness_plugin : public appbase::plugin< witness_plugin >
 {
 public:
    APPBASE_PLUGIN_REQUIRES(
-      (steem::plugins::chain::chain_plugin)
-      (steem::plugins::p2p::p2p_plugin)
-      (steem::plugins::rc::rc_plugin)
+      (hive::plugins::chain::chain_plugin)
+      (hive::plugins::p2p::p2p_plugin)
+      (hive::plugins::rc::rc_plugin)
    )
 
    witness_plugin();
@@ -62,4 +62,4 @@ private:
    std::unique_ptr< detail::witness_plugin_impl > my;
 };
 
-} } } // steem::plugins::witness
+} } } // hive::plugins::witness

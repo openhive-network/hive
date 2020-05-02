@@ -2,7 +2,7 @@
 #include <steem/protocol/types.hpp>
 #include <steem/protocol/base.hpp>
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
 #ifdef IS_TEST_NET
    struct example_required_action : public base_operation
@@ -16,8 +16,8 @@ namespace steem { namespace protocol {
    };
 #endif
 
-} } // steem::protocol
+} } // hive::protocol
 
 #ifdef IS_TEST_NET
-FC_REFLECT( steem::protocol::example_required_action, (account) )
+FC_REFLECT( hive::protocol::example_required_action, (account) )
 #endif

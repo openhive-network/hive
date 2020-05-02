@@ -6,7 +6,7 @@
 
 #include <steem/protocol/types.hpp>
 
-namespace steem { namespace schema { namespace detail {
+namespace hive { namespace schema { namespace detail {
 
 //////////////////////////////////////////////
 // account_name_type                        //
@@ -21,7 +21,7 @@ struct schema_account_name_type_impl
 }
 
 template<>
-struct schema_reflect< steem::protocol::account_name_type >
+struct schema_reflect< hive::protocol::account_name_type >
 {
    typedef detail::schema_account_name_type_impl           schema_impl_type;
 };
@@ -31,11 +31,11 @@ struct schema_reflect< steem::protocol::account_name_type >
 namespace fc {
 
 template<>
-struct get_typename< steem::protocol::account_name_type >
+struct get_typename< hive::protocol::account_name_type >
 {
    static const char* name()
    {
-      return "steem::protocol::account_name_type";
+      return "hive::protocol::account_name_type";
    }
 };
 

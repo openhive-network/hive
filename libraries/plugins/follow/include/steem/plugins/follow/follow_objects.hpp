@@ -3,10 +3,10 @@
 
 #include <boost/multi_index/composite_key.hpp>
 
-namespace steem { namespace plugins { namespace follow {
+namespace hive { namespace plugins { namespace follow {
 
 using namespace std;
-using namespace steem::chain;
+using namespace hive::chain;
 
 using chainbase::t_vector;
 
@@ -285,36 +285,36 @@ typedef multi_index_container<
    allocator< follow_count_object >
 > follow_count_index;
 
-} } } // steem::plugins::follow
+} } } // hive::plugins::follow
 
-FC_REFLECT_ENUM( steem::plugins::follow::follow_type, (undefined)(blog)(ignore) )
+FC_REFLECT_ENUM( hive::plugins::follow::follow_type, (undefined)(blog)(ignore) )
 
-FC_REFLECT( steem::plugins::follow::follow_object, (id)(follower)(following)(what) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::follow::follow_object, steem::plugins::follow::follow_index )
+FC_REFLECT( hive::plugins::follow::follow_object, (id)(follower)(following)(what) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::follow::follow_object, hive::plugins::follow::follow_index )
 
-FC_REFLECT( steem::plugins::follow::feed_object, (id)(account)(first_reblogged_by)(first_reblogged_on)(reblogged_by)(comment)(account_feed_id) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::follow::feed_object, steem::plugins::follow::feed_index )
+FC_REFLECT( hive::plugins::follow::feed_object, (id)(account)(first_reblogged_by)(first_reblogged_on)(reblogged_by)(comment)(account_feed_id) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::follow::feed_object, hive::plugins::follow::feed_index )
 
-FC_REFLECT( steem::plugins::follow::blog_object, (id)(account)(comment)(reblogged_on)(blog_feed_id) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::follow::blog_object, steem::plugins::follow::blog_index )
+FC_REFLECT( hive::plugins::follow::blog_object, (id)(account)(comment)(reblogged_on)(blog_feed_id) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::follow::blog_object, hive::plugins::follow::blog_index )
 
-FC_REFLECT( steem::plugins::follow::reputation_object, (id)(account)(reputation) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::follow::reputation_object, steem::plugins::follow::reputation_index )
+FC_REFLECT( hive::plugins::follow::reputation_object, (id)(account)(reputation) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::follow::reputation_object, hive::plugins::follow::reputation_index )
 
-FC_REFLECT( steem::plugins::follow::follow_count_object, (id)(account)(follower_count)(following_count) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::follow::follow_count_object, steem::plugins::follow::follow_count_index )
+FC_REFLECT( hive::plugins::follow::follow_count_object, (id)(account)(follower_count)(following_count) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::follow::follow_count_object, hive::plugins::follow::follow_count_index )
 
-FC_REFLECT( steem::plugins::follow::blog_author_stats_object, (id)(blogger)(guest)(count) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::follow::blog_author_stats_object, steem::plugins::follow::blog_author_stats_index );
+FC_REFLECT( hive::plugins::follow::blog_author_stats_object, (id)(blogger)(guest)(count) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::follow::blog_author_stats_object, hive::plugins::follow::blog_author_stats_index );
 
 namespace helpers
 {
    template <>
-   class index_statistic_provider<steem::plugins::follow::feed_index>
+   class index_statistic_provider<hive::plugins::follow::feed_index>
    {
    public:
-      typedef steem::plugins::follow::feed_index IndexType;
-      typedef typename steem::plugins::follow::feed_object::t_reblogged_by_container t_reblogged_by_container;
+      typedef hive::plugins::follow::feed_index IndexType;
+      typedef typename hive::plugins::follow::feed_object::t_reblogged_by_container t_reblogged_by_container;
 
       index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
       {

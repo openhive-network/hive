@@ -5,11 +5,11 @@
 #include <chainbase/chainbase.hpp>
 #include <boost/interprocess/managed_mapped_file.hpp>
 
-namespace steem { namespace chain {
-   using steem::protocol::authority;
-   using steem::protocol::public_key_type;
-   using steem::protocol::account_name_type;
-   using steem::protocol::weight_type;
+namespace hive { namespace chain {
+   using hive::protocol::authority;
+   using hive::protocol::public_key_type;
+   using hive::protocol::account_name_type;
+   using hive::protocol::weight_type;
 
    using chainbase::t_flat_map;
    using chainbase::t_allocator_pair;
@@ -99,7 +99,7 @@ namespace steem { namespace chain {
    bool operator == ( const authority& a, const shared_authority& b );
    bool operator == ( const shared_authority& a, const authority& b );
 
-} } //steem::chain
+} } //hive::chain
 
-FC_REFLECT_TYPENAME( steem::chain::shared_authority::account_authority_map)
-FC_REFLECT( steem::chain::shared_authority, (weight_threshold)(account_auths)(key_auths) )
+FC_REFLECT_TYPENAME( hive::chain::shared_authority::account_authority_map)
+FC_REFLECT( hive::chain::shared_authority, (weight_threshold)(account_auths)(key_auths) )

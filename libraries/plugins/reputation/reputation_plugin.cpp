@@ -18,9 +18,9 @@
 
 #include <memory>
 
-namespace steem { namespace plugins { namespace reputation {
+namespace hive { namespace plugins { namespace reputation {
 
-using namespace steem::protocol;
+using namespace hive::protocol;
 
 namespace detail {
 
@@ -28,7 +28,7 @@ class reputation_plugin_impl
 {
    public:
       reputation_plugin_impl( reputation_plugin& _plugin ) :
-         _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ),
+         _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
          _self( _plugin ) {}
       ~reputation_plugin_impl() {}
 
@@ -220,4 +220,4 @@ void reputation_plugin::plugin_shutdown()
    chain::util::disconnect_signal( my->_post_apply_operation_conn );
 }
 
-} } } // steem::plugins::reputation
+} } } // hive::plugins::reputation

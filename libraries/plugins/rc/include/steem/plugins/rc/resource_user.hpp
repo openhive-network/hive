@@ -4,15 +4,15 @@
 
 #include <fc/reflect/reflect.hpp>
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 struct signed_transaction;
-} } // steem::protocol
+} } // hive::protocol
 
-namespace steem { namespace plugins { namespace rc {
+namespace hive { namespace plugins { namespace rc {
 
-using steem::protocol::account_name_type;
-using steem::protocol::signed_transaction;
+using hive::protocol::account_name_type;
+using hive::protocol::signed_transaction;
 
 account_name_type get_resource_user( const signed_transaction& tx );
 
-} } } // steem::plugins::rc
+} } } // hive::plugins::rc

@@ -5,10 +5,10 @@
 
 #include <fc/crypto/restartable_sha256.hpp>
 
-namespace steem { namespace plugins { namespace block_log_info {
+namespace hive { namespace plugins { namespace block_log_info {
 
 using namespace std;
-using namespace steem::chain;
+using namespace hive::chain;
 
 #ifndef STEEM_BLOCK_LOG_INFO_SPACE_ID
 #define STEEM_BLOCK_LOG_INFO_SPACE_ID 14
@@ -81,13 +81,13 @@ typedef multi_index_container<
    allocator< block_log_pending_message_object >
 > block_log_pending_message_index;
 
-} } } // steem::plugins::block_log_info
+} } } // hive::plugins::block_log_info
 
 
-FC_REFLECT( steem::plugins::block_log_info::block_log_hash_state_object, (id)(total_size)(rsha256)(last_interval) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::block_log_info::block_log_hash_state_object, steem::plugins::block_log_info::block_log_hash_state_index )
+FC_REFLECT( hive::plugins::block_log_info::block_log_hash_state_object, (id)(total_size)(rsha256)(last_interval) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::block_log_info::block_log_hash_state_object, hive::plugins::block_log_info::block_log_hash_state_index )
 
-FC_REFLECT( steem::plugins::block_log_info::block_log_message_data, (block_num)(total_size)(current_interval)(rsha256) )
+FC_REFLECT( hive::plugins::block_log_info::block_log_message_data, (block_num)(total_size)(current_interval)(rsha256) )
 
-FC_REFLECT( steem::plugins::block_log_info::block_log_pending_message_object, (id)(data) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::block_log_info::block_log_pending_message_object, steem::plugins::block_log_info::block_log_pending_message_index )
+FC_REFLECT( hive::plugins::block_log_info::block_log_pending_message_object, (id)(data) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::block_log_info::block_log_pending_message_object, hive::plugins::block_log_info::block_log_pending_message_index )

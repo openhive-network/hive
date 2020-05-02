@@ -9,7 +9,7 @@
 #define LOG_READ  (std::ios::in | std::ios::binary)
 #define LOG_WRITE (std::ios::out | std::ios::binary | std::ios::app)
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
    typedef boost::interprocess::scoped_lock< boost::mutex > scoped_lock;
 
@@ -442,4 +442,4 @@ namespace steem { namespace chain {
    {
       my->use_locking = true;
    }
-} } // steem::chain
+} } // hive::chain

@@ -20,7 +20,7 @@
 #define STEEM_ACCOUNT_STATISTICS_PLUGIN_NAME "account_stats"
 #endif
 
-namespace steem { namespace account_statistics {
+namespace hive { namespace account_statistics {
 
 using namespace chain;
 using app::application;
@@ -135,7 +135,7 @@ namespace detail
    class account_statistics_plugin_impl;
 }
 
-class account_statistics_plugin : public steem::app::plugin
+class account_statistics_plugin : public hive::app::plugin
 {
    public:
       account_statistics_plugin( application* app );
@@ -157,9 +157,9 @@ class account_statistics_plugin : public steem::app::plugin
       std::unique_ptr< detail::account_statistics_plugin_impl > _my;
 };
 
-} } // steem::account_statistics
+} } // hive::account_statistics
 
-FC_REFLECT( steem::account_statistics::account_stats_bucket_object,
+FC_REFLECT( hive::account_statistics::account_stats_bucket_object,
    (id)
    (open)
    (seconds)
@@ -224,10 +224,10 @@ FC_REFLECT( steem::account_statistics::account_stats_bucket_object,
    (total_pow)
    (estimated_hashpower)
 )
-//SET_INDEX_TYPE( steem::account_statistics::account_stats_bucket_object,)
+//SET_INDEX_TYPE( hive::account_statistics::account_stats_bucket_object,)
 
 FC_REFLECT(
-   steem::account_statistics::account_activity_bucket_object,
+   hive::account_statistics::account_activity_bucket_object,
    (id)
    (open)
    (seconds)

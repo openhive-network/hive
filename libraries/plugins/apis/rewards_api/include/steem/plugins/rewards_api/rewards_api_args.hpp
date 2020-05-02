@@ -5,7 +5,7 @@
 #include <steem/protocol/asset.hpp>
 #include <steem/plugins/json_rpc/utility.hpp>
 
-namespace steem { namespace plugins { namespace rewards_api {
+namespace hive { namespace plugins { namespace rewards_api {
 
 struct simulate_curve_payouts_element {
    protocol::account_name_type  author;
@@ -26,8 +26,8 @@ struct simulate_curve_payouts_return
 };
 
 
-} } } // steem::plugins::rewards_api
+} } } // hive::plugins::rewards_api
 
-FC_REFLECT( steem::plugins::rewards_api::simulate_curve_payouts_element, (author)(permlink)(payout) )
-FC_REFLECT( steem::plugins::rewards_api::simulate_curve_payouts_args, (curve)(var1) )
-FC_REFLECT( steem::plugins::rewards_api::simulate_curve_payouts_return, (recent_claims)(payouts) )
+FC_REFLECT( hive::plugins::rewards_api::simulate_curve_payouts_element, (author)(permlink)(payout) )
+FC_REFLECT( hive::plugins::rewards_api::simulate_curve_payouts_args, (curve)(var1) )
+FC_REFLECT( hive::plugins::rewards_api::simulate_curve_payouts_return, (recent_claims)(payouts) )

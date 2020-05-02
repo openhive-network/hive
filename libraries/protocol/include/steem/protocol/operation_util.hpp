@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
 struct get_required_auth_visitor
 {
@@ -44,7 +44,7 @@ struct get_required_auth_visitor
    }
 };
 
-} } // steem::protocol
+} } // hive::protocol
 
 //
 // Place STEEM_DECLARE_OPERATION_TYPE in a .hpp file to declare
@@ -52,7 +52,7 @@ struct get_required_auth_visitor
 //
 #define STEEM_DECLARE_OPERATION_TYPE( OperationType )                            \
                                                                                  \
-namespace steem { namespace protocol {                                           \
+namespace hive { namespace protocol {                                           \
                                                                                  \
 void operation_validate( const OperationType& o );                               \
 void operation_get_required_authorities( const OperationType& op,                \
@@ -61,4 +61,4 @@ void operation_get_required_authorities( const OperationType& op,               
                                          flat_set< account_name_type >& posting, \
                                          vector< authority >& other );           \
                                                                                  \
-} } /* steem::protocol */
+} } /* hive::protocol */

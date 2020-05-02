@@ -5,7 +5,7 @@
 
 #include <boost/container/flat_set.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 using boost::container::flat_set;
 
@@ -97,4 +97,4 @@ class sps_helper
       static void remove_proposals( database& db, const flat_set<int64_t>& proposal_ids, const account_name_type& proposal_owner );
 };
 
-} } // steem::chain
+} } // hive::chain

@@ -1,9 +1,9 @@
 #pragma once
 #include <steem/chain/steem_object_types.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
-   using steem::protocol::block_id_type;
+   using hive::protocol::block_id_type;
 
    /**
     *  @brief tracks minimal information about past blocks to implement TaPOS
@@ -38,15 +38,15 @@ namespace steem { namespace chain {
       allocator< block_summary_object >
    > block_summary_index;
 
-} } // steem::chain
+} } // hive::chain
 
 #ifdef ENABLE_MIRA
 namespace mira {
 
-template<> struct is_static_length< steem::chain::block_summary_object > : public boost::true_type {};
+template<> struct is_static_length< hive::chain::block_summary_object > : public boost::true_type {};
 
 } // mira
 #endif
 
-FC_REFLECT( steem::chain::block_summary_object, (id)(block_id) )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::block_summary_object, steem::chain::block_summary_index )
+FC_REFLECT( hive::chain::block_summary_object, (id)(block_id) )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::block_summary_object, hive::chain::block_summary_index )

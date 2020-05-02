@@ -6,13 +6,13 @@
 #define STEEM_WITNESS_SPACE_ID 19
 #endif
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 struct by_account;
 } }
 
-namespace steem { namespace plugins { namespace witness {
+namespace hive { namespace plugins { namespace witness {
 
-using namespace steem::chain;
+using namespace hive::chain;
 
 enum witness_object_types
 {
@@ -46,9 +46,9 @@ typedef multi_index_container<
 
 } } }
 
-FC_REFLECT( steem::plugins::witness::witness_custom_op_object,
+FC_REFLECT( hive::plugins::witness::witness_custom_op_object,
    (id)
    (account)
    (count)
    )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::witness::witness_custom_op_object, steem::plugins::witness::witness_custom_op_index )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::witness::witness_custom_op_object, hive::plugins::witness::witness_custom_op_index )

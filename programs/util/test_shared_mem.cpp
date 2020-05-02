@@ -61,7 +61,7 @@ struct book
      template<typename Constructor, typename Allocator>
      book( Constructor&& c, const Allocator& al )
      :name(al),author(al),pages(0),prize(0),
-     auth( allocator<steem::chain::shared_authority >( al )),
+     auth( allocator<hive::chain::shared_authority >( al )),
      deq( allocator<shared_string>( al ) )
      {
         c( *this );
@@ -71,12 +71,12 @@ struct book
      shared_string author;
      int32_t                          pages;
      int32_t                          prize;
-     steem::chain::shared_authority auth;
+     hive::chain::shared_authority auth;
      t_deque< shared_string > deq;
 
      book(const shared_string::allocator_type& al):
      name(al),author(al),pages(0),prize(0),
-     auth( allocator<steem::chain::shared_authority >( al )),
+     auth( allocator<hive::chain::shared_authority >( al )),
      deq( allocator<shared_string>( al ) )
      {}
 
@@ -137,7 +137,7 @@ int main(int argc, char** argv, char** envp)
    }
 
    //b.pages = pbc->size();
-   //b.auth = steem::chain::authority( 1, "dan", pbc->size() );
+   //b.auth = hive::chain::authority( 1, "dan", pbc->size() );
 #ifndef ENABLE_MIRA
    pbc->emplace( [&]( book& b ) {
                  b.name = "emplace name";

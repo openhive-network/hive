@@ -6,8 +6,8 @@ int main( int argc, char** argv, char** envp )
 {
    try
    {
-      //steem::chain::database db;
-      steem::chain::block_log log;
+      //hive::chain::database db;
+      hive::chain::block_log log;
 
       fc::temp_directory temp_dir( "." );
 
@@ -16,9 +16,9 @@ int main( int argc, char** argv, char** envp )
 
       idump( (log.head() ) );
 
-      steem::protocol::signed_block b1;
+      hive::protocol::signed_block b1;
       b1.witness = "alice";
-      b1.previous = steem::protocol::block_id_type();
+      b1.previous = hive::protocol::block_id_type();
 
       log.append( b1 );
       log.flush();
@@ -26,7 +26,7 @@ int main( int argc, char** argv, char** envp )
       idump( ( log.head() ) );
       idump( (fc::raw::pack_size(b1)) );
 
-      steem::protocol::signed_block b2;
+      hive::protocol::signed_block b2;
       b2.witness = "bob";
       b2.previous = b1.id();
 

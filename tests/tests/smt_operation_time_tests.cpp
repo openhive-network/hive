@@ -1,5 +1,5 @@
 
-#if defined IS_TEST_NET && defined STEEM_ENABLE_SMT
+#if defined IS_TEST_NET && defined HIVE_ENABLE_SMT
 
 #include <boost/test/unit_test.hpp>
 
@@ -23,9 +23,9 @@
 
 #include <cmath>
 
-using namespace steem;
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive;
+using namespace hive::chain;
+using namespace hive::protocol;
 
 BOOST_FIXTURE_TEST_SUITE( smt_operation_time_tests, smt_database_fixture )
 

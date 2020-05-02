@@ -3,14 +3,14 @@
 
 #include <steem/plugins/reputation/reputation_objects.hpp>
 
-namespace steem { namespace plugins { namespace reputation {
+namespace hive { namespace plugins { namespace reputation {
 
 namespace detail {
 
 class reputation_api_impl
 {
    public:
-      reputation_api_impl() : _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ) {}
+      reputation_api_impl() : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
       DECLARE_API_IMPL(
          (get_account_reputations)
@@ -59,4 +59,4 @@ DEFINE_READ_APIS( reputation_api,
    (get_account_reputations)
 )
 
-} } } // steem::plugins::reputation
+} } } // hive::plugins::reputation

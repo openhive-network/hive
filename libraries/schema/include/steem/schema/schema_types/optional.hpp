@@ -8,7 +8,7 @@
 
 #include <utility>
 
-namespace steem { namespace schema { namespace detail {
+namespace hive { namespace schema { namespace detail {
 
 //////////////////////////////////////////////
 // optional                                 //

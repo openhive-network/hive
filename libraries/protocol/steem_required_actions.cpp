@@ -1,7 +1,7 @@
 #include <steem/protocol/validation.hpp>
 #include <steem/protocol/steem_required_actions.hpp>
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
 #ifdef IS_TEST_NET
 void example_required_action::validate()const
@@ -15,4 +15,4 @@ bool operator==( const example_required_action& lhs, const example_required_acti
 }
 #endif
 
-} } //steem::protocol
+} } //hive::protocol

@@ -9,7 +9,7 @@
 #include <fc/variant.hpp>
 #include <fc/vector.hpp>
 
-namespace steem { namespace plugins { namespace debug_node {
+namespace hive { namespace plugins { namespace debug_node {
 
 using json_rpc::void_type;
 
@@ -109,25 +109,25 @@ class debug_node_api
       std::unique_ptr< detail::debug_node_api_impl > my;
 };
 
-} } } // steem::plugins::debug_node
+} } } // hive::plugins::debug_node
 
-FC_REFLECT( steem::plugins::debug_node::debug_push_blocks_args,
+FC_REFLECT( hive::plugins::debug_node::debug_push_blocks_args,
             (src_filename)(count)(skip_validate_invariants) )
 
-FC_REFLECT( steem::plugins::debug_node::debug_push_blocks_return,
+FC_REFLECT( hive::plugins::debug_node::debug_push_blocks_return,
             (blocks) )
 
-FC_REFLECT( steem::plugins::debug_node::debug_generate_blocks_until_args,
+FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_until_args,
             (debug_key)(head_block_time)(generate_sparsely) )
 
-FC_REFLECT( steem::plugins::debug_node::debug_pop_block_return,
+FC_REFLECT( hive::plugins::debug_node::debug_pop_block_return,
             (block) )
 
-FC_REFLECT( steem::plugins::debug_node::debug_set_hardfork_args,
+FC_REFLECT( hive::plugins::debug_node::debug_set_hardfork_args,
             (hardfork_id) )
 
-FC_REFLECT( steem::plugins::debug_node::debug_has_hardfork_return,
+FC_REFLECT( hive::plugins::debug_node::debug_has_hardfork_return,
             (has_hardfork) )
 
-FC_REFLECT( steem::plugins::debug_node::debug_get_json_schema_return,
+FC_REFLECT( hive::plugins::debug_node::debug_get_json_schema_return,
             (schema) )

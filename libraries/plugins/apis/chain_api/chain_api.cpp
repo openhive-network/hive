@@ -1,7 +1,7 @@
 #include <steem/plugins/chain_api/chain_api_plugin.hpp>
 #include <steem/plugins/chain_api/chain_api.hpp>
 
-namespace steem { namespace plugins { namespace chain {
+namespace hive { namespace plugins { namespace chain {
 
 namespace detail {
 
@@ -86,4 +86,4 @@ DEFINE_LOCKLESS_APIS( chain_api,
    (push_transaction)
 )
 
-} } } //steem::plugins::chain
+} } } //hive::plugins::chain

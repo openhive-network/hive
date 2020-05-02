@@ -25,7 +25,7 @@
 #include <memory>
 #include <iostream>
 
-namespace steem { namespace plugins { namespace webserver {
+namespace hive { namespace plugins { namespace webserver {
 
 namespace asio = boost::asio;
 
@@ -506,4 +506,4 @@ void webserver_plugin::plugin_shutdown()
    my->stop_webserver();
 }
 
-} } } // steem::plugins::webserver
+} } } // hive::plugins::webserver

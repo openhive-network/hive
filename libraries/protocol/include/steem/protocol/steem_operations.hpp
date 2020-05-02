@@ -7,7 +7,7 @@
 
 #include <fc/crypto/equihash.hpp>
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
    void validate_auth_size( const authority& a );
 
@@ -123,7 +123,7 @@ namespace steem { namespace protocol {
       void validate()const;
    };
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
    struct votable_asset_info_v1
    {
       votable_asset_info_v1() = default;
@@ -186,19 +186,19 @@ namespace steem { namespace protocol {
       void validate() const
       {
          FC_ASSERT(votable_assets.size() <= SMT_MAX_VOTABLE_ASSETS, "Too much votable assets specified");
-         FC_ASSERT(is_allowed(STEEM_SYMBOL) == false,
+         FC_ASSERT(is_allowed(HIVE_SYMBOL) == false,
             "HIVE can not be explicitly specified as one of allowed_vote_assets");
       }
 
       flat_map< asset_symbol_type, votable_asset_info > votable_assets;
    };
-#endif /// STEEM_ENABLE_SMT
+#endif /// HIVE_ENABLE_SMT
 
    typedef static_variant<
             comment_payout_beneficiaries
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
             ,allowed_vote_assets
-#endif /// STEEM_ENABLE_SMT
+#endif /// HIVE_ENABLE_SMT
            > comment_options_extension;
 
    typedef flat_set< comment_options_extension > comment_options_extensions_type;
@@ -216,8 +216,8 @@ namespace steem { namespace protocol {
       account_name_type author;
       string            permlink;
 
-      asset             max_accepted_payout    = asset( 1000000000, SBD_SYMBOL );       /// SBD value of the maximum payout this post will receive
-      uint16_t          percent_steem_dollars  = STEEM_100_PERCENT; /// the percent of Steem Dollars to key, unkept amounts will be received as Steem Power
+      asset             max_accepted_payout    = asset( 1000000000, HBD_SYMBOL );       /// SBD value of the maximum payout this post will receive
+      uint16_t          percent_steem_dollars  = HIVE_100_PERCENT; /// the percent of Steem Dollars to key, unkept amounts will be received as Steem Power
       bool              allow_votes            = true;      /// allows a post to receive votes;
       bool              allow_curation_rewards = true; /// allows voters to recieve curation rewards. Rewards return to reward fund.
       comment_options_extensions_type extensions;
@@ -323,8 +323,8 @@ namespace steem { namespace protocol {
       account_name_type agent;
       uint32_t          escrow_id = 30;
 
-      asset             sbd_amount = asset( 0, SBD_SYMBOL );
-      asset             steem_amount = asset( 0, STEEM_SYMBOL );
+      asset             sbd_amount = asset( 0, HBD_SYMBOL );
+      asset             steem_amount = asset( 0, HIVE_SYMBOL );
       asset             fee;
 
       time_point_sec    ratification_deadline;
@@ -395,8 +395,8 @@ namespace steem { namespace protocol {
       account_name_type receiver; ///< the account that should receive funds (might be from, might be to)
 
       uint32_t          escrow_id = 30;
-      asset             sbd_amount = asset( 0, SBD_SYMBOL ); ///< the amount of sbd to release
-      asset             steem_amount = asset( 0, STEEM_SYMBOL ); ///< the amount of steem to release
+      asset             sbd_amount = asset( 0, HBD_SYMBOL ); ///< the amount of sbd to release
+      asset             steem_amount = asset( 0, HIVE_SYMBOL ); ///< the amount of steem to release
 
       void validate()const;
       void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(who); }
@@ -472,14 +472,14 @@ namespace steem { namespace protocol {
        *  fee requires all accounts to have some kind of commitment to the network that includes the
        *  ability to vote and make transactions.
        */
-      legacy_steem_asset account_creation_fee = legacy_steem_asset::from_amount( STEEM_MIN_ACCOUNT_CREATION_FEE );
+      legacy_steem_asset account_creation_fee = legacy_steem_asset::from_amount( HIVE_MIN_ACCOUNT_CREATION_FEE );
 
       /**
        *  This witnesses vote for the maximum_block_size which is used by the network
        *  to tune rate limiting and capacity
        */
-      uint32_t          maximum_block_size = STEEM_MIN_BLOCK_SIZE_LIMIT * 2;
-      uint16_t          sbd_interest_rate  = STEEM_DEFAULT_SBD_INTEREST_RATE;
+      uint32_t          maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
+      uint16_t          sbd_interest_rate  = HIVE_DEFAULT_HBD_INTEREST_RATE;
 
       template< bool force_canon >
       void validate()const
@@ -488,10 +488,10 @@ namespace steem { namespace protocol {
          {
             FC_ASSERT( account_creation_fee.symbol.is_canon() );
          }
-         FC_ASSERT( account_creation_fee.amount >= STEEM_MIN_ACCOUNT_CREATION_FEE);
-         FC_ASSERT( maximum_block_size >= STEEM_MIN_BLOCK_SIZE_LIMIT);
+         FC_ASSERT( account_creation_fee.amount >= HIVE_MIN_ACCOUNT_CREATION_FEE);
+         FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT);
          FC_ASSERT( sbd_interest_rate >= 0 );
-         FC_ASSERT( sbd_interest_rate <= STEEM_100_PERCENT );
+         FC_ASSERT( sbd_interest_rate <= HIVE_100_PERCENT );
       }
    };
 
@@ -540,7 +540,7 @@ namespace steem { namespace protocol {
             a.push_back( authority( 1, signing_key, 1 ) );
          }
          else
-            a.push_back( authority( 1, STEEM_NULL_ACCOUNT, 1 ) ); // The null account auth is impossible to satisfy
+            a.push_back( authority( 1, HIVE_NULL_ACCOUNT, 1 ) ); // The null account auth is impossible to satisfy
       }
    };
 
@@ -637,7 +637,7 @@ namespace steem { namespace protocol {
 
    /**
     *  This operation instructs the blockchain to start a conversion between STEEM and SBD,
-    *  The funds are deposited after STEEM_CONVERSION_DELAY
+    *  The funds are deposited after HIVE_CONVERSION_DELAY
     */
    struct convert_operation : public base_operation
    {
@@ -799,7 +799,7 @@ namespace steem { namespace protocol {
    /**
     * This operation is used to report a miner who signs two blocks
     * at the same time. To be valid, the violation must be reported within
-    * STEEM_MAX_WITNESSES blocks of the head block (1 round) and the
+    * HIVE_MAX_WITNESSES blocks of the head block (1 round) and the
     * producer must be in the ACTIVE witness set.
     *
     * Users not in the ACTIVE witness set should not have to worry about their
@@ -1037,7 +1037,7 @@ namespace steem { namespace protocol {
       void validate() const;
    };
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
    /** Differs with original operation with extensions field and a container of tokens that will
     *  be rewarded to an account. See discussion in issue #1859
     */
@@ -1074,35 +1074,35 @@ namespace steem { namespace protocol {
       void get_required_active_authorities( flat_set< account_name_type >& a ) const { a.insert( delegator ); }
       void validate() const;
    };
-} } // steem::protocol
+} } // hive::protocol
 
 
-FC_REFLECT( steem::protocol::transfer_to_savings_operation, (from)(to)(amount)(memo) )
-FC_REFLECT( steem::protocol::transfer_from_savings_operation, (from)(request_id)(to)(amount)(memo) )
-FC_REFLECT( steem::protocol::cancel_transfer_from_savings_operation, (from)(request_id) )
+FC_REFLECT( hive::protocol::transfer_to_savings_operation, (from)(to)(amount)(memo) )
+FC_REFLECT( hive::protocol::transfer_from_savings_operation, (from)(request_id)(to)(amount)(memo) )
+FC_REFLECT( hive::protocol::cancel_transfer_from_savings_operation, (from)(request_id) )
 
-FC_REFLECT( steem::protocol::reset_account_operation, (reset_account)(account_to_reset)(new_owner_authority) )
-FC_REFLECT( steem::protocol::set_reset_account_operation, (account)(current_reset_account)(reset_account) )
+FC_REFLECT( hive::protocol::reset_account_operation, (reset_account)(account_to_reset)(new_owner_authority) )
+FC_REFLECT( hive::protocol::set_reset_account_operation, (account)(current_reset_account)(reset_account) )
 
 
-FC_REFLECT( steem::protocol::report_over_production_operation, (reporter)(first_block)(second_block) )
-FC_REFLECT( steem::protocol::convert_operation, (owner)(requestid)(amount) )
-FC_REFLECT( steem::protocol::feed_publish_operation, (publisher)(exchange_rate) )
-FC_REFLECT( steem::protocol::pow, (worker)(input)(signature)(work) )
-FC_REFLECT( steem::protocol::pow2, (input)(pow_summary) )
-FC_REFLECT( steem::protocol::pow2_input, (worker_account)(prev_block)(nonce) )
-FC_REFLECT( steem::protocol::equihash_pow, (input)(proof)(prev_block)(pow_summary) )
-FC_REFLECT( steem::protocol::legacy_chain_properties,
+FC_REFLECT( hive::protocol::report_over_production_operation, (reporter)(first_block)(second_block) )
+FC_REFLECT( hive::protocol::convert_operation, (owner)(requestid)(amount) )
+FC_REFLECT( hive::protocol::feed_publish_operation, (publisher)(exchange_rate) )
+FC_REFLECT( hive::protocol::pow, (worker)(input)(signature)(work) )
+FC_REFLECT( hive::protocol::pow2, (input)(pow_summary) )
+FC_REFLECT( hive::protocol::pow2_input, (worker_account)(prev_block)(nonce) )
+FC_REFLECT( hive::protocol::equihash_pow, (input)(proof)(prev_block)(pow_summary) )
+FC_REFLECT( hive::protocol::legacy_chain_properties,
             (account_creation_fee)
             (maximum_block_size)
             (sbd_interest_rate)
           )
 
-FC_REFLECT_TYPENAME( steem::protocol::pow2_work )
-FC_REFLECT( steem::protocol::pow_operation, (worker_account)(block_id)(nonce)(work)(props) )
-FC_REFLECT( steem::protocol::pow2_operation, (work)(new_owner_key)(props) )
+FC_REFLECT_TYPENAME( hive::protocol::pow2_work )
+FC_REFLECT( hive::protocol::pow_operation, (worker_account)(block_id)(nonce)(work)(props) )
+FC_REFLECT( hive::protocol::pow2_operation, (work)(new_owner_key)(props) )
 
-FC_REFLECT( steem::protocol::account_create_operation,
+FC_REFLECT( hive::protocol::account_create_operation,
             (fee)
             (creator)
             (new_account_name)
@@ -1112,7 +1112,7 @@ FC_REFLECT( steem::protocol::account_create_operation,
             (memo_key)
             (json_metadata) )
 
-FC_REFLECT( steem::protocol::account_create_with_delegation_operation,
+FC_REFLECT( hive::protocol::account_create_with_delegation_operation,
             (fee)
             (delegation)
             (creator)
@@ -1124,7 +1124,7 @@ FC_REFLECT( steem::protocol::account_create_with_delegation_operation,
             (json_metadata)
             (extensions) )
 
-FC_REFLECT( steem::protocol::account_update_operation,
+FC_REFLECT( hive::protocol::account_update_operation,
             (account)
             (owner)
             (active)
@@ -1132,7 +1132,7 @@ FC_REFLECT( steem::protocol::account_update_operation,
             (memo_key)
             (json_metadata) )
 
-FC_REFLECT( steem::protocol::account_update2_operation,
+FC_REFLECT( hive::protocol::account_update2_operation,
             (account)
             (owner)
             (active)
@@ -1142,48 +1142,48 @@ FC_REFLECT( steem::protocol::account_update2_operation,
             (posting_json_metadata)
             (extensions) )
 
-FC_REFLECT( steem::protocol::transfer_operation, (from)(to)(amount)(memo) )
-FC_REFLECT( steem::protocol::transfer_to_vesting_operation, (from)(to)(amount) )
-FC_REFLECT( steem::protocol::withdraw_vesting_operation, (account)(vesting_shares) )
-FC_REFLECT( steem::protocol::set_withdraw_vesting_route_operation, (from_account)(to_account)(percent)(auto_vest) )
-FC_REFLECT( steem::protocol::witness_update_operation, (owner)(url)(block_signing_key)(props)(fee) )
-FC_REFLECT( steem::protocol::witness_set_properties_operation, (owner)(props)(extensions) )
-FC_REFLECT( steem::protocol::account_witness_vote_operation, (account)(witness)(approve) )
-FC_REFLECT( steem::protocol::account_witness_proxy_operation, (account)(proxy) )
-FC_REFLECT( steem::protocol::comment_operation, (parent_author)(parent_permlink)(author)(permlink)(title)(body)(json_metadata) )
-FC_REFLECT( steem::protocol::vote_operation, (voter)(author)(permlink)(weight) )
-FC_REFLECT( steem::protocol::custom_operation, (required_auths)(id)(data) )
-FC_REFLECT( steem::protocol::custom_json_operation, (required_auths)(required_posting_auths)(id)(json) )
-FC_REFLECT( steem::protocol::custom_binary_operation, (required_owner_auths)(required_active_auths)(required_posting_auths)(required_auths)(id)(data) )
-FC_REFLECT( steem::protocol::limit_order_create_operation, (owner)(orderid)(amount_to_sell)(min_to_receive)(fill_or_kill)(expiration) )
-FC_REFLECT( steem::protocol::limit_order_create2_operation, (owner)(orderid)(amount_to_sell)(exchange_rate)(fill_or_kill)(expiration) )
-FC_REFLECT( steem::protocol::limit_order_cancel_operation, (owner)(orderid) )
+FC_REFLECT( hive::protocol::transfer_operation, (from)(to)(amount)(memo) )
+FC_REFLECT( hive::protocol::transfer_to_vesting_operation, (from)(to)(amount) )
+FC_REFLECT( hive::protocol::withdraw_vesting_operation, (account)(vesting_shares) )
+FC_REFLECT( hive::protocol::set_withdraw_vesting_route_operation, (from_account)(to_account)(percent)(auto_vest) )
+FC_REFLECT( hive::protocol::witness_update_operation, (owner)(url)(block_signing_key)(props)(fee) )
+FC_REFLECT( hive::protocol::witness_set_properties_operation, (owner)(props)(extensions) )
+FC_REFLECT( hive::protocol::account_witness_vote_operation, (account)(witness)(approve) )
+FC_REFLECT( hive::protocol::account_witness_proxy_operation, (account)(proxy) )
+FC_REFLECT( hive::protocol::comment_operation, (parent_author)(parent_permlink)(author)(permlink)(title)(body)(json_metadata) )
+FC_REFLECT( hive::protocol::vote_operation, (voter)(author)(permlink)(weight) )
+FC_REFLECT( hive::protocol::custom_operation, (required_auths)(id)(data) )
+FC_REFLECT( hive::protocol::custom_json_operation, (required_auths)(required_posting_auths)(id)(json) )
+FC_REFLECT( hive::protocol::custom_binary_operation, (required_owner_auths)(required_active_auths)(required_posting_auths)(required_auths)(id)(data) )
+FC_REFLECT( hive::protocol::limit_order_create_operation, (owner)(orderid)(amount_to_sell)(min_to_receive)(fill_or_kill)(expiration) )
+FC_REFLECT( hive::protocol::limit_order_create2_operation, (owner)(orderid)(amount_to_sell)(exchange_rate)(fill_or_kill)(expiration) )
+FC_REFLECT( hive::protocol::limit_order_cancel_operation, (owner)(orderid) )
 
-FC_REFLECT( steem::protocol::delete_comment_operation, (author)(permlink) );
+FC_REFLECT( hive::protocol::delete_comment_operation, (author)(permlink) );
 
-FC_REFLECT( steem::protocol::beneficiary_route_type, (account)(weight) )
-FC_REFLECT( steem::protocol::comment_payout_beneficiaries, (beneficiaries) )
+FC_REFLECT( hive::protocol::beneficiary_route_type, (account)(weight) )
+FC_REFLECT( hive::protocol::comment_payout_beneficiaries, (beneficiaries) )
 
-#ifdef STEEM_ENABLE_SMT
-FC_REFLECT( steem::protocol::votable_asset_info_v1, (max_accepted_payout)(allow_curation_rewards) )
-FC_REFLECT( steem::protocol::allowed_vote_assets, (votable_assets) )
+#ifdef HIVE_ENABLE_SMT
+FC_REFLECT( hive::protocol::votable_asset_info_v1, (max_accepted_payout)(allow_curation_rewards) )
+FC_REFLECT( hive::protocol::allowed_vote_assets, (votable_assets) )
 #endif
 
-FC_REFLECT_TYPENAME( steem::protocol::comment_options_extension )
-FC_REFLECT( steem::protocol::comment_options_operation, (author)(permlink)(max_accepted_payout)(percent_steem_dollars)(allow_votes)(allow_curation_rewards)(extensions) )
+FC_REFLECT_TYPENAME( hive::protocol::comment_options_extension )
+FC_REFLECT( hive::protocol::comment_options_operation, (author)(permlink)(max_accepted_payout)(percent_steem_dollars)(allow_votes)(allow_curation_rewards)(extensions) )
 
-FC_REFLECT( steem::protocol::escrow_transfer_operation, (from)(to)(sbd_amount)(steem_amount)(escrow_id)(agent)(fee)(json_meta)(ratification_deadline)(escrow_expiration) );
-FC_REFLECT( steem::protocol::escrow_approve_operation, (from)(to)(agent)(who)(escrow_id)(approve) );
-FC_REFLECT( steem::protocol::escrow_dispute_operation, (from)(to)(agent)(who)(escrow_id) );
-FC_REFLECT( steem::protocol::escrow_release_operation, (from)(to)(agent)(who)(receiver)(escrow_id)(sbd_amount)(steem_amount) );
-FC_REFLECT( steem::protocol::claim_account_operation, (creator)(fee)(extensions) );
-FC_REFLECT( steem::protocol::create_claimed_account_operation, (creator)(new_account_name)(owner)(active)(posting)(memo_key)(json_metadata)(extensions) );
-FC_REFLECT( steem::protocol::request_account_recovery_operation, (recovery_account)(account_to_recover)(new_owner_authority)(extensions) );
-FC_REFLECT( steem::protocol::recover_account_operation, (account_to_recover)(new_owner_authority)(recent_owner_authority)(extensions) );
-FC_REFLECT( steem::protocol::change_recovery_account_operation, (account_to_recover)(new_recovery_account)(extensions) );
-FC_REFLECT( steem::protocol::decline_voting_rights_operation, (account)(decline) );
-FC_REFLECT( steem::protocol::claim_reward_balance_operation, (account)(reward_steem)(reward_sbd)(reward_vests) )
-#ifdef STEEM_ENABLE_SMT
-FC_REFLECT( steem::protocol::claim_reward_balance2_operation, (account)(extensions)(reward_tokens) )
+FC_REFLECT( hive::protocol::escrow_transfer_operation, (from)(to)(sbd_amount)(steem_amount)(escrow_id)(agent)(fee)(json_meta)(ratification_deadline)(escrow_expiration) );
+FC_REFLECT( hive::protocol::escrow_approve_operation, (from)(to)(agent)(who)(escrow_id)(approve) );
+FC_REFLECT( hive::protocol::escrow_dispute_operation, (from)(to)(agent)(who)(escrow_id) );
+FC_REFLECT( hive::protocol::escrow_release_operation, (from)(to)(agent)(who)(receiver)(escrow_id)(sbd_amount)(steem_amount) );
+FC_REFLECT( hive::protocol::claim_account_operation, (creator)(fee)(extensions) );
+FC_REFLECT( hive::protocol::create_claimed_account_operation, (creator)(new_account_name)(owner)(active)(posting)(memo_key)(json_metadata)(extensions) );
+FC_REFLECT( hive::protocol::request_account_recovery_operation, (recovery_account)(account_to_recover)(new_owner_authority)(extensions) );
+FC_REFLECT( hive::protocol::recover_account_operation, (account_to_recover)(new_owner_authority)(recent_owner_authority)(extensions) );
+FC_REFLECT( hive::protocol::change_recovery_account_operation, (account_to_recover)(new_recovery_account)(extensions) );
+FC_REFLECT( hive::protocol::decline_voting_rights_operation, (account)(decline) );
+FC_REFLECT( hive::protocol::claim_reward_balance_operation, (account)(reward_steem)(reward_sbd)(reward_vests) )
+#ifdef HIVE_ENABLE_SMT
+FC_REFLECT( hive::protocol::claim_reward_balance2_operation, (account)(extensions)(reward_tokens) )
 #endif
-FC_REFLECT( steem::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
+FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );

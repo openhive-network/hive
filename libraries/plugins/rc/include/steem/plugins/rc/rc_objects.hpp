@@ -8,20 +8,20 @@
 
 #include <fc/int_array.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 struct by_account;
 } }
 
-namespace steem { namespace plugins { namespace rc {
+namespace hive { namespace plugins { namespace rc {
 
 using namespace std;
-using namespace steem::chain;
+using namespace hive::chain;
 
 #ifndef STEEM_RC_SPACE_ID
 #define STEEM_RC_SPACE_ID 16
 #endif
 
-#define STEEM_RC_DRC_FLOAT_LEVEL   (20*STEEM_1_PERCENT)
+#define STEEM_RC_DRC_FLOAT_LEVEL   (20*HIVE_1_PERCENT)
 #define STEEM_RC_MAX_DRC_RATE      1000
 
 enum rc_object_types
@@ -80,7 +80,7 @@ class rc_account_object : public object< rc_account_object_type, rc_account_obje
       id_type               id;
 
       account_name_type     account;
-      steem::chain::util::manabar   rc_manabar;
+      hive::chain::util::manabar   rc_manabar;
       asset                 max_rc_creation_adjustment = asset( 0, VESTS_SYMBOL );
 
       // This is used for bug-catching, to match that the vesting shares in a
@@ -105,7 +105,7 @@ class rc_delegation_pool_object : public object< rc_delegation_pool_object_type,
       id_type                       id;
 
       account_name_type             account;
-      steem::chain::util::manabar   rc_pool_manabar;
+      hive::chain::util::manabar   rc_pool_manabar;
 };
 
 /**
@@ -157,11 +157,11 @@ class rc_outdel_drc_edge_object : public object< rc_outdel_drc_edge_object_type,
       id_type                       id;
       account_name_type             from_pool;
       account_name_type             to_account;
-      steem::chain::util::manabar   drc_manabar;
+      hive::chain::util::manabar   drc_manabar;
       int64_t                       drc_max_mana = 0;
 };
 
-int64_t get_maximum_rc( const steem::chain::account_object& account, const rc_account_object& rc_account );
+int64_t get_maximum_rc( const hive::chain::account_object& account, const rc_account_object& rc_account );
 
 struct by_edge;
 
@@ -227,43 +227,43 @@ typedef multi_index_container<
    allocator< rc_outdel_drc_edge_object >
 > rc_outdel_drc_edge_index;
 
-} } } // steem::plugins::rc
+} } } // hive::plugins::rc
 
-FC_REFLECT( steem::plugins::rc::rc_resource_param_object, (id)(resource_param_array) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::rc::rc_resource_param_object, steem::plugins::rc::rc_resource_param_index )
+FC_REFLECT( hive::plugins::rc::rc_resource_param_object, (id)(resource_param_array) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_resource_param_object, hive::plugins::rc::rc_resource_param_index )
 
-FC_REFLECT( steem::plugins::rc::rc_pool_object, (id)(pool_array) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::rc::rc_pool_object, steem::plugins::rc::rc_pool_index )
+FC_REFLECT( hive::plugins::rc::rc_pool_object, (id)(pool_array) )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_pool_object, hive::plugins::rc::rc_pool_index )
 
-FC_REFLECT( steem::plugins::rc::rc_account_object,
+FC_REFLECT( hive::plugins::rc::rc_account_object,
    (id)
    (account)
    (rc_manabar)
    (max_rc_creation_adjustment)
    (last_max_rc)
    )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::rc::rc_account_object, steem::plugins::rc::rc_account_index )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_account_object, hive::plugins::rc::rc_account_index )
 
-FC_REFLECT( steem::plugins::rc::rc_delegation_pool_object,
+FC_REFLECT( hive::plugins::rc::rc_delegation_pool_object,
    (id)
    (account)
    (rc_pool_manabar)
    )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::rc::rc_delegation_pool_object, steem::plugins::rc::rc_delegation_pool_index )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_delegation_pool_object, hive::plugins::rc::rc_delegation_pool_index )
 
-FC_REFLECT( steem::plugins::rc::rc_indel_edge_object,
+FC_REFLECT( hive::plugins::rc::rc_indel_edge_object,
    (id)
    (from_account)
    (to_pool)
    (amount)
    )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::rc::rc_indel_edge_object, steem::plugins::rc::rc_indel_edge_index )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_indel_edge_object, hive::plugins::rc::rc_indel_edge_index )
 
-FC_REFLECT( steem::plugins::rc::rc_outdel_drc_edge_object,
+FC_REFLECT( hive::plugins::rc::rc_outdel_drc_edge_object,
    (id)
    (from_pool)
    (to_account)
    (drc_manabar)
    (drc_max_mana)
    )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::rc::rc_outdel_drc_edge_object, steem::plugins::rc::rc_outdel_drc_edge_index )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_outdel_drc_edge_object, hive::plugins::rc::rc_outdel_drc_edge_index )

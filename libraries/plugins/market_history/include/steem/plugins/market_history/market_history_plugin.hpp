@@ -23,9 +23,9 @@
 #endif
 
 
-namespace steem { namespace plugins { namespace market_history {
+namespace hive { namespace plugins { namespace market_history {
 
-using namespace steem::chain;
+using namespace hive::chain;
 using namespace appbase;
 
 enum market_history_object_types
@@ -42,7 +42,7 @@ class market_history_plugin : public plugin< market_history_plugin >
       market_history_plugin();
       virtual ~market_history_plugin();
 
-      APPBASE_PLUGIN_REQUIRES( (steem::plugins::chain::chain_plugin) )
+      APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
       static const std::string& name() { static std::string name = STEEM_MARKET_HISTORY_PLUGIN_NAME; return name; }
 
@@ -99,14 +99,14 @@ struct bucket_object : public object< bucket_object_type, bucket_object >
    bucket_object_details steem;
    bucket_object_details non_steem;
 
-#ifdef STEEM_ENABLE_SMT
-   asset_symbol_type symbol = SBD_SYMBOL;
+#ifdef HIVE_ENABLE_SMT
+   asset_symbol_type symbol = HBD_SYMBOL;
 
-   price high()const { return asset( non_steem.high, symbol ) / asset( steem.high, STEEM_SYMBOL ); }
-   price low()const { return asset( non_steem.low, symbol ) / asset( steem.low, STEEM_SYMBOL ); }
+   price high()const { return asset( non_steem.high, symbol ) / asset( steem.high, HIVE_SYMBOL ); }
+   price low()const { return asset( non_steem.low, symbol ) / asset( steem.low, HIVE_SYMBOL ); }
 #else
-   price high()const { return asset( non_steem.high, SBD_SYMBOL ) / asset( steem.high, STEEM_SYMBOL ); }
-   price low()const { return asset( non_steem.low, SBD_SYMBOL ) / asset( steem.low, STEEM_SYMBOL ); }
+   price high()const { return asset( non_steem.high, HBD_SYMBOL ) / asset( steem.high, HIVE_SYMBOL ); }
+   price low()const { return asset( non_steem.low, HBD_SYMBOL ) / asset( steem.low, HIVE_SYMBOL ); }
 #endif
 };
 
@@ -163,29 +163,29 @@ typedef multi_index_container<
    allocator< order_history_object >
 > order_history_index;
 
-} } } // steem::plugins::market_history
+} } } // hive::plugins::market_history
 
-FC_REFLECT( steem::plugins::market_history::bucket_object_details,
+FC_REFLECT( hive::plugins::market_history::bucket_object_details,
             (high)
             (low)
             (open)
             (close)
             (volume) )
 
-FC_REFLECT( steem::plugins::market_history::bucket_object,
+FC_REFLECT( hive::plugins::market_history::bucket_object,
                      (id)
                      (open)(seconds)
                      (steem)
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
                      (symbol)
 #endif
                      (non_steem)
          )
 
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::market_history::bucket_object, steem::plugins::market_history::bucket_index )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::market_history::bucket_object, hive::plugins::market_history::bucket_index )
 
-FC_REFLECT( steem::plugins::market_history::order_history_object,
+FC_REFLECT( hive::plugins::market_history::order_history_object,
                      (id)
                      (time)
                      (op) )
-CHAINBASE_SET_INDEX_TYPE( steem::plugins::market_history::order_history_object, steem::plugins::market_history::order_history_index )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::market_history::order_history_object, hive::plugins::market_history::order_history_index )

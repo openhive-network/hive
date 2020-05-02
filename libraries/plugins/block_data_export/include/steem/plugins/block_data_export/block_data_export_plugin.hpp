@@ -4,7 +4,7 @@
 
 #include <steem/plugins/chain/chain_plugin.hpp>
 
-namespace steem { namespace plugins { namespace block_data_export {
+namespace hive { namespace plugins { namespace block_data_export {
 
 namespace detail { class block_data_export_plugin_impl; }
 
@@ -20,7 +20,7 @@ class block_data_export_plugin : public appbase::plugin< block_data_export_plugi
       block_data_export_plugin();
       virtual ~block_data_export_plugin();
 
-      APPBASE_PLUGIN_REQUIRES( (steem::plugins::chain::chain_plugin) )
+      APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
       static const std::string& name() { static std::string name = STEEM_BLOCK_DATA_EXPORT_PLUGIN_NAME; return name; }
 
@@ -83,4 +83,4 @@ std::shared_ptr< T > find_export_data( const std::string& name )
    return export_plugin->find_export_data< T >( name );
 }
 
-} } } // steem::plugins::block_data_export
+} } } // hive::plugins::block_data_export

@@ -4,7 +4,7 @@
 
 #include <steem/plugins/chain/chain_plugin.hpp>
 
-namespace steem { namespace plugins { namespace block_log_info {
+namespace hive { namespace plugins { namespace block_log_info {
 
 namespace detail { class block_log_info_plugin_impl; }
 
@@ -18,7 +18,7 @@ class block_log_info_plugin : public appbase::plugin< block_log_info_plugin >
       block_log_info_plugin();
       virtual ~block_log_info_plugin();
 
-      APPBASE_PLUGIN_REQUIRES( (steem::plugins::chain::chain_plugin) )
+      APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
       static const std::string& name() { static std::string name = STEEM_BLOCK_LOG_INFO_PLUGIN_NAME; return name; }
 
@@ -31,4 +31,4 @@ class block_log_info_plugin : public appbase::plugin< block_log_info_plugin >
       std::unique_ptr< detail::block_log_info_plugin_impl > my;
 };
 
-} } } // steem::plugins::block_log_info
+} } } // hive::plugins::block_log_info

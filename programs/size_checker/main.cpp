@@ -35,7 +35,7 @@
 #include <string>
 #include <vector>
 
-using namespace steem::protocol;
+using namespace hive::protocol;
 
 std::vector< fc::variant_object > g_op_types;
 
@@ -68,7 +68,7 @@ int main( int argc, char** argv )
 {
    try
    {
-      steem::protocol::operation op;
+      hive::protocol::operation op;
 
 
       std::vector<uint64_t> witnesses; witnesses.resize(50);

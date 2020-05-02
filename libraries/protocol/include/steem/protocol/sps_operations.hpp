@@ -4,7 +4,7 @@
 #include <steem/protocol/asset.hpp>
 
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
 struct create_proposal_operation : public base_operation
 {
@@ -85,7 +85,7 @@ struct proposal_pay_operation : public virtual_operation
    uint16_t op_in_trx = 0;
 };
 
-} } // steem::protocol
+} } // hive::protocol
 
 namespace fc {
 
@@ -130,9 +130,9 @@ namespace fc {
    
 }
 
-FC_REFLECT( steem::protocol::create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink)(extensions) )
-FC_REFLECT( steem::protocol::update_proposal_votes_operation, (voter)(proposal_ids)(approve)(extensions) )
-FC_REFLECT( steem::protocol::remove_proposal_operation, (proposal_owner)(proposal_ids)(extensions) )
+FC_REFLECT( hive::protocol::create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink)(extensions) )
+FC_REFLECT( hive::protocol::update_proposal_votes_operation, (voter)(proposal_ids)(approve)(extensions) )
+FC_REFLECT( hive::protocol::remove_proposal_operation, (proposal_owner)(proposal_ids)(extensions) )
 
-FC_REFLECT(steem::protocol::proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx))
+FC_REFLECT(hive::protocol::proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx))
 

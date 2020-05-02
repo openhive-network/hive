@@ -24,11 +24,8 @@
 #define HIVE_NAI_HIVE   (2)
 #define HIVE_NAI_VESTS  (3)
 
-#define STEEM_ASSET_NUM_SBD   (uint32_t(((SMT_MAX_NAI + HIVE_NAI_HBD)   << HIVE_NAI_SHIFT) | HIVE_PRECISION_HBD))
 #define HIVE_ASSET_NUM_HBD    (uint32_t(((SMT_MAX_NAI + HIVE_NAI_HBD)   << HIVE_NAI_SHIFT) | HIVE_PRECISION_HBD))
-#define STEEM_ASSET_NUM_STEEM (uint32_t(((SMT_MAX_NAI + HIVE_NAI_HIVE)  << HIVE_NAI_SHIFT) | HIVE_PRECISION_HIVE))
 #define HIVE_ASSET_NUM_HIVE   (uint32_t(((SMT_MAX_NAI + HIVE_NAI_HIVE)  << HIVE_NAI_SHIFT) | HIVE_PRECISION_HIVE))
-#define STEEM_ASSET_NUM_VESTS (uint32_t(((SMT_MAX_NAI + HIVE_NAI_VESTS) << HIVE_NAI_SHIFT) | HIVE_PRECISION_VESTS))
 #define HIVE_ASSET_NUM_VESTS  (uint32_t(((SMT_MAX_NAI + HIVE_NAI_VESTS) << HIVE_NAI_SHIFT) | HIVE_PRECISION_VESTS))
 
 #ifdef IS_TEST_NET
@@ -61,7 +58,7 @@
 #define ASSET_SYMBOL_NAI_KEY      "nai"
 #define ASSET_SYMBOL_DECIMALS_KEY "decimals"
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
 class asset_symbol_type
 {
@@ -134,9 +131,9 @@ class asset_symbol_type
       uint32_t asset_num = 0;
 };
 
-} } // steem::protocol
+} } // hive::protocol
 
-FC_REFLECT(steem::protocol::asset_symbol_type, (asset_num))
+FC_REFLECT(hive::protocol::asset_symbol_type, (asset_num))
 
 namespace fc { namespace raw {
 
@@ -151,22 +148,22 @@ namespace fc { namespace raw {
 // NAI internal storage of legacy assets
 
 template< typename Stream >
-inline void pack( Stream& s, const steem::protocol::asset_symbol_type& sym )
+inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym )
 {
    switch( sym.space() )
    {
-      case steem::protocol::asset_symbol_type::legacy_space:
+      case hive::protocol::asset_symbol_type::legacy_space:
       {
          uint64_t ser = 0;
          switch( sym.asset_num )
          {
-            case STEEM_ASSET_NUM_STEEM:
+            case HIVE_ASSET_NUM_HIVE:
                ser = STEEM_SYMBOL_SER;
                break;
-            case STEEM_ASSET_NUM_SBD:
+            case HIVE_ASSET_NUM_HBD:
                ser = SBD_SYMBOL_SER;
                break;
-            case STEEM_ASSET_NUM_VESTS:
+            case HIVE_ASSET_NUM_VESTS:
                ser = VESTS_SYMBOL_SER;
                break;
             default:
@@ -175,7 +172,7 @@ inline void pack( Stream& s, const steem::protocol::asset_symbol_type& sym )
          pack( s, ser );
          break;
       }
-      case steem::protocol::asset_symbol_type::smt_nai_space:
+      case hive::protocol::asset_symbol_type::smt_nai_space:
          pack( s, sym.asset_num );
          break;
       default:
@@ -184,7 +181,7 @@ inline void pack( Stream& s, const steem::protocol::asset_symbol_type& sym )
 }
 
 template< typename Stream >
-inline void unpack( Stream& s, steem::protocol::asset_symbol_type& sym, uint32_t )
+inline void unpack( Stream& s, hive::protocol::asset_symbol_type& sym, uint32_t )
 {
    uint64_t ser = 0;
    s.read( (char*) &ser, 4 );
@@ -194,17 +191,17 @@ inline void unpack( Stream& s, steem::protocol::asset_symbol_type& sym, uint32_t
       case STEEM_SYMBOL_SER & 0xFFFFFFFF:
          s.read( ((char*) &ser)+4, 4 );
          FC_ASSERT( ser == STEEM_SYMBOL_SER, "invalid asset bits" );
-         sym.asset_num = STEEM_ASSET_NUM_STEEM;
+         sym.asset_num = HIVE_ASSET_NUM_HIVE;
          break;
       case SBD_SYMBOL_SER & 0xFFFFFFFF:
          s.read( ((char*) &ser)+4, 4 );
          FC_ASSERT( ser == SBD_SYMBOL_SER, "invalid asset bits" );
-         sym.asset_num = STEEM_ASSET_NUM_SBD;
+         sym.asset_num = HIVE_ASSET_NUM_HBD;
          break;
       case VESTS_SYMBOL_SER & 0xFFFFFFFF:
          s.read( ((char*) &ser)+4, 4 );
          FC_ASSERT( ser == VESTS_SYMBOL_SER, "invalid asset bits" );
-         sym.asset_num = STEEM_ASSET_NUM_VESTS;
+         sym.asset_num = HIVE_ASSET_NUM_VESTS;
          break;
       default:
          sym.asset_num = uint32_t( ser );
@@ -214,7 +211,7 @@ inline void unpack( Stream& s, steem::protocol::asset_symbol_type& sym, uint32_t
 
 } // fc::raw
 
-inline void to_variant( const steem::protocol::asset_symbol_type& sym, fc::variant& var )
+inline void to_variant( const hive::protocol::asset_symbol_type& sym, fc::variant& var )
 {
    try
    {
@@ -225,9 +222,9 @@ inline void to_variant( const steem::protocol::asset_symbol_type& sym, fc::varia
    } FC_CAPTURE_AND_RETHROW()
 }
 
-inline void from_variant( const fc::variant& var, steem::protocol::asset_symbol_type& sym )
+inline void from_variant( const fc::variant& var, hive::protocol::asset_symbol_type& sym )
 {
-   using steem::protocol::asset_symbol_type;
+   using hive::protocol::asset_symbol_type;
 
    try
    {

@@ -4,12 +4,12 @@
 #include <steem/chain/steem_object_types.hpp>
 #include <steem/chain/database.hpp>
 
-namespace steem { namespace plugins{ namespace follow {
+namespace hive { namespace plugins{ namespace follow {
 
-using namespace steem::chain;
-using steem::chain::database;
+using namespace hive::chain;
+using hive::chain::database;
 
-using steem::protocol::account_name_type;
+using hive::protocol::account_name_type;
 
 class performance_impl;
 
@@ -135,4 +135,4 @@ class performance
       }
 };
 
-} } } //steem::follow
+} } } //hive::follow

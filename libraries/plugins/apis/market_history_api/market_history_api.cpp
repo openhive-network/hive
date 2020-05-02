@@ -5,16 +5,16 @@
 
 #define ASSET_TO_REAL( asset ) (double)( asset.amount.value )
 
-namespace steem { namespace plugins { namespace market_history {
+namespace hive { namespace plugins { namespace market_history {
 
 namespace detail {
 
-using namespace steem::plugins::market_history;
+using namespace hive::plugins::market_history;
 
 class market_history_api_impl
 {
    public:
-      market_history_api_impl() : _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ) {}
+      market_history_api_impl() : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
       DECLARE_API_IMPL(
          (get_ticker)
@@ -38,9 +38,9 @@ DEFINE_API_IMPL( market_history_api_impl, get_ticker )
 
    if( itr != bucket_idx.end() )
    {
-      auto open = ASSET_TO_REAL( asset( itr->non_steem.open, SBD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->steem.open, STEEM_SYMBOL ) );
+      auto open = ASSET_TO_REAL( asset( itr->non_steem.open, HBD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->steem.open, HIVE_SYMBOL ) );
       itr = bucket_idx.lower_bound( boost::make_tuple( 0, _db.head_block_time() ) );
-      result.latest = ASSET_TO_REAL( asset( itr->non_steem.close, SBD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->steem.close, STEEM_SYMBOL ) );
+      result.latest = ASSET_TO_REAL( asset( itr->non_steem.close, HBD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->steem.close, HIVE_SYMBOL ) );
       result.percent_change = ( (result.latest - open ) / open ) * 100;
    }
 
@@ -83,31 +83,31 @@ DEFINE_API_IMPL( market_history_api_impl, get_order_book )
    FC_ASSERT( args.limit <= 500 );
 
    const auto& order_idx = _db.get_index< chain::limit_order_index, chain::by_price >();
-   auto itr = order_idx.lower_bound( price::max( SBD_SYMBOL, STEEM_SYMBOL ) );
+   auto itr = order_idx.lower_bound( price::max( HBD_SYMBOL, HIVE_SYMBOL ) );
 
    get_order_book_return result;
 
-   while( itr != order_idx.end() && itr->sell_price.base.symbol == SBD_SYMBOL && result.bids.size() < args.limit )
+   while( itr != order_idx.end() && itr->sell_price.base.symbol == HBD_SYMBOL && result.bids.size() < args.limit )
    {
       order cur;
       cur.order_price = itr->sell_price;
       cur.real_price = ASSET_TO_REAL( itr->sell_price.base ) / ASSET_TO_REAL( itr->sell_price.quote );
-      cur.steem = ( asset( itr->for_sale, SBD_SYMBOL ) * itr->sell_price ).amount;
+      cur.steem = ( asset( itr->for_sale, HBD_SYMBOL ) * itr->sell_price ).amount;
       cur.sbd = itr->for_sale;
       cur.created = itr->created;
       result.bids.push_back( cur );
       ++itr;
    }
 
-   itr = order_idx.lower_bound( price::max( STEEM_SYMBOL, SBD_SYMBOL ) );
+   itr = order_idx.lower_bound( price::max( HIVE_SYMBOL, HBD_SYMBOL ) );
 
-   while( itr != order_idx.end() && itr->sell_price.base.symbol == STEEM_SYMBOL && result.asks.size() < args.limit )
+   while( itr != order_idx.end() && itr->sell_price.base.symbol == HIVE_SYMBOL && result.asks.size() < args.limit )
    {
       order cur;
       cur.order_price = itr->sell_price;
       cur.real_price = ASSET_TO_REAL( itr->sell_price.quote ) / ASSET_TO_REAL( itr->sell_price.base );
       cur.steem = itr->for_sale;
-      cur.sbd = ( asset( itr->for_sale, STEEM_SYMBOL ) * itr->sell_price ).amount;
+      cur.sbd = ( asset( itr->for_sale, HIVE_SYMBOL ) * itr->sell_price ).amount;
       cur.created = itr->created;
       result.asks.push_back( cur );
       ++itr;
@@ -178,7 +178,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_market_history )
 DEFINE_API_IMPL( market_history_api_impl, get_market_history_buckets )
 {
    get_market_history_buckets_return result;
-   result.bucket_sizes = appbase::app().get_plugin< steem::plugins::market_history::market_history_plugin >().get_tracked_buckets();
+   result.bucket_sizes = appbase::app().get_plugin< hive::plugins::market_history::market_history_plugin >().get_tracked_buckets();
    return result;
 }
 
@@ -202,4 +202,4 @@ DEFINE_READ_APIS( market_history_api,
    (get_market_history_buckets)
 )
 
-} } } // steem::plugins::market_history
+} } } // hive::plugins::market_history

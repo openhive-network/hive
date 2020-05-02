@@ -8,7 +8,7 @@
 
 #include <steem/plugins/condenser_api/condenser_api_legacy_asset.hpp>
 
-namespace steem { namespace plugins { namespace condenser_api {
+namespace hive { namespace plugins { namespace condenser_api {
 
    template< typename T >
    struct convert_to_legacy_static_variant
@@ -29,7 +29,7 @@ namespace steem { namespace plugins { namespace condenser_api {
 
    typedef static_variant<
             protocol::comment_payout_beneficiaries
-   #ifdef STEEM_ENABLE_SMT
+   #ifdef HIVE_ENABLE_SMT
             ,protocol::allowed_vote_assets
    #endif
          > legacy_comment_options_extensions;
@@ -41,7 +41,7 @@ namespace steem { namespace plugins { namespace condenser_api {
             protocol::equihash_pow
          > legacy_pow2_work;
 
-   using namespace steem::protocol;
+   using namespace hive::protocol;
 
    typedef account_update_operation               legacy_account_update_operation;
    typedef account_update2_operation              legacy_account_update2_operation;
@@ -112,10 +112,10 @@ namespace steem { namespace plugins { namespace condenser_api {
       }
 
       legacy_asset   account_creation_fee;
-      uint32_t       maximum_block_size = STEEM_MIN_BLOCK_SIZE_LIMIT * 2;
-      uint16_t       sbd_interest_rate = STEEM_DEFAULT_SBD_INTEREST_RATE;
-      int32_t        account_subsidy_budget = STEEM_DEFAULT_ACCOUNT_SUBSIDY_BUDGET;
-      uint32_t       account_subsidy_decay = STEEM_DEFAULT_ACCOUNT_SUBSIDY_DECAY;
+      uint32_t       maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
+      uint16_t       sbd_interest_rate = HIVE_DEFAULT_HBD_INTEREST_RATE;
+      int32_t        account_subsidy_budget = HIVE_DEFAULT_ACCOUNT_SUBSIDY_BUDGET;
+      uint32_t       account_subsidy_decay = HIVE_DEFAULT_ACCOUNT_SUBSIDY_DECAY;
    };
 
    struct legacy_account_create_operation
@@ -1666,18 +1666,18 @@ struct convert_from_legacy_operation_visitor
    }
 };
 
-} } } // steem::plugins::condenser_api
+} } } // hive::plugins::condenser_api
 
 namespace fc {
 
-void to_variant( const steem::plugins::condenser_api::legacy_operation&, fc::variant& );
-void from_variant( const fc::variant&, steem::plugins::condenser_api::legacy_operation& );
+void to_variant( const hive::plugins::condenser_api::legacy_operation&, fc::variant& );
+void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_operation& );
 
-void to_variant( const steem::plugins::condenser_api::legacy_comment_options_extensions&, fc::variant& );
-void from_variant( const fc::variant&, steem::plugins::condenser_api::legacy_comment_options_extensions& );
+void to_variant( const hive::plugins::condenser_api::legacy_comment_options_extensions&, fc::variant& );
+void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_comment_options_extensions& );
 
-void to_variant( const steem::plugins::condenser_api::legacy_pow2_work&, fc::variant& );
-void from_variant( const fc::variant&, steem::plugins::condenser_api::legacy_pow2_work& );
+void to_variant( const hive::plugins::condenser_api::legacy_pow2_work&, fc::variant& );
+void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_pow2_work& );
 
 struct from_old_static_variant
 {
@@ -1724,17 +1724,17 @@ void old_sv_from_variant( const fc::variant& v, T& sv )
 
 }
 
-FC_REFLECT( steem::plugins::condenser_api::api_chain_properties,
+FC_REFLECT( hive::plugins::condenser_api::api_chain_properties,
             (account_creation_fee)(maximum_block_size)(sbd_interest_rate)(account_subsidy_budget)(account_subsidy_decay)
           )
 
-FC_REFLECT( steem::plugins::condenser_api::legacy_price, (base)(quote) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_transfer_to_savings_operation, (from)(to)(amount)(memo) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_transfer_from_savings_operation, (from)(request_id)(to)(amount)(memo) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_convert_operation, (owner)(requestid)(amount) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_feed_publish_operation, (publisher)(exchange_rate) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_price, (base)(quote) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_transfer_to_savings_operation, (from)(to)(amount)(memo) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_transfer_from_savings_operation, (from)(request_id)(to)(amount)(memo) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_convert_operation, (owner)(requestid)(amount) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_feed_publish_operation, (publisher)(exchange_rate) )
 
-FC_REFLECT( steem::plugins::condenser_api::legacy_account_create_operation,
+FC_REFLECT( hive::plugins::condenser_api::legacy_account_create_operation,
             (fee)
             (creator)
             (new_account_name)
@@ -1744,7 +1744,7 @@ FC_REFLECT( steem::plugins::condenser_api::legacy_account_create_operation,
             (memo_key)
             (json_metadata) )
 
-FC_REFLECT( steem::plugins::condenser_api::legacy_account_create_with_delegation_operation,
+FC_REFLECT( hive::plugins::condenser_api::legacy_account_create_with_delegation_operation,
             (fee)
             (delegation)
             (creator)
@@ -1756,35 +1756,35 @@ FC_REFLECT( steem::plugins::condenser_api::legacy_account_create_with_delegation
             (json_metadata)
             (extensions) )
 
-FC_REFLECT( steem::plugins::condenser_api::legacy_transfer_operation, (from)(to)(amount)(memo) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_transfer_to_vesting_operation, (from)(to)(amount) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_withdraw_vesting_operation, (account)(vesting_shares) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_witness_update_operation, (owner)(url)(block_signing_key)(props)(fee) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_limit_order_create_operation, (owner)(orderid)(amount_to_sell)(min_to_receive)(fill_or_kill)(expiration) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_limit_order_create2_operation, (owner)(orderid)(amount_to_sell)(exchange_rate)(fill_or_kill)(expiration) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_comment_options_operation, (author)(permlink)(max_accepted_payout)(percent_steem_dollars)(allow_votes)(allow_curation_rewards)(extensions) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_escrow_transfer_operation, (from)(to)(sbd_amount)(steem_amount)(escrow_id)(agent)(fee)(json_meta)(ratification_deadline)(escrow_expiration) );
-FC_REFLECT( steem::plugins::condenser_api::legacy_escrow_release_operation, (from)(to)(agent)(who)(receiver)(escrow_id)(sbd_amount)(steem_amount) );
-FC_REFLECT( steem::plugins::condenser_api::legacy_pow2_operation, (work)(new_owner_key)(props) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_claim_reward_balance_operation, (account)(reward_steem)(reward_sbd)(reward_vests) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
-FC_REFLECT( steem::plugins::condenser_api::legacy_author_reward_operation, (author)(permlink)(sbd_payout)(steem_payout)(vesting_payout) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_comment_reward_operation, (author)(permlink)(payout) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_liquidity_reward_operation, (owner)(payout) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_interest_operation, (owner)(interest) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_return_vesting_delegation_operation, (account)(vesting_shares) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_comment_benefactor_reward_operation, (benefactor)(author)(permlink)(sbd_payout)(steem_payout)(vesting_payout) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_producer_reward_operation, (producer)(vesting_shares) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_claim_account_operation, (creator)(fee)(extensions) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_sps_fund_operation, (fund_account)(additional_funds) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(sbd_transferred)(steem_transferred)(vests_converted)(total_steem_from_vests) )
-FC_REFLECT( steem::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(sbd_transferred)(steem_transferred) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_transfer_operation, (from)(to)(amount)(memo) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_transfer_to_vesting_operation, (from)(to)(amount) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_withdraw_vesting_operation, (account)(vesting_shares) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_witness_update_operation, (owner)(url)(block_signing_key)(props)(fee) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_limit_order_create_operation, (owner)(orderid)(amount_to_sell)(min_to_receive)(fill_or_kill)(expiration) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_limit_order_create2_operation, (owner)(orderid)(amount_to_sell)(exchange_rate)(fill_or_kill)(expiration) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_comment_options_operation, (author)(permlink)(max_accepted_payout)(percent_steem_dollars)(allow_votes)(allow_curation_rewards)(extensions) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_escrow_transfer_operation, (from)(to)(sbd_amount)(steem_amount)(escrow_id)(agent)(fee)(json_meta)(ratification_deadline)(escrow_expiration) );
+FC_REFLECT( hive::plugins::condenser_api::legacy_escrow_release_operation, (from)(to)(agent)(who)(receiver)(escrow_id)(sbd_amount)(steem_amount) );
+FC_REFLECT( hive::plugins::condenser_api::legacy_pow2_operation, (work)(new_owner_key)(props) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_claim_reward_balance_operation, (account)(reward_steem)(reward_sbd)(reward_vests) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
+FC_REFLECT( hive::plugins::condenser_api::legacy_author_reward_operation, (author)(permlink)(sbd_payout)(steem_payout)(vesting_payout) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_comment_reward_operation, (author)(permlink)(payout) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_liquidity_reward_operation, (owner)(payout) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_interest_operation, (owner)(interest) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_return_vesting_delegation_operation, (account)(vesting_shares) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_comment_benefactor_reward_operation, (benefactor)(author)(permlink)(sbd_payout)(steem_payout)(vesting_payout) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_producer_reward_operation, (producer)(vesting_shares) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_claim_account_operation, (creator)(fee)(extensions) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_sps_fund_operation, (fund_account)(additional_funds) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(sbd_transferred)(steem_transferred)(vests_converted)(total_steem_from_vests) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(sbd_transferred)(steem_transferred) )
 
-FC_REFLECT_TYPENAME( steem::plugins::condenser_api::legacy_operation )
+FC_REFLECT_TYPENAME( hive::plugins::condenser_api::legacy_operation )

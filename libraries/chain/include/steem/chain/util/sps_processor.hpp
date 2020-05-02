@@ -10,7 +10,7 @@
 
 #include <steem/protocol/sps_operations.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 class sps_processor
 {
@@ -67,4 +67,4 @@ class sps_processor
       void run( const block_notification& note );
 };
 
-} } // namespace steem::chain
+} } // namespace hive::chain

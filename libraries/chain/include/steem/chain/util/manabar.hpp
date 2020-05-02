@@ -8,7 +8,7 @@
 #include <fc/exception/exception.hpp>
 #include <fc/reflect/reflect.hpp>
 
-namespace steem { namespace chain { namespace util {
+namespace hive { namespace chain { namespace util {
 
 struct manabar_params
 {
@@ -121,7 +121,7 @@ void update_manabar( const PropType& gpo, AccountType& account, bool downvote_ma
 {
    auto effective_vests = util::get_effective_vesting_shares( account );
    try {
-   manabar_params params( effective_vests, STEEM_VOTING_MANA_REGENERATION_SECONDS );
+   manabar_params params( effective_vests, HIVE_VOTING_MANA_REGENERATION_SECONDS );
    account.voting_manabar.regenerate_mana( params, gpo.time );
    account.voting_manabar.use_mana( -new_mana );
    } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
@@ -132,11 +132,11 @@ void update_manabar( const PropType& gpo, AccountType& account, bool downvote_ma
    if( downvote_mana )
    {
       manabar_params params;
-      params.regen_time = STEEM_VOTING_MANA_REGENERATION_SECONDS;
+      params.regen_time = HIVE_VOTING_MANA_REGENERATION_SECONDS;
 
       if( check_overflow )
       {
-         params.max_mana = ( ( uint128_t( effective_vests ) * gpo.downvote_pool_percent ) / STEEM_100_PERCENT ).to_int64();
+         params.max_mana = ( ( uint128_t( effective_vests ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ).to_int64();
       }
       else
       {
@@ -145,18 +145,18 @@ void update_manabar( const PropType& gpo, AccountType& account, bool downvote_ma
          if( numerator.hi != 0 )
             elog( "NOTIFYALERT! max mana overflow made it in to the chain" );
 
-         params.max_mana = ( effective_vests * gpo.downvote_pool_percent ) / STEEM_100_PERCENT;
+         params.max_mana = ( effective_vests * gpo.downvote_pool_percent ) / HIVE_100_PERCENT;
       }
 
       account.downvote_manabar.regenerate_mana( params, gpo.time );
-      account.downvote_manabar.use_mana( ( -new_mana * gpo.downvote_pool_percent ) / STEEM_100_PERCENT );
+      account.downvote_manabar.use_mana( ( -new_mana * gpo.downvote_pool_percent ) / HIVE_100_PERCENT );
    }
    } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
 }
 
-} } } // steem::chain::util
+} } } // hive::chain::util
 
-FC_REFLECT( steem::chain::util::manabar,
+FC_REFLECT( hive::chain::util::manabar,
    (current_mana)
    (last_update_time)
    )

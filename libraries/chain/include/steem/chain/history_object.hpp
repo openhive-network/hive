@@ -11,7 +11,7 @@
 #include <steem/chain/steem_object_types.hpp>
 #include <steem/chain/witness_objects.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
    class operation_object : public object< operation_object_type, operation_object >
    {
@@ -102,25 +102,25 @@ namespace steem { namespace chain {
 #ifdef ENABLE_MIRA
 namespace mira {
 
-template<> struct is_static_length< steem::chain::account_history_object > : public boost::true_type {};
+template<> struct is_static_length< hive::chain::account_history_object > : public boost::true_type {};
 
 } // mira
 #endif
 
-FC_REFLECT( steem::chain::operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(serialized_op) )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::operation_object, steem::chain::operation_index )
+FC_REFLECT( hive::chain::operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(serialized_op) )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::operation_object, hive::chain::operation_index )
 
-FC_REFLECT( steem::chain::account_history_object, (id)(account)(sequence)(op) )
+FC_REFLECT( hive::chain::account_history_object, (id)(account)(sequence)(op) )
 
-CHAINBASE_SET_INDEX_TYPE( steem::chain::account_history_object, steem::chain::account_history_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::account_history_object, hive::chain::account_history_index )
 
 namespace helpers
 {
    template <>
-   class index_statistic_provider<steem::chain::operation_index>
+   class index_statistic_provider<hive::chain::operation_index>
    {
    public:
-      typedef steem::chain::operation_index IndexType;
+      typedef hive::chain::operation_index IndexType;
 
       index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
       {
@@ -131,7 +131,7 @@ namespace helpers
          {
             for(const auto& o : index)
                info._item_additional_allocation +=
-                  o.serialized_op.capacity()*sizeof(steem::chain::buffer_type::value_type);
+                  o.serialized_op.capacity()*sizeof(hive::chain::buffer_type::value_type);
          }
 
          return info;
@@ -139,10 +139,10 @@ namespace helpers
    };
 
    template <>
-   class index_statistic_provider<steem::chain::account_history_index>
+   class index_statistic_provider<hive::chain::account_history_index>
    {
    public:
-      typedef steem::chain::account_history_index IndexType;
+      typedef hive::chain::account_history_index IndexType;
 
       index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
       {
@@ -153,7 +153,7 @@ namespace helpers
          {
             //for(const auto& o : index)
             //   info._item_additional_allocation += o.get_ops().capacity()*
-            //      sizeof(steem::chain::account_history_object::operation_container::value_type);
+            //      sizeof(hive::chain::account_history_object::operation_container::value_type);
          }
 
          return info;

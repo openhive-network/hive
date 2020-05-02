@@ -84,10 +84,10 @@ BOOST_PP_CAT( method, _return ) class :: method ( const BOOST_PP_CAT( method, _a
 #define DEFINE_LOCKLESS_APIS( class, METHODS ) \
    BOOST_PP_SEQ_FOR_EACH( DEFINE_LOCKLESS_API_HELPER, class, METHODS )
 
-namespace steem { namespace plugins { namespace json_rpc {
+namespace hive { namespace plugins { namespace json_rpc {
 
 struct void_type {};
 
-} } } // steem::plugins::json_rpc
+} } } // hive::plugins::json_rpc
 
-FC_REFLECT( steem::plugins::json_rpc::void_type, )
+FC_REFLECT( hive::plugins::json_rpc::void_type, )

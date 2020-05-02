@@ -5,7 +5,7 @@
 
 #include <appbase/application.hpp>
 
-namespace steem { namespace plugins { namespace block_api {
+namespace hive { namespace plugins { namespace block_api {
 
 using namespace appbase;
 
@@ -18,8 +18,8 @@ class block_api_plugin : public plugin< block_api_plugin >
       virtual ~block_api_plugin();
 
       APPBASE_PLUGIN_REQUIRES(
-         (steem::plugins::json_rpc::json_rpc_plugin)
-         (steem::plugins::chain::chain_plugin)
+         (hive::plugins::json_rpc::json_rpc_plugin)
+         (hive::plugins::chain::chain_plugin)
       )
 
       static const std::string& name() { static std::string name = STEEM_BLOCK_API_PLUGIN_NAME; return name; }
@@ -34,4 +34,4 @@ class block_api_plugin : public plugin< block_api_plugin >
       std::shared_ptr< class block_api > api;
 };
 
-} } } // steem::plugins::block_api
+} } } // hive::plugins::block_api

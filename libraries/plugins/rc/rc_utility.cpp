@@ -4,7 +4,7 @@
 #include <fc/reflect/variant.hpp>
 #include <fc/uint128.hpp>
 
-namespace steem { namespace plugins { namespace rc {
+namespace hive { namespace plugins { namespace rc {
 
 using fc::uint128_t;
 

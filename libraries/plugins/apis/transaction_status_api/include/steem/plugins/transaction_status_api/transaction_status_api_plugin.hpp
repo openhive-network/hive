@@ -5,7 +5,7 @@
 
 #include <appbase/application.hpp>
 
-namespace steem { namespace plugins { namespace transaction_status_api {
+namespace hive { namespace plugins { namespace transaction_status_api {
 
 #define STEEM_TRANSACTION_STATUS_API_PLUGIN_NAME "transaction_status_api"
 
@@ -16,8 +16,8 @@ class transaction_status_api_plugin : public appbase::plugin< transaction_status
       virtual ~transaction_status_api_plugin();
 
       APPBASE_PLUGIN_REQUIRES(
-         (steem::plugins::json_rpc::json_rpc_plugin)
-         (steem::plugins::transaction_status::transaction_status_plugin)
+         (hive::plugins::json_rpc::json_rpc_plugin)
+         (hive::plugins::transaction_status::transaction_status_plugin)
       )
 
       static const std::string& name() { static std::string name = STEEM_TRANSACTION_STATUS_API_PLUGIN_NAME; return name; }
@@ -32,4 +32,4 @@ class transaction_status_api_plugin : public appbase::plugin< transaction_status
       std::unique_ptr< class transaction_status_api > api;
 };
 
-} } } // steem::plugins::transaction_status_api
+} } } // hive::plugins::transaction_status_api

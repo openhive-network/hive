@@ -9,11 +9,11 @@
 #include <fc/vector.hpp>
 
 
-namespace steem { namespace plugins { namespace market_history {
+namespace hive { namespace plugins { namespace market_history {
 
 
-using steem::chain::share_type;
-using steem::chain::asset;
+using hive::chain::share_type;
+using hive::chain::asset;
 using fc::time_point_sec;
 using json_rpc::void_type;
 
@@ -26,16 +26,16 @@ struct get_ticker_return
    double      lowest_ask = 0;
    double      highest_bid = 0;
    double      percent_change = 0;
-   asset       steem_volume = asset( 0 , STEEM_SYMBOL );
-   asset       sbd_volume = asset( 0, SBD_SYMBOL );
+   asset       steem_volume = asset( 0 , HIVE_SYMBOL );
+   asset       sbd_volume = asset( 0, HBD_SYMBOL );
 };
 
 typedef void_type get_volume_args;
 
 struct get_volume_return
 {
-   asset       steem_volume = asset( 0, STEEM_SYMBOL );
-   asset       sbd_volume = asset( 0, SBD_SYMBOL );
+   asset       steem_volume = asset( 0, HIVE_SYMBOL );
+   asset       sbd_volume = asset( 0, HBD_SYMBOL );
 };
 
 struct order
@@ -127,40 +127,40 @@ class market_history_api
       std::unique_ptr< detail::market_history_api_impl > my;
 };
 
-} } } // steem::plugins::market_history
+} } } // hive::plugins::market_history
 
-FC_REFLECT( steem::plugins::market_history::get_ticker_return,
+FC_REFLECT( hive::plugins::market_history::get_ticker_return,
             (latest)(lowest_ask)(highest_bid)(percent_change)(steem_volume)(sbd_volume) )
 
-FC_REFLECT( steem::plugins::market_history::get_volume_return,
+FC_REFLECT( hive::plugins::market_history::get_volume_return,
             (steem_volume)(sbd_volume) )
 
-FC_REFLECT( steem::plugins::market_history::order,
+FC_REFLECT( hive::plugins::market_history::order,
             (order_price)(real_price)(steem)(sbd)(created) )
 
-FC_REFLECT( steem::plugins::market_history::get_order_book_args,
+FC_REFLECT( hive::plugins::market_history::get_order_book_args,
             (limit) )
 
-FC_REFLECT( steem::plugins::market_history::get_order_book_return,
+FC_REFLECT( hive::plugins::market_history::get_order_book_return,
             (bids)(asks) )
 
-FC_REFLECT( steem::plugins::market_history::market_trade,
+FC_REFLECT( hive::plugins::market_history::market_trade,
             (date)(current_pays)(open_pays) )
 
-FC_REFLECT( steem::plugins::market_history::get_trade_history_args,
+FC_REFLECT( hive::plugins::market_history::get_trade_history_args,
             (start)(end)(limit) )
 
-FC_REFLECT( steem::plugins::market_history::get_trade_history_return,
+FC_REFLECT( hive::plugins::market_history::get_trade_history_return,
             (trades) )
 
-FC_REFLECT( steem::plugins::market_history::get_recent_trades_args,
+FC_REFLECT( hive::plugins::market_history::get_recent_trades_args,
             (limit) )
 
-FC_REFLECT( steem::plugins::market_history::get_market_history_args,
+FC_REFLECT( hive::plugins::market_history::get_market_history_args,
             (bucket_seconds)(start)(end) )
 
-FC_REFLECT( steem::plugins::market_history::get_market_history_return,
+FC_REFLECT( hive::plugins::market_history::get_market_history_return,
             (buckets) )
 
-FC_REFLECT( steem::plugins::market_history::get_market_history_buckets_return,
+FC_REFLECT( hive::plugins::market_history::get_market_history_buckets_return,
             (bucket_sizes) )

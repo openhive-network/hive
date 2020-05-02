@@ -3,11 +3,11 @@
 
 #include <steem/app/plugin.hpp>
 
-namespace steem { namespace plugin { namespace auth_util {
+namespace hive { namespace plugin { namespace auth_util {
 
-using steem::app::application;
+using hive::app::application;
 
-class auth_util_plugin : public steem::app::plugin
+class auth_util_plugin : public hive::app::plugin
 {
    public:
       auth_util_plugin( application* app ) ;

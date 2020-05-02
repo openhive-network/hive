@@ -14,11 +14,11 @@
 #include <boost/algorithm/string.hpp>
 
 
-#define STEEM_NAMESPACE_PREFIX "steem::protocol::"
+#define STEEM_NAMESPACE_PREFIX "hive::protocol::"
 
-namespace steem { namespace plugins { namespace account_history {
+namespace hive { namespace plugins { namespace account_history {
 
-using namespace steem::protocol;
+using namespace hive::protocol;
 
 using chain::database;
 using chain::operation_notification;
@@ -30,7 +30,7 @@ class account_history_plugin_impl
 {
    public:
       account_history_plugin_impl() :
-         _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ) {}
+         _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
       virtual ~account_history_plugin_impl() {}
 
@@ -348,4 +348,4 @@ flat_map< account_name_type, account_name_type > account_history_plugin::tracked
    return my->_tracked_accounts;
 }
 
-} } } // steem::plugins::account_history
+} } } // hive::plugins::account_history

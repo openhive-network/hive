@@ -4,9 +4,9 @@
 #include <fc/optional.hpp>
 #include <fc/time.hpp>
 
-namespace steem { namespace plugins { namespace statsd { namespace util {
+namespace hive { namespace plugins { namespace statsd { namespace util {
 
-using steem::plugins::statsd::statsd_plugin;
+using hive::plugins::statsd::statsd_plugin;
 
 bool statsd_enabled();
 const statsd_plugin& get_statsd();
@@ -54,47 +54,47 @@ inline uint32_t timing_helper( const fc::time_point& time ) { return time.time_s
 inline uint32_t timing_helper( const fc::time_point_sec& time ) { return time.sec_since_epoch() * 1000; }
 inline uint32_t timing_helper( uint32_t time ) { return time; }
 
-} } } } // steem::plugins::statsd::util
+} } } } // hive::plugins::statsd::util
 
 #define STATSD_INCREMENT( NAMESPACE, STAT, KEY, FREQ )   \
-if( steem::plugins::statsd::util::statsd_enabled() )     \
+if( hive::plugins::statsd::util::statsd_enabled() )     \
 {                                                        \
-   steem::plugins::statsd::util::get_statsd().increment( \
+   hive::plugins::statsd::util::get_statsd().increment( \
       NAMESPACE, STAT, KEY, FREQ                         \
    );                                                    \
 }
 
 #define STATSD_DECREMENT( NAMESPACE, STAT, KEY, FREQ )   \
-if( steem::plugins::statsd::util::statsd_enabled() )     \
+if( hive::plugins::statsd::util::statsd_enabled() )     \
 {                                                        \
-   steem::plugins::statsd::util::get_statsd().decrement( \
+   hive::plugins::statsd::util::get_statsd().decrement( \
       NAMESPACE, STAT, KEY, FREQ                         \
    );                                                    \
 }
 
 #define STATSD_COUNT( NAMESPACE, STAT, KEY, VAL, FREQ )  \
-if( steem::plugins::statsd::util::statsd_enabled() )     \
+if( hive::plugins::statsd::util::statsd_enabled() )     \
 {                                                        \
-   steem::plugins::statsd::util::get_statsd().count(     \
+   hive::plugins::statsd::util::get_statsd().count(     \
       NAMESPACE, STAT, KEY, VAL, FREQ                    \
    );                                                    \
 }
 
 #define STATSD_GAUGE( NAMESPACE, STAT, KEY, VAL, FREQ )  \
-if( steem::plugins::statsd::util::statsd_enabled() )     \
+if( hive::plugins::statsd::util::statsd_enabled() )     \
 {                                                        \
-   steem::plugins::statsd::util::get_statsd().gauge(     \
+   hive::plugins::statsd::util::get_statsd().gauge(     \
       NAMESPACE, STAT, KEY, VAL, FREQ                    \
    );                                                    \
 }
 
 // You can only have one statsd timer in the current scope at a time
 #define STATSD_START_TIMER( NAMESPACE, STAT, KEY, FREQ )                         \
-fc::optional< steem::plugins::statsd::util::statsd_timer_helper > statsd_timer;  \
-if( steem::plugins::statsd::util::statsd_enabled() )                             \
+fc::optional< hive::plugins::statsd::util::statsd_timer_helper > statsd_timer;  \
+if( hive::plugins::statsd::util::statsd_enabled() )                             \
 {                                                                                \
-   statsd_timer = steem::plugins::statsd::util::statsd_timer_helper(             \
-      NAMESPACE, STAT, KEY, FREQ, steem::plugins::statsd::util::get_statsd()     \
+   statsd_timer = hive::plugins::statsd::util::statsd_timer_helper(             \
+      NAMESPACE, STAT, KEY, FREQ, hive::plugins::statsd::util::get_statsd()     \
    );                                                                            \
 }
 
@@ -102,11 +102,11 @@ if( steem::plugins::statsd::util::statsd_enabled() )                            
    statsd_timer.reset();
 
 #define STATSD_TIMER( NAMESPACE, STAT, KEY, VAL, FREQ )  \
-if( steem::plugins::statsd::util::statsd_enabled() )     \
+if( hive::plugins::statsd::util::statsd_enabled() )     \
 {                                                        \
-   steem::plugins::statsd::util::get_statsd().timing(    \
+   hive::plugins::statsd::util::get_statsd().timing(    \
       NAMESPACE, STAT, KEY,                              \
-      steem::plugins::statsd::util::timing_helper( VAL ),\
+      hive::plugins::statsd::util::timing_helper( VAL ),\
       FREQ                                               \
    );                                                    \
 }

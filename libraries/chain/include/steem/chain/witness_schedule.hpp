@@ -1,6 +1,6 @@
 #pragma once
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 class database;
 

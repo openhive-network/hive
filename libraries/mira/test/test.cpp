@@ -24,7 +24,7 @@ struct mira_fixture {
    mira_fixture()
    {
       tmp = boost::filesystem::current_path() / boost::filesystem::unique_path();
-      db.open( tmp, 0, 1024*1024*8, steem::utilities::default_database_configuration() );
+      db.open( tmp, 0, 1024*1024*8, hive::utilities::default_database_configuration() );
    }
 
    ~mira_fixture()

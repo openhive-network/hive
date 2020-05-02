@@ -9,14 +9,14 @@
 
 #include "../db_fixture/database_fixture.hpp"
 
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive::chain;
+using namespace hive::protocol;
 
 BOOST_FIXTURE_TEST_SUITE( market_history, database_fixture )
 
 BOOST_AUTO_TEST_CASE( mh_test )
 {
-   using namespace steem::plugins::market_history;
+   using namespace hive::plugins::market_history;
 
    try
    {
@@ -32,16 +32,16 @@ BOOST_AUTO_TEST_CASE( mh_test )
       }
 
       appbase::app().register_plugin< market_history_plugin >();
-      db_plugin = &appbase::app().register_plugin< steem::plugins::debug_node::debug_node_plugin >();
+      db_plugin = &appbase::app().register_plugin< hive::plugins::debug_node::debug_node_plugin >();
       init_account_pub_key = init_account_priv_key.get_public_key();
 
       db_plugin->logging = false;
       appbase::app().initialize<
-         steem::plugins::market_history::market_history_plugin,
-         steem::plugins::debug_node::debug_node_plugin
+         hive::plugins::market_history::market_history_plugin,
+         hive::plugins::debug_node::debug_node_plugin
       >( argc, argv );
 
-      db = &appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db();
+      db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
       BOOST_REQUIRE( db );
 
       open_database();

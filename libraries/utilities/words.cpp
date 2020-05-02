@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <steem/utilities/words.hpp>
 
-namespace steem { namespace words {
+namespace hive { namespace words {
 
 const const_char_ptr word_list[] = {
 "a",
@@ -49780,4 +49780,4 @@ void hide_unused_warning() {
   (void)word_list;
 }
 
-} } // steem::words
+} } // hive::words

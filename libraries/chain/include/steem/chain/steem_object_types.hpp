@@ -21,7 +21,7 @@
       object_type () {}
 #endif
 
-namespace steem {
+namespace hive {
 
 namespace protocol {
 
@@ -36,12 +36,12 @@ using chainbase::object;
 using chainbase::oid;
 using chainbase::allocator;
 
-using steem::protocol::block_id_type;
-using steem::protocol::transaction_id_type;
-using steem::protocol::chain_id_type;
-using steem::protocol::account_name_type;
-using steem::protocol::share_type;
-using steem::protocol::ushare_type;
+using hive::protocol::block_id_type;
+using hive::protocol::transaction_id_type;
+using hive::protocol::chain_id_type;
+using hive::protocol::account_name_type;
+using hive::protocol::share_type;
+using hive::protocol::ushare_type;
 
 using chainbase::shared_string;
 
@@ -87,7 +87,7 @@ enum object_type
    pending_optional_action_object_type,
    proposal_object_type,
    proposal_vote_object_type,
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
    // SMT objects
    smt_token_object_type,
    account_regular_balance_object_type,
@@ -132,7 +132,7 @@ class vesting_delegation_expiration_object;
 class pending_required_action_object;
 class pending_optional_action_object;
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 class smt_token_object;
 class account_regular_balance_object;
 class account_rewards_balance_object;
@@ -178,7 +178,7 @@ typedef oid< vesting_delegation_expiration_object   > vesting_delegation_expirat
 typedef oid< pending_required_action_object         > pending_required_action_id_type;
 typedef oid< pending_optional_action_object         > pending_optional_action_id_type;
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 typedef oid< smt_token_object                       > smt_token_id_type;
 typedef oid< account_regular_balance_object         > account_regular_balance_id_type;
 typedef oid< account_rewards_balance_object         > account_rewards_balance_id_type;
@@ -198,17 +198,17 @@ enum bandwidth_type
    market   ///< Rate limiting for all other actions
 };
 
-} } //steem::chain
+} } //hive::chain
 
 #ifdef ENABLE_MIRA
 namespace mira {
 
 template< typename T > struct is_static_length< chainbase::oid< T > > : public boost::true_type {};
 template< typename T > struct is_static_length< fc::fixed_string< T > > : public boost::true_type {};
-template<> struct is_static_length< steem::protocol::account_name_type > : public boost::true_type {};
-template<> struct is_static_length< steem::protocol::asset_symbol_type > : public boost::true_type {};
-template<> struct is_static_length< steem::protocol::asset > : public boost::true_type {};
-template<> struct is_static_length< steem::protocol::price > : public boost::true_type {};
+template<> struct is_static_length< hive::protocol::account_name_type > : public boost::true_type {};
+template<> struct is_static_length< hive::protocol::asset_symbol_type > : public boost::true_type {};
+template<> struct is_static_length< hive::protocol::asset > : public boost::true_type {};
+template<> struct is_static_length< hive::protocol::price > : public boost::true_type {};
 
 } // mira
 #endif
@@ -218,12 +218,12 @@ namespace fc
 class variant;
 
 #ifndef ENABLE_MIRA
-inline void to_variant( const steem::chain::shared_string& s, variant& var )
+inline void to_variant( const hive::chain::shared_string& s, variant& var )
 {
-   var = fc::string( steem::chain::to_string( s ) );
+   var = fc::string( hive::chain::to_string( s ) );
 }
 
-inline void from_variant( const variant& var, steem::chain::shared_string& s )
+inline void from_variant( const variant& var, hive::chain::shared_string& s )
 {
    auto str = var.as_string();
    s.assign( str.begin(), str.end() );
@@ -271,7 +271,7 @@ void unpack( Stream& s, chainbase::oid<T>& id, uint32_t )
 template< typename Stream >
 void pack( Stream& s, const chainbase::shared_string& ss )
 {
-   std::string str = steem::chain::to_string( ss );
+   std::string str = hive::chain::to_string( ss );
    fc::raw::pack( s, str );
 }
 
@@ -281,7 +281,7 @@ void unpack( Stream& s, chainbase::shared_string& ss, uint32_t depth )
    depth++;
    std::string str;
    fc::raw::unpack( s, str, depth );
-   steem::chain::from_string( ss, str );
+   hive::chain::from_string( ss, str );
 }
 #endif
 
@@ -338,7 +338,7 @@ void unpack( Stream& s, boost::interprocess::flat_map< K, V, C, A >& value, uint
 
 #ifndef ENABLE_MIRA
 template< typename T >
-T unpack_from_vector( const steem::chain::buffer_type& s )
+T unpack_from_vector( const hive::chain::buffer_type& s )
 {
    try
    {
@@ -354,7 +354,7 @@ T unpack_from_vector( const steem::chain::buffer_type& s )
 #endif
 } } // namespace fc::raw
 
-FC_REFLECT_ENUM( steem::chain::object_type,
+FC_REFLECT_ENUM( hive::chain::object_type,
                  (dynamic_global_property_object_type)
                  (account_object_type)
                  (account_metadata_object_type)
@@ -390,7 +390,7 @@ FC_REFLECT_ENUM( steem::chain::object_type,
                  (proposal_object_type)
                  (proposal_vote_object_type)
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
                  (smt_token_object_type)
                  (account_regular_balance_object_type)
                  (account_rewards_balance_object_type)
@@ -402,7 +402,7 @@ FC_REFLECT_ENUM( steem::chain::object_type,
                )
 
 #ifndef ENABLE_MIRA
-FC_REFLECT_TYPENAME( steem::chain::shared_string )
+FC_REFLECT_TYPENAME( hive::chain::shared_string )
 #endif
 
-FC_REFLECT_ENUM( steem::chain::bandwidth_type, (post)(forum)(market) )
+FC_REFLECT_ENUM( hive::chain::bandwidth_type, (post)(forum)(market) )

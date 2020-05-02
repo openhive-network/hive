@@ -10,11 +10,11 @@
 #include <fc/variant.hpp>
 #include <fc/vector.hpp>
 
-namespace steem { namespace plugins { namespace tags {
+namespace hive { namespace plugins { namespace tags {
 
-using steem::protocol::share_type;
-using steem::protocol::asset;
-using steem::protocol::account_name_type;
+using hive::protocol::share_type;
+using hive::protocol::asset;
+using hive::protocol::account_name_type;
 using fc::time_point_sec;
 
 namespace detail { class tags_api_impl; }
@@ -51,7 +51,7 @@ struct vote_state
 
 struct discussion : public database_api::api_comment_object
 {
-   discussion( const steem::chain::comment_object& o, const steem::chain::database& db ) :
+   discussion( const hive::chain::comment_object& o, const hive::chain::database& db ) :
       database_api::api_comment_object( o, db ) {}
 
    discussion(){}
@@ -63,7 +63,7 @@ struct discussion : public database_api::api_comment_object
    vector< vote_state >          active_votes;
    vector< string >              replies; ///< author/slug mapping
    share_type                    author_reputation = 0;
-   asset                         promoted = asset(0, SBD_SYMBOL);
+   asset                         promoted = asset(0, HBD_SYMBOL);
    uint32_t                      body_length = 0;
    vector< account_name_type >   reblogged_by;
    optional< account_name_type > first_reblogged_by;
@@ -236,46 +236,46 @@ class tags_api
       std::unique_ptr< detail::tags_api_impl > my;
 };
 
-} } } // steem::plugins::tags
+} } } // hive::plugins::tags
 
-FC_REFLECT( steem::plugins::tags::api_tag_object,
+FC_REFLECT( hive::plugins::tags::api_tag_object,
             (name)(total_payouts)(net_votes)(top_posts)(comments)(trending) )
 
-FC_REFLECT( steem::plugins::tags::vote_state,
+FC_REFLECT( hive::plugins::tags::vote_state,
             (voter)(weight)(rshares)(percent)(reputation)(time) )
 
-FC_REFLECT_DERIVED( steem::plugins::tags::discussion, (steem::plugins::database_api::api_comment_object),
+FC_REFLECT_DERIVED( hive::plugins::tags::discussion, (hive::plugins::database_api::api_comment_object),
             (url)(root_title)(pending_payout_value)(total_pending_payout_value)(active_votes)(replies)(author_reputation)(promoted)(body_length)(reblogged_by)(first_reblogged_by)(first_reblogged_on) )
 
-FC_REFLECT( steem::plugins::tags::get_trending_tags_args,
+FC_REFLECT( hive::plugins::tags::get_trending_tags_args,
             (start_tag)(limit) )
 
-FC_REFLECT( steem::plugins::tags::get_trending_tags_return,
+FC_REFLECT( hive::plugins::tags::get_trending_tags_return,
             (tags) )
 
-FC_REFLECT( steem::plugins::tags::get_tags_used_by_author_args,
+FC_REFLECT( hive::plugins::tags::get_tags_used_by_author_args,
             (author) )
 
-FC_REFLECT( steem::plugins::tags::tag_count_object,
+FC_REFLECT( hive::plugins::tags::tag_count_object,
             (tag)(count) )
 
-FC_REFLECT( steem::plugins::tags::get_tags_used_by_author_return,
+FC_REFLECT( hive::plugins::tags::get_tags_used_by_author_return,
             (tags) )
 
-FC_REFLECT( steem::plugins::tags::get_discussion_args,
+FC_REFLECT( hive::plugins::tags::get_discussion_args,
             (author)(permlink) )
 
-FC_REFLECT( steem::plugins::tags::discussion_query,
+FC_REFLECT( hive::plugins::tags::discussion_query,
             (tag)(limit)(filter_tags)(select_authors)(select_tags)(truncate_body)(start_author)(start_permlink)(parent_author)(parent_permlink) )
 
-FC_REFLECT( steem::plugins::tags::discussion_query_result,
+FC_REFLECT( hive::plugins::tags::discussion_query_result,
             (discussions) )
 
-FC_REFLECT( steem::plugins::tags::get_replies_by_last_update_args,
+FC_REFLECT( hive::plugins::tags::get_replies_by_last_update_args,
             (start_parent_author)(start_permlink)(limit) )
 
-FC_REFLECT( steem::plugins::tags::get_discussions_by_author_before_date_args,
+FC_REFLECT( hive::plugins::tags::get_discussions_by_author_before_date_args,
             (author)(start_permlink)(before_date)(limit) )
 
-FC_REFLECT( steem::plugins::tags::get_active_votes_return,
+FC_REFLECT( hive::plugins::tags::get_active_votes_return,
             (votes) )

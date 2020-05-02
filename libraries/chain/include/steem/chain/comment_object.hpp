@@ -9,12 +9,12 @@
 
 #include <steem/chain/util/greedy_asset.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
    using protocol::beneficiary_route_type;
    using chainbase::t_vector;
    using chainbase::t_pair;
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
    using protocol::votable_asset_info;
 #endif
 
@@ -52,7 +52,7 @@ namespace steem { namespace chain {
          template< typename Constructor, typename Allocator >
          comment_object( Constructor&& c, allocator< Allocator > a )
             :category( a ), parent_permlink( a ), permlink( a ), beneficiaries( a )
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
             , allowed_vote_assets( a )
 #endif
          {
@@ -89,9 +89,9 @@ namespace steem { namespace chain {
          uint16_t          reward_weight = 0;
 
          /** tracks the total payout this comment has received over time, measured in HBD */
-         greedy_SBD_asset  total_payout_value = asset(0, SBD_SYMBOL);
-         greedy_SBD_asset  curator_payout_value = asset(0, SBD_SYMBOL);
-         greedy_SBD_asset  beneficiary_payout_value = asset( 0, SBD_SYMBOL );
+         greedy_SBD_asset  total_payout_value = asset(0, HBD_SYMBOL);
+         greedy_SBD_asset  curator_payout_value = asset(0, HBD_SYMBOL);
+         greedy_SBD_asset  beneficiary_payout_value = asset( 0, HBD_SYMBOL );
 
          share_type        author_rewards = 0;
 
@@ -99,15 +99,15 @@ namespace steem { namespace chain {
 
          id_type           root_comment;
 
-         greedy_SBD_asset  max_accepted_payout = asset( 1000000000, SBD_SYMBOL );       /// SBD value of the maximum payout this post will receive
-         uint16_t          percent_steem_dollars = STEEM_100_PERCENT; /// the percent of Steem Dollars to key, unkept amounts will be received as Steem Power
+         greedy_SBD_asset  max_accepted_payout = asset( 1000000000, HBD_SYMBOL );       /// SBD value of the maximum payout this post will receive
+         uint16_t          percent_steem_dollars = HIVE_100_PERCENT; /// the percent of Steem Dollars to key, unkept amounts will be received as Steem Power
          bool              allow_replies = true;      /// allows a post to disable replies.
          bool              allow_votes   = true;      /// allows a post to receive votes;
          bool              allow_curation_rewards = true;
 
          using t_beneficiaries = t_vector< beneficiary_route_type >;
          t_beneficiaries   beneficiaries;
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
          using t_votable_assets = t_vector< t_pair< asset_symbol_type, votable_asset_info > >;
          t_votable_assets  allowed_vote_assets;
 #endif
@@ -260,17 +260,17 @@ namespace steem { namespace chain {
       allocator< comment_content_object >
    > comment_content_index;
 
-} } // steem::chain
+} } // hive::chain
 
 #ifdef ENABLE_MIRA
 namespace mira {
 
-template<> struct is_static_length< steem::chain::comment_vote_object > : public boost::true_type {};
+template<> struct is_static_length< hive::chain::comment_vote_object > : public boost::true_type {};
 
 } // mira
 #endif
 
-FC_REFLECT( steem::chain::comment_object,
+FC_REFLECT( hive::chain::comment_object,
              (id)(author)(permlink)
              (category)(parent_author)(parent_permlink)
              (last_update)(created)(active)(last_payout)
@@ -280,34 +280,34 @@ FC_REFLECT( steem::chain::comment_object,
              (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(beneficiary_payout_value)(author_rewards)(net_votes)(root_comment)
              (max_accepted_payout)(percent_steem_dollars)(allow_replies)(allow_votes)(allow_curation_rewards)
              (beneficiaries)
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
              (allowed_vote_assets)
 #endif
           )
 
-CHAINBASE_SET_INDEX_TYPE( steem::chain::comment_object, steem::chain::comment_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_object, hive::chain::comment_index )
 
-FC_REFLECT( steem::chain::comment_content_object,
+FC_REFLECT( hive::chain::comment_content_object,
             (id)(comment)(title)(body)(json_metadata) )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::comment_content_object, steem::chain::comment_content_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_content_object, hive::chain::comment_content_index )
 
-FC_REFLECT( steem::chain::comment_vote_object,
+FC_REFLECT( hive::chain::comment_vote_object,
              (id)(voter)(comment)(weight)(rshares)(vote_percent)(last_update)(num_changes)
           )
-CHAINBASE_SET_INDEX_TYPE( steem::chain::comment_vote_object, steem::chain::comment_vote_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_vote_object, hive::chain::comment_vote_index )
 
 namespace helpers
 {
-   using steem::chain::shared_string;
+   using hive::chain::shared_string;
 
    template <>
-   class index_statistic_provider<steem::chain::comment_index>
+   class index_statistic_provider<hive::chain::comment_index>
    {
    public:
-      typedef steem::chain::comment_index IndexType;
-      typedef typename steem::chain::comment_object::t_beneficiaries t_beneficiaries;
-#ifdef STEEM_ENABLE_SMT
-      typedef typename steem::chain::comment_object::t_votable_assets t_votable_assets;
+      typedef hive::chain::comment_index IndexType;
+      typedef typename hive::chain::comment_object::t_beneficiaries t_beneficiaries;
+#ifdef HIVE_ENABLE_SMT
+      typedef typename hive::chain::comment_object::t_votable_assets t_votable_assets;
 #endif
       index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
       {
@@ -322,7 +322,7 @@ namespace helpers
                info._item_additional_allocation += o.parent_permlink.capacity()*sizeof(shared_string::value_type);
                info._item_additional_allocation += o.permlink.capacity()*sizeof(shared_string::value_type);
                info._item_additional_allocation += o.beneficiaries.capacity()*sizeof(t_beneficiaries::value_type);
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
                info._item_additional_allocation += o.allowed_vote_assets.capacity()*sizeof(t_votable_assets::value_type);
 #endif
             }
@@ -333,10 +333,10 @@ namespace helpers
    };
 
    template <>
-   class index_statistic_provider<steem::chain::comment_content_index>
+   class index_statistic_provider<hive::chain::comment_content_index>
    {
    public:
-      typedef steem::chain::comment_content_index IndexType;
+      typedef hive::chain::comment_content_index IndexType;
 
       index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
       {

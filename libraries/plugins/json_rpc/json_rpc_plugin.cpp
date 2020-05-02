@@ -14,7 +14,7 @@
 
 #define ENABLE_JSON_RPC_LOG
 
-namespace steem { namespace plugins { namespace json_rpc {
+namespace hive { namespace plugins { namespace json_rpc {
 
 namespace detail
 {
@@ -492,9 +492,9 @@ string json_rpc_plugin::call( const string& message )
 
 }
 
-} } } // steem::plugins::json_rpc
+} } } // hive::plugins::json_rpc
 
-FC_REFLECT( steem::plugins::json_rpc::detail::json_rpc_error, (code)(message)(data) )
-FC_REFLECT( steem::plugins::json_rpc::detail::json_rpc_response, (jsonrpc)(result)(error)(id) )
+FC_REFLECT( hive::plugins::json_rpc::detail::json_rpc_error, (code)(message)(data) )
+FC_REFLECT( hive::plugins::json_rpc::detail::json_rpc_response, (jsonrpc)(result)(error)(id) )
 
-FC_REFLECT( steem::plugins::json_rpc::detail::get_signature_args, (method) )
+FC_REFLECT( hive::plugins::json_rpc::detail::get_signature_args, (method) )

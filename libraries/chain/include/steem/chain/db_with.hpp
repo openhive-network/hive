@@ -13,7 +13,7 @@
  * and put the finally block in a destructor.  Aagh!
  */
 
-namespace steem { namespace chain { namespace detail {
+namespace hive { namespace chain { namespace detail {
 /**
  * Class used to help the with_skip_flags implementation.
  * It must be defined in this header because it must be
@@ -60,7 +60,7 @@ struct pending_transactions_restorer
 
       for( const auto& tx : _db._popped_tx )
       {
-         if( apply_trxs && fc::time_point::now() - start > STEEM_PENDING_TRANSACTION_EXECUTION_LIMIT ) apply_trxs = false;
+         if( apply_trxs && fc::time_point::now() - start > HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT ) apply_trxs = false;
 
          if( apply_trxs )
          {
@@ -82,7 +82,7 @@ struct pending_transactions_restorer
       _db._popped_tx.clear();
       for( const signed_transaction& tx : _pending_transactions )
       {
-         if( apply_trxs && fc::time_point::now() - start > STEEM_PENDING_TRANSACTION_EXECUTION_LIMIT ) apply_trxs = false;
+         if( apply_trxs && fc::time_point::now() - start > HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT ) apply_trxs = false;
 
          if( apply_trxs )
          {
@@ -165,4 +165,4 @@ void without_pending_transactions(
     return;
 }
 
-} } } // steem::chain::detail
+} } } // hive::chain::detail

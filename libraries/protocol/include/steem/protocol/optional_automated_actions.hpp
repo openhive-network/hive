@@ -4,7 +4,7 @@
 
 #include <steem/protocol/operation_util.hpp>
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
    /** NOTE: do not change the order of any actions or it will trigger a hardfork.
     */
@@ -14,11 +14,11 @@ namespace steem { namespace protocol {
 #endif
          > optional_automated_action;
 
-} } // steem::protocol
+} } // hive::protocol
 
-STEEM_DECLARE_OPERATION_TYPE( steem::protocol::optional_automated_action );
+STEEM_DECLARE_OPERATION_TYPE( hive::protocol::optional_automated_action );
 
 FC_TODO( "Remove ifdef when first optional automated action is added" )
 #ifdef IS_TEST_NET
-FC_REFLECT_TYPENAME( steem::protocol::optional_automated_action );
+FC_REFLECT_TYPENAME( hive::protocol::optional_automated_action );
 #endif

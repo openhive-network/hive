@@ -5,7 +5,7 @@
 
 #include <appbase/application.hpp>
 
-namespace steem { namespace plugins { namespace rewards_api {
+namespace hive { namespace plugins { namespace rewards_api {
 
 #define STEEM_REWARDS_API_PLUGIN_NAME "rewards_api"
 
@@ -16,7 +16,7 @@ class rewards_api_plugin : public appbase::plugin< rewards_api_plugin >
       virtual ~rewards_api_plugin();
 
       APPBASE_PLUGIN_REQUIRES(
-         (steem::plugins::json_rpc::json_rpc_plugin)
+         (hive::plugins::json_rpc::json_rpc_plugin)
       )
 
       static const std::string& name() { static std::string name = STEEM_REWARDS_API_PLUGIN_NAME; return name; }
@@ -32,5 +32,5 @@ class rewards_api_plugin : public appbase::plugin< rewards_api_plugin >
       std::unique_ptr< rewards_api > api;
 };
 
-} } } // steem::plugins::rewards_api
+} } } // hive::plugins::rewards_api
 
