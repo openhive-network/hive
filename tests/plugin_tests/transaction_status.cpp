@@ -1,12 +1,12 @@
 #if defined IS_TEST_NET
 #include <boost/test/unit_test.hpp>
-#include <steem/chain/account_object.hpp>
-#include <steem/protocol/steem_operations.hpp>
-#include <steem/protocol/config.hpp>
-#include <steem/plugins/transaction_status/transaction_status_plugin.hpp>
-#include <steem/plugins/transaction_status/transaction_status_objects.hpp>
-#include <steem/plugins/transaction_status_api/transaction_status_api_plugin.hpp>
-#include <steem/plugins/transaction_status_api/transaction_status_api.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/protocol/steem_operations.hpp>
+#include <hive/protocol/config.hpp>
+#include <hive/plugins/transaction_status/transaction_status_plugin.hpp>
+#include <hive/plugins/transaction_status/transaction_status_objects.hpp>
+#include <hive/plugins/transaction_status_api/transaction_status_api_plugin.hpp>
+#include <hive/plugins/transaction_status_api/transaction_status_api.hpp>
 
 #include "../db_fixture/database_fixture.hpp"
 

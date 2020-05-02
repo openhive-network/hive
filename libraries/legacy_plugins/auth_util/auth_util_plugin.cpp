@@ -1,7 +1,7 @@
 
 
-#include <steem/plugins/auth_util/auth_util_api.hpp>
-#include <steem/plugins/auth_util/auth_util_plugin.hpp>
+#include <hive/plugins/auth_util/auth_util_api.hpp>
+#include <hive/plugins/auth_util/auth_util_plugin.hpp>
 
 #include <string>
 

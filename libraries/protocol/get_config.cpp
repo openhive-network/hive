@@ -1,8 +1,8 @@
-#include <steem/protocol/get_config.hpp>
-#include <steem/protocol/config.hpp>
-#include <steem/protocol/asset.hpp>
-#include <steem/protocol/types.hpp>
-#include <steem/protocol/version.hpp>
+#include <hive/protocol/get_config.hpp>
+#include <hive/protocol/config.hpp>
+#include <hive/protocol/asset.hpp>
+#include <hive/protocol/types.hpp>
+#include <hive/protocol/version.hpp>
 
 namespace hive { namespace protocol {
 

@@ -8,10 +8,10 @@
 #include <fc/reflect/reflect.hpp>
 #include <fc/variant.hpp>
 
-#include <steem/utilities/key_conversion.hpp>
+#include <hive/utilities/key_conversion.hpp>
 
-#include <steem/protocol/transaction.hpp>
-#include <steem/protocol/types.hpp>
+#include <hive/protocol/transaction.hpp>
+#include <hive/protocol/types.hpp>
 
 #define CHAIN_ID_PARAM "--chain-id"
 

@@ -24,19 +24,19 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/protocol/exceptions.hpp>
+#include <hive/protocol/exceptions.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/steem_objects.hpp>
-#include <steem/chain/history_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/history_object.hpp>
 
-#include <steem/plugins/account_history/account_history_plugin.hpp>
-#include <steem/plugins/witness/block_producer.hpp>
+#include <hive/plugins/account_history/account_history_plugin.hpp>
+#include <hive/plugins/witness/block_producer.hpp>
 
-#include <steem/utilities/tempdir.hpp>
-#include <steem/utilities/database_configuration.hpp>
+#include <hive/utilities/tempdir.hpp>
+#include <hive/utilities/database_configuration.hpp>
 
 #include <fc/crypto/digest.hpp>
 

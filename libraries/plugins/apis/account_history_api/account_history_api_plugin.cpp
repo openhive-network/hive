@@ -1,5 +1,5 @@
-#include <steem/plugins/account_history_api/account_history_api_plugin.hpp>
-#include <steem/plugins/account_history_api/account_history_api.hpp>
+#include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
+#include <hive/plugins/account_history_api/account_history_api.hpp>
 
 
 namespace hive { namespace plugins { namespace account_history {

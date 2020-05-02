@@ -1,5 +1,5 @@
-#include <steem/plugins/reputation_api/reputation_api_plugin.hpp>
-#include <steem/plugins/reputation_api/reputation_api.hpp>
+#include <hive/plugins/reputation_api/reputation_api_plugin.hpp>
+#include <hive/plugins/reputation_api/reputation_api.hpp>
 
 
 namespace hive { namespace plugins { namespace reputation {

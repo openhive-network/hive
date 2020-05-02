@@ -1,13 +1,13 @@
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/plugins/block_log_info/block_log_info_plugin.hpp>
-#include <steem/plugins/block_log_info/block_log_info_objects.hpp>
+#include <hive/plugins/block_log_info/block_log_info_plugin.hpp>
+#include <hive/plugins/block_log_info/block_log_info_objects.hpp>
 
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/chain/global_property_object.hpp>
-#include <steem/chain/index.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/global_property_object.hpp>
+#include <hive/chain/index.hpp>
 
 #include <fstream>
 #include <iostream>

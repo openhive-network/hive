@@ -1,20 +1,20 @@
 #include <appbase/application.hpp>
-#include <steem/manifest/plugins.hpp>
+#include <hive/manifest/plugins.hpp>
 
-#include <steem/protocol/types.hpp>
-#include <steem/protocol/version.hpp>
+#include <hive/protocol/types.hpp>
+#include <hive/protocol/version.hpp>
 
-#include <steem/utilities/logging_config.hpp>
-#include <steem/utilities/key_conversion.hpp>
-#include <steem/utilities/git_revision.hpp>
+#include <hive/utilities/logging_config.hpp>
+#include <hive/utilities/key_conversion.hpp>
+#include <hive/utilities/git_revision.hpp>
 
-#include <steem/plugins/account_by_key/account_by_key_plugin.hpp>
-#include <steem/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
-#include <steem/plugins/chain/chain_plugin.hpp>
-#include <steem/plugins/condenser_api/condenser_api_plugin.hpp>
-#include <steem/plugins/p2p/p2p_plugin.hpp>
-#include <steem/plugins/webserver/webserver_plugin.hpp>
-#include <steem/plugins/witness/witness_plugin.hpp>
+#include <hive/plugins/account_by_key/account_by_key_plugin.hpp>
+#include <hive/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
+#include <hive/plugins/chain/chain_plugin.hpp>
+#include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
+#include <hive/plugins/p2p/p2p_plugin.hpp>
+#include <hive/plugins/webserver/webserver_plugin.hpp>
+#include <hive/plugins/witness/witness_plugin.hpp>
 
 #include <fc/exception/exception.hpp>
 #include <fc/thread/thread.hpp>

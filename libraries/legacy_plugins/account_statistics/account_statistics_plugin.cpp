@@ -1,9 +1,9 @@
-#include <steem/account_statistics/account_statistics_api.hpp>
+#include <hive/account_statistics/account_statistics_api.hpp>
 
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/comment_object.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/comment_object.hpp>
 
-#include <steem/chain/database.hpp>
+#include <hive/chain/database.hpp>
 
 namespace hive { namespace account_statistics {
 

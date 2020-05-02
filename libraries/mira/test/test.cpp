@@ -4,7 +4,7 @@
 #include "test_templates.hpp"
 
 #include <boost/test/unit_test.hpp>
-#include <steem/utilities/database_configuration.hpp>
+#include <hive/utilities/database_configuration.hpp>
 #include <iostream>
 
 using namespace mira;

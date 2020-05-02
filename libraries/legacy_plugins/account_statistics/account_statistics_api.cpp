@@ -1,4 +1,4 @@
-#include <steem/account_statistics/account_statistics_api.hpp>
+#include <hive/account_statistics/account_statistics_api.hpp>
 
 namespace hive { namespace account_statistics {
 

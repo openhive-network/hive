@@ -1,6 +1,6 @@
 
-#include <steem/plugins/network_broadcast_api/network_broadcast_api.hpp>
-#include <steem/plugins/network_broadcast_api/network_broadcast_api_plugin.hpp>
+#include <hive/plugins/network_broadcast_api/network_broadcast_api.hpp>
+#include <hive/plugins/network_broadcast_api/network_broadcast_api_plugin.hpp>
 
 #include <appbase/application.hpp>
 

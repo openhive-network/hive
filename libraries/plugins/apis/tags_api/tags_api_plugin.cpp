@@ -1,5 +1,5 @@
-#include <steem/plugins/tags_api/tags_api_plugin.hpp>
-#include <steem/plugins/tags_api/tags_api.hpp>
+#include <hive/plugins/tags_api/tags_api_plugin.hpp>
+#include <hive/plugins/tags_api/tags_api.hpp>
 
 
 namespace hive { namespace plugins { namespace tags {

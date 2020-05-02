@@ -1,12 +1,12 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/protocol/sps_operations.hpp>
+#include <hive/protocol/sps_operations.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/steem_evaluator.hpp>
-#include <steem/chain/sps_objects.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/steem_evaluator.hpp>
+#include <hive/chain/sps_objects.hpp>
 
-#include <steem/chain/util/sps_helper.hpp>
+#include <hive/chain/util/sps_helper.hpp>
 
 
 namespace hive { namespace chain {

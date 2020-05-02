@@ -1,6 +1,6 @@
-#include <steem/protocol/operations.hpp>
+#include <hive/protocol/operations.hpp>
 
-#include <steem/protocol/operation_util_impl.hpp>
+#include <hive/protocol/operation_util_impl.hpp>
 
 namespace hive { namespace protocol {
 

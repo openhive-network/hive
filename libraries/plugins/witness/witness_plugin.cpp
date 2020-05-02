@@ -1,15 +1,15 @@
-#include <steem/plugins/witness/witness_plugin.hpp>
-#include <steem/plugins/witness/witness_plugin_objects.hpp>
+#include <hive/plugins/witness/witness_plugin.hpp>
+#include <hive/plugins/witness/witness_plugin_objects.hpp>
 
-#include <steem/chain/database_exceptions.hpp>
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/comment_object.hpp>
-#include <steem/chain/witness_objects.hpp>
-#include <steem/chain/index.hpp>
-#include <steem/chain/util/impacted.hpp>
+#include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/comment_object.hpp>
+#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/index.hpp>
+#include <hive/chain/util/impacted.hpp>
 
-#include <steem/utilities/key_conversion.hpp>
-#include <steem/utilities/plugin_utilities.hpp>
+#include <hive/utilities/key_conversion.hpp>
+#include <hive/utilities/plugin_utilities.hpp>
 
 #include <fc/io/json.hpp>
 #include <fc/macros.hpp>

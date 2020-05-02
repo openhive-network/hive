@@ -2,7 +2,7 @@
 How plugins work
 ----------------
 
-All plugins in the `libraries/plugins` directory are iterated over by `CMakeLists.txt`. The manifest directory iterates through all plugins, adding them to the `steem_plugins` build target. Any other build target wanting to access all plugins
+All plugins in the `libraries/plugins` directory are iterated over by `CMakeLists.txt`. The manifest directory iterates through all plugins, adding them to the `hive_plugins` build target. Any other build target wanting to access all plugins
 available at build time should link to this target.
 
 There is a plugin in `example_plugins` called `example_api_plugin` which is a working example of adding a custom API call.

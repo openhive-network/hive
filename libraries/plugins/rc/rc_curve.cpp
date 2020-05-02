@@ -1,6 +1,6 @@
 
-#include <steem/plugins/rc/rc_curve.hpp>
-#include <steem/protocol/config.hpp>
+#include <hive/plugins/rc/rc_curve.hpp>
+#include <hive/protocol/config.hpp>
 
 #include <fc/exception/exception.hpp>
 #include <fc/log/logger.hpp>

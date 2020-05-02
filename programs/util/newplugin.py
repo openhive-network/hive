@@ -62,7 +62,7 @@ FC_API( {plugin_provider}::plugin::{plugin_name}::{plugin_name}_api,
 """
 #pragma once
 
-#include <steem/app/plugin.hpp>
+#include <hive/app/plugin.hpp>
 
 namespace {plugin_provider} {{ namespace plugin {{ namespace {plugin_name} {{
 
@@ -90,8 +90,8 @@ class {plugin_name}_plugin : public hive::app::plugin
 
 "{plugin_name}_api.cpp" :
 """
-#include <steem/app/api_context.hpp>
-#include <steem/app/application.hpp>
+#include <hive/app/api_context.hpp>
+#include <hive/app/application.hpp>
 
 #include <{plugin_provider}/plugins/{plugin_name}/{plugin_name}_api.hpp>
 #include <{plugin_provider}/plugins/{plugin_name}/{plugin_name}_plugin.hpp>

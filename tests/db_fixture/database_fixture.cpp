@@ -1,23 +1,23 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/program_options.hpp>
 
-#include <steem/utilities/tempdir.hpp>
-#include <steem/utilities/database_configuration.hpp>
+#include <hive/utilities/tempdir.hpp>
+#include <hive/utilities/database_configuration.hpp>
 
-#include <steem/chain/history_object.hpp>
-#include <steem/chain/steem_objects.hpp>
-#include <steem/chain/sps_objects.hpp>
-#include <steem/chain/util/delayed_voting.hpp>
+#include <hive/chain/history_object.hpp>
+#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/sps_objects.hpp>
+#include <hive/chain/util/delayed_voting.hpp>
 
-#include <steem/plugins/account_history/account_history_plugin.hpp>
-#include <steem/plugins/chain/chain_plugin.hpp>
-#include <steem/plugins/rc/rc_plugin.hpp>
-#include <steem/plugins/webserver/webserver_plugin.hpp>
-#include <steem/plugins/witness/witness_plugin.hpp>
+#include <hive/plugins/account_history/account_history_plugin.hpp>
+#include <hive/plugins/chain/chain_plugin.hpp>
+#include <hive/plugins/rc/rc_plugin.hpp>
+#include <hive/plugins/webserver/webserver_plugin.hpp>
+#include <hive/plugins/witness/witness_plugin.hpp>
 
-#include <steem/plugins/condenser_api/condenser_api_plugin.hpp>
+#include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
 
-#include <steem/chain/smt_objects/nai_pool_object.hpp>
+#include <hive/chain/smt_objects/nai_pool_object.hpp>
 
 #include <fc/crypto/digest.hpp>
 #include <fc/smart_ref_impl.hpp>

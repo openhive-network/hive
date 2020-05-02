@@ -1,4 +1,4 @@
-#include <steem/plugins/statsd/statsd_plugin.hpp>
+#include <hive/plugins/statsd/statsd_plugin.hpp>
 
 #include <fc/network/resolve.hpp>
 

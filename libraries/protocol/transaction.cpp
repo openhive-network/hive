@@ -1,6 +1,6 @@
 
-#include <steem/protocol/transaction.hpp>
-#include <steem/protocol/transaction_util.hpp>
+#include <hive/protocol/transaction.hpp>
+#include <hive/protocol/transaction_util.hpp>
 
 #include <fc/io/raw.hpp>
 #include <fc/bitutil.hpp>

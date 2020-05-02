@@ -1,14 +1,14 @@
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/plugins/tags/tags_plugin.hpp>
+#include <hive/plugins/tags/tags_plugin.hpp>
 
-#include <steem/protocol/config.hpp>
+#include <hive/protocol/config.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/index.hpp>
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/comment_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/index.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/comment_object.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>

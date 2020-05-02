@@ -1,6 +1,6 @@
-#include <steem/plugins/follow/follow_operations.hpp>
+#include <hive/plugins/follow/follow_operations.hpp>
 
-#include <steem/protocol/operation_util_impl.hpp>
+#include <hive/protocol/operation_util_impl.hpp>
 
 namespace hive { namespace plugins{ namespace follow {
 

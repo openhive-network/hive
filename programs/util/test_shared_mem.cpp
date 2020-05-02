@@ -8,12 +8,12 @@
 #include <fc/reflect/reflect.hpp>
 #include <fc/variant.hpp>
 
-#include <steem/utilities/key_conversion.hpp>
+#include <hive/utilities/key_conversion.hpp>
 
-#include <steem/protocol/types.hpp>
-#include <steem/protocol/authority.hpp>
+#include <hive/protocol/types.hpp>
+#include <hive/protocol/authority.hpp>
 
-#include <steem/chain/shared_authority.hpp>
+#include <hive/chain/shared_authority.hpp>
 
 #include <boost/interprocess/managed_mapped_file.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>

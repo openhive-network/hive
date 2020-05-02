@@ -1,16 +1,16 @@
-#include <steem/plugins/debug_node_api/debug_node_api_plugin.hpp>
-#include <steem/plugins/debug_node_api/debug_node_api.hpp>
+#include <hive/plugins/debug_node_api/debug_node_api_plugin.hpp>
+#include <hive/plugins/debug_node_api/debug_node_api.hpp>
 
 #include <fc/filesystem.hpp>
 #include <fc/optional.hpp>
 #include <fc/variant_object.hpp>
 
-#include <steem/chain/block_log.hpp>
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/chain/witness_objects.hpp>
+#include <hive/chain/block_log.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/witness_objects.hpp>
 
-#include <steem/utilities/key_conversion.hpp>
+#include <hive/utilities/key_conversion.hpp>
 
 namespace hive { namespace plugins { namespace debug_node {
 

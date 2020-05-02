@@ -1,4 +1,4 @@
-#include <steem/plugins/condenser_api/condenser_api_legacy_operations.hpp>
+#include <hive/plugins/condenser_api/condenser_api_legacy_operations.hpp>
 
 #define LEGACY_PREFIX "legacy_"
 #define LEGACY_PREFIX_OFFSET (7)

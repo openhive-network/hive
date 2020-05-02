@@ -1,10 +1,10 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 #include <appbase/application.hpp>
 
-#include <steem/plugins/block_api/block_api.hpp>
-#include <steem/plugins/block_api/block_api_plugin.hpp>
+#include <hive/plugins/block_api/block_api.hpp>
+#include <hive/plugins/block_api/block_api_plugin.hpp>
 
-#include <steem/protocol/get_config.hpp>
+#include <hive/protocol/get_config.hpp>
 
 namespace hive { namespace plugins { namespace block_api {
 

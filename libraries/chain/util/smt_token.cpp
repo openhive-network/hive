@@ -1,6 +1,6 @@
-#include <steem/chain/steem_fwd.hpp>
-#include <steem/chain/util/smt_token.hpp>
-#include <steem/chain/steem_object_types.hpp>
+#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/util/smt_token.hpp>
+#include <hive/chain/steem_object_types.hpp>
 #ifdef HIVE_ENABLE_SMT
 
 namespace hive { namespace chain { namespace util { namespace smt {

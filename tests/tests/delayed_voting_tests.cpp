@@ -2,22 +2,22 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/protocol/exceptions.hpp>
-#include <steem/protocol/hardfork.hpp>
+#include <hive/protocol/exceptions.hpp>
+#include <hive/protocol/hardfork.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/database_exceptions.hpp>
-#include <steem/chain/steem_objects.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/steem_objects.hpp>
 
-#include <steem/chain/sps_objects.hpp>
+#include <hive/chain/sps_objects.hpp>
 
-#include <steem/plugins/rc/rc_objects.hpp>
-#include <steem/plugins/rc/resource_count.hpp>
+#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/resource_count.hpp>
 
-#include <steem/chain/util/delayed_voting_processor.hpp>
-#include <steem/chain/util/delayed_voting.hpp>
+#include <hive/chain/util/delayed_voting_processor.hpp>
+#include <hive/chain/util/delayed_voting.hpp>
 
 #include <fc/macros.hpp>
 #include <fc/crypto/digest.hpp>

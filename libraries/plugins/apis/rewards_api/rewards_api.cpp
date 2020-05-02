@@ -1,10 +1,10 @@
 #include <chainbase/chainbase.hpp>
-#include <steem/chain/steem_objects.hpp>
-#include <steem/chain/util/reward.hpp>
-#include <steem/chain/util/uint256.hpp>
-#include <steem/plugins/chain/chain_plugin.hpp>
-#include <steem/plugins/rewards_api/rewards_api_plugin.hpp>
-#include <steem/plugins/rewards_api/rewards_api.hpp>
+#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/util/reward.hpp>
+#include <hive/chain/util/uint256.hpp>
+#include <hive/plugins/chain/chain_plugin.hpp>
+#include <hive/plugins/rewards_api/rewards_api_plugin.hpp>
+#include <hive/plugins/rewards_api/rewards_api.hpp>
 
 namespace hive { namespace plugins { namespace rewards_api {
 

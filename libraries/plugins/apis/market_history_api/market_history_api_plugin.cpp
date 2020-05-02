@@ -1,5 +1,5 @@
-#include <steem/plugins/market_history_api/market_history_api_plugin.hpp>
-#include <steem/plugins/market_history_api/market_history_api.hpp>
+#include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
+#include <hive/plugins/market_history_api/market_history_api.hpp>
 
 
 namespace hive { namespace plugins { namespace market_history {

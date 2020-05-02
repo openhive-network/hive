@@ -1,7 +1,7 @@
 #pragma once
 #include <appbase/application.hpp>
 
-#include <steem/plugins/json_rpc/json_rpc_plugin.hpp>
+#include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
 
 #define STEEM_EXAMPLE_API_PLUGIN_NAME "example_api"
 

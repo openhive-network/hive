@@ -28,7 +28,7 @@
 #include <graphene/net/node_configuration.hpp>
 #include <graphene/net/peer_database.hpp>
 
-#include <steem/protocol/types.hpp>
+#include <hive/protocol/types.hpp>
 
 #include <list>
 

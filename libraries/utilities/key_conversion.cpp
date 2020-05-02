@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include <steem/utilities/key_conversion.hpp>
+#include <hive/utilities/key_conversion.hpp>
 #include <fc/crypto/base58.hpp>
 #include <fc/variant.hpp>
 

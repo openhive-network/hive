@@ -1,4 +1,4 @@
-#include <steem/chain/shared_authority.hpp>
+#include <hive/chain/shared_authority.hpp>
 
 namespace hive { namespace chain {
 

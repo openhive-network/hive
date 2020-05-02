@@ -1,5 +1,5 @@
 
-#include <steem/protocol/fixed_string.hpp>
+#include <hive/protocol/fixed_string.hpp>
 
 #include <fc/io/raw.hpp>
 

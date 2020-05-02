@@ -24,15 +24,15 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/protocol/protocol.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/protocol/protocol.hpp>
 
-#include <steem/protocol/steem_operations.hpp>
-#include <steem/chain/account_object.hpp>
+#include <hive/protocol/steem_operations.hpp>
+#include <hive/chain/account_object.hpp>
 
-#include <steem/chain/util/reward.hpp>
+#include <hive/chain/util/reward.hpp>
 
 #include <fc/crypto/digest.hpp>
 #include <fc/crypto/hex.hpp>

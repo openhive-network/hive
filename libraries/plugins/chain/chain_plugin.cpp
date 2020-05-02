@@ -1,11 +1,11 @@
-#include <steem/chain/database_exceptions.hpp>
+#include <hive/chain/database_exceptions.hpp>
 
-#include <steem/plugins/chain/abstract_block_producer.hpp>
-#include <steem/plugins/chain/chain_plugin.hpp>
-#include <steem/plugins/statsd/utility.hpp>
+#include <hive/plugins/chain/abstract_block_producer.hpp>
+#include <hive/plugins/chain/chain_plugin.hpp>
+#include <hive/plugins/statsd/utility.hpp>
 
-#include <steem/utilities/benchmark_dumper.hpp>
-#include <steem/utilities/database_configuration.hpp>
+#include <hive/utilities/benchmark_dumper.hpp>
+#include <hive/utilities/database_configuration.hpp>
 
 #include <fc/string.hpp>
 #include <fc/io/json.hpp>

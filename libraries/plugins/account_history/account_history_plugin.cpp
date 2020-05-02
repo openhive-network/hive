@@ -1,12 +1,12 @@
-#include <steem/plugins/account_history/account_history_plugin.hpp>
+#include <hive/plugins/account_history/account_history_plugin.hpp>
 
-#include <steem/chain/util/impacted.hpp>
+#include <hive/chain/util/impacted.hpp>
 
-#include <steem/protocol/config.hpp>
+#include <hive/protocol/config.hpp>
 
-#include <steem/chain/history_object.hpp>
+#include <hive/chain/history_object.hpp>
 
-#include <steem/utilities/plugin_utilities.hpp>
+#include <hive/utilities/plugin_utilities.hpp>
 
 #include <fc/io/json.hpp>
 #include <fc/smart_ref_impl.hpp>

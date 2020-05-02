@@ -1,9 +1,9 @@
 
-#include <steem/app/api_context.hpp>
-#include <steem/app/application.hpp>
+#include <hive/app/api_context.hpp>
+#include <hive/app/application.hpp>
 
-#include <steem/plugins/block_info/block_info_api.hpp>
-#include <steem/plugins/block_info/block_info_plugin.hpp>
+#include <hive/plugins/block_info/block_info_api.hpp>
+#include <hive/plugins/block_info/block_info_plugin.hpp>
 
 namespace hive { namespace plugin { namespace block_info {
 

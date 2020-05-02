@@ -1,6 +1,6 @@
-#include <steem/chain/fork_database.hpp>
+#include <hive/chain/fork_database.hpp>
 
-#include <steem/chain/database_exceptions.hpp>
+#include <hive/chain/database_exceptions.hpp>
 
 namespace hive { namespace chain {
 

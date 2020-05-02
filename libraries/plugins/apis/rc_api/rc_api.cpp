@@ -1,10 +1,10 @@
-#include <steem/plugins/rc_api/rc_api_plugin.hpp>
-#include <steem/plugins/rc_api/rc_api.hpp>
+#include <hive/plugins/rc_api/rc_api_plugin.hpp>
+#include <hive/plugins/rc_api/rc_api.hpp>
 
-#include <steem/plugins/rc/rc_objects.hpp>
-#include <steem/plugins/rc/resource_sizes.hpp>
+#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/resource_sizes.hpp>
 
-#include <steem/chain/account_object.hpp>
+#include <hive/chain/account_object.hpp>
 
 #include <fc/variant_object.hpp>
 #include <fc/reflect/variant.hpp>

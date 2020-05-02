@@ -1,4 +1,4 @@
-#include <steem/chain/transaction_object.hpp>
+#include <hive/chain/transaction_object.hpp>
 
 namespace hive { namespace chain {
 

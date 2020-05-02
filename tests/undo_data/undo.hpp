@@ -1,6 +1,6 @@
 #pragma once
 
-#include <steem/chain/database.hpp>
+#include <hive/chain/database.hpp>
 #include <fstream>
 
 namespace hive { namespace chain {

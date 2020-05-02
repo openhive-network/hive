@@ -22,26 +22,26 @@ set(sources
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/git_revision.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp" @ONLY)
 list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")
 
-add_library( steem_utilities
+add_library( hive_utilities
              ${sources}
              ${HEADERS} )
-target_link_libraries( steem_utilities fc )
-target_include_directories( steem_utilities
+target_link_libraries( hive_utilities fc )
+target_include_directories( hive_utilities
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 if (USE_PCH)
-  set_target_properties(steem_utilities PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
-  cotire(steem_utilities)
+  set_target_properties(hive_utilities PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
+  cotire(hive_utilities)
 endif(USE_PCH)
 
 if( CLANG_TIDY_EXE )
    set_target_properties(
-      steem_utilities PROPERTIES
+      hive_utilities PROPERTIES
       CXX_CLANG_TIDY "${DO_CLANG_TIDY}"
    )
 endif( CLANG_TIDY_EXE )
 
 install( TARGETS
-   steem_utilities
+   hive_utilities
 
    RUNTIME DESTINATION bin
    LIBRARY DESTINATION lib

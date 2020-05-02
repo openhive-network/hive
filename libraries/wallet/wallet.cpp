@@ -1,17 +1,17 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/utilities/git_revision.hpp>
-#include <steem/utilities/key_conversion.hpp>
-#include <steem/utilities/words.hpp>
+#include <hive/utilities/git_revision.hpp>
+#include <hive/utilities/key_conversion.hpp>
+#include <hive/utilities/words.hpp>
 
-#include <steem/protocol/base.hpp>
-#include <steem/protocol/sps_operations.hpp>
-#include <steem/wallet/wallet.hpp>
-#include <steem/wallet/api_documentation.hpp>
-#include <steem/wallet/reflect_util.hpp>
-#include <steem/wallet/remote_node_api.hpp>
+#include <hive/protocol/base.hpp>
+#include <hive/protocol/sps_operations.hpp>
+#include <hive/wallet/wallet.hpp>
+#include <hive/wallet/api_documentation.hpp>
+#include <hive/wallet/reflect_util.hpp>
+#include <hive/wallet/remote_node_api.hpp>
 
-#include <steem/plugins/follow/follow_operations.hpp>
+#include <hive/plugins/follow/follow_operations.hpp>
 
 #include <algorithm>
 #include <cctype>

@@ -1,21 +1,21 @@
-#include <steem/plugins/condenser_api/condenser_api.hpp>
-#include <steem/plugins/condenser_api/condenser_api_plugin.hpp>
+#include <hive/plugins/condenser_api/condenser_api.hpp>
+#include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
 
-#include <steem/plugins/database_api/database_api_plugin.hpp>
-#include <steem/plugins/block_api/block_api_plugin.hpp>
-#include <steem/plugins/account_history_api/account_history_api_plugin.hpp>
-#include <steem/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
-#include <steem/plugins/network_broadcast_api/network_broadcast_api_plugin.hpp>
-#include <steem/plugins/tags_api/tags_api_plugin.hpp>
-#include <steem/plugins/follow_api/follow_api_plugin.hpp>
-#include <steem/plugins/reputation_api/reputation_api_plugin.hpp>
-#include <steem/plugins/market_history_api/market_history_api_plugin.hpp>
+#include <hive/plugins/database_api/database_api_plugin.hpp>
+#include <hive/plugins/block_api/block_api_plugin.hpp>
+#include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
+#include <hive/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
+#include <hive/plugins/network_broadcast_api/network_broadcast_api_plugin.hpp>
+#include <hive/plugins/tags_api/tags_api_plugin.hpp>
+#include <hive/plugins/follow_api/follow_api_plugin.hpp>
+#include <hive/plugins/reputation_api/reputation_api_plugin.hpp>
+#include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
 
 
-#include <steem/utilities/git_revision.hpp>
+#include <hive/utilities/git_revision.hpp>
 
-#include <steem/chain/util/reward.hpp>
-#include <steem/chain/util/uint256.hpp>
+#include <hive/chain/util/reward.hpp>
+#include <hive/chain/util/uint256.hpp>
 
 #include <fc/git_revision.hpp>
 

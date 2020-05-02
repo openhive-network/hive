@@ -24,13 +24,13 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/chain/steem_objects.hpp>
-#include <steem/chain/database.hpp>
+#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/database.hpp>
 
-#include <steem/plugins/condenser_api/condenser_api_legacy_asset.hpp>
-#include <steem/plugins/condenser_api/condenser_api_legacy_objects.hpp>
+#include <hive/plugins/condenser_api/condenser_api_legacy_asset.hpp>
+#include <hive/plugins/condenser_api/condenser_api_legacy_objects.hpp>
 
 #include <fc/crypto/digest.hpp>
 #include <fc/crypto/elliptic.hpp>

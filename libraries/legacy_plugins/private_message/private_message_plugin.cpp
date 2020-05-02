@@ -22,17 +22,17 @@
  * THE SOFTWARE.
  */
 
-#include <steem/private_message/private_message_evaluators.hpp>
-#include <steem/private_message/private_message_operations.hpp>
-#include <steem/private_message/private_message_plugin.hpp>
+#include <hive/private_message/private_message_evaluators.hpp>
+#include <hive/private_message/private_message_operations.hpp>
+#include <hive/private_message/private_message_plugin.hpp>
 
-#include <steem/app/impacted.hpp>
+#include <hive/app/impacted.hpp>
 
-#include <steem/protocol/config.hpp>
+#include <hive/protocol/config.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/index.hpp>
-#include <steem/chain/generic_custom_operation_interpreter.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/index.hpp>
+#include <hive/chain/generic_custom_operation_interpreter.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>

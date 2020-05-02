@@ -1,18 +1,18 @@
 #pragma once
 
 #include <appbase/application.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/chain/util/delayed_voting.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/util/delayed_voting.hpp>
 #include <fc/io/json.hpp>
 #include <fc/smart_ref_impl.hpp>
 
-#include <steem/plugins/debug_node/debug_node_plugin.hpp>
+#include <hive/plugins/debug_node/debug_node_plugin.hpp>
 
-#include <steem/utilities/key_conversion.hpp>
+#include <hive/utilities/key_conversion.hpp>
 
-#include <steem/plugins/block_api/block_api_plugin.hpp>
-#include <steem/plugins/condenser_api/condenser_api_legacy_asset.hpp>
-#include <steem/plugins/database_api/database_api_plugin.hpp>
+#include <hive/plugins/block_api/block_api_plugin.hpp>
+#include <hive/plugins/condenser_api/condenser_api_legacy_asset.hpp>
+#include <hive/plugins/database_api/database_api_plugin.hpp>
 
 #include <fc/network/http/connection.hpp>
 #include <fc/network/ip.hpp>

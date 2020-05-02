@@ -1,7 +1,7 @@
 
-#include <steem/chain/compound.hpp>
-#include <steem/protocol/asset.hpp>
-#include <steem/protocol/types.hpp>
+#include <hive/chain/compound.hpp>
+#include <hive/protocol/asset.hpp>
+#include <hive/protocol/types.hpp>
 
 #include <fc/io/json.hpp>
 #include <fc/variant_object.hpp>

@@ -1,19 +1,19 @@
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/plugins/follow/follow_plugin.hpp>
-#include <steem/plugins/follow/follow_objects.hpp>
-#include <steem/plugins/follow/follow_operations.hpp>
-#include <steem/plugins/follow/inc_performance.hpp>
+#include <hive/plugins/follow/follow_plugin.hpp>
+#include <hive/plugins/follow/follow_objects.hpp>
+#include <hive/plugins/follow/follow_operations.hpp>
+#include <hive/plugins/follow/inc_performance.hpp>
 
-#include <steem/chain/util/impacted.hpp>
+#include <hive/chain/util/impacted.hpp>
 
-#include <steem/protocol/config.hpp>
+#include <hive/protocol/config.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/index.hpp>
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/comment_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/index.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/comment_object.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>

@@ -27,7 +27,7 @@
 #include <iostream>
 #include <iterator>
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
 #include <fc/io/json.hpp>
 #include <fc/io/stdio.hpp>
@@ -38,11 +38,11 @@
 #include <fc/rpc/websocket_api.hpp>
 #include <fc/smart_ref_impl.hpp>
 
-#include <steem/utilities/key_conversion.hpp>
+#include <hive/utilities/key_conversion.hpp>
 
-#include <steem/protocol/protocol.hpp>
-#include <steem/wallet/remote_node_api.hpp>
-#include <steem/wallet/wallet.hpp>
+#include <hive/protocol/protocol.hpp>
+#include <hive/wallet/remote_node_api.hpp>
+#include <hive/wallet/wallet.hpp>
 
 #include <fc/interprocess/signals.hpp>
 #include <boost/program_options.hpp>

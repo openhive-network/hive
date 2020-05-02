@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-#include <steem/utilities/tempdir.hpp>
+#include <hive/utilities/tempdir.hpp>
 
 #include <cstdlib>
 

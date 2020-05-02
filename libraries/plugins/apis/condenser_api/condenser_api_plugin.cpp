@@ -1,6 +1,6 @@
-#include <steem/plugins/condenser_api/condenser_api_plugin.hpp>
-#include <steem/plugins/condenser_api/condenser_api.hpp>
-#include <steem/plugins/chain/chain_plugin.hpp>
+#include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
+#include <hive/plugins/condenser_api/condenser_api.hpp>
+#include <hive/plugins/chain/chain_plugin.hpp>
 
 namespace hive { namespace plugins { namespace condenser_api {
 

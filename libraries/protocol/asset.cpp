@@ -1,4 +1,4 @@
-#include <steem/protocol/asset.hpp>
+#include <hive/protocol/asset.hpp>
 
 #include <fc/io/json.hpp>
 

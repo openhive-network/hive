@@ -1,9 +1,9 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
-#include <steem/plugins/account_by_key_api/account_by_key_api.hpp>
+#include <hive/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
+#include <hive/plugins/account_by_key_api/account_by_key_api.hpp>
 
-#include <steem/plugins/account_by_key/account_by_key_objects.hpp>
+#include <hive/plugins/account_by_key/account_by_key_objects.hpp>
 
 namespace hive { namespace plugins { namespace account_by_key {
 

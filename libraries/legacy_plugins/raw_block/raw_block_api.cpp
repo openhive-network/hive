@@ -1,9 +1,9 @@
 
-#include <steem/app/api_context.hpp>
-#include <steem/app/application.hpp>
+#include <hive/app/api_context.hpp>
+#include <hive/app/application.hpp>
 
-#include <steem/plugins/raw_block/raw_block_api.hpp>
-#include <steem/plugins/raw_block/raw_block_plugin.hpp>
+#include <hive/plugins/raw_block/raw_block_api.hpp>
+#include <hive/plugins/raw_block/raw_block_plugin.hpp>
 
 namespace hive { namespace plugin { namespace raw_block {
 

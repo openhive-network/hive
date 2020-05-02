@@ -1,5 +1,5 @@
-#include <steem/protocol/validation.hpp>
-#include <steem/protocol/steem_optional_actions.hpp>
+#include <hive/protocol/validation.hpp>
+#include <hive/protocol/steem_optional_actions.hpp>
 
 namespace hive { namespace protocol {
 

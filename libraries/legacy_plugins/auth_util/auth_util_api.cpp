@@ -1,15 +1,15 @@
 
-#include <steem/app/api_context.hpp>
-#include <steem/app/application.hpp>
+#include <hive/app/api_context.hpp>
+#include <hive/app/application.hpp>
 
-#include <steem/protocol/authority.hpp>
-#include <steem/protocol/sign_state.hpp>
+#include <hive/protocol/authority.hpp>
+#include <hive/protocol/sign_state.hpp>
 
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/database.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/database.hpp>
 
-#include <steem/plugins/auth_util/auth_util_api.hpp>
-#include <steem/plugins/auth_util/auth_util_plugin.hpp>
+#include <hive/plugins/auth_util/auth_util_api.hpp>
+#include <hive/plugins/auth_util/auth_util_plugin.hpp>
 
 #include <fc/container/flat.hpp>
 

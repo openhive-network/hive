@@ -1,7 +1,7 @@
-#include <steem/plugins/webserver/webserver_plugin.hpp>
-#include <steem/plugins/webserver/local_endpoint.hpp>
+#include <hive/plugins/webserver/webserver_plugin.hpp>
+#include <hive/plugins/webserver/local_endpoint.hpp>
 
-#include <steem/plugins/chain/chain_plugin.hpp>
+#include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <fc/network/ip.hpp>
 #include <fc/log/logger_config.hpp>

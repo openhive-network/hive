@@ -1,4 +1,4 @@
-#include<steem/wallet/remote_node_api.hpp>
+#include<hive/wallet/remote_node_api.hpp>
 
 namespace hive { namespace wallet{
 

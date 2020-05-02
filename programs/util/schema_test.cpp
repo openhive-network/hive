@@ -3,24 +3,24 @@ namespace hive { namespace protocol {
 struct votable_asset_info_v1;
 } }
 
-#include <steem/protocol/types_fwd.hpp>
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/protocol/types_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/schema/schema.hpp>
-#include <steem/schema/schema_impl.hpp>
-#include <steem/schema/schema_types.hpp>
+#include <hive/schema/schema.hpp>
+#include <hive/schema/schema_impl.hpp>
+#include <hive/schema/schema_types.hpp>
 
-#include <steem/chain/schema_types/oid.hpp>
-#include <steem/protocol/schema_types/account_name_type.hpp>
-#include <steem/protocol/schema_types/asset_symbol_type.hpp>
+#include <hive/chain/schema_types/oid.hpp>
+#include <hive/protocol/schema_types/account_name_type.hpp>
+#include <hive/protocol/schema_types/asset_symbol_type.hpp>
 
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/steem_objects.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/steem_objects.hpp>
 
 using namespace hive::schema;
 

@@ -1,8 +1,8 @@
 
-#include <steem/schema/abstract_schema.hpp>
-#include <steem/schema/schema_impl.hpp>
+#include <hive/schema/abstract_schema.hpp>
+#include <hive/schema/schema_impl.hpp>
 
-#include <steem/protocol/schema_types.hpp>
+#include <hive/protocol/schema_types.hpp>
 
 namespace hive { namespace schema { namespace detail {
 

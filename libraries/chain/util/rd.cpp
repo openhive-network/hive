@@ -1,6 +1,6 @@
 
-#include <steem/chain/util/rd_setup.hpp>
-#include <steem/chain/util/rd_dynamics.hpp>
+#include <hive/chain/util/rd_setup.hpp>
+#include <hive/chain/util/rd_dynamics.hpp>
 
 #include <fc/uint128.hpp>
 #include <fc/exception/exception.hpp>

@@ -1,15 +1,15 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/chain/steem_evaluator.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/chain/custom_operation_interpreter.hpp>
-#include <steem/chain/steem_objects.hpp>
-#include <steem/chain/witness_objects.hpp>
-#include <steem/chain/block_summary_object.hpp>
+#include <hive/chain/steem_evaluator.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/custom_operation_interpreter.hpp>
+#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/block_summary_object.hpp>
 
-#include <steem/chain/util/reward.hpp>
-#include <steem/chain/util/manabar.hpp>
-#include <steem/chain/util/delayed_voting.hpp>
+#include <hive/chain/util/reward.hpp>
+#include <hive/chain/util/manabar.hpp>
+#include <hive/chain/util/delayed_voting.hpp>
 
 #include <fc/macros.hpp>
 

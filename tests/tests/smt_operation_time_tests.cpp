@@ -3,19 +3,19 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/protocol/exceptions.hpp>
-#include <steem/protocol/hardfork.hpp>
+#include <hive/protocol/exceptions.hpp>
+#include <hive/protocol/hardfork.hpp>
 
-#include <steem/chain/block_summary_object.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/chain/history_object.hpp>
-#include <steem/chain/steem_objects.hpp>
+#include <hive/chain/block_summary_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/history_object.hpp>
+#include <hive/chain/steem_objects.hpp>
 
-#include <steem/chain/util/reward.hpp>
+#include <hive/chain/util/reward.hpp>
 
-#include <steem/plugins/debug_node/debug_node_plugin.hpp>
+#include <hive/plugins/debug_node/debug_node_plugin.hpp>
 
 #include <fc/crypto/digest.hpp>
 

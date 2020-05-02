@@ -1,14 +1,14 @@
-#include <steem/plugins/witness/block_producer.hpp>
+#include <hive/plugins/witness/block_producer.hpp>
 
-#include <steem/protocol/base.hpp>
-#include <steem/protocol/config.hpp>
-#include <steem/protocol/version.hpp>
+#include <hive/protocol/base.hpp>
+#include <hive/protocol/config.hpp>
+#include <hive/protocol/version.hpp>
 
-#include <steem/chain/database_exceptions.hpp>
-#include <steem/chain/db_with.hpp>
-#include <steem/chain/pending_required_action_object.hpp>
-#include <steem/chain/pending_optional_action_object.hpp>
-#include <steem/chain/witness_objects.hpp>
+#include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/db_with.hpp>
+#include <hive/chain/pending_required_action_object.hpp>
+#include <hive/chain/pending_optional_action_object.hpp>
+#include <hive/chain/witness_objects.hpp>
 
 #include <fc/macros.hpp>
 

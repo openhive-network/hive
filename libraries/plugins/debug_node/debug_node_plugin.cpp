@@ -1,7 +1,7 @@
-#include <steem/plugins/debug_node/debug_node_plugin.hpp>
+#include <hive/plugins/debug_node/debug_node_plugin.hpp>
 
-#include <steem/plugins/witness/block_producer.hpp>
-#include <steem/chain/witness_objects.hpp>
+#include <hive/plugins/witness/block_producer.hpp>
+#include <hive/chain/witness_objects.hpp>
 
 #include <fc/io/buffered_iostream.hpp>
 #include <fc/io/fstream.hpp>
@@ -11,7 +11,7 @@
 #include <fc/thread/mutex.hpp>
 #include <fc/thread/scoped_lock.hpp>
 
-#include <steem/utilities/key_conversion.hpp>
+#include <hive/utilities/key_conversion.hpp>
 
 #include <sstream>
 #include <string>

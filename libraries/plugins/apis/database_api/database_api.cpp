@@ -1,17 +1,17 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
 #include <appbase/application.hpp>
 
-#include <steem/plugins/database_api/database_api.hpp>
-#include <steem/plugins/database_api/database_api_plugin.hpp>
+#include <hive/plugins/database_api/database_api.hpp>
+#include <hive/plugins/database_api/database_api_plugin.hpp>
 
-#include <steem/protocol/get_config.hpp>
-#include <steem/protocol/exceptions.hpp>
-#include <steem/protocol/transaction_util.hpp>
+#include <hive/protocol/get_config.hpp>
+#include <hive/protocol/exceptions.hpp>
+#include <hive/protocol/transaction_util.hpp>
 
-#include <steem/chain/util/smt_token.hpp>
+#include <hive/chain/util/smt_token.hpp>
 
-#include <steem/utilities/git_revision.hpp>
+#include <hive/utilities/git_revision.hpp>
 
 #include <fc/git_revision.hpp>
 

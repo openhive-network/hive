@@ -1,7 +1,7 @@
-#include <steem/plugins/market_history_api/market_history_api_plugin.hpp>
-#include <steem/plugins/market_history_api/market_history_api.hpp>
+#include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
+#include <hive/plugins/market_history_api/market_history_api.hpp>
 
-#include <steem/chain/steem_objects.hpp>
+#include <hive/chain/steem_objects.hpp>
 
 #define ASSET_TO_REAL( asset ) (double)( asset.amount.value )
 

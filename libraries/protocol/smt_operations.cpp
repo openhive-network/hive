@@ -1,6 +1,6 @@
 
-#include <steem/protocol/smt_operations.hpp>
-#include <steem/protocol/validation.hpp>
+#include <hive/protocol/smt_operations.hpp>
+#include <hive/protocol/validation.hpp>
 #ifdef HIVE_ENABLE_SMT
 
 #define SMT_DESTINATION_FROM          account_name_type( "$from" )

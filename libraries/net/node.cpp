@@ -80,8 +80,8 @@
 #include <graphene/net/config.hpp>
 #include <graphene/net/exceptions.hpp>
 
-#include <steem/protocol/config.hpp>
-#include <steem/plugins/statsd/utility.hpp>
+#include <hive/protocol/config.hpp>
+#include <hive/plugins/statsd/utility.hpp>
 
 #include <fc/git_revision.hpp>
 

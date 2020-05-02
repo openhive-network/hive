@@ -1,5 +1,5 @@
-#include <steem/plugins/database_api/database_api.hpp>
-#include <steem/plugins/database_api/database_api_plugin.hpp>
+#include <hive/plugins/database_api/database_api.hpp>
+#include <hive/plugins/database_api/database_api_plugin.hpp>
 
 namespace hive { namespace plugins { namespace database_api {
 

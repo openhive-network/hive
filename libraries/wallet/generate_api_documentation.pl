@@ -13,8 +13,8 @@ my $outFile = new IO::File($outputFileName, "w")
 my $fileHeader = <<'END';
 /** GENERATED FILE **/
 #include <set>
-#include <steem/wallet/api_documentation.hpp>
-#include <steem/wallet/wallet.hpp>
+#include <hive/wallet/api_documentation.hpp>
+#include <hive/wallet/wallet.hpp>
 
 namespace hive { namespace wallet {
    namespace detail

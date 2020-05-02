@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <steem/protocol/version.hpp>
+#include <hive/protocol/version.hpp>
 #include <set>
 
 #ifdef IS_TEST_NET

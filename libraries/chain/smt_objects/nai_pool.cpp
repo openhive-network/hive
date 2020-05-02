@@ -1,9 +1,9 @@
-#include <steem/chain/steem_fwd.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/protocol/asset_symbol.hpp>
-#include <steem/chain/smt_objects.hpp>
-#include <steem/chain/util/nai_generator.hpp>
-#include <steem/chain/util/smt_token.hpp>
+#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/protocol/asset_symbol.hpp>
+#include <hive/chain/smt_objects.hpp>
+#include <hive/chain/util/nai_generator.hpp>
+#include <hive/chain/util/smt_token.hpp>
 
 #ifdef HIVE_ENABLE_SMT
 

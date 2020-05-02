@@ -27,7 +27,7 @@
 #include <fc/variant.hpp>
 #include <fc/variant_object.hpp>
 
-#include <steem/protocol/protocol.hpp>
+#include <hive/protocol/protocol.hpp>
 
 #include <algorithm>
 #include <iostream>

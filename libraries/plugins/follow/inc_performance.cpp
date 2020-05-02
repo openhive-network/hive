@@ -1,9 +1,9 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/plugins/follow/inc_performance.hpp>
+#include <hive/plugins/follow/inc_performance.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/plugins/follow/follow_objects.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/plugins/follow/follow_objects.hpp>
 
 namespace hive { namespace plugins{ namespace follow {
 

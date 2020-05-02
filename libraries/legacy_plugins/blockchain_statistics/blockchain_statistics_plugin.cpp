@@ -1,13 +1,13 @@
-#include <steem/blockchain_statistics/blockchain_statistics_api.hpp>
+#include <hive/blockchain_statistics/blockchain_statistics_api.hpp>
 
-#include <steem/app/impacted.hpp>
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/comment_object.hpp>
-#include <steem/chain/history_object.hpp>
+#include <hive/app/impacted.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/comment_object.hpp>
+#include <hive/chain/history_object.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/index.hpp>
-#include <steem/chain/operation_notification.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/index.hpp>
+#include <hive/chain/operation_notification.hpp>
 
 namespace hive { namespace blockchain_statistics {
 

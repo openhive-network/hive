@@ -1,5 +1,5 @@
-#include <steem/chain/database.hpp>
-#include <steem/protocol/block.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/protocol/block.hpp>
 #include <fc/io/raw.hpp>
 
 int main( int argc, char** argv, char** envp )

@@ -1,8 +1,8 @@
 
-#include <steem/plugins/rc/resource_count.hpp>
-#include <steem/plugins/rc/resource_sizes.hpp>
+#include <hive/plugins/rc/resource_count.hpp>
+#include <hive/plugins/rc/resource_sizes.hpp>
 
-#include <steem/protocol/operations.hpp>
+#include <hive/protocol/operations.hpp>
 
 namespace hive { namespace plugins { namespace rc {
 

@@ -1,13 +1,13 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/chain/steem_evaluator.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/chain/steem_objects.hpp>
-#include <steem/chain/smt_objects.hpp>
-#include <steem/chain/util/reward.hpp>
-#include <steem/chain/util/smt_token.hpp>
+#include <hive/chain/steem_evaluator.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/smt_objects.hpp>
+#include <hive/chain/util/reward.hpp>
+#include <hive/chain/util/smt_token.hpp>
 
-#include <steem/protocol/smt_operations.hpp>
+#include <hive/protocol/smt_operations.hpp>
 
 #ifdef HIVE_ENABLE_SMT
 namespace hive { namespace chain {

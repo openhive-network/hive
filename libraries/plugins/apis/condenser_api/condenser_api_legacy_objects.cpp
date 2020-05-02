@@ -1,4 +1,4 @@
-#include <steem/plugins/condenser_api/condenser_api_legacy_objects.hpp>
+#include <hive/plugins/condenser_api/condenser_api_legacy_objects.hpp>
 
 namespace fc {
 

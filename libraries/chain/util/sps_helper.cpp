@@ -1,6 +1,6 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/chain/util/sps_helper.hpp>
+#include <hive/chain/util/sps_helper.hpp>
 
 namespace hive { namespace chain {
 

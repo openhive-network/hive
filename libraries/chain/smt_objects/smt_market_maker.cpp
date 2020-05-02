@@ -1,8 +1,8 @@
 
 #ifdef HIVE_ENABLE_SMT
 
-#include <steem/jsonball/jsonball.hpp>
-#include <steem/chain/smt_objects/smt_market_maker.hpp>
+#include <hive/jsonball/jsonball.hpp>
+#include <hive/chain/smt_objects/smt_market_maker.hpp>
 
 #include <fc/variant.hpp>
 #include <fc/io/json.hpp>

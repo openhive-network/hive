@@ -1,12 +1,12 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/plugins/follow/follow_plugin.hpp>
-#include <steem/plugins/follow/follow_operations.hpp>
-#include <steem/plugins/follow/follow_objects.hpp>
-#include <steem/plugins/follow/inc_performance.hpp>
+#include <hive/plugins/follow/follow_plugin.hpp>
+#include <hive/plugins/follow/follow_operations.hpp>
+#include <hive/plugins/follow/follow_objects.hpp>
+#include <hive/plugins/follow/inc_performance.hpp>
 
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/comment_object.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/comment_object.hpp>
 
 namespace hive { namespace plugins { namespace follow {
 

@@ -1,10 +1,10 @@
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/plugins/market_history/market_history_plugin.hpp>
+#include <hive/plugins/market_history/market_history_plugin.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/index.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/index.hpp>
 
 #include <fc/io/json.hpp>
 

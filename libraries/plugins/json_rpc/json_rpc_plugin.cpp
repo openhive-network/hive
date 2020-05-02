@@ -1,7 +1,7 @@
-#include <steem/plugins/json_rpc/json_rpc_plugin.hpp>
-#include <steem/plugins/json_rpc/utility.hpp>
+#include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
+#include <hive/plugins/json_rpc/utility.hpp>
 
-#include <steem/plugins/statsd/utility.hpp>
+#include <hive/plugins/statsd/utility.hpp>
 
 #include <boost/algorithm/string.hpp>
 

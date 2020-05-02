@@ -1,5 +1,5 @@
-#include <steem/plugins/rc_api/rc_api_plugin.hpp>
-#include <steem/plugins/rc_api/rc_api.hpp>
+#include <hive/plugins/rc_api/rc_api_plugin.hpp>
+#include <hive/plugins/rc_api/rc_api.hpp>
 
 
 namespace hive { namespace plugins { namespace rc {

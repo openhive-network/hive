@@ -1,4 +1,4 @@
-#include <steem/protocol/authority.hpp>
+#include <hive/protocol/authority.hpp>
 
 namespace hive { namespace protocol {
 

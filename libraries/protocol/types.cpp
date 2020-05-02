@@ -1,5 +1,5 @@
-#include <steem/protocol/config.hpp>
-#include <steem/protocol/types.hpp>
+#include <hive/protocol/config.hpp>
+#include <hive/protocol/types.hpp>
 
 #include <fc/crypto/base58.hpp>
 #include <fc/crypto/ripemd160.hpp>

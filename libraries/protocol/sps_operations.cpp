@@ -1,6 +1,6 @@
-#include <steem/protocol/sps_operations.hpp>
+#include <hive/protocol/sps_operations.hpp>
 
-#include <steem/protocol/validation.hpp>
+#include <hive/protocol/validation.hpp>
 
 namespace hive { namespace protocol {
 

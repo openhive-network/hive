@@ -1,17 +1,17 @@
 
-#include <steem/chain/steem_object_types.hpp>
+#include <hive/chain/steem_object_types.hpp>
 
-#include <steem/chain/index.hpp>
+#include <hive/chain/index.hpp>
 
-#include <steem/chain/block_summary_object.hpp>
-#include <steem/chain/history_object.hpp>
-#include <steem/chain/pending_required_action_object.hpp>
-#include <steem/chain/pending_optional_action_object.hpp>
-#include <steem/chain/smt_objects.hpp>
-#include <steem/chain/steem_objects.hpp>
-#include <steem/chain/sps_objects.hpp>
-#include <steem/chain/transaction_object.hpp>
-#include <steem/chain/witness_schedule.hpp>
+#include <hive/chain/block_summary_object.hpp>
+#include <hive/chain/history_object.hpp>
+#include <hive/chain/pending_required_action_object.hpp>
+#include <hive/chain/pending_optional_action_object.hpp>
+#include <hive/chain/smt_objects.hpp>
+#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/sps_objects.hpp>
+#include <hive/chain/transaction_object.hpp>
+#include <hive/chain/witness_schedule.hpp>
 
 namespace hive { namespace chain {
 

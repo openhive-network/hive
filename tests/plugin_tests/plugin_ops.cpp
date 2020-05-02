@@ -1,6 +1,6 @@
 #ifdef IS_TEST_NET
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/generic_custom_operation_interpreter.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/generic_custom_operation_interpreter.hpp>
 
 #include <boost/test/unit_test.hpp>
 

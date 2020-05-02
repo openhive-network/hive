@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include <steem/utilities/string_escape.hpp>
+#include <hive/utilities/string_escape.hpp>
 #include <sstream>
 
 namespace hive { namespace utilities {

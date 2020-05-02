@@ -47,7 +47,7 @@ void unpack( Stream& s, chainbase::oid<T>& id )
 
 } }
 
-#include <steem/protocol/fixed_string.hpp>
+#include <hive/protocol/fixed_string.hpp>
 
 #include <mira/index_adapter.hpp>
 #include <mira/ordered_index.hpp>

@@ -1,16 +1,16 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/protocol/exceptions.hpp>
-#include <steem/protocol/hardfork.hpp>
+#include <hive/protocol/exceptions.hpp>
+#include <hive/protocol/hardfork.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/database_exceptions.hpp>
-#include <steem/chain/steem_objects.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/steem_objects.hpp>
 
-#include <steem/chain/util/reward.hpp>
+#include <hive/chain/util/reward.hpp>
 
 #include <fc/macros.hpp>
 #include <fc/crypto/digest.hpp>

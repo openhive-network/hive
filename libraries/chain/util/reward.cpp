@@ -1,6 +1,6 @@
 
-#include <steem/chain/util/reward.hpp>
-#include <steem/chain/util/uint256.hpp>
+#include <hive/chain/util/reward.hpp>
+#include <hive/chain/util/uint256.hpp>
 
 namespace hive { namespace chain { namespace util {
 

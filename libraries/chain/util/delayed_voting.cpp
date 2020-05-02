@@ -1,5 +1,5 @@
-#include <steem/chain/util/delayed_voting.hpp>
-#include <steem/chain/util/delayed_voting_processor.hpp>
+#include <hive/chain/util/delayed_voting.hpp>
+#include <hive/chain/util/delayed_voting_processor.hpp>
 
 namespace hive { namespace chain {
 

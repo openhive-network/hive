@@ -1,5 +1,5 @@
-#include <steem/plugins/chain_api/chain_api_plugin.hpp>
-#include <steem/plugins/chain_api/chain_api.hpp>
+#include <hive/plugins/chain_api/chain_api_plugin.hpp>
+#include <hive/plugins/chain_api/chain_api.hpp>
 
 namespace hive { namespace plugins { namespace chain {
 

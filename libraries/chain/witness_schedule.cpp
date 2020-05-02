@@ -1,12 +1,12 @@
 
-#include <steem/chain/steem_fwd.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/chain/witness_objects.hpp>
-#include <steem/chain/witness_schedule.hpp>
+#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/witness_schedule.hpp>
 
-#include <steem/chain/util/rd_setup.hpp>
+#include <hive/chain/util/rd_setup.hpp>
 
-#include <steem/protocol/config.hpp>
+#include <hive/protocol/config.hpp>
 
 namespace hive { namespace chain {
 

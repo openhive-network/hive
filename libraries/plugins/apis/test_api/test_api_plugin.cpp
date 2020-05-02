@@ -1,4 +1,4 @@
-#include <steem/plugins/test_api/test_api_plugin.hpp>
+#include <hive/plugins/test_api/test_api_plugin.hpp>
 
 #include <fc/log/logger_config.hpp>
 

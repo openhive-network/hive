@@ -1,11 +1,11 @@
 #if defined IS_TEST_NET && defined HIVE_ENABLE_SMT
 #include <boost/test/unit_test.hpp>
 
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/comment_object.hpp>
-#include <steem/protocol/steem_operations.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/comment_object.hpp>
+#include <hive/protocol/steem_operations.hpp>
 
-#include <steem/plugins/market_history/market_history_plugin.hpp>
+#include <hive/plugins/market_history/market_history_plugin.hpp>
 
 #include "../db_fixture/database_fixture.hpp"
 

@@ -1,7 +1,7 @@
 
-#include <steem/plugins/rc/resource_user.hpp>
+#include <hive/plugins/rc/resource_user.hpp>
 
-#include <steem/protocol/transaction.hpp>
+#include <hive/protocol/transaction.hpp>
 
 namespace hive { namespace plugins { namespace rc {
 

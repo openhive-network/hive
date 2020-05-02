@@ -1,10 +1,10 @@
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/global_property_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/global_property_object.hpp>
 
-#include <steem/plugins/block_info/block_info.hpp>
-#include <steem/plugins/block_info/block_info_api.hpp>
-#include <steem/plugins/block_info/block_info_plugin.hpp>
+#include <hive/plugins/block_info/block_info.hpp>
+#include <hive/plugins/block_info/block_info_api.hpp>
+#include <hive/plugins/block_info/block_info_plugin.hpp>
 
 #include <string>
 

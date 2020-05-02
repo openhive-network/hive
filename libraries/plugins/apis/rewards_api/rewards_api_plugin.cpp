@@ -1,5 +1,5 @@
-#include <steem/plugins/rewards_api/rewards_api_plugin.hpp>
-#include <steem/plugins/rewards_api/rewards_api.hpp>
+#include <hive/plugins/rewards_api/rewards_api_plugin.hpp>
+#include <hive/plugins/rewards_api/rewards_api.hpp>
 
 namespace hive { namespace plugins { namespace rewards_api {
 

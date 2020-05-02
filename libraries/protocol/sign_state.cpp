@@ -1,5 +1,5 @@
 
-#include <steem/protocol/sign_state.hpp>
+#include <hive/protocol/sign_state.hpp>
 
 namespace hive { namespace protocol {
 

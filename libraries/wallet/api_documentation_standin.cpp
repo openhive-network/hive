@@ -23,8 +23,8 @@
  */
 #include <iomanip>
 #include <boost/algorithm/string/join.hpp>
-#include <steem/wallet/wallet.hpp>
-#include <steem/wallet/api_documentation.hpp>
+#include <hive/wallet/wallet.hpp>
+#include <hive/wallet/api_documentation.hpp>
 
 namespace hive { namespace wallet {
    namespace detail {

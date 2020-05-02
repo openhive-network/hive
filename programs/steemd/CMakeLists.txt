@@ -13,16 +13,16 @@ if( HIVE_STATIC_BUILD )
    target_link_libraries( steemd PRIVATE
       "-static-libstdc++ -static-libgcc"
       appbase
-      steem_utilities
-      steem_plugins
+      hive_utilities
+      hive_plugins
       ${CMAKE_DL_LIBS}
       ${PLATFORM_SPECIFIC_LIBS}
    )
 else( HIVE_STATIC_BUILD )
    target_link_libraries( steemd PRIVATE
       appbase
-      steem_utilities
-      steem_plugins
+      hive_utilities
+      hive_plugins
       ${CMAKE_DL_LIBS}
       ${PLATFORM_SPECIFIC_LIBS}
    )

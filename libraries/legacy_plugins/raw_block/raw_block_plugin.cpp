@@ -1,7 +1,7 @@
 
 
-#include <steem/plugins/raw_block/raw_block_api.hpp>
-#include <steem/plugins/raw_block/raw_block_plugin.hpp>
+#include <hive/plugins/raw_block/raw_block_api.hpp>
+#include <hive/plugins/raw_block/raw_block_plugin.hpp>
 
 #include <string>
 

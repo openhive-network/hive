@@ -1,6 +1,6 @@
-#include <steem/protocol/authority.hpp>
+#include <hive/protocol/authority.hpp>
 
-#include <steem/chain/util/impacted.hpp>
+#include <hive/chain/util/impacted.hpp>
 
 #include <fc/utility.hpp>
 

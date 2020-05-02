@@ -1,4 +1,4 @@
-#include <steem/protocol/block.hpp>
+#include <hive/protocol/block.hpp>
 #include <fc/io/raw.hpp>
 #include <fc/bitutil.hpp>
 #include <algorithm>

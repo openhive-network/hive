@@ -1,4 +1,4 @@
-#include <steem/chain/util/sps_processor.hpp>
+#include <hive/chain/util/sps_processor.hpp>
 
 namespace hive { namespace chain {
 

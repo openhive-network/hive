@@ -1,7 +1,7 @@
 #include <fc/io/json.hpp>
 #include <fc/variant.hpp>
 #include <fc/reflect/variant.hpp>
-#include <steem/utilities/database_configuration.hpp>
+#include <hive/utilities/database_configuration.hpp>
 
 #define KB(x)   ((size_t) (x) << 10)
 #define MB(x)   ((size_t) (x) << 20)

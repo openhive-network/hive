@@ -1,11 +1,11 @@
-#include <steem/plugins/p2p/p2p_plugin.hpp>
-#include <steem/plugins/p2p/p2p_default_seeds.hpp>
-#include <steem/plugins/statsd/utility.hpp>
+#include <hive/plugins/p2p/p2p_plugin.hpp>
+#include <hive/plugins/p2p/p2p_default_seeds.hpp>
+#include <hive/plugins/statsd/utility.hpp>
 
 #include <graphene/net/node.hpp>
 #include <graphene/net/exceptions.hpp>
 
-#include <steem/chain/database_exceptions.hpp>
+#include <hive/chain/database_exceptions.hpp>
 
 #include <fc/network/ip.hpp>
 #include <fc/network/resolve.hpp>

@@ -1,4 +1,4 @@
-#include <steem/blockchain_statistics/blockchain_statistics_api.hpp>
+#include <hive/blockchain_statistics/blockchain_statistics_api.hpp>
 
 namespace hive { namespace blockchain_statistics {
 

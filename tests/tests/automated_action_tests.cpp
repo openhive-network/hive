@@ -1,14 +1,14 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/protocol/exceptions.hpp>
+#include <hive/protocol/exceptions.hpp>
 
-#include <steem/chain/pending_required_action_object.hpp>
-#include <steem/chain/pending_optional_action_object.hpp>
+#include <hive/chain/pending_required_action_object.hpp>
+#include <hive/chain/pending_optional_action_object.hpp>
 
-#include <steem/plugins/witness/block_producer.hpp>
+#include <hive/plugins/witness/block_producer.hpp>
 
 #include "../db_fixture/database_fixture.hpp"
 
