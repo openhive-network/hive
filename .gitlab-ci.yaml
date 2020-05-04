@@ -41,7 +41,6 @@ staging-build:
 
   cache: {}
   tags:
-    - hive-hive-runner
     - public-runner
     
   allow_failure: false
@@ -77,7 +76,6 @@ development-build:
 
   cache: {}
   tags:
-    - hive-hive-runner
     - public-runner
 
   allow_failure: false
