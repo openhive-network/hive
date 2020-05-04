@@ -200,7 +200,7 @@ void database::open( const open_args& args )
       {
          const auto& hardforks = get_hardfork_property_object();
          ilog("Loaded blockchain which had already processed hardfork 24, setting Hive chain id");
-         if (hardforks.last_hardfork >= STEEM_HARDFORK_0_24)
+         if (hardforks.last_hardfork >= HIVE_HARDFORK_0_24)
             set_chain_id(HIVE_CHAIN_ID);
       });
          
