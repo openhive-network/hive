@@ -1,19 +1,19 @@
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/plugins/block_data_export/block_data_export_plugin.hpp>
+#include <hive/plugins/block_data_export/block_data_export_plugin.hpp>
 
-#include <steem/plugins/rc/rc_curve.hpp>
-#include <steem/plugins/rc/rc_export_objects.hpp>
-#include <steem/plugins/rc/rc_plugin.hpp>
-#include <steem/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/rc_curve.hpp>
+#include <hive/plugins/rc/rc_export_objects.hpp>
+#include <hive/plugins/rc/rc_plugin.hpp>
+#include <hive/plugins/rc/rc_objects.hpp>
 
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/chain/database_exceptions.hpp>
-#include <steem/chain/index.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/index.hpp>
 
-#include <steem/jsonball/jsonball.hpp>
+#include <hive/jsonball/jsonball.hpp>
 
 #include <boost/algorithm/string.hpp>
 
@@ -30,20 +30,20 @@
 // 2 / ( 24 * 5 ) = 0.01666...
 #define STEEM_RC_MAX_NEGATIVE_PERCENT 166
 
-namespace steem { namespace plugins { namespace rc {
+namespace hive { namespace plugins { namespace rc {
 
-using steem::plugins::block_data_export::block_data_export_plugin;
+using hive::plugins::block_data_export::block_data_export_plugin;
 
 namespace detail {
 
 using chain::plugin_exception;
-using steem::chain::util::manabar_params;
+using hive::chain::util::manabar_params;
 
 class rc_plugin_impl
 {
    public:
       rc_plugin_impl( rc_plugin& _plugin ) :
-         _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ),
+         _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
          _self( _plugin )
       {
          _skip.skip_reject_not_enough_rc = 0;
@@ -112,7 +112,7 @@ void create_rc_account( database& db, uint32_t now, const account_object& accoun
          return;
    }
 
-   if( max_rc_creation_adjustment.symbol == STEEM_SYMBOL )
+   if( max_rc_creation_adjustment.symbol == HIVE_SYMBOL )
    {
       const dynamic_global_property_object& gpo = db.get_dynamic_global_properties();
       max_rc_creation_adjustment = max_rc_creation_adjustment * gpo.get_vesting_share_price();
@@ -271,7 +271,7 @@ void use_account_rcs(
 
       bool has_mana = rca.rc_manabar.has_mana( rc );
 
-      if( (!skip.skip_reject_not_enough_rc) && db.has_hardfork( STEEM_HARDFORK_0_20 ) )
+      if( (!skip.skip_reject_not_enough_rc) && db.has_hardfork( HIVE_HARDFORK_0_20 ) )
       {
          if( db.is_producing() )
          {
@@ -304,7 +304,7 @@ void use_account_rcs(
       if( skip.skip_deduct_rc )
          return;
 
-      int64_t min_mana = -1 * ( STEEM_RC_MAX_NEGATIVE_PERCENT * mbparams.max_mana ) / STEEM_100_PERCENT;
+      int64_t min_mana = -1 * ( STEEM_RC_MAX_NEGATIVE_PERCENT * mbparams.max_mana ) / HIVE_100_PERCENT;
 
       rca.rc_manabar.use_mana( rc, min_mana );
    } );
@@ -317,7 +317,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
    if( before_first_block() )
       return;
 
-   int64_t rc_regen = (gpo.total_vesting_shares.amount.value / (STEEM_RC_REGEN_TIME / STEEM_BLOCK_INTERVAL));
+   int64_t rc_regen = (gpo.total_vesting_shares.amount.value / (STEEM_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL));
 
    rc_transaction_info tx_info;
 
@@ -354,7 +354,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
    );
 
    std::shared_ptr< exp_rc_data > export_data =
-      steem::plugins::block_data_export::find_export_data< exp_rc_data >( STEEM_RC_PLUGIN_NAME );
+      hive::plugins::block_data_export::find_export_data< exp_rc_data >( STEEM_RC_PLUGIN_NAME );
    if( (gpo.head_block_number % 10000) == 0 )
    {
       dlog( "${t} : ${i}", ("t", gpo.time)("i", tx_info) );
@@ -513,7 +513,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       } );
 
    std::shared_ptr< exp_rc_data > export_data =
-      steem::plugins::block_data_export::find_export_data< exp_rc_data >( STEEM_RC_PLUGIN_NAME );
+      hive::plugins::block_data_export::find_export_data< exp_rc_data >( STEEM_RC_PLUGIN_NAME );
    if( export_data )
       export_data->block_info = block_info;
 } FC_CAPTURE_AND_RETHROW( (note.block) ) }
@@ -521,7 +521,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
 void rc_plugin_impl::on_first_block()
 {
    // Initial values are located at `libraries/jsonball/data/resource_parameters.json`
-   std::string resource_params_json = steem::jsonball::get_resource_parameters();
+   std::string resource_params_json = hive::jsonball::get_resource_parameters();
    fc::variant resource_params_var = fc::json::from_string( resource_params_json, fc::json::strict_parser );
    std::vector< std::pair< fc::variant, std::pair< fc::variant_object, fc::variant_object > > > resource_params_pairs;
    fc::from_variant( resource_params_var, resource_params_pairs );
@@ -613,7 +613,7 @@ struct pre_apply_operation_visitor
       //
       // TODO:  Issue number
       //
-      static_assert( STEEM_RC_REGEN_TIME <= STEEM_VOTING_MANA_REGENERATION_SECONDS, "RC regen time must be smaller than vote regen time" );
+      static_assert( STEEM_RC_REGEN_TIME <= HIVE_VOTING_MANA_REGENERATION_SECONDS, "RC regen time must be smaller than vote regen time" );
 
       // ilog( "regenerate(${a})", ("a", account.name) );
 
@@ -720,7 +720,7 @@ struct pre_apply_operation_visitor
       regenerate( op.account );
    }
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
    void operator()( const claim_reward_balance2_operation& op )const
    {
       regenerate( op.account );
@@ -729,7 +729,7 @@ struct pre_apply_operation_visitor
 
    void operator()( const hardfork_operation& op )const
    {
-      if( op.hardfork_id == STEEM_HARDFORK_0_1 )
+      if( op.hardfork_id == HIVE_HARDFORK_0_1 )
       {
          const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
          for( auto it=idx.begin(); it!=idx.end(); ++it )
@@ -756,7 +756,7 @@ struct pre_apply_operation_visitor
 
    void operator()( const clear_null_account_balance_operation& op )const
    {
-      regenerate( STEEM_NULL_ACCOUNT );
+      regenerate( HIVE_NULL_ACCOUNT );
    }
 
    //void operator()( const consolidate_treasury_balance_operation& op )const //not needed for treasury accounts, leave default
@@ -847,7 +847,7 @@ struct post_apply_operation_visitor
    void operator()( const pow_operation& op )const
    {
       // ilog( "handling post-apply pow_operation" );
-      create_rc_account< true >( _db, _current_time, op.worker_account, asset( 0, STEEM_SYMBOL ) );
+      create_rc_account< true >( _db, _current_time, op.worker_account, asset( 0, HIVE_SYMBOL ) );
       _mod_accounts.emplace_back( op.worker_account );
       _mod_accounts.emplace_back( _current_witness );
    }
@@ -855,7 +855,7 @@ struct post_apply_operation_visitor
    void operator()( const pow2_operation& op )const
    {
       auto worker_name = get_worker_name( op.work );
-      create_rc_account< true >( _db, _current_time, worker_name, asset( 0, STEEM_SYMBOL ) );
+      create_rc_account< true >( _db, _current_time, worker_name, asset( 0, HIVE_SYMBOL ) );
       _mod_accounts.emplace_back( worker_name );
       _mod_accounts.emplace_back( _current_witness );
    }
@@ -904,7 +904,7 @@ struct post_apply_operation_visitor
       _mod_accounts.emplace_back( op.account );
    }
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
    void operator()( const claim_reward_balance2_operation& op )const
    {
       _mod_accounts.emplace_back( op.account );
@@ -913,7 +913,7 @@ struct post_apply_operation_visitor
 
    void operator()( const hardfork_operation& op )const
    {
-      if( op.hardfork_id == STEEM_HARDFORK_0_1 )
+      if( op.hardfork_id == HIVE_HARDFORK_0_1 )
       {
          const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
          for( auto it=idx.begin(); it!=idx.end(); ++it )
@@ -922,7 +922,7 @@ struct post_apply_operation_visitor
          }
       }
 
-      if( op.hardfork_id == STEEM_HARDFORK_0_20 )
+      if( op.hardfork_id == HIVE_HARDFORK_0_20 )
       {
          const auto& params = _db.get< rc_resource_param_object, by_id >( rc_resource_param_object::id_type() );
 
@@ -955,7 +955,7 @@ struct post_apply_operation_visitor
 
    void operator()( const clear_null_account_balance_operation& op )const
    {
-      _mod_accounts.emplace_back( STEEM_NULL_ACCOUNT );
+      _mod_accounts.emplace_back( HIVE_NULL_ACCOUNT );
    }
 
    //void operator()( const consolidate_treasury_balance_operation& op )const //not needed for treasury accounts, leave default
@@ -1001,7 +1001,7 @@ void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note 
    pre_apply_operation_visitor vtor( _db );
 
    // TODO: Add issue number to HF constant
-   if( _db.has_hardfork( STEEM_HARDFORK_0_20 ) )
+   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
       vtor._vesting_share_price = gpo.get_vesting_share_price();
 
    vtor._current_witness = gpo.current_witness;
@@ -1078,7 +1078,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
    update_modified_accounts( _db, modified_accounts );
 
    // There is no transaction equivalent for actions, so post apply transaction logic for actions go here.
-   int64_t rc_regen = (gpo.total_vesting_shares.amount.value / (STEEM_RC_REGEN_TIME / STEEM_BLOCK_INTERVAL));
+   int64_t rc_regen = (gpo.total_vesting_shares.amount.value / (STEEM_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL));
 
    rc_optional_action_info opt_action_info;
 
@@ -1115,7 +1115,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
    );
 
    std::shared_ptr< exp_rc_data > export_data =
-      steem::plugins::block_data_export::find_export_data< exp_rc_data >( STEEM_RC_PLUGIN_NAME );
+      hive::plugins::block_data_export::find_export_data< exp_rc_data >( STEEM_RC_PLUGIN_NAME );
    if( (gpo.head_block_number % 10000) == 0 )
    {
       dlog( "${t} : ${i}", ("t", gpo.time)("i", opt_action_info) );
@@ -1181,7 +1181,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
             []() -> std::shared_ptr< exportable_block_data > { return std::make_shared< exp_rc_data >(); } );
       }
 
-      chain::database& db = appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db();
+      chain::database& db = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
 
       my->_post_apply_block_conn = db.add_post_apply_block_handler( [&]( const block_notification& note )
          { try { my->on_post_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
@@ -1288,4 +1288,4 @@ int64_t get_maximum_rc( const account_object& account, const rc_account_object& 
    return result;
 }
 
-} } } // steem::plugins::rc
+} } } // hive::plugins::rc

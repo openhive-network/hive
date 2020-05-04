@@ -12,21 +12,24 @@ namespace chainbase
 template<typename T>
 class oid
 {
+
+using __id_type = uint32_t;
+
 public:
-   oid( int64_t i = 0 ):_id(i){}
+   oid( __id_type i = 0 ):_id(i){}
 
    oid& operator++() { ++_id; return *this; }
 
    operator size_t () const
    {
-      return _id;
+      return static_cast<size_t>(_id);
    }
 
    friend bool operator < ( const oid& a, const oid& b ) { return a._id < b._id; }
    friend bool operator > ( const oid& a, const oid& b ) { return a._id > b._id; }
    friend bool operator == ( const oid& a, const oid& b ) { return a._id == b._id; }
    friend bool operator != ( const oid& a, const oid& b ) { return a._id != b._id; }
-   int64_t _id = 0;
+   __id_type _id = 0;
 };
 
 } /// namespace chainbase

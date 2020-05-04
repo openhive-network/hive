@@ -70,8 +70,8 @@ libraries/wallet/Doxyfile
 libraries/wallet/api_documentation.cpp
 libraries/wallet/doxygen
 
-programs/build_helpers/steem_build_helpers/__pycache__/
-programs/util/dump_steem_schema
+programs/build_helpers/hive_build_helpers/__pycache__/
+programs/util/dump_hive_schema
 programs/util/schema_test
 programs/util/serialize_set_properties
 programs/util/sign_digest

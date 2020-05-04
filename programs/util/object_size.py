@@ -16,8 +16,8 @@ builtin_type_sizes = {
    "bool" : 1,
 
    "fc::time_point_sec" : 4,
-   "steem::protocol::asset_symbol_type" : 8,
-   "steem::protocol::account_name_type" : 16,
+   "hive::protocol::asset_symbol_type" : 8,
+   "hive::protocol::account_name_type" : 16,
 }
 
 class TermSum(object):

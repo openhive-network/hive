@@ -1,26 +1,26 @@
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/plugins/reputation/reputation_plugin.hpp>
-#include <steem/plugins/reputation/reputation_objects.hpp>
+#include <hive/plugins/reputation/reputation_plugin.hpp>
+#include <hive/plugins/reputation/reputation_objects.hpp>
 
-#include <steem/chain/util/impacted.hpp>
+#include <hive/chain/util/impacted.hpp>
 
-#include <steem/protocol/config.hpp>
+#include <hive/protocol/config.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/index.hpp>
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/comment_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/index.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/comment_object.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>
 
 #include <memory>
 
-namespace steem { namespace plugins { namespace reputation {
+namespace hive { namespace plugins { namespace reputation {
 
-using namespace steem::protocol;
+using namespace hive::protocol;
 
 namespace detail {
 
@@ -28,7 +28,7 @@ class reputation_plugin_impl
 {
    public:
       reputation_plugin_impl( reputation_plugin& _plugin ) :
-         _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ),
+         _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
          _self( _plugin ) {}
       ~reputation_plugin_impl() {}
 
@@ -220,4 +220,4 @@ void reputation_plugin::plugin_shutdown()
    chain::util::disconnect_signal( my->_post_apply_operation_conn );
 }
 
-} } } // steem::plugins::reputation
+} } } // hive::plugins::reputation

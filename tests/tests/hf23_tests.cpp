@@ -2,21 +2,21 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/protocol/exceptions.hpp>
-#include <steem/protocol/hardfork.hpp>
-#include <steem/protocol/sps_operations.hpp>
+#include <hive/protocol/exceptions.hpp>
+#include <hive/protocol/hardfork.hpp>
+#include <hive/protocol/sps_operations.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/database_exceptions.hpp>
-#include <steem/chain/steem_objects.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/steem_objects.hpp>
 
-#include <steem/chain/util/reward.hpp>
-#include <steem/chain/util/hf23_helper.hpp>
+#include <hive/chain/util/reward.hpp>
+#include <hive/chain/util/hf23_helper.hpp>
 
-#include <steem/plugins/rc/rc_objects.hpp>
-#include <steem/plugins/rc/resource_count.hpp>
+#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/resource_count.hpp>
 
 #include <fc/macros.hpp>
 #include <fc/crypto/digest.hpp>
@@ -27,17 +27,20 @@
 #include <iostream>
 #include <stdexcept>
 
-using namespace steem;
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive;
+using namespace hive::chain;
+using namespace hive::protocol;
 using fc::string;
+
+#define DELEGATED_VESTS( account ) db->get_account( account ).get_delegated_vesting().amount.value
+#define RECEIVED_VESTS( account ) db->get_account( account ).get_received_vesting().amount.value
 
 namespace
 {
 
 std::string asset_to_string( const asset& a )
 {
-   return steem::plugins::condenser_api::legacy_asset::from_asset( a ).to_string();
+   return hive::plugins::condenser_api::legacy_asset::from_asset( a ).to_string();
 }
 
 } // namespace
@@ -64,7 +67,7 @@ BOOST_AUTO_TEST_CASE( restore_accounts_02 )
          std::string name;
 
          asset       balance;
-         asset       sbd_balance;
+         asset       hbd_balance;
       };
       auto cmp = []( const tmp_data& a, const tmp_data& b )
       {
@@ -76,15 +79,15 @@ BOOST_AUTO_TEST_CASE( restore_accounts_02 )
       uint32_t cnt = 1;
       for( auto& account : accounts )
       {
-         FUND( account, asset( cnt * 1000,      STEEM_SYMBOL ) );
-         FUND( account, asset( cnt * 1000 + 1,  SBD_SYMBOL ) );
+         FUND( account, asset( cnt * 1000,      HIVE_SYMBOL ) );
+         FUND( account, asset( cnt * 1000 + 1,  HBD_SYMBOL ) );
          ++cnt;
 
-         old_balances.emplace( tmp_data{ account, db->get_account( account ).balance, db->get_account( account ).sbd_balance } );
+         old_balances.emplace( tmp_data{ account, get_balance( account ), get_hbd_balance( account ) } );
       }
       {
-         FUND( "dude", asset( 68,   STEEM_SYMBOL ) );
-         FUND( "dude", asset( 78,   SBD_SYMBOL ) );
+         FUND( "dude", asset( 68,   HIVE_SYMBOL ) );
+         FUND( "dude", asset( 78,   HBD_SYMBOL ) );
          generate_block();
       }
       {
@@ -94,13 +97,13 @@ BOOST_AUTO_TEST_CASE( restore_accounts_02 )
          {
             auto& _acc = db->get_account( account );
 
-            idump(( _acc.balance ));
-            idump(( _acc.sbd_balance ));
-            BOOST_REQUIRE( _acc.balance     == asset( 0, STEEM_SYMBOL ) );
-            BOOST_REQUIRE( _acc.sbd_balance == asset( 0, SBD_SYMBOL ) );
+            idump(( _acc.get_balance() ));
+            idump(( _acc.get_hbd_balance() ));
+            BOOST_REQUIRE( _acc.get_balance() == asset( 0, HIVE_SYMBOL ) );
+            BOOST_REQUIRE( _acc.get_hbd_balance() == asset( 0, HBD_SYMBOL ) );
          }
-         BOOST_REQUIRE( db->get_account( "dude" ).balance      == asset( 68, STEEM_SYMBOL ) );
-         BOOST_REQUIRE( db->get_account( "dude" ).sbd_balance  == asset( 78, SBD_SYMBOL ) );
+         BOOST_REQUIRE( get_balance( "dude" )      == asset( 68, HIVE_SYMBOL ) );
+         BOOST_REQUIRE( get_hbd_balance( "dude" )  == asset( 78, HBD_SYMBOL ) );
       }
       {
          auto accounts_ex = accounts;
@@ -115,13 +118,13 @@ BOOST_AUTO_TEST_CASE( restore_accounts_02 )
             auto& _acc = db->get_account( account );
 
             BOOST_REQUIRE( account           == itr_old_balances->name );
-            BOOST_REQUIRE( _acc.balance      == itr_old_balances->balance );
-            BOOST_REQUIRE( _acc.sbd_balance  == itr_old_balances->sbd_balance );
+            BOOST_REQUIRE( _acc.get_balance() == itr_old_balances->balance );
+            BOOST_REQUIRE( _acc.get_hbd_balance() == itr_old_balances->hbd_balance );
 
             ++itr_old_balances;
          }
-         BOOST_REQUIRE( db->get_account( "dude" ).balance      == asset( 68, STEEM_SYMBOL ) );
-         BOOST_REQUIRE( db->get_account( "dude" ).sbd_balance  == asset( 78, SBD_SYMBOL ) );
+         BOOST_REQUIRE( get_balance( "dude" )      == asset( 68, HIVE_SYMBOL ) );
+         BOOST_REQUIRE( get_hbd_balance( "dude" )  == asset( 78, HBD_SYMBOL ) );
       }
 
       database_fixture::validate_database();
@@ -156,24 +159,24 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
          auto& _alice   = db->get_account( "alice" );
          auto& _bob     = db->get_account( "bob" );
 
-         auto alice_balance      = _alice.balance;
-         auto alice_sbd_balance  = _alice.sbd_balance;
-         auto bob_balance        = _bob.balance;
-         auto bob_sbd_balance    = _bob.sbd_balance;
+         auto alice_balance      = _alice.get_balance();
+         auto alice_hbd_balance  = _alice.get_hbd_balance();
+         auto bob_balance        = _bob.get_balance();
+         auto bob_hbd_balance    = _bob.get_hbd_balance();
 
          {
-            hf23_helper::gather_balance( _hf23_items, _alice.name, _alice.balance, _alice.sbd_balance );
-            db->adjust_balance( db->get_treasury_name(), _alice.balance );
-            db->adjust_balance( db->get_treasury_name(), _alice.sbd_balance );
-            db->adjust_balance( "alice", -_alice.balance );
-            db->adjust_balance( "alice", -_alice.sbd_balance );
+            hf23_helper::gather_balance( _hf23_items, _alice.name, _alice.get_balance(), _alice.get_hbd_balance() );
+            db->adjust_balance( db->get_treasury_name(), _alice.get_balance() );
+            db->adjust_balance( db->get_treasury_name(), _alice.get_hbd_balance() );
+            db->adjust_balance( "alice", -_alice.get_balance() );
+            db->adjust_balance( "alice", -_alice.get_hbd_balance() );
          }
          {
-            hf23_helper::gather_balance( _hf23_items, _bob.name, _bob.balance, _bob.sbd_balance );
-            db->adjust_balance( db->get_treasury_name(), _bob.balance );
-            db->adjust_balance( db->get_treasury_name(), _bob.sbd_balance );
-            db->adjust_balance( "bob", -_bob.balance );
-            db->adjust_balance( "bob", -_bob.sbd_balance );
+            hf23_helper::gather_balance( _hf23_items, _bob.name, _bob.get_balance(), _bob.get_hbd_balance() );
+            db->adjust_balance( db->get_treasury_name(), _bob.get_balance() );
+            db->adjust_balance( db->get_treasury_name(), _bob.get_hbd_balance() );
+            db->adjust_balance( "bob", -_bob.get_balance() );
+            db->adjust_balance( "bob", -_bob.get_hbd_balance() );
          }
 
          asset _2000 = ASSET( "2000.000 TESTS" );
@@ -192,8 +195,8 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
 
             generate_block();
 
-            BOOST_REQUIRE( db->get_account( "alice" ).balance     == _2000 );
-            BOOST_REQUIRE( db->get_account( "alice" ).sbd_balance == _10 );
+            BOOST_REQUIRE( get_balance( "alice" )     == _2000 );
+            BOOST_REQUIRE( get_hbd_balance( "alice" ) == _10 );
          }
          {
             //Create another balances for `bob`
@@ -204,30 +207,30 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
 
             generate_block();
 
-            BOOST_REQUIRE( db->get_account( "bob" ).balance       == _800 );
-            BOOST_REQUIRE( db->get_account( "bob" ).sbd_balance   == _70 );
+            BOOST_REQUIRE( get_balance( "bob" )       == _800 );
+            BOOST_REQUIRE( get_hbd_balance( "bob" )   == _70 );
          }
 
          std::set< std::string > restored_accounts = { "bob", "alice", "carol" };
 
-         auto treasury_balance_start      = db->get_treasury().balance;
-         auto treasury_sbd_balance_start  = db->get_treasury().sbd_balance;
+         auto treasury_balance_start      = db->get_treasury().get_balance();
+         auto treasury_hbd_balance_start  = db->get_treasury().get_hbd_balance();
 
          {
-            auto last_supply = db->get_dynamic_global_properties().current_sbd_supply;
+            auto last_supply = db->get_dynamic_global_properties().get_current_hbd_supply();
 
             FUND( db->get_treasury_name(), _5000 );
             FUND( db->get_treasury_name(), _4000 );
 
             generate_block();
 
-            auto interest = db->get_dynamic_global_properties().current_sbd_supply - last_supply - _4000;
+            auto interest = db->get_dynamic_global_properties().get_current_hbd_supply() - last_supply - _4000;
 
-            BOOST_REQUIRE( db->get_treasury().balance     == _5000 + treasury_balance_start );
-            BOOST_REQUIRE( db->get_treasury().sbd_balance == _4000 + treasury_sbd_balance_start + interest );
+            BOOST_REQUIRE( db->get_treasury().get_balance() == _5000 + treasury_balance_start );
+            BOOST_REQUIRE( db->get_treasury().get_hbd_balance() == _4000 + treasury_hbd_balance_start + interest );
 
             treasury_balance_start     += _5000;
-            treasury_sbd_balance_start += _4000 + interest;
+            treasury_hbd_balance_start += _4000 + interest;
          }
 
          database_fixture::validate_database();
@@ -238,13 +241,13 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
          auto& _bob2             = db->get_account( "bob" );
          const auto& _treasury2 = db->get_treasury();
 
-         BOOST_REQUIRE( _alice2.balance      == _2000 + alice_balance );
-         BOOST_REQUIRE( _alice2.sbd_balance  == _10 + alice_sbd_balance );
-         BOOST_REQUIRE( _bob2.balance        == _800 + bob_balance );
-         BOOST_REQUIRE( _bob2.sbd_balance    == _70 + bob_sbd_balance );
+         BOOST_REQUIRE( _alice2.get_balance() == _2000 + alice_balance );
+         BOOST_REQUIRE( _alice2.get_hbd_balance() == _10 + alice_hbd_balance );
+         BOOST_REQUIRE( _bob2.get_balance() == _800 + bob_balance );
+         BOOST_REQUIRE( _bob2.get_hbd_balance() == _70 + bob_hbd_balance );
 
-         BOOST_REQUIRE( _treasury2.balance     == treasury_balance_start     - ( alice_balance + bob_balance ) );
-         BOOST_REQUIRE( _treasury2.sbd_balance == treasury_sbd_balance_start - ( alice_sbd_balance + bob_sbd_balance ) );
+         BOOST_REQUIRE( _treasury2.get_balance() == treasury_balance_start - ( alice_balance + bob_balance ) );
+         BOOST_REQUIRE( _treasury2.get_hbd_balance() == treasury_hbd_balance_start - ( alice_hbd_balance + bob_hbd_balance ) );
       }
 
       database_fixture::validate_database();
@@ -258,8 +261,8 @@ hf23_helper::hf23_item get_balances( const account_object& obj )
 
    res.name          = obj.name;
 
-   res.balance       = obj.balance;
-   res.sbd_balance   = obj.sbd_balance;
+   res.balance       = obj.get_balance();
+   res.sbd_balance   = obj.get_hbd_balance();
 
    return res;
 }
@@ -289,7 +292,7 @@ BOOST_AUTO_TEST_CASE( save_test_02 )
       const std::set< std::string > accounts{ "alice", "bob" };
 
       {
-         hf23_helper::gather_balance( _hf23_items, "alice", db->get_account( "alice" ).balance, db->get_account( "alice" ).sbd_balance );
+         hf23_helper::gather_balance( _hf23_items, "alice", get_balance( "alice" ), get_hbd_balance( "alice" ) );
       }
       {
          BOOST_REQUIRE_EQUAL( _hf23_items.size(), 1u );
@@ -331,8 +334,8 @@ BOOST_AUTO_TEST_CASE( save_test_01 )
          vest( "alice", "alice", ASSET( "10.000 TESTS" ), alice_private_key );
          vest( "bob", "bob", ASSET( "10.000 TESTS" ), bob_private_key );
 
-         hf23_helper::gather_balance( _hf23_items, "alice", db->get_account( "alice" ).balance, db->get_account( "alice" ).sbd_balance );
-         hf23_helper::gather_balance( _hf23_items, "bob", db->get_account( "bob" ).balance, db->get_account( "bob" ).sbd_balance );
+         hf23_helper::gather_balance( _hf23_items, "alice", get_balance( "alice" ), get_hbd_balance( "alice" ) );
+         hf23_helper::gather_balance( _hf23_items, "bob", get_balance( "bob" ), get_hbd_balance( "bob" ) );
       }
       {
          auto alice_balances = get_balances( db->get_account( "alice" ) );
@@ -467,48 +470,48 @@ BOOST_AUTO_TEST_CASE( basic_test_05 )
          delegate_vest( "alice", "bob", _1v, alice_private_key );
          delegate_vest( "alice", "bob", _2v, alice_private_key );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).delegated_vesting_shares.amount.value == _2v.amount.value );
+         BOOST_REQUIRE( DELEGATED_VESTS( "alice" ) == _2v.amount.value );
 
-         BOOST_REQUIRE( db->get_account( "bob" ).received_vesting_shares.amount.value == _2v.amount.value );
+         BOOST_REQUIRE( RECEIVED_VESTS( "bob" ) == _2v.amount.value );
       }
       {
          delegate_vest( "alice", "carol", _1v, alice_private_key );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).delegated_vesting_shares.amount.value == _3v.amount.value );
+         BOOST_REQUIRE( DELEGATED_VESTS( "alice" ) == _3v.amount.value );
 
-         BOOST_REQUIRE( db->get_account( "bob" ).received_vesting_shares.amount.value == _2v.amount.value );
-         BOOST_REQUIRE( db->get_account( "carol" ).received_vesting_shares.amount.value == _1v.amount.value );
+         BOOST_REQUIRE( RECEIVED_VESTS( "bob" ) == _2v.amount.value );
+         BOOST_REQUIRE( RECEIVED_VESTS( "carol" ) == _1v.amount.value );
       }
       {
          delegate_vest( "carol", "bob", _1v, carol_private_key );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).delegated_vesting_shares.amount.value == _3v.amount.value );
-         BOOST_REQUIRE( db->get_account( "carol" ).delegated_vesting_shares.amount.value == _1v.amount.value );
+         BOOST_REQUIRE( DELEGATED_VESTS( "alice" ) == _3v.amount.value );
+         BOOST_REQUIRE( DELEGATED_VESTS( "carol" ) == _1v.amount.value );
 
-         BOOST_REQUIRE( db->get_account( "bob" ).received_vesting_shares.amount.value == _3v.amount.value );
-         BOOST_REQUIRE( db->get_account( "carol" ).received_vesting_shares.amount.value == _1v.amount.value );
+         BOOST_REQUIRE( RECEIVED_VESTS( "bob" ) == _3v.amount.value );
+         BOOST_REQUIRE( RECEIVED_VESTS( "carol" ) == _1v.amount.value );
       }
       {
          const auto& _carol = db->get_account( "carol" );
          db->clear_account( _carol );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).delegated_vesting_shares.amount.value == _3v.amount.value );
-         BOOST_REQUIRE( db->get_account( "carol" ).delegated_vesting_shares.amount.value == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "alice" ) == _3v.amount.value );
+         BOOST_REQUIRE( DELEGATED_VESTS( "carol" ) == 0l );
 
-         BOOST_REQUIRE( db->get_account( "bob" ).received_vesting_shares.amount.value == _2v.amount.value );
-         BOOST_REQUIRE( db->get_account( "carol" ).received_vesting_shares.amount.value == _1v.amount.value );
+         BOOST_REQUIRE( RECEIVED_VESTS( "bob" ) == _2v.amount.value );
+         BOOST_REQUIRE( RECEIVED_VESTS( "carol" ) == _1v.amount.value );
       }
       {
          const auto& _alice = db->get_account( "alice" );
          db->clear_account( _alice );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).delegated_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).delegated_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).delegated_vesting_shares.amount.value == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "alice" ) == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "bob" ) == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "carol" ) == 0l );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).received_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).received_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).received_vesting_shares.amount.value == 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "alice" ) == 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "bob" ) == 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "carol" ) == 0l );
       }
 
       database_fixture::validate_database();
@@ -543,51 +546,51 @@ BOOST_AUTO_TEST_CASE( basic_test_04 )
          vest( "alice", "alice", _20, alice_private_key );
 
          delegate_vest( "alice", "bob", _1v, alice_private_key );
-         BOOST_REQUIRE( db->get_account( "alice" ).delegated_vesting_shares.amount.value != 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).delegated_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).delegated_vesting_shares.amount.value == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "alice" ) != 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "bob" ) == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "carol" ) == 0l );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).received_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).received_vesting_shares.amount.value != 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).received_vesting_shares.amount.value == 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "alice" ) == 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "bob" ) != 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "carol" ) == 0l );
 
-         auto previous = db->get_account( "alice" ).delegated_vesting_shares.amount.value;
+         auto previous = DELEGATED_VESTS( "alice" );
 
          delegate_vest( "alice", "carol", _2v, alice_private_key );
 
-         auto next = db->get_account( "alice" ).delegated_vesting_shares.amount.value;
+         auto next = DELEGATED_VESTS( "alice" );
          BOOST_REQUIRE( next > previous );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).delegated_vesting_shares.amount.value != 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).delegated_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).delegated_vesting_shares.amount.value == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "alice" ) != 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "bob" ) == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "carol" ) == 0l );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).received_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).received_vesting_shares.amount.value != 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).received_vesting_shares.amount.value != 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "alice" ) == 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "bob" ) != 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "carol" ) != 0l );
       }
       {
          const auto& _alice = db->get_account( "alice" );
          db->clear_account( _alice );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).delegated_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).delegated_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).delegated_vesting_shares.amount.value == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "alice" ) == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "bob" ) == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "carol" ) == 0l );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).received_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).received_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).received_vesting_shares.amount.value == 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "alice" ) == 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "bob" ) == 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "carol" ) == 0l );
 
          const auto& _bob = db->get_account( "bob" );
          db->clear_account( _bob );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).delegated_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).delegated_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).delegated_vesting_shares.amount.value == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "alice" ) == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "bob" ) == 0l );
+         BOOST_REQUIRE( DELEGATED_VESTS( "carol" ) == 0l );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).received_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).received_vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).received_vesting_shares.amount.value == 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "alice" ) == 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "bob" ) == 0l );
+         BOOST_REQUIRE( RECEIVED_VESTS( "carol" ) == 0l );
       }
 
       database_fixture::validate_database();
@@ -616,40 +619,40 @@ BOOST_AUTO_TEST_CASE( basic_test_03 )
       FUND( "bob", _1000 );
       FUND( "carol", _1000 );
 
-      BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == db->get_account( "bob" ).vesting_shares );
-      BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares == db->get_account( "carol" ).vesting_shares );
+      BOOST_REQUIRE( get_vesting( "alice" ) == get_vesting( "bob" ) );
+      BOOST_REQUIRE( get_vesting( "bob" ) == get_vesting( "carol" ) );
 
       {
          vest( "alice", "bob", _1, alice_private_key );
          vest( "bob", "carol", _2, bob_private_key );
          vest( "carol", "alice", _3, carol_private_key );
-         BOOST_REQUIRE_GT( db->get_account( "alice" ).vesting_shares.amount.value, db->get_account( "carol" ).vesting_shares.amount.value );
-         BOOST_REQUIRE_GT( db->get_account( "carol" ).vesting_shares.amount.value, db->get_account( "bob" ).vesting_shares.amount.value );
+         BOOST_REQUIRE_GT( get_vesting( "alice" ).amount.value, get_vesting( "carol" ).amount.value );
+         BOOST_REQUIRE_GT( get_vesting( "carol" ).amount.value, get_vesting( "bob" ).amount.value );
       }
       {
-         auto vest_bob = db->get_account( "bob" ).vesting_shares.amount.value;
-         auto vest_carol = db->get_account( "carol" ).vesting_shares.amount.value;
+         auto vest_bob = get_vesting( "bob" ).amount.value;
+         auto vest_carol = get_vesting( "carol" ).amount.value;
 
          const auto& _alice = db->get_account( "alice" );
          db->clear_account( _alice );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares.amount.value == vest_bob );
-         BOOST_REQUIRE( db->get_account( "carol" ).vesting_shares.amount.value == vest_carol );
+         BOOST_REQUIRE( get_vesting( "alice" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "bob" ).amount.value == vest_bob );
+         BOOST_REQUIRE( get_vesting( "carol" ).amount.value == vest_carol );
 
          const auto& _bob = db->get_account( "bob" );
          db->clear_account( _bob );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).vesting_shares.amount.value == vest_carol );
+         BOOST_REQUIRE( get_vesting( "alice" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "bob" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "carol" ).amount.value == vest_carol );
 
          const auto& _carol = db->get_account( "carol" );
          db->clear_account( _carol );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "carol" ).vesting_shares.amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "alice" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "bob" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "carol" ).amount.value == 0l );
       }
 
       database_fixture::validate_database();
@@ -675,26 +678,26 @@ BOOST_AUTO_TEST_CASE( basic_test_02 )
       FUND( "alice", _1000 );
       FUND( "bob", _1000 );
 
-      BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares == db->get_account( "bob" ).vesting_shares );
+      BOOST_REQUIRE( get_vesting( "alice" ) == get_vesting( "bob" ) );
 
       {
          vest( "alice", "alice", _1, alice_private_key );
-         BOOST_REQUIRE_GT( db->get_account( "alice" ).vesting_shares.amount.value, db->get_account( "bob" ).vesting_shares.amount.value );
+         BOOST_REQUIRE_GT( get_vesting( "alice" ).amount.value, get_vesting( "bob" ).amount.value );
       }
       {
-         auto vest_bob = db->get_account( "bob" ).vesting_shares.amount.value;
+         auto vest_bob = get_vesting( "bob" ).amount.value;
 
          const auto& _alice = db->get_account( "alice" );
          db->clear_account( _alice );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares.amount.value == vest_bob );
+         BOOST_REQUIRE( get_vesting( "alice" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "bob" ).amount.value == vest_bob );
 
          const auto& _bob = db->get_account( "bob" );
          db->clear_account( _bob );
 
-         BOOST_REQUIRE( db->get_account( "alice" ).vesting_shares.amount.value == 0l );
-         BOOST_REQUIRE( db->get_account( "bob" ).vesting_shares.amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "alice" ).amount.value == 0l );
+         BOOST_REQUIRE( get_vesting( "bob" ).amount.value == 0l );
       }
 
       database_fixture::validate_database();
@@ -732,11 +735,11 @@ BOOST_AUTO_TEST_CASE( basic_test_01 )
 BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
 {
 
-#define REQUIRE_BALANCE( alice, bob, carol, treasury, member, asset ) \
-   BOOST_REQUIRE( db->get_account("alice").member == ASSET( alice " " asset ) ); \
-   BOOST_REQUIRE( db->get_account("bob").member == ASSET( bob " " asset ) ); \
-   BOOST_REQUIRE( db->get_account("carol").member == ASSET( carol " " asset ) ); \
-   BOOST_REQUIRE( db->get_treasury().member == ASSET( treasury " " asset ) )
+#define REQUIRE_BALANCE( alice, bob, carol, treasury, getter, asset ) \
+   BOOST_REQUIRE( getter( "alice" ) == ASSET( alice " " asset ) ); \
+   BOOST_REQUIRE( getter( "bob" ) == ASSET( bob " " asset ) ); \
+   BOOST_REQUIRE( getter( "carol" ) == ASSET( carol " " asset ) ); \
+   BOOST_REQUIRE( getter( db->get_treasury_name() ) == ASSET( treasury " " asset ) )
 
    try
    {
@@ -748,11 +751,11 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       fund( "alice", ASSET( "10.000 TESTS" ) ); //<- note! extra 0.1 is in form of vests
       fund( "alice", ASSET( "10.100 TBD" ) ); //<- note! treasury will get extras from interest and sps-fund/inflation
       generate_block();
-      REQUIRE_BALANCE( "10.000", "0.000", "0.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "10.100", "0.000", "0.000", "0.027", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "10.000", "0.000", "0.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "10.100", "0.000", "0.000", "0.027", get_hbd_balance, "TBD" );
 
       signed_transaction tx;
-      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       {
          escrow_transfer_operation op;
          op.from = "alice";
@@ -762,23 +765,23 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
          op.sbd_amount = ASSET( "10.000 TBD" );
          op.fee = ASSET( "0.100 TBD" );
          op.json_meta = "";
-         op.ratification_deadline = db->head_block_time() + fc::seconds( STEEM_BLOCK_INTERVAL * 10 );
-         op.escrow_expiration = db->head_block_time() + fc::seconds( STEEM_BLOCK_INTERVAL * 20 );
+         op.ratification_deadline = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 10 );
+         op.escrow_expiration = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 20 );
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
          db->push_transaction( tx, 0 );
       }
       tx.clear();
 
-      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "0.027", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "0.027", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) != nullptr );
       generate_block();
 
       //escrow transfer requested but neither receiver nor agent approved yet
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.136", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.136", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
       UNDO_CLEAR;
 
@@ -794,15 +797,15 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       }
       tx.clear();
 
-      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "0.036", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "0.036", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) != nullptr );
       generate_block();
 
       //escrow transfer approved by agent but not by receiver
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.145", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.145", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
       UNDO_CLEAR;
 
@@ -818,15 +821,15 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       }
       tx.clear();
 
-      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "0.000", "0.100", "0.045", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "0.000", "0.100", "0.045", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) != nullptr );
       generate_block();
 
       //escrow transfer approved by all parties (agent got fee) but the transfer itself wasn't released yet
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "0.000", "0.100", "10.054", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "0.000", "0.100", "10.054", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
       UNDO_CLEAR;
 
@@ -845,15 +848,15 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       }
       tx.clear();
 
-      REQUIRE_BALANCE( "0.000", "2.000", "0.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "3.000", "0.100", "0.054", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "2.000", "0.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "3.000", "0.100", "0.054", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) != nullptr );
       generate_block();
 
       //escrow transfer released partially by sender prior to escrow expiration
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "2.000", "0.000", "8.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "3.000", "0.100", "7.063", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "2.000", "0.000", "8.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "3.000", "0.100", "7.063", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
       UNDO_CLEAR;
 
@@ -872,15 +875,15 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       }
       tx.clear();
 
-      REQUIRE_BALANCE( "2.000", "2.000", "0.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "3.000", "3.000", "0.100", "0.063", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "2.000", "2.000", "0.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "3.000", "3.000", "0.100", "0.063", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) != nullptr );
       generate_block();
 
       //escrow transfer released partially by receiver prior to escrow expiration
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "2.000", "0.000", "8.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "3.000", "0.100", "7.072", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "2.000", "0.000", "8.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "3.000", "0.100", "7.072", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
       UNDO_CLEAR;
 
@@ -898,15 +901,15 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       }
       tx.clear();
 
-      REQUIRE_BALANCE( "2.000", "2.000", "0.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "3.000", "3.000", "0.100", "0.072", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "2.000", "2.000", "0.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "3.000", "3.000", "0.100", "0.072", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) != nullptr );
       generate_block();
 
       //escrow transfer disputed by sender
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "2.000", "0.000", "8.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "3.000", "0.100", "7.081", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "2.000", "0.000", "8.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "3.000", "0.100", "7.081", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
       UNDO_CLEAR;
 
@@ -937,15 +940,15 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       }
       tx.clear();
 
-      REQUIRE_BALANCE( "4.000", "4.000", "0.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "4.000", "6.000", "0.100", "0.081", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "4.000", "4.000", "0.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "4.000", "6.000", "0.100", "0.081", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) != nullptr );
       generate_block();
 
       //escrow transfer released partially by agent to sender and partially to receiver
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "4.000", "0.000", "6.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "6.000", "0.100", "4.090", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "4.000", "0.000", "6.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "6.000", "0.100", "4.090", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
       UNDO_CLEAR;
 
@@ -964,15 +967,15 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       }
       tx.clear();
 
-      REQUIRE_BALANCE( "4.000", "6.000", "0.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "4.000", "6.000", "0.100", "0.090", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "4.000", "6.000", "0.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "4.000", "6.000", "0.100", "0.090", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
       generate_block();
 
       //escrow transfer released by agent to receiver and finished (transfer fully executed)
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "6.000", "0.000", "4.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "6.000", "0.100", "4.099", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "6.000", "0.000", "4.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "6.000", "0.100", "4.099", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
       UNDO_CLEAR;
    }
@@ -985,10 +988,10 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
 BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
 {
 
-#define REQUIRE_BALANCE( alice, bob, treasury, member, asset ) \
-   BOOST_REQUIRE( db->get_account("alice").member == ASSET( alice " " asset ) ); \
-   BOOST_REQUIRE( db->get_account("bob").member == ASSET( bob " " asset ) ); \
-   BOOST_REQUIRE( db->get_treasury().member == ASSET( treasury " " asset ) )
+#define REQUIRE_BALANCE( alice, bob, treasury, getter, asset ) \
+   BOOST_REQUIRE( getter( "alice" ) == ASSET( alice " " asset ) ); \
+   BOOST_REQUIRE( getter( "bob" ) == ASSET( bob " " asset ) ); \
+   BOOST_REQUIRE( getter( db->get_treasury_name() ) == ASSET( treasury " " asset ) )
 
    try
    {
@@ -999,32 +1002,32 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
       fund( "alice", ASSET( "10.000 TESTS" ) ); //<- note! extra 0.1 is in form of vests
       fund( "bob", ASSET( "5.000 TBD" ) ); //<- note! treasury will get extras from interest and sps-fund/inflation
       generate_block();
-      REQUIRE_BALANCE( "10.000", "0.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "5.000", "0.027", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "10.000", "0.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "5.000", "0.027", get_hbd_balance, "TBD" );
 
       signed_transaction tx;
-      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       {
          limit_order_create_operation op;
          op.owner = "alice";
          op.amount_to_sell = ASSET( "10.000 TESTS" );
          op.min_to_receive = ASSET( "5.000 TBD" );
-         op.expiration = db->head_block_time() + fc::seconds( STEEM_BLOCK_INTERVAL * 20 );
+         op.expiration = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 20 );
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
          db->push_transaction( tx, 0 );
       }
       tx.clear();
 
-      REQUIRE_BALANCE( "0.000", "0.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "5.000", "0.027", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "0.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "5.000", "0.027", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_limit_order( "alice", 0 ) != nullptr );
       generate_block();
 
       //limit order set but not matched yet
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "0.000", "10.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "5.000", "0.036", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "0.000", "10.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "5.000", "0.036", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_limit_order( "alice", 0 ) == nullptr );
       UNDO_CLEAR;
 
@@ -1034,22 +1037,22 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
          op.amount_to_sell = ASSET( "2.000 TBD" );
          op.min_to_receive = ASSET( "3.500 TESTS" );
          op.fill_or_kill = true;
-         op.expiration = db->head_block_time() + fc::seconds( STEEM_BLOCK_INTERVAL * 20 );
+         op.expiration = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 20 );
          tx.operations.push_back( op );
          sign( tx, bob_private_key );
          db->push_transaction( tx, 0 );
       }
       tx.clear();
 
-      REQUIRE_BALANCE( "0.000", "4.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "2.000", "3.000", "0.036", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "4.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "2.000", "3.000", "0.036", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_limit_order( "alice", 0 ) != nullptr );
       generate_block();
 
       //limit order partially matched
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "4.000", "6.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "3.000", "2.045", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "4.000", "6.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "3.000", "2.045", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_limit_order( "alice", 0 ) == nullptr );
       UNDO_CLEAR;
 
@@ -1059,22 +1062,22 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
          op.amount_to_sell = ASSET( "3.000 TBD" );
          op.exchange_rate = ASSET( "2.000 TBD" ) / ASSET( "5.000 TESTS" );
          op.fill_or_kill = true;
-         op.expiration = db->head_block_time() + fc::seconds( STEEM_BLOCK_INTERVAL * 20 );
+         op.expiration = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 20 );
          tx.operations.push_back( op );
          sign( tx, bob_private_key );
-         STEEM_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+         HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
       }
       tx.clear();
 
-      REQUIRE_BALANCE( "0.000", "4.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "2.000", "3.000", "0.045", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "4.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "2.000", "3.000", "0.045", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_limit_order( "alice", 0 ) != nullptr );
       generate_block();
 
       //limit order partially matched after counter-order in fill_or_kill mode that failed (no change)
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "4.000", "6.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "3.000", "2.054", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "4.000", "6.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "3.000", "2.054", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_limit_order( "alice", 0 ) == nullptr );
       UNDO_CLEAR;
 
@@ -1084,22 +1087,22 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
          op.amount_to_sell = ASSET( "3.000 TBD" );
          op.exchange_rate = ASSET( "2.000 TBD" ) / ASSET( "4.000 TESTS" );
          op.fill_or_kill = true;
-         op.expiration = db->head_block_time() + fc::seconds( STEEM_BLOCK_INTERVAL * 20 );
+         op.expiration = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 20 );
          tx.operations.push_back( op );
          sign( tx, bob_private_key );
          db->push_transaction( tx, 0 );
       }
       tx.clear();
 
-      REQUIRE_BALANCE( "0.000", "10.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "5.000", "0.000", "0.054", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "10.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "5.000", "0.000", "0.054", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_limit_order( "alice", 0 ) == nullptr );
       generate_block();
 
       //limit order fully matched
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "10.000", "0.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "0.000", "5.063", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "10.000", "0.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "0.000", "5.063", get_hbd_balance, "TBD" );
       BOOST_REQUIRE( db->find_limit_order( "alice", 0 ) == nullptr );
       UNDO_CLEAR;
    }
@@ -1112,9 +1115,9 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
 BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
 {
 
-#define REQUIRE_BALANCE( alice, treasury, member, asset ) \
-   BOOST_REQUIRE( db->get_account("alice").member == ASSET( alice " " asset ) ); \
-   BOOST_REQUIRE( db->get_treasury().member == ASSET( treasury " " asset ) )
+#define REQUIRE_BALANCE( alice, treasury, getter, asset ) \
+   BOOST_REQUIRE( getter( "alice" ) == ASSET( alice " " asset ) ); \
+   BOOST_REQUIRE( getter( db->get_treasury_name() ) == ASSET( treasury " " asset ) )
 
    try
    {
@@ -1125,11 +1128,11 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
       //note! extra 0.1 TESTS is in form of vests
       fund( "alice", ASSET( "5.000 TBD" ) ); //<- note! treasury will get extras from interest and sps-fund/inflation
       generate_block();
-      REQUIRE_BALANCE( "0.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "5.000", "0.027", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "5.000", "0.027", get_hbd_balance, "TBD" );
 
       signed_transaction tx;
-      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       {
          convert_operation op;
          op.owner = "alice";
@@ -1140,26 +1143,26 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
       }
       tx.clear();
 
-      REQUIRE_BALANCE( "0.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "0.027", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "0.027", get_hbd_balance, "TBD" );
       generate_block();
 
       //conversion request created but not executed yet
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "0.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "5.036", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "0.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "5.036", get_hbd_balance, "TBD" );
       UNDO_CLEAR;
 
-      generate_blocks( db->head_block_time() + STEEM_CONVERSION_DELAY );
+      generate_blocks( db->head_block_time() + HIVE_CONVERSION_DELAY );
 
-      REQUIRE_BALANCE( "5.000", "0.000", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "0.054", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "5.000", "0.000", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "0.054", get_hbd_balance, "TBD" );
       generate_block();
 
       //conversion request executed
       CLEAR( "alice" );
-      REQUIRE_BALANCE( "0.000", "5.100", balance, "TESTS" );
-      REQUIRE_BALANCE( "0.000", "0.063", sbd_balance, "TBD" );
+      REQUIRE_BALANCE( "0.000", "5.100", get_balance, "TESTS" );
+      REQUIRE_BALANCE( "0.000", "0.063", get_hbd_balance, "TBD" );
       UNDO_CLEAR;
    }
    FC_LOG_AND_RETHROW()
@@ -1168,7 +1171,7 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
 
 }
 
-BOOST_AUTO_TEST_CASE( sbd_test_01 )
+BOOST_AUTO_TEST_CASE( hbd_test_01 )
 {
    try
    {
@@ -1178,22 +1181,22 @@ BOOST_AUTO_TEST_CASE( sbd_test_01 )
       set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
       generate_block();
 
-      BOOST_REQUIRE( db->get_account( "alice" ).sbd_balance == ASSET( "0.000 TBD" ) );
+      BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
       db->clear_account( db->get_account( "alice" ) );
-      BOOST_REQUIRE( db->get_account( "alice" ).sbd_balance == ASSET( "0.000 TBD" ) );
+      BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
       database_fixture::validate_database();
 
       fund( "alice", ASSET( "1000.000 TBD" ) );
-      auto alice_sbd = db->get_account( "alice" ).sbd_balance;
-      BOOST_REQUIRE( alice_sbd == ASSET( "1000.000 TBD" ) );
+      auto alice_hbd = get_hbd_balance( "alice" );
+      BOOST_REQUIRE( alice_hbd == ASSET( "1000.000 TBD" ) );
       db->clear_account( db->get_account( "alice" ) );
-      BOOST_REQUIRE( db->get_account( "alice" ).sbd_balance == ASSET( "0.000 TBD" ) );
+      BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
       database_fixture::validate_database();
    }
    FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE( sbd_test_02 )
+BOOST_AUTO_TEST_CASE( hbd_test_02 )
 {
    try
    {
@@ -1203,15 +1206,15 @@ BOOST_AUTO_TEST_CASE( sbd_test_02 )
       set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
       generate_block();
 
-      BOOST_REQUIRE( db->get_account( "alice" ).sbd_balance == ASSET( "0.000 TBD" ) );
+      BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
       fund( "alice", ASSET( "1000.000 TBD" ) );
       auto start_time = db->get_account( "alice" ).sbd_seconds_last_update;
-      auto alice_sbd = db->get_account( "alice" ).sbd_balance;
-      BOOST_TEST_MESSAGE( "treasury_sbd = " << asset_to_string( db->get_treasury().sbd_balance ) );
-      BOOST_TEST_MESSAGE( "alice_sbd = " << asset_to_string( alice_sbd ) );
-      BOOST_REQUIRE( alice_sbd == ASSET( "1000.000 TBD" ) );
+      auto alice_hbd = get_hbd_balance( "alice" );
+      BOOST_TEST_MESSAGE( "treasury_hbd = " << asset_to_string( db->get_treasury().get_hbd_balance() ) );
+      BOOST_TEST_MESSAGE( "alice_hbd = " << asset_to_string( alice_hbd ) );
+      BOOST_REQUIRE( alice_hbd == ASSET( "1000.000 TBD" ) );
 
-      generate_blocks( db->head_block_time() + fc::seconds( STEEM_SBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
+      generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
 
       {
       signed_transaction tx;
@@ -1219,7 +1222,7 @@ BOOST_AUTO_TEST_CASE( sbd_test_02 )
       transfer.to = "bob";
       transfer.from = "alice";
       transfer.amount = ASSET( "1.000 TBD" );
-      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       tx.operations.push_back( transfer );
       sign( tx, alice_private_key );
       db->push_transaction( tx, 0 );
@@ -1228,24 +1231,24 @@ BOOST_AUTO_TEST_CASE( sbd_test_02 )
       auto& gpo = db->get_dynamic_global_properties();
       auto interest_op = get_last_operations( 1 )[0].get< interest_operation >();
 
-      BOOST_REQUIRE( gpo.sbd_interest_rate > 0 );
-      BOOST_REQUIRE( static_cast<uint64_t>(db->get_account( "alice" ).sbd_balance.amount.value) ==
-         alice_sbd.amount.value - ASSET( "1.000 TBD" ).amount.value +
-         ( ( ( ( uint128_t( alice_sbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() ) / STEEM_SECONDS_PER_YEAR ) *
-            gpo.sbd_interest_rate ) / STEEM_100_PERCENT ).to_uint64() );
+      BOOST_REQUIRE( gpo.get_hbd_interest_rate() > 0 );
+      BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) ==
+         alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value +
+         ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() ) / HIVE_SECONDS_PER_YEAR ) *
+            gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
       BOOST_REQUIRE( interest_op.owner == "alice" );
       BOOST_REQUIRE( interest_op.interest.amount.value ==
-         db->get_account( "alice" ).sbd_balance.amount.value - ( alice_sbd.amount.value - ASSET( "1.000 TBD" ).amount.value ) );
+         get_hbd_balance( "alice" ).amount.value - ( alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value ) );
       database_fixture::validate_database();
 
-      generate_blocks( db->head_block_time() + fc::seconds( STEEM_SBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
+      generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
 
-      alice_sbd = db->get_account( "alice" ).sbd_balance;
-      BOOST_TEST_MESSAGE( "alice_sbd = " << asset_to_string( alice_sbd ) );
-      BOOST_TEST_MESSAGE( "bob_sbd = " << asset_to_string( db->get_account( "bob" ).sbd_balance ) );
+      alice_hbd = get_hbd_balance( "alice" );
+      BOOST_TEST_MESSAGE( "alice_hbd = " << asset_to_string( alice_hbd ) );
+      BOOST_TEST_MESSAGE( "bob_hbd = " << asset_to_string( get_hbd_balance( "bob" ) ) );
 
       db->clear_account( db->get_account( "alice" ) );
-      BOOST_REQUIRE( db->get_account( "alice" ).sbd_balance == ASSET( "0.000 TBD" ) );
+      BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
       database_fixture::validate_database();
    }
    FC_LOG_AND_RETHROW()
@@ -1268,14 +1271,14 @@ BOOST_AUTO_TEST_CASE( savings_test_01 )
       op.from = "alice";
       op.to = "alice";
       op.amount = ASSET( "1000.000 TBD" );
-      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
       db->push_transaction( tx, 0 );
 
-      BOOST_REQUIRE( db->get_account( "alice" ).savings_sbd_balance == ASSET( "1000.000 TBD" ) );
+      BOOST_REQUIRE( get_hbd_savings( "alice" ) == ASSET( "1000.000 TBD" ) );
       db->clear_account( db->get_account( "alice" ) );
-      BOOST_REQUIRE( db->get_account( "alice" ).savings_sbd_balance == ASSET( "0.000 TBD" ) );
+      BOOST_REQUIRE( get_hbd_savings( "alice" ) == ASSET( "0.000 TBD" ) );
       database_fixture::validate_database();
    }
    FC_LOG_AND_RETHROW()
@@ -1298,19 +1301,19 @@ BOOST_AUTO_TEST_CASE( savings_test_02 )
       op.from = "alice";
       op.to = "alice";
       op.amount = ASSET( "1000.000 TBD" );
-      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
       db->push_transaction( tx, 0 );
 
-      BOOST_REQUIRE( db->get_account( "alice" ).savings_sbd_balance == ASSET( "1000.000 TBD" ) );
+      BOOST_REQUIRE( get_hbd_savings( "alice" ) == ASSET( "1000.000 TBD" ) );
 
-      generate_blocks( db->head_block_time() + fc::seconds( STEEM_SBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
+      generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
 
-      BOOST_TEST_MESSAGE( "alice_savings_sbd before clear = " << asset_to_string( db->get_account( "alice" ).savings_sbd_balance ) ); // alice_savings_sbd before clear = 1000.000 TBD
+      BOOST_TEST_MESSAGE( "alice_savings_hbd before clear = " << asset_to_string( get_hbd_savings( "alice" ) ) );
       db->clear_account( db->get_account( "alice" ) );
-      BOOST_TEST_MESSAGE( "alice_savings_sbd after clear = " << asset_to_string( db->get_account( "alice" ).savings_sbd_balance ) ); // alice_savings_sbd after clear = 8.219 TBD
-      BOOST_REQUIRE( db->get_account( "alice" ).savings_sbd_balance == ASSET( "0.000 TBD" ) );
+      BOOST_TEST_MESSAGE( "alice_savings_hbd after clear = " << asset_to_string( get_hbd_savings( "alice" ) ) );
+      BOOST_REQUIRE( get_hbd_savings( "alice" ) == ASSET( "0.000 TBD" ) );
       database_fixture::validate_database();
    }
    FC_LOG_AND_RETHROW()

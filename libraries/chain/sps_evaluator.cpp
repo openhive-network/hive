@@ -1,23 +1,23 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/protocol/sps_operations.hpp>
+#include <hive/protocol/sps_operations.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/steem_evaluator.hpp>
-#include <steem/chain/sps_objects.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/steem_evaluator.hpp>
+#include <hive/chain/sps_objects.hpp>
 
-#include <steem/chain/util/sps_helper.hpp>
+#include <hive/chain/util/sps_helper.hpp>
 
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
-using steem::chain::create_proposal_evaluator;
+using hive::chain::create_proposal_evaluator;
 
 void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
 {
    try
    {
-      FC_ASSERT( _db.has_hardfork( STEEM_PROPOSALS_HARDFORK ), "Proposals functionality not enabled until hardfork ${hf}", ("hf", STEEM_PROPOSALS_HARDFORK) );
+      FC_ASSERT( _db.has_hardfork( HIVE_PROPOSALS_HARDFORK ), "Proposals functionality not enabled until hardfork ${hf}", ("hf", HIVE_PROPOSALS_HARDFORK) );
 
       /** start date can be earlier than head_block_time - otherwise creating a proposal can be difficult,
           since passed date should be adjusted by potential transaction execution delay (i.e. 3 sec
@@ -25,7 +25,7 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
       */
       FC_ASSERT(o.end_date > _db.head_block_time(), "Can't create inactive proposals...");
 
-      asset fee_sbd( STEEM_TREASURY_FEE, SBD_SYMBOL );
+      asset fee_sbd( HIVE_TREASURY_FEE, HBD_SYMBOL );
 
       //treasury account must exist, also we need it later to change its balance
       const auto& treasury_account =_db.get_treasury();
@@ -72,7 +72,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
 {
    try
    {
-      FC_ASSERT( _db.has_hardfork( STEEM_PROPOSALS_HARDFORK ), "Proposals functionality not enabled until hardfork ${hf}", ("hf", STEEM_PROPOSALS_HARDFORK) );
+      FC_ASSERT( _db.has_hardfork( HIVE_PROPOSALS_HARDFORK ), "Proposals functionality not enabled until hardfork ${hf}", ("hf", HIVE_PROPOSALS_HARDFORK) );
 
       const auto& pidx = _db.get_index< proposal_index >().indices().get< by_proposal_id >();
       const auto& pvidx = _db.get_index< proposal_vote_index >().indices().get< by_voter_proposal >();
@@ -109,13 +109,13 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
 {
    try
    {
-      FC_ASSERT( _db.has_hardfork( STEEM_PROPOSALS_HARDFORK ), "Proposals functionality not enabled until hardfork ${hf}", ("hf", STEEM_PROPOSALS_HARDFORK) );
+      FC_ASSERT( _db.has_hardfork( HIVE_PROPOSALS_HARDFORK ), "Proposals functionality not enabled until hardfork ${hf}", ("hf", HIVE_PROPOSALS_HARDFORK) );
 
       sps_helper::remove_proposals( _db, op.proposal_ids, op.proposal_owner );
 
       /*
          Because of performance removing proposals are restricted due to the `sps_remove_threshold` threshold.
-         Therefore all proposals are marked with flag `removed` and `end_date` is moved beyond 'head_time + STEEM_PROPOSAL_MAINTENANCE_CLEANUP`
+         Therefore all proposals are marked with flag `removed` and `end_date` is moved beyond 'head_time + HIVE_PROPOSAL_MAINTENANCE_CLEANUP`
          flag `removed` - it's information for 'sps_api' plugin
          moving `end_date` - triggers the algorithm in `sps_processor::remove_proposals`
 
@@ -134,7 +134,7 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
             proposal.removed = true;
 
             auto head_date = _db.head_block_time();
-            auto new_end_date = head_date - fc::seconds( STEEM_PROPOSAL_MAINTENANCE_CLEANUP );
+            auto new_end_date = head_date - fc::seconds( HIVE_PROPOSAL_MAINTENANCE_CLEANUP );
 
             proposal.end_date = new_end_date;
          } );
@@ -144,4 +144,4 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
    FC_CAPTURE_AND_RETHROW( (op) )
 }
 
-} } // steem::chain
+} } // hive::chain

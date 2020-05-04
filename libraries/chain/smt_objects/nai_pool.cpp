@@ -1,15 +1,15 @@
-#include <steem/chain/steem_fwd.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/protocol/asset_symbol.hpp>
-#include <steem/chain/smt_objects.hpp>
-#include <steem/chain/util/nai_generator.hpp>
-#include <steem/chain/util/smt_token.hpp>
+#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/protocol/asset_symbol.hpp>
+#include <hive/chain/smt_objects.hpp>
+#include <hive/chain/util/nai_generator.hpp>
+#include <hive/chain/util/smt_token.hpp>
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 
 #define NAI_GENERATION_SEED_BLOCK_ID_HASH_INDEX 4
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 /**
  * Refill the NAI pool with newly generated values
@@ -97,6 +97,6 @@ void remove_from_nai_pool( database &db, const asset_symbol_type& a )
    }
 }
 
-} } // steem::chain
+} } // hive::chain
 
 #endif

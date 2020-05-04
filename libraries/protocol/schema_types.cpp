@@ -1,10 +1,10 @@
 
-#include <steem/schema/abstract_schema.hpp>
-#include <steem/schema/schema_impl.hpp>
+#include <hive/schema/abstract_schema.hpp>
+#include <hive/schema/schema_impl.hpp>
 
-#include <steem/protocol/schema_types.hpp>
+#include <hive/protocol/schema_types.hpp>
 
-namespace steem { namespace schema { namespace detail {
+namespace hive { namespace schema { namespace detail {
 
 //////////////////////////////////////////////
 // account_name_type                        //

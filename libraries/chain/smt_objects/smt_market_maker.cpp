@@ -1,8 +1,8 @@
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 
-#include <steem/jsonball/jsonball.hpp>
-#include <steem/chain/smt_objects/smt_market_maker.hpp>
+#include <hive/jsonball/jsonball.hpp>
+#include <hive/chain/smt_objects/smt_market_maker.hpp>
 
 #include <fc/variant.hpp>
 #include <fc/io/json.hpp>
@@ -14,11 +14,11 @@
 #include <string>
 #include <vector>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 static std::vector< rational_u64 > load_mm_ticks()
 {
-   std::string mm_ticks_json = steem::jsonball::get_market_maker_ticks();
+   std::string mm_ticks_json = hive::jsonball::get_market_maker_ticks();
    fc::variant mm_ticks_var = fc::json::from_string( mm_ticks_json, fc::json::strict_parser );
    std::vector< std::pair< uint64_t, uint64_t > > mm_ticks_pairs;
    fc::from_variant( mm_ticks_var, mm_ticks_pairs );

@@ -1,22 +1,22 @@
-#include <steem/chain/util/sps_processor.hpp>
+#include <hive/chain/util/sps_processor.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
-using steem::protocol::asset;
-using steem::protocol::operation;
+using hive::protocol::asset;
+using hive::protocol::operation;
 
-using steem::chain::proposal_object;
-using steem::chain::by_start_date;
-using steem::chain::by_end_date;
-using steem::chain::proposal_index;
-using steem::chain::proposal_id_type;
-using steem::chain::proposal_vote_index;
-using steem::chain::by_proposal_voter;
-using steem::chain::by_voter_proposal;
-using steem::protocol::proposal_pay_operation;
-using steem::chain::sps_helper;
-using steem::chain::dynamic_global_property_object;
-using steem::chain::block_notification;
+using hive::chain::proposal_object;
+using hive::chain::by_start_date;
+using hive::chain::by_end_date;
+using hive::chain::proposal_index;
+using hive::chain::proposal_id_type;
+using hive::chain::proposal_vote_index;
+using hive::chain::by_proposal_voter;
+using hive::chain::by_voter_proposal;
+using hive::protocol::proposal_pay_operation;
+using hive::chain::sps_helper;
+using hive::chain::dynamic_global_property_object;
+using hive::chain::block_notification;
 
 const std::string sps_processor::removing_name = "sps_processor_remove";
 const std::string sps_processor::calculating_name = "sps_processor_calculate";
@@ -71,7 +71,7 @@ uint64_t sps_processor::calculate_votes( const proposal_id_type& id )
       const auto& _voter = db.get_account( found->voter );
 
       //If _voter has set proxy, then his votes aren't taken into consideration
-      if( _voter.proxy == STEEM_PROXY_TO_SELF_ACCOUNT )
+      if( _voter.proxy == HIVE_PROXY_TO_SELF_ACCOUNT )
       {
          auto sum = _voter.witness_vote_weight();
          ret += sum.value;
@@ -119,7 +119,7 @@ asset sps_processor::get_treasury_fund()
 asset sps_processor::get_daily_inflation()
 {
    FC_TODO( "to invent how to get inflation needed for HIVE_TREASURY_ACCOUNT" )
-   return asset( 0, SBD_SYMBOL );
+   return asset( 0, HBD_SYMBOL );
 }
 
 asset sps_processor::calculate_maintenance_budget( const time_point_sec& head_time )
@@ -179,7 +179,7 @@ void sps_processor::transfer_payments( const time_point_sec& head_time, asset& m
    const auto& treasury_account = db.get_treasury();
 
    uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().last_budget_time ).to_seconds();
-   uint128_t ratio = ( passed_time_seconds * STEEM_100_PERCENT ) / daily_seconds;
+   uint128_t ratio = ( passed_time_seconds * HIVE_100_PERCENT ) / daily_seconds;
 
    auto processing = [this, &treasury_account]( const proposal_object& _item, const asset& payment )
    {
@@ -201,7 +201,7 @@ void sps_processor::transfer_payments( const time_point_sec& head_time, asset& m
       if( _item.total_votes == 0 )
          break;
 
-      asset period_pay = asset( ( ratio * _item.daily_pay.amount.value ).to_uint64() / STEEM_100_PERCENT, _item.daily_pay.symbol );
+      asset period_pay = asset( ( ratio * _item.daily_pay.amount.value ).to_uint64() / HIVE_100_PERCENT, _item.daily_pay.symbol );
 
       if( period_pay >= maintenance_budget_limit )
       {
@@ -220,7 +220,7 @@ void sps_processor::update_settings( const time_point_sec& head_time )
 {
    db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& _dgpo )
                                           {
-                                             _dgpo.next_maintenance_time = head_time + fc::seconds( STEEM_PROPOSAL_MAINTENANCE_PERIOD );
+                                             _dgpo.next_maintenance_time = head_time + fc::seconds( HIVE_PROPOSAL_MAINTENANCE_PERIOD );
                                              _dgpo.last_budget_time = head_time;
                                           } );
 }
@@ -314,8 +314,8 @@ void sps_processor::record_funding( const block_notification& note )
 
    db.modify( props, []( dynamic_global_property_object& dgpo )
    {
-      dgpo.sps_interval_ledger = asset( 0, SBD_SYMBOL );
+      dgpo.sps_interval_ledger = asset( 0, HBD_SYMBOL );
    });
 }
 
-} } // namespace steem::chain
+} } // namespace hive::chain

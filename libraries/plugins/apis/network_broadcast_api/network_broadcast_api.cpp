@@ -1,10 +1,10 @@
 
-#include <steem/plugins/network_broadcast_api/network_broadcast_api.hpp>
-#include <steem/plugins/network_broadcast_api/network_broadcast_api_plugin.hpp>
+#include <hive/plugins/network_broadcast_api/network_broadcast_api.hpp>
+#include <hive/plugins/network_broadcast_api/network_broadcast_api_plugin.hpp>
 
 #include <appbase/application.hpp>
 
-namespace steem { namespace plugins { namespace network_broadcast_api {
+namespace hive { namespace plugins { namespace network_broadcast_api {
 
 namespace detail
 {
@@ -12,8 +12,8 @@ namespace detail
    {
       public:
          network_broadcast_api_impl() :
-            _p2p( appbase::app().get_plugin< steem::plugins::p2p::p2p_plugin >() ),
-            _chain( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >() )
+            _p2p( appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >() ),
+            _chain( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >() )
          {}
 
          DECLARE_API_IMPL(
@@ -23,8 +23,8 @@ namespace detail
 
          bool check_max_block_age( int32_t max_block_age ) const;
 
-         steem::plugins::p2p::p2p_plugin&                      _p2p;
-         steem::plugins::chain::chain_plugin&                  _chain;
+         hive::plugins::p2p::p2p_plugin&                      _p2p;
+         hive::plugins::chain::chain_plugin&                  _chain;
    };
 
    DEFINE_API_IMPL( network_broadcast_api_impl, broadcast_transaction )
@@ -71,4 +71,4 @@ DEFINE_LOCKLESS_APIS( network_broadcast_api,
    (broadcast_block)
 )
 
-} } } // steem::plugins::network_broadcast_api
+} } } // hive::plugins::network_broadcast_api

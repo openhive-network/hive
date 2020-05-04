@@ -1,18 +1,18 @@
 #pragma once
 
 #include <appbase/application.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/chain/util/delayed_voting.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/util/delayed_voting.hpp>
 #include <fc/io/json.hpp>
 #include <fc/smart_ref_impl.hpp>
 
-#include <steem/plugins/debug_node/debug_node_plugin.hpp>
+#include <hive/plugins/debug_node/debug_node_plugin.hpp>
 
-#include <steem/utilities/key_conversion.hpp>
+#include <hive/utilities/key_conversion.hpp>
 
-#include <steem/plugins/block_api/block_api_plugin.hpp>
-#include <steem/plugins/condenser_api/condenser_api_legacy_asset.hpp>
-#include <steem/plugins/database_api/database_api_plugin.hpp>
+#include <hive/plugins/block_api/block_api_plugin.hpp>
+#include <hive/plugins/condenser_api/condenser_api_legacy_asset.hpp>
+#include <hive/plugins/database_api/database_api_plugin.hpp>
 
 #include <fc/network/http/connection.hpp>
 #include <fc/network/ip.hpp>
@@ -21,15 +21,15 @@
 #include <iostream>
 
 #define INITIAL_TEST_SUPPLY (10000000000ll)
-#define SBD_INITIAL_TEST_SUPPLY (300000000ll)
+#define HBD_INITIAL_TEST_SUPPLY (300000000ll)
 
-extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
+extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
 
 #define PUSH_TX \
-   steem::chain::test::_push_transaction
+   hive::chain::test::_push_transaction
 
 #define PUSH_BLOCK \
-   steem::chain::test::_push_block
+   hive::chain::test::_push_block
 
 // See below
 #define REQUIRE_OP_VALIDATION_SUCCESS( op, field, value ) \
@@ -48,7 +48,7 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
    db.push_transaction( trx, ~0 ); \
 }
 
-/*#define STEEM_REQUIRE_THROW( expr, exc_type )          \
+/*#define HIVE_REQUIRE_THROW( expr, exc_type )            \
 {                                                         \
    std::string req_throw_info = fc::json::to_string(      \
       fc::mutable_variant_object()                        \
@@ -58,18 +58,18 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
       ("exc_type", #exc_type)                             \
       );                                                  \
    if( fc::enable_record_assert_trip )                    \
-      std::cout << "STEEM_REQUIRE_THROW begin "        \
+      std::cout << "HIVE_REQUIRE_THROW begin "            \
          << req_throw_info << std::endl;                  \
    BOOST_REQUIRE_THROW( expr, exc_type );                 \
    if( fc::enable_record_assert_trip )                    \
-      std::cout << "STEEM_REQUIRE_THROW end "          \
+      std::cout << "HIVE_REQUIRE_THROW end "              \
          << req_throw_info << std::endl;                  \
 }*/
 
-#define STEEM_REQUIRE_THROW( expr, exc_type )          \
+#define HIVE_REQUIRE_THROW( expr, exc_type )              \
    BOOST_REQUIRE_THROW( expr, exc_type );
 
-#define STEEM_CHECK_THROW( expr, exc_type )            \
+#define HIVE_CHECK_THROW( expr, exc_type )                \
 {                                                         \
    std::string req_throw_info = fc::json::to_string(      \
       fc::mutable_variant_object()                        \
@@ -79,11 +79,11 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
       ("exc_type", #exc_type)                             \
       );                                                  \
    if( fc::enable_record_assert_trip )                    \
-      std::cout << "STEEM_CHECK_THROW begin "          \
+      std::cout << "HIVE_CHECK_THROW begin "              \
          << req_throw_info << std::endl;                  \
    BOOST_CHECK_THROW( expr, exc_type );                   \
    if( fc::enable_record_assert_trip )                    \
-      std::cout << "STEEM_CHECK_THROW end "            \
+      std::cout << "HIVE_CHECK_THROW end "                \
          << req_throw_info << std::endl;                  \
 }
 
@@ -91,7 +91,7 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
 { \
    const auto temp = op.field; \
    op.field = value; \
-   STEEM_REQUIRE_THROW( op.validate(), exc_type ); \
+   HIVE_REQUIRE_THROW( op.validate(), exc_type ); \
    op.field = temp; \
 }
 #define REQUIRE_OP_VALIDATION_FAILURE( op, field, value ) \
@@ -103,7 +103,7 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
    op.field = value; \
    trx.operations.back() = op; \
    op.field = bak; \
-   STEEM_REQUIRE_THROW(db.push_transaction(trx, ~0), exc_type); \
+   HIVE_REQUIRE_THROW(db.push_transaction(trx, ~0), exc_type); \
 }
 
 #define REQUIRE_THROW_WITH_VALUE( op, field, value ) \
@@ -140,7 +140,7 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
    asset_symbol_type name ## _symbol = get_new_smt_symbol( decimal_places, db );
 
 #define ASSET( s ) \
-   steem::plugins::condenser_api::legacy_asset::from_string( s ).to_asset()
+   hive::plugins::condenser_api::legacy_asset::from_string( s ).to_asset()
 
 #define FUND( account_name, amount ) \
    fund( account_name, amount ); \
@@ -155,7 +155,7 @@ extern uint32_t STEEM_TESTING_GENESIS_TIMESTAMP;
 
 #define OP2TX(OP,TX,KEY) \
 TX.operations.push_back( OP ); \
-TX.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION ); \
+TX.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION ); \
 TX.sign( KEY, db->get_chain_id(), fc::ecc::bip_0062 );
 
 #define PUSH_OP(OP,KEY) \
@@ -177,12 +177,12 @@ TX.sign( KEY, db->get_chain_id(), fc::ecc::bip_0062 );
 { \
    signed_transaction tx; \
    OP2TX(OP,tx,KEY) \
-   STEEM_REQUIRE_THROW( db->push_transaction( tx, 0 ), EXCEPTION ); \
+   HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), EXCEPTION ); \
 }
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
-using namespace steem::protocol;
+using namespace hive::protocol;
 
 struct database_fixture {
    // the reason we use an app is to exercise the indexes of built-in
@@ -193,7 +193,7 @@ struct database_fixture {
    account_id_type committee_account;
    fc::ecc::private_key private_key = fc::ecc::private_key::generate();
    fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
-   string debug_key = steem::utilities::key_to_wif( init_account_priv_key );
+   string debug_key = hive::utilities::key_to_wif( init_account_priv_key );
    public_key_type init_account_pub_key = init_account_priv_key.get_public_key();
    uint32_t default_skip = 0 | database::skip_undo_history_check | database::skip_authority_check;
    fc::ecc::canonical_signature_type default_sig_canon = fc::ecc::fc_canonical;
@@ -207,7 +207,7 @@ struct database_fixture {
    virtual ~database_fixture() { appbase::reset(); }
 
    static fc::ecc::private_key generate_private_key( string seed = "init_key" );
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
    static asset_symbol_type get_new_smt_symbol( uint8_t token_decimal_places, chain::database* db );
 #endif
 
@@ -272,7 +272,16 @@ struct database_fixture {
    void proxy( const string& account, const string& proxy );
    void set_price_feed( const price& new_price );
    void set_witness_props( const flat_map< string, vector< char > >& new_props );
-   const asset& get_balance( const string& account_name )const;
+   account_id_type get_account_id( const string& account_name )const;
+   asset get_balance( const string& account_name )const;
+   asset get_hbd_balance( const string& account_name )const;
+   asset get_savings( const string& account_name )const;
+   asset get_hbd_savings( const string& account_name )const;
+   asset get_rewards( const string& account_name )const;
+   asset get_hbd_rewards( const string& account_name )const;
+   asset get_vesting( const string& account_name )const;
+   asset get_vest_rewards( const string& account_name )const;
+   asset get_vest_rewards_as_hive( const string& account_name )const;
    void sign( signed_transaction& trx, const fc::ecc::private_key& key );
 
    vector< operation > get_last_operations( uint32_t ops );
@@ -297,7 +306,7 @@ struct live_database_fixture : public database_fixture
    fc::path _chain_dir;
 };
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 template< typename T >
 struct t_smt_database_fixture : public T
 {
@@ -323,7 +332,7 @@ struct t_smt_database_fixture : public T
    void create_conflicting_smt( const asset_symbol_type existing_smt, const char* control_account_name, const fc::ecc::private_key& key );
 
    //smt_setup_operation
-   smt_generation_unit get_generation_unit ( const units& steem_unit = units(), const units& token_unit = units() );
+   smt_generation_unit get_generation_unit ( const units& hive_unit = units(), const units& token_unit = units() );
    smt_capped_generation_policy get_capped_generation_policy
    (
       const smt_generation_unit& pre_soft_cap_unit = smt_generation_unit(),
@@ -370,7 +379,7 @@ struct sps_proposal_database_fixture : public virtual clean_database_fixture
       std::string receiver   ;
       fc::time_point_sec start_date ;
       fc::time_point_sec end_date   ;
-      steem::protocol::asset daily_pay ;
+      hive::protocol::asset daily_pay ;
       std::string subject ;
       std::string url     ;
 
@@ -380,7 +389,7 @@ struct sps_proposal_database_fixture : public virtual clean_database_fixture
          receiver   = "bob";
          start_date = _start     + fc::days( 1 );
          end_date   = start_date + fc::days( 2 );
-         daily_pay  = asset( 100, SBD_SYMBOL );
+         daily_pay  = asset( 100, HBD_SYMBOL );
          subject    = "hello";
          url        = "http:://something.html";
       }
@@ -470,7 +479,7 @@ struct delayed_vote_proposal_database_fixture
 struct json_rpc_database_fixture : public database_fixture
 {
    private:
-      steem::plugins::json_rpc::json_rpc_plugin* rpc_plugin;
+      hive::plugins::json_rpc::json_rpc_plugin* rpc_plugin;
 
       fc::variant get_answer( std::string& request );
       void review_answer( fc::variant& answer, int64_t code, bool is_warning, bool is_fail, fc::optional< fc::variant > id );

@@ -1,21 +1,21 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
 #include <appbase/application.hpp>
 
-#include <steem/plugins/database_api/database_api.hpp>
-#include <steem/plugins/database_api/database_api_plugin.hpp>
+#include <hive/plugins/database_api/database_api.hpp>
+#include <hive/plugins/database_api/database_api_plugin.hpp>
 
-#include <steem/protocol/get_config.hpp>
-#include <steem/protocol/exceptions.hpp>
-#include <steem/protocol/transaction_util.hpp>
+#include <hive/protocol/get_config.hpp>
+#include <hive/protocol/exceptions.hpp>
+#include <hive/protocol/transaction_util.hpp>
 
-#include <steem/chain/util/smt_token.hpp>
+#include <hive/chain/util/smt_token.hpp>
 
-#include <steem/utilities/git_revision.hpp>
+#include <hive/utilities/git_revision.hpp>
 
 #include <fc/git_revision.hpp>
 
-namespace steem { namespace plugins { namespace database_api {
+namespace hive { namespace plugins { namespace database_api {
 
 
 
@@ -77,7 +77,7 @@ class database_api_impl
          (verify_authority)
          (verify_account_authority)
          (verify_signatures)
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
          (get_nai_pool)
          (list_smt_contributions)
          (find_smt_contributions)
@@ -150,7 +150,7 @@ database_api::database_api()
 database_api::~database_api() {}
 
 database_api_impl::database_api_impl()
-   : _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ) {}
+   : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
 database_api_impl::~database_api_impl() {}
 
@@ -163,15 +163,15 @@ database_api_impl::~database_api_impl() {}
 
 DEFINE_API_IMPL( database_api_impl, get_config )
 {
-   return steem::protocol::get_config( _db.get_treasury_name(), _db.get_chain_id() );
+   return hive::protocol::get_config( _db.get_treasury_name(), _db.get_chain_id() );
 }
 
 DEFINE_API_IMPL( database_api_impl, get_version )
 {
    return get_version_return
    (
-      fc::string( STEEM_BLOCKCHAIN_VERSION ),
-      fc::string( steem::utilities::git_revision_sha ),
+      fc::string( HIVE_BLOCKCHAIN_VERSION ),
+      fc::string( hive::utilities::git_revision_sha ),
       fc::string( fc::git_revision_sha ),
       _db.get_chain_id()
    );
@@ -1361,15 +1361,15 @@ DEFINE_API_IMPL( database_api_impl, get_order_book )
    FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
    get_order_book_return result;
 
-   auto max_sell = price::max( SBD_SYMBOL, STEEM_SYMBOL );
-   auto max_buy = price::max( STEEM_SYMBOL, SBD_SYMBOL );
+   auto max_sell = price::max( HBD_SYMBOL, HIVE_SYMBOL );
+   auto max_buy = price::max( HIVE_SYMBOL, HBD_SYMBOL );
 
    const auto& limit_price_idx = _db.get_index< chain::limit_order_index >().indices().get< chain::by_price >();
    auto sell_itr = limit_price_idx.lower_bound( max_sell );
    auto buy_itr  = limit_price_idx.lower_bound( max_buy );
    auto end = limit_price_idx.end();
 
-   while( sell_itr != end && sell_itr->sell_price.base.symbol == SBD_SYMBOL && result.bids.size() < args.limit )
+   while( sell_itr != end && sell_itr->sell_price.base.symbol == HBD_SYMBOL && result.bids.size() < args.limit )
    {
       auto itr = sell_itr;
       order cur;
@@ -1377,12 +1377,12 @@ DEFINE_API_IMPL( database_api_impl, get_order_book )
       cur.real_price  = 0.0;
       // cur.real_price  = (cur.order_price).to_real();
       cur.sbd = itr->for_sale;
-      cur.steem = ( asset( itr->for_sale, SBD_SYMBOL ) * cur.order_price ).amount;
+      cur.steem = ( asset( itr->for_sale, HBD_SYMBOL ) * cur.order_price ).amount;
       cur.created = itr->created;
       result.bids.push_back( cur );
       ++sell_itr;
    }
-   while( buy_itr != end && buy_itr->sell_price.base.symbol == STEEM_SYMBOL && result.asks.size() < args.limit )
+   while( buy_itr != end && buy_itr->sell_price.base.symbol == HIVE_SYMBOL && result.asks.size() < args.limit )
    {
       auto itr = buy_itr;
       order cur;
@@ -1390,7 +1390,7 @@ DEFINE_API_IMPL( database_api_impl, get_order_book )
       cur.real_price = 0.0;
       // cur.real_price  = (~cur.order_price).to_real();
       cur.steem   = itr->for_sale;
-      cur.sbd     = ( asset( itr->for_sale, STEEM_SYMBOL ) * cur.order_price ).amount;
+      cur.sbd     = ( asset( itr->for_sale, HIVE_SYMBOL ) * cur.order_price ).amount;
       cur.created = itr->created;
       result.asks.push_back( cur );
       ++buy_itr;
@@ -1454,7 +1454,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
       case by_creator:
       {
          auto key = args.start.as< std::pair< account_name_type, api_id_type > >();
-         iterate_results< steem::chain::proposal_index, steem::chain::by_creator >(
+         iterate_results< hive::chain::proposal_index, hive::chain::by_creator >(
             boost::make_tuple( key.first, key.second ),
             result.proposals,
             args.limit,
@@ -1467,7 +1467,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
       case by_start_date:
       {
          auto key = args.start.as< std::pair< time_point_sec, api_id_type > >();
-         iterate_results< steem::chain::proposal_index, steem::chain::by_start_date >(
+         iterate_results< hive::chain::proposal_index, hive::chain::by_start_date >(
             boost::make_tuple( key.first, key.second ),
             result.proposals,
             args.limit,
@@ -1480,7 +1480,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
       case by_end_date:
       {
          auto key = args.start.as< std::pair< time_point_sec, api_id_type > >();
-         iterate_results< steem::chain::proposal_index, steem::chain::by_end_date >(
+         iterate_results< hive::chain::proposal_index, hive::chain::by_end_date >(
             boost::make_tuple( key.first, key.second ),
             result.proposals,
             args.limit,
@@ -1493,7 +1493,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
       case by_total_votes:
       {
          auto key = args.start.as< std::pair< uint64_t, api_id_type > >();
-         iterate_results< steem::chain::proposal_index, steem::chain::by_total_votes >(
+         iterate_results< hive::chain::proposal_index, hive::chain::by_total_votes >(
             boost::make_tuple( key.first, key.second ),
             result.proposals,
             args.limit,
@@ -1521,7 +1521,7 @@ DEFINE_API_IMPL( database_api_impl, find_proposals )
 
    std::for_each( args.proposal_ids.begin(), args.proposal_ids.end(), [&](auto& id)
    {
-      auto po = _db.find< steem::chain::proposal_object, steem::chain::by_proposal_id >( id );
+      auto po = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( id );
       if( po != nullptr && !po->removed )
       {
          result.proposals.emplace_back( api_proposal_object( *po, currentTime ) );
@@ -1548,14 +1548,14 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
       case by_voter_proposal:
       {
          auto key = args.start.as< std::pair< account_name_type, api_id_type > >();
-         iterate_results< steem::chain::proposal_vote_index, steem::chain::by_voter_proposal >(
+         iterate_results< hive::chain::proposal_vote_index, hive::chain::by_voter_proposal >(
             boost::make_tuple( key.first, key.second ),
             result.proposal_votes,
             args.limit,
             [&]( const proposal_vote_object& po ){ return api_proposal_vote_object( po, _db ); },
             [&]( const proposal_vote_object& po )
             {
-               auto itr = _db.find< steem::chain::proposal_object, steem::chain::by_id >( po.proposal_id );
+               auto itr = _db.find< hive::chain::proposal_object, hive::chain::by_id >( po.proposal_id );
                return itr != nullptr && !itr->removed;
             },
             args.order_direction
@@ -1565,14 +1565,14 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
       case by_proposal_voter:
       {
          auto key = args.start.as< std::pair< api_id_type, account_name_type > >();
-         iterate_results< steem::chain::proposal_vote_index, steem::chain::by_proposal_voter >(
+         iterate_results< hive::chain::proposal_vote_index, hive::chain::by_proposal_voter >(
             boost::make_tuple( key.first, key.second ),
             result.proposal_votes,
             args.limit,
             [&]( const proposal_vote_object& po ){ return api_proposal_vote_object( po, _db ); },
             [&]( const proposal_vote_object& po )
             {
-               auto itr = _db.find< steem::chain::proposal_object, steem::chain::by_id >( po.proposal_id );
+               auto itr = _db.find< hive::chain::proposal_object, hive::chain::by_id >( po.proposal_id );
                return itr != nullptr && !itr->removed;
             },
             args.order_direction
@@ -1606,8 +1606,8 @@ DEFINE_API_IMPL( database_api_impl, get_required_signatures )
                                                    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
                                                    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
                                                    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
-                                                   STEEM_MAX_SIG_CHECK_DEPTH,
-                                                   _db.has_hardfork( STEEM_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
+                                                   HIVE_MAX_SIG_CHECK_DEPTH,
+                                                   _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
 
    return result;
 }
@@ -1639,8 +1639,8 @@ DEFINE_API_IMPL( database_api_impl, get_potential_signatures )
             result.keys.insert( k );
          return authority( auth );
       },
-      STEEM_MAX_SIG_CHECK_DEPTH,
-      _db.has_hardfork( STEEM_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical
+      HIVE_MAX_SIG_CHECK_DEPTH,
+      _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical
    );
 
    return result;
@@ -1652,10 +1652,10 @@ DEFINE_API_IMPL( database_api_impl, verify_authority )
                            [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
                            [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
                            [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
-                           STEEM_MAX_SIG_CHECK_DEPTH,
-                           STEEM_MAX_AUTHORITY_MEMBERSHIP,
-                           STEEM_MAX_SIG_CHECK_ACCOUNTS,
-                           _db.has_hardfork( STEEM_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
+                           HIVE_MAX_SIG_CHECK_DEPTH,
+                           HIVE_MAX_AUTHORITY_MEMBERSHIP,
+                           HIVE_MAX_SIG_CHECK_ACCOUNTS,
+                           _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
    return verify_authority_return( { true } );
 }
 
@@ -1693,20 +1693,20 @@ DEFINE_API_IMPL( database_api_impl, verify_signatures )
    // verify authority throws on failure, catch and return false
    try
    {
-      steem::protocol::verify_authority< verify_signatures_args >(
+      hive::protocol::verify_authority< verify_signatures_args >(
          { args },
          sig_keys,
          [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).owner ); },
          [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).active ); },
          [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).posting ); },
-         STEEM_MAX_SIG_CHECK_DEPTH );
+         HIVE_MAX_SIG_CHECK_DEPTH );
    }
    catch( fc::exception& ) { result.valid = false; }
 
    return result;
 }
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 //////////////////////////////////////////////////////////////////////
 //                                                                  //
 // SMT                                                              //
@@ -1996,7 +1996,7 @@ DEFINE_READ_APIS( database_api,
    (verify_authority)
    (verify_account_authority)
    (verify_signatures)
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
    (get_nai_pool)
    (list_smt_contributions)
    (find_smt_contributions)
@@ -2007,4 +2007,4 @@ DEFINE_READ_APIS( database_api,
 #endif
 )
 
-} } } // steem::plugins::database_api
+} } } // hive::plugins::database_api

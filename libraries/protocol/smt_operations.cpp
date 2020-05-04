@@ -1,7 +1,7 @@
 
-#include <steem/protocol/smt_operations.hpp>
-#include <steem/protocol/validation.hpp>
-#ifdef STEEM_ENABLE_SMT
+#include <hive/protocol/smt_operations.hpp>
+#include <hive/protocol/validation.hpp>
+#ifdef HIVE_ENABLE_SMT
 
 #define SMT_DESTINATION_FROM          account_name_type( "$from" )
 #define SMT_DESTINATION_FROM_VESTING  account_name_type( "$from.vesting" )
@@ -9,7 +9,7 @@
 #define SMT_DESTINATION_REWARDS       account_name_type( "$rewards" )
 #define SMT_DESTINATION_VESTING       account_name_type( "$vesting" )
 
-namespace steem { namespace protocol {
+namespace hive { namespace protocol {
 
 void common_symbol_validation( const asset_symbol_type& symbol )
 {
@@ -29,8 +29,8 @@ void smt_create_operation::validate()const
 {
    smt_admin_operation_validate( *this );
    FC_ASSERT( smt_creation_fee.amount >= 0, "fee cannot be negative" );
-   FC_ASSERT( smt_creation_fee.amount <= STEEM_MAX_SHARE_SUPPLY, "Fee must be smaller than HIVE_MAX_SHARE_SUPPLY" );
-   FC_ASSERT( is_asset_type( smt_creation_fee, STEEM_SYMBOL ) || is_asset_type( smt_creation_fee, SBD_SYMBOL ), "Fee must be HIVE or HBD" );
+   FC_ASSERT( smt_creation_fee.amount <= HIVE_MAX_SHARE_SUPPLY, "Fee must be smaller than HIVE_MAX_SHARE_SUPPLY" );
+   FC_ASSERT( is_asset_type( smt_creation_fee, HIVE_SYMBOL ) || is_asset_type( smt_creation_fee, HBD_SYMBOL ), "Fee must be HIVE or HBD" );
    FC_ASSERT( symbol.decimals() == precision, "Mismatch between redundantly provided precision ${prec1} vs ${prec2}",
       ("prec1",symbol.decimals())("prec2",precision) );
 }
@@ -97,7 +97,7 @@ void smt_capped_generation_policy::validate()const
    post_soft_cap_unit.validate();
 
    FC_ASSERT( soft_cap_percent > 0 );
-   FC_ASSERT( soft_cap_percent <= STEEM_100_PERCENT );
+   FC_ASSERT( soft_cap_percent <= HIVE_100_PERCENT );
 
    FC_ASSERT( pre_soft_cap_unit.steem_unit.size() > 0 );
    FC_ASSERT( pre_soft_cap_unit.token_unit.size() > 0 );
@@ -109,7 +109,7 @@ void smt_capped_generation_policy::validate()const
 
    // TODO : Check account name
 
-   if( soft_cap_percent == STEEM_100_PERCENT )
+   if( soft_cap_percent == HIVE_100_PERCENT )
    {
       FC_ASSERT( post_soft_cap_unit.steem_unit.size() == 0 );
       FC_ASSERT( post_soft_cap_unit.token_unit.size() == 0 );
@@ -135,7 +135,7 @@ void smt_setup_emissions_operation::validate()const
 {
    smt_admin_operation_validate( *this );
 
-   FC_ASSERT( schedule_time > STEEM_GENESIS_TIME );
+   FC_ASSERT( schedule_time > HIVE_GENESIS_TIME );
    FC_ASSERT( emissions_unit.token_unit.empty() == false, "Emissions token unit cannot be empty" );
 
    for ( const auto& e : emissions_unit.token_unit )
@@ -185,14 +185,14 @@ void smt_setup_operation::validate()const
    smt_admin_operation_validate( *this );
 
    FC_ASSERT( max_supply > 0, "Max supply must be greater than 0" );
-   FC_ASSERT( max_supply <= STEEM_MAX_SHARE_SUPPLY, "Max supply must be less than ${n}", ("n", STEEM_MAX_SHARE_SUPPLY) );
-   FC_ASSERT( contribution_begin_time > STEEM_GENESIS_TIME, "Contribution begin time must be greater than ${t}", ("t", STEEM_GENESIS_TIME) );
+   FC_ASSERT( max_supply <= HIVE_MAX_SHARE_SUPPLY, "Max supply must be less than ${n}", ("n", HIVE_MAX_SHARE_SUPPLY) );
+   FC_ASSERT( contribution_begin_time > HIVE_GENESIS_TIME, "Contribution begin time must be greater than ${t}", ("t", HIVE_GENESIS_TIME) );
    FC_ASSERT( contribution_end_time > contribution_begin_time, "Contribution end time must be after contribution begin time" );
    FC_ASSERT( launch_time >= contribution_end_time, "SMT ICO launch time must be after the contribution end time" );
    FC_ASSERT( steem_units_soft_cap <= steem_units_hard_cap, "Steem units soft cap must less than or equal to steem units hard cap" );
    FC_ASSERT( steem_units_soft_cap >= SMT_MIN_SOFT_CAP_STEEM_UNITS, "Steem units soft cap must be greater than or equal to ${n}", ("n", SMT_MIN_SOFT_CAP_STEEM_UNITS) );
    FC_ASSERT( steem_units_hard_cap >= SMT_MIN_HARD_CAP_STEEM_UNITS, "Steem units hard cap must be greater than or equal to ${n}", ("n", SMT_MIN_HARD_CAP_STEEM_UNITS) );
-   FC_ASSERT( steem_units_hard_cap <= STEEM_MAX_SHARE_SUPPLY, "Steem units hard cap must be less than or equal to ${n}", ("n", STEEM_MAX_SHARE_SUPPLY) );
+   FC_ASSERT( steem_units_hard_cap <= HIVE_MAX_SHARE_SUPPLY, "Steem units hard cap must be less than or equal to ${n}", ("n", HIVE_MAX_SHARE_SUPPLY) );
 
    validate_visitor vtor;
    initial_generation_policy.visit( vtor );
@@ -248,7 +248,7 @@ struct smt_set_runtime_parameters_operation_visitor
 
    void operator()( const smt_param_rewards_v1& param_rewards )const
    {
-      FC_ASSERT( param_rewards.percent_curation_rewards <= STEEM_100_PERCENT,
+      FC_ASSERT( param_rewards.percent_curation_rewards <= HIVE_100_PERCENT,
          "Percent Curation Rewards must not exceed 10000. Was ${n}",
          ("n", param_rewards.percent_curation_rewards) );
 
@@ -298,7 +298,7 @@ void smt_contribute_operation::validate() const
 {
    validate_account_name( contributor );
    common_symbol_validation( symbol );
-   FC_ASSERT( contribution.symbol == STEEM_SYMBOL, "Contributions must be made in HIVE" );
+   FC_ASSERT( contribution.symbol == HIVE_SYMBOL, "Contributions must be made in HIVE" );
    FC_ASSERT( contribution.amount > 0, "Contribution amount must be greater than 0" );
 }
 

@@ -1,8 +1,8 @@
-#include <steem/chain/steem_fwd.hpp>
-#include <steem/chain/steem_objects.hpp>
+#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/steem_objects.hpp>
 
 #include <fc/uint128.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
-} } // steem::chain
+} } // hive::chain

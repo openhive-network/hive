@@ -1,17 +1,17 @@
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/history_object.hpp>
-#include <steem/chain/index.hpp>
-#include <steem/chain/util/impacted.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/history_object.hpp>
+#include <hive/chain/index.hpp>
+#include <hive/chain/util/impacted.hpp>
 
-#include <steem/plugins/chain/chain_plugin.hpp>
+#include <hive/plugins/chain/chain_plugin.hpp>
 
-#include <steem/utilities/benchmark_dumper.hpp>
-#include <steem/utilities/plugin_utilities.hpp>
+#include <hive/utilities/benchmark_dumper.hpp>
+#include <hive/utilities/plugin_utilities.hpp>
 
 #include <appbase/application.hpp>
 
@@ -31,7 +31,7 @@
 
 namespace bpo = boost::program_options;
 
-#define STEEM_NAMESPACE_PREFIX "steem::protocol::"
+#define STEEM_NAMESPACE_PREFIX "hive::protocol::"
 #define OPEN_FILE_LIMIT 750
 
 #define DIAGNOSTIC(s)
@@ -57,19 +57,19 @@ namespace bpo = boost::program_options;
 #define STORE_MAJOR_VERSION          1
 #define STORE_MINOR_VERSION          0
 
-namespace steem { namespace plugins { namespace account_history_rocksdb {
+namespace hive { namespace plugins { namespace account_history_rocksdb {
 
-using steem::protocol::account_name_type;
-using steem::protocol::block_id_type;
-using steem::protocol::operation;
-using steem::protocol::signed_block;
-using steem::protocol::signed_block_header;
-using steem::protocol::signed_transaction;
+using hive::protocol::account_name_type;
+using hive::protocol::block_id_type;
+using hive::protocol::operation;
+using hive::protocol::signed_block;
+using hive::protocol::signed_block_header;
+using hive::protocol::signed_transaction;
 
-using steem::chain::operation_notification;
-using steem::chain::transaction_id_type;
+using hive::chain::operation_notification;
+using hive::chain::transaction_id_type;
 
-using steem::utilities::benchmark_dumper;
+using hive::utilities::benchmark_dumper;
 
 using ::rocksdb::DB;
 using ::rocksdb::DBOptions;
@@ -407,18 +407,18 @@ class account_history_rocksdb_plugin::impl final
 public:
    impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath) :
       _self(self),
-      _mainDb(appbase::app().get_plugin<steem::plugins::chain::chain_plugin>().db()),
+      _mainDb(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db()),
       _storagePath(storagePath),
       _writeBuffer(_storage, _columnHandles)
       {
       collectOptions(options);
 
-      _mainDb.add_pre_reindex_handler([&]( const steem::chain::reindex_notification& note ) -> void
+      _mainDb.add_pre_reindex_handler([&]( const hive::chain::reindex_notification& note ) -> void
          {
             on_pre_reindex( note );
          }, _self, 0);
 
-      _mainDb.add_post_reindex_handler([&]( const steem::chain::reindex_notification& note ) -> void
+      _mainDb.add_post_reindex_handler([&]( const hive::chain::reindex_notification& note ) -> void
          {
             on_post_reindex( note );
          }, _self, 0);
@@ -493,8 +493,8 @@ public:
    }
 
    void printReport(uint32_t blockNo, const char* detailText) const;
-   void on_pre_reindex( const steem::chain::reindex_notification& note );
-   void on_post_reindex( const steem::chain::reindex_notification& note );
+   void on_pre_reindex( const hive::chain::reindex_notification& note );
+   void on_post_reindex( const hive::chain::reindex_notification& note );
 
    /// Allows to start immediate data import (outside replay process).
    void importData(unsigned int blockLimit);
@@ -845,7 +845,7 @@ inline bool account_history_rocksdb_plugin::impl::isTrackedAccount(const account
 std::vector<account_name_type> account_history_rocksdb_plugin::impl::getImpactedAccounts(const operation& op) const
 {
    flat_set<account_name_type> impacted;
-   steem::app::operation_get_impacted_accounts(op, impacted);
+   hive::app::operation_get_impacted_accounts(op, impacted);
    std::vector<account_name_type> retVal;
 
    if(impacted.empty())
@@ -1299,7 +1299,7 @@ void account_history_rocksdb_plugin::impl::prunePotentiallyTooOldItems(account_h
    }
 }
 
-void account_history_rocksdb_plugin::impl::on_pre_reindex(const steem::chain::reindex_notification& note)
+void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::reindex_notification& note)
 {
    ilog("Received onReindexStart request, attempting to clean database storage.");
 
@@ -1324,7 +1324,7 @@ void account_history_rocksdb_plugin::impl::on_pre_reindex(const steem::chain::re
    ilog("onReindexStart request completed successfully.");
 }
 
-void account_history_rocksdb_plugin::impl::on_post_reindex(const steem::chain::reindex_notification& note)
+void account_history_rocksdb_plugin::impl::on_post_reindex(const hive::chain::reindex_notification& note)
 {
    ilog("Reindex completed up to block: ${b}. Setting back write limit to non-massive level.",
       ("b", note.last_block_number));
@@ -1615,5 +1615,5 @@ bool account_history_rocksdb_plugin::find_transaction_info(const protocol::trans
 
 } } }
 
-FC_REFLECT( steem::plugins::account_history_rocksdb::account_history_info,
+FC_REFLECT( hive::plugins::account_history_rocksdb::account_history_info,
    (id)(oldestEntryId)(newestEntryId)(oldestEntryTimestamp) )

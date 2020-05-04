@@ -1,11 +1,11 @@
 
-#include <steem/protocol/operations.hpp>
+#include <hive/protocol/operations.hpp>
 
 #include <fc/io/json.hpp>
 
 #include <boost/algorithm/string.hpp>
 
-using namespace steem::protocol;
+using namespace hive::protocol;
 using boost::container::flat_map;
 using std::string;
 using std::vector;

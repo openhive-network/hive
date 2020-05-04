@@ -1,11 +1,11 @@
 
-#include <steem/plugins/rc/resource_user.hpp>
+#include <hive/plugins/rc/resource_user.hpp>
 
-#include <steem/protocol/transaction.hpp>
+#include <hive/protocol/transaction.hpp>
 
-namespace steem { namespace plugins { namespace rc {
+namespace hive { namespace plugins { namespace rc {
 
-using namespace steem::protocol;
+using namespace hive::protocol;
 
 account_name_type get_resource_user( const signed_transaction& tx )
 {
@@ -27,4 +27,4 @@ account_name_type get_resource_user( const signed_transaction& tx )
    return account_name_type();
 }
 
-} } } // steem::plugins::rc
+} } } // hive::plugins::rc

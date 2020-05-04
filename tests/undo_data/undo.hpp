@@ -1,9 +1,9 @@
 #pragma once
 
-#include <steem/chain/database.hpp>
+#include <hive/chain/database.hpp>
 #include <fstream>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
    namespace u_types
    {

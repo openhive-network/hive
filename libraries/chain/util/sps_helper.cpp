@@ -1,8 +1,8 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/chain/util/sps_helper.hpp>
+#include <hive/chain/util/sps_helper.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
 void sps_helper::remove_proposals( database& db, const flat_set<int64_t>& proposal_ids, const account_name_type& proposal_owner )
 {
@@ -33,4 +33,4 @@ void sps_helper::remove_proposals( database& db, const flat_set<int64_t>& propos
 
 }
 
-} } // steem::chain
+} } // hive::chain

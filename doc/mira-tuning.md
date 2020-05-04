@@ -62,7 +62,7 @@ Suggestion: inc-bloom-bits-per-key option : bloom_bits action : increase suggest
 scope: entities:
 {'ENTITY_PLACEHOLDER'}
 scope: col_fam:
-{'boost\\:\\:mpl\\:\\:v_item<steem\\:\\:chain\\:\\:by_id, boost\\:\\:mpl\\:\\:vector0<mpl_\\:\\:na>, 0>', 'boost\\:\\:mpl\\:\\:v_item<steem\\:\\:chain\\:\\:by_last_owner_update, boost\\:\\:mpl\\:\\:vector0<mpl_\\:\\:na>, 0>', 'boost\\:\\:mpl\\:\\:v_item<steem\\:\\:chain\\:\\:by_account, boost\\:\\:mpl\\:\\:vector0<mpl_\\:\\:na>, 0>', 'default'}
+{'boost\\:\\:mpl\\:\\:v_item<hive\\:\\:chain\\:\\:by_id, boost\\:\\:mpl\\:\\:vector0<mpl_\\:\\:na>, 0>', 'boost\\:\\:mpl\\:\\:v_item<hive\\:\\:chain\\:\\:by_last_owner_update, boost\\:\\:mpl\\:\\:vector0<mpl_\\:\\:na>, 0>', 'boost\\:\\:mpl\\:\\:v_item<hive\\:\\:chain\\:\\:by_account, boost\\:\\:mpl\\:\\:vector0<mpl_\\:\\:na>, 0>', 'default'}
 ```
 
 In reality you will get significantly more output than above. For the sake of simplicity, we will work with one performance suggestion. We can see here the `rocksdb_advisor.sh` provided a suggestion for the `account_authority_object` database.

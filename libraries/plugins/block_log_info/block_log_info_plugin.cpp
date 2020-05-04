@@ -1,19 +1,19 @@
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/steem_fwd.hpp>
 
-#include <steem/plugins/block_log_info/block_log_info_plugin.hpp>
-#include <steem/plugins/block_log_info/block_log_info_objects.hpp>
+#include <hive/plugins/block_log_info/block_log_info_plugin.hpp>
+#include <hive/plugins/block_log_info/block_log_info_objects.hpp>
 
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/chain/global_property_object.hpp>
-#include <steem/chain/index.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/global_property_object.hpp>
+#include <hive/chain/index.hpp>
 
 #include <fstream>
 #include <iostream>
 #include <sstream>
 
-namespace steem { namespace plugins { namespace block_log_info {
+namespace hive { namespace plugins { namespace block_log_info {
 
 namespace detail {
 
@@ -21,7 +21,7 @@ class block_log_info_plugin_impl
 {
    public:
       block_log_info_plugin_impl( block_log_info_plugin& _plugin ) :
-         _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ),
+         _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
          _self( _plugin ) {}
 
       void on_post_apply_block( const block_notification& note );
@@ -150,7 +150,7 @@ void block_log_info_plugin::plugin_initialize( const boost::program_options::var
    try
    {
       ilog( "Initializing block_log_info plugin" );
-      chain::database& db = appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db();
+      chain::database& db = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
 
       my->_post_apply_block_conn = db.add_post_apply_block_handler(
          [&]( const block_notification& note ){ my->on_post_apply_block( note ); }, *this );
@@ -179,4 +179,4 @@ void block_log_info_plugin::plugin_shutdown()
    chain::util::disconnect_signal( my->_post_apply_block_conn );
 }
 
-} } } // steem::plugins::block_log_info
+} } } // hive::plugins::block_log_info

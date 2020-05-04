@@ -1,8 +1,8 @@
-#include <steem/plugins/follow/follow_operations.hpp>
+#include <hive/plugins/follow/follow_operations.hpp>
 
-#include <steem/protocol/operation_util_impl.hpp>
+#include <hive/protocol/operation_util_impl.hpp>
 
-namespace steem { namespace plugins{ namespace follow {
+namespace hive { namespace plugins{ namespace follow {
 
 void follow_operation::validate()const
 {
@@ -14,6 +14,6 @@ void reblog_operation::validate()const
    FC_ASSERT( account != author, "You cannot reblog your own content" );
 }
 
-} } } //steem::plugins::follow
+} } } //hive::plugins::follow
 
-STEEM_DEFINE_OPERATION_TYPE( steem::plugins::follow::follow_plugin_operation )
+STEEM_DEFINE_OPERATION_TYPE( hive::plugins::follow::follow_plugin_operation )

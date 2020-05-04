@@ -1,8 +1,8 @@
-#include <steem/plugins/condenser_api/condenser_api_plugin.hpp>
-#include <steem/plugins/condenser_api/condenser_api.hpp>
-#include <steem/plugins/chain/chain_plugin.hpp>
+#include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
+#include <hive/plugins/condenser_api/condenser_api.hpp>
+#include <hive/plugins/chain/chain_plugin.hpp>
 
-namespace steem { namespace plugins { namespace condenser_api {
+namespace hive { namespace plugins { namespace condenser_api {
 
 condenser_api_plugin::condenser_api_plugin() {}
 condenser_api_plugin::~condenser_api_plugin() {}
@@ -26,4 +26,4 @@ void condenser_api_plugin::plugin_startup()
 
 void condenser_api_plugin::plugin_shutdown() {}
 
-} } } // steem::plugins::condenser_api
+} } } // hive::plugins::condenser_api

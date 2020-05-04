@@ -22,22 +22,22 @@
  * THE SOFTWARE.
  */
 
-#include <steem/private_message/private_message_evaluators.hpp>
-#include <steem/private_message/private_message_operations.hpp>
-#include <steem/private_message/private_message_plugin.hpp>
+#include <hive/private_message/private_message_evaluators.hpp>
+#include <hive/private_message/private_message_operations.hpp>
+#include <hive/private_message/private_message_plugin.hpp>
 
-#include <steem/app/impacted.hpp>
+#include <hive/app/impacted.hpp>
 
-#include <steem/protocol/config.hpp>
+#include <hive/protocol/config.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/index.hpp>
-#include <steem/chain/generic_custom_operation_interpreter.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/index.hpp>
+#include <hive/chain/generic_custom_operation_interpreter.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>
 
-namespace steem { namespace private_message {
+namespace hive { namespace private_message {
 
 namespace detail
 {
@@ -48,20 +48,20 @@ class private_message_plugin_impl
       private_message_plugin_impl(private_message_plugin& _plugin);
       virtual ~private_message_plugin_impl();
 
-      steem::chain::database& database()
+      hive::chain::database& database()
       {
          return _self.database();
       }
 
       private_message_plugin&                                                             _self;
-      std::shared_ptr< generic_custom_operation_interpreter< steem::private_message::private_message_plugin_operation > >   _custom_operation_interpreter;
+      std::shared_ptr< generic_custom_operation_interpreter< hive::private_message::private_message_plugin_operation > >   _custom_operation_interpreter;
       flat_map<string,string>                                                             _tracked_accounts;
 };
 
 private_message_plugin_impl::private_message_plugin_impl( private_message_plugin& _plugin )
    : _self( _plugin )
 {
-   _custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< steem::private_message::private_message_plugin_operation > >( database() );
+   _custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< hive::private_message::private_message_plugin_operation > >( database() );
 
    _custom_operation_interpreter->register_evaluator< private_message_evaluator >( &_self );
 
@@ -185,6 +185,6 @@ flat_map<string,string> private_message_plugin::tracked_accounts() const
 
 } }
 
-STEEM_DEFINE_PLUGIN( private_message, steem::private_message::private_message_plugin )
+STEEM_DEFINE_PLUGIN( private_message, hive::private_message::private_message_plugin )
 
-STEEM_DEFINE_OPERATION_TYPE( steem::private_message::private_message_plugin_operation )
+STEEM_DEFINE_OPERATION_TYPE( hive::private_message::private_message_plugin_operation )
