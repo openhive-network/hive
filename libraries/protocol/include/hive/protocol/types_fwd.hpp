@@ -13,7 +13,7 @@ class fixed_string_impl;
 
 class asset_symbol_type;
 class legacy_steem_asset_symbol_type;
-struct legacy_steem_asset;
+struct legacy_hive_asset;
 } } // hive::protocol
 
 using boost::container::flat_set;
@@ -73,8 +73,8 @@ inline void from_variant( const variant& v, hive::protocol::fixed_string_impl< S
 
 inline void to_variant( const hive::protocol::asset_symbol_type& sym, fc::variant& v );
 
-inline void from_variant( const fc::variant& v, hive::protocol::legacy_steem_asset& leg );
-inline void to_variant( const hive::protocol::legacy_steem_asset& leg, fc::variant& v );
+inline void from_variant( const fc::variant& v, hive::protocol::legacy_hive_asset& leg );
+inline void to_variant( const hive::protocol::legacy_hive_asset& leg, fc::variant& v );
 
 template<typename T> struct get_typename<flat_set_ex<T>>
 {

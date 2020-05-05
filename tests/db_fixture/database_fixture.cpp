@@ -589,7 +589,7 @@ void database_fixture::set_price_feed( const price& new_price )
    {
       witness_set_properties_operation op;
       op.owner = HIVE_INIT_MINER_NAME + fc::to_string( i );
-      op.props[ "sbd_exchange_rate" ] = fc::raw::pack_to_vector( new_price );
+      op.props[ "hbd_exchange_rate" ] = fc::raw::pack_to_vector( new_price );
       op.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
 
       trx.operations.push_back( op );

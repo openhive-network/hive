@@ -105,9 +105,9 @@ namespace hive { namespace plugins { namespace condenser_api {
       operator legacy_chain_properties() const
       {
          legacy_chain_properties props;
-         props.account_creation_fee = legacy_steem_asset::from_asset( asset( account_creation_fee ) );
+         props.account_creation_fee = legacy_hive_asset::from_asset( asset( account_creation_fee ) );
          props.maximum_block_size = maximum_block_size;
-         props.sbd_interest_rate = sbd_interest_rate;
+         props.hbd_interest_rate = sbd_interest_rate;
          return props;
       }
 
@@ -209,7 +209,7 @@ namespace hive { namespace plugins { namespace condenser_api {
          author( op.author ),
          permlink( op.permlink ),
          max_accepted_payout( legacy_asset::from_asset( op.max_accepted_payout ) ),
-         percent_steem_dollars( op.percent_steem_dollars ),
+         percent_steem_dollars( op.percent_hbd ),
          allow_votes( op.allow_votes ),
          allow_curation_rewards( op.allow_curation_rewards )
       {
@@ -227,7 +227,7 @@ namespace hive { namespace plugins { namespace condenser_api {
          op.author = author;
          op.permlink = permlink;
          op.max_accepted_payout = max_accepted_payout;
-         op.percent_steem_dollars = percent_steem_dollars;
+         op.percent_hbd = percent_steem_dollars;
          op.allow_curation_rewards = allow_curation_rewards;
          op.extensions.insert( extensions.begin(), extensions.end() );
          return op;
@@ -278,8 +278,8 @@ namespace hive { namespace plugins { namespace condenser_api {
          to( op.to ),
          agent( op.agent ),
          escrow_id( op.escrow_id ),
-         sbd_amount( legacy_asset::from_asset( op.sbd_amount ) ),
-         steem_amount( legacy_asset::from_asset( op.steem_amount ) ),
+         sbd_amount( legacy_asset::from_asset( op.hbd_amount ) ),
+         steem_amount( legacy_asset::from_asset( op.hive_amount ) ),
          fee( legacy_asset::from_asset( op.fee ) ),
          ratification_deadline( op.ratification_deadline ),
          escrow_expiration( op.escrow_expiration ),
@@ -293,8 +293,8 @@ namespace hive { namespace plugins { namespace condenser_api {
          op.to = to;
          op.agent = agent;
          op.escrow_id = escrow_id;
-         op.sbd_amount = sbd_amount;
-         op.steem_amount = steem_amount;
+         op.hbd_amount = sbd_amount;
+         op.hive_amount = steem_amount;
          op.fee = fee;
          op.ratification_deadline = ratification_deadline;
          op.escrow_expiration = escrow_expiration;
@@ -327,8 +327,8 @@ namespace hive { namespace plugins { namespace condenser_api {
          who( op.who ),
          receiver( op.receiver ),
          escrow_id( op.escrow_id ),
-         sbd_amount( legacy_asset::from_asset( op.sbd_amount ) ),
-         steem_amount( legacy_asset::from_asset( op.steem_amount ) )
+         sbd_amount( legacy_asset::from_asset( op.hbd_amount ) ),
+         steem_amount( legacy_asset::from_asset( op.hive_amount ) )
       {}
 
       operator escrow_release_operation()const
@@ -340,8 +340,8 @@ namespace hive { namespace plugins { namespace condenser_api {
          op.who = who;
          op.receiver = receiver;
          op.escrow_id = escrow_id;
-         op.sbd_amount = sbd_amount;
-         op.steem_amount = steem_amount;
+         op.hbd_amount = sbd_amount;
+         op.hive_amount = steem_amount;
          return op;
       }
 
@@ -365,7 +365,7 @@ namespace hive { namespace plugins { namespace condenser_api {
          op.work.visit( convert_to_legacy_static_variant< legacy_pow2_work >( work ) );
          props.account_creation_fee = legacy_asset::from_asset( op.props.account_creation_fee.to_asset< false >() );
          props.maximum_block_size = op.props.maximum_block_size;
-         props.sbd_interest_rate = op.props.sbd_interest_rate;
+         props.sbd_interest_rate = op.props.hbd_interest_rate;
       }
 
       operator pow2_operation()const
@@ -373,9 +373,9 @@ namespace hive { namespace plugins { namespace condenser_api {
          pow2_operation op;
          work.visit( convert_to_legacy_static_variant< pow2_work >( op.work ) );
          op.new_owner_key = new_owner_key;
-         op.props.account_creation_fee = legacy_steem_asset::from_asset( asset( props.account_creation_fee ) );
+         op.props.account_creation_fee = legacy_hive_asset::from_asset( asset( props.account_creation_fee ) );
          op.props.maximum_block_size = props.maximum_block_size;
-         op.props.sbd_interest_rate = props.sbd_interest_rate;
+         op.props.hbd_interest_rate = props.sbd_interest_rate;
          return op;
       }
 
@@ -473,7 +473,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       {
          props.account_creation_fee = legacy_asset::from_asset( op.props.account_creation_fee.to_asset< false >() );
          props.maximum_block_size = op.props.maximum_block_size;
-         props.sbd_interest_rate = op.props.sbd_interest_rate;
+         props.sbd_interest_rate = op.props.hbd_interest_rate;
       }
 
       operator witness_update_operation()const
@@ -482,9 +482,9 @@ namespace hive { namespace plugins { namespace condenser_api {
          op.owner = owner;
          op.url = url;
          op.block_signing_key = block_signing_key;
-         op.props.account_creation_fee = legacy_steem_asset::from_asset( asset( props.account_creation_fee ) );
+         op.props.account_creation_fee = legacy_hive_asset::from_asset( asset( props.account_creation_fee ) );
          op.props.maximum_block_size = props.maximum_block_size;
-         op.props.sbd_interest_rate = props.sbd_interest_rate;
+         op.props.hbd_interest_rate = props.sbd_interest_rate;
          op.fee = fee;
          return op;
       }
@@ -663,8 +663,8 @@ namespace hive { namespace plugins { namespace condenser_api {
       legacy_claim_reward_balance_operation() {}
       legacy_claim_reward_balance_operation( const claim_reward_balance_operation& op ) :
          account( op.account ),
-         reward_steem( legacy_asset::from_asset( op.reward_steem ) ),
-         reward_sbd( legacy_asset::from_asset( op.reward_sbd ) ),
+         reward_steem( legacy_asset::from_asset( op.reward_hive ) ),
+         reward_sbd( legacy_asset::from_asset( op.reward_hbd ) ),
          reward_vests( legacy_asset::from_asset( op.reward_vests ) )
       {}
 
@@ -672,8 +672,8 @@ namespace hive { namespace plugins { namespace condenser_api {
       {
          claim_reward_balance_operation op;
          op.account = account;
-         op.reward_steem = reward_steem;
-         op.reward_sbd = reward_sbd;
+         op.reward_hive = reward_steem;
+         op.reward_hbd = reward_sbd;
          op.reward_vests = reward_vests;
          return op;
       }

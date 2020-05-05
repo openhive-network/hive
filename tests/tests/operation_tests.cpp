@@ -1856,7 +1856,7 @@ BOOST_AUTO_TEST_CASE( witness_update_apply )
       op.url = "foo.bar";
       op.fee = ASSET( "1.000 TESTS" );
       op.block_signing_key = signing_key.get_public_key();
-      op.props.account_creation_fee = legacy_steem_asset::from_asset( asset(HIVE_MIN_ACCOUNT_CREATION_FEE + 10, HIVE_SYMBOL) );
+      op.props.account_creation_fee = legacy_hive_asset::from_asset( asset(HIVE_MIN_ACCOUNT_CREATION_FEE + 10, HIVE_SYMBOL) );
       op.props.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT + 100;
 
       signed_transaction tx;
@@ -4423,8 +4423,8 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_validate )
       escrow_transfer_operation op;
       op.from = "alice";
       op.to = "bob";
-      op.sbd_amount = ASSET( "1.000 TBD" );
-      op.steem_amount = ASSET( "1.000 TESTS" );
+      op.hbd_amount = ASSET( "1.000 TBD" );
+      op.hive_amount = ASSET( "1.000 TESTS" );
       op.escrow_id = 0;
       op.agent = "sam";
       op.fee = ASSET( "0.100 TESTS" );
@@ -4433,37 +4433,37 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_validate )
       op.escrow_expiration = db->head_block_time() + 200;
 
       BOOST_TEST_MESSAGE( "--- failure when hbd symbol != HBD" );
-      op.sbd_amount.symbol = HIVE_SYMBOL;
+      op.hbd_amount.symbol = HIVE_SYMBOL;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       BOOST_TEST_MESSAGE( "--- failure when hive symbol != HIVE" );
-      op.sbd_amount.symbol = HBD_SYMBOL;
-      op.steem_amount.symbol = HBD_SYMBOL;
+      op.hbd_amount.symbol = HBD_SYMBOL;
+      op.hive_amount.symbol = HBD_SYMBOL;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       BOOST_TEST_MESSAGE( "--- failure when fee symbol != HBD and fee symbol != HIVE" );
-      op.steem_amount.symbol = HIVE_SYMBOL;
+      op.hive_amount.symbol = HIVE_SYMBOL;
       op.fee.symbol = VESTS_SYMBOL;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       BOOST_TEST_MESSAGE( "--- failure when hbd == 0 and hive == 0" );
       op.fee.symbol = HIVE_SYMBOL;
-      op.sbd_amount.amount = 0;
-      op.steem_amount.amount = 0;
+      op.hbd_amount.amount = 0;
+      op.hive_amount.amount = 0;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       BOOST_TEST_MESSAGE( "--- failure when hbd < 0" );
-      op.sbd_amount.amount = -100;
-      op.steem_amount.amount = 1000;
+      op.hbd_amount.amount = -100;
+      op.hive_amount.amount = 1000;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       BOOST_TEST_MESSAGE( "--- failure when hive < 0" );
-      op.sbd_amount.amount = 1000;
-      op.steem_amount.amount = -100;
+      op.hbd_amount.amount = 1000;
+      op.hive_amount.amount = -100;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       BOOST_TEST_MESSAGE( "--- failure when fee < 0" );
-      op.steem_amount.amount = 1000;
+      op.hive_amount.amount = 1000;
       op.fee.amount = -100;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
@@ -4492,8 +4492,8 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_authorities )
       escrow_transfer_operation op;
       op.from = "alice";
       op.to = "bob";
-      op.sbd_amount = ASSET( "1.000 TBD" );
-      op.steem_amount = ASSET( "1.000 TESTS" );
+      op.hbd_amount = ASSET( "1.000 TBD" );
+      op.hive_amount = ASSET( "1.000 TESTS" );
       op.escrow_id = 0;
       op.agent = "sam";
       op.fee = ASSET( "0.100 TESTS" );
@@ -4530,8 +4530,8 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_apply )
       escrow_transfer_operation op;
       op.from = "alice";
       op.to = "bob";
-      op.sbd_amount = ASSET( "1.000 TBD" );
-      op.steem_amount = ASSET( "1.000 TESTS" );
+      op.hbd_amount = ASSET( "1.000 TBD" );
+      op.hive_amount = ASSET( "1.000 TESTS" );
       op.escrow_id = 0;
       op.agent = "sam";
       op.fee = ASSET( "0.100 TESTS" );
@@ -4547,8 +4547,8 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_apply )
       HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
 
       BOOST_TEST_MESSAGE( "--- falure when from cannot cover amount + fee" );
-      op.sbd_amount.amount = 0;
-      op.steem_amount.amount = 10000;
+      op.hbd_amount.amount = 0;
+      op.hive_amount.amount = 10000;
       tx.operations.clear();
       tx.signatures.clear();
       tx.operations.push_back( op );
@@ -4556,7 +4556,7 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_apply )
       HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
 
       BOOST_TEST_MESSAGE( "--- failure when ratification deadline is in the past" );
-      op.steem_amount.amount = 1000;
+      op.hive_amount.amount = 1000;
       op.ratification_deadline = db->head_block_time() - 200;
       tx.operations.clear();
       tx.signatures.clear();
@@ -4580,8 +4580,8 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_apply )
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
 
-      auto alice_hive_balance = alice.get_balance() - op.steem_amount - op.fee;
-      auto alice_hbd_balance = alice.get_hbd_balance() - op.sbd_amount;
+      auto alice_hive_balance = alice.get_balance() - op.hive_amount - op.fee;
+      auto alice_hbd_balance = alice.get_hbd_balance() - op.hbd_amount;
       auto bob_hive_balance = bob.get_balance();
       auto bob_hbd_balance = bob.get_hbd_balance();
       auto sam_hive_balance = sam.get_balance();
@@ -4597,8 +4597,8 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_apply )
       BOOST_REQUIRE( escrow.agent == op.agent );
       BOOST_REQUIRE( escrow.ratification_deadline == op.ratification_deadline );
       BOOST_REQUIRE( escrow.escrow_expiration == op.escrow_expiration );
-      BOOST_REQUIRE( escrow.get_hbd_balance() == op.sbd_amount );
-      BOOST_REQUIRE( escrow.get_hive_balance() == op.steem_amount );
+      BOOST_REQUIRE( escrow.get_hbd_balance() == op.hbd_amount );
+      BOOST_REQUIRE( escrow.get_hive_balance() == op.hive_amount );
       BOOST_REQUIRE( escrow.get_fee() == op.fee );
       BOOST_REQUIRE( !escrow.to_approved );
       BOOST_REQUIRE( !escrow.agent_approved );
@@ -4696,7 +4696,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
       et_op.from = "alice";
       et_op.to = "bob";
       et_op.agent = "sam";
-      et_op.steem_amount = ASSET( "1.000 TESTS" );
+      et_op.hive_amount = ASSET( "1.000 TESTS" );
       et_op.fee = ASSET( "0.100 TESTS" );
       et_op.json_meta = "";
       et_op.ratification_deadline = db->head_block_time() + 100;
@@ -5015,7 +5015,7 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
       et_op.from = "alice";
       et_op.to = "bob";
       et_op.agent = "sam";
-      et_op.steem_amount = ASSET( "1.000 TESTS" );
+      et_op.hive_amount = ASSET( "1.000 TESTS" );
       et_op.fee = ASSET( "0.100 TESTS" );
       et_op.ratification_deadline = db->head_block_time() + HIVE_BLOCK_INTERVAL;
       et_op.escrow_expiration = db->head_block_time() + 2 * HIVE_BLOCK_INTERVAL;
@@ -5054,8 +5054,8 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
       BOOST_REQUIRE( escrow.agent == "sam" );
       BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
       BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-      BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.sbd_amount );
-      BOOST_REQUIRE( escrow.get_hive_balance() == et_op.steem_amount );
+      BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.hbd_amount );
+      BOOST_REQUIRE( escrow.get_hive_balance() == et_op.hive_amount );
       BOOST_REQUIRE( escrow.get_fee() == et_op.fee );
       BOOST_REQUIRE( escrow.to_approved );
       BOOST_REQUIRE( !escrow.agent_approved );
@@ -5088,8 +5088,8 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
       BOOST_REQUIRE( escrow.agent == "sam" );
       BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
       BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-      BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.sbd_amount );
-      BOOST_REQUIRE( escrow.get_hive_balance() == et_op.steem_amount );
+      BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.hbd_amount );
+      BOOST_REQUIRE( escrow.get_hive_balance() == et_op.hive_amount );
       BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
       BOOST_REQUIRE( escrow.to_approved );
       BOOST_REQUIRE( escrow.agent_approved );
@@ -5110,8 +5110,8 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
       BOOST_REQUIRE( escrow.agent == "sam" );
       BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
       BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-      BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.sbd_amount );
-      BOOST_REQUIRE( escrow.get_hive_balance() == et_op.steem_amount );
+      BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.hbd_amount );
+      BOOST_REQUIRE( escrow.get_hive_balance() == et_op.hive_amount );
       BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
       BOOST_REQUIRE( escrow.to_approved );
       BOOST_REQUIRE( escrow.agent_approved );
@@ -5135,8 +5135,8 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
          BOOST_REQUIRE( escrow.agent == "sam" );
          BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
          BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-         BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.sbd_amount );
-         BOOST_REQUIRE( escrow.get_hive_balance() == et_op.steem_amount );
+         BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.hbd_amount );
+         BOOST_REQUIRE( escrow.get_hive_balance() == et_op.hive_amount );
          BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
          BOOST_REQUIRE( escrow.to_approved );
          BOOST_REQUIRE( escrow.agent_approved );
@@ -5174,8 +5174,8 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
          BOOST_REQUIRE( escrow.agent == "sam" );
          BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
          BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-         BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.sbd_amount );
-         BOOST_REQUIRE( escrow.get_hive_balance() == et_op.steem_amount );
+         BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.hbd_amount );
+         BOOST_REQUIRE( escrow.get_hive_balance() == et_op.hive_amount );
          BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
          BOOST_REQUIRE( escrow.to_approved );
          BOOST_REQUIRE( escrow.agent_approved );
@@ -5197,8 +5197,8 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
          BOOST_REQUIRE( escrow.agent == "sam" );
          BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
          BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-         BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.sbd_amount );
-         BOOST_REQUIRE( escrow.get_hive_balance() == et_op.steem_amount );
+         BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.hbd_amount );
+         BOOST_REQUIRE( escrow.get_hive_balance() == et_op.hive_amount );
          BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
          BOOST_REQUIRE( escrow.to_approved );
          BOOST_REQUIRE( escrow.agent_approved );
@@ -5222,34 +5222,34 @@ BOOST_AUTO_TEST_CASE( escrow_release_validate )
 
 
       BOOST_TEST_MESSAGE( "--- failure when hive < 0" );
-      op.steem_amount.amount = -1;
+      op.hive_amount.amount = -1;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
 
       BOOST_TEST_MESSAGE( "--- failure when hbd < 0" );
-      op.steem_amount.amount = 0;
-      op.sbd_amount.amount = -1;
+      op.hive_amount.amount = 0;
+      op.hbd_amount.amount = -1;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
 
       BOOST_TEST_MESSAGE( "--- failure when hive == 0 and hbd == 0" );
-      op.sbd_amount.amount = 0;
+      op.hbd_amount.amount = 0;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
 
       BOOST_TEST_MESSAGE( "--- failure when hbd is not HBD symbol" );
-      op.sbd_amount = ASSET( "1.000 TESTS" );
+      op.hbd_amount = ASSET( "1.000 TESTS" );
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
 
       BOOST_TEST_MESSAGE( "--- failure when hive is not HIVE symbol" );
-      op.sbd_amount.symbol = HBD_SYMBOL;
-      op.steem_amount = ASSET( "1.000 TBD" );
+      op.hbd_amount.symbol = HBD_SYMBOL;
+      op.hive_amount = ASSET( "1.000 TBD" );
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
 
       BOOST_TEST_MESSAGE( "--- success" );
-      op.steem_amount.symbol = HIVE_SYMBOL;
+      op.hive_amount.symbol = HIVE_SYMBOL;
       op.validate();
    }
    FC_LOG_AND_RETHROW()
@@ -5308,7 +5308,7 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
       et_op.from = "alice";
       et_op.to = "bob";
       et_op.agent = "sam";
-      et_op.steem_amount = ASSET( "1.000 TESTS" );
+      et_op.hive_amount = ASSET( "1.000 TESTS" );
       et_op.fee = ASSET( "0.100 TESTS" );
       et_op.ratification_deadline = db->head_block_time() + HIVE_BLOCK_INTERVAL;
       et_op.escrow_expiration = db->head_block_time() + 2 * HIVE_BLOCK_INTERVAL;
@@ -5328,7 +5328,7 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
       op.agent = et_op.agent;
       op.who = et_op.from;
       op.receiver = et_op.to;
-      op.steem_amount = ASSET( "0.100 TESTS" );
+      op.hive_amount = ASSET( "0.100 TESTS" );
 
       tx.clear();
       tx.operations.push_back( op );
@@ -5489,7 +5489,7 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
 
 
       BOOST_TEST_MESSAGE( "--- failure when releasing more hbd than available" );
-      op.steem_amount = ASSET( "1.000 TESTS" );
+      op.hive_amount = ASSET( "1.000 TESTS" );
 
       tx.clear();
       tx.operations.push_back( op );
@@ -5498,8 +5498,8 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
 
 
       BOOST_TEST_MESSAGE( "--- failure when releasing less hive than available" );
-      op.steem_amount = ASSET( "0.000 TESTS" );
-      op.sbd_amount = ASSET( "1.000 TBD" );
+      op.hive_amount = ASSET( "0.000 TESTS" );
+      op.hbd_amount = ASSET( "1.000 TBD" );
 
       tx.clear();
       tx.operations.push_back( op );
@@ -5523,8 +5523,8 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
       op.from = et_op.from;
       op.receiver = et_op.from;
       op.who = et_op.to;
-      op.steem_amount = ASSET( "0.100 TESTS" );
-      op.sbd_amount = ASSET( "0.000 TBD" );
+      op.hive_amount = ASSET( "0.100 TESTS" );
+      op.hbd_amount = ASSET( "0.000 TBD" );
       tx.operations.push_back( op );
       sign( tx, bob_private_key );
       HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
@@ -5616,7 +5616,7 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
 
       BOOST_TEST_MESSAGE( "--- success deleting escrow when balances are both zero" );
       tx.clear();
-      op.steem_amount = ASSET( "0.500 TESTS" );
+      op.hive_amount = ASSET( "0.500 TESTS" );
       tx.operations.push_back( op );
       sign( tx, sam_private_key );
       db->push_transaction( tx, 0 );
@@ -5643,7 +5643,7 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
       tx.clear();
       op.receiver = et_op.to;
       op.who = et_op.agent;
-      op.steem_amount = ASSET( "0.100 TESTS" );
+      op.hive_amount = ASSET( "0.100 TESTS" );
       tx.operations.push_back( op );
       sign( tx, sam_private_key );
       HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
@@ -5745,7 +5745,7 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
 
       BOOST_TEST_MESSAGE( "--- success deleting escrow when balances are zero on non-disputed escrow" );
       tx.clear();
-      op.steem_amount = ASSET( "0.600 TESTS" );
+      op.hive_amount = ASSET( "0.600 TESTS" );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
       db->push_transaction( tx, 0 );
@@ -6547,8 +6547,8 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_validate )
    {
       claim_reward_balance_operation op;
       op.account = "alice";
-      op.reward_steem = ASSET( "0.000 TESTS" );
-      op.reward_sbd = ASSET( "0.000 TBD" );
+      op.reward_hive = ASSET( "0.000 TESTS" );
+      op.reward_hbd = ASSET( "0.000 TBD" );
       op.reward_vests = ASSET( "0.000000 VESTS" );
 
 
@@ -6557,14 +6557,14 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_validate )
 
 
       BOOST_TEST_MESSAGE( "Testing single reward claims" );
-      op.reward_steem.amount = 1000;
+      op.reward_hive.amount = 1000;
       op.validate();
 
-      op.reward_steem.amount = 0;
-      op.reward_sbd.amount = 1000;
+      op.reward_hive.amount = 0;
+      op.reward_hbd.amount = 1000;
       op.validate();
 
-      op.reward_sbd.amount = 0;
+      op.reward_hbd.amount = 0;
       op.reward_vests.amount = 1000;
       op.validate();
 
@@ -6572,25 +6572,25 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_validate )
 
 
       BOOST_TEST_MESSAGE( "Testing wrong HIVE symbol" );
-      op.reward_steem = ASSET( "1.000 TBD" );
+      op.reward_hive = ASSET( "1.000 TBD" );
       HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
 
 
       BOOST_TEST_MESSAGE( "Testing wrong HBD symbol" );
-      op.reward_steem = ASSET( "1.000 TESTS" );
-      op.reward_sbd = ASSET( "1.000 TESTS" );
+      op.reward_hive = ASSET( "1.000 TESTS" );
+      op.reward_hbd = ASSET( "1.000 TESTS" );
       HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
 
 
       BOOST_TEST_MESSAGE( "Testing wrong VESTS symbol" );
-      op.reward_sbd = ASSET( "1.000 TBD" );
+      op.reward_hbd = ASSET( "1.000 TBD" );
       op.reward_vests = ASSET( "1.000 TESTS" );
       HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
 
 
       BOOST_TEST_MESSAGE( "Testing a single negative amount" );
-      op.reward_steem.amount = 1000;
-      op.reward_sbd.amount = -1000;
+      op.reward_hive.amount = 1000;
+      op.reward_hbd.amount = -1000;
       HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
    }
    FC_LOG_AND_RETHROW()
@@ -6741,8 +6741,8 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
       signed_transaction tx;
 
       op.account = "alice";
-      op.reward_steem = ASSET( "20.000 TESTS" );
-      op.reward_sbd = ASSET( "0.000 TBD" );
+      op.reward_hive = ASSET( "20.000 TESTS" );
+      op.reward_hbd = ASSET( "0.000 TBD" );
       op.reward_vests = ASSET( "0.000000 VESTS" );
 
       tx.operations.push_back( op );
@@ -6753,16 +6753,16 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
 
       BOOST_TEST_MESSAGE( "--- Claiming a partial reward balance" );
 
-      op.reward_steem = ASSET( "0.000 TESTS" );
+      op.reward_hive = ASSET( "0.000 TESTS" );
       op.reward_vests = ASSET( "5.000000 VESTS" );
       tx.clear();
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
       db->push_transaction( tx, 0 );
 
-      BOOST_REQUIRE( get_balance( "alice" ) == alice_hive + op.reward_steem );
+      BOOST_REQUIRE( get_balance( "alice" ) == alice_hive + op.reward_hive );
       BOOST_REQUIRE( get_rewards( "alice" ) == ASSET( "10.000 TESTS" ) );
-      BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd + op.reward_sbd );
+      BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd + op.reward_hbd );
       BOOST_REQUIRE( get_hbd_rewards( "alice" ) == ASSET( "10.000 TBD" ) );
       BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + op.reward_vests );
       BOOST_REQUIRE( get_vest_rewards( "alice" ) == ASSET( "5.000000 VESTS" ) );
@@ -6774,16 +6774,16 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
 
       BOOST_TEST_MESSAGE( "--- Claiming the full reward balance" );
 
-      op.reward_steem = ASSET( "10.000 TESTS" );
-      op.reward_sbd = ASSET( "10.000 TBD" );
+      op.reward_hive = ASSET( "10.000 TESTS" );
+      op.reward_hbd = ASSET( "10.000 TBD" );
       tx.clear();
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
       db->push_transaction( tx, 0 );
 
-      BOOST_REQUIRE( get_balance( "alice" ) == alice_hive + op.reward_steem );
+      BOOST_REQUIRE( get_balance( "alice" ) == alice_hive + op.reward_hive );
       BOOST_REQUIRE( get_rewards( "alice" ) == ASSET( "0.000 TESTS" ) );
-      BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd + op.reward_sbd );
+      BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd + op.reward_hbd );
       BOOST_REQUIRE( get_hbd_rewards( "alice" ) == ASSET( "0.000 TBD" ) );
       BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + op.reward_vests );
       BOOST_REQUIRE( get_vest_rewards( "alice" ) == ASSET( "0.000000 VESTS" ) );
@@ -7484,7 +7484,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_validate )
       op.url = "foo.bar";
       op.fee = ASSET( "1.000 TESTS" );
       op.block_signing_key = signing_key.get_public_key();
-      op.props.account_creation_fee = legacy_steem_asset::from_asset( asset(HIVE_MIN_ACCOUNT_CREATION_FEE + 10, HIVE_SYMBOL) );
+      op.props.account_creation_fee = legacy_hive_asset::from_asset( asset(HIVE_MIN_ACCOUNT_CREATION_FEE + 10, HIVE_SYMBOL) );
       op.props.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT + 100;
 
       signed_transaction tx;
@@ -7514,21 +7514,21 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_validate )
 
       BOOST_TEST_MESSAGE( "--- failure when setting hbd_interest_rate with negative number" );
       prop_op.props.erase( "maximum_block_size" );
-      prop_op.props[ "sbd_interest_rate" ] = fc::raw::pack_to_vector( -700 );
+      prop_op.props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( -700 );
       HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
       BOOST_TEST_MESSAGE( "--- failure when setting hbd_interest_rate to HIVE_100_PERCENT + 1" );
-      prop_op.props[ "sbd_interest_rate" ].clear();
-      prop_op.props[ "sbd_interest_rate" ] = fc::raw::pack_to_vector( HIVE_100_PERCENT + 1 );
+      prop_op.props[ "hbd_interest_rate" ].clear();
+      prop_op.props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( HIVE_100_PERCENT + 1 );
       HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
-      BOOST_TEST_MESSAGE( "--- failure when setting new sbd_exchange_rate with HBD / HIVE" );
-      prop_op.props.erase( "sbd_interest_rate" );
-      prop_op.props[ "sbd_exchange_rate" ] = fc::raw::pack_to_vector( price( ASSET( "1.000 TESTS" ), ASSET( "10.000 TBD" ) ) );
+      BOOST_TEST_MESSAGE( "--- failure when setting new hbd_exchange_rate with HBD / HIVE" );
+      prop_op.props.erase( "hbd_interest_rate" );
+      prop_op.props[ "hbd_exchange_rate" ] = fc::raw::pack_to_vector( price( ASSET( "1.000 TESTS" ), ASSET( "10.000 TBD" ) ) );
       HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
       BOOST_TEST_MESSAGE( "--- failure when setting new url with length of zero" );
-      prop_op.props.erase( "sbd_exchange_rate" );
+      prop_op.props.erase( "hbd_exchange_rate" );
       prop_op.props[ "url" ] = fc::raw::pack_to_vector( "" );
       HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
@@ -7658,7 +7658,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
       op.url = "foo.bar";
       op.fee = ASSET( "1.000 TESTS" );
       op.block_signing_key = signing_key.get_public_key();
-      op.props.account_creation_fee = legacy_steem_asset::from_asset( asset(HIVE_MIN_ACCOUNT_CREATION_FEE + 10, HIVE_SYMBOL) );
+      op.props.account_creation_fee = legacy_hive_asset::from_asset( asset(HIVE_MIN_ACCOUNT_CREATION_FEE + 10, HIVE_SYMBOL) );
       op.props.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT + 100;
 
       signed_transaction tx;
@@ -7692,7 +7692,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
 
       // Setting hbd_interest_rate
       prop_op.props.erase( "maximum_block_size" );
-      prop_op.props[ "sbd_interest_rate" ] = fc::raw::pack_to_vector( 700 );
+      prop_op.props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 700 );
       tx.clear();
       tx.operations.push_back( prop_op );
       sign( tx, signing_key );
@@ -7703,7 +7703,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
       private_key_type old_signing_key = signing_key;
       signing_key = generate_private_key( "new_key" );
       public_key_type alice_pub = signing_key.get_public_key();
-      prop_op.props.erase( "sbd_interest_rate" );
+      prop_op.props.erase( "hbd_interest_rate" );
       prop_op.props[ "new_signing_key" ] = fc::raw::pack_to_vector( alice_pub );
       tx.clear();
       tx.operations.push_back( prop_op );
@@ -7715,7 +7715,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
       prop_op.props.erase( "new_signing_key" );
       prop_op.props[ "key" ].clear();
       prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key() );
-      prop_op.props[ "sbd_exchange_rate" ] = fc::raw::pack_to_vector( price( ASSET(" 1.000 TBD" ), ASSET( "100.000 TESTS" ) ) );
+      prop_op.props[ "hbd_exchange_rate" ] = fc::raw::pack_to_vector( price( ASSET(" 1.000 TBD" ), ASSET( "100.000 TESTS" ) ) );
       tx.clear();
       tx.operations.push_back( prop_op );
       sign( tx, signing_key );
@@ -7724,7 +7724,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
       BOOST_REQUIRE( alice_witness.last_sbd_exchange_update == db->head_block_time() );
 
       // Setting new url
-      prop_op.props.erase( "sbd_exchange_rate" );
+      prop_op.props.erase( "hbd_exchange_rate" );
       prop_op.props[ "url" ] = fc::raw::pack_to_vector( "foo.bar" );
       tx.clear();
       tx.operations.push_back( prop_op );
@@ -7733,7 +7733,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
       BOOST_REQUIRE( alice_witness.url == "foo.bar" );
 
       // Setting new extranious_property
-      prop_op.props.erase( "sbd_exchange_rate" );
+      prop_op.props.erase( "hbd_exchange_rate" );
       prop_op.props[ "extraneous_property" ] = fc::raw::pack_to_vector( "foo" );
       tx.clear();
       tx.operations.push_back( prop_op );

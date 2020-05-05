@@ -138,7 +138,7 @@ namespace hive { namespace protocol {
 
    /** Allows to store all SMT tokens being allowed to use during voting process.
     *  Maps asset symbol (SMT) to the vote info.
-    *  @see SMT spec for details: https://github.com/steemit/smt-whitepaper/blob/master/smt-manual/manual.md
+    *  @see SMT spec for details: https://gitlab.syncad.com/hive/smt-whitepaper/blob/master/smt-manual/manual.md
     */
    struct allowed_vote_assets
    {
@@ -208,17 +208,16 @@ namespace hive { namespace protocol {
     *  operation allows authors to update properties associated with their post.
     *
     *  The max_accepted_payout may be decreased, but never increased.
-    *  The percent_steem_dollars may be decreased, but never increased
-    *
+    *  The percent_hbd may be decreased, but never increased
     */
    struct comment_options_operation : public base_operation
    {
       account_name_type author;
       string            permlink;
 
-      asset             max_accepted_payout    = asset( 1000000000, HBD_SYMBOL );       /// SBD value of the maximum payout this post will receive
-      uint16_t          percent_steem_dollars  = HIVE_100_PERCENT; /// the percent of Steem Dollars to key, unkept amounts will be received as Steem Power
-      bool              allow_votes            = true;      /// allows a post to receive votes;
+      asset             max_accepted_payout    = asset( 1000000000, HBD_SYMBOL ); /// HBD value of the maximum payout this post will receive
+      uint16_t          percent_hbd            = HIVE_100_PERCENT; /// the percent of HBD to key, unkept amounts will be received in form of VESTS
+      bool              allow_votes            = true; /// allows a post to receive votes
       bool              allow_curation_rewards = true; /// allows voters to recieve curation rewards. Rewards return to reward fund.
       comment_options_extensions_type extensions;
 
@@ -279,7 +278,7 @@ namespace hive { namespace protocol {
    /**
     * @ingroup operations
     *
-    * @brief Transfers STEEM from one account to another.
+    * @brief Transfers any liquid asset (nonvesting) from one account to another.
     */
    struct transfer_operation : public base_operation
    {
@@ -289,8 +288,7 @@ namespace hive { namespace protocol {
       /// The amount of asset to transfer from @ref from to @ref to
       asset             amount;
 
-      /// The memo is plain-text, any encryption on the memo is up to
-      /// a higher level protocol.
+      /// The memo is plain-text, any encryption on the memo is up to a higher level protocol.
       string            memo;
 
       void              validate()const;
@@ -323,8 +321,8 @@ namespace hive { namespace protocol {
       account_name_type agent;
       uint32_t          escrow_id = 30;
 
-      asset             sbd_amount = asset( 0, HBD_SYMBOL );
-      asset             steem_amount = asset( 0, HIVE_SYMBOL );
+      asset             hbd_amount = asset( 0, HBD_SYMBOL );
+      asset             hive_amount = asset( 0, HIVE_SYMBOL );
       asset             fee;
 
       time_point_sec    ratification_deadline;
@@ -395,8 +393,8 @@ namespace hive { namespace protocol {
       account_name_type receiver; ///< the account that should receive funds (might be from, might be to)
 
       uint32_t          escrow_id = 30;
-      asset             sbd_amount = asset( 0, HBD_SYMBOL ); ///< the amount of sbd to release
-      asset             steem_amount = asset( 0, HIVE_SYMBOL ); ///< the amount of steem to release
+      asset             hbd_amount = asset( 0, HBD_SYMBOL ); ///< the amount of HBD to release
+      asset             hive_amount = asset( 0, HIVE_SYMBOL ); ///< the amount of HIVE to release
 
       void validate()const;
       void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(who); }
@@ -404,7 +402,7 @@ namespace hive { namespace protocol {
 
 
    /**
-    *  This operation converts liquid token (STEEM or liquid SMT) into VFS (Vesting Fund Shares,
+    *  This operation converts liquid token (HIVE or liquid SMT) into VFS (Vesting Fund Shares,
     *  VESTS or vesting SMT) at the current exchange rate. With this operation it is possible to
     *  give another account vesting shares so that faucets can pre-fund new accounts with vesting shares.
     */
@@ -412,7 +410,7 @@ namespace hive { namespace protocol {
    {
       account_name_type from;
       account_name_type to;      ///< if null, then same as from
-      asset             amount;  ///< must be STEEM or liquid variant of SMT
+      asset             amount;  ///< must be HIVE or liquid variant of SMT
 
       void validate()const;
       void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(from); }
@@ -445,7 +443,7 @@ namespace hive { namespace protocol {
     * request for the funds to be transferred directly to another account's
     * balance rather than the withdrawing account. In addition, those funds
     * can be immediately vested again, circumventing the conversion from
-    * vests to steem and back, guaranteeing they maintain their value.
+    * VESTS to HIVE and back, guaranteeing they maintain their value.
     */
    struct set_withdraw_vesting_route_operation : public base_operation
    {
@@ -467,19 +465,19 @@ namespace hive { namespace protocol {
    struct legacy_chain_properties
    {
       /**
-       *  This fee, paid in STEEM, is converted into VESTING SHARES for the new account. Accounts
+       *  This fee, paid in HIVE, is converted into VESTS for the new account. Accounts
        *  without vesting shares cannot earn usage rations and therefore are powerless. This minimum
        *  fee requires all accounts to have some kind of commitment to the network that includes the
        *  ability to vote and make transactions.
        */
-      legacy_steem_asset account_creation_fee = legacy_steem_asset::from_amount( HIVE_MIN_ACCOUNT_CREATION_FEE );
+      legacy_hive_asset account_creation_fee = legacy_hive_asset::from_amount( HIVE_MIN_ACCOUNT_CREATION_FEE );
 
       /**
        *  This witnesses vote for the maximum_block_size which is used by the network
        *  to tune rate limiting and capacity
        */
       uint32_t          maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
-      uint16_t          sbd_interest_rate  = HIVE_DEFAULT_HBD_INTEREST_RATE;
+      uint16_t          hbd_interest_rate  = HIVE_DEFAULT_HBD_INTEREST_RATE;
 
       template< bool force_canon >
       void validate()const
@@ -490,8 +488,8 @@ namespace hive { namespace protocol {
          }
          FC_ASSERT( account_creation_fee.amount >= HIVE_MIN_ACCOUNT_CREATION_FEE);
          FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT);
-         FC_ASSERT( sbd_interest_rate >= 0 );
-         FC_ASSERT( sbd_interest_rate <= HIVE_100_PERCENT );
+         FC_ASSERT( hbd_interest_rate >= 0 );
+         FC_ASSERT( hbd_interest_rate <= HIVE_100_PERCENT );
       }
    };
 
@@ -623,7 +621,7 @@ namespace hive { namespace protocol {
 
    /**
     *  Feeds can only be published by the top N witnesses which are included in every round and are
-    *  used to define the exchange rate between steem and the dollar.
+    *  used to define the exchange rate between HIVE and the dollar (represented by HBD).
     */
    struct feed_publish_operation : public base_operation
    {
@@ -636,7 +634,7 @@ namespace hive { namespace protocol {
 
 
    /**
-    *  This operation instructs the blockchain to start a conversion between STEEM and SBD,
+    *  This operation instructs the blockchain to start a conversion between HIVE and HBD,
     *  The funds are deposited after HIVE_CONVERSION_DELAY
     */
    struct convert_operation : public base_operation
@@ -804,10 +802,12 @@ namespace hive { namespace protocol {
     *
     * Users not in the ACTIVE witness set should not have to worry about their
     * key getting compromised and being used to produced multiple blocks so
-    * the attacker can report it and steel their vesting steem.
+    * the attacker can report it and steel their VESTS.
     *
-    * The result of the operation is to transfer the full VESTING STEEM balance
+    * The result of the operation is to transfer the full VESTS balance
     * of the block producer to the reporter.
+    *
+    * DEPRECATED since HF4
     */
    struct report_over_production_operation : public base_operation
    {
@@ -1029,8 +1029,8 @@ namespace hive { namespace protocol {
    struct claim_reward_balance_operation : public base_operation
    {
       account_name_type account;
-      asset             reward_steem;
-      asset             reward_sbd;
+      asset             reward_hive;
+      asset             reward_hbd;
       asset             reward_vests;
 
       void get_required_posting_authorities( flat_set< account_name_type >& a )const{ a.insert( account ); }
@@ -1095,7 +1095,7 @@ FC_REFLECT( hive::protocol::equihash_pow, (input)(proof)(prev_block)(pow_summary
 FC_REFLECT( hive::protocol::legacy_chain_properties,
             (account_creation_fee)
             (maximum_block_size)
-            (sbd_interest_rate)
+            (hbd_interest_rate)
           )
 
 FC_REFLECT_TYPENAME( hive::protocol::pow2_work )
@@ -1170,19 +1170,19 @@ FC_REFLECT( hive::protocol::allowed_vote_assets, (votable_assets) )
 #endif
 
 FC_REFLECT_TYPENAME( hive::protocol::comment_options_extension )
-FC_REFLECT( hive::protocol::comment_options_operation, (author)(permlink)(max_accepted_payout)(percent_steem_dollars)(allow_votes)(allow_curation_rewards)(extensions) )
+FC_REFLECT( hive::protocol::comment_options_operation, (author)(permlink)(max_accepted_payout)(percent_hbd)(allow_votes)(allow_curation_rewards)(extensions) )
 
-FC_REFLECT( hive::protocol::escrow_transfer_operation, (from)(to)(sbd_amount)(steem_amount)(escrow_id)(agent)(fee)(json_meta)(ratification_deadline)(escrow_expiration) );
+FC_REFLECT( hive::protocol::escrow_transfer_operation, (from)(to)(hbd_amount)(hive_amount)(escrow_id)(agent)(fee)(json_meta)(ratification_deadline)(escrow_expiration) );
 FC_REFLECT( hive::protocol::escrow_approve_operation, (from)(to)(agent)(who)(escrow_id)(approve) );
 FC_REFLECT( hive::protocol::escrow_dispute_operation, (from)(to)(agent)(who)(escrow_id) );
-FC_REFLECT( hive::protocol::escrow_release_operation, (from)(to)(agent)(who)(receiver)(escrow_id)(sbd_amount)(steem_amount) );
+FC_REFLECT( hive::protocol::escrow_release_operation, (from)(to)(agent)(who)(receiver)(escrow_id)(hbd_amount)(hive_amount) );
 FC_REFLECT( hive::protocol::claim_account_operation, (creator)(fee)(extensions) );
 FC_REFLECT( hive::protocol::create_claimed_account_operation, (creator)(new_account_name)(owner)(active)(posting)(memo_key)(json_metadata)(extensions) );
 FC_REFLECT( hive::protocol::request_account_recovery_operation, (recovery_account)(account_to_recover)(new_owner_authority)(extensions) );
 FC_REFLECT( hive::protocol::recover_account_operation, (account_to_recover)(new_owner_authority)(recent_owner_authority)(extensions) );
 FC_REFLECT( hive::protocol::change_recovery_account_operation, (account_to_recover)(new_recovery_account)(extensions) );
 FC_REFLECT( hive::protocol::decline_voting_rights_operation, (account)(decline) );
-FC_REFLECT( hive::protocol::claim_reward_balance_operation, (account)(reward_steem)(reward_sbd)(reward_vests) )
+FC_REFLECT( hive::protocol::claim_reward_balance_operation, (account)(reward_hive)(reward_hbd)(reward_vests) )
 #ifdef HIVE_ENABLE_SMT
 FC_REFLECT( hive::protocol::claim_reward_balance2_operation, (account)(extensions)(reward_tokens) )
 #endif

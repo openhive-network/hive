@@ -1885,8 +1885,8 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_transfer(
    op.to = to;
    op.agent = agent;
    op.escrow_id = escrow_id;
-   op.sbd_amount = sbd_amount.to_asset();
-   op.steem_amount = steem_amount.to_asset();
+   op.hbd_amount = sbd_amount.to_asset();
+   op.hive_amount = steem_amount.to_asset();
    op.fee = fee.to_asset();
    op.ratification_deadline = ratification_deadline;
    op.escrow_expiration = escrow_expiration;
@@ -1965,8 +1965,8 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_release(
    op.who = who;
    op.receiver = receiver;
    op.escrow_id = escrow_id;
-   op.sbd_amount = sbd_amount.to_asset();
-   op.steem_amount = steem_amount.to_asset();
+   op.hbd_amount = sbd_amount.to_asset();
+   op.hive_amount = steem_amount.to_asset();
 
    signed_transaction tx;
    tx.operations.push_back( op );
@@ -2212,8 +2212,8 @@ condenser_api::legacy_signed_transaction wallet_api::claim_reward_balance(
    FC_ASSERT( !is_locked() );
    claim_reward_balance_operation op;
    op.account = account;
-   op.reward_steem = reward_steem.to_asset();
-   op.reward_sbd = reward_sbd.to_asset();
+   op.reward_hive = reward_steem.to_asset();
+   op.reward_hbd = reward_sbd.to_asset();
    op.reward_vests = reward_vests.to_asset();
 
    signed_transaction tx;

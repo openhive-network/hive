@@ -761,8 +761,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
          op.from = "alice";
          op.to = "bob";
          op.agent = "carol";
-         op.steem_amount = ASSET( "10.000 TESTS" );
-         op.sbd_amount = ASSET( "10.000 TBD" );
+         op.hive_amount = ASSET( "10.000 TESTS" );
+         op.hbd_amount = ASSET( "10.000 TBD" );
          op.fee = ASSET( "0.100 TBD" );
          op.json_meta = "";
          op.ratification_deadline = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 10 );
@@ -840,8 +840,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
          op.agent = "carol";
          op.who = "alice";
          op.receiver = "bob";
-         op.steem_amount = ASSET( "2.000 TESTS" );
-         op.sbd_amount = ASSET( "3.000 TBD" );
+         op.hive_amount = ASSET( "2.000 TESTS" );
+         op.hbd_amount = ASSET( "3.000 TBD" );
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
          db->push_transaction( tx, 0 );
@@ -867,8 +867,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
          op.agent = "carol";
          op.who = "bob";
          op.receiver = "alice";
-         op.steem_amount = ASSET( "2.000 TESTS" );
-         op.sbd_amount = ASSET( "3.000 TBD" );
+         op.hive_amount = ASSET( "2.000 TESTS" );
+         op.hbd_amount = ASSET( "3.000 TBD" );
          tx.operations.push_back( op );
          sign( tx, bob_private_key );
          db->push_transaction( tx, 0 );
@@ -922,8 +922,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
          op.agent = "carol";
          op.who = "carol";
          op.receiver = "bob";
-         op.steem_amount = ASSET( "2.000 TESTS" );
-         op.sbd_amount = ASSET( "3.000 TBD" );
+         op.hive_amount = ASSET( "2.000 TESTS" );
+         op.hbd_amount = ASSET( "3.000 TBD" );
          tx.operations.push_back( op );
 
          op.from = "alice";
@@ -931,8 +931,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
          op.agent = "carol";
          op.who = "carol";
          op.receiver = "alice";
-         op.steem_amount = ASSET( "2.000 TESTS" );
-         op.sbd_amount = ASSET( "1.000 TBD" );
+         op.hive_amount = ASSET( "2.000 TESTS" );
+         op.hbd_amount = ASSET( "1.000 TBD" );
          tx.operations.push_back( op );
 
          sign( tx, carol_private_key );
@@ -959,8 +959,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
          op.agent = "carol";
          op.who = "carol";
          op.receiver = "bob";
-         op.steem_amount = ASSET( "2.000 TESTS" );
-         op.sbd_amount = ASSET( "0.000 TBD" );
+         op.hive_amount = ASSET( "2.000 TESTS" );
+         op.hbd_amount = ASSET( "0.000 TBD" );
          tx.operations.push_back( op );
          sign( tx, carol_private_key );
          db->push_transaction( tx, 0 );

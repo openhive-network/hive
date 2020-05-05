@@ -73,7 +73,7 @@ void copy_legacy_chain_properties( chain_properties& dest, const legacy_chain_pr
 {
    dest.account_creation_fee = src.account_creation_fee.to_asset< force_canon >();
    dest.maximum_block_size = src.maximum_block_size;
-   dest.sbd_interest_rate = src.sbd_interest_rate;
+   dest.sbd_interest_rate = src.hbd_interest_rate;
 }
 
 void witness_update_evaluator::do_apply( const witness_update_operation& o )
@@ -176,7 +176,7 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
       fc::raw::unpack_from_vector( itr->second, props.maximum_block_size );
    }
 
-   itr = o.props.find( "sbd_interest_rate" );
+   itr = o.props.find( "hbd_interest_rate" );
    flags.sbd_interest_changed = itr != o.props.end();
    if( flags.sbd_interest_changed )
    {
@@ -204,7 +204,7 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
       fc::raw::unpack_from_vector( itr->second, signing_key );
    }
 
-   itr = o.props.find( "sbd_exchange_rate" );
+   itr = o.props.find( "hbd_exchange_rate" );
    flags.sbd_exchange_changed = itr != o.props.end();
    if( flags.sbd_exchange_changed )
    {
@@ -747,11 +747,11 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
    FC_ASSERT( comment.allow_curation_rewards >= o.allow_curation_rewards, "Curation rewards cannot be re-enabled." );
    FC_ASSERT( comment.allow_votes >= o.allow_votes, "Voting cannot be re-enabled." );
    FC_ASSERT( comment.max_accepted_payout >= o.max_accepted_payout, "A comment cannot accept a greater payout." );
-   FC_ASSERT( comment.percent_steem_dollars >= o.percent_steem_dollars, "A comment cannot accept a greater percent HBD." );
+   FC_ASSERT( comment.percent_steem_dollars >= o.percent_hbd, "A comment cannot accept a greater percent HBD." );
 
    _db.modify( comment, [&]( comment_object& c ) {
        c.max_accepted_payout   = o.max_accepted_payout;
-       c.percent_steem_dollars = o.percent_steem_dollars;
+       c.percent_steem_dollars = o.percent_hbd;
        c.allow_votes           = o.allow_votes;
        c.allow_curation_rewards = o.allow_curation_rewards;
    });
@@ -1012,8 +1012,8 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
       FC_ASSERT( o.ratification_deadline > _db.head_block_time(), "The escrow ratification deadline must be after head block time." );
       FC_ASSERT( o.escrow_expiration > _db.head_block_time(), "The escrow expiration must be after head block time." );
 
-      asset steem_spent = o.steem_amount;
-      asset sbd_spent = o.sbd_amount;
+      asset steem_spent = o.hive_amount;
+      asset sbd_spent = o.hbd_amount;
       if( o.fee.symbol == HIVE_SYMBOL )
          steem_spent += o.fee;
       else
@@ -1030,8 +1030,8 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
          esc.agent                  = o.agent;
          esc.ratification_deadline  = o.ratification_deadline;
          esc.escrow_expiration      = o.escrow_expiration;
-         esc.sbd_balance            = o.sbd_amount;
-         esc.steem_balance          = o.steem_amount;
+         esc.sbd_balance            = o.hbd_amount;
+         esc.steem_balance          = o.hive_amount;
          esc.pending_fee            = o.fee;
       });
    }
@@ -1125,8 +1125,8 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
       _db.get_account(o.from); // Verify from account exists
 
       const auto& e = _db.get_escrow( o.from, o.escrow_id );
-      FC_ASSERT( e.steem_balance >= o.steem_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.steem_amount)("b", e.steem_balance) );
-      FC_ASSERT( e.sbd_balance >= o.sbd_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.sbd_amount)("b", e.sbd_balance) );
+      FC_ASSERT( e.steem_balance >= o.hive_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hive_amount)("b", e.steem_balance) );
+      FC_ASSERT( e.sbd_balance >= o.hbd_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hbd_amount)("b", e.sbd_balance) );
       FC_ASSERT( e.to == o.to, "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.to) );
       FC_ASSERT( e.agent == o.agent, "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.agent) );
       FC_ASSERT( o.receiver == e.from || o.receiver == e.to, "Funds must be released to 'from' (${f}) or 'to' (${t})", ("f", e.from)("t", e.to) );
@@ -1156,13 +1156,13 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
       }
       // If escrow expires and there is no dispute, either party can release funds to either party.
 
-      _db.adjust_balance( o.receiver, o.steem_amount );
-      _db.adjust_balance( o.receiver, o.sbd_amount );
+      _db.adjust_balance( o.receiver, o.hive_amount );
+      _db.adjust_balance( o.receiver, o.hbd_amount );
 
       _db.modify( e, [&]( escrow_object& esc )
       {
-         esc.steem_balance -= o.steem_amount;
-         esc.sbd_balance -= o.sbd_amount;
+         esc.steem_balance -= o.hive_amount;
+         esc.sbd_balance -= o.hbd_amount;
       });
 
       if( e.steem_balance.amount == 0 && e.sbd_balance.amount == 0 )
@@ -2985,10 +2985,10 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 {
    const auto& acnt = _db.get_account( op.account );
 
-   FC_ASSERT( op.reward_steem <= acnt.reward_steem_balance, "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
-      ("c", op.reward_steem)("a", acnt.reward_steem_balance) );
-   FC_ASSERT( op.reward_sbd <= acnt.reward_sbd_balance, "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
-      ("c", op.reward_sbd)("a", acnt.reward_sbd_balance) );
+   FC_ASSERT( op.reward_hive <= acnt.reward_steem_balance, "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
+      ("c", op.reward_hive)("a", acnt.reward_steem_balance) );
+   FC_ASSERT( op.reward_hbd <= acnt.reward_sbd_balance, "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
+      ("c", op.reward_hbd)("a", acnt.reward_sbd_balance) );
    FC_ASSERT( op.reward_vests <= acnt.reward_vesting_balance, "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
       ("c", op.reward_vests)("a", acnt.reward_vesting_balance) );
 
@@ -2999,10 +2999,10 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
       reward_vesting_steem_to_move = asset( ( ( uint128_t( op.reward_vests.amount.value ) * uint128_t( acnt.reward_vesting_steem.amount.value ) )
          / uint128_t( acnt.reward_vesting_balance.amount.value ) ).to_uint64(), HIVE_SYMBOL );
 
-   _db.adjust_reward_balance( acnt, -op.reward_steem );
-   _db.adjust_reward_balance( acnt, -op.reward_sbd );
-   _db.adjust_balance( acnt, op.reward_steem );
-   _db.adjust_balance( acnt, op.reward_sbd );
+   _db.adjust_reward_balance( acnt, -op.reward_hive );
+   _db.adjust_reward_balance( acnt, -op.reward_hbd );
+   _db.adjust_balance( acnt, op.reward_hive );
+   _db.adjust_balance( acnt, op.reward_hbd );
 
    _db.modify( acnt, [&]( account_object& a )
    {
