@@ -6,7 +6,7 @@
 # "../../hive_utils/resources/config.ini.in" Path to config.ini.in - usually ./steem_utils/resources/config.ini.in
 #  1 - number of proposals for every account
 #  200 - number of accounts
-#  200000.000- number of STEEM's for every account
+#  200000.000- number of HIVE's for every account
 #  30000.000- number of HBD's for every account
 #  100000.000- number of VEST's for every account
 # finally is created 200(1*200) proposals and 200 votes for every proposals -> 40200 objects are created
@@ -18,7 +18,7 @@
 # "../../hive_utils/resources/config.ini.in" Path to config.ini.in - usually ./steem_utils/resources/config.ini.in
 #  2 - number of proposals for every account
 #  300 - number of accounts
-#  200000.000- number of STEEM's for every account
+#  200000.000- number of HIVE's for every account
 #  30000.000- number of HBD's for every account
 #  100000.000- number of VEST's for every account
 # finally is created 600(2*300) proposals and 300 votes for every proposals -> 180600 objects are created
@@ -267,7 +267,7 @@ if __name__ == '__main__':
     parser.add_argument("creator", help = "Account to create test accounts with")
     parser.add_argument("nr_proposals", type=int, help = "Nr proposals for every account")
     parser.add_argument("nr_accounts", type=int, help = "Nr accounts")
-    parser.add_argument("steems", type=str, default="200000.000", help = "STEEM's")
+    parser.add_argument("steems", type=str, default="200000.000", help = "HIVE's")
     parser.add_argument("hbds", type=str, default="30000.000", help = "HBD's")
     parser.add_argument("vests", type=str, default="100000.000", help = "VEST's")
 

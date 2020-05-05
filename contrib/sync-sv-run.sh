@@ -3,7 +3,7 @@
 VERSION=`cat /etc/steemdversion`
 
 # if the writer node dies by itself, kill runsv causing the container to exit
-STEEMD_PID=`pgrep -f p2p-endpoint`
+HIVED_PID=`pgrep -f p2p-endpoint`
 if [[ ! $? -eq 0 ]]; then
   echo NOTIFYALERT! steemdsync has quit unexpectedly, checking for coredump and then starting a new instance..
   sleep 30
@@ -38,13 +38,13 @@ if [[ ! -z "$BLOCKCHAIN_TIME" ]]; then
   # if we're within 10 seconds of current time, call it synced and begin the upload
   BLOCK_AGE=$((${CURRENT_SECS} - ${BLOCKCHAIN_SECS}))
   if [[ ${BLOCK_AGE} -le 10 ]]; then
-    STEEMD_PID=`pgrep -f p2p-endpoint`
-    kill -SIGINT $STEEMD_PID
+    HIVED_PID=`pgrep -f p2p-endpoint`
+    kill -SIGINT $HIVED_PID
     echo steemdsync: waiting for steemd to exit cleanly
 
     # loop while the process is still running
     let WAIT_TIME=0
-    while kill -0 $STEEMD_PID 2> /dev/null; do
+    while kill -0 $HIVED_PID 2> /dev/null; do
        sleep 1
        let WAIT_TIME++
 

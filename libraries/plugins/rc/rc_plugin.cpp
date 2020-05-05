@@ -17,18 +17,18 @@
 
 #include <boost/algorithm/string.hpp>
 
-#define STEEM_RC_REGEN_TIME   (60*60*24*5)
-// 2020.748973 VESTS == 1.000 STEEM when HF20 occurred on mainnet
+#define HIVE_RC_REGEN_TIME   (60*60*24*5)
+// 2020.748973 VESTS == 1.000 HIVE when HF20 occurred on mainnet
 // TODO: What should this value be for testnet?
-#define STEEM_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT      2020748973
+#define HIVE_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT      2020748973
 
 #ifndef IS_TEST_NET
-#define STEEM_HF20_BLOCK_NUM                              26256743
+#define HIVE_HF20_BLOCK_NUM                              26256743
 #endif
 
 // 1.66% is ~2 hours of regen.
 // 2 / ( 24 * 5 ) = 0.01666...
-#define STEEM_RC_MAX_NEGATIVE_PERCENT 166
+#define HIVE_RC_MAX_NEGATIVE_PERCENT 166
 
 namespace hive { namespace plugins { namespace rc {
 
@@ -244,7 +244,7 @@ void use_account_rcs(
    {
       if( db.is_producing() )
       {
-         STEEM_ASSERT( false, plugin_exception,
+         HIVE_ASSERT( false, plugin_exception,
             "Tried to execute transaction with no resource user",
             );
       }
@@ -261,7 +261,7 @@ void use_account_rcs(
 
    manabar_params mbparams;
    mbparams.max_mana = get_maximum_rc( account, rc_account );
-   mbparams.regen_time = STEEM_RC_REGEN_TIME;
+   mbparams.regen_time = HIVE_RC_REGEN_TIME;
 
    try{
 
@@ -275,7 +275,7 @@ void use_account_rcs(
       {
          if( db.is_producing() )
          {
-            STEEM_ASSERT( has_mana, plugin_exception,
+            HIVE_ASSERT( has_mana, plugin_exception,
                "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
                ("account", account_name)
                ("rc_needed", rc)
@@ -304,7 +304,7 @@ void use_account_rcs(
       if( skip.skip_deduct_rc )
          return;
 
-      int64_t min_mana = -1 * ( STEEM_RC_MAX_NEGATIVE_PERCENT * mbparams.max_mana ) / HIVE_100_PERCENT;
+      int64_t min_mana = -1 * ( HIVE_RC_MAX_NEGATIVE_PERCENT * mbparams.max_mana ) / HIVE_100_PERCENT;
 
       rca.rc_manabar.use_mana( rc, min_mana );
    } );
@@ -317,7 +317,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
    if( before_first_block() )
       return;
 
-   int64_t rc_regen = (gpo.total_vesting_shares.amount.value / (STEEM_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL));
+   int64_t rc_regen = (gpo.total_vesting_shares.amount.value / (HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL));
 
    rc_transaction_info tx_info;
 
@@ -333,7 +333,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
    // When rc_regen is 0, everything is free
    if( rc_regen > 0 )
    {
-      for( size_t i=0; i<STEEM_NUM_RESOURCE_TYPES; i++ )
+      for( size_t i=0; i<HIVE_NUM_RESOURCE_TYPES; i++ )
       {
          const rc_resource_params& params = params_obj.resource_param_array[i];
          int64_t pool = pool_obj.pool_array[i];
@@ -354,7 +354,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
    );
 
    std::shared_ptr< exp_rc_data > export_data =
-      hive::plugins::block_data_export::find_export_data< exp_rc_data >( STEEM_RC_PLUGIN_NAME );
+      hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
    if( (gpo.head_block_number % 10000) == 0 )
    {
       dlog( "${t} : ${i}", ("t", gpo.time)("i", tx_info) );
@@ -467,7 +467,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       {
          bool debug_print = ((gpo.head_block_number % 10000) == 0);
 
-         for( size_t i=0; i<STEEM_NUM_RESOURCE_TYPES; i++ )
+         for( size_t i=0; i<HIVE_NUM_RESOURCE_TYPES; i++ )
          {
             const rd_dynamics_params& params = params_obj.resource_param_array[i].resource_dynamics_params;
             int64_t& pool = pool_obj.pool_array[i];
@@ -503,7 +503,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
                double k = 27.027027027027028;
                double a = double(params.pool_eq - pool);
                a /= k*double(pool);
-               dlog( "a=${a}   aR=${aR}", ("a", a)("aR", a*gpo.total_vesting_shares.amount.value/STEEM_RC_REGEN_TIME) );
+               dlog( "a=${a}   aR=${aR}", ("a", a)("aR", a*gpo.total_vesting_shares.amount.value/HIVE_RC_REGEN_TIME) );
             }
          }
          if( debug_print )
@@ -513,7 +513,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       } );
 
    std::shared_ptr< exp_rc_data > export_data =
-      hive::plugins::block_data_export::find_export_data< exp_rc_data >( STEEM_RC_PLUGIN_NAME );
+      hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
    if( export_data )
       export_data->block_info = block_info;
 } FC_CAPTURE_AND_RETHROW( (note.block) ) }
@@ -546,7 +546,7 @@ void rc_plugin_impl::on_first_block()
    _db.create< rc_pool_object >(
       [&]( rc_pool_object& pool_obj )
       {
-         for( size_t i=0; i<STEEM_NUM_RESOURCE_TYPES; i++ )
+         for( size_t i=0; i<HIVE_NUM_RESOURCE_TYPES; i++ )
          {
             const rc_resource_params& params = params_obj.resource_param_array[i];
             pool_obj.pool_array[i] = params.resource_dynamics_params.pool_eq;
@@ -558,7 +558,7 @@ void rc_plugin_impl::on_first_block()
    const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
    for( auto it=idx.begin(); it!=idx.end(); ++it )
    {
-      create_rc_account( _db, now.sec_since_epoch(), *it, asset( STEEM_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT, VESTS_SYMBOL ) );
+      create_rc_account( _db, now.sec_since_epoch(), *it, asset( HIVE_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT, VESTS_SYMBOL ) );
    }
 
    return;
@@ -613,13 +613,13 @@ struct pre_apply_operation_visitor
       //
       // TODO:  Issue number
       //
-      static_assert( STEEM_RC_REGEN_TIME <= HIVE_VOTING_MANA_REGENERATION_SECONDS, "RC regen time must be smaller than vote regen time" );
+      static_assert( HIVE_RC_REGEN_TIME <= HIVE_VOTING_MANA_REGENERATION_SECONDS, "RC regen time must be smaller than vote regen time" );
 
       // ilog( "regenerate(${a})", ("a", account.name) );
 
       manabar_params mbparams;
       mbparams.max_mana = get_maximum_rc( account, rc_account );
-      mbparams.regen_time = STEEM_RC_REGEN_TIME;
+      mbparams.regen_time = HIVE_RC_REGEN_TIME;
 
       try {
 
@@ -627,7 +627,7 @@ struct pre_apply_operation_visitor
       {
          if( !_skip.skip_reject_unknown_delta_vests )
          {
-            STEEM_ASSERT( false, plugin_exception,
+            HIVE_ASSERT( false, plugin_exception,
                "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
                ("a", account.name)("old", rc_account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
          }
@@ -928,7 +928,7 @@ struct post_apply_operation_visitor
 
          _db.modify( _db.get< rc_pool_object, by_id >( rc_pool_object::id_type() ), [&]( rc_pool_object& p )
          {
-            for( size_t i = 0; i < STEEM_NUM_RESOURCE_TYPES; i++ )
+            for( size_t i = 0; i < HIVE_NUM_RESOURCE_TYPES; i++ )
             {
                p.pool_array[ i ] = int64_t( params.resource_param_array[ i ].resource_dynamics_params.max_pool_size );
             }
@@ -1078,7 +1078,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
    update_modified_accounts( _db, modified_accounts );
 
    // There is no transaction equivalent for actions, so post apply transaction logic for actions go here.
-   int64_t rc_regen = (gpo.total_vesting_shares.amount.value / (STEEM_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL));
+   int64_t rc_regen = (gpo.total_vesting_shares.amount.value / (HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL));
 
    rc_optional_action_info opt_action_info;
 
@@ -1094,7 +1094,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
    // When rc_regen is 0, everything is free
    if( rc_regen > 0 )
    {
-      for( size_t i=0; i<STEEM_NUM_RESOURCE_TYPES; i++ )
+      for( size_t i=0; i<HIVE_NUM_RESOURCE_TYPES; i++ )
       {
          const rc_resource_params& params = params_obj.resource_param_array[i];
          int64_t pool = pool_obj.pool_array[i];
@@ -1115,7 +1115,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
    );
 
    std::shared_ptr< exp_rc_data > export_data =
-      hive::plugins::block_data_export::find_export_data< exp_rc_data >( STEEM_RC_PLUGIN_NAME );
+      hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
    if( (gpo.head_block_number % 10000) == 0 )
    {
       dlog( "${t} : ${i}", ("t", gpo.time)("i", opt_action_info) );
@@ -1177,7 +1177,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
       if( export_plugin != nullptr )
       {
          ilog( "Registering RC export data factory" );
-         export_plugin->register_export_data_factory( STEEM_RC_PLUGIN_NAME,
+         export_plugin->register_export_data_factory( HIVE_RC_PLUGIN_NAME,
             []() -> std::shared_ptr< exportable_block_data > { return std::make_shared< exp_rc_data >(); } );
       }
 
@@ -1198,9 +1198,9 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
       my->_post_apply_optional_action_conn = db.add_post_apply_optional_action_handler( [&]( const optional_action_notification& note )
          { try { my->on_post_apply_optional_action( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
 
-      STEEM_ADD_PLUGIN_INDEX(db, rc_resource_param_index);
-      STEEM_ADD_PLUGIN_INDEX(db, rc_pool_index);
-      STEEM_ADD_PLUGIN_INDEX(db, rc_account_index);
+      HIVE_ADD_PLUGIN_INDEX(db, rc_resource_param_index);
+      HIVE_ADD_PLUGIN_INDEX(db, rc_pool_index);
+      HIVE_ADD_PLUGIN_INDEX(db, rc_account_index);
 
       fc::mutable_variant_object state_opts;
 
@@ -1209,7 +1209,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 #ifndef IS_TEST_NET
       if( !options.at( "rc-compute-historical-rc" ).as<bool>() )
       {
-         my->_enable_at_block = STEEM_HF20_BLOCK_NUM;
+         my->_enable_at_block = HIVE_HF20_BLOCK_NUM;
       }
 #else
       uint32_t start_block = options.at( "rc-start-at-block" ).as<uint32_t>();

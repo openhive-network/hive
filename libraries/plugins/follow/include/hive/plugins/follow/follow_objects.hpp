@@ -10,18 +10,18 @@ using namespace hive::chain;
 
 using chainbase::t_vector;
 
-#ifndef STEEM_FOLLOW_SPACE_ID
-#define STEEM_FOLLOW_SPACE_ID 8
+#ifndef HIVE_FOLLOW_SPACE_ID
+#define HIVE_FOLLOW_SPACE_ID 8
 #endif
 
 enum follow_plugin_object_type
 {
-   follow_object_type            = ( STEEM_FOLLOW_SPACE_ID << 8 ),
-   feed_object_type              = ( STEEM_FOLLOW_SPACE_ID << 8 ) + 1,
-   reputation_object_type        = ( STEEM_FOLLOW_SPACE_ID << 8 ) + 2,
-   blog_object_type              = ( STEEM_FOLLOW_SPACE_ID << 8 ) + 3,
-   follow_count_object_type      = ( STEEM_FOLLOW_SPACE_ID << 8 ) + 4,
-   blog_author_stats_object_type = ( STEEM_FOLLOW_SPACE_ID << 8 ) + 5
+   follow_object_type            = ( HIVE_FOLLOW_SPACE_ID << 8 ),
+   feed_object_type              = ( HIVE_FOLLOW_SPACE_ID << 8 ) + 1,
+   reputation_object_type        = ( HIVE_FOLLOW_SPACE_ID << 8 ) + 2,
+   blog_object_type              = ( HIVE_FOLLOW_SPACE_ID << 8 ) + 3,
+   follow_count_object_type      = ( HIVE_FOLLOW_SPACE_ID << 8 ) + 4,
+   blog_author_stats_object_type = ( HIVE_FOLLOW_SPACE_ID << 8 ) + 5
 };
 
 enum follow_type

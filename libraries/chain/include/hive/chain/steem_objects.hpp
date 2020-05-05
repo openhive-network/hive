@@ -115,7 +115,7 @@ namespace hive { namespace chain {
     *  When a user is a taker, their volume decreases
     *
     *  Every 1000 blocks, the account that has the highest volume_weight() is paid the maximum of
-    *  1000 STEEM or 1000 * virtual_supply / (100*blocks_per_year) aka 10 * virtual_supply / blocks_per_year
+    *  1000 HIVE or 1000 * virtual_supply / (100*blocks_per_year) aka 10 * virtual_supply / blocks_per_year
     *
     *  After being paid volume gets reset to 0
     */

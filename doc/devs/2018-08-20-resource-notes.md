@@ -173,7 +173,7 @@ checking makes upgrades painful:
 The subsidized account resource limit is consensus.  Other resource limits are non-consensus.  Why were things
 divided that way?  It has to do with the consequences of violating the limits:
 
-- If a witness ignores the subsidized account limit, people will get new accounts for free, that normally cost STEEM to create.  This is a medium-sized economic problem.
+- If a witness ignores the subsidized account limit, people will get new accounts for free, that normally cost HIVE to create.  This is a medium-sized economic problem.
 - If a witness ignores the other resource limits, their blocks might take a little longer [1] to process or use more memory.  This is a tiny IT problem.
 
 For resource limits, having witness-only upgrades outweighs the problem.  Witnesses who have been around a long time know that, in the ancient past, Steem's bandwidth

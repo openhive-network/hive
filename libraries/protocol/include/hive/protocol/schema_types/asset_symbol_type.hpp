@@ -15,7 +15,7 @@ namespace hive { namespace schema { namespace detail {
 struct schema_asset_symbol_type_impl
    : public abstract_schema
 {
-   STEEM_SCHEMA_CLASS_BODY( schema_asset_symbol_type_impl )
+   HIVE_SCHEMA_CLASS_BODY( schema_asset_symbol_type_impl )
 };
 
 }

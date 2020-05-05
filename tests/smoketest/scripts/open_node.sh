@@ -39,7 +39,7 @@ function check_pid_port {
 
 PID=-1
 NAME=$1 
-STEEMD_PATH=$2
+HIVED_PATH=$2
 NODE_OPTIONS=$3
 WORK_PATH=$4
 TEST_PORT=$5
@@ -49,7 +49,7 @@ function cleanup {
    then
       sleep 0.1 && kill -s SIGINT $PID &
       wait $PID
-      [ $? -eq 0 ] && echo ERROR: $STEEMD_PATH exited with error
+      [ $? -eq 0 ] && echo ERROR: $HIVED_PATH exited with error
    fi
    exit -1
 }
@@ -57,15 +57,15 @@ function cleanup {
 trap cleanup SIGINT SIGPIPE
 
 echo Running $NAME steemd to listen
-$STEEMD_PATH $NODE_OPTIONS -d $WORK_PATH & PID=$!
+$HIVED_PATH $NODE_OPTIONS -d $WORK_PATH & PID=$!
 
 if [ $PID -le 0 ]
 then
-   echo FATAL: cannot run $STEEMD_PATH
+   echo FATAL: cannot run $HIVED_PATH
    exit -1
 fi
 
 if check_pid_port $PID $TEST_PORT; then
-   STEEMD_NODE_PID=$PID
-   echo NODE: $STEEMD_NODE_PID
+   HIVED_NODE_PID=$PID
+   echo NODE: $HIVED_NODE_PID
 fi

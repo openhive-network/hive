@@ -167,7 +167,7 @@ legacy_asset legacy_asset::from_string( const string& from )
 
          int64_t prec = precision( result.symbol );
 
-         //Max amount = 9223372036854775.807 STEEM/HBD
+         //Max amount = 9223372036854775.807 HIVE/HBD
          //`inpart` * `prec` can cause overflow, better is to emulate multiplication using additional zeros
          auto _prec = std::to_string( prec );
          if( !_prec.empty() )

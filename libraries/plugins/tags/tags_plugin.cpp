@@ -531,9 +531,9 @@ void tags_plugin::plugin_initialize(const boost::program_options::variables_map&
       });
    }
 
-   STEEM_ADD_PLUGIN_INDEX(my->_db, tag_index);
-   STEEM_ADD_PLUGIN_INDEX(my->_db, tag_stats_index);
-   STEEM_ADD_PLUGIN_INDEX(my->_db, author_tag_stats_index);
+   HIVE_ADD_PLUGIN_INDEX(my->_db, tag_index);
+   HIVE_ADD_PLUGIN_INDEX(my->_db, tag_stats_index);
+   HIVE_ADD_PLUGIN_INDEX(my->_db, author_tag_stats_index);
 
    fc::mutable_variant_object state_opts;
 

@@ -34,7 +34,7 @@ OBJECTS=( "account_authority"                \
 
 
 DATA_DIR="$HOME/.steemd"
-STEEMD_DIR="../.."
+HIVED_DIR="../.."
 STATS_DUMP_PERIOD=600
 
 ADVISOR_PATH="../../libraries/vendor/rocksdb/tools/advisor"
@@ -46,7 +46,7 @@ while (( "$#" )); do
          shift 2
          ;;
       -s|--steemd-dir)
-         STEEMD_DIR=$2
+         HIVED_DIR=$2
          shift 2
          ;;
       -p|--stats-dump-period)
@@ -68,7 +68,7 @@ while (( "$#" )); do
    esac
 done
 
-cd "$STEEMD_DIR/libraries/vendor/rocksdb/tools/advisor"
+cd "$HIVED_DIR/libraries/vendor/rocksdb/tools/advisor"
 
 for OBJ in "${OBJECTS[@]}"; do
    DB_PATH="$DATA_DIR/blockchain/rocksdb_"

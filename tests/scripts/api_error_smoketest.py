@@ -159,7 +159,7 @@ tests = [
    },
    {
       "method": "condenser_api.get_transaction_hex",
-      "params": [{"operations":[["transfer", {"from":"temp", "to":"null", "ammount":"1.000 STEEM"}]]}]
+      "params": [{"operations":[["transfer", {"from":"temp", "to":"null", "ammount":"1.000 HIVE"}]]}]
    },
 # Not currently tracking info required for this
 #   {
@@ -168,11 +168,11 @@ tests = [
 #   },
    {
       "method": "condenser_api.get_required_signatures",
-      "params": [{"operations":[["transfer", {"from":"temp", "to":"null", "ammount":"1.000 STEEM"}]]}, []]
+      "params": [{"operations":[["transfer", {"from":"temp", "to":"null", "ammount":"1.000 HIVE"}]]}, []]
    },
    {
       "method": "condenser_api.verify_authority",
-      "params": [{"operations":[["transfer", {"from":"temp", "to":"null", "ammount":"1.000 STEEM"}]]}]
+      "params": [{"operations":[["transfer", {"from":"temp", "to":"null", "ammount":"1.000 HIVE"}]]}]
    },
    {
       "method": "condenser_api.verify_account_authority",

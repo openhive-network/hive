@@ -470,4 +470,4 @@ uint32_t blockchain_statistics_plugin::get_max_history_per_bucket() const
 
 } } // hive::blockchain_statistics
 
-STEEM_DEFINE_PLUGIN( blockchain_statistics, hive::blockchain_statistics::blockchain_statistics_plugin );
+HIVE_DEFINE_PLUGIN( blockchain_statistics, hive::blockchain_statistics::blockchain_statistics_plugin );

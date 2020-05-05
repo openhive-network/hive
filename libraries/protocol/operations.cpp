@@ -34,4 +34,4 @@ bool is_virtual_operation( const operation& op )
 
 } } // hive::protocol
 
-STEEM_DEFINE_OPERATION_TYPE( hive::protocol::operation )
+HIVE_DEFINE_OPERATION_TYPE( hive::protocol::operation )

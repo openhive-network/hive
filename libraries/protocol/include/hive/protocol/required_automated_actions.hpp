@@ -16,7 +16,7 @@ namespace hive { namespace protocol {
 
 } } // hive::protocol
 
-STEEM_DECLARE_OPERATION_TYPE( hive::protocol::required_automated_action );
+HIVE_DECLARE_OPERATION_TYPE( hive::protocol::required_automated_action );
 
 FC_TODO( "Remove ifdef when first required automated action is added" )
 #ifdef IS_TEST_NET

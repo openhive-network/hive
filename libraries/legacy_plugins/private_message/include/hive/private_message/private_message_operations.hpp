@@ -29,5 +29,5 @@ typedef fc::static_variant< private_message_operation > private_message_plugin_o
 
 FC_REFLECT( hive::private_message::private_message_operation, (from)(to)(from_memo_key)(to_memo_key)(sent_time)(checksum)(encrypted_message) )
 
-STEEM_DECLARE_OPERATION_TYPE( hive::private_message::private_message_plugin_operation )
+HIVE_DECLARE_OPERATION_TYPE( hive::private_message::private_message_plugin_operation )
 FC_REFLECT_TYPENAME( hive::private_message::private_message_plugin_operation )

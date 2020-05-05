@@ -47,10 +47,10 @@ struct get_required_auth_visitor
 } } // hive::protocol
 
 //
-// Place STEEM_DECLARE_OPERATION_TYPE in a .hpp file to declare
+// Place HIVE_DECLARE_OPERATION_TYPE in a .hpp file to declare
 // functions related to your operation type
 //
-#define STEEM_DECLARE_OPERATION_TYPE( OperationType )                            \
+#define HIVE_DECLARE_OPERATION_TYPE( OperationType )                            \
                                                                                  \
 namespace hive { namespace protocol {                                           \
                                                                                  \

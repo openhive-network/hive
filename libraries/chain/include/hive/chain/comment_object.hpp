@@ -89,9 +89,9 @@ namespace hive { namespace chain {
          uint16_t          reward_weight = 0;
 
          /** tracks the total payout this comment has received over time, measured in HBD */
-         greedy_HBD_asset  total_payout_value = asset(0, HBD_SYMBOL);
-         greedy_HBD_asset  curator_payout_value = asset(0, HBD_SYMBOL);
-         greedy_HBD_asset  beneficiary_payout_value = asset( 0, HBD_SYMBOL );
+         HBD_asset         total_payout_value = asset(0, HBD_SYMBOL);
+         HBD_asset         curator_payout_value = asset(0, HBD_SYMBOL);
+         HBD_asset         beneficiary_payout_value = asset( 0, HBD_SYMBOL );
 
          share_type        author_rewards = 0;
 
@@ -99,7 +99,7 @@ namespace hive { namespace chain {
 
          id_type           root_comment;
 
-         greedy_HBD_asset  max_accepted_payout = asset( 1000000000, HBD_SYMBOL );       /// HBD value of the maximum payout this post will receive
+         HBD_asset         max_accepted_payout = asset( 1000000000, HBD_SYMBOL );       /// HBD value of the maximum payout this post will receive
          uint16_t          percent_hbd = HIVE_100_PERCENT; /// the percent of HBD to key, unkept amounts will be received as VESTS
          bool              allow_replies = true;      /// allows a post to disable replies.
          bool              allow_votes   = true;      /// allows a post to receive votes;

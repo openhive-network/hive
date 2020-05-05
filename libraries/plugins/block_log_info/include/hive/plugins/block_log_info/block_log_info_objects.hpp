@@ -10,14 +10,14 @@ namespace hive { namespace plugins { namespace block_log_info {
 using namespace std;
 using namespace hive::chain;
 
-#ifndef STEEM_BLOCK_LOG_INFO_SPACE_ID
-#define STEEM_BLOCK_LOG_INFO_SPACE_ID 14
+#ifndef HIVE_BLOCK_LOG_INFO_SPACE_ID
+#define HIVE_BLOCK_LOG_INFO_SPACE_ID 14
 #endif
 
 enum block_log_info_object_types
 {
-   block_log_hash_state_object_type      = ( STEEM_BLOCK_LOG_INFO_SPACE_ID << 8 )    ,
-   block_log_pending_message_object_type = ( STEEM_BLOCK_LOG_INFO_SPACE_ID << 8 ) + 1,
+   block_log_hash_state_object_type      = ( HIVE_BLOCK_LOG_INFO_SPACE_ID << 8 )    ,
+   block_log_pending_message_object_type = ( HIVE_BLOCK_LOG_INFO_SPACE_ID << 8 ) + 1,
 };
 
 class block_log_hash_state_object : public object< block_log_hash_state_object_type, block_log_hash_state_object >

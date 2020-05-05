@@ -30,4 +30,4 @@ void auth_util_plugin::plugin_shutdown()
 
 } } } // hive::plugin::auth_util
 
-STEEM_DEFINE_PLUGIN( auth_util, hive::plugin::auth_util::auth_util_plugin )
+HIVE_DEFINE_PLUGIN( auth_util, hive::plugin::auth_util::auth_util_plugin )

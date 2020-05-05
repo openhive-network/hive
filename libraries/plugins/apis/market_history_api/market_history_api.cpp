@@ -187,7 +187,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_market_history_buckets )
 
 market_history_api::market_history_api(): my( new detail::market_history_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_MARKET_HISTORY_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_MARKET_HISTORY_API_PLUGIN_NAME );
 }
 
 market_history_api::~market_history_api() {}

@@ -18,7 +18,7 @@ template< typename E >
 struct schema_optional_impl
    : public abstract_schema
 {
-   STEEM_SCHEMA_TEMPLATE_CLASS_BODY( schema_optional_impl )
+   HIVE_SCHEMA_TEMPLATE_CLASS_BODY( schema_optional_impl )
 };
 
 template< typename E >

@@ -709,7 +709,7 @@ chain::comment_id_type tags_api_impl::get_parent( const discussion_query& query 
 
 tags_api::tags_api(): my( new detail::tags_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_TAGS_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_TAGS_API_PLUGIN_NAME );
 }
 
 tags_api::~tags_api() {}

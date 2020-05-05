@@ -61,7 +61,7 @@ namespace detail
 
 network_broadcast_api::network_broadcast_api() : my( new detail::network_broadcast_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_NETWORK_BROADCAST_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_NETWORK_BROADCAST_API_PLUGIN_NAME );
 }
 
 network_broadcast_api::~network_broadcast_api() {}

@@ -5,7 +5,7 @@
 #include <hive/chain/generic_custom_operation_interpreter.hpp>
 
 
-#define STEEM_REPUTATION_PLUGIN_NAME "reputation"
+#define HIVE_REPUTATION_PLUGIN_NAME "reputation"
 
 
 namespace hive { namespace plugins{ namespace reputation {
@@ -23,7 +23,7 @@ class reputation_plugin : public appbase::plugin< reputation_plugin >
 
       APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
-      static const std::string& name() { static std::string name = STEEM_REPUTATION_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_REPUTATION_PLUGIN_NAME; return name; }
 
       virtual void set_program_options(
          options_description& cli,

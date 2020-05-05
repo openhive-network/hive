@@ -7,7 +7,7 @@
 #include <hive/chain/generic_custom_operation_interpreter.hpp>
 
 
-#define STEEM_FOLLOW_PLUGIN_NAME "follow"
+#define HIVE_FOLLOW_PLUGIN_NAME "follow"
 
 
 namespace hive { namespace plugins{ namespace follow {
@@ -25,7 +25,7 @@ class follow_plugin : public appbase::plugin< follow_plugin >
 
       APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
-      static const std::string& name() { static std::string name = STEEM_FOLLOW_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_FOLLOW_PLUGIN_NAME; return name; }
 
       virtual void set_program_options(
          options_description& cli,

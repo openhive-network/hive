@@ -45,15 +45,15 @@ using app::application;
 // various template automagic depends on them being known at compile
 // time.
 //
-#ifndef STEEM_PRIVATE_MESSAGE_SPACE_ID
-#define STEEM_PRIVATE_MESSAGE_SPACE_ID 6
+#ifndef HIVE_PRIVATE_MESSAGE_SPACE_ID
+#define HIVE_PRIVATE_MESSAGE_SPACE_ID 6
 #endif
 
-#define STEEM_PRIVATE_MESSAGE_COP_ID 777
+#define HIVE_PRIVATE_MESSAGE_COP_ID 777
 
 enum private_message_object_type
 {
-   message_object_type = ( STEEM_PRIVATE_MESSAGE_SPACE_ID << 8 )
+   message_object_type = ( HIVE_PRIVATE_MESSAGE_SPACE_ID << 8 )
 };
 
 

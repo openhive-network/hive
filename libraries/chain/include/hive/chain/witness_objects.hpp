@@ -27,7 +27,7 @@ namespace hive { namespace chain {
    struct chain_properties
    {
       /**
-       *  This fee, paid in STEEM, is converted into VESTING SHARES for the new account. Accounts
+       *  This fee, paid in HIVE, is converted into VESTING SHARES for the new account. Accounts
        *  without vesting shares cannot earn usage rations and therefore are powerless. This minimum
        *  fee requires all accounts to have some kind of commitment to the network that includes the
        *  ability to vote and make transactions.

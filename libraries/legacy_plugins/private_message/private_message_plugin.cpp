@@ -143,7 +143,7 @@ void private_message_plugin::plugin_initialize(const boost::program_options::var
    app().register_api_factory<private_message_api>("private_message_api");
 
    typedef pair<string,string> pairstring;
-   STEEM_LOAD_VALUE_SET(options, "pm-accounts", my->_tracked_accounts, pairstring);
+   HIVE_LOAD_VALUE_SET(options, "pm-accounts", my->_tracked_accounts, pairstring);
 }
 
 vector< message_api_obj > private_message_api::get_inbox( string to, time_point newest, uint16_t limit )const {
@@ -185,6 +185,6 @@ flat_map<string,string> private_message_plugin::tracked_accounts() const
 
 } }
 
-STEEM_DEFINE_PLUGIN( private_message, hive::private_message::private_message_plugin )
+HIVE_DEFINE_PLUGIN( private_message, hive::private_message::private_message_plugin )
 
-STEEM_DEFINE_OPERATION_TYPE( hive::private_message::private_message_plugin_operation )
+HIVE_DEFINE_OPERATION_TYPE( hive::private_message::private_message_plugin_operation )

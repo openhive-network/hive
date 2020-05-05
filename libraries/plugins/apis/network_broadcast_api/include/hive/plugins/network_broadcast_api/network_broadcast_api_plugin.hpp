@@ -7,7 +7,7 @@
 
 #include <appbase/application.hpp>
 
-#define STEEM_NETWORK_BROADCAST_API_PLUGIN_NAME "network_broadcast_api"
+#define HIVE_NETWORK_BROADCAST_API_PLUGIN_NAME "network_broadcast_api"
 
 namespace hive { namespace plugins { namespace network_broadcast_api {
 
@@ -26,7 +26,7 @@ public:
    network_broadcast_api_plugin();
    virtual ~network_broadcast_api_plugin();
 
-   static const std::string& name() { static std::string name = STEEM_NETWORK_BROADCAST_API_PLUGIN_NAME; return name; }
+   static const std::string& name() { static std::string name = HIVE_NETWORK_BROADCAST_API_PLUGIN_NAME; return name; }
 
    virtual void set_program_options( options_description& cli, options_description& cfg ) override;
    virtual void plugin_initialize( const variables_map& options ) override;

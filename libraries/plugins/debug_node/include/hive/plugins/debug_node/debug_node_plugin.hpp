@@ -8,7 +8,7 @@
 #include <map>
 #include <fstream>
 
-#define STEEM_DEBUG_NODE_PLUGIN_NAME "debug_node"
+#define HIVE_DEBUG_NODE_PLUGIN_NAME "debug_node"
 
 namespace hive { namespace protocol {
    struct pow2;
@@ -47,7 +47,7 @@ class debug_node_plugin : public plugin< debug_node_plugin >
 
       APPBASE_PLUGIN_REQUIRES( (chain::chain_plugin) )
 
-      static const std::string& name() { static std::string name = STEEM_DEBUG_NODE_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_DEBUG_NODE_PLUGIN_NAME; return name; }
 
       virtual void set_program_options(
          options_description& cli,

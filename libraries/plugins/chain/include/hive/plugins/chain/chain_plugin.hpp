@@ -6,7 +6,7 @@
 
 #include <boost/signals2.hpp>
 
-#define STEEM_CHAIN_PLUGIN_NAME "chain"
+#define HIVE_CHAIN_PLUGIN_NAME "chain"
 
 namespace hive { namespace plugins { namespace chain {
 
@@ -28,7 +28,7 @@ public:
 
    bfs::path state_storage_dir() const;
 
-   static const std::string& name() { static std::string name = STEEM_CHAIN_PLUGIN_NAME; return name; }
+   static const std::string& name() { static std::string name = HIVE_CHAIN_PLUGIN_NAME; return name; }
 
    virtual void set_program_options( options_description& cli, options_description& cfg ) override;
    virtual void plugin_initialize( const variables_map& options ) override;

@@ -92,7 +92,7 @@ DEFINE_API_IMPL( rewards_api_impl, simulate_curve_payouts )
 
 rewards_api::rewards_api() : my( std::make_unique< detail::rewards_api_impl >() )
 {
-   JSON_RPC_REGISTER_API( STEEM_REWARDS_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_REWARDS_API_PLUGIN_NAME );
 }
 
 rewards_api::~rewards_api() {}

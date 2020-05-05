@@ -18,7 +18,7 @@ struct rc_transaction_info
 {
    account_name_type         resource_user;
    count_resources_result    usage;
-   fc::int_array< int64_t, STEEM_NUM_RESOURCE_TYPES >
+   fc::int_array< int64_t, HIVE_NUM_RESOURCE_TYPES >
                              cost;
 };
 

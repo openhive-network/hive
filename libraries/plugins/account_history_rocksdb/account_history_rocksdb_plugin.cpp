@@ -31,7 +31,7 @@
 
 namespace bpo = boost::program_options;
 
-#define STEEM_NAMESPACE_PREFIX "hive::protocol::"
+#define HIVE_NAMESPACE_PREFIX "hive::protocol::"
 #define OPEN_FILE_LIMIT 750
 
 #define DIAGNOSTIC(s)
@@ -423,7 +423,7 @@ public:
             on_post_reindex( note );
          }, _self, 0);
 
-      STEEM_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
+      HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
       }
 
    ~impl()
@@ -760,7 +760,7 @@ void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_o
     fc::mutable_variant_object state_opts;
 
    typedef std::pair< account_name_type, account_name_type > pairstring;
-   STEEM_LOAD_VALUE_SET(options, "account-history-rocksdb-track-account-range", _tracked_accounts, pairstring);
+   HIVE_LOAD_VALUE_SET(options, "account-history-rocksdb-track-account-range", _tracked_accounts, pairstring);
 
    state_opts[ "account-history-rocksdb-track-account-range" ] = _tracked_accounts;
 
@@ -893,7 +893,7 @@ void account_history_rocksdb_plugin::impl::storeOpFilteringParameters(const std:
          for(const string& op : ops)
          {
             if( op.empty() == false )
-               storage->insert( STEEM_NAMESPACE_PREFIX + op );
+               storage->insert( HIVE_NAMESPACE_PREFIX + op );
          }
       }
    }

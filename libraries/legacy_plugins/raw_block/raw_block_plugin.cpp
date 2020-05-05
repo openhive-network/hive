@@ -30,4 +30,4 @@ void raw_block_plugin::plugin_shutdown()
 
 } } } // hive::plugin::raw_block
 
-STEEM_DEFINE_PLUGIN( raw_block, hive::plugin::raw_block::raw_block_plugin )
+HIVE_DEFINE_PLUGIN( raw_block, hive::plugin::raw_block::raw_block_plugin )

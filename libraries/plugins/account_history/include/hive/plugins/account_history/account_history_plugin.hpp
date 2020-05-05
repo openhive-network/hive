@@ -2,7 +2,7 @@
 #include <hive/chain/steem_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
 
-#define STEEM_ACCOUNT_HISTORY_PLUGIN_NAME "account_history"
+#define HIVE_ACCOUNT_HISTORY_PLUGIN_NAME "account_history"
 
 namespace hive { namespace plugins { namespace account_history {
 
@@ -21,8 +21,8 @@ using hive::protocol::account_name_type;
 // various template automagic depends on them being known at compile
 // time.
 //
-#ifndef STEEM_ACCOUNT_HISTORY_SPACE_ID
-#define STEEM_ACCOUNT_HISTORY_SPACE_ID 5
+#ifndef HIVE_ACCOUNT_HISTORY_SPACE_ID
+#define HIVE_ACCOUNT_HISTORY_SPACE_ID 5
 #endif
 
 /**
@@ -37,7 +37,7 @@ class account_history_plugin : public plugin< account_history_plugin >
 
       APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
-      static const std::string& name() { static std::string name = STEEM_ACCOUNT_HISTORY_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_ACCOUNT_HISTORY_PLUGIN_NAME; return name; }
 
       virtual void set_program_options(
          options_description& cli,

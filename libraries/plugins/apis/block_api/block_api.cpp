@@ -31,7 +31,7 @@ class block_api_impl
 block_api::block_api()
    : my( new block_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_BLOCK_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_BLOCK_API_PLUGIN_NAME );
 }
 
 block_api::~block_api() {}

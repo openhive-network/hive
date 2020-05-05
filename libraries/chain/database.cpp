@@ -56,11 +56,11 @@
 long hf24_time()
   {
   long hf24Time = 1585746000; // 2020-04-01 01:00:00
-  const char* value = getenv("STEEM_HF24_TIME");
+  const char* value = getenv("HIVE_HF24_TIME");
   if(value != nullptr)
     {
        hf24Time = atol(value);
-       ilog("STEEM_HF24_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hf24Time));
+       ilog("HIVE_HF24_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hf24Time));
     }
 
   return hf24Time;
@@ -69,11 +69,11 @@ long hf24_time()
 long hf23_time()
   {
   long hf23Time = 1584712800; // Friday, 20 March 2020 14:00:00 GMT
-  const char* value = getenv("STEEM_HF23_TIME");
+  const char* value = getenv("HIVE_HF23_TIME");
   if(value != nullptr)
     {
        hf23Time = atol(value);
-       ilog("STEEM_HF23_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hf23Time));
+       ilog("HIVE_HF23_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hf23Time));
     }
 
   return hf23Time;
@@ -264,7 +264,7 @@ uint32_t database::reindex( const open_args& args )
    reindex_notification note( args );
 
    BOOST_SCOPE_EXIT(this_,&note) {
-      STEEM_TRY_NOTIFY(this_->_post_reindex_signal, note);
+      HIVE_TRY_NOTIFY(this_->_post_reindex_signal, note);
    } BOOST_SCOPE_EXIT_END
 
    try
@@ -278,7 +278,7 @@ uint32_t database::reindex( const open_args& args )
       wipe( args.data_dir, args.shared_mem_dir, false );
       open( args );
 
-      STEEM_TRY_NOTIFY(_pre_reindex_signal, note);
+      HIVE_TRY_NOTIFY(_pre_reindex_signal, note);
 
 #ifdef ENABLE_MIRA
       if( args.replay_in_memory )
@@ -291,7 +291,7 @@ uint32_t database::reindex( const open_args& args )
       _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
 
       auto start = fc::time_point::now();
-      STEEM_ASSERT( _block_log.head(), block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
+      HIVE_ASSERT( _block_log.head(), block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
 
       ilog( "Replaying blocks..." );
 
@@ -1000,7 +1000,7 @@ void database::pop_block()
 
       /// save the head block so we can recover its transactions
       optional<signed_block> head_block = fetch_block_by_id( head_id );
-      STEEM_ASSERT( head_block.valid(), pop_empty_chain, "there are no blocks to pop" );
+      HIVE_ASSERT( head_block.valid(), pop_empty_chain, "there are no blocks to pop" );
 
       _fork_db.pop_block();
       undo();
@@ -1051,7 +1051,7 @@ void database::post_push_virtual_operation( const operation& op )
 
 void database::notify_pre_apply_operation( const operation_notification& note )
 {
-   STEEM_TRY_NOTIFY( _pre_apply_operation_signal, note )
+   HIVE_TRY_NOTIFY( _pre_apply_operation_signal, note )
 }
 
 struct action_validate_visitor
@@ -1107,52 +1107,52 @@ void database::push_optional_action( const optional_automated_action& a )
 
 void database::notify_pre_apply_required_action( const required_action_notification& note )
 {
-   STEEM_TRY_NOTIFY( _pre_apply_required_action_signal, note );
+   HIVE_TRY_NOTIFY( _pre_apply_required_action_signal, note );
 }
 
 void database::notify_post_apply_required_action( const required_action_notification& note )
 {
-   STEEM_TRY_NOTIFY( _post_apply_required_action_signal, note );
+   HIVE_TRY_NOTIFY( _post_apply_required_action_signal, note );
 }
 
 void database::notify_pre_apply_optional_action( const optional_action_notification& note )
 {
-   STEEM_TRY_NOTIFY( _pre_apply_optional_action_signal, note );
+   HIVE_TRY_NOTIFY( _pre_apply_optional_action_signal, note );
 }
 
 void database::notify_post_apply_optional_action( const optional_action_notification& note )
 {
-   STEEM_TRY_NOTIFY( _post_apply_optional_action_signal, note );
+   HIVE_TRY_NOTIFY( _post_apply_optional_action_signal, note );
 }
 
 void database::notify_post_apply_operation( const operation_notification& note )
 {
-   STEEM_TRY_NOTIFY( _post_apply_operation_signal, note )
+   HIVE_TRY_NOTIFY( _post_apply_operation_signal, note )
 }
 
 void database::notify_pre_apply_block( const block_notification& note )
 {
-   STEEM_TRY_NOTIFY( _pre_apply_block_signal, note )
+   HIVE_TRY_NOTIFY( _pre_apply_block_signal, note )
 }
 
 void database::notify_irreversible_block( uint32_t block_num )
 {
-   STEEM_TRY_NOTIFY( _on_irreversible_block, block_num )
+   HIVE_TRY_NOTIFY( _on_irreversible_block, block_num )
 }
 
 void database::notify_post_apply_block( const block_notification& note )
 {
-   STEEM_TRY_NOTIFY( _post_apply_block_signal, note )
+   HIVE_TRY_NOTIFY( _post_apply_block_signal, note )
 }
 
 void database::notify_pre_apply_transaction( const transaction_notification& note )
 {
-   STEEM_TRY_NOTIFY( _pre_apply_transaction_signal, note )
+   HIVE_TRY_NOTIFY( _pre_apply_transaction_signal, note )
 }
 
 void database::notify_post_apply_transaction( const transaction_notification& note )
 {
-   STEEM_TRY_NOTIFY( _post_apply_transaction_signal, note )
+   HIVE_TRY_NOTIFY( _post_apply_transaction_signal, note )
 }
 
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
@@ -1197,8 +1197,8 @@ uint32_t database::get_slot_at_time(fc::time_point_sec when)const
 }
 
 /**
- *  Converts STEEM into HBD and adds it to to_account while reducing the STEEM supply
- *  by STEEM and increasing the HBD supply by the specified amount.
+ *  Converts HIVE into HBD and adds it to to_account while reducing the HIVE supply
+ *  by HIVE and increasing the HBD supply by the specified amount.
  */
 std::pair< asset, asset > database::create_hbd( const account_object& to_account, asset steem, bool to_reward_balance )
 {
@@ -1377,7 +1377,7 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
 
 /**
  * @param to_account - the account to receive the new vesting shares
- * @param liquid     - STEEM or liquid SMT to be converted to vesting shares
+ * @param liquid     - HIVE or liquid SMT to be converted to vesting shares
  */
 asset database::create_vesting( const account_object& to_account, asset liquid, bool to_reward_balance )
 {
@@ -2030,7 +2030,7 @@ void database::clear_account( const account_object& account,
    adjust_balance( treasury_account, account.get_hbd_savings() );
    adjust_savings_balance( account, -account.get_hbd_savings() );
 
-   // Remove HBD and STEEM balances
+   // Remove HBD and HIVE balances
    total_transferred_steem += account.balance;
    total_transferred_hbd += account.get_hbd_balance();
    adjust_balance( treasury_account, account.balance );
@@ -2436,7 +2436,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
                   auto hbd_payout           = create_hbd( get_account( b.account ), asset( benefactor_hbd_steem, HIVE_SYMBOL ), true );
 
                   vop.hbd_payout   = hbd_payout.first; // HBD portion
-                  vop.steem_payout = hbd_payout.second; // STEEM portion
+                  vop.steem_payout = hbd_payout.second; // HIVE portion
                }
 
                create_vesting2( *this, get_account( b.account ), asset( benefactor_vesting_steem, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
@@ -2958,7 +2958,7 @@ share_type database::pay_reward_funds( share_type reward )
 
       used_rewards += r;
 
-      // Sanity check to ensure we aren't printing more STEEM than has been allocated through inflation
+      // Sanity check to ensure we aren't printing more HIVE than has been allocated through inflation
       FC_ASSERT( used_rewards <= reward );
    }
 
@@ -3306,7 +3306,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       } inhibitor(*this);
 
       // Create blockchain accounts
-      public_key_type      init_public_key(STEEM_INIT_PUBLIC_KEY);
+      public_key_type      init_public_key(HIVE_INIT_PUBLIC_KEY);
 
       create< account_object >( [&]( account_object& a )
       {
@@ -3464,7 +3464,7 @@ void database::notify_changed_objects()
    {
       /*vector< chainbase::generic_id > ids;
       get_changed_ids( ids );
-      STEEM_TRY_NOTIFY( changed_objects, ids )*/
+      HIVE_TRY_NOTIFY( changed_objects, ids )*/
       /*
       if( _undo_db.enabled() )
       {
@@ -3479,7 +3479,7 @@ void database::notify_changed_objects()
             changed_ids.push_back( item.first );
             removed.emplace_back( item.second.get() );
          }
-         STEEM_TRY_NOTIFY( changed_objects, changed_ids )
+         HIVE_TRY_NOTIFY( changed_objects, changed_ids )
       }
       */
    }
@@ -3904,10 +3904,10 @@ try {
             if( has_hardfork( HIVE_HARDFORK_0_14__230 ) )
             {
                // This block limits the effective median price to force HBD to remain at or
-               // below 10% of the combined market cap of STEEM and HBD.
+               // below 10% of the combined market cap of HIVE and HBD.
                //
-               // For example, if we have 500 STEEM and 100 HBD, the price is limited to
-               // 900 HBD / 500 STEEM which works out to be $1.80.  At this price, 500 Steem
+               // For example, if we have 500 HIVE and 100 HBD, the price is limited to
+               // 900 HBD / 500 HIVE which works out to be $1.80.  At this price, 500 Steem
                // would be valued at 500 * $1.80 = $900.  100 HBD is by definition always $100,
                // so the combined market cap is $900 + $100 = $1000.
 
@@ -3978,18 +3978,18 @@ void database::_apply_transaction(const signed_transaction& trx)
       {
          const auto& tapos_block_summary = get< block_summary_object >( trx.ref_block_num );
          //Verify TaPoS block summary has correct ID prefix, and that this block's time is not past the expiration
-         STEEM_ASSERT( trx.ref_block_prefix == tapos_block_summary.block_id._hash[1], transaction_tapos_exception,
+         HIVE_ASSERT( trx.ref_block_prefix == tapos_block_summary.block_id._hash[1], transaction_tapos_exception,
                     "", ("trx.ref_block_prefix", trx.ref_block_prefix)
                     ("tapos_block_summary",tapos_block_summary.block_id._hash[1]));
       }
 
       fc::time_point_sec now = head_block_time();
 
-      STEEM_ASSERT( trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION), transaction_expiration_exception,
+      HIVE_ASSERT( trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION), transaction_expiration_exception,
                   "", ("trx.expiration",trx.expiration)("now",now)("max_til_exp",HIVE_MAX_TIME_UNTIL_EXPIRATION));
       if( has_hardfork( HIVE_HARDFORK_0_9 ) ) // Simple solution to pending trx bug when now == trx.expiration
-         STEEM_ASSERT( now < trx.expiration, transaction_expiration_exception, "", ("now",now)("trx.exp",trx.expiration) );
-      STEEM_ASSERT( now <= trx.expiration, transaction_expiration_exception, "", ("now",now)("trx.exp",trx.expiration) );
+         HIVE_ASSERT( now < trx.expiration, transaction_expiration_exception, "", ("now",now)("trx.exp",trx.expiration) );
+      HIVE_ASSERT( now <= trx.expiration, transaction_expiration_exception, "", ("now",now)("trx.exp",trx.expiration) );
    }
 
    //Insert transaction into unique transactions database.
@@ -4408,7 +4408,7 @@ FC_TODO( "#ifndef not needed after HF 20 is live" );
 
    if( !(get_node_properties().skip_flags & skip_undo_history_check) )
    {
-      STEEM_ASSERT( _dgp.head_block_number - _dgp.last_irreversible_block_num  < HIVE_MAX_UNDO_HISTORY, undo_database_exception,
+      HIVE_ASSERT( _dgp.head_block_number - _dgp.last_irreversible_block_num  < HIVE_MAX_UNDO_HISTORY, undo_database_exception,
                  "The database does not have enough undo history to support a blockchain with so many missed blocks. "
                  "Please add a checkpoint if you would like to continue applying blocks beyond this point.",
                  ("last_irreversible_block_num",_dgp.last_irreversible_block_num)("head", _dgp.head_block_number)
@@ -4604,19 +4604,19 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
 #pragma message( "TODO:  Remove if(), do assert unconditionally after HF20 occurs" )
    if( has_hf_20__1815 )
    {
-      STEEM_ASSERT( new_order.sell_price.quote.symbol == old_order.sell_price.base.symbol,
+      HIVE_ASSERT( new_order.sell_price.quote.symbol == old_order.sell_price.base.symbol,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-      STEEM_ASSERT( new_order.sell_price.base.symbol  == old_order.sell_price.quote.symbol,
+      HIVE_ASSERT( new_order.sell_price.base.symbol  == old_order.sell_price.quote.symbol,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-      STEEM_ASSERT( new_order.for_sale > 0 && old_order.for_sale > 0,
+      HIVE_ASSERT( new_order.for_sale > 0 && old_order.for_sale > 0,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-      STEEM_ASSERT( match_price.quote.symbol == new_order.sell_price.base.symbol,
+      HIVE_ASSERT( match_price.quote.symbol == new_order.sell_price.base.symbol,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-      STEEM_ASSERT( match_price.base.symbol == old_order.sell_price.base.symbol,
+      HIVE_ASSERT( match_price.base.symbol == old_order.sell_price.base.symbol,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
    }
@@ -4647,7 +4647,7 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
 #pragma message( "TODO:  Remove if(), do assert unconditionally after HF20 occurs" )
    if( has_hf_20__1815 )
    {
-      STEEM_ASSERT( new_order_pays == new_order.amount_for_sale() ||
+      HIVE_ASSERT( new_order_pays == new_order.amount_for_sale() ||
                     old_order_pays == old_order.amount_for_sale(),
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
@@ -4679,7 +4679,7 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
 #pragma message( "TODO:  Remove if(), do assert unconditionally after HF20 occurs" )
    if( has_hf_20__1815 )
    {
-      STEEM_ASSERT( result != 0,
+      HIVE_ASSERT( result != 0,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
    }
@@ -4732,10 +4732,10 @@ bool database::fill_order( const limit_order_object& order, const asset& pays, c
 {
    try
    {
-      STEEM_ASSERT( order.amount_for_sale().symbol == pays.symbol,
+      HIVE_ASSERT( order.amount_for_sale().symbol == pays.symbol,
          order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
          ("order", order)("pays", pays)("receives", receives) );
-      STEEM_ASSERT( pays.symbol != receives.symbol,
+      HIVE_ASSERT( pays.symbol != receives.symbol,
          order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
          ("order", order)("pays", pays)("receives", receives) );
 
@@ -4751,7 +4751,7 @@ bool database::fill_order( const limit_order_object& order, const asset& pays, c
 #pragma message( "TODO:  Remove if(), do assert unconditionally after HF20 occurs" )
          if( has_hardfork( HIVE_HARDFORK_0_20__1815 ) )
          {
-            STEEM_ASSERT( pays < order.amount_for_sale(),
+            HIVE_ASSERT( pays < order.amount_for_sale(),
               order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
               ("order", order)("pays", pays)("receives", receives) );
          }
@@ -5338,7 +5338,7 @@ void database::generate_required_actions()
 void database::generate_optional_actions()
 {
    static const generate_optional_actions_notification note;
-   STEEM_TRY_NOTIFY( _generate_optional_actions_signal, note );
+   HIVE_TRY_NOTIFY( _generate_optional_actions_signal, note );
 }
 
 void database::init_hardforks()

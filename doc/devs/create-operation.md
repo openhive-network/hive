@@ -1,5 +1,5 @@
 
-This is developer documentation for creating brand-new operations on the STEEM blockchain.
+This is developer documentation for creating brand-new operations on the HIVE blockchain.
 
 - (1) Define `smt_elevate_account_operation` structure in `smt_operations.hpp`
 - (2) Create `FC_REFLECT` definition for the operation struct.
@@ -85,7 +85,7 @@ of virtual operations.
 
 ## Step 5
 
-- (5a) You must add `STEEM_DEFINE_EVALUATOR` macro in `evaluator.hpp` to
+- (5a) You must add `HIVE_DEFINE_EVALUATOR` macro in `evaluator.hpp` to
 generate some boilerplate code.  The macro is defined `evaluator.hpp`,
 most of the generated code is support code required by the framework and
 does not affect the operation itself.

@@ -1,14 +1,14 @@
 #include <stdint.h>
 #include <hive/utilities/git_revision.hpp>
 
-#define STEEM_GIT_REVISION_SHA "@STEEM_GIT_REVISION_SHA@"
-#define STEEM_GIT_REVISION_UNIX_TIMESTAMP @STEEM_GIT_REVISION_UNIX_TIMESTAMP@
-#define STEEM_GIT_REVISION_DESCRIPTION "@STEEM_GIT_REVISION_DESCRIPTION@"
+#define HIVE_GIT_REVISION_SHA "@HIVE_GIT_REVISION_SHA@"
+#define HIVE_GIT_REVISION_UNIX_TIMESTAMP @HIVE_GIT_REVISION_UNIX_TIMESTAMP@
+#define HIVE_GIT_REVISION_DESCRIPTION "@HIVE_GIT_REVISION_DESCRIPTION@"
 
 namespace hive { namespace utilities {
 
-const char* const git_revision_sha = STEEM_GIT_REVISION_SHA;
-const uint32_t git_revision_unix_timestamp = STEEM_GIT_REVISION_UNIX_TIMESTAMP;
-const char* const git_revision_description = STEEM_GIT_REVISION_DESCRIPTION;
+const char* const git_revision_sha = HIVE_GIT_REVISION_SHA;
+const uint32_t git_revision_unix_timestamp = HIVE_GIT_REVISION_UNIX_TIMESTAMP;
+const char* const git_revision_description = HIVE_GIT_REVISION_DESCRIPTION;
 
 } } // end namespace hive::utilities

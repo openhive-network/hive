@@ -35,7 +35,7 @@
  * as the argument type.
  */
 
-#define STEEM_JSON_RPC_PLUGIN_NAME "json_rpc"
+#define HIVE_JSON_RPC_PLUGIN_NAME "json_rpc"
 
 #define JSON_RPC_REGISTER_API( API_NAME )                                                       \
 {                                                                                               \
@@ -94,7 +94,7 @@ class json_rpc_plugin : public appbase::plugin< json_rpc_plugin >
       APPBASE_PLUGIN_REQUIRES();
       virtual void set_program_options( options_description&, options_description& ) override;
 
-      static const std::string& name() { static std::string name = STEEM_JSON_RPC_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_JSON_RPC_PLUGIN_NAME; return name; }
 
       virtual void plugin_initialize( const variables_map& options ) override;
       virtual void plugin_startup() override;

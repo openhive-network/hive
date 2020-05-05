@@ -10,7 +10,7 @@ namespace detail { class block_data_export_plugin_impl; }
 
 using namespace appbase;
 
-#define STEEM_BLOCK_DATA_EXPORT_PLUGIN_NAME "block_data_export"
+#define HIVE_BLOCK_DATA_EXPORT_PLUGIN_NAME "block_data_export"
 
 class exportable_block_data;
 
@@ -22,7 +22,7 @@ class block_data_export_plugin : public appbase::plugin< block_data_export_plugi
 
       APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
-      static const std::string& name() { static std::string name = STEEM_BLOCK_DATA_EXPORT_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_BLOCK_DATA_EXPORT_PLUGIN_NAME; return name; }
 
       virtual void set_program_options( options_description& cli, options_description& cfg ) override;
       virtual void plugin_initialize( const variables_map& options ) override;

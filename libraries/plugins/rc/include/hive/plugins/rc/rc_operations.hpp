@@ -31,8 +31,8 @@ typedef fc::static_variant<
          delegate_drc_from_pool_operation
       > rc_plugin_operation;
 
-STEEM_DEFINE_PLUGIN_EVALUATOR( rc_plugin, rc_plugin_operation, delegate_to_pool_operation );
-STEEM_DEFINE_PLUGIN_EVALUATOR( rc_plugin, rc_plugin_operation, delegate_drc_from_pool_operation );
+HIVE_DEFINE_PLUGIN_EVALUATOR( rc_plugin, rc_plugin_operation, delegate_to_pool_operation );
+HIVE_DEFINE_PLUGIN_EVALUATOR( rc_plugin, rc_plugin_operation, delegate_drc_from_pool_operation );
 
 } } } // hive::plugins::rc
 
@@ -48,5 +48,5 @@ FC_REFLECT( hive::plugins::rc::delegate_drc_from_pool_operation,
    (drc_max_mana)
    )
 
-STEEM_DECLARE_OPERATION_TYPE( hive::plugins::rc::rc_plugin_operation )
+HIVE_DECLARE_OPERATION_TYPE( hive::plugins::rc::rc_plugin_operation )
 FC_REFLECT_TYPENAME( hive::plugins::rc::rc_plugin_operation )

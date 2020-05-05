@@ -10,7 +10,7 @@ namespace detail { class rc_plugin_impl; }
 
 using namespace appbase;
 
-#define STEEM_RC_PLUGIN_NAME "rc"
+#define HIVE_RC_PLUGIN_NAME "rc"
 
 struct rc_plugin_skip_flags
 {
@@ -28,7 +28,7 @@ class rc_plugin : public appbase::plugin< rc_plugin >
 
       APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
-      static const std::string& name() { static std::string name = STEEM_RC_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_RC_PLUGIN_NAME; return name; }
 
       virtual void set_program_options( options_description& cli, options_description& cfg ) override;
       virtual void plugin_initialize( const variables_map& options ) override;

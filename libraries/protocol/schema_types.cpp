@@ -10,7 +10,7 @@ namespace hive { namespace schema { namespace detail {
 // account_name_type                        //
 //////////////////////////////////////////////
 
-STEEM_SCHEMA_DEFINE_CLASS_METHODS( schema_account_name_type_impl )
+HIVE_SCHEMA_DEFINE_CLASS_METHODS( schema_account_name_type_impl )
 
 void schema_account_name_type_impl::get_deps( std::vector< std::shared_ptr< abstract_schema > >& deps )
 {
@@ -43,7 +43,7 @@ void schema_account_name_type_impl::get_str_schema( std::string& s )
 // asset_symbol_type                        //
 //////////////////////////////////////////////
 
-STEEM_SCHEMA_DEFINE_CLASS_METHODS( schema_asset_symbol_type_impl )
+HIVE_SCHEMA_DEFINE_CLASS_METHODS( schema_asset_symbol_type_impl )
 
 void schema_asset_symbol_type_impl::get_deps( std::vector< std::shared_ptr< abstract_schema > >& deps )
 {

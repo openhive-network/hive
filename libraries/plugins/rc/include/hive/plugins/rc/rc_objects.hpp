@@ -17,21 +17,21 @@ namespace hive { namespace plugins { namespace rc {
 using namespace std;
 using namespace hive::chain;
 
-#ifndef STEEM_RC_SPACE_ID
-#define STEEM_RC_SPACE_ID 16
+#ifndef HIVE_RC_SPACE_ID
+#define HIVE_RC_SPACE_ID 16
 #endif
 
-#define STEEM_RC_DRC_FLOAT_LEVEL   (20*HIVE_1_PERCENT)
-#define STEEM_RC_MAX_DRC_RATE      1000
+#define HIVE_RC_DRC_FLOAT_LEVEL   (20*HIVE_1_PERCENT)
+#define HIVE_RC_MAX_DRC_RATE      1000
 
 enum rc_object_types
 {
-   rc_resource_param_object_type   = ( STEEM_RC_SPACE_ID << 8 ),
-   rc_pool_object_type             = ( STEEM_RC_SPACE_ID << 8 ) + 1,
-   rc_account_object_type          = ( STEEM_RC_SPACE_ID << 8 ) + 2,
-   rc_delegation_pool_object_type  = ( STEEM_RC_SPACE_ID << 8 ) + 3,
-   rc_indel_edge_object_type       = ( STEEM_RC_SPACE_ID << 8 ) + 4,
-   rc_outdel_drc_edge_object_type  = ( STEEM_RC_SPACE_ID << 8 ) + 5
+   rc_resource_param_object_type   = ( HIVE_RC_SPACE_ID << 8 ),
+   rc_pool_object_type             = ( HIVE_RC_SPACE_ID << 8 ) + 1,
+   rc_account_object_type          = ( HIVE_RC_SPACE_ID << 8 ) + 2,
+   rc_delegation_pool_object_type  = ( HIVE_RC_SPACE_ID << 8 ) + 3,
+   rc_indel_edge_object_type       = ( HIVE_RC_SPACE_ID << 8 ) + 4,
+   rc_outdel_drc_edge_object_type  = ( HIVE_RC_SPACE_ID << 8 ) + 5
 };
 
 class rc_resource_param_object : public object< rc_resource_param_object_type, rc_resource_param_object >
@@ -46,7 +46,7 @@ class rc_resource_param_object : public object< rc_resource_param_object_type, r
       rc_resource_param_object() {}
 
       id_type               id;
-      fc::int_array< rc_resource_params, STEEM_NUM_RESOURCE_TYPES >
+      fc::int_array< rc_resource_params, HIVE_NUM_RESOURCE_TYPES >
                             resource_param_array;
 };
 
@@ -62,7 +62,7 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
       rc_pool_object() {}
 
       id_type               id;
-      fc::int_array< int64_t, STEEM_NUM_RESOURCE_TYPES >
+      fc::int_array< int64_t, HIVE_NUM_RESOURCE_TYPES >
                             pool_array;
 };
 
@@ -133,9 +133,9 @@ class rc_indel_edge_object : public object< rc_indel_edge_object_type, rc_indel_
  *
  * In the case of a pool that is not under heavy load, DRC:RC has a 1:1 exchange rate.
  *
- * However, if the pool drops below STEEM_RC_DRC_FLOAT_LEVEL, DRC:RC exchange rate starts
+ * However, if the pool drops below HIVE_RC_DRC_FLOAT_LEVEL, DRC:RC exchange rate starts
  * to rise according to `f(x) = 1/(a+b*x)` where `x` is the pool level, and coefficients `a`,
- * `b` are set such that `f(STEEM_RC_DRC_FLOAT_LEVEL) = 1` and `f(0) = STEEM_RC_MAX_DRC_RATE`.
+ * `b` are set such that `f(HIVE_RC_DRC_FLOAT_LEVEL) = 1` and `f(0) = HIVE_RC_MAX_DRC_RATE`.
  *
  * This ensures the limited RC of oversubscribed pools under heavy load are
  * shared "fairly" among their users proportionally to DRC.  This logic

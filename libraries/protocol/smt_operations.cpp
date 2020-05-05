@@ -190,8 +190,8 @@ void smt_setup_operation::validate()const
    FC_ASSERT( contribution_end_time > contribution_begin_time, "Contribution end time must be after contribution begin time" );
    FC_ASSERT( launch_time >= contribution_end_time, "SMT ICO launch time must be after the contribution end time" );
    FC_ASSERT( steem_units_soft_cap <= steem_units_hard_cap, "Steem units soft cap must less than or equal to steem units hard cap" );
-   FC_ASSERT( steem_units_soft_cap >= SMT_MIN_SOFT_CAP_STEEM_UNITS, "Steem units soft cap must be greater than or equal to ${n}", ("n", SMT_MIN_SOFT_CAP_STEEM_UNITS) );
-   FC_ASSERT( steem_units_hard_cap >= SMT_MIN_HARD_CAP_STEEM_UNITS, "Steem units hard cap must be greater than or equal to ${n}", ("n", SMT_MIN_HARD_CAP_STEEM_UNITS) );
+   FC_ASSERT( steem_units_soft_cap >= SMT_MIN_SOFT_CAP_HIVE_UNITS, "Steem units soft cap must be greater than or equal to ${n}", ("n", SMT_MIN_SOFT_CAP_HIVE_UNITS) );
+   FC_ASSERT( steem_units_hard_cap >= SMT_MIN_HARD_CAP_HIVE_UNITS, "Steem units hard cap must be greater than or equal to ${n}", ("n", SMT_MIN_HARD_CAP_HIVE_UNITS) );
    FC_ASSERT( steem_units_hard_cap <= HIVE_MAX_SHARE_SUPPLY, "Steem units hard cap must be less than or equal to ${n}", ("n", HIVE_MAX_SHARE_SUPPLY) );
 
    validate_visitor vtor;

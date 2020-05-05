@@ -345,8 +345,6 @@ namespace hive { namespace chain {
           *
           * Use the get_slot_time() and get_slot_at_time() functions
           * to convert between slot_num and timestamp.
-          *
-          * Passing slot_num == 0 returns STEEM_NULL_WITNESS
           */
          account_name_type get_scheduled_witness(uint32_t slot_num)const;
 
@@ -370,7 +368,7 @@ namespace hive { namespace chain {
           */
          uint32_t get_slot_at_time(fc::time_point_sec when)const;
 
-         /** @return the HBD created and deposited to_account, may return STEEM if there is no median feed */
+         /** @return the HBD created and deposited to_account, may return HIVE if there is no median feed */
          std::pair< asset, asset > create_hbd( const account_object& to_account, asset steem, bool to_reward_balance=false );
 
          using Before = std::function< void( const asset& ) >;
@@ -442,7 +440,7 @@ namespace hive { namespace chain {
 
          /**
           * Helper method to return the current HBD value of a given amount of
-          * STEEM.  Return 0 HBD if there isn't a current_median_history
+          * HIVE.  Return 0 HBD if there isn't a current_median_history
           */
          asset to_hbd( const asset& steem )const;
          asset to_steem( const asset& hbd )const;

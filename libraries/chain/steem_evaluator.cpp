@@ -1202,7 +1202,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
 
    /*
       Voting immediately when `transfer_to_vesting` is executed is dangerous,
-      because malicious accounts would take over whole STEEM network.
+      because malicious accounts would take over whole HIVE network.
       Therefore an idea is based on voting deferring. Default value is 30 days.
       This range of time is enough long to defeat/block potential malicious intention.
    */

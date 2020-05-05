@@ -27,7 +27,7 @@ public:
    id_type             id;
    /// Name of the account, the balance is held for.
    account_name_type   owner;
-   asset               liquid;   /// 'balance' for STEEM
+   asset               liquid;   /// 'balance' for HIVE
    asset               vesting;  /// 'vesting_shares' for VESTS
 
    /** Set of simple methods that allow unification of
@@ -75,7 +75,7 @@ public:
    id_type             id;
    /// Name of the account, the balance is held for.
    account_name_type   owner;
-   asset               pending_liquid;          /// 'reward_steem_balance' for pending STEEM
+   asset               pending_liquid;          /// 'reward_steem_balance' for pending HIVE
    asset               pending_vesting_shares;  /// 'reward_vesting_balance' for pending VESTS
    asset               pending_vesting_value;   /// 'reward_vesting_steem' for pending VESTS
 

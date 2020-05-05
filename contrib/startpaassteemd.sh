@@ -3,11 +3,11 @@
 VERSION=`cat /etc/steemdversion`
 
 if [[ "$IS_BROADCAST_NODE" ]]; then
-  STEEMD="/usr/local/steemd-default/bin/steemd"
+  HIVED="/usr/local/steemd-default/bin/steemd"
 elif [[ "$IS_AH_NODE" ]]; then
-  STEEMD="/usr/local/steemd-default/bin/steemd"
+  HIVED="/usr/local/steemd-default/bin/steemd"
 else
-  STEEMD="/usr/local/steemd-full/bin/steemd"
+  HIVED="/usr/local/steemd-full/bin/steemd"
 fi
 
 chown -R steemd:steemd $HOME
@@ -19,19 +19,19 @@ ARGS=""
 
 # if user did pass in desired seed nodes, use
 # the ones the user specified:
-if [[ ! -z "$STEEMD_SEED_NODES" ]]; then
-    for NODE in $STEEMD_SEED_NODES ; do
+if [[ ! -z "$HIVED_SEED_NODES" ]]; then
+    for NODE in $HIVED_SEED_NODES ; do
         ARGS+=" --p2p-seed-node=$NODE"
     done
 fi
 
 NOW=`date +%s`
-STEEMD_FEED_START_TIME=`expr $NOW - 1209600`
+HIVED_FEED_START_TIME=`expr $NOW - 1209600`
 
-ARGS+=" --follow-start-feeds=$STEEMD_FEED_START_TIME"
+ARGS+=" --follow-start-feeds=$HIVED_FEED_START_TIME"
 
-STEEMD_PROMOTED_START_TIME=`expr $NOW - 604800`
-ARGS+=" --tags-start-promoted=$STEEMD_PROMOTED_START_TIME"
+HIVED_PROMOTED_START_TIME=`expr $NOW - 604800`
+ARGS+=" --tags-start-promoted=$HIVED_PROMOTED_START_TIME"
 
 if [[ ! "$DISABLE_BLOCK_API" ]]; then
    ARGS+=" --plugin=block_api"
@@ -147,13 +147,13 @@ cp /etc/nginx/healthcheck.conf /etc/nginx/sites-enabled/default
 /etc/init.d/fcgiwrap restart
 service nginx restart
 exec chpst -usteemd \
-    $STEEMD \
+    $HIVED \
         --webserver-ws-endpoint=127.0.0.1:8091 \
         --webserver-http-endpoint=127.0.0.1:8091 \
         --p2p-endpoint=0.0.0.0:2001 \
         --data-dir=$HOME \
         $ARGS \
-        $STEEMD_EXTRA_OPTS \
+        $HIVED_EXTRA_OPTS \
         2>&1&
 SAVED_PID=`pgrep -f p2p-endpoint`
 echo $SAVED_PID >> /tmp/steemdpid

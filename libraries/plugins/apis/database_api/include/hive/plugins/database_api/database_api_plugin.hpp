@@ -9,7 +9,7 @@ namespace hive { namespace plugins { namespace database_api {
 
 using namespace appbase;
 
-#define STEEM_DATABASE_API_PLUGIN_NAME "database_api"
+#define HIVE_DATABASE_API_PLUGIN_NAME "database_api"
 
 class database_api_plugin : public plugin< database_api_plugin >
 {
@@ -22,7 +22,7 @@ class database_api_plugin : public plugin< database_api_plugin >
          (hive::plugins::chain::chain_plugin)
       )
 
-      static const std::string& name() { static std::string name = STEEM_DATABASE_API_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_DATABASE_API_PLUGIN_NAME; return name; }
 
       virtual void set_program_options(
          options_description& cli,

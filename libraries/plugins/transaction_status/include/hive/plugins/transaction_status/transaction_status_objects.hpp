@@ -6,13 +6,13 @@ namespace hive { namespace plugins { namespace transaction_status {
 
 using namespace hive::chain;
 
-#ifndef STEEM_TRANSACTION_STATUS_SPACE_ID
-#define STEEM_TRANSACTION_STATUS_SPACE_ID 18
+#ifndef HIVE_TRANSACTION_STATUS_SPACE_ID
+#define HIVE_TRANSACTION_STATUS_SPACE_ID 18
 #endif
 
 enum transaction_status_object_type
 {
-   transaction_status_object_type = ( STEEM_TRANSACTION_STATUS_SPACE_ID << 8 )
+   transaction_status_object_type = ( HIVE_TRANSACTION_STATUS_SPACE_ID << 8 )
 };
 
 enum transaction_status

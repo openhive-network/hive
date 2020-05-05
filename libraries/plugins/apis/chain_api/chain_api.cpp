@@ -76,7 +76,7 @@ DEFINE_API_IMPL( chain_api_impl, push_transaction )
 
 chain_api::chain_api(): my( new detail::chain_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_CHAIN_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_CHAIN_API_PLUGIN_NAME );
 }
 
 chain_api::~chain_api() {}

@@ -4,7 +4,7 @@
 
 #include <boost/config.hpp>
 
-#define STEEM_STATSD_PLUGIN_NAME "statsd"
+#define HIVE_STATSD_PLUGIN_NAME "statsd"
 
 namespace hive { namespace plugins { namespace statsd {
 
@@ -25,7 +25,7 @@ class statsd_plugin : public appbase::plugin< statsd_plugin >
 
       virtual void set_program_options( options_description&, options_description& ) override;
 
-      static const std::string& name() { static std::string name = STEEM_STATSD_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_STATSD_PLUGIN_NAME; return name; }
 
       virtual void plugin_initialize( const variables_map& options ) override;
       virtual void plugin_startup() override;

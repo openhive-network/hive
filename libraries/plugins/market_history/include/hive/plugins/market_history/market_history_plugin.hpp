@@ -14,12 +14,12 @@
 // various template automagic depends on them being known at compile
 // time.
 //
-#ifndef STEEM_MARKET_HISTORY_SPACE_ID
-#define STEEM_MARKET_HISTORY_SPACE_ID 7
+#ifndef HIVE_MARKET_HISTORY_SPACE_ID
+#define HIVE_MARKET_HISTORY_SPACE_ID 7
 #endif
 
-#ifndef STEEM_MARKET_HISTORY_PLUGIN_NAME
-#define STEEM_MARKET_HISTORY_PLUGIN_NAME "market_history"
+#ifndef HIVE_MARKET_HISTORY_PLUGIN_NAME
+#define HIVE_MARKET_HISTORY_PLUGIN_NAME "market_history"
 #endif
 
 
@@ -30,8 +30,8 @@ using namespace appbase;
 
 enum market_history_object_types
 {
-   bucket_object_type        = ( STEEM_MARKET_HISTORY_SPACE_ID << 8 ),
-   order_history_object_type = ( STEEM_MARKET_HISTORY_SPACE_ID << 8 ) + 1
+   bucket_object_type        = ( HIVE_MARKET_HISTORY_SPACE_ID << 8 ),
+   order_history_object_type = ( HIVE_MARKET_HISTORY_SPACE_ID << 8 ) + 1
 };
 
 namespace detail { class market_history_plugin_impl; }
@@ -44,7 +44,7 @@ class market_history_plugin : public plugin< market_history_plugin >
 
       APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
-      static const std::string& name() { static std::string name = STEEM_MARKET_HISTORY_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_MARKET_HISTORY_PLUGIN_NAME; return name; }
 
       flat_set< uint32_t > get_tracked_buckets() const;
       uint32_t get_max_history_per_bucket() const;

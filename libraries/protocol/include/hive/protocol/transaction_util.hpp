@@ -48,7 +48,7 @@ void verify_authority( const vector<AuthContainerType>& auth_containers, const f
          s.approved_by.insert( id );
       for( const auto& id : required_posting )
       {
-         STEEM_ASSERT( s.check_authority(id) ||
+         HIVE_ASSERT( s.check_authority(id) ||
                           s.check_authority(get_active(id)) ||
                           s.check_authority(get_owner(id)),
                           tx_missing_posting_auth, "Missing Posting Authority ${id}",
@@ -57,7 +57,7 @@ void verify_authority( const vector<AuthContainerType>& auth_containers, const f
                           ("active",get_active(id))
                           ("owner",get_owner(id)) );
       }
-      STEEM_ASSERT(
+      HIVE_ASSERT(
          !s.remove_unused_signatures(),
          tx_irrelevant_sig,
          "Unnecessary signature(s) detected"
@@ -77,25 +77,25 @@ void verify_authority( const vector<AuthContainerType>& auth_containers, const f
 
    for( const auto& auth : other )
    {
-      STEEM_ASSERT( s.check_authority(auth), tx_missing_other_auth, "Missing Authority", ("auth",auth)("sigs",sigs) );
+      HIVE_ASSERT( s.check_authority(auth), tx_missing_other_auth, "Missing Authority", ("auth",auth)("sigs",sigs) );
    }
 
    // fetch all of the top level authorities
    for( const auto& id : required_active )
    {
-      STEEM_ASSERT( s.check_authority(id) ||
+      HIVE_ASSERT( s.check_authority(id) ||
                        s.check_authority(get_owner(id)),
                        tx_missing_active_auth, "Missing Active Authority ${id}", ("id",id)("auth",get_active(id))("owner",get_owner(id)) );
    }
 
    for( const auto& id : required_owner )
    {
-      STEEM_ASSERT( owner_approvals.find(id) != owner_approvals.end() ||
+      HIVE_ASSERT( owner_approvals.find(id) != owner_approvals.end() ||
                        s.check_authority(get_owner(id)),
                        tx_missing_owner_auth, "Missing Owner Authority ${id}", ("id",id)("auth",get_owner(id)) );
    }
 
-   STEEM_ASSERT(
+   HIVE_ASSERT(
       !s.remove_unused_signatures(),
       tx_irrelevant_sig,
       "Unnecessary signature(s) detected"

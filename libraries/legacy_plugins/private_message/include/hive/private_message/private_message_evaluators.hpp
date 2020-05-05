@@ -7,6 +7,6 @@
 
 namespace hive { namespace private_message {
 
-STEEM_DEFINE_PLUGIN_EVALUATOR( private_message_plugin, hive::private_message::private_message_plugin_operation, private_message )
+HIVE_DEFINE_PLUGIN_EVALUATOR( private_message_plugin, hive::private_message::private_message_plugin_operation, private_message )
 
 } }

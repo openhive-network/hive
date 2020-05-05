@@ -2151,7 +2151,7 @@ uint16_t api_account_object::_compute_voting_power( const database_api::api_acco
 condenser_api::condenser_api()
    : my( new detail::condenser_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_CONDENSER_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_CONDENSER_API_PLUGIN_NAME );
 }
 
 condenser_api::~condenser_api() {}

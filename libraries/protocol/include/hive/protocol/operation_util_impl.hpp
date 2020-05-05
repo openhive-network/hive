@@ -49,10 +49,10 @@ struct operation_validate_visitor
 } } // hive::protocol
 
 //
-// Place STEEM_DEFINE_OPERATION_TYPE in a .cpp file to define
+// Place HIVE_DEFINE_OPERATION_TYPE in a .cpp file to define
 // functions related to your operation type
 //
-#define STEEM_DEFINE_OPERATION_TYPE( OperationType )                       \
+#define HIVE_DEFINE_OPERATION_TYPE( OperationType )                       \
                                                                            \
 namespace hive { namespace protocol {                                     \
                                                                            \

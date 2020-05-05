@@ -79,8 +79,8 @@ namespace hive { namespace chain {
          util::manabar     voting_manabar;
          util::manabar     downvote_manabar;
 
-         greedy_STEEM_asset balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
-         greedy_STEEM_asset savings_balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
+         HIVE_asset        balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
+         HIVE_asset        savings_balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
 
          /**
           *  HBD Deposits pay interest based upon the interest rate set by witnesses. The purpose of these
@@ -90,19 +90,19 @@ namespace hive { namespace chain {
           *  interest = interest_rate * hbd_seconds / seconds_per_year
           *
           *  Every time the hbd_balance is updated the hbd_seconds is also updated. If at least
-          *  STEEM_MIN_COMPOUNDING_INTERVAL_SECONDS has past since hbd_last_interest_payment then
+          *  HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC has passed since hbd_last_interest_payment then
           *  interest is added to hbd_balance.
           *
           *  @defgroup hbd_data HBD Balance Data
           */
          ///@{
-         greedy_HBD_asset  hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
+         HBD_asset         hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
          uint128_t         hbd_seconds; ///< total HBD * how long it has been held
          time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
          time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
 
 
-         greedy_HBD_asset  savings_hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
+         HBD_asset         savings_hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
          uint128_t         savings_hbd_seconds; ///< total HBD * how long it has been held
          time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
          time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
@@ -110,19 +110,19 @@ namespace hive { namespace chain {
          uint8_t           savings_withdraw_requests = 0;
          ///@}
 
-         greedy_HBD_asset   reward_hbd_balance = asset( 0, HBD_SYMBOL );
-         greedy_STEEM_asset reward_steem_balance = asset( 0, HIVE_SYMBOL );
-         greedy_VEST_asset  reward_vesting_balance = asset( 0, VESTS_SYMBOL );
-         greedy_STEEM_asset reward_vesting_steem = asset( 0, HIVE_SYMBOL );
+         HBD_asset         reward_hbd_balance = asset( 0, HBD_SYMBOL );
+         HIVE_asset        reward_steem_balance = asset( 0, HIVE_SYMBOL );
+         VEST_asset        reward_vesting_balance = asset( 0, VESTS_SYMBOL );
+         HIVE_asset        reward_vesting_steem = asset( 0, HIVE_SYMBOL );
 
          share_type        curation_rewards = 0;
          share_type        posting_rewards = 0;
 
-         greedy_VEST_asset vesting_shares = asset( 0, VESTS_SYMBOL ); ///< total vesting shares held by this account, controls its voting power
-         greedy_VEST_asset delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
-         greedy_VEST_asset received_vesting_shares = asset( 0, VESTS_SYMBOL );
+         VEST_asset        vesting_shares = asset( 0, VESTS_SYMBOL ); ///< total vesting shares held by this account, controls its voting power
+         VEST_asset        delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
+         VEST_asset        received_vesting_shares = asset( 0, VESTS_SYMBOL );
 
-         greedy_VEST_asset vesting_withdraw_rate = asset( 0, VESTS_SYMBOL ); ///< at the time this is updated it can be at most vesting_shares/104
+         VEST_asset        vesting_withdraw_rate = asset( 0, VESTS_SYMBOL ); ///< at the time this is updated it can be at most vesting_shares/104
          time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
          share_type        withdrawn = 0; /// Track how many shares have been withdrawn
          share_type        to_withdraw = 0; /// Might be able to look this up with operation history.

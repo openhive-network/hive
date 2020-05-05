@@ -42,8 +42,8 @@ class test_plugin : public plugin
       std::shared_ptr< generic_custom_operation_interpreter< test_op > > _evaluator_registry;
 };
 
-STEEM_DEFINE_PLUGIN_EVALUATOR( test_plugin, test_a_operation, test_a );
-STEEM_DEFINE_PLUGIN_EVALUATOR( test_plugin, test_b_operation, test_b );
+HIVE_DEFINE_PLUGIN_EVALUATOR( test_plugin, test_a_operation, test_a );
+HIVE_DEFINE_PLUGIN_EVALUATOR( test_plugin, test_b_operation, test_b );
 
 void test_a_evaluator::do_apply( const test_a_operation& o )
 {
@@ -77,14 +77,14 @@ test_plugin::test_plugin( application* app ) : plugin( app )
 
 } } // hive::plugin_tests
 
-STEEM_DEFINE_PLUGIN( test, hive::plugin_tests::test_plugin )
+HIVE_DEFINE_PLUGIN( test, hive::plugin_tests::test_plugin )
 
 FC_REFLECT( hive::plugin_tests::test_a_operation, (account) )
 FC_REFLECT( hive::plugin_tests::test_b_operation, (account) )
 
-STEEM_DECLARE_OPERATION_TYPE( hive::plugin_tests::test_op );
+HIVE_DECLARE_OPERATION_TYPE( hive::plugin_tests::test_op );
 FC_REFLECT_TYPENAME( hive::plugin_tests::test_op );
-STEEM_DEFINE_OPERATION_TYPE( hive::plugin_tests::test_op );
+HIVE_DEFINE_OPERATION_TYPE( hive::plugin_tests::test_op );
 */
 
 

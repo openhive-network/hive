@@ -9,7 +9,7 @@ namespace hive { namespace plugins { namespace block_api {
 
 using namespace appbase;
 
-#define STEEM_BLOCK_API_PLUGIN_NAME "block_api"
+#define HIVE_BLOCK_API_PLUGIN_NAME "block_api"
 
 class block_api_plugin : public plugin< block_api_plugin >
 {
@@ -22,7 +22,7 @@ class block_api_plugin : public plugin< block_api_plugin >
          (hive::plugins::chain::chain_plugin)
       )
 
-      static const std::string& name() { static std::string name = STEEM_BLOCK_API_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_BLOCK_API_PLUGIN_NAME; return name; }
 
       virtual void set_program_options(
          options_description& cli,

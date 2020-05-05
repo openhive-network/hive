@@ -16,4 +16,4 @@ void reblog_operation::validate()const
 
 } } } //hive::plugins::follow
 
-STEEM_DEFINE_OPERATION_TYPE( hive::plugins::follow::follow_plugin_operation )
+HIVE_DEFINE_OPERATION_TYPE( hive::plugins::follow::follow_plugin_operation )

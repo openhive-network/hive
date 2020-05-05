@@ -220,7 +220,7 @@ namespace hive { namespace protocol {
       asset             hbd_transferred;
       asset             steem_transferred;
       asset             vests_converted; // Amount of converted vests
-      asset             total_steem_from_vests; // Resulting STEEM from conversion
+      asset             total_steem_from_vests; // Resulting HIVE from conversion
    };
 
    struct hardfork_hive_restore_operation : public virtual_operation

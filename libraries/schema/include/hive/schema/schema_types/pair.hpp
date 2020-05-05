@@ -16,7 +16,7 @@ template< typename K, typename V >
 struct schema_pair_impl
    : public abstract_schema
 {
-   STEEM_SCHEMA_TEMPLATE_CLASS_BODY( schema_pair_impl )
+   HIVE_SCHEMA_TEMPLATE_CLASS_BODY( schema_pair_impl )
 };
 
 template< typename K, typename V >
