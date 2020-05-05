@@ -644,11 +644,11 @@ tests = [
       "params": {"account":"temp"}
    },
    {
-      "method": "database_api.list_sbd_conversion_requests",
+      "method": "database_api.list_hbd_conversion_requests",
       "params": {"start":["",0], "limit":10, "order":"by_account"}
    },
    {
-      "method": "database_api.find_sbd_conversion_requests",
+      "method": "database_api.find_hbd_conversion_requests",
       "params": {"account":"temp"}
    },
    {

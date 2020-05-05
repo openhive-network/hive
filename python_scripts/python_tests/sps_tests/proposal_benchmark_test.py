@@ -7,7 +7,7 @@
 #  1 - number of proposals for every account
 #  200 - number of accounts
 #  200000.000- number of STEEM's for every account
-#  30000.000- number of SBD's for every account
+#  30000.000- number of HBD's for every account
 #  100000.000- number of VEST's for every account
 # finally is created 200(1*200) proposals and 200 votes for every proposals -> 40200 objects are created
 #  ./proposal_benchmark_test.py "/home/a/steemd" "/home/a/data" "../../hive_utils/resources/config.ini.in" initminer 1 200 200000.000 30000.000 100000.000
@@ -19,7 +19,7 @@
 #  2 - number of proposals for every account
 #  300 - number of accounts
 #  200000.000- number of STEEM's for every account
-#  30000.000- number of SBD's for every account
+#  30000.000- number of HBD's for every account
 #  100000.000- number of VEST's for every account
 # finally is created 600(2*300) proposals and 300 votes for every proposals -> 180600 objects are created
 #  ./proposal_benchmark_test.py "/home/a/steemd" "/home/a/data" "../../hive_utils/resources/config.ini.in" initminer 2 300 200000.000 30000.000 100000.000
@@ -100,14 +100,14 @@ def transfer_to_vesting(node, from_account, accounts, vests ):
 
 # transfer initminer pychol "399.000 TESTS" "initial transfer" true
 # transfer initminer pychol "398.000 TBD" "initial transfer" true
-def transfer_assets_to_accounts(node, from_account, accounts, steems, sbds):
+def transfer_assets_to_accounts(node, from_account, accounts, steems, hbds):
     for acnt in accounts:
         logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt['name'], steems, "TESTS"))
         node.commit.transfer(acnt['name'], steems, "TESTS", memo = "initial transfer", account = from_account)
      hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
     for acnt in accounts:
-        logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt['name'], sbds, "TBD"))
-        node.commit.transfer(acnt['name'], sbds, "TBD", memo = "initial transfer", account = from_account)
+        logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt['name'], hbds, "TBD"))
+        node.commit.transfer(acnt['name'], hbds, "TBD", memo = "initial transfer", account = from_account)
     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
 def create_permlink( node, account ):
@@ -268,7 +268,7 @@ if __name__ == '__main__':
     parser.add_argument("nr_proposals", type=int, help = "Nr proposals for every account")
     parser.add_argument("nr_accounts", type=int, help = "Nr accounts")
     parser.add_argument("steems", type=str, default="200000.000", help = "STEEM's")
-    parser.add_argument("sbds", type=str, default="30000.000", help = "SBD's")
+    parser.add_argument("hbds", type=str, default="30000.000", help = "HBD's")
     parser.add_argument("vests", type=str, default="100000.000", help = "VEST's")
 
     args = parser.parse_args()
@@ -296,7 +296,7 @@ if __name__ == '__main__':
 
             create_accounts(node_client, args.creator, accounts)
             transfer_to_vesting(node_client, args.creator, accounts, args.vests )
-            transfer_assets_to_accounts(node_client, args.creator, accounts, args.steems, args.sbds )
+            transfer_assets_to_accounts(node_client, args.creator, accounts, args.steems, args.hbds )
             create_posts(node_client, accounts)
 
             #total proposals: nr_proposals * accounts

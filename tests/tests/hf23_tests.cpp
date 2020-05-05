@@ -262,14 +262,14 @@ hf23_helper::hf23_item get_balances( const account_object& obj )
    res.name          = obj.name;
 
    res.balance       = obj.get_balance();
-   res.sbd_balance   = obj.get_hbd_balance();
+   res.hbd_balance   = obj.get_hbd_balance();
 
    return res;
 }
 
 bool cmp_hf23_item( const hf23_helper::hf23_item& a, const hf23_helper::hf23_item& b )
 {
-   return a.name == b.name && a.balance == b.balance && a.sbd_balance == b.sbd_balance;
+   return a.name == b.name && a.balance == b.balance && a.hbd_balance == b.hbd_balance;
 }
 
 BOOST_AUTO_TEST_CASE( save_test_02 )
@@ -1208,7 +1208,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
 
       BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
       fund( "alice", ASSET( "1000.000 TBD" ) );
-      auto start_time = db->get_account( "alice" ).sbd_seconds_last_update;
+      auto start_time = db->get_account( "alice" ).hbd_seconds_last_update;
       auto alice_hbd = get_hbd_balance( "alice" );
       BOOST_TEST_MESSAGE( "treasury_hbd = " << asset_to_string( db->get_treasury().get_hbd_balance() ) );
       BOOST_TEST_MESSAGE( "alice_hbd = " << asset_to_string( alice_hbd ) );

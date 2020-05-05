@@ -31,8 +31,8 @@ ADD_API_TEST(database_api find_proposals 0 23)
 ## find_savings_withdrawals
 ADD_API_TEST(database_api find_savings_withdrawals steemit)
 
-## find_sbd_conversion_requests
-ADD_API_TEST(database_api find_sbd_conversion_requests steemit)
+## find_hbd_conversion_requests
+ADD_API_TEST(database_api find_hbd_conversion_requests steemit)
 
 ## find_smt_contributions
 # From HF23!
@@ -137,8 +137,8 @@ ADD_API_TEST(database_api list_proposals [""] 10 by_creator ascending active)
 ## list_savings_withdrawals 
 ADD_API_TEST(database_api list_savings_withdrawals [0] 10 by_from_id)
 
-## list_sbd_conversion_requests 
-ADD_API_TEST(database_api list_sbd_conversion_requests ["steemit",0] 10 by_account)
+## list_hbd_conversion_requests 
+ADD_API_TEST(database_api list_hbd_conversion_requests ["steemit",0] 10 by_account)
 
 ## list_smt_contributions 
 # From HF23!

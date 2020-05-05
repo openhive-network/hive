@@ -113,7 +113,7 @@ asset sps_processor::get_treasury_fund()
 {
    auto& treasury_account = db.get_treasury();
 
-   return treasury_account.sbd_balance;
+   return treasury_account.get_hbd_balance();
 }
 
 asset sps_processor::get_daily_inflation()
@@ -153,7 +153,7 @@ void sps_processor::transfer_daily_inflation_to_treasury( const asset& daily_inf
 
       Comment from Michael Vandeberg:
 
-         Is this printing new SBD?
+         Is this printing new HBD?
 
          That's not how we have handled inflation in the past.
          Either inflation should be paid, per block,

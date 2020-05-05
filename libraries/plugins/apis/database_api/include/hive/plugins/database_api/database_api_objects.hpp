@@ -57,7 +57,7 @@ struct api_comment_object
       author_rewards( o.author_rewards ),
       net_votes( o.net_votes ),
       max_accepted_payout( o.max_accepted_payout ),
-      percent_steem_dollars( o.percent_steem_dollars ),
+      percent_hbd( o.percent_hbd ),
       allow_replies( o.allow_replies ),
       allow_votes( o.allow_votes ),
       allow_curation_rewards( o.allow_curation_rewards )
@@ -124,7 +124,7 @@ struct api_comment_object
    string            root_permlink;
 
    asset             max_accepted_payout;
-   uint16_t          percent_steem_dollars = 0;
+   uint16_t          percent_hbd = 0;
    bool              allow_replies = false;
    bool              allow_votes = false;
    bool              allow_curation_rewards = false;
@@ -180,16 +180,16 @@ struct api_account_object
       downvote_manabar( a.downvote_manabar ),
       balance( a.balance ),
       savings_balance( a.savings_balance ),
-      sbd_balance( a.sbd_balance ),
-      sbd_seconds( a.sbd_seconds ),
-      sbd_seconds_last_update( a.sbd_seconds_last_update ),
-      sbd_last_interest_payment( a.sbd_last_interest_payment ),
-      savings_sbd_balance( a.savings_sbd_balance ),
-      savings_sbd_seconds( a.savings_sbd_seconds ),
-      savings_sbd_seconds_last_update( a.savings_sbd_seconds_last_update ),
-      savings_sbd_last_interest_payment( a.savings_sbd_last_interest_payment ),
+      hbd_balance( a.hbd_balance ),
+      hbd_seconds( a.hbd_seconds ),
+      hbd_seconds_last_update( a.hbd_seconds_last_update ),
+      hbd_last_interest_payment( a.hbd_last_interest_payment ),
+      savings_hbd_balance( a.get_hbd_savings() ),
+      savings_hbd_seconds( a.savings_hbd_seconds ),
+      savings_hbd_seconds_last_update( a.savings_hbd_seconds_last_update ),
+      savings_hbd_last_interest_payment( a.savings_hbd_last_interest_payment ),
       savings_withdraw_requests( a.savings_withdraw_requests ),
-      reward_sbd_balance( a.reward_sbd_balance ),
+      reward_hbd_balance( a.get_hbd_rewards() ),
       reward_steem_balance( a.reward_steem_balance ),
       reward_vesting_balance( a.reward_vesting_balance ),
       reward_vesting_steem( a.reward_vesting_steem ),
@@ -273,19 +273,19 @@ struct api_account_object
    asset             balance;
    asset             savings_balance;
 
-   asset             sbd_balance;
-   uint128_t         sbd_seconds;
-   time_point_sec    sbd_seconds_last_update;
-   time_point_sec    sbd_last_interest_payment;
+   asset             hbd_balance;
+   uint128_t         hbd_seconds;
+   time_point_sec    hbd_seconds_last_update;
+   time_point_sec    hbd_last_interest_payment;
 
-   asset             savings_sbd_balance;
-   uint128_t         savings_sbd_seconds;
-   time_point_sec    savings_sbd_seconds_last_update;
-   time_point_sec    savings_sbd_last_interest_payment;
+   asset             savings_hbd_balance;
+   uint128_t         savings_hbd_seconds;
+   time_point_sec    savings_hbd_seconds_last_update;
+   time_point_sec    savings_hbd_last_interest_payment;
 
    uint8_t           savings_withdraw_requests = 0;
 
-   asset             reward_sbd_balance;
+   asset             reward_hbd_balance;
    asset             reward_steem_balance;
    asset             reward_vesting_balance;
    asset             reward_vesting_steem;
@@ -410,8 +410,8 @@ struct api_witness_object
       pow_worker( w.pow_worker ),
       signing_key( w.signing_key ),
       props( w.props ),
-      sbd_exchange_rate( w.sbd_exchange_rate ),
-      last_sbd_exchange_update( w.last_sbd_exchange_update ),
+      hbd_exchange_rate( w.get_hbd_exchange_rate() ),
+      last_hbd_exchange_update( w.get_last_hbd_exchange_update() ),
       votes( w.votes ),
       virtual_last_update( w.virtual_last_update ),
       virtual_position( w.virtual_position ),
@@ -435,8 +435,8 @@ struct api_witness_object
    uint64_t          pow_worker = 0;
    public_key_type   signing_key;
    chain_properties  props;
-   price             sbd_exchange_rate;
-   time_point_sec    last_sbd_exchange_update;
+   price             hbd_exchange_rate;
+   time_point_sec    last_hbd_exchange_update;
    share_type        votes;
    fc::uint128       virtual_last_update;
    fc::uint128       virtual_position;
@@ -627,7 +627,7 @@ struct order
    price                order_price;
    double               real_price; // dollars per steem
    share_type           steem;
-   share_type           sbd;
+   share_type           hbd;
    fc::time_point_sec   created;
 };
 
@@ -648,7 +648,7 @@ FC_REFLECT( hive::plugins::database_api::api_comment_object,
              (children_abs_rshares)(cashout_time)(max_cashout_time)
              (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(author_rewards)(net_votes)
              (root_author)(root_permlink)
-             (max_accepted_payout)(percent_steem_dollars)(allow_replies)(allow_votes)(allow_curation_rewards)
+             (max_accepted_payout)(percent_hbd)(allow_replies)(allow_votes)(allow_curation_rewards)
              (beneficiaries)
           )
 
@@ -663,9 +663,9 @@ FC_REFLECT( hive::plugins::database_api::api_account_object,
              (comment_count)(lifetime_vote_count)(post_count)(can_vote)(voting_manabar)(downvote_manabar)
              (balance)
              (savings_balance)
-             (sbd_balance)(sbd_seconds)(sbd_seconds_last_update)(sbd_last_interest_payment)
-             (savings_sbd_balance)(savings_sbd_seconds)(savings_sbd_seconds_last_update)(savings_sbd_last_interest_payment)(savings_withdraw_requests)
-             (reward_sbd_balance)(reward_steem_balance)(reward_vesting_balance)(reward_vesting_steem)
+             (hbd_balance)(hbd_seconds)(hbd_seconds_last_update)(hbd_last_interest_payment)
+             (savings_hbd_balance)(savings_hbd_seconds)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)(savings_withdraw_requests)
+             (reward_hbd_balance)(reward_steem_balance)(reward_vesting_balance)(reward_vesting_steem)
              (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)(vesting_withdraw_rate)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
              (curation_rewards)
              (posting_rewards)
@@ -713,7 +713,7 @@ FC_REFLECT( hive::plugins::database_api::api_witness_object,
              (url)(votes)(virtual_last_update)(virtual_position)(virtual_scheduled_time)(total_missed)
              (last_aslot)(last_confirmed_block_num)(pow_worker)(signing_key)
              (props)
-             (sbd_exchange_rate)(last_sbd_exchange_update)
+             (hbd_exchange_rate)(last_hbd_exchange_update)
              (last_work)
              (running_version)
              (hardfork_version_vote)(hardfork_time_vote)
@@ -793,6 +793,6 @@ FC_REFLECT( hive::plugins::database_api::api_proposal_vote_object,
             (proposal)
           )
 
-FC_REFLECT( hive::plugins::database_api::order, (order_price)(real_price)(steem)(sbd)(created) );
+FC_REFLECT( hive::plugins::database_api::order, (order_price)(real_price)(steem)(hbd)(created) );
 
 FC_REFLECT( hive::plugins::database_api::order_book, (asks)(bids) );

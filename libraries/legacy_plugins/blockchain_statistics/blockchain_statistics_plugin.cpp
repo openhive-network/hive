@@ -56,7 +56,7 @@ struct operation_process
          if( op.amount.symbol == HIVE_SYMBOL )
             b.steem_transferred += op.amount.amount;
          else
-            b.sbd_transferred += op.amount.amount;
+            b.hbd_transferred += op.amount.amount;
       });
    }
 
@@ -64,7 +64,7 @@ struct operation_process
    {
       _db.modify( _bucket, [&]( bucket_object& b )
       {
-         b.sbd_paid_as_interest += op.interest.amount;
+         b.hbd_paid_as_interest += op.interest.amount;
       });
    }
 
@@ -154,7 +154,7 @@ struct operation_process
       _db.modify( _bucket, [&]( bucket_object& b )
       {
          b.payouts++;
-         b.sbd_paid_to_authors += op.sbd_payout.amount;
+         b.hbd_paid_to_authors += op.hbd_payout.amount;
          b.vests_paid_to_authors += op.vesting_payout.amount;
       });
    }
@@ -229,8 +229,8 @@ struct operation_process
    {
       _db.modify( _bucket, [&]( bucket_object& b )
       {
-         b.sbd_conversion_requests_created++;
-         b.sbd_to_be_converted += op.amount.amount;
+         b.hbd_conversion_requests_created++;
+         b.hbd_to_be_converted += op.amount.amount;
       });
    }
 
@@ -238,7 +238,7 @@ struct operation_process
    {
       _db.modify( _bucket, [&]( bucket_object& b )
       {
-         b.sbd_conversion_requests_filled++;
+         b.hbd_conversion_requests_filled++;
          b.steem_converted += op.amount_out.amount;
       });
    }

@@ -166,11 +166,11 @@ def print_balance(node, accounts):
     balances_str = []
     for acnt in accounts:
         ret = Account(acnt['name'], hive_instance=node).json()
-        sbd = ret.get('sbd_balance', None)
-        if sbd is not None:
-            sbd = sbd.get('amount')
-        balances_str.append("{}:{}".format(acnt['name'], sbd))
-        balances.append(sbd)
+        hbd = ret.get('hbd_balance', None)
+        if hbd is not None:
+            hbd = hbd.get('amount')
+        balances_str.append("{}:{}".format(acnt['name'], hbd))
+        balances.append(hbd)
     logger.info("Balances ==> {}".format(",".join(balances_str)))
     return balances
 

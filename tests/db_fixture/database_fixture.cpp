@@ -149,7 +149,7 @@ void clean_database_fixture::resize_shared_mem( uint64_t size )
       args.data_dir = data_dir->path();
       args.shared_mem_dir = args.data_dir;
       args.initial_supply = INITIAL_TEST_SUPPLY;
-      args.sbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
+      args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
       args.shared_file_size = size;
       args.database_cfg = hive::utilities::default_database_configuration();
       db->open( args );
@@ -263,7 +263,7 @@ void database_fixture::open_database( uint16_t shared_file_size_in_mb )
       args.data_dir = data_dir->path();
       args.shared_mem_dir = args.data_dir;
       args.initial_supply = INITIAL_TEST_SUPPLY;
-      args.sbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
+      args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
       args.shared_file_size = 1024 * 1024 * shared_file_size_in_mb; // 8MB(default) or more:  file for testing
       args.database_cfg = hive::utilities::default_database_configuration();
       args.sps_remove_threshold = 20;
@@ -441,8 +441,8 @@ void database_fixture::fund(
                a.balance += amount;
             else if( amount.symbol == HBD_SYMBOL )
             {
-               a.sbd_balance += amount;
-               a.sbd_seconds_last_update = db.head_block_time();
+               a.hbd_balance += amount;
+               a.hbd_seconds_last_update = db.head_block_time();
             }
          });
 
@@ -451,7 +451,7 @@ void database_fixture::fund(
             if( amount.symbol == HIVE_SYMBOL )
                gpo.current_supply += amount;
             else if( amount.symbol == HBD_SYMBOL )
-               gpo.current_sbd_supply += amount;
+               gpo.current_hbd_supply += amount;
          });
 
          if( amount.symbol == HBD_SYMBOL )
@@ -479,9 +479,9 @@ void database_fixture::convert(
       if ( amount.symbol == HIVE_SYMBOL )
       {
          db->adjust_balance( account_name, -amount );
-         db->adjust_balance( account_name, db->to_sbd( amount ) );
+         db->adjust_balance( account_name, db->to_hbd( amount ) );
          db->adjust_supply( -amount );
-         db->adjust_supply( db->to_sbd( amount ) );
+         db->adjust_supply( db->to_hbd( amount ) );
       }
       else if ( amount.symbol == HBD_SYMBOL )
       {

@@ -1120,7 +1120,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
       {
          db.modify( db.get_account( "alice" ), []( account_object& a )
          {
-            a.reward_sbd_balance = ASSET( "10.000 TBD" );
+            a.reward_hbd_balance = ASSET( "10.000 TBD" );
             a.reward_steem_balance = ASSET( "10.000 TESTS" );
             a.reward_vesting_balance = ASSET( "10.000000 VESTS" );
             a.reward_vesting_steem = ASSET( "10.000 TESTS" );
@@ -1128,7 +1128,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
 
          db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
          {
-            gpo.current_sbd_supply += ASSET( "10.000 TBD" );
+            gpo.current_hbd_supply += ASSET( "10.000 TBD" );
             gpo.current_supply += ASSET( "20.000 TESTS" );
             gpo.virtual_supply += ASSET( "20.000 TESTS" );
             gpo.pending_rewarded_vesting_shares += ASSET( "10.000000 VESTS" );

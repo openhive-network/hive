@@ -57,8 +57,8 @@ class database_api_impl
          (find_vesting_delegations)
          (list_vesting_delegation_expirations)
          (find_vesting_delegation_expirations)
-         (list_sbd_conversion_requests)
-         (find_sbd_conversion_requests)
+         (list_hbd_conversion_requests)
+         (find_hbd_conversion_requests)
          (list_decline_voting_rights_requests)
          (find_decline_voting_rights_requests)
          (list_comments)
@@ -871,13 +871,13 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegation_expirations )
 }
 
 
-/* SBD Conversion Requests */
+/* HBD Conversion Requests */
 
-DEFINE_API_IMPL( database_api_impl, list_sbd_conversion_requests )
+DEFINE_API_IMPL( database_api_impl, list_hbd_conversion_requests )
 {
    FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
 
-   list_sbd_conversion_requests_return result;
+   list_hbd_conversion_requests_return result;
    result.requests.reserve( args.limit );
 
    switch( args.order )
@@ -911,9 +911,9 @@ DEFINE_API_IMPL( database_api_impl, list_sbd_conversion_requests )
    return result;
 }
 
-DEFINE_API_IMPL( database_api_impl, find_sbd_conversion_requests )
+DEFINE_API_IMPL( database_api_impl, find_hbd_conversion_requests )
 {
-   find_sbd_conversion_requests_return result;
+   find_hbd_conversion_requests_return result;
    const auto& convert_idx = _db.get_index< chain::convert_request_index, chain::by_owner >();
    auto itr = convert_idx.lower_bound( args.account );
 
@@ -1376,7 +1376,7 @@ DEFINE_API_IMPL( database_api_impl, get_order_book )
       cur.order_price = itr->sell_price;
       cur.real_price  = 0.0;
       // cur.real_price  = (cur.order_price).to_real();
-      cur.sbd = itr->for_sale;
+      cur.hbd = itr->for_sale;
       cur.steem = ( asset( itr->for_sale, HBD_SYMBOL ) * cur.order_price ).amount;
       cur.created = itr->created;
       result.bids.push_back( cur );
@@ -1390,7 +1390,7 @@ DEFINE_API_IMPL( database_api_impl, get_order_book )
       cur.real_price = 0.0;
       // cur.real_price  = (~cur.order_price).to_real();
       cur.steem   = itr->for_sale;
-      cur.sbd     = ( asset( itr->for_sale, HIVE_SYMBOL ) * cur.order_price ).amount;
+      cur.hbd     = ( asset( itr->for_sale, HIVE_SYMBOL ) * cur.order_price ).amount;
       cur.created = itr->created;
       result.asks.push_back( cur );
       ++buy_itr;
@@ -1976,8 +1976,8 @@ DEFINE_READ_APIS( database_api,
    (find_vesting_delegations)
    (list_vesting_delegation_expirations)
    (find_vesting_delegation_expirations)
-   (list_sbd_conversion_requests)
-   (find_sbd_conversion_requests)
+   (list_hbd_conversion_requests)
+   (find_hbd_conversion_requests)
    (list_decline_voting_rights_requests)
    (find_decline_voting_rights_requests)
    (list_comments)

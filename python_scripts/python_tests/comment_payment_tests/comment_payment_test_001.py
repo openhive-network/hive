@@ -43,7 +43,7 @@ def print_comment_rewards(node_client, accounts):
     last_cashout_time = ""
 
     table = PrettyTable()
-    table.field_names = ['author','permlink','last_payout','cashout_time','total_vote_weight','reward_weight','total_payout_value','curator_payout_value','author_rewards','net_votes','percent_steem_dollars','pending_payout_value','total_pending_payout_value']
+    table.field_names = ['author','permlink','last_payout','cashout_time','total_vote_weight','reward_weight','total_payout_value','curator_payout_value','author_rewards','net_votes','percent_hbd','pending_payout_value','total_pending_payout_value']
     ret = []
     for account in accounts:
         blog = node_client.rpc.get_content(account["name"], test_utils.get_post_permlink(account["name"]))

@@ -264,9 +264,9 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
             t.balance = ASSET( "5.000 TESTS" );
             t.savings_balance = ASSET( "3.000 TESTS" );
             t.reward_steem_balance = ASSET( "2.000 TESTS" );
-            t.sbd_balance = ASSET( "5.000 TBD" );
-            t.savings_sbd_balance = ASSET( "3.000 TBD" );
-            t.reward_sbd_balance = ASSET( "2.000 TBD" );
+            t.hbd_balance = ASSET( "5.000 TBD" );
+            t.savings_hbd_balance = ASSET( "3.000 TBD" );
+            t.reward_hbd_balance = ASSET( "2.000 TBD" );
          } );
       } );
       database_fixture::validate_database();

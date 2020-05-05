@@ -31,7 +31,7 @@ namespace hive
 			void	check(const asset& val) const	{ FC_ASSERT(val.symbol.asset_num == _SYMBOL); }
 		};
 
-		using greedy_SBD_asset		= greedy_asset<	HIVE_ASSET_NUM_HBD		>;
+		using greedy_HBD_asset		= greedy_asset<	HIVE_ASSET_NUM_HBD		>;
 		using greedy_STEEM_asset	= greedy_asset<	HIVE_ASSET_NUM_HIVE	>;
 		using greedy_VEST_asset		= greedy_asset<	HIVE_ASSET_NUM_VESTS	>;
 
@@ -47,6 +47,6 @@ namespace hive
 	}
 }
 
-FC_REFLECT( hive::chain::greedy_SBD_asset,			(amount) )
-FC_REFLECT( hive::chain::greedy_STEEM_asset,		(amount) )
-FC_REFLECT( hive::chain::greedy_VEST_asset,		(amount) )
+FC_REFLECT( hive::chain::greedy_HBD_asset,   (amount) )
+FC_REFLECT( hive::chain::greedy_STEEM_asset,	(amount) )
+FC_REFLECT( hive::chain::greedy_VEST_asset,	(amount) )

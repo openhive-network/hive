@@ -40,7 +40,7 @@ class proposal_object : public object< proposal_object_type, proposal_object >
       // end_date (when the proposal expires and can no longer pay out)
       time_point_sec end_date;
 
-      //daily_pay (the amount of SBD that is being requested to be paid out daily)
+      //daily_pay (the amount of HBD that is being requested to be paid out daily)
       asset daily_pay;
 
       //subject (a very brief description or title for the proposal)

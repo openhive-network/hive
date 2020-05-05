@@ -15,7 +15,7 @@ struct create_proposal_operation : public base_operation
    time_point_sec start_date;
    time_point_sec end_date;
 
-   /// Amount of SBDs to be daily paid to the `receiver` account.
+   /// Amount of HBD to be daily paid to the `receiver` account.
    asset daily_pay;
 
    string subject;
@@ -77,7 +77,7 @@ struct proposal_pay_operation : public virtual_operation
    account_name_type receiver;
    /// Name of the treasury account that is source of payment
    account_name_type payer;
-   /// Amount of SBDs paid.
+   /// Amount of HBD paid.
    asset             payment;
 
    /// Transaction id + position of operation where appeared a proposal being a source of given operation.

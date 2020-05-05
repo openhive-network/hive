@@ -6712,7 +6712,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
          db.modify( db.get_account( "alice" ), []( account_object& a )
          {
             a.reward_steem_balance = ASSET( "10.000 TESTS" );
-            a.reward_sbd_balance = ASSET( "10.000 TBD" );
+            a.reward_hbd_balance = ASSET( "10.000 TBD" );
             a.reward_vesting_balance = ASSET( "10.000000 VESTS" );
             a.reward_vesting_steem = ASSET( "10.000 TESTS" );
          });
@@ -6720,7 +6720,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
          db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
          {
             gpo.current_supply += ASSET( "20.000 TESTS" );
-            gpo.current_sbd_supply += ASSET( "10.000 TBD" );
+            gpo.current_hbd_supply += ASSET( "10.000 TBD" );
             gpo.virtual_supply += ASSET( "20.000 TESTS" );
             gpo.pending_rewarded_vesting_shares += ASSET( "10.000000 VESTS" );
             gpo.pending_rewarded_vesting_steem += ASSET( "10.000 TESTS" );
@@ -7350,7 +7350,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
 
          db.modify( db.get_treasury(), [=]( account_object& a )
          {
-            a.sbd_balance.amount.value = 0;
+            a.hbd_balance.amount.value = 0;
          });
       });
 
@@ -7697,7 +7697,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
       tx.operations.push_back( prop_op );
       sign( tx, signing_key );
       db->push_transaction( tx, 0 );
-      BOOST_REQUIRE( alice_witness.props.sbd_interest_rate == 700 );
+      BOOST_REQUIRE( alice_witness.props.hbd_interest_rate == 700 );
 
       // Setting new signing_key
       private_key_type old_signing_key = signing_key;
@@ -7720,8 +7720,8 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
       tx.operations.push_back( prop_op );
       sign( tx, signing_key );
       db->push_transaction( tx, 0 );
-      BOOST_REQUIRE( alice_witness.sbd_exchange_rate == price( ASSET( "1.000 TBD" ), ASSET( "100.000 TESTS" ) ) );
-      BOOST_REQUIRE( alice_witness.last_sbd_exchange_update == db->head_block_time() );
+      BOOST_REQUIRE( alice_witness.get_hbd_exchange_rate() == price( ASSET( "1.000 TBD" ), ASSET( "100.000 TESTS" ) ) );
+      BOOST_REQUIRE( alice_witness.get_last_hbd_exchange_update() == db->head_block_time() );
 
       // Setting new url
       prop_op.props.erase( "hbd_exchange_rate" );

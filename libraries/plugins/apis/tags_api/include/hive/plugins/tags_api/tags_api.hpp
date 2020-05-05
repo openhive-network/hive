@@ -58,8 +58,8 @@ struct discussion : public database_api::api_comment_object
 
    string                        url; /// /category/@rootauthor/root_permlink#author/permlink
    string                        root_title;
-   asset                         pending_payout_value; ///< sbd
-   asset                         total_pending_payout_value; ///< sbd including replies
+   asset                         pending_payout_value; ///< HBD
+   asset                         total_pending_payout_value; ///< HBD including replies
    vector< vote_state >          active_votes;
    vector< string >              replies; ///< author/slug mapping
    share_type                    author_reputation = 0;

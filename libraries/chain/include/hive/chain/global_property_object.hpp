@@ -36,13 +36,13 @@ namespace hive { namespace chain {
          const asset& get_current_supply() const { return current_supply; }
 
          //initial amount of HBD issued (see also get_full_hbd_supply)
-         const asset& get_init_hbd_supply() const { return init_sbd_supply; }
+         const asset& get_init_hbd_supply() const { return init_hbd_supply; }
          //main HBD token counter (see also get_full_hbd_supply)
-         const asset& get_current_hbd_supply() const { return current_sbd_supply; }
+         const asset& get_current_hbd_supply() const { return current_hbd_supply; }
          //rate of interest for holding HBD (in BPS - basis points)
-         uint16_t get_hbd_interest_rate() const { return sbd_interest_rate; }
+         uint16_t get_hbd_interest_rate() const { return hbd_interest_rate; }
          //percentage of HIVE being converted to HBD during payouts (in BPS - basis points)
-         uint16_t get_hbd_print_rate() const { return sbd_print_rate; }
+         uint16_t get_hbd_print_rate() const { return hbd_print_rate; }
 
          //pool of HIVE tokens vested normally
          const asset& get_total_vesting_fund_hive() const { return total_vesting_fund_steem; }
@@ -78,10 +78,8 @@ namespace hive { namespace chain {
 
          asset       virtual_supply             = asset( 0, HIVE_SYMBOL );
          asset       current_supply             = asset( 0, HIVE_SYMBOL );
-         asset       confidential_supply        = asset( 0, HIVE_SYMBOL ); ///< total asset held in confidential balances
-         asset       init_sbd_supply            = asset( 0, HBD_SYMBOL );
-         asset       current_sbd_supply         = asset( 0, HBD_SYMBOL );
-         asset       confidential_sbd_supply    = asset( 0, HBD_SYMBOL ); ///< total asset held in confidential balances
+         asset       init_hbd_supply            = asset( 0, HBD_SYMBOL );
+         asset       current_hbd_supply         = asset( 0, HBD_SYMBOL );
          asset       total_vesting_fund_steem   = asset( 0, HIVE_SYMBOL );
          asset       total_vesting_shares       = asset( 0, VESTS_SYMBOL );
          asset       total_reward_fund_steem    = asset( 0, HIVE_SYMBOL );
@@ -106,9 +104,9 @@ namespace hive { namespace chain {
          /**
           *  This property defines the interest rate that HBD deposits receive.
           */
-         uint16_t sbd_interest_rate = 0;
+         uint16_t hbd_interest_rate = 0;
 
-         uint16_t sbd_print_rate = HIVE_100_PERCENT;
+         uint16_t hbd_print_rate = HIVE_100_PERCENT;
 
          /**
           *  Maximum block size is decided by the set of active witnesses which change every round.
@@ -157,8 +155,8 @@ namespace hive { namespace chain {
 
          int64_t available_account_subsidies = 0;
 
-         uint16_t sbd_stop_percent = 0;
-         uint16_t sbd_start_percent = 0;
+         uint16_t hbd_stop_percent = 0;
+         uint16_t hbd_start_percent = 0;
 
          //settings used to compute payments for every proposal
          time_point_sec next_maintenance_time;
@@ -206,18 +204,16 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
              (num_pow_witnesses)
              (virtual_supply)
              (current_supply)
-             (confidential_supply)
-             (init_sbd_supply)
-             (current_sbd_supply)
-             (confidential_sbd_supply)
+             (init_hbd_supply)
+             (current_hbd_supply)
              (total_vesting_fund_steem)
              (total_vesting_shares)
              (total_reward_fund_steem)
              (total_reward_shares2)
              (pending_rewarded_vesting_shares)
              (pending_rewarded_vesting_steem)
-             (sbd_interest_rate)
-             (sbd_print_rate)
+             (hbd_interest_rate)
+             (hbd_print_rate)
              (maximum_block_size)
              (required_actions_partition_percent)
              (current_aslot)
@@ -228,8 +224,8 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
              (delegation_return_period)
              (reverse_auction_seconds)
              (available_account_subsidies)
-             (sbd_stop_percent)
-             (sbd_start_percent)
+             (hbd_stop_percent)
+             (hbd_start_percent)
              (next_maintenance_time)
              (last_budget_time)
              (content_reward_percent)

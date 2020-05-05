@@ -1109,7 +1109,7 @@ namespace detail
    DEFINE_API_IMPL( condenser_api_impl, get_conversion_requests )
    {
       CHECK_ARG_SIZE( 1 )
-      auto requests = _database_api->find_sbd_conversion_requests(
+      auto requests = _database_api->find_hbd_conversion_requests(
          {
             args[0].as< account_name_type >()
          }).requests;

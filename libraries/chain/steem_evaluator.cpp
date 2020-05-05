@@ -73,7 +73,7 @@ void copy_legacy_chain_properties( chain_properties& dest, const legacy_chain_pr
 {
    dest.account_creation_fee = src.account_creation_fee.to_asset< force_canon >();
    dest.maximum_block_size = src.maximum_block_size;
-   dest.sbd_interest_rate = src.hbd_interest_rate;
+   dest.hbd_interest_rate = src.hbd_interest_rate;
 }
 
 void witness_update_evaluator::do_apply( const witness_update_operation& o )
@@ -127,11 +127,11 @@ struct witness_properties_change_flags
 {
    uint32_t account_creation_changed       : 1;
    uint32_t max_block_changed              : 1;
-   uint32_t sbd_interest_changed           : 1;
+   uint32_t hbd_interest_changed           : 1;
    uint32_t account_subsidy_budget_changed : 1;
    uint32_t account_subsidy_decay_changed  : 1;
    uint32_t key_changed                    : 1;
-   uint32_t sbd_exchange_changed           : 1;
+   uint32_t hbd_exchange_changed           : 1;
    uint32_t url_changed                    : 1;
 };
 
@@ -144,8 +144,8 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
    // Capture old properties. This allows only updating the object once.
    chain_properties  props;
    public_key_type   signing_key;
-   price             sbd_exchange_rate;
-   time_point_sec    last_sbd_exchange_update;
+   price             hbd_exchange_rate;
+   time_point_sec    last_hbd_exchange_update;
    string            url;
 
    witness_properties_change_flags flags;
@@ -177,10 +177,10 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
    }
 
    itr = o.props.find( "hbd_interest_rate" );
-   flags.sbd_interest_changed = itr != o.props.end();
-   if( flags.sbd_interest_changed )
+   flags.hbd_interest_changed = itr != o.props.end();
+   if( flags.hbd_interest_changed )
    {
-      fc::raw::unpack_from_vector( itr->second, props.sbd_interest_rate );
+      fc::raw::unpack_from_vector( itr->second, props.hbd_interest_rate );
    }
 
    itr = o.props.find( "account_subsidy_budget" );
@@ -205,11 +205,11 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
    }
 
    itr = o.props.find( "hbd_exchange_rate" );
-   flags.sbd_exchange_changed = itr != o.props.end();
-   if( flags.sbd_exchange_changed )
+   flags.hbd_exchange_changed = itr != o.props.end();
+   if( flags.hbd_exchange_changed )
    {
-      fc::raw::unpack_from_vector( itr->second, sbd_exchange_rate );
-      last_sbd_exchange_update = _db.head_block_time();
+      fc::raw::unpack_from_vector( itr->second, hbd_exchange_rate );
+      last_hbd_exchange_update = _db.head_block_time();
    }
 
    itr = o.props.find( "url" );
@@ -231,9 +231,9 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
          w.props.maximum_block_size = props.maximum_block_size;
       }
 
-      if( flags.sbd_interest_changed )
+      if( flags.hbd_interest_changed )
       {
-         w.props.sbd_interest_rate = props.sbd_interest_rate;
+         w.props.hbd_interest_rate = props.hbd_interest_rate;
       }
 
       if( flags.account_subsidy_budget_changed )
@@ -251,10 +251,10 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
          w.signing_key = signing_key;
       }
 
-      if( flags.sbd_exchange_changed )
+      if( flags.hbd_exchange_changed )
       {
-         w.sbd_exchange_rate = sbd_exchange_rate;
-         w.last_sbd_exchange_update = last_sbd_exchange_update;
+         w.hbd_exchange_rate = hbd_exchange_rate;
+         w.last_hbd_exchange_update = last_hbd_exchange_update;
       }
 
       if( flags.url_changed )
@@ -747,12 +747,12 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
    FC_ASSERT( comment.allow_curation_rewards >= o.allow_curation_rewards, "Curation rewards cannot be re-enabled." );
    FC_ASSERT( comment.allow_votes >= o.allow_votes, "Voting cannot be re-enabled." );
    FC_ASSERT( comment.max_accepted_payout >= o.max_accepted_payout, "A comment cannot accept a greater payout." );
-   FC_ASSERT( comment.percent_steem_dollars >= o.percent_hbd, "A comment cannot accept a greater percent HBD." );
+   FC_ASSERT( comment.percent_hbd >= o.percent_hbd, "A comment cannot accept a greater percent HBD." );
 
    _db.modify( comment, [&]( comment_object& c ) {
-       c.max_accepted_payout   = o.max_accepted_payout;
-       c.percent_steem_dollars = o.percent_hbd;
-       c.allow_votes           = o.allow_votes;
+       c.max_accepted_payout    = o.max_accepted_payout;
+       c.percent_hbd            = o.percent_hbd;
+       c.allow_votes            = o.allow_votes;
        c.allow_curation_rewards = o.allow_curation_rewards;
    });
 
@@ -1013,14 +1013,14 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
       FC_ASSERT( o.escrow_expiration > _db.head_block_time(), "The escrow expiration must be after head block time." );
 
       asset steem_spent = o.hive_amount;
-      asset sbd_spent = o.hbd_amount;
+      asset hbd_spent = o.hbd_amount;
       if( o.fee.symbol == HIVE_SYMBOL )
          steem_spent += o.fee;
       else
-         sbd_spent += o.fee;
+         hbd_spent += o.fee;
 
       _db.adjust_balance( from_account, -steem_spent );
-      _db.adjust_balance( from_account, -sbd_spent );
+      _db.adjust_balance( from_account, -hbd_spent );
 
       _db.create<escrow_object>([&]( escrow_object& esc )
       {
@@ -1030,7 +1030,7 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
          esc.agent                  = o.agent;
          esc.ratification_deadline  = o.ratification_deadline;
          esc.escrow_expiration      = o.escrow_expiration;
-         esc.sbd_balance            = o.hbd_amount;
+         esc.hbd_balance            = o.hbd_amount;
          esc.steem_balance          = o.hive_amount;
          esc.pending_fee            = o.fee;
       });
@@ -1079,7 +1079,7 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
       if( reject_escrow )
       {
          _db.adjust_balance( o.from, escrow.steem_balance );
-         _db.adjust_balance( o.from, escrow.sbd_balance );
+         _db.adjust_balance( o.from, escrow.get_hbd_balance() );
          _db.adjust_balance( o.from, escrow.pending_fee );
 
          _db.remove( escrow );
@@ -1126,7 +1126,7 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
 
       const auto& e = _db.get_escrow( o.from, o.escrow_id );
       FC_ASSERT( e.steem_balance >= o.hive_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hive_amount)("b", e.steem_balance) );
-      FC_ASSERT( e.sbd_balance >= o.hbd_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hbd_amount)("b", e.sbd_balance) );
+      FC_ASSERT( e.get_hbd_balance() >= o.hbd_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hbd_amount)("b", e.get_hbd_balance()) );
       FC_ASSERT( e.to == o.to, "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.to) );
       FC_ASSERT( e.agent == o.agent, "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.agent) );
       FC_ASSERT( o.receiver == e.from || o.receiver == e.to, "Funds must be released to 'from' (${f}) or 'to' (${t})", ("f", e.from)("t", e.to) );
@@ -1162,10 +1162,10 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
       _db.modify( e, [&]( escrow_object& esc )
       {
          esc.steem_balance -= o.hive_amount;
-         esc.sbd_balance -= o.hbd_amount;
+         esc.hbd_balance -= o.hbd_amount;
       });
 
-      if( e.steem_balance.amount == 0 && e.sbd_balance.amount == 0 )
+      if( e.steem_balance.amount == 0 && e.get_hbd_balance().amount == 0 )
       {
          _db.remove( e );
       }
@@ -2526,8 +2526,8 @@ void feed_publish_evaluator::do_apply( const feed_publish_operation& o )
    const auto& witness = _db.get_witness( o.publisher );
    _db.modify( witness, [&]( witness_object& w )
    {
-      w.sbd_exchange_rate = o.exchange_rate;
-      w.last_sbd_exchange_update = _db.head_block_time();
+      w.hbd_exchange_rate = o.exchange_rate;
+      w.last_hbd_exchange_update = _db.head_block_time();
    });
 }
 
@@ -2987,8 +2987,8 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 
    FC_ASSERT( op.reward_hive <= acnt.reward_steem_balance, "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
       ("c", op.reward_hive)("a", acnt.reward_steem_balance) );
-   FC_ASSERT( op.reward_hbd <= acnt.reward_sbd_balance, "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
-      ("c", op.reward_hbd)("a", acnt.reward_sbd_balance) );
+   FC_ASSERT( op.reward_hbd <= acnt.get_hbd_rewards(), "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
+      ("c", op.reward_hbd)("a", acnt.get_hbd_rewards()) );
    FC_ASSERT( op.reward_vests <= acnt.reward_vesting_balance, "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
       ("c", op.reward_vests)("a", acnt.reward_vesting_balance) );
 
@@ -3086,8 +3086,8 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
          {
             FC_ASSERT( is_asset_type( token, HIVE_SYMBOL ) == false || token <= a->reward_steem_balance,
                        "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}", ("c", token)("a", a->reward_steem_balance) );
-            FC_ASSERT( is_asset_type( token, HBD_SYMBOL ) == false || token <= a->reward_sbd_balance,
-                       "Cannot claim that much HBD. Claim: ${c} Actual: ${a}", ("c", token)("a", a->reward_sbd_balance) );
+            FC_ASSERT( is_asset_type( token, HBD_SYMBOL ) == false || token <= a->get_hbd_rewards(),
+                       "Cannot claim that much HBD. Claim: ${c} Actual: ${a}", ("c", token)("a", a->get_hbd_rewards()) );
             _db.adjust_reward_balance( *a, -token );
             _db.adjust_balance( *a, token );
          }

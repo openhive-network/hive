@@ -53,8 +53,8 @@ Some possible sources of inaccuracy, the direction and estimated relative sizes 
 
 - Missed blocks not modeled (lowers STEEM supply, small)
 - Miner queue length very approximately modeled (assumed to go to 100 during the first blocks and then stay there) (may lower or raise STEEM supply, very small)
-- Creation / destruction of STEEM used to back SBD not modeled (moves STEEM supply in direction opposite to changes in dollar value of 1 STEEM, large)
-- Interest paid to SBD not modeled (raises STEEM supply, medium)
+- Creation / destruction of STEEM used to back HBD not modeled (moves STEEM supply in direction opposite to changes in dollar value of 1 STEEM, large)
+- Interest paid to HBD not modeled (raises STEEM supply, medium)
 - Lost / forgotten private keys / wallets and deliberate burning of STEEM not modeled (lowers STEEM supply, unknown but likely small)
 - Possible bugs or mismatches with implementation (unknown)
 

@@ -77,8 +77,8 @@ struct bucket_object : public object< bucket_object_type, bucket_object >
    uint32_t             transactions = 0;                            ///< Transactions processed
    uint32_t             transfers = 0;                               ///< Account to account transfers
    share_type           steem_transferred = 0;                       ///< STEEM transferred from account to account
-   share_type           sbd_transferred = 0;                         ///< SBD transferred from account to account
-   share_type           sbd_paid_as_interest = 0;                    ///< SBD paid as interest
+   share_type           hbd_transferred = 0;                         ///< HBD transferred from account to account
+   share_type           hbd_paid_as_interest = 0;                    ///< HBD paid as interest
    uint32_t             paid_accounts_created = 0;                   ///< Accounts created with fee
    uint32_t             mined_accounts_created = 0;                  ///< Accounts mined for free
    uint32_t             root_comments = 0;                           ///< Top level root comments
@@ -92,7 +92,7 @@ struct bucket_object : public object< bucket_object_type, bucket_object >
    uint32_t             new_reply_votes = 0;                         ///< New votes on replies
    uint32_t             changed_reply_votes = 0;                     ///< Changed votes on replies
    uint32_t             payouts = 0;                                 ///< Number of comment payouts
-   share_type           sbd_paid_to_authors = 0;                     ///< Ammount of SBD paid to authors
+   share_type           hbd_paid_to_authors = 0;                     ///< Ammount of HBD paid to authors
    share_type           vests_paid_to_authors = 0;                   ///< Ammount of VESS paid to authors
    share_type           vests_paid_to_curators = 0;                  ///< Ammount of VESTS paid to curators
    share_type           liquidity_rewards_paid = 0;                  ///< Ammount of STEEM paid to market makers
@@ -105,9 +105,9 @@ struct bucket_object : public object< bucket_object_type, bucket_object >
    uint32_t             finished_vesting_withdrawals = 0;            ///< Processed vesting withdrawals that are now finished
    share_type           vests_withdrawn = 0;                         ///< Ammount of VESTS withdrawn to STEEM
    share_type           vests_transferred = 0;                       ///< Ammount of VESTS transferred to another account
-   uint32_t             sbd_conversion_requests_created = 0;         ///< SBD conversion requests created
-   share_type           sbd_to_be_converted = 0;                     ///< Amount of SBD to be converted
-   uint32_t             sbd_conversion_requests_filled = 0;          ///< SBD conversion requests filled
+   uint32_t             hbd_conversion_requests_created = 0;         ///< HBD conversion requests created
+   share_type           hbd_to_be_converted = 0;                     ///< Amount of HBD to be converted
+   uint32_t             hbd_conversion_requests_filled = 0;          ///< HBD conversion requests filled
    share_type           steem_converted = 0;                         ///< Amount of STEEM that was converted
    uint32_t             limit_orders_created = 0;                    ///< Limit orders created
    uint32_t             limit_orders_filled = 0;                     ///< Limit orders filled
@@ -146,8 +146,8 @@ FC_REFLECT( hive::blockchain_statistics::bucket_object,
    (transactions)
    (transfers)
    (steem_transferred)
-   (sbd_transferred)
-   (sbd_paid_as_interest)
+   (hbd_transferred)
+   (hbd_paid_as_interest)
    (paid_accounts_created)
    (mined_accounts_created)
    (root_comments)
@@ -161,7 +161,7 @@ FC_REFLECT( hive::blockchain_statistics::bucket_object,
    (new_reply_votes)
    (changed_reply_votes)
    (payouts)
-   (sbd_paid_to_authors)
+   (hbd_paid_to_authors)
    (vests_paid_to_authors)
    (vests_paid_to_curators)
    (liquidity_rewards_paid)
@@ -174,9 +174,9 @@ FC_REFLECT( hive::blockchain_statistics::bucket_object,
    (finished_vesting_withdrawals)
    (vests_withdrawn)
    (vests_transferred)
-   (sbd_conversion_requests_created)
-   (sbd_to_be_converted)
-   (sbd_conversion_requests_filled)
+   (hbd_conversion_requests_created)
+   (hbd_to_be_converted)
+   (hbd_conversion_requests_filled)
    (steem_converted)
    (limit_orders_created)
    (limit_orders_filled)
