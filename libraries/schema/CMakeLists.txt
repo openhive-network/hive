@@ -1,4 +1,4 @@
-file(GLOB HEADERS "include/steem/schema/*.hpp")
+file(GLOB HEADERS "include/hive/schema/*.hpp")
 add_library( hive_schema schema.cpp ${HEADERS} )
 target_link_libraries( hive_schema fc )
 target_include_directories( hive_schema PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
@@ -10,4 +10,4 @@ install( TARGETS
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
-install( FILES ${HEADERS} DESTINATION "include/steem/schema" )
+install( FILES ${HEADERS} DESTINATION "include/hive/schema" )

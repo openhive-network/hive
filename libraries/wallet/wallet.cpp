@@ -852,7 +852,7 @@ public:
                ss
                   << ' ' << setw( spacing ) << legacy_asset::from_asset( bid_sum ).to_string()
                   << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.bids[i].hbd, HBD_SYMBOL ) ).to_string()
-                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.bids[i].steem, HIVE_SYMBOL ) ).to_string()
+                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.bids[i].hive, HIVE_SYMBOL ) ).to_string()
                   << ' ' << setw( spacing ) << orders.bids[i].real_price;
             }
             else
@@ -866,7 +866,7 @@ public:
             {
                ask_sum += asset( orders.asks[i].hbd, HBD_SYMBOL );
                ss << ' ' << setw( spacing ) << orders.asks[i].real_price
-                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.asks[i].steem, HIVE_SYMBOL ) ).to_string()
+                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.asks[i].hive, HIVE_SYMBOL ) ).to_string()
                   << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.asks[i].hbd, HBD_SYMBOL ) ).to_string()
                   << ' ' << setw( spacing ) << legacy_asset::from_asset( ask_sum ).to_string();
             }

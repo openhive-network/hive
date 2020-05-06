@@ -33,7 +33,7 @@ OBJECTS=( "account_authority"                \
           "witness_vote" )
 
 
-DATA_DIR="$HOME/.steemd"
+DATA_DIR="$HOME/.hived"
 HIVED_DIR="../.."
 STATS_DUMP_PERIOD=600
 
@@ -45,7 +45,7 @@ while (( "$#" )); do
          DATA_DIR=$2
          shift 2
          ;;
-      -s|--steemd-dir)
+      -s|--hived-dir)
          HIVED_DIR=$2
          shift 2
          ;;
@@ -54,14 +54,14 @@ while (( "$#" )); do
          shift 2
          ;;
       -h|--help)
-         echo "Specify data directory with '--data-dir' (Default is ~/.steemd)"
-         echo "Specify steemd directory with '--steemd-dir' (Default is ../..)"
+         echo "Specify data directory with '--data-dir' (Default is ~/.hived)"
+         echo "Specify hived directory with '--hived-dir' (Default is ../..)"
          echo "Specify stats dump period with '--stats-dump-period' (Default is 600)"
          exit 1
          ;;
       *)
-         echo "Specify data directory with '--data-dir' (Default is ~/.steemd)"
-         echo "Specify steemd directory with '--steemd-dir' (Default is ../..)"
+         echo "Specify data directory with '--data-dir' (Default is ~/.hived)"
+         echo "Specify hived directory with '--hived-dir' (Default is ../..)"
          echo "Specify stats dump period with '--stats-dump-period' (Default is 600)"
          exit 1
          ;;

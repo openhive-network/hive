@@ -42,7 +42,7 @@ struct order
 {
    price          order_price;
    double         real_price;
-   share_type     steem;
+   share_type     hive;
    share_type     hbd;
    time_point_sec created;
 };
@@ -136,7 +136,7 @@ FC_REFLECT( hive::plugins::market_history::get_volume_return,
             (steem_volume)(hbd_volume) )
 
 FC_REFLECT( hive::plugins::market_history::order,
-            (order_price)(real_price)(steem)(hbd)(created) )
+            (order_price)(real_price)(hive)(hbd)(created) )
 
 FC_REFLECT( hive::plugins::market_history::get_order_book_args,
             (limit) )

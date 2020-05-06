@@ -1,14 +1,14 @@
 #!/bin/bash
 
-HIVED="/usr/local/steemd-default/bin/steemd"
+HIVED="/usr/local/hived-default/bin/hived"
 
-VERSION=`cat /etc/steemdversion`
+VERSION=`cat /etc/hivedversion`
 
 if [[ "$USE_WAY_TOO_MUCH_RAM" ]]; then
-    HIVED="/usr/local/steemd-full/bin/steemd"
+    HIVED="/usr/local/hived-full/bin/hived"
 fi
 
-chown -R steemd:steemd $HOME
+chown -R hived:hived $HOME
 
 ARGS=""
 
@@ -47,27 +47,27 @@ ARGS+=" --follow-start-feeds=$HIVED_FEED_START_TIME"
 
 # overwrite local config with image one
 if [[ "$USE_FULL_WEB_NODE" ]]; then
-  cp /etc/steemd/fullnode.config.ini $HOME/config.ini
+  cp /etc/hived/fullnode.config.ini $HOME/config.ini
 elif [[ "$IS_BROADCAST_NODE" ]]; then
-  cp /etc/steemd/config-for-broadcaster.ini $HOME/config.ini
+  cp /etc/hived/config-for-broadcaster.ini $HOME/config.ini
 elif [[ "$IS_AH_NODE" ]]; then
-  cp /etc/steemd/config-for-ahnode.ini $HOME/config.ini
+  cp /etc/hived/config-for-ahnode.ini $HOME/config.ini
 elif [[ "$IS_OPSWHITELIST_NODE" ]]; then
-  cp /etc/steemd/fullnode.opswhitelist.config.ini $HOME/config.ini
+  cp /etc/hived/fullnode.opswhitelist.config.ini $HOME/config.ini
 else
-  cp /etc/steemd/config.ini $HOME/config.ini
+  cp /etc/hived/config.ini $HOME/config.ini
 fi
 
-chown steemd:steemd $HOME/config.ini
+chown hived:hived $HOME/config.ini
 
 if [[ ! -d $HOME/blockchain ]]; then
-    if [[ -e /var/cache/steemd/blocks.tbz2 ]]; then
+    if [[ -e /var/cache/hived/blocks.tbz2 ]]; then
         # init with blockchain cached in image
         ARGS+=" --replay-blockchain"
         mkdir -p $HOME/blockchain/database
         cd $HOME/blockchain/database
-        tar xvjpf /var/cache/steemd/blocks.tbz2
-        chown -R steemd:steemd $HOME/blockchain
+        tar xvjpf /var/cache/hived/blocks.tbz2
+        chown -R hived:hived $HOME/blockchain
     fi
 else
    ARGS+=" --tags-skip-startup-update"
@@ -78,7 +78,7 @@ fi
 cd $HOME
 
 if [[ "$USE_PUBLIC_SHARED_MEMORY" ]]; then
-  echo steemd: Downloading and uncompressing blockchain-$VERSION-latest.tar.lz4 - this may take awhile.
+  echo hived: Downloading and uncompressing blockchain-$VERSION-latest.tar.lz4 - this may take awhile.
   wget -qO- https://s3.amazonaws.com/steemit-dev-blockchainstate/blockchain-$VERSION-latest.tar.lz4 | lz4 -d | tar x
 fi
 
@@ -87,7 +87,7 @@ if [[ "$USE_PUBLIC_BLOCKLOG" ]]; then
     if [[ ! -d $HOME/blockchain ]]; then
       mkdir -p $HOME/blockchain
     fi
-    echo "steemd: Downloading a block_log and replaying the blockchain"
+    echo "hived: Downloading a block_log and replaying the blockchain"
     echo "This may take a little while..."
     wget -O $HOME/blockchain/block_log https://s3.amazonaws.com/steemit-dev-blockchainstate/block_log-latest
     ARGS+=" --replay-blockchain"
@@ -98,7 +98,7 @@ fi
 sleep 1
 
 mv /etc/nginx/nginx.conf /etc/nginx/nginx.original.conf
-cp /etc/nginx/steemd.nginx.conf /etc/nginx/nginx.conf
+cp /etc/nginx/hived.nginx.conf /etc/nginx/nginx.conf
 
 if [[ "$USE_NGINX_FRONTEND" ]]; then
     cp /etc/nginx/healthcheck.conf.template /etc/nginx/healthcheck.conf
@@ -108,7 +108,7 @@ if [[ "$USE_NGINX_FRONTEND" ]]; then
     cp /etc/nginx/healthcheck.conf /etc/nginx/sites-enabled/default
     /etc/init.d/fcgiwrap restart
     service nginx restart
-    exec chpst -usteemd \
+    exec chpst -uhived \
         $HIVED \
             --webserver-ws-endpoint=0.0.0.0:8091 \
             --webserver-http-endpoint=0.0.0.0:8091 \
@@ -118,7 +118,7 @@ if [[ "$USE_NGINX_FRONTEND" ]]; then
             $HIVED_EXTRA_OPTS \
             2>&1
 else
-    exec chpst -usteemd \
+    exec chpst -uhived \
         $HIVED \
             --webserver-ws-endpoint=0.0.0.0:8090 \
             --webserver-http-endpoint=0.0.0.0:8090 \

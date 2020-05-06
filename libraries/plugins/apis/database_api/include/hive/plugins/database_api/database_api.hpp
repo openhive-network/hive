@@ -141,7 +141,7 @@ class database_api
 
          /*
           * This is a general purpose API that checks signatures against accounts for an arbitrary sha256 hash
-          * using the existing authority structures in Steem
+          * using the existing authority structures in Hive
           */
          (verify_signatures)
 

@@ -7,7 +7,7 @@ ADD_API_TEST(bridge account_notifications steemmeupscotty 1)
 ADD_API_TEST(bridge get_community hive-123456 alice)
 
 ## get_ranked_posts
-ADD_API_TEST(bridge get_ranked_posts trending steem alice)
+ADD_API_TEST(bridge get_ranked_posts trending hive alice)
 
 ## list_all_subscriptions
 ADD_API_TEST(bridge list_all_subscriptions alice)

@@ -1241,8 +1241,8 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
    }
 
 
-   FC_ASSERT( account.vesting_shares >= asset( 0, VESTS_SYMBOL ), "Account does not have sufficient Steem Power for withdraw." );
-   FC_ASSERT( static_cast<asset>(account.vesting_shares) - account.delegated_vesting_shares >= o.vesting_shares, "Account does not have sufficient Steem Power for withdraw." );
+   FC_ASSERT( account.vesting_shares >= asset( 0, VESTS_SYMBOL ), "Account does not have sufficient Hive Power for withdraw." );
+   FC_ASSERT( static_cast<asset>(account.vesting_shares) - account.delegated_vesting_shares >= o.vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
 
    FC_TODO( "Remove this entire block after HF 20" )
    if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1860 ) && !account.mined && _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
@@ -1254,7 +1254,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
       min_vests.amount.value *= 10;
 
       FC_ASSERT( account.vesting_shares > min_vests || ( _db.has_hardfork( HIVE_HARDFORK_0_16__562 ) && o.vesting_shares.amount == 0 ),
-                 "Account registered by another account requires 10x account creation fee worth of Steem Power before it can be powered down." );
+                 "Account registered by another account requires 10x account creation fee worth of Hive Power before it can be powered down." );
    }
 
    if( o.vesting_shares.amount == 0 )
@@ -1555,11 +1555,11 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
    }
    else if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) )
    {
-      FC_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || o.weight == 0, "Voting weight is too small, please accumulate more voting power or steem power." );
+      FC_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || o.weight == 0, "Voting weight is too small, please accumulate more voting power or Hive Power." );
    }
    else if( _db.has_hardfork( HIVE_HARDFORK_0_13__248 ) )
    {
-      FC_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || abs_rshares == 1, "Voting weight is too small, please accumulate more voting power or steem power." );
+      FC_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || abs_rshares == 1, "Voting weight is too small, please accumulate more voting power or Hive Power." );
    }
 
 
@@ -3237,7 +3237,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
    {
       auto delta = op.vesting_shares - delegation->vesting_shares;
 
-      FC_ASSERT( delta >= min_update, "Steem Power increase is not enough of a difference. min_update: ${min}", ("min", min_update) );
+      FC_ASSERT( delta >= min_update, "Hive Power increase is not enough of a difference. min_update: ${min}", ("min", min_update) );
       FC_ASSERT( available_shares >= delta, "Account ${acc} does not have enough mana to delegate. required: ${r} available: ${a}",
          ("acc", op.delegator)("r", delta)("a", available_shares) );
       FC_TODO( "This hardfork check should not be needed. Remove after HF21 if that is the case." );
@@ -3286,7 +3286,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 
       if( op.vesting_shares.amount > 0 )
       {
-         FC_ASSERT( delta >= min_update, "Steem Power decrease is not enough of a difference. min_update: ${min}", ("min", min_update) );
+         FC_ASSERT( delta >= min_update, "Hive Power decrease is not enough of a difference. min_update: ${min}", ("min", min_update) );
          FC_ASSERT( op.vesting_shares >= min_delegation, "Delegation must be removed or leave minimum delegation amount of ${v}", ("v", min_delegation) );
       }
       else

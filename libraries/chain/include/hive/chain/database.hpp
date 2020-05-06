@@ -369,12 +369,12 @@ namespace hive { namespace chain {
          uint32_t get_slot_at_time(fc::time_point_sec when)const;
 
          /** @return the HBD created and deposited to_account, may return HIVE if there is no median feed */
-         std::pair< asset, asset > create_hbd( const account_object& to_account, asset steem, bool to_reward_balance=false );
+         std::pair< asset, asset > create_hbd( const account_object& to_account, asset hive, bool to_reward_balance=false );
 
          using Before = std::function< void( const asset& ) >;
          asset adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
 
-         asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false );
+         asset create_vesting( const account_object& to_account, asset hive, bool to_reward_balance=false );
 
          void adjust_total_payout( const comment_object& a, const asset& hbd, const asset& curator_hbd_value, const asset& beneficiary_value );
 
@@ -442,7 +442,7 @@ namespace hive { namespace chain {
           * Helper method to return the current HBD value of a given amount of
           * HIVE.  Return 0 HBD if there isn't a current_median_history
           */
-         asset to_hbd( const asset& steem )const;
+         asset to_hbd( const asset& hive )const;
          asset to_steem( const asset& hbd )const;
 
          time_point_sec   head_block_time()const;

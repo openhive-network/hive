@@ -20,7 +20,7 @@ namespace hive { namespace chain {
    typedef protocol::fixed_string< 16 > reward_fund_name_type;
 
    /**
-    *  This object is used to track pending requests to convert HBD to steem
+    *  This object is used to track pending requests to convert HBD to HIVE
     */
    class convert_request_object : public object< convert_request_object_type, convert_request_object >
    {

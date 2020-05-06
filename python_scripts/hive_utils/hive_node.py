@@ -139,7 +139,7 @@ class HiveNodeInScreen(object):
 
   def run_hive_node(self, additional_params = [], wait_for_blocks = True):
     from .common import detect_process_by_name, save_screen_cfg, save_pid_file, wait_n_blocks, wait_for_string_in_file, kill_process
-    detect_process_by_name("steem", self.ip_address, self.port)
+    detect_process_by_name("hive", self.ip_address, self.port)
 
     logger.info("*** START NODE at {0}:{1} in {2}".format(self.ip_address, self.port, self.working_dir))
 
@@ -156,7 +156,7 @@ class HiveNodeInScreen(object):
     
     self.pid_file_name = "{0}/run_steem-{1}.pid".format(self.working_dir, self.port)
     current_time_str = datetime.datetime.now().strftime("%Y-%m-%d")
-    log_file_name = "{0}/{1}-{2}-{3}.log".format(self.working_dir, "steem", self.port, current_time_str)
+    log_file_name = "{0}/{1}-{2}-{3}.log".format(self.working_dir, "hive", self.port, current_time_str)
     screen_cfg_name = "{0}/steem_screen-{1}.cfg".format(self.working_dir, self.port)
 
     save_screen_cfg(screen_cfg_name, log_file_name)
@@ -168,15 +168,15 @@ class HiveNodeInScreen(object):
       "-c",
       screen_cfg_name,
       "-S",
-      "{0}-{1}-{2}".format("steem", self.port, current_time_str)
+      "{0}-{1}-{2}".format("hive", self.port, current_time_str)
     ]
 
     parameters = screen_params + parameters
-    logger.info("Running steemd with command: {0}".format(" ".join(parameters)))
+    logger.info("Running hived with command: {0}".format(" ".join(parameters)))
       
     try:
       subprocess.Popen(parameters)
-      save_pid_file(self.pid_file_name, "steem", self.port, current_time_str)
+      save_pid_file(self.pid_file_name, "hive", self.port, current_time_str)
       if "--replay-blockchain" in parameters:
         wait_for_string_in_file(log_file_name, "start listening for ws requests", None)
       else:
@@ -187,15 +187,15 @@ class HiveNodeInScreen(object):
       self.node_running = True
       logger.info("Node at {0}:{1} in {2} is up and running...".format(self.ip_address, self.port, self.working_dir))
     except Exception as ex:
-      logger.error("Exception during steemd run: {0}".format(ex))
-      kill_process(self.pid_file_name, "steem", self.ip_address, self.port)
+      logger.error("Exception during hived run: {0}".format(ex))
+      kill_process(self.pid_file_name, "hive", self.ip_address, self.port)
       self.node_running = False
 
 
   def stop_hive_node(self):
     from .common import kill_process
     logger.info("Stopping node at {0}:{1}".format(self.ip_address, self.port))
-    kill_process(self.pid_file_name, "steem", self.ip_address, self.port)
+    kill_process(self.pid_file_name, "hive", self.ip_address, self.port)
     self.node_running = False
 
   def __enter__(self):
@@ -233,7 +233,7 @@ if __name__ == "__main__":
         + "private-key = 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n\n" \
         + "required-participation = 0"
 
-      binary_path = "/home/dariusz-work/Builds/hive/programs/steemd/steemd"
+      binary_path = "/home/dariusz-work/Builds/hive/programs/hived/hived"
       work_dir = "/home/dariusz-work/hive-data"
 
       print(config)

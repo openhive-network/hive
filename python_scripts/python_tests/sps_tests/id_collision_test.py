@@ -104,7 +104,7 @@ if __name__ == "__main__":
     parser.add_argument("creator", help = "Account to create test accounts with")
     parser.add_argument("receiver", help = "Account to receive payment for proposal")
     parser.add_argument("wif", help="Private key for creator account")
-    parser.add_argument("nodes_url", type=str, nargs="+", help="Url of working steem node")
+    parser.add_argument("nodes_url", type=str, nargs="+", help="Url of working hive node")
     parser.add_argument("--delays", dest="delays", type=float, nargs="+", help="Delays for each worker/node (default 0)")
     parser.add_argument("--proposal-count", dest="proposal_count", type=int, default=1, help="Number of proposals each worker will create.")
 

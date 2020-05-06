@@ -877,7 +877,7 @@ class wallet_api
        * you can fill in.  It's better than nothing.
        *
        * @param operation_type the type of operation to return, must be one of the
-       *                       operations defined in `steem/chain/operations.hpp`
+       *                       operations defined in `hive/chain/operations.hpp`
        *                       (e.g., "global_parameters_update_operation")
        * @return a default-constructed operation of the given type
        */

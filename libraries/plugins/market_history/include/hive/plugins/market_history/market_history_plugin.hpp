@@ -96,17 +96,17 @@ struct bucket_object : public object< bucket_object_type, bucket_object >
    fc::time_point_sec   open;
    uint32_t             seconds = 0;
 
-   bucket_object_details steem;
-   bucket_object_details non_steem;
+   bucket_object_details hive;
+   bucket_object_details non_hive;
 
 #ifdef HIVE_ENABLE_SMT
    asset_symbol_type symbol = HBD_SYMBOL;
 
-   price high()const { return asset( non_steem.high, symbol ) / asset( steem.high, HIVE_SYMBOL ); }
-   price low()const { return asset( non_steem.low, symbol ) / asset( steem.low, HIVE_SYMBOL ); }
+   price high()const { return asset( non_hive.high, symbol ) / asset( hive.high, HIVE_SYMBOL ); }
+   price low()const { return asset( non_hive.low, symbol ) / asset( hive.low, HIVE_SYMBOL ); }
 #else
-   price high()const { return asset( non_steem.high, HBD_SYMBOL ) / asset( steem.high, HIVE_SYMBOL ); }
-   price low()const { return asset( non_steem.low, HBD_SYMBOL ) / asset( steem.low, HIVE_SYMBOL ); }
+   price high()const { return asset( non_hive.high, HBD_SYMBOL ) / asset( hive.high, HIVE_SYMBOL ); }
+   price low()const { return asset( non_hive.low, HBD_SYMBOL ) / asset( hive.low, HIVE_SYMBOL ); }
 #endif
 };
 
@@ -175,11 +175,11 @@ FC_REFLECT( hive::plugins::market_history::bucket_object_details,
 FC_REFLECT( hive::plugins::market_history::bucket_object,
                      (id)
                      (open)(seconds)
-                     (steem)
+                     (hive)
 #ifdef HIVE_ENABLE_SMT
                      (symbol)
 #endif
-                     (non_steem)
+                     (non_hive)
          )
 
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::market_history::bucket_object, hive::plugins::market_history::bucket_index )

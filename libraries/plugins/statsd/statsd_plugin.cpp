@@ -68,7 +68,7 @@ namespace detail
          port = _statsd_endpoint->port();
       }
 
-      _statsd.reset( new StatsdClient( host, port, "steemd.", _statsd_batchsize ) );
+      _statsd.reset( new StatsdClient( host, port, "hived.", _statsd_batchsize ) );
       _started = true;
    }
 

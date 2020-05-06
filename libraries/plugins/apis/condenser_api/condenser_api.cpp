@@ -887,7 +887,7 @@ namespace detail
 
    DEFINE_API_IMPL( condenser_api_impl, get_account_references )
    {
-      FC_ASSERT( false, "condenser_api::get_account_references --- Needs to be refactored for Steem." );
+      FC_ASSERT( false, "condenser_api::get_account_references --- Needs to be refactored for Hive." );
    }
 
    DEFINE_API_IMPL( condenser_api_impl, lookup_account_names )

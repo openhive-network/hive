@@ -6,10 +6,10 @@ popd () { command popd "$@" > /dev/null; }
 
 if [ $# -lt 5 -o $# -gt 6 ]
 then
-   echo "Usage: path_to_tested_steemd path_to_reference_steemd"
+   echo "Usage: path_to_tested_hived path_to_reference_hived"
    echo "       path_to_test_blockchain_directory path_to_reference_blockchain_directory"
    echo "       number_of_blocks_to_replay [--dont-copy-config]"
-   echo "Example: ~/work/steemit/steem/build/programs/steemd/steemd ~/master/steemit/steem/build/programs/steemd/steemd ~/steemit/steem/work1 ~/steemit/steem/work2 2000000"
+   echo "Example: ~/work/steemit/hive/build/programs/hived/hived ~/master/steemit/hive/build/programs/hived/hived ~/steemit/hive/work1 ~/steemit/hive/work2 2000000"
    echo "Note: Run this script from test group directory."
    exit -1
 fi
@@ -51,7 +51,7 @@ function cleanup {
         sleep 0.1 && kill -s SIGINT $REPLAY_PID1 &
      fi
      wait -n $REPLAY_PID1
-     [ $ARG -ne 0 -a $? -ne 0 ] && echo "FATAL: tested steemd failed to replay $BLOCK_LIMIT blocks." && EXIT_CODE=-1
+     [ $ARG -ne 0 -a $? -ne 0 ] && echo "FATAL: tested hived failed to replay $BLOCK_LIMIT blocks." && EXIT_CODE=-1
    fi
    if [ $REPLAY_PID2 ]
    then
@@ -59,7 +59,7 @@ function cleanup {
         sleep 0.1 && kill -s SIGINT $REPLAY_PID2 &
      fi
      wait -n $REPLAY_PID2
-     [ $ARG -ne 0 -a $? -ne 0 ] && echo "FATAL: reference steemd failed to replay $BLOCK_LIMIT blocks." && EXIT_CODE=-1
+     [ $ARG -ne 0 -a $? -ne 0 ] && echo "FATAL: reference hived failed to replay $BLOCK_LIMIT blocks." && EXIT_CODE=-1
    fi
 
    if [ $ARG -ne 0 ]

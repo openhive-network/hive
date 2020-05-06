@@ -104,8 +104,8 @@ def list_proposals_test(node_client, creator):
     id_first = proposals[0]['id']
     id_last  = proposals[-1]['id']
 
-    logger.warning("descending order is broken in steem!!!!")
-    logger.warning("last_id is not implemented in steem!!!!")
+    logger.warning("descending order is broken in hive!!!!")
+    logger.warning("last_id is not implemented in hive!!!!")
     logger.info("Testing direction descending with start field given")
     #proposals = node_client.rpc.list_proposals([creator], 1000, "by_creator", "descending", "all")
     # we should get len(START_END_SUBJECTS) proposals with first proposal with subject Subject009
@@ -177,10 +177,10 @@ if __name__ == '__main__':
     parser.add_argument("creator", help = "Account to create test accounts with")
     parser.add_argument("receiver", help = "Account to receive payment")
     parser.add_argument("wif", help="Private key for creator account")
-    parser.add_argument("--node-url", dest="node_url", default="http://127.0.0.1:8090", help="Url of working steem node")
-    parser.add_argument("--run-steemd", dest="steemd_path", help = "Path to steemd executable. Warning: using this option will erase contents of selected steemd working directory.")
-    parser.add_argument("--working_dir", dest="steemd_working_dir", default="/tmp/steemd-data/", help = "Path to steemd working directory")
-    parser.add_argument("--config_path", dest="steemd_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
+    parser.add_argument("--node-url", dest="node_url", default="http://127.0.0.1:8090", help="Url of working hive node")
+    parser.add_argument("--run-hived", dest="hived_path", help = "Path to hived executable. Warning: using this option will erase contents of selected hived working directory.")
+    parser.add_argument("--working_dir", dest="hived_working_dir", default="/tmp/hived-data/", help = "Path to hived working directory")
+    parser.add_argument("--config_path", dest="hived_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
     parser.add_argument("--no-erase-proposal", action='store_false', dest = "no_erase_proposal", help = "Do not erase proposal created with this test")
 
 
@@ -188,16 +188,16 @@ if __name__ == '__main__':
 
     node = None
 
-    if args.steemd_path:
-        logger.info("Running steemd via {} in {} with config {}".format(args.steemd_path, 
-            args.steemd_working_dir, 
-            args.steemd_config_path)
+    if args.hived_path:
+        logger.info("Running hived via {} in {} with config {}".format(args.hived_path, 
+            args.hived_working_dir, 
+            args.hived_config_path)
         )
         
         node = hive_utils.hive_node.HiveNodeInScreen(
-            args.steemd_path, 
-            args.steemd_working_dir, 
-            args.steemd_config_path
+            args.hived_path, 
+            args.hived_working_dir, 
+            args.hived_config_path
         )
     
     node_url = args.node_url

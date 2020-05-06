@@ -8,8 +8,8 @@ Tests are broken in several categories:
 basic_tests          // Tests of "basic" functionality
 block_tests          // Tests of the block chain
 live_tests           // Tests on live chain data (currently only past hardfork testing)
-operation_tests      // Unit Tests of Steem operations
-operation_time_tests // Tests of Steem operations that include a time based component (ex. vesting withdrawals)
+operation_tests      // Unit Tests of Hive operations
+operation_time_tests // Tests of Hive operations that include a time based component (ex. vesting withdrawals)
 serialization_tests  // Tests related of serialization
 ```
 

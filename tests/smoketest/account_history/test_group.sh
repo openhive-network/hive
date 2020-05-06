@@ -5,8 +5,8 @@ pushd () { command pushd "$@" > /dev/null; }
 popd () { command popd "$@" > /dev/null; }
 
 function print_help_and_quit {
-   echo Usage: jobs test_steemd_path ref_steemd_path test_work_path ref_work_path block_limit [--dont-copy-config]
-   echo Example: 16 ~/steemit/1/steemd ~/steemit/2/steemd ~/steemit/1/wdir ~/steemit/2/wdir 5000000
+   echo Usage: jobs test_hived_path ref_hived_path test_work_path ref_work_path block_limit [--dont-copy-config]
+   echo Example: 16 ~/steemit/1/hived ~/steemit/2/hived ~/steemit/1/wdir ~/steemit/2/wdir 5000000
    exit -1
 }
 

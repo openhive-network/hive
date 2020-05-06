@@ -47,16 +47,16 @@ ADD_API_TEST(database_api find_hbd_conversion_requests steemit)
 #ADD_API_TEST(database_api find_smt_tokens false)
 
 ## find_vesting_delegation_expirations 
-ADD_API_TEST(database_api find_vesting_delegation_expirations steem)
+ADD_API_TEST(database_api find_vesting_delegation_expirations hive)
 
 ## find_vesting_delegations 
-ADD_API_TEST(database_api find_vesting_delegations steem)
+ADD_API_TEST(database_api find_vesting_delegations hive)
 
 ## find_votes 
 ADD_API_TEST(database_api find_votes steemit firstpost)
 
 ## find_withdraw_vesting_routes 
-ADD_API_TEST(database_api find_withdraw_vesting_routes steem by_destination)
+ADD_API_TEST(database_api find_withdraw_vesting_routes hive by_destination)
 
 ## find_witnesses
 ADD_API_TEST(database_api find_witnesses blocktrades)

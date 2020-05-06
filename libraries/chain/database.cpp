@@ -1200,13 +1200,13 @@ uint32_t database::get_slot_at_time(fc::time_point_sec when)const
  *  Converts HIVE into HBD and adds it to to_account while reducing the HIVE supply
  *  by HIVE and increasing the HBD supply by the specified amount.
  */
-std::pair< asset, asset > database::create_hbd( const account_object& to_account, asset steem, bool to_reward_balance )
+std::pair< asset, asset > database::create_hbd( const account_object& to_account, asset hive, bool to_reward_balance )
 {
    std::pair< asset, asset > assets( asset( 0, HBD_SYMBOL ), asset( 0, HIVE_SYMBOL ) );
 
    try
    {
-      if( steem.amount == 0 )
+      if( hive.amount == 0 )
          return assets;
 
       const auto& median_price = get_feed_history().current_median_history;
@@ -1214,34 +1214,34 @@ std::pair< asset, asset > database::create_hbd( const account_object& to_account
 
       if( !median_price.is_null() )
       {
-         auto to_hbd = ( gpo.hbd_print_rate * steem.amount ) / HIVE_100_PERCENT;
-         auto to_steem = steem.amount - to_hbd;
+         auto to_hbd = ( gpo.hbd_print_rate * hive.amount ) / HIVE_100_PERCENT;
+         auto to_hive = hive.amount - to_hbd;
 
          auto hbd = asset( to_hbd, HIVE_SYMBOL ) * median_price;
 
          if( to_reward_balance )
          {
             adjust_reward_balance( to_account, hbd );
-            adjust_reward_balance( to_account, asset( to_steem, HIVE_SYMBOL ) );
+            adjust_reward_balance( to_account, asset( to_hive, HIVE_SYMBOL ) );
          }
          else
          {
             adjust_balance( to_account, hbd );
-            adjust_balance( to_account, asset( to_steem, HIVE_SYMBOL ) );
+            adjust_balance( to_account, asset( to_hive, HIVE_SYMBOL ) );
          }
 
          adjust_supply( asset( -to_hbd, HIVE_SYMBOL ) );
          adjust_supply( hbd );
          assets.first = hbd;
-         assets.second = asset( to_steem, HIVE_SYMBOL );
+         assets.second = asset( to_hive, HIVE_SYMBOL );
       }
       else
       {
-         adjust_balance( to_account, steem );
-         assets.second = steem;
+         adjust_balance( to_account, hive );
+         assets.second = hive;
       }
    }
-   FC_CAPTURE_LOG_AND_RETHROW( (to_account.name)(steem) )
+   FC_CAPTURE_LOG_AND_RETHROW( (to_account.name)(hive) )
 
    return assets;
 }
@@ -1823,7 +1823,7 @@ void database::restore_accounts( const hf23_helper::hf23_items& balances, const 
       operation vop = hardfork_hive_restore_operation( name, treasury_name, found->hbd_balance, found->balance );
       push_virtual_operation( vop );
 
-      ilog( "Balances ${hbd} and ${steem} for the account ${acc} were restored", ( "hbd", found->hbd_balance )( "steem", found->balance )( "acc", name ) );
+      ilog( "Balances ${hbd} and ${hive} for the account ${acc} were restored", ( "hbd", found->hbd_balance )( "hive", found->balance )( "acc", name ) );
    }
 }
 
@@ -2225,7 +2225,7 @@ void database::process_vesting_withdrawals()
          }
       };
 
-      // Do two passes, the first for vests, the second for steem. Try to maintain as much accuracy for vests as possible.
+      // Do two passes, the first for VESTS, the second for HIVE. Try to maintain as much accuracy for VESTS as possible.
       process_routing( true/*auto_vest_mode*/ );
       process_routing( false/*auto_vest_mode*/ );
 
@@ -2675,7 +2675,7 @@ void database::process_comment_cashout()
 }
 
 /**
- *  Overall the network has an inflation rate of 102% of virtual steem per year
+ *  Overall the network has an inflation rate of 102% of virtual hive per year
  *  90% of inflation is directed to vesting shares
  *  10% of inflation is directed to subjective proof of work voting
  *  1% of inflation is directed to liquidity providers
@@ -2967,7 +2967,7 @@ share_type database::pay_reward_funds( share_type reward )
 
 /**
  *  Iterates over all conversion requests with a conversion date before
- *  the head block time and then converts them to/from steem/HBD at the
+ *  the head block time and then converts them to/from HIVE/HBD at the
  *  current median price feed history price times the premium
  */
 void database::process_conversions()
@@ -3008,9 +3008,9 @@ void database::process_conversions()
    } );
 }
 
-asset database::to_hbd( const asset& steem )const
+asset database::to_hbd( const asset& hive )const
 {
-   return util::to_hbd( get_feed_history().current_median_history, steem );
+   return util::to_hbd( get_feed_history().current_median_history, hive );
 }
 
 asset database::to_steem( const asset& hbd )const
@@ -3907,7 +3907,7 @@ try {
                // below 10% of the combined market cap of HIVE and HBD.
                //
                // For example, if we have 500 HIVE and 100 HBD, the price is limited to
-               // 900 HBD / 500 HIVE which works out to be $1.80.  At this price, 500 Steem
+               // 900 HBD / 500 HIVE which works out to be $1.80.  At this price, 500 HIVE
                // would be valued at 500 * $1.80 = $900.  100 HBD is by definition always $100,
                // so the combined market cap is $900 + $100 = $1000.
 

@@ -68,11 +68,11 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
                b.open = open;
                b.seconds = bucket;
 
-               b.steem.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.open_pays.amount : op.current_pays.amount );
+               b.hive.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.open_pays.amount : op.current_pays.amount );
 #ifdef HIVE_ENABLE_SMT
                   b.symbol = ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
 #endif
-                  b.non_steem.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.amount : op.open_pays.amount );
+                  b.non_hive.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.amount : op.open_pays.amount );
             });
          }
          else
@@ -84,46 +84,46 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
 #endif
                if( op.open_pays.symbol == HIVE_SYMBOL )
                {
-                  b.steem.volume += op.open_pays.amount;
-                  b.steem.close = op.open_pays.amount;
+                  b.hive.volume += op.open_pays.amount;
+                  b.hive.close = op.open_pays.amount;
 
-                  b.non_steem.volume += op.current_pays.amount;
-                  b.non_steem.close = op.current_pays.amount;
+                  b.non_hive.volume += op.current_pays.amount;
+                  b.non_hive.close = op.current_pays.amount;
 
                   if( b.high() < price( op.current_pays, op.open_pays ) )
                   {
-                     b.steem.high = op.open_pays.amount;
+                     b.hive.high = op.open_pays.amount;
 
-                     b.non_steem.high = op.current_pays.amount;
+                     b.non_hive.high = op.current_pays.amount;
                   }
 
                   if( b.low() > price( op.current_pays, op.open_pays ) )
                   {
-                     b.steem.low = op.open_pays.amount;
+                     b.hive.low = op.open_pays.amount;
 
-                     b.non_steem.low = op.current_pays.amount;
+                     b.non_hive.low = op.current_pays.amount;
                   }
                }
                else
                {
-                  b.steem.volume += op.current_pays.amount;
-                  b.steem.close = op.current_pays.amount;
+                  b.hive.volume += op.current_pays.amount;
+                  b.hive.close = op.current_pays.amount;
 
-                  b.non_steem.volume += op.open_pays.amount;
-                  b.non_steem.close = op.open_pays.amount;
+                  b.non_hive.volume += op.open_pays.amount;
+                  b.non_hive.close = op.open_pays.amount;
 
                   if( b.high() < price( op.open_pays, op.current_pays ) )
                   {
-                     b.steem.high = op.current_pays.amount;
+                     b.hive.high = op.current_pays.amount;
 
-                     b.non_steem.high = op.open_pays.amount;
+                     b.non_hive.high = op.open_pays.amount;
                   }
 
                   if( b.low() > price( op.open_pays, op.current_pays ) )
                   {
-                     b.steem.low = op.current_pays.amount;
+                     b.hive.low = op.current_pays.amount;
 
-                     b.non_steem.low = op.open_pays.amount;
+                     b.non_hive.low = op.open_pays.amount;
                   }
                }
             });

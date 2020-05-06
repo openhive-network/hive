@@ -625,8 +625,8 @@ struct api_proposal_vote_object
 struct order
 {
    price                order_price;
-   double               real_price; // dollars per steem
-   share_type           steem;
+   double               real_price; // dollars per HIVE
+   share_type           hive;
    share_type           hbd;
    fc::time_point_sec   created;
 };
@@ -793,6 +793,6 @@ FC_REFLECT( hive::plugins::database_api::api_proposal_vote_object,
             (proposal)
           )
 
-FC_REFLECT( hive::plugins::database_api::order, (order_price)(real_price)(steem)(hbd)(created) );
+FC_REFLECT( hive::plugins::database_api::order, (order_price)(real_price)(hive)(hbd)(created) );
 
 FC_REFLECT( hive::plugins::database_api::order_book, (asks)(bids) );

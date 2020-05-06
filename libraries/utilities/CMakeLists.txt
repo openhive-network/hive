@@ -7,7 +7,7 @@ if(NOT HIVE_GIT_REVISION_DESCRIPTION)
     set(HIVE_GIT_REVISION_DESCRIPTION "unknown")
 endif(NOT HIVE_GIT_REVISION_DESCRIPTION)
 
-file(GLOB HEADERS "include/steem/utilities/*.hpp")
+file(GLOB HEADERS "include/hive/utilities/*.hpp")
 
 set(sources
    benchmark_dumper.cpp
@@ -47,4 +47,4 @@ install( TARGETS
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
-install( FILES ${HEADERS} DESTINATION "include/steem/utilities" )
+install( FILES ${HEADERS} DESTINATION "include/hive/utilities" )

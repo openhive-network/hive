@@ -91,7 +91,7 @@ will build out of the box without further effort:
     mkdir build
     cd build
     cmake -DCMAKE_BUILD_TYPE=Release ..
-    make -j$(nproc) steemd
+    make -j$(nproc) hived
     make -j$(nproc) cli_wallet
     # optional
     make install  # defaults to /usr/local
@@ -156,7 +156,7 @@ Then the instructions are the same as for hive:
     git submodule update --init --recursive
     mkdir build && cd build
     cmake -DCMAKE_BUILD_TYPE=Release ..
-    make -j$(nproc) steemd
+    make -j$(nproc) hived
     make -j$(nproc) cli_wallet
 
 ## Building on macOS X
@@ -228,15 +228,15 @@ In that case, change the directories for `export` accordingly.
 
 Also, some useful build targets for `make` are:
 
-    steemd
+    hived
     chain_test
     cli_wallet
 
 e.g.:
 
-    make -j$(sysctl -n hw.logicalcpu) steemd
+    make -j$(sysctl -n hw.logicalcpu) hived
 
-This will only build `steemd`.
+This will only build `hived`.
 
 ## Building on Other Platforms
 

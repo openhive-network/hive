@@ -241,8 +241,8 @@ struct extended_account : public api_account_object
    extended_account( const database_api::api_account_object& a ) :
       api_account_object( a ) {}
 
-   legacy_asset                                             vesting_balance;  /// convert vesting_shares to vesting steem
-   share_type                                               reputation = 0;
+   legacy_asset                            vesting_balance;  /// convert vesting_shares to vesting hive
+   share_type                              reputation = 0;
    map< uint64_t, api_operation_object >   transfer_history; /// transfer to/from vesting
    map< uint64_t, api_operation_object >   market_history;   /// limit order / cancel / fill
    map< uint64_t, api_operation_object >   post_history;
@@ -939,14 +939,14 @@ struct order
    order( const market_history::order& o ) :
       order_price( o.order_price ),
       real_price( o.real_price ),
-      steem( o.steem ),
+      hive( o.hive ),
       hbd( o.hbd ),
       created( o.created )
    {}
 
    legacy_price   order_price;
    double         real_price;
-   share_type     steem;
+   share_type     hive;
    share_type     hbd;
    time_point_sec created;
 };
@@ -1353,7 +1353,7 @@ FC_REFLECT( hive::plugins::condenser_api::volume,
             (steem_volume)(hbd_volume) )
 
 FC_REFLECT( hive::plugins::condenser_api::order,
-            (order_price)(real_price)(steem)(hbd)(created) )
+            (order_price)(real_price)(hive)(hbd)(created) )
 
 FC_REFLECT( hive::plugins::condenser_api::order_book,
             (bids)(asks) )

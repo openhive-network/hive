@@ -79,7 +79,7 @@ class Sizer(object):
         return term(1, name)
 
 def main():
-    with open("steem.schema", "r") as f:
+    with open("hive.schema", "r") as f:
         schema = json.load(f)
 
     schema_map = schema["schema_map"]

@@ -6,30 +6,30 @@ popd () { command popd "$@" > /dev/null; }
 
 if [ $# -ne 5 ]
 then
-   echo Usage: node_kind steemd_path node_options work_path port
-   echo Example: reference ~/steemit/steem/build/programs/steemd/steemd --webserver-http-endpoint=127.0.0.1:8090 ~/working 8090
+   echo Usage: node_kind hived_path node_options work_path port
+   echo Example: reference ~/steemit/hive/build/programs/hived/hived --webserver-http-endpoint=127.0.0.1:8090 ~/working 8090
    exit -1
 fi
 
 function check_pid_port {
-   echo Checking that steemd with pid $1 listens at $2 port.
+   echo Checking that hived with pid $1 listens at $2 port.
 
    NETSTAT_CMD="netstat -tlpn 2> /dev/null"
    STAGE1=$(eval $NETSTAT_CMD)
    # echo STAGE1: $STAGE1
-   STAGE2=$(echo $STAGE1 | grep -o ":$2 [^ ]* LISTEN $1/steemd")
+   STAGE2=$(echo $STAGE1 | grep -o ":$2 [^ ]* LISTEN $1/hived")
    ATTEMPT=0
 
    while [[ -z $STAGE2 ]] && [ $ATTEMPT -lt 3 ]; do
       sleep 3
       STAGE1=$(eval $NETSTAT_CMD)
-      STAGE2=$(echo $STAGE1 | grep -o ":$2 [^ ]* LISTEN $1/steemd")
+      STAGE2=$(echo $STAGE1 | grep -o ":$2 [^ ]* LISTEN $1/hived")
       ((ATTEMPT++))
    done
 
    if [[ -z $STAGE2 ]]; then
-      echo FATAL: Could not find steemd with pid $1 listening at port $2 using $NETSTAT_CMD command.
-      echo FATAL: Most probably another steemd instance is running and listens at the port.
+      echo FATAL: Could not find hived with pid $1 listening at port $2 using $NETSTAT_CMD command.
+      echo FATAL: Most probably another hived instance is running and listens at the port.
       kill -s SIGINT $1
       return 1
    else
@@ -56,7 +56,7 @@ function cleanup {
 
 trap cleanup SIGINT SIGPIPE
 
-echo Running $NAME steemd to listen
+echo Running $NAME hived to listen
 $HIVED_PATH $NODE_OPTIONS -d $WORK_PATH & PID=$!
 
 if [ $PID -le 0 ]

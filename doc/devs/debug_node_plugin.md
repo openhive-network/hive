@@ -73,7 +73,7 @@ The API's configured with `public-api` are assigned numbers starting at zero.  S
 API number 2 (TODO:  Explain about resolving names to API's and get it working).
 
 The API provides the following methods
-(see `libraries/plugins/debug_node/include/steem/plugins/debug_node/debug_node_api.hpp`
+(see `libraries/plugins/debug_node/include/hive/plugins/debug_node/debug_node_api.hpp`
 for these definitions):
 
     void debug_push_blocks( std::string src_filename, uint32_t count );
@@ -82,7 +82,7 @@ for these definitions):
     void debug_stream_json_objects( std::string filename );
     void debug_stream_json_objects_flush();
 
-Okay, let's run `steemd`.  It should start immediately with no blocks.  We can ask it to read blocks from the directory we saved earlier:
+Okay, let's run `hived`.  It should start immediately with no blocks.  We can ask it to read blocks from the directory we saved earlier:
 
     curl --data '{"jsonrpc": "2.0", "method": "call", "params": [2,"debug_push_blocks",["/mydir/myblocks", 1000]], "id": 1}' http://127.0.0.1:8090/rpc
 
