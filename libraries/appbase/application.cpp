@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <thread>
 
 namespace appbase {
 
@@ -13,6 +14,56 @@ namespace bpo = boost::program_options;
 using bpo::options_description;
 using bpo::variables_map;
 using std::cout;
+
+io_handler::io_handler()
+{
+}
+
+boost::asio::io_service& io_handler::get_io_service()
+{
+   return io_serv;
+}
+
+void io_handler::close( uint32_t _last_signal_code )
+{
+   if( is_interrupt_request() )
+      return;
+
+   last_signal_code = _last_signal_code;
+   io_serv.stop();
+}
+
+void io_handler::attach_signals()
+{
+   /** To avoid killing process by broken pipe and continue regular app shutdown.
+    *  Useful for usecase: `steemd | tee steemd.log` and pressing Ctrl+C
+    **/
+   signal(SIGPIPE, SIG_IGN);
+
+   std::shared_ptr<boost::asio::signal_set> sigint_set(new boost::asio::signal_set( io_serv, SIGINT));
+   sigint_set->async_wait([ sigint_set, this ](const boost::system::error_code& err, int num) {
+     std::cout << "Caught SIGINT\n";
+     close( SIGINT );
+     sigint_set->cancel();
+   });
+
+   std::shared_ptr<boost::asio::signal_set> sigterm_set(new boost::asio::signal_set( io_serv, SIGTERM));
+   sigterm_set->async_wait([ sigterm_set, this ](const boost::system::error_code& err, int num) {
+     std::cout << "Caught SIGTERM\n";
+     close( SIGTERM );
+     sigterm_set->cancel();
+   });
+}
+
+void io_handler::run()
+{
+   io_serv.run();
+}
+
+bool io_handler::is_interrupt_request() const
+{
+   return last_signal_code != 0;
+}
 
 class application_impl {
    public:
@@ -28,14 +79,34 @@ class application_impl {
 
 application::application()
 :my(new application_impl()){
-   io_serv = std::make_shared<boost::asio::io_service>();
 }
 
 application::~application() { }
 
 void application::startup() {
+
+   startup_io_handler = io_handler::p_io_handler( new io_handler() );
+   startup_io_handler->attach_signals();
+
+   std::thread startup_thread = std::thread( [&]()
+   {
+      startup_io_handler->run();
+   });
+
    for (const auto& plugin : initialized_plugins)
+   {
       plugin->startup();
+
+      if( is_interrupt_request() )
+         break;
+   }
+
+   startup_io_handler->close();
+   startup_thread.join();
+
+   _is_interrupt_request = startup_io_handler->is_interrupt_request();
+
+   startup_io_handler.reset();
 }
 
 application& application::instance( bool reset ) {
@@ -199,6 +270,9 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
 }
 
 void application::shutdown() {
+
+   std::cout << "Shutting down...\n";
+
    for(auto ritr = running_plugins.rbegin();
        ritr != running_plugins.rend(); ++ritr) {
       (*ritr)->shutdown();
@@ -212,33 +286,14 @@ void application::shutdown() {
    plugins.clear();
 }
 
-void application::quit() {
-   io_serv->stop();
-}
-
 void application::exec() {
-   /** To avoid killing process by broken pipe and continue regular app shutdown.
-    *  Useful for usecase: `steemd | tee steemd.log` and pressing Ctrl+C
-    **/
-   signal(SIGPIPE, SIG_IGN);
 
-   std::shared_ptr<boost::asio::signal_set> sigint_set(new boost::asio::signal_set(*io_serv, SIGINT));
-   sigint_set->async_wait([sigint_set,this](const boost::system::error_code& err, int num) {
-     std::cout << "Caught SIGINT\n";
-     quit();
-     sigint_set->cancel();
-   });
+   if( !is_interrupt_request() )
+   {
+      main_io_handler.attach_signals();
 
-   std::shared_ptr<boost::asio::signal_set> sigterm_set(new boost::asio::signal_set(*io_serv, SIGTERM));
-   sigterm_set->async_wait([sigterm_set,this](const boost::system::error_code& err, int num) {
-     std::cout << "Caught SIGTERM\n";
-     quit();
-     sigterm_set->cancel();
-   });
-
-   io_serv->run();
-
-   std::cout << "Shutting down...\n";
+      main_io_handler.run();
+   }
 
    shutdown(); /// perform synchronous shutdown
 }

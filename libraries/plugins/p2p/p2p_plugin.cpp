@@ -640,6 +640,9 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
 void p2p_plugin::plugin_startup()
 {
+   if( !my->chain.is_p2p_enabled() )
+      return;
+
    my->p2p_thread.async( [this]
    {
       my->node.reset(new graphene::net::node(my->user_agent));
@@ -704,6 +707,10 @@ const char* fStatus(std::future_status s)
 }
 
 void p2p_plugin::plugin_shutdown() {
+
+   if( !my->chain.is_p2p_enabled() )
+      return;
+
    ilog("Shutting down P2P Plugin");
    my->running.store(false);
 

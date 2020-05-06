@@ -14,6 +14,31 @@ namespace appbase {
    namespace bpo = boost::program_options;
    namespace bfs = boost::filesystem;
 
+   class io_handler
+   {
+      public:
+
+         using p_io_handler = std::shared_ptr< io_handler >;
+
+      private:
+
+         uint32_t last_signal_code = 0;
+
+         boost::asio::io_service io_serv;
+
+      public:
+
+         io_handler();
+
+         boost::asio::io_service& get_io_service();
+
+         void close( uint32_t _last_signal_code = 0 );
+         void attach_signals();
+         void run();
+
+         bool is_interrupt_request() const;
+   };
+
    class application
    {
       public:
@@ -39,7 +64,6 @@ namespace appbase {
           *  Wait until quit(), SIGINT or SIGTERM and then shutdown
           */
          void exec();
-         void quit();
 
          static application& instance( bool reset = false );
 
@@ -90,7 +114,18 @@ namespace appbase {
          template< typename... Plugin >
          void set_default_plugins() { default_plugins = { Plugin::name()... }; }
 
-         boost::asio::io_service& get_io_service() { return *io_serv; }
+         boost::asio::io_service& get_io_service() { return main_io_handler.get_io_service(); }
+
+         void generate_interrupt_request()
+         {
+            if( startup_io_handler )
+               startup_io_handler->close( SIGINT );
+         }
+
+         bool is_interrupt_request() const
+         {
+            return startup_io_handler ? startup_io_handler->is_interrupt_request() : _is_interrupt_request;
+         }
 
       protected:
          template< typename Impl >
@@ -114,7 +149,6 @@ namespace appbase {
          map< string, std::shared_ptr< abstract_plugin > >  plugins; ///< all registered plugins
          vector< abstract_plugin* >                         initialized_plugins; ///< stored in the order they were started running
          vector< abstract_plugin* >                         running_plugins; ///< stored in the order they were started running
-         std::shared_ptr< boost::asio::io_service >         io_serv;
          std::string                                        version_info;
          std::string                                        app_name = "appbase";
          std::vector< std::string >                         default_plugins;
@@ -123,6 +157,12 @@ namespace appbase {
          void write_default_config( const bfs::path& cfg_file );
          std::unique_ptr< class application_impl > my;
 
+         io_handler                 main_io_handler;
+
+         //This handler is designed only for startup purposes
+         io_handler::p_io_handler   startup_io_handler;
+
+         bool _is_interrupt_request = false;
    };
 
    application& app();

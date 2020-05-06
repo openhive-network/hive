@@ -18,6 +18,8 @@ using namespace hive::chain;
 
 namespace bfs = boost::filesystem;
 
+using synchronization_type = boost::signals2::signal<void()>;
+
 class chain_plugin : public plugin< chain_plugin >
 {
 public:
@@ -114,7 +116,9 @@ public:
 
    // Emitted when the blockchain is syncing/live.
    // This is to synchronize plugins that have the chain plugin as an optional dependency.
-   boost::signals2::signal<void()> on_sync;
+   synchronization_type on_sync;
+
+   bool is_p2p_enabled() const;
 
 private:
    std::unique_ptr< detail::chain_plugin_impl > my;

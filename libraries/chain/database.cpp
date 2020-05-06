@@ -1,5 +1,7 @@
 #include <hive/chain/steem_fwd.hpp>
 
+#include <appbase/application.hpp>
+
 #include <hive/protocol/steem_operations.hpp>
 #include <hive/protocol/get_config.hpp>
 
@@ -158,7 +160,10 @@ void database::open( const open_args& args )
 
       _benchmark_dumper.set_enabled( args.benchmark_is_enabled );
 
-      _block_log.open( args.data_dir / "block_log" );
+      with_write_lock( [&]()
+      {
+         _block_log.open( args.data_dir / "block_log" );
+      });
 
       auto log_head = _block_log.head();
 
@@ -319,7 +324,7 @@ uint32_t database::reindex( const open_args& args )
             args.benchmark.second( 0, get_abstract_index_cntr() );
          }
 
-         while( itr.first.block_num() != last_block_num )
+         while( !appbase::app().is_interrupt_request() && itr.first.block_num() != last_block_num )
          {
             auto cur_block_num = itr.first.block_num();
             if( cur_block_num % 100000 == 0 )
@@ -348,10 +353,22 @@ uint32_t database::reindex( const open_args& args )
 
             if( (args.benchmark.first > 0) && (cur_block_num % args.benchmark.first == 0) )
                args.benchmark.second( cur_block_num, get_abstract_index_cntr() );
-            itr = _block_log.read_block( itr.second );
+
+            if( !appbase::app().is_interrupt_request() )
+            {
+               itr = _block_log.read_block( itr.second );
+            }
          }
 
-         apply_block( itr.first, skip_flags );
+         if( appbase::app().is_interrupt_request() )
+         {
+            ilog("Replaying is interrupted on user request. Last applied: ( block number: ${n} )( trx: ${trx} )", ( "n", itr.first.block_num() )( "trx", itr.first.id() ) );
+         }
+         else
+         {
+            apply_block( itr.first, skip_flags );
+         }
+
          note.last_block_number = itr.first.block_num();
 
          if( (args.benchmark.first > 0) && (note.last_block_number % args.benchmark.first == 0) )
@@ -399,6 +416,8 @@ void database::close(bool rewind)
 {
    try
    {
+      ilog( "Closing database" );
+
       // Since pop_block() will move tx's in the popped blocks into pending,
       // we have to clear_pending() after we're done popping to get a clean
       // DB state (issue #336).
@@ -414,6 +433,8 @@ void database::close(bool rewind)
       _block_log.close();
 
       _fork_db.reset();
+
+      ilog( "Database is closed" );
    }
    FC_CAPTURE_AND_RETHROW()
 }
