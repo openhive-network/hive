@@ -302,7 +302,7 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
 
     # remove all created proposals
     from beembase.operations import Remove_proposal
-    if remove:
+    if not remove:
         start_date = test_utils.date_to_iso(now + datetime.timedelta(days = 6))
         for _ in range(0, 2):
             proposals = s.list_proposals([start_date], 5, "by_start_date", "descending", "all")
@@ -368,9 +368,9 @@ if __name__ == '__main__':
             test_vote_proposal(node_url, args.creator, wif, subject)
             test_list_voter_proposals(node_url, args.creator, wif, subject)
             hive_utils.common.wait_n_blocks(node_url, 3)
-            if args.no_erase_proposal:
+            if not args.no_erase_proposal:
                 test_remove_proposal(node_url, args.creator, wif, subject)
-            #test_iterate_results_test(node_url, args.creator, args.receiver, args.wif, str(uuid4()), args.no_erase_proposal)
+            test_iterate_results_test(node_url, args.creator, args.receiver, args.wif, str(uuid4()), args.no_erase_proposal)
             hive_utils.common.wait_n_blocks(node_url, 3)
             if node is not None:
                 node.stop_hive_node()

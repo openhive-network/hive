@@ -1913,7 +1913,7 @@ namespace detail
 
    DEFINE_API_IMPL( condenser_api_impl, list_proposals )
    {
-      FC_ASSERT( args.size() >= 3 && args.size() <= 5, "Expected 3-5 argument, was ${n}", ("n", args.size()) );
+      FC_ASSERT( args.size() >= 3 && args.size() <= 6, "Expected 3-6 argument, was ${n}", ("n", args.size()) );
 
       hive::plugins::database_api::list_proposals_args list_args;
       list_args.start           = args[0];
@@ -1923,6 +1923,8 @@ namespace detail
          args[3].as< hive::plugins::database_api::order_direction_type >() : database_api::ascending;
       list_args.status          = args.size() > 4 ?
          args[4].as< hive::plugins::database_api::proposal_status >() : database_api::all;
+      list_args.last_id         = args.size() > 5 ?
+         fc::optional<uint64_t>( args[5].as< uint64_t >() ) : fc::optional<uint64_t>();
 
       const auto& proposals = _database_api->list_proposals( list_args ).proposals;
       list_proposals_return result;

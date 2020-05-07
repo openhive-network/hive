@@ -93,6 +93,43 @@ class database_api_impl
       template< typename ValueType >
       static bool filter_default( const ValueType& r ) { return true; }
 
+        template<typename IndexType, typename OrderType, typename StartType, typename ResultType, typename OnPushType, typename FilterType>
+        void iterate_results_from_index(
+                uint64_t index,
+                std::vector<ResultType>& result,
+                uint32_t limit,
+                OnPushType&& on_push,
+                FilterType&& filter,
+                order_direction_type direction = ascending )
+        {
+            const auto& idx = _db.get_index< IndexType, OrderType >();
+            if( direction == ascending )
+            {
+                auto itr = idx.iterator_to(*(_db.get_index<IndexType, hive::chain::by_id>().find(index)));
+                auto end = idx.end();
+
+                while( result.size() < limit && itr != end )
+                {
+                    if( filter( *itr ) )
+                        result.push_back( on_push( *itr ) );
+                    ++itr;
+                }
+            }
+            else if( direction == descending )
+            {
+                auto index_it = idx.iterator_to(*(_db.get_index<IndexType, hive::chain::by_id>().upper_bound(index)));
+                auto iter  = boost::make_reverse_iterator( index_it );
+                auto iter_end = boost::make_reverse_iterator( idx.begin() );
+
+                while ( result.size() < limit && iter != iter_end )
+                {
+                    if( filter( *iter ) )
+                        result.push_back( on_push( *iter ) );
+                    ++iter;
+                }
+            }
+        }
+
       template<typename IndexType, typename OrderType, typename StartType, typename ResultType, typename OnPushType, typename FilterType>
       void iterate_results(
          StartType start,
@@ -100,8 +137,15 @@ class database_api_impl
          uint32_t limit,
          OnPushType&& on_push,
          FilterType&& filter,
-         order_direction_type direction = ascending )
+         order_direction_type direction = ascending,
+         fc::optional<uint64_t> last_index = fc::optional<uint64_t>()
+      )
       {
+         if ( last_index.valid() ) {
+             iterate_results_from_index<IndexType, OrderType, StartType>( *last_index, result, limit, std::move(on_push), std::move(filter), direction );
+             return;
+         }
+
          const auto& idx = _db.get_index< IndexType, OrderType >();
          if( direction == ascending )
          {
@@ -118,21 +162,23 @@ class database_api_impl
          }
          else if( direction == descending )
          {
-            auto itr = boost::make_reverse_iterator( idx.lower_bound( start ) );
-            auto end = idx.rend();
+             auto iter = boost::make_reverse_iterator( idx.upper_bound(start) );
+             auto end_iter = boost::make_reverse_iterator( idx.begin() );
 
-            while( result.size() < limit && itr != end )
-            {
-               if( filter( *itr ) )
-                  result.push_back( on_push( *itr ) );
-
-               ++itr;
-            }
+             while ( result.size() < limit && iter != end_iter )
+             {
+                 if (filter(*iter))
+                     result.push_back(on_push(*iter));
+                 ++iter;
+             }
          }
       }
 
       chain::database& _db;
 };
+
+
+
 
 //////////////////////////////////////////////////////////////////////
 //                                                                  //
@@ -1281,6 +1327,7 @@ bool filter_proposal_status( const proposal_object& po, proposal_status filter, 
 
 DEFINE_API_IMPL( database_api_impl, list_proposals )
 {
+   using variants = std::vector< fc::variant >;
    FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
 
    list_proposals_return result;
@@ -1288,57 +1335,95 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
 
    const auto current_time = _db.head_block_time();
 
+   constexpr auto LOWEST_PROPOSAL_ID = 0;
+   constexpr auto GREATEST_PROPOSAL_ID = std::numeric_limits<api_id_type>::max();
    switch( args.order )
    {
       case by_creator:
       {
-         auto key = args.start.as< std::pair< account_name_type, api_id_type > >();
+          // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
+         auto start_parameters = args.start.as< variants >();
+         auto start_creator = start_parameters.empty()
+                 ? account_name_type()
+                 : start_parameters.front().as< account_name_type >()
+         ;
          iterate_results< hive::chain::proposal_index, hive::chain::by_creator >(
-            boost::make_tuple( key.first, key.second ),
+            boost::make_tuple( start_creator, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ),
             result.proposals,
             args.limit,
             [&]( const proposal_object& po ){ return api_proposal_object( po, current_time ); },
             [&]( const proposal_object& po ){ return filter_proposal_status( po, args.status, current_time ); },
-            args.order_direction
+            args.order_direction,
+            args.last_id
          );
          break;
       }
       case by_start_date:
       {
-         auto key = args.start.as< std::pair< time_point_sec, api_id_type > >();
+          // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
+         auto start_parameters = args.start.as< variants >();
+         auto start_date_string = start_parameters.empty()
+               ? std::string()
+               : start_parameters.front().as< std::string >()
+         ;
+         // check if empty string was passed as the time
+         auto time =  start_date_string.empty() || start_parameters.empty()
+             ? time_point_sec( args.order_direction == ascending ? fc::time_point::min() : fc::time_point::maximum() )
+             : start_parameters.front().as< time_point_sec >()
+         ;
+
          iterate_results< hive::chain::proposal_index, hive::chain::by_start_date >(
-            boost::make_tuple( key.first, key.second ),
+            boost::make_tuple( time, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ),
             result.proposals,
             args.limit,
             [&]( const proposal_object& po ){ return api_proposal_object( po, current_time ); },
             [&]( const proposal_object& po ){ return filter_proposal_status( po, args.status, current_time ); },
-            args.order_direction
+            args.order_direction,
+            args.last_id
          );
          break;
       }
       case by_end_date:
       {
-         auto key = args.start.as< std::pair< time_point_sec, api_id_type > >();
+          // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
+          auto start_parameters = args.start.as< variants >();
+          auto end_date_string = start_parameters.empty()
+               ? std::string()
+               : start_parameters.front().as< std::string >()
+          ;
+          // check if empty string was passed as the time
+          auto time =  end_date_string.empty() || start_parameters.empty()
+                       ? time_point_sec( args.order_direction == ascending ? fc::time_point::min() : fc::time_point::maximum() )
+                       : start_parameters.front().as< time_point_sec >()
+          ;
+
          iterate_results< hive::chain::proposal_index, hive::chain::by_end_date >(
-            boost::make_tuple( key.first, key.second ),
+            boost::make_tuple( time, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ),
             result.proposals,
             args.limit,
             [&]( const proposal_object& po ){ return api_proposal_object( po, current_time ); },
             [&]( const proposal_object& po ){ return filter_proposal_status( po, args.status, current_time ); },
-            args.order_direction
+            args.order_direction,
+            args.last_id
          );
          break;
       }
       case by_total_votes:
       {
-         auto key = args.start.as< std::pair< uint64_t, api_id_type > >();
+         // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
+         auto start_parameters = args.start.as< variants >();
+         auto votes = start_parameters.empty()
+               ? uint64_t(0)
+               : start_parameters.front().as< uint64_t >()
+         ;
          iterate_results< hive::chain::proposal_index, hive::chain::by_total_votes >(
-            boost::make_tuple( key.first, key.second ),
+            boost::make_tuple( votes, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ),
             result.proposals,
             args.limit,
             [&]( const proposal_object& po ){ return api_proposal_object( po, current_time ); },
             [&]( const proposal_object& po ){ return filter_proposal_status( po, args.status, current_time ); },
-            args.order_direction
+            args.order_direction,
+            args.last_id
          );
          break;
       }

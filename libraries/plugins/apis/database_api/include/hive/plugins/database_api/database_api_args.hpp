@@ -461,6 +461,9 @@ struct list_proposals_args
 
    // result will contain only data with status flag set to this value. Default is all
    proposal_status status;
+
+    // result will contain only data from given index, start value will be ignored
+   fc::optional<uint64_t> last_id = fc::optional<uint64_t>();
 };
 
 struct list_proposals_return
@@ -792,7 +795,7 @@ FC_REFLECT( hive::plugins::database_api::get_order_book_args,
    (limit) )
 
 FC_REFLECT( hive::plugins::database_api::list_proposals_args,
-   (start)(limit)(order)(order_direction)(status) )
+   (start)(limit)(order)(order_direction)(status)(last_id) )
 
 FC_REFLECT( hive::plugins::database_api::list_proposals_return,
    (proposals) )
