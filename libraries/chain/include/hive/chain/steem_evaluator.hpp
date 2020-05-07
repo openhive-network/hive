@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/protocol/steem_operations.hpp>
+#include <hive/protocol/hive_operations.hpp>
 
 #include <hive/chain/evaluator.hpp>
 

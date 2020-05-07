@@ -59,10 +59,10 @@ bool is_valid_smt_emissions_unit_destination( const account_name_type& name )
    return false;
 }
 
-uint32_t smt_generation_unit::steem_unit_sum()const
+uint32_t smt_generation_unit::hive_unit_sum()const
 {
    uint32_t result = 0;
-   for(const std::pair< account_name_type, uint16_t >& e : steem_unit )
+   for(const std::pair< account_name_type, uint16_t >& e : hive_unit )
       result += e.second;
    return result;
 }
@@ -77,8 +77,8 @@ uint32_t smt_generation_unit::token_unit_sum()const
 
 void smt_generation_unit::validate()const
 {
-   FC_ASSERT( steem_unit.size() <= SMT_MAX_UNIT_ROUTES );
-   for(const std::pair< account_name_type, uint16_t >& e : steem_unit )
+   FC_ASSERT( hive_unit.size() <= SMT_MAX_UNIT_ROUTES );
+   for(const std::pair< account_name_type, uint16_t >& e : hive_unit )
    {
       FC_ASSERT( is_valid_unit_target( e.first ) );
       FC_ASSERT( e.second > 0 );
@@ -99,24 +99,24 @@ void smt_capped_generation_policy::validate()const
    FC_ASSERT( soft_cap_percent > 0 );
    FC_ASSERT( soft_cap_percent <= HIVE_100_PERCENT );
 
-   FC_ASSERT( pre_soft_cap_unit.steem_unit.size() > 0 );
+   FC_ASSERT( pre_soft_cap_unit.hive_unit.size() > 0 );
    FC_ASSERT( pre_soft_cap_unit.token_unit.size() > 0 );
 
-   FC_ASSERT( pre_soft_cap_unit.steem_unit.size() <= SMT_MAX_UNIT_COUNT );
+   FC_ASSERT( pre_soft_cap_unit.hive_unit.size() <= SMT_MAX_UNIT_COUNT );
    FC_ASSERT( pre_soft_cap_unit.token_unit.size() <= SMT_MAX_UNIT_COUNT );
-   FC_ASSERT( post_soft_cap_unit.steem_unit.size() <= SMT_MAX_UNIT_COUNT );
+   FC_ASSERT( post_soft_cap_unit.hive_unit.size() <= SMT_MAX_UNIT_COUNT );
    FC_ASSERT( post_soft_cap_unit.token_unit.size() <= SMT_MAX_UNIT_COUNT );
 
    // TODO : Check account name
 
    if( soft_cap_percent == HIVE_100_PERCENT )
    {
-      FC_ASSERT( post_soft_cap_unit.steem_unit.size() == 0 );
+      FC_ASSERT( post_soft_cap_unit.hive_unit.size() == 0 );
       FC_ASSERT( post_soft_cap_unit.token_unit.size() == 0 );
    }
    else
    {
-      FC_ASSERT( post_soft_cap_unit.steem_unit.size() > 0 );
+      FC_ASSERT( post_soft_cap_unit.hive_unit.size() > 0 );
    }
 }
 
@@ -189,10 +189,10 @@ void smt_setup_operation::validate()const
    FC_ASSERT( contribution_begin_time > HIVE_GENESIS_TIME, "Contribution begin time must be greater than ${t}", ("t", HIVE_GENESIS_TIME) );
    FC_ASSERT( contribution_end_time > contribution_begin_time, "Contribution end time must be after contribution begin time" );
    FC_ASSERT( launch_time >= contribution_end_time, "SMT ICO launch time must be after the contribution end time" );
-   FC_ASSERT( steem_units_soft_cap <= steem_units_hard_cap, "Hive units soft cap must less than or equal to hive units hard cap" );
-   FC_ASSERT( steem_units_soft_cap >= SMT_MIN_SOFT_CAP_HIVE_UNITS, "Hive units soft cap must be greater than or equal to ${n}", ("n", SMT_MIN_SOFT_CAP_HIVE_UNITS) );
-   FC_ASSERT( steem_units_hard_cap >= SMT_MIN_HARD_CAP_HIVE_UNITS, "Hive units hard cap must be greater than or equal to ${n}", ("n", SMT_MIN_HARD_CAP_HIVE_UNITS) );
-   FC_ASSERT( steem_units_hard_cap <= HIVE_MAX_SHARE_SUPPLY, "Hive units hard cap must be less than or equal to ${n}", ("n", HIVE_MAX_SHARE_SUPPLY) );
+   FC_ASSERT( hive_units_soft_cap <= hive_units_hard_cap, "Hive units soft cap must less than or equal to hive units hard cap" );
+   FC_ASSERT( hive_units_soft_cap >= SMT_MIN_SOFT_CAP_HIVE_UNITS, "Hive units soft cap must be greater than or equal to ${n}", ("n", SMT_MIN_SOFT_CAP_HIVE_UNITS) );
+   FC_ASSERT( hive_units_hard_cap >= SMT_MIN_HARD_CAP_HIVE_UNITS, "Hive units hard cap must be greater than or equal to ${n}", ("n", SMT_MIN_HARD_CAP_HIVE_UNITS) );
+   FC_ASSERT( hive_units_hard_cap <= HIVE_MAX_SHARE_SUPPLY, "Hive units hard cap must be less than or equal to ${n}", ("n", HIVE_MAX_SHARE_SUPPLY) );
 
    validate_visitor vtor;
    initial_generation_policy.visit( vtor );

@@ -1,4 +1,4 @@
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/chain/steem_evaluator.hpp>
 #include <hive/chain/database.hpp>
@@ -406,8 +406,8 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
    const auto& props = _db.get_dynamic_global_properties();
    const witness_schedule_object& wso = _db.get_witness_schedule_object();
 
-   FC_ASSERT( creator.balance >= o.fee, "Insufficient balance to create account.",
-               ( "creator.balance", creator.balance )
+   FC_ASSERT( creator.get_balance() >= o.fee, "Insufficient balance to create account.",
+               ( "creator.balance", creator.get_balance() )
                ( "required", o.fee ) );
 
    FC_ASSERT( static_cast<asset>(creator.vesting_shares) - creator.delegated_vesting_shares - asset( creator.to_withdraw - creator.withdrawn, VESTS_SYMBOL ) >= o.delegation, "Insufficient vesting shares to delegate to new account.",
@@ -1063,14 +1063,14 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
       FC_ASSERT( o.ratification_deadline > _db.head_block_time(), "The escrow ratification deadline must be after head block time." );
       FC_ASSERT( o.escrow_expiration > _db.head_block_time(), "The escrow expiration must be after head block time." );
 
-      asset steem_spent = o.hive_amount;
+      asset hive_spent = o.hive_amount;
       asset hbd_spent = o.hbd_amount;
       if( o.fee.symbol == HIVE_SYMBOL )
-         steem_spent += o.fee;
+         hive_spent += o.fee;
       else
          hbd_spent += o.fee;
 
-      _db.adjust_balance( from_account, -steem_spent );
+      _db.adjust_balance( from_account, -hive_spent );
       _db.adjust_balance( from_account, -hbd_spent );
 
       _db.create<escrow_object>([&]( escrow_object& esc )
@@ -1082,7 +1082,7 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
          esc.ratification_deadline  = o.ratification_deadline;
          esc.escrow_expiration      = o.escrow_expiration;
          esc.hbd_balance            = o.hbd_amount;
-         esc.steem_balance          = o.hive_amount;
+         esc.hive_balance           = o.hive_amount;
          esc.pending_fee            = o.fee;
       });
    }
@@ -1129,15 +1129,15 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
 
       if( reject_escrow )
       {
-         _db.adjust_balance( o.from, escrow.steem_balance );
+         _db.adjust_balance( o.from, escrow.get_hive_balance() );
          _db.adjust_balance( o.from, escrow.get_hbd_balance() );
-         _db.adjust_balance( o.from, escrow.pending_fee );
+         _db.adjust_balance( o.from, escrow.get_fee() );
 
          _db.remove( escrow );
       }
       else if( escrow.to_approved && escrow.agent_approved )
       {
-         _db.adjust_balance( o.agent, escrow.pending_fee );
+         _db.adjust_balance( o.agent, escrow.get_fee() );
 
          _db.modify( escrow, [&]( escrow_object& esc )
          {
@@ -1176,7 +1176,7 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
       _db.get_account(o.from); // Verify from account exists
 
       const auto& e = _db.get_escrow( o.from, o.escrow_id );
-      FC_ASSERT( e.steem_balance >= o.hive_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hive_amount)("b", e.steem_balance) );
+      FC_ASSERT( e.get_hive_balance() >= o.hive_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hive_amount)("b", e.get_hive_balance()) );
       FC_ASSERT( e.get_hbd_balance() >= o.hbd_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hbd_amount)("b", e.get_hbd_balance()) );
       FC_ASSERT( e.to == o.to, "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.to) );
       FC_ASSERT( e.agent == o.agent, "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.agent) );
@@ -1212,11 +1212,11 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
 
       _db.modify( e, [&]( escrow_object& esc )
       {
-         esc.steem_balance -= o.hive_amount;
+         esc.hive_balance -= o.hive_amount;
          esc.hbd_balance -= o.hbd_amount;
       });
 
-      if( e.steem_balance.amount == 0 && e.get_hbd_balance().amount == 0 )
+      if( e.get_hive_balance().amount == 0 && e.get_hbd_balance().amount == 0 )
       {
          _db.remove( e );
       }
@@ -2618,16 +2618,16 @@ void convert_evaluator::do_apply( const convert_operation& o )
   const auto& fhistory = _db.get_feed_history();
   FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot convert HBD because there is no price feed." );
 
-  auto steem_conversion_delay = HIVE_CONVERSION_DELAY_PRE_HF_16;
+  auto hive_conversion_delay = HIVE_CONVERSION_DELAY_PRE_HF_16;
   if( _db.has_hardfork( HIVE_HARDFORK_0_16__551) )
-     steem_conversion_delay = HIVE_CONVERSION_DELAY;
+     hive_conversion_delay = HIVE_CONVERSION_DELAY;
 
   _db.create<convert_request_object>( [&]( convert_request_object& obj )
   {
       obj.owner           = o.owner;
       obj.requestid       = o.requestid;
       obj.amount          = o.amount;
-      obj.conversion_date = _db.head_block_time() + steem_conversion_delay;
+      obj.conversion_date = _db.head_block_time() + hive_conversion_delay;
   });
 
 }
@@ -2720,7 +2720,7 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
    const auto& creator = _db.get_account( o.creator );
    const auto& wso = _db.get_witness_schedule_object();
 
-   FC_ASSERT( creator.balance >= o.fee, "Insufficient balance to create account.", ( "creator.balance", creator.balance )( "required", o.fee ) );
+   FC_ASSERT( creator.get_balance() >= o.fee, "Insufficient balance to create account.", ( "creator.balance", creator.get_balance() )( "required", o.fee ) );
 
    if( o.fee.amount == 0 )
    {
@@ -3065,19 +3065,19 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 {
    const auto& acnt = _db.get_account( op.account );
 
-   FC_ASSERT( op.reward_hive <= acnt.reward_steem_balance, "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
-      ("c", op.reward_hive)("a", acnt.reward_steem_balance) );
+   FC_ASSERT( op.reward_hive <= acnt.get_rewards(), "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
+      ("c", op.reward_hive)("a", acnt.get_rewards() ) );
    FC_ASSERT( op.reward_hbd <= acnt.get_hbd_rewards(), "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
       ("c", op.reward_hbd)("a", acnt.get_hbd_rewards()) );
-   FC_ASSERT( op.reward_vests <= acnt.reward_vesting_balance, "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
-      ("c", op.reward_vests)("a", acnt.reward_vesting_balance) );
+   FC_ASSERT( op.reward_vests <= acnt.get_vest_rewards(), "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
+      ("c", op.reward_vests)("a", acnt.get_vest_rewards() ) );
 
-   asset reward_vesting_steem_to_move = asset( 0, HIVE_SYMBOL );
-   if( op.reward_vests == acnt.reward_vesting_balance )
-      reward_vesting_steem_to_move = acnt.reward_vesting_steem;
+   asset reward_vesting_hive_to_move = asset( 0, HIVE_SYMBOL );
+   if( op.reward_vests == acnt.get_vest_rewards() )
+      reward_vesting_hive_to_move = acnt.get_vest_rewards_as_hive();
    else
-      reward_vesting_steem_to_move = asset( ( ( uint128_t( op.reward_vests.amount.value ) * uint128_t( acnt.reward_vesting_steem.amount.value ) )
-         / uint128_t( acnt.reward_vesting_balance.amount.value ) ).to_uint64(), HIVE_SYMBOL );
+      reward_vesting_hive_to_move = asset( ( ( uint128_t( op.reward_vests.amount.value ) * uint128_t( acnt.get_vest_rewards_as_hive().amount.value ) )
+         / uint128_t( acnt.get_vest_rewards().amount.value ) ).to_uint64(), HIVE_SYMBOL );
 
    _db.adjust_reward_balance( acnt, -op.reward_hive );
    _db.adjust_reward_balance( acnt, -op.reward_hbd );
@@ -3093,16 +3093,16 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 
       a.vesting_shares += op.reward_vests;
       a.reward_vesting_balance -= op.reward_vests;
-      a.reward_vesting_steem -= reward_vesting_steem_to_move;
+      a.reward_vesting_hive -= reward_vesting_hive_to_move;
    });
 
    _db.modify( _db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
    {
       gpo.total_vesting_shares += op.reward_vests;
-      gpo.total_vesting_fund_steem += reward_vesting_steem_to_move;
+      gpo.total_vesting_fund_hive += reward_vesting_hive_to_move;
 
       gpo.pending_rewarded_vesting_shares -= op.reward_vests;
-      gpo.pending_rewarded_vesting_steem -= reward_vesting_steem_to_move;
+      gpo.pending_rewarded_vesting_hive -= reward_vesting_hive_to_move;
    });
 
    _db.adjust_proxied_witness_votes( acnt, op.reward_vests.amount );
@@ -3134,38 +3134,38 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
 
          if( token.symbol == VESTS_SYMBOL)
          {
-            FC_ASSERT( token <= a->reward_vesting_balance, "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
-               ("c", token)("a", a->reward_vesting_balance) );
+            FC_ASSERT( token <= a->get_vest_rewards(), "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
+               ("c", token)("a", a->get_vest_rewards() ) );
 
-            asset reward_vesting_steem_to_move = asset( 0, HIVE_SYMBOL );
-            if( token == a->reward_vesting_balance )
-               reward_vesting_steem_to_move = a->reward_vesting_steem;
+            asset reward_vesting_hive_to_move = asset( 0, HIVE_SYMBOL );
+            if( token == a->get_vest_rewards() )
+               reward_vesting_hive_to_move = a->get_vest_rewards_as_hive();
             else
-               reward_vesting_steem_to_move = asset( ( ( uint128_t( token.amount.value ) * uint128_t( a->reward_vesting_steem.amount.value ) )
-                  / uint128_t( a->reward_vesting_balance.amount.value ) ).to_uint64(), HIVE_SYMBOL );
+               reward_vesting_hive_to_move = asset( ( ( uint128_t( token.amount.value ) * uint128_t( a->get_vest_rewards_as_hive().amount.value ) )
+                  / uint128_t( a->get_vest_rewards().amount.value ) ).to_uint64(), HIVE_SYMBOL );
 
             _db.modify( *a, [&]( account_object& a )
             {
                a.vesting_shares += token;
                a.reward_vesting_balance -= token;
-               a.reward_vesting_steem -= reward_vesting_steem_to_move;
+               a.reward_vesting_hive -= reward_vesting_hive_to_move;
             });
 
             _db.modify( _db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
             {
                gpo.total_vesting_shares += token;
-               gpo.total_vesting_fund_steem += reward_vesting_steem_to_move;
+               gpo.total_vesting_fund_hive += reward_vesting_hive_to_move;
 
                gpo.pending_rewarded_vesting_shares -= token;
-               gpo.pending_rewarded_vesting_steem -= reward_vesting_steem_to_move;
+               gpo.pending_rewarded_vesting_hive -= reward_vesting_hive_to_move;
             });
 
             _db.adjust_proxied_witness_votes( *a, token.amount );
          }
          else if( token.symbol == HIVE_SYMBOL || token.symbol == HBD_SYMBOL )
          {
-            FC_ASSERT( is_asset_type( token, HIVE_SYMBOL ) == false || token <= a->reward_steem_balance,
-                       "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}", ("c", token)("a", a->reward_steem_balance) );
+            FC_ASSERT( is_asset_type( token, HIVE_SYMBOL ) == false || token <= a->get_rewards(),
+                       "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}", ("c", token)("a", a->get_rewards() ) );
             FC_ASSERT( is_asset_type( token, HBD_SYMBOL ) == false || token <= a->get_hbd_rewards(),
                        "Cannot claim that much HBD. Claim: ${c} Actual: ${a}", ("c", token)("a", a->get_hbd_rewards()) );
             _db.adjust_reward_balance( *a, -token );

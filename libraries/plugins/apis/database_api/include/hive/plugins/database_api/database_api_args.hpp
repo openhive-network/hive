@@ -83,10 +83,10 @@ struct get_version_return
 {
    get_version_return() {}
    get_version_return( fc::string bc_v, fc::string s_v, fc::string fc_v, chain_id_type c_id )
-      :blockchain_version( bc_v ), steem_revision( s_v ), fc_revision( fc_v ), chain_id( c_id ) {}
+      :blockchain_version( bc_v ), hive_revision( s_v ), fc_revision( fc_v ), chain_id( c_id ) {}
 
    fc::string     blockchain_version;
-   fc::string     steem_revision;
+   fc::string     hive_revision;
    fc::string     fc_revision;
    chain_id_type  chain_id;
 };
@@ -631,7 +631,7 @@ typedef list_smt_token_emissions_return find_smt_token_emissions_return;
 } } } // hive::database_api
 
 FC_REFLECT( hive::plugins::database_api::get_version_return,
-            (blockchain_version)(steem_revision)(fc_revision)(chain_id) )
+            (blockchain_version)(hive_revision)(fc_revision)(chain_id) )
 
 FC_REFLECT_ENUM( hive::plugins::database_api::sort_order_type,
    (by_name)

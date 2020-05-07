@@ -2,7 +2,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
@@ -263,7 +263,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
          {
             t.balance = ASSET( "5.000 TESTS" );
             t.savings_balance = ASSET( "3.000 TESTS" );
-            t.reward_steem_balance = ASSET( "2.000 TESTS" );
+            t.reward_hive_balance = ASSET( "2.000 TESTS" );
             t.hbd_balance = ASSET( "5.000 TBD" );
             t.savings_hbd_balance = ASSET( "3.000 TBD" );
             t.reward_hbd_balance = ASSET( "2.000 TBD" );

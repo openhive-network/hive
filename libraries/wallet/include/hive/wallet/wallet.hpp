@@ -83,7 +83,7 @@ class wallet_api_impl;
 class wallet_api
 {
    public:
-      wallet_api( const wallet_data& initial_data, const hive::protocol::chain_id_type& _steem_chain_id, fc::api< remote_node_api > rapi );
+      wallet_api( const wallet_data& initial_data, const hive::protocol::chain_id_type& _hive_chain_id, fc::api< remote_node_api > rapi );
       virtual ~wallet_api();
 
       bool copy_wallet_file( string destination_filename );
@@ -383,7 +383,7 @@ class wallet_api
        *  These accounts are created with combination of HIVE and delegated SP
        *
        *  @param creator The account creating the new account
-       *  @param steem_fee The amount of the fee to be paid with HIVE
+       *  @param hive_fee The amount of the fee to be paid with HIVE
        *  @param delegated_vests The amount of the fee to be paid with delegation
        *  @param new_account_name The name of the new account
        *  @param json_meta JSON Metadata associated with the new account
@@ -391,7 +391,7 @@ class wallet_api
        */
       condenser_api::legacy_signed_transaction create_account_delegated(
          string creator,
-         condenser_api::legacy_asset steem_fee,
+         condenser_api::legacy_asset hive_fee,
          condenser_api::legacy_asset delegated_vests,
          string new_account_name,
          string json_meta,
@@ -406,7 +406,7 @@ class wallet_api
        * These accounts are created with combination of HIVE and delegated SP
        *
        * @param creator The account creating the new account
-       * @param steem_fee The amount of the fee to be paid with HIVE
+       * @param hive_fee The amount of the fee to be paid with HIVE
        * @param delegated_vests The amount of the fee to be paid with delegation
        * @param newname The name of the new account
        * @param json_meta JSON Metadata associated with the new account
@@ -418,7 +418,7 @@ class wallet_api
        */
       condenser_api::legacy_signed_transaction create_account_with_keys_delegated(
          string creator,
-         condenser_api::legacy_asset steem_fee,
+         condenser_api::legacy_asset hive_fee,
          condenser_api::legacy_asset delegated_vests,
          string newname,
          string json_meta,
@@ -656,7 +656,7 @@ class wallet_api
        * @param agent The account acting as the agent in case of dispute
        * @param escrow_id A unique id for the escrow transfer. (from, escrow_id) must be a unique pair
        * @param hbd_amount The amount of HBD to transfer
-       * @param steem_amount The amount of HIVE to transfer
+       * @param hive_amount The amount of HIVE to transfer
        * @param fee The fee paid to the agent
        * @param ratification_deadline The deadline for 'to' and 'agent' to approve the escrow transfer
        * @param escrow_expiration The expiration of the escrow transfer, after which either party can claim the funds
@@ -669,7 +669,7 @@ class wallet_api
          string agent,
          uint32_t escrow_id,
          condenser_api::legacy_asset hbd_amount,
-         condenser_api::legacy_asset steem_amount,
+         condenser_api::legacy_asset hive_amount,
          condenser_api::legacy_asset fee,
          time_point_sec ratification_deadline,
          time_point_sec escrow_expiration,
@@ -728,7 +728,7 @@ class wallet_api
        * @param receiver The account that will receive funds being released
        * @param escrow_id A unique id for the escrow transfer
        * @param hbd_amount The amount of HBD that will be released
-       * @param steem_amount The amount of HIVE that will be released
+       * @param hive_amount The amount of HIVE that will be released
        * @param broadcast true if you wish to broadcast the transaction
        */
       condenser_api::legacy_signed_transaction escrow_release(
@@ -739,7 +739,7 @@ class wallet_api
          string receiver,
          uint32_t escrow_id,
          condenser_api::legacy_asset hbd_amount,
-         condenser_api::legacy_asset steem_amount,
+         condenser_api::legacy_asset hive_amount,
          bool broadcast = false
       );
 
@@ -1062,7 +1062,7 @@ class wallet_api
 
       condenser_api::legacy_signed_transaction claim_reward_balance(
          string account,
-         condenser_api::legacy_asset reward_steem,
+         condenser_api::legacy_asset reward_hive,
          condenser_api::legacy_asset reward_hbd,
          condenser_api::legacy_asset reward_vests,
          bool broadcast );

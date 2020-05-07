@@ -1,11 +1,11 @@
 #pragma once
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/authority.hpp>
-#include <hive/protocol/steem_operations.hpp>
+#include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/misc_utilities.hpp>
 
-#include <hive/chain/steem_object_types.hpp>
+#include <hive/chain/hive_object_types.hpp>
 
 #include <boost/multiprecision/cpp_int.hpp>
 
@@ -57,7 +57,7 @@ namespace hive { namespace chain {
          escrow_object(){}
 
          //HIVE portion of transfer balance
-         const asset& get_hive_balance() const { return steem_balance; }
+         const asset& get_hive_balance() const { return hive_balance; }
          //HBD portion of transfer balance
          const asset& get_hbd_balance() const { return hbd_balance; }
          //fee offered to escrow (can be either in HIVE or HBD)
@@ -72,7 +72,7 @@ namespace hive { namespace chain {
          time_point_sec    ratification_deadline;
          time_point_sec    escrow_expiration;
          asset             hbd_balance;
-         asset             steem_balance;
+         asset             hive_balance;
          asset             pending_fee;
          bool              to_approved = false;
          bool              agent_approved = false;
@@ -130,13 +130,13 @@ namespace hive { namespace chain {
 
          liquidity_reward_balance_object(){}
 
-         int64_t get_hive_volume() const { return steem_volume; }
+         int64_t get_hive_volume() const { return hive_volume; }
          int64_t get_hbd_volume() const { return hbd_volume; }
 
          id_type           id;
 
          account_id_type   owner;
-         int64_t           steem_volume = 0;
+         int64_t           hive_volume = 0;
          int64_t           hbd_volume = 0;
          uint128_t         weight = 0;
 
@@ -145,12 +145,12 @@ namespace hive { namespace chain {
          /// this is the sort index
          uint128_t volume_weight()const
          {
-            return steem_volume * hbd_volume * is_positive();
+            return hive_volume * hbd_volume * is_positive();
          }
 
          uint128_t min_volume_weight()const
          {
-            return std::min(steem_volume,hbd_volume) * is_positive();
+            return std::min(hive_volume,hbd_volume) * is_positive();
          }
 
          void update_weight( bool hf9 )
@@ -160,7 +160,7 @@ namespace hive { namespace chain {
 
          inline int is_positive()const
          {
-            return ( steem_volume > 0 && hbd_volume > 0 ) ? 1 : 0;
+            return ( hive_volume > 0 && hbd_volume > 0 ) ? 1 : 0;
          }
    };
 
@@ -514,7 +514,7 @@ FC_REFLECT( hive::chain::convert_request_object,
 CHAINBASE_SET_INDEX_TYPE( hive::chain::convert_request_object, hive::chain::convert_request_index )
 
 FC_REFLECT( hive::chain::liquidity_reward_balance_object,
-             (id)(owner)(steem_volume)(hbd_volume)(weight)(last_update) )
+             (id)(owner)(hive_volume)(hbd_volume)(weight)(last_update) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::liquidity_reward_balance_object, hive::chain::liquidity_reward_balance_index )
 
 FC_REFLECT( hive::chain::withdraw_vesting_route_object,
@@ -528,7 +528,7 @@ CHAINBASE_SET_INDEX_TYPE( hive::chain::savings_withdraw_object, hive::chain::sav
 FC_REFLECT( hive::chain::escrow_object,
              (id)(escrow_id)(from)(to)(agent)
              (ratification_deadline)(escrow_expiration)
-             (hbd_balance)(steem_balance)(pending_fee)
+             (hbd_balance)(hive_balance)(pending_fee)
              (to_approved)(agent_approved)(disputed) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::escrow_object, hive::chain::escrow_index )
 

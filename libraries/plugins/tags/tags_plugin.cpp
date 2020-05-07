@@ -1,5 +1,5 @@
 
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/tags/tags_plugin.hpp>
 

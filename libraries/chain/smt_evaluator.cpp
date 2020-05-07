@@ -1,4 +1,4 @@
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/chain/steem_evaluator.hpp>
 #include <hive/chain/database.hpp>
@@ -83,7 +83,7 @@ void smt_create_evaluator::do_apply( const smt_create_operation& o )
          FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot pay the fee using different asset symbol because there is no price feed." );
 
          if( dgpo.smt_creation_fee.symbol == HIVE_SYMBOL )
-            creation_fee = _db.to_steem( o.smt_creation_fee );
+            creation_fee = _db.to_hive( o.smt_creation_fee );
          else
             creation_fee = _db.to_hbd( o.smt_creation_fee );
       }
@@ -157,8 +157,8 @@ void smt_setup_evaluator::do_apply( const smt_setup_operation& o )
       token_ico_obj.contribution_begin_time = o.contribution_begin_time;
       token_ico_obj.contribution_end_time = o.contribution_end_time;
       token_ico_obj.launch_time = o.launch_time;
-      token_ico_obj.steem_units_soft_cap = o.steem_units_soft_cap;
-      token_ico_obj.steem_units_hard_cap = o.steem_units_hard_cap;
+      token_ico_obj.hive_units_soft_cap = o.hive_units_soft_cap;
+      token_ico_obj.hive_units_hard_cap = o.hive_units_hard_cap;
    } );
 
    smt_setup_evaluator_visitor visitor( token_ico, _db );
@@ -302,10 +302,10 @@ void smt_contribute_evaluator::do_apply( const smt_contribute_operation& o )
 
       const smt_ico_object* token_ico = _db.find< smt_ico_object, by_symbol >( token->liquid_symbol );
       FC_ASSERT( token_ico != nullptr, "Unable to find ICO data for symbol: ${sym}", ("sym", token->liquid_symbol) );
-      FC_ASSERT( token_ico->contributed.amount < token_ico->steem_units_hard_cap, "SMT ICO has reached its hard cap and no longer accepts contributions" );
-      FC_ASSERT( token_ico->contributed.amount + o.contribution.amount <= token_ico->steem_units_hard_cap,
+      FC_ASSERT( token_ico->contributed.amount < token_ico->hive_units_hard_cap, "SMT ICO has reached its hard cap and no longer accepts contributions" );
+      FC_ASSERT( token_ico->contributed.amount + o.contribution.amount <= token_ico->hive_units_hard_cap,
          "The proposed contribution would exceed the ICO hard cap, maximum possible contribution: ${c}",
-         ("c", asset( token_ico->steem_units_hard_cap - token_ico->contributed.amount, HIVE_SYMBOL )) );
+         ("c", asset( token_ico->hive_units_hard_cap - token_ico->contributed.amount, HIVE_SYMBOL )) );
 
       auto key = boost::tuple< asset_symbol_type, account_name_type, uint32_t >( o.contribution.symbol, o.contributor, o.contribution_id );
       auto contrib_ptr = _db.find< smt_contribution_object, by_symbol_contributor >( key );

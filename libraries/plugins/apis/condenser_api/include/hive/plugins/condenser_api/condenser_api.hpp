@@ -1,5 +1,5 @@
 #pragma once
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/database_api/database_api.hpp>
 #include <hive/plugins/block_api/block_api.hpp>
@@ -130,9 +130,9 @@ struct api_account_object
       savings_hbd_last_interest_payment( a.savings_hbd_last_interest_payment ),
       savings_withdraw_requests( a.savings_withdraw_requests ),
       reward_hbd_balance( legacy_asset::from_asset( a.reward_hbd_balance ) ),
-      reward_steem_balance( legacy_asset::from_asset( a.reward_steem_balance ) ),
+      reward_hive_balance( legacy_asset::from_asset( a.reward_hive_balance ) ),
       reward_vesting_balance( legacy_asset::from_asset( a.reward_vesting_balance ) ),
-      reward_vesting_steem( legacy_asset::from_asset( a.reward_vesting_steem ) ),
+      reward_vesting_hive( legacy_asset::from_asset( a.reward_vesting_hive ) ),
       curation_rewards( a.curation_rewards ),
       posting_rewards( a.posting_rewards ),
       vesting_shares( legacy_asset::from_asset( a.vesting_shares ) ),
@@ -205,9 +205,9 @@ struct api_account_object
    uint8_t           savings_withdraw_requests = 0;
 
    legacy_asset      reward_hbd_balance;
-   legacy_asset      reward_steem_balance;
+   legacy_asset      reward_hive_balance;
    legacy_asset      reward_vesting_balance;
-   legacy_asset      reward_vesting_steem;
+   legacy_asset      reward_vesting_hive;
 
    share_type        curation_rewards;
    share_type        posting_rewards;
@@ -364,17 +364,17 @@ struct extended_dynamic_global_properties
       total_pow( o.total_pow ),
       num_pow_witnesses( o.num_pow_witnesses ),
       virtual_supply( legacy_asset::from_asset( o.virtual_supply ) ),
-      current_supply( legacy_asset::from_asset( o.current_supply ) ),
+      current_supply( legacy_asset::from_asset( o.get_current_supply() ) ),
       init_hbd_supply( legacy_asset::from_asset( o.get_init_hbd_supply() ) ),
       current_hbd_supply( legacy_asset::from_asset( o.get_current_hbd_supply() ) ),
-      total_vesting_fund_steem( legacy_asset::from_asset( o.total_vesting_fund_steem ) ),
-      total_vesting_shares( legacy_asset::from_asset( o.total_vesting_shares ) ),
-      total_reward_fund_steem( legacy_asset::from_asset( o.total_reward_fund_steem ) ),
+      total_vesting_fund_hive( legacy_asset::from_asset( o.get_total_vesting_fund_hive() ) ),
+      total_vesting_shares( legacy_asset::from_asset( o.get_total_vesting_shares() ) ),
+      total_reward_fund_hive( legacy_asset::from_asset( o.get_total_reward_fund_hive() ) ),
       total_reward_shares2( o.total_reward_shares2 ),
-      pending_rewarded_vesting_shares( legacy_asset::from_asset( o.pending_rewarded_vesting_shares ) ),
-      pending_rewarded_vesting_steem( legacy_asset::from_asset( o.pending_rewarded_vesting_steem ) ),
+      pending_rewarded_vesting_shares( legacy_asset::from_asset( o.get_pending_rewarded_vesting_shares() ) ),
+      pending_rewarded_vesting_hive( legacy_asset::from_asset( o.get_pending_rewarded_vesting_hive() ) ),
       hbd_interest_rate( o.get_hbd_interest_rate() ),
-      hbd_print_rate( o.hbd_print_rate ),
+      hbd_print_rate( o.get_hbd_print_rate() ),
       maximum_block_size( o.maximum_block_size ),
       required_actions_partition_percent( o.required_actions_partition_percent ),
       current_aslot( o.current_aslot ),
@@ -411,12 +411,12 @@ struct extended_dynamic_global_properties
    legacy_asset      init_hbd_supply = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
    legacy_asset      current_hbd_supply = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
    legacy_asset      confidential_hbd_supply = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
-   legacy_asset      total_vesting_fund_steem;
+   legacy_asset      total_vesting_fund_hive;
    legacy_asset      total_vesting_shares;
-   legacy_asset      total_reward_fund_steem;
+   legacy_asset      total_reward_fund_hive;
    fc::uint128       total_reward_shares2;
    legacy_asset      pending_rewarded_vesting_shares;
-   legacy_asset      pending_rewarded_vesting_steem;
+   legacy_asset      pending_rewarded_vesting_hive;
 
    uint16_t          hbd_interest_rate = 0;
    uint16_t          hbd_print_rate = HIVE_100_PERCENT;
@@ -604,8 +604,8 @@ struct api_escrow_object
       ratification_deadline( e.ratification_deadline ),
       escrow_expiration( e.escrow_expiration ),
       hbd_balance( legacy_asset::from_asset( e.get_hbd_balance() ) ),
-      steem_balance( legacy_asset::from_asset( e.steem_balance ) ),
-      pending_fee( legacy_asset::from_asset( e.pending_fee ) ),
+      hive_balance( legacy_asset::from_asset( e.get_hive_balance() ) ),
+      pending_fee( legacy_asset::from_asset( e.get_fee() ) ),
       to_approved( e.to_approved ),
       disputed( e.disputed ),
       agent_approved( e.agent_approved )
@@ -619,7 +619,7 @@ struct api_escrow_object
    time_point_sec    ratification_deadline;
    time_point_sec    escrow_expiration;
    legacy_asset      hbd_balance;
-   legacy_asset      steem_balance;
+   legacy_asset      hive_balance;
    legacy_asset      pending_fee;
    bool              to_approved = false;
    bool              disputed = false;
@@ -909,7 +909,7 @@ struct ticker
       lowest_ask( t.lowest_ask ),
       highest_bid( t.highest_bid ),
       percent_change( t.percent_change ),
-      steem_volume( legacy_asset::from_asset( t.steem_volume ) ),
+      hive_volume( legacy_asset::from_asset( t.hive_volume ) ),
       hbd_volume( legacy_asset::from_asset( t.hbd_volume ) )
    {}
 
@@ -917,7 +917,7 @@ struct ticker
    double         lowest_ask = 0;
    double         highest_bid = 0;
    double         percent_change = 0;
-   legacy_asset   steem_volume;
+   legacy_asset   hive_volume;
    legacy_asset   hbd_volume;
 };
 
@@ -925,11 +925,11 @@ struct volume
 {
    volume() {}
    volume( const market_history::get_volume_return& v ) :
-      steem_volume( legacy_asset::from_asset( v.steem_volume ) ),
+      hive_volume( legacy_asset::from_asset( v.hive_volume ) ),
       hbd_volume( legacy_asset::from_asset( v.hbd_volume ) )
    {}
 
-   legacy_asset   steem_volume;
+   legacy_asset   hive_volume;
    legacy_asset   hbd_volume;
 };
 
@@ -1201,7 +1201,7 @@ FC_REFLECT( hive::plugins::condenser_api::api_account_object,
              (savings_balance)
              (hbd_balance)(hbd_seconds)(hbd_seconds_last_update)(hbd_last_interest_payment)
              (savings_hbd_balance)(savings_hbd_seconds)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)(savings_withdraw_requests)
-             (reward_hbd_balance)(reward_steem_balance)(reward_vesting_balance)(reward_vesting_steem)
+             (reward_hbd_balance)(reward_hive_balance)(reward_vesting_balance)(reward_vesting_hive)
              (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)(vesting_withdraw_rate)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
              (curation_rewards)
              (posting_rewards)
@@ -1231,8 +1231,8 @@ FC_REFLECT( hive::plugins::condenser_api::extended_dynamic_global_properties,
             (head_block_number)(head_block_id)(time)
             (current_witness)(total_pow)(num_pow_witnesses)
             (virtual_supply)(current_supply)(confidential_supply)(init_hbd_supply)(current_hbd_supply)(confidential_hbd_supply)
-            (total_vesting_fund_steem)(total_vesting_shares)
-            (total_reward_fund_steem)(total_reward_shares2)(pending_rewarded_vesting_shares)(pending_rewarded_vesting_steem)
+            (total_vesting_fund_hive)(total_vesting_shares)
+            (total_reward_fund_hive)(total_reward_shares2)(pending_rewarded_vesting_shares)(pending_rewarded_vesting_hive)
             (hbd_interest_rate)(hbd_print_rate)
             (maximum_block_size)(required_actions_partition_percent)(current_aslot)(recent_slots_filled)(participation_count)(last_irreversible_block_num)
             (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)(available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)
@@ -1296,7 +1296,7 @@ FC_REFLECT( hive::plugins::condenser_api::api_reward_fund_object,
 FC_REFLECT( hive::plugins::condenser_api::api_escrow_object,
              (id)(escrow_id)(from)(to)(agent)
              (ratification_deadline)(escrow_expiration)
-             (hbd_balance)(steem_balance)(pending_fee)
+             (hbd_balance)(hive_balance)(pending_fee)
              (to_approved)(agent_approved)(disputed) )
 
 FC_REFLECT( hive::plugins::condenser_api::api_savings_withdraw_object,
@@ -1347,10 +1347,10 @@ FC_REFLECT( hive::plugins::condenser_api::comment_blog_entry,
             (comment)(blog)(reblog_on)(entry_id) )
 
 FC_REFLECT( hive::plugins::condenser_api::ticker,
-            (latest)(lowest_ask)(highest_bid)(percent_change)(steem_volume)(hbd_volume) )
+            (latest)(lowest_ask)(highest_bid)(percent_change)(hive_volume)(hbd_volume) )
 
 FC_REFLECT( hive::plugins::condenser_api::volume,
-            (steem_volume)(hbd_volume) )
+            (hive_volume)(hbd_volume) )
 
 FC_REFLECT( hive::plugins::condenser_api::order,
             (order_price)(real_price)(hive)(hbd)(created) )

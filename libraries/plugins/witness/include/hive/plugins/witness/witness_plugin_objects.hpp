@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/chain/steem_object_types.hpp>
+#include <hive/chain/hive_object_types.hpp>
 
 #ifndef HIVE_WITNESS_SPACE_ID
 #define HIVE_WITNESS_SPACE_ID 19

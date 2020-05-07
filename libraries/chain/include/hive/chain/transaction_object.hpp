@@ -1,10 +1,10 @@
 #pragma once
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/transaction.hpp>
 
 #include <hive/chain/buffer_type.hpp>
-#include <hive/chain/steem_object_types.hpp>
+#include <hive/chain/hive_object_types.hpp>
 
 //#include <boost/multi_index/hashed_index.hpp>
 

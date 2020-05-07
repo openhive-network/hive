@@ -1,5 +1,5 @@
 #pragma once
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 #include <hive/protocol/asset.hpp>
 
 namespace hive { namespace plugins { namespace condenser_api {

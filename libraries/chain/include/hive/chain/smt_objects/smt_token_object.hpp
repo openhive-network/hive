@@ -1,7 +1,7 @@
 #pragma once
 
-#include <hive/chain/steem_fwd.hpp>
-#include <hive/chain/steem_object_types.hpp>
+#include <hive/chain/hive_fwd.hpp>
+#include <hive/chain/hive_object_types.hpp>
 #include <hive/protocol/smt_operations.hpp>
 
 #ifdef HIVE_ENABLE_SMT
@@ -31,7 +31,7 @@ public:
 
    struct smt_market_maker_state
    {
-      asset    steem_balance;
+      asset    hive_balance;
       asset    token_balance;
       uint32_t reserve_ratio = 0;
    };
@@ -129,8 +129,8 @@ public:
    time_point_sec                contribution_begin_time;
    time_point_sec                contribution_end_time;
    time_point_sec                launch_time;
-   share_type                    steem_units_soft_cap = -1;
-   share_type                    steem_units_hard_cap = -1;
+   share_type                    hive_units_soft_cap = -1;
+   share_type                    hive_units_hard_cap = -1;
    asset                         contributed = asset( 0, HIVE_SYMBOL );
 };
 
@@ -274,7 +274,7 @@ FC_REFLECT_ENUM( hive::chain::smt_phase,
 )
 
 FC_REFLECT( hive::chain::smt_token_object::smt_market_maker_state,
-   (steem_balance)
+   (hive_balance)
    (token_balance)
    (reserve_ratio)
 )
@@ -310,8 +310,8 @@ FC_REFLECT( hive::chain::smt_ico_object,
    (contribution_begin_time)
    (contribution_end_time)
    (launch_time)
-   (steem_units_soft_cap)
-   (steem_units_hard_cap)
+   (hive_units_soft_cap)
+   (hive_units_hard_cap)
    (contributed)
 )
 

@@ -1,10 +1,10 @@
 #pragma once
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/authority.hpp>
-#include <hive/protocol/steem_operations.hpp>
+#include <hive/protocol/hive_operations.hpp>
 
-#include <hive/chain/steem_object_types.hpp>
+#include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/witness_objects.hpp>
 
 #include <hive/chain/util/greedy_asset.hpp>

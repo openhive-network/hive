@@ -1,7 +1,7 @@
 #pragma once
 #include <hive/app/plugin.hpp>
 
-#include <hive/chain/steem_object_types.hpp>
+#include <hive/chain/hive_object_types.hpp>
 
 #include <boost/multi_index/composite_key.hpp>
 
@@ -76,7 +76,7 @@ struct bucket_object : public object< bucket_object_type, bucket_object >
    uint32_t             operations = 0;                              ///< Operations evaluated
    uint32_t             transactions = 0;                            ///< Transactions processed
    uint32_t             transfers = 0;                               ///< Account to account transfers
-   share_type           steem_transferred = 0;                       ///< HIVE transferred from account to account
+   share_type           hive_transferred = 0;                       ///< HIVE transferred from account to account
    share_type           hbd_transferred = 0;                         ///< HBD transferred from account to account
    share_type           hbd_paid_as_interest = 0;                    ///< HBD paid as interest
    uint32_t             paid_accounts_created = 0;                   ///< Accounts created with fee
@@ -97,7 +97,7 @@ struct bucket_object : public object< bucket_object_type, bucket_object >
    share_type           vests_paid_to_curators = 0;                  ///< Ammount of VESTS paid to curators
    share_type           liquidity_rewards_paid = 0;                  ///< Ammount of HIVE paid to market makers
    uint32_t             transfers_to_vesting = 0;                    ///< Transfers of HIVE into VESTS
-   share_type           steem_vested = 0;                            ///< Ammount of HIVE vested
+   share_type           hive_vested = 0;                             ///< Ammount of HIVE vested
    uint32_t             new_vesting_withdrawal_requests = 0;         ///< New vesting withdrawal requests
    uint32_t             modified_vesting_withdrawal_requests = 0;    ///< Changes to vesting withdrawal requests
    share_type           vesting_withdraw_rate_delta = 0;
@@ -108,7 +108,7 @@ struct bucket_object : public object< bucket_object_type, bucket_object >
    uint32_t             hbd_conversion_requests_created = 0;         ///< HBD conversion requests created
    share_type           hbd_to_be_converted = 0;                     ///< Amount of HBD to be converted
    uint32_t             hbd_conversion_requests_filled = 0;          ///< HBD conversion requests filled
-   share_type           steem_converted = 0;                         ///< Amount of HIVE that was converted
+   share_type           hive_converted = 0;                          ///< Amount of HIVE that was converted
    uint32_t             limit_orders_created = 0;                    ///< Limit orders created
    uint32_t             limit_orders_filled = 0;                     ///< Limit orders filled
    uint32_t             limit_orders_cancelled = 0;                  ///< Limit orders cancelled
@@ -145,7 +145,7 @@ FC_REFLECT( hive::blockchain_statistics::bucket_object,
    (operations)
    (transactions)
    (transfers)
-   (steem_transferred)
+   (hive_transferred)
    (hbd_transferred)
    (hbd_paid_as_interest)
    (paid_accounts_created)
@@ -166,7 +166,7 @@ FC_REFLECT( hive::blockchain_statistics::bucket_object,
    (vests_paid_to_curators)
    (liquidity_rewards_paid)
    (transfers_to_vesting)
-   (steem_vested)
+   (hive_vested)
    (new_vesting_withdrawal_requests)
    (modified_vesting_withdrawal_requests)
    (vesting_withdraw_rate_delta)
@@ -177,7 +177,7 @@ FC_REFLECT( hive::blockchain_statistics::bucket_object,
    (hbd_conversion_requests_created)
    (hbd_to_be_converted)
    (hbd_conversion_requests_filled)
-   (steem_converted)
+   (hive_converted)
    (limit_orders_created)
    (limit_orders_filled)
    (limit_orders_cancelled)

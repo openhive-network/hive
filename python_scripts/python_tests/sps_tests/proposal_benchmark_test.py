@@ -3,7 +3,7 @@
 #example A:
 #"/home/a/hived" Path to hived exe
 # "/home/a/data"  Path to blockchain directory
-# "../../hive_utils/resources/config.ini.in" Path to config.ini.in - usually ./steem_utils/resources/config.ini.in
+# "../../hive_utils/resources/config.ini.in" Path to config.ini.in - usually ./hive_utils/resources/config.ini.in
 #  1 - number of proposals for every account
 #  200 - number of accounts
 #  200000.000- number of HIVE's for every account
@@ -15,7 +15,7 @@
 #example B:
 #"/home/a/hived" Path to hived exe
 # "/home/a/data"  Path to blockchain directory
-# "../../hive_utils/resources/config.ini.in" Path to config.ini.in - usually ./steem_utils/resources/config.ini.in
+# "../../hive_utils/resources/config.ini.in" Path to config.ini.in - usually ./hive_utils/resources/config.ini.in
 #  2 - number of proposals for every account
 #  300 - number of accounts
 #  200000.000- number of HIVE's for every account
@@ -100,10 +100,10 @@ def transfer_to_vesting(node, from_account, accounts, vests ):
 
 # transfer initminer pychol "399.000 TESTS" "initial transfer" true
 # transfer initminer pychol "398.000 TBD" "initial transfer" true
-def transfer_assets_to_accounts(node, from_account, accounts, steems, hbds):
+def transfer_assets_to_accounts(node, from_account, accounts, hives, hbds):
     for acnt in accounts:
-        logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt['name'], steems, "TESTS"))
-        node.commit.transfer(acnt['name'], steems, "TESTS", memo = "initial transfer", account = from_account)
+        logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt['name'], hives, "TESTS"))
+        node.commit.transfer(acnt['name'], hives, "TESTS", memo = "initial transfer", account = from_account)
      hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
     for acnt in accounts:
         logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt['name'], hbds, "TBD"))
@@ -111,20 +111,20 @@ def transfer_assets_to_accounts(node, from_account, accounts, steems, hbds):
     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
 def create_permlink( node, account ):
-   return "steempy-proposal-title-{}".format( account )
+   return "hivepy-proposal-title-{}".format( account )
 
 def create_posts(node, accounts):
     logger.info("Creating posts...")
     i = 0
     for acnt in accounts:
-        node.commit.post("Steempy proposal title [{}]".format(acnt['name']), 
-            "Steempy proposal body [{}]".format(acnt['name']), 
+        node.commit.post("Hivepy proposal title [{}]".format(acnt['name']), 
+            "Hivepy proposal body [{}]".format(acnt['name']), 
             acnt['name'], 
             permlink = create_permlink( node, acnt['name'] ), 
             tags = "proposals")
         i += 1
         if ( i % data_size ) == 0:
-            steem_utils.steem_tools.wait_for_blocks_produced(delayed_blocks_ex, node.url)
+            hive_utils.hive_tools.wait_for_blocks_produced(delayed_blocks_ex, node.url)
             print_progress( i, len( accounts ) )
 
     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
@@ -170,7 +170,7 @@ def create_proposals(node, accounts, start_date, end_date, nr_proposals):
             )
             i += 1
             if ( i % data_size ) == 0:
-                steem_utils.steem_tools.wait_for_blocks_produced(delayed_blocks_ex, node.url)
+                hive_utils.hive_tools.wait_for_blocks_produced(delayed_blocks_ex, node.url)
                 print_progress( i, nr_proposals * len( accounts ) )
 
      hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
@@ -245,7 +245,7 @@ def generate_blocks( node, time, wif ):
     node.debug_generate_blocks( wif, delayed_blocks_ex )
 
 def get_block_time( node ):
-    global_properties = steem_utils.steem_tools.get_dynamic_global_properties( node.url )
+    global_properties = hive_utils.hive_tools.get_dynamic_global_properties( node.url )
 
     last_block_number = global_properties.get('result', None)
     return last_block_number[ "time" ]
@@ -263,11 +263,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("path", type=str, help = "Path to hived")
     parser.add_argument("dir", type=str, help = "Path to blockchain directory")
-    parser.add_argument("ini", type=str, help = "Path to config.ini.in - usually ./steem_utils/resources/config.ini.in")
+    parser.add_argument("ini", type=str, help = "Path to config.ini.in - usually ./hive_utils/resources/config.ini.in")
     parser.add_argument("creator", help = "Account to create test accounts with")
     parser.add_argument("nr_proposals", type=int, help = "Nr proposals for every account")
     parser.add_argument("nr_accounts", type=int, help = "Nr accounts")
-    parser.add_argument("steems", type=str, default="200000.000", help = "HIVE's")
+    parser.add_argument("hives", type=str, default="200000.000", help = "HIVE's")
     parser.add_argument("hbds", type=str, default="30000.000", help = "HBD's")
     parser.add_argument("vests", type=str, default="100000.000", help = "VEST's")
 
@@ -296,7 +296,7 @@ if __name__ == '__main__':
 
             create_accounts(node_client, args.creator, accounts)
             transfer_to_vesting(node_client, args.creator, accounts, args.vests )
-            transfer_assets_to_accounts(node_client, args.creator, accounts, args.steems, args.hbds )
+            transfer_assets_to_accounts(node_client, args.creator, accounts, args.hives, args.hbds )
             create_posts(node_client, accounts)
 
             #total proposals: nr_proposals * accounts

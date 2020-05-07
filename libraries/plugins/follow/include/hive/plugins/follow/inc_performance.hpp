@@ -1,7 +1,7 @@
 #pragma once
 
 #include <hive/protocol/types.hpp>
-#include <hive/chain/steem_object_types.hpp>
+#include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/database.hpp>
 
 namespace hive { namespace plugins{ namespace follow {

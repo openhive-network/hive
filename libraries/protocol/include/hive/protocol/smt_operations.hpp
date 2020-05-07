@@ -43,10 +43,10 @@ struct smt_create_operation : public base_operation
 
 struct smt_generation_unit
 {
-   flat_map< account_name_type, uint16_t >        steem_unit;
+   flat_map< account_name_type, uint16_t >        hive_unit;
    flat_map< account_name_type, uint16_t >        token_unit;
 
-   uint32_t steem_unit_sum()const;
+   uint32_t hive_unit_sum()const;
    uint32_t token_unit_sum()const;
 
    void validate()const;
@@ -84,8 +84,8 @@ struct smt_setup_operation : public base_operation
    time_point_sec          contribution_end_time;
    time_point_sec          launch_time;
 
-   share_type              steem_units_soft_cap;
-   share_type              steem_units_hard_cap;
+   share_type              hive_units_soft_cap;
+   share_type              hive_units_hard_cap;
 
    extensions_type         extensions;
 
@@ -229,14 +229,14 @@ FC_REFLECT(
    (contribution_begin_time)
    (contribution_end_time)
    (launch_time)
-   (steem_units_soft_cap)
-   (steem_units_hard_cap)
+   (hive_units_soft_cap)
+   (hive_units_hard_cap)
    (extensions)
    )
 
 FC_REFLECT(
    hive::protocol::smt_generation_unit,
-   (steem_unit)
+   (hive_unit)
    (token_unit)
    )
 

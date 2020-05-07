@@ -184,7 +184,7 @@ namespace hive { namespace chain {
          const signed_transaction   get_recent_transaction( const transaction_id_type& trx_id )const;
          std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
-         chain_id_type steem_chain_id = HIVE_CHAIN_ID;
+         chain_id_type hive_chain_id = HIVE_CHAIN_ID;
          chain_id_type get_chain_id() const;
          void set_chain_id( const chain_id_type& chain_id );
 
@@ -455,7 +455,7 @@ namespace hive { namespace chain {
           * HIVE.  Return 0 HBD if there isn't a current_median_history
           */
          asset to_hbd( const asset& hive )const;
-         asset to_steem( const asset& hbd )const;
+         asset to_hive( const asset& hbd )const;
 
          time_point_sec   head_block_time()const;
          uint32_t         head_block_num()const;
@@ -547,8 +547,8 @@ namespace hive { namespace chain {
          //Clears all pending operations on account that involve balance, moves tokens to treasury account
          void clear_accounts( hf23_helper::hf23_items& balances, const std::set< std::string >& cleared_accounts );
          void clear_account( const account_object& account,
-            asset* transferred_hbd_ptr = nullptr, asset* transferred_steem_ptr = nullptr,
-            asset* converted_vests_ptr = nullptr, asset* steem_from_vests_ptr = nullptr );
+            asset* transferred_hbd_ptr = nullptr, asset* transferred_hive_ptr = nullptr,
+            asset* converted_vests_ptr = nullptr, asset* hive_from_vests_ptr = nullptr );
 
    protected:
          //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead
@@ -573,8 +573,8 @@ namespace hive { namespace chain {
          void create_block_summary(const signed_block& next_block);
 
          //calculates sum of all balances stored on given account, returns true if any is nonzero
-         bool collect_account_total_balance( const account_object& account, asset* total_steem, asset* total_hbd,
-            asset* total_vests, asset* vesting_shares_steem_value );
+         bool collect_account_total_balance( const account_object& account, asset* total_hive, asset* total_hbd,
+            asset* total_vests, asset* vesting_shares_hive_value );
          //removes (burns) balances held on null account
          void clear_null_account_balance();
          //moves balances from old treasury account to current one

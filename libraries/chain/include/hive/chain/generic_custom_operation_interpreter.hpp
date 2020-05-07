@@ -5,7 +5,7 @@
 #include <hive/chain/schema_types.hpp>
 #include <hive/schema/schema.hpp>
 
-#include <hive/protocol/steem_operations.hpp>
+#include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/operation_util_impl.hpp>
 #include <hive/protocol/types.hpp>
 

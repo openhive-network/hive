@@ -747,7 +747,7 @@ def main():
    elif len( sys.argv ) == 2:
       url = sys.argv[1]
    else:
-      exit( "Usage: api_error_smoketest.py <steem_api_endpoint>" )
+      exit( "Usage: api_error_smoketest.py <hive_api_endpoint>" )
 
    print( "Testing against endpoint: " + url )
 

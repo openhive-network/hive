@@ -1,5 +1,5 @@
 #pragma once
-#include <hive/chain/steem_object_types.hpp>
+#include <hive/chain/hive_object_types.hpp>
 #include <hive/protocol/transaction.hpp>
 
 namespace hive { namespace plugins { namespace transaction_status {

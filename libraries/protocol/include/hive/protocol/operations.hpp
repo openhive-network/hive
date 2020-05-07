@@ -3,7 +3,7 @@
 #include <hive/protocol/types.hpp>
 
 #include <hive/protocol/operation_util.hpp>
-#include <hive/protocol/steem_operations.hpp>
+#include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/steem_virtual_operations.hpp>
 #include <hive/protocol/smt_operations.hpp>
 #include <hive/protocol/sps_operations.hpp>

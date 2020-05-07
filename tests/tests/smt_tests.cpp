@@ -6,7 +6,7 @@ FC_TODO(Extend testing scenarios to support multiple NAIs per account)
 
 #include <boost/test/unit_test.hpp>
 
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
@@ -307,83 +307,83 @@ BOOST_AUTO_TEST_CASE( setup_validate )
          to_many_units.emplace( "alice" + std::to_string( i ), 1 );
 
       //FC_ASSERT( hive_unit.size() <= SMT_MAX_UNIT_ROUTES )
-      gp.pre_soft_cap_unit.steem_unit = to_many_units;
+      gp.pre_soft_cap_unit.hive_unit = to_many_units;
       gp.pre_soft_cap_unit.token_unit = { { "bob",3 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "bob2", 33 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "bob2", 33 } };
       gp.pre_soft_cap_unit.token_unit = to_many_units;
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       //Invalid account
-      gp.pre_soft_cap_unit.steem_unit = { { "{}{}", 12 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "{}{}", 12 } };
       gp.pre_soft_cap_unit.token_unit = { { "xyz", 13 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "xyz2", 14 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "xyz2", 14 } };
       gp.pre_soft_cap_unit.token_unit = { { "{}", 15 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       //Invalid account -> valid is '$from'
-      gp.pre_soft_cap_unit.steem_unit = { { "$fromx", 1 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$fromx", 1 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from", 2 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "$from", 3 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$from", 3 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from_", 4 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       //Invalid account -> valid is '$from.vesting'
-      gp.pre_soft_cap_unit.steem_unit = { { "$from.vestingx", 2 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$from.vestingx", 2 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from.vesting", 222 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "$from.vesting", 13 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$from.vesting", 13 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from.vesting.vesting", 3 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       //FC_ASSERT( hive_unit.value > 0 );
-      gp.pre_soft_cap_unit.steem_unit = { { "$from.vesting", 0 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$from.vesting", 0 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from.vesting", 2 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "$from.vesting", 10 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$from.vesting", 10 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from.vesting", 0 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       //FC_ASSERT( hive_unit.value > 0 );
-      gp.pre_soft_cap_unit.steem_unit = { { "$from", 0 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$from", 0 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from", 100 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "$from", 33 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$from", 33 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from", 0 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       //FC_ASSERT( hive_unit.value > 0 );
-      gp.pre_soft_cap_unit.steem_unit = { { "qprst", 0 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "qprst", 0 } };
       gp.pre_soft_cap_unit.token_unit = { { "qprst", 67 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "my_account2", 55 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "my_account2", 55 } };
       gp.pre_soft_cap_unit.token_unit = { { "my_account", 0 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "bob", 2 }, { "$from.vesting", 3 }, { "$from", 4 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "bob", 2 }, { "$from.vesting", 3 }, { "$from", 4 } };
       gp.pre_soft_cap_unit.token_unit = { { "alice", 5 }, { "$from", 3 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
@@ -397,31 +397,31 @@ BOOST_AUTO_TEST_CASE( setup_validate )
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       gp.soft_cap_percent = HIVE_100_PERCENT;
-      gp.post_soft_cap_unit.steem_unit = { { "bob", 2 } };
+      gp.post_soft_cap_unit.hive_unit = { { "bob", 2 } };
       gp.post_soft_cap_unit.token_unit = {};
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       gp.soft_cap_percent = HIVE_100_PERCENT;
-      gp.post_soft_cap_unit.steem_unit = {};
+      gp.post_soft_cap_unit.hive_unit = {};
       gp.post_soft_cap_unit.token_unit = { { "alice", 3 } };
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       gp.soft_cap_percent = HIVE_100_PERCENT / 2;
-      gp.post_soft_cap_unit.steem_unit = {};
+      gp.post_soft_cap_unit.hive_unit = {};
       gp.post_soft_cap_unit.token_unit = {};
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       gp.soft_cap_percent = HIVE_100_PERCENT;
-      gp.post_soft_cap_unit.steem_unit = {};
+      gp.post_soft_cap_unit.hive_unit = {};
       gp.post_soft_cap_unit.token_unit = {};
       op.initial_generation_policy = gp;
       HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      op.steem_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
-      op.steem_units_hard_cap = SMT_MIN_HARD_CAP_HIVE_UNITS;
+      op.hive_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
+      op.hive_units_hard_cap = SMT_MIN_HARD_CAP_HIVE_UNITS;
       op.validate();
 
       gp.max_unit_ratio = ( ( 11 * SMT_MIN_HARD_CAP_HIVE_UNITS ) / SMT_MIN_SATURATION_HIVE_UNITS ) * 2;
@@ -435,7 +435,7 @@ BOOST_AUTO_TEST_CASE( setup_validate )
       smt_capped_generation_policy gp_valid = gp;
 
       gp.soft_cap_percent = 1;
-      gp.post_soft_cap_unit.steem_unit = { { "bob", 2 } };
+      gp.post_soft_cap_unit.hive_unit = { { "bob", 2 } };
       op.initial_generation_policy = gp;
       op.validate();
 
@@ -448,7 +448,7 @@ BOOST_AUTO_TEST_CASE( setup_validate )
 
       gp.soft_cap_percent = HIVE_100_PERCENT - 1;
       gp.min_unit_ratio = max_val_32;
-      gp.post_soft_cap_unit.steem_unit = { { "abc", 1 } };
+      gp.post_soft_cap_unit.hive_unit = { { "abc", 1 } };
       gp.post_soft_cap_unit.token_unit = { { "abc1", max_val_16 } };
       gp.pre_soft_cap_unit.token_unit = { { "abc2", max_val_16 } };
       op.initial_generation_policy = gp;
@@ -457,8 +457,8 @@ BOOST_AUTO_TEST_CASE( setup_validate )
       gp.min_unit_ratio = 1;
       gp.post_soft_cap_unit.token_unit = { { "abc1", 1 } };
       gp.pre_soft_cap_unit.token_unit = { { "abc2", 1 } };
-      gp.post_soft_cap_unit.steem_unit = { { "abc3", max_val_16 } };
-      gp.pre_soft_cap_unit.steem_unit = { { "abc34", max_val_16 } };
+      gp.post_soft_cap_unit.hive_unit = { { "abc3", max_val_16 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "abc34", max_val_16 } };
       op.initial_generation_policy = gp;
       op.validate();
    }
@@ -503,8 +503,8 @@ BOOST_AUTO_TEST_CASE( setup_apply )
 
       smt_setup_operation op;
       op.control_account = "alice";
-      op.steem_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
-      op.steem_units_hard_cap = SMT_MIN_HARD_CAP_HIVE_UNITS;
+      op.hive_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
+      op.hive_units_hard_cap = SMT_MIN_HARD_CAP_HIVE_UNITS;
 
       smt_capped_generation_policy gp = get_capped_generation_policy
       (

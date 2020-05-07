@@ -661,7 +661,7 @@ At first look it works good but sometimes output differs in:
 `last_irreversible_block_num
 `sps_interval_ledger
 `time
-`total_vesting_fund_steem
+`total_vesting_fund_hive
 `total_vesting_shares
 `virtual_supply
 
@@ -981,7 +981,7 @@ I dont know if these are valid values
 ```
 "blockchain_version": "0.22.1",
 "fc_revision": "b0e0336500baac1d1f52dd883ca0b0dcb58d5623",
-"steem_revision": "b0e0336500baac1d1f52dd883ca0b0dcb58d5623"
+"hive_revision": "b0e0336500baac1d1f52dd883ca0b0dcb58d5623"
 ```
 
 #### get_vesting_delegations

@@ -1,5 +1,5 @@
 #pragma once
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 #include <appbase/application.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/plugins/chain/abstract_block_producer.hpp>

@@ -88,8 +88,8 @@ class HiveNode(object):
     self.hived_lock.release()
 
 class HiveNodeInScreen(object):
-  def __init__(self, steem_executable, working_dir, config_src_path, run_using_existing_data = False):
-    self.steem_executable = steem_executable
+  def __init__(self, hive_executable, working_dir, config_src_path, run_using_existing_data = False):
+    self.hive_executable = hive_executable
     self.working_dir = working_dir
     self.config_src_path = config_src_path
 
@@ -103,13 +103,13 @@ class HiveNodeInScreen(object):
       # copy config file to working dir
       copy(self.config_src_path, self.working_dir + "/config.ini")
 
-    self.steem_config = self.parse_node_config_file(self.working_dir + "/config.ini")
-    self.ip_address, self.port = self.steem_config["webserver-http-endpoint"][0].split(":")
+    self.hive_config = self.parse_node_config_file(self.working_dir + "/config.ini")
+    self.ip_address, self.port = self.hive_config["webserver-http-endpoint"][0].split(":")
     self.ip_address = "http://{}".format(self.ip_address)
     self.node_running = False
 
   def get_from_config(self, key):
-    return self.steem_config.get(key, None)
+    return self.hive_config.get(key, None)
 
   def get_node_url(self):
     return "{}:{}/".format(self.ip_address, self.port)
@@ -144,7 +144,7 @@ class HiveNodeInScreen(object):
     logger.info("*** START NODE at {0}:{1} in {2}".format(self.ip_address, self.port, self.working_dir))
 
     parameters = [
-      self.steem_executable,
+      self.hive_executable,
       "-d",
       self.working_dir,
       "--advanced-benchmark",
@@ -154,10 +154,10 @@ class HiveNodeInScreen(object):
 
     parameters = parameters + additional_params
     
-    self.pid_file_name = "{0}/run_steem-{1}.pid".format(self.working_dir, self.port)
+    self.pid_file_name = "{0}/run_hive-{1}.pid".format(self.working_dir, self.port)
     current_time_str = datetime.datetime.now().strftime("%Y-%m-%d")
     log_file_name = "{0}/{1}-{2}-{3}.log".format(self.working_dir, "hive", self.port, current_time_str)
-    screen_cfg_name = "{0}/steem_screen-{1}.cfg".format(self.working_dir, self.port)
+    screen_cfg_name = "{0}/hive_screen-{1}.cfg".format(self.working_dir, self.port)
 
     save_screen_cfg(screen_cfg_name, log_file_name)
     screen_params = [

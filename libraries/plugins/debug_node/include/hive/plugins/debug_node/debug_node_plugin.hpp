@@ -1,6 +1,6 @@
 
 #pragma once
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <fc/variant_object.hpp>

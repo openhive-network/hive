@@ -1,4 +1,4 @@
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/sps_operations.hpp>
 

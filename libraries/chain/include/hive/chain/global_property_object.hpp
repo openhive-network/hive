@@ -1,9 +1,9 @@
 #pragma once
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <fc/uint128.hpp>
 
-#include <hive/chain/steem_object_types.hpp>
+#include <hive/chain/hive_object_types.hpp>
 
 #include <hive/protocol/asset.hpp>
 
@@ -45,15 +45,15 @@ namespace hive { namespace chain {
          uint16_t get_hbd_print_rate() const { return hbd_print_rate; }
 
          //pool of HIVE tokens vested normally
-         const asset& get_total_vesting_fund_hive() const { return total_vesting_fund_steem; }
+         const asset& get_total_vesting_fund_hive() const { return total_vesting_fund_hive; }
          //amount of VESTS produced from HIVE held in normal vested fund
          const asset& get_total_vesting_shares() const { return total_vesting_shares; }
 
          //pool of HIVE tokens for pending (liquid) rewards
-         const asset& get_total_reward_fund_hive() const { return total_reward_fund_steem; }
+         const asset& get_total_reward_fund_hive() const { return total_reward_fund_hive; }
 
          //pool of HIVE tokens for pending (vested) rewards
-         const asset& get_pending_rewarded_vesting_hive() const { return pending_rewarded_vesting_steem; }
+         const asset& get_pending_rewarded_vesting_hive() const { return pending_rewarded_vesting_hive; }
          //amount of VESTS produced from HIVE held in pending reward vested fund
          const asset& get_pending_rewarded_vesting_shares() const { return pending_rewarded_vesting_shares; }
 
@@ -80,25 +80,25 @@ namespace hive { namespace chain {
          asset       current_supply             = asset( 0, HIVE_SYMBOL );
          asset       init_hbd_supply            = asset( 0, HBD_SYMBOL );
          asset       current_hbd_supply         = asset( 0, HBD_SYMBOL );
-         asset       total_vesting_fund_steem   = asset( 0, HIVE_SYMBOL );
+         asset       total_vesting_fund_hive    = asset( 0, HIVE_SYMBOL );
          asset       total_vesting_shares       = asset( 0, VESTS_SYMBOL );
-         asset       total_reward_fund_steem    = asset( 0, HIVE_SYMBOL );
+         asset       total_reward_fund_hive     = asset( 0, HIVE_SYMBOL );
          fc::uint128 total_reward_shares2; ///< the running total of REWARD^2
          asset       pending_rewarded_vesting_shares = asset( 0, VESTS_SYMBOL );
-         asset       pending_rewarded_vesting_steem  = asset( 0, HIVE_SYMBOL );
+         asset       pending_rewarded_vesting_hive   = asset( 0, HIVE_SYMBOL );
 
          price       get_vesting_share_price() const
          {
-            if ( total_vesting_fund_steem.amount == 0 || total_vesting_shares.amount == 0 )
+            if ( total_vesting_fund_hive.amount == 0 || total_vesting_shares.amount == 0 )
                return price ( asset( 1000, HIVE_SYMBOL ), asset( 1000000, VESTS_SYMBOL ) );
 
-            return price( total_vesting_shares, total_vesting_fund_steem );
+            return price( total_vesting_shares, total_vesting_fund_hive );
          }
 
          price get_reward_vesting_share_price() const
          {
             return price( total_vesting_shares + pending_rewarded_vesting_shares,
-               total_vesting_fund_steem + pending_rewarded_vesting_steem );
+               total_vesting_fund_hive + pending_rewarded_vesting_hive );
          }
 
          /**
@@ -206,12 +206,12 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
              (current_supply)
              (init_hbd_supply)
              (current_hbd_supply)
-             (total_vesting_fund_steem)
+             (total_vesting_fund_hive)
              (total_vesting_shares)
-             (total_reward_fund_steem)
+             (total_reward_fund_hive)
              (total_reward_shares2)
              (pending_rewarded_vesting_shares)
-             (pending_rewarded_vesting_steem)
+             (pending_rewarded_vesting_hive)
              (hbd_interest_rate)
              (hbd_print_rate)
              (maximum_block_size)

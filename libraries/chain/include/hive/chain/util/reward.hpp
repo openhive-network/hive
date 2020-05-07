@@ -25,8 +25,8 @@ struct comment_reward_context
    uint16_t   reward_weight = 0;
    asset      max_hbd;
    uint128_t  total_reward_shares2;
-   asset      total_reward_fund_steem;
-   price      current_steem_price;
+   asset      total_reward_fund_hive;
+   price      current_hive_price;
    protocol::curve_id   reward_curve = protocol::quadratic;
    uint128_t  content_constant = HIVE_CONTENT_CONSTANT_HF0;
 };
@@ -40,9 +40,9 @@ inline uint128_t get_content_constant_s()
 
 uint128_t evaluate_reward_curve( const uint128_t& rshares, const protocol::curve_id& curve = protocol::quadratic, const uint128_t& var1 = HIVE_CONTENT_CONSTANT_HF0 );
 
-inline bool is_comment_payout_dust( const price& p, uint64_t steem_payout )
+inline bool is_comment_payout_dust( const price& p, uint64_t hive_payout )
 {
-   return to_hbd( p, asset( steem_payout, HIVE_SYMBOL ) ) < HIVE_MIN_PAYOUT_HBD;
+   return to_hbd( p, asset( hive_payout, HIVE_SYMBOL ) ) < HIVE_MIN_PAYOUT_HBD;
 }
 
 } } } // hive::chain::util
@@ -52,8 +52,8 @@ FC_REFLECT( hive::chain::util::comment_reward_context,
    (reward_weight)
    (max_hbd)
    (total_reward_shares2)
-   (total_reward_fund_steem)
-   (current_steem_price)
+   (total_reward_fund_hive)
+   (current_hive_price)
    (reward_curve)
    (content_constant)
    )

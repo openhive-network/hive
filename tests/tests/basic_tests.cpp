@@ -24,12 +24,12 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/protocol/protocol.hpp>
 
-#include <hive/protocol/steem_operations.hpp>
+#include <hive/protocol/hive_operations.hpp>
 #include <hive/chain/account_object.hpp>
 
 #include <hive/chain/util/reward.hpp>

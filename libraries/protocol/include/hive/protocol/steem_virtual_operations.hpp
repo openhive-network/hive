@@ -10,12 +10,12 @@ namespace hive { namespace protocol {
    struct author_reward_operation : public virtual_operation {
       author_reward_operation(){}
       author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v )
-         :author(a), permlink(p), hbd_payout(s), steem_payout(st), vesting_payout(v){}
+         :author(a), permlink(p), hbd_payout(s), hive_payout(st), vesting_payout(v){}
 
       account_name_type author;
       string            permlink;
       asset             hbd_payout;
-      asset             steem_payout;
+      asset             hive_payout;
       asset             vesting_payout;
    };
 
@@ -158,13 +158,13 @@ namespace hive { namespace protocol {
    {
       comment_benefactor_reward_operation() {}
       comment_benefactor_reward_operation( const account_name_type& b, const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v )
-         : benefactor( b ), author( a ), permlink( p ), hbd_payout( s ), steem_payout( st ), vesting_payout( v ) {}
+         : benefactor( b ), author( a ), permlink( p ), hbd_payout( s ), hive_payout( st ), vesting_payout( v ) {}
 
       account_name_type benefactor;
       account_name_type author;
       string            permlink;
       asset             hbd_payout;
-      asset             steem_payout;
+      asset             hive_payout;
       asset             vesting_payout;
    };
 
@@ -212,32 +212,32 @@ namespace hive { namespace protocol {
       hardfork_hive_operation() {}
       hardfork_hive_operation( const account_name_type& acc, const account_name_type& _treasury,
          const asset& s, const asset& st, const asset& v, const asset& cs )
-         : account( acc ), treasury( _treasury ), hbd_transferred( s ), steem_transferred( st ), vests_converted( v ), total_steem_from_vests(cs)
+         : account( acc ), treasury( _treasury ), hbd_transferred( s ), hive_transferred( st ), vests_converted( v ), total_hive_from_vests(cs)
       {}
 
       account_name_type account;
       account_name_type treasury;
       asset             hbd_transferred;
-      asset             steem_transferred;
+      asset             hive_transferred;
       asset             vests_converted; // Amount of converted vests
-      asset             total_steem_from_vests; // Resulting HIVE from conversion
+      asset             total_hive_from_vests; // Resulting HIVE from conversion
    };
 
    struct hardfork_hive_restore_operation : public virtual_operation
    {
       hardfork_hive_restore_operation() {}
       hardfork_hive_restore_operation( const account_name_type& acc, const account_name_type& _treasury, const asset& s, const asset& st )
-         : account( acc ), treasury( _treasury ), hbd_transferred( s ), steem_transferred( st ) {}
+         : account( acc ), treasury( _treasury ), hbd_transferred( s ), hive_transferred( st ) {}
 
       account_name_type account;
       account_name_type treasury;
       asset             hbd_transferred;
-      asset             steem_transferred;
+      asset             hive_transferred;
    };
 
 } } //hive::protocol
 
-FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(steem_payout)(vesting_payout) )
+FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
 FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink) )
 FC_REFLECT( hive::protocol::comment_reward_operation, (author)(permlink)(payout) )
 FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
@@ -250,11 +250,11 @@ FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amo
 FC_REFLECT( hive::protocol::hardfork_operation, (hardfork_id) )
 FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink) )
 FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesting_shares) )
-FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(steem_payout)(vesting_payout) )
+FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
 FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared) )
 FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
 FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
 FC_REFLECT( hive::protocol::sps_fund_operation, (fund_account)(additional_funds) )
-FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(hbd_transferred)(steem_transferred)(vests_converted)(total_steem_from_vests) )
-FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(steem_transferred) )
+FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
+FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )

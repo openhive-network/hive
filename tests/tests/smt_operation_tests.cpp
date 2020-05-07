@@ -4,7 +4,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
@@ -1121,9 +1121,9 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
          db.modify( db.get_account( "alice" ), []( account_object& a )
          {
             a.reward_hbd_balance = ASSET( "10.000 TBD" );
-            a.reward_steem_balance = ASSET( "10.000 TESTS" );
+            a.reward_hive_balance = ASSET( "10.000 TESTS" );
             a.reward_vesting_balance = ASSET( "10.000000 VESTS" );
-            a.reward_vesting_steem = ASSET( "10.000 TESTS" );
+            a.reward_vesting_hive = ASSET( "10.000 TESTS" );
          });
 
          db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
@@ -1132,7 +1132,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
             gpo.current_supply += ASSET( "20.000 TESTS" );
             gpo.virtual_supply += ASSET( "20.000 TESTS" );
             gpo.pending_rewarded_vesting_shares += ASSET( "10.000000 VESTS" );
-            gpo.pending_rewarded_vesting_steem += ASSET( "10.000 TESTS" );
+            gpo.pending_rewarded_vesting_hive += ASSET( "10.000 TESTS" );
          });
       });
 
@@ -2810,8 +2810,8 @@ BOOST_AUTO_TEST_CASE( smt_contribute_apply )
          db.create< smt_ico_object >( [&]( smt_ico_object& o )
          {
             o.symbol = alice_symbol;
-            o.steem_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
-            o.steem_units_hard_cap = 99000;
+            o.hive_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
+            o.hive_units_hard_cap = 99000;
          } );
       } );
 

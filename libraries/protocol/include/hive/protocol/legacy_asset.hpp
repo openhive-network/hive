@@ -10,10 +10,10 @@
 
 namespace hive { namespace protocol {
 
-class legacy_steem_asset_symbol_type
+class legacy_hive_asset_symbol_type
 {
    public:
-      legacy_steem_asset_symbol_type() {}
+      legacy_hive_asset_symbol_type() {}
 
       bool is_canon()const
       {   return ( ser == STEEM_SYMBOL_SER );    }
@@ -50,7 +50,7 @@ struct legacy_hive_asset
       }
 
       share_type                       amount;
-      legacy_steem_asset_symbol_type   symbol;
+      legacy_hive_asset_symbol_type   symbol;
 };
 
 } }
@@ -58,7 +58,7 @@ struct legacy_hive_asset
 namespace fc { namespace raw {
 
 template< typename Stream >
-inline void pack( Stream& s, const hive::protocol::legacy_steem_asset_symbol_type& sym )
+inline void pack( Stream& s, const hive::protocol::legacy_hive_asset_symbol_type& sym )
 {
    switch( sym.ser )
    {
@@ -77,7 +77,7 @@ inline void pack( Stream& s, const hive::protocol::legacy_steem_asset_symbol_typ
 }
 
 template< typename Stream >
-inline void unpack( Stream& s, hive::protocol::legacy_steem_asset_symbol_type& sym, uint32_t depth )
+inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sym, uint32_t depth )
 {
    //  994240:        "account_creation_fee": "0.1 HIVE"
    // 1021529:        "account_creation_fee": "10.0 HIVE"
@@ -122,11 +122,11 @@ inline void from_variant( const fc::variant& v, hive::protocol::legacy_hive_asse
 }
 
 template<>
-struct get_typename< hive::protocol::legacy_steem_asset_symbol_type >
+struct get_typename< hive::protocol::legacy_hive_asset_symbol_type >
 {
    static const char* name()
    {
-      return "hive::protocol::legacy_steem_asset_symbol_type";
+      return "hive::protocol::legacy_hive_asset_symbol_type";
    }
 };
 

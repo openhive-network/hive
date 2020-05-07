@@ -3,7 +3,7 @@
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/comment_object.hpp>
-#include <hive/protocol/steem_operations.hpp>
+#include <hive/protocol/hive_operations.hpp>
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
 
 #include "../db_fixture/database_fixture.hpp"

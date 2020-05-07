@@ -12,7 +12,7 @@ template< typename Storage = fc::uint128 >
 class fixed_string_impl;
 
 class asset_symbol_type;
-class legacy_steem_asset_symbol_type;
+class legacy_hive_asset_symbol_type;
 struct legacy_hive_asset;
 } } // hive::protocol
 
@@ -54,9 +54,9 @@ template< typename Stream >
 inline void unpack( Stream& s, hive::protocol::asset_symbol_type& sym, uint32_t depth = 0 );
 
 template< typename Stream >
-inline void pack( Stream& s, const hive::protocol::legacy_steem_asset_symbol_type& sym );
+inline void pack( Stream& s, const hive::protocol::legacy_hive_asset_symbol_type& sym );
 template< typename Stream >
-inline void unpack( Stream& s, hive::protocol::legacy_steem_asset_symbol_type& sym, uint32_t depth = 0 );
+inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sym, uint32_t depth = 0 );
 
 } // raw
 

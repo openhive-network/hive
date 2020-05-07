@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/chain/steem_object_types.hpp>
+#include <hive/chain/hive_object_types.hpp>
 #include <hive/protocol/smt_operations.hpp>
 
 #ifdef HIVE_ENABLE_SMT
@@ -75,9 +75,9 @@ public:
    id_type             id;
    /// Name of the account, the balance is held for.
    account_name_type   owner;
-   asset               pending_liquid;          /// 'reward_steem_balance' for pending HIVE
+   asset               pending_liquid;          /// 'reward_hive_balance' for pending HIVE
    asset               pending_vesting_shares;  /// 'reward_vesting_balance' for pending VESTS
-   asset               pending_vesting_value;   /// 'reward_vesting_steem' for pending VESTS
+   asset               pending_vesting_value;   /// 'reward_vesting_hive' for pending VESTS
 
    /** Set of simple methods that allow unification of
     *  regular and rewards balance manipulation code.

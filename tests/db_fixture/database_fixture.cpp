@@ -486,9 +486,9 @@ void database_fixture::convert(
       else if ( amount.symbol == HBD_SYMBOL )
       {
          db->adjust_balance( account_name, -amount );
-         db->adjust_balance( account_name, db->to_steem( amount ) );
+         db->adjust_balance( account_name, db->to_hive( amount ) );
          db->adjust_supply( -amount );
-         db->adjust_supply( db->to_steem( amount ) );
+         db->adjust_supply( db->to_hive( amount ) );
       }
    } FC_CAPTURE_AND_RETHROW( (account_name)(amount) )
 }
@@ -871,7 +871,7 @@ smt_generation_unit t_smt_database_fixture< T >::get_generation_unit( const unit
 {
    smt_generation_unit ret;
 
-   ret.steem_unit = hive_unit;
+   ret.hive_unit = hive_unit;
    ret.token_unit = token_unit;
 
    return ret;

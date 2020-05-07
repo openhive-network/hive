@@ -51,7 +51,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_ticker )
       result.lowest_ask = orders.asks[0].real_price;
 
    auto volume = get_volume( get_volume_args() );
-   result.steem_volume = volume.steem_volume;
+   result.hive_volume = volume.hive_volume;
    result.hbd_volume = volume.hbd_volume;
 
    return result;
@@ -69,7 +69,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_volume )
    uint32_t bucket_size = itr->seconds;
    do
    {
-      result.steem_volume.amount += itr->hive.volume;
+      result.hive_volume.amount += itr->hive.volume;
       result.hbd_volume.amount += itr->non_hive.volume;
 
       ++itr;

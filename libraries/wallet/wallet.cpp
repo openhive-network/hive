@@ -1,4 +1,4 @@
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/utilities/git_revision.hpp>
 #include <hive/utilities/key_conversion.hpp>
@@ -222,14 +222,14 @@ class wallet_api_impl
 
 public:
    wallet_api& self;
-   wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const hive::protocol::chain_id_type& _steem_chain_id, fc::api< remote_node_api > rapi )
+   wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const hive::protocol::chain_id_type& _hive_chain_id, fc::api< remote_node_api > rapi )
       : self( s ),
         _remote_api( rapi )
    {
       init_prototype_ops();
 
       _wallet.ws_server = initial_data.ws_server;
-      steem_chain_id = _steem_chain_id;
+      hive_chain_id = _hive_chain_id;
    }
    virtual ~wallet_api_impl()
    {}
@@ -312,8 +312,8 @@ public:
       fc::mutable_variant_object result;
       result["blockchain_version"]       = HIVE_BLOCKCHAIN_VERSION;
       result["client_version"]           = client_version;
-      result["steem_revision"]           = hive::utilities::git_revision_sha;
-      result["steem_revision_age"]       = fc::get_approximate_relative_time_string( fc::time_point_sec( hive::utilities::git_revision_unix_timestamp ) );
+      result["hive_revision"]            = hive::utilities::git_revision_sha;
+      result["hive_revision_age"]        = fc::get_approximate_relative_time_string( fc::time_point_sec( hive::utilities::git_revision_unix_timestamp ) );
       result["fc_revision"]              = fc::git_revision_sha;
       result["fc_revision_age"]          = fc::get_approximate_relative_time_string( fc::time_point_sec( fc::git_revision_unix_timestamp ) );
       result["compile_date"]             = "compiled on " __DATE__ " at " __TIME__;
@@ -336,7 +336,7 @@ public:
       {
          auto v = _remote_api->get_version();
          result["server_blockchain_version"] = v.blockchain_version;
-         result["server_steem_revision"] = v.steem_revision;
+         result["server_hive_revision"] = v.hive_revision;
          result["server_fc_revision"] = v.fc_revision;
       }
       catch( fc::exception& )
@@ -689,7 +689,7 @@ public:
       }
 
       auto minimal_signing_keys = tx.minimize_required_signatures(
-         steem_chain_id,
+         hive_chain_id,
          available_keys,
          [&]( const string& account_name ) -> const authority&
          {
@@ -725,7 +725,7 @@ public:
       {
          auto it = available_private_keys.find(k);
          FC_ASSERT( it != available_private_keys.end() );
-         tx.sign( it->second, steem_chain_id, fc::ecc::fc_canonical );
+         tx.sign( it->second, hive_chain_id, fc::ecc::fc_canonical );
       }
 
       if( broadcast )
@@ -764,11 +764,11 @@ public:
          std::stringstream out;
 
          auto accounts = result.as<vector<condenser_api::api_account_object>>();
-         asset total_steem;
+         asset total_hive;
          asset total_vest(0, VESTS_SYMBOL );
          asset total_hbd(0, HBD_SYMBOL );
          for( const auto& a : accounts ) {
-            total_steem += a.balance.to_asset();
+            total_hive += a.balance.to_asset();
             total_vest  += a.vesting_shares.to_asset();
             total_hbd  += a.hbd_balance.to_asset();
             out << std::left << std::setw( 17 ) << std::string(a.name)
@@ -778,7 +778,7 @@ public:
          }
          out << "-------------------------------------------------------------------------\n";
             out << std::left << std::setw( 17 ) << "TOTAL"
-                << std::right << std::setw(18) << legacy_asset::from_asset(total_steem).to_string() <<" "
+                << std::right << std::setw(18) << legacy_asset::from_asset(total_hive).to_string() <<" "
                 << std::right << std::setw(26) << legacy_asset::from_asset(total_vest).to_string() <<" "
                 << std::right << std::setw(16) << legacy_asset::from_asset(total_hbd).to_string() <<"\n";
          return out.str();
@@ -915,7 +915,7 @@ public:
 
    string                                  _wallet_filename;
    wallet_data                             _wallet;
-   hive::protocol::chain_id_type          steem_chain_id;
+   hive::protocol::chain_id_type          hive_chain_id;
 
    map<public_key_type,string>             _keys;
    fc::sha512                              _checksum;
@@ -938,8 +938,8 @@ public:
 
 namespace hive { namespace wallet {
 
-wallet_api::wallet_api(const wallet_data& initial_data, const hive::protocol::chain_id_type& _steem_chain_id, fc::api< remote_node_api > rapi)
-   : my(new detail::wallet_api_impl(*this, initial_data, _steem_chain_id, rapi))
+wallet_api::wallet_api(const wallet_data& initial_data, const hive::protocol::chain_id_type& _hive_chain_id, fc::api< remote_node_api > rapi)
+   : my(new detail::wallet_api_impl(*this, initial_data, _hive_chain_id, rapi))
 {}
 
 wallet_api::~wallet_api(){}
@@ -1262,7 +1262,7 @@ condenser_api::legacy_signed_transaction wallet_api::create_account_with_keys(
  */
 condenser_api::legacy_signed_transaction wallet_api::create_account_with_keys_delegated(
    string creator,
-   condenser_api::legacy_asset steem_fee,
+   condenser_api::legacy_asset hive_fee,
    condenser_api::legacy_asset delegated_vests,
    string new_account_name,
    string json_meta,
@@ -1281,7 +1281,7 @@ condenser_api::legacy_signed_transaction wallet_api::create_account_with_keys_de
    op.posting = authority( 1, posting, 1 );
    op.memo_key = memo;
    op.json_metadata = json_meta;
-   op.fee = steem_fee.to_asset();
+   op.fee = hive_fee.to_asset();
    op.delegation = delegated_vests.to_asset();
 
    signed_transaction tx;
@@ -1678,7 +1678,7 @@ condenser_api::legacy_signed_transaction wallet_api::create_account(
  */
 condenser_api::legacy_signed_transaction wallet_api::create_account_delegated(
    string creator,
-   condenser_api::legacy_asset steem_fee,
+   condenser_api::legacy_asset hive_fee,
    condenser_api::legacy_asset delegated_vests,
    string new_account_name,
    string json_meta,
@@ -1693,7 +1693,7 @@ condenser_api::legacy_signed_transaction wallet_api::create_account_delegated(
    import_key( active.wif_priv_key );
    import_key( posting.wif_priv_key );
    import_key( memo.wif_priv_key );
-   return create_account_with_keys_delegated( creator, steem_fee, delegated_vests, new_account_name, json_meta,  owner.pub_key, active.pub_key, posting.pub_key, memo.pub_key, broadcast );
+   return create_account_with_keys_delegated( creator, hive_fee, delegated_vests, new_account_name, json_meta,  owner.pub_key, active.pub_key, posting.pub_key, memo.pub_key, broadcast );
 } FC_CAPTURE_AND_RETHROW( (creator)(new_account_name)(json_meta) ) }
 
 
@@ -1872,7 +1872,7 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_transfer(
    string agent,
    uint32_t escrow_id,
    condenser_api::legacy_asset hbd_amount,
-   condenser_api::legacy_asset steem_amount,
+   condenser_api::legacy_asset hive_amount,
    condenser_api::legacy_asset fee,
    time_point_sec ratification_deadline,
    time_point_sec escrow_expiration,
@@ -1886,7 +1886,7 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_transfer(
    op.agent = agent;
    op.escrow_id = escrow_id;
    op.hbd_amount = hbd_amount.to_asset();
-   op.hive_amount = steem_amount.to_asset();
+   op.hive_amount = hive_amount.to_asset();
    op.fee = fee.to_asset();
    op.ratification_deadline = ratification_deadline;
    op.escrow_expiration = escrow_expiration;
@@ -1954,7 +1954,7 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_release(
    string receiver,
    uint32_t escrow_id,
    condenser_api::legacy_asset hbd_amount,
-   condenser_api::legacy_asset steem_amount,
+   condenser_api::legacy_asset hive_amount,
    bool broadcast )
 {
    FC_ASSERT( !is_locked() );
@@ -1966,7 +1966,7 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_release(
    op.receiver = receiver;
    op.escrow_id = escrow_id;
    op.hbd_amount = hbd_amount.to_asset();
-   op.hive_amount = steem_amount.to_asset();
+   op.hive_amount = hive_amount.to_asset();
 
    signed_transaction tx;
    tx.operations.push_back( op );
@@ -2204,7 +2204,7 @@ condenser_api::legacy_signed_transaction wallet_api::decline_voting_rights(
 
 condenser_api::legacy_signed_transaction wallet_api::claim_reward_balance(
    string account,
-   condenser_api::legacy_asset reward_steem,
+   condenser_api::legacy_asset reward_hive,
    condenser_api::legacy_asset reward_hbd,
    condenser_api::legacy_asset reward_vests,
    bool broadcast )
@@ -2212,7 +2212,7 @@ condenser_api::legacy_signed_transaction wallet_api::claim_reward_balance(
    FC_ASSERT( !is_locked() );
    claim_reward_balance_operation op;
    op.account = account;
-   op.reward_hive = reward_steem.to_asset();
+   op.reward_hive = reward_hive.to_asset();
    op.reward_hbd = reward_hbd.to_asset();
    op.reward_vests = reward_vests.to_asset();
 

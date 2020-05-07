@@ -1,5 +1,5 @@
 #pragma once
-#include <hive/chain/steem_object_types.hpp>
+#include <hive/chain/hive_object_types.hpp>
 
 #include <hive/protocol/authority.hpp>
 #include <chainbase/chainbase.hpp>

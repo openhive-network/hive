@@ -1,12 +1,12 @@
 #pragma once
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <fc/fixed_string.hpp>
 
 #include <hive/protocol/authority.hpp>
-#include <hive/protocol/steem_operations.hpp>
+#include <hive/protocol/hive_operations.hpp>
 
-#include <hive/chain/steem_object_types.hpp>
+#include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/shared_authority.hpp>
 #include <hive/chain/util/manabar.hpp>
@@ -37,7 +37,7 @@ namespace hive { namespace chain {
          //HIVE balance in savings
          asset get_savings() const { return savings_balance; }
          //unclaimed HIVE rewards
-         asset get_rewards() const { return reward_steem_balance; }
+         asset get_rewards() const { return reward_hive_balance; }
 
          //liquid HBD balance
          asset get_hbd_balance() const { return hbd_balance; }
@@ -56,7 +56,7 @@ namespace hive { namespace chain {
          //unclaimed VESTS rewards
          asset get_vest_rewards() const { return reward_vesting_balance; }
          //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
-         asset get_vest_rewards_as_hive() const { return reward_vesting_steem; }
+         asset get_vest_rewards_as_hive() const { return reward_vesting_hive; }
 
          id_type           id;
 
@@ -111,9 +111,9 @@ namespace hive { namespace chain {
          ///@}
 
          HBD_asset         reward_hbd_balance = asset( 0, HBD_SYMBOL );
-         HIVE_asset        reward_steem_balance = asset( 0, HIVE_SYMBOL );
+         HIVE_asset        reward_hive_balance = asset( 0, HIVE_SYMBOL );
          VEST_asset        reward_vesting_balance = asset( 0, VESTS_SYMBOL );
-         HIVE_asset        reward_vesting_steem = asset( 0, HIVE_SYMBOL );
+         HIVE_asset        reward_vesting_hive = asset( 0, HIVE_SYMBOL );
 
          share_type        curation_rewards = 0;
          share_type        posting_rewards = 0;
@@ -518,7 +518,7 @@ FC_REFLECT( hive::chain::account_object,
              (savings_balance)
              (hbd_balance)(hbd_seconds)(hbd_seconds_last_update)(hbd_last_interest_payment)
              (savings_hbd_balance)(savings_hbd_seconds)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)(savings_withdraw_requests)
-             (reward_steem_balance)(reward_hbd_balance)(reward_vesting_balance)(reward_vesting_steem)
+             (reward_hive_balance)(reward_hbd_balance)(reward_vesting_balance)(reward_vesting_hive)
              (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)
              (vesting_withdraw_rate)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
              (curation_rewards)

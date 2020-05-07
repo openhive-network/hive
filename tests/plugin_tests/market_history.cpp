@@ -3,7 +3,7 @@
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/comment_object.hpp>
-#include <hive/protocol/steem_operations.hpp>
+#include <hive/protocol/hive_operations.hpp>
 
 #include <hive/plugins/market_history/market_history_plugin.hpp>
 

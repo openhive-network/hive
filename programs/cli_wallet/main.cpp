@@ -27,7 +27,7 @@
 #include <iostream>
 #include <iterator>
 
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <fc/io/json.hpp>
 #include <fc/io/stdio.hpp>
@@ -102,7 +102,7 @@ int main( int argc, char** argv )
          wdump((allowed_ips));
       }
 
-      hive::protocol::chain_id_type _steem_chain_id;
+      hive::protocol::chain_id_type _hive_chain_id;
 
 #ifdef IS_TEST_NET
       if( options.count("chain-id") )
@@ -111,7 +111,7 @@ int main( int argc, char** argv )
 
          try
          {
-            _steem_chain_id = chain_id_type( chain_id_str);
+            _hive_chain_id = chain_id_type( chain_id_str);
          }
          catch( fc::exception& )
          {
@@ -172,7 +172,7 @@ int main( int argc, char** argv )
 
       auto remote_api = apic->get_remote_api< hive::wallet::remote_node_api >( 0, "condenser_api" );
 
-      auto wapiptr = std::make_shared<wallet_api>( wdata, _steem_chain_id, remote_api );
+      auto wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api );
       wapiptr->set_wallet_filename( wallet_file.generic_string() );
       wapiptr->load_wallet_file();
 

@@ -1,7 +1,7 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
@@ -2918,10 +2918,10 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
       {
          db.modify( db.get_account( HIVE_NULL_ACCOUNT ), [&]( account_object& a )
          {
-            a.reward_steem_balance = ASSET( "1.000 TESTS" );
+            a.reward_hive_balance = ASSET( "1.000 TESTS" );
             a.reward_hbd_balance = ASSET( "1.000 TBD" );
             a.reward_vesting_balance = ASSET( "1.000000 VESTS" );
-            a.reward_vesting_steem = ASSET( "1.000 TESTS" );
+            a.reward_vesting_hive = ASSET( "1.000 TESTS" );
          });
 
          db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
@@ -2930,7 +2930,7 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
             gpo.virtual_supply += ASSET( "3.000 TESTS" );
             gpo.current_hbd_supply += ASSET( "1.000 TBD" );
             gpo.pending_rewarded_vesting_shares += ASSET( "1.000000 VESTS" );
-            gpo.pending_rewarded_vesting_steem += ASSET( "1.000 TESTS" );
+            gpo.pending_rewarded_vesting_hive += ASSET( "1.000 TESTS" );
          });
       });
 

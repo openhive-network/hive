@@ -35,7 +35,7 @@ add_custom_command(
    ${CMAKE_CURRENT_SOURCE_DIR}/../plugins
    -o ${CMAKE_CURRENT_BINARY_DIR}/template_context/plugins.json
    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/template_context/plugins.json
-   DEPENDS ${PLUGINS_DEPS} ${CMAKE_CURRENT_SOURCE_DIR}/steem_manifest/plugins.py
+   DEPENDS ${PLUGINS_DEPS} ${CMAKE_CURRENT_SOURCE_DIR}/hive_manifest/plugins.py
 )
 
 ##############################################################################
@@ -83,7 +83,7 @@ add_custom_command(
    -t ${CMAKE_CURRENT_SOURCE_DIR}/templates
    -o ${CMAKE_CURRENT_BINARY_DIR}/gensrc
    OUTPUT ${MANIFEST_OUTPUTS}
-   DEPENDS ${MANIFEST_DEPS} ${CMAKE_CURRENT_SOURCE_DIR}/steem_manifest/build.py
+   DEPENDS ${MANIFEST_DEPS} ${CMAKE_CURRENT_SOURCE_DIR}/hive_manifest/build.py
 )
 
 ##############################################################################

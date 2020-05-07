@@ -149,7 +149,7 @@ struct operation_visitor
       << static_cast<std::string>(op.author) << ";"
       << op.permlink << ";" 
       << asset_to_string(op.hbd_payout) << ";" 
-      << asset_to_string(op.steem_payout) << ";" 
+      << asset_to_string(op.hive_payout) << ";" 
       << asset_to_string(op.vesting_payout)
       << "\n";
   }
@@ -183,7 +183,7 @@ struct operation_visitor
       << static_cast<std::string>(op.author) << ";" 
       << op.permlink << ";"
       << asset_to_string(op.hbd_payout) << ";" 
-      << asset_to_string(op.steem_payout) << ";" 
+      << asset_to_string(op.hive_payout) << ";" 
       << asset_to_string(op.vesting_payout)
       << "\n";
   }

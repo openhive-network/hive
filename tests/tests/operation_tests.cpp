@@ -1,7 +1,7 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
@@ -1761,7 +1761,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
          db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
          {
             gpo.current_supply += wso.median_props.account_creation_fee - ASSET( "0.001 TESTS" ) - gpo.get_total_vesting_fund_hive();
-            gpo.total_vesting_fund_steem = wso.median_props.account_creation_fee - ASSET( "0.001 TESTS" );
+            gpo.total_vesting_fund_hive = wso.median_props.account_creation_fee - ASSET( "0.001 TESTS" );
          });
 
          db.update_virtual_supply();
@@ -6727,10 +6727,10 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
       {
          db.modify( db.get_account( "alice" ), []( account_object& a )
          {
-            a.reward_steem_balance = ASSET( "10.000 TESTS" );
+            a.reward_hive_balance = ASSET( "10.000 TESTS" );
             a.reward_hbd_balance = ASSET( "10.000 TBD" );
             a.reward_vesting_balance = ASSET( "10.000000 VESTS" );
-            a.reward_vesting_steem = ASSET( "10.000 TESTS" );
+            a.reward_vesting_hive = ASSET( "10.000 TESTS" );
          });
 
          db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
@@ -6739,7 +6739,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
             gpo.current_hbd_supply += ASSET( "10.000 TBD" );
             gpo.virtual_supply += ASSET( "20.000 TESTS" );
             gpo.pending_rewarded_vesting_shares += ASSET( "10.000000 VESTS" );
-            gpo.pending_rewarded_vesting_steem += ASSET( "10.000 TESTS" );
+            gpo.pending_rewarded_vesting_hive += ASSET( "10.000 TESTS" );
          });
       });
 
@@ -7469,7 +7469,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
          db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
          {
             gpo.current_supply -= gpo.get_total_reward_fund_hive();
-            gpo.total_reward_fund_steem = ASSET( "100.000 TESTS" );
+            gpo.total_reward_fund_hive = ASSET( "100.000 TESTS" );
             gpo.current_supply += gpo.get_total_reward_fund_hive();
          });
       });

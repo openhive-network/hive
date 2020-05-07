@@ -1,5 +1,5 @@
 #pragma once
-#include <hive/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/operations.hpp>
 #include <hive/protocol/sps_operations.hpp>
@@ -279,7 +279,7 @@ namespace hive { namespace plugins { namespace condenser_api {
          agent( op.agent ),
          escrow_id( op.escrow_id ),
          hbd_amount( legacy_asset::from_asset( op.hbd_amount ) ),
-         steem_amount( legacy_asset::from_asset( op.hive_amount ) ),
+         hive_amount( legacy_asset::from_asset( op.hive_amount ) ),
          fee( legacy_asset::from_asset( op.fee ) ),
          ratification_deadline( op.ratification_deadline ),
          escrow_expiration( op.escrow_expiration ),
@@ -294,7 +294,7 @@ namespace hive { namespace plugins { namespace condenser_api {
          op.agent = agent;
          op.escrow_id = escrow_id;
          op.hbd_amount = hbd_amount;
-         op.hive_amount = steem_amount;
+         op.hive_amount = hive_amount;
          op.fee = fee;
          op.ratification_deadline = ratification_deadline;
          op.escrow_expiration = escrow_expiration;
@@ -308,7 +308,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       uint32_t          escrow_id;
 
       legacy_asset      hbd_amount;
-      legacy_asset      steem_amount;
+      legacy_asset      hive_amount;
       legacy_asset      fee;
 
       time_point_sec    ratification_deadline;
@@ -328,7 +328,7 @@ namespace hive { namespace plugins { namespace condenser_api {
          receiver( op.receiver ),
          escrow_id( op.escrow_id ),
          hbd_amount( legacy_asset::from_asset( op.hbd_amount ) ),
-         steem_amount( legacy_asset::from_asset( op.hive_amount ) )
+         hive_amount( legacy_asset::from_asset( op.hive_amount ) )
       {}
 
       operator escrow_release_operation()const
@@ -341,7 +341,7 @@ namespace hive { namespace plugins { namespace condenser_api {
          op.receiver = receiver;
          op.escrow_id = escrow_id;
          op.hbd_amount = hbd_amount;
-         op.hive_amount = steem_amount;
+         op.hive_amount = hive_amount;
          return op;
       }
 
@@ -353,7 +353,7 @@ namespace hive { namespace plugins { namespace condenser_api {
 
       uint32_t          escrow_id;
       legacy_asset      hbd_amount;
-      legacy_asset      steem_amount;
+      legacy_asset      hive_amount;
    };
 
    struct legacy_pow2_operation
@@ -663,7 +663,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       legacy_claim_reward_balance_operation() {}
       legacy_claim_reward_balance_operation( const claim_reward_balance_operation& op ) :
          account( op.account ),
-         reward_steem( legacy_asset::from_asset( op.reward_hive ) ),
+         reward_hive( legacy_asset::from_asset( op.reward_hive ) ),
          reward_hbd( legacy_asset::from_asset( op.reward_hbd ) ),
          reward_vests( legacy_asset::from_asset( op.reward_vests ) )
       {}
@@ -672,14 +672,14 @@ namespace hive { namespace plugins { namespace condenser_api {
       {
          claim_reward_balance_operation op;
          op.account = account;
-         op.reward_hive = reward_steem;
+         op.reward_hive = reward_hive;
          op.reward_hbd = reward_hbd;
          op.reward_vests = reward_vests;
          return op;
       }
 
       account_name_type account;
-      legacy_asset      reward_steem;
+      legacy_asset      reward_hive;
       legacy_asset      reward_hbd;
       legacy_asset      reward_vests;
    };
@@ -714,7 +714,7 @@ namespace hive { namespace plugins { namespace condenser_api {
          author( op.author ),
          permlink( op.permlink ),
          hbd_payout( legacy_asset::from_asset( op.hbd_payout ) ),
-         steem_payout( legacy_asset::from_asset( op.steem_payout ) ),
+         hive_payout( legacy_asset::from_asset( op.hive_payout ) ),
          vesting_payout( legacy_asset::from_asset( op.vesting_payout ) )
       {}
 
@@ -724,7 +724,7 @@ namespace hive { namespace plugins { namespace condenser_api {
          op.author = author;
          op.permlink = permlink;
          op.hbd_payout = hbd_payout;
-         op.steem_payout = steem_payout;
+         op.hive_payout = hive_payout;
          op.vesting_payout = vesting_payout;
          return op;
       }
@@ -732,7 +732,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       account_name_type author;
       string            permlink;
       legacy_asset      hbd_payout;
-      legacy_asset      steem_payout;
+      legacy_asset      hive_payout;
       legacy_asset      vesting_payout;
    };
 
@@ -966,7 +966,7 @@ namespace hive { namespace plugins { namespace condenser_api {
          author( op.author ),
          permlink( op.permlink ),
          hbd_payout( legacy_asset::from_asset( op.hbd_payout ) ),
-         steem_payout( legacy_asset::from_asset( op.steem_payout ) ),
+         hive_payout( legacy_asset::from_asset( op.hive_payout ) ),
          vesting_payout( legacy_asset::from_asset( op.vesting_payout ) )
       {}
 
@@ -977,7 +977,7 @@ namespace hive { namespace plugins { namespace condenser_api {
          op.author = author;
          op.permlink = permlink;
          op.hbd_payout = hbd_payout;
-         op.steem_payout = steem_payout;
+         op.hive_payout = hive_payout;
          op.vesting_payout = vesting_payout;
          return op;
       }
@@ -986,7 +986,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       account_name_type author;
       string            permlink;
       legacy_asset      hbd_payout;
-      legacy_asset      steem_payout;
+      legacy_asset      hive_payout;
       legacy_asset      vesting_payout;
    };
 
@@ -1088,9 +1088,9 @@ namespace hive { namespace plugins { namespace condenser_api {
       legacy_hardfork_hive_operation( const hardfork_hive_operation& op ) :
          account( op.account ), treasury( op.treasury ),
          hbd_transferred( legacy_asset::from_asset( op.hbd_transferred ) ),
-         steem_transferred( legacy_asset::from_asset( op.steem_transferred ) ),
+         hive_transferred( legacy_asset::from_asset( op.hive_transferred ) ),
          vests_converted( legacy_asset::from_asset( op.vests_converted ) ),
-         total_steem_from_vests( legacy_asset::from_asset( op.total_steem_from_vests ) )
+         total_hive_from_vests( legacy_asset::from_asset( op.total_hive_from_vests ) )
       {}
 
       operator hardfork_hive_operation()const
@@ -1099,18 +1099,18 @@ namespace hive { namespace plugins { namespace condenser_api {
          op.account = account;
          op.treasury = treasury;
          op.hbd_transferred = hbd_transferred;
-         op.steem_transferred = steem_transferred;
+         op.hive_transferred = hive_transferred;
          op.vests_converted = vests_converted;
-         op.total_steem_from_vests = total_steem_from_vests;
+         op.total_hive_from_vests = total_hive_from_vests;
          return op;
       }
 
       account_name_type account;
       account_name_type treasury;
       legacy_asset      hbd_transferred;
-      legacy_asset      steem_transferred;
+      legacy_asset      hive_transferred;
       legacy_asset      vests_converted;
-      legacy_asset      total_steem_from_vests;
+      legacy_asset      total_hive_from_vests;
    };
 
    struct legacy_hardfork_hive_restore_operation
@@ -1119,7 +1119,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       legacy_hardfork_hive_restore_operation( const hardfork_hive_restore_operation& op ) :
          account( op.account ), treasury( op.treasury ),
          hbd_transferred( legacy_asset::from_asset( op.hbd_transferred ) ),
-         steem_transferred( legacy_asset::from_asset( op.steem_transferred ) )
+         hive_transferred( legacy_asset::from_asset( op.hive_transferred ) )
       {}
 
       operator hardfork_hive_restore_operation()const
@@ -1128,14 +1128,14 @@ namespace hive { namespace plugins { namespace condenser_api {
          op.account = account;
          op.treasury = treasury;
          op.hbd_transferred = hbd_transferred;
-         op.steem_transferred = steem_transferred;
+         op.hive_transferred = hive_transferred;
          return op;
       }
 
       account_name_type account;
       account_name_type treasury;
       legacy_asset      hbd_transferred;
-      legacy_asset      steem_transferred;
+      legacy_asset      hive_transferred;
    };
 
    typedef fc::static_variant<
@@ -1763,12 +1763,12 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_witness_update_operation, (owne
 FC_REFLECT( hive::plugins::condenser_api::legacy_limit_order_create_operation, (owner)(orderid)(amount_to_sell)(min_to_receive)(fill_or_kill)(expiration) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_limit_order_create2_operation, (owner)(orderid)(amount_to_sell)(exchange_rate)(fill_or_kill)(expiration) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_comment_options_operation, (author)(permlink)(max_accepted_payout)(percent_hbd)(allow_votes)(allow_curation_rewards)(extensions) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_escrow_transfer_operation, (from)(to)(hbd_amount)(steem_amount)(escrow_id)(agent)(fee)(json_meta)(ratification_deadline)(escrow_expiration) );
-FC_REFLECT( hive::plugins::condenser_api::legacy_escrow_release_operation, (from)(to)(agent)(who)(receiver)(escrow_id)(hbd_amount)(steem_amount) );
+FC_REFLECT( hive::plugins::condenser_api::legacy_escrow_transfer_operation, (from)(to)(hbd_amount)(hive_amount)(escrow_id)(agent)(fee)(json_meta)(ratification_deadline)(escrow_expiration) );
+FC_REFLECT( hive::plugins::condenser_api::legacy_escrow_release_operation, (from)(to)(agent)(who)(receiver)(escrow_id)(hbd_amount)(hive_amount) );
 FC_REFLECT( hive::plugins::condenser_api::legacy_pow2_operation, (work)(new_owner_key)(props) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_claim_reward_balance_operation, (account)(reward_steem)(reward_hbd)(reward_vests) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_claim_reward_balance_operation, (account)(reward_hive)(reward_hbd)(reward_vests) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
-FC_REFLECT( hive::plugins::condenser_api::legacy_author_reward_operation, (author)(permlink)(hbd_payout)(steem_payout)(vesting_payout) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_comment_reward_operation, (author)(permlink)(payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
@@ -1778,13 +1778,13 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_fill_vesting_withdraw_operation
 FC_REFLECT( hive::plugins::condenser_api::legacy_fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_return_vesting_delegation_operation, (account)(vesting_shares) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(steem_payout)(vesting_payout) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_claim_account_operation, (creator)(fee)(extensions) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_sps_fund_operation, (fund_account)(additional_funds) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(hbd_transferred)(steem_transferred)(vests_converted)(total_steem_from_vests) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(steem_transferred) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 
 FC_REFLECT_TYPENAME( hive::plugins::condenser_api::legacy_operation )

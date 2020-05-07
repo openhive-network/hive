@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/protocol/steem_required_actions.hpp>
+#include <hive/protocol/hive_required_actions.hpp>
 
 #include <hive/protocol/operation_util.hpp>
 

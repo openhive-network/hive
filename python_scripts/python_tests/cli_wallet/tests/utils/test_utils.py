@@ -100,7 +100,7 @@ def ws_to_http(_url):
     return "http" + _url[pos:]
 
 
-def get_valid_steem_account_name():
+def get_valid_hive_account_name():
     http_url = ws_to_http(args.server_rpc_endpoint)
     while True:
         params = {"jsonrpc":"2.0", "method":"condenser_api.get_accounts", "params":[["".join(user_name)]], "id":1}
@@ -126,7 +126,7 @@ def make_user_for_tests(_cli_wallet, _value_for_vesting = None,  _value_for_tran
     value_for_transfer_tests    = _value_for_transfer_tests if _value_for_transfer_tests else "20.000 TESTS"
     value_for_transfer_tbd      = _value_for_transfer_tbd   if _value_for_transfer_tbd else "20.000 TBD"
 
-    receiver = get_valid_steem_account_name()
+    receiver = get_valid_hive_account_name()
 
     _cli_wallet.create_account( creator, receiver, "{}", "true")
 

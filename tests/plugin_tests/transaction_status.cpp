@@ -1,7 +1,7 @@
 #if defined IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 #include <hive/chain/account_object.hpp>
-#include <hive/protocol/steem_operations.hpp>
+#include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/config.hpp>
 #include <hive/plugins/transaction_status/transaction_status_plugin.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>

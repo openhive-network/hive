@@ -15,7 +15,7 @@ inline asset to_hbd( const price& p, const asset& hive )
    return hive * p;
 }
 
-inline asset to_steem( const price& p, const asset& hbd )
+inline asset to_hive( const price& p, const asset& hbd )
 {
    FC_ASSERT( hbd.symbol == HBD_SYMBOL );
    if( p.is_null() )

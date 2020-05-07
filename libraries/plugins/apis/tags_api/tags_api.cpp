@@ -4,7 +4,7 @@
 #include <hive/plugins/follow_api/follow_api_plugin.hpp>
 #include <hive/plugins/follow_api/follow_api.hpp>
 
-#include <hive/chain/steem_object_types.hpp>
+#include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/uint256.hpp>
 
@@ -549,7 +549,7 @@ void tags_api_impl::set_pending_payout( discussion& d )
    if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
       pot = _db.get_reward_fund().reward_balance;
    else
-      pot = props.total_reward_fund_steem;
+      pot = props.get_total_reward_fund_hive();
 
    if( !hist.current_median_history.is_null() ) pot = pot * hist.current_median_history;
 

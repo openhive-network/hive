@@ -184,8 +184,8 @@ struct api_account_object
       can_vote( a.can_vote ),
       voting_manabar( a.voting_manabar ),
       downvote_manabar( a.downvote_manabar ),
-      balance( a.balance ),
-      savings_balance( a.savings_balance ),
+      balance( a.get_balance() ),
+      savings_balance( a.get_savings() ),
       hbd_balance( a.hbd_balance ),
       hbd_seconds( a.hbd_seconds ),
       hbd_seconds_last_update( a.hbd_seconds_last_update ),
@@ -196,9 +196,9 @@ struct api_account_object
       savings_hbd_last_interest_payment( a.savings_hbd_last_interest_payment ),
       savings_withdraw_requests( a.savings_withdraw_requests ),
       reward_hbd_balance( a.get_hbd_rewards() ),
-      reward_steem_balance( a.reward_steem_balance ),
-      reward_vesting_balance( a.reward_vesting_balance ),
-      reward_vesting_steem( a.reward_vesting_steem ),
+      reward_hive_balance( a.get_rewards() ),
+      reward_vesting_balance( a.get_vest_rewards() ),
+      reward_vesting_hive( a.get_vest_rewards_as_hive() ),
       curation_rewards( a.curation_rewards ),
       posting_rewards( a.posting_rewards ),
       vesting_shares( a.vesting_shares ),
@@ -292,9 +292,9 @@ struct api_account_object
    uint8_t           savings_withdraw_requests = 0;
 
    asset             reward_hbd_balance;
-   asset             reward_steem_balance;
+   asset             reward_hive_balance;
    asset             reward_vesting_balance;
-   asset             reward_vesting_steem;
+   asset             reward_vesting_hive;
 
    share_type        curation_rewards;
    share_type        posting_rewards;
@@ -671,7 +671,7 @@ FC_REFLECT( hive::plugins::database_api::api_account_object,
              (savings_balance)
              (hbd_balance)(hbd_seconds)(hbd_seconds_last_update)(hbd_last_interest_payment)
              (savings_hbd_balance)(savings_hbd_seconds)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)(savings_withdraw_requests)
-             (reward_hbd_balance)(reward_steem_balance)(reward_vesting_balance)(reward_vesting_steem)
+             (reward_hbd_balance)(reward_hive_balance)(reward_vesting_balance)(reward_vesting_hive)
              (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)(vesting_withdraw_rate)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
              (curation_rewards)
              (posting_rewards)
