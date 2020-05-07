@@ -30,24 +30,24 @@
 
 #ifdef IS_TEST_NET
 
-#define VESTS_SYMBOL_U64  (uint64_t('V') | (uint64_t('E') << 8) | (uint64_t('S') << 16) | (uint64_t('T') << 24) | (uint64_t('S') << 32))
-#define STEEM_SYMBOL_U64  (uint64_t('T') | (uint64_t('E') << 8) | (uint64_t('S') << 16) | (uint64_t('T') << 24) | (uint64_t('S') << 32))
-#define HIVE_SYMBOL_U64   STEEM_SYMBOL_U64
-#define SBD_SYMBOL_U64    (uint64_t('T') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
-#define HBD_SYMBOL_U64    SBD_SYMBOL_U64
+#define VESTS_SYMBOL_U64    (uint64_t('V') | (uint64_t('E') << 8) | (uint64_t('S') << 16) | (uint64_t('T') << 24) | (uint64_t('S') << 32))
+#define OBSOLETE_SYMBOL_U64 (uint64_t('T') | (uint64_t('E') << 8) | (uint64_t('S') << 16) | (uint64_t('T') << 24) | (uint64_t('S') << 32))
+#define HIVE_SYMBOL_U64     OBSOLETE_SYMBOL_U64
+#define OBD_SYMBOL_U64      (uint64_t('T') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
+#define HBD_SYMBOL_U64      OBD_SYMBOL_U64
 #else
 
-#define VESTS_SYMBOL_U64  (uint64_t('V') | (uint64_t('E') << 8) | (uint64_t('S') << 16) | (uint64_t('T') << 24) | (uint64_t('S') << 32))
-#define STEEM_SYMBOL_U64  (uint64_t('S') | (uint64_t('T') << 8) | (uint64_t('E') << 16) | (uint64_t('E') << 24) | (uint64_t('M') << 32))
-#define HIVE_SYMBOL_U64   (uint64_t('H') | (uint64_t('I') << 8) | (uint64_t('V') << 16) | (uint64_t('E') << 24))
-#define SBD_SYMBOL_U64    (uint64_t('S') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
-#define HBD_SYMBOL_U64    (uint64_t('H') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
+#define VESTS_SYMBOL_U64    (uint64_t('V') | (uint64_t('E') << 8) | (uint64_t('S') << 16) | (uint64_t('T') << 24) | (uint64_t('S') << 32))
+#define OBSOLETE_SYMBOL_U64 (uint64_t('S') | (uint64_t('T') << 8) | (uint64_t('E') << 16) | (uint64_t('E') << 24) | (uint64_t('M') << 32))
+#define HIVE_SYMBOL_U64     (uint64_t('H') | (uint64_t('I') << 8) | (uint64_t('V') << 16) | (uint64_t('E') << 24))
+#define OBD_SYMBOL_U64      (uint64_t('S') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
+#define HBD_SYMBOL_U64      (uint64_t('H') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
 
 #endif
 
-#define VESTS_SYMBOL_SER  (uint64_t(6) | (VESTS_SYMBOL_U64 << 8)) ///< VESTS|VESTS with 6 digits of precision
-#define STEEM_SYMBOL_SER  (uint64_t(3) | (STEEM_SYMBOL_U64 << 8)) ///< STEEM|TESTS with 3 digits of precision
-#define SBD_SYMBOL_SER    (uint64_t(3) |   (SBD_SYMBOL_U64 << 8)) ///< SBD|TBD with 3 digits of precision
+#define VESTS_SYMBOL_SER    (uint64_t(6) | (VESTS_SYMBOL_U64 << 8)) ///< VESTS|VESTS with 6 digits of precision
+#define OBSOLETE_SYMBOL_SER (uint64_t(3) | (OBSOLETE_SYMBOL_U64 << 8)) ///< STEEM|TESTS with 3 digits of precision
+#define OBD_SYMBOL_SER      (uint64_t(3) | (OBD_SYMBOL_U64 << 8)) ///< SBD|TBD with 3 digits of precision
 
 #define HIVE_ASSET_MAX_DECIMALS  12
 
@@ -158,10 +158,10 @@ inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym )
          switch( sym.asset_num )
          {
             case HIVE_ASSET_NUM_HIVE:
-               ser = STEEM_SYMBOL_SER;
+               ser = OBSOLETE_SYMBOL_SER;
                break;
             case HIVE_ASSET_NUM_HBD:
-               ser = SBD_SYMBOL_SER;
+               ser = OBD_SYMBOL_SER;
                break;
             case HIVE_ASSET_NUM_VESTS:
                ser = VESTS_SYMBOL_SER;
@@ -188,14 +188,14 @@ inline void unpack( Stream& s, hive::protocol::asset_symbol_type& sym, uint32_t 
 
    switch( ser )
    {
-      case STEEM_SYMBOL_SER & 0xFFFFFFFF:
+      case OBSOLETE_SYMBOL_SER & 0xFFFFFFFF:
          s.read( ((char*) &ser)+4, 4 );
-         FC_ASSERT( ser == STEEM_SYMBOL_SER, "invalid asset bits" );
+         FC_ASSERT( ser == OBSOLETE_SYMBOL_SER, "invalid asset bits" );
          sym.asset_num = HIVE_ASSET_NUM_HIVE;
          break;
-      case SBD_SYMBOL_SER & 0xFFFFFFFF:
+      case OBD_SYMBOL_SER & 0xFFFFFFFF:
          s.read( ((char*) &ser)+4, 4 );
-         FC_ASSERT( ser == SBD_SYMBOL_SER, "invalid asset bits" );
+         FC_ASSERT( ser == OBD_SYMBOL_SER, "invalid asset bits" );
          sym.asset_num = HIVE_ASSET_NUM_HBD;
          break;
       case VESTS_SYMBOL_SER & 0xFFFFFFFF:

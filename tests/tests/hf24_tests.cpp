@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       {
          transfer_operation op;
          op.from = "alice";
-         op.to = OLD_STEEM_TREASURY_ACCOUNT;
+         op.to = OBSOLETE_TREASURY_ACCOUNT;
          op.amount = ASSET( "1.000 TESTS" );
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       {
          transfer_to_vesting_operation op;
          op.from = "alice";
-         op.to = OLD_STEEM_TREASURY_ACCOUNT;
+         op.to = OBSOLETE_TREASURY_ACCOUNT;
          op.amount = ASSET( "1.000 TESTS" );
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       {
          set_withdraw_vesting_route_operation op;
          op.from_account = "alice";
-         op.to_account = OLD_STEEM_TREASURY_ACCOUNT;
+         op.to_account = OBSOLETE_TREASURY_ACCOUNT;
          op.percent = 50 * HIVE_1_PERCENT;
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       {
          transfer_to_savings_operation op;
          op.from = "alice";
-         op.to = OLD_STEEM_TREASURY_ACCOUNT;
+         op.to = OBSOLETE_TREASURY_ACCOUNT;
          op.amount = ASSET( "1.000 TESTS" );
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       {
          transfer_from_savings_operation op;
          op.from = "alice";
-         op.to = OLD_STEEM_TREASURY_ACCOUNT;
+         op.to = OBSOLETE_TREASURY_ACCOUNT;
          op.amount = ASSET( "1.000 TESTS" );
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
       {
          comment_options_operation op;
          comment_payout_beneficiaries b;
-         b.beneficiaries.push_back( beneficiary_route_type( OLD_STEEM_TREASURY_ACCOUNT, HIVE_100_PERCENT ) );
+         b.beneficiaries.push_back( beneficiary_route_type( OBSOLETE_TREASURY_ACCOUNT, HIVE_100_PERCENT ) );
          op.author = "alice";
          op.permlink = "test";
          op.allow_curation_rewards = false;
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
 
       asset initial_treasury_balance = db->get_treasury().get_hbd_balance();
       generate_blocks( db->get_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time );
-      BOOST_REQUIRE_EQUAL( get_hbd_balance( OLD_STEEM_TREASURY_ACCOUNT ).amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( get_hbd_balance( OBSOLETE_TREASURY_ACCOUNT ).amount.value, 0 );
       BOOST_REQUIRE_EQUAL( db->get_treasury().get_hbd_balance().amount.value, 1150 + initial_treasury_balance.amount.value );
 
       database_fixture::validate_database();
@@ -256,7 +256,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
          {
             gpo.sps_fund_percent = 0;
          } );
-         auto& old_treasury = db.get_account( OLD_STEEM_TREASURY_ACCOUNT );
+         auto& old_treasury = db.get_account( OBSOLETE_TREASURY_ACCOUNT );
          db.create_vesting( old_treasury, ASSET( "7.000 TESTS" ) );
          db.create_vesting( old_treasury, ASSET( "3.000 TESTS" ), true );
          db.modify( old_treasury, [&]( account_object& t )
@@ -271,7 +271,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       } );
       database_fixture::validate_database();
       {
-         auto& old_treasury = db->get_account( OLD_STEEM_TREASURY_ACCOUNT );
+         auto& old_treasury = db->get_account( OBSOLETE_TREASURY_ACCOUNT );
          BOOST_REQUIRE_EQUAL( old_treasury.get_balance().amount.value, 5000 );
          BOOST_REQUIRE_EQUAL( old_treasury.get_savings().amount.value, 3000 );
          BOOST_REQUIRE_EQUAL( old_treasury.get_rewards().amount.value, 2000 );
@@ -287,7 +287,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       database_fixture::validate_database();
 
       {
-         auto& old_treasury = db->get_account( OLD_STEEM_TREASURY_ACCOUNT );
+         auto& old_treasury = db->get_account( OBSOLETE_TREASURY_ACCOUNT );
          BOOST_REQUIRE_EQUAL( old_treasury.get_balance().amount.value, 0 );
          BOOST_REQUIRE_EQUAL( old_treasury.get_savings().amount.value, 0 );
          BOOST_REQUIRE_EQUAL( old_treasury.get_rewards().amount.value, 0 );

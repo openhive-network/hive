@@ -639,12 +639,12 @@ std::string database::get_treasury_name( uint32_t hardfork ) const
    if( hardfork >= HIVE_TREASURY_RENAME_HARDFORK )
      return NEW_HIVE_TREASURY_ACCOUNT;
    else
-     return OLD_STEEM_TREASURY_ACCOUNT;
+     return OBSOLETE_TREASURY_ACCOUNT;
 }
 
 bool database::is_treasury( const account_name_type& name )const
 {
-   return ( name == NEW_HIVE_TREASURY_ACCOUNT ) || ( name == OLD_STEEM_TREASURY_ACCOUNT );
+   return ( name == NEW_HIVE_TREASURY_ACCOUNT ) || ( name == OBSOLETE_TREASURY_ACCOUNT );
 }
 
 const account_object& database::get_account( const account_name_type& name )const
@@ -3428,7 +3428,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
 #ifdef IS_TEST_NET
       create< account_object >( [&]( account_object& a )
       {
-         a.name = OLD_STEEM_TREASURY_ACCOUNT;
+         a.name = OBSOLETE_TREASURY_ACCOUNT;
       } );
       create< account_object >( [&]( account_object& a )
       {

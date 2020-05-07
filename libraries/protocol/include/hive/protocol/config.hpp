@@ -342,7 +342,7 @@
 //#define HIVE_TREASURY_ACCOUNT                 "steem.dao" //no longer constant, changed in HF24 - use database::get_treasury_name() instead
 //note that old account is still considered a treasury (cannot be reused for other purposes), just all funds and actions are redirected to new one
 //DO NOT USE the following constants anywhere other than inside database::get_treasury_name()
-#define OLD_STEEM_TREASURY_ACCOUNT            "steem.dao"
+#define OBSOLETE_TREASURY_ACCOUNT             "steem.dao"
 #define NEW_HIVE_TREASURY_ACCOUNT             "hive.fund"
 ///@}
 

@@ -44,7 +44,7 @@ uint32_t string_to_asset_num( const char* p, uint8_t decimals )
          {
 #ifndef IS_TEST_NET
            /// Has same value as HIVE_SYMBOL_U64
-           case STEEM_SYMBOL_U64:
+           case OBSOLETE_SYMBOL_U64:
 #endif /// IS_TEST_NET
             case HIVE_SYMBOL_U64:
                FC_ASSERT( decimals == 3, "Incorrect decimal places" );
@@ -52,7 +52,7 @@ uint32_t string_to_asset_num( const char* p, uint8_t decimals )
                break;
 #ifndef IS_TEST_NET
             /// Has same value as HBD_SYMBOL_U64
-            case SBD_SYMBOL_U64:
+            case OBD_SYMBOL_U64:
 #endif ///IS_TEST_NET
             case HBD_SYMBOL_U64:
                FC_ASSERT( decimals == 3, "Incorrect decimal places" );
