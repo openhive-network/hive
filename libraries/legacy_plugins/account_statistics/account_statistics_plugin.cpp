@@ -107,4 +107,4 @@ const flat_set< std::string >& account_statistics_plugin::get_tracked_accounts()
 
 } } // hive::account_statistics
 
-STEEM_DEFINE_PLUGIN( account_statistics, hive::account_statistics::account_statistics_plugin );
+HIVE_DEFINE_PLUGIN( account_statistics, hive::account_statistics::account_statistics_plugin );

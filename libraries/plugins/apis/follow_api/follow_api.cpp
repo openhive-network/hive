@@ -296,7 +296,7 @@ DEFINE_API_IMPL( follow_api_impl, get_blog_authors )
 
 follow_api::follow_api(): my( new detail::follow_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_FOLLOW_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_FOLLOW_API_PLUGIN_NAME );
 }
 
 follow_api::~follow_api() {}

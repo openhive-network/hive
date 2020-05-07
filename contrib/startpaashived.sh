@@ -1,16 +1,16 @@
 #!/bin/bash
 
-VERSION=`cat /etc/steemdversion`
+VERSION=`cat /etc/hivedversion`
 
 if [[ "$IS_BROADCAST_NODE" ]]; then
-  STEEMD="/usr/local/steemd-default/bin/steemd"
+  HIVED="/usr/local/hived-default/bin/hived"
 elif [[ "$IS_AH_NODE" ]]; then
-  STEEMD="/usr/local/steemd-default/bin/steemd"
+  HIVED="/usr/local/hived-default/bin/hived"
 else
-  STEEMD="/usr/local/steemd-full/bin/steemd"
+  HIVED="/usr/local/hived-full/bin/hived"
 fi
 
-chown -R steemd:steemd $HOME
+chown -R hived:hived $HOME
 
 # clean out data dir since it may be semi-persistent block storage on the ec2 with stale data
 rm -rf $HOME/*
@@ -19,19 +19,19 @@ ARGS=""
 
 # if user did pass in desired seed nodes, use
 # the ones the user specified:
-if [[ ! -z "$STEEMD_SEED_NODES" ]]; then
-    for NODE in $STEEMD_SEED_NODES ; do
+if [[ ! -z "$HIVED_SEED_NODES" ]]; then
+    for NODE in $HIVED_SEED_NODES ; do
         ARGS+=" --p2p-seed-node=$NODE"
     done
 fi
 
 NOW=`date +%s`
-STEEMD_FEED_START_TIME=`expr $NOW - 1209600`
+HIVED_FEED_START_TIME=`expr $NOW - 1209600`
 
-ARGS+=" --follow-start-feeds=$STEEMD_FEED_START_TIME"
+ARGS+=" --follow-start-feeds=$HIVED_FEED_START_TIME"
 
-STEEMD_PROMOTED_START_TIME=`expr $NOW - 604800`
-ARGS+=" --tags-start-promoted=$STEEMD_PROMOTED_START_TIME"
+HIVED_PROMOTED_START_TIME=`expr $NOW - 604800`
+ARGS+=" --tags-start-promoted=$HIVED_PROMOTED_START_TIME"
 
 if [[ ! "$DISABLE_BLOCK_API" ]]; then
    ARGS+=" --plugin=block_api"
@@ -39,24 +39,24 @@ fi
 
 # overwrite local config with image one
 if [[ "$IS_BROADCAST_NODE" ]]; then
-  cp /etc/steemd/config-for-broadcaster.ini $HOME/config.ini
+  cp /etc/hived/config-for-broadcaster.ini $HOME/config.ini
 elif [[ "$IS_AH_NODE" ]]; then
-  cp /etc/steemd/config-for-ahnode.ini $HOME/config.ini
+  cp /etc/hived/config-for-ahnode.ini $HOME/config.ini
 elif [[ "$IS_OPSWHITELIST_NODE" ]]; then
-  cp /etc/steemd/fullnode.opswhitelist.config.ini $HOME/config.ini
+  cp /etc/hived/fullnode.opswhitelist.config.ini $HOME/config.ini
 else
-  cp /etc/steemd/fullnode.config.ini $HOME/config.ini
+  cp /etc/hived/fullnode.config.ini $HOME/config.ini
 fi
 
-chown steemd:steemd $HOME/config.ini
+chown hived:hived $HOME/config.ini
 
 cd $HOME
 
 mv /etc/nginx/nginx.conf /etc/nginx/nginx.original.conf
-cp /etc/nginx/steemd.nginx.conf /etc/nginx/nginx.conf
+cp /etc/nginx/hived.nginx.conf /etc/nginx/nginx.conf
 
 # get blockchain state from an S3 bucket
-echo steemd: beginning download and decompress of s3://$S3_BUCKET/blockchain-$VERSION-latest.tar.lz4
+echo hived: beginning download and decompress of s3://$S3_BUCKET/blockchain-$VERSION-latest.tar.lz4
 finished=0
 count=1
 if [[ "$USE_RAMDISK" ]]; then
@@ -77,13 +77,13 @@ if [[ "$USE_RAMDISK" ]]; then
     fi
     if [[ $? -ne 0 ]]; then
       sleep 1
-      echo notifyalert steemd: unable to pull blockchain state from S3 - attempt $count
+      echo notifyalert hived: unable to pull blockchain state from S3 - attempt $count
       (( count++ ))
     else
       finished=1
     fi
   done
-  chown -R steemd:steemd /mnt/ramdisk/blockchain
+  chown -R hived:hived /mnt/ramdisk/blockchain
 else
   while [[ $count -le 5 ]] && [[ $finished == 0 ]]
   do
@@ -97,7 +97,7 @@ else
     fi
     if [[ $? -ne 0 ]]; then
       sleep 1
-      echo notifyalert steemd: unable to pull blockchain state from S3 - attempt $count
+      echo notifyalert hived: unable to pull blockchain state from S3 - attempt $count
       (( count++ ))
     else
       finished=1
@@ -106,19 +106,19 @@ else
 fi
 if [[ $finished == 0 ]]; then
   if [[ ! "$SYNC_TO_S3" ]]; then
-    echo notifyalert steemd: unable to pull blockchain state from S3 - exiting
+    echo notifyalert hived: unable to pull blockchain state from S3 - exiting
     exit 1
   else
-    echo notifysteemdsync steemdsync: shared memory file for $VERSION not found, creating a new one by replaying the blockchain
+    echo notifyhivedsync hivedsync: shared memory file for $VERSION not found, creating a new one by replaying the blockchain
     if [[ "$USE_RAMDISK" ]]; then
       mkdir -p /mnt/ramdisk/blockchain
-      chown -R steemd:steemd /mnt/ramdisk/blockchain
+      chown -R hived:hived /mnt/ramdisk/blockchain
     else
       mkdir blockchain
     fi
     aws s3 cp s3://$S3_BUCKET/block_log-latest blockchain/block_log
     if [[ $? -ne 0 ]]; then
-      echo notifysteemdsync steemdsync: unable to pull latest block_log from S3, will sync from scratch.
+      echo notifyhivedsync hivedsync: unable to pull latest block_log from S3, will sync from scratch.
     else
       ARGS+=" --replay-blockchain --force-validate"
     fi
@@ -136,7 +136,7 @@ if [[ "$SYNC_TO_S3" ]]; then
   chown www-data:www-data /tmp/issyncnode
 fi
 
-chown -R steemd:steemd $HOME/*
+chown -R hived:hived $HOME/*
 
 # let's get going
 cp /etc/nginx/healthcheck.conf.template /etc/nginx/healthcheck.conf
@@ -146,22 +146,22 @@ rm /etc/nginx/sites-enabled/default
 cp /etc/nginx/healthcheck.conf /etc/nginx/sites-enabled/default
 /etc/init.d/fcgiwrap restart
 service nginx restart
-exec chpst -usteemd \
-    $STEEMD \
+exec chpst -uhived \
+    $HIVED \
         --webserver-ws-endpoint=127.0.0.1:8091 \
         --webserver-http-endpoint=127.0.0.1:8091 \
         --p2p-endpoint=0.0.0.0:2001 \
         --data-dir=$HOME \
         $ARGS \
-        $STEEMD_EXTRA_OPTS \
+        $HIVED_EXTRA_OPTS \
         2>&1&
 SAVED_PID=`pgrep -f p2p-endpoint`
-echo $SAVED_PID >> /tmp/steemdpid
-mkdir -p /etc/service/steemd
+echo $SAVED_PID >> /tmp/hivedpid
+mkdir -p /etc/service/hived
 if [[ ! "$SYNC_TO_S3" ]]; then
-  cp /usr/local/bin/paas-sv-run.sh /etc/service/steemd/run
+  cp /usr/local/bin/paas-sv-run.sh /etc/service/hived/run
 else
-  cp /usr/local/bin/sync-sv-run.sh /etc/service/steemd/run
+  cp /usr/local/bin/sync-sv-run.sh /etc/service/hived/run
 fi
-chmod +x /etc/service/steemd/run
-runsv /etc/service/steemd
+chmod +x /etc/service/hived/run
+runsv /etc/service/hived

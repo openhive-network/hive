@@ -55,4 +55,4 @@ void block_info_plugin::on_applied_block( const chain::signed_block& b )
 
 } } } // hive::plugin::block_info
 
-STEEM_DEFINE_PLUGIN( block_info, hive::plugin::block_info::block_info_plugin )
+HIVE_DEFINE_PLUGIN( block_info, hive::plugin::block_info::block_info_plugin )

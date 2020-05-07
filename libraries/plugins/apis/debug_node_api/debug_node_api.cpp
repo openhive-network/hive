@@ -154,7 +154,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_get_json_schema )
 
 debug_node_api::debug_node_api(): my( new detail::debug_node_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_DEBUG_NODE_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_DEBUG_NODE_API_PLUGIN_NAME );
 }
 
 debug_node_api::~debug_node_api() {}

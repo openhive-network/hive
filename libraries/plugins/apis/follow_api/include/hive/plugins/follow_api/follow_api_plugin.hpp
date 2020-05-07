@@ -5,7 +5,7 @@
 
 #include <appbase/application.hpp>
 
-#define STEEM_FOLLOW_API_PLUGIN_NAME "follow_api"
+#define HIVE_FOLLOW_API_PLUGIN_NAME "follow_api"
 
 
 namespace hive { namespace plugins { namespace follow {
@@ -23,7 +23,7 @@ public:
    follow_api_plugin();
    virtual ~follow_api_plugin();
 
-   static const std::string& name() { static std::string name = STEEM_FOLLOW_API_PLUGIN_NAME; return name; }
+   static const std::string& name() { static std::string name = HIVE_FOLLOW_API_PLUGIN_NAME; return name; }
 
    virtual void set_program_options( options_description& cli, options_description& cfg ) override;
 

@@ -25,11 +25,11 @@ using chainbase::allocator;
 // various template automagic depends on them being known at compile
 // time.
 //
-#ifndef STEEM_TAG_SPACE_ID
-#define STEEM_TAG_SPACE_ID 5
+#ifndef HIVE_TAG_SPACE_ID
+#define HIVE_TAG_SPACE_ID 5
 #endif
 
-#define STEEM_TAGS_PLUGIN_NAME "tags"
+#define HIVE_TAGS_PLUGIN_NAME "tags"
 
 typedef protocol::fixed_string< 32 > tag_name_type;
 
@@ -39,10 +39,10 @@ typedef protocol::fixed_string< 32 > tag_name_type;
 // to define as they see fit.
 enum
 {
-   tag_object_type              = ( STEEM_TAG_SPACE_ID << 8 ),
-   tag_stats_object_type        = ( STEEM_TAG_SPACE_ID << 8 ) + 1,
-   peer_stats_object_type       = ( STEEM_TAG_SPACE_ID << 8 ) + 2,
-   author_tag_stats_object_type = ( STEEM_TAG_SPACE_ID << 8 ) + 3
+   tag_object_type              = ( HIVE_TAG_SPACE_ID << 8 ),
+   tag_stats_object_type        = ( HIVE_TAG_SPACE_ID << 8 ) + 1,
+   peer_stats_object_type       = ( HIVE_TAG_SPACE_ID << 8 ) + 2,
+   author_tag_stats_object_type = ( HIVE_TAG_SPACE_ID << 8 ) + 3
 };
 
 namespace detail { class tags_plugin_impl; }
@@ -347,7 +347,7 @@ class tags_plugin : public plugin< tags_plugin >
 
       APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
-      static const std::string& name() { static std::string name = STEEM_TAGS_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_TAGS_PLUGIN_NAME; return name; }
 
       virtual void set_program_options(
          options_description& cli,

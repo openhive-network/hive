@@ -7,7 +7,7 @@
 
 namespace hive { namespace plugins { namespace rewards_api {
 
-#define STEEM_REWARDS_API_PLUGIN_NAME "rewards_api"
+#define HIVE_REWARDS_API_PLUGIN_NAME "rewards_api"
 
 class rewards_api_plugin : public appbase::plugin< rewards_api_plugin >
 {
@@ -19,7 +19,7 @@ class rewards_api_plugin : public appbase::plugin< rewards_api_plugin >
          (hive::plugins::json_rpc::json_rpc_plugin)
       )
 
-      static const std::string& name() { static std::string name = STEEM_REWARDS_API_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_REWARDS_API_PLUGIN_NAME; return name; }
 
       virtual void set_program_options(
          boost::program_options::options_description& cli,

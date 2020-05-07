@@ -40,11 +40,11 @@ namespace hive { namespace chain {
          asset get_rewards() const { return reward_steem_balance; }
 
          //liquid HBD balance
-         asset get_hbd_balance() const { return sbd_balance; }
+         asset get_hbd_balance() const { return hbd_balance; }
          //HBD balance in savings
-         asset get_hbd_savings() const { return savings_sbd_balance; }
+         asset get_hbd_savings() const { return savings_hbd_balance; }
          //unclaimed HBD rewards
-         asset get_hbd_rewards() const { return reward_sbd_balance; }
+         asset get_hbd_rewards() const { return reward_hbd_balance; }
 
          //all VESTS held by the account - use other routines to get active VESTS for specific uses
          asset get_vesting() const { return vesting_shares; }
@@ -79,50 +79,50 @@ namespace hive { namespace chain {
          util::manabar     voting_manabar;
          util::manabar     downvote_manabar;
 
-         greedy_STEEM_asset balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
-         greedy_STEEM_asset savings_balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
+         HIVE_asset        balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
+         HIVE_asset        savings_balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
 
          /**
           *  HBD Deposits pay interest based upon the interest rate set by witnesses. The purpose of these
-          *  fields is to track the total (time * sbd_balance) that it is held. Then at the appointed time
+          *  fields is to track the total (time * hbd_balance) that it is held. Then at the appointed time
           *  interest can be paid using the following equation:
           *
-          *  interest = interest_rate * sbd_seconds / seconds_per_year
+          *  interest = interest_rate * hbd_seconds / seconds_per_year
           *
-          *  Every time the sbd_balance is updated the sbd_seconds is also updated. If at least
-          *  STEEM_MIN_COMPOUNDING_INTERVAL_SECONDS has past since sbd_last_interest_payment then
-          *  interest is added to sbd_balance.
+          *  Every time the hbd_balance is updated the hbd_seconds is also updated. If at least
+          *  HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC has passed since hbd_last_interest_payment then
+          *  interest is added to hbd_balance.
           *
-          *  @defgroup sbd_data sbd Balance Data
+          *  @defgroup hbd_data HBD Balance Data
           */
          ///@{
-         greedy_SBD_asset  sbd_balance = asset( 0, HBD_SYMBOL ); /// total sbd balance
-         uint128_t         sbd_seconds; ///< total sbd * how long it has been hel
-         time_point_sec    sbd_seconds_last_update; ///< the last time the sbd_seconds was updated
-         time_point_sec    sbd_last_interest_payment; ///< used to pay interest at most once per month
+         HBD_asset         hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
+         uint128_t         hbd_seconds; ///< total HBD * how long it has been held
+         time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
+         time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
 
 
-         greedy_SBD_asset  savings_sbd_balance = asset( 0, HBD_SYMBOL ); /// total sbd balance
-         uint128_t         savings_sbd_seconds; ///< total sbd * how long it has been hel
-         time_point_sec    savings_sbd_seconds_last_update; ///< the last time the sbd_seconds was updated
-         time_point_sec    savings_sbd_last_interest_payment; ///< used to pay interest at most once per month
+         HBD_asset         savings_hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
+         uint128_t         savings_hbd_seconds; ///< total HBD * how long it has been held
+         time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
+         time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
 
          uint8_t           savings_withdraw_requests = 0;
          ///@}
 
-         greedy_SBD_asset   reward_sbd_balance = asset( 0, HBD_SYMBOL );
-         greedy_STEEM_asset reward_steem_balance = asset( 0, HIVE_SYMBOL );
-         greedy_VEST_asset  reward_vesting_balance = asset( 0, VESTS_SYMBOL );
-         greedy_STEEM_asset reward_vesting_steem = asset( 0, HIVE_SYMBOL );
+         HBD_asset         reward_hbd_balance = asset( 0, HBD_SYMBOL );
+         HIVE_asset        reward_steem_balance = asset( 0, HIVE_SYMBOL );
+         VEST_asset        reward_vesting_balance = asset( 0, VESTS_SYMBOL );
+         HIVE_asset        reward_vesting_steem = asset( 0, HIVE_SYMBOL );
 
          share_type        curation_rewards = 0;
          share_type        posting_rewards = 0;
 
-         greedy_VEST_asset vesting_shares = asset( 0, VESTS_SYMBOL ); ///< total vesting shares held by this account, controls its voting power
-         greedy_VEST_asset delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
-         greedy_VEST_asset received_vesting_shares = asset( 0, VESTS_SYMBOL );
+         VEST_asset        vesting_shares = asset( 0, VESTS_SYMBOL ); ///< total vesting shares held by this account, controls its voting power
+         VEST_asset        delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
+         VEST_asset        received_vesting_shares = asset( 0, VESTS_SYMBOL );
 
-         greedy_VEST_asset vesting_withdraw_rate = asset( 0, VESTS_SYMBOL ); ///< at the time this is updated it can be at most vesting_shares/104
+         VEST_asset        vesting_withdraw_rate = asset( 0, VESTS_SYMBOL ); ///< at the time this is updated it can be at most vesting_shares/104
          time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
          share_type        withdrawn = 0; /// Track how many shares have been withdrawn
          share_type        to_withdraw = 0; /// Might be able to look this up with operation history.
@@ -516,9 +516,9 @@ FC_REFLECT( hive::chain::account_object,
              (comment_count)(lifetime_vote_count)(post_count)(can_vote)(voting_manabar)(downvote_manabar)
              (balance)
              (savings_balance)
-             (sbd_balance)(sbd_seconds)(sbd_seconds_last_update)(sbd_last_interest_payment)
-             (savings_sbd_balance)(savings_sbd_seconds)(savings_sbd_seconds_last_update)(savings_sbd_last_interest_payment)(savings_withdraw_requests)
-             (reward_steem_balance)(reward_sbd_balance)(reward_vesting_balance)(reward_vesting_steem)
+             (hbd_balance)(hbd_seconds)(hbd_seconds_last_update)(hbd_last_interest_payment)
+             (savings_hbd_balance)(savings_hbd_seconds)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)(savings_withdraw_requests)
+             (reward_steem_balance)(reward_hbd_balance)(reward_vesting_balance)(reward_vesting_steem)
              (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)
              (vesting_withdraw_rate)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
              (curation_rewards)

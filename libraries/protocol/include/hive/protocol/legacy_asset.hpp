@@ -21,10 +21,10 @@ class legacy_steem_asset_symbol_type
       uint64_t ser = STEEM_SYMBOL_SER;
 };
 
-struct legacy_steem_asset
+struct legacy_hive_asset
 {
    public:
-      legacy_steem_asset() {}
+      legacy_hive_asset() {}
 
       template< bool force_canon >
       asset to_asset()const
@@ -36,14 +36,14 @@ struct legacy_steem_asset
          return asset( amount, HIVE_SYMBOL );
       }
 
-      static legacy_steem_asset from_amount( share_type amount )
+      static legacy_hive_asset from_amount( share_type amount )
       {
-         legacy_steem_asset leg;
+         legacy_hive_asset leg;
          leg.amount = amount;
          return leg;
       }
 
-      static legacy_steem_asset from_asset( const asset& a )
+      static legacy_hive_asset from_asset( const asset& a )
       {
          FC_ASSERT( a.symbol == HIVE_SYMBOL );
          return from_amount( a.amount );
@@ -109,16 +109,16 @@ inline void unpack( Stream& s, hive::protocol::legacy_steem_asset_symbol_type& s
 
 } // fc::raw
 
-inline void to_variant( const hive::protocol::legacy_steem_asset& leg, fc::variant& v )
+inline void to_variant( const hive::protocol::legacy_hive_asset& leg, fc::variant& v )
 {
    to_variant( leg.to_asset<false>(), v );
 }
 
-inline void from_variant( const fc::variant& v, hive::protocol::legacy_steem_asset& leg )
+inline void from_variant( const fc::variant& v, hive::protocol::legacy_hive_asset& leg )
 {
    hive::protocol::asset a;
    from_variant( v, a );
-   leg = hive::protocol::legacy_steem_asset::from_asset( a );
+   leg = hive::protocol::legacy_hive_asset::from_asset( a );
 }
 
 template<>
@@ -132,7 +132,7 @@ struct get_typename< hive::protocol::legacy_steem_asset_symbol_type >
 
 } // fc
 
-FC_REFLECT( hive::protocol::legacy_steem_asset,
+FC_REFLECT( hive::protocol::legacy_hive_asset,
    (amount)
    (symbol)
    )

@@ -90,7 +90,7 @@ DEFINE_API_IMPL( transaction_status_api_impl, find_transaction )
 
 transaction_status_api::transaction_status_api() : my( std::make_unique< detail::transaction_status_api_impl >() )
 {
-   JSON_RPC_REGISTER_API( STEEM_TRANSACTION_STATUS_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_TRANSACTION_STATUS_API_PLUGIN_NAME );
 }
 
 transaction_status_api::~transaction_status_api() {}

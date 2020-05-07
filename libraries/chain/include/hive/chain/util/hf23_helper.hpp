@@ -17,7 +17,7 @@ class hf23_helper
          std::string name;
 
          asset       balance;
-         asset       sbd_balance;
+         asset       hbd_balance;
       };
 
       struct cmp_hf23_item

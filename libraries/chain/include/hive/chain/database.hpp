@@ -120,7 +120,7 @@ namespace hive { namespace chain {
             fc::path data_dir;
             fc::path shared_mem_dir;
             uint64_t initial_supply = HIVE_INIT_SUPPLY;
-            uint64_t sbd_initial_supply = HIVE_HBD_INIT_SUPPLY;
+            uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;
             uint64_t shared_file_size = 0;
             uint16_t shared_file_full_threshold = 0;
             uint16_t shared_file_scale_rate = 0;
@@ -357,8 +357,6 @@ namespace hive { namespace chain {
           *
           * Use the get_slot_time() and get_slot_at_time() functions
           * to convert between slot_num and timestamp.
-          *
-          * Passing slot_num == 0 returns STEEM_NULL_WITNESS
           */
          account_name_type get_scheduled_witness(uint32_t slot_num)const;
 
@@ -382,15 +380,15 @@ namespace hive { namespace chain {
           */
          uint32_t get_slot_at_time(fc::time_point_sec when)const;
 
-         /** @return the sbd created and deposited to_account, may return STEEM if there is no median feed */
-         std::pair< asset, asset > create_sbd( const account_object& to_account, asset steem, bool to_reward_balance=false );
+         /** @return the HBD created and deposited to_account, may return HIVE if there is no median feed */
+         std::pair< asset, asset > create_hbd( const account_object& to_account, asset hive, bool to_reward_balance=false );
 
          using Before = std::function< void( const asset& ) >;
          asset adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
 
-         asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false );
+         asset create_vesting( const account_object& to_account, asset hive, bool to_reward_balance=false );
 
-         void adjust_total_payout( const comment_cashout_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value );
+         void adjust_total_payout( const comment_cashout_object& a, const asset& hbd, const asset& curator_hbd_value, const asset& beneficiary_value );
 
          void        adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_bid );
          void        adjust_balance( const account_object& a, const asset& delta );
@@ -429,7 +427,7 @@ namespace hive { namespace chain {
          void clear_witness_votes( const account_object& a );
          void process_vesting_withdrawals();
          share_type pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout, share_type& max_rewards );
-         share_type cashout_comment_helper(  util::comment_reward_context& ctx, const comment_object& comment, const comment_cashout_object& comment_cashout, bool forward_curation_remainder = true );
+         share_type cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment, const comment_cashout_object& comment_cashout, bool forward_curation_remainder = true );
          void process_comment_cashout();
          void process_funds();
          void process_conversions();
@@ -453,11 +451,11 @@ namespace hive { namespace chain {
          void  pay_liquidity_reward();
 
          /**
-          * Helper method to return the current sbd value of a given amount of
-          * STEEM.  Return 0 HBD if there isn't a current_median_history
+          * Helper method to return the current HBD value of a given amount of
+          * HIVE.  Return 0 HBD if there isn't a current_median_history
           */
-         asset to_sbd( const asset& steem )const;
-         asset to_steem( const asset& sbd )const;
+         asset to_hbd( const asset& hive )const;
+         asset to_steem( const asset& hbd )const;
 
          time_point_sec   head_block_time()const;
          uint32_t         head_block_num()const;
@@ -475,7 +473,7 @@ namespace hive { namespace chain {
          /// Reset the object graph in-memory
          void initialize_indexes();
          void init_schema();
-         void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t sbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
+         void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
 
          /**
           *  This method validates transactions without adding it to the pending state.
@@ -549,7 +547,7 @@ namespace hive { namespace chain {
          //Clears all pending operations on account that involve balance, moves tokens to treasury account
          void clear_accounts( hf23_helper::hf23_items& balances, const std::set< std::string >& cleared_accounts );
          void clear_account( const account_object& account,
-            asset* transferred_sbd_ptr = nullptr, asset* transferred_steem_ptr = nullptr,
+            asset* transferred_hbd_ptr = nullptr, asset* transferred_steem_ptr = nullptr,
             asset* converted_vests_ptr = nullptr, asset* steem_from_vests_ptr = nullptr );
 
    protected:
@@ -575,7 +573,7 @@ namespace hive { namespace chain {
          void create_block_summary(const signed_block& next_block);
 
          //calculates sum of all balances stored on given account, returns true if any is nonzero
-         bool collect_account_total_balance( const account_object& account, asset* total_steem, asset* total_sbd,
+         bool collect_account_total_balance( const account_object& account, asset* total_steem, asset* total_hbd,
             asset* total_vests, asset* vesting_shares_steem_value );
          //removes (burns) balances held on null account
          void clear_null_account_balance();

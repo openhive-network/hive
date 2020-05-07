@@ -14,12 +14,12 @@
 // various template automagic depends on them being known at compile
 // time.
 //
-#ifndef STEEM_MARKET_HISTORY_SPACE_ID
-#define STEEM_MARKET_HISTORY_SPACE_ID 7
+#ifndef HIVE_MARKET_HISTORY_SPACE_ID
+#define HIVE_MARKET_HISTORY_SPACE_ID 7
 #endif
 
-#ifndef STEEM_MARKET_HISTORY_PLUGIN_NAME
-#define STEEM_MARKET_HISTORY_PLUGIN_NAME "market_history"
+#ifndef HIVE_MARKET_HISTORY_PLUGIN_NAME
+#define HIVE_MARKET_HISTORY_PLUGIN_NAME "market_history"
 #endif
 
 
@@ -30,8 +30,8 @@ using namespace appbase;
 
 enum market_history_object_types
 {
-   bucket_object_type        = ( STEEM_MARKET_HISTORY_SPACE_ID << 8 ),
-   order_history_object_type = ( STEEM_MARKET_HISTORY_SPACE_ID << 8 ) + 1
+   bucket_object_type        = ( HIVE_MARKET_HISTORY_SPACE_ID << 8 ),
+   order_history_object_type = ( HIVE_MARKET_HISTORY_SPACE_ID << 8 ) + 1
 };
 
 namespace detail { class market_history_plugin_impl; }
@@ -44,7 +44,7 @@ class market_history_plugin : public plugin< market_history_plugin >
 
       APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
 
-      static const std::string& name() { static std::string name = STEEM_MARKET_HISTORY_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_MARKET_HISTORY_PLUGIN_NAME; return name; }
 
       flat_set< uint32_t > get_tracked_buckets() const;
       uint32_t get_max_history_per_bucket() const;
@@ -96,17 +96,17 @@ struct bucket_object : public object< bucket_object_type, bucket_object >
    fc::time_point_sec   open;
    uint32_t             seconds = 0;
 
-   bucket_object_details steem;
-   bucket_object_details non_steem;
+   bucket_object_details hive;
+   bucket_object_details non_hive;
 
 #ifdef HIVE_ENABLE_SMT
    asset_symbol_type symbol = HBD_SYMBOL;
 
-   price high()const { return asset( non_steem.high, symbol ) / asset( steem.high, HIVE_SYMBOL ); }
-   price low()const { return asset( non_steem.low, symbol ) / asset( steem.low, HIVE_SYMBOL ); }
+   price high()const { return asset( non_hive.high, symbol ) / asset( hive.high, HIVE_SYMBOL ); }
+   price low()const { return asset( non_hive.low, symbol ) / asset( hive.low, HIVE_SYMBOL ); }
 #else
-   price high()const { return asset( non_steem.high, HBD_SYMBOL ) / asset( steem.high, HIVE_SYMBOL ); }
-   price low()const { return asset( non_steem.low, HBD_SYMBOL ) / asset( steem.low, HIVE_SYMBOL ); }
+   price high()const { return asset( non_hive.high, HBD_SYMBOL ) / asset( hive.high, HIVE_SYMBOL ); }
+   price low()const { return asset( non_hive.low, HBD_SYMBOL ) / asset( hive.low, HIVE_SYMBOL ); }
 #endif
 };
 
@@ -175,11 +175,11 @@ FC_REFLECT( hive::plugins::market_history::bucket_object_details,
 FC_REFLECT( hive::plugins::market_history::bucket_object,
                      (id)
                      (open)(seconds)
-                     (steem)
+                     (hive)
 #ifdef HIVE_ENABLE_SMT
                      (symbol)
 #endif
-                     (non_steem)
+                     (non_hive)
          )
 
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::market_history::bucket_object, hive::plugins::market_history::bucket_index )

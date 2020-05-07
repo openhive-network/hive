@@ -32,7 +32,7 @@ Explanation of output
 
 {"rvec":["929159090641","8360617424769","929159090641","8360617424769","197985103985","1780051544865","195077031513","1755693283617","179687790278","1615357001502"],"b":68585000,"s":"24303404786580"}
 
-rvec shows total number of STEEM satoshis created since genesis for:
+rvec shows total number of HIVE satoshis created since genesis for:
 
 - Curation rewards
 - Vesting rewards balancing curation rewards
@@ -51,11 +51,11 @@ s is total supply
 
 Some possible sources of inaccuracy, the direction and estimated relative sizes of these effects:
 
-- Missed blocks not modeled (lowers STEEM supply, small)
-- Miner queue length very approximately modeled (assumed to go to 100 during the first blocks and then stay there) (may lower or raise STEEM supply, very small)
-- Creation / destruction of STEEM used to back SBD not modeled (moves STEEM supply in direction opposite to changes in dollar value of 1 STEEM, large)
-- Interest paid to SBD not modeled (raises STEEM supply, medium)
-- Lost / forgotten private keys / wallets and deliberate burning of STEEM not modeled (lowers STEEM supply, unknown but likely small)
+- Missed blocks not modeled (lowers HIVE supply, small)
+- Miner queue length very approximately modeled (assumed to go to 100 during the first blocks and then stay there) (may lower or raise HIVE supply, very small)
+- Creation / destruction of HIVE used to back HBD not modeled (moves HIVE supply in direction opposite to changes in dollar value of 1 HIVE, large)
+- Interest paid to HBD not modeled (raises HIVE supply, medium)
+- Lost / forgotten private keys / wallets and deliberate burning of HIVE not modeled (lowers HIVE supply, unknown but likely small)
 - Possible bugs or mismatches with implementation (unknown)
 
 */

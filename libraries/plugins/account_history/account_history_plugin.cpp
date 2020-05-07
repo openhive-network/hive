@@ -14,7 +14,7 @@
 #include <boost/algorithm/string.hpp>
 
 
-#define STEEM_NAMESPACE_PREFIX "hive::protocol::"
+#define HIVE_NAMESPACE_PREFIX "hive::protocol::"
 
 namespace hive { namespace plugins { namespace account_history {
 
@@ -223,12 +223,12 @@ void account_history_plugin::plugin_initialize( const boost::program_options::va
       [&]( const operation_notification& note ){ my->on_pre_apply_operation(note); }, *this, 0 );
 
    typedef pair< account_name_type, account_name_type > pairstring;
-   STEEM_LOAD_VALUE_SET(options, "account-history-track-account-range", my->_tracked_accounts, pairstring);
+   HIVE_LOAD_VALUE_SET(options, "account-history-track-account-range", my->_tracked_accounts, pairstring);
 
    if( options.count( "track-account-range" ) )
    {
       wlog( "track-account-range is deprecated in favor of account-history-track-account-range" );
-      STEEM_LOAD_VALUE_SET( options, "track-account-range", my->_tracked_accounts, pairstring );
+      HIVE_LOAD_VALUE_SET( options, "track-account-range", my->_tracked_accounts, pairstring );
    }
 
    fc::mutable_variant_object state_opts;
@@ -253,7 +253,7 @@ void account_history_plugin::plugin_initialize( const boost::program_options::va
             for( const string& op : ops )
             {
                if( op.size() )
-                  my->_op_list.insert( STEEM_NAMESPACE_PREFIX + op );
+                  my->_op_list.insert( HIVE_NAMESPACE_PREFIX + op );
             }
          }
       }
@@ -270,7 +270,7 @@ void account_history_plugin::plugin_initialize( const boost::program_options::va
             for( const string& op : ops )
             {
                if( op.size() )
-                  my->_op_list.insert( STEEM_NAMESPACE_PREFIX + op );
+                  my->_op_list.insert( HIVE_NAMESPACE_PREFIX + op );
             }
          }
       }
@@ -297,7 +297,7 @@ void account_history_plugin::plugin_initialize( const boost::program_options::va
             for( const string& op : ops )
             {
                if( op.size() )
-                  my->_op_list.insert( STEEM_NAMESPACE_PREFIX + op );
+                  my->_op_list.insert( HIVE_NAMESPACE_PREFIX + op );
             }
          }
       }
@@ -314,7 +314,7 @@ void account_history_plugin::plugin_initialize( const boost::program_options::va
             for( const string& op : ops )
             {
                if( op.size() )
-                  my->_op_list.insert( STEEM_NAMESPACE_PREFIX + op );
+                  my->_op_list.insert( HIVE_NAMESPACE_PREFIX + op );
             }
          }
       }

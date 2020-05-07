@@ -96,7 +96,7 @@ int main( int argc, char** argv )
       hive::plugins::register_plugins();
 
       appbase::app().set_version_string( version_string() );
-      appbase::app().set_app_name( "steemd" );
+      appbase::app().set_app_name( "hived" );
 
       // These plugins are included in the default config
       appbase::app().set_default_plugins<

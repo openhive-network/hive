@@ -6,7 +6,7 @@
 
 #include <appbase/application.hpp>
 
-#define STEEM_REPUTATION_API_PLUGIN_NAME "reputation_api"
+#define HIVE_REPUTATION_API_PLUGIN_NAME "reputation_api"
 
 
 namespace hive { namespace plugins { namespace reputation {
@@ -24,7 +24,7 @@ public:
    reputation_api_plugin();
    virtual ~reputation_api_plugin();
 
-   static const std::string& name() { static std::string name = STEEM_REPUTATION_API_PLUGIN_NAME; return name; }
+   static const std::string& name() { static std::string name = HIVE_REPUTATION_API_PLUGIN_NAME; return name; }
 
    virtual void set_program_options( options_description& cli, options_description& cfg ) override;
 

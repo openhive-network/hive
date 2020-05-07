@@ -42,7 +42,7 @@ void new_chain_banner( const chain::database& db )
       "********************************\n"
       "*                              *\n"
       "*   ------- NEW CHAIN ------   *\n"
-      "*   -   Welcome to Steem!  -   *\n"
+      "*   -   Welcome to Hive!   -   *\n"
       "*   ------------------------   *\n"
       "*                              *\n"
       "********************************\n"
@@ -104,7 +104,7 @@ namespace detail {
 
       void operator()( const comment_payout_beneficiaries& cpb )const
       {
-         STEEM_ASSERT( cpb.beneficiaries.size() <= 8,
+         HIVE_ASSERT( cpb.beneficiaries.size() <= 8,
             plugin_exception,
             "Cannot specify more than 8 beneficiaries." );
       }
@@ -139,27 +139,27 @@ namespace detail {
       for( auto& key_weight_pair : auth.owner.key_auths )
       {
          for( auto& key : keys )
-            STEEM_ASSERT( key_weight_pair.first != key,  plugin_exception,
+            HIVE_ASSERT( key_weight_pair.first != key,  plugin_exception,
                "Detected private owner key in memo field. You should change your owner keys." );
       }
 
       for( auto& key_weight_pair : auth.active.key_auths )
       {
          for( auto& key : keys )
-            STEEM_ASSERT( key_weight_pair.first != key,  plugin_exception,
+            HIVE_ASSERT( key_weight_pair.first != key,  plugin_exception,
                "Detected private active key in memo field. You should change your active keys." );
       }
 
       for( auto& key_weight_pair : auth.posting.key_auths )
       {
          for( auto& key : keys )
-            STEEM_ASSERT( key_weight_pair.first != key,  plugin_exception,
+            HIVE_ASSERT( key_weight_pair.first != key,  plugin_exception,
                "Detected private posting key in memo field. You should change your posting keys." );
       }
 
       const auto& memo_key = account.memo_key;
       for( auto& key : keys )
-         STEEM_ASSERT( memo_key != key,  plugin_exception,
+         HIVE_ASSERT( memo_key != key,  plugin_exception,
             "Detected private memo key in memo field. You should change your memo key." );
    }
 
@@ -193,7 +193,7 @@ namespace detail {
             const auto& parent = _db.find_comment( o.parent_author, o.parent_permlink );
 
             if( parent != nullptr )
-            STEEM_ASSERT( parent->depth < HIVE_SOFT_MAX_COMMENT_DEPTH,
+            HIVE_ASSERT( parent->depth < HIVE_SOFT_MAX_COMMENT_DEPTH,
                plugin_exception,
                "Comment is nested ${x} posts deep, maximum depth is ${y}.", ("x",parent->depth)("y",HIVE_SOFT_MAX_COMMENT_DEPTH) );
          }
@@ -264,7 +264,7 @@ namespace detail {
                   }
                   else
                   {
-                     STEEM_ASSERT( coo->count < WITNESS_CUSTOM_OP_BLOCK_LIMIT, plugin_exception,
+                     HIVE_ASSERT( coo->count < WITNESS_CUSTOM_OP_BLOCK_LIMIT, plugin_exception,
                         "Account ${a} already submitted ${n} custom json operation(s) this block.",
                         ("a", account)("n", WITNESS_CUSTOM_OP_BLOCK_LIMIT) );
 
@@ -481,7 +481,7 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
 
    my->_chain_plugin.register_block_generator( get_name(), my->_block_producer );
 
-   STEEM_LOAD_VALUE_SET( options, "witness", my->_witnesses, hive::protocol::account_name_type )
+   HIVE_LOAD_VALUE_SET( options, "witness", my->_witnesses, hive::protocol::account_name_type )
 
    if( options.count("private-key") )
    {
@@ -518,7 +518,7 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
    if( my->_witnesses.size() && my->_private_keys.size() )
       my->_chain_plugin.set_write_lock_hold_time( -1 );
 
-   STEEM_ADD_PLUGIN_INDEX(my->_db, witness_custom_op_index);
+   HIVE_ADD_PLUGIN_INDEX(my->_db, witness_custom_op_index);
 
 } FC_LOG_AND_RETHROW() }
 

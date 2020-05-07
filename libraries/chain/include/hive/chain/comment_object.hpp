@@ -52,9 +52,6 @@ namespace hive { namespace chain {
          template< typename Constructor, typename Allocator >
          comment_object( Constructor&& c, allocator< Allocator > a )
             :category( a ), parent_permlink( a ), permlink( a )
-#ifdef HIVE_ENABLE_SMT
-            , allowed_vote_assets( a )
-#endif
          {
             c( *this );
          }
@@ -91,6 +88,9 @@ namespace hive { namespace chain {
          template< typename Constructor, typename Allocator >
          comment_cashout_object( Constructor&& c, allocator< Allocator > a )
             : beneficiaries( a )
+#ifdef HIVE_ENABLE_SMT
+            , allowed_vote_assets( a )
+#endif
          {
             c( *this );
          }
@@ -116,16 +116,16 @@ namespace hive { namespace chain {
          uint16_t          reward_weight = 0;
 
          /** tracks the total payout this comment has received over time, measured in HBD */
-         greedy_SBD_asset  total_payout_value = asset(0, HBD_SYMBOL);
-         greedy_SBD_asset  curator_payout_value = asset(0, HBD_SYMBOL);
-         greedy_SBD_asset  beneficiary_payout_value = asset( 0, HBD_SYMBOL );
+         HBD_asset         total_payout_value = asset(0, HBD_SYMBOL);
+         HBD_asset         curator_payout_value = asset(0, HBD_SYMBOL);
+         HBD_asset         beneficiary_payout_value = asset( 0, HBD_SYMBOL );
 
          share_type        author_rewards = 0;
 
          int32_t           net_votes = 0;
 
-         greedy_SBD_asset  max_accepted_payout = asset( 1000000000, HBD_SYMBOL );       /// SBD value of the maximum payout this post will receive
-         uint16_t          percent_steem_dollars = HIVE_100_PERCENT; /// the percent of Steem Dollars to key, unkept amounts will be received as Steem Power
+         HBD_asset         max_accepted_payout = asset( 1000000000, HBD_SYMBOL );       /// HBD value of the maximum payout this post will receive
+         uint16_t          percent_hbd = HIVE_100_PERCENT; /// the percent of HBD to key, unkept amounts will be received as VESTS
          bool              allow_votes   = true;      /// allows a post to receive votes;
          bool              allow_curation_rewards = true;
 
@@ -319,7 +319,7 @@ FC_REFLECT( hive::chain::comment_cashout_object,
              (children_abs_rshares)(cashout_time)(max_cashout_time)
              (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(beneficiary_payout_value)
              (author_rewards)(net_votes)
-             (max_accepted_payout)(percent_steem_dollars)(allow_votes)(allow_curation_rewards)
+             (max_accepted_payout)(percent_hbd)(allow_votes)(allow_curation_rewards)
              (beneficiaries)
 #ifdef HIVE_ENABLE_SMT
              (allowed_vote_assets)
@@ -371,7 +371,7 @@ namespace helpers
    public:
       typedef hive::chain::comment_cashout_index IndexType;
       typedef typename hive::chain::comment_cashout_object::t_beneficiaries t_beneficiaries;
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
       typedef typename hive::chain::comment_cashout_object::t_votable_assets t_votable_assets;
 #endif
       index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const

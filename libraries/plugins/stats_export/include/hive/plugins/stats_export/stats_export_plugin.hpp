@@ -11,7 +11,7 @@ namespace detail { class stats_export_plugin_impl; }
 
 using namespace appbase;
 
-#define STEEM_STATS_EXPORT_PLUGIN_NAME "stats_export"
+#define HIVE_STATS_EXPORT_PLUGIN_NAME "stats_export"
 
 class stats_export_plugin : public appbase::plugin< stats_export_plugin >
 {
@@ -24,7 +24,7 @@ class stats_export_plugin : public appbase::plugin< stats_export_plugin >
          (hive::plugins::chain::chain_plugin)
       )
 
-      static const std::string& name() { static std::string name = STEEM_STATS_EXPORT_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_STATS_EXPORT_PLUGIN_NAME; return name; }
 
       virtual void set_program_options( options_description& cli, options_description& cfg ) override;
       virtual void plugin_initialize( const variables_map& options ) override;

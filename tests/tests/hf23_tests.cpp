@@ -262,14 +262,14 @@ hf23_helper::hf23_item get_balances( const account_object& obj )
    res.name          = obj.name;
 
    res.balance       = obj.get_balance();
-   res.sbd_balance   = obj.get_hbd_balance();
+   res.hbd_balance   = obj.get_hbd_balance();
 
    return res;
 }
 
 bool cmp_hf23_item( const hf23_helper::hf23_item& a, const hf23_helper::hf23_item& b )
 {
-   return a.name == b.name && a.balance == b.balance && a.sbd_balance == b.sbd_balance;
+   return a.name == b.name && a.balance == b.balance && a.hbd_balance == b.hbd_balance;
 }
 
 BOOST_AUTO_TEST_CASE( save_test_02 )
@@ -761,8 +761,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
          op.from = "alice";
          op.to = "bob";
          op.agent = "carol";
-         op.steem_amount = ASSET( "10.000 TESTS" );
-         op.sbd_amount = ASSET( "10.000 TBD" );
+         op.hive_amount = ASSET( "10.000 TESTS" );
+         op.hbd_amount = ASSET( "10.000 TBD" );
          op.fee = ASSET( "0.100 TBD" );
          op.json_meta = "";
          op.ratification_deadline = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 10 );
@@ -840,8 +840,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
          op.agent = "carol";
          op.who = "alice";
          op.receiver = "bob";
-         op.steem_amount = ASSET( "2.000 TESTS" );
-         op.sbd_amount = ASSET( "3.000 TBD" );
+         op.hive_amount = ASSET( "2.000 TESTS" );
+         op.hbd_amount = ASSET( "3.000 TBD" );
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
          db->push_transaction( tx, 0 );
@@ -867,8 +867,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
          op.agent = "carol";
          op.who = "bob";
          op.receiver = "alice";
-         op.steem_amount = ASSET( "2.000 TESTS" );
-         op.sbd_amount = ASSET( "3.000 TBD" );
+         op.hive_amount = ASSET( "2.000 TESTS" );
+         op.hbd_amount = ASSET( "3.000 TBD" );
          tx.operations.push_back( op );
          sign( tx, bob_private_key );
          db->push_transaction( tx, 0 );
@@ -922,8 +922,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
          op.agent = "carol";
          op.who = "carol";
          op.receiver = "bob";
-         op.steem_amount = ASSET( "2.000 TESTS" );
-         op.sbd_amount = ASSET( "3.000 TBD" );
+         op.hive_amount = ASSET( "2.000 TESTS" );
+         op.hbd_amount = ASSET( "3.000 TBD" );
          tx.operations.push_back( op );
 
          op.from = "alice";
@@ -931,8 +931,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
          op.agent = "carol";
          op.who = "carol";
          op.receiver = "alice";
-         op.steem_amount = ASSET( "2.000 TESTS" );
-         op.sbd_amount = ASSET( "1.000 TBD" );
+         op.hive_amount = ASSET( "2.000 TESTS" );
+         op.hbd_amount = ASSET( "1.000 TBD" );
          tx.operations.push_back( op );
 
          sign( tx, carol_private_key );
@@ -959,8 +959,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
          op.agent = "carol";
          op.who = "carol";
          op.receiver = "bob";
-         op.steem_amount = ASSET( "2.000 TESTS" );
-         op.sbd_amount = ASSET( "0.000 TBD" );
+         op.hive_amount = ASSET( "2.000 TESTS" );
+         op.hbd_amount = ASSET( "0.000 TBD" );
          tx.operations.push_back( op );
          sign( tx, carol_private_key );
          db->push_transaction( tx, 0 );
@@ -1208,7 +1208,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
 
       BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
       fund( "alice", ASSET( "1000.000 TBD" ) );
-      auto start_time = db->get_account( "alice" ).sbd_seconds_last_update;
+      auto start_time = db->get_account( "alice" ).hbd_seconds_last_update;
       auto alice_hbd = get_hbd_balance( "alice" );
       BOOST_TEST_MESSAGE( "treasury_hbd = " << asset_to_string( db->get_treasury().get_hbd_balance() ) );
       BOOST_TEST_MESSAGE( "alice_hbd = " << asset_to_string( alice_hbd ) );

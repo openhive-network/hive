@@ -165,4 +165,4 @@ void delayed_node_plugin::connection_failed()
 
 } }
 
-STEEM_DEFINE_PLUGIN( delayed_node, hive::delayed_node::delayed_node_plugin )
+HIVE_DEFINE_PLUGIN( delayed_node, hive::delayed_node::delayed_node_plugin )

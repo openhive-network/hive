@@ -2375,7 +2375,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
    int64_t expected_bob0bp_delayed_votes;
    asset expected_carol_hive;
 
-/* https://gitlab.syncad.com/hive-group/steem/issues/5#note_24084
+/* https://gitlab.syncad.com/hive-group/hive/issues/5#note_24084
 
   actors: alice, alice.bp (witness of alice choice), bob, bob.bp (witness of bob choice), carol
 */

@@ -655,7 +655,7 @@ class wallet_api
        * @param to The account the funds are going to
        * @param agent The account acting as the agent in case of dispute
        * @param escrow_id A unique id for the escrow transfer. (from, escrow_id) must be a unique pair
-       * @param sbd_amount The amount of HBD to transfer
+       * @param hbd_amount The amount of HBD to transfer
        * @param steem_amount The amount of HIVE to transfer
        * @param fee The fee paid to the agent
        * @param ratification_deadline The deadline for 'to' and 'agent' to approve the escrow transfer
@@ -668,7 +668,7 @@ class wallet_api
          string to,
          string agent,
          uint32_t escrow_id,
-         condenser_api::legacy_asset sbd_amount,
+         condenser_api::legacy_asset hbd_amount,
          condenser_api::legacy_asset steem_amount,
          condenser_api::legacy_asset fee,
          time_point_sec ratification_deadline,
@@ -727,7 +727,7 @@ class wallet_api
        * @param who The account authorizing the release
        * @param receiver The account that will receive funds being released
        * @param escrow_id A unique id for the escrow transfer
-       * @param sbd_amount The amount of HBD that will be released
+       * @param hbd_amount The amount of HBD that will be released
        * @param steem_amount The amount of HIVE that will be released
        * @param broadcast true if you wish to broadcast the transaction
        */
@@ -738,7 +738,7 @@ class wallet_api
          string who,
          string receiver,
          uint32_t escrow_id,
-         condenser_api::legacy_asset sbd_amount,
+         condenser_api::legacy_asset hbd_amount,
          condenser_api::legacy_asset steem_amount,
          bool broadcast = false
       );
@@ -835,7 +835,7 @@ class wallet_api
        *  @param amount The amount of HBD to convert
        *  @param broadcast true if you wish to broadcast the transaction
        */
-      condenser_api::legacy_signed_transaction convert_sbd(
+      condenser_api::legacy_signed_transaction convert_hbd(
          string from,
          condenser_api::legacy_asset amount,
          bool broadcast = false );
@@ -877,7 +877,7 @@ class wallet_api
        * you can fill in.  It's better than nothing.
        *
        * @param operation_type the type of operation to return, must be one of the
-       *                       operations defined in `steem/chain/operations.hpp`
+       *                       operations defined in `hive/chain/operations.hpp`
        *                       (e.g., "global_parameters_update_operation")
        * @return a default-constructed operation of the given type
        */
@@ -1063,7 +1063,7 @@ class wallet_api
       condenser_api::legacy_signed_transaction claim_reward_balance(
          string account,
          condenser_api::legacy_asset reward_steem,
-         condenser_api::legacy_asset reward_sbd,
+         condenser_api::legacy_asset reward_hbd,
          condenser_api::legacy_asset reward_vests,
          bool broadcast );
 
@@ -1212,7 +1212,7 @@ FC_API( hive::wallet::wallet_api,
         (transfer_to_vesting)
         (withdraw_vesting)
         (set_withdraw_vesting_route)
-        (convert_sbd)
+        (convert_hbd)
         (publish_feed)
         (get_order_book)
         (get_open_orders)

@@ -152,7 +152,7 @@ struct post_operation_visitor
    {
       try
       {
-         if( op.id == STEEM_FOLLOW_PLUGIN_NAME )
+         if( op.id == HIVE_FOLLOW_PLUGIN_NAME )
          {
             custom_json_operation new_cop;
 
@@ -366,12 +366,12 @@ void follow_plugin::plugin_initialize( const boost::program_options::variables_m
 
       my->_pre_apply_operation_conn = my->_db.add_pre_apply_operation_handler( [&]( const operation_notification& note ){ my->pre_operation( note ); }, *this, 0 );
       my->_post_apply_operation_conn = my->_db.add_post_apply_operation_handler( [&]( const operation_notification& note ){ my->post_operation( note ); }, *this, 0 );
-      STEEM_ADD_PLUGIN_INDEX(my->_db, follow_index);
-      STEEM_ADD_PLUGIN_INDEX(my->_db, feed_index);
-      STEEM_ADD_PLUGIN_INDEX(my->_db, blog_index);
-      STEEM_ADD_PLUGIN_INDEX(my->_db, reputation_index);
-      STEEM_ADD_PLUGIN_INDEX(my->_db, follow_count_index);
-      STEEM_ADD_PLUGIN_INDEX(my->_db, blog_author_stats_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, follow_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, feed_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, blog_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, reputation_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, follow_count_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, blog_author_stats_index);
 
       fc::mutable_variant_object state_opts;
 

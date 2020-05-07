@@ -127,5 +127,5 @@ namespace hive { namespace protocol {
     void from_variant( const fc::variant& var,  hive::protocol::operation& vo );
 }*/
 
-STEEM_DECLARE_OPERATION_TYPE( hive::protocol::operation )
+HIVE_DECLARE_OPERATION_TYPE( hive::protocol::operation )
 FC_REFLECT_TYPENAME( hive::protocol::operation )

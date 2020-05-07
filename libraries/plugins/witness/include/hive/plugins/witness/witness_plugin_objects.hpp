@@ -2,8 +2,8 @@
 
 #include <hive/chain/steem_object_types.hpp>
 
-#ifndef STEEM_WITNESS_SPACE_ID
-#define STEEM_WITNESS_SPACE_ID 19
+#ifndef HIVE_WITNESS_SPACE_ID
+#define HIVE_WITNESS_SPACE_ID 19
 #endif
 
 namespace hive { namespace chain {
@@ -16,7 +16,7 @@ using namespace hive::chain;
 
 enum witness_object_types
 {
-   witness_custom_op_object_type          = ( STEEM_WITNESS_SPACE_ID << 8 )
+   witness_custom_op_object_type          = ( HIVE_WITNESS_SPACE_ID << 8 )
 };
 
 class witness_custom_op_object : public object< witness_custom_op_object_type, witness_custom_op_object >

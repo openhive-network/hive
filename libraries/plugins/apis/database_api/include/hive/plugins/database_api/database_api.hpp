@@ -81,8 +81,8 @@ class database_api
          (find_vesting_delegations)
          (list_vesting_delegation_expirations)
          (find_vesting_delegation_expirations)
-         (list_sbd_conversion_requests)
-         (find_sbd_conversion_requests)
+         (list_hbd_conversion_requests)
+         (find_hbd_conversion_requests)
          (list_decline_voting_rights_requests)
          (find_decline_voting_rights_requests)
 
@@ -140,7 +140,7 @@ class database_api
 
          /*
           * This is a general purpose API that checks signatures against accounts for an arbitrary sha256 hash
-          * using the existing authority structures in Steem
+          * using the existing authority structures in Hive
           */
          (verify_signatures)
 

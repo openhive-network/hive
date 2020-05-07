@@ -1,5 +1,5 @@
 
-This is developer documentation for creating brand-new operations on the STEEM blockchain.
+This is developer documentation for creating brand-new operations on the HIVE blockchain.
 
 - (1) Define `smt_elevate_account_operation` structure in `smt_operations.hpp`
 - (2) Create `FC_REFLECT` definition for the operation struct.
@@ -85,7 +85,7 @@ of virtual operations.
 
 ## Step 5
 
-- (5a) You must add `STEEM_DEFINE_EVALUATOR` macro in `evaluator.hpp` to
+- (5a) You must add `HIVE_DEFINE_EVALUATOR` macro in `evaluator.hpp` to
 generate some boilerplate code.  The macro is defined `evaluator.hpp`,
 most of the generated code is support code required by the framework and
 does not affect the operation itself.
@@ -152,10 +152,10 @@ to make it available to JSON clients
 
 ## Step 9
 
-- (9a) Add `smt_token_object_type` to `enum object_type` in `steem_objects.hpp` and add
+- (9a) Add `smt_token_object_type` to `enum object_type` in `hive_objects.hpp` and add
 to `FC_REFLECT_ENUM` bubble list at the bottom of that file
-- (9b) Declare (but do not define) `class smt_token_object;` in `steem_objects.hpp`
-- (9c) Define `typedef oid< smt_token_object > smt_token_id_type` in `steem_objects.hpp`
+- (9b) Declare (but do not define) `class smt_token_object;` in `hive_objects.hpp`
+- (9c) Define `typedef oid< smt_token_object > smt_token_id_type` in `hive_objects.hpp`
 - (9d) Create object header file (one header file per object) in `smt_objects` directory.
 Include the new header from `smt_objects.hpp`.
 - (9e) All SMT objects are consensus, and therefore should exist in `hive::chain` namespace
@@ -191,7 +191,7 @@ register the object type with the database.
 Step 9 requires some explanation.
 
 - (9a) Each object type has an integer ID signifying that object type.  These type ID's are
-defined by an `enum` in `steem_object_types.hpp`, any new objects must be added here.  In SQL
+defined by an `enum` in `hive_object_types.hpp`, any new objects must be added here.  In SQL
 terms, if we imagine each *database table* has an integer ID, then `smt_token_object_type` is
 the ID value that refers to the `smt_token_object` *table*.
 
@@ -200,7 +200,7 @@ variable of ID type, which notes the table the ID refers to.  This is implemente
 `chainbase::oid` class, which takes the class name as a template parameter.  To cut down
 on the number of template invocations needed in typical code (and to ease porting of
 code first developed with older versions of `chainbase` or its predecessors), a type
-alias `typedef oid< smt_token_object > smt_id_type` is added to `steem_object_types.hpp`.
+alias `typedef oid< smt_token_object > smt_id_type` is added to `hive_object_types.hpp`.
 
 - (9f) The `smt_token_object` class subclasses
 `chainbase::object< smt_token_object_type, smt_token_object >`.  This is the
@@ -228,8 +228,8 @@ Examples may be seen with fields `transaction_object::packed_trx`, `comment_obje
 created will be assigned the next sequentially available object ID.
 
 - (9l) Some functionality in `chainbase` requires the `by_id` field.  Since `chainbase`
-is designed as a reusable library, not tightly coupled to Steem, it contains no reference
-to any `steem` namespaces.  So the name `by_id` must refer to `chainbase::by_id`.  If you
+is designed as a reusable library, not tightly coupled to Hive, it contains no reference
+to any `hive` namespaces.  So the name `by_id` must refer to `chainbase::by_id`.  If you
 define a `struct by_id;` in the `hive::chain` namespace, the result will be that every
 index defined later in the compilation unit which references `by_id` without qualification
 will become an incorrect or ambiguous type reference.  The result likely will not
@@ -249,7 +249,7 @@ definitions.  More information about the syntax is available in the Boost docume
 
 - (9m) The `by_id` index is used by the `chainbase` infrastructure to implement the undo function.
 
-- (9m) All indexes used in Steem must be `ordered_unique`.  In theory, hashed or non-unique
+- (9m) All indexes used in Hive must be `ordered_unique`.  In theory, hashed or non-unique
 indexes may be permissible in some situations, and may offer a performance advantage.
 However, past experience has shown that the undefined iteration order of these indexes
 is a potential source of state corruption bugs (in practice, iteration order of such an

@@ -40,13 +40,13 @@ class proposal_object : public object< proposal_object_type, proposal_object >
       // end_date (when the proposal expires and can no longer pay out)
       time_point_sec end_date;
 
-      //daily_pay (the amount of SBD that is being requested to be paid out daily)
+      //daily_pay (the amount of HBD that is being requested to be paid out daily)
       asset daily_pay;
 
       //subject (a very brief description or title for the proposal)
       shared_string subject;
 
-      //permlink (a link to a page describing the work proposal in depth, generally this will probably be to a Steem post).
+      //permlink (a link to a page describing the work proposal in depth, generally this will probably be to a Hive post).
       shared_string permlink;
 
       //This will be calculate every maintenance period

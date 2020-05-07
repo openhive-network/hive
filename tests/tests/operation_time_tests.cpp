@@ -487,7 +487,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
       auto bob_comment_payout = asset( ( ( uint128_t( bob_comment_rshares.value ) * bob_comment_rshares.value * reward_hive.amount.value ) / total_rshares2 ).to_uint64(), HIVE_SYMBOL );
       auto bob_comment_discussion_rewards = asset( bob_comment_payout.amount / 4, HIVE_SYMBOL );
       bob_comment_payout -= bob_comment_discussion_rewards;
-      auto bob_comment_hbd_reward = db->to_sbd( asset( bob_comment_payout.amount / 2, HIVE_SYMBOL ) );
+      auto bob_comment_hbd_reward = db->to_hbd( asset( bob_comment_payout.amount / 2, HIVE_SYMBOL ) );
       auto bob_comment_vesting_reward = ( bob_comment_payout - asset( bob_comment_payout.amount / 2, HIVE_SYMBOL) ) * db->get_dynamic_global_properties().get_vesting_share_price();
 
       BOOST_TEST_MESSAGE( "Cause first payout" );
@@ -1034,13 +1034,13 @@ OOST_AUTO_TEST_CASE( nested_comments )
       dave_pays_bob_vest -= dave_pays_alice_vest;
 
       // Calculate total comment payouts
-      auto alice_comment_total_payout = db->to_sbd( asset( alice_pays_alice_hbd + alice_pays_alice_vest, HIVE_SYMBOL ) );
-      alice_comment_total_payout += db->to_sbd( asset( bob_pays_alice_hbd + bob_pays_alice_vest, HIVE_SYMBOL ) );
-      alice_comment_total_payout += db->to_sbd( asset( dave_pays_alice_hbd + dave_pays_alice_vest, HIVE_SYMBOL ) );
-      auto bob_comment_total_payout = db->to_sbd( asset( bob_pays_bob_hbd + bob_pays_bob_vest, HIVE_SYMBOL ) );
-      bob_comment_total_payout += db->to_sbd( asset( dave_pays_bob_hbd + dave_pays_bob_vest, HIVE_SYMBOL ) );
-      auto sam_comment_total_payout = db->to_sbd( asset( dave_pays_sam_hbd + dave_pays_sam_vest, HIVE_SYMBOL ) );
-      auto dave_comment_total_payout = db->to_sbd( asset( dave_pays_dave_hbd + dave_pays_dave_vest, HIVE_SYMBOL ) );
+      auto alice_comment_total_payout = db->to_hbd( asset( alice_pays_alice_hbd + alice_pays_alice_vest, HIVE_SYMBOL ) );
+      alice_comment_total_payout += db->to_hbd( asset( bob_pays_alice_hbd + bob_pays_alice_vest, HIVE_SYMBOL ) );
+      alice_comment_total_payout += db->to_hbd( asset( dave_pays_alice_hbd + dave_pays_alice_vest, HIVE_SYMBOL ) );
+      auto bob_comment_total_payout = db->to_hbd( asset( bob_pays_bob_hbd + bob_pays_bob_vest, HIVE_SYMBOL ) );
+      bob_comment_total_payout += db->to_hbd( asset( dave_pays_bob_hbd + dave_pays_bob_vest, HIVE_SYMBOL ) );
+      auto sam_comment_total_payout = db->to_hbd( asset( dave_pays_sam_hbd + dave_pays_sam_vest, HIVE_SYMBOL ) );
+      auto dave_comment_total_payout = db->to_hbd( asset( dave_pays_dave_hbd + dave_pays_dave_vest, HIVE_SYMBOL ) );
 
       auto alice_starting_vesting = get_vesting( "alice" );
       auto alice_starting_hbd = get_hbd_balance( "alice" );
@@ -1764,7 +1764,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
 
       fund( "alice", ASSET( "31.903 TBD" ) );
 
-      auto start_time = db->get_account( "alice" ).sbd_seconds_last_update;
+      auto start_time = db->get_account( "alice" ).hbd_seconds_last_update;
       auto alice_hbd = get_hbd_balance( "alice" );
 
       generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
@@ -1791,7 +1791,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
 
       BOOST_TEST_MESSAGE( "Testing interest under interest period" );
 
-      start_time = db->get_account( "alice" ).sbd_seconds_last_update;
+      start_time = db->get_account( "alice" ).hbd_seconds_last_update;
       alice_hbd = get_hbd_balance( "alice" );
 
       generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC / 2 ), true );
@@ -1808,7 +1808,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
 
       auto alice_coindays = uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds();
       alice_hbd = get_hbd_balance( "alice" );
-      start_time = db->get_account( "alice" ).sbd_seconds_last_update;
+      start_time = db->get_account( "alice" ).hbd_seconds_last_update;
 
       BOOST_TEST_MESSAGE( "Testing longer interest period" );
 
@@ -2730,12 +2730,12 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
       BOOST_TEST_MESSAGE( "Changing sam and gpo to set up market cap conditions" );
 
-      asset hbd_balance = asset( ( gpo.virtual_supply.amount * ( gpo.sbd_stop_percent + 112 ) ) / HIVE_100_PERCENT, HIVE_SYMBOL ) * exchange_rate;
+      asset hbd_balance = asset( ( gpo.virtual_supply.amount * ( gpo.hbd_stop_percent + 112 ) ) / HIVE_100_PERCENT, HIVE_SYMBOL ) * exchange_rate;
       db_plugin->debug_update( [=]( database& db )
       {
          db.modify( db.get_account( "sam" ), [&]( account_object& a )
          {
-            a.sbd_balance = hbd_balance;
+            a.hbd_balance = hbd_balance;
          });
       }, database::skip_witness_signature );
 
@@ -2743,7 +2743,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       {
          db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
          {
-            gpo.current_sbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
+            gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
             gpo.virtual_supply = gpo.virtual_supply + hbd_balance * exchange_rate;
          });
       }, database::skip_witness_signature );
@@ -2776,17 +2776,17 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       {
          db.modify( db.get_account( "sam" ), [&]( account_object& a )
          {
-            a.sbd_balance = asset( ( ( gpo.sbd_start_percent - 9 ) * hbd_balance.amount ) / gpo.sbd_stop_percent, HBD_SYMBOL );
+            a.hbd_balance = asset( ( ( gpo.hbd_start_percent - 9 ) * hbd_balance.amount ) / gpo.hbd_stop_percent, HBD_SYMBOL );
          });
       }, database::skip_witness_signature );
 
-      auto current_hbd_supply = alice_hbd + asset( ( ( gpo.sbd_start_percent - 9 ) * hbd_balance.amount ) / gpo.sbd_stop_percent, HBD_SYMBOL ) + db->get_treasury().get_hbd_balance();
+      auto current_hbd_supply = alice_hbd + asset( ( ( gpo.hbd_start_percent - 9 ) * hbd_balance.amount ) / gpo.hbd_stop_percent, HBD_SYMBOL ) + db->get_treasury().get_hbd_balance();
 
       db_plugin->debug_update( [=]( database& db )
       {
          db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
          {
-            gpo.current_sbd_supply = current_hbd_supply;
+            gpo.current_hbd_supply = current_hbd_supply;
          });
       }, database::skip_witness_signature );
 
@@ -2798,7 +2798,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       auto last_print_rate = db->get_dynamic_global_properties().get_hbd_print_rate();
 
       // Keep producing blocks until printing HBD is back
-      while( ( db->get_dynamic_global_properties().get_current_hbd_supply() * exchange_rate ).amount >= ( db->get_dynamic_global_properties().virtual_supply.amount * db->get_dynamic_global_properties().sbd_start_percent ) / HIVE_100_PERCENT )
+      while( ( db->get_dynamic_global_properties().get_current_hbd_supply() * exchange_rate ).amount >= ( db->get_dynamic_global_properties().virtual_supply.amount * db->get_dynamic_global_properties().hbd_start_percent ) / HIVE_100_PERCENT )
       {
          auto& gpo = db->get_dynamic_global_properties();
          BOOST_REQUIRE( gpo.get_hbd_print_rate() >= last_print_rate );
@@ -2919,7 +2919,7 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
          db.modify( db.get_account( HIVE_NULL_ACCOUNT ), [&]( account_object& a )
          {
             a.reward_steem_balance = ASSET( "1.000 TESTS" );
-            a.reward_sbd_balance = ASSET( "1.000 TBD" );
+            a.reward_hbd_balance = ASSET( "1.000 TBD" );
             a.reward_vesting_balance = ASSET( "1.000000 VESTS" );
             a.reward_vesting_steem = ASSET( "1.000 TESTS" );
          });
@@ -2928,7 +2928,7 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
          {
             gpo.current_supply += ASSET( "2.000 TESTS" );
             gpo.virtual_supply += ASSET( "3.000 TESTS" );
-            gpo.current_sbd_supply += ASSET( "1.000 TBD" );
+            gpo.current_hbd_supply += ASSET( "1.000 TBD" );
             gpo.pending_rewarded_vesting_shares += ASSET( "1.000000 VESTS" );
             gpo.pending_rewarded_vesting_steem += ASSET( "1.000 TESTS" );
          });

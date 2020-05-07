@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
   test_args = {
     "jsonrpc":"2.0", 
-    "method":"database_api.list_sbd_conversion_requests", 
+    "method":"database_api.list_hbd_conversion_requests", 
     "params" : {
       "start" : json.loads(args.start),
       "limit" : args.limit,

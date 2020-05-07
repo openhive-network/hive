@@ -2,70 +2,71 @@
 
 #include <hive/protocol/exceptions.hpp>
 
-#define STEEM_DECLARE_OP_BASE_EXCEPTIONS( op_name )                \
-   FC_DECLARE_DERIVED_EXCEPTION(                                      \
-      op_name ## _validate_exception,                                 \
-      hive::chain::operation_validate_exception,                  \
+#define HIVE_DECLARE_OP_BASE_EXCEPTIONS( op_name )                                        \
+   FC_DECLARE_DERIVED_EXCEPTION(                                                          \
+      op_name ## _validate_exception,                                                     \
+      hive::chain::operation_validate_exception,                                          \
       4040000 + 100 * protocol::operation::tag< protocol::op_name ## _operation >::value, \
-      #op_name "_operation validation exception"                      \
-      )                                                               \
-   FC_DECLARE_DERIVED_EXCEPTION(                                      \
-      op_name ## _evaluate_exception,                                 \
-      hive::chain::operation_evaluate_exception,                  \
+      #op_name "_operation validation exception"                                          \
+      )                                                                                   \
+   FC_DECLARE_DERIVED_EXCEPTION(                                                          \
+      op_name ## _evaluate_exception,                                                     \
+      hive::chain::operation_evaluate_exception,                                          \
       4050000 + 100 * protocol::operation::tag< protocol::op_name ## _operation >::value, \
-      #op_name "_operation evaluation exception"                      \
+      #op_name "_operation evaluation exception"                                          \
       )
 
-#define STEEM_DECLARE_OP_VALIDATE_EXCEPTION( exc_name, op_name, seqnum, msg ) \
-   FC_DECLARE_DERIVED_EXCEPTION(                                      \
-      op_name ## _ ## exc_name,                                       \
-      hive::chain::op_name ## _validate_exception,                \
+#define HIVE_DECLARE_OP_VALIDATE_EXCEPTION( exc_name, op_name, seqnum, msg )              \
+   FC_DECLARE_DERIVED_EXCEPTION(                                                          \
+      op_name ## _ ## exc_name,                                                           \
+      hive::chain::op_name ## _validate_exception,                                        \
       4040000 + 100 * protocol::operation::tag< protocol::op_name ## _operation >::value  \
-         + seqnum,                                                    \
-      msg                                                             \
+         + seqnum,                                                                        \
+      msg                                                                                 \
       )
 
-#define STEEM_DECLARE_OP_EVALUATE_EXCEPTION( exc_name, op_name, seqnum, msg ) \
-   FC_DECLARE_DERIVED_EXCEPTION(                                      \
-      op_name ## _ ## exc_name,                                       \
-      hive::chain::op_name ## _evaluate_exception,                \
+#define HIVE_DECLARE_OP_EVALUATE_EXCEPTION( exc_name, op_name, seqnum, msg )              \
+   FC_DECLARE_DERIVED_EXCEPTION(                                                          \
+      op_name ## _ ## exc_name,                                                           \
+      hive::chain::op_name ## _evaluate_exception,                                        \
       4050000 + 100 * protocol::operation::tag< protocol::op_name ## _operation >::value  \
-         + seqnum,                                                    \
-      msg                                                             \
+         + seqnum,                                                                        \
+      msg                                                                                 \
       )
 
-#define STEEM_DECLARE_INTERNAL_EXCEPTION( exc_name, seqnum, msg )  \
-   FC_DECLARE_DERIVED_EXCEPTION(                                      \
-      internal_ ## exc_name,                                          \
-      hive::chain::internal_exception,                            \
-      4990000 + seqnum,                                               \
-      msg                                                             \
+#define HIVE_DECLARE_INTERNAL_EXCEPTION( exc_name, seqnum, msg )                          \
+   FC_DECLARE_DERIVED_EXCEPTION(                                                          \
+      internal_ ## exc_name,                                                              \
+      hive::chain::internal_exception,                                                    \
+      4990000 + seqnum,                                                                   \
+      msg                                                                                 \
       )
 
-#define STEEM_TRY_NOTIFY( signal, ... )                                       \
-   try                                                                        \
-   {                                                                          \
-      signal( __VA_ARGS__ );                                                  \
-   }                                                                          \
-   catch( const hive::chain::plugin_exception& e )                           \
-   {                                                                          \
-      throw;                                                                  \
-   }                                                                          \
-   catch( const fc::exception& e )                                            \
-   {                                                                          \
-      elog( "Caught exception in plugin: ${e}", ("e", e.to_detail_string() ) ); \
-   }                                                                          \
-   catch( const boost::exception& e )                                         \
-   {                                                                          \
-      elog( "Caught unexpected exception in plugin: ${e}", ("e", boost::diagnostic_information(e)) ); \
-   }                                                                          \
-   catch( const std::exception& e )                                           \
-   {                                                                          \
-      elog( "Caught unexpected exception in plugin: ${e}", ("e", e.what()));  \
-   }                                                                          \
-   catch( ... )                                                               \
-   {                                                                          \
-      wlog( "Caught unexpected exception in plugin" );                        \
+#define HIVE_TRY_NOTIFY( signal, ... )                                                    \
+   try                                                                                    \
+   {                                                                                      \
+      signal( __VA_ARGS__ );                                                              \
+   }                                                                                      \
+   catch( const hive::chain::plugin_exception& e )                                        \
+   {                                                                                      \
+      throw;                                                                              \
+   }                                                                                      \
+   catch( const fc::exception& e )                                                        \
+   {                                                                                      \
+      elog( "Caught exception in plugin: ${e}", ("e", e.to_detail_string() ) );           \
+   }                                                                                      \
+   catch( const boost::exception& e )                                                     \
+   {                                                                                      \
+      elog( "Caught unexpected exception in plugin: ${e}", ("e",                          \
+         boost::diagnostic_information(e)) );                                             \
+   }                                                                                      \
+   catch( const std::exception& e )                                                       \
+   {                                                                                      \
+      elog( "Caught unexpected exception in plugin: ${e}", ("e", e.what()));              \
+   }                                                                                      \
+   catch( ... )                                                                           \
+   {                                                                                      \
+      wlog( "Caught unexpected exception in plugin" );                                    \
    }
 
 namespace hive { namespace chain {
@@ -91,21 +92,21 @@ namespace hive { namespace chain {
 
    FC_DECLARE_DERIVED_EXCEPTION( pop_empty_chain,                   hive::chain::undo_database_exception, 4070001, "there are no blocks to pop" )
 
-   STEEM_DECLARE_OP_BASE_EXCEPTIONS( transfer );
-//   STEEM_DECLARE_OP_EVALUATE_EXCEPTION( from_account_not_whitelisted, transfer, 1, "owner mismatch" )
+   HIVE_DECLARE_OP_BASE_EXCEPTIONS( transfer );
+//   HIVE_DECLARE_OP_EVALUATE_EXCEPTION( from_account_not_whitelisted, transfer, 1, "owner mismatch" )
 
-   STEEM_DECLARE_OP_BASE_EXCEPTIONS( account_create );
-   STEEM_DECLARE_OP_EVALUATE_EXCEPTION( max_auth_exceeded, account_create, 1, "Exceeds max authority fan-out" )
-   STEEM_DECLARE_OP_EVALUATE_EXCEPTION( auth_account_not_found, account_create, 2, "Auth account not found" )
+   HIVE_DECLARE_OP_BASE_EXCEPTIONS( account_create );
+   HIVE_DECLARE_OP_EVALUATE_EXCEPTION( max_auth_exceeded, account_create, 1, "Exceeds max authority fan-out" )
+   HIVE_DECLARE_OP_EVALUATE_EXCEPTION( auth_account_not_found, account_create, 2, "Auth account not found" )
 
-   STEEM_DECLARE_OP_BASE_EXCEPTIONS( account_update );
-   STEEM_DECLARE_OP_EVALUATE_EXCEPTION( max_auth_exceeded, account_update, 1, "Exceeds max authority fan-out" )
-   STEEM_DECLARE_OP_EVALUATE_EXCEPTION( auth_account_not_found, account_update, 2, "Auth account not found" )
+   HIVE_DECLARE_OP_BASE_EXCEPTIONS( account_update );
+   HIVE_DECLARE_OP_EVALUATE_EXCEPTION( max_auth_exceeded, account_update, 1, "Exceeds max authority fan-out" )
+   HIVE_DECLARE_OP_EVALUATE_EXCEPTION( auth_account_not_found, account_update, 2, "Auth account not found" )
 
    FC_DECLARE_DERIVED_EXCEPTION( internal_exception, hive::chain::chain_exception, 4990000, "internal exception" )
 
-   STEEM_DECLARE_INTERNAL_EXCEPTION( verify_auth_max_auth_exceeded, 1, "Exceeds max authority fan-out" )
-   STEEM_DECLARE_INTERNAL_EXCEPTION( verify_auth_account_not_found, 2, "Auth account not found" )
+   HIVE_DECLARE_INTERNAL_EXCEPTION( verify_auth_max_auth_exceeded, 1, "Exceeds max authority fan-out" )
+   HIVE_DECLARE_INTERNAL_EXCEPTION( verify_auth_account_not_found, 2, "Auth account not found" )
 
 } } // hive::chain
 

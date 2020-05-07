@@ -85,7 +85,7 @@ void smt_create_evaluator::do_apply( const smt_create_operation& o )
          if( dgpo.smt_creation_fee.symbol == HIVE_SYMBOL )
             creation_fee = _db.to_steem( o.smt_creation_fee );
          else
-            creation_fee = _db.to_sbd( o.smt_creation_fee );
+            creation_fee = _db.to_hbd( o.smt_creation_fee );
       }
 
       FC_ASSERT( creation_fee == dgpo.smt_creation_fee,

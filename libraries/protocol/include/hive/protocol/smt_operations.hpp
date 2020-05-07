@@ -9,10 +9,10 @@
 #define SMT_MAX_UNIT_ROUTES            10
 #define SMT_MAX_UNIT_COUNT             20
 #define SMT_MAX_DECIMAL_PLACES         8
-#define SMT_MIN_HARD_CAP_STEEM_UNITS   10000
+#define SMT_MIN_HARD_CAP_HIVE_UNITS   10000
 #define SMT_MIN_HARD_CAP_HIVE_UNITS    10000
 #define SMT_MIN_SATURATION_HIVE_UNITS  1000
-#define SMT_MIN_SOFT_CAP_STEEM_UNITS   1000
+#define SMT_MIN_SOFT_CAP_HIVE_UNITS   1000
 #define SMT_MIN_SOFT_CAP_HIVE_UNITS    1000
 
 namespace hive { namespace protocol {
@@ -142,7 +142,7 @@ typedef static_variant<
 struct smt_param_windows_v1
 {
    uint32_t cashout_window_seconds = 0;                // HIVE_CASHOUT_WINDOW_SECONDS
-   uint32_t reverse_auction_window_seconds = 0;        // STEEM_REVERSE_AUCTION_WINDOW_SECONDS
+   uint32_t reverse_auction_window_seconds = 0;        // HIVE_REVERSE_AUCTION_WINDOW_SECONDS
 };
 
 struct smt_param_vote_regeneration_period_seconds_v1

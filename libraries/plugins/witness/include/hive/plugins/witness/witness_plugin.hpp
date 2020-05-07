@@ -7,7 +7,7 @@
 
 #include <appbase/application.hpp>
 
-#define STEEM_WITNESS_PLUGIN_NAME "witness"
+#define HIVE_WITNESS_PLUGIN_NAME "witness"
 
 #define RESERVE_RATIO_PRECISION ((int64_t)10000)
 #define RESERVE_RATIO_MIN_INCREMENT ((int64_t)5000)
@@ -47,7 +47,7 @@ public:
    witness_plugin();
    virtual ~witness_plugin();
 
-   static const std::string& name() { static std::string name = STEEM_WITNESS_PLUGIN_NAME; return name; }
+   static const std::string& name() { static std::string name = HIVE_WITNESS_PLUGIN_NAME; return name; }
 
    virtual void set_program_options(
       boost::program_options::options_description &command_line_options,

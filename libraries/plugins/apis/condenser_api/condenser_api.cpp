@@ -887,7 +887,7 @@ namespace detail
 
    DEFINE_API_IMPL( condenser_api_impl, get_account_references )
    {
-      FC_ASSERT( false, "condenser_api::get_account_references --- Needs to be refactored for Steem." );
+      FC_ASSERT( false, "condenser_api::get_account_references --- Needs to be refactored for Hive." );
    }
 
    DEFINE_API_IMPL( condenser_api_impl, lookup_account_names )
@@ -1109,7 +1109,7 @@ namespace detail
    DEFINE_API_IMPL( condenser_api_impl, get_conversion_requests )
    {
       CHECK_ARG_SIZE( 1 )
-      auto requests = _database_api->find_sbd_conversion_requests(
+      auto requests = _database_api->find_hbd_conversion_requests(
          {
             args[0].as< account_name_type >()
          }).requests;
@@ -2151,7 +2151,7 @@ uint16_t api_account_object::_compute_voting_power( const database_api::api_acco
 condenser_api::condenser_api()
    : my( new detail::condenser_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_CONDENSER_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_CONDENSER_API_PLUGIN_NAME );
 }
 
 condenser_api::~condenser_api() {}

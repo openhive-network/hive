@@ -7,20 +7,20 @@ namespace hive { namespace chain { namespace util {
 using hive::protocol::asset;
 using hive::protocol::price;
 
-inline asset to_sbd( const price& p, const asset& steem )
+inline asset to_hbd( const price& p, const asset& hive )
 {
-   FC_ASSERT( steem.symbol == HIVE_SYMBOL );
+   FC_ASSERT( hive.symbol == HIVE_SYMBOL );
    if( p.is_null() )
       return asset( 0, HBD_SYMBOL );
-   return steem * p;
+   return hive * p;
 }
 
-inline asset to_steem( const price& p, const asset& sbd )
+inline asset to_steem( const price& p, const asset& hbd )
 {
-   FC_ASSERT( sbd.symbol == HBD_SYMBOL );
+   FC_ASSERT( hbd.symbol == HBD_SYMBOL );
    if( p.is_null() )
       return asset( 0, HIVE_SYMBOL );
-   return sbd * p;
+   return hbd * p;
 }
 
 } } }

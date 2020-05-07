@@ -1,4 +1,4 @@
-file(GLOB HEADERS "include/steem/condenser_api_plugin/*.hpp")
+file(GLOB HEADERS "include/hive/condenser_api_plugin/*.hpp")
 add_library( condenser_api_plugin
              condenser_api.cpp
              condenser_api_plugin.cpp
@@ -34,4 +34,4 @@ install( TARGETS
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
-install( FILES ${HEADERS} DESTINATION "include/steem/condenser_api_plugin" )
+install( FILES ${HEADERS} DESTINATION "include/hive/condenser_api_plugin" )

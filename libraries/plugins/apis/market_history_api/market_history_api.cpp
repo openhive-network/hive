@@ -38,9 +38,9 @@ DEFINE_API_IMPL( market_history_api_impl, get_ticker )
 
    if( itr != bucket_idx.end() )
    {
-      auto open = ASSET_TO_REAL( asset( itr->non_steem.open, HBD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->steem.open, HIVE_SYMBOL ) );
+      auto open = ASSET_TO_REAL( asset( itr->non_hive.open, HBD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->hive.open, HIVE_SYMBOL ) );
       itr = bucket_idx.lower_bound( boost::make_tuple( 0, _db.head_block_time() ) );
-      result.latest = ASSET_TO_REAL( asset( itr->non_steem.close, HBD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->steem.close, HIVE_SYMBOL ) );
+      result.latest = ASSET_TO_REAL( asset( itr->non_hive.close, HBD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->hive.close, HIVE_SYMBOL ) );
       result.percent_change = ( (result.latest - open ) / open ) * 100;
    }
 
@@ -52,7 +52,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_ticker )
 
    auto volume = get_volume( get_volume_args() );
    result.steem_volume = volume.steem_volume;
-   result.sbd_volume = volume.sbd_volume;
+   result.hbd_volume = volume.hbd_volume;
 
    return result;
 }
@@ -69,8 +69,8 @@ DEFINE_API_IMPL( market_history_api_impl, get_volume )
    uint32_t bucket_size = itr->seconds;
    do
    {
-      result.steem_volume.amount += itr->steem.volume;
-      result.sbd_volume.amount += itr->non_steem.volume;
+      result.steem_volume.amount += itr->hive.volume;
+      result.hbd_volume.amount += itr->non_hive.volume;
 
       ++itr;
    } while( itr != bucket_idx.end() && itr->seconds == bucket_size );
@@ -92,8 +92,8 @@ DEFINE_API_IMPL( market_history_api_impl, get_order_book )
       order cur;
       cur.order_price = itr->sell_price;
       cur.real_price = ASSET_TO_REAL( itr->sell_price.base ) / ASSET_TO_REAL( itr->sell_price.quote );
-      cur.steem = ( asset( itr->for_sale, HBD_SYMBOL ) * itr->sell_price ).amount;
-      cur.sbd = itr->for_sale;
+      cur.hive = ( asset( itr->for_sale, HBD_SYMBOL ) * itr->sell_price ).amount;
+      cur.hbd = itr->for_sale;
       cur.created = itr->created;
       result.bids.push_back( cur );
       ++itr;
@@ -106,8 +106,8 @@ DEFINE_API_IMPL( market_history_api_impl, get_order_book )
       order cur;
       cur.order_price = itr->sell_price;
       cur.real_price = ASSET_TO_REAL( itr->sell_price.quote ) / ASSET_TO_REAL( itr->sell_price.base );
-      cur.steem = itr->for_sale;
-      cur.sbd = ( asset( itr->for_sale, HIVE_SYMBOL ) * itr->sell_price ).amount;
+      cur.hive = itr->for_sale;
+      cur.hbd = ( asset( itr->for_sale, HIVE_SYMBOL ) * itr->sell_price ).amount;
       cur.created = itr->created;
       result.asks.push_back( cur );
       ++itr;
@@ -187,7 +187,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_market_history_buckets )
 
 market_history_api::market_history_api(): my( new detail::market_history_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_MARKET_HISTORY_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_MARKET_HISTORY_API_PLUGIN_NAME );
 }
 
 market_history_api::~market_history_api() {}

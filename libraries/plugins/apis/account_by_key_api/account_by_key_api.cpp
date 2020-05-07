@@ -47,7 +47,7 @@ get_key_references_return account_by_key_api_impl::get_key_references( const get
 
 account_by_key_api::account_by_key_api(): my( new detail::account_by_key_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_ACCOUNT_BY_KEY_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_ACCOUNT_BY_KEY_API_PLUGIN_NAME );
 }
 
 account_by_key_api::~account_by_key_api() {}

@@ -65,7 +65,7 @@ re_reflect_derived = re.compile(r"""
 FC_REFLECT_DERIVED\s*[(]
 \s*(hive::[a-zA-Z0-9_:]+)
 \s*,
-\s*[(]\s*((?:graphene|steem)::[a-zA-Z0-9_:]+)\s*[)]
+\s*[(]\s*((?:graphene|hive)::[a-zA-Z0-9_:]+)\s*[)]
 \s*,
 ((?:\s*[(]\s*[a-zA-Z0-9_]+\s*[)])*)
 """, re.VERBOSE)

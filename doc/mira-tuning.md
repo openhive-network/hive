@@ -1,6 +1,6 @@
 # Preface
 
-After MIRAs initial development efforts we released the [Basic MIRA Configuration Guide](https://github.com/openhive-network/hive/blob/master/doc/mira.md) to help bootstrap users attempting to use MIRA enabled `steemd`. There is actually much more fine tuning that can be done to improve MIRA's performance. We will break up this process into three phases:
+After MIRAs initial development efforts we released the [Basic MIRA Configuration Guide](https://github.com/openhive-network/hive/blob/master/doc/mira.md) to help bootstrap users attempting to use MIRA enabled `hived`. There is actually much more fine tuning that can be done to improve MIRA's performance. We will break up this process into three phases:
 
 * Phase 1: Gathering statistics
 * Phase 2: Analyzing statistics
@@ -11,7 +11,7 @@ After MIRAs initial development efforts we released the [Basic MIRA Configuratio
 As you may have noticed, within the `database.cfg` file, there is a global option called `statistics`. By default this is set to `false`. This must be set to `true` before proceeding! Here is an example of a `database.cfg` with statistics enabled:
 
 ```
-$ cat ~/.steemd/database.cfg 
+$ cat ~/.hived/database.cfg 
 {
   "global": {
     "shared_cache": {
@@ -39,11 +39,11 @@ $ cat ~/.steemd/database.cfg
 
 ```
 
-Once statistics has been enabled, simply perform the action you'd like to optimize. In my example, I will be syncing up the testnet. Start `steemd` like you otherwise normally would. Please be aware that enabling statistics causes a drastic performance impact - you won't want to run this in production. By default, statistics are dumped every 10 minutes so you will want to run for a while. The more data you gather, the more accurate the performance tuning suggestions will potentially be.
+Once statistics has been enabled, simply perform the action you'd like to optimize. In my example, I will be syncing up the testnet. Start `hived` like you otherwise normally would. Please be aware that enabling statistics causes a drastic performance impact - you won't want to run this in production. By default, statistics are dumped every 10 minutes so you will want to run for a while. The more data you gather, the more accurate the performance tuning suggestions will potentially be.
 
 # Phase 2: Analyzing statistics
 
-Luckily, you won't need intimate knowledge of RocksDB in order to analyze the statistics data. The developers working on RocksDB have provided us with a tool that can read the gathered statistics and make performance tuning recommendations. This tool can be found within the `steemd` repository at `programs/util/rocksdb_advisor.sh`. From the `program/util` directory run the tool:
+Luckily, you won't need intimate knowledge of RocksDB in order to analyze the statistics data. The developers working on RocksDB have provided us with a tool that can read the gathered statistics and make performance tuning recommendations. This tool can be found within the `hived` repository at `programs/util/rocksdb_advisor.sh`. From the `program/util` directory run the tool:
 
 ```
 $ sh rocksdb_advisor.sh
@@ -73,7 +73,7 @@ Let's move on to applying the advisor's suggestions.
 
 # Phase 3: Applying performance recommendations
 
-If you want to apply the same options to all databases, you would just change the `base` setting as this is applied to every database within a MIRA enabled `steemd` node.
+If you want to apply the same options to all databases, you would just change the `base` setting as this is applied to every database within a MIRA enabled `hived` node.
 
 You may notice that you will get different recommendations for different objects. In MIRA's implementation, each object is its own RocksDB database. How do we implement different options for different databases?
 

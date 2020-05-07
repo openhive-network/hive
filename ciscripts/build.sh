@@ -33,7 +33,7 @@ make -j$(nproc)
 make install
 cd .. 
 
-( "${BUILD_DIR}/install-root"/bin/steemd --version \
+( "${BUILD_DIR}/install-root"/bin/hived --version \
   | grep -o '[0-9]*\.[0-9]*\.[0-9]*' \
   && echo '_' \
   && git rev-parse --short HEAD ) \

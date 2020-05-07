@@ -296,7 +296,7 @@ public:
                                                                           time_point_sec(time_point::now()),
                                                                           " old");
       result["participation"] = (100*dynamic_props.recent_slots_filled.popcount()) / 128.0;
-      result["median_sbd_price"] = _remote_api->get_current_median_history_price();
+      result["median_hbd_price"] = _remote_api->get_current_median_history_price();
       result["account_creation_fee"] = _remote_api->get_chain_properties().account_creation_fee;
       result["post_reward_fund"] = fc::variant(_remote_api->get_reward_fund( HIVE_POST_REWARD_FUND_NAME )).get_object();
       return result;
@@ -766,21 +766,21 @@ public:
          auto accounts = result.as<vector<condenser_api::api_account_object>>();
          asset total_steem;
          asset total_vest(0, VESTS_SYMBOL );
-         asset total_sbd(0, HBD_SYMBOL );
+         asset total_hbd(0, HBD_SYMBOL );
          for( const auto& a : accounts ) {
             total_steem += a.balance.to_asset();
             total_vest  += a.vesting_shares.to_asset();
-            total_sbd  += a.sbd_balance.to_asset();
+            total_hbd  += a.hbd_balance.to_asset();
             out << std::left << std::setw( 17 ) << std::string(a.name)
                 << std::right << std::setw(18) << fc::variant(a.balance).as_string() <<" "
                 << std::right << std::setw(26) << fc::variant(a.vesting_shares).as_string() <<" "
-                << std::right << std::setw(16) << fc::variant(a.sbd_balance).as_string() <<"\n";
+                << std::right << std::setw(16) << fc::variant(a.hbd_balance).as_string() <<"\n";
          }
          out << "-------------------------------------------------------------------------\n";
             out << std::left << std::setw( 17 ) << "TOTAL"
                 << std::right << std::setw(18) << legacy_asset::from_asset(total_steem).to_string() <<" "
                 << std::right << std::setw(26) << legacy_asset::from_asset(total_vest).to_string() <<" "
-                << std::right << std::setw(16) << legacy_asset::from_asset(total_sbd).to_string() <<"\n";
+                << std::right << std::setw(16) << legacy_asset::from_asset(total_hbd).to_string() <<"\n";
          return out.str();
       };
       m["get_account_history"] = []( variant result, const fc::variants& a ) {
@@ -848,11 +848,11 @@ public:
          {
             if ( i < orders.bids.size() )
             {
-               bid_sum += asset( orders.bids[i].sbd, HBD_SYMBOL );
+               bid_sum += asset( orders.bids[i].hbd, HBD_SYMBOL );
                ss
                   << ' ' << setw( spacing ) << legacy_asset::from_asset( bid_sum ).to_string()
-                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.bids[i].sbd, HBD_SYMBOL ) ).to_string()
-                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.bids[i].steem, HIVE_SYMBOL ) ).to_string()
+                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.bids[i].hbd, HBD_SYMBOL ) ).to_string()
+                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.bids[i].hive, HIVE_SYMBOL ) ).to_string()
                   << ' ' << setw( spacing ) << orders.bids[i].real_price;
             }
             else
@@ -864,10 +864,10 @@ public:
 
             if ( i < orders.asks.size() )
             {
-               ask_sum += asset( orders.asks[i].sbd, HBD_SYMBOL );
+               ask_sum += asset( orders.asks[i].hbd, HBD_SYMBOL );
                ss << ' ' << setw( spacing ) << orders.asks[i].real_price
-                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.asks[i].steem, HIVE_SYMBOL ) ).to_string()
-                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.asks[i].sbd, HBD_SYMBOL ) ).to_string()
+                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.asks[i].hive, HIVE_SYMBOL ) ).to_string()
+                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.asks[i].hbd, HBD_SYMBOL ) ).to_string()
                   << ' ' << setw( spacing ) << legacy_asset::from_asset( ask_sum ).to_string();
             }
 
@@ -1871,7 +1871,7 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_transfer(
    string to,
    string agent,
    uint32_t escrow_id,
-   condenser_api::legacy_asset sbd_amount,
+   condenser_api::legacy_asset hbd_amount,
    condenser_api::legacy_asset steem_amount,
    condenser_api::legacy_asset fee,
    time_point_sec ratification_deadline,
@@ -1885,8 +1885,8 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_transfer(
    op.to = to;
    op.agent = agent;
    op.escrow_id = escrow_id;
-   op.sbd_amount = sbd_amount.to_asset();
-   op.steem_amount = steem_amount.to_asset();
+   op.hbd_amount = hbd_amount.to_asset();
+   op.hive_amount = steem_amount.to_asset();
    op.fee = fee.to_asset();
    op.ratification_deadline = ratification_deadline;
    op.escrow_expiration = escrow_expiration;
@@ -1953,7 +1953,7 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_release(
    string who,
    string receiver,
    uint32_t escrow_id,
-   condenser_api::legacy_asset sbd_amount,
+   condenser_api::legacy_asset hbd_amount,
    condenser_api::legacy_asset steem_amount,
    bool broadcast )
 {
@@ -1965,8 +1965,8 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_release(
    op.who = who;
    op.receiver = receiver;
    op.escrow_id = escrow_id;
-   op.sbd_amount = sbd_amount.to_asset();
-   op.steem_amount = steem_amount.to_asset();
+   op.hbd_amount = hbd_amount.to_asset();
+   op.hive_amount = steem_amount.to_asset();
 
    signed_transaction tx;
    tx.operations.push_back( op );
@@ -2103,7 +2103,7 @@ condenser_api::legacy_signed_transaction wallet_api::set_withdraw_vesting_route(
    return my->sign_transaction( tx, broadcast );
 }
 
-condenser_api::legacy_signed_transaction wallet_api::convert_sbd(
+condenser_api::legacy_signed_transaction wallet_api::convert_hbd(
    string from,
    condenser_api::legacy_asset amount,
    bool broadcast )
@@ -2205,15 +2205,15 @@ condenser_api::legacy_signed_transaction wallet_api::decline_voting_rights(
 condenser_api::legacy_signed_transaction wallet_api::claim_reward_balance(
    string account,
    condenser_api::legacy_asset reward_steem,
-   condenser_api::legacy_asset reward_sbd,
+   condenser_api::legacy_asset reward_hbd,
    condenser_api::legacy_asset reward_vests,
    bool broadcast )
 {
    FC_ASSERT( !is_locked() );
    claim_reward_balance_operation op;
    op.account = account;
-   op.reward_steem = reward_steem.to_asset();
-   op.reward_sbd = reward_sbd.to_asset();
+   op.reward_hive = reward_steem.to_asset();
+   op.reward_hbd = reward_hbd.to_asset();
    op.reward_vests = reward_vests.to_asset();
 
    signed_transaction tx;

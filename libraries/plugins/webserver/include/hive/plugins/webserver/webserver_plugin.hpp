@@ -7,7 +7,7 @@
 #include <boost/thread.hpp>
 #include <boost/container/vector.hpp>
 
-#define STEEM_WEBSERVER_PLUGIN_NAME "webserver"
+#define HIVE_WEBSERVER_PLUGIN_NAME "webserver"
 
 namespace hive { namespace plugins { namespace webserver {
 
@@ -36,7 +36,7 @@ class webserver_plugin : public appbase::plugin< webserver_plugin >
 
       APPBASE_PLUGIN_REQUIRES( (plugins::json_rpc::json_rpc_plugin) );
 
-      static const std::string& name() { static std::string name = STEEM_WEBSERVER_PLUGIN_NAME; return name; }
+      static const std::string& name() { static std::string name = HIVE_WEBSERVER_PLUGIN_NAME; return name; }
 
       virtual void set_program_options(options_description&, options_description& cfg) override;
 

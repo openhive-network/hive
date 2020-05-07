@@ -146,7 +146,7 @@ template< typename T > struct fixed_string_size_for_impl;
 //
 // We want to write this one-liner:
 //
-//     STEEM_DEFINE_FIXED_STRING_IMPL( 32, fc::erpair< fc::uint128_t, fc::uint128_t > )
+//     HIVE_DEFINE_FIXED_STRING_IMPL( 32, fc::erpair< fc::uint128_t, fc::uint128_t > )
 //
 // Unfortunately, since the preprocessor doesn't do syntactic parsing,
 // this would be regarded as a 3-argument call (since there are three commas,
@@ -164,9 +164,9 @@ template< typename T > struct fixed_string_size_for_impl;
 // widely-compatible implementation is available in the Boost Identity Type
 // library.  Which allows our one-liner to be:
 //
-//     STEEM_DEFINE_FIXED_STRING_IMPL( 32, BOOST_IDENTITY_TYPE((fc::erpair< fc::uint128_t, fc::uint128_t >)) )
+//     HIVE_DEFINE_FIXED_STRING_IMPL( 32, BOOST_IDENTITY_TYPE((fc::erpair< fc::uint128_t, fc::uint128_t >)) )
 //
-#define STEEM_DEFINE_FIXED_STRING_IMPL( SIZE, STORAGE_TYPE )       \
+#define HIVE_DEFINE_FIXED_STRING_IMPL( SIZE, STORAGE_TYPE )       \
 template<>                                                         \
 struct fixed_string_impl_for_size< SIZE >                          \
 {                                                                  \
@@ -179,9 +179,9 @@ struct fixed_string_size_for_impl< STORAGE_TYPE >                  \
    static const size_t size = SIZE;                                \
 };
 
-STEEM_DEFINE_FIXED_STRING_IMPL( 16, BOOST_IDENTITY_TYPE((fc::uint128_t)) )
-STEEM_DEFINE_FIXED_STRING_IMPL( 24, BOOST_IDENTITY_TYPE((fc::erpair< fc::uint128_t, uint64_t >)) )
-STEEM_DEFINE_FIXED_STRING_IMPL( 32, BOOST_IDENTITY_TYPE((fc::erpair< fc::uint128_t, fc::uint128_t >)) )
+HIVE_DEFINE_FIXED_STRING_IMPL( 16, BOOST_IDENTITY_TYPE((fc::uint128_t)) )
+HIVE_DEFINE_FIXED_STRING_IMPL( 24, BOOST_IDENTITY_TYPE((fc::erpair< fc::uint128_t, uint64_t >)) )
+HIVE_DEFINE_FIXED_STRING_IMPL( 32, BOOST_IDENTITY_TYPE((fc::erpair< fc::uint128_t, fc::uint128_t >)) )
 
 template< size_t N >
 using fixed_string = typename fixed_string_impl_for_size<N>::t;

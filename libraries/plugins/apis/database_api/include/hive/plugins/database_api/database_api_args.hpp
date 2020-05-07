@@ -342,22 +342,22 @@ struct find_vesting_delegation_expirations_args
 typedef list_vesting_delegation_expirations_return find_vesting_delegation_expirations_return;
 
 
-/* SBD Converstions */
+/* HBD Converstions */
 
-typedef list_object_args_type list_sbd_conversion_requests_args;
+typedef list_object_args_type list_hbd_conversion_requests_args;
 
-struct list_sbd_conversion_requests_return
+struct list_hbd_conversion_requests_return
 {
    vector< api_convert_request_object > requests;
 };
 
 
-struct find_sbd_conversion_requests_args
+struct find_hbd_conversion_requests_args
 {
    account_name_type account;
 };
 
-typedef list_sbd_conversion_requests_return find_sbd_conversion_requests_return;
+typedef list_hbd_conversion_requests_return find_hbd_conversion_requests_return;
 
 
 /* Decline Voting Rights Requests */
@@ -758,10 +758,10 @@ FC_REFLECT( hive::plugins::database_api::list_vesting_delegation_expirations_ret
 FC_REFLECT( hive::plugins::database_api::find_vesting_delegation_expirations_args,
    (account) )
 
-FC_REFLECT( hive::plugins::database_api::list_sbd_conversion_requests_return,
+FC_REFLECT( hive::plugins::database_api::list_hbd_conversion_requests_return,
    (requests) )
 
-FC_REFLECT( hive::plugins::database_api::find_sbd_conversion_requests_args,
+FC_REFLECT( hive::plugins::database_api::find_hbd_conversion_requests_args,
    (account) )
 
 FC_REFLECT( hive::plugins::database_api::list_decline_voting_rights_requests_return,

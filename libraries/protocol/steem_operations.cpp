@@ -148,7 +148,7 @@ namespace hive { namespace protocol {
    void comment_options_operation::validate()const
    {
       validate_account_name( author );
-      FC_ASSERT( percent_steem_dollars <= HIVE_100_PERCENT, "Percent cannot exceed 100%" );
+      FC_ASSERT( percent_hbd <= HIVE_100_PERCENT, "Percent cannot exceed 100%" );
       FC_ASSERT( max_accepted_payout.symbol == HBD_SYMBOL, "Max accepted payout must be in HBD" );
       FC_ASSERT( max_accepted_payout.amount.value >= 0, "Cannot accept less than 0 payout" );
       validate_permlink( permlink );
@@ -230,7 +230,7 @@ namespace hive { namespace protocol {
    {
       validate_account_name( from_account );
       validate_account_name( to_account );
-      FC_ASSERT( 0 <= percent && percent <= HIVE_100_PERCENT, "Percent must be valid steem percent" );
+      FC_ASSERT( 0 <= percent && percent <= HIVE_100_PERCENT, "Percent must be valid HIVE percent" );
    }
 
    void witness_update_operation::validate() const
@@ -269,13 +269,13 @@ namespace hive { namespace protocol {
          FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT, "maximum_block_size smaller than minimum max block size" );
       }
 
-      itr = props.find( "sbd_interest_rate" );
+      itr = props.find( "hbd_interest_rate" );
       if( itr != props.end() )
       {
-         uint16_t sbd_interest_rate;
-         fc::raw::unpack_from_vector( itr->second, sbd_interest_rate );
-         FC_ASSERT( sbd_interest_rate >= 0, "sbd_interest_rate must be positive" );
-         FC_ASSERT( sbd_interest_rate <= HIVE_100_PERCENT, "sbd_interest_rate must not exceed 100%" );
+         uint16_t hbd_interest_rate;
+         fc::raw::unpack_from_vector( itr->second, hbd_interest_rate );
+         FC_ASSERT( hbd_interest_rate >= 0, "hbd_interest_rate must be positive" );
+         FC_ASSERT( hbd_interest_rate <= HIVE_100_PERCENT, "hbd_interest_rate must not exceed 100%" );
       }
 
       itr = props.find( "new_signing_key" );
@@ -286,14 +286,14 @@ namespace hive { namespace protocol {
          FC_UNUSED( signing_key ); // This tests the deserialization of the key
       }
 
-      itr = props.find( "sbd_exchange_rate" );
+      itr = props.find( "hbd_exchange_rate" );
       if( itr != props.end() )
       {
-         price sbd_exchange_rate;
-         fc::raw::unpack_from_vector( itr->second, sbd_exchange_rate );
-         FC_ASSERT( ( is_asset_type( sbd_exchange_rate.base, HBD_SYMBOL ) && is_asset_type( sbd_exchange_rate.quote, HIVE_SYMBOL ) ),
+         price hbd_exchange_rate;
+         fc::raw::unpack_from_vector( itr->second, hbd_exchange_rate );
+         FC_ASSERT( ( is_asset_type( hbd_exchange_rate.base, HBD_SYMBOL ) && is_asset_type( hbd_exchange_rate.quote, HIVE_SYMBOL ) ),
             "Price feed must be a HIVE/HBD price" );
-         sbd_exchange_rate.validate();
+         hbd_exchange_rate.validate();
       }
 
       itr = props.find( "url" );
@@ -564,13 +564,13 @@ namespace hive { namespace protocol {
       validate_account_name( to );
       validate_account_name( agent );
       FC_ASSERT( fee.amount >= 0, "fee cannot be negative" );
-      FC_ASSERT( sbd_amount.amount >= 0, "sbd amount cannot be negative" );
-      FC_ASSERT( steem_amount.amount >= 0, "steem amount cannot be negative" );
-      FC_ASSERT( sbd_amount.amount > 0 || steem_amount.amount > 0, "escrow must transfer a non-zero amount" );
+      FC_ASSERT( hbd_amount.amount >= 0, "HBD amount cannot be negative" );
+      FC_ASSERT( hive_amount.amount >= 0, "HIVE amount cannot be negative" );
+      FC_ASSERT( hbd_amount.amount > 0 || hive_amount.amount > 0, "escrow must transfer a non-zero amount" );
       FC_ASSERT( from != agent && to != agent, "agent must be a third party" );
       FC_ASSERT( (fee.symbol == HIVE_SYMBOL) || (fee.symbol == HBD_SYMBOL), "fee must be HIVE or HBD" );
-      FC_ASSERT( sbd_amount.symbol == HBD_SYMBOL, "sbd amount must contain HBD" );
-      FC_ASSERT( steem_amount.symbol == HIVE_SYMBOL, "steem amount must contain HIVE" );
+      FC_ASSERT( hbd_amount.symbol == HBD_SYMBOL, "HBD amount must contain HBD asset" );
+      FC_ASSERT( hive_amount.symbol == HIVE_SYMBOL, "HIVE amount must contain HIVE asset" );
       FC_ASSERT( ratification_deadline < escrow_expiration, "ratification deadline must be before escrow expiration" );
       if ( json_meta.size() > 0 )
       {
@@ -606,11 +606,11 @@ namespace hive { namespace protocol {
       validate_account_name( receiver );
       FC_ASSERT( who == from || who == to || who == agent, "who must be from or to or agent" );
       FC_ASSERT( receiver == from || receiver == to, "receiver must be from or to" );
-      FC_ASSERT( sbd_amount.amount >= 0, "sbd amount cannot be negative" );
-      FC_ASSERT( steem_amount.amount >= 0, "steem amount cannot be negative" );
-      FC_ASSERT( sbd_amount.amount > 0 || steem_amount.amount > 0, "escrow must release a non-zero amount" );
-      FC_ASSERT( sbd_amount.symbol == HBD_SYMBOL, "sbd amount must contain HBD" );
-      FC_ASSERT( steem_amount.symbol == HIVE_SYMBOL, "steem amount must contain HIVE" );
+      FC_ASSERT( hbd_amount.amount >= 0, "HBD amount cannot be negative" );
+      FC_ASSERT( hive_amount.amount >= 0, "HIVE amount cannot be negative" );
+      FC_ASSERT( hbd_amount.amount > 0 || hive_amount.amount > 0, "escrow must release a non-zero amount" );
+      FC_ASSERT( hbd_amount.symbol == HBD_SYMBOL, "HBD amount must contain HBD asset" );
+      FC_ASSERT( hive_amount.symbol == HIVE_SYMBOL, "HIVE amount must contain HIVE asset" );
    }
 
    void request_account_recovery_operation::validate()const
@@ -683,13 +683,13 @@ namespace hive { namespace protocol {
    void claim_reward_balance_operation::validate()const
    {
       validate_account_name( account );
-      FC_ASSERT( is_asset_type( reward_steem, HIVE_SYMBOL ), "Reward Steem must be HIVE" );
-      FC_ASSERT( is_asset_type( reward_sbd, HBD_SYMBOL ), "Reward Steem must be HBD" );
-      FC_ASSERT( is_asset_type( reward_vests, VESTS_SYMBOL ), "Reward Steem must be VESTS" );
-      FC_ASSERT( reward_steem.amount >= 0, "Cannot claim a negative amount" );
-      FC_ASSERT( reward_sbd.amount >= 0, "Cannot claim a negative amount" );
+      FC_ASSERT( is_asset_type( reward_hive, HIVE_SYMBOL ), "Reward HIVE must be expressed in HIVE" );
+      FC_ASSERT( is_asset_type( reward_hbd, HBD_SYMBOL ), "Reward HBD must be expressed in HBD" );
+      FC_ASSERT( is_asset_type( reward_vests, VESTS_SYMBOL ), "Reward VESTS must be expressed in VESTS" );
+      FC_ASSERT( reward_hive.amount >= 0, "Cannot claim a negative amount" );
+      FC_ASSERT( reward_hbd.amount >= 0, "Cannot claim a negative amount" );
       FC_ASSERT( reward_vests.amount >= 0, "Cannot claim a negative amount" );
-      FC_ASSERT( reward_steem.amount > 0 || reward_sbd.amount > 0 || reward_vests.amount > 0, "Must claim something." );
+      FC_ASSERT( reward_hive.amount > 0 || reward_hbd.amount > 0 || reward_vests.amount > 0, "Must claim something." );
    }
 
 #ifdef HIVE_ENABLE_SMT

@@ -5,7 +5,7 @@
 #include <hive/plugins/database_api/database_api_plugin.hpp>
 #include <hive/plugins/block_api/block_api_plugin.hpp>
 
-#define STEEM_CONDENSER_API_PLUGIN_NAME "condenser_api"
+#define HIVE_CONDENSER_API_PLUGIN_NAME "condenser_api"
 
 namespace hive { namespace plugins { namespace condenser_api {
 
@@ -19,7 +19,7 @@ public:
    condenser_api_plugin();
    virtual ~condenser_api_plugin();
 
-   static const std::string& name() { static std::string name = STEEM_CONDENSER_API_PLUGIN_NAME; return name; }
+   static const std::string& name() { static std::string name = HIVE_CONDENSER_API_PLUGIN_NAME; return name; }
 
    virtual void set_program_options( options_description& cli, options_description& cfg ) override;
 

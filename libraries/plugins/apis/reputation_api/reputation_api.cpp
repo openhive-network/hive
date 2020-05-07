@@ -50,7 +50,7 @@ DEFINE_API_IMPL( reputation_api_impl, get_account_reputations )
 
 reputation_api::reputation_api(): my( new detail::reputation_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_REPUTATION_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_REPUTATION_API_PLUGIN_NAME );
 }
 
 reputation_api::~reputation_api() {}

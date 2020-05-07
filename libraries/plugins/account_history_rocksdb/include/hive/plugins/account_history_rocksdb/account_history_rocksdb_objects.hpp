@@ -4,8 +4,8 @@
 
 #include <boost/multi_index/composite_key.hpp>
 
-#ifndef STEEM_ACCOUNT_HISTORY_ROCKSDB_SPACE_ID
-#define STEEM_ACCOUNT_HISTORY_ROCKSDB_SPACE_ID 15
+#ifndef HIVE_ACCOUNT_HISTORY_ROCKSDB_SPACE_ID
+#define HIVE_ACCOUNT_HISTORY_ROCKSDB_SPACE_ID 15
 #endif
 
 namespace hive { namespace plugins { namespace account_history_rocksdb {
@@ -16,7 +16,7 @@ typedef std::vector<char> serialize_buffer_t;
 
 enum account_history_rocksdb_object_types
 {
-   volatile_operation_object_type = ( STEEM_ACCOUNT_HISTORY_ROCKSDB_SPACE_ID << 8 )
+   volatile_operation_object_type = ( HIVE_ACCOUNT_HISTORY_ROCKSDB_SPACE_ID << 8 )
 };
 
 class volatile_operation_object : public object< volatile_operation_object_type, volatile_operation_object >

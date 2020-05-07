@@ -12,13 +12,13 @@ using namespace hive::chain;
 
 using chainbase::t_vector;
 
-#ifndef STEEM_REPUTATION_SPACE_ID
-#define STEEM_REPUTATION_SPACE_ID 17
+#ifndef HIVE_REPUTATION_SPACE_ID
+#define HIVE_REPUTATION_SPACE_ID 17
 #endif
 
 enum reputation_plugin_object_type
 {
-   reputation_object_type        = ( STEEM_REPUTATION_SPACE_ID << 8 )
+   reputation_object_type        = ( HIVE_REPUTATION_SPACE_ID << 8 )
 };
 
 

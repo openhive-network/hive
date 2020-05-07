@@ -12,12 +12,12 @@
 // various template automagic depends on them being known at compile
 // time.
 //
-#ifndef STEEM_ACCOUNT_STATISTICS_SPACE_ID
-#define STEEM_ACCOUNT_STATISTICS_SPACE_ID 10
+#ifndef HIVE_ACCOUNT_STATISTICS_SPACE_ID
+#define HIVE_ACCOUNT_STATISTICS_SPACE_ID 10
 #endif
 
-#ifndef STEEM_ACCOUNT_STATISTICS_PLUGIN_NAME
-#define STEEM_ACCOUNT_STATISTICS_PLUGIN_NAME "account_stats"
+#ifndef HIVE_ACCOUNT_STATISTICS_PLUGIN_NAME
+#define HIVE_ACCOUNT_STATISTICS_PLUGIN_NAME "account_stats"
 #endif
 
 namespace hive { namespace account_statistics {
@@ -27,8 +27,8 @@ using app::application;
 
 enum account_statistics_plugin_object_types
 {
-   account_stats_bucket_object_type    = ( STEEM_ACCOUNT_STATISTICS_SPACE_ID << 8 ),
-   account_activity_bucket_object_type = ( STEEM_ACCOUNT_STATISTICS_SPACE_ID << 8 ) + 1
+   account_stats_bucket_object_type    = ( HIVE_ACCOUNT_STATISTICS_SPACE_ID << 8 ),
+   account_activity_bucket_object_type = ( HIVE_ACCOUNT_STATISTICS_SPACE_ID << 8 ) + 1
 };
 
 struct account_stats_bucket_object : public object< account_stats_bucket_object_type, account_stats_bucket_object >
@@ -63,46 +63,46 @@ struct account_stats_bucket_object : public object< account_stats_bucket_object_
    uint32_t             new_reply_votes = 0;                      ///< New votes on replies
    uint32_t             changed_reply_votes = 0;                  ///< Changed votes for replies
    uint32_t             author_reward_payouts = 0;                ///< Number of author reward payouts
-   share_type           author_rewards_sbd = 0;                   ///< SBD paid for author rewards
+   share_type           author_rewards_hbd = 0;                   ///< HBD paid for author rewards
    share_type           author_rewards_vests = 0;                 ///< VESTS paid for author rewards
-   share_type           author_rewards_total_steem_value = 0;     ///< STEEM Value of author rewards
-   share_type           author_rewards_payout_sbd_value = 0;      ///< SBD Value of author rewards at time of payout
+   share_type           author_rewards_total_steem_value = 0;     ///< HIVE Value of author rewards
+   share_type           author_rewards_payout_hbd_value = 0;      ///< HBD Value of author rewards at time of payout
    uint32_t             curation_reward_payouts = 0;              ///< Number of curation reward payouts.
    share_type           curation_rewards_vests = 0;               ///< VESTS paid for curation rewards
-   share_type           curation_rewards_steem_value = 0;         ///< STEEM Value of curation rewards
-   share_type           curation_rewards_payout_sbd_value = 0;    ///< SBD Value of curation rewards at time of payout
+   share_type           curation_rewards_steem_value = 0;         ///< HIVE Value of curation rewards
+   share_type           curation_rewards_payout_hbd_value = 0;    ///< HBD Value of curation rewards at time of payout
    uint32_t             liquidity_reward_payouts = 0;             ///< Number of liquidity reward payouts
-   share_type           liquidity_rewards = 0;                    ///< Amount of STEEM paid as liquidity rewards
+   share_type           liquidity_rewards = 0;                    ///< Amount of HIVE paid as liquidity rewards
    uint32_t             transfers_to = 0;                         ///< Account to account transfers to this account
    uint32_t             transfers_from = 0;                       ///< Account to account transfers from this account
-   share_type           steem_sent = 0;                           ///< STEEM sent from this account
-   share_type           steem_received = 0;                       ///< STEEM received by this account
-   share_type           sbd_sent = 0;                             ///< SBD sent from this account
-   share_type           sbd_received = 0;                         ///< SBD received by this account
-   uint32_t             sbd_interest_payments = 0;                ///< Number of times interest was paid to SBD
-   share_type           sbd_paid_as_interest = 0;                 ///< Amount of SBD paid as interest
+   share_type           steem_sent = 0;                           ///< HIVE sent from this account
+   share_type           steem_received = 0;                       ///< HIVE received by this account
+   share_type           hbd_sent = 0;                             ///< HBD sent from this account
+   share_type           hbd_received = 0;                         ///< HBD received by this account
+   uint32_t             hbd_interest_payments = 0;                ///< Number of times interest was paid to HBD
+   share_type           hbd_paid_as_interest = 0;                 ///< Amount of HBD paid as interest
    uint32_t             transfers_to_vesting = 0;                 ///< Transfers to vesting by this account. Note: Transfer to vesting from A to B counts as a transfer from A to B followed by a vesting deposit by B.
-   share_type           steem_vested = 0;                         ///< STEEM vested by the account
+   share_type           steem_vested = 0;                         ///< HIVE vested by the account
    share_type           new_vests = 0;                            ///< New VESTS by vesting transfers
    uint32_t             new_vesting_withdrawal_requests = 0;      ///< New vesting withdrawal requests
    uint32_t             modified_vesting_withdrawal_requests = 0; ///< Changes to vesting withdraw requests
    uint32_t             vesting_withdrawals_processed = 0;        ///< Vesting withdrawals processed for this account
    uint32_t             finished_vesting_withdrawals = 0;         ///< Processed vesting withdrawals that are now finished
    share_type           vests_withdrawn = 0;                      ///< VESTS withdrawn from the account
-   share_type           steem_received_from_withdrawls = 0;       ///< STEEM received from this account's vesting withdrawals
-   share_type           steem_received_from_routes = 0;           ///< STEEM received from another account's vesting withdrawals
+   share_type           steem_received_from_withdrawls = 0;       ///< HIVE received from this account's vesting withdrawals
+   share_type           steem_received_from_routes = 0;           ///< HIVE received from another account's vesting withdrawals
    share_type           vests_received_from_routes = 0;           ///< VESTS received from another account's vesting withdrawals
-   uint32_t             sbd_conversion_requests_created = 0;      ///< SBD conversion requests created
-   share_type           sbd_to_be_converted = 0;                  ///< Amount of SBD to be converted
-   uint32_t             sbd_conversion_requests_filled = 0;       ///< SBD conversion requests filled
-   share_type           steem_converted = 0;                      ///< Amount of STEEM that was converted
+   uint32_t             hbd_conversion_requests_created = 0;      ///< HBD conversion requests created
+   share_type           hbd_to_be_converted = 0;                  ///< Amount of HBD to be converted
+   uint32_t             hbd_conversion_requests_filled = 0;       ///< HBD conversion requests filled
+   share_type           steem_converted = 0;                      ///< Amount of HIVE that was converted
    uint32_t             limit_orders_created = 0;                 ///< Limit orders created by this account
    uint32_t             limit_orders_filled = 0;                  ///< Limit orders filled by this account
    uint32_t             limit_orders_cancelled = 0;               ///< Limit orders cancelled by this account
-   share_type           limit_order_steem_paid = 0;               ///< STEEM paid by limit orders
-   share_type           limit_order_steem_received = 0;           ///< STEEM received from limit orders
-   share_type           limit_order_sbd_paid = 0;                 ///< SBD paid by limit orders
-   share_type           limit_order_sbd_received = 0;             ///< SBD received by limit orders
+   share_type           limit_order_steem_paid = 0;               ///< HIVE paid by limit orders
+   share_type           limit_order_steem_received = 0;           ///< HIVE received from limit orders
+   share_type           limit_order_hbd_paid = 0;                 ///< HBD paid by limit orders
+   share_type           limit_order_hbd_received = 0;             ///< HBD received by limit orders
    uint32_t             total_pow = 0;                            ///< POW completed
    uint128_t            estimated_hashpower = 0;                  ///< Estimated hashpower
 };
@@ -141,7 +141,7 @@ class account_statistics_plugin : public hive::app::plugin
       account_statistics_plugin( application* app );
       virtual ~account_statistics_plugin();
 
-      virtual std::string plugin_name()const override { return STEEM_ACCOUNT_STATISTICS_PLUGIN_NAME; }
+      virtual std::string plugin_name()const override { return HIVE_ACCOUNT_STATISTICS_PLUGIN_NAME; }
       virtual void plugin_set_program_options(
          boost::program_options::options_description& cli,
          boost::program_options::options_description& cfg ) override;
@@ -181,24 +181,24 @@ FC_REFLECT( hive::account_statistics::account_stats_bucket_object,
    (new_reply_votes)
    (changed_reply_votes)
    (author_reward_payouts)
-   (author_rewards_sbd)
+   (author_rewards_hbd)
    (author_rewards_vests)
    (author_rewards_total_steem_value)
-   (author_rewards_payout_sbd_value)
+   (author_rewards_payout_hbd_value)
    (curation_reward_payouts)
    (curation_rewards_vests)
    (curation_rewards_steem_value)
-   (curation_rewards_payout_sbd_value)
+   (curation_rewards_payout_hbd_value)
    (liquidity_reward_payouts)
    (liquidity_rewards)
    (transfers_to)
    (transfers_from)
    (steem_sent)
    (steem_received)
-   (sbd_sent)
-   (sbd_received)
-   (sbd_interest_payments)
-   (sbd_paid_as_interest)
+   (hbd_sent)
+   (hbd_received)
+   (hbd_interest_payments)
+   (hbd_paid_as_interest)
    (transfers_to_vesting)
    (steem_vested)
    (new_vests)
@@ -210,17 +210,17 @@ FC_REFLECT( hive::account_statistics::account_stats_bucket_object,
    (steem_received_from_withdrawls)
    (steem_received_from_routes)
    (vests_received_from_routes)
-   (sbd_conversion_requests_created)
-   (sbd_to_be_converted)
-   (sbd_conversion_requests_filled)
+   (hbd_conversion_requests_created)
+   (hbd_to_be_converted)
+   (hbd_conversion_requests_filled)
    (steem_converted)
    (limit_orders_created)
    (limit_orders_filled)
    (limit_orders_cancelled)
    (limit_order_steem_paid)
    (limit_order_steem_received)
-   (limit_order_sbd_paid)
-   (limit_order_sbd_received)
+   (limit_order_hbd_paid)
+   (limit_order_hbd_received)
    (total_pow)
    (estimated_hashpower)
 )

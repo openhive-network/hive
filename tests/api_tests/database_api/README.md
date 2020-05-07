@@ -43,8 +43,8 @@ Expected result: empty result
 ## find_savings_withdrawals 
 `python3 find_savings_withdrawals.py https://api.steem.house https://api.steemit.com ./ steemit`
 
-## find_sbd_conversion_requests 
-`python3 find_sbd_conversion_requests.py https://api.steem.house https://api.steemit.com ./ steemit`
+## find_hbd_conversion_requests 
+`python3 find_hbd_conversion_requests.py https://api.steem.house https://api.steemit.com ./ steemit`
 
 ## find_smt_contributions 
 `python3 find_smt_contributions.py https://api.steem.house https://api.steemit.com ./`
@@ -157,8 +157,8 @@ Expected result: empty result
 ## list_savings_withdrawals 
 `python3 list_savings_withdrawals.py https://api.steem.house https://api.steemit.com ./ '[0]' 10 by_from_id`
 
-## list_sbd_conversion_requests 
-`python3 list_sbd_conversion_requests.py https://api.steem.house https://api.steemit.com ./ '["steemit", 0]' 10 by_account`
+## list_hbd_conversion_requests 
+`python3 list_hbd_conversion_requests.py https://api.steem.house https://api.steemit.com ./ '["steemit", 0]' 10 by_account`
 
 ## list_smt_contributions 
 `python3 list_smt_contributions.py https://api.steem.house https://api.steemit.com ./ '[{"nai": "@@422838704", "decimals": 0}, 0]' 10 by_symbol_id`

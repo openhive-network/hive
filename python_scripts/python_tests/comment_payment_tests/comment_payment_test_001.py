@@ -43,7 +43,7 @@ def print_comment_rewards(node_client, accounts):
     last_cashout_time = ""
 
     table = PrettyTable()
-    table.field_names = ['author','permlink','last_payout','cashout_time','total_vote_weight','reward_weight','total_payout_value','curator_payout_value','author_rewards','net_votes','percent_steem_dollars','pending_payout_value','total_pending_payout_value']
+    table.field_names = ['author','permlink','last_payout','cashout_time','total_vote_weight','reward_weight','total_payout_value','curator_payout_value','author_rewards','net_votes','percent_hbd','pending_payout_value','total_pending_payout_value']
     ret = []
     for account in accounts:
         blog = node_client.rpc.get_content(account["name"], test_utils.get_post_permlink(account["name"]))
@@ -68,28 +68,28 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("creator", help = "Account to create test accounts with")
     parser.add_argument("wif", help="Private key for creator account")
-    parser.add_argument("steemd_path", help = "Path to steemd executable.")
-    parser.add_argument("replay_steemd_path", help = "Path to steemd executable performing replay.")
+    parser.add_argument("hived_path", help = "Path to hived executable.")
+    parser.add_argument("replay_hived_path", help = "Path to hived executable performing replay.")
 
-    parser.add_argument("--node-url", dest="node_url", default="http://127.0.0.1:8090", help="Url of working steem node")
-    parser.add_argument("--working_dir", dest="steemd_working_dir", default="/tmp/steemd-data/", help = "Path to steemd working directory")
-    parser.add_argument("--config_path", dest="steemd_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
+    parser.add_argument("--node-url", dest="node_url", default="http://127.0.0.1:8090", help="Url of working hive node")
+    parser.add_argument("--working_dir", dest="hived_working_dir", default="/tmp/hived-data/", help = "Path to hived working directory")
+    parser.add_argument("--config_path", dest="hived_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
 
 
     args = parser.parse_args()
 
     node = None
 
-    if args.steemd_path:
-        logger.info("Running steemd via {} in {} with config {}".format(args.steemd_path, 
-            args.steemd_working_dir, 
-            args.steemd_config_path)
+    if args.hived_path:
+        logger.info("Running hived via {} in {} with config {}".format(args.hived_path, 
+            args.hived_working_dir, 
+            args.hived_config_path)
         )
         
         node = hive_utils.hive_node.HiveNodeInScreen(
-            args.steemd_path, 
-            args.steemd_working_dir, 
-            args.steemd_config_path
+            args.hived_path, 
+            args.hived_working_dir, 
+            args.hived_config_path
         )
     
     node_url = args.node_url
@@ -177,16 +177,16 @@ if __name__ == '__main__':
                 node.stop_hive_node()
 
         logger.info("Attempting replay!!!")
-        if args.replay_steemd_path:
-            logger.info("Replaying with steemd via {} in {} with config {}".format(args.replay_steemd_path, 
-                args.steemd_working_dir, 
-                args.steemd_working_dir + "/config.ini")
+        if args.replay_hived_path:
+            logger.info("Replaying with hived via {} in {} with config {}".format(args.replay_hived_path, 
+                args.hived_working_dir, 
+                args.hived_working_dir + "/config.ini")
             )
             
             node = hive_utils.hive_node.HiveNodeInScreen(
-                args.replay_steemd_path, 
-                args.steemd_working_dir, 
-                args.steemd_working_dir + "/config.ini",
+                args.replay_hived_path, 
+                args.hived_working_dir, 
+                args.hived_working_dir + "/config.ini",
                 True
             )
         if node is not None:

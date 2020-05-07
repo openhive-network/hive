@@ -71,8 +71,8 @@ class asset_symbol_type
 
       explicit operator uint32_t() { return to_nai(); }
 
-      // buf must have space for STEEM_ASSET_SYMBOL_MAX_LENGTH+1
       static asset_symbol_type from_string( const std::string& str );
+      // buf must have space for HIVE_ASSET_SYMBOL_NAI_STRING_LENGTH
       static asset_symbol_type from_nai_string( const char* buf, uint8_t decimal_places );
       static asset_symbol_type from_asset_num( uint32_t asset_num )
       {   asset_symbol_type result;   result.asset_num = asset_num;   return result;   }

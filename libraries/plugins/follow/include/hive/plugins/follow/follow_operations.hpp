@@ -39,14 +39,14 @@ typedef fc::static_variant<
          reblog_operation
       > follow_plugin_operation;
 
-STEEM_DEFINE_PLUGIN_EVALUATOR( follow_plugin, follow_plugin_operation, follow );
-STEEM_DEFINE_PLUGIN_EVALUATOR( follow_plugin, follow_plugin_operation, reblog );
+HIVE_DEFINE_PLUGIN_EVALUATOR( follow_plugin, follow_plugin_operation, follow );
+HIVE_DEFINE_PLUGIN_EVALUATOR( follow_plugin, follow_plugin_operation, reblog );
 
 } } } // hive::plugins::follow
 
 FC_REFLECT( hive::plugins::follow::follow_operation, (follower)(following)(what) )
 FC_REFLECT( hive::plugins::follow::reblog_operation, (account)(author)(permlink) )
 
-STEEM_DECLARE_OPERATION_TYPE( hive::plugins::follow::follow_plugin_operation )
+HIVE_DECLARE_OPERATION_TYPE( hive::plugins::follow::follow_plugin_operation )
 
 FC_REFLECT_TYPENAME( hive::plugins::follow::follow_plugin_operation )

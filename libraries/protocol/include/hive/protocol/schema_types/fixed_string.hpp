@@ -16,7 +16,7 @@ template< size_t N >
 struct schema_fixed_string_impl
    : public abstract_schema
 {
-   STEEM_SCHEMA_TEMPLATE_CLASS_BODY( schema_fixed_string_impl )
+   HIVE_SCHEMA_TEMPLATE_CLASS_BODY( schema_fixed_string_impl )
 };
 
 template< size_t N >

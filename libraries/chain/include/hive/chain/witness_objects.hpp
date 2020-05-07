@@ -27,7 +27,7 @@ namespace hive { namespace chain {
    struct chain_properties
    {
       /**
-       *  This fee, paid in STEEM, is converted into VESTING SHARES for the new account. Accounts
+       *  This fee, paid in HIVE, is converted into VESTING SHARES for the new account. Accounts
        *  without vesting shares cannot earn usage rations and therefore are powerless. This minimum
        *  fee requires all accounts to have some kind of commitment to the network that includes the
        *  ability to vote and make transactions.
@@ -40,7 +40,7 @@ namespace hive { namespace chain {
        *  to tune rate limiting and capacity
        */
       uint32_t          maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
-      uint16_t          sbd_interest_rate  = HIVE_DEFAULT_HBD_INTEREST_RATE;
+      uint16_t          hbd_interest_rate  = HIVE_DEFAULT_HBD_INTEREST_RATE;
       /**
        * How many free accounts should be created per elected witness block.
        * Scaled so that HIVE_ACCOUNT_SUBSIDY_PRECISION represents one account.
@@ -81,9 +81,9 @@ namespace hive { namespace chain {
          }
 
          //HBD to HIVE ratio proposed by the witness
-         const price& get_hbd_exchange_rate() const { return sbd_exchange_rate; }
+         const price& get_hbd_exchange_rate() const { return hbd_exchange_rate; }
          //time when HBD/HIVE price ratio was last confirmed (TODO: add routine to check if price feed is valid)
-         const time_point_sec& get_last_hbd_exchange_update() const { return last_sbd_exchange_update; }
+         const time_point_sec& get_last_hbd_exchange_update() const { return last_hbd_exchange_update; }
 
          id_type           id;
 
@@ -109,8 +109,8 @@ namespace hive { namespace chain {
          public_key_type   signing_key;
 
          chain_properties  props;
-         price             sbd_exchange_rate;
-         time_point_sec    last_sbd_exchange_update;
+         price             hbd_exchange_rate;
+         time_point_sec    last_hbd_exchange_update;
 
 
          /**
@@ -152,7 +152,7 @@ namespace hive { namespace chain {
          digest_type       last_work;
 
          /**
-          * This field represents the Steem blockchain version the witness is running.
+          * This field represents the Hive blockchain version the witness is running.
           */
          version           running_version;
 
@@ -306,7 +306,7 @@ FC_REFLECT_ENUM( hive::chain::witness_object::witness_schedule_type, (elected)(t
 FC_REFLECT( hive::chain::chain_properties,
              (account_creation_fee)
              (maximum_block_size)
-             (sbd_interest_rate)
+             (hbd_interest_rate)
              (account_subsidy_budget)
              (account_subsidy_decay)
           )
@@ -318,7 +318,7 @@ FC_REFLECT( hive::chain::witness_object,
              (url)(votes)(schedule)(virtual_last_update)(virtual_position)(virtual_scheduled_time)(total_missed)
              (last_aslot)(last_confirmed_block_num)(pow_worker)(signing_key)
              (props)
-             (sbd_exchange_rate)(last_sbd_exchange_update)
+             (hbd_exchange_rate)(last_hbd_exchange_update)
              (last_work)
              (running_version)
              (hardfork_version_vote)(hardfork_time_vote)

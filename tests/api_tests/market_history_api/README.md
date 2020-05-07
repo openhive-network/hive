@@ -8,7 +8,7 @@
 - get_volume
 
 #### get_market_history
-###### Returns the market history for the internal SBD:STEEM market.
+###### Returns the market history for the internal HBD:HIVE market.
 Example call:
 
 `python get_market_history.py https://api.steemit.com https://api.steem.house ./ 
@@ -33,7 +33,7 @@ Example call:
 Result: no differences.
 
 #### get_recent_trades
-###### Returns the most recent trades for the internal SBD:STEEM market.
+###### Returns the most recent trades for the internal HBD:HIVE market.
 Example call:
 
 `python get_recent_trades.py https://api.steemit.com https://api.steem.house ./ 20`
@@ -41,7 +41,7 @@ Example call:
 Result: no differences.
 
 #### get_ticker
-###### Returns the market ticker for the internal SBD:STEEM market.
+###### Returns the market ticker for the internal HBD:HIVE market.
 Example call:
 
 `python get_ticker.py https://api.steemit.com https://api.steem.house ./`
@@ -49,7 +49,7 @@ Example call:
 Result: no differences.
 
 #### get_trade_history
-###### Returns the trade history for the internal SBD:STEEM market.
+###### Returns the trade history for the internal HBD:HIVE market.
 Example call:
 
 `python get_trade_history.py https://api.steemit.com https://api.steem.house ./ 

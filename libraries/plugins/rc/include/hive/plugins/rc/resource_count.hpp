@@ -7,7 +7,7 @@
 #include <fc/reflect/reflect.hpp>
 #include <vector>
 
-#define STEEM_NUM_RESOURCE_TYPES     5
+#define HIVE_NUM_RESOURCE_TYPES     5
 
 namespace hive { namespace plugins { namespace rc {
 
@@ -20,7 +20,7 @@ enum rc_resource_types
    resource_execution_time
 };
 
-typedef fc::int_array< int64_t, STEEM_NUM_RESOURCE_TYPES > resource_count_type;
+typedef fc::int_array< int64_t, HIVE_NUM_RESOURCE_TYPES > resource_count_type;
 
 struct count_resources_result
 {
