@@ -78,14 +78,14 @@ def create_posts(node, account):
     logger.info("Creating posts...")
     from test_utils import get_permlink
     logger.info("New post ==> ({},{},{},{},{})".format(
-        "Steempy proposal title [{}]".format(account['name']), 
-        "Steempy proposal body [{}]".format(account['name']), 
+        "Hivepy proposal title [{}]".format(account['name']), 
+        "Hivepy proposal body [{}]".format(account['name']), 
         account['name'], 
         get_permlink(account['name']), 
         "proposals"
     ))
-    node.post("Steempy proposal title [{}]".format(account['name']), 
-        "Steempy proposal body [{}]".format(account['name']), 
+    node.post("Hivepy proposal title [{}]".format(account['name']), 
+        "Hivepy proposal body [{}]".format(account['name']), 
         account['name'], 
         permlink = get_permlink(account['name']), 
         tags = "proposals")

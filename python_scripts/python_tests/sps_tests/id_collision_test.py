@@ -80,7 +80,7 @@ class ProposalsCreatorThread(threading.Thread):
 
 
 def get_permlink(account):
-    return "steempy-proposal-title-{}".format(account)
+    return "hivepy-proposal-title-{}".format(account)
 
 
 def list_proposals_by_node(creator, private_key, nodes, subjects):
@@ -114,15 +114,15 @@ if __name__ == "__main__":
 
     node_client = Hive(node = args.nodes_url, keys = [args.wif])
     logger.info("New post ==> ({},{},{},{},{})".format(
-        "Steempy proposal title [{}]".format(args.creator), 
-        "Steempy proposal body [{}]".format(args.creator), 
+        "Hivepy proposal title [{}]".format(args.creator), 
+        "Hivepy proposal body [{}]".format(args.creator), 
         args.creator, 
         get_permlink(args.creator), 
         "proposals"
     ))
 
-    node_client.post("Steempy proposal title [{}]".format(args.creator), 
-        "Steempy proposal body [{}]".format(args.creator), 
+    node_client.post("Hivepy proposal title [{}]".format(args.creator), 
+        "Hivepy proposal body [{}]".format(args.creator), 
         args.creator, 
         permlink = get_permlink(args.creator), 
         tags = "proposals"

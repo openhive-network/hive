@@ -73,21 +73,21 @@ def transfer_assets_to_treasury(node, from_account, treasury_account, amount, as
 
 
 def get_permlink(account):
-    return "steempy-proposal-title-{}".format(account)
+    return "hivepy-proposal-title-{}".format(account)
 
 
 def create_posts(node, accounts, wif=None):
     logger.info("Creating posts...")
     for acnt in accounts:
         logger.info("New post ==> ({},{},{},{},{})".format(
-            "Steempy proposal title [{}]".format(acnt['name']), 
-            "Steempy proposal body [{}]".format(acnt['name']), 
+            "Hivepy proposal title [{}]".format(acnt['name']), 
+            "Hivepy proposal body [{}]".format(acnt['name']), 
             acnt['name'], 
             get_permlink(acnt['name']), 
             "proposals"
         ))
-        node.post("Steempy proposal title [{}]".format(acnt['name']), 
-            "Steempy proposal body [{}]".format(acnt['name']), 
+        node.post("Hivepy proposal title [{}]".format(acnt['name']), 
+            "Hivepy proposal body [{}]".format(acnt['name']), 
             acnt['name'], 
             permlink = get_permlink(acnt['name']), 
             tags = "proposals")

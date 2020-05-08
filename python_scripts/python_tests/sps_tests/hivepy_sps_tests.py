@@ -59,7 +59,7 @@ def test_create_proposal(node, creator_account, receiver_account, wif, subject):
         logger.error("Account: {} not found. {}".format(receiver_account, ex))
         sys.exit(1)
 
-    ret = s.post("Steempy proposal title", "Steempy proposal body", creator["name"], permlink = "steempy-proposal-title", tags = "proposals")
+    ret = s.post("Hivepy proposal title", "Hivepy proposal body", creator["name"], permlink = "hivepy-proposal-title", tags = "proposals")
     from beembase.operations import Create_proposal
     op = Create_proposal(
         **{
@@ -69,7 +69,7 @@ def test_create_proposal(node, creator_account, receiver_account, wif, subject):
             "end_date" : end_date,
             "daily_pay" : "16.000 TBD",
             "subject" : subject,
-            "permlink" : "steempy-proposal-title"
+            "permlink" : "hivepy-proposal-title"
         }
     )
     ret = s.finalizeOp(op, creator["name"], "active")
@@ -80,7 +80,7 @@ def test_create_proposal(node, creator_account, receiver_account, wif, subject):
     assert ret["operations"][0][1]["end_date"] == end_date
     assert ret["operations"][0][1]["daily_pay"] == "16.000 TBD"
     assert ret["operations"][0][1]["subject"] == subject
-    assert ret["operations"][0][1]["permlink"] == "steempy-proposal-title"
+    assert ret["operations"][0][1]["permlink"] == "hivepy-proposal-title"
 
 def test_list_proposals(node, account, wif, subject):
     logger.info("Testing: list_proposals")
@@ -262,7 +262,7 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
                 'end_date' :end_date,
                 'daily_pay' : "16.000 TBD",
                 'subject' : subject,
-                'permlink' : "steempy-proposal-title"
+                'permlink' : "hivepy-proposal-title"
             }
         )
         s.finalizeOp(op, creator["name"], "active")

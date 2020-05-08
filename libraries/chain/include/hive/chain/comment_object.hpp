@@ -78,7 +78,7 @@ namespace hive { namespace chain {
       Objects of this class can be removed, it depends on `cashout_time`
       when `cashout_time == fc::time_point_sec::maximum()`
    */
-   class comment_cashout_object : public object < comment_cashout_object_type, comment_cashout_object >
+   class comment_cashout_object : public object< comment_cashout_object_type, comment_cashout_object >
    {
       CHAINBASE_OBJECT( comment_cashout_object );
       public:

@@ -70,7 +70,7 @@ def create_proposals(node_client, creator_account, receiver_account):
         sys.exit(1)
 
     logger.info("Creating initial post...")
-    node_client.post("Steempy proposal title", "Steempy proposal body", creator["name"], permlink = "steempy-proposal-title", tags = "proposals")
+    node_client.post("Hivepy proposal title", "Hivepy proposal body", creator["name"], permlink = "hivepy-proposal-title", tags = "proposals")
 
     logger.info("Creating proposals...")
     from beembase.operations import Create_proposal
@@ -84,7 +84,7 @@ def create_proposals(node_client, creator_account, receiver_account):
                 'end_date' : end_date,
                 'daily_pay' : "16.000 TBD",
                 'subject' : start_end_subject[2],
-                'permlink' : "steempy-proposal-title"
+                'permlink' : "hivepy-proposal-title"
             }
         )
         node_client.finalizeOp(op, creator["name"], "active")

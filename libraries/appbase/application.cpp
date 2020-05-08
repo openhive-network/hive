@@ -36,7 +36,7 @@ void io_handler::close( uint32_t _last_signal_code )
 void io_handler::attach_signals()
 {
    /** To avoid killing process by broken pipe and continue regular app shutdown.
-    *  Useful for usecase: `steemd | tee steemd.log` and pressing Ctrl+C
+    *  Useful for usecase: `hived | tee hived.log` and pressing Ctrl+C
     **/
    signal(SIGPIPE, SIG_IGN);
 
