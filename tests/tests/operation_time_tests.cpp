@@ -9,7 +9,7 @@
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/history_object.hpp>
-#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/hive_objects.hpp>
 
 #include <hive/chain/util/reward.hpp>
 

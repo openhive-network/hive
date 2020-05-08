@@ -20,7 +20,7 @@ struct votable_asset_info_v1;
 #include <vector>
 
 #include <hive/chain/account_object.hpp>
-#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/hive_objects.hpp>
 
 using namespace hive::schema;
 

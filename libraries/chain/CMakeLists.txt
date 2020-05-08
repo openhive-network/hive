@@ -12,8 +12,8 @@ add_library( hive_chain
 
              smt_objects/smt_market_maker.cpp
              smt_objects/nai_pool.cpp
-             steem_evaluator.cpp
-             steem_objects.cpp
+             hive_evaluator.cpp
+             hive_objects.cpp
              required_action_evaluator.cpp
              optional_action_evaluator.cpp
 

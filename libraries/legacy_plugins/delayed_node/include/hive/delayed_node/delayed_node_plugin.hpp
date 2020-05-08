@@ -24,7 +24,7 @@
 #pragma once
 
 #include <hive/app/plugin.hpp>
-#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/hive_objects.hpp>
 
 namespace hive { namespace delayed_node {
 namespace detail { struct delayed_node_plugin_impl; }

@@ -16,7 +16,7 @@
 #include <vector>
 
 #include <hive/chain/account_object.hpp>
-#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
 

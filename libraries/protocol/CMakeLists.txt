@@ -22,7 +22,7 @@ endif( MSVC )
 add_library( hive_protocol
 
              smt_operations.cpp
-             steem_operations.cpp
+             hive_operations.cpp
              sps_operations.cpp
              hive_required_actions.cpp
              hive_optional_actions.cpp

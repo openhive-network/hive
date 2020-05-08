@@ -13,7 +13,7 @@ FC_TODO(Extend testing scenarios to support multiple NAIs per account)
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
-#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/smt_objects.hpp>
 
 #include <hive/chain/util/smt_token.hpp>

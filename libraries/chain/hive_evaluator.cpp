@@ -1,9 +1,9 @@
 #include <hive/chain/hive_fwd.hpp>
 
-#include <hive/chain/steem_evaluator.hpp>
+#include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/custom_operation_interpreter.hpp>
-#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/block_summary_object.hpp>
 

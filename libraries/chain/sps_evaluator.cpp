@@ -3,7 +3,7 @@
 #include <hive/protocol/sps_operations.hpp>
 
 #include <hive/chain/database.hpp>
-#include <hive/chain/steem_evaluator.hpp>
+#include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/sps_objects.hpp>
 
 #include <hive/chain/util/sps_helper.hpp>

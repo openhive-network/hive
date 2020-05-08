@@ -19,8 +19,8 @@
 #include <hive/chain/pending_optional_action_object.hpp>
 #include <hive/chain/required_action_evaluator.hpp>
 #include <hive/chain/smt_objects.hpp>
-#include <hive/chain/steem_evaluator.hpp>
-#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/hive_evaluator.hpp>
+#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/shared_db_merkle.hpp>
 #include <hive/chain/witness_schedule.hpp>

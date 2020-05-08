@@ -29,7 +29,7 @@
 #include <hive/protocol/exceptions.hpp>
 
 #include <hive/chain/database.hpp>
-#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/history_object.hpp>
 
 #include <hive/plugins/account_history/account_history_plugin.hpp>

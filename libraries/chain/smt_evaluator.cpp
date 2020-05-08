@@ -1,8 +1,8 @@
 #include <hive/chain/hive_fwd.hpp>
 
-#include <hive/chain/steem_evaluator.hpp>
+#include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/database.hpp>
-#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/smt_objects.hpp>
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/smt_token.hpp>

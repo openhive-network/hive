@@ -4,7 +4,7 @@
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/history_object.hpp>
-#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/database.hpp>

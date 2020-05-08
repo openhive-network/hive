@@ -26,7 +26,7 @@
 
 #include <hive/chain/hive_fwd.hpp>
 
-#include <hive/chain/steem_objects.hpp>
+#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/database.hpp>
 
 #include <hive/plugins/condenser_api/condenser_api_legacy_asset.hpp>
