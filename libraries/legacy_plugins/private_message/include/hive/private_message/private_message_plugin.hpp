@@ -75,6 +75,7 @@ struct message_body
 
 class message_object : public object< message_object_type, message_object >
 {
+   CHAINBASE_OBJECT( message_object );
    public:
       template< typename Constructor, typename Allocator >
       message_object( Constructor&& c, allocator< Allocator > a ) :

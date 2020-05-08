@@ -25,10 +25,9 @@ enum class smt_phase : uint8_t
  */
 class smt_token_object : public object< smt_token_object_type, smt_token_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( smt_token_object );
+   CHAINBASE_OBJECT( smt_token_object );
 
 public:
-
    struct smt_market_maker_state
    {
       asset    hive_balance;
@@ -44,14 +43,14 @@ public:
       c( *this );
    }
 
-   price    one_vesting_to_one_liquid() const
+   price one_vesting_to_one_liquid() const
    {
       int64_t one_smt = std::pow(10, liquid_symbol.decimals());
       return price ( asset( one_smt, liquid_symbol.get_paired_symbol() ), asset( one_smt, liquid_symbol ) );
       // ^ On the assumption that liquid and vesting SMT have the same precision. See issue 2212
    }
 
-   price    get_vesting_share_price() const
+   price get_vesting_share_price() const
    {
       if ( total_vesting_fund_smt == 0 || total_vesting_shares == 0 )
          return one_vesting_to_one_liquid();
@@ -60,7 +59,7 @@ public:
       return price( asset( total_vesting_shares, liquid_symbol.get_paired_symbol() ), asset( total_vesting_fund_smt, liquid_symbol ) );
    }
 
-   price    get_reward_vesting_share_price() const
+   price get_reward_vesting_share_price() const
    {
       share_type reward_vesting_shares = total_vesting_shares + pending_rewarded_vesting_shares;
       share_type reward_vesting_smt = total_vesting_fund_smt + pending_rewarded_vesting_smt;
@@ -113,7 +112,7 @@ public:
 
 class smt_ico_object : public object< smt_ico_object_type, smt_ico_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( smt_ico_object );
+   CHAINBASE_OBJECT( smt_ico_object );
 
 public:
    template< typename Constructor, typename Allocator >
@@ -136,7 +135,7 @@ public:
 
 class smt_token_emissions_object : public object< smt_token_emissions_object_type, smt_token_emissions_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( smt_token_emissions_object );
+   CHAINBASE_OBJECT( smt_token_emissions_object );
 
 public:
    template< typename Constructor, typename Allocator >
@@ -162,7 +161,7 @@ public:
 
 class smt_contribution_object : public object< smt_contribution_object_type, smt_contribution_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( smt_contribution_object );
+   CHAINBASE_OBJECT( smt_contribution_object );
 
 public:
    template< typename Constructor, typename Allocator >

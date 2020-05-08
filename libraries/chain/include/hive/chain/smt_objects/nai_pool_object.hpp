@@ -10,7 +10,7 @@ namespace hive { namespace chain {
 
    class nai_pool_object : public object< nai_pool_object_type, nai_pool_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( nai_pool_object );
+      CHAINBASE_OBJECT( nai_pool_object );
 
    public:
       template< typename Constructor, typename Allocator >

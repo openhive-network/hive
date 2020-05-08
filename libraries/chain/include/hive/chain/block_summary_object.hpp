@@ -16,14 +16,13 @@ namespace hive { namespace chain {
     */
    class block_summary_object : public object< block_summary_object_type, block_summary_object >
    {
+      CHAINBASE_OBJECT( block_summary_object );
       public:
          template< typename Constructor, typename Allocator >
          block_summary_object( Constructor&& c, allocator< Allocator > a )
          {
             c( *this );
          }
-
-         block_summary_object(){};
 
          id_type        id;
          block_id_type  block_id;

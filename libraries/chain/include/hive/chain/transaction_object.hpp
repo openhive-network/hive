@@ -20,8 +20,7 @@ namespace hive { namespace chain {
     */
    class transaction_object : public object< transaction_object_type, transaction_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( transaction_object )
-
+      CHAINBASE_OBJECT( transaction_object );
       public:
          template< typename Constructor, typename Allocator >
          transaction_object( Constructor&& c, allocator< Allocator > a )

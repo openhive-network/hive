@@ -23,14 +23,13 @@ namespace hive { namespace chain {
     */
    class dynamic_global_property_object : public object< dynamic_global_property_object_type, dynamic_global_property_object>
    {
+      CHAINBASE_OBJECT( dynamic_global_property_object, true );
       public:
          template< typename Constructor, typename Allocator >
          dynamic_global_property_object( Constructor&& c, allocator< Allocator > a )
          {
             c( *this );
          }
-
-         dynamic_global_property_object(){}
 
          //main HIVE token counter (see also get_full_hive_supply)
          const asset& get_current_supply() const { return current_supply; }
@@ -63,7 +62,6 @@ namespace hive { namespace chain {
          block_id_type     head_block_id;
          time_point_sec    time;
          account_name_type current_witness;
-
 
          /**
           *  The total POW accumulated, aka the sum of num_pow_witness at the time new POW is added

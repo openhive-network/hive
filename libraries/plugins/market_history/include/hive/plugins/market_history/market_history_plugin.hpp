@@ -83,13 +83,14 @@ struct bucket_object_details
 
 struct bucket_object : public object< bucket_object_type, bucket_object >
 {
+   CHAINBASE_OBJECT( bucket_object, true );
+
+public:
    template< typename Constructor, typename Allocator >
    bucket_object( Constructor&& c, allocator< Allocator > a )
    {
       c( *this );
    }
-
-   bucket_object() {}
 
    id_type              id;
 
@@ -115,13 +116,14 @@ typedef oid< bucket_object > bucket_id_type;
 
 struct order_history_object : public object< order_history_object_type, order_history_object >
 {
+   CHAINBASE_OBJECT( order_history_object );
+
+public:
    template< typename Constructor, typename Allocator >
    order_history_object( Constructor&& c, allocator< Allocator > a )
    {
       c( *this );
    }
-
-   order_history_object() {}
 
    id_type                          id;
 

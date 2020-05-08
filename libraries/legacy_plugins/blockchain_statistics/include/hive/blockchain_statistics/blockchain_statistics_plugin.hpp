@@ -61,6 +61,9 @@ class blockchain_statistics_plugin : public hive::app::plugin
 
 struct bucket_object : public object< bucket_object_type, bucket_object >
 {
+   CHAINBASE_OBJECT( bucket_object );
+
+public:
    template< typename Constructor, typename Allocator >
    bucket_object( Constructor&& c, allocator< Allocator > a )
    {

@@ -11,8 +11,7 @@ using hive::protocol::optional_automated_action;
 
 class pending_optional_action_object : public object< pending_optional_action_object_type, pending_optional_action_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( pending_optional_action_object )
-
+   CHAINBASE_OBJECT( pending_optional_action_object );
    public:
       template< typename Constructor, typename Allocator >
       pending_optional_action_object( Constructor&& c, allocator< Allocator > a )

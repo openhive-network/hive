@@ -11,8 +11,7 @@ namespace hive { namespace chain {
 
    class hardfork_property_object : public object< hardfork_property_object_type, hardfork_property_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( hardfork_property_object )
-
+      CHAINBASE_OBJECT( hardfork_property_object );
       public:
          template< typename Constructor, typename Allocator >
          hardfork_property_object( Constructor&& c, allocator< Allocator > a )
@@ -21,15 +20,15 @@ namespace hive { namespace chain {
             c( *this );
          }
 
-         id_type                                                              id;
+         id_type                     id;
 
          using t_processed_hardforks = t_vector< fc::time_point_sec >;
 
-         t_processed_hardforks                                                processed_hardforks;
-         uint32_t                                                             last_hardfork = 0;
-         protocol::hardfork_version                                           current_hardfork_version;
-         protocol::hardfork_version                                           next_hardfork;
-         fc::time_point_sec                                                   next_hardfork_time;
+         t_processed_hardforks       processed_hardforks;
+         uint32_t                    last_hardfork = 0;
+         protocol::hardfork_version  current_hardfork_version;
+         protocol::hardfork_version  next_hardfork;
+         fc::time_point_sec          next_hardfork_time;
    };
 
    typedef multi_index_container<

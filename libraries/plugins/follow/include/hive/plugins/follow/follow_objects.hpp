@@ -33,14 +33,13 @@ enum follow_type
 
 class follow_object : public object< follow_object_type, follow_object >
 {
+   CHAINBASE_OBJECT( follow_object );
    public:
       template< typename Constructor, typename Allocator >
       follow_object( Constructor&& c, allocator< Allocator > a )
       {
          c( *this );
       }
-
-      follow_object() {}
 
       id_type           id;
 
@@ -54,8 +53,7 @@ typedef oid< follow_object > follow_id_type;
 
 class feed_object : public object< feed_object_type, feed_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( feed_object );
-
+   CHAINBASE_OBJECT( feed_object );
    public:
       typedef t_vector<account_name_type> t_reblogged_by_container;
 
@@ -81,14 +79,13 @@ typedef oid< feed_object > feed_id_type;
 
 class blog_object : public object< blog_object_type, blog_object >
 {
+   CHAINBASE_OBJECT( blog_object, true );
    public:
       template< typename Constructor, typename Allocator >
       blog_object( Constructor&& c, allocator< Allocator > a )
       {
          c( *this );
       }
-
-      blog_object() {}
 
       id_type           id;
 
@@ -109,14 +106,13 @@ typedef oid< blog_object > blog_id_type;
  */
 class blog_author_stats_object : public object< blog_author_stats_object_type, blog_author_stats_object >
 {
+   CHAINBASE_OBJECT( blog_author_stats_object );
    public:
       template< typename Constructor, typename Allocator >
       blog_author_stats_object( Constructor&& c, allocator< Allocator > a )
       {
          c( *this );
       }
-
-      blog_author_stats_object() {}
 
       id_type           id;
       account_name_type blogger;
@@ -130,14 +126,13 @@ typedef oid< blog_author_stats_object > blog_author_stats_id_type;
 
 class reputation_object : public object< reputation_object_type, reputation_object >
 {
+   CHAINBASE_OBJECT( reputation_object );
    public:
       template< typename Constructor, typename Allocator >
       reputation_object( Constructor&& c, allocator< Allocator > a )
       {
          c( *this );
       }
-
-      reputation_object() {}
 
       id_type           id;
 
@@ -150,14 +145,13 @@ typedef oid< reputation_object > reputation_id_type;
 
 class follow_count_object : public object< follow_count_object_type, follow_count_object >
 {
+   CHAINBASE_OBJECT( follow_count_object );
    public:
       template< typename Constructor, typename Allocator >
       follow_count_object( Constructor&& c, allocator< Allocator > a )
       {
          c( *this );
       }
-
-      follow_count_object() {}
 
       id_type           id;
 

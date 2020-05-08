@@ -62,8 +62,7 @@ namespace hive { namespace chain {
     */
    class witness_object : public object< witness_object_type, witness_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( witness_object )
-
+      CHAINBASE_OBJECT( witness_object );
       public:
          enum witness_schedule_type
          {
@@ -165,14 +164,13 @@ namespace hive { namespace chain {
 
    class witness_vote_object : public object< witness_vote_object_type, witness_vote_object >
    {
+      CHAINBASE_OBJECT( witness_vote_object );
       public:
          template< typename Constructor, typename Allocator >
          witness_vote_object( Constructor&& c, allocator< Allocator > a )
          {
             c( *this );
          }
-
-         witness_vote_object(){}
 
          id_type           id;
 
@@ -182,14 +180,13 @@ namespace hive { namespace chain {
 
    class witness_schedule_object : public object< witness_schedule_object_type, witness_schedule_object >
    {
+      CHAINBASE_OBJECT( witness_schedule_object );
       public:
          template< typename Constructor, typename Allocator >
          witness_schedule_object( Constructor&& c, allocator< Allocator > a )
          {
             c( *this );
          }
-
-         witness_schedule_object(){}
 
          id_type                                                           id;
 

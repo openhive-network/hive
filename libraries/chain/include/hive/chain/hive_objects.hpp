@@ -24,14 +24,13 @@ namespace hive { namespace chain {
     */
    class convert_request_object : public object< convert_request_object_type, convert_request_object >
    {
+      CHAINBASE_OBJECT( convert_request_object );
       public:
          template< typename Constructor, typename Allocator >
          convert_request_object( Constructor&& c, allocator< Allocator > a )
          {
             c( *this );
          }
-
-         convert_request_object(){}
 
          //amount of HBD to be converted to HIVE
          const asset& get_convert_amount() const { return amount; }
@@ -47,14 +46,13 @@ namespace hive { namespace chain {
 
    class escrow_object : public object< escrow_object_type, escrow_object >
    {
+      CHAINBASE_OBJECT( escrow_object );
       public:
          template< typename Constructor, typename Allocator >
          escrow_object( Constructor&& c, allocator< Allocator > a )
          {
             c( *this );
          }
-
-         escrow_object(){}
 
          //HIVE portion of transfer balance
          const asset& get_hive_balance() const { return hive_balance; }
@@ -84,8 +82,7 @@ namespace hive { namespace chain {
 
    class savings_withdraw_object : public object< savings_withdraw_object_type, savings_withdraw_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( savings_withdraw_object )
-
+      CHAINBASE_OBJECT( savings_withdraw_object );
       public:
          template< typename Constructor, typename Allocator >
          savings_withdraw_object( Constructor&& c, allocator< Allocator > a )
@@ -121,14 +118,13 @@ namespace hive { namespace chain {
     */
    class liquidity_reward_balance_object : public object< liquidity_reward_balance_object_type, liquidity_reward_balance_object >
    {
+      CHAINBASE_OBJECT( liquidity_reward_balance_object );
       public:
          template< typename Constructor, typename Allocator >
          liquidity_reward_balance_object( Constructor&& c, allocator< Allocator > a )
          {
             c( *this );
          }
-
-         liquidity_reward_balance_object(){}
 
          int64_t get_hive_volume() const { return hive_volume; }
          int64_t get_hbd_volume() const { return hbd_volume; }
@@ -170,8 +166,7 @@ namespace hive { namespace chain {
     */
    class feed_history_object  : public object< feed_history_object_type, feed_history_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( feed_history_object )
-
+      CHAINBASE_OBJECT( feed_history_object );
       public:
          template< typename Constructor, typename Allocator >
          feed_history_object( Constructor&& c, allocator< Allocator > a )
@@ -180,13 +175,13 @@ namespace hive { namespace chain {
             c( *this );
          }
 
-         id_type                                   id;
+         id_type id;
 
-         price                                     current_median_history; ///< the current median of the price history, used as the base for convert operations
+         price current_median_history; ///< the current median of the price history, used as the base for convert operations
 
          using t_price_history = t_deque< price >;
 
-         t_deque< price >   price_history; ///< tracks this last week of median_feed one per hour
+         t_deque< price > price_history; ///< tracks this last week of median_feed one per hour
    };
 
 
@@ -200,14 +195,13 @@ namespace hive { namespace chain {
     */
    class limit_order_object : public object< limit_order_object_type, limit_order_object >
    {
+      CHAINBASE_OBJECT( limit_order_object );
       public:
          template< typename Constructor, typename Allocator >
          limit_order_object( Constructor&& c, allocator< Allocator > a )
          {
             c( *this );
          }
-
-         limit_order_object(){}
 
          id_type           id;
 
@@ -235,14 +229,13 @@ namespace hive { namespace chain {
     */
    class withdraw_vesting_route_object : public object< withdraw_vesting_route_object_type, withdraw_vesting_route_object >
    {
+      CHAINBASE_OBJECT( withdraw_vesting_route_object, true );
       public:
          template< typename Constructor, typename Allocator >
          withdraw_vesting_route_object( Constructor&& c, allocator< Allocator > a )
          {
             c( *this );
          }
-
-         withdraw_vesting_route_object(){}
 
          id_type  id;
 
@@ -255,14 +248,13 @@ namespace hive { namespace chain {
 
    class decline_voting_rights_request_object : public object< decline_voting_rights_request_object_type, decline_voting_rights_request_object >
    {
+      CHAINBASE_OBJECT( decline_voting_rights_request_object );
       public:
          template< typename Constructor, typename Allocator >
          decline_voting_rights_request_object( Constructor&& c, allocator< Allocator > a )
          {
             c( *this );
          }
-
-         decline_voting_rights_request_object(){}
 
          id_type           id;
 
@@ -272,6 +264,7 @@ namespace hive { namespace chain {
 
    class reward_fund_object : public object< reward_fund_object_type, reward_fund_object >
    {
+      CHAINBASE_OBJECT( reward_fund_object );
       public:
          template< typename Constructor, typename Allocator >
          reward_fund_object( Constructor&& c, allocator< Allocator > a )
@@ -279,12 +272,10 @@ namespace hive { namespace chain {
             c( *this );
          }
 
-         reward_fund_object() {}
-
          //amount of HIVE in reward fund
          const asset& get_reward_balance() const { return reward_balance; }
 
-         reward_fund_id_type     id;
+         id_type                 id;
          reward_fund_name_type   name;
          asset                   reward_balance = asset( 0, HIVE_SYMBOL );
          fc::uint128_t           recent_claims = 0;

@@ -61,14 +61,13 @@ namespace detail { class tags_plugin_impl; }
  */
 class tag_object : public object< tag_object_type, tag_object >
 {
+   CHAINBASE_OBJECT( tag_object );
    public:
       template< typename Constructor, typename Allocator >
       tag_object( Constructor&& c, allocator< Allocator > a )
       {
          c( *this );
       }
-
-      tag_object() {}
 
       id_type           id;
 
@@ -216,14 +215,13 @@ typedef multi_index_container<
  */
 class tag_stats_object : public object< tag_stats_object_type, tag_stats_object >
 {
+   CHAINBASE_OBJECT( tag_stats_object );
    public:
       template< typename Constructor, typename Allocator >
       tag_stats_object( Constructor&& c, allocator< Allocator > )
       {
          c( *this );
       }
-
-      tag_stats_object() {}
 
       id_type           id;
 
@@ -282,14 +280,13 @@ typedef multi_index_container<
  */
 class author_tag_stats_object : public object< author_tag_stats_object_type, author_tag_stats_object >
 {
+   CHAINBASE_OBJECT( author_tag_stats_object );
    public:
       template< typename Constructor, typename Allocator >
       author_tag_stats_object( Constructor&& c, allocator< Allocator > )
       {
          c( *this );
       }
-
-      author_tag_stats_object() {}
 
       id_type         id;
       account_id_type author;

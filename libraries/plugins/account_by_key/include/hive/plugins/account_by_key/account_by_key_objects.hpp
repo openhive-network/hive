@@ -17,14 +17,13 @@ enum account_by_key_object_types
 
 class key_lookup_object : public object< key_lookup_object_type, key_lookup_object >
 {
+   CHAINBASE_OBJECT( key_lookup_object );
    public:
       template< typename Constructor, typename Allocator >
       key_lookup_object( Constructor&& c, allocator< Allocator > a )
       {
          c( *this );
       }
-
-      key_lookup_object() {}
 
       id_type           id;
 

@@ -23,8 +23,8 @@ namespace hive { namespace chain {
 
    class account_object : public object< account_object_type, account_object >
    {
-         STEEM_STD_ALLOCATOR_CONSTRUCTOR( account_object )
-
+      CHAINBASE_OBJECT( account_object );
+      public:
          template<typename Constructor, typename Allocator>
          account_object( Constructor&& c, allocator< Allocator > a )
          : delayed_votes( a )
@@ -186,25 +186,24 @@ namespace hive { namespace chain {
 
    class account_metadata_object : public object< account_metadata_object_type, account_metadata_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( account_metadata_object )
+      CHAINBASE_OBJECT( account_metadata_object );
+      public:
+         template< typename Constructor, typename Allocator >
+         account_metadata_object( Constructor&& c, allocator< Allocator > a )
+            : json_metadata( a ), posting_json_metadata( a )
+         {
+            c( *this );
+         }
 
-      template< typename Constructor, typename Allocator >
-      account_metadata_object( Constructor&& c, allocator< Allocator > a )
-         : json_metadata( a ), posting_json_metadata( a )
-      {
-         c( *this );
-      }
-
-      id_type           id;
-      account_id_type   account;
-      shared_string     json_metadata;
-      shared_string     posting_json_metadata;
+         id_type           id;
+         account_id_type   account;
+         shared_string     json_metadata;
+         shared_string     posting_json_metadata;
    };
 
    class account_authority_object : public object< account_authority_object_type, account_authority_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( account_authority_object )
-
+      CHAINBASE_OBJECT( account_authority_object );
       public:
          template< typename Constructor, typename Allocator >
          account_authority_object( Constructor&& c, allocator< Allocator > a )
@@ -226,6 +225,7 @@ namespace hive { namespace chain {
 
    class vesting_delegation_object : public object< vesting_delegation_object_type, vesting_delegation_object >
    {
+      CHAINBASE_OBJECT( vesting_delegation_object );
       public:
          template< typename Constructor, typename Allocator >
          vesting_delegation_object( Constructor&& c, allocator< Allocator > a )
@@ -233,20 +233,19 @@ namespace hive { namespace chain {
             c( *this );
          }
 
-         vesting_delegation_object() {}
-
          //amount of delegated VESTS
          const asset& get_vesting() const { return vesting_shares; }
 
          id_type           id;
          account_name_type delegator;
          account_name_type delegatee;
-         asset             vesting_shares;
+         asset             vesting_shares = asset( 0, VESTS_SYMBOL );
          time_point_sec    min_delegation_time;
    };
 
    class vesting_delegation_expiration_object : public object< vesting_delegation_expiration_object_type, vesting_delegation_expiration_object >
    {
+      CHAINBASE_OBJECT( vesting_delegation_expiration_object );
       public:
          template< typename Constructor, typename Allocator >
          vesting_delegation_expiration_object( Constructor&& c, allocator< Allocator > a )
@@ -254,21 +253,18 @@ namespace hive { namespace chain {
             c( *this );
          }
 
-         vesting_delegation_expiration_object() {}
-
          //amount of expiring delegated VESTS
          const asset& get_vesting() const { return vesting_shares; }
 
          id_type           id;
          account_name_type delegator;
-         asset             vesting_shares;
+         asset             vesting_shares = asset( 0, VESTS_SYMBOL );
          time_point_sec    expiration;
    };
 
    class owner_authority_history_object : public object< owner_authority_history_object_type, owner_authority_history_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( owner_authority_history_object )
-
+      CHAINBASE_OBJECT( owner_authority_history_object );
       public:
          template< typename Constructor, typename Allocator >
          owner_authority_history_object( Constructor&& c, allocator< Allocator > a )
@@ -286,8 +282,7 @@ namespace hive { namespace chain {
 
    class account_recovery_request_object : public object< account_recovery_request_object_type, account_recovery_request_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( account_recovery_request_object )
-
+      CHAINBASE_OBJECT( account_recovery_request_object );
       public:
          template< typename Constructor, typename Allocator >
          account_recovery_request_object( Constructor&& c, allocator< Allocator > a )
@@ -305,8 +300,7 @@ namespace hive { namespace chain {
 
    class change_recovery_account_request_object : public object< change_recovery_account_request_object_type, change_recovery_account_request_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( change_recovery_account_request_object )
-
+      CHAINBASE_OBJECT( change_recovery_account_request_object );
       public:
          template< typename Constructor, typename Allocator >
          change_recovery_account_request_object( Constructor&& c, allocator< Allocator > a )

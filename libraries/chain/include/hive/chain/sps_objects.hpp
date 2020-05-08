@@ -11,8 +11,7 @@ using hive::protocol::asset;
 
 class proposal_object : public object< proposal_object_type, proposal_object >
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( proposal_object )
-
+   CHAINBASE_OBJECT( proposal_object );
    public:
 
       template<typename Constructor, typename Allocator>
@@ -20,7 +19,7 @@ class proposal_object : public object< proposal_object_type, proposal_object >
       : subject( a ), permlink( a )
       {
          c(*this);
-      };
+      }
 
       //internal key
       id_type id;
@@ -65,8 +64,7 @@ class proposal_object : public object< proposal_object_type, proposal_object >
 
 class proposal_vote_object : public object< proposal_vote_object_type, proposal_vote_object>
 {
-   STEEM_STD_ALLOCATOR_CONSTRUCTOR( proposal_vote_object )
-
+   CHAINBASE_OBJECT( proposal_vote_object );
    public:
 
       template< typename Constructor, typename Allocator >

@@ -15,8 +15,7 @@ namespace hive { namespace chain {
 
    class operation_object : public object< operation_object_type, operation_object >
    {
-      STEEM_STD_ALLOCATOR_CONSTRUCTOR( operation_object )
-
+      CHAINBASE_OBJECT( operation_object );
       public:
          template< typename Constructor, typename Allocator >
          operation_object( Constructor&& c, allocator< Allocator > a )
@@ -65,14 +64,13 @@ namespace hive { namespace chain {
 
    class account_history_object : public object< account_history_object_type, account_history_object >
    {
+      CHAINBASE_OBJECT( account_history_object );
       public:
          template< typename Constructor, typename Allocator >
          account_history_object( Constructor&& c, allocator< Allocator > a )
          {
             c( *this );
          }
-
-         account_history_object() {}
 
          id_type           id;
 
