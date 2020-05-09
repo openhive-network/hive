@@ -47,14 +47,12 @@ void delegate_drc_from_pool_operation::validate()const
    validate_account_name( from_pool );
    validate_account_name( to_account );
 
-   FC_ASSERT( to_slot >= 0 );
-   FC_ASSERT( to_slot < STEEM_RC_MAX_SLOTS );
    FC_ASSERT( asset_symbol.is_vesting(), "Must use vesting symbol" );
    FC_ASSERT( asset_symbol == VESTS_SYMBOL, "Currently can only delegate VESTS (SMT's not supported #2698)" );
    FC_ASSERT( drc_max_mana >= 0 );
 }
 
-void set_slot_delegator_operation::validate()const
+void set_slot_delegator_operation::validate() const
 {
    validate_account_name( from_pool );
    validate_account_name( to_account );
@@ -239,8 +237,12 @@ void delegate_drc_from_pool_evaluator::do_apply( const delegate_drc_from_pool_op
 
    const auto& to_rca = _db.get< rc_account_object, by_name >( op.to_account );
 
-   FC_ASSERT( to_rca.indel_slots[ op.to_slot ] == op.from_pool, "Pool cannot delegate RC to slot ${n}. Expected: ${e} Was: ${w}",
-      ("n", op.to_slot)("e", to_rca.indel_slots[ op.to_slot ])("w", op.from_pool) );
+   bool found = false;
+   for (int i = 0; i < STEEM_RC_MAX_SLOTS; i++) {
+      if (to_rca.indel_slots[ i ] == op.from_pool)
+         found = true;
+   }
+   FC_ASSERT(found, "No slot is set to receive from pool ${pool}", ("pool", op.from_pool) );
 
    const auto* edge = _db.find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( op.from_pool, op.to_account, op.asset_symbol ) );
    steem::chain::util::manabar edge_manabar;

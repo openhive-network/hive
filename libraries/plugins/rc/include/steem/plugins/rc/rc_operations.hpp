@@ -56,7 +56,6 @@ struct delegate_drc_from_pool_operation : steem::protocol::base_operation
 {
    account_name_type      from_pool;
    account_name_type      to_account;
-   int8_t                 to_slot = 0;
    asset_symbol_type      asset_symbol;
    int64_t                drc_max_mana = 0;
 
@@ -109,7 +108,6 @@ FC_REFLECT( steem::plugins::rc::delegate_to_pool_operation,
 FC_REFLECT( steem::plugins::rc::delegate_drc_from_pool_operation,
    (from_pool)
    (to_account)
-   (to_slot)
    (asset_symbol)
    (drc_max_mana)
    (extensions)
