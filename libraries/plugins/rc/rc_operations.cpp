@@ -325,25 +325,21 @@ void set_slot_delegator_evaluator::do_apply( const set_slot_delegator_operation&
    {
       case STEEM_RC_CREATOR_SLOT_NUM:
       {
-         FC_ASSERT( to_rca.creator == op.signer,
-            "Only the account creator ${c} can change RC creator slot ${n}",
-            ("c", to_rca.creator)("n", STEEM_RC_CREATOR_SLOT_NUM) );
+         FC_ASSERT( (to_rca.creator == op.signer || op.signer == op.to_account ),
+            "Only the account creator ${c} or the account owner ${a} can change RC creator slot ${n}",
+            ("c", to_rca.creator)("a", op.to_account)("n", STEEM_RC_CREATOR_SLOT_NUM) );
          break;
       }
       case STEEM_RC_RECOVERY_SLOT_NUM:
       {
-         if( to_account.recovery_account != account_name_type() )
-         {
-            FC_ASSERT( to_account.recovery_account == op.signer,
-               "Only recovery partner ${r} can change RC recovery slot ${n}.",
-               ("r", to_account.recovery_account)("n", STEEM_RC_RECOVERY_SLOT_NUM) );
-         }
-         else
-         {
-            const auto& top_witness_owner = _db.get_index< witness_index, by_vote_name >().begin()->owner;
-            FC_ASSERT( top_witness_owner == op.signer,
-               "Only top witness ${w} can change RC recovery slot ${n}.",
-               ("r", top_witness_owner)("n", STEEM_RC_RECOVERY_SLOT_NUM) );
+         if( to_account.recovery_account != account_name_type() ) {
+            FC_ASSERT((to_account.recovery_account == op.signer || op.signer == op.to_account ),
+                      "Only recovery partner ${r} or the account owner ${a} can change RC recovery slot ${n}.",
+                      ("r", to_account.recovery_account)("a", op.to_account)("n", STEEM_RC_RECOVERY_SLOT_NUM));
+         } else {
+             FC_ASSERT((to_account.recovery_account == op.signer),
+                      "No recovery partner set, only the account owner ${a} can change RC recovery slot ${n}.",
+                     ("a", op.to_account)("n", STEEM_RC_RECOVERY_SLOT_NUM));
          }
          break;
       }
@@ -352,19 +348,22 @@ void set_slot_delegator_evaluator::do_apply( const set_slot_delegator_operation&
          FC_ASSERT( op.to_slot >= STEEM_RC_USER_SLOT_NUM && op.to_slot < STEEM_RC_MAX_SLOTS,
             "User controlled slots must be between ${l} and ${u}",
             ("l", STEEM_RC_USER_SLOT_NUM)("u", STEEM_RC_MAX_SLOTS) );
-         FC_ASSERT( op.signer == op.to_account, "The user must change user controlled RC slots." );
-
+         FC_ASSERT( op.signer == op.to_account, "Only the account can change user controlled RC slots." );
          break;
       }
    }
 
    FC_ASSERT( to_rca.indel_slots[ op.to_slot ] != op.from_pool, "The slot must change." );
 
-   for (int i = 0; i < STEEM_RC_MAX_SLOTS; i++) {
-      if (i == op.to_slot)
-         continue;
+   // No need to check if the slot is already set if we want to set the slot to STEEM_NULL_ACCOUNT
+   if ( op.from_pool != STEEM_NULL_ACCOUNT ) {
+      for (int i = 0; i < STEEM_RC_MAX_SLOTS; i++) {
+         if (i == op.to_slot)
+            continue;
 
-      FC_ASSERT( to_rca.indel_slots[i] != op.from_pool, "Already have slot ${slot} tied to account ${acc}", ("slot", i) ("acc", op.from_pool) );
+         FC_ASSERT(to_rca.indel_slots[i] != op.from_pool, "Already have slot ${slot} tied to account ${acc}",
+                   ("slot", i)("acc", op.from_pool));
+      }
    }
 
    const auto* edge = _db.find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( op.from_pool, op.to_account, VESTS_SYMBOL ) );
