@@ -22,8 +22,6 @@ BOOST_FIXTURE_TEST_SUITE( rc_delegation, clean_database_fixture )
 BOOST_AUTO_TEST_CASE( rc_delegate_to_pool_validate )
 {
    try{
-
-
       delegate_to_pool_operation op;
       op.from_account = "alice";
       op.to_pool = "bob";
@@ -325,7 +323,13 @@ BOOST_AUTO_TEST_CASE( rc_set_slot_delegator )
       op.to_slot = STEEM_RC_MAX_SLOTS;
       BOOST_CHECK_THROW( op.validate(), fc::assert_exception );
 
+      // Dave creator: alice, recovery : bob
+
+      // Alice can only set slot 0, throw error on slot 1
       op.to_slot = 1;
+      op.from_pool = STEEM_TEMP_ACCOUNT;
+      op.to_account = "dave";
+      op.signer = "alice";
       tx.clear();
       custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
       tx.operations.push_back( custom_op );
@@ -333,13 +337,21 @@ BOOST_AUTO_TEST_CASE( rc_set_slot_delegator )
       sign( tx, alice_private_key );
       BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
 
+      // Alice can only set slot 0, throw error on slot 2
       op.to_slot = 2;
+      op.from_pool = STEEM_TEMP_ACCOUNT;
+      op.to_account = "dave";
+      op.signer = "alice";
       tx.clear();
       custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
       tx.operations.push_back( custom_op );
       sign( tx, alice_private_key );
       BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
 
+
+      op.from_pool = STEEM_TEMP_ACCOUNT;
+      op.to_account = "dave";
+      op.signer = "alice";
       op.to_slot = 0;
       tx.clear();
       custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
@@ -351,10 +363,101 @@ BOOST_AUTO_TEST_CASE( rc_set_slot_delegator )
       idump( (slot_delegator) );
       BOOST_REQUIRE( slot_delegator == op.from_pool );
 
-
       generate_block();
       custom_op.required_auths.clear();
       custom_op.required_auths.insert( "bob" );
+
+      // Bob can only set slot 1 as he is the recovery, throw error on slot 0
+      op.from_pool = "alice";
+      op.to_account = "dave";
+      op.signer = "bob";
+      op.to_slot = 0;
+      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+      tx.clear();
+      tx.operations.push_back( custom_op );
+      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      sign( tx, bob_private_key );
+      BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
+
+      // Bob can only set slot 1 as he is the recovery, throw error on slot 2
+      op.from_pool = "alice";
+      op.to_account = "dave";
+      op.signer = "bob";
+      op.to_slot = 2;
+      tx.clear();
+      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+      tx.operations.push_back( custom_op );
+      sign( tx, bob_private_key );
+      BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
+
+      op.from_pool = "alice";
+      op.to_account = "dave";
+      op.signer = "bob";
+      op.to_slot = 1;
+      tx.clear();
+      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+      tx.operations.push_back( custom_op );
+      sign( tx, bob_private_key );
+      db->push_transaction( tx, 0 );
+
+
+      slot_delegator = db->get< rc_account_object, by_name >( "dave" ).indel_slots[ op.to_slot ];
+      idump( (slot_delegator) );
+      BOOST_REQUIRE( slot_delegator == op.from_pool );
+
+      // the user should be able to set all three of his slots
+      generate_block();
+      custom_op.required_auths.clear();
+      custom_op.required_auths.insert( "bob" );
+
+      op.from_pool = "alice";
+      op.to_account = "bob";
+      op.signer = "bob";
+      op.to_slot = 0;
+      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+      tx.clear();
+      tx.operations.push_back( custom_op );
+      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      sign( tx, bob_private_key );
+      db->push_transaction( tx, 0 );
+
+      slot_delegator = db->get< rc_account_object, by_name >( "bob" ).indel_slots[ op.to_slot ];
+      idump( (slot_delegator) );
+      BOOST_REQUIRE( slot_delegator == op.from_pool );
+
+      op.from_pool = "dave";
+      op.to_account = "bob";
+      op.signer = "bob";
+      op.to_slot = 1;
+      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+      tx.clear();
+      tx.operations.push_back( custom_op );
+      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      sign( tx, bob_private_key );
+      db->push_transaction( tx, 0 );
+
+      slot_delegator = db->get< rc_account_object, by_name >( "bob" ).indel_slots[ op.to_slot ];
+      idump( (slot_delegator) );
+      BOOST_REQUIRE( slot_delegator == op.from_pool );
+
+      op.from_pool = STEEM_TEMP_ACCOUNT;
+      op.to_account = "bob";
+      op.signer = "bob";
+      op.to_slot = 2;
+      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+      tx.clear();
+      tx.operations.push_back( custom_op );
+      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      sign( tx, bob_private_key );
+      db->push_transaction( tx, 0 );
+
+      slot_delegator = db->get< rc_account_object, by_name >( "bob" ).indel_slots[ op.to_slot ];
+      idump( (slot_delegator) );
+      BOOST_REQUIRE( slot_delegator == op.from_pool );
+
+      // you can't have two slots pointing to the same pool
+      op.from_pool = "alice";
+      op.to_account = "bob";
       op.signer = "bob";
       op.to_slot = 0;
       tx.clear();
@@ -363,85 +466,7 @@ BOOST_AUTO_TEST_CASE( rc_set_slot_delegator )
       sign( tx, bob_private_key );
       BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
 
-      op.to_slot = 2;
-      tx.clear();
-      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-      tx.operations.push_back( custom_op );
-      sign( tx, bob_private_key );
-      BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
 
-      op.to_slot = 1;
-      tx.clear();
-      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-      tx.operations.push_back( custom_op );
-      sign( tx, bob_private_key );
-      db->push_transaction( tx, 0 );
-
-      slot_delegator = db->get< rc_account_object, by_name >( "dave" ).indel_slots[ op.to_slot ];
-      BOOST_REQUIRE( slot_delegator == op.from_pool );
-
-
-      generate_block();
-      custom_op.required_auths.clear();
-      custom_op.required_auths.insert( "dave" );
-      op.signer = "dave";
-      op.to_slot = 0;
-      tx.clear();
-      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-      tx.operations.push_back( custom_op );
-      sign( tx, dave_private_key );
-      BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
-
-      op.to_slot = 1;
-      tx.clear();
-      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-      tx.operations.push_back( custom_op );
-      sign( tx, dave_private_key );
-      BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
-
-      op.to_slot = 2;
-      tx.clear();
-      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-      tx.operations.push_back( custom_op );
-      sign( tx, dave_private_key );
-      db->push_transaction( tx, 0 );
-
-      slot_delegator = db->get< rc_account_object, by_name >( "dave" ).indel_slots[ op.to_slot ];
-      BOOST_REQUIRE( slot_delegator == op.from_pool );
-
-      generate_block();
-      tx.clear();
-      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
-      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-      tx.operations.push_back( custom_op );
-      sign( tx, dave_private_key );
-      BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
-
-
-      generate_block();
-      custom_op.required_auths.clear();
-      custom_op.required_auths.insert( "charlie" );
-      op.signer = "charlie";
-      op.to_slot = 0;
-      tx.clear();
-      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-      tx.operations.push_back( custom_op );
-      sign( tx, charlie_private_key );
-      BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
-
-      op.to_slot = 1;
-      tx.clear();
-      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-      tx.operations.push_back( custom_op );
-      sign( tx, charlie_private_key );
-      BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
-
-      op.to_slot = 2;
-      tx.clear();
-      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-      tx.operations.push_back( custom_op );
-      sign( tx, charlie_private_key );
-      BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
    }
    FC_LOG_AND_RETHROW()
 }
@@ -457,7 +482,6 @@ BOOST_AUTO_TEST_CASE( rc_delegate_drc_from_pool )
       delegate_drc_from_pool_operation op;
       op.from_pool = "bob";
       op.to_account = "alice";
-      op.to_slot = 2;
       op.asset_symbol = VESTS_SYMBOL;
       op.drc_max_mana = 100;
 
@@ -537,7 +561,6 @@ BOOST_AUTO_TEST_CASE( rc_delegate_drc_from_pool )
       const auto* pool_ptr = db->find< rc_delegation_pool_object, by_account_symbol >( boost::make_tuple( op.from_pool, op.asset_symbol ) );
       BOOST_REQUIRE( pool_ptr == nullptr );
 
-      op.to_slot = 1;
       custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
       tx.clear();
       tx.operations.push_back( custom_op );

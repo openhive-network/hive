@@ -1063,7 +1063,6 @@ class wallet_api
    condenser_api::legacy_signed_transaction delegate_drc_from_pool(
            account_name_type from_pool,
            account_name_type to_account,
-           uint8_t to_slot,
            asset_symbol_type asset_symbol,
            int64_t drc_max_mana,
            bool broadcast );

@@ -328,7 +328,7 @@ void use_account_rcs(
    } else {
       rca_manabar.use_mana(rc);
    }
-   ilog( "rc : ${rc} rc_available ${ra} rcs_left_to_pay: ${rcs_left_to_pay}, delta ${d})",("rc", rc) ("ra", rc_available) ("rcs_left_to_pay", rcs_left_to_pay) ("d", delta));
+   //ilog( "rc : ${rc} rc_available ${ra} rcs_left_to_pay: ${rcs_left_to_pay}, delta ${d})",("rc", rc) ("ra", rc_available) ("rcs_left_to_pay", rcs_left_to_pay) ("d", delta));
 
    // If the account doesn't have enough RC, pull from delegated RC to the account
    for (int i = 0; i < STEEM_RC_MAX_SLOTS; i++) {
@@ -337,7 +337,7 @@ void use_account_rcs(
 
       if (drc_edge == nullptr) continue;
 
-      ilog( "id : ${id} slot : ${slot} from_pool: ${pool} to_account: ${acc} ", ("id",  drc_edge->id) ("slot", rc_account.indel_slots[i]) ("pool", drc_edge->from_pool) ("acc", drc_edge->to_account));
+      //ilog( "id : ${id} slot : ${slot} from_pool: ${pool} to_account: ${acc} ", ("id",  drc_edge->id) ("slot", rc_account.indel_slots[i]) ("pool", drc_edge->from_pool) ("acc", drc_edge->to_account));
 
       mbparams.max_mana = drc_edge->drc_max_mana;
       drc_manabars[i] = drc_edge->drc_manabar;
@@ -353,7 +353,7 @@ void use_account_rcs(
       int64_t delegated_rc_available = std::min(drc_manabars[i].current_mana, pool_manabars[i].current_mana);
       total_rc_available += delegated_rc_available;
       delta = delegated_rc_available - rcs_left_to_pay;
-      ilog( "i : ${i}, acc: ${acc} delegated_rc_avail ${dra} rcs_left_to_pay: ${rcs_left_to_pay}, delta ${d})", ("i", i) ("acc", pool.account) ("dra", delegated_rc_available) ("rcs_left_to_pay", rcs_left_to_pay) ("d", delta));
+      //ilog( "i : ${i}, acc: ${acc} delegated_rc_avail ${dra} rcs_left_to_pay: ${rcs_left_to_pay}, delta ${d})", ("i", i) ("acc", pool.account) ("dra", delegated_rc_available) ("rcs_left_to_pay", rcs_left_to_pay) ("d", delta));
 
       // Don't use rc if we already paid the full rc cost
       if (rcs_left_to_pay <= 0) continue;
@@ -372,7 +372,7 @@ void use_account_rcs(
 
    bool has_rc = rcs_left_to_pay <= 0;
 
-   ilog( "data ( rcs_left_to_pay: ${rcs_left_to_pay})", ("rcs_left_to_pay", rcs_left_to_pay));
+   //ilog( "data ( rcs_left_to_pay: ${rcs_left_to_pay})", ("rcs_left_to_pay", rcs_left_to_pay));
 
    db.modify( rc_account, [&]( rc_account_object& rca )
    {
