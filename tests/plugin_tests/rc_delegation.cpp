@@ -587,8 +587,8 @@ BOOST_AUTO_TEST_CASE( rc_drc_pool_consumption )
       This test will consume 100 rc, which will cause the following changes:
 
       poola has 50 rc, with 0 remaining to alice
-      poolb has 0 rc, with 25 remaining to alice
-      alice has 25 rc
+      poolb has 25 rc, with 50 remaining to alice
+      alice has 0 rc
 
       The second test is the general test
       poolc has 200 rc, with 100 rc to bob
@@ -707,14 +707,14 @@ BOOST_AUTO_TEST_CASE( rc_drc_pool_consumption )
       use_account_rcs( *db, gpo, "alice", 100, skip, whitelist );
       BOOST_REQUIRE( poola_pool.rc_pool_manabar.current_mana == 50 );
       BOOST_REQUIRE( poola_drc_alice.drc_manabar.current_mana == 0 );
-      BOOST_REQUIRE( poolb_pool.rc_pool_manabar.current_mana == 0 );
-      BOOST_REQUIRE( poolb_drc_alice.drc_manabar.current_mana == 25 );
-      BOOST_REQUIRE( alice_rc.rc_manabar.current_mana == 25 );
+      BOOST_REQUIRE( poolb_pool.rc_pool_manabar.current_mana == 25 );
+      BOOST_REQUIRE( poolb_drc_alice.drc_manabar.current_mana == 50 );
+      BOOST_REQUIRE( alice_rc.rc_manabar.current_mana == 0 );
 
       use_account_rcs( *db, gpo, "bob", 50, skip, whitelist );
-      BOOST_REQUIRE( poolc_pool.rc_pool_manabar.current_mana == 150 );
-      BOOST_REQUIRE( poolc_drc_bob.drc_manabar.current_mana == 50 );
-      BOOST_REQUIRE( bob_rc.rc_manabar.current_mana == 100 );
+      BOOST_REQUIRE( poolc_pool.rc_pool_manabar.current_mana == 200 );
+      BOOST_REQUIRE( poolc_drc_bob.drc_manabar.current_mana == 100 );
+      BOOST_REQUIRE( bob_rc.rc_manabar.current_mana == 50 );
 
       db->set_producing( true );
       BOOST_CHECK_THROW( use_account_rcs( *db, gpo, "bob", 200, skip, whitelist ), steem::chain::plugin_exception );
