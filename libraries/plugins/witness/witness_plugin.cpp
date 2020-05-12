@@ -42,7 +42,7 @@ void new_chain_banner( const chain::database& db )
       "********************************\n"
       "*                              *\n"
       "*   ------- NEW CHAIN ------   *\n"
-      "*   -   Welcome to Steem!  -   *\n"
+      "*   -    Welcome to HIVE!  -   *\n"
       "*   ------------------------   *\n"
       "*                              *\n"
       "********************************\n"
