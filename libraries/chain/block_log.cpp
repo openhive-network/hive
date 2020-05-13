@@ -2,6 +2,8 @@
 #include <fstream>
 #include <fc/io/raw.hpp>
 
+#include <appbase/application.hpp>
+
 #include <boost/thread/mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/interprocess/sync/lock_options.hpp>
@@ -165,7 +167,7 @@ namespace hive { namespace chain {
             else if( block_pos > index_pos )
             {
                ilog( "Index is incomplete" );
-               construct_index();
+               construct_index( true/*resume*/, index_pos );
             }
          }
          else
@@ -404,17 +406,20 @@ namespace hive { namespace chain {
       return my->head;
    }
 
-   void block_log::construct_index()
+   void block_log::construct_index( bool resume, uint64_t index_pos )
    {
       try
       {
          ilog( "Reconstructing Block Log Index..." );
          my->index_stream.close();
-         fc::remove_all( my->index_file );
+
+         if( !resume )
+            fc::remove_all( my->index_file );
+
          my->index_stream.open( my->index_file.generic_string().c_str(), LOG_WRITE );
          my->index_write = true;
 
-         uint64_t pos = 0;
+         uint64_t pos = resume ? index_pos : 0;
          uint64_t end_pos;
          my->check_block_read();
 
@@ -423,13 +428,27 @@ namespace hive { namespace chain {
          signed_block tmp;
 
          my->block_stream.seekg( pos );
+         if( resume )
+         {
+            my->index_stream.seekg( 0, std::ios::end );
 
-         while( pos < end_pos )
+            fc::raw::unpack( my->block_stream, tmp );
+            my->block_stream.read( (char*)&pos, sizeof( pos ) );
+
+            ilog("Resuming Block Log Index. Last applied: ( block number: ${n} )( trx: ${trx} )( bytes position: ${pos} )",
+                                                                                          ( "n", tmp.block_num() )( "trx", tmp.id() )( "pos", pos ) );
+         }
+
+         while( !appbase::app().is_interrupt_request() && pos < end_pos )
          {
             fc::raw::unpack( my->block_stream, tmp );
             my->block_stream.read( (char*)&pos, sizeof( pos ) );
             my->index_stream.write( (char*)&pos, sizeof( pos ) );
          }
+
+         if( appbase::app().is_interrupt_request() )
+            ilog("Creating Block Log Index is interrupted on user request. Last applied: ( block number: ${n} )( trx: ${trx} )( bytes position: ${pos} )",
+                                                                                          ( "n", tmp.block_num() )( "trx", tmp.id() )( "pos", pos ) );
 
          /// Flush and reopen to be sure that given index file has been saved.
          /// Otherwise just executed replay, next stopped by ctrl+C can again corrupt this file. 

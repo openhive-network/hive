@@ -171,8 +171,6 @@ void database::open( const open_args& args )
          _block_log.open( args.data_dir / "block_log" );
       });
 
-      auto log_head = _block_log.head();
-
       // Rewind all undo state. This should return us to the state at the last irreversible block.
       with_write_lock( [&]()
       {
@@ -362,6 +360,9 @@ uint32_t database::reindex( const open_args& args )
          wipe( args.data_dir, args.shared_mem_dir, false );
 
       open( args );
+
+      if( appbase::app().is_interrupt_request() )
+         return 0;
 
       HIVE_TRY_NOTIFY(_pre_reindex_signal, note);
 

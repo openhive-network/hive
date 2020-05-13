@@ -66,7 +66,7 @@ namespace hive { namespace chain {
          static const uint64_t npos = std::numeric_limits<uint64_t>::max();
 
       private:
-         void construct_index();
+         void construct_index( bool resume = false, uint64_t index_pos = 0 );
 
          std::pair< signed_block, uint64_t > read_block_helper( uint64_t file_pos )const;
          uint64_t get_block_pos_helper( uint32_t block_num ) const;
