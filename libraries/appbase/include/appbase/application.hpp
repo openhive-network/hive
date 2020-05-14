@@ -6,6 +6,7 @@
 #include <boost/throw_exception.hpp>
 
 #include <iostream>
+#include <atomic>
 
 #define APPBASE_VERSION_STRING ("appbase 1.0")
 
@@ -19,23 +20,41 @@ namespace appbase {
       public:
 
          using p_io_handler = std::shared_ptr< io_handler >;
+         using p_signal_set = std::shared_ptr< boost::asio::signal_set >;
+         using final_action_type = std::function< void() >;
 
       private:
 
-         uint32_t last_signal_code = 0;
+         std::atomic_flag        lock = ATOMIC_FLAG_INIT;
+
+         bool                    closed = false;
+         bool                    allow_close_when_signal_is_received = false;
+         uint32_t                last_signal_code = 0;
+
+         final_action_type       final_action;
+
+         p_signal_set            sigint_set;
+         p_signal_set            sigterm_set;
 
          boost::asio::io_service io_serv;
 
+         void close_signal( p_signal_set& signal );
+
+         void handle_signal( uint32_t _last_signal_code );
+
       public:
 
-         io_handler();
+         io_handler( bool _allow_close_when_signal_is_received, final_action_type&& _final_action );
 
          boost::asio::io_service& get_io_service();
 
-         void close( uint32_t _last_signal_code = 0 );
+         void close();
+
          void attach_signals();
+
          void run();
 
+         void set_interrupt_request( uint32_t _last_signal_code );
          bool is_interrupt_request() const;
    };
 
@@ -119,7 +138,7 @@ namespace appbase {
          void generate_interrupt_request()
          {
             if( startup_io_handler )
-               startup_io_handler->close( SIGINT );
+               startup_io_handler->set_interrupt_request( SIGINT );
          }
 
          bool is_interrupt_request() const

@@ -15,7 +15,8 @@ using bpo::options_description;
 using bpo::variables_map;
 using std::cout;
 
-io_handler::io_handler()
+io_handler::io_handler( bool _allow_close_when_signal_is_received, final_action_type&& _final_action )
+         : allow_close_when_signal_is_received( _allow_close_when_signal_is_received ), final_action( _final_action )
 {
 }
 
@@ -24,13 +25,43 @@ boost::asio::io_service& io_handler::get_io_service()
    return io_serv;
 }
 
-void io_handler::close( uint32_t _last_signal_code )
+void io_handler::close()
 {
-   if( is_interrupt_request() )
+   while( lock.test_and_set( std::memory_order_acquire ) );
+
+   if( !closed )
+   {
+      final_action();
+
+      io_serv.stop();
+
+      close_signal( sigint_set );
+      close_signal( sigterm_set );
+
+      closed = true;
+   }
+
+   lock.clear( std::memory_order_release );
+}
+
+void io_handler::close_signal( p_signal_set& signal )
+{
+   if( !signal )
       return;
 
-   last_signal_code = _last_signal_code;
-   io_serv.stop();
+   boost::system::error_code ec;
+   sigint_set->cancel( ec );
+
+   if( ec.value() != 0 )
+      cout<<"Error during cancelling signal: "<< ec.message() << std::endl;
+}
+
+void io_handler::handle_signal( uint32_t _last_signal_code )
+{
+   set_interrupt_request( _last_signal_code );
+
+   if( allow_close_when_signal_is_received )
+      close();
 }
 
 void io_handler::attach_signals()
@@ -40,24 +71,25 @@ void io_handler::attach_signals()
     **/
    signal(SIGPIPE, SIG_IGN);
 
-   std::shared_ptr<boost::asio::signal_set> sigint_set(new boost::asio::signal_set( io_serv, SIGINT));
-   sigint_set->async_wait([ sigint_set, this ](const boost::system::error_code& err, int num) {
-     std::cout << "Caught SIGINT\n";
-     close( SIGINT );
-     sigint_set->cancel();
+   sigint_set = p_signal_set( new boost::asio::signal_set( io_serv, SIGINT ) );
+   sigint_set->async_wait([ this ](const boost::system::error_code& err, int num) {
+     handle_signal( SIGINT );
    });
 
-   std::shared_ptr<boost::asio::signal_set> sigterm_set(new boost::asio::signal_set( io_serv, SIGTERM));
-   sigterm_set->async_wait([ sigterm_set, this ](const boost::system::error_code& err, int num) {
-     std::cout << "Caught SIGTERM\n";
-     close( SIGTERM );
-     sigterm_set->cancel();
+   sigterm_set = p_signal_set( new boost::asio::signal_set( io_serv, SIGTERM ) );
+   sigterm_set->async_wait([ this ](const boost::system::error_code& err, int num) {
+     handle_signal( SIGTERM );
    });
 }
 
 void io_handler::run()
 {
    io_serv.run();
+}
+
+void io_handler::set_interrupt_request( uint32_t _last_signal_code )
+{
+   last_signal_code = _last_signal_code;
 }
 
 bool io_handler::is_interrupt_request() const
@@ -78,19 +110,26 @@ class application_impl {
 };
 
 application::application()
-:my(new application_impl()){
+:my(new application_impl()), main_io_handler( true/*allow_close_when_signal_is_received*/, [ this ](){ shutdown(); } )
+{
 }
 
 application::~application() { }
 
 void application::startup() {
 
-   startup_io_handler = io_handler::p_io_handler( new io_handler() );
+   startup_io_handler = io_handler::p_io_handler( new io_handler  ( false/*allow_close_when_signal_is_received*/,
+                                                                     [ this ]()
+                                                                     {
+                                                                        _is_interrupt_request = startup_io_handler->is_interrupt_request();
+                                                                     }
+                                                                  ) );
    startup_io_handler->attach_signals();
 
    std::thread startup_thread = std::thread( [&]()
    {
       startup_io_handler->run();
+      startup_io_handler.reset();
    });
 
    for (const auto& plugin : initialized_plugins)
@@ -103,10 +142,6 @@ void application::startup() {
 
    startup_io_handler->close();
    startup_thread.join();
-
-   _is_interrupt_request = startup_io_handler->is_interrupt_request();
-
-   startup_io_handler.reset();
 }
 
 application& application::instance( bool reset ) {
@@ -294,8 +329,8 @@ void application::exec() {
 
       main_io_handler.run();
    }
-
-   shutdown(); /// perform synchronous shutdown
+   else
+      shutdown();
 }
 
 void application::write_default_config(const bfs::path& cfg_file) {
