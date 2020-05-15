@@ -25,6 +25,11 @@ public:
       return static_cast<size_t>(_id);
    }
 
+   static oid<T> null_id() noexcept
+   {
+      return oid<T>(std::numeric_limits<__id_type>::max());
+   }
+
    friend bool operator < ( const oid& a, const oid& b ) { return a._id < b._id; }
    friend bool operator > ( const oid& a, const oid& b ) { return a._id > b._id; }
    friend bool operator == ( const oid& a, const oid& b ) { return a._id == b._id; }

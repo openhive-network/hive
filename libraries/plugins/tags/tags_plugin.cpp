@@ -221,10 +221,10 @@ void tags_plugin_impl::update_tag( const tag_object& current, const comment_obje
 void tags_plugin_impl::create_tag( const string& tag, const comment_object& comment, double hot, double trending )const
 {
    comment_id_type parent;
-   account_id_type author = _db.get_account( comment.author ).id;
+   account_id_type author = comment.author_id;
 
-   if( comment.parent_author.size() )
-      parent = _db.get_comment( comment.parent_author, comment.parent_permlink ).id;
+   if( comment.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
+      parent = _db.get_comment( comment.parent_author_id, comment.parent_permlink ).id;
 
    const comment_cashout_object* cc = _db.get_comment_cashout( comment );
 
@@ -332,9 +332,9 @@ void tags_plugin_impl::update_tags( const comment_object& c, bool parse_tags )co
       }
    }
 
-   if( c.parent_author.size() )
+   if( c.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
    {
-      update_tags( _db.get_comment( c.parent_author, c.parent_permlink ) );
+      update_tags( _db.get_comment( c.parent_author_id, c.parent_permlink ) );
    }
    } FC_CAPTURE_LOG_AND_RETHROW( (c) )
 }
@@ -348,7 +348,7 @@ struct pre_apply_operation_visitor
 
    void operator()( const delete_comment_operation& op )const
    {
-      const auto& comment = _db.find< comment_object, chain::by_permlink >( boost::make_tuple( op.author, op.permlink ) );
+      const auto& comment = _db.find_comment( op.author, op.permlink );
 
       if( comment == nullptr )
          return;
@@ -405,7 +405,7 @@ struct operation_visitor
             auto perm = part[1];
 
             auto c = _my._db.find_comment( acnt, perm );
-            if( c && c->parent_author.size() == 0 )
+            if( c && c->parent_author_id == HIVE_ROOT_POST_PARENT_ID )
             {
                const auto& comment_idx = _my._db.get_index<tag_index>().indices().get<by_comment>();
                auto citr = comment_idx.lower_bound( c->id );

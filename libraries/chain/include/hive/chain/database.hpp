@@ -211,13 +211,22 @@ namespace hive { namespace chain {
          /// Returns true for any account name that was ever a treasury account
          bool                   is_treasury( const account_name_type& name )const;
          
+         const account_object&  get_account(  const account_id_type      id )const;
+         const account_object*  find_account( const account_id_type&     id )const;
+         
          const account_object&  get_account(  const account_name_type& name )const;
          const account_object*  find_account( const account_name_type& name )const;
+
+         const comment_object&  get_comment(  const account_id_type& author, const shared_string& permlink )const;
+         const comment_object*  find_comment( const account_id_type& author, const shared_string& permlink )const;
 
          const comment_object&  get_comment(  const account_name_type& author, const shared_string& permlink )const;
          const comment_object*  find_comment( const account_name_type& author, const shared_string& permlink )const;
 
 #ifndef ENABLE_MIRA
+         const comment_object&  get_comment(  const account_id_type& author, const string& permlink )const;
+         const comment_object*  find_comment( const account_id_type& author, const string& permlink )const;
+
          const comment_object&  get_comment(  const account_name_type& author, const string& permlink )const;
          const comment_object*  find_comment( const account_name_type& author, const string& permlink )const;
 #endif

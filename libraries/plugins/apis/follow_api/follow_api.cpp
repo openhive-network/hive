@@ -117,7 +117,7 @@ DEFINE_API_IMPL( follow_api_impl, get_feed_entries )
    {
       const auto& comment = _db.get( itr->comment );
       feed_entry entry;
-      entry.author = comment.author;
+      entry.author = _db.get_account(comment.author_id).name;
       entry.permlink = chain::to_string( comment.permlink );
       entry.entry_id = itr->account_feed_id;
 
@@ -190,7 +190,7 @@ DEFINE_API_IMPL( follow_api_impl, get_blog_entries )
    {
       const auto& comment = _db.get( itr->comment );
       blog_entry entry;
-      entry.author = comment.author;
+      entry.author = _db.get_account(comment.author_id).name;
       entry.permlink = chain::to_string( comment.permlink );
       entry.blog = args.account;
       entry.reblog_on = itr->reblogged_on;

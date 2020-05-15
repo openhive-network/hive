@@ -34,15 +34,17 @@ struct api_comment_object
    api_comment_object( const comment_object& o, const database& db ):
       id( o.id ),
       category( to_string( o.category ) ),
-      parent_author( o.parent_author ),
       parent_permlink( to_string( o.parent_permlink ) ),
-      author( o.author ),
+      author( db.get_account(o.author_id).name ),
       permlink( to_string( o.permlink ) ),
       last_update( o.last_update ),
       created( o.created ),
       depth( o.depth ),
       allow_replies( o.allow_replies )
    {
+      if( o.parent_author_id == HIVE_ROOT_POST_PARENT_ID ) parent_author = HIVE_ROOT_POST_PARENT_ID;
+      else parent_author = db.get_account( o.parent_author_id ).name;
+
       const comment_cashout_object* cc = db.get_comment_cashout( o );
       if( cc )
       {
@@ -77,7 +79,7 @@ struct api_comment_object
 
       if( root != nullptr )
       {
-         root_author = root->author;
+         root_author = db.get_account(root->author_id).name;
          root_permlink = to_string( root->permlink );
       }
 #ifndef IS_LOW_MEM
@@ -149,7 +151,7 @@ struct api_comment_vote_object
    {
       voter = db.get( cv.voter ).name;
       auto comment = db.get( cv.comment );
-      author = comment.author;
+      author = db.get_account(comment.author_id).name;
       permlink = to_string( comment.permlink );
    }
 

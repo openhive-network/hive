@@ -231,7 +231,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
 
       undo_scenario< comment_object > co( *db );
       undo_scenario< comment_cashout_object > co_cashout( *db );
-      const comment_object& objc0 = co.create( [&]( comment_object& obj ){ obj.author = "a1"; } );
+      const comment_object& objc0 = co.create( [&]( comment_object& obj ){ obj.author_id = 2; } );
       const comment_cashout_object& objc0_cashout = co_cashout.create( [&]( comment_cashout_object& obj ){ obj.id = objc0.id._id; obj.cashout_time = time_point_sec( 20 ); } );
 
       BOOST_REQUIRE( objc0_cashout.id._id == objc0.id._id );
@@ -247,7 +247,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
       co.modify( objc0, [&]( comment_object& obj ){ obj.depth = 1; } );
       co_cashout.modify( objc0_cashout, [&]( comment_cashout_object& obj ){ obj.cashout_time = time_point_sec( 21 ); } );
 
-      const comment_object& objc1 = co.create( [&]( comment_object& obj ){ obj.author = "a2"; } );
+      const comment_object& objc1 = co.create( [&]( comment_object& obj ){ obj.author_id = 3; } );
       const comment_cashout_object& objc1_cashout = co_cashout.create( [&]( comment_cashout_object& obj ){ obj.id = objc1.id._id; obj.cashout_time = time_point_sec( 20 ); } );
 
       BOOST_REQUIRE( objc1_cashout.id._id == objc1.id._id );
@@ -313,8 +313,8 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
       ao.remove( obja2 );
       BOOST_REQUIRE( old_size_ao + 2 == ao.size< account_index >() );
 
-      co.create( [&]( comment_object& obj ){ obj.permlink = "11"; obj.author = "a0"; } );
-      const comment_object& objc1 = co.create( [&]( comment_object& obj ){ obj.permlink = "12"; obj.author = "a1"; } );
+      co.create( [&]( comment_object& obj ){ obj.permlink = "11"; obj.author_id = 10; } );
+      const comment_object& objc1 = co.create( [&]( comment_object& obj ){ obj.permlink = "12"; obj.author_id = 3; } );
       co.modify( objc1, [&]( comment_object& obj ){ obj.permlink = "13"; } );
       BOOST_REQUIRE( old_size_co + 2 == co.size< comment_index >() );
 
@@ -335,13 +335,13 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
       udb.undo_begin();
 
       ao.create( [&]( account_object& obj ){ obj.name = "name01"; } );
-      const comment_object& objc2 = co.create( [&]( comment_object& obj ){ obj.permlink = "12"; obj.author = "a1"; } );
+      const comment_object& objc2 = co.create( [&]( comment_object& obj ){ obj.permlink = "12"; obj.author_id = 2; } );
       const comment_content_object& objcc1 = cc.create( [&]( comment_content_object& obj ){ obj.comment = 13; } );
       BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
       BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
       BOOST_REQUIRE( old_size_cc + 1 == cc.size< comment_content_index >() );
 
-      co.modify( objc2, [&]( comment_object& obj ){ obj.author = "a2"; } );
+      co.modify( objc2, [&]( comment_object& obj ){ obj.author_id = 3; } );
       cc.remove( objcc1 );
       BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
       BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
@@ -359,7 +359,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
       BOOST_TEST_MESSAGE( "--- 'comment_content_object' - create/remove" );
 
       const comment_content_object& cc1 = cc.create( [&]( comment_content_object& obj ){ obj.comment = 0; } );
-      const comment_object& co1 = co.create( [&]( comment_object& obj ){ obj.permlink = "12"; obj.author = std::to_string(0); } );
+      const comment_object& co1 = co.create( [&]( comment_object& obj ){ obj.permlink = "12"; obj.author_id = HIVE_ROOT_POST_PARENT_ID; } );
       const account_object& ao1 = ao.create( [&]( account_object& obj ){ obj.name = std::to_string(0); } );
 
       ao.remember_old_values< account_index >();
@@ -372,7 +372,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
 
       for( int32_t i=1; i<=5; ++i )
       {
-         co.modify( co1, [&]( comment_object& obj ){ obj.permlink = "12"; obj.author = std::to_string(0); } );
+         co.modify( co1, [&]( comment_object& obj ){ obj.permlink = "12"; obj.author_id = HIVE_ROOT_POST_PARENT_ID; } );
          ao.modify( ao1, [&]( account_object& obj ){ obj.name = std::to_string(0); } );
 
          BOOST_REQUIRE( old_size_ao == ao.size< account_index >() );

@@ -474,6 +474,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
 
       signed_transaction tx;
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      auto get_account_id = [&](const account_name_type& acc ) { return db->get_account(acc).id; };
 
       BOOST_TEST_MESSAGE( "--- Test Alice posting a root comment" );
       tx.operations.push_back( op );
@@ -483,7 +484,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
       const comment_object& alice_comment = db->get_comment( "alice", string( "lorem" ) );
       const comment_cashout_object* alice_comment_cashout = db->get_comment_cashout( alice_comment );
 
-      BOOST_REQUIRE( alice_comment.author == op.author );
+      BOOST_REQUIRE( alice_comment.author_id == get_account_id(op.author) );
       BOOST_REQUIRE( to_string( alice_comment.permlink ) == op.permlink );
       BOOST_REQUIRE( to_string( alice_comment.parent_permlink ) == op.parent_permlink );
       BOOST_REQUIRE( alice_comment.last_update == db->head_block_time() );
@@ -528,9 +529,9 @@ BOOST_AUTO_TEST_CASE( comment_apply )
       const comment_object& bob_comment = db->get_comment( "bob", string( "ipsum" ) );
       const comment_cashout_object* bob_comment_cashout = db->get_comment_cashout( bob_comment );
 
-      BOOST_REQUIRE( bob_comment.author == op.author );
+      BOOST_REQUIRE( bob_comment.author_id == get_account_id(op.author) );
       BOOST_REQUIRE( to_string( bob_comment.permlink ) == op.permlink );
-      BOOST_REQUIRE( bob_comment.parent_author == op.parent_author );
+      BOOST_REQUIRE( bob_comment.parent_author_id == get_account_id(op.parent_author) );
       BOOST_REQUIRE( to_string( bob_comment.parent_permlink ) == op.parent_permlink );
       BOOST_REQUIRE( bob_comment.last_update == db->head_block_time() );
       BOOST_REQUIRE( bob_comment.created == db->head_block_time() );
@@ -556,9 +557,9 @@ BOOST_AUTO_TEST_CASE( comment_apply )
       const comment_object& sam_comment = db->get_comment( "sam", string( "dolor" ) );
       const comment_cashout_object* sam_comment_cashout = db->get_comment_cashout( sam_comment );
 
-      BOOST_REQUIRE( sam_comment.author == op.author );
+      BOOST_REQUIRE( sam_comment.author_id == get_account_id(op.author) );
       BOOST_REQUIRE( to_string( sam_comment.permlink ) == op.permlink );
-      BOOST_REQUIRE( sam_comment.parent_author == op.parent_author );
+      BOOST_REQUIRE( sam_comment.parent_author_id == get_account_id(op.parent_author) );
       BOOST_REQUIRE( to_string( sam_comment.parent_permlink ) == op.parent_permlink );
       BOOST_REQUIRE( sam_comment.last_update == db->head_block_time() );
       BOOST_REQUIRE( sam_comment.created == db->head_block_time() );
@@ -602,9 +603,9 @@ BOOST_AUTO_TEST_CASE( comment_apply )
       sign( tx, sam_private_key );
       db->push_transaction( tx, 0 );
 
-      BOOST_REQUIRE( mod_sam_comment.author == op.author );
+      BOOST_REQUIRE( mod_sam_comment.author_id == get_account_id(op.author) );
       BOOST_REQUIRE( to_string( mod_sam_comment.permlink ) == op.permlink );
-      BOOST_REQUIRE( mod_sam_comment.parent_author == op.parent_author );
+      BOOST_REQUIRE( mod_sam_comment.parent_author_id == get_account_id(op.parent_author) );
       BOOST_REQUIRE( to_string( mod_sam_comment.parent_permlink ) == op.parent_permlink );
       BOOST_REQUIRE( mod_sam_comment.last_update == db->head_block_time() );
       BOOST_REQUIRE( mod_sam_comment.created == created );
@@ -705,7 +706,7 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
       sign( tx, alice_private_key );
       db->push_transaction( tx, 0 );
 
-      auto test_comment = db->find< comment_object, by_permlink >( boost::make_tuple( "alice", string( "test1" ) ) );
+      auto test_comment = db->find_comment( "alice", string( "test1" ) );
       BOOST_REQUIRE( test_comment == nullptr );
 
 

@@ -9,6 +9,8 @@
 
 #include <hive/chain/util/greedy_asset.hpp>
 
+#define HIVE_ROOT_POST_PARENT_ID hive::chain::account_id_type::null_id()
+
 namespace hive { namespace chain {
 
    using protocol::beneficiary_route_type;
@@ -58,9 +60,9 @@ namespace hive { namespace chain {
          id_type           id;
 
          shared_string     category;
-         account_name_type parent_author;
+         account_id_type   parent_author_id;
          shared_string     parent_permlink;
-         account_name_type author;
+         account_id_type   author_id;
          shared_string     permlink;
 
          time_point_sec    last_update;
@@ -218,10 +220,10 @@ namespace hive { namespace chain {
          ordered_unique< tag< by_id >, member< comment_object, comment_id_type, &comment_object::id > >,
          ordered_unique< tag< by_permlink >, /// used by consensus to find posts referenced in ops
             composite_key< comment_object,
-               member< comment_object, account_name_type, &comment_object::author >,
+               member< comment_object, account_id_type, &comment_object::author_id >,
                member< comment_object, shared_string, &comment_object::permlink >
             >,
-            composite_key_compare< std::less< account_name_type >, strcmp_less >
+            composite_key_compare< std::less< account_id_type >, strcmp_less >
          >,
          ordered_unique< tag< by_root >,
             composite_key< comment_object,
@@ -231,30 +233,30 @@ namespace hive { namespace chain {
          >,
          ordered_unique< tag< by_parent >, /// used by consensus to find posts referenced in ops
             composite_key< comment_object,
-               member< comment_object, account_name_type, &comment_object::parent_author >,
+               member< comment_object, account_id_type, &comment_object::parent_author_id >,
                member< comment_object, shared_string, &comment_object::parent_permlink >,
                member< comment_object, comment_id_type, &comment_object::id >
             >,
-            composite_key_compare< std::less< account_name_type >, strcmp_less, std::less< comment_id_type > >
+            composite_key_compare< std::less< account_id_type >, strcmp_less, std::less< comment_id_type > >
          >
          /// NON_CONSENSUS INDICIES - used by APIs
 #ifndef IS_LOW_MEM
          ,
          ordered_unique< tag< by_last_update >,
             composite_key< comment_object,
-               member< comment_object, account_name_type, &comment_object::parent_author >,
+               member< comment_object, account_id_type, &comment_object::parent_author_id >,
                member< comment_object, time_point_sec, &comment_object::last_update >,
                member< comment_object, comment_id_type, &comment_object::id >
             >,
-            composite_key_compare< std::less< account_name_type >, std::greater< time_point_sec >, std::less< comment_id_type > >
+            composite_key_compare< std::less< account_id_type >, std::greater< time_point_sec >, std::less< comment_id_type > >
          >,
          ordered_unique< tag< by_author_last_update >,
             composite_key< comment_object,
-               member< comment_object, account_name_type, &comment_object::author >,
+               member< comment_object, account_id_type, &comment_object::author_id >,
                member< comment_object, time_point_sec, &comment_object::last_update >,
                member< comment_object, comment_id_type, &comment_object::id >
             >,
-            composite_key_compare< std::less< account_name_type >, std::greater< time_point_sec >, std::less< comment_id_type > >
+            composite_key_compare< std::less< account_id_type >, std::greater< time_point_sec >, std::less< comment_id_type > >
          >
 #endif
       >,
@@ -300,7 +302,7 @@ template<> struct is_static_length< hive::chain::comment_vote_object > : public 
 
 FC_REFLECT( hive::chain::comment_object,
              (id)(category)
-             (parent_author)(parent_permlink)(author)(permlink)
+             (parent_author_id)(parent_permlink)(author_id)(permlink)
              (last_update)(created)(depth)(root_comment)(allow_replies)
           )
 

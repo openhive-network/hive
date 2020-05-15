@@ -127,7 +127,7 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
       performance perf( _db );
 
       const auto& c = _db.get_comment( o.author, o.permlink );
-      FC_ASSERT( c.parent_author.size() == 0, "Only top level posts can be reblogged" );
+      FC_ASSERT( c.parent_author_id == HIVE_ROOT_POST_PARENT_ID, "Only top level posts can be reblogged" );
 
       const auto& blog_idx = _db.get_index< blog_index >().indices().get< by_blog >();
       const auto& blog_comment_idx = _db.get_index< blog_index >().indices().get< by_comment >();
@@ -152,8 +152,9 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
       });
 
       const auto& stats_idx = _db.get_index< blog_author_stats_index,by_blogger_guest_count>();
-      auto stats_itr = stats_idx.lower_bound( boost::make_tuple( o.account, c.author ) );
-      if( stats_itr != stats_idx.end() && stats_itr->blogger == o.account && stats_itr->guest == c.author ) {
+      const account_name_type& c_author{ _db.get_account(c.author_id ).name };
+      auto stats_itr = stats_idx.lower_bound( boost::make_tuple( o.account, c_author ) );
+      if( stats_itr != stats_idx.end() && stats_itr->blogger == o.account && stats_itr->guest == c_author ) {
          _db.modify( *stats_itr, [&]( blog_author_stats_object& s ) {
             ++s.count;
          });
@@ -161,7 +162,7 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
          _db.create<blog_author_stats_object>( [&]( blog_author_stats_object& s ) {
             s.count = 1;
             s.blogger = o.account;
-            s.guest   = c.author;
+            s.guest   = c_author;
          });
       }
 

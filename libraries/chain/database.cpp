@@ -647,6 +647,16 @@ bool database::is_treasury( const account_name_type& name )const
    return ( name == NEW_HIVE_TREASURY_ACCOUNT ) || ( name == OBSOLETE_TREASURY_ACCOUNT );
 }
 
+const account_object& database::get_account( const account_id_type id )const
+{ try {
+   return get< account_object, by_id >( id );
+} FC_CAPTURE_AND_RETHROW( (id) ) }
+
+const account_object* database::find_account( const account_id_type& id )const
+{
+   return find< account_object, by_id >( id );
+}
+
 const account_object& database::get_account( const account_name_type& name )const
 { try {
    return get< account_object, by_name >( name );
@@ -657,25 +667,49 @@ const account_object* database::find_account( const account_name_type& name )con
    return find< account_object, by_name >( name );
 }
 
-const comment_object& database::get_comment( const account_name_type& author, const shared_string& permlink )const
+const comment_object& database::get_comment( const account_id_type& author, const shared_string& permlink )const
 { try {
    return get< comment_object, by_permlink >( boost::make_tuple( author, permlink ) );
 } FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
 
-const comment_object* database::find_comment( const account_name_type& author, const shared_string& permlink )const
+const comment_object* database::find_comment( const account_id_type& author, const shared_string& permlink )const
 {
    return find< comment_object, by_permlink >( boost::make_tuple( author, permlink ) );
 }
 
+const comment_object& database::get_comment( const account_name_type& author, const shared_string& permlink )const
+{ try {
+   return get_comment( get_account(author).id, permlink );
+} FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
+
+const comment_object* database::find_comment( const account_name_type& author, const shared_string& permlink )const
+{
+   const account_object* acc = find_account(author);
+   if(acc == nullptr) return nullptr;
+   return find_comment( acc->id, permlink );
+}
+
 #ifndef ENABLE_MIRA
-const comment_object& database::get_comment( const account_name_type& author, const string& permlink )const
+const comment_object& database::get_comment( const account_id_type& author, const string& permlink )const
 { try {
    return get< comment_object, by_permlink >( boost::make_tuple( author, permlink) );
 } FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
 
-const comment_object* database::find_comment( const account_name_type& author, const string& permlink )const
+const comment_object* database::find_comment( const account_id_type& author, const string& permlink )const
 {
    return find< comment_object, by_permlink >( boost::make_tuple( author, permlink ) );
+}
+
+const comment_object& database::get_comment( const account_name_type& author, const string& permlink )const
+{ try {
+   return get_comment( get_account(author).id, permlink);
+} FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
+
+const comment_object* database::find_comment( const account_name_type& author, const string& permlink )const
+{
+   const account_object* acc = find_account(author);
+   if(acc == nullptr) return nullptr;
+   return find_comment( acc->id, permlink );
 }
 #endif
 
@@ -742,7 +776,7 @@ const hardfork_property_object& database::get_hardfork_property_object()const
 
 const comment_object& database::find_comment_for_payout_time( const comment_object& comment )const
 {
-   if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || comment.parent_author == HIVE_ROOT_POST_PARENT )
+   if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || comment.parent_author_id == HIVE_ROOT_POST_PARENT_ID )
       return comment;
    else
       return get< comment_object >( comment.root_comment );
@@ -2428,6 +2462,7 @@ share_type database::pay_curators( const comment_object& comment, const comment_
             ++itr;
          }
 
+         const auto& comment_author_name = get_account(comment.author_id).name;
          for( auto& item : proxy_set )
          { try {
             uint128_t weight( item->weight );
@@ -2436,7 +2471,7 @@ share_type database::pay_curators( const comment_object& comment, const comment_
             {
                unclaimed_rewards -= claim;
                const auto& voter = get( item->voter );
-               operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment.author, to_string( comment.permlink ) );
+               operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment.permlink ) );
                create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
                   [&]( const asset& reward )
                   {
@@ -2499,12 +2534,14 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
             share_type total_beneficiary = 0;
             claimed_reward = author_tokens + curation_tokens;
+            const auto& author = get_account( comment.author_id );
+            const auto& comment_author = author.name;
 
             for( auto& b : comment_cashout.beneficiaries )
             {
                auto benefactor_tokens = ( author_tokens * b.weight ) / HIVE_100_PERCENT;
                auto benefactor_vesting_hive = benefactor_tokens;
-               auto vop = comment_benefactor_reward_operation( b.account, comment.author, to_string( comment.permlink ), asset( 0, HBD_SYMBOL ), asset( 0, HIVE_SYMBOL ), asset( 0, VESTS_SYMBOL ) );
+               auto vop = comment_benefactor_reward_operation( b.account, comment_author, to_string( comment.permlink ), asset( 0, HBD_SYMBOL ), asset( 0, HIVE_SYMBOL ), asset( 0, VESTS_SYMBOL ) );
 
                if( has_hardfork( HIVE_HARDFORK_0_21__3343 ) && is_treasury( b.account ) )
                {
@@ -2540,9 +2577,8 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             auto hbd_hive     = ( author_tokens * comment_cashout.percent_hbd ) / ( 2 * HIVE_100_PERCENT ) ;
             auto vesting_hive = author_tokens - hbd_hive;
 
-            const auto& author = get_account( comment.author );
             auto hbd_payout = create_hbd( author, asset( hbd_hive, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
-            operation vop = author_reward_operation( comment.author, to_string( comment.permlink ), hbd_payout.first, hbd_payout.second, asset( 0, VESTS_SYMBOL ) );
+            operation vop = author_reward_operation( comment_author, to_string( comment.permlink ), hbd_payout.first, hbd_payout.second, asset( 0, VESTS_SYMBOL ) );
 
             create_vesting2( *this, author, asset( vesting_hive, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
                [&]( const asset& vesting_payout )
@@ -2554,7 +2590,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             adjust_total_payout( comment_cashout, hbd_payout.first + to_hbd( hbd_payout.second + asset( vesting_hive, HIVE_SYMBOL ) ), to_hbd( asset( curation_tokens, HIVE_SYMBOL ) ), to_hbd( asset( total_beneficiary, HIVE_SYMBOL ) ) );
 
             post_push_virtual_operation( vop );
-            vop = comment_reward_operation( comment.author, to_string( comment.permlink ), to_hbd( asset( claimed_reward, HIVE_SYMBOL ) ) );
+            vop = comment_reward_operation( comment_author, to_string( comment.permlink ), to_hbd( asset( claimed_reward, HIVE_SYMBOL ) ) );
             pre_push_virtual_operation( vop );
             post_push_virtual_operation( vop );
 
@@ -2564,7 +2600,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
                   c.author_rewards += author_tokens;
                });
 
-               modify( get_account( comment.author ), [&]( account_object& a )
+               modify( author, [&]( account_object& a )
                {
                   a.posting_rewards += author_tokens;
                });
@@ -2594,7 +2630,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
          {
             c.cashout_time = fc::time_point_sec::maximum();
          }
-         else if( comment.parent_author == HIVE_ROOT_POST_PARENT )
+         else if( comment.parent_author_id == HIVE_ROOT_POST_PARENT_ID )
          {
             if( has_hardfork( HIVE_HARDFORK_0_12__177 ) && c.last_payout == fc::time_point_sec::min() )
                c.cashout_time = head_block_time() + HIVE_SECOND_CASHOUT_WINDOW;
@@ -2605,7 +2641,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
          c.last_payout = head_block_time();
       } );
 
-      push_virtual_operation( comment_payout_update_operation( comment.author, to_string( comment.permlink ) ) );
+      push_virtual_operation( comment_payout_update_operation( get_account(comment.author_id).name, to_string( comment.permlink ) ) );
 
       const auto& vote_idx = get_index< comment_vote_index >().indices().get< by_comment_voter >();
       auto vote_itr = vote_idx.lower_bound( comment.id );
@@ -5655,7 +5691,7 @@ void database::apply_hardfork( uint32_t hardfork )
                // All posts with a payout get their cashout time set to +30 days. This hardfork takes place within 30 days
                // initial payout so we don't have to handle the case of posts that should be frozen that aren't
                const comment_object& comment = get_comment( *itr );
-               if( comment.parent_author == HIVE_ROOT_POST_PARENT )
+               if( comment.parent_author_id == HIVE_ROOT_POST_PARENT_ID )
                {
                   // Post has not been paid out and has no votes (cashout_time == 0 === net_rshares == 0, under current semmantics)
                   if( itr->last_payout == fc::time_point_sec::min() && itr->cashout_time == fc::time_point_sec::maximum() )
@@ -6311,11 +6347,11 @@ void database::retally_comment_children()
 
    for( auto itr = cidx2.begin(); itr != cidx2.end(); ++itr )
    {
-      if( itr->parent_author != HIVE_ROOT_POST_PARENT )
+      if( itr->parent_author_id != HIVE_ROOT_POST_PARENT_ID )
       {
 // Low memory nodes only need immediate child count, full nodes track total children
 #ifdef IS_LOW_MEM
-         const comment_cashout_object* comment_cashout = get_comment_cashout( get_comment( itr->parent_author, itr->parent_permlink ) );
+         const comment_cashout_object* comment_cashout = get_comment_cashout( get_comment( itr->parent_author_id, itr->parent_permlink ) );
          if( comment_cashout )
          {
             modify( *comment_cashout, [&]( comment_cashout_object& c )
@@ -6324,7 +6360,7 @@ void database::retally_comment_children()
             });
          }
 #else
-         const comment_object* parent = &get_comment( itr->parent_author, itr->parent_permlink );
+         const comment_object* parent = &get_comment( itr->parent_author_id, itr->parent_permlink );
          while( parent )
          {
             const comment_cashout_object* comment_cashout = get_comment_cashout( *parent );
@@ -6337,8 +6373,8 @@ void database::retally_comment_children()
                });
             }
 
-            if( parent->parent_author != HIVE_ROOT_POST_PARENT )
-               parent = &get_comment( parent->parent_author, parent->parent_permlink );
+            if( parent->parent_author_id != HIVE_ROOT_POST_PARENT_ID )
+               parent = &get_comment( parent->parent_author_id, parent->parent_permlink );
             else
                parent = nullptr;
          }

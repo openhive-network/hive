@@ -1035,7 +1035,6 @@ DEFINE_API_IMPL( database_api_impl, find_decline_voting_rights_requests )
 //////////////////////////////////////////////////////////////////////
 
 /* Comments */
-
 DEFINE_API_IMPL( database_api_impl, find_comments )
 {
    FC_ASSERT( args.comments.size() <= DATABASE_API_SINGLE_QUERY_LIMIT );
@@ -1044,7 +1043,7 @@ DEFINE_API_IMPL( database_api_impl, find_comments )
 
    for( auto& key: args.comments )
    {
-      auto comment = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( key.first, key.second ) );
+      auto comment = _db.find_comment( key.first, key.second );
 
       if( comment != nullptr )
          result.comments.push_back( api_comment_object( *comment, _db ) );
@@ -1096,7 +1095,7 @@ namespace last_votes_misc
 
       if( author != account_name_type() || permlink.size() )
       {
-         auto comment = _impl._db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( author, permlink ) );
+         auto comment = _impl._db.find_comment( author, permlink );
          FC_ASSERT( comment != nullptr, "Could not find comment ${a}/${p}.", ("a", author)("p", permlink) );
          comment_id = comment->id;
       }
@@ -1161,7 +1160,7 @@ DEFINE_API_IMPL( database_api_impl, find_votes )
 {
    find_votes_return result;
 
-   auto comment = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( args.author, args.permlink ) );
+   auto comment = _db.find_comment( args.author, args.permlink );
    FC_ASSERT( comment != nullptr, "Could not find comment ${a}/${p}", ("a", args.author)("p", args.permlink ) );
 
    const auto& vote_idx = _db.get_index< chain::comment_vote_index, chain::by_comment_voter >();

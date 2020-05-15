@@ -108,14 +108,14 @@ struct operation_process
 
          if( comment.created == _db.head_block_time() )
          {
-            if( comment.parent_author.length() )
+            if( comment.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
                b.replies++;
             else
                b.root_comments++;
          }
          else
          {
-            if( comment.parent_author.length() )
+            if( comment.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
                b.reply_edits++;
             else
                b.root_comment_edits++;
@@ -134,14 +134,14 @@ struct operation_process
 
          if( itr->num_changes )
          {
-            if( comment.parent_author.size() )
+            if( comment.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
                b.new_reply_votes++;
             else
                b.new_root_votes++;
          }
          else
          {
-            if( comment.parent_author.size() )
+            if( comment.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
                b.changed_reply_votes++;
             else
                b.changed_root_votes++;
@@ -345,7 +345,7 @@ void blockchain_statistics_plugin_impl::pre_operation( const operation_notificat
 
          db.modify( bucket, [&]( bucket_object& b )
          {
-            if( comment.parent_author.length() )
+            if( comment.parent_author != HIVE_ROOT_POST_PARENT_ID )
                b.replies_deleted++;
             else
                b.root_comments_deleted++;

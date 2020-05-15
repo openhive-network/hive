@@ -674,9 +674,9 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
    }
 
    /// this loop can be skiped for validate-only nodes as it is merely gathering stats for indicies
-   if( _db.has_hardfork( HIVE_HARDFORK_0_6__80 ) && comment.parent_author != HIVE_ROOT_POST_PARENT )
+   if( _db.has_hardfork( HIVE_HARDFORK_0_6__80 ) && comment.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
    {
-      auto parent = &_db.get_comment( comment.parent_author, comment.parent_permlink );
+      auto parent = &_db.get_comment( comment.parent_author_id, comment.parent_permlink );
       auto now = _db.head_block_time();
       while( parent )
       {
@@ -689,8 +689,8 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
             });
          }
    #ifndef IS_LOW_MEM
-         if( parent->parent_author != HIVE_ROOT_POST_PARENT )
-            parent = &_db.get_comment( parent->parent_author, parent->parent_permlink );
+         if( parent->parent_author_id != HIVE_ROOT_POST_PARENT_ID )
+            parent = &_db.get_comment( parent->parent_author_id, parent->parent_permlink );
          else
    #endif
             parent = nullptr;
@@ -792,10 +792,10 @@ void comment_evaluator::do_apply( const comment_operation& o )
    if( _db.has_hardfork( HIVE_HARDFORK_0_5__55 ) )
       FC_ASSERT( o.title.size() + o.body.size() + o.json_metadata.size(), "Cannot update comment because nothing appears to be changing." );
 
-   const auto& by_permlink_idx = _db.get_index< comment_index >().indices().get< by_permlink >();
-   auto itr = by_permlink_idx.find( boost::make_tuple( o.author, o.permlink ) );
-
    const auto& auth = _db.get_account( o.author ); /// prove it exists
+
+   const auto& by_permlink_idx = _db.get_index< comment_index >().indices().get< by_permlink >();
+   auto itr = by_permlink_idx.find( boost::make_tuple( auth.id, o.permlink ) );
 
    comment_id_type id;
 
@@ -879,21 +879,21 @@ void comment_evaluator::do_apply( const comment_operation& o )
             validate_permlink_0_1( o.permlink );
          }
 
-         com.author = o.author;
+         com.author_id = auth.id;
          from_string( com.permlink, o.permlink );
          com.last_update = _db.head_block_time();
          com.created = com.last_update;
 
          if ( o.parent_author == HIVE_ROOT_POST_PARENT )
          {
-            com.parent_author = "";
+            com.parent_author_id = HIVE_ROOT_POST_PARENT_ID;
             from_string( com.parent_permlink, o.parent_permlink );
             from_string( com.category, o.parent_permlink );
             com.root_comment = com.id;
          }
          else
          {
-            com.parent_author = parent->author;
+            com.parent_author_id = parent->author_id;
             com.parent_permlink = parent->permlink;
             com.depth = parent->depth + 1;
             com.category = parent->category;
@@ -956,8 +956,8 @@ void comment_evaluator::do_apply( const comment_operation& o )
             });
          }
 #ifndef IS_LOW_MEM
-         if( parent->parent_author != HIVE_ROOT_POST_PARENT )
-            parent = &_db.get_comment( parent->parent_author, parent->parent_permlink );
+         if( parent->parent_author_id != HIVE_ROOT_POST_PARENT_ID )
+            parent = &_db.get_comment( parent->parent_author_id, parent->parent_permlink );
          else
 #endif
             parent = nullptr;
@@ -995,12 +995,12 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
          if( !parent )
          {
-            FC_ASSERT( com.parent_author == account_name_type(), "The parent of a comment cannot change." );
+            FC_ASSERT( com.parent_author_id == HIVE_ROOT_POST_PARENT_ID, "The parent of a comment cannot change." );
             FC_ASSERT( equal( com.parent_permlink, o.parent_permlink ), "The permlink of a comment cannot change." );
          }
          else
          {
-            FC_ASSERT( com.parent_author == o.parent_author, "The parent of a comment cannot change." );
+            FC_ASSERT( _db.get_account(com.parent_author_id).name == o.parent_author, "The parent of a comment cannot change." );
             FC_ASSERT( equal( com.parent_permlink, o.parent_permlink ), "The permlink of a comment cannot change." );
          }
       });

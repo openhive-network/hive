@@ -48,7 +48,7 @@ DEFINE_API_IMPL( rewards_api_impl, simulate_curve_payouts )
       const chain::comment_object& comment = _db.get_comment( *current );
 
       simulate_curve_payouts_element e;
-      e.author = comment.author;
+      e.author = _db.get_account(comment.author_id).name;
       e.permlink = chain::to_string( comment.permlink );
 
       auto new_curve_vshares = chain::util::evaluate_reward_curve( current->net_rshares.value, args.curve, var1 );

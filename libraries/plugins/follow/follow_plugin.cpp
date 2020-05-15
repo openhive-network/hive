@@ -108,7 +108,7 @@ struct pre_operation_visitor
          const auto* comment = db.find_comment( op.author, op.permlink );
 
          if( comment == nullptr ) return;
-         if( comment->parent_author.size() ) return;
+         if( comment->parent_author_id != HIVE_ROOT_POST_PARENT_ID ) return;
 
          const auto& feed_idx = db.get_index< feed_index >().indices().get< by_comment >();
          auto itr = feed_idx.lower_bound( comment->id );
