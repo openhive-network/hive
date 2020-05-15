@@ -7,7 +7,7 @@
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/witness_objects.hpp>
 
-#include <hive/chain/util/greedy_asset.hpp>
+#include <hive/chain/util/tiny_asset.hpp>
 
 #define HIVE_ROOT_POST_PARENT_ID hive::chain::account_id_type::null_id()
 
