@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
       BOOST_REQUIRE( acct.created == db->head_block_time() );
       BOOST_REQUIRE( acct.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
       BOOST_REQUIRE( acct.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
-      BOOST_REQUIRE( acct.id._id == acct_auth.id._id );
+      BOOST_REQUIRE( acct.get_id().get_value() == acct_auth.get_id().get_value() );
 
       BOOST_REQUIRE( acct.get_vesting().amount.value == 0 );
       BOOST_REQUIRE( acct.vesting_withdraw_rate.amount.value == ASSET( "0.000000 VESTS" ).amount.value );
@@ -474,7 +474,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
 
       signed_transaction tx;
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      auto get_account_id = [&](const account_name_type& acc ) { return db->get_account(acc).id; };
+      //auto get_account_id = [&](const account_name_type& acc ) { return db->get_account(acc).id; };
 
       BOOST_TEST_MESSAGE( "--- Test Alice posting a root comment" );
       tx.operations.push_back( op );
@@ -494,12 +494,12 @@ BOOST_AUTO_TEST_CASE( comment_apply )
       BOOST_REQUIRE( alice_comment_cashout->cashout_time == fc::time_point_sec( db->head_block_time() + fc::seconds( HIVE_CASHOUT_WINDOW_SECONDS ) ) );
 
       #ifndef IS_LOW_MEM
-         const auto& alice_comment_content = db->get< comment_content_object, by_comment >( alice_comment.id );
+         const auto& alice_comment_content = db->get< comment_content_object, by_comment >( alice_comment.get_id() );
          BOOST_REQUIRE( to_string( alice_comment_content.title ) == op.title );
          BOOST_REQUIRE( to_string( alice_comment_content.body ) == op.body );
          BOOST_REQUIRE( to_string( alice_comment_content.json_metadata ) == op.json_metadata );
       #else
-         const auto* alice_comment_content = db->find< comment_content_object, by_comment >( alice_comment.id );
+         const auto* alice_comment_content = db->find< comment_content_object, by_comment >( alice_comment.get_id() );
          BOOST_REQUIRE( alice_comment_content == nullptr );
       #endif
 
@@ -538,7 +538,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
       BOOST_REQUIRE( bob_comment_cashout->net_rshares.value == 0 );
       BOOST_REQUIRE( bob_comment_cashout->abs_rshares.value == 0 );
       BOOST_REQUIRE( bob_comment_cashout->cashout_time == bob_comment.created + HIVE_CASHOUT_WINDOW_SECONDS );
-      BOOST_REQUIRE( bob_comment.root_comment == alice_comment.id );
+      BOOST_REQUIRE( bob_comment.root_comment == alice_comment.get_id() );
       validate_database();
 
       BOOST_TEST_MESSAGE( "--- Test Sam posting a comment on Bob's comment" );
@@ -566,7 +566,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
       BOOST_REQUIRE( sam_comment_cashout->net_rshares.value == 0 );
       BOOST_REQUIRE( sam_comment_cashout->abs_rshares.value == 0 );
       BOOST_REQUIRE( sam_comment_cashout->cashout_time == sam_comment.created + HIVE_CASHOUT_WINDOW_SECONDS );
-      BOOST_REQUIRE( sam_comment.root_comment == alice_comment.id );
+      BOOST_REQUIRE( sam_comment.root_comment == alice_comment.get_id() );
       validate_database();
 
       generate_blocks( 60 * 5 / HIVE_BLOCK_INTERVAL + 1 );
@@ -861,7 +861,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
          auto& alice_comment = db->get_comment( "alice", string( "foo" ) );
          const comment_cashout_object* alice_comment_cashout = db->get_comment_cashout( alice_comment );
 
-         auto itr = vote_idx.find( boost::make_tuple( alice_comment.id, alice.id ) );
+         auto itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), alice.get_id() ) );
          int64_t max_vote_denom = ( db->get_dynamic_global_properties().vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS ) / (60*60*24);
 
          BOOST_REQUIRE( alice.last_vote_time == db->head_block_time() );
@@ -901,7 +901,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
          const auto& bob_comment = db->get_comment( "bob", string( "foo" ) );
          const comment_cashout_object* bob_comment_cashout = db->get_comment_cashout( bob_comment );
-         itr = vote_idx.find( boost::make_tuple( bob_comment.id, alice.id ) );
+         itr = vote_idx.find( boost::make_tuple( bob_comment.get_id(), alice.get_id() ) );
 
          BOOST_REQUIRE( bob_comment_cashout->net_rshares.value == ( old_manabar.current_mana - db->get_account( "alice" ).voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
          BOOST_REQUIRE( bob_comment_cashout->cashout_time == bob_comment.created + HIVE_CASHOUT_WINDOW_SECONDS );
@@ -930,7 +930,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
          sign( tx, bob_private_key );
          db->push_transaction( tx, 0 );
 
-         itr = vote_idx.find( boost::make_tuple( new_alice_comment.id, new_bob.id ) );
+         itr = vote_idx.find( boost::make_tuple( new_alice_comment.get_id(), new_bob.get_id() ) );
 
          BOOST_REQUIRE( new_alice_comment_cashout->net_rshares.value == old_abs_rshares + ( old_mana - new_bob.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
          BOOST_REQUIRE( new_alice_comment_cashout->cashout_time == new_alice_comment.created + HIVE_CASHOUT_WINDOW_SECONDS );
@@ -959,7 +959,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
          sign( tx, sam_private_key );
          db->push_transaction( tx, 0 );
 
-         itr = vote_idx.find( boost::make_tuple( new_bob_comment.id, new_sam.id ) );
+         itr = vote_idx.find( boost::make_tuple( new_bob_comment.get_id(), new_sam.get_id() ) );
 
          util::manabar old_downvote_manabar;
          util::manabar_params downvote_params( util::get_effective_vesting_shares( db->get_account( "alice" ) ) / 4, HIVE_VOTING_MANA_REGENERATION_SECONDS );
@@ -1011,7 +1011,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
          generate_blocks( db->head_block_time() + HIVE_MIN_VOTE_INTERVAL_SEC );
 
          auto new_alice = db->get_account( "alice" );
-         auto alice_bob_vote = vote_idx.find( boost::make_tuple( new_bob_comment.id, new_alice.id ) );
+         auto alice_bob_vote = vote_idx.find( boost::make_tuple( new_bob_comment.get_id(), new_alice.get_id() ) );
          auto old_vote_rshares = alice_bob_vote->rshares;
          auto old_net_rshares = new_bob_comment_cashout->net_rshares.value;
          old_abs_rshares = new_bob_comment_cashout->abs_rshares.value;
@@ -1031,7 +1031,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
          db->push_transaction( tx, 0 );
-         alice_bob_vote = vote_idx.find( boost::make_tuple( new_bob_comment.id, new_alice.id ) );
+         alice_bob_vote = vote_idx.find( boost::make_tuple( new_bob_comment.get_id(), new_alice.get_id() ) );
 
          new_rshares = old_manabar.current_mana - VOTING_MANABAR( "alice" ).current_mana - HIVE_VOTE_DUST_THRESHOLD;
 
@@ -1068,7 +1068,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
          db->push_transaction( tx, 0 );
-         alice_bob_vote = vote_idx.find( boost::make_tuple( new_bob_comment.id, new_alice.id ) );
+         alice_bob_vote = vote_idx.find( boost::make_tuple( new_bob_comment.get_id(), new_alice.get_id() ) );
 
          new_rshares = old_downvote_manabar.current_mana - DOWNVOTE_MANABAR( "alice" ).current_mana - HIVE_VOTE_DUST_THRESHOLD;
 
@@ -1094,7 +1094,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
          db->push_transaction( tx, 0 );
-         alice_bob_vote = vote_idx.find( boost::make_tuple( new_bob_comment.id, new_alice.id ) );
+         alice_bob_vote = vote_idx.find( boost::make_tuple( new_bob_comment.get_id(), new_alice.get_id() ) );
 
          BOOST_REQUIRE( new_bob_comment_cashout->net_rshares == old_net_rshares - old_vote_rshares );
          BOOST_REQUIRE( new_bob_comment_cashout->abs_rshares == old_abs_rshares );
@@ -1143,7 +1143,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
          tx.operations.push_back( op );
          sign( tx, alice_private_key );
          db->push_transaction( tx, 0 );
-         alice_bob_vote = vote_idx.find( boost::make_tuple( new_bob_comment.id, new_alice.id ) );
+         alice_bob_vote = vote_idx.find( boost::make_tuple( new_bob_comment.get_id(), new_alice.get_id() ) );
 
          {
             const auto& bob_comment = db->get_comment( "bob", string( "foo" ) );
@@ -1177,8 +1177,8 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
          new_rshares = old_manabar.current_mana - VOTING_MANABAR( "dave" ).current_mana - HIVE_VOTE_DUST_THRESHOLD;
          new_rshares = ( new_rshares * ( HIVE_UPVOTE_LOCKOUT_SECONDS - HIVE_BLOCK_INTERVAL ) ) / HIVE_UPVOTE_LOCKOUT_SECONDS;
-         account_id_type dave_id = db->get_account( "dave" ).id;
-         comment_id_type bob_comment_id = db->get_comment( "bob", string( "foo" ) ).id;
+         account_id_type dave_id = db->get_account( "dave" ).get_id();
+         comment_id_type bob_comment_id = db->get_comment( "bob", string( "foo" ) ).get_id();
 
          {
             auto dave_bob_vote = db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( bob_comment_id, dave_id ) );
@@ -6534,7 +6534,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_apply )
       sign( tx, alice_private_key );
       HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
 
-      db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( db->get_comment( "alice", string( "test" ) ).id, db->get_account( "alice" ).id ) );
+      db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( db->get_comment( "alice", string( "test" ) ).get_id(), db->get_account( "alice" ).get_id() ) );
 
       vote.weight = 0;
       tx.clear();
@@ -7024,7 +7024,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
 
       auto& alice_comment = db->get_comment( "alice", string( "foo" ) );
       const comment_cashout_object* alice_comment_cashout = db->get_comment_cashout( alice_comment );
-      auto itr = vote_idx.find( boost::make_tuple( alice_comment.id, bob_acc.id ) );
+      auto itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), bob_acc.get_id() ) );
       BOOST_REQUIRE( alice_comment_cashout->net_rshares.value == old_manabar.current_mana - db->get_account( "bob" ).voting_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD );
       BOOST_REQUIRE( itr->rshares == old_manabar.current_mana - db->get_account( "bob" ).voting_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD );
 
@@ -8211,7 +8211,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
       BOOST_REQUIRE( bob_auth.posting == authority( 3, priv_key.get_public_key(), 3 ) );
       BOOST_REQUIRE( bob.memo_key == priv_key.get_public_key() );
 #ifndef IS_LOW_MEM // json_metadata is not stored on low memory nodes
-      const auto& bob_meta = db->get< account_metadata_object, by_account >( bob.id );
+      const auto& bob_meta = db->get< account_metadata_object, by_account >( bob.get_id() );
       BOOST_REQUIRE( bob_meta.json_metadata == "{\"foo\":\"bar\"}" );
 #endif
       BOOST_REQUIRE( bob.proxy == "" );
@@ -8220,7 +8220,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
       BOOST_REQUIRE( bob.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
       BOOST_REQUIRE( bob.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
       BOOST_REQUIRE( bob.get_vesting().amount.value == ASSET( "0.000000 VESTS" ).amount.value );
-      BOOST_REQUIRE( bob.id._id == bob_auth.id._id );
+      BOOST_REQUIRE( bob.get_id().get_value() == bob_auth.get_id().get_value() );
 
       BOOST_REQUIRE( db->get_account( "alice" ).pending_claimed_accounts == 1 );
       validate_database();
@@ -8677,7 +8677,7 @@ BOOST_AUTO_TEST_CASE( account_update2_apply )
       BOOST_REQUIRE( acct.memo_key == new_private_key.get_public_key() );
 
 #ifndef IS_LOW_MEM
-      const account_metadata_object& acct_metadata = db->get< account_metadata_object, by_account >( acct.id );
+      const account_metadata_object& acct_metadata = db->get< account_metadata_object, by_account >( acct.get_id() );
       BOOST_REQUIRE( acct_metadata.json_metadata == "{\"bar\":\"foo\"}" );
       BOOST_REQUIRE( acct_metadata.posting_json_metadata == "{\"success\":true}" );
 #endif

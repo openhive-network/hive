@@ -32,14 +32,35 @@ enum tables {
  * globally unique ID (book_table) and must inherit from chainbase::object<> which
  * decorates the book type by defining "id_type" and "type_id" 
  */
-struct book : public chainbase::object<book_table, book> {
+class book : public chainbase::object<book_table, book>
+{
+   /** defines access to default constructor (deleted, enabled for MIRA)
+     * as well as "id_type id" mandatory member as a primary key
+     * and other standard things
+     * If access to default constructor is necessary for some reason
+     * use the macro like this:
+     * CHAINBASE_OBJECT( book, true );
+     */
+   CHAINBASE_OBJECT( book );
 
-   /** defines a default constructor for types that don't have
-     * members requiring dynamic memory allocation.
+public:
+   /** defines a standard constructor for types that don't have
+     * members requiring dynamic memory allocation. If there was
+     * some that need allocator simply add their names in the list
+     * like this:
+     * CHAINBASE_DEFAULT_CONSTRUCTOR( book, (index_vector)(description) )
      */
    CHAINBASE_DEFAULT_CONSTRUCTOR( book )
+
+   /** you can also define custom constructor - just two first
+     * arguments are needed as in this example and their actual
+     * parameters are given automatically
+     */
+   template< typename Allocator >
+   book( allocator< Allocator > a, uint64_t _id, int _pages, int _date = 0 )
+      : id( _id ), pages( _pages ), publish_date( _date )
+   {}
    
-   id_type          id; ///< this manditory member is a primary key
    int pages        = 0;
    int publish_date = 0;
 };
@@ -83,9 +104,8 @@ int main( int argc, char** argv ) {
    const auto& new_book300 = db.create<book>( [&]( book& b ) {
        b.pages = 300+book_idx.size();
    } );
-   const auto& new_book400 = db.create<book>( [&]( book& b ) {
-       b.pages = 300+book_idx.size();
-   } );
+   // use of custom constructor (note that allocator and id are no provided in call)
+   const auto& new_book400 = db.create<book>( 300+book_idx.size(), 3 );
 
    /**
       You modify a book by passing in a lambda that receives a

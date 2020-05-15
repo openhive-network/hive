@@ -124,12 +124,12 @@ extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
 #define ACTOR(name) \
    PREP_ACTOR(name) \
    const auto& name = account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
-   account_id_type name ## _id = name.id; (void)name ## _id;
+   account_id_type name ## _id = name.get_id(); (void)name ## _id;
 
 #define GET_ACTOR(name) \
    fc::ecc::private_key name ## _private_key = generate_private_key(BOOST_PP_STRINGIZE(name)); \
    const account_object& name = get_account(BOOST_PP_STRINGIZE(name)); \
-   account_id_type name ## _id = name.id; \
+   account_id_type name ## _id = name.get_id(); \
    (void)name ##_id
 
 #define ACTORS_IMPL(r, data, elem) ACTOR(elem)

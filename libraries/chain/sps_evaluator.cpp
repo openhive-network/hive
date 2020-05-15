@@ -46,7 +46,7 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
 
       _db.create< proposal_object >( [&]( proposal_object& proposal )
       {
-         proposal.proposal_id = proposal.id;
+         proposal.proposal_id = proposal.get_id();
 
          proposal.creator = o.creator;
          proposal.receiver = o.receiver;
@@ -77,14 +77,14 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
       const auto& pidx = _db.get_index< proposal_index >().indices().get< by_proposal_id >();
       const auto& pvidx = _db.get_index< proposal_vote_index >().indices().get< by_voter_proposal >();
 
-      for( const auto id : o.proposal_ids )
+      for( const auto pid : o.proposal_ids )
       {
          //checking if proposal id exists
-         auto found_id = pidx.find( id );
+         auto found_id = pidx.find( pid );
          if( found_id == pidx.end() || found_id->removed )
             continue;
 
-         auto found = pvidx.find( boost::make_tuple( o.voter, id ) );
+         auto found = pvidx.find( boost::make_tuple( o.voter, pid ) );
 
          if( o.approve )
          {
@@ -92,7 +92,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
                _db.create< proposal_vote_object >( [&]( proposal_vote_object& proposal_vote )
                {
                   proposal_vote.voter = o.voter;
-                  proposal_vote.proposal_id = id;
+                  proposal_vote.proposal_id = pid;
                } );
          }
          else
@@ -121,11 +121,11 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
 
          When automatic actions will be introduced, this code will disappear.
       */
-      for( const auto id : op.proposal_ids )
+      for( const auto pid : op.proposal_ids )
       {
          const auto& pidx = _db.get_index< proposal_index >().indices().get< by_proposal_id >();
 
-         auto found_id = pidx.find( id );
+         auto found_id = pidx.find( pid );
          if( found_id == pidx.end() || found_id->removed )
             continue;
 

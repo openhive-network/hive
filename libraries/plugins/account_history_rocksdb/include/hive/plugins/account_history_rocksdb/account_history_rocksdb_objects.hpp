@@ -24,14 +24,7 @@ class volatile_operation_object : public object< volatile_operation_object_type,
    CHAINBASE_OBJECT( volatile_operation_object );
 
    public:
-      template< typename Constructor, typename Allocator >
-      volatile_operation_object( Constructor&& c, allocator< Allocator > a )
-         :serialized_op( a ), impacted( a )
-      {
-         c( *this );
-      }
-
-      id_type                    id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_operation_object, (serialized_op)(impacted) )
 
       chain::transaction_id_type trx_id;
       uint32_t                   block = 0;
@@ -43,7 +36,7 @@ class volatile_operation_object : public object< volatile_operation_object_type,
       chainbase::t_vector< account_name_type > impacted;
 };
 
-typedef volatile_operation_object::id_type volatile_operation_id_type;
+typedef oid_ref< volatile_operation_object > volatile_operation_id_type;
 
 /** Dedicated definition is needed because of conflict of BIP allocator
  *  against usage of this class as temporary object.
@@ -81,11 +74,12 @@ struct by_block;
 typedef multi_index_container<
       volatile_operation_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< volatile_operation_object, volatile_operation_id_type, &volatile_operation_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< volatile_operation_object, volatile_operation_object::id_type, &volatile_operation_object::get_id > >,
          ordered_unique< tag< by_block >,
             composite_key< volatile_operation_object,
                member< volatile_operation_object, uint32_t, &volatile_operation_object::block>,
-               member< volatile_operation_object, volatile_operation_id_type, &volatile_operation_object::id>
+               const_mem_fun< volatile_operation_object, volatile_operation_object::id_type, &volatile_operation_object::get_id >
             >
          >
       >,

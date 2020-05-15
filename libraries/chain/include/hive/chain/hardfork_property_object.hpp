@@ -13,14 +13,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( hardfork_property_object );
       public:
-         template< typename Constructor, typename Allocator >
-         hardfork_property_object( Constructor&& c, allocator< Allocator > a )
-            :processed_hardforks( a )
-         {
-            c( *this );
-         }
-
-         id_type                     id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( hardfork_property_object, (processed_hardforks) )
 
          using t_processed_hardforks = t_vector< fc::time_point_sec >;
 
@@ -34,7 +27,8 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       hardfork_property_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< hardfork_property_object, hardfork_property_object::id_type, &hardfork_property_object::id > >
+         ordered_unique< tag< by_id >,
+            const_mem_fun< hardfork_property_object, hardfork_property_object::id_type, &hardfork_property_object::get_id > >
       >,
       allocator< hardfork_property_object >
    > hardfork_property_index;

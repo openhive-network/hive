@@ -35,20 +35,14 @@ class follow_object : public object< follow_object_type, follow_object >
 {
    CHAINBASE_OBJECT( follow_object );
    public:
-      template< typename Constructor, typename Allocator >
-      follow_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
-
-      id_type           id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( follow_object )
 
       account_name_type follower;
       account_name_type following;
       uint16_t          what = 0;
 };
 
-typedef oid< follow_object > follow_id_type;
+typedef oid_ref< follow_object > follow_id_type;
 
 
 class feed_object : public object< feed_object_type, feed_object >
@@ -57,44 +51,31 @@ class feed_object : public object< feed_object_type, feed_object >
    public:
       typedef t_vector<account_name_type> t_reblogged_by_container;
 
-      template< typename Constructor, typename Allocator >
-      feed_object( Constructor&& c, allocator< Allocator > a )
-      :reblogged_by( a )
-      {
-         c( *this );
-      }
+      CHAINBASE_DEFAULT_CONSTRUCTOR( feed_object, (reblogged_by) )
 
-      id_type                    id;
-
-      account_name_type                account;
-      t_reblogged_by_container         reblogged_by;
-      account_name_type                first_reblogged_by;
-      time_point_sec                   first_reblogged_on;
-      comment_id_type                  comment;
-      uint32_t                         account_feed_id = 0;
+      account_name_type          account;
+      t_reblogged_by_container   reblogged_by;
+      account_name_type          first_reblogged_by;
+      time_point_sec             first_reblogged_on;
+      comment_id_type            comment;
+      uint32_t                   account_feed_id = 0;
 };
 
-typedef oid< feed_object > feed_id_type;
+typedef oid_ref< feed_object > feed_id_type;
 
 
 class blog_object : public object< blog_object_type, blog_object >
 {
    CHAINBASE_OBJECT( blog_object, true );
    public:
-      template< typename Constructor, typename Allocator >
-      blog_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
-
-      id_type           id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( blog_object )
 
       account_name_type account;
       comment_id_type   comment;
       time_point_sec    reblogged_on;
       uint32_t          blog_feed_id = 0;
 };
-typedef oid< blog_object > blog_id_type;
+typedef oid_ref< blog_object > blog_id_type;
 
 /**
  *  This index is maintained to get an idea of which authors are rehived by a particular blogger and
@@ -108,19 +89,14 @@ class blog_author_stats_object : public object< blog_author_stats_object_type, b
 {
    CHAINBASE_OBJECT( blog_author_stats_object );
    public:
-      template< typename Constructor, typename Allocator >
-      blog_author_stats_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
+      CHAINBASE_DEFAULT_CONSTRUCTOR( blog_author_stats_object )
 
-      id_type           id;
       account_name_type blogger;
       account_name_type guest;
       uint32_t          count = 0;
 };
 
-typedef oid< blog_author_stats_object > blog_author_stats_id_type;
+typedef oid_ref< blog_author_stats_object > blog_author_stats_id_type;
 
 
 
@@ -128,39 +104,27 @@ class reputation_object : public object< reputation_object_type, reputation_obje
 {
    CHAINBASE_OBJECT( reputation_object );
    public:
-      template< typename Constructor, typename Allocator >
-      reputation_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
-
-      id_type           id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( reputation_object )
 
       account_name_type account;
       share_type        reputation;
 };
 
-typedef oid< reputation_object > reputation_id_type;
+typedef oid_ref< reputation_object > reputation_id_type;
 
 
 class follow_count_object : public object< follow_count_object_type, follow_count_object >
 {
    CHAINBASE_OBJECT( follow_count_object );
    public:
-      template< typename Constructor, typename Allocator >
-      follow_count_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
-
-      id_type           id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( follow_count_object )
 
       account_name_type account;
       uint32_t          follower_count  = 0;
       uint32_t          following_count = 0;
 };
 
-typedef oid< follow_count_object > follow_count_id_type;
+typedef oid_ref< follow_count_object > follow_count_id_type;
 
 
 struct by_following_follower;
@@ -169,7 +133,8 @@ struct by_follower_following;
 typedef multi_index_container<
    follow_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< follow_object, follow_id_type, &follow_object::id > >,
+      ordered_unique< tag< by_id >,
+         const_mem_fun< follow_object, follow_object::id_type, &follow_object::get_id > >,
       ordered_unique< tag< by_following_follower >,
          composite_key< follow_object,
             member< follow_object, account_name_type, &follow_object::following >,
@@ -192,7 +157,8 @@ struct by_blogger_guest_count;
 typedef multi_index_container<
    blog_author_stats_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< blog_author_stats_object, blog_author_stats_id_type, &blog_author_stats_object::id > >,
+      ordered_unique< tag< by_id >,
+         const_mem_fun< blog_author_stats_object, blog_author_stats_object::id_type, &blog_author_stats_object::get_id > >,
       ordered_unique< tag< by_blogger_guest_count >,
          composite_key< blog_author_stats_object,
             member< blog_author_stats_object, account_name_type, &blog_author_stats_object::blogger >,
@@ -212,7 +178,8 @@ struct by_comment;
 typedef multi_index_container<
    feed_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< feed_object, feed_id_type, &feed_object::id > >,
+      ordered_unique< tag< by_id >,
+         const_mem_fun< feed_object, feed_object::id_type, &feed_object::get_id > >,
       ordered_unique< tag< by_feed >,
          composite_key< feed_object,
             member< feed_object, account_name_type, &feed_object::account >,
@@ -224,7 +191,7 @@ typedef multi_index_container<
          composite_key< feed_object,
             member< feed_object, comment_id_type, &feed_object::comment >,
             member< feed_object, account_name_type, &feed_object::account >,
-            member< feed_object, feed_id_type, &feed_object::id >
+            const_mem_fun< feed_object, feed_object::id_type, &feed_object::get_id >
          >,
          composite_key_compare< std::less< comment_id_type >, std::less< account_name_type >, std::less< feed_id_type > >
       >
@@ -237,7 +204,8 @@ struct by_blog;
 typedef multi_index_container<
    blog_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< blog_object, blog_id_type, &blog_object::id > >,
+      ordered_unique< tag< by_id >,
+         const_mem_fun< blog_object, blog_object::id_type, &blog_object::get_id > >,
       ordered_unique< tag< by_blog >,
          composite_key< blog_object,
             member< blog_object, account_name_type, &blog_object::account >,
@@ -249,7 +217,7 @@ typedef multi_index_container<
          composite_key< blog_object,
             member< blog_object, comment_id_type, &blog_object::comment >,
             member< blog_object, account_name_type, &blog_object::account >,
-            member< blog_object, blog_id_type, &blog_object::id >
+            const_mem_fun< blog_object, blog_object::id_type, &blog_object::get_id >
          >,
          composite_key_compare< std::less< comment_id_type >, std::less< account_name_type >, std::less< blog_id_type > >
       >
@@ -260,8 +228,10 @@ typedef multi_index_container<
 typedef multi_index_container<
    reputation_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< reputation_object, reputation_id_type, &reputation_object::id > >,
-      ordered_unique< tag< by_account >, member< reputation_object, account_name_type, &reputation_object::account > >
+      ordered_unique< tag< by_id >,
+         const_mem_fun< reputation_object, reputation_object::id_type, &reputation_object::get_id > >,
+      ordered_unique< tag< by_account >,
+         member< reputation_object, account_name_type, &reputation_object::account > >
    >,
    allocator< reputation_object >
 > reputation_index;
@@ -273,8 +243,10 @@ struct by_following;
 typedef multi_index_container<
    follow_count_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< follow_count_object, follow_count_id_type, &follow_count_object::id > >,
-      ordered_unique< tag< by_account >, member< follow_count_object, account_name_type, &follow_count_object::account > >
+      ordered_unique< tag< by_id >,
+         const_mem_fun< follow_count_object, follow_count_object::id_type, &follow_count_object::get_id > >,
+      ordered_unique< tag< by_account >,
+         member< follow_count_object, account_name_type, &follow_count_object::account > >
    >,
    allocator< follow_count_object >
 > follow_count_index;

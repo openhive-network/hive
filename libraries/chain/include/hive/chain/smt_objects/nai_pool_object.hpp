@@ -13,13 +13,7 @@ namespace hive { namespace chain {
       CHAINBASE_OBJECT( nai_pool_object );
 
    public:
-      template< typename Constructor, typename Allocator >
-      nai_pool_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
-
-      id_type id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( nai_pool_object )
 
       uint8_t num_available_nais = 0;
       fc::array< asset_symbol_type, SMT_MAX_NAI_POOL_COUNT > nais;
@@ -39,7 +33,8 @@ namespace hive { namespace chain {
    typedef multi_index_container <
       nai_pool_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< nai_pool_object, nai_pool_id_type, &nai_pool_object::id > >
+         ordered_unique< tag< by_id >,
+            const_mem_fun< nai_pool_object, nai_pool_object::id_type, &nai_pool_object::get_id > >
       >,
       allocator< nai_pool_object >
    > nai_pool_index;

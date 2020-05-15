@@ -509,7 +509,7 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
 
       // Reversible blocks are *usually* in the TAPOS buffer.  Since this
       // is the fastest check, we do it first.
-      block_summary_id_type bsid = block_num & 0xFFFF;
+      block_summary_object::id_type bsid( block_num & 0xFFFF );
       const block_summary_object* bs = find< block_summary_object, by_id >( bsid );
       if( bs != nullptr )
       {
@@ -726,14 +726,14 @@ const comment_object* database::find_comment( const account_id_type& author, con
 
 const comment_object& database::get_comment( const account_name_type& author, const shared_string& permlink )const
 { try {
-   return get_comment( get_account(author).id, permlink );
+   return get_comment( get_account(author).get_id(), permlink );
 } FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
 
 const comment_object* database::find_comment( const account_name_type& author, const shared_string& permlink )const
 {
    const account_object* acc = find_account(author);
    if(acc == nullptr) return nullptr;
-   return find_comment( acc->id, permlink );
+   return find_comment( acc->get_id(), permlink );
 }
 
 #ifndef ENABLE_MIRA
@@ -749,14 +749,14 @@ const comment_object* database::find_comment( const account_id_type& author, con
 
 const comment_object& database::get_comment( const account_name_type& author, const string& permlink )const
 { try {
-   return get_comment( get_account(author).id, permlink);
+   return get_comment( get_account(author).get_id(), permlink);
 } FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
 
 const comment_object* database::find_comment( const account_name_type& author, const string& permlink )const
 {
    const account_object* acc = find_account(author);
    if(acc == nullptr) return nullptr;
-   return find_comment( acc->id, permlink );
+   return find_comment( acc->get_id(), permlink );
 }
 #endif
 
@@ -845,7 +845,7 @@ const time_point_sec database::calculate_discussion_payout_time( const comment_c
    const comment_object& comment = get_comment( comment_cashout );
    const comment_object& _comment = find_comment_for_payout_time( comment );
 
-   if( _comment.id == comment.id )
+   if( _comment.get_id() == comment.get_id() )
    {
       return comment_cashout.cashout_time;
    }
@@ -867,7 +867,8 @@ const reward_fund_object& database::get_reward_fund() const
 const comment_cashout_object* database::get_comment_cashout( const comment_object& comment ) const
 {
    const auto& idx = get_index< comment_cashout_index >().indices().get< by_id >();
-   auto found = idx.find( comment.id._id );
+   comment_cashout_object::id_type ccid( comment.get_id() );
+   auto found = idx.find( ccid );
 
    if( found == idx.end() )
       return nullptr;
@@ -878,7 +879,7 @@ const comment_cashout_object* database::get_comment_cashout( const comment_objec
 const comment_object& database::get_comment( const comment_cashout_object& comment_cashout ) const
 {
    const auto& idx = get_index< comment_index >().indices().get< by_id >();
-   auto found = idx.find( comment_cashout.id._id );
+   auto found = idx.find( comment_cashout.get_comment_id() );
 
    FC_ASSERT( found != idx.end() );
 
@@ -2277,12 +2278,7 @@ void database::update_owner_authority( const account_object& account, const auth
 {
    if( head_block_num() >= HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
    {
-      create< owner_authority_history_object >( [&]( owner_authority_history_object& hist )
-      {
-         hist.account = account.name;
-         hist.previous_owner_authority = get< account_authority_object, by_account >( account.name ).owner;
-         hist.last_valid_time = head_block_time();
-      });
+      create< owner_authority_history_object >( account, get< account_authority_object, by_account >( account.name ).owner, head_block_time() );
    }
 
    modify( get< account_authority_object, by_account >( account.name ), [&]( account_authority_object& auth )
@@ -2366,7 +2362,7 @@ void database::process_vesting_withdrawals()
                         FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
 
                         dv->add_votes( _votes_update_data_items,
-                                       to_account.id == from_account.id/*withdraw_executor*/,
+                                       to_account.get_id() == from_account.get_id()/*withdraw_executor*/,
                                        routed.amount.value/*val*/,
                                        to_account/*account*/
                                     );
@@ -2500,10 +2496,10 @@ share_type database::pay_curators( const comment_object& comment, const comment_
       else if( comment_cashout.total_vote_weight > 0 )
       {
          const auto& cvidx = get_index<comment_vote_index>().indices().get<by_comment_voter>();
-         auto itr = cvidx.lower_bound( comment.id );
+         auto itr = cvidx.lower_bound( comment.get_id() );
 
          std::set< const comment_vote_object*, cmp > proxy_set;
-         while( itr != cvidx.end() && itr->comment == comment.id )
+         while( itr != cvidx.end() && itr->comment == comment.get_id() )
          {
             proxy_set.insert( &( *itr ) );
             ++itr;
@@ -2691,8 +2687,8 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       push_virtual_operation( comment_payout_update_operation( get_account(comment.author_id).name, to_string( comment.permlink ) ) );
 
       const auto& vote_idx = get_index< comment_vote_index >().indices().get< by_comment_voter >();
-      auto vote_itr = vote_idx.lower_bound( comment.id );
-      while( vote_itr != vote_idx.end() && vote_itr->comment == comment.id )
+      auto vote_itr = vote_idx.lower_bound( comment.get_id() );
+      while( vote_itr != vote_idx.end() && vote_itr->comment == comment.get_id() )
       {
          const auto& cur_vote = *vote_itr;
          ++vote_itr;
@@ -2753,7 +2749,7 @@ void database::process_comment_cashout()
       rf_ctx.reward_balance = itr->reward_balance;
 
       // The index is by ID, so the ID should be the current size of the vector (0, 1, 2, etc...)
-      assert( funds.size() == static_cast<size_t>(itr->id._id) );
+      assert( funds.size() == itr->id );
 
       funds.push_back( rf_ctx );
    }
@@ -2770,7 +2766,7 @@ void database::process_comment_cashout()
          if( current->net_rshares > 0 )
          {
             const auto& rf = get_reward_fund();
-            funds[ rf.id._id ].recent_claims += util::evaluate_reward_curve( current->net_rshares.value, rf.author_reward_curve, rf.content_constant );
+            funds[ rf.get_id() ].recent_claims += util::evaluate_reward_curve( current->net_rshares.value, rf.author_reward_curve, rf.content_constant );
          }
 
          ++current;
@@ -2798,7 +2794,7 @@ void database::process_comment_cashout()
 
       if( has_hardfork( HIVE_HARDFORK_0_17__771 ) )
       {
-         auto fund_id = get_reward_fund().id._id;
+         auto fund_id = get_reward_fund().get_id();
          ctx.total_reward_shares2 = funds[ fund_id ].recent_claims;
          ctx.total_reward_fund_hive = funds[ fund_id ].reward_balance;
 
@@ -2808,7 +2804,7 @@ void database::process_comment_cashout()
       }
       else
       {
-         auto itr = com_by_root.lower_bound( _comment.root_comment._id );
+         auto itr = com_by_root.lower_bound( _comment.root_comment );
          while( itr != com_by_root.end() && itr->root_comment == _comment.root_comment )
          {
             const auto& comment = *itr; ++itr;
@@ -2843,7 +2839,7 @@ void database::process_comment_cashout()
    {
       for( size_t i = 0; i < funds.size(); i++ )
       {
-         modify( get< reward_fund_object, by_id >( reward_fund_id_type( i ) ), [&]( reward_fund_object& rfo )
+         modify( get< reward_fund_object, by_id >( reward_fund_object::id_type( i ) ), [&]( reward_fund_object& rfo )
          {
             rfo.recent_claims = funds[ i ].recent_claims;
             rfo.reward_balance -= asset( funds[ i ].hive_awarded, HIVE_SYMBOL );
@@ -3807,7 +3803,7 @@ void database::_apply_block( const signed_block& next_block )
          const auto& witness_idx = get_index<witness_index>().indices().get<by_id>();
          vector<witness_id_type> wit_ids_to_update;
          for( auto it=witness_idx.begin(); it!=witness_idx.end(); ++it )
-            wit_ids_to_update.push_back(it->id);
+            wit_ids_to_update.push_back( it->get_id() );
 
          for( witness_id_type wit_id : wit_ids_to_update )
          {
@@ -4154,7 +4150,8 @@ void database::_apply_transaction(const signed_transaction& trx)
    {
       if( !(skip & skip_tapos_check) )
       {
-         const auto& tapos_block_summary = get< block_summary_object >( trx.ref_block_num );
+         block_summary_object::id_type bsid( trx.ref_block_num );
+         const auto& tapos_block_summary = get< block_summary_object >( bsid );
          //Verify TaPoS block summary has correct ID prefix, and that this block's time is not past the expiration
          HIVE_ASSERT( trx.ref_block_prefix == tapos_block_summary.block_id._hash[1], transaction_tapos_exception,
                     "", ("trx.ref_block_prefix", trx.ref_block_prefix)
@@ -4524,8 +4521,8 @@ const witness_object& database::validate_block_header( uint32_t skip, const sign
 
 void database::create_block_summary(const signed_block& next_block)
 { try {
-   block_summary_id_type sid( next_block.block_num() & 0xffff );
-   modify( get< block_summary_object >( sid ), [&](block_summary_object& p) {
+   block_summary_object::id_type bsid( next_block.block_num() & 0xffff );
+   modify( get< block_summary_object >( bsid ), [&](block_summary_object& p) {
          p.block_id = next_block.id();
    });
 } FC_CAPTURE_AND_RETHROW() }
@@ -4755,7 +4752,7 @@ void database::migrate_irreversible_state()
 
 bool database::apply_order( const limit_order_object& new_order_object )
 {
-   auto order_id = new_order_object.id;
+   auto order_id = new_order_object.get_id();
 
    const auto& limit_price_idx = get_index<limit_order_index>().indices().get<by_price>();
 
@@ -4865,10 +4862,10 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
 }
 
 
-void database::adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_sdb )
+void database::adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_hbd )
 {
    const auto& ridx = get_index< liquidity_reward_balance_index >().indices().get< by_owner >();
-   auto itr = ridx.find( owner.id );
+   auto itr = ridx.find( owner.get_id() );
    if( itr != ridx.end() )
    {
       modify<liquidity_reward_balance_object>( *itr, [&]( liquidity_reward_balance_object& r )
@@ -4880,7 +4877,7 @@ void database::adjust_liquidity_reward( const account_object& owner, const asset
             r.weight = 0;
          }
 
-         if( is_sdb )
+         if( is_hbd )
             r.hbd_volume += volume.amount.value;
          else
             r.hive_volume += volume.amount.value;
@@ -4893,8 +4890,8 @@ void database::adjust_liquidity_reward( const account_object& owner, const asset
    {
       create<liquidity_reward_balance_object>( [&](liquidity_reward_balance_object& r )
       {
-         r.owner = owner.id;
-         if( is_sdb )
+         r.owner = owner.get_id();
+         if( is_hbd )
             r.hbd_volume = volume.amount.value;
          else
             r.hive_volume = volume.amount.value;
@@ -5828,7 +5825,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
             // As a shortcut in payout processing, we use the id as an array index.
             // The IDs must be assigned this way. The assertion is a dummy check to ensure this happens.
-            FC_ASSERT( post_rf.id._id == 0 );
+            FC_ASSERT( post_rf.get_id() == reward_fund_id_type() );
 
             modify( gpo, [&]( dynamic_global_property_object& g )
             {
@@ -5858,8 +5855,9 @@ void database::apply_hardfork( uint32_t hardfork )
             for( auto itr = comment_idx.begin(); itr != comment_idx.end() && itr->cashout_time < fc::time_point_sec::maximum(); ++itr )
             {
                root_posts.push_back( &(*itr) );
+               auto cid = itr->get_comment_id();
 
-               for( auto reply_itr = by_root_idx.lower_bound( itr->id._id ); reply_itr != by_root_idx.end() && reply_itr->root_comment == itr->id; ++reply_itr )
+               for( auto reply_itr = by_root_idx.lower_bound( cid ); reply_itr != by_root_idx.end() && reply_itr->root_comment == cid; ++reply_itr )
                {
                   const comment_cashout_object* comment_cashout = get_comment_cashout( *reply_itr );
                   replies.push_back( std::make_pair( comment_cashout, reply_itr->created ) );

@@ -23,13 +23,8 @@ class witness_custom_op_object : public object< witness_custom_op_object_type, w
 {
    CHAINBASE_OBJECT( witness_custom_op_object );
    public:
-      template< typename Constructor, typename Allocator >
-      witness_custom_op_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
+      CHAINBASE_DEFAULT_CONSTRUCTOR( witness_custom_op_object )
 
-      id_type              id;
       account_name_type    account;
       uint32_t             count = 0;
 };
@@ -37,8 +32,10 @@ class witness_custom_op_object : public object< witness_custom_op_object_type, w
 typedef multi_index_container<
    witness_custom_op_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< witness_custom_op_object, witness_custom_op_object::id_type, &witness_custom_op_object::id > >,
-      ordered_unique< tag< by_account >, member< witness_custom_op_object, account_name_type, &witness_custom_op_object::account > >
+      ordered_unique< tag< by_id >,
+         const_mem_fun< witness_custom_op_object, witness_custom_op_object::id_type, &witness_custom_op_object::get_id > >,
+      ordered_unique< tag< by_account >,
+         member< witness_custom_op_object, account_name_type, &witness_custom_op_object::account > >
    >,
    allocator< witness_custom_op_object >
 > witness_custom_op_index;

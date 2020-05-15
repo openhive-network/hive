@@ -17,7 +17,7 @@ void basic_test( const std::vector< uint64_t >& v,
    {
       db.create< Object >( [&] ( Object& o )
       {
-         o.id = item;
+         o.set_id( item );
          call( o );
          o.val = 100 - item;
       } );
@@ -40,7 +40,7 @@ void basic_test( const std::vector< uint64_t >& v,
    BOOST_TEST_MESSAGE( "Creating 1 object" );
    db.create< Object >( [&] ( Object& o )
    {
-      o.id = 0;
+      o.set_id( 0 );
       call( o );
       o.val = 888;
    } );
@@ -63,7 +63,7 @@ void basic_test( const std::vector< uint64_t >& v,
    {
       db.create< Object >( [&] ( Object& o )
       {
-         o.id = item;
+         o.set_id( item );
          call( o );
          o.val = 100 - item;
       } );
@@ -98,7 +98,7 @@ void insert_remove_test( const std::vector< uint64_t >& v,
    {
       db.create< Object >( [&] ( Object& o )
       {
-         o.id = item;
+         o.set_id( item );
          call( o );
          o.val = item;
       } );
@@ -124,7 +124,7 @@ void insert_remove_test( const std::vector< uint64_t >& v,
    {
       db.create< Object >( [&] ( Object& o )
       {
-         o.id = item;
+         o.set_id( item );
          call( o );
          o.val = cnt;
       } );
@@ -142,7 +142,7 @@ void insert_remove_test( const std::vector< uint64_t >& v,
    BOOST_TEST_MESSAGE( "Adding object with id_key = 0" );
    db.create< Object >( [&] ( Object& o )
    {
-      o.id = v[0];
+      o.set_id( v[0] );
       call( o );
       o.val = 100;
    } );
@@ -205,7 +205,7 @@ void modify_test( const std::vector< uint64_t >& v,
    {
       db.create< Object >( [&] ( Object& o )
       {
-         o.id = item;
+         o.set_id( item );
          call1( o );
          o.val = item + 100;
       } );
@@ -222,7 +222,7 @@ void modify_test( const std::vector< uint64_t >& v,
    int32_t cnt = 0;
    for( const auto& item : c )
    {
-      BOOST_REQUIRE( size_t( item.id ) == v[ cnt++ ] );
+      BOOST_REQUIRE( size_t( item.get_id() ) == v[ cnt++ ] );
       db.modify( item, call3 );
       db.modify( item, call4 );
    }
@@ -259,7 +259,7 @@ void misc_test( const std::vector< uint64_t >& v, chainbase::database& db )
    {
       db.create< Object >( [&] ( Object& o )
       {
-         o.id = item;
+         o.set_id( item );
          o.name = "any_name";
          o.val = item + 200;
       } );
@@ -270,9 +270,9 @@ void misc_test( const std::vector< uint64_t >& v, chainbase::database& db )
    uint32_t cnt = 0;
    for( const auto& item : c )
    {
-      BOOST_REQUIRE( size_t( item.id ) == v[ cnt++ ] );
+      BOOST_REQUIRE( size_t( item.get_id() ) == v[ cnt++ ] );
       BOOST_REQUIRE( item.name == "any_name" );
-      BOOST_REQUIRE( item.val == size_t( item.id ) + 200 );
+      BOOST_REQUIRE( item.val == size_t( item.get_id() ) + 200 );
    }
 
    BOOST_TEST_MESSAGE( "Removing 2 objects: first and last" );
@@ -318,7 +318,7 @@ void misc_test( const std::vector< uint64_t >& v, chainbase::database& db )
    {
       auto constructor = [ &item ]( Object &obj )
       {
-         obj.id = item;
+         obj.set_id( item );
          obj.name = "all_objects_have_the_same_name";
          obj.val = 667;
       };
@@ -333,7 +333,7 @@ void misc_test( const std::vector< uint64_t >& v, chainbase::database& db )
    BOOST_REQUIRE( c.size() == 1 );
 
    auto it_only_one = c.begin();
-   BOOST_REQUIRE( size_t( it_only_one->id ) == v[0] );
+   BOOST_REQUIRE( size_t( it_only_one->get_id() ) == v[0] );
    BOOST_REQUIRE( it_only_one->name == "all_objects_have_the_same_name" );
    BOOST_REQUIRE( it_only_one->val == 667 );
 
@@ -348,7 +348,7 @@ void misc_test( const std::vector< uint64_t >& v, chainbase::database& db )
    {
       auto constructor = [ &item, &cnt ]( Object &obj )
       {
-         obj.id = item;
+         obj.set_id( item );
          obj.name = "object nr:" + std::to_string( cnt++ );
          obj.val = 5000;
       };
@@ -363,7 +363,7 @@ void misc_test( const std::vector< uint64_t >& v, chainbase::database& db )
 
    auto found = ordered_idx.find( v.size() - 1 );
    BOOST_REQUIRE( found != ordered_idx.end() );
-   BOOST_REQUIRE( size_t( found->id ) == v.size() - 1 );
+   BOOST_REQUIRE( size_t( found->get_id() ) == v.size() - 1 );
 
    found = ordered_idx.find( 987654 );
    BOOST_REQUIRE( found == ordered_idx.end() );
@@ -410,7 +410,7 @@ void misc_test3( const std::vector< uint64_t >& v, chainbase::database& db )
    {
       auto constructor = [ &item ]( Object &obj )
       {
-         obj.id = item;
+         obj.set_id( item );
          obj.val = item + 1;
          obj.val2 = item + 2;
          obj.val3 = item + 3;
@@ -430,10 +430,10 @@ void misc_test3( const std::vector< uint64_t >& v, chainbase::database& db )
    found = ordered_idx.upper_bound( 5739854 );
    BOOST_REQUIRE( found == ordered_idx.end() );
 
-   found = ordered_idx.lower_bound(  ordered_idx.begin()->id );
+   found = ordered_idx.lower_bound(  ordered_idx.begin()->get_id() );
    BOOST_REQUIRE( found == ordered_idx.begin() );
 
-   auto found2 = ordered_idx.upper_bound( ordered_idx.begin()->id );
+   auto found2 = ordered_idx.upper_bound( ordered_idx.begin()->get_id() );
    BOOST_REQUIRE( found == --found2 );
 
    auto cfound = composite_ordered_idx.find( boost::make_tuple( 667, 5000 ) );

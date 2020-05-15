@@ -60,4 +60,10 @@ struct schema_reflect< chainbase::oid< T > >
    typedef detail::schema_oid_impl< T >        schema_impl_type;
 };
 
+template< typename T >
+struct schema_reflect< chainbase::oid_ref< T > >
+{
+   typedef detail::schema_oid_impl< T >        schema_impl_type;
+};
+
 } }

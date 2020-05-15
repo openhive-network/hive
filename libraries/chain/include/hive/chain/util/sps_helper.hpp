@@ -82,7 +82,7 @@ class sps_helper
          /// Now remove all votes specific to given proposal.
          auto propI = byVoterIdx.lower_bound(boost::make_tuple(proposal->proposal_id, account_name_type()));
 
-         while(propI != byVoterIdx.end() && static_cast< size_t >( propI->proposal_id ) == static_cast< size_t >( proposal->proposal_id ) )
+         while(propI != byVoterIdx.end() && propI->proposal_id == proposal->proposal_id )
          {
             auto result_itr = checker< ByProposalType, true/*Loop*/ >( proposal, proposalIndex, obj_perf );
             if( obj_perf.done )

@@ -24,13 +24,7 @@ class block_log_hash_state_object : public object< block_log_hash_state_object_t
 {
    CHAINBASE_OBJECT( block_log_hash_state_object );
    public:
-      template< typename Constructor, typename Allocator >
-      block_log_hash_state_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
-
-      id_type                  id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( block_log_hash_state_object )
 
       uint64_t                 total_size = 0;
       fc::restartable_sha256   rsha256;
@@ -49,24 +43,19 @@ class block_log_pending_message_object : public object< block_log_pending_messag
 {
    CHAINBASE_OBJECT( block_log_pending_message_object );
    public:
-      template< typename Constructor, typename Allocator >
-      block_log_pending_message_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
-
-      id_type                  id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( block_log_pending_message_object )
 
       block_log_message_data   data;
 };
 
-typedef block_log_hash_state_object::id_type block_log_hash_state_id_type;
-typedef block_log_pending_message_object::id_type block_log_pending_message_id_type;
+typedef oid_ref< block_log_hash_state_object > block_log_hash_state_id_type;
+typedef oid_ref< block_log_pending_message_object > block_log_pending_message_id_type;
 
 typedef multi_index_container<
    block_log_hash_state_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< block_log_hash_state_object, block_log_hash_state_id_type, &block_log_hash_state_object::id > >
+      ordered_unique< tag< by_id >,
+         const_mem_fun< block_log_hash_state_object, block_log_hash_state_object::id_type, &block_log_hash_state_object::get_id > >
    >,
    allocator< block_log_hash_state_object >
 > block_log_hash_state_index;
@@ -74,7 +63,8 @@ typedef multi_index_container<
 typedef multi_index_container<
    block_log_pending_message_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< block_log_pending_message_object, block_log_pending_message_id_type, &block_log_pending_message_object::id > >
+      ordered_unique< tag< by_id >,
+         const_mem_fun< block_log_pending_message_object, block_log_pending_message_object::id_type, &block_log_pending_message_object::get_id > >
    >,
    allocator< block_log_pending_message_object >
 > block_log_pending_message_index;

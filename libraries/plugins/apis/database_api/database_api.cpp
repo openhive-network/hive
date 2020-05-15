@@ -93,42 +93,43 @@ class database_api_impl
       template< typename ValueType >
       static bool filter_default( const ValueType& r ) { return true; }
 
-        template<typename IndexType, typename OrderType, typename StartType, typename ResultType, typename OnPushType, typename FilterType>
-        void iterate_results_from_index(
-                uint64_t index,
-                std::vector<ResultType>& result,
-                uint32_t limit,
-                OnPushType&& on_push,
-                FilterType&& filter,
-                order_direction_type direction = ascending )
-        {
-            const auto& idx = _db.get_index< IndexType, OrderType >();
-            if( direction == ascending )
-            {
-                auto itr = idx.iterator_to(*(_db.get_index<IndexType, hive::chain::by_id>().find(index)));
-                auto end = idx.end();
+      template<typename IndexType, typename OrderType, typename StartType, typename ResultType, typename OnPushType, typename FilterType>
+      void iterate_results_from_index(
+         uint64_t index,
+         std::vector<ResultType>& result,
+         uint32_t limit,
+         OnPushType&& on_push,
+         FilterType&& filter,
+         order_direction_type direction = ascending )
+      {
+         const auto& idx = _db.get_index< IndexType, OrderType >();
+         typename IndexType::value_type::id_type id( index );
+         if( direction == ascending )
+         {
+            auto itr = idx.iterator_to(*(_db.get_index<IndexType, hive::chain::by_id>().find( id )));
+            auto end = idx.end();
 
-                while( result.size() < limit && itr != end )
-                {
-                    if( filter( *itr ) )
-                        result.push_back( on_push( *itr ) );
-                    ++itr;
-                }
-            }
-            else if( direction == descending )
+            while( result.size() < limit && itr != end )
             {
-                auto index_it = idx.iterator_to(*(_db.get_index<IndexType, hive::chain::by_id>().upper_bound(index)));
-                auto iter  = boost::make_reverse_iterator( index_it );
-                auto iter_end = boost::make_reverse_iterator( idx.begin() );
-
-                while ( result.size() < limit && iter != iter_end )
-                {
-                    if( filter( *iter ) )
-                        result.push_back( on_push( *iter ) );
-                    ++iter;
-                }
+               if( filter( *itr ) )
+                  result.push_back( on_push( *itr ) );
+               ++itr;
             }
-        }
+         }
+         else if( direction == descending )
+         {
+            auto index_it = idx.iterator_to(*(_db.get_index<IndexType, hive::chain::by_id>().upper_bound( id )));
+            auto iter  = boost::make_reverse_iterator( index_it );
+            auto iter_end = boost::make_reverse_iterator( idx.begin() );
+
+            while( result.size() < limit && iter != iter_end )
+            {
+               if( filter( *iter ) )
+                  result.push_back( on_push( *iter ) );
+               ++iter;
+            }
+         }
+      }
 
       template<typename IndexType, typename OrderType, typename StartType, typename ResultType, typename OnPushType, typename FilterType>
       void iterate_results(
@@ -142,8 +143,8 @@ class database_api_impl
       )
       {
          if ( last_index.valid() ) {
-             iterate_results_from_index<IndexType, OrderType, StartType>( *last_index, result, limit, std::move(on_push), std::move(filter), direction );
-             return;
+            iterate_results_from_index<IndexType, OrderType, StartType>( *last_index, result, limit, std::move(on_push), std::move(filter), direction );
+            return;
          }
 
          const auto& idx = _db.get_index< IndexType, OrderType >();
@@ -162,15 +163,15 @@ class database_api_impl
          }
          else if( direction == descending )
          {
-             auto iter = boost::make_reverse_iterator( idx.upper_bound(start) );
-             auto end_iter = boost::make_reverse_iterator( idx.begin() );
+            auto iter = boost::make_reverse_iterator( idx.upper_bound(start) );
+            auto end_iter = boost::make_reverse_iterator( idx.begin() );
 
-             while ( result.size() < limit && iter != end_iter )
-             {
-                 if (filter(*iter))
-                     result.push_back(on_push(*iter));
-                 ++iter;
-             }
+            while( result.size() < limit && iter != end_iter )
+            {
+               if( filter( *iter ) )
+                  result.push_back( on_push( *iter ) );
+               ++iter;
+            }
          }
       }
 
@@ -303,7 +304,7 @@ DEFINE_API_IMPL( database_api_impl, list_witnesses )
       case( by_schedule_time ):
       {
          auto key = args.start.as< std::pair< fc::uint128, account_name_type > >();
-         auto wit_id = _db.get< chain::witness_object, chain::by_name >( key.second ).id;
+         auto wit_id = _db.get< chain::witness_object, chain::by_name >( key.second ).get_id();
          iterate_results< chain::witness_index, chain::by_schedule_time >(
             boost::make_tuple( key.first, wit_id ),
             result.witnesses,
@@ -1090,14 +1091,14 @@ namespace last_votes_misc
       {
          auto account = _impl._db.find< chain::account_object, chain::by_name >( voter );
          FC_ASSERT( account != nullptr, "Could not find voter ${v}.", ("v", voter ) );
-         voter_id = account->id;
+         voter_id = account->get_id();
       }
 
       if( author != account_name_type() || permlink.size() )
       {
          auto comment = _impl._db.find_comment( author, permlink );
          FC_ASSERT( comment != nullptr, "Could not find comment ${a}/${p}.", ("a", author)("p", permlink) );
-         comment_id = comment->id;
+         comment_id = comment->get_id();
       }
 
       if( SORTORDERTYPE == by_comment_voter )
@@ -1164,9 +1165,9 @@ DEFINE_API_IMPL( database_api_impl, find_votes )
    FC_ASSERT( comment != nullptr, "Could not find comment ${a}/${p}", ("a", args.author)("p", args.permlink ) );
 
    const auto& vote_idx = _db.get_index< chain::comment_vote_index, chain::by_comment_voter >();
-   auto itr = vote_idx.lower_bound( comment->id );
+   auto itr = vote_idx.lower_bound( comment->get_id() );
 
-   while( itr != vote_idx.end() && itr->comment == comment->id && result.votes.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
+   while( itr != vote_idx.end() && itr->comment == comment->get_id() && result.votes.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
       result.votes.push_back( api_comment_vote_object( *itr, _db ) );
       ++itr;
@@ -1359,7 +1360,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
       }
       case by_start_date:
       {
-          // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
+         // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
          auto start_parameters = args.start.as< variants >();
          auto start_date_string = start_parameters.empty()
                ? std::string()
@@ -1384,17 +1385,17 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
       }
       case by_end_date:
       {
-          // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
-          auto start_parameters = args.start.as< variants >();
-          auto end_date_string = start_parameters.empty()
+         // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
+         auto start_parameters = args.start.as< variants >();
+         auto end_date_string = start_parameters.empty()
                ? std::string()
                : start_parameters.front().as< std::string >()
-          ;
-          // check if empty string was passed as the time
-          auto time =  end_date_string.empty() || start_parameters.empty()
-                       ? time_point_sec( args.order_direction == ascending ? fc::time_point::min() : fc::time_point::maximum() )
-                       : start_parameters.front().as< time_point_sec >()
-          ;
+         ;
+         // check if empty string was passed as the time
+         auto time = end_date_string.empty() || start_parameters.empty()
+               ? time_point_sec( args.order_direction == ascending ? fc::time_point::min() : fc::time_point::maximum() )
+               : start_parameters.front().as< time_point_sec >()
+         ;
 
          iterate_results< hive::chain::proposal_index, hive::chain::by_end_date >(
             boost::make_tuple( time, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ),
@@ -1478,7 +1479,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
             [&]( const proposal_vote_object& po ){ return api_proposal_vote_object( po, _db ); },
             [&]( const proposal_vote_object& po )
             {
-               auto itr = _db.find< hive::chain::proposal_object, hive::chain::by_id >( po.proposal_id );
+               auto itr = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( po.proposal_id );
                return itr != nullptr && !itr->removed;
             },
             args.order_direction
@@ -1495,7 +1496,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
             [&]( const proposal_vote_object& po ){ return api_proposal_vote_object( po, _db ); },
             [&]( const proposal_vote_object& po )
             {
-               auto itr = _db.find< hive::chain::proposal_object, hive::chain::by_id >( po.proposal_id );
+               auto itr = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( po.proposal_id );
                return itr != nullptr && !itr->removed;
             },
             args.order_direction
@@ -1676,11 +1677,11 @@ DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
          auto key = args.start.get_array();
          FC_ASSERT( key.size() == 0 || key.size() == 2, "The parameter 'start' must be an empty array or consist of asset_symbol_type and id" );
 
-         boost::tuple< asset_symbol_type, smt_contribution_object_id_type > start;
+         boost::tuple< asset_symbol_type, smt_contribution_id_type > start;
          if ( key.size() == 0 )
-            start = boost::make_tuple( asset_symbol_type(), 0 );
+            start = boost::make_tuple( asset_symbol_type(), smt_contribution_id_type() );
          else
-            start = boost::make_tuple( key[ 0 ].as< asset_symbol_type >(), key[ 1 ].as< smt_contribution_object_id_type >() );
+            start = boost::make_tuple( key[ 0 ].as< asset_symbol_type >(), key[ 1 ].as< smt_contribution_id_type >() );
 
          iterate_results< chain::smt_contribution_index, chain::by_symbol_id >(
             start,

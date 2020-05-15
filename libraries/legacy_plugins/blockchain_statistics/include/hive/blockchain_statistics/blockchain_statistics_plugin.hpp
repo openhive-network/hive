@@ -64,13 +64,7 @@ struct bucket_object : public object< bucket_object_type, bucket_object >
    CHAINBASE_OBJECT( bucket_object );
 
 public:
-   template< typename Constructor, typename Allocator >
-   bucket_object( Constructor&& c, allocator< Allocator > a )
-   {
-      c( *this );
-   }
-
-   id_type              id;
+   CHAINBASE_DEFAULT_CONSTRUCTOR( bucket_object )
 
    fc::time_point_sec   open;                                        ///< Open time of the bucket
    uint32_t             seconds = 0;                                 ///< Seconds accounted for in the bucket
@@ -119,14 +113,14 @@ public:
    uint128_t            estimated_hashpower = 0;                     ///< Estimated average hashpower over interval
 };
 
-typedef oid< bucket_object > bucket_id_type;
+typedef oid_ref< bucket_object > bucket_id_type;
 
 struct by_id;
 struct by_bucket;
 typedef multi_index_container<
    bucket_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< bucket_object, bucket_id_type, &bucket_object::id > >,
+      ordered_unique< tag< by_id >, member< bucket_object, bucket_object::id_type, &bucket_object::id > >,
       ordered_unique< tag< by_bucket >,
          composite_key< bucket_object,
             member< bucket_object, uint32_t, &bucket_object::seconds >,

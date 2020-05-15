@@ -87,7 +87,7 @@ void tags_plugin_impl::remove_stats( const tag_object& tag, const tag_stats_obje
 {
    _db.modify( stats, [&]( tag_stats_object& s )
    {
-        if( tag.parent == comment_id_type() )
+        if( tag.is_post() )
         {
            s.top_posts--;
         }
@@ -104,7 +104,7 @@ void tags_plugin_impl::add_stats( const tag_object& tag, const tag_stats_object&
 {
    _db.modify( stats, [&]( tag_stats_object& s )
    {
-        if( tag.parent == comment_id_type() )
+        if( tag.is_post() )
         {
            s.top_posts++;
         }
@@ -220,18 +220,18 @@ void tags_plugin_impl::update_tag( const tag_object& current, const comment_obje
 
 void tags_plugin_impl::create_tag( const string& tag, const comment_object& comment, double hot, double trending )const
 {
-   comment_id_type parent;
+   comment_id_type parent = comment_object::id_type::null_id();
    account_id_type author = comment.author_id;
 
    if( comment.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
-      parent = _db.get_comment( comment.parent_author_id, comment.parent_permlink ).id;
+      parent = _db.get_comment( comment.parent_author_id, comment.parent_permlink ).get_id();
 
    const comment_cashout_object* cc = _db.get_comment_cashout( comment );
 
    const auto& tag_obj = _db.create<tag_object>( [&]( tag_object& obj )
    {
        obj.tag               = tag;
-       obj.comment           = comment.id;
+       obj.comment           = comment.get_id();
        obj.parent            = parent;
        obj.created           = comment.created;
        obj.active            = cc ? cc->active : fc::time_point_sec();
@@ -282,13 +282,13 @@ void tags_plugin_impl::update_tags( const comment_object& c, bool parse_tags )co
 #ifndef IS_LOW_MEM
    if( parse_tags )
    {
-      auto meta = filter_tags( c, _db.get< comment_content_object, chain::by_comment >( c.id ) );
-      auto citr = comment_idx.lower_bound( c.id );
+      auto meta = filter_tags( c, _db.get< comment_content_object, chain::by_comment >( c.get_id() ) );
+      auto citr = comment_idx.lower_bound( c.get_id() );
 
       map< string, const tag_object* > existing_tags;
       vector< const tag_object* > remove_queue;
 
-      while( citr != comment_idx.end() && citr->comment == c.id )
+      while( citr != comment_idx.end() && citr->comment == c.get_id() )
       {
          const tag_object* tag = &*citr;
          ++citr;
@@ -323,9 +323,9 @@ void tags_plugin_impl::update_tags( const comment_object& c, bool parse_tags )co
    else
 #endif
    {
-      auto citr = comment_idx.lower_bound( c.id );
+      auto citr = comment_idx.lower_bound( c.get_id() );
 
-      while( citr != comment_idx.end() && citr->comment == c.id )
+      while( citr != comment_idx.end() && citr->comment == c.get_id() )
       {
          update_tag( *citr, c, hot, trending );
          ++citr;
@@ -356,10 +356,10 @@ struct pre_apply_operation_visitor
       const auto& idx = _db.get_index< tag_index, by_author_comment >();
       const auto& auth = _db.get_account( op.author );
 
-      auto tag_itr = idx.lower_bound( boost::make_tuple( auth.id, comment->id ) );
+      auto tag_itr = idx.lower_bound( boost::make_tuple( auth.get_id(), comment->get_id() ) );
       vector< const tag_object* > to_remove;
 
-      while( tag_itr != idx.end() && tag_itr->author == auth.id && tag_itr->comment == comment->id )
+      while( tag_itr != idx.end() && tag_itr->author == auth.get_id() && tag_itr->comment == comment->get_id() )
       {
          to_remove.push_back( &(*tag_itr) );
          ++tag_itr;
@@ -408,8 +408,8 @@ struct operation_visitor
             if( c && c->parent_author_id == HIVE_ROOT_POST_PARENT_ID )
             {
                const auto& comment_idx = _my._db.get_index<tag_index>().indices().get<by_comment>();
-               auto citr = comment_idx.lower_bound( c->id );
-               while( citr != comment_idx.end() && citr->comment == c->id )
+               auto citr = comment_idx.lower_bound( c->get_id() );
+               while( citr != comment_idx.end() && citr->comment == c->get_id() )
                {
                   _my._db.modify( *citr, [&]( tag_object& t )
                   {
@@ -441,7 +441,7 @@ struct operation_visitor
          _my.update_tags( c );
 
 #ifndef IS_LOW_MEM
-         comment_metadata meta = _my.filter_tags( c, _my._db.get< comment_content_object, chain::by_comment >( c.id ) );
+         comment_metadata meta = _my.filter_tags( c, _my._db.get< comment_content_object, chain::by_comment >( c.get_id() ) );
 
          for( const string& tag : meta.tags )
          {

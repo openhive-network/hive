@@ -25,12 +25,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( account_object );
       public:
-         template<typename Constructor, typename Allocator>
-         account_object( Constructor&& c, allocator< Allocator > a )
-         : delayed_votes( a )
-         {
-            c(*this);
-         }
+         CHAINBASE_DEFAULT_CONSTRUCTOR( account_object, (delayed_votes) )
 
          //liquid HIVE balance
          asset get_balance() const { return balance; }
@@ -57,8 +52,6 @@ namespace hive { namespace chain {
          asset get_vest_rewards() const { return reward_vesting_balance; }
          //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
          asset get_vest_rewards_as_hive() const { return reward_vesting_hive; }
-
-         id_type           id;
 
          account_name_type name;
          public_key_type   memo_key;
@@ -188,14 +181,8 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( account_metadata_object );
       public:
-         template< typename Constructor, typename Allocator >
-         account_metadata_object( Constructor&& c, allocator< Allocator > a )
-            : json_metadata( a ), posting_json_metadata( a )
-         {
-            c( *this );
-         }
+         CHAINBASE_DEFAULT_CONSTRUCTOR( account_metadata_object, (json_metadata)(posting_json_metadata) )
 
-         id_type           id;
          account_id_type   account;
          shared_string     json_metadata;
          shared_string     posting_json_metadata;
@@ -205,14 +192,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( account_authority_object );
       public:
-         template< typename Constructor, typename Allocator >
-         account_authority_object( Constructor&& c, allocator< Allocator > a )
-            : owner( a ), active( a ), posting( a )
-         {
-            c( *this );
-         }
-
-         id_type           id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( account_authority_object, (owner)(active)(posting) )
 
          account_name_type account;
 
@@ -227,16 +207,11 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( vesting_delegation_object );
       public:
-         template< typename Constructor, typename Allocator >
-         vesting_delegation_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
+         CHAINBASE_DEFAULT_CONSTRUCTOR( vesting_delegation_object )
 
          //amount of delegated VESTS
          const asset& get_vesting() const { return vesting_shares; }
 
-         id_type           id;
          account_name_type delegator;
          account_name_type delegatee;
          asset             vesting_shares = asset( 0, VESTS_SYMBOL );
@@ -247,16 +222,11 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( vesting_delegation_expiration_object );
       public:
-         template< typename Constructor, typename Allocator >
-         vesting_delegation_expiration_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
+         CHAINBASE_DEFAULT_CONSTRUCTOR( vesting_delegation_expiration_object )
 
          //amount of expiring delegated VESTS
          const asset& get_vesting() const { return vesting_shares; }
 
-         id_type           id;
          account_name_type delegator;
          asset             vesting_shares = asset( 0, VESTS_SYMBOL );
          time_point_sec    expiration;
@@ -266,14 +236,14 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( owner_authority_history_object );
       public:
-         template< typename Constructor, typename Allocator >
-         owner_authority_history_object( Constructor&& c, allocator< Allocator > a )
-            :previous_owner_authority( allocator< shared_authority >( a ) )
+         template< typename Allocator >
+         owner_authority_history_object( allocator< Allocator > a, uint64_t _id,
+            const account_object& _account, const shared_authority& _previous_owner, const time_point_sec& _creation_time )
+            : id( _id ), account( _account.name ), previous_owner_authority( allocator< shared_authority >( a ) ),
+            last_valid_time( _creation_time )
          {
-            c( *this );
+            previous_owner_authority = _previous_owner;
          }
-
-         id_type           id;
 
          account_name_type account;
          shared_authority  previous_owner_authority;
@@ -284,14 +254,14 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( account_recovery_request_object );
       public:
-         template< typename Constructor, typename Allocator >
-         account_recovery_request_object( Constructor&& c, allocator< Allocator > a )
-            :new_owner_authority( allocator< shared_authority >( a ) )
+         template< typename Allocator >
+         account_recovery_request_object( allocator< Allocator > a, uint64_t _id,
+            const account_name_type& _account_to_recover, const authority& _new_owner_authority, const time_point_sec& _expiration_time )
+            : id( _id ), account_to_recover( _account_to_recover ), new_owner_authority( allocator< shared_authority >( a ) ),
+            expires( _expiration_time )
          {
-            c( *this );
+            new_owner_authority = _new_owner_authority;
          }
-
-         id_type           id;
 
          account_name_type account_to_recover;
          shared_authority  new_owner_authority;
@@ -302,13 +272,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( change_recovery_account_request_object );
       public:
-         template< typename Constructor, typename Allocator >
-         change_recovery_account_request_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
-
-         id_type           id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( change_recovery_account_request_object )
 
          account_name_type account_to_recover;
          account_name_type recovery_account;
@@ -325,7 +289,7 @@ namespace hive { namespace chain {
       account_object,
       indexed_by<
          ordered_unique< tag< by_id >,
-            member< account_object, account_id_type, &account_object::id > >,
+            const_mem_fun< account_object, account_object::id_type, &account_object::get_id > >,
          ordered_unique< tag< by_name >,
             member< account_object, account_name_type, &account_object::name > >,
          ordered_unique< tag< by_proxy >,
@@ -343,7 +307,7 @@ namespace hive { namespace chain {
          ordered_unique< tag< by_delayed_voting >,
             composite_key< account_object,
                const_mem_fun< account_object, time_point_sec, &account_object::get_the_earliest_time >,
-               member< account_object, account_id_type, &account_object::id >
+               const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
             >
          >
       >,
@@ -356,7 +320,7 @@ namespace hive { namespace chain {
       account_metadata_object,
       indexed_by<
          ordered_unique< tag< by_id >,
-            member< account_metadata_object, account_metadata_id_type, &account_metadata_object::id > >,
+            const_mem_fun< account_metadata_object, account_metadata_object::id_type, &account_metadata_object::get_id > >,
          ordered_unique< tag< by_account >,
             member< account_metadata_object, account_id_type, &account_metadata_object::account > >
       >,
@@ -367,12 +331,12 @@ namespace hive { namespace chain {
       owner_authority_history_object,
       indexed_by <
          ordered_unique< tag< by_id >,
-            member< owner_authority_history_object, owner_authority_history_id_type, &owner_authority_history_object::id > >,
+            const_mem_fun< owner_authority_history_object, owner_authority_history_object::id_type, &owner_authority_history_object::get_id > >,
          ordered_unique< tag< by_account >,
             composite_key< owner_authority_history_object,
                member< owner_authority_history_object, account_name_type, &owner_authority_history_object::account >,
                member< owner_authority_history_object, time_point_sec, &owner_authority_history_object::last_valid_time >,
-               member< owner_authority_history_object, owner_authority_history_id_type, &owner_authority_history_object::id >
+               const_mem_fun< owner_authority_history_object, owner_authority_history_object::id_type, &owner_authority_history_object::get_id >
             >,
             composite_key_compare< std::less< account_name_type >, std::less< time_point_sec >, std::less< owner_authority_history_id_type > >
          >
@@ -386,18 +350,18 @@ namespace hive { namespace chain {
       account_authority_object,
       indexed_by <
          ordered_unique< tag< by_id >,
-            member< account_authority_object, account_authority_id_type, &account_authority_object::id > >,
+            const_mem_fun< account_authority_object, account_authority_object::id_type, &account_authority_object::get_id > >,
          ordered_unique< tag< by_account >,
             composite_key< account_authority_object,
                member< account_authority_object, account_name_type, &account_authority_object::account >,
-               member< account_authority_object, account_authority_id_type, &account_authority_object::id >
+               const_mem_fun< account_authority_object, account_authority_object::id_type, &account_authority_object::get_id >
             >,
             composite_key_compare< std::less< account_name_type >, std::less< account_authority_id_type > >
          >,
          ordered_unique< tag< by_last_owner_update >,
             composite_key< account_authority_object,
                member< account_authority_object, time_point_sec, &account_authority_object::last_owner_update >,
-               member< account_authority_object, account_authority_id_type, &account_authority_object::id >
+               const_mem_fun< account_authority_object, account_authority_object::id_type, &account_authority_object::get_id >
             >,
             composite_key_compare< std::greater< time_point_sec >, std::less< account_authority_id_type > >
          >
@@ -411,7 +375,7 @@ namespace hive { namespace chain {
       vesting_delegation_object,
       indexed_by <
          ordered_unique< tag< by_id >,
-            member< vesting_delegation_object, vesting_delegation_id_type, &vesting_delegation_object::id > >,
+            const_mem_fun< vesting_delegation_object, vesting_delegation_object::id_type, &vesting_delegation_object::get_id > >,
          ordered_unique< tag< by_delegation >,
             composite_key< vesting_delegation_object,
                member< vesting_delegation_object, account_name_type, &vesting_delegation_object::delegator >,
@@ -430,11 +394,11 @@ namespace hive { namespace chain {
       vesting_delegation_expiration_object,
       indexed_by <
          ordered_unique< tag< by_id >,
-            member< vesting_delegation_expiration_object, vesting_delegation_expiration_id_type, &vesting_delegation_expiration_object::id > >,
+            const_mem_fun< vesting_delegation_expiration_object, vesting_delegation_expiration_object::id_type, &vesting_delegation_expiration_object::get_id > >,
          ordered_unique< tag< by_expiration >,
             composite_key< vesting_delegation_expiration_object,
                member< vesting_delegation_expiration_object, time_point_sec, &vesting_delegation_expiration_object::expiration >,
-               member< vesting_delegation_expiration_object, vesting_delegation_expiration_id_type, &vesting_delegation_expiration_object::id >
+               const_mem_fun< vesting_delegation_expiration_object, vesting_delegation_expiration_object::id_type, &vesting_delegation_expiration_object::get_id >
             >,
             composite_key_compare< std::less< time_point_sec >, std::less< vesting_delegation_expiration_id_type > >
          >,
@@ -442,7 +406,7 @@ namespace hive { namespace chain {
             composite_key< vesting_delegation_expiration_object,
                member< vesting_delegation_expiration_object, account_name_type, &vesting_delegation_expiration_object::delegator >,
                member< vesting_delegation_expiration_object, time_point_sec, &vesting_delegation_expiration_object::expiration >,
-               member< vesting_delegation_expiration_object, vesting_delegation_expiration_id_type, &vesting_delegation_expiration_object::id >
+               const_mem_fun< vesting_delegation_expiration_object, vesting_delegation_expiration_object::id_type, &vesting_delegation_expiration_object::get_id >
             >,
             composite_key_compare< std::less< account_name_type >, std::less< time_point_sec >, std::less< vesting_delegation_expiration_id_type > >
          >
@@ -456,7 +420,7 @@ namespace hive { namespace chain {
       account_recovery_request_object,
       indexed_by <
          ordered_unique< tag< by_id >,
-            member< account_recovery_request_object, account_recovery_request_id_type, &account_recovery_request_object::id > >,
+            const_mem_fun< account_recovery_request_object, account_recovery_request_object::id_type, &account_recovery_request_object::get_id > >,
          ordered_unique< tag< by_account >,
             member< account_recovery_request_object, account_name_type, &account_recovery_request_object::account_to_recover >
          >,
@@ -477,7 +441,7 @@ namespace hive { namespace chain {
       change_recovery_account_request_object,
       indexed_by <
          ordered_unique< tag< by_id >,
-            member< change_recovery_account_request_object, change_recovery_account_request_id_type, &change_recovery_account_request_object::id > >,
+            const_mem_fun< change_recovery_account_request_object, change_recovery_account_request_object::id_type, &change_recovery_account_request_object::get_id > >,
          ordered_unique< tag< by_account >,
             member< change_recovery_account_request_object, account_name_type, &change_recovery_account_request_object::account_to_recover >
          >,

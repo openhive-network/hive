@@ -93,7 +93,7 @@ public:
    }
 
    template< typename ObjectType >
-   const ObjectType* find( chainbase::oid< ObjectType > key = chainbase::oid< ObjectType >() )
+   const ObjectType* find( chainbase::oid< ObjectType > key = chainbase::oid_ref< ObjectType >() )
    {
       return db().find< ObjectType >( key );
    }
@@ -105,7 +105,7 @@ public:
    }
 
    template< typename ObjectType >
-   const ObjectType& get( const chainbase::oid< ObjectType >& key = chainbase::oid< ObjectType >() )
+   const ObjectType& get( const chainbase::oid< ObjectType >& key = chainbase::oid_ref< ObjectType >() )
    {
       return db().get< ObjectType >( key );
    }

@@ -59,14 +59,14 @@ void sps_processor::find_active_proposals( const time_point_sec& head_time, t_pr
                                              } );
 }
 
-uint64_t sps_processor::calculate_votes( const proposal_id_type& id )
+uint64_t sps_processor::calculate_votes( uint32_t pid )
 {
    uint64_t ret = 0;
 
    const auto& pvidx = db.get_index< proposal_vote_index >().indices().get< by_proposal_voter >();
-   auto found = pvidx.find( id );
+   auto found = pvidx.find( pid );
 
-   while( found != pvidx.end() && found->proposal_id == id )
+   while( found != pvidx.end() && found->proposal_id == pid )
    {
       const auto& _voter = db.get_account( found->voter );
 

@@ -406,7 +406,7 @@ namespace hive { namespace chain {
 
          void adjust_total_payout( const comment_cashout_object& a, const asset& hbd, const asset& curator_hbd_value, const asset& beneficiary_value );
 
-         void        adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_bid );
+         void        adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_hbd );
          void        adjust_balance( const account_object& a, const asset& delta );
          void        adjust_balance( const account_name_type& name, const asset& delta );
          void        adjust_savings_balance( const account_object& a, const asset& delta );

@@ -13,19 +13,10 @@ class proposal_object : public object< proposal_object_type, proposal_object >
 {
    CHAINBASE_OBJECT( proposal_object );
    public:
-
-      template<typename Constructor, typename Allocator>
-      proposal_object( Constructor&& c, allocator< Allocator > a )
-      : subject( a ), permlink( a )
-      {
-         c(*this);
-      }
-
-      //internal key
-      id_type id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( proposal_object, (subject)(permlink) )
 
       //additional key, at this moment has the same value as `id` member
-      id_type proposal_id;
+      uint32_t proposal_id;
 
       // account that created the proposal
       account_name_type creator;
@@ -66,21 +57,13 @@ class proposal_vote_object : public object< proposal_vote_object_type, proposal_
 {
    CHAINBASE_OBJECT( proposal_vote_object );
    public:
-
-      template< typename Constructor, typename Allocator >
-      proposal_vote_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
-
-      //internal key
-      id_type id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( proposal_vote_object )
 
       //account that made voting
       account_name_type voter;
 
       //the voter voted for this proposal number
-      proposal_id_type proposal_id;
+      uint32_t proposal_id; //note: it cannot be proposal_id_type because we are searching using proposal_object::proposal_id, not proposal_object::id
 };
 
 struct by_proposal_id;
@@ -92,35 +75,37 @@ struct by_total_votes;
 typedef multi_index_container<
    proposal_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< proposal_object, proposal_id_type, &proposal_object::id > >,
-      ordered_unique< tag< by_proposal_id >, member< proposal_object, proposal_id_type, &proposal_object::proposal_id > >,
+      ordered_unique< tag< by_id >,
+         const_mem_fun< proposal_object, proposal_object::id_type, &proposal_object::get_id > >,
+      ordered_unique< tag< by_proposal_id >,
+         member< proposal_object, uint32_t, &proposal_object::proposal_id > >,
       ordered_unique< tag< by_start_date >,
          composite_key< proposal_object,
             member< proposal_object, time_point_sec, &proposal_object::start_date >,
-            member< proposal_object, proposal_id_type, &proposal_object::proposal_id >
+            member< proposal_object, uint32_t, &proposal_object::proposal_id >
          >,
-         composite_key_compare< std::less< time_point_sec >, std::less< proposal_id_type > >
+         composite_key_compare< std::less< time_point_sec >, std::less< uint32_t > >
       >,
       ordered_unique< tag< by_end_date >,
          composite_key< proposal_object,
             const_mem_fun< proposal_object, time_point_sec, &proposal_object::get_end_date_with_delay >,
-            member< proposal_object, proposal_id_type, &proposal_object::proposal_id >
+            member< proposal_object, uint32_t, &proposal_object::proposal_id >
          >,
-         composite_key_compare< std::less< time_point_sec >, std::less< proposal_id_type > >
+         composite_key_compare< std::less< time_point_sec >, std::less< uint32_t > >
       >,
       ordered_unique< tag< by_creator >,
          composite_key< proposal_object,
             member< proposal_object, account_name_type, &proposal_object::creator >,
-            member< proposal_object, proposal_id_type, &proposal_object::proposal_id >
+            member< proposal_object, uint32_t, &proposal_object::proposal_id >
          >,
-         composite_key_compare< std::less< account_name_type >, std::less< proposal_id_type > >
+         composite_key_compare< std::less< account_name_type >, std::less< uint32_t > >
       >,
       ordered_unique< tag< by_total_votes >,
          composite_key< proposal_object,
             member< proposal_object, uint64_t, &proposal_object::total_votes >,
-            member< proposal_object, proposal_id_type, &proposal_object::proposal_id >
+            member< proposal_object, uint32_t, &proposal_object::proposal_id >
          >,
-         composite_key_compare< std::less< uint64_t >, std::less< proposal_id_type > >
+         composite_key_compare< std::less< uint64_t >, std::less< uint32_t > >
       >
    >,
    allocator< proposal_object >
@@ -132,18 +117,19 @@ struct by_proposal_voter;
 typedef multi_index_container<
    proposal_vote_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< proposal_vote_object, proposal_vote_id_type, &proposal_vote_object::id > >,
+      ordered_unique< tag< by_id >,
+         const_mem_fun< proposal_vote_object, proposal_vote_object::id_type, &proposal_vote_object::get_id > >,
       ordered_unique< tag< by_voter_proposal >,
          composite_key< proposal_vote_object,
             member< proposal_vote_object, account_name_type, &proposal_vote_object::voter >,
-            member< proposal_vote_object, proposal_id_type, &proposal_vote_object::proposal_id >
-            >
-       >,
+            member< proposal_vote_object, uint32_t, &proposal_vote_object::proposal_id >
+         >
+      >,
       ordered_unique< tag< by_proposal_voter >,
          composite_key< proposal_vote_object,
-            member< proposal_vote_object, proposal_id_type, &proposal_vote_object::proposal_id >,
+            member< proposal_vote_object, uint32_t, &proposal_vote_object::proposal_id >,
             member< proposal_vote_object, account_name_type, &proposal_vote_object::voter >
-            >
+         >
        >
    >,
    allocator< proposal_vote_object >

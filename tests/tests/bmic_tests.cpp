@@ -14,7 +14,7 @@ void basic_test( const std::vector< uint64_t >& v, Call&& call )
    {
       auto constructor = [ &item, &call ]( Object &obj )
       {
-         obj.id = item;
+         obj.id = typename Object::id_type( item );
          call( obj );
          obj.val = 100 - item;
       };
@@ -29,7 +29,7 @@ void basic_test( const std::vector< uint64_t >& v, Call&& call )
    BOOST_TEST_MESSAGE( "Creating 1 object" );
    auto constructor2 = [ &call ]( Object &obj )
    {
-      obj.id = 0;
+      obj.id = typename Object::id_type( 0 );
       call( obj );
       obj.val = 888;
    };
@@ -48,7 +48,7 @@ void basic_test( const std::vector< uint64_t >& v, Call&& call )
    {
       auto constructor = [ &item, &call ]( Object &obj )
       {
-         obj.id = item;
+         obj.id = typename Object::id_type( item );
          call( obj );
          obj.val = 100 - item;
       };
@@ -79,7 +79,7 @@ void insert_remove_test( const std::vector< uint64_t >& v, Call&& call )
    {
       auto constructor = [ &item, &call ]( Object &obj )
       {
-         obj.id = item;
+         obj.id = typename Object::id_type( item );
          call( obj );
          obj.val = item;
       };
@@ -91,7 +91,7 @@ void insert_remove_test( const std::vector< uint64_t >& v, Call&& call )
    BOOST_TEST_MESSAGE( "Removing objects one by one. Every object is removed by erase method" );
    for( int64_t i = 0; i < cnt; ++i )
    {
-      auto found = c.find( i );
+      auto found = c.find( typename Object::id_type( i ) );
       BOOST_REQUIRE( found != c.end() );
       c.erase( found );
       BOOST_REQUIRE( v.size() - i - 1 == c.size() );
@@ -104,7 +104,7 @@ void insert_remove_test( const std::vector< uint64_t >& v, Call&& call )
    {
       auto constructor = [ &item, &cnt, &call ]( Object &obj )
       {
-         obj.id = item;
+         obj.id = typename Object::id_type( item );
          call( obj );
          obj.val = cnt;
       };
@@ -122,7 +122,12 @@ void insert_remove_test( const std::vector< uint64_t >& v, Call&& call )
    BOOST_REQUIRE( c.size() == 1 );
 
    BOOST_TEST_MESSAGE( "Adding object with id_key = 0" );
-   auto constructor1 = [ &v, &call ]( Object &obj ) { obj.id = v[0]; call( obj ); obj.val = 100; };
+   auto constructor1 = [ &v, &call ]( Object &obj )
+   {
+      obj.id = typename Object::id_type( v[0] );
+      call( obj );
+      obj.val = 100;
+   };
    c.emplace( std::move( Object( constructor1, std::allocator< Object >() ) ) );
    BOOST_REQUIRE( c.size() == 2 );
 
@@ -165,7 +170,7 @@ void modify_test( const std::vector< uint64_t >& v, Call1&& call1, Call2&& call2
    {
       auto constructor = [ &item, &call1 ]( Object &obj )
       {
-         obj.id = item;
+         obj.id = typename Object::id_type( item );
          call1( obj );
          obj.val = item + 100;
       };
@@ -209,7 +214,7 @@ void misc_test( const std::vector< uint64_t >& v )
    {
       auto constructor = [ &item ]( Object &obj )
       {
-         obj.id = item;
+         obj.id = typename Object::id_type( item );
          obj.name = "any_name";
          obj.val = item + 200;
       };
@@ -263,7 +268,7 @@ void misc_test( const std::vector< uint64_t >& v )
    {
       auto constructor = [ &item ]( Object &obj )
       {
-         obj.id = item;
+         obj.id = typename Object::id_type( item );
          obj.name = "all_objects_have_the_same_name";
          obj.val = 667;
       };
@@ -288,7 +293,7 @@ void misc_test( const std::vector< uint64_t >& v )
    {
       auto constructor = [ &item, &cnt ]( Object &obj )
       {
-         obj.id = item;
+         obj.id = typename Object::id_type( item );
          obj.name = "object nr:" + std::to_string( cnt++ );
          obj.val = 5000;
       };
@@ -300,14 +305,14 @@ void misc_test( const std::vector< uint64_t >& v )
    const auto& ordered_idx = c.template get< SimpleIndex >();
    const auto& composite_ordered_idx = c.template get< ComplexIndex >();
 
-   auto found = ordered_idx.find( v.size() - 1 );
+   auto found = ordered_idx.find( typename Object::id_type( v.size() - 1 ) );
    BOOST_REQUIRE( found != ordered_idx.end() );
    BOOST_REQUIRE( size_t( found->id ) == v.size() - 1 );
 
-   found = ordered_idx.find( 987654 );
+   found = ordered_idx.find( typename Object::id_type( 987654 ) );
    BOOST_REQUIRE( found == ordered_idx.end() );
 
-   found = ordered_idx.find( v[0] );
+   found = ordered_idx.find( typename Object::id_type( v[0] ) );
    BOOST_REQUIRE( found != ordered_idx.end() );
 
    auto cfound = composite_ordered_idx.find( boost::make_tuple( "stupid_name", 5000 ) );
@@ -343,7 +348,7 @@ void misc_test3( const std::vector< uint64_t >& v )
    {
       auto constructor = [ &item ]( Object &obj )
       {
-         obj.id = item;
+         obj.id = typename Object::id_type( item );
          obj.val = item + 1;
          obj.val2 = item + 2;
          obj.val3 = item + 3;
@@ -357,13 +362,13 @@ void misc_test3( const std::vector< uint64_t >& v )
    const auto& composite_ordered_idx = c.template get< ComplexIndex >();
    const auto& another_composite_ordered_idx = c.template get< AnotherComplexIndex >();
 
-   auto found = ordered_idx.lower_bound( 5739854 );
+   auto found = ordered_idx.lower_bound( typename Object::id_type( 5739854 ) );
    BOOST_REQUIRE( found == ordered_idx.end() );
 
-   found = ordered_idx.upper_bound( 5739854 );
+   found = ordered_idx.upper_bound( typename Object::id_type( 5739854 ) );
    BOOST_REQUIRE( found == ordered_idx.end() );
 
-   found = ordered_idx.lower_bound(  ordered_idx.begin()->id );
+   found = ordered_idx.lower_bound( ordered_idx.begin()->id );
    BOOST_REQUIRE( found == ordered_idx.begin() );
 
    auto found2 = ordered_idx.upper_bound( ordered_idx.begin()->id );
@@ -412,20 +417,20 @@ BOOST_AUTO_TEST_CASE(insert_remove_tests)
 
 BOOST_AUTO_TEST_CASE(insert_remove_collision_tests)
 {
-   auto c1 = []( bmic::test_object& obj ) { obj.id = 0; obj.name = "_name7"; obj.val = 7; };
-   auto c2 = []( bmic::test_object& obj ) { obj.id = 0; obj.name = "_name8"; obj.val = 8; };
-   auto c3 = []( bmic::test_object& obj ) { obj.id = 0; obj.name = "the_same_name"; obj.val = 7; };
-   auto c4 = []( bmic::test_object& obj ) { obj.id = 1; obj.name = "the_same_name"; obj.val = 7; };
+   auto c1 = []( bmic::test_object& obj ) { obj.id = bmic::test_object::id_type( 0 ); obj.name = "_name7"; obj.val = 7; };
+   auto c2 = []( bmic::test_object& obj ) { obj.id = bmic::test_object::id_type( 0 ); obj.name = "_name8"; obj.val = 8; };
+   auto c3 = []( bmic::test_object& obj ) { obj.id = bmic::test_object::id_type( 0 ); obj.name = "the_same_name"; obj.val = 7; };
+   auto c4 = []( bmic::test_object& obj ) { obj.id = bmic::test_object::id_type( 1 ); obj.name = "the_same_name"; obj.val = 7; };
 
-   auto c1b = []( bmic::test_object2& obj ) { obj.id = 0; obj.val = 7; };
-   auto c2b = []( bmic::test_object2& obj ) { obj.id = 0; obj.val = 8; };
-   auto c3b = []( bmic::test_object2& obj ) { obj.id = 6; obj.val = 7; };
-   auto c4b = []( bmic::test_object2& obj ) { obj.id = 6; obj.val = 7; };
+   auto c1b = []( bmic::test_object2& obj ) { obj.id = bmic::test_object2::id_type( 0 ); obj.val = 7; };
+   auto c2b = []( bmic::test_object2& obj ) { obj.id = bmic::test_object2::id_type( 0 ); obj.val = 8; };
+   auto c3b = []( bmic::test_object2& obj ) { obj.id = bmic::test_object2::id_type( 6 ); obj.val = 7; };
+   auto c4b = []( bmic::test_object2& obj ) { obj.id = bmic::test_object2::id_type( 6 ); obj.val = 7; };
 
-   auto c1c = []( bmic::test_object3& obj ) { obj.id = 0; obj.val = 20; obj.val2 = 20; };
-   auto c2c = []( bmic::test_object3& obj ) { obj.id = 1; obj.val = 20; obj.val2 = 20; };
-   auto c3c = []( bmic::test_object3& obj ) { obj.id = 2; obj.val = 30; obj.val3 = 30; };
-   auto c4c = []( bmic::test_object3& obj ) { obj.id = 3; obj.val = 30; obj.val3 = 30; };
+   auto c1c = []( bmic::test_object3& obj ) { obj.id = bmic::test_object3::id_type( 0 ); obj.val = 20; obj.val2 = 20; };
+   auto c2c = []( bmic::test_object3& obj ) { obj.id = bmic::test_object3::id_type( 1 ); obj.val = 20; obj.val2 = 20; };
+   auto c3c = []( bmic::test_object3& obj ) { obj.id = bmic::test_object3::id_type( 2 ); obj.val = 30; obj.val3 = 30; };
+   auto c4c = []( bmic::test_object3& obj ) { obj.id = bmic::test_object3::id_type( 3 ); obj.val = 30; obj.val3 = 30; };
 
    insert_remove_collision_test< bmic::test_object_index, bmic::test_object >( {}, c1, c2, c3, c4 );
    insert_remove_collision_test< bmic::test_object_index2, bmic::test_object2 >( {}, c1b, c2b, c3b, c4b );

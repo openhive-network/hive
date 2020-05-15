@@ -640,7 +640,7 @@ void database_fixture::set_witness_props( const flat_map< string, vector< char >
 
 account_id_type database_fixture::get_account_id( const string& account_name )const
 {
-   return db->get_account( account_name ).id;
+   return db->get_account( account_name ).get_id();
 }
 
 asset database_fixture::get_balance( const string& account_name )const
@@ -1046,8 +1046,8 @@ void sps_proposal_database_fixture::remove_proposal(account_name_type _deleter, 
 bool sps_proposal_database_fixture::find_vote_for_proposal(const std::string& _user, int64_t _proposal_id)
 {
       const auto& proposal_vote_idx = db->get_index< proposal_vote_index >().indices(). template get< by_voter_proposal >();
-      auto found_vote = proposal_vote_idx.find( boost::make_tuple(_user, _proposal_id) );
-      return found_vote != proposal_vote_idx.end() ;
+      auto found_vote = proposal_vote_idx.find( boost::make_tuple(_user, _proposal_id ) );
+      return found_vote != proposal_vote_idx.end();
 }
 
 uint64_t sps_proposal_database_fixture::get_nr_blocks_until_maintenance_block()
@@ -1274,7 +1274,7 @@ bool delayed_vote_database_fixture::check_collection( const COLLECTION& collecti
 
    if( !found->account )
       return false;
-   return ( found->withdraw_executor == withdraw_executor ) && ( found->val == val ) && ( found->account->id == obj.id );
+   return ( found->withdraw_executor == withdraw_executor ) && ( found->val == val ) && ( found->account->get_id() == obj.get_id() );
 }
 
 using dvd_vector = std::vector< delayed_votes_data >;

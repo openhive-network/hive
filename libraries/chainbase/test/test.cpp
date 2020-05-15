@@ -6,6 +6,7 @@
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/member.hpp>
+#include <boost/multi_index/mem_fun.hpp>
 
 #include <iostream>
 
@@ -16,22 +17,22 @@ using namespace boost::multi_index;
 
 #ifndef ENABLE_MIRA
 
-struct book : public chainbase::object<0, book> {
+class book : public chainbase::object<0, book>
+{
+   CHAINBASE_OBJECT( book );
 
-   template<typename Constructor, typename Allocator>
-    book(  Constructor&& c, Allocator&& a ) {
-       c(*this);
-    }
+public:
+   CHAINBASE_DEFAULT_CONSTRUCTOR( book )
 
-    id_type id;
-    int a = 0;
-    int b = 1;
+   int a = 0;
+   int b = 1;
 };
+typedef oid_ref< book > book_id_type;
 
 typedef multi_index_container<
   book,
   indexed_by<
-     ordered_unique< member<book,book::id_type,&book::id> >,
+     ordered_unique< const_mem_fun<book,book::id_type,&book::get_id> >,
      ordered_non_unique< BOOST_MULTI_INDEX_MEMBER(book,int,a) >,
      ordered_non_unique< BOOST_MULTI_INDEX_MEMBER(book,int,b) >
   >,

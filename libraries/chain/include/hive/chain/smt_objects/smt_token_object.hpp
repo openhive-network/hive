@@ -37,11 +37,7 @@ public:
 
 public:
 
-   template< typename Constructor, typename Allocator >
-   smt_token_object( Constructor&& c, allocator< Allocator > a )
-   {
-      c( *this );
-   }
+   CHAINBASE_DEFAULT_CONSTRUCTOR( smt_token_object )
 
    price one_vesting_to_one_liquid() const
    {
@@ -70,9 +66,6 @@ public:
 
       return price( asset( reward_vesting_shares, liquid_symbol.get_paired_symbol() ), asset( reward_vesting_smt, liquid_symbol ) );
    }
-
-   // id_type is actually oid<smt_token_object>
-   id_type              id;
 
    /**The object represents both liquid and vesting variant of SMT
     * To get vesting symbol, call liquid_symbol.get_paired_symbol()
@@ -115,13 +108,8 @@ class smt_ico_object : public object< smt_ico_object_type, smt_ico_object >
    CHAINBASE_OBJECT( smt_ico_object );
 
 public:
-   template< typename Constructor, typename Allocator >
-   smt_ico_object( Constructor&& c, allocator< Allocator > a )
-   {
-      c( *this );
-   }
+   CHAINBASE_DEFAULT_CONSTRUCTOR( smt_ico_object )
 
-   id_type id;
    asset_symbol_type             symbol;
    hive::protocol::
    smt_capped_generation_policy  capped_generation_policy;
@@ -138,13 +126,8 @@ class smt_token_emissions_object : public object< smt_token_emissions_object_typ
    CHAINBASE_OBJECT( smt_token_emissions_object );
 
 public:
-   template< typename Constructor, typename Allocator >
-   smt_token_emissions_object( Constructor&& c, allocator< Allocator > a )
-   {
-      c( *this );
-   }
+   CHAINBASE_DEFAULT_CONSTRUCTOR( smt_token_emissions_object )
 
-   id_type                               id;
    asset_symbol_type                     symbol;
    time_point_sec                        schedule_time = HIVE_GENESIS_TIME;
    hive::protocol::smt_emissions_unit   emissions_unit;
@@ -164,13 +147,8 @@ class smt_contribution_object : public object< smt_contribution_object_type, smt
    CHAINBASE_OBJECT( smt_contribution_object );
 
 public:
-   template< typename Constructor, typename Allocator >
-   smt_contribution_object( Constructor&& c, allocator< Allocator > a )
-   {
-      c( *this );
-   }
+   CHAINBASE_DEFAULT_CONSTRUCTOR( smt_contribution_object )
 
-   id_type                               id;
    asset_symbol_type                     symbol;
    account_name_type                     contributor;
    uint32_t                              contribution_id;
@@ -185,7 +163,7 @@ typedef multi_index_container <
    smt_contribution_object,
    indexed_by <
       ordered_unique< tag< by_id >,
-         member< smt_contribution_object, smt_contribution_object_id_type, &smt_contribution_object::id > >,
+         const_mem_fun< smt_contribution_object, smt_contribution_object::id_type, &smt_contribution_object::get_id > >,
       ordered_unique< tag< by_symbol_contributor >,
          composite_key< smt_contribution_object,
             member< smt_contribution_object, asset_symbol_type, &smt_contribution_object::symbol >,
@@ -196,7 +174,7 @@ typedef multi_index_container <
       ordered_unique< tag< by_symbol_id >,
          composite_key< smt_contribution_object,
             member< smt_contribution_object, asset_symbol_type, &smt_contribution_object::symbol >,
-            member< smt_contribution_object, smt_contribution_object_id_type, &smt_contribution_object::id >
+            const_mem_fun< smt_contribution_object, smt_contribution_object::id_type, &smt_contribution_object::get_id >
          >
       >
 #ifndef IS_LOW_MEM
@@ -220,7 +198,7 @@ typedef multi_index_container <
    smt_token_object,
    indexed_by <
       ordered_unique< tag< by_id >,
-         member< smt_token_object, smt_token_id_type, &smt_token_object::id > >,
+         const_mem_fun< smt_token_object, smt_token_object::id_type, &smt_token_object::get_id > >,
       ordered_unique< tag< by_symbol >,
          member< smt_token_object, asset_symbol_type, &smt_token_object::liquid_symbol > >,
       ordered_unique< tag< by_control_account >,
@@ -237,7 +215,7 @@ typedef multi_index_container <
    smt_ico_object,
    indexed_by <
       ordered_unique< tag< by_id >,
-         member< smt_ico_object, smt_ico_object_id_type, &smt_ico_object::id > >,
+         const_mem_fun< smt_ico_object, smt_ico_object::id_type, &smt_ico_object::get_id > >,
       ordered_unique< tag< by_symbol >,
          member< smt_ico_object, asset_symbol_type, &smt_ico_object::symbol > >
    >,
@@ -250,7 +228,7 @@ typedef multi_index_container <
    smt_token_emissions_object,
    indexed_by <
       ordered_unique< tag< by_id >,
-         member< smt_token_emissions_object, smt_token_emissions_object_id_type, &smt_token_emissions_object::id > >,
+         const_mem_fun< smt_token_emissions_object, smt_token_emissions_object::id_type, &smt_token_emissions_object::get_id > >,
       ordered_unique< tag< by_symbol_time >,
          composite_key< smt_token_emissions_object,
             member< smt_token_emissions_object, asset_symbol_type, &smt_token_emissions_object::symbol >,

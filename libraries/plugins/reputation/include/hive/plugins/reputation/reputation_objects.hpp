@@ -26,25 +26,21 @@ class reputation_object : public object< reputation_object_type, reputation_obje
 {
    CHAINBASE_OBJECT( reputation_object );
    public:
-      template< typename Constructor, typename Allocator >
-      reputation_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
-
-      id_type           id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( reputation_object )
 
       account_name_type account;
       share_type        reputation;
 };
 
-typedef oid< reputation_object > reputation_id_type;
+typedef oid_ref< reputation_object > reputation_id_type;
 
 typedef multi_index_container<
    reputation_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< reputation_object, reputation_id_type, &reputation_object::id > >,
-      ordered_unique< tag< by_account >, member< reputation_object, account_name_type, &reputation_object::account > >
+      ordered_unique< tag< by_id >,
+         const_mem_fun< reputation_object, reputation_object::id_type, &reputation_object::get_id > >,
+      ordered_unique< tag< by_account >,
+         member< reputation_object, account_name_type, &reputation_object::account > >
    >,
    allocator< reputation_object >
 > reputation_index;

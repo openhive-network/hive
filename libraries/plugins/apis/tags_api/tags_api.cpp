@@ -99,11 +99,11 @@ DEFINE_API_IMPL( tags_api_impl, get_tags_used_by_author )
    FC_ASSERT( acnt != nullptr, "Author not found" );
 
    const auto& tidx = _db.get_index< tags::author_tag_stats_index, tags::by_author_posts_tag >();
-   auto itr = tidx.lower_bound( boost::make_tuple( acnt->id, 0 ) );
+   auto itr = tidx.lower_bound( boost::make_tuple( acnt->get_id(), 0 ) );
 
    get_tags_used_by_author_return result;
 
-   while( itr != tidx.end() && itr->author == acnt->id && result.tags.size() < 1000 )
+   while( itr != tidx.end() && itr->author == acnt->get_id() && result.tags.size() < 1000 )
    {
       result.tags.push_back( tag_count_object( { itr->tag, itr->total_posts } ) );
       ++itr;
@@ -114,11 +114,11 @@ DEFINE_API_IMPL( tags_api_impl, get_tags_used_by_author )
 
 DEFINE_API_IMPL( tags_api_impl, get_discussion )
 {
-   auto itr = _db.find_comment( args.author, args.permlink );
+   auto* comment = _db.find_comment( args.author, args.permlink );
 
-   if( itr != nullptr )
+   if( comment != nullptr )
    {
-      get_discussion_return result( *itr, _db );
+      get_discussion_return result( *comment, _db );
       set_pending_payout( result );
       result.active_votes = get_active_votes( get_active_votes_args( { args.author, args.permlink } ) ).votes;
       return result;
@@ -130,9 +130,12 @@ DEFINE_API_IMPL( tags_api_impl, get_discussion )
 DEFINE_API_IMPL( tags_api_impl, get_content_replies )
 {
    get_content_replies_return result;
-   const account_object * author = _db.find_account(args.author);
+   const account_object* author = _db.find_account( args.author );
    account_id_type author_id;
-   if(author == nullptr) return result; else author_id = author->id; 
+   if(author == nullptr)
+      return result;
+   else
+      author_id = author->get_id();
    const auto& by_permlink_idx = _db.get_index< chain::comment_index, chain::by_parent >();
    auto itr = by_permlink_idx.find( boost::make_tuple( author_id, args.permlink ) );
 
@@ -149,7 +152,7 @@ DEFINE_API_IMPL( tags_api_impl, get_post_discussions_by_payout )
 {
    args.validate();
    auto tag = fc::to_lower( args.tag );
-   auto parent = chain::comment_id_type();
+   auto parent = chain::comment_id_type(); //ignored
 
    const auto& tidx = _db.get_index< tags::tag_index, tags::by_reward_fund_net_rshares >();
    auto tidx_itr = tidx.lower_bound( boost::make_tuple( tag, true ) );
@@ -161,7 +164,7 @@ DEFINE_API_IMPL( tags_api_impl, get_comment_discussions_by_payout )
 {
    args.validate();
    auto tag = fc::to_lower( args.tag );
-   auto parent = chain::comment_id_type( 1 );
+   auto parent = chain::comment_id_type(); //ignored
 
    const auto& tidx = _db.get_index< tags::tag_index, tags::by_reward_fund_net_rshares >();
    auto tidx_itr = tidx.lower_bound( boost::make_tuple( tag, false ) );
@@ -270,7 +273,7 @@ DEFINE_API_IMPL( tags_api_impl, get_discussions_by_feed )
 
    if( start_author.size() || start_permlink.size() )
    {
-      auto start_c = c_idx.find( boost::make_tuple( _db.get_comment( start_author, start_permlink ).id, account.name ) );
+      auto start_c = c_idx.find( boost::make_tuple( _db.get_comment( start_author, start_permlink ).get_id(), account.name ) );
       FC_ASSERT( start_c != c_idx.end(), "Comment is not in account's feed" );
       feed_itr = f_idx.iterator_to( *start_c );
    }
@@ -319,7 +322,7 @@ DEFINE_API_IMPL( tags_api_impl, get_discussions_by_blog )
 
    if( start_author.size() || start_permlink.size() )
    {
-      auto start_c = c_idx.find( boost::make_tuple( _db.get_comment( start_author, start_permlink ).id, account.name ) );
+      auto start_c = c_idx.find( boost::make_tuple( _db.get_comment( start_author, start_permlink ).get_id(), account.name ) );
       FC_ASSERT( start_c != c_idx.end(), "Comment is not in account's blog" );
       blog_itr = b_idx.iterator_to( *start_c );
    }
@@ -378,16 +381,17 @@ DEFINE_API_IMPL( tags_api_impl, get_discussions_by_comments )
    args.validate();
    FC_ASSERT( args.start_author, "Must get comments for a specific author" );
    const account_object* start_author = _db.find_account(*( args.start_author ));
-   if(!start_author) return result;
+   if( !start_author )
+      return result;
    auto start_permlink = args.start_permlink ? *( args.start_permlink ) : "";
 
    const auto& c_idx = _db.get_index< comment_index, by_permlink >();
    const auto& t_idx = _db.get_index< comment_index, by_author_last_update >();
-   auto comment_itr = t_idx.lower_bound( start_author->id );
+   auto comment_itr = t_idx.lower_bound( start_author->get_id() );
 
    if( start_permlink.size() )
    {
-      auto start_c = c_idx.find( boost::make_tuple( start_author->id, start_permlink ) );
+      auto start_c = c_idx.find( boost::make_tuple( start_author->get_id(), start_permlink ) );
       FC_ASSERT( start_c != c_idx.end(), "Comment is not in account's comments" );
       comment_itr = t_idx.iterator_to( *start_c );
    }
@@ -396,13 +400,13 @@ DEFINE_API_IMPL( tags_api_impl, get_discussions_by_comments )
 
    while( result.discussions.size() < args.limit && comment_itr != t_idx.end() )
    {
-      if( comment_itr->author_id != start_author->id )
+      if( comment_itr->author_id != start_author->get_id() )
          break;
       if( comment_itr->parent_author_id != HIVE_ROOT_POST_PARENT_ID )
       {
          try
          {
-            result.discussions.push_back( lookup_discussion( comment_itr->id ) );
+            result.discussions.push_back( lookup_discussion( comment_itr->get_id() ) );
          }
          catch( const fc::exception& e )
          {
@@ -436,7 +440,7 @@ DEFINE_API_IMPL( tags_api_impl, get_replies_by_last_update )
    FC_ASSERT( args.limit <= 100 );
    const auto& last_update_idx = _db.get_index< comment_index, by_last_update >();
    auto itr = last_update_idx.begin();
-   account_id_type parent_author = _db.get_account(args.start_parent_author).id;
+   account_id_type parent_author = _db.get_account( args.start_parent_author ).get_id();
 
    if( args.start_permlink.size() )
    {
@@ -472,7 +476,8 @@ DEFINE_API_IMPL( tags_api_impl, get_discussions_by_author_before_date )
       FC_ASSERT( args.limit <= 100 );
 
       const account_object* author = _db.find_account(args.author);
-      if(!author) return result;
+      if( !author )
+         return result;
 
       result.discussions.reserve( args.limit );
       uint32_t count = 0;
@@ -483,18 +488,18 @@ DEFINE_API_IMPL( tags_api_impl, get_discussions_by_author_before_date )
       if( before_date == time_point_sec() )
          before_date = time_point_sec::maximum();
 
-      auto itr = didx.lower_bound( boost::make_tuple( author->id, time_point_sec::maximum() ) );
+      auto itr = didx.lower_bound( boost::make_tuple( author->get_id(), time_point_sec::maximum() ) );
       if( args.start_permlink.size() )
       {
-         const auto& comment = _db.get_comment( author->id, args.start_permlink );
+         const auto& comment = _db.get_comment( author->get_id(), args.start_permlink );
          if( comment.created < before_date )
             itr = didx.iterator_to( comment );
       }
 
 
-      while( itr != didx.end() && itr->author_id == author->id && count < args.limit )
+      while( itr != didx.end() && itr->author_id == author->get_id() && count < args.limit )
       {
-         if( itr->parent_author_id != HIVE_ROOT_POST_PARENT_ID )
+         if( itr->parent_author_id == HIVE_ROOT_POST_PARENT_ID )
          {
             result.discussions.push_back( discussion( *itr, _db ) );
             set_pending_payout( result.discussions.back() );
@@ -519,7 +524,7 @@ DEFINE_API_IMPL( tags_api_impl, get_active_votes )
    get_active_votes_return result;
    const auto& comment = _db.get_comment( args.author, args.permlink );
    const auto& idx = _db.get_index< chain::comment_vote_index, chain::by_comment_voter >();
-   chain::comment_id_type cid(comment.id);
+   chain::comment_id_type cid( comment.get_id() );
    auto itr = idx.lower_bound( cid );
    while( itr != idx.end() && itr->comment == cid )
    {
@@ -648,7 +653,7 @@ discussion_query_result tags_api_impl::get_discussions( const discussion_query& 
 
    if( query.start_author && query.start_permlink )
    {
-      start = _db.get_comment( *query.start_author, *query.start_permlink ).id;
+      start = _db.get_comment( *query.start_author, *query.start_permlink ).get_id();
       auto itr = cidx.find( start );
       while( itr != cidx.end() && itr->comment == start )
       {
@@ -710,7 +715,7 @@ chain::comment_id_type tags_api_impl::get_parent( const discussion_query& query 
 {
    chain::comment_id_type parent;
    if( query.parent_author && query.parent_permlink ) {
-      parent = _db.get_comment( *query.parent_author, *query.parent_permlink ).id;
+      parent = _db.get_comment( *query.parent_author, *query.parent_permlink ).get_id();
    }
    return parent;
 }

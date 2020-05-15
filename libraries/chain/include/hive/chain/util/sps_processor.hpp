@@ -35,7 +35,7 @@ class sps_processor
 
       void find_active_proposals( const time_point_sec& head_time, t_proposals& proposals );
 
-      uint64_t calculate_votes( const proposal_id_type& id );
+      uint64_t calculate_votes( uint32_t pid );
       void calculate_votes( const t_proposals& proposals );
 
       void sort_by_votes( t_proposals& proposals );

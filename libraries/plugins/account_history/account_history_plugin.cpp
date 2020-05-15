@@ -89,7 +89,7 @@ struct operation_visitor
       {
          ahist.account  = item;
          ahist.sequence = sequence;
-         ahist.op       = new_obj->id;
+         ahist.op       = new_obj->get_id();
       });
 
       if( _prune )

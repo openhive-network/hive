@@ -49,7 +49,7 @@ struct discussion_index
 struct api_limit_order_object
 {
    api_limit_order_object( const limit_order_object& o ) :
-      id( o.id ),
+      id( o.get_id() ),
       created( o.created ),
       expiration( o.expiration ),
       seller( o.seller ),
@@ -478,7 +478,7 @@ struct api_witness_object
       available_witness_account_subsidies( w.available_witness_account_subsidies )
    {}
 
-   witness_id_type  id;
+   witness_id_type         id;
    account_name_type       owner;
    time_point_sec          created;
    string                  url;
@@ -568,7 +568,7 @@ struct api_reward_fund_object
 {
    api_reward_fund_object() {}
    api_reward_fund_object( const database_api::api_reward_fund_object& r ) :
-      id( r.id ),
+      id( r.get_id() ),
       name( r.name ),
       reward_balance( legacy_asset::from_asset( r.reward_balance ) ),
       recent_claims( r.recent_claims ),
@@ -596,7 +596,7 @@ struct api_escrow_object
 {
    api_escrow_object() {}
    api_escrow_object( const database_api::api_escrow_object& e ) :
-      id( e.id ),
+      id( e.get_id() ),
       escrow_id( e.escrow_id ),
       from( e.from ),
       to( e.to ),
@@ -653,7 +653,7 @@ struct api_vesting_delegation_object
 {
    api_vesting_delegation_object() {}
    api_vesting_delegation_object( const database_api::api_vesting_delegation_object& v ) :
-      id( v.id ),
+      id( v.get_id() ),
       delegator( v.delegator ),
       delegatee( v.delegatee ),
       vesting_shares( legacy_asset::from_asset( v.vesting_shares ) ),
@@ -671,7 +671,7 @@ struct api_vesting_delegation_expiration_object
 {
    api_vesting_delegation_expiration_object() {}
    api_vesting_delegation_expiration_object( const database_api::api_vesting_delegation_expiration_object& v ) :
-      id( v.id ),
+      id( v.get_id() ),
       delegator( v.delegator ),
       vesting_shares( legacy_asset::from_asset( v.vesting_shares ) ),
       expiration( v.expiration )
@@ -687,7 +687,7 @@ struct api_convert_request_object
 {
    api_convert_request_object() {}
    api_convert_request_object( const database_api::api_convert_request_object& c ) :
-      id( c.id ),
+      id( c.get_id() ),
       owner( c.owner ),
       requestid( c.requestid ),
       amount( legacy_asset::from_asset( c.amount ) ),
@@ -707,7 +707,7 @@ struct api_proposal_object
 {
    api_proposal_object() {}
    api_proposal_object( const database_api::api_proposal_object& p ) :
-      id( p.id ),
+      id( proposal_object::id_type( p.id ) ),
       proposal_id( p.proposal_id ),
       creator( p.creator ),
       receiver( p.receiver ),
@@ -720,7 +720,7 @@ struct api_proposal_object
    {}
 
    proposal_id_type  id;
-   proposal_id_type  proposal_id;
+   uint32_t          proposal_id;
    account_name_type creator;
    account_name_type receiver;
    time_point_sec    start_date;

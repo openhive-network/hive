@@ -152,7 +152,7 @@ std::vector< std::pair< int64_t, account_name_type > > dump_all_accounts( const 
    const auto& idx = db.get_index< account_index >().indices().get< by_id >();
    for( auto it=idx.begin(); it!=idx.end(); ++it )
    {
-      result.emplace_back( it->id._id, it->name );
+      result.emplace_back( it->get_id(), it->name );
    }
 
    return result;
@@ -164,7 +164,7 @@ std::vector< std::pair< int64_t, account_name_type > > dump_all_rc_accounts( con
    const auto& idx = db.get_index< rc_account_index >().indices().get< by_id >();
    for( auto it=idx.begin(); it!=idx.end(); ++it )
    {
-      result.emplace_back( it->id._id, it->account );
+      result.emplace_back( it->get_id(), it->account );
    }
 
    return result;
@@ -325,8 +325,8 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
    count_resources( note.transaction, tx_info.usage );
 
    // How many RC does this transaction cost?
-   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_object::id_type() );
-   const rc_pool_object& pool_obj = _db.get< rc_pool_object, by_id >( rc_pool_object::id_type() );
+   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
+   const rc_pool_object& pool_obj = _db.get< rc_pool_object, by_id >( rc_pool_id_type() );
 
    int64_t total_cost = 0;
 
@@ -443,7 +443,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
    }
 
    const witness_schedule_object& wso = _db.get_witness_schedule_object();
-   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_object::id_type() );
+   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
 
    rc_block_info block_info;
 
@@ -462,7 +462,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       } );
    }
 
-   _db.modify( _db.get< rc_pool_object, by_id >( rc_pool_object::id_type() ),
+   _db.modify( _db.get< rc_pool_object, by_id >( rc_pool_id_type() ),
       [&]( rc_pool_object& pool_obj )
       {
          bool debug_print = ((gpo.head_block_number % 10000) == 0);
@@ -541,7 +541,7 @@ void rc_plugin_impl::on_first_block()
          dlog( "Genesis params_obj is ${o}", ("o", params_obj) );
       } );
 
-   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_object::id_type() );
+   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
 
    _db.create< rc_pool_object >(
       [&]( rc_pool_object& pool_obj )
@@ -924,9 +924,9 @@ struct post_apply_operation_visitor
 
       if( op.hardfork_id == HIVE_HARDFORK_0_20 )
       {
-         const auto& params = _db.get< rc_resource_param_object, by_id >( rc_resource_param_object::id_type() );
+         const auto& params = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
 
-         _db.modify( _db.get< rc_pool_object, by_id >( rc_pool_object::id_type() ), [&]( rc_pool_object& p )
+         _db.modify( _db.get< rc_pool_object, by_id >( rc_pool_id_type() ), [&]( rc_pool_object& p )
          {
             for( size_t i = 0; i < HIVE_NUM_RESOURCE_TYPES; i++ )
             {
@@ -1086,8 +1086,8 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
    count_resources( note.action, opt_action_info.usage );
 
    // How many RC does this transaction cost?
-   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_object::id_type() );
-   const rc_pool_object& pool_obj = _db.get< rc_pool_object, by_id >( rc_pool_object::id_type() );
+   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
+   const rc_pool_object& pool_obj = _db.get< rc_pool_object, by_id >( rc_pool_id_type() );
 
    int64_t total_cost = 0;
 

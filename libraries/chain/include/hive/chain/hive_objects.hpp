@@ -26,16 +26,10 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( convert_request_object );
       public:
-         template< typename Constructor, typename Allocator >
-         convert_request_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
+         CHAINBASE_DEFAULT_CONSTRUCTOR( convert_request_object )
 
          //amount of HBD to be converted to HIVE
          const asset& get_convert_amount() const { return amount; }
-
-         id_type           id;
 
          account_name_type owner;
          uint32_t          requestid = 0; ///< id set by owner, the owner,requestid pair must be unique
@@ -48,11 +42,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( escrow_object );
       public:
-         template< typename Constructor, typename Allocator >
-         escrow_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
+         CHAINBASE_DEFAULT_CONSTRUCTOR( escrow_object )
 
          //HIVE portion of transfer balance
          const asset& get_hive_balance() const { return hive_balance; }
@@ -60,8 +50,6 @@ namespace hive { namespace chain {
          const asset& get_hbd_balance() const { return hbd_balance; }
          //fee offered to escrow (can be either in HIVE or HBD)
          const asset& get_fee() const { return pending_fee; }
-
-         id_type           id;
 
          uint32_t          escrow_id = 20;
          account_name_type from;
@@ -84,17 +72,10 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( savings_withdraw_object );
       public:
-         template< typename Constructor, typename Allocator >
-         savings_withdraw_object( Constructor&& c, allocator< Allocator > a )
-            :memo( a )
-         {
-            c( *this );
-         }
+         CHAINBASE_DEFAULT_CONSTRUCTOR( savings_withdraw_object, (memo) )
 
          //amount of savings to withdraw (HIVE or HBD)
          const asset& get_withdraw_amount() const { return amount; }
-
-         id_type           id;
 
          account_name_type from;
          account_name_type to;
@@ -120,16 +101,10 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( liquidity_reward_balance_object );
       public:
-         template< typename Constructor, typename Allocator >
-         liquidity_reward_balance_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
+         CHAINBASE_DEFAULT_CONSTRUCTOR( liquidity_reward_balance_object )
 
          int64_t get_hive_volume() const { return hive_volume; }
          int64_t get_hbd_volume() const { return hbd_volume; }
-
-         id_type           id;
 
          account_id_type   owner;
          int64_t           hive_volume = 0;
@@ -168,14 +143,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( feed_history_object );
       public:
-         template< typename Constructor, typename Allocator >
-         feed_history_object( Constructor&& c, allocator< Allocator > a )
-            :price_history( a )
-         {
-            c( *this );
-         }
-
-         id_type id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( feed_history_object, (price_history) )
 
          price current_median_history; ///< the current median of the price history, used as the base for convert operations
 
@@ -197,13 +165,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( limit_order_object );
       public:
-         template< typename Constructor, typename Allocator >
-         limit_order_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
-
-         id_type           id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( limit_order_object )
 
          time_point_sec    created;
          time_point_sec    expiration;
@@ -231,13 +193,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( withdraw_vesting_route_object, true );
       public:
-         template< typename Constructor, typename Allocator >
-         withdraw_vesting_route_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
-
-         id_type  id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( withdraw_vesting_route_object )
 
          account_name_type from_account;
          account_name_type to_account;
@@ -250,13 +206,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( decline_voting_rights_request_object );
       public:
-         template< typename Constructor, typename Allocator >
-         decline_voting_rights_request_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
-
-         id_type           id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( decline_voting_rights_request_object )
 
          account_name_type account;
          time_point_sec    effective_date;
@@ -266,16 +216,11 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( reward_fund_object );
       public:
-         template< typename Constructor, typename Allocator >
-         reward_fund_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
+         CHAINBASE_DEFAULT_CONSTRUCTOR( reward_fund_object )
 
          //amount of HIVE in reward fund
          const asset& get_reward_balance() const { return reward_balance; }
 
-         id_type                 id;
          reward_fund_name_type   name;
          asset                   reward_balance = asset( 0, HIVE_SYMBOL );
          fc::uint128_t           recent_claims = 0;
@@ -293,17 +238,18 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       limit_order_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< limit_order_object, limit_order_id_type, &limit_order_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< limit_order_object, limit_order_object::id_type, &limit_order_object::get_id > >,
          ordered_unique< tag< by_expiration >,
             composite_key< limit_order_object,
                member< limit_order_object, time_point_sec, &limit_order_object::expiration >,
-               member< limit_order_object, limit_order_id_type, &limit_order_object::id >
+               const_mem_fun< limit_order_object, limit_order_object::id_type, &limit_order_object::get_id >
             >
          >,
          ordered_unique< tag< by_price >,
             composite_key< limit_order_object,
                member< limit_order_object, price, &limit_order_object::sell_price >,
-               member< limit_order_object, limit_order_id_type, &limit_order_object::id >
+               const_mem_fun< limit_order_object, limit_order_object::id_type, &limit_order_object::get_id >
             >,
             composite_key_compare< std::greater< price >, std::less< limit_order_id_type > >
          >,
@@ -322,11 +268,12 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       convert_request_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< convert_request_object, convert_request_id_type, &convert_request_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< convert_request_object, convert_request_object::id_type, &convert_request_object::get_id > >,
          ordered_unique< tag< by_conversion_date >,
             composite_key< convert_request_object,
                member< convert_request_object, time_point_sec, &convert_request_object::conversion_date >,
-               member< convert_request_object, convert_request_id_type, &convert_request_object::id >
+               const_mem_fun< convert_request_object, convert_request_object::id_type, &convert_request_object::get_id >
             >
          >,
          ordered_unique< tag< by_owner >,
@@ -345,8 +292,10 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       liquidity_reward_balance_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< liquidity_reward_balance_object, liquidity_reward_balance_id_type, &liquidity_reward_balance_object::id > >,
-         ordered_unique< tag< by_owner >, member< liquidity_reward_balance_object, account_id_type, &liquidity_reward_balance_object::owner > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< liquidity_reward_balance_object, liquidity_reward_balance_object::id_type, &liquidity_reward_balance_object::get_id > >,
+         ordered_unique< tag< by_owner >,
+            member< liquidity_reward_balance_object, account_id_type, &liquidity_reward_balance_object::owner > >,
          ordered_unique< tag< by_volume_weight >,
             composite_key< liquidity_reward_balance_object,
                 member< liquidity_reward_balance_object, fc::uint128, &liquidity_reward_balance_object::weight >,
@@ -361,7 +310,8 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       feed_history_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< feed_history_object, feed_history_id_type, &feed_history_object::id > >
+         ordered_unique< tag< by_id >,
+            const_mem_fun< feed_history_object, feed_history_object::id_type, &feed_history_object::get_id > >
       >,
       allocator< feed_history_object >
    > feed_history_index;
@@ -371,7 +321,8 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       withdraw_vesting_route_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< withdraw_vesting_route_object, withdraw_vesting_route_id_type, &withdraw_vesting_route_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< withdraw_vesting_route_object, withdraw_vesting_route_object::id_type, &withdraw_vesting_route_object::get_id > >,
          ordered_unique< tag< by_withdraw_route >,
             composite_key< withdraw_vesting_route_object,
                member< withdraw_vesting_route_object, account_name_type, &withdraw_vesting_route_object::from_account >,
@@ -382,7 +333,7 @@ namespace hive { namespace chain {
          ordered_unique< tag< by_destination >,
             composite_key< withdraw_vesting_route_object,
                member< withdraw_vesting_route_object, account_name_type, &withdraw_vesting_route_object::to_account >,
-               member< withdraw_vesting_route_object, withdraw_vesting_route_id_type, &withdraw_vesting_route_object::id >
+               const_mem_fun< withdraw_vesting_route_object, withdraw_vesting_route_object::id_type, &withdraw_vesting_route_object::get_id >
             >
          >
       >,
@@ -394,10 +345,11 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       escrow_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< escrow_object, escrow_id_type, &escrow_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< escrow_object, escrow_object::id_type, &escrow_object::get_id > >,
          ordered_unique< tag< by_from_id >,
             composite_key< escrow_object,
-               member< escrow_object, account_name_type,  &escrow_object::from >,
+               member< escrow_object, account_name_type, &escrow_object::from >,
                member< escrow_object, uint32_t, &escrow_object::escrow_id >
             >
          >,
@@ -405,7 +357,7 @@ namespace hive { namespace chain {
             composite_key< escrow_object,
                const_mem_fun< escrow_object, bool, &escrow_object::is_approved >,
                member< escrow_object, time_point_sec, &escrow_object::ratification_deadline >,
-               member< escrow_object, escrow_id_type, &escrow_object::id >
+               const_mem_fun< escrow_object, escrow_object::id_type, &escrow_object::get_id >
             >,
             composite_key_compare< std::less< bool >, std::less< time_point_sec >, std::less< escrow_id_type > >
          >
@@ -419,25 +371,26 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       savings_withdraw_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< savings_withdraw_object, savings_withdraw_id_type, &savings_withdraw_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< savings_withdraw_object, savings_withdraw_object::id_type, &savings_withdraw_object::get_id > >,
          ordered_unique< tag< by_from_rid >,
             composite_key< savings_withdraw_object,
-               member< savings_withdraw_object, account_name_type,  &savings_withdraw_object::from >,
+               member< savings_withdraw_object, account_name_type, &savings_withdraw_object::from >,
                member< savings_withdraw_object, uint32_t, &savings_withdraw_object::request_id >
             >
          >,
          ordered_unique< tag< by_complete_from_rid >,
             composite_key< savings_withdraw_object,
-               member< savings_withdraw_object, time_point_sec,  &savings_withdraw_object::complete >,
-               member< savings_withdraw_object, account_name_type,  &savings_withdraw_object::from >,
+               member< savings_withdraw_object, time_point_sec, &savings_withdraw_object::complete >,
+               member< savings_withdraw_object, account_name_type, &savings_withdraw_object::from >,
                member< savings_withdraw_object, uint32_t, &savings_withdraw_object::request_id >
             >
          >,
          ordered_unique< tag< by_to_complete >,
             composite_key< savings_withdraw_object,
-               member< savings_withdraw_object, account_name_type,  &savings_withdraw_object::to >,
-               member< savings_withdraw_object, time_point_sec,  &savings_withdraw_object::complete >,
-               member< savings_withdraw_object, savings_withdraw_id_type, &savings_withdraw_object::id >
+               member< savings_withdraw_object, account_name_type, &savings_withdraw_object::to >,
+               member< savings_withdraw_object, time_point_sec, &savings_withdraw_object::complete >,
+               const_mem_fun< savings_withdraw_object, savings_withdraw_object::id_type, &savings_withdraw_object::get_id >
             >
          >
       >,
@@ -449,7 +402,8 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       decline_voting_rights_request_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< decline_voting_rights_request_object, decline_voting_rights_request_id_type, &decline_voting_rights_request_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< decline_voting_rights_request_object, decline_voting_rights_request_object::id_type, &decline_voting_rights_request_object::get_id > >,
          ordered_unique< tag< by_account >,
             member< decline_voting_rights_request_object, account_name_type, &decline_voting_rights_request_object::account >
          >,
@@ -467,8 +421,10 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       reward_fund_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< reward_fund_object, reward_fund_id_type, &reward_fund_object::id > >,
-         ordered_unique< tag< by_name >, member< reward_fund_object, reward_fund_name_type, &reward_fund_object::name > >
+         ordered_unique< tag< by_id >,
+            const_mem_fun< reward_fund_object, reward_fund_object::id_type, &reward_fund_object::get_id > >,
+         ordered_unique< tag< by_name >,
+            member< reward_fund_object, reward_fund_name_type, &reward_fund_object::name > >
       >,
       allocator< reward_fund_object >
    > reward_fund_index;

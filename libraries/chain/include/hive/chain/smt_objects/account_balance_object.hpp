@@ -17,14 +17,8 @@ class account_regular_balance_object : public object< account_regular_balance_ob
    CHAINBASE_OBJECT( account_regular_balance_object );
 
 public:   
-   template <typename Constructor, typename Allocator>
-   account_regular_balance_object(Constructor&& c, allocator< Allocator > a)
-   {
-      c( *this );
-   }
+   CHAINBASE_DEFAULT_CONSTRUCTOR( account_regular_balance_object )
 
-   // id_type is actually oid<account_regular_balance_object>
-   id_type             id;
    /// Name of the account, the balance is held for.
    account_name_type   owner;
    asset               liquid;   /// 'balance' for HIVE
@@ -65,14 +59,8 @@ class account_rewards_balance_object : public object< account_rewards_balance_ob
    CHAINBASE_OBJECT( account_rewards_balance_object );
 
 public:   
-   template <typename Constructor, typename Allocator>
-   account_rewards_balance_object(Constructor&& c, allocator< Allocator > a)
-   {
-      c( *this );
-   }
+   CHAINBASE_DEFAULT_CONSTRUCTOR( account_rewards_balance_object )
 
-   // id_type is actually oid<account_rewards_balance_object>
-   id_type             id;
    /// Name of the account, the balance is held for.
    account_name_type   owner;
    asset               pending_liquid;          /// 'reward_hive_balance' for pending HIVE
@@ -114,7 +102,7 @@ typedef multi_index_container <
    account_regular_balance_object,
    indexed_by <
       ordered_unique< tag< by_id >,
-         member< account_regular_balance_object, account_regular_balance_id_type, &account_regular_balance_object::id>
+         const_mem_fun< account_regular_balance_object, account_regular_balance_object::id_type, &account_regular_balance_object::get_id>
       >,
       ordered_unique<tag<by_owner_liquid_symbol>,
          composite_key<account_regular_balance_object,
@@ -130,7 +118,7 @@ typedef multi_index_container <
    account_rewards_balance_object,
    indexed_by <
       ordered_unique< tag< by_id >,
-         member< account_rewards_balance_object, account_rewards_balance_id_type, &account_rewards_balance_object::id>
+         const_mem_fun< account_rewards_balance_object, account_rewards_balance_object::id_type, &account_rewards_balance_object::get_id>
       >,
       ordered_unique<tag<by_owner_liquid_symbol>,
          composite_key<account_rewards_balance_object,

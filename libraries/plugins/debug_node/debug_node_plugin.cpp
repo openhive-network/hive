@@ -119,7 +119,7 @@ void debug_apply_update( chain::database& db, const fc::variant_object& vo, bool
       action = db_action_delete;
 
    fc::mutable_variant_object mvo( vo );
-   mvo( "id", oid._id );
+   mvo( "id", oid );
    auto it_action = vo.find("_action" );
    if( it_action != vo.end() )
    {

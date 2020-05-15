@@ -72,19 +72,12 @@ namespace hive { namespace chain {
             none
          };
 
-         template< typename Constructor, typename Allocator >
-         witness_object( Constructor&& c, allocator< Allocator > a )
-            :url( a )
-         {
-            c( *this );
-         }
+         CHAINBASE_DEFAULT_CONSTRUCTOR( witness_object, (url) )
 
          //HBD to HIVE ratio proposed by the witness
          const price& get_hbd_exchange_rate() const { return hbd_exchange_rate; }
          //time when HBD/HIVE price ratio was last confirmed (TODO: add routine to check if price feed is valid)
          const time_point_sec& get_last_hbd_exchange_update() const { return last_hbd_exchange_update; }
-
-         id_type           id;
 
          /** the account that has authority over this witness */
          account_name_type owner;
@@ -166,13 +159,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( witness_vote_object );
       public:
-         template< typename Constructor, typename Allocator >
-         witness_vote_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
-
-         id_type           id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( witness_vote_object )
 
          account_name_type witness;
          account_name_type account;
@@ -182,13 +169,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( witness_schedule_object );
       public:
-         template< typename Constructor, typename Allocator >
-         witness_schedule_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
-
-         id_type                                                           id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( witness_schedule_object )
 
          fc::uint128                                                       current_virtual_time;
          uint32_t                                                          next_shuffle_block_num = 1;
@@ -224,18 +205,20 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       witness_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< witness_object, witness_id_type, &witness_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< witness_object, witness_object::id_type, &witness_object::get_id > >,
          ordered_unique< tag< by_work >,
             composite_key< witness_object,
                member< witness_object, digest_type, &witness_object::last_work >,
-               member< witness_object, witness_id_type, &witness_object::id >
+               const_mem_fun< witness_object, witness_object::id_type, &witness_object::get_id >
             >
          >,
-         ordered_unique< tag< by_name >, member< witness_object, account_name_type, &witness_object::owner > >,
+         ordered_unique< tag< by_name >,
+            member< witness_object, account_name_type, &witness_object::owner > >,
          ordered_unique< tag< by_pow >,
             composite_key< witness_object,
                member< witness_object, uint64_t, &witness_object::pow_worker >,
-               member< witness_object, witness_id_type, &witness_object::id >
+               const_mem_fun< witness_object, witness_object::id_type, &witness_object::get_id >
             >
          >,
          ordered_unique< tag< by_vote_name >,
@@ -248,7 +231,7 @@ namespace hive { namespace chain {
          ordered_unique< tag< by_schedule_time >,
             composite_key< witness_object,
                member< witness_object, fc::uint128, &witness_object::virtual_scheduled_time >,
-               member< witness_object, witness_id_type, &witness_object::id >
+               const_mem_fun< witness_object, witness_object::id_type, &witness_object::get_id >
             >
          >
       >,
@@ -260,7 +243,8 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       witness_vote_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< witness_vote_object, witness_vote_id_type, &witness_vote_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< witness_vote_object, witness_vote_object::id_type, &witness_vote_object::get_id > >,
          ordered_unique< tag< by_account_witness >,
             composite_key< witness_vote_object,
                member< witness_vote_object, account_name_type, &witness_vote_object::account >,
@@ -282,7 +266,8 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       witness_schedule_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< witness_schedule_object, witness_schedule_id_type, &witness_schedule_object::id > >
+         ordered_unique< tag< by_id >,
+            const_mem_fun< witness_schedule_object, witness_schedule_object::id_type, &witness_schedule_object::get_id > >
       >,
       allocator< witness_schedule_object >
    > witness_schedule_index;

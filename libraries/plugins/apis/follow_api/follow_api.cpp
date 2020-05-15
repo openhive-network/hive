@@ -265,9 +265,9 @@ DEFINE_API_IMPL( follow_api_impl, get_reblogged_by )
    const auto& post = _db.get_comment( args.author, args.permlink );
    const auto& blog_idx = _db.get_index< follow::blog_index, follow::by_comment >();
 
-   auto itr = blog_idx.lower_bound( post.id );
+   auto itr = blog_idx.lower_bound( post.get_id() );
 
-   while( itr != blog_idx.end() && itr->comment == post.id && result.accounts.size() < 2000 )
+   while( itr != blog_idx.end() && itr->comment == post.get_id() && result.accounts.size() < 2000 )
    {
       result.accounts.push_back( itr->account );
       ++itr;

@@ -65,7 +65,7 @@ struct pre_operation_visitor
          if( db.calculate_discussion_payout_time( c ) == fc::time_point_sec::maximum() ) return;
 
          const auto& cv_idx = db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-         auto cv = cv_idx.find( boost::make_tuple( c.id, db.get_account( op.voter ).id ) );
+         auto cv = cv_idx.find( boost::make_tuple( c.get_id(), db.get_account( op.voter ).get_id() ) );
 
          if( cv != cv_idx.end() )
          {
@@ -111,9 +111,9 @@ struct pre_operation_visitor
          if( comment->parent_author_id != HIVE_ROOT_POST_PARENT_ID ) return;
 
          const auto& feed_idx = db.get_index< feed_index >().indices().get< by_comment >();
-         auto itr = feed_idx.lower_bound( comment->id );
+         auto itr = feed_idx.lower_bound( comment->get_id() );
 
-         while( itr != feed_idx.end() && itr->comment == comment->id )
+         while( itr != feed_idx.end() && itr->comment == comment->get_id() )
          {
             const auto& old_feed = *itr;
             ++itr;
@@ -121,9 +121,9 @@ struct pre_operation_visitor
          }
 
          const auto& blog_idx = db.get_index< blog_index >().indices().get< by_comment >();
-         auto blog_itr = blog_idx.lower_bound( comment->id );
+         auto blog_itr = blog_idx.lower_bound( comment->get_id() );
 
-         while( blog_itr != blog_idx.end() && blog_itr->comment == comment->id )
+         while( blog_itr != blog_idx.end() && blog_itr->comment == comment->get_id() )
          {
             const auto& old_blog = *blog_itr;
             ++blog_itr;
@@ -206,10 +206,10 @@ struct post_operation_visitor
             {
                if( itr->what & ( 1 << blog ) )
                {
-                  auto feed_itr = comment_idx.find( boost::make_tuple( c.id, itr->follower ) );
+                  auto feed_itr = comment_idx.find( boost::make_tuple( c.get_id(), itr->follower ) );
                   bool is_empty = feed_itr == comment_idx.end();
 
-                  pd.init( c.id, is_empty );
+                  pd.init( c.get_id(), is_empty );
                   uint32_t next_id = 0;
 #ifndef ENABLE_MIRA
                   next_id = perf.delete_old_objects< performance_data::t_creation_type::part_feed >( old_feed_idx, itr->follower, _plugin._self.max_feed_size, pd );
@@ -220,7 +220,7 @@ struct post_operation_visitor
                      db.create< feed_object >( [&]( feed_object& f )
                      {
                         f.account = itr->follower;
-                        f.comment = c.id;
+                        f.comment = c.get_id();
                         f.account_feed_id = next_id;
                      });
                   }
@@ -231,14 +231,14 @@ struct post_operation_visitor
          }
 
          const auto& comment_blog_idx = db.get_index< blog_index >().indices().get< by_comment >();
-         auto blog_itr = comment_blog_idx.find( boost::make_tuple( c.id, op.author ) );
+         auto blog_itr = comment_blog_idx.find( boost::make_tuple( c.get_id(), op.author ) );
          bool is_empty = blog_itr == comment_blog_idx.end();
 
 #ifndef ENABLE_MIRA
          const auto& old_blog_idx = db.get_index< blog_index >().indices().get< by_blog >();
 #endif
 
-         pd.init( c.id, is_empty );
+         pd.init( c.get_id(), is_empty );
          uint32_t next_id = 0;
 #ifndef ENABLE_MIRA
          next_id = perf.delete_old_objects< performance_data::t_creation_type::full_blog >( old_blog_idx, op.author, _plugin._self.max_feed_size, pd );
@@ -249,7 +249,7 @@ struct post_operation_visitor
             db.create< blog_object >( [&]( blog_object& b)
             {
                b.account = op.author;
-               b.comment = c.id;
+               b.comment = c.get_id();
                b.blog_feed_id = next_id;
             });
          }
@@ -268,7 +268,7 @@ struct post_operation_visitor
             return;
 
          const auto& cv_idx = db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-         auto cv = cv_idx.find( boost::make_tuple( comment.id, db.get_account( op.voter ).id ) );
+         auto cv = cv_idx.find( boost::make_tuple( comment.get_id(), db.get_account( op.voter ).get_id() ) );
 
          const auto& rep_idx = db.get_index< reputation_index >().indices().get< by_account >();
          auto voter_rep = rep_idx.find( op.voter );

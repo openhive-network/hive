@@ -22,14 +22,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( transaction_object );
       public:
-         template< typename Constructor, typename Allocator >
-         transaction_object( Constructor&& c, allocator< Allocator > a )
-            : packed_trx( a )
-         {
-            c( *this );
-         }
-
-         id_type              id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( transaction_object, (packed_trx) )
 
          typedef buffer_type t_packed_trx;
 
@@ -43,12 +36,14 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       transaction_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< transaction_object, transaction_object_id_type, &transaction_object::id > >,
-         ordered_unique< tag< by_trx_id >, member< transaction_object, transaction_id_type, &transaction_object::trx_id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< transaction_object, transaction_object::id_type, &transaction_object::get_id > >,
+         ordered_unique< tag< by_trx_id >,
+            member< transaction_object, transaction_id_type, &transaction_object::trx_id > >,
          ordered_unique< tag< by_expiration >,
             composite_key< transaction_object,
                member<transaction_object, time_point_sec, &transaction_object::expiration >,
-               member<transaction_object, transaction_object::id_type, &transaction_object::id >
+               const_mem_fun<transaction_object, transaction_object::id_type, &transaction_object::get_id >
             >
          >
       >,

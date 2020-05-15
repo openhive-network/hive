@@ -140,13 +140,13 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
          next_blog_id = last_blog->blog_feed_id + 1;
       }
 
-      auto blog_itr = blog_comment_idx.find( boost::make_tuple( c.id, o.account ) );
+      auto blog_itr = blog_comment_idx.find( boost::make_tuple( c.get_id(), o.account ) );
 
       FC_ASSERT( blog_itr == blog_comment_idx.end(), "Account has already reblogged this post" );
       _db.create< blog_object >( [&]( blog_object& b )
       {
          b.account = o.account;
-         b.comment = c.id;
+         b.comment = c.get_id();
          b.reblogged_on = _db.head_block_time();
          b.blog_feed_id = next_blog_id;
       });
@@ -182,10 +182,10 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
          {
             if( itr->what & ( 1 << blog ) )
             {
-               auto feed_itr = comment_idx.find( boost::make_tuple( c.id, itr->follower ) );
+               auto feed_itr = comment_idx.find( boost::make_tuple( c.get_id(), itr->follower ) );
                bool is_empty = feed_itr == comment_idx.end();
 
-               pd.init( o.account, _db.head_block_time(), c.id, is_empty, is_empty ? 0 : feed_itr->account_feed_id );
+               pd.init( o.account, _db.head_block_time(), c.get_id(), is_empty, is_empty ? 0 : feed_itr->account_feed_id );
                uint32_t next_id = 0;
 #ifndef ENABLE_MIRA
                perf.delete_old_objects< performance_data::t_creation_type::full_feed >( old_feed_idx, itr->follower, _plugin->max_feed_size, pd );
@@ -201,7 +201,7 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
                         f.reblogged_by.push_back( o.account );
                         f.first_reblogged_by = o.account;
                         f.first_reblogged_on = _db.head_block_time();
-                        f.comment = c.id;
+                        f.comment = c.get_id();
                         f.account_feed_id = next_id;
                      });
                   }

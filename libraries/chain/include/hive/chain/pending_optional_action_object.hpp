@@ -13,13 +13,7 @@ class pending_optional_action_object : public object< pending_optional_action_ob
 {
    CHAINBASE_OBJECT( pending_optional_action_object );
    public:
-      template< typename Constructor, typename Allocator >
-      pending_optional_action_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
-
-      id_type                    id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( pending_optional_action_object )
 
       time_point_sec             execution_time;
       optional_automated_action  action;
@@ -28,11 +22,12 @@ class pending_optional_action_object : public object< pending_optional_action_ob
 typedef multi_index_container<
    pending_optional_action_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< pending_optional_action_object, pending_optional_action_id_type, &pending_optional_action_object::id > >,
+      ordered_unique< tag< by_id >,
+         const_mem_fun< pending_optional_action_object, pending_optional_action_object::id_type, &pending_optional_action_object::get_id > >,
       ordered_unique< tag< by_execution >,
          composite_key< pending_optional_action_object,
             member< pending_optional_action_object, time_point_sec, &pending_optional_action_object::execution_time >,
-            member< pending_optional_action_object, pending_optional_action_id_type, &pending_optional_action_object::id >
+            const_mem_fun< pending_optional_action_object, pending_optional_action_object::id_type, &pending_optional_action_object::get_id >
          >
       >
    >,

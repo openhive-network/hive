@@ -50,14 +50,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( comment_object );
       public:
-         template< typename Constructor, typename Allocator >
-         comment_object( Constructor&& c, allocator< Allocator > a )
-            :category( a ), parent_permlink( a ), permlink( a )
-         {
-            c( *this );
-         }
-
-         id_type           id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( comment_object, (category)(parent_permlink)(permlink) )
 
          shared_string     category;
          account_id_type   parent_author_id;
@@ -69,7 +62,7 @@ namespace hive { namespace chain {
          time_point_sec    created;
          uint16_t          depth = 0;
 
-         id_type           root_comment;
+         comment_id_type   root_comment;
 
          bool              allow_replies = true;      /// allows a post to disable replies.
    };
@@ -84,17 +77,19 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( comment_cashout_object );
       public:
-         template< typename Constructor, typename Allocator >
-         comment_cashout_object( Constructor&& c, allocator< Allocator > a )
-            : beneficiaries( a )
+         template< typename Allocator >
+         comment_cashout_object( allocator< Allocator > a, uint64_t _id,
+            const comment_object& _comment, const time_point_sec& _cashout_time, uint16_t _reward_weight = 0 )
+            : id( _comment.get_id() ), //note that it is possible because relation is 1->{0,1} so we can share id
+            active( _comment.created ), last_payout( time_point_sec::min() ), cashout_time( _cashout_time ),
+            max_cashout_time( time_point_sec::maximum() ), reward_weight( _reward_weight ), beneficiaries( a )
 #ifdef HIVE_ENABLE_SMT
             , allowed_vote_assets( a )
 #endif
-         {
-            c( *this );
-         }
+         {}
 
-         id_type           id;
+         //returns id of associated comment
+         comment_id_type get_comment_id() const { return comment_object::id_type( id ); }
 
          time_point_sec    active; ///< the last time this post was "touched" by voting or reply
          time_point_sec    last_payout;
@@ -140,14 +135,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( comment_content_object );
       public:
-         template< typename Constructor, typename Allocator >
-         comment_content_object( Constructor&& c, allocator< Allocator > a ) :
-            title( a ), body( a ), json_metadata( a )
-         {
-            c( *this );
-         }
-
-         id_type           id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( comment_content_object, (title)(body)(json_metadata) )
 
          comment_id_type   comment;
 
@@ -164,13 +152,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( comment_vote_object );
       public:
-         template< typename Constructor, typename Allocator >
-         comment_vote_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
-
-         id_type           id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( comment_vote_object )
 
          account_id_type   voter;
          comment_id_type   comment;
@@ -186,7 +168,8 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       comment_vote_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< comment_vote_object, comment_vote_id_type, &comment_vote_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< comment_vote_object, comment_vote_object::id_type, &comment_vote_object::get_id > >,
          ordered_unique< tag< by_comment_voter >,
             composite_key< comment_vote_object,
                member< comment_vote_object, comment_id_type, &comment_vote_object::comment>,
@@ -217,7 +200,8 @@ namespace hive { namespace chain {
       comment_object,
       indexed_by<
          /// CONSENSUS INDICES - used by evaluators
-         ordered_unique< tag< by_id >, member< comment_object, comment_id_type, &comment_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< comment_object, comment_object::id_type, &comment_object::get_id > >,
          ordered_unique< tag< by_permlink >, /// used by consensus to find posts referenced in ops
             composite_key< comment_object,
                member< comment_object, account_id_type, &comment_object::author_id >,
@@ -228,14 +212,14 @@ namespace hive { namespace chain {
          ordered_unique< tag< by_root >,
             composite_key< comment_object,
                member< comment_object, comment_id_type, &comment_object::root_comment >,
-               member< comment_object, comment_id_type, &comment_object::id >
+               const_mem_fun< comment_object, comment_object::id_type, &comment_object::get_id >
             >
          >,
          ordered_unique< tag< by_parent >, /// used by consensus to find posts referenced in ops
             composite_key< comment_object,
                member< comment_object, account_id_type, &comment_object::parent_author_id >,
                member< comment_object, shared_string, &comment_object::parent_permlink >,
-               member< comment_object, comment_id_type, &comment_object::id >
+               const_mem_fun< comment_object, comment_object::id_type, &comment_object::get_id >
             >,
             composite_key_compare< std::less< account_id_type >, strcmp_less, std::less< comment_id_type > >
          >
@@ -246,7 +230,7 @@ namespace hive { namespace chain {
             composite_key< comment_object,
                member< comment_object, account_id_type, &comment_object::parent_author_id >,
                member< comment_object, time_point_sec, &comment_object::last_update >,
-               member< comment_object, comment_id_type, &comment_object::id >
+               const_mem_fun< comment_object, comment_object::id_type, &comment_object::get_id >
             >,
             composite_key_compare< std::less< account_id_type >, std::greater< time_point_sec >, std::less< comment_id_type > >
          >,
@@ -254,7 +238,7 @@ namespace hive { namespace chain {
             composite_key< comment_object,
                member< comment_object, account_id_type, &comment_object::author_id >,
                member< comment_object, time_point_sec, &comment_object::last_update >,
-               member< comment_object, comment_id_type, &comment_object::id >
+               const_mem_fun< comment_object, comment_object::id_type, &comment_object::get_id >
             >,
             composite_key_compare< std::less< account_id_type >, std::greater< time_point_sec >, std::less< comment_id_type > >
          >
@@ -268,11 +252,12 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       comment_cashout_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< comment_cashout_object, comment_cashout_id_type, &comment_cashout_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< comment_cashout_object, comment_cashout_object::id_type, &comment_cashout_object::get_id > >,
          ordered_unique< tag< by_cashout_time >,
             composite_key< comment_cashout_object,
                member< comment_cashout_object, time_point_sec, &comment_cashout_object::cashout_time>,
-               member< comment_cashout_object, comment_cashout_id_type, &comment_cashout_object::id >
+               const_mem_fun< comment_cashout_object, comment_cashout_object::id_type, &comment_cashout_object::get_id >
             >
          >
       >,
@@ -284,8 +269,10 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       comment_content_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< comment_content_object, comment_content_id_type, &comment_content_object::id > >,
-         ordered_unique< tag< by_comment >, member< comment_content_object, comment_id_type, &comment_content_object::comment > >
+         ordered_unique< tag< by_id >,
+            const_mem_fun< comment_content_object, comment_content_object::id_type, &comment_content_object::get_id > >,
+         ordered_unique< tag< by_comment >,
+            member< comment_content_object, comment_id_type, &comment_content_object::comment > >
       >,
       allocator< comment_content_object >
    > comment_content_index;

@@ -370,7 +370,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 #ifndef IS_LOW_MEM
    _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
    {
-      meta.account = new_account.id;
+      meta.account = new_account.get_id();
       from_string( meta.json_metadata, o.json_metadata );
    });
 #else
@@ -472,7 +472,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 #ifndef IS_LOW_MEM
    _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
    {
-      meta.account = new_account.id;
+      meta.account = new_account.get_id();
       from_string( meta.json_metadata, o.json_metadata );
    });
 #else
@@ -554,7 +554,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
    #ifndef IS_LOW_MEM
    if( o.json_metadata.size() > 0 )
    {
-      _db.modify( _db.get< account_metadata_object, by_account >( account.id ), [&]( account_metadata_object& meta )
+      _db.modify( _db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
       {
          from_string( meta.json_metadata, o.json_metadata );
          if ( !_db.has_hardfork( HIVE_HARDFORK_0_21__3274 ) )
@@ -620,7 +620,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
    #ifndef IS_LOW_MEM
    if( o.json_metadata.size() > 0 || o.posting_json_metadata.size() > 0 )
    {
-      _db.modify( _db.get< account_metadata_object, by_account >( account.id ), [&]( account_metadata_object& meta )
+      _db.modify( _db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
       {
          if ( o.json_metadata.size() > 0 )
             from_string( meta.json_metadata, o.json_metadata );
@@ -666,8 +666,9 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
 
    const auto& vote_idx = _db.get_index<comment_vote_index>().indices().get<by_comment_voter>();
 
-   auto vote_itr = vote_idx.lower_bound( comment_id_type(comment_cashout->id) );
-   while( vote_itr != vote_idx.end() && vote_itr->comment == comment_cashout->id ) {
+   auto vote_itr = vote_idx.lower_bound( comment.get_id() );
+   while( vote_itr != vote_idx.end() && vote_itr->comment == comment.get_id() )
+   {
       const auto& cur_vote = *vote_itr;
       ++vote_itr;
       _db.remove(cur_vote);
@@ -795,9 +796,8 @@ void comment_evaluator::do_apply( const comment_operation& o )
    const auto& auth = _db.get_account( o.author ); /// prove it exists
 
    const auto& by_permlink_idx = _db.get_index< comment_index >().indices().get< by_permlink >();
-   auto itr = by_permlink_idx.find( boost::make_tuple( auth.id, o.permlink ) );
-
-   comment_id_type id;
+   auto itr = by_permlink_idx.find( boost::make_tuple( auth.get_id(), o.permlink ) );
+   auto _now = _db.head_block_time();
 
    const comment_object* parent = nullptr;
    if( o.parent_author != HIVE_ROOT_POST_PARENT )
@@ -810,8 +810,6 @@ void comment_evaluator::do_apply( const comment_operation& o )
    }
 
    FC_ASSERT( fc::is_utf8( o.json_metadata ), "JSON Metadata must be UTF-8" );
-
-   auto now = _db.head_block_time();
 
    if ( itr == by_permlink_idx.end() )
    {
@@ -826,27 +824,27 @@ void comment_evaluator::do_apply( const comment_operation& o )
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2019 ) )
       {
          if( o.parent_author == HIVE_ROOT_POST_PARENT )
-             FC_ASSERT( ( now - auth.last_root_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",now)("last_root_post", auth.last_root_post) );
+             FC_ASSERT( ( _now - auth.last_root_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.last_root_post) );
          else
-             FC_ASSERT( (now - auth.last_post) >= HIVE_MIN_REPLY_INTERVAL_HF20, "You may only comment once every 3 seconds.", ("now",now)("auth.last_post",auth.last_post) );
+             FC_ASSERT( ( _now - auth.last_post ) >= HIVE_MIN_REPLY_INTERVAL_HF20, "You may only comment once every 3 seconds.", ("now",_now)("auth.last_post",auth.last_post) );
       }
       else if( _db.has_hardfork( HIVE_HARDFORK_0_12__176 ) )
       {
          if( o.parent_author == HIVE_ROOT_POST_PARENT )
-             FC_ASSERT( ( now - auth.last_root_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",now)("last_root_post", auth.last_root_post) );
+             FC_ASSERT( ( _now - auth.last_root_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.last_root_post) );
          else
-             FC_ASSERT( (now - auth.last_post) > HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 20 seconds.", ("now",now)("auth.last_post",auth.last_post) );
+             FC_ASSERT( ( _now - auth.last_post ) > HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth.last_post) );
       }
       else if( _db.has_hardfork( HIVE_HARDFORK_0_6__113 ) )
       {
          if( o.parent_author == HIVE_ROOT_POST_PARENT )
-             FC_ASSERT( (now - auth.last_post) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",now)("auth.last_post",auth.last_post) );
+             FC_ASSERT( ( _now - auth.last_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("auth.last_post",auth.last_post) );
          else
-             FC_ASSERT( (now - auth.last_post) > HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 20 seconds.", ("now",now)("auth.last_post",auth.last_post) );
+             FC_ASSERT( ( _now - auth.last_post ) > HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth.last_post) );
       }
       else
       {
-         FC_ASSERT( (now - auth.last_post) > fc::seconds(60), "You may only post once per minute.", ("now",now)("auth.last_post",auth.last_post) );
+         FC_ASSERT( ( _now - auth.last_post ) > fc::seconds(60), "You may only post once per minute.", ("now",_now)("auth.last_post",auth.last_post) );
       }
 
       uint16_t reward_weight = HIVE_100_PERCENT;
@@ -854,7 +852,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_12__176 ) && !_db.has_hardfork( HIVE_HARDFORK_0_17__733 ) && o.parent_author == HIVE_ROOT_POST_PARENT )
       {
-         uint64_t post_delta_time = std::min( _db.head_block_time().sec_since_epoch() - auth.last_root_post.sec_since_epoch(), HIVE_POST_AVERAGE_WINDOW );
+         uint64_t post_delta_time = std::min( _now.sec_since_epoch() - auth.last_root_post.sec_since_epoch(), HIVE_POST_AVERAGE_WINDOW );
          uint32_t old_weight = uint32_t( ( post_bandwidth * ( HIVE_POST_AVERAGE_WINDOW - post_delta_time ) ) / HIVE_POST_AVERAGE_WINDOW );
          post_bandwidth = ( old_weight + HIVE_100_PERCENT );
          reward_weight = uint16_t( std::min( ( HIVE_POST_WEIGHT_CONSTANT * HIVE_100_PERCENT ) / ( post_bandwidth * post_bandwidth ), uint64_t( HIVE_100_PERCENT ) ) );
@@ -863,11 +861,11 @@ void comment_evaluator::do_apply( const comment_operation& o )
       _db.modify( auth, [&]( account_object& a ) {
          if( o.parent_author == HIVE_ROOT_POST_PARENT )
          {
-            a.last_root_post = now;
+            a.last_root_post = _now;
             a.post_bandwidth = uint32_t( post_bandwidth );
          }
-         a.last_post = now;
-         a.last_post_edit = now;
+         a.last_post = _now;
+         a.last_post_edit = _now;
          a.post_count++;
       });
 
@@ -879,9 +877,9 @@ void comment_evaluator::do_apply( const comment_operation& o )
             validate_permlink_0_1( o.permlink );
          }
 
-         com.author_id = auth.id;
+         com.author_id = auth.get_id();
          from_string( com.permlink, o.permlink );
-         com.last_update = _db.head_block_time();
+         com.last_update = _now;
          com.created = com.last_update;
 
          if ( o.parent_author == HIVE_ROOT_POST_PARENT )
@@ -889,7 +887,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
             com.parent_author_id = HIVE_ROOT_POST_PARENT_ID;
             from_string( com.parent_permlink, o.parent_permlink );
             from_string( com.category, o.parent_permlink );
-            com.root_comment = com.id;
+            com.root_comment = com.get_id();
          }
          else
          {
@@ -901,38 +899,20 @@ void comment_evaluator::do_apply( const comment_operation& o )
          }
       });
 
-      _db.create< comment_cashout_object >( [&]( comment_cashout_object& com_cash )
-      {
-         com_cash.id = new_comment.id._id;
+      fc::time_point_sec cashout_time;
+      if( _db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
+         cashout_time = _now + HIVE_CASHOUT_WINDOW_SECONDS;
+      else if( ( o.parent_author == HIVE_ROOT_POST_PARENT ) && _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) )
+         cashout_time = _now + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
+      else
+         cashout_time = fc::time_point_sec::maximum();
 
-         com_cash.active = _db.head_block_time();
-         com_cash.last_payout = fc::time_point_sec::min();
-         com_cash.max_cashout_time = fc::time_point_sec::maximum();
-         com_cash.reward_weight = reward_weight;
-
-         if ( o.parent_author == HIVE_ROOT_POST_PARENT )
-         {
-            com_cash.cashout_time = _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) ?
-               _db.head_block_time() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17 :
-               fc::time_point_sec::maximum();
-         }
-         else
-         {
-            com_cash.cashout_time = fc::time_point_sec::maximum();
-         }
-
-         if( _db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
-         {
-            com_cash.cashout_time = new_comment.created + HIVE_CASHOUT_WINDOW_SECONDS;
-         }
-      });
-
-      id = new_comment.id;
+      _db.create< comment_cashout_object >( new_comment, cashout_time, reward_weight );
 
    #ifndef IS_LOW_MEM
       _db.create< comment_content_object >( [&]( comment_content_object& con )
       {
-         con.comment = id;
+         con.comment = new_comment.get_id();
 
          from_string( con.title, o.title );
          if( o.body.size() < 1024*1024*128 )
@@ -945,14 +925,14 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
 
 /// this loop can be skiped for validate-only nodes as it is merely gathering stats for indicies
-      auto now = _db.head_block_time();
-      while( parent ) {
+      while( parent )
+      {
          const comment_cashout_object* _parent = _db.get_comment_cashout( *parent );
          if( _parent )
          {
             _db.modify( *_parent, [&]( comment_cashout_object& p ){
                p.children++;
-               p.active = now;
+               p.active = _now;
             });
          }
 #ifndef IS_LOW_MEM
@@ -971,7 +951,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
       if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_21__3313 ) )
       {
-         FC_ASSERT( now - auth.last_post_edit >= HIVE_MIN_COMMENT_EDIT_INTERVAL, "Can only perform one comment edit per block." );
+         FC_ASSERT( _now - auth.last_post_edit >= HIVE_MIN_COMMENT_EDIT_INTERVAL, "Can only perform one comment edit per block." );
       }
 
       if( !_db.has_hardfork( HIVE_HARDFORK_0_17__772 ) )
@@ -984,7 +964,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
       }
       _db.modify( comment, [&]( comment_object& com )
       {
-         com.last_update   = _db.head_block_time();
+         com.last_update = _now;
          std::function< bool( const shared_string& a, const string& b ) > equal;
 
          FC_TODO( "Check if this can be simplified after HF 21" );
@@ -1009,18 +989,19 @@ void comment_evaluator::do_apply( const comment_operation& o )
       {
          _db.modify( *comment_cashout, [&]( comment_cashout_object& com )
          {
-            com.active = comment.last_update;
+            com.active = _now;
          });
       }
 
       _db.modify( auth, [&]( account_object& a )
       {
-         a.last_post_edit = now;
+         a.last_post_edit = _now;
       });
    #ifndef IS_LOW_MEM
-      _db.modify( _db.get< comment_content_object, by_comment >( comment.id ), [&]( comment_content_object& con )
+      _db.modify( _db.get< comment_content_object, by_comment >( comment.get_id() ), [&]( comment_content_object& con )
       {
-         if( o.title.size() )         from_string( con.title, o.title );
+         if( o.title.size() )
+            from_string( con.title, o.title );
          if( o.json_metadata.size() )
             from_string( con.json_metadata, o.json_metadata );
 
@@ -1432,14 +1413,14 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
    if( o.proxy.size() ) {
       const auto& new_proxy = _db.get_account( o.proxy );
-      flat_set<account_id_type> proxy_chain( { account.id, new_proxy.id } );
+      flat_set<account_id_type> proxy_chain( { account.get_id(), new_proxy.get_id() } );
       proxy_chain.reserve( HIVE_MAX_PROXY_RECURSION_DEPTH + 1 );
 
       /// check for proxy loops and fail to update the proxy if it would create a loop
       auto cprox = &new_proxy;
       while( cprox->proxy.size() != 0 ) {
          const auto next_proxy = _db.get_account( cprox->proxy );
-         FC_ASSERT( proxy_chain.insert( next_proxy.id ).second, "This proxy would create a proxy loop." );
+         FC_ASSERT( proxy_chain.insert( next_proxy.get_id() ).second, "This proxy would create a proxy loop." );
          cprox = &next_proxy;
          FC_ASSERT( proxy_chain.size() <= HIVE_MAX_PROXY_RECURSION_DEPTH, "Proxy chain is too long." );
       }
@@ -1548,13 +1529,13 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
    {
 #ifndef CLEAR_VOTES
       const auto& comment_vote_idx = _db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-      auto itr = comment_vote_idx.find( boost::make_tuple( comment.id, voter.id ) );
+      auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
 
       if( itr == comment_vote_idx.end() )
          _db.create< comment_vote_object >( [&]( comment_vote_object& cvo )
          {
-            cvo.voter = voter.id;
-            cvo.comment = comment.id;
+            cvo.voter = voter.get_id();
+            cvo.comment = comment.get_id();
             cvo.vote_percent = o.weight;
             cvo.last_update = _db.head_block_time();
          });
@@ -1569,7 +1550,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
    }
 
    const auto& comment_vote_idx = _db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-   auto itr = comment_vote_idx.find( boost::make_tuple( comment.id, voter.id ) );
+   auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
 
    int64_t elapsed_seconds = _db.head_block_time().sec_since_epoch() - voter.voting_manabar.last_update_time;
 
@@ -1687,7 +1668,8 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
             c.net_votes++;
          else
             c.net_votes--;
-         if( !_db.has_hardfork( HIVE_HARDFORK_0_6__114 ) && c.net_rshares == -c.abs_rshares) FC_ASSERT( c.net_votes < 0, "Comment has negative net votes?" );
+         if( !_db.has_hardfork( HIVE_HARDFORK_0_6__114 ) && c.net_rshares == -c.abs_rshares )
+            FC_ASSERT( c.net_votes < 0, "Comment has negative net votes?" );
       });
 
       if( root_cashout )
@@ -1736,8 +1718,8 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
        *
       **/
       _db.create<comment_vote_object>( [&]( comment_vote_object& cv ){
-         cv.voter   = voter.id;
-         cv.comment = comment.id;
+         cv.voter   = voter.get_id();
+         cv.comment = comment.get_id();
          cv.rshares = rshares;
          cv.vote_percent = o.weight;
          cv.last_update = _db.head_block_time();
@@ -1953,13 +1935,13 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
    {
 #ifndef CLEAR_VOTES
       const auto& comment_vote_idx = _db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-      auto itr = comment_vote_idx.find( boost::make_tuple( comment.id, voter.id ) );
+      auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
 
       if( itr == comment_vote_idx.end() )
          _db.create< comment_vote_object >( [&]( comment_vote_object& cvo )
          {
-            cvo.voter = voter.id;
-            cvo.comment = comment.id;
+            cvo.voter = voter.get_id();
+            cvo.comment = comment.get_id();
             cvo.vote_percent = o.weight;
             cvo.last_update = _db.head_block_time();
          });
@@ -1978,7 +1960,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
    }
 
    const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
-   auto itr = comment_vote_idx.find( boost::make_tuple( comment.id, voter.id ) );
+   auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
 
    // Lazily delete vote
    if( itr != comment_vote_idx.end() && itr->num_changes == -1 )
@@ -2150,8 +2132,8 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
       **/
       _db.create<comment_vote_object>( [&]( comment_vote_object& cv )
       {
-         cv.voter   = voter.id;
-         cv.comment = comment.id;
+         cv.voter   = voter.get_id();
+         cv.comment = comment.get_id();
          cv.rshares = rshares;
          cv.vote_percent = o.weight;
          cv.last_update = _db.head_block_time();
@@ -2429,7 +2411,7 @@ void pow_apply( database& db, Operation o )
 #ifndef IS_LOW_MEM
       db.create< account_metadata_object >( [&]( account_metadata_object& meta )
       {
-         meta.account = new_account.id;
+         meta.account = new_account.get_id();
       });
 #else
       FC_UNUSED( new_account );
@@ -2551,7 +2533,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
 #ifndef IS_LOW_MEM
       db.create< account_metadata_object >( [&]( account_metadata_object& meta )
       {
-         meta.account = new_account.id;
+         meta.account = new_account.get_id();
       });
 #else
       FC_UNUSED( new_account );
@@ -2795,7 +2777,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
 #ifndef IS_LOW_MEM
    _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
    {
-      meta.account = new_account.id;
+      meta.account = new_account.get_id();
       from_string( meta.json_metadata, o.json_metadata );
    });
 #else
@@ -2848,12 +2830,8 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
          }
       }
 
-      _db.create< account_recovery_request_object >( [&]( account_recovery_request_object& req )
-      {
-         req.account_to_recover = o.account_to_recover;
-         req.new_owner_authority = o.new_owner_authority;
-         req.expires = _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD;
-      });
+      _db.create< account_recovery_request_object >( o.account_to_recover, o.new_owner_authority,
+         _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
    }
    else if( o.new_owner_authority.weight_threshold == 0 ) // Cancel Request if authority is open
    {

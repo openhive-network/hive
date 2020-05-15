@@ -36,13 +36,7 @@ struct account_stats_bucket_object : public object< account_stats_bucket_object_
    CHAINBASE_OBJECT( account_stats_bucket_object );
 
 public:
-   template< typename Constructor, typename Allocator >
-   account_stats_bucket_object( Constructor&& c, allocator< Allocator > a )
-   {
-      c( *this );
-   }
-
-   id_type              id;
+   CHAINBASE_DEFAULT_CONSTRUCTOR( account_stats_bucket_object )
 
    fc::time_point_sec   open;                                     ///< Open time of the bucket
    uint32_t             seconds = 0;                              ///< Seconds accounted for in the bucket
@@ -115,13 +109,7 @@ struct account_activity_bucket_object : public object< account_activity_bucket_o
    CHAINBASE_OBJECT( account_activity_bucket_object );
 
 public:
-   template< typename Constructor, typename Allocator >
-   account_activity_bucket_object( Constructor&& c, allocator< Allocator > a )
-   {
-      c( *this );
-   }
-
-   id_type              id;
+   CHAINBASE_DEFAULT_CONSTRUCTOR( account_activity_bucket_object )
 
    fc::time_point_sec   open;                                  ///< Open time for the bucket
    uint32_t             seconds = 0;                           ///< Seconds accounted for in the bucket

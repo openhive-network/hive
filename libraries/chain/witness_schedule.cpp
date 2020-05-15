@@ -149,7 +149,7 @@ void update_witness_schedule4( database& db )
    {
       if( db.has_hardfork( HIVE_HARDFORK_0_14__278 ) && (itr->signing_key == public_key_type()) )
          continue;
-      selected_voted.insert( itr->id );
+      selected_voted.insert( itr->get_id() );
       active_witnesses.push_back( itr->owner) ;
       db.modify( *itr, [&]( witness_object& wo ) { wo.schedule = witness_object::elected; } );
    }
@@ -165,12 +165,12 @@ void update_witness_schedule4( database& db )
    while( mitr != pow_idx.end() && selected_miners.size() < wso.max_miner_witnesses )
    {
       // Only consider a miner who is not a top voted witness
-      if( selected_voted.find(mitr->id) == selected_voted.end() )
+      if( selected_voted.find( mitr->get_id() ) == selected_voted.end() )
       {
          // Only consider a miner who has a valid block signing key
          if( !( db.has_hardfork( HIVE_HARDFORK_0_14__278 ) && db.get_witness( mitr->owner ).signing_key == public_key_type() ) )
          {
-            selected_miners.insert(mitr->id);
+            selected_miners.insert( mitr->get_id() );
             active_witnesses.push_back(mitr->owner);
             db.modify( *mitr, [&]( witness_object& wo ) { wo.schedule = witness_object::miner; } );
          }
@@ -205,8 +205,8 @@ void update_witness_schedule4( database& db )
       if( db.has_hardfork( HIVE_HARDFORK_0_14__278 ) && sitr->signing_key == public_key_type() )
          continue; /// skip witnesses without a valid block signing key
 
-      if( selected_miners.find(sitr->id) == selected_miners.end()
-          && selected_voted.find(sitr->id) == selected_voted.end() )
+      if( selected_miners.find( sitr->get_id() ) == selected_miners.end()
+          && selected_voted.find( sitr->get_id() ) == selected_voted.end() )
       {
          active_witnesses.push_back(sitr->owner);
          db.modify( *sitr, [&]( witness_object& wo ) { wo.schedule = witness_object::timeshare; } );

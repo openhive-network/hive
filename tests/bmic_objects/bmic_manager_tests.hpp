@@ -23,21 +23,23 @@ namespace bmic
 {
    struct test_object
    {
+      typedef chainbase::oid<test_object> id_type;
+      
       template <class Constructor, class Allocator>
-      test_object(Constructor&& c, Allocator a )
+      test_object( Constructor&& c, Allocator a )
       : id( 0 ), val( 0 ), name( a )
       {
          c(*this);
       }
 
       template <class Constructor, class Allocator>
-      test_object(Constructor&& c, int64_t _id, Allocator a )
+      test_object( Constructor&& c, int64_t _id, Allocator a )
       : id( _id ), val( 0 ), name( a )
       {
          c(*this);
       }
 
-      chainbase::oid<test_object> id;
+      id_type id;
       uint32_t val;
       std::string name;
    };
@@ -48,7 +50,7 @@ namespace bmic
    using test_object_index = boost::multi_index_container<test_object,
    indexed_by<
       ordered_unique<
-            tag<OrderedIndex>, member<test_object, chainbase::oid<test_object>, &test_object::id>>,
+            tag<OrderedIndex>, member<test_object, test_object::id_type, &test_object::id>>,
       ordered_unique< tag< CompositeOrderedIndex >,
             composite_key< test_object,
                member< test_object, std::string, &test_object::name >,
@@ -61,14 +63,16 @@ namespace bmic
 
    struct test_object2
    {
+      typedef chainbase::oid<test_object2> id_type;
+
       template <class Constructor, class Allocator>
-      test_object2(Constructor&& c, Allocator a )
+      test_object2( Constructor&& c, Allocator a )
       : id( 0 ), val( 0 )
       {
          c(*this);
       }
 
-      chainbase::oid<test_object2> id;
+      id_type id;
       uint32_t val;
    };
 
@@ -78,11 +82,11 @@ namespace bmic
    using test_object_index2 = boost::multi_index_container<test_object2,
    indexed_by<
       ordered_unique<
-            tag<OrderedIndex2>, member<test_object2, chainbase::oid<test_object2>, &test_object2::id>>,
+            tag<OrderedIndex2>, member<test_object2, test_object2::id_type, &test_object2::id>>,
       ordered_unique< tag< CompositeOrderedIndex2 >,
             composite_key< test_object2,
                member< test_object2, uint32_t, &test_object2::val >,
-               member<test_object2, chainbase::oid<test_object2>, &test_object2::id>
+               member<test_object2, test_object2::id_type, &test_object2::id>
                >
             >
       >,
@@ -91,14 +95,16 @@ namespace bmic
 
    struct test_object3
    {
+      typedef chainbase::oid<test_object3> id_type;
+
       template <class Constructor, class Allocator>
-      test_object3(Constructor&& c, Allocator a )
+      test_object3( Constructor&& c, Allocator a )
       : id( 0 ), val( 0 ), val2( 0 ), val3( 0 )
       {
          c(*this);
       }
 
-      chainbase::oid<test_object3> id;
+      id_type id;
       uint32_t val;
       uint32_t val2;
       uint32_t val3;
@@ -111,7 +117,7 @@ namespace bmic
    using test_object_index3 = boost::multi_index_container<test_object3,
    indexed_by<
       ordered_unique<
-            tag<OrderedIndex3>, member<test_object3, chainbase::oid<test_object3>, &test_object3::id>>,
+            tag<OrderedIndex3>, member<test_object3, test_object3::id_type, &test_object3::id>>,
       ordered_unique< tag< CompositeOrderedIndex3a>,
             composite_key< test_object3,
                member< test_object3, uint32_t, &test_object3::val >,

@@ -86,13 +86,7 @@ struct bucket_object : public object< bucket_object_type, bucket_object >
    CHAINBASE_OBJECT( bucket_object, true );
 
 public:
-   template< typename Constructor, typename Allocator >
-   bucket_object( Constructor&& c, allocator< Allocator > a )
-   {
-      c( *this );
-   }
-
-   id_type              id;
+   CHAINBASE_DEFAULT_CONSTRUCTOR( bucket_object )
 
    fc::time_point_sec   open;
    uint32_t             seconds = 0;
@@ -111,7 +105,7 @@ public:
 #endif
 };
 
-typedef oid< bucket_object > bucket_id_type;
+typedef oid_ref< bucket_object > bucket_id_type;
 
 
 struct order_history_object : public object< order_history_object_type, order_history_object >
@@ -119,26 +113,21 @@ struct order_history_object : public object< order_history_object_type, order_hi
    CHAINBASE_OBJECT( order_history_object );
 
 public:
-   template< typename Constructor, typename Allocator >
-   order_history_object( Constructor&& c, allocator< Allocator > a )
-   {
-      c( *this );
-   }
-
-   id_type                          id;
+   CHAINBASE_DEFAULT_CONSTRUCTOR( order_history_object )
 
    fc::time_point_sec               time;
    protocol::fill_order_operation   op;
 };
 
-typedef oid< order_history_object > order_history_id_type;
+typedef oid_ref< order_history_object > order_history_id_type;
 
 
 struct by_bucket;
 typedef multi_index_container<
    bucket_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< bucket_object, bucket_id_type, &bucket_object::id > >,
+      ordered_unique< tag< by_id >,
+         const_mem_fun< bucket_object, bucket_object::id_type, &bucket_object::get_id > >,
       ordered_unique< tag< by_bucket >,
          composite_key< bucket_object,
             member< bucket_object, uint32_t, &bucket_object::seconds >,
@@ -154,11 +143,12 @@ struct by_time;
 typedef multi_index_container<
    order_history_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< order_history_object, order_history_id_type, &order_history_object::id > >,
+      ordered_unique< tag< by_id >,
+         const_mem_fun< order_history_object, order_history_object::id_type, &order_history_object::get_id > >,
       ordered_unique< tag< by_time >,
          composite_key< order_history_object,
             member< order_history_object, time_point_sec, &order_history_object::time >,
-            member< order_history_object, order_history_id_type, &order_history_object::id >
+            const_mem_fun< order_history_object, order_history_object::id_type, &order_history_object::get_id >
          >
       >
    >,

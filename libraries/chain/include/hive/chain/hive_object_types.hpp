@@ -11,26 +11,6 @@
 
 #include <hive/chain/multi_index_types.hpp>
 
-#define CHAINBASE_OBJECT_1( object_class ) CHAINBASE_OBJECT_false( object_class )
-#define CHAINBASE_OBJECT_2( object_class, allow_default ) CHAINBASE_OBJECT_##allow_default( object_class )
-#define CHAINBASE_OBJECT_true( object_class ) CHAINBASE_OBJECT_COMMON( object_class ); public: object_class() {} private:
-#define CHAINBASE_OBJECT_COMMON( object_class ) friend class fc::reflector< object_class >
-
-#ifdef ENABLE_MIRA
-#define CHAINBASE_OBJECT_false( object_class ) CHAINBASE_OBJECT_true( object_class )
-#else
-#define CHAINBASE_OBJECT_false( object_class ) CHAINBASE_OBJECT_COMMON( object_class ); object_class() = delete; private:
-#endif
-
-/**
- * use at the start of any class derived from chainbase::object<>, f.e.:
- * CHAINBASE_OBJECT( account_object ) or
- * CHAINBASE_OBJECT( dynamic_global_property_object, true )
- * first parameter is a class name, second (true or false, default false) tells if default constructor should be allowed
- * Note that with MIRA enabled default constructors will be allowed anyway as it uses them during unpacking of object contents.
- */
-#define CHAINBASE_OBJECT( ... ) BOOST_PP_OVERLOAD(CHAINBASE_OBJECT_,__VA_ARGS__)(__VA_ARGS__)
-
 namespace hive {
 
 namespace protocol {
@@ -44,6 +24,7 @@ namespace chain {
 
 using chainbase::object;
 using chainbase::oid;
+using chainbase::oid_ref;
 using chainbase::allocator;
 
 using hive::protocol::block_id_type;
@@ -157,52 +138,52 @@ class smt_ico_object;
 class proposal_object;
 class proposal_vote_object;
 
-typedef oid< dynamic_global_property_object         > dynamic_global_property_id_type;
-typedef oid< account_object                         > account_id_type;
-typedef oid< account_metadata_object                > account_metadata_id_type;
-typedef oid< account_authority_object               > account_authority_id_type;
-typedef oid< witness_object                         > witness_id_type;
-typedef oid< transaction_object                     > transaction_object_id_type;
-typedef oid< block_summary_object                   > block_summary_id_type;
-typedef oid< witness_schedule_object                > witness_schedule_id_type;
-typedef oid< comment_object                         > comment_id_type;
-typedef oid< comment_content_object                 > comment_content_id_type;
-typedef oid< comment_vote_object                    > comment_vote_id_type;
-typedef oid< witness_vote_object                    > witness_vote_id_type;
-typedef oid< limit_order_object                     > limit_order_id_type;
-typedef oid< feed_history_object                    > feed_history_id_type;
-typedef oid< convert_request_object                 > convert_request_id_type;
-typedef oid< liquidity_reward_balance_object        > liquidity_reward_balance_id_type;
-typedef oid< operation_object                       > operation_id_type;
-typedef oid< account_history_object                 > account_history_id_type;
-typedef oid< hardfork_property_object               > hardfork_property_id_type;
-typedef oid< withdraw_vesting_route_object          > withdraw_vesting_route_id_type;
-typedef oid< owner_authority_history_object         > owner_authority_history_id_type;
-typedef oid< account_recovery_request_object        > account_recovery_request_id_type;
-typedef oid< change_recovery_account_request_object > change_recovery_account_request_id_type;
-typedef oid< escrow_object                          > escrow_id_type;
-typedef oid< savings_withdraw_object                > savings_withdraw_id_type;
-typedef oid< decline_voting_rights_request_object   > decline_voting_rights_request_id_type;
-typedef oid< block_stats_object                     > block_stats_id_type;
-typedef oid< reward_fund_object                     > reward_fund_id_type;
-typedef oid< vesting_delegation_object              > vesting_delegation_id_type;
-typedef oid< vesting_delegation_expiration_object   > vesting_delegation_expiration_id_type;
-typedef oid< pending_required_action_object         > pending_required_action_id_type;
-typedef oid< pending_optional_action_object         > pending_optional_action_id_type;
-typedef oid< comment_cashout_object                 > comment_cashout_id_type;
+typedef oid_ref< dynamic_global_property_object         > dynamic_global_property_id_type;
+typedef oid_ref< account_object                         > account_id_type;
+typedef oid_ref< account_metadata_object                > account_metadata_id_type;
+typedef oid_ref< account_authority_object               > account_authority_id_type;
+typedef oid_ref< witness_object                         > witness_id_type;
+typedef oid_ref< transaction_object                     > transaction_object_id_type;
+typedef oid_ref< block_summary_object                   > block_summary_id_type;
+typedef oid_ref< witness_schedule_object                > witness_schedule_id_type;
+typedef oid_ref< comment_object                         > comment_id_type;
+typedef oid_ref< comment_content_object                 > comment_content_id_type;
+typedef oid_ref< comment_vote_object                    > comment_vote_id_type;
+typedef oid_ref< witness_vote_object                    > witness_vote_id_type;
+typedef oid_ref< limit_order_object                     > limit_order_id_type;
+typedef oid_ref< feed_history_object                    > feed_history_id_type;
+typedef oid_ref< convert_request_object                 > convert_request_id_type;
+typedef oid_ref< liquidity_reward_balance_object        > liquidity_reward_balance_id_type;
+typedef oid_ref< operation_object                       > operation_id_type;
+typedef oid_ref< account_history_object                 > account_history_id_type;
+typedef oid_ref< hardfork_property_object               > hardfork_property_id_type;
+typedef oid_ref< withdraw_vesting_route_object          > withdraw_vesting_route_id_type;
+typedef oid_ref< owner_authority_history_object         > owner_authority_history_id_type;
+typedef oid_ref< account_recovery_request_object        > account_recovery_request_id_type;
+typedef oid_ref< change_recovery_account_request_object > change_recovery_account_request_id_type;
+typedef oid_ref< escrow_object                          > escrow_id_type;
+typedef oid_ref< savings_withdraw_object                > savings_withdraw_id_type;
+typedef oid_ref< decline_voting_rights_request_object   > decline_voting_rights_request_id_type;
+typedef oid_ref< block_stats_object                     > block_stats_id_type;
+typedef oid_ref< reward_fund_object                     > reward_fund_id_type;
+typedef oid_ref< vesting_delegation_object              > vesting_delegation_id_type;
+typedef oid_ref< vesting_delegation_expiration_object   > vesting_delegation_expiration_id_type;
+typedef oid_ref< pending_required_action_object         > pending_required_action_id_type;
+typedef oid_ref< pending_optional_action_object         > pending_optional_action_id_type;
+typedef oid_ref< comment_cashout_object                 > comment_cashout_id_type;
 
 #ifdef HIVE_ENABLE_SMT
-typedef oid< smt_token_object                       > smt_token_id_type;
-typedef oid< account_regular_balance_object         > account_regular_balance_id_type;
-typedef oid< account_rewards_balance_object         > account_rewards_balance_id_type;
-typedef oid< nai_pool_object                        > nai_pool_id_type;
-typedef oid< smt_token_emissions_object             > smt_token_emissions_object_id_type;
-typedef oid< smt_contribution_object                > smt_contribution_object_id_type;
-typedef oid< smt_ico_object                         > smt_ico_object_id_type;
+typedef oid_ref< smt_token_object                       > smt_token_id_type;
+typedef oid_ref< account_regular_balance_object         > account_regular_balance_id_type;
+typedef oid_ref< account_rewards_balance_object         > account_rewards_balance_id_type;
+typedef oid_ref< nai_pool_object                        > nai_pool_id_type;
+typedef oid_ref< smt_token_emissions_object             > smt_token_emissions_id_type;
+typedef oid_ref< smt_contribution_object                > smt_contribution_id_type;
+typedef oid_ref< smt_ico_object                         > smt_ico_id_type;
 #endif
 
-typedef oid< proposal_object > proposal_id_type;
-typedef oid< proposal_vote_object > proposal_vote_id_type;
+typedef oid_ref< proposal_object                        > proposal_id_type;
+typedef oid_ref< proposal_vote_object                   > proposal_vote_id_type;
 
 enum bandwidth_type
 {
@@ -217,6 +198,7 @@ enum bandwidth_type
 namespace mira {
 
 template< typename T > struct is_static_length< chainbase::oid< T > > : public boost::true_type {};
+template< typename T > struct is_static_length< chainbase::oid_ref< T > > : public boost::true_type {};
 template< typename T > struct is_static_length< fc::fixed_string< T > > : public boost::true_type {};
 template<> struct is_static_length< hive::protocol::account_name_type > : public boost::true_type {};
 template<> struct is_static_length< hive::protocol::asset_symbol_type > : public boost::true_type {};
@@ -246,13 +228,25 @@ inline void from_variant( const variant& var, hive::chain::shared_string& s )
 template<typename T>
 void to_variant( const chainbase::oid<T>& var,  variant& vo )
 {
-   vo = var._id;
+   vo = var.get_value();
+}
+
+template<typename T>
+void to_variant( const chainbase::oid_ref<T>& var, variant& vo )
+{
+   vo = var.get_value();
 }
 
 template<typename T>
 void from_variant( const variant& vo, chainbase::oid<T>& var )
 {
-   var._id = vo.as_int64();
+   var = chainbase::oid<T>(vo.as_int64());
+}
+
+template<typename T>
+void from_variant( const variant& vo, chainbase::oid_ref<T>& var )
+{
+   var = chainbase::oid<T>( vo.as_int64() );
 }
 
 template< typename T >
@@ -265,19 +259,41 @@ struct get_typename< chainbase::oid< T > >
    }
 };
 
+template< typename T >
+struct get_typename< chainbase::oid_ref< T > >
+{
+   static const char* name()
+   {
+      static std::string n = std::string( "chainbase::oid_ref<" ) + get_typename< T >::name() + ">";
+      return n.c_str();
+   }
+};
+
 namespace raw
 {
 
 template<typename Stream, typename T>
 void pack( Stream& s, const chainbase::oid<T>& id )
 {
-   s.write( (const char*)&id._id, sizeof(id._id) );
+   s.write( (const char*)&id, sizeof(id) );
+}
+
+template<typename Stream, typename T>
+void pack( Stream& s, const chainbase::oid_ref<T>& id )
+{
+   s.write( (const char*)&id, sizeof(id) );
 }
 
 template<typename Stream, typename T>
 void unpack( Stream& s, chainbase::oid<T>& id, uint32_t )
 {
-   s.read( (char*)&id._id, sizeof(id._id));
+   s.read( (char*)&id, sizeof(id));
+}
+
+template<typename Stream, typename T>
+void unpack( Stream& s, chainbase::oid_ref<T>& id, uint32_t )
+{
+   s.read( (char*)&id, sizeof(id) );
 }
 
 #ifndef ENABLE_MIRA

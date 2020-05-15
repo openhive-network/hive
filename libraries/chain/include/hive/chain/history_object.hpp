@@ -17,14 +17,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( operation_object );
       public:
-         template< typename Constructor, typename Allocator >
-         operation_object( Constructor&& c, allocator< Allocator > a )
-            :serialized_op( a )
-         {
-            c( *this );
-         }
-
-         id_type              id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( operation_object, (serialized_op) )
 
          transaction_id_type  trx_id;
          uint32_t             block = 0;
@@ -42,19 +35,20 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       operation_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< operation_object, operation_id_type, &operation_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< operation_object, operation_object::id_type, &operation_object::get_id > >,
          ordered_unique< tag< by_location >,
             composite_key< operation_object,
                member< operation_object, uint32_t, &operation_object::block >,
-               member< operation_object, operation_id_type, &operation_object::id >
+               const_mem_fun< operation_object, operation_object::id_type, &operation_object::get_id >
             >
          >
 #ifndef SKIP_BY_TX_ID
          ,
          ordered_unique< tag< by_transaction_id >,
             composite_key< operation_object,
-               member< operation_object, transaction_id_type, &operation_object::trx_id>,
-               member< operation_object, operation_id_type, &operation_object::id>
+               member< operation_object, transaction_id_type, &operation_object::trx_id> ,
+               const_mem_fun< operation_object, operation_object::id_type, &operation_object::get_id >
             >
          >
 #endif
@@ -66,13 +60,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( account_history_object );
       public:
-         template< typename Constructor, typename Allocator >
-         account_history_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
-
-         id_type           id;
+         CHAINBASE_DEFAULT_CONSTRUCTOR( account_history_object )
 
          account_name_type account;
          uint32_t          sequence = 0;
@@ -84,7 +72,8 @@ namespace hive { namespace chain {
    typedef multi_index_container<
       account_history_object,
       indexed_by<
-         ordered_unique< tag< by_id >, member< account_history_object, account_history_id_type, &account_history_object::id > >,
+         ordered_unique< tag< by_id >,
+            const_mem_fun< account_history_object, account_history_object::id_type, &account_history_object::get_id > >,
          ordered_unique< tag< by_account >,
             composite_key< account_history_object,
                member< account_history_object, account_name_type, &account_history_object::account>,

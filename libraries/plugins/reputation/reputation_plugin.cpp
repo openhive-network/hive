@@ -63,7 +63,7 @@ struct pre_operation_visitor
          if( db.calculate_discussion_payout_time( c ) == fc::time_point_sec::maximum() ) return;
 
          const auto& cv_idx = db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-         auto cv = cv_idx.find( boost::make_tuple( c.id, db.get_account( op.voter ).id ) );
+         auto cv = cv_idx.find( boost::make_tuple( c.get_id(), db.get_account( op.voter ).get_id() ) );
 
          if( cv != cv_idx.end() )
          {
@@ -122,7 +122,7 @@ struct post_operation_visitor
             return;
 
          const auto& cv_idx = db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-         auto cv = cv_idx.find( boost::make_tuple( comment.id, db.get_account( op.voter ).id ) );
+         auto cv = cv_idx.find( boost::make_tuple( comment.get_id(), db.get_account( op.voter ).get_id() ) );
 
          const auto& rep_idx = db.get_index< reputation_index >().indices().get< by_account >();
          auto voter_rep = rep_idx.find( op.voter );

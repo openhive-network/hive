@@ -472,9 +472,9 @@ int64_t set_revision( int64_t rev )
 
 id_type next_id()
 {
-   id_type id;
+   id_type id( 0 );
    if ( !get_metadata( "next_id", id ) )
-      id = 0;
+      id = id_type( 0 );
    return id;
 }
 
@@ -687,7 +687,7 @@ primary_iterator erase( primary_iterator position )
             the value has already updated the cache, but in case something
             doesn't line up here, we update by moving the value to itself... */
             std::lock_guard< std::mutex > lock( super::_cache->get_lock() );
-            super::_cache->get_index_cache( ID_INDEX )->update( (void*)&super::id( v ), std::move( v ), modified_indices );
+            super::_cache->get_index_cache( ID_INDEX )->update( (void*)&v, std::move( v ), modified_indices );
             super::commit_first_key_update();
          }
          else

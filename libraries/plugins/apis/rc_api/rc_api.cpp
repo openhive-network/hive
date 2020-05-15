@@ -31,7 +31,7 @@ class rc_api_impl
 DEFINE_API_IMPL( rc_api_impl, get_resource_params )
 {
    get_resource_params_return result;
-   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_object::id_type() );
+   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
    fc::mutable_variant_object resource_params_mvo;
 
    for( size_t i=0; i<HIVE_NUM_RESOURCE_TYPES; i++ )
@@ -65,7 +65,7 @@ DEFINE_API_IMPL( rc_api_impl, get_resource_pool )
 {
    get_resource_pool_return result;
    fc::mutable_variant_object mvo;
-   const rc_pool_object& pool_obj = _db.get< rc_pool_object, by_id >( rc_pool_object::id_type() );
+   const rc_pool_object& pool_obj = _db.get< rc_pool_object, by_id >( rc_pool_id_type() );
 
    for( size_t i=0; i<HIVE_NUM_RESOURCE_TYPES; i++ )
    {

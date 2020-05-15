@@ -155,7 +155,7 @@ to make it available to JSON clients
 - (9a) Add `smt_token_object_type` to `enum object_type` in `hive_objects.hpp` and add
 to `FC_REFLECT_ENUM` bubble list at the bottom of that file
 - (9b) Declare (but do not define) `class smt_token_object;` in `hive_objects.hpp`
-- (9c) Define `typedef oid< smt_token_object > smt_token_id_type` in `hive_objects.hpp`
+- (9c) Define `typedef oid_ref< smt_token_object > smt_token_id_type` in `hive_objects.hpp`
 - (9d) Create object header file (one header file per object) in `smt_objects` directory.
 Include the new header from `smt_objects.hpp`.
 - (9e) All SMT objects are consensus, and therefore should exist in `hive::chain` namespace
@@ -168,12 +168,17 @@ In practice, this means strings should be `shared_string`, and collections (vect
 should be one of the `boost::interprocess` types.  See examples in fields
 `transaction_object::packed_trx`, `comment_object::permlink`, and
 `feed_history_object::price_history`.
-- (9i) The first field should be `id_type id;`
+- (9i) The first field should be `id_type id;` - if you are using `CHAINBASE_OBJECT` macro it
+will be added automatically
 - (9j) Most fields should be default initialized, or set to zero, empty or compile-time
 default values.  Usually, the only field initialization done in the class constructor is
 passing the allocator, setting integer fields to zero, and executing the caller-provided
 `Constructor` callback.  The "real" initialization is performed by that callback, which
 will have access to necessary external information (from `database` and the operation).
+Such standard constructor can be defined with use of `CHAINBASE_DEFAULT_CONSTRUCTOR` macro, but
+you can also define custom constructors - they just need to be extensions of the following:
+```template< typename Allocator >
+chain_object( allocator< Allocator > a, uint64_t _id ) : id( _id ) {}```
 - (9k) All fields must be passed to `FC_REFLECT` in a bubble list
 - (9l) `struct` definitions for any index other than the default `by_id` should follow the class;
 `by_id` should *never* be defined by an object class.
@@ -200,7 +205,7 @@ variable of ID type, which notes the table the ID refers to.  This is implemente
 `chainbase::oid` class, which takes the class name as a template parameter.  To cut down
 on the number of template invocations needed in typical code (and to ease porting of
 code first developed with older versions of `chainbase` or its predecessors), a type
-alias `typedef oid< smt_token_object > smt_id_type` is added to `hive_object_types.hpp`.
+alias `typedef oid_ref< smt_token_object > smt_id_type` is added to `hive_object_types.hpp`.
 
 - (9f) The `smt_token_object` class subclasses
 `chainbase::object< smt_token_object_type, smt_token_object >`.  This is the
@@ -209,7 +214,7 @@ it involves routing of type parameters to allow interaction of templates and pol
 complicated, but the `object` class definition in `chainbase.hpp` makes clear that it is used to simply
 `typedef oid< smt_token_object > id_type;`
 
-As a consequence of the above, `smt_token_id_type`, `oid< smt_token_object >` and
+As a consequence of the above, `smt_token_id_type`, `oid_ref< smt_token_object >` and
 `smt_token_object::id_type` all refer to a type representing an integer object ID, with a
 compile-time "note" attached that this object ID is a primary key for the `smt_token_object`
 database table.  The table ID of that database table is an integer value given by

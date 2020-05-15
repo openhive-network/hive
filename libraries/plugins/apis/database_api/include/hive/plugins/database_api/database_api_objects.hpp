@@ -32,7 +32,7 @@ typedef reward_fund_object                     api_reward_fund_object;
 struct api_comment_object
 {
    api_comment_object( const comment_object& o, const database& db ):
-      id( o.id ),
+      id( o.get_id() ),
       category( to_string( o.category ) ),
       parent_permlink( to_string( o.parent_permlink ) ),
       author( db.get_account(o.author_id).name ),
@@ -42,8 +42,8 @@ struct api_comment_object
       depth( o.depth ),
       allow_replies( o.allow_replies )
    {
-      if( o.parent_author_id == HIVE_ROOT_POST_PARENT_ID ) parent_author = HIVE_ROOT_POST_PARENT_ID;
-      else parent_author = db.get_account( o.parent_author_id ).name;
+      if( o.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
+         parent_author = db.get_account( o.parent_author_id ).name;
 
       const comment_cashout_object* cc = db.get_comment_cashout( o );
       if( cc )
@@ -83,7 +83,7 @@ struct api_comment_object
          root_permlink = to_string( root->permlink );
       }
 #ifndef IS_LOW_MEM
-      const auto& con = db.get< chain::comment_content_object, chain::by_comment >( o.id );
+      const auto& con = db.get< chain::comment_content_object, chain::by_comment >( o.get_id() );
       title = to_string( con.title );
       body = to_string( con.body );
       json_metadata = to_string( con.json_metadata );
@@ -142,7 +142,7 @@ struct api_comment_object
 struct api_comment_vote_object
 {
    api_comment_vote_object( const comment_vote_object& cv, const database& db ) :
-      id( cv.id ),
+      id( cv.get_id() ),
       weight( cv.weight ),
       rshares( cv.rshares),
       vote_percent( cv.vote_percent ),
@@ -170,7 +170,7 @@ struct api_comment_vote_object
 struct api_account_object
 {
    api_account_object( const account_object& a, const database& db, bool delayed_votes_active ) :
-      id( a.id ),
+      id( a.get_id() ),
       name( a.name ),
       memo_key( a.memo_key ),
       proxy( a.proxy ),
@@ -330,7 +330,7 @@ struct api_account_object
 struct api_owner_authority_history_object
 {
    api_owner_authority_history_object( const owner_authority_history_object& o ) :
-      id( o.id ),
+      id( o.get_id() ),
       account( o.account ),
       previous_owner_authority( authority( o.previous_owner_authority ) ),
       last_valid_time( o.last_valid_time )
@@ -348,7 +348,7 @@ struct api_owner_authority_history_object
 struct api_account_recovery_request_object
 {
    api_account_recovery_request_object( const account_recovery_request_object& o ) :
-      id( o.id ),
+      id( o.get_id() ),
       account_to_recover( o.account_to_recover ),
       new_owner_authority( authority( o.new_owner_authority ) ),
       expires( o.expires )
@@ -370,7 +370,7 @@ struct api_account_history_object
 struct api_savings_withdraw_object
 {
    api_savings_withdraw_object( const savings_withdraw_object& o ) :
-      id( o.id ),
+      id( o.get_id() ),
       from( o.from ),
       to( o.to ),
       memo( to_string( o.memo ) ),
@@ -393,7 +393,7 @@ struct api_savings_withdraw_object
 struct api_feed_history_object
 {
    api_feed_history_object( const feed_history_object& f ) :
-      id( f.id ),
+      id( f.get_id() ),
       current_median_history( f.current_median_history ),
       price_history( f.price_history.begin(), f.price_history.end() )
    {}
@@ -408,7 +408,7 @@ struct api_feed_history_object
 struct api_witness_object
 {
    api_witness_object( const witness_object& w ) :
-      id( w.id ),
+      id( w.get_id() ),
       owner( w.owner ),
       created( w.created ),
       url( to_string( w.url ) ),
@@ -461,7 +461,7 @@ struct api_witness_schedule_object
    api_witness_schedule_object() {}
 
    api_witness_schedule_object( const witness_schedule_object& wso) :
-      id( wso.id ),
+      id( wso.get_id() ),
       current_virtual_time( wso.current_virtual_time ),
       next_shuffle_block_num( wso.next_shuffle_block_num ),
       num_scheduled_witnesses( wso.num_scheduled_witnesses ),
@@ -530,7 +530,7 @@ struct api_signed_block_object : public signed_block
 struct api_hardfork_property_object
 {
    api_hardfork_property_object( const hardfork_property_object& h ) :
-      id( h.id ),
+      id( h.get_id() ),
       last_hardfork( h.last_hardfork ),
       current_hardfork_version( h.current_hardfork_version ),
       next_hardfork( h.next_hardfork ),
@@ -588,7 +588,7 @@ struct api_proposal_object
    api_proposal_object() = default;
 
    api_proposal_object(const proposal_object& po, const time_point_sec& current_time) :
-      id(po.id),
+      id(po.get_id()),
       proposal_id(po.proposal_id),
       creator(po.creator),
       receiver(po.receiver),
@@ -603,7 +603,7 @@ struct api_proposal_object
 
    api_id_type       id;
 
-   api_id_type       proposal_id;
+   uint32_t          proposal_id;
    account_name_type creator;
    account_name_type receiver;
    time_point_sec    start_date;
@@ -620,9 +620,9 @@ struct api_proposal_vote_object
    api_proposal_vote_object() = default;
 
    api_proposal_vote_object( const proposal_vote_object& pvo, const database& db ) :
-      id( pvo.id ),
+      id( pvo.get_id() ),
       voter( pvo.voter ),
-      proposal( db.get< proposal_object, by_id >( pvo.proposal_id ), db.head_block_time() )
+      proposal( db.get< proposal_object, by_proposal_id >( pvo.proposal_id ), db.head_block_time() )
    {}
 
    proposal_vote_id_type   id;

@@ -25,11 +25,7 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( dynamic_global_property_object, true );
       public:
-         template< typename Constructor, typename Allocator >
-         dynamic_global_property_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
+         CHAINBASE_DEFAULT_CONSTRUCTOR( dynamic_global_property_object )
 
          //main HIVE token counter (see also get_full_hive_supply)
          const asset& get_current_supply() const { return current_supply; }
@@ -55,8 +51,6 @@ namespace hive { namespace chain {
          const asset& get_pending_rewarded_vesting_hive() const { return pending_rewarded_vesting_hive; }
          //amount of VESTS produced from HIVE held in pending reward vested fund
          const asset& get_pending_rewarded_vesting_shares() const { return pending_rewarded_vesting_shares; }
-
-         id_type           id;
 
          uint32_t          head_block_number = 0;
          block_id_type     head_block_id;
@@ -177,7 +171,7 @@ namespace hive { namespace chain {
       dynamic_global_property_object,
       indexed_by<
          ordered_unique< tag< by_id >,
-            member< dynamic_global_property_object, dynamic_global_property_object::id_type, &dynamic_global_property_object::id > >
+            const_mem_fun< dynamic_global_property_object, dynamic_global_property_object::id_type, &dynamic_global_property_object::get_id > >
       >,
       allocator< dynamic_global_property_object >
    > dynamic_global_property_index;

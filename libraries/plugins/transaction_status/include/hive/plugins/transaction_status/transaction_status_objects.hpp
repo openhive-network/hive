@@ -31,18 +31,13 @@ class transaction_status_object : public object< transaction_status_object_type,
    CHAINBASE_OBJECT( transaction_status_object );
 
 public:
-   template< typename Constructor, typename Allocator >
-   transaction_status_object( Constructor&& c, allocator< Allocator > a )
-   {
-      c( *this );
-   }
+   CHAINBASE_DEFAULT_CONSTRUCTOR( transaction_status_object )
 
-   id_type                     id;
    transaction_id_type         transaction_id;
    uint32_t                    block_num = 0;
 };
 
-typedef oid< transaction_status_object > transaction_status_object_id_type;
+typedef oid_ref< transaction_status_object > transaction_status_object_id_type;
 
 struct by_trx_id;
 struct by_block_num;
@@ -51,8 +46,10 @@ struct by_expiration;
 typedef multi_index_container<
    transaction_status_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< transaction_status_object, transaction_status_object_id_type, &transaction_status_object::id > >,
-      ordered_unique< tag< by_trx_id >, member< transaction_status_object, transaction_id_type, &transaction_status_object::transaction_id > >,
+      ordered_unique< tag< by_id >,
+         const_mem_fun< transaction_status_object, transaction_status_object::id_type, &transaction_status_object::get_id > >,
+      ordered_unique< tag< by_trx_id >,
+         member< transaction_status_object, transaction_id_type, &transaction_status_object::transaction_id > >,
       ordered_unique< tag< by_block_num >,
          composite_key< transaction_status_object,
             member< transaction_status_object, uint32_t, &transaction_status_object::block_num >,

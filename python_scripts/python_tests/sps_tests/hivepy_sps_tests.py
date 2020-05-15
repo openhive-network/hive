@@ -116,7 +116,7 @@ def test_list_proposals(node, account, wif, subject):
 def test_find_proposals(node, account, wif, subject):
     logger.info("Testing: find_proposals")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
-    # first we will find our special proposal and get its id
+    # first we will find our special proposal and get its proposal_id
     proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
     found = None
@@ -125,7 +125,7 @@ def test_find_proposals(node, account, wif, subject):
             found = proposal
     
     assert found is not None
-    proposal_id = int(found["id"])
+    proposal_id = int(found["proposal_id"])
 
     ret = s.rpc.find_proposals([proposal_id])
     assert ret[0]["subject"] == found["subject"]
@@ -133,7 +133,7 @@ def test_find_proposals(node, account, wif, subject):
 def test_vote_proposal(node, account, wif, subject):
     logger.info("Testing: vote_proposal")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
-    # first we will find our special proposal and get its id
+    # first we will find our special proposal and get its proposal_id
     proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
     found = None
@@ -142,7 +142,7 @@ def test_vote_proposal(node, account, wif, subject):
             found = proposal
     
     assert found is not None
-    proposal_id = int(found["id"])
+    proposal_id = int(found["proposal_id"])
 
     # now lets vote
     from beembase.operations import Update_proposal_votes
@@ -174,7 +174,7 @@ def test_list_voter_proposals(node, account, wif, subject):
 def test_remove_proposal(node, account, wif, subject):
     logger.info("Testing: remove_proposal")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
-    # first we will find our special proposal and get its id
+    # first we will find our special proposal and get its proposal_id
     proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
     found = None
@@ -183,7 +183,7 @@ def test_remove_proposal(node, account, wif, subject):
             found = proposal
     
     assert found is not None, "Not found"
-    proposal_id = int(found["id"])
+    proposal_id = int(found["proposal_id"])
 
     # remove proposal
     print(account)
@@ -276,7 +276,7 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
     ids = []
     for proposal in proposals:
         assert proposal["start_date"] == start_date, "Expected start_date do not match {} != {}".format(start_date, proposals[-1]["start_date"])
-        ids.append(proposal["id"])
+        ids.append(proposal["proposal_id"])
     assert len(ids) == 3, "Expected {} elements got {}".format(3, len(ids))
 
     # 3 we list proposals again with the same conditiona as in 2, we should get the same set of results
@@ -285,7 +285,7 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
     oids = []
     for proposal in proposals:
         assert proposal["start_date"] == start_date, "Expected start_date do not match {} != {}".format(start_date, proposals[-1]["start_date"])
-        oids.append(proposal["id"])
+        oids.append(proposal["proposal_id"])
     assert len(oids) == 3, "Expected {} elements got {}".format(3, len(oids))
 
     # the same set of results check
@@ -308,7 +308,7 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
             proposals = s.list_proposals([start_date], 5, "by_start_date", "descending", "all")
             ids = []
             for proposal in proposals:
-                ids.append(int(proposal['id']))
+                ids.append(int(proposal['proposal_id']))
             
             op = Remove_proposal(
                 **{

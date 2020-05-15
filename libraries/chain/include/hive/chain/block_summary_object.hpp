@@ -18,13 +18,8 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( block_summary_object );
       public:
-         template< typename Constructor, typename Allocator >
-         block_summary_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
+         CHAINBASE_DEFAULT_CONSTRUCTOR( block_summary_object )
 
-         id_type        id;
          block_id_type  block_id;
    };
 
@@ -32,7 +27,7 @@ namespace hive { namespace chain {
       block_summary_object,
       indexed_by<
          ordered_unique< tag< by_id >,
-            member< block_summary_object, block_summary_object::id_type, &block_summary_object::id > >
+            const_mem_fun< block_summary_object, block_summary_object::id_type, &block_summary_object::get_id > >
       >,
       allocator< block_summary_object >
    > block_summary_index;

@@ -123,7 +123,14 @@ struct js_name<chainbase::oid<O> >
       return "protocol_id_type \"" + remove_namespace(fc::get_typename<O>::name()) + "\"";
    };
 };
-
+template<typename O>
+struct js_name<chainbase::oid_ref<O> >
+{
+   static std::string name()
+   {
+      return "protocol_id_type \"" + remove_namespace( fc::get_typename<O>::name() ) + "\"";
+   };
+};
 
 template<typename T> struct js_name< std::set<T> > { static std::string name(){ return "set " + js_name<T>::name(); } };
 
@@ -265,6 +272,12 @@ struct serializer<fc::optional<T>,false>
 
 template<typename T>
 struct serializer< chainbase::oid<T> ,true>
+{
+   static void init() {}
+   static void generate() {}
+};
+template<typename T>
+struct serializer< chainbase::oid_ref<T>, true>
 {
    static void init() {}
    static void generate() {}

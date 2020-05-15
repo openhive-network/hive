@@ -19,26 +19,21 @@ class key_lookup_object : public object< key_lookup_object_type, key_lookup_obje
 {
    CHAINBASE_OBJECT( key_lookup_object );
    public:
-      template< typename Constructor, typename Allocator >
-      key_lookup_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
-
-      id_type           id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( key_lookup_object )
 
       public_key_type   key;
       account_name_type account;
 };
 
-typedef key_lookup_object::id_type key_lookup_id_type;
+typedef oid_ref< key_lookup_object > key_lookup_id_type;
 
 struct by_key;
 
 typedef multi_index_container<
    key_lookup_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< key_lookup_object, key_lookup_id_type, &key_lookup_object::id > >,
+      ordered_unique< tag< by_id >,
+         const_mem_fun< key_lookup_object, key_lookup_object::id_type, &key_lookup_object::get_id > >,
       ordered_unique< tag< by_key >,
          composite_key< key_lookup_object,
             member< key_lookup_object, public_key_type, &key_lookup_object::key >,

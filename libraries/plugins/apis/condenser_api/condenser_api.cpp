@@ -331,7 +331,7 @@ namespace detail
             {
       #ifndef IS_LOW_MEM
                int count = 0;
-               const account_id_type acnt_id = _db.get_account(acnt).id;
+               const account_id_type acnt_id = _db.get_account(acnt).get_id();
                const auto& pidx = _db.get_index< comment_index, by_author_last_update >();
                auto itr = pidx.lower_bound( acnt_id );
                eacnt.comments = vector<string>();
@@ -1272,7 +1272,7 @@ namespace detail
       vector< tags::vote_state > votes;
       const auto& comment = _db.get_comment( args[0].as< account_name_type >(), args[1].as< string >() );
       const auto& idx = _db.get_index< chain::comment_vote_index, chain::by_comment_voter >();
-      chain::comment_id_type cid(comment.id);
+      chain::comment_id_type cid( comment.get_id() );
       auto itr = idx.lower_bound( cid );
 
       while( itr != idx.end() && itr->comment == cid )
@@ -1311,7 +1311,7 @@ namespace detail
       const auto& voter_acnt = _db.get_account( voter );
       const auto& idx = _db.get_index< comment_vote_index, by_voter_comment >();
 
-      account_id_type aid( voter_acnt.id );
+      account_id_type aid( voter_acnt.get_id() );
       auto itr = idx.lower_bound( aid );
       auto end = idx.upper_bound( aid );
       while( itr != end )
@@ -1354,13 +1354,15 @@ namespace detail
 
       vector< discussion > result;
       
-      const account_object * author = _db.find_account( args[0].as< account_name_type >() );
+      const account_object* author = _db.find_account( args[0].as< account_name_type >() );
       account_id_type author_id;
-      if(author == nullptr) return result;
-      else  author_id = author->id;
+      if( author == nullptr )
+         return result;
+      else
+         author_id = author->get_id();
       string permlink = args[1].as< string >();
       const auto& by_permlink_idx = _db.get_index< comment_index, by_parent >();
-      auto itr = by_permlink_idx.find( boost::make_tuple( author_id , permlink ) );
+      auto itr = by_permlink_idx.find( boost::make_tuple( author_id, permlink ) );
 
       while( itr != by_permlink_idx.end() && itr->parent_author_id == author_id && to_string( itr->parent_permlink ) == permlink )
       {
@@ -1615,28 +1617,29 @@ namespace detail
       FC_ASSERT( limit <= 100 );
       const auto& last_update_idx = _db.get_index< comment_index, by_last_update >();
       auto itr = last_update_idx.begin();
-      account_object* parent_author_obj = nullptr;
+      const account_object* parent_author_obj = nullptr;
 
       if( start_permlink.size() )
       {
          const comment_object& comment = _db.get_comment( start_parent_author, start_permlink );
          itr = last_update_idx.iterator_to( comment );
-         parent_author_obj = const_cast<account_object*>(&_db.get_account(comment.parent_author_id));
+         parent_author_obj = &_db.get_account( comment.parent_author_id );
       }
       else if( start_parent_author.size() )
       {
-         parent_author_obj = const_cast<account_object*>(_db.find_account( start_parent_author ));
-         itr = last_update_idx.lower_bound( parent_author_obj->id );
+         parent_author_obj = _db.find_account( start_parent_author );
+         itr = last_update_idx.lower_bound( parent_author_obj->get_id() );
       }
 
       result.reserve( limit );
 
-      if(parent_author_obj == nullptr)
+      if( parent_author_obj == nullptr )
       {
-         parent_author_obj = const_cast<account_object*>(_db.find_account( start_parent_author ));
-         if(parent_author_obj == nullptr ) return result;
+         parent_author_obj = _db.find_account( start_parent_author );
+         if( parent_author_obj == nullptr )
+            return result;
       }
-      const account_id_type parent_author_id{ parent_author_obj->id };
+      const account_id_type parent_author_id{ parent_author_obj->get_id() };
 
       while( itr != last_update_idx.end() && result.size() < limit && itr->parent_author_id == parent_author_id )
       {

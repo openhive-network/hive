@@ -13,6 +13,7 @@ using namespace appbase;
 
 using chainbase::object;
 using chainbase::oid;
+using chainbase::oid_ref;
 using chainbase::allocator;
 
 //
@@ -63,13 +64,7 @@ class tag_object : public object< tag_object_type, tag_object >
 {
    CHAINBASE_OBJECT( tag_object );
    public:
-      template< typename Constructor, typename Allocator >
-      tag_object( Constructor&& c, allocator< Allocator > a )
-      {
-         c( *this );
-      }
-
-      id_type           id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( tag_object )
 
       tag_name_type     tag;
       time_point_sec    created;
@@ -86,10 +81,10 @@ class tag_object : public object< tag_object_type, tag_object >
       comment_id_type   parent;
       comment_id_type   comment;
 
-      bool is_post()const { return parent == comment_id_type(); }
+      bool is_post()const { return parent == comment_object::id_type::null_id(); }
 };
 
-typedef oid< tag_object > tag_id_type;
+typedef oid_ref< tag_object > tag_id_type;
 
 
 struct by_cashout; /// all posts regardless of depth
@@ -109,11 +104,12 @@ struct by_tag;
 typedef multi_index_container<
    tag_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< tag_object, tag_id_type, &tag_object::id > >,
+      ordered_unique< tag< by_id >,
+         const_mem_fun< tag_object, tag_object::id_type, &tag_object::get_id > >,
       ordered_unique< tag< by_comment >,
          composite_key< tag_object,
             member< tag_object, comment_id_type, &tag_object::comment >,
-            member< tag_object, tag_id_type, &tag_object::id >
+            const_mem_fun< tag_object, tag_object::id_type, &tag_object::get_id >
          >,
          composite_key_compare< std::less< comment_id_type >, std::less< tag_id_type > >
       >,
@@ -121,7 +117,7 @@ typedef multi_index_container<
             composite_key< tag_object,
                member< tag_object, account_id_type, &tag_object::author >,
                member< tag_object, comment_id_type, &tag_object::comment >,
-               member< tag_object, tag_id_type, &tag_object::id >
+               const_mem_fun< tag_object, tag_object::id_type, &tag_object::get_id >
             >,
             composite_key_compare< std::less< account_id_type >, std::less< comment_id_type >, std::less< tag_id_type > >
       >,
@@ -130,7 +126,7 @@ typedef multi_index_container<
                member< tag_object, tag_name_type, &tag_object::tag >,
                member< tag_object, comment_id_type, &tag_object::parent >,
                member< tag_object, time_point_sec, &tag_object::created >,
-               member<tag_object, tag_id_type, &tag_object::id >
+               const_mem_fun< tag_object, tag_object::id_type, &tag_object::get_id >
             >,
             composite_key_compare< std::less< tag_name_type >, std::less<comment_id_type>, std::greater< time_point_sec >, std::less< tag_id_type > >
       >,
@@ -139,7 +135,7 @@ typedef multi_index_container<
                member< tag_object, tag_name_type, &tag_object::tag >,
                member< tag_object, comment_id_type, &tag_object::parent >,
                member< tag_object, time_point_sec, &tag_object::active >,
-               member< tag_object, tag_id_type, &tag_object::id >
+               const_mem_fun< tag_object, tag_object::id_type, &tag_object::get_id >
             >,
             composite_key_compare< std::less<tag_name_type>, std::less<comment_id_type>, std::greater< time_point_sec >, std::less< tag_id_type > >
       >,
@@ -148,7 +144,7 @@ typedef multi_index_container<
                member< tag_object, tag_name_type, &tag_object::tag >,
                member< tag_object, comment_id_type, &tag_object::parent >,
                member< tag_object, share_type, &tag_object::promoted_balance >,
-               member< tag_object, tag_id_type, &tag_object::id >
+               const_mem_fun< tag_object, tag_object::id_type, &tag_object::get_id >
             >,
             composite_key_compare< std::less<tag_name_type>, std::less<comment_id_type>, std::greater< share_type >, std::less< tag_id_type > >
       >,
@@ -157,7 +153,7 @@ typedef multi_index_container<
                member< tag_object, tag_name_type, &tag_object::tag >,
                member< tag_object, comment_id_type, &tag_object::parent >,
                member< tag_object, int32_t, &tag_object::net_votes >,
-               member< tag_object, tag_id_type, &tag_object::id >
+               const_mem_fun< tag_object, tag_object::id_type, &tag_object::get_id >
             >,
             composite_key_compare< std::less<tag_name_type>, std::less<comment_id_type>, std::greater< int32_t >, std::less< tag_id_type > >
       >,
@@ -166,7 +162,7 @@ typedef multi_index_container<
                member< tag_object, tag_name_type, &tag_object::tag >,
                member< tag_object, comment_id_type, &tag_object::parent >,
                member< tag_object, int32_t, &tag_object::children >,
-               member< tag_object, tag_id_type, &tag_object::id >
+               const_mem_fun< tag_object, tag_object::id_type, &tag_object::get_id >
             >,
             composite_key_compare< std::less<tag_name_type>, std::less<comment_id_type>, std::greater< int32_t >, std::less< tag_id_type > >
       >,
@@ -175,7 +171,7 @@ typedef multi_index_container<
                member< tag_object, tag_name_type, &tag_object::tag >,
                member< tag_object, comment_id_type, &tag_object::parent >,
                member< tag_object, double, &tag_object::hot >,
-               member< tag_object, tag_id_type, &tag_object::id >
+               const_mem_fun< tag_object, tag_object::id_type, &tag_object::get_id >
             >,
             composite_key_compare< std::less<tag_name_type>, std::less<comment_id_type>, std::greater< double >, std::less< tag_id_type > >
       >,
@@ -184,7 +180,7 @@ typedef multi_index_container<
                member< tag_object, tag_name_type, &tag_object::tag >,
                member< tag_object, comment_id_type, &tag_object::parent >,
                member< tag_object, double, &tag_object::trending >,
-               member< tag_object, tag_id_type, &tag_object::id >
+               const_mem_fun< tag_object, tag_object::id_type, &tag_object::get_id >
             >,
             composite_key_compare< std::less<tag_name_type>, std::less<comment_id_type>, std::greater< double >, std::less< tag_id_type > >
       >,
@@ -192,7 +188,7 @@ typedef multi_index_container<
             composite_key< tag_object,
                member< tag_object, tag_name_type, &tag_object::tag >,
                member< tag_object, time_point_sec, &tag_object::cashout >,
-               member< tag_object, tag_id_type, &tag_object::id >
+               const_mem_fun< tag_object, tag_object::id_type, &tag_object::get_id >
             >,
             composite_key_compare< std::less<tag_name_type>, std::less< time_point_sec >, std::less< tag_id_type > >
       >,
@@ -201,7 +197,7 @@ typedef multi_index_container<
                member< tag_object, tag_name_type, &tag_object::tag >,
                const_mem_fun< tag_object, bool, &tag_object::is_post >,
                member< tag_object, int64_t, &tag_object::net_rshares >,
-               member< tag_object, tag_id_type, &tag_object::id >
+               const_mem_fun< tag_object, tag_object::id_type, &tag_object::get_id >
             >,
             composite_key_compare< std::less<tag_name_type>, std::less< bool >,std::greater< int64_t >, std::less< tag_id_type > >
       >
@@ -217,13 +213,7 @@ class tag_stats_object : public object< tag_stats_object_type, tag_stats_object 
 {
    CHAINBASE_OBJECT( tag_stats_object );
    public:
-      template< typename Constructor, typename Allocator >
-      tag_stats_object( Constructor&& c, allocator< Allocator > )
-      {
-         c( *this );
-      }
-
-      id_type           id;
+      CHAINBASE_DEFAULT_CONSTRUCTOR( tag_stats_object )
 
       tag_name_type     tag;
       asset             total_payout = asset( 0, HBD_SYMBOL );
@@ -233,7 +223,7 @@ class tag_stats_object : public object< tag_stats_object_type, tag_stats_object 
       fc::uint128       total_trending = 0;
 };
 
-typedef oid< tag_stats_object > tag_stats_id_type;
+typedef oid_ref< tag_stats_object > tag_stats_id_type;
 
 struct by_comments;
 struct by_top_posts;
@@ -242,8 +232,10 @@ struct by_trending;
 typedef multi_index_container<
    tag_stats_object,
    indexed_by<
-      ordered_unique< tag< by_id >, member< tag_stats_object, tag_stats_id_type, &tag_stats_object::id > >,
-      ordered_unique< tag< by_tag >, member< tag_stats_object, tag_name_type, &tag_stats_object::tag > >,
+      ordered_unique< tag< by_id >,
+         const_mem_fun< tag_stats_object, tag_stats_object::id_type, &tag_stats_object::get_id > >,
+      ordered_unique< tag< by_tag >,
+         member< tag_stats_object, tag_name_type, &tag_stats_object::tag > >,
       /*
       ordered_non_unique< tag< by_comments >,
          composite_key< tag_stats_object,
@@ -282,19 +274,14 @@ class author_tag_stats_object : public object< author_tag_stats_object_type, aut
 {
    CHAINBASE_OBJECT( author_tag_stats_object );
    public:
-      template< typename Constructor, typename Allocator >
-      author_tag_stats_object( Constructor&& c, allocator< Allocator > )
-      {
-         c( *this );
-      }
+      CHAINBASE_DEFAULT_CONSTRUCTOR( author_tag_stats_object )
 
-      id_type         id;
       account_id_type author;
       tag_name_type   tag;
       asset           total_rewards = asset( 0, HBD_SYMBOL );
       uint32_t        total_posts = 0;
 };
-typedef oid< author_tag_stats_object > author_tag_stats_id_type;
+typedef oid_ref< author_tag_stats_object > author_tag_stats_id_type;
 
 struct by_author_tag_posts;
 struct by_author_posts_tag;
@@ -305,7 +292,7 @@ typedef multi_index_container<
   author_tag_stats_object,
   indexed_by<
       ordered_unique< tag< by_id >,
-        member< author_tag_stats_object, author_tag_stats_id_type, &author_tag_stats_object::id >
+        const_mem_fun< author_tag_stats_object, author_tag_stats_object::id_type, &author_tag_stats_object::get_id >
       >,
       ordered_unique< tag< by_author_posts_tag >,
          composite_key< author_tag_stats_object,

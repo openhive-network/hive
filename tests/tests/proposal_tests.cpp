@@ -36,8 +36,8 @@ template< typename PROPOSAL_IDX >
 int64_t calc_proposals( const PROPOSAL_IDX& proposal_idx, const std::vector< int64_t >& proposals_id )
 {
    auto cnt = 0;
-   for( auto id : proposals_id )
-      cnt += proposal_idx.find( id ) != proposal_idx.end() ? 1 : 0;
+   for( auto pid : proposals_id )
+      cnt += proposal_idx.find( pid ) != proposal_idx.end() ? 1 : 0;
    return cnt;
 }
 
@@ -46,7 +46,7 @@ int64_t calc_proposal_votes( const PROPOSAL_VOTE_IDX& proposal_vote_idx, uint64_
 {
    auto cnt = 0;
    auto found = proposal_vote_idx.find( proposal_id );
-   while( found != proposal_vote_idx.end() && static_cast< size_t >( found->proposal_id ) == proposal_id )
+   while( found != proposal_vote_idx.end() && found->proposal_id == proposal_id )
    {
       ++cnt;
       ++found;
@@ -728,7 +728,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_apply )
 
          auto found = proposal_vote_idx.find( boost::make_tuple( voter_01, id_proposal_00 ) );
          BOOST_REQUIRE( found->voter == voter_01 );
-         BOOST_REQUIRE( static_cast< int64_t >( found->proposal_id ) == id_proposal_00 );
+         BOOST_REQUIRE( found->proposal_id == id_proposal_00 );
       }
 
       {
@@ -1527,7 +1527,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_003 )
 
       found = proposal_idx.find( cpd.creator );
       BOOST_REQUIRE( found != proposal_idx.end() );
-      BOOST_REQUIRE( int64_t(found->proposal_id)  == proposals[1]);
+      BOOST_REQUIRE( found->proposal_id == proposals[1]);
       BOOST_REQUIRE( proposal_idx.size() == 1 );
 
       proposals_to_erase.clear();
@@ -1575,8 +1575,8 @@ BOOST_AUTO_TEST_CASE( remove_proposal_004 )
       found = proposal_idx.find( cpd.creator );
       BOOST_REQUIRE( found != proposal_idx.end() );
       for(auto& it : proposal_idx) {
-         BOOST_REQUIRE( static_cast< int64_t >(it.proposal_id) != proposals[0] );
-         BOOST_REQUIRE( static_cast< int64_t >(it.proposal_id) != proposals[5] );
+         BOOST_REQUIRE( it.proposal_id != proposals[0] );
+         BOOST_REQUIRE( it.proposal_id != proposals[5] );
       }
       BOOST_REQUIRE( proposal_idx.size() == 4 );
 
@@ -1587,10 +1587,10 @@ BOOST_AUTO_TEST_CASE( remove_proposal_004 )
       remove_proposal(cpd.creator, proposals_to_erase, alice_private_key);
       found = proposal_idx.find( cpd.creator );
       for(auto& it : proposal_idx) {
-         BOOST_REQUIRE( static_cast< int64_t >(it.proposal_id) != proposals[0] );
-         BOOST_REQUIRE( static_cast< int64_t >(it.proposal_id) != proposals[1] );
-         BOOST_REQUIRE( static_cast< int64_t >(it.proposal_id) != proposals[4] );
-         BOOST_REQUIRE( static_cast< int64_t >(it.proposal_id) != proposals[5] );
+         BOOST_REQUIRE( it.proposal_id != proposals[0] );
+         BOOST_REQUIRE( it.proposal_id != proposals[1] );
+         BOOST_REQUIRE( it.proposal_id != proposals[4] );
+         BOOST_REQUIRE( it.proposal_id != proposals[5] );
       }
       BOOST_REQUIRE( found != proposal_idx.end() );
       BOOST_REQUIRE( proposal_idx.size() == 2 );

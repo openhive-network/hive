@@ -48,7 +48,7 @@ void block_log_info_plugin_impl::on_post_apply_block( const block_notification& 
       } );
    }
 
-   const block_log_hash_state_object& state = _db.get< block_log_hash_state_object, by_id >( block_log_hash_state_id_type(0) );
+   const block_log_hash_state_object& state = _db.get< block_log_hash_state_object, by_id >( block_log_hash_state_id_type() );
    uint64_t current_interval = state.last_interval;
 
    if( (print_interval_seconds > 0) && !is_genesis )
