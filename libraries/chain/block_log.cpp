@@ -318,7 +318,7 @@ namespace hive { namespace chain {
       FC_LOG_AND_RETHROW()
    }
 
-   optional< signed_block > block_log::read_block_by_num( uint32_t block_num )const
+   optional< std::pair< signed_block, uint64_t > > block_log::read_block_by_num( uint32_t block_num )const
    {
       try
       {
@@ -326,17 +326,19 @@ namespace hive { namespace chain {
 
          if( my->use_locking )
          {
-            lock.lock();;
+            lock.lock();
          }
 
-         optional< signed_block > b;
+         optional< std::pair< signed_block, uint64_t > > res;
+
          uint64_t pos = get_block_pos_helper( block_num );
          if( pos != npos )
          {
-            b = read_block_helper( pos ).first;
-            FC_ASSERT( b->block_num() == block_num , "Wrong block was read from block log.", ( "returned", b->block_num() )( "expected", block_num ));
+            res = read_block_helper( pos );
+            const signed_block& b = res->first;
+            FC_ASSERT( b.block_num() == block_num , "Wrong block was read from block log.", ( "returned", b.block_num() )( "expected", block_num ));
          }
-         return b;
+         return res;
       }
       FC_LOG_AND_RETHROW()
    }

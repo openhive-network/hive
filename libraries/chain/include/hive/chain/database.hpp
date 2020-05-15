@@ -133,8 +133,9 @@ namespace hive { namespace chain {
             std::vector< std::string > replay_memory_indices{};
 
             // The following fields are only used on reindexing
-            uint32_t stop_replay_at    = 0;
-            bool     exit_after_replay = false;
+            uint32_t stop_replay_at = 0;
+            bool exit_after_replay  = false;
+            bool resume_replay      = false;
             TBenchmark benchmark = TBenchmark(0, []( uint32_t, const abstract_index_cntr_t& ){});
          };
 
@@ -147,6 +148,12 @@ namespace hive { namespace chain {
           * @param data_dir Path to open or create database in
           */
          void open( const open_args& args );
+
+      private:
+
+         uint32_t reindex_internal( const open_args& args, std::pair< signed_block, uint64_t >& block_data );
+
+      public:
 
          /**
           * @brief Rebuild object graph from block history and open detabase

@@ -48,7 +48,7 @@ namespace hive { namespace chain {
          uint64_t append( const signed_block& b );
          void flush();
          std::pair< signed_block, uint64_t > read_block( uint64_t file_pos )const;
-         optional< signed_block > read_block_by_num( uint32_t block_num )const;
+         optional< std::pair< signed_block, uint64_t > > read_block_by_num( uint32_t block_num )const;
 
          /**
           * Return offset of block in file, or block_log::npos if it does not exist.

@@ -5,53 +5,141 @@
 
 namespace chainbase {
 
-   struct environment_check {
-      environment_check() {
-         memset( &compiler_version, 0, sizeof( compiler_version ) );
-         memcpy( &compiler_version, __VERSION__, std::min<size_t>( strlen(__VERSION__), 256 ) );
+   class environment_check {
+
+      public:
+
+#ifdef ENABLE_MIRA
+         environment_check()
+#else
+         template< typename Allocator >
+         environment_check( allocator< Allocator > a )
+                           : version_info( a ), plugins( a )
+#endif
+
+         {
+            memset( &compiler_version, 0, sizeof( compiler_version ) );
+            memcpy( &compiler_version, __VERSION__, std::min<size_t>( strlen(__VERSION__), 256 ) );
 #ifndef NDEBUG
-         debug = true;
+            debug = true;
 #endif
 #ifdef __APPLE__
-         apple = true;
+            apple = true;
 #endif
 #ifdef WIN32
-         windows = true;
+            windows = true;
 #endif
-      }
-      friend bool operator == ( const environment_check& a, const environment_check& b ) {
-         return std::make_tuple( a.compiler_version, a.debug, a.apple, a.windows )
-            ==  std::make_tuple( b.compiler_version, b.debug, b.apple, b.windows );
-      }
+         }
 
-      environment_check& operator = ( const environment_check& other )
-      {
-         compiler_version = other.compiler_version;
-         debug = other.debug;
-         apple = other.apple;
-         windows = other.windows;
+         friend bool operator == ( const environment_check& a, const environment_check& b ) {
+            return std::make_tuple( a.compiler_version, a.debug, a.apple, a.windows )
+               ==  std::make_tuple( b.compiler_version, b.debug, b.apple, b.windows );
+         }
 
-         return *this;
-      }
+         environment_check& operator = ( const environment_check& other )
+         {
+#ifndef ENABLE_MIRA
+            plugins = plugins;
+#endif
+            compiler_version = other.compiler_version;
+            debug = other.debug;
+            apple = other.apple;
+            windows = other.windows;
 
-      std::string dump() const
-        {
-        std::string retVal("{'compiler':'");
-        retVal += compiler_version.data();
-        retVal += "', 'debug':" + std::to_string(debug);
-        retVal += ", 'apple':" + std::to_string(apple);
-        retVal += ", 'windows':" + std::to_string(windows) + "}";
+            return *this;
+         }
 
-        return retVal;
-        }
+         std::string dump() const
+         {
+            std::string retVal("{\"compiler\":\"");
+            retVal += compiler_version.data();
+            retVal += "\", \"debug\":" + std::to_string(debug);
+            retVal += ", \"apple\":" + std::to_string(apple);
+            retVal += ", \"windows\":" + std::to_string(windows);
 
-      boost::array<char,256>  compiler_version;
-      bool                    debug = false;
-      bool                    apple = false;
-      bool                    windows = false;
+#ifndef ENABLE_MIRA
+            retVal += ", " + std::string( version_info.c_str() );
+            retVal += ", " + dump( plugins );
+#endif
+
+            retVal += "}";
+
+            return retVal;
+         }
+
+#ifndef ENABLE_MIRA
+
+         template< typename Set >
+         std::string dump( const Set& source ) const
+         {
+            bool first = true;
+
+            std::string res = "\"plugins\" : [";
+
+            for( auto& item : source )
+            {
+               res += first ? "\"" : ", \"";
+               res += std::string( item.c_str() ) + "\"";
+
+               first = false;
+            }
+            res += "]";
+
+            return res;
+         }
+
+         void test_set_plugins( const helpers::environment_extension_resources& environment_extension )
+         {
+            if( created_storage )
+            {
+               version_info = environment_extension.version_info.c_str();
+
+               for( auto& item : environment_extension.plugins )
+                  plugins.insert( shared_string( item.c_str(), version_info.get_allocator() ) );
+            }
+            else
+            {
+               bool result = strcmp( version_info.c_str(), environment_extension.version_info.c_str() ) == 0;
+               if( !result )
+               {
+                  std::string message = "Persistent storage was created according to the version: " + std::string( version_info.c_str() );
+                  message += " but current node has the version: " + environment_extension.version_info;
+
+                  environment_extension.logger( message );
+               }
+
+               result = std::equal( plugins.begin(), plugins.end(), environment_extension.plugins.begin(), environment_extension.plugins.end(), []( const shared_string& s1, const std::string& s2 )
+               {
+                  return strcmp( s1.c_str(), s2.c_str() ) == 0;
+               });
+
+               if( !result )
+               {
+                  std::string dump_plugins = dump( plugins );
+                  std::string dump_current_plugins = dump( environment_extension.plugins );
+
+                  std::string message = "Persistent storage was created using plugins: " + dump_plugins;
+                  message += " but current node has following plugins: " + dump_current_plugins;
+
+                  environment_extension.logger( message );
+               }
+            }
+            created_storage = false;
+         }
+
+         shared_string                 version_info;
+         t_flat_set< shared_string >   plugins;
+#endif
+
+         boost::array<char,256>  compiler_version;
+         bool                    debug = false;
+         bool                    apple = false;
+         bool                    windows = false;
+
+         bool                    created_storage = true;
    };
 
-   void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg )
+   void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension )
    {
       assert( dir.is_absolute() );
       bfs::create_directories( dir );
@@ -84,16 +172,16 @@ namespace chainbase {
          {
             if( !env.first )
             {
-               _segment->construct< environment_check >( "environment" )();
+               _segment->construct< environment_check >( "environment" )( allocator< environment_check >( _segment->get_segment_manager() ) );
             }
             else
             {
-               *env.first = environment_check();
+               *env.first = environment_check( allocator< environment_check >( _segment->get_segment_manager() ) );
             }
          }
          else
          {
-           environment_check eCheck;
+           environment_check eCheck( allocator< environment_check >( _segment->get_segment_manager() ) );
             if( !env.first || !( *env.first == eCheck) ) {
                if(!env.first)
                  BOOST_THROW_EXCEPTION( std::runtime_error( "Unable to find environment data saved in persistent storage. Probably database created by a different compiler, build, or operating system" ) );
@@ -103,15 +191,19 @@ namespace chainbase {
                BOOST_THROW_EXCEPTION(std::runtime_error("Different persistent & runtime environments. Persistent: `" + dp + "'. Runtime: `"+ dr + "'.Probably database created by a different compiler, build, or operating system"));
             }
 
-          std::cout << "Compiler and build environment read from persistent stoage: `" << env.first->dump() << '\'' << std::endl;
+          std::cout << "Compiler and build environment read from persistent storage: `" << env.first->dump() << '\'' << std::endl;
          }
       } else {
          _file_size = shared_file_size;
          _segment.reset( new bip::managed_mapped_file( bip::create_only,
                                                        abs_path.generic_string().c_str(), shared_file_size
                                                        ) );
-         _segment->find_or_construct< environment_check >( "environment" )();
+         _segment->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment->get_segment_manager() ) );
       }
+
+      auto env = _segment->find< environment_check >( "environment" );
+      if( environment_extension )
+         env.first->test_set_plugins( *environment_extension );
 
       _flock = bip::file_lock( abs_path.generic_string().c_str() );
       if( !_flock.try_lock() )

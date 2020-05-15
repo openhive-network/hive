@@ -128,6 +128,7 @@ namespace appbase {
          const bpo::variables_map& get_args() const;
 
          void set_version_string( const string& version ) { version_info = version; }
+         const std::string& get_version_string() const { return version_info; }
          void set_app_name( const string& name ) { app_name = name; }
 
          template< typename... Plugin >
@@ -145,6 +146,8 @@ namespace appbase {
          {
             return startup_io_handler ? startup_io_handler->is_interrupt_request() : _is_interrupt_request;
          }
+
+         std::set< std::string > get_plugins_names() const;
 
       protected:
          template< typename Impl >

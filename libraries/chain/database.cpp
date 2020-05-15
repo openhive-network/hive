@@ -147,7 +147,13 @@ void database::open( const open_args& args )
    try
    {
       init_schema();
-      chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg );
+
+      helpers::environment_extension_resources environment_extension(
+                                                                        appbase::app().get_version_string(),
+                                                                        std::move( appbase::app().get_plugins_names() ),
+                                                                        []( const std::string& message ){ wlog( message.c_str() ); }
+                                                                    );
+      chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension );
 
       initialize_indexes();
       initialize_evaluators();
@@ -191,9 +197,9 @@ void database::open( const open_args& args )
       {
          auto head_block = _block_log.read_block_by_num( head_block_num() );
          // This assertion should be caught and a reindex should occur
-         FC_ASSERT( head_block.valid() && head_block->id() == head_block_id(), "Chain state does not match block log. Please reindex blockchain." );
+         FC_ASSERT( head_block.valid() && head_block->first.id() == head_block_id(), "Chain state does not match block log. Please reindex blockchain." );
 
-         _fork_db.start_block( *head_block );
+         _fork_db.start_block( head_block->first );
       }
 
       with_read_lock( [&]()
@@ -264,6 +270,76 @@ void reindex_set_index_helper( database& db, mira::index_type type, const boost:
 }
 #endif
 
+uint32_t database::reindex_internal( const open_args& args, std::pair< signed_block, uint64_t >& block_data )
+{
+   uint64_t skip_flags =
+      skip_witness_signature |
+      skip_transaction_signatures |
+      skip_transaction_dupe_check |
+      skip_tapos_check |
+      skip_merkle_check |
+      skip_witness_schedule_check |
+      skip_authority_check |
+      skip_validate | /// no need to validate operations
+      skip_validate_invariants |
+      skip_block_log;
+
+   auto last_block_num = _block_log.head()->block_num();
+   if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
+      last_block_num = args.stop_replay_at;
+   if( args.benchmark.first > 0 )
+   {
+      args.benchmark.second( 0, get_abstract_index_cntr() );
+   }
+
+   while( !appbase::app().is_interrupt_request() && block_data.first.block_num() != last_block_num )
+   {
+      auto cur_block_num = block_data.first.block_num();
+      if( cur_block_num % 100000 == 0 )
+      {
+         std::cerr << "   " << double( cur_block_num * 100 ) / last_block_num << "%   " << cur_block_num << " of " << last_block_num << "   (" <<
+#ifdef ENABLE_MIRA
+         get_cache_size()  << " objects cached using " << (get_cache_usage() >> 20) << "M"
+#else
+         (get_free_memory() >> 20) << "M free"
+#endif
+         << ")\n";
+
+         //rocksdb::SetPerfLevel(rocksdb::kEnableCount);
+         //rocksdb::get_perf_context()->Reset();
+      }
+      apply_block( block_data.first, skip_flags );
+
+      if( cur_block_num % 100000 == 0 )
+      {
+         //std::cout << rocksdb::get_perf_context()->ToString() << std::endl;
+         if( cur_block_num % 1000000 == 0 )
+         {
+            dump_lb_call_counts();
+         }
+      }
+
+      if( (args.benchmark.first > 0) && (cur_block_num % args.benchmark.first == 0) )
+         args.benchmark.second( cur_block_num, get_abstract_index_cntr() );
+
+      if( !appbase::app().is_interrupt_request() )
+      {
+         block_data = _block_log.read_block( block_data.second );
+      }
+   }
+
+   if( appbase::app().is_interrupt_request() )
+   {
+      ilog("Replaying is interrupted on user request. Last applied: ( block number: ${n} )( trx: ${trx} )", ( "n", block_data.first.block_num() )( "trx", block_data.first.id() ) );
+   }
+   else
+   {
+      apply_block( block_data.first, skip_flags );
+   }
+
+   return block_data.first.block_num();
+}
+
 uint32_t database::reindex( const open_args& args )
 {
    reindex_notification note( args );
@@ -280,7 +356,11 @@ uint32_t database::reindex( const open_args& args )
       initialize_indexes();
 #endif
 
-      wipe( args.data_dir, args.shared_mem_dir, false );
+      if( args.resume_replay )
+         close();
+      else
+         wipe( args.data_dir, args.shared_mem_dir, false );
+
       open( args );
 
       HIVE_TRY_NOTIFY(_pre_reindex_signal, note);
@@ -300,76 +380,41 @@ uint32_t database::reindex( const open_args& args )
 
       ilog( "Replaying blocks..." );
 
-      uint64_t skip_flags =
-         skip_witness_signature |
-         skip_transaction_signatures |
-         skip_transaction_dupe_check |
-         skip_tapos_check |
-         skip_merkle_check |
-         skip_witness_schedule_check |
-         skip_authority_check |
-         skip_validate | /// no need to validate operations
-         skip_validate_invariants |
-         skip_block_log;
-
       with_write_lock( [&]()
       {
          _block_log.set_locking( false );
-         auto itr = _block_log.read_block( 0 );
-         auto last_block_num = _block_log.head()->block_num();
-         if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
-            last_block_num = args.stop_replay_at;
-         if( args.benchmark.first > 0 )
+
+         optional< std::pair< signed_block, uint64_t > > start;
+
+         uint32_t _head_block_num = head_block_num();
+         bool replay_required = true;
+
+         if( args.resume_replay && _head_block_num > 0 )
          {
-            args.benchmark.second( 0, get_abstract_index_cntr() );
-         }
+            if( args.stop_replay_at == 0 || args.stop_replay_at > _head_block_num )
+               start = _block_log.read_block_by_num( _head_block_num + 1 );
 
-         while( !appbase::app().is_interrupt_request() && itr.first.block_num() != last_block_num )
-         {
-            auto cur_block_num = itr.first.block_num();
-            if( cur_block_num % 100000 == 0 )
+            if( !start.valid() )
             {
-               std::cerr << "   " << double( cur_block_num * 100 ) / last_block_num << "%   " << cur_block_num << " of " << last_block_num << "   (" <<
-#ifdef ENABLE_MIRA
-               get_cache_size()  << " objects cached using " << (get_cache_usage() >> 20) << "M"
-#else
-               (get_free_memory() >> 20) << "M free"
-#endif
-               << ")\n";
+               start = _block_log.read_block_by_num( _head_block_num );
+               FC_ASSERT( start.valid(), "Head block number for state: ${h} but for `block_log` this block doesn't exist", ( "h", _head_block_num ) );
 
-               //rocksdb::SetPerfLevel(rocksdb::kEnableCount);
-               //rocksdb::get_perf_context()->Reset();
+               replay_required = false;
             }
-            apply_block( itr.first, skip_flags );
-
-            if( cur_block_num % 100000 == 0 )
-            {
-               //std::cout << rocksdb::get_perf_context()->ToString() << std::endl;
-               if( cur_block_num % 1000000 == 0 )
-               {
-                  dump_lb_call_counts();
-               }
-            }
-
-            if( (args.benchmark.first > 0) && (cur_block_num % args.benchmark.first == 0) )
-               args.benchmark.second( cur_block_num, get_abstract_index_cntr() );
-
-            if( !appbase::app().is_interrupt_request() )
-            {
-               itr = _block_log.read_block( itr.second );
-            }
-         }
-
-         if( appbase::app().is_interrupt_request() )
-         {
-            ilog("Replaying is interrupted on user request. Last applied: ( block number: ${n} )( trx: ${trx} )", ( "n", itr.first.block_num() )( "trx", itr.first.id() ) );
          }
          else
          {
-            apply_block( itr.first, skip_flags );
+            start = _block_log.read_block( 0 );
          }
 
-         note.last_block_number = itr.first.block_num();
+         if( replay_required )
+         {
+            note.last_block_number = reindex_internal( args, *start );
+         }
+         else
+         {
+            note.last_block_number = ( *start ).first.block_num();
+         }
 
          if( (args.benchmark.first > 0) && (note.last_block_number % args.benchmark.first == 0) )
             args.benchmark.second( note.last_block_number, get_abstract_index_cntr() );
@@ -475,7 +520,7 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
       // Next we query the block log.   Irreversible blocks are here.
       auto b = _block_log.read_block_by_num( block_num );
       if( b.valid() )
-         return b->id();
+         return b->first.id();
 
       // Finally we query the fork DB.
       shared_ptr< fork_item > fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
@@ -502,11 +547,10 @@ optional<signed_block> database::fetch_block_by_id( const block_id_type& id )con
    {
       auto tmp = _block_log.read_block_by_num( protocol::block_header::num_from_id( id ) );
 
-      if( tmp && tmp->id() == id )
-         return tmp;
+      if( tmp && tmp->first.id() == id )
+         return tmp->first;
 
-      tmp.reset();
-      return tmp;
+      return optional<signed_block>();
    }
 
    return b->data;
@@ -520,7 +564,10 @@ optional<signed_block> database::fetch_block_by_number( uint32_t block_num )cons
    if( fitem )
       b = fitem->data;
    else
-      b = _block_log.read_block_by_num( block_num );
+   {
+      auto block_data =_block_log.read_block_by_num( block_num ); 
+      b = block_data.valid() ? block_data->first : optional<signed_block>();
+   }
 
    return b;
 } FC_LOG_AND_RETHROW() }

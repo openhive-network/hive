@@ -2,7 +2,7 @@
 
 #include <boost/interprocess/managed_mapped_file.hpp>
 #include <boost/interprocess/containers/map.hpp>
-#include <boost/interprocess/containers/set.hpp>
+#include <boost/interprocess/containers/flat_set.hpp>
 #include <boost/interprocess/containers/flat_map.hpp>
 #include <boost/interprocess/containers/deque.hpp>
 #include <boost/interprocess/containers/string.hpp>
@@ -59,6 +59,12 @@ namespace chainbase {
 
    template< typename FIRST_TYPE, typename SECOND_TYPE >
    using t_allocator_pair = allocator< t_pair< const FIRST_TYPE, SECOND_TYPE > >;
+
+   template< typename KEY_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>>
+   using t_flat_set = typename std::conditional< _ENABLE_MIRA,
+      boost::container::flat_set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > >,
+      bip::flat_set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > >
+      >::type;
 
    template< typename KEY_TYPE, typename VALUE_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>>
    using t_flat_map = typename std::conditional< _ENABLE_MIRA,

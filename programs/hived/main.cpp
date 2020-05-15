@@ -37,9 +37,9 @@ using std::vector;
 string& version_string()
 {
    static string v_str =
-      "hive_blockchain_version: " + fc::string( HIVE_BLOCKCHAIN_VERSION ) + "\n" +
-      "hive_git_revision:       " + fc::string( hive::utilities::git_revision_sha ) + "\n" +
-      "fc_git_revision:          " + fc::string( fc::git_revision_sha ) + "\n";
+      "  \"version\" : { \"hive_blockchain_hard_fork\" : \""   + fc::string( HIVE_BLOCKCHAIN_VERSION )            + "\", " +
+      "\"hive_git_revision\" : \""                             + fc::string( hive::utilities::git_revision_sha )  + "\" }";
+
    return v_str;
 }
 

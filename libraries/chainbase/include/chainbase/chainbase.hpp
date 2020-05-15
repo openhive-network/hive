@@ -44,6 +44,23 @@
 
 namespace helpers
 {
+   struct environment_extension_resources
+   {
+      using t_plugins = std::set< std::string >;
+      using logger_type = std::function< void( const std::string& ) >;
+
+      const std::string&   version_info;
+      const t_plugins      plugins;
+
+      logger_type          logger;
+
+      environment_extension_resources( const std::string& _version_info, t_plugins&& _plugins, logger_type&& _logger )
+                                 : version_info( _version_info ), plugins( _plugins ), logger( _logger )
+      {
+      }
+
+   };
+
    struct index_statistic_info
    {
       std::string _value_type_name;
@@ -886,7 +903,7 @@ namespace chainbase {
          };
 
       public:
-         void open( const bfs::path& dir, uint32_t flags = 0, size_t shared_file_size = 0, const boost::any& database_cfg = nullptr );
+         void open( const bfs::path& dir, uint32_t flags = 0, size_t shared_file_size = 0, const boost::any& database_cfg = nullptr, const helpers::environment_extension_resources* environment_extension = nullptr );
          void close();
          void flush();
          size_t get_cache_usage() const;

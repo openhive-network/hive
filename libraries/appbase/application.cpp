@@ -407,4 +407,14 @@ const variables_map& application::get_args() const
    return my->_args;
 }
 
+std::set< std::string > application::get_plugins_names() const
+{
+   std::set< std::string > res;
+
+   for( auto& plugin : initialized_plugins )
+      res.insert( plugin->get_name() );
+
+   return res;
+}
+
 } /// namespace appbase
