@@ -17,8 +17,43 @@ inline static const std::set< std::string >& get_restored_accounts()
 {
    static const std::set< std::string > restored_accounts
    {
-      // HERE PUT ALL RESTORED ACCOUNTS
-      // accounts which should be restored
+      // Errored accounts
+      "akiroq",
+      "balticbadger",
+      "dailychina",
+      "dailystats",
+      "dftba",
+      "double-u",
+      "edgarare1",
+      "electrodo",
+      "fadetoblack",
+      "freedompoint",
+      "friendlystranger",
+      "john371911",
+      "juancar347",
+      "kdtkaren",
+      "lichtblick",
+      "lifeskills-tv",
+      "lotusfleur",
+      "ricko66",
+      "rynow",
+      "scottcbusiness",
+      "seo-boss",
+      "sgbonus",
+      "spoke",
+      "steemchiller",
+      "steemflower",
+      "stimp1024",
+      "travelnepal",
+      "truce",
+      "tuckerjtruman",
+      "yanirauseche"
+
+      // Won their aidrop appeal (proposal #104)
+      "lupafilotaxia",
+      "thebigsweed",
+      "farm-mom",
+      "soufiani",
    };
 
    return restored_accounts;
