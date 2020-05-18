@@ -433,7 +433,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
 
       BOOST_TEST_MESSAGE( "--- Test filling limit order with better order when partial order is worse." );
 
-      //auto gpo = db->get_dynamic_global_properties();
+      //auto& gpo = db->get_dynamic_global_properties();
       //auto start_hbd = gpo.get_current_hbd_supply();
 
       op.owner = "alice";
@@ -908,7 +908,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
 
       BOOST_TEST_MESSAGE( "--- Test filling limit order with better order when partial order is worse." );
 
-      //auto gpo = db->get_dynamic_global_properties();
+      //auto& gpo = db->get_dynamic_global_properties();
       //auto start_hbd = gpo.get_current_hbd_supply();
 
       op.owner = "alice";
@@ -1827,20 +1827,22 @@ BOOST_AUTO_TEST_CASE( smt_create_reset )
       sign( tx, alice_private_key );
       db->push_transaction( tx, 0 );
 
-      auto token = db->get< smt_token_object, by_symbol >( alice_prec_4 );
+      {
+         auto& token = db->get< smt_token_object, by_symbol >( alice_prec_4 );
 
-      BOOST_REQUIRE( token.liquid_symbol == op.symbol );
-      BOOST_REQUIRE( token.control_account == "alice" );
-      BOOST_REQUIRE( token.allow_voting == true );
-      BOOST_REQUIRE( token.cashout_window_seconds == HIVE_CASHOUT_WINDOW_SECONDS );
-      BOOST_REQUIRE( token.reverse_auction_window_seconds == HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20 );
-      BOOST_REQUIRE( token.vote_regeneration_period_seconds == HIVE_VOTING_MANA_REGENERATION_SECONDS );
-      BOOST_REQUIRE( token.votes_per_regeneration_period == SMT_DEFAULT_VOTES_PER_REGEN_PERIOD );
-      BOOST_REQUIRE( token.content_constant == HIVE_CONTENT_CONSTANT_HF0 );
-      BOOST_REQUIRE( token.percent_curation_rewards == SMT_DEFAULT_PERCENT_CURATION_REWARDS );
-      BOOST_REQUIRE( token.author_reward_curve == curve_id::linear );
-      BOOST_REQUIRE( token.curation_reward_curve == curve_id::square_root );
-      BOOST_REQUIRE( token.allow_downvotes == true );
+         BOOST_REQUIRE( token.liquid_symbol == op.symbol );
+         BOOST_REQUIRE( token.control_account == "alice" );
+         BOOST_REQUIRE( token.allow_voting == true );
+         BOOST_REQUIRE( token.cashout_window_seconds == HIVE_CASHOUT_WINDOW_SECONDS );
+         BOOST_REQUIRE( token.reverse_auction_window_seconds == HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20 );
+         BOOST_REQUIRE( token.vote_regeneration_period_seconds == HIVE_VOTING_MANA_REGENERATION_SECONDS );
+         BOOST_REQUIRE( token.votes_per_regeneration_period == SMT_DEFAULT_VOTES_PER_REGEN_PERIOD );
+         BOOST_REQUIRE( token.content_constant == HIVE_CONTENT_CONSTANT_HF0 );
+         BOOST_REQUIRE( token.percent_curation_rewards == SMT_DEFAULT_PERCENT_CURATION_REWARDS );
+         BOOST_REQUIRE( token.author_reward_curve == curve_id::linear );
+         BOOST_REQUIRE( token.curation_reward_curve == curve_id::square_root );
+         BOOST_REQUIRE( token.allow_downvotes == true );
+      }
 
       const auto& emissions_idx = db->get_index< smt_token_emissions_index, by_id >();
       BOOST_REQUIRE( emissions_idx.begin() == emissions_idx.end() );

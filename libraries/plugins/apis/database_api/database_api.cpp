@@ -88,7 +88,7 @@ class database_api_impl
       )
 
       template< typename ResultType >
-      static ResultType on_push_default( const ResultType& r ) { return r; }
+      static ResultType on_push_default( const ResultType& r ) { return r.copy_chain_object(); } //FIXME: exposes internal chain object as API result
 
       template< typename ValueType >
       static bool filter_default( const ValueType& r ) { return true; }
@@ -225,7 +225,7 @@ DEFINE_API_IMPL( database_api_impl, get_version )
 
 DEFINE_API_IMPL( database_api_impl, get_dynamic_global_properties )
 {
-   return _db.get_dynamic_global_properties();
+   return _db.get_dynamic_global_properties().copy_chain_object(); //FIXME: exposes internal chain object as API result
 }
 
 DEFINE_API_IMPL( database_api_impl, get_witness_schedule )
@@ -247,7 +247,7 @@ DEFINE_API_IMPL( database_api_impl, get_reward_funds )
 
    while( itr != rf_idx.end() )
    {
-      result.funds.push_back( *itr );
+      result.funds.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 
@@ -353,7 +353,7 @@ DEFINE_API_IMPL( database_api_impl, list_witness_votes )
             boost::make_tuple( key.first, key.second ),
             result.votes,
             args.limit,
-            [&]( const witness_vote_object& v ){ return api_witness_vote_object( v ); },
+            [&]( const witness_vote_object& v ){ return v.copy_chain_object(); }, //FIXME: exposes internal chain object as API result
             &database_api_impl::filter_default< api_witness_vote_object > );
          break;
       }
@@ -364,7 +364,7 @@ DEFINE_API_IMPL( database_api_impl, list_witness_votes )
             boost::make_tuple( key.first, key.second ),
             result.votes,
             args.limit,
-            [&]( const witness_vote_object& v ){ return api_witness_vote_object( v ); },
+            [&]( const witness_vote_object& v ){ return v.copy_chain_object(); }, //FIXME: exposes internal chain object as API result
             &database_api_impl::filter_default< api_witness_vote_object > );
          break;
       }
@@ -601,7 +601,7 @@ DEFINE_API_IMPL( database_api_impl, find_change_recovery_account_requests )
       auto request = _db.find< chain::change_recovery_account_request_object, chain::by_account >( a );
 
       if( request != nullptr )
-         result.requests.push_back( *request );
+         result.requests.push_back( request->copy_chain_object() ); //FIXME: exposes internal chain object as API result
    }
 
    return result;
@@ -658,7 +658,7 @@ DEFINE_API_IMPL( database_api_impl, find_escrows )
 
    while( itr != escrow_idx.end() && itr->from == args.from && result.escrows.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
-      result.escrows.push_back( *itr );
+      result.escrows.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 
@@ -719,7 +719,7 @@ DEFINE_API_IMPL( database_api_impl, find_withdraw_vesting_routes )
 
          while( itr != route_idx.end() && itr->from_account == args.account && result.routes.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
          {
-            result.routes.push_back( *itr );
+            result.routes.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
             ++itr;
          }
 
@@ -732,7 +732,7 @@ DEFINE_API_IMPL( database_api_impl, find_withdraw_vesting_routes )
 
          while( itr != route_idx.end() && itr->to_account == args.account && result.routes.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
          {
-            result.routes.push_back( *itr );
+            result.routes.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
             ++itr;
          }
 
@@ -852,7 +852,7 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegations )
 
    while( itr != delegation_idx.end() && itr->delegator == args.account && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
-      result.delegations.push_back( api_vesting_delegation_object( *itr ) );
+      result.delegations.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 
@@ -909,7 +909,7 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegation_expirations )
 
    while( itr != del_exp_idx.end() && itr->delegator == args.account && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
-      result.delegations.push_back( *itr );
+      result.delegations.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 
@@ -965,7 +965,7 @@ DEFINE_API_IMPL( database_api_impl, find_hbd_conversion_requests )
 
    while( itr != convert_idx.end() && itr->owner == args.account && result.requests.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
-      result.requests.push_back( *itr );
+      result.requests.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 
@@ -1022,7 +1022,7 @@ DEFINE_API_IMPL( database_api_impl, find_decline_voting_rights_requests )
       auto request = _db.find< chain::decline_voting_rights_request_object, chain::by_account >( a );
 
       if( request != nullptr )
-         result.requests.push_back( *request );
+         result.requests.push_back( request->copy_chain_object() ); //FIXME: exposes internal chain object as API result
    }
 
    return result;
@@ -1231,7 +1231,7 @@ DEFINE_API_IMPL( database_api_impl, find_limit_orders )
 
    while( itr != order_idx.end() && itr->seller == args.account && result.orders.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
-      result.orders.push_back( *itr );
+      result.orders.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 
@@ -1730,7 +1730,7 @@ DEFINE_API_IMPL( database_api_impl, find_smt_contributions )
       auto itr = idx.lower_bound( boost::make_tuple( symbol_contributor.first, symbol_contributor.second, 0 ) );
       while( itr != idx.end() && itr->symbol == symbol_contributor.first && itr->contributor == symbol_contributor.second && result.contributions.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
       {
-         result.contributions.push_back( *itr );
+         result.contributions.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
          ++itr;
       }
    }
@@ -1860,7 +1860,7 @@ DEFINE_API_IMPL( database_api_impl, find_smt_token_emissions )
 
    while( itr != idx.end() && itr->symbol == args.asset_symbol && result.token_emissions.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
-      result.token_emissions.push_back( *itr );
+      result.token_emissions.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 

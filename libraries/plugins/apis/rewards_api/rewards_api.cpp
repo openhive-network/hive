@@ -33,7 +33,7 @@ DEFINE_API_IMPL( rewards_api_impl, simulate_curve_payouts )
 
    std::vector< fc::uint128_t > element_vshares;
 
-   auto reward_fund_object = _db.get< chain::reward_fund_object, chain::by_name >( HIVE_POST_REWARD_FUND_NAME );
+   auto& reward_fund_object = _db.get< chain::reward_fund_object, chain::by_name >( HIVE_POST_REWARD_FUND_NAME );
 
    fc::uint128_t var1{ args.var1 };
 

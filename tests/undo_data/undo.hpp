@@ -59,7 +59,7 @@ namespace hive { namespace chain {
             auto it = idx.begin();
 
             while( it != idx.end() )
-               old_values.emplace_back( *( it++ ) );
+               old_values.emplace_back( ( it++ )->copy_chain_object() );
          }
 
          //Get size of given index.

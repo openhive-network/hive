@@ -474,7 +474,6 @@ BOOST_AUTO_TEST_CASE( comment_apply )
 
       signed_transaction tx;
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      //auto get_account_id = [&](const account_name_type& acc ) { return db->get_account(acc).id; };
 
       BOOST_TEST_MESSAGE( "--- Test Alice posting a root comment" );
       tx.operations.push_back( op );
@@ -1010,7 +1009,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
          generate_blocks( db->head_block_time() + HIVE_MIN_VOTE_INTERVAL_SEC );
 
-         auto new_alice = db->get_account( "alice" );
+         auto& new_alice = db->get_account( "alice" );
          auto alice_bob_vote = vote_idx.find( boost::make_tuple( new_bob_comment.get_id(), new_alice.get_id() ) );
          auto old_vote_rshares = alice_bob_vote->rshares;
          auto old_net_rshares = new_bob_comment_cashout->net_rshares.value;
@@ -1177,14 +1176,19 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
          new_rshares = old_manabar.current_mana - VOTING_MANABAR( "dave" ).current_mana - HIVE_VOTE_DUST_THRESHOLD;
          new_rshares = ( new_rshares * ( HIVE_UPVOTE_LOCKOUT_SECONDS - HIVE_BLOCK_INTERVAL ) ) / HIVE_UPVOTE_LOCKOUT_SECONDS;
-         account_id_type dave_id = db->get_account( "dave" ).get_id();
+         account_id_type dave_id = get_account_id( "dave" );
          comment_id_type bob_comment_id = db->get_comment( "bob", string( "foo" ) ).get_id();
 
          {
-            auto dave_bob_vote = db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( bob_comment_id, dave_id ) );
-            BOOST_REQUIRE( dave_bob_vote.rshares = new_rshares );
+            auto& dave_bob_vote = db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( bob_comment_id, dave_id ) );
+            BOOST_REQUIRE_EQUAL( dave_bob_vote.rshares, new_rshares );
          }
          validate_database();
+
+         /*
+         the following part of test never worked since its inception due to bugs (assignment used instead of comparison);
+         since then the mechanism changed a lot (downvote has its own mana pool f.e. but replacing code below with its use didn't fix the test)
+         and it doesn't look reasonable to just copy the equations from hf20_vote_evaluator
 
          BOOST_TEST_MESSAGE( "--- Test reduced effectiveness when reducing rshares within lockout period" );
 
@@ -1204,10 +1208,11 @@ BOOST_AUTO_TEST_CASE( vote_apply )
          new_rshares = ( new_rshares * ( HIVE_UPVOTE_LOCKOUT_SECONDS - HIVE_BLOCK_INTERVAL - HIVE_BLOCK_INTERVAL ) ) / HIVE_UPVOTE_LOCKOUT_SECONDS;
 
          {
-            auto dave_bob_vote = db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( bob_comment_id, dave_id ) );
-            BOOST_REQUIRE( dave_bob_vote.rshares = new_rshares );
+            auto& dave_bob_vote = db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( bob_comment_id, dave_id ) );
+            BOOST_REQUIRE_EQUAL( dave_bob_vote.rshares, new_rshares );
          }
          validate_database();
+         */
       }
    }
    FC_LOG_AND_RETHROW()
@@ -2911,11 +2916,13 @@ BOOST_AUTO_TEST_CASE( feed_publish_apply )
 
       db->push_transaction( tx, 0 );
 
-      witness_object& alice_witness = const_cast< witness_object& >( db->get_witness( "alice" ) );
+      {
+         auto& alice_witness = db->get_witness( "alice" );
 
-      BOOST_REQUIRE( alice_witness.get_hbd_exchange_rate() == op.exchange_rate );
-      BOOST_REQUIRE( alice_witness.get_last_hbd_exchange_update() == db->head_block_time() );
-      validate_database();
+         BOOST_REQUIRE( alice_witness.get_hbd_exchange_rate() == op.exchange_rate );
+         BOOST_REQUIRE( alice_witness.get_last_hbd_exchange_update() == db->head_block_time() );
+         validate_database();
+      }
 
       BOOST_TEST_MESSAGE( "--- Test failure publishing to non-existent witness" );
 
@@ -2948,7 +2955,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_apply )
 
       db->push_transaction( tx, 0 );
 
-      alice_witness = const_cast< witness_object& >( db->get_witness( "alice" ) );
+      auto& alice_witness = db->get_witness( "alice" );
       // BOOST_REQUIRE( std::abs( alice_witness.get_hbd_exchange_rate().to_real() - op.exchange_rate.to_real() ) < 0.0000005 );
       BOOST_REQUIRE( alice_witness.get_last_hbd_exchange_update() == db->head_block_time() );
       validate_database();
@@ -3446,7 +3453,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
 
       BOOST_TEST_MESSAGE( "--- Test filling limit order with better order when partial order is worse." );
 
-      //auto gpo = db->get_dynamic_global_properties();
+      //auto& gpo = db->get_dynamic_global_properties();
       //auto start_hbd = gpo.get_current_hbd_supply();
 
       op.owner = "alice";
@@ -3811,7 +3818,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
 
       BOOST_TEST_MESSAGE( "--- Test filling limit order with better order when partial order is worse." );
 
-      //auto gpo = db->get_dynamic_global_properties();
+      //auto& gpo = db->get_dynamic_global_properties();
       //auto start_hbd = gpo.get_current_hbd_supply();
 
 
@@ -6534,7 +6541,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_apply )
       sign( tx, alice_private_key );
       HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
 
-      db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( db->get_comment( "alice", string( "test" ) ).get_id(), db->get_account( "alice" ).get_id() ) );
+      db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( db->get_comment( "alice", string( "test" ) ).get_id(), get_account_id( "alice" ) ) );
 
       vote.weight = 0;
       tx.clear();
@@ -6674,7 +6681,7 @@ BOOST_AUTO_TEST_CASE( account_create_with_delegation_apply )
       signed_transaction tx;
       ACTORS( (alice) );
       // 150 * fee = ( 5 * HIVE ) + SP
-      //auto gpo = db->get_dynamic_global_properties();
+      //auto& gpo = db->get_dynamic_global_properties();
       generate_blocks(1);
       fund( "alice", ASSET("1510.000 TESTS") );
       vest( HIVE_INIT_MINER_NAME, "alice", ASSET("1000.000 TESTS") );
@@ -7157,7 +7164,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
 
       auto exp_obj = db->get_index< vesting_delegation_expiration_index, by_id >().begin();
       auto end = db->get_index< vesting_delegation_expiration_index, by_id >().end();
-      auto gpo = db->get_dynamic_global_properties();
+      auto& gpo = db->get_dynamic_global_properties();
 
       BOOST_REQUIRE( gpo.delegation_return_period == HIVE_DELEGATION_RETURN_PERIOD_HF20 );
 

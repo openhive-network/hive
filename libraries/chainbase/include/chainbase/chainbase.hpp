@@ -158,15 +158,32 @@ namespace chainbase {
    #define CHAINBASE_SET_INDEX_TYPE( OBJECT_TYPE, INDEX_TYPE )  \
    namespace chainbase { template<> struct get_index_type<OBJECT_TYPE> { typedef INDEX_TYPE type; }; }
 
+   #ifdef ENABLE_MIRA
+   #define CHAINBASE_COPY_ACCESS public //MIRA is too weird to quench its thirst for object copies
+   #else
+   #define CHAINBASE_COPY_ACCESS private
+   #endif
 
    #define CHAINBASE_OBJECT_1( object_class ) CHAINBASE_OBJECT_false( object_class )
    #define CHAINBASE_OBJECT_2( object_class, allow_default ) CHAINBASE_OBJECT_##allow_default( object_class )
    #define CHAINBASE_OBJECT_true( object_class ) CHAINBASE_OBJECT_COMMON( object_class ); public: object_class() : id(0) {} private:
-   #define CHAINBASE_OBJECT_COMMON( object_class )        \
-   private:                                               \
-      id_type id;                                         \
-   public:                                                \
-      id_type get_id() const { return id; }               \
+   #define CHAINBASE_OBJECT_COMMON( object_class )                      \
+   private:                                                             \
+      id_type id;                                                       \
+   CHAINBASE_COPY_ACCESS:                                               \
+      object_class( const object_class& source ) = default;             \
+      /* problem with this being private? you most likely did           \
+         auto chain_object = db.get(...);                               \
+         instead of                                                     \
+         auto& chain_object_ref = db.get(...);                          \
+         In case you actually need copy, use copy_chain_object() below  \
+      */                                                                \
+      object_class& operator= ( const object_class& source ) = default; \
+   public:                                                              \
+      id_type get_id() const { return id; }                             \
+      object_class( object_class&& source ) = default;                  \
+      object_class& operator= ( object_class&& source ) = default;      \
+      object_class copy_chain_object() const { return *this; }          \
       friend class fc::reflector< object_class >
 
    #ifdef ENABLE_MIRA
@@ -448,7 +465,7 @@ namespace chainbase {
          void undo() {
             if( !enabled() ) return;
 
-            const auto& head = _stack.back();
+            auto& head = _stack.back();
 
             for( auto& item : head.old_values ) {
                bool ok = false;
@@ -548,7 +565,7 @@ namespace chainbase {
 
             // We can only be outside type A/AB (the nop path) if B is not nop, so it suffices to iterate through B's three containers.
 
-            for( const auto& item : state.old_values )
+            for( auto& item : state.old_values )
             {
                if( prev_state.new_ids.find( item.second.get_id() ) != prev_state.new_ids.end() )
                {
@@ -646,7 +663,7 @@ namespace chainbase {
             if( itr != head.old_values.end() )
                return;
 
-            head.old_values.emplace( std::pair< id_type, const value_type& >( v.get_id(), v ) );
+            head.old_values.emplace( v.get_id(), v.copy_chain_object() );
          }
 
          void on_remove( const value_type& v ) {
@@ -668,7 +685,7 @@ namespace chainbase {
             if( head.removed_values.count( v.get_id() ) )
                return;
 
-            head.removed_values.emplace( std::pair< id_type, const value_type& >( v.get_id(), v ) );
+            head.removed_values.emplace( v.get_id(), v.copy_chain_object() );
          }
 
          void on_create( const value_type& v ) {

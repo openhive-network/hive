@@ -102,7 +102,7 @@ void stats_export_plugin_impl::on_post_apply_block( const block_notification& no
    if( !stats )
       return;
 
-   stats->global_properties = _db.get_dynamic_global_properties();
+   stats->global_properties = _db.get_dynamic_global_properties().copy_chain_object(); //FIXME: exposes internal chain object as API result
    for( const signed_transaction& tx : note.block.transactions )
    {
       stats->transaction_stats.emplace_back();
