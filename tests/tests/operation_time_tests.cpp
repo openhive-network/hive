@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
          db->push_transaction( tx, 0 );
       }
 
-      //auto reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive();
+      //auto& reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive();
 
       // generate a few blocks to seed the reward fund
       generate_blocks(10);
@@ -224,7 +224,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
       generate_blocks( db->get_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time );
 
       // If comments are paid out independent of order, then the last satoshi of HIVE cannot be divided among them
-      const auto rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
+      const auto& rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
       BOOST_REQUIRE( rf.reward_balance == ASSET( "0.001 TESTS" ) );
 
       validate_database();
@@ -577,7 +577,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
       price exchange_rate( ASSET( "1.000 TESTS" ), ASSET( "1.000 TBD" ) );
       set_price_feed( exchange_rate );
 
-      auto gpo = db->get_dynamic_global_properties();
+      auto& gpo = db->get_dynamic_global_properties();
 
       signed_transaction tx;
 
@@ -965,7 +965,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
 
       generate_blocks( db->get_comment( "alice", string( "test" ) ).cashout_time - fc::seconds( HIVE_BLOCK_INTERVAL ), true );
 
-      auto gpo = db->get_dynamic_global_properties();
+      auto& gpo = db->get_dynamic_global_properties();
       uint128_t reward_hive = gpo.get_total_reward_fund_hive().amount.value + ASSET( "2.000 TESTS" ).amount.value;
       uint128_t total_rshares2 = gpo.total_reward_shares2;
 
@@ -1052,8 +1052,6 @@ OOST_AUTO_TEST_CASE( nested_comments )
       auto dave_starting_hbd = get_hbd_balance( "dave" );
 
       generate_block();
-
-      gpo = db->get_dynamic_global_properties();
 
       // Calculate vesting share rewards from voting.
       auto alice_vote_alice_vesting = alice_vote_alice_reward * gpo.get_vesting_share_price();
@@ -1229,7 +1227,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
       generate_block();
 
       auto fill_op = get_last_operations( 1 )[0].get< fill_vesting_withdraw_operation >();
-      auto gpo = db->get_dynamic_global_properties();
+      auto& gpo = db->get_dynamic_global_properties();
 
       BOOST_REQUIRE( get_vesting( "alice" ).amount.value == ( vesting_shares - withdraw_rate ).amount.value );
       BOOST_REQUIRE( ( withdraw_rate * gpo.get_vesting_share_price() ).amount.value - get_balance( "alice" ).amount.value <= 1 ); // Check a range due to differences in the share price
@@ -1250,8 +1248,6 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
          generate_blocks( db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
 
          const auto& alice = db->get_account( "alice" );
-
-         gpo = db->get_dynamic_global_properties();
 
          //`delayed_voting_operation` is triggered for all witnesses + `alice` after `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` ( 30 days )
          const int shift = ( i == 4 ) ? ( HIVE_MAX_WITNESSES + 1/*alice*/ ) : 0;
@@ -1466,7 +1462,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
 
       generate_blocks( HIVE_BLOCKS_PER_HOUR ); // Jump forward 1 hour
       BOOST_TEST_MESSAGE( "Get feed history object" );
-      feed_history_object feed_history = db->get_feed_history();
+      auto& feed_history = db->get_feed_history();
       BOOST_TEST_MESSAGE( "Check state" );
       BOOST_REQUIRE( feed_history.current_median_history == price( asset( 1000, HBD_SYMBOL ), asset( 99000, HIVE_SYMBOL) ) );
       BOOST_REQUIRE( feed_history.price_history[ 0 ] == price( asset( 1000, HBD_SYMBOL ), asset( 99000, HIVE_SYMBOL) ) );
@@ -1493,7 +1489,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
 
          BOOST_TEST_MESSAGE( "Check feed_history" );
 
-         feed_history = db->get(feed_history_id_type());
+         auto& feed_history = db->get(feed_history_id_type());
          BOOST_REQUIRE( feed_history.current_median_history == feed_history.price_history[ ( i + 1 ) / 2 ] );
          BOOST_REQUIRE( feed_history.price_history[ i + 1 ] == ops[4].exchange_rate );
          validate_database();
@@ -1569,7 +1565,7 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
    /*
       BOOST_TEST_MESSAGE( "Testing HIVE Inflation until the vesting start block" );
 
-      auto gpo = db->get_dynamic_global_properties();
+      auto& gpo = db->get_dynamic_global_properties();
       auto virtual_supply = gpo.virtual_supply;
       auto witness_name = db->get_scheduled_witness(1);
       auto old_witness_balance = get_balance( witness_name );
@@ -1593,8 +1589,6 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
       new_vesting_hive += gpo.get_total_vesting_fund_hive();
 
       generate_block();
-
-      gpo = db->get_dynamic_global_properties();
 
       BOOST_REQUIRE( gpo.get_current_supply().amount.value == new_supply.amount.value );
       BOOST_REQUIRE( gpo.virtual_supply.amount.value == new_supply.amount.value );
@@ -1633,8 +1627,6 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
          new_vesting_hive += gpo.get_total_vesting_fund_hive();
 
          generate_block();
-
-         gpo = db->get_dynamic_global_properties();
 
          BOOST_REQUIRE( gpo.get_current_supply().amount.value == new_supply.amount.value );
          BOOST_REQUIRE( gpo.virtual_supply.amount.value == new_supply.amount.value );
@@ -1677,8 +1669,6 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
 
          generate_block();
 
-         gpo = db->get_dynamic_global_properties();
-
          BOOST_REQUIRE( gpo.get_current_supply().amount.value == new_supply.amount.value );
          BOOST_REQUIRE( gpo.virtual_supply.amount.value == new_supply.amount.value );
          BOOST_REQUIRE( gpo.get_total_reward_fund_hive().amount.value == new_rewards.amount.value );
@@ -1707,8 +1697,6 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
          new_vesting_hive += gpo.get_total_vesting_fund_hive();
 
          generate_block();
-
-         gpo = db->get_dynamic_global_properties();
 
          BOOST_REQUIRE( gpo.get_current_supply().amount.value == new_supply.amount.value );
          BOOST_REQUIRE( gpo.virtual_supply.amount.value == new_supply.amount.value );
@@ -1780,7 +1768,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
       sign( tx, alice_private_key );
       db->push_transaction( tx, 0 );
 
-      auto gpo = db->get_dynamic_global_properties();
+      auto& gpo = db->get_dynamic_global_properties();
       auto interest_op = get_last_operations( 1 )[0].get< interest_operation >();
 
       BOOST_REQUIRE( gpo.get_hbd_interest_rate() > 0 );
@@ -2772,7 +2760,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       BOOST_TEST_MESSAGE( "Letting percent market cap fall to hbd_start_percent to verify printing of HBD turns back on" );
 
       // Get close to hbd_start_percent for printing HBD to start again, but not all the way
-      db_plugin->debug_update( [=]( database& db )
+      db_plugin->debug_update( [&]( database& db )
       {
          db.modify( db.get_account( "sam" ), [&]( account_object& a )
          {

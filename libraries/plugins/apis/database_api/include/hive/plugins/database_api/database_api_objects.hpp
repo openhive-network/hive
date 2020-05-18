@@ -150,7 +150,7 @@ struct api_comment_vote_object
       num_changes( cv.num_changes )
    {
       voter = db.get( cv.voter ).name;
-      auto comment = db.get( cv.comment );
+      auto& comment = db.get( cv.comment );
       author = db.get_account(comment.author_id).name;
       permlink = to_string( comment.permlink );
    }
@@ -557,11 +557,12 @@ struct api_hardfork_property_object
 
 struct api_smt_token_object
 {
-   api_smt_token_object( const smt_token_object& token, const database& db ) : token( token )
+   api_smt_token_object( const smt_token_object& token, const database& db )
+      : token( token.copy_chain_object() ) //FIXME: exposes internal chain object as API result
    {
       const smt_ico_object* ico = db.find< chain::smt_ico_object, chain::by_symbol >( token.liquid_symbol );
       if ( ico != nullptr )
-         this->ico = *ico;
+         this->ico = ico->copy_chain_object(); //FIXME: exposes internal chain object as API result
    }
 
    smt_token_object                token;

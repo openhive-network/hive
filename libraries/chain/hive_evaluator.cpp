@@ -1418,8 +1418,9 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
       /// check for proxy loops and fail to update the proxy if it would create a loop
       auto cprox = &new_proxy;
-      while( cprox->proxy.size() != 0 ) {
-         const auto next_proxy = _db.get_account( cprox->proxy );
+      while( cprox->proxy.size() != 0 )
+      {
+         const auto& next_proxy = _db.get_account( cprox->proxy );
          FC_ASSERT( proxy_chain.insert( next_proxy.get_id() ).second, "This proxy would create a proxy loop." );
          cprox = &next_proxy;
          FC_ASSERT( proxy_chain.size() <= HIVE_MAX_PROXY_RECURSION_DEPTH, "Proxy chain is too long." );

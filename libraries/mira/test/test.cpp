@@ -255,7 +255,7 @@ BOOST_AUTO_TEST_CASE( sanity_tests )
 
       BOOST_REQUIRE( b_itr == book_by_b_idx.end() );
 
-      const auto book_by_b = db.get< book, by_b >( boost::make_tuple( 5, 4 ) );
+      const auto& book_by_b = db.get< book, by_b >( boost::make_tuple( 5, 4 ) );
 
       BOOST_REQUIRE( book_by_b.get_id() == book::id_type(1) );
       BOOST_REQUIRE( book_by_b.a == 4 );

@@ -2557,7 +2557,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
          if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
          {
-            const auto rf = get_reward_fund();
+            const auto& rf = get_reward_fund();
             ctx.reward_curve = rf.author_reward_curve;
             ctx.content_constant = rf.content_constant;
          }
@@ -2749,7 +2749,7 @@ void database::process_comment_cashout()
       rf_ctx.reward_balance = itr->reward_balance;
 
       // The index is by ID, so the ID should be the current size of the vector (0, 1, 2, etc...)
-      assert( funds.size() == itr->id );
+      assert( funds.size() == itr->get_id().get_value() );
 
       funds.push_back( rf_ctx );
    }
@@ -5808,7 +5808,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
             const auto& gpo = get_dynamic_global_properties();
 
-            auto post_rf = create< reward_fund_object >( [&]( reward_fund_object& rfo )
+            auto& post_rf = create< reward_fund_object >( [&]( reward_fund_object& rfo )
             {
                rfo.name = HIVE_POST_REWARD_FUND_NAME;
                rfo.last_update = head_block_time();
@@ -6071,7 +6071,7 @@ void database::validate_invariants()const
       uint64_t reward_fund_no = 0;
       uint64_t contribution_no = 0;
 
-      auto gpo = get_dynamic_global_properties();
+      auto& gpo = get_dynamic_global_properties();
 
       /// verify no witness has too many votes
       const auto& witness_idx = get_index< witness_index >().indices();

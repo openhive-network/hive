@@ -167,7 +167,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_market_history )
 
    while( itr != bucket_idx.end() && itr->seconds == args.bucket_seconds && itr->open < args.end )
    {
-      result.buckets.push_back( *itr );
+      result.buckets.push_back( itr->copy_chain_object() );
 
       ++itr;
    }

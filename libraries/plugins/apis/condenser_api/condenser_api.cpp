@@ -994,13 +994,15 @@ namespace detail
       if( destination == outgoing || destination == all )
       {
          auto routes = _database_api->find_withdraw_vesting_routes( { account, database_api::by_withdraw_route } ).routes;
-         result.insert( result.end(), routes.begin(), routes.end() );
+         for( auto& route : routes )
+           result.emplace_back( route.copy_chain_object() ); //FIXME: exposes internal chain object as API result
       }
 
       if( destination == incoming || destination == all )
       {
          auto routes = _database_api->find_withdraw_vesting_routes( { account, database_api::by_destination } ).routes;
-         result.insert( result.end(), routes.begin(), routes.end() );
+         for( auto& route : routes )
+            result.emplace_back( route.copy_chain_object() ); //FIXME: exposes internal chain object as API result
       }
 
       return result;

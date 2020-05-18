@@ -252,7 +252,7 @@ void update_witness_schedule4( database& db )
 
       for( uint32_t i = 0; i < wso.num_scheduled_witnesses; i++ )
       {
-         auto witness = db.get_witness( wso.current_shuffled_witnesses[ i ] );
+         auto& witness = db.get_witness( wso.current_shuffled_witnesses[ i ] );
          if( witness_versions.find( witness.running_version ) == witness_versions.end() )
             witness_versions[ witness.running_version ] = 1;
          else
