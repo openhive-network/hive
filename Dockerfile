@@ -145,8 +145,15 @@ ENV ENABLE_MIRA=${ENABLE_MIRA}
 
 RUN \
   cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${ENABLE_MIRA} && \
-    cd build/tests && \
-    ./chain_test && \
-    ./plugin_test 
+      ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${ENABLE_MIRA} && \
+      apt-get update && \
+      apt-get install -y screen && \
+      pip3 install -U secp256k1prp && \
+      git clone https://gitlab.syncad.com/hive/beem.git && \
+      cd beem && \
+        git checkout dk-expiration-fix-for-debug-plugin && \
+        python3 setup.py build && \
+        python3 setup.py install --user && \
+  cd ${src_dir} && \
+        ${src_dir}/ciscripts/run_regressions.sh
 
