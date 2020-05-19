@@ -48,14 +48,19 @@ void sps_processor::remove_proposals( const time_point_sec& head_time )
    }
 }
 
-void sps_processor::find_active_proposals( const time_point_sec& head_time, t_proposals& proposals )
+void sps_processor::find_proposals( const time_point_sec& head_time, t_proposals& active_proposals, t_proposals& no_active_yet_proposals )
 {
    const auto& pidx = db.get_index< proposal_index >().indices().get< by_start_date >();
 
    std::for_each( pidx.begin(), pidx.upper_bound( head_time ), [&]( auto& proposal )
                                              {
                                                 if( head_time >= proposal.start_date && head_time <= proposal.end_date )
-                                                   proposals.emplace_back( proposal );
+                                                   active_proposals.emplace_back( proposal );
+                                             } );
+
+   std::for_each( pidx.upper_bound( head_time ), pidx.end(), [&]( auto& proposal )
+                                             {
+                                                no_active_yet_proposals.emplace_back( proposal );
                                              } );
 }
 
@@ -250,13 +255,16 @@ void sps_processor::make_payments( const block_notification& note )
       db.get_benchmark_dumper().begin();
 
    t_proposals active_proposals;
+   t_proposals no_active_yet_proposals;
 
    //Find all active proposals, where actual_time >= start_date and actual_time <= end_date
-   find_active_proposals( head_time, active_proposals );
+   find_proposals( head_time, active_proposals, no_active_yet_proposals );
    if( active_proposals.empty() )
    {
       if( db.get_benchmark_dumper().is_enabled() )
          db.get_benchmark_dumper().end( sps_processor::calculating_name );
+
+      calculate_votes( no_active_yet_proposals );
 
       //Set `new maintenance time` and `last budget time`
       update_settings( head_time );
@@ -265,6 +273,9 @@ void sps_processor::make_payments( const block_notification& note )
 
    //Calculate total_votes for every active proposal
    calculate_votes( active_proposals );
+
+   //Calculate total_votes for every proposal that isn't active yet. It's only for presentation/statistics
+   calculate_votes( no_active_yet_proposals );
 
    //Sort all active proposals by total_votes
    sort_by_votes( active_proposals );

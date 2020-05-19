@@ -41,6 +41,17 @@ int64_t calc_proposals( const PROPOSAL_IDX& proposal_idx, const std::vector< int
    return cnt;
 }
 
+template< typename PROPOSAL_IDX >
+uint64_t calc_total_votes( const PROPOSAL_IDX& proposal_idx, uint64_t proposal_id )
+{
+   auto found = proposal_idx.find( proposal_id );
+
+   if( found == proposal_idx.end() )
+      return 0;
+   else
+      return found->total_votes;
+}
+
 template< typename PROPOSAL_VOTE_IDX >
 int64_t calc_proposal_votes( const PROPOSAL_VOTE_IDX& proposal_vote_idx, uint64_t proposal_id )
 {
@@ -64,6 +75,194 @@ int64_t calc_votes( const PROPOSAL_VOTE_IDX& proposal_vote_idx, const std::vecto
 }
 
 BOOST_FIXTURE_TEST_SUITE( proposal_tests, sps_proposal_database_fixture )
+
+BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
+{
+   try
+   {
+      BOOST_TEST_MESSAGE( "Testing: proposals before activation can have votes" );
+
+      ACTORS( (alice)(bob)(carol)(dan) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      //=====================preparing=====================
+      uint64_t found_votes_00 = 0;
+      uint64_t found_votes_01 = 0;
+
+      auto creator = "alice";
+      auto receiver = "bob";
+
+      auto start_date = db->head_block_time();
+
+      auto daily_pay = ASSET( "48.000 TBD" );
+      auto hourly_pay = ASSET( "1.996 TBD" );// hourly_pay != ASSET( "2.000 TBD" ) because lack of rounding
+
+      FUND( creator, ASSET( "160.000 TESTS" ) );
+      FUND( creator, ASSET( "80.000 TBD" ) );
+      FUND( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
+
+      auto voter_00 = "carol";
+      auto voter_01 = "dan";
+
+      vest(STEEM_INIT_MINER_NAME, voter_00, ASSET( "1.000 TESTS" ));
+      vest(STEEM_INIT_MINER_NAME, voter_01, ASSET( "3.100 TESTS" ));
+
+      //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
+      start_date += fc::seconds( STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+      generate_blocks( start_date );
+
+      start_date = db->head_block_time();
+
+      auto start_date_02 = start_date + fc::hours( 24 );
+
+      auto end_date = start_date + fc::hours( 48 );
+      auto end_date_02 = start_date_02 + fc::hours( 48 );
+      //=====================preparing=====================
+
+      const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_proposal_id >();
+
+      //Needed basic operations
+      int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key );
+      generate_blocks( 1 );
+      int64_t id_proposal_01 = create_proposal( creator, receiver, start_date_02, end_date_02, daily_pay, alice_private_key );
+      generate_blocks( 1 );
+
+      /*
+         proposal_00
+         `start_date` = (now)          -> `end_date`  (now + 48h)
+
+         proposal_01
+         start_date` = (now + 24h) `   -> `end_date`  (now + 72h)
+      */
+      {
+         found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
+         found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
+         BOOST_REQUIRE_EQUAL( found_votes_00, 0 );
+         BOOST_REQUIRE_EQUAL( found_votes_01, 0 );
+      }
+
+      vote_proposal( voter_00, { id_proposal_00 }, true/*approve*/, carol_private_key );
+      generate_blocks( 1 );
+
+      {
+         found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
+         found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
+         BOOST_REQUIRE_EQUAL( found_votes_00, 0 );
+         BOOST_REQUIRE_EQUAL( found_votes_01, 0 );
+      }
+
+      vote_proposal( voter_01, { id_proposal_01 }, true/*approve*/, dan_private_key );
+      generate_blocks( 1 );
+
+      {
+         found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
+         found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
+         BOOST_REQUIRE_EQUAL( found_votes_00, 0 );
+         BOOST_REQUIRE_EQUAL( found_votes_01, 0 );
+      }
+
+      //skipping interest generating is necessary
+      transfer( STEEM_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ));
+      generate_block( 5 );
+      transfer( STEEM_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+      generate_block( 5 );
+
+      const auto& dgpo = db->get_dynamic_global_properties();
+      auto old_sbd_supply = dgpo.current_sbd_supply;
+
+
+      const account_object& _creator = db->get_account( creator );
+      const account_object& _receiver = db->get_account( receiver );
+      const account_object& _voter_01 = db->get_account( voter_01 );
+      const account_object& _treasury = db->get_treasury();
+
+      {
+         BOOST_TEST_MESSAGE( "---Payment---" );
+
+         auto before_creator_sbd_balance = _creator.sbd_balance;
+         auto before_receiver_sbd_balance = _receiver.sbd_balance;
+         auto before_voter_01_sbd_balance = _voter_01.sbd_balance;
+         auto before_treasury_sbd_balance = _treasury.sbd_balance;
+
+         auto next_block = get_nr_blocks_until_maintenance_block();
+         generate_blocks( next_block - 1 );
+         generate_blocks( 1 );
+
+         auto treasury_sbd_inflation = dgpo.current_sbd_supply - old_sbd_supply;
+         auto after_creator_sbd_balance = _creator.sbd_balance;
+         auto after_receiver_sbd_balance = _receiver.sbd_balance;
+         auto after_voter_01_sbd_balance = _voter_01.sbd_balance;
+         auto after_treasury_sbd_balance = _treasury.sbd_balance;
+
+         BOOST_REQUIRE( before_creator_sbd_balance == after_creator_sbd_balance );
+         BOOST_REQUIRE( before_receiver_sbd_balance == after_receiver_sbd_balance - hourly_pay );
+         BOOST_REQUIRE( before_voter_01_sbd_balance == after_voter_01_sbd_balance );
+         BOOST_REQUIRE( before_treasury_sbd_balance == after_treasury_sbd_balance - treasury_sbd_inflation + hourly_pay );
+      }
+      /*
+         Reminder:
+
+         proposal_00
+         `start_date` = (now)          -> `end_date`  (now + 48h)
+
+         proposal_01
+         start_date` = (now + 24h) `   -> `end_date`  (now + 72h)
+      */
+      {
+         //Passed ~1h - one reward for `proposal_00` was paid out
+         found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
+         found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
+         BOOST_REQUIRE_GT( found_votes_00, 0 );
+         BOOST_REQUIRE_GT( found_votes_01, 0 );
+      }
+      {
+         auto time_movement = start_date + fc::hours( 24 );
+         generate_blocks( time_movement );
+
+         //Passed ~25h - both proposals have `total_votes`
+         auto _found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
+         auto _found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
+         BOOST_REQUIRE_EQUAL( found_votes_00, _found_votes_00 );
+         BOOST_REQUIRE_EQUAL( found_votes_01, _found_votes_01 );
+      }
+      {
+         auto time_movement = start_date + fc::hours( 27 );
+         generate_blocks( time_movement );
+
+         //Passed ~28h - both proposals have `total_votes`
+         auto _found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
+         auto _found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
+         BOOST_REQUIRE_EQUAL( found_votes_00, _found_votes_00 );
+         BOOST_REQUIRE_EQUAL( found_votes_01, _found_votes_01 );
+      }
+      {
+         auto time_movement = start_date + fc::hours( 47 );
+         generate_blocks( time_movement );
+
+         //Passed ~28h - both proposals have `total_votes`
+         auto _found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
+         auto _found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
+         BOOST_REQUIRE_EQUAL( found_votes_00, _found_votes_00 );
+         BOOST_REQUIRE_EQUAL( found_votes_01, _found_votes_01 );
+      }
+      {
+         auto time_movement = start_date + fc::hours( 71 );
+         generate_blocks( time_movement );
+
+         //Passed ~28h - both proposals have `total_votes`
+         auto _found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
+         auto _found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
+         BOOST_REQUIRE_EQUAL( found_votes_00, _found_votes_00 );
+         BOOST_REQUIRE_EQUAL( found_votes_01, _found_votes_01 );
+      }
+
+      validate_database();
+   }
+   FC_LOG_AND_RETHROW()
+}
 
 BOOST_AUTO_TEST_CASE( generating_payments )
 {

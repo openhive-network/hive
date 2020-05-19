@@ -33,7 +33,7 @@ class sps_processor
 
       void remove_proposals( const time_point_sec& head_time );
 
-      void find_active_proposals( const time_point_sec& head_time, t_proposals& proposals );
+      void find_proposals( const time_point_sec& head_time, t_proposals& active_proposals, t_proposals& no_active_yet_proposals );
 
       uint64_t calculate_votes( const proposal_id_type& id );
       void calculate_votes( const t_proposals& proposals );
