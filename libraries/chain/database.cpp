@@ -911,7 +911,7 @@ asset database::get_effective_vesting_shares( const account_object& account, ass
 
 #pragma message( "TODO: Update the code below when delegation is modified to support SMTs." )
    const account_regular_balance_object* bo = find< account_regular_balance_object, by_owner_liquid_symbol >(
-      boost::make_tuple( account.name, vested_symbol.get_paired_symbol() ) );
+      boost::make_tuple( account.get_id(), vested_symbol.get_paired_symbol() ) );
    if( bo == nullptr )
       return asset( 0, vested_symbol );
 
@@ -5017,12 +5017,11 @@ void database::clear_expired_delegations()
    } FC_CAPTURE_AND_RETHROW( (vop) ) }
 }
 #ifdef HIVE_ENABLE_SMT
-template< typename smt_balance_object_type, class balance_operator_type >
-void database::adjust_smt_balance( const account_name_type& name, const asset& delta, bool check_account,
-   balance_operator_type balance_operator )
+template< typename smt_balance_object_type, typename modifier_type >
+void database::adjust_smt_balance( const account_object& owner, const asset& delta, modifier_type&& modifier )
 {
    asset_symbol_type liquid_symbol = delta.symbol.is_vesting() ? delta.symbol.get_paired_symbol() : delta.symbol;
-   const smt_balance_object_type* bo = find< smt_balance_object_type, by_owner_liquid_symbol >( boost::make_tuple( name, liquid_symbol ) );
+   const smt_balance_object_type* bo = find< smt_balance_object_type, by_owner_liquid_symbol >( boost::make_tuple( owner.get_id(), liquid_symbol ) );
    // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
    if( bo == nullptr )
    {
@@ -5032,38 +5031,16 @@ void database::adjust_smt_balance( const account_name_type& name, const asset& d
       if( delta.amount.value == 0 )
          return;
 
-      if( check_account )
-         get_account( name );
-
-      create< smt_balance_object_type >( [&]( smt_balance_object_type& smt_balance )
-      {
-         smt_balance.clear_balance( liquid_symbol );
-         smt_balance.owner = name;
-         balance_operator.add_to_balance( smt_balance );
-         smt_balance.validate();
-      } );
+      auto& new_balance_object = create< smt_balance_object_type >( owner, liquid_symbol );
+      bo = &new_balance_object;
    }
-   else
-   {
-      bool is_all_zero = false;
-      int64_t result = balance_operator.get_combined_balance( bo, &is_all_zero );
-      // Check result to avoid negative balance storing.
-      FC_ASSERT( result >= 0, "Insufficient SMT ${smt} funds", ( "smt", delta.symbol ) );
 
-      // Exit if whole balance becomes zero.
-      if( is_all_zero )
-      {
-         // Zero balance is the same as non object balance at all.
-         // Remove balance object if both liquid and vesting balances are zero.
-         remove( *bo );
-      }
-      else
-      {
-         modify( *bo, [&]( smt_balance_object_type& smt_balance )
-         {
-            balance_operator.add_to_balance( smt_balance );
-         } );
-      }
+   modify( *bo, std::move( modifier ) );
+   if( bo->is_empty() )
+   {
+      // Zero balance is the same as non object balance at all.
+      // Remove balance object if both liquid and vesting balances are zero.
+      remove( *bo );
    }
 }
 #endif
@@ -5186,61 +5163,6 @@ const index_delegate_map& database::index_delegates()
    return _index_delegate_map;
 }
 
-#ifdef HIVE_ENABLE_SMT
-struct smt_regular_balance_operator
-{
-   smt_regular_balance_operator( const asset& delta ) : delta(delta), is_vesting(delta.symbol.is_vesting()) {}
-
-   void add_to_balance( account_regular_balance_object& smt_balance )
-   {
-      if( is_vesting )
-         smt_balance.vesting += delta;
-      else
-         smt_balance.liquid += delta;
-   }
-   int64_t get_combined_balance( const account_regular_balance_object* bo, bool* is_all_zero )
-   {
-      asset result = is_vesting ? bo->vesting + delta : bo->liquid + delta;
-      *is_all_zero = result.amount.value == 0 && (is_vesting ? bo->liquid.amount.value : bo->vesting.amount.value) == 0;
-      return result.amount.value;
-   }
-
-   asset delta;
-   bool  is_vesting;
-};
-
-struct smt_reward_balance_operator
-{
-   smt_reward_balance_operator( const asset& value_delta, const asset& share_delta )
-      : value_delta(value_delta), share_delta(share_delta), is_vesting(share_delta.amount.value != 0)
-   {
-       FC_ASSERT( value_delta.symbol.is_vesting() == false && share_delta.symbol.is_vesting() );
-   }
-
-   void add_to_balance( account_rewards_balance_object& smt_balance )
-   {
-      if( is_vesting )
-      {
-         smt_balance.pending_vesting_value += value_delta;
-         smt_balance.pending_vesting_shares += share_delta;
-      }
-      else
-         smt_balance.pending_liquid += value_delta;
-   }
-   int64_t get_combined_balance( const account_rewards_balance_object* bo, bool* is_all_zero )
-   {
-      asset result = is_vesting ? bo->pending_vesting_value + value_delta : bo->pending_liquid + value_delta;
-      *is_all_zero = result.amount.value == 0 &&
-                     (is_vesting ? bo->pending_liquid.amount.value : bo->pending_vesting_value.amount.value) == 0;
-      return result.amount.value;
-   }
-
-   asset value_delta;
-   asset share_delta;
-   bool  is_vesting;
-};
-#endif
-
 void database::adjust_balance( const account_object& a, const asset& delta )
 {
    if ( delta.amount < 0 )
@@ -5258,40 +5180,26 @@ void database::adjust_balance( const account_object& a, const asset& delta )
    {
       // No account object modification for SMT balance, hence separate handling here.
       // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
-      smt_regular_balance_operator balance_operator( delta );
-      adjust_smt_balance< account_regular_balance_object >( a.name, delta, false/*check_account*/, balance_operator );
+      adjust_smt_balance< account_regular_balance_object >( a, delta, [&]( account_regular_balance_object& bo )
+      {
+         if( delta.symbol.is_vesting() )
+         {
+            bo.vesting += delta;
+            // Check result to avoid negative balance storing.
+            FC_ASSERT( bo.vesting.amount >= 0, "Insufficient SMT ${smt} funds", ( "smt", delta.symbol ) ); //ABW: redundant with check at start
+         }
+         else
+         {
+            bo.liquid += delta;
+            // Check result to avoid negative balance storing.
+            FC_ASSERT( bo.liquid.amount >= 0, "Insufficient SMT ${smt} funds", ( "smt", delta.symbol ) ); //ABW: redundant with check at start
+         }
+      } );
    }
    else
 #endif
    {
       modify_balance( a, delta, check_balance );
-   }
-}
-
-void database::adjust_balance( const account_name_type& name, const asset& delta )
-{
-   if ( delta.amount < 0 )
-   {
-      asset available = get_balance( name, delta.symbol );
-      FC_ASSERT( available >= -delta,
-         "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
-            ("acc", name)("r", delta)("a", available) );
-   }
-
-   bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
-
-#ifdef HIVE_ENABLE_SMT
-   if( delta.symbol.space() == asset_symbol_type::smt_nai_space )
-   {
-      // No account object modification for SMT balance, hence separate handling here.
-      // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
-      smt_regular_balance_operator balance_operator( delta );
-      adjust_smt_balance< account_regular_balance_object >( name, delta, false/*check_account*/, balance_operator );
-   }
-   else
-#endif
-   {
-      modify_balance( get_account( name ), delta, check_balance );
    }
 }
 
@@ -5360,34 +5268,28 @@ void database::adjust_reward_balance( const account_object& a, const asset& valu
    // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
    if( value_delta.symbol.space() == asset_symbol_type::smt_nai_space )
    {
-      smt_reward_balance_operator balance_operator( value_delta, share_delta );
-      adjust_smt_balance< account_rewards_balance_object >( a.name, value_delta, false/*check_account*/, balance_operator );
-      return;
+      adjust_smt_balance< account_rewards_balance_object >( a, value_delta, [&]( account_rewards_balance_object& bo )
+      {
+         if( share_delta.amount.value != 0 )
+         {
+            bo.pending_vesting_value += value_delta;
+            bo.pending_vesting_shares += share_delta;
+            // Check result to avoid negative balance storing.
+            FC_ASSERT( bo.pending_vesting_value.amount >= 0, "Insufficient SMT ${smt} funds", ( "smt", value_delta.symbol ) );
+         }
+         else
+         {
+            bo.pending_liquid += value_delta;
+            // Check result to avoid negative balance storing.
+            FC_ASSERT( bo.pending_liquid.amount >= 0, "Insufficient SMT ${smt} funds", ( "smt", value_delta.symbol ) );
+         }
+      } );
    }
+   else
 #endif
-
-   modify_reward_balance(a, value_delta, share_delta, check_balance);
-}
-
-void database::adjust_reward_balance( const account_name_type& name, const asset& value_delta,
-                                      const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
-{
-   bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
-   FC_ASSERT( value_delta.symbol.is_vesting() == false && share_delta.symbol.is_vesting() );
-
-#ifdef HIVE_ENABLE_SMT
-   // No account object modification for SMT balance, hence separate handling here.
-   // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
-   if( value_delta.symbol.space() == asset_symbol_type::smt_nai_space )
    {
-      smt_reward_balance_operator balance_operator( value_delta, share_delta );
-      adjust_smt_balance< account_rewards_balance_object >( name, value_delta, true/*check_account*/, balance_operator );
-      return;
+      modify_reward_balance( a, value_delta, share_delta, check_balance );
    }
-#endif
-
-   const auto& a = get_account( name );
-   modify_reward_balance(a, value_delta, share_delta, check_balance);
 }
 
 void database::adjust_supply( const asset& delta, bool adjust_vesting )
@@ -5455,7 +5357,7 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
       {
 #ifdef HIVE_ENABLE_SMT
          FC_ASSERT( symbol.space() == asset_symbol_type::smt_nai_space, "Invalid symbol: ${s}", ("s", symbol) );
-         auto key = boost::make_tuple( a.name, symbol.is_vesting() ? symbol.get_paired_symbol() : symbol );
+         auto key = boost::make_tuple( a.get_id(), symbol.is_vesting() ? symbol.get_paired_symbol() : symbol );
          const account_regular_balance_object* arbo = find< account_regular_balance_object, by_owner_liquid_symbol >( key );
          if( arbo == nullptr )
          {
@@ -5470,27 +5372,6 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
 #endif
       }
    }
-}
-
-asset database::get_balance( const account_name_type& name, asset_symbol_type symbol )const
-{
-#ifdef HIVE_ENABLE_SMT
-   if ( symbol.space() == asset_symbol_type::smt_nai_space )
-   {
-      auto key = boost::make_tuple( name, symbol.is_vesting() ? symbol.get_paired_symbol() : symbol );
-      const account_regular_balance_object* arbo = find< account_regular_balance_object, by_owner_liquid_symbol >( key );
-
-      if( arbo == nullptr )
-      {
-         return asset( 0, symbol );
-      }
-      else
-      {
-         return symbol.is_vesting() ? arbo->vesting : arbo->liquid;
-      }
-   }
-#endif
-   return get_balance( get_account( name ), symbol );
 }
 
 asset database::get_savings_balance( const account_object& a, asset_symbol_type symbol )const
