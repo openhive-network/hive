@@ -1715,11 +1715,7 @@ BOOST_AUTO_TEST_CASE( smt_create_reset )
 
       db_plugin->debug_update( [=]( database& db )
       {
-         db.create< smt_token_object >( [&]( smt_token_object& o )
-         {
-            o.control_account = "alice";
-            o.liquid_symbol = alice_symbol;
-         });
+         db.create< smt_token_object >( alice_symbol, "alice" );
       });
 
       generate_block();
@@ -2637,11 +2633,7 @@ BOOST_AUTO_TEST_CASE( smt_set_runtime_parameters_apply )
 
       db_plugin->debug_update( [=](database& db)
       {
-         db.create< smt_token_object >( [&]( smt_token_object& o )
-         {
-            o.control_account = "alice";
-            o.liquid_symbol = alice_symbol;
-         });
+         db.create< smt_token_object >( alice_symbol, "alice" );
       });
 
       smt_set_runtime_parameters_operation op;
@@ -2803,11 +2795,7 @@ BOOST_AUTO_TEST_CASE( smt_contribute_apply )
 
       db_plugin->debug_update( [=] ( database& db )
       {
-         db.create< smt_token_object >( [&]( smt_token_object& o )
-         {
-            o.control_account = "alice";
-            o.liquid_symbol = alice_symbol;
-         } );
+         db.create< smt_token_object >( alice_symbol, "alice" );
 
          db.create< smt_ico_object >( [&]( smt_ico_object& o )
          {

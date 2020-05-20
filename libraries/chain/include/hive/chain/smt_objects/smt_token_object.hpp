@@ -2,6 +2,7 @@
 
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/hive_object_types.hpp>
+#include <hive/chain/util/tiny_asset.hpp>
 #include <hive/protocol/smt_operations.hpp>
 
 #ifdef HIVE_ENABLE_SMT
@@ -30,14 +31,19 @@ class smt_token_object : public object< smt_token_object_type, smt_token_object 
 public:
    struct smt_market_maker_state
    {
-      asset    hive_balance;
-      asset    token_balance;
-      uint32_t reserve_ratio = 0;
+      uint32_t   reserve_ratio = 0;
+      HIVE_asset hive_balance;
+      asset      token_balance;
    };
 
 public:
-
-   CHAINBASE_DEFAULT_CONSTRUCTOR( smt_token_object )
+   template< typename Allocator >
+   smt_token_object( allocator< Allocator > a, uint64_t _id,
+      asset_symbol_type _liquid_symbol, const account_name_type& _control_account )
+      : id( _id ), liquid_symbol( _liquid_symbol ), control_account( _control_account )
+   {
+      market_maker.token_balance = asset( 0, liquid_symbol );
+   }
 
    price one_vesting_to_one_liquid() const
    {
@@ -100,7 +106,7 @@ public:
    bool                 allow_downvotes = true;
 
    ///parameters for 'smt_setup_operation'
-   int64_t                       max_supply = 0;
+   int64_t              max_supply = 0;
 };
 
 class smt_ico_object : public object< smt_ico_object_type, smt_ico_object >
@@ -251,9 +257,9 @@ FC_REFLECT_ENUM( hive::chain::smt_phase,
 )
 
 FC_REFLECT( hive::chain::smt_token_object::smt_market_maker_state,
+   (reserve_ratio)
    (hive_balance)
    (token_balance)
-   (reserve_ratio)
 )
 
 FC_REFLECT( hive::chain::smt_token_object,
