@@ -200,7 +200,6 @@ namespace hive { namespace chain {
    struct by_permlink; /// author, perm
    struct by_root;
    struct by_parent;
-   struct by_last_update; /// parent_auth, last_update
    struct by_author_last_update;
 
    /**
@@ -233,26 +232,6 @@ namespace hive { namespace chain {
             >,
             composite_key_compare< std::less< account_id_type >, strcmp_less, std::less< comment_id_type > >
          >
-         /// NON_CONSENSUS INDICIES - used by APIs
-#ifndef IS_LOW_MEM
-         ,
-         ordered_unique< tag< by_last_update >,
-            composite_key< comment_object,
-               member< comment_object, account_id_type, &comment_object::parent_author_id >,
-               member< comment_object, time_point_sec, &comment_object::last_update >,
-               const_mem_fun< comment_object, comment_object::id_type, &comment_object::get_id >
-            >,
-            composite_key_compare< std::less< account_id_type >, std::greater< time_point_sec >, std::less< comment_id_type > >
-         >,
-         ordered_unique< tag< by_author_last_update >,
-            composite_key< comment_object,
-               member< comment_object, account_id_type, &comment_object::author_id >,
-               member< comment_object, time_point_sec, &comment_object::last_update >,
-               const_mem_fun< comment_object, comment_object::id_type, &comment_object::get_id >
-            >,
-            composite_key_compare< std::less< account_id_type >, std::greater< time_point_sec >, std::less< comment_id_type > >
-         >
-#endif
       >,
       allocator< comment_object >
    > comment_index;

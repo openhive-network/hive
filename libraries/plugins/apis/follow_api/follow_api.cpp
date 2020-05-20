@@ -38,67 +38,17 @@ class follow_api_impl
 
 DEFINE_API_IMPL( follow_api_impl, get_followers )
 {
-   FC_ASSERT( args.limit <= 1000 );
-
-   get_followers_return result;
-   result.followers.reserve( args.limit );
-
-   const auto& idx = _db.get_index< follow::follow_index >().indices().get< follow::by_following_follower >();
-   auto itr = idx.lower_bound( boost::make_tuple( args.account, args.start ) );
-   while( itr != idx.end() && result.followers.size() < args.limit && itr->following == args.account )
-   {
-      if( args.type == follow::undefined || itr->what & ( 1 << args.type ) )
-      {
-         api_follow_object entry;
-         entry.follower = itr->follower;
-         entry.following = itr->following;
-         set_what( entry.what, itr->what );
-         result.followers.push_back( entry );
-      }
-
-      ++itr;
-   }
-
-   return result;
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( follow_api_impl, get_following )
 {
-   FC_ASSERT( args.limit <= 1000 );
-
-   get_following_return result;
-   result.following.reserve( args.limit );
-
-   const auto& idx = _db.get_index< follow::follow_index >().indices().get< follow::by_follower_following >();
-   auto itr = idx.lower_bound( boost::make_tuple( args.account, args.start ) );
-   while( itr != idx.end() && result.following.size() < args.limit && itr->follower == args.account )
-   {
-      if( args.type == follow::undefined || itr->what & ( 1 << args.type ) )
-      {
-         api_follow_object entry;
-         entry.follower = itr->follower;
-         entry.following = itr->following;
-         set_what( entry.what, itr->what );
-         result.following.push_back( entry );
-      }
-
-      ++itr;
-   }
-
-   return result;
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( follow_api_impl, get_follow_count )
 {
-   get_follow_count_return result;
-   auto itr = _db.find< follow::follow_count_object, follow::by_account >( args.account );
-
-   if( itr != nullptr )
-      result = get_follow_count_return{ itr->account, itr->follower_count, itr->following_count };
-   else
-      result.account = args.account;
-
-   return result;
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( follow_api_impl, get_feed_entries )
@@ -176,104 +126,22 @@ DEFINE_API_IMPL( follow_api_impl, get_feed )
 
 DEFINE_API_IMPL( follow_api_impl, get_blog_entries )
 {
-   FC_ASSERT( args.limit <= 500, "Cannot retrieve more than 500 blog entries at a time." );
-
-   auto entry_id = args.start_entry_id == 0 ? ~0 : args.start_entry_id;
-
-   get_blog_entries_return result;
-   result.blog.reserve( args.limit );
-
-   const auto& blog_idx = _db.get_index< follow::blog_index >().indices().get< follow::by_blog >();
-   auto itr = blog_idx.lower_bound( boost::make_tuple( args.account, entry_id ) );
-
-   while( itr != blog_idx.end() && itr->account == args.account && result.blog.size() < args.limit )
-   {
-      const auto& comment = _db.get( itr->comment );
-      blog_entry entry;
-      entry.author = _db.get_account(comment.author_id).name;
-      entry.permlink = chain::to_string( comment.permlink );
-      entry.blog = args.account;
-      entry.reblog_on = itr->reblogged_on;
-      entry.entry_id = itr->blog_feed_id;
-
-      result.blog.push_back( entry );
-      ++itr;
-   }
-
-   return result;
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( follow_api_impl, get_blog )
 {
-   FC_ASSERT( args.limit <= 500, "Cannot retrieve more than 500 blog entries at a time." );
-
-   auto entry_id = args.start_entry_id == 0 ? ~0 : args.start_entry_id;
-
-   get_blog_return result;
-   result.blog.reserve( args.limit );
-
-   const auto& blog_idx = _db.get_index< follow::blog_index >().indices().get< follow::by_blog >();
-   auto itr = blog_idx.lower_bound( boost::make_tuple( args.account, entry_id ) );
-
-   while( itr != blog_idx.end() && itr->account == args.account && result.blog.size() < args.limit )
-   {
-      const auto& comment = _db.get( itr->comment );
-      comment_blog_entry entry;
-      entry.comment = database_api::api_comment_object( comment, _db );
-      entry.blog = args.account;
-      entry.reblog_on = itr->reblogged_on;
-      entry.entry_id = itr->blog_feed_id;
-
-      result.blog.push_back( entry );
-      ++itr;
-   }
-
-   return result;
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( follow_api_impl, get_account_reputations )
 {
-   FC_ASSERT( args.limit <= 1000, "Cannot retrieve more than 1000 account reputations at a time." );
-
-   const auto& acc_idx = _db.get_index< chain::account_index >().indices().get< chain::by_name >();
-   const auto& rep_idx = _db.get_index< follow::reputation_index >().indices().get< follow::by_account >();
-
-   auto acc_itr = acc_idx.lower_bound( args.account_lower_bound );
-
-   get_account_reputations_return result;
-   result.reputations.reserve( args.limit );
-
-   while( acc_itr != acc_idx.end() && result.reputations.size() < args.limit )
-   {
-      auto itr = rep_idx.find( acc_itr->name );
-      account_reputation rep;
-
-      rep.account = acc_itr->name;
-      rep.reputation = itr != rep_idx.end() ? itr->reputation : 0;
-
-      result.reputations.push_back( rep );
-      ++acc_itr;
-   }
-
-   return result;
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( follow_api_impl, get_reblogged_by )
 {
-   get_reblogged_by_return result;
-
-   const auto& post = _db.get_comment( args.author, args.permlink );
-   const auto& blog_idx = _db.get_index< follow::blog_index, follow::by_comment >();
-
-   auto itr = blog_idx.lower_bound( post.get_id() );
-
-   while( itr != blog_idx.end() && itr->comment == post.get_id() && result.accounts.size() < 2000 )
-   {
-      result.accounts.push_back( itr->account );
-      ++itr;
-   }
-
-   return result;
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( follow_api_impl, get_blog_authors )

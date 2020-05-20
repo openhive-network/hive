@@ -114,86 +114,32 @@ DEFINE_API_IMPL( tags_api_impl, get_tags_used_by_author )
 
 DEFINE_API_IMPL( tags_api_impl, get_discussion )
 {
-   auto* comment = _db.find_comment( args.author, args.permlink );
-
-   if( comment != nullptr )
-   {
-      get_discussion_return result( *comment, _db );
-      set_pending_payout( result );
-      result.active_votes = get_active_votes( get_active_votes_args( { args.author, args.permlink } ) ).votes;
-      return result;
-   }
-
-   return get_discussion_return();
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( tags_api_impl, get_content_replies )
 {
-   get_content_replies_return result;
-   const account_object* author = _db.find_account( args.author );
-   account_id_type author_id;
-   if(author == nullptr)
-      return result;
-   else
-      author_id = author->get_id();
-   const auto& by_permlink_idx = _db.get_index< chain::comment_index, chain::by_parent >();
-   auto itr = by_permlink_idx.find( boost::make_tuple( author_id, args.permlink ) );
-
-   while( itr != by_permlink_idx.end() && itr->parent_author_id == author_id && chain::to_string( itr->parent_permlink ) == args.permlink )
-   {
-      result.discussions.push_back( discussion( *itr, _db ) );
-      set_pending_payout( result.discussions.back() );
-      ++itr;
-   }
-   return result;
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( tags_api_impl, get_post_discussions_by_payout )
 {
-   args.validate();
-   auto tag = fc::to_lower( args.tag );
-   auto parent = chain::comment_id_type(); //ignored
-
-   const auto& tidx = _db.get_index< tags::tag_index, tags::by_reward_fund_net_rshares >();
-   auto tidx_itr = tidx.lower_bound( boost::make_tuple( tag, true ) );
-
-   return get_discussions( args, tag, parent, tidx, tidx_itr, args.truncate_body, []( const database_api::api_comment_object& c ){ return c.net_rshares <= 0; }, exit_default, tag_exit_default, true );
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( tags_api_impl, get_comment_discussions_by_payout )
 {
-   args.validate();
-   auto tag = fc::to_lower( args.tag );
-   auto parent = chain::comment_id_type(); //ignored
-
-   const auto& tidx = _db.get_index< tags::tag_index, tags::by_reward_fund_net_rshares >();
-   auto tidx_itr = tidx.lower_bound( boost::make_tuple( tag, false ) );
-
-   return get_discussions( args, tag, parent, tidx, tidx_itr, args.truncate_body, []( const database_api::api_comment_object& c ){ return c.net_rshares <= 0; }, exit_default, tag_exit_default, true );
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( tags_api_impl, get_discussions_by_trending )
 {
-   args.validate();
-   auto tag = fc::to_lower( args.tag );
-   auto parent = get_parent( args );
-
-   const auto& tidx = _db.get_index< tags::tag_index, tags::by_parent_trending >();
-   auto tidx_itr = tidx.lower_bound( boost::make_tuple( tag, parent, std::numeric_limits< double >::max() )  );
-
-   return get_discussions( args, tag, parent, tidx, tidx_itr, args.truncate_body, []( const database_api::api_comment_object& c ) { return c.net_rshares <= 0; } );
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( tags_api_impl, get_discussions_by_created )
 {
-   args.validate();
-   auto tag = fc::to_lower( args.tag );
-   auto parent = get_parent( args );
-
-   const auto& tidx = _db.get_index< tags::tag_index, tags::by_parent_created >();
-   auto tidx_itr = tidx.lower_bound( boost::make_tuple( tag, parent, fc::time_point_sec::maximum() )  );
-
-   return get_discussions( args, tag, parent, tidx, tidx_itr, args.truncate_body );
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( tags_api_impl, get_discussions_by_active )
@@ -248,275 +194,79 @@ DEFINE_API_IMPL( tags_api_impl, get_discussions_by_children )
 
 DEFINE_API_IMPL( tags_api_impl, get_discussions_by_hot )
 {
-   args.validate();
-   auto tag = fc::to_lower( args.tag );
-   auto parent = get_parent( args );
-
-   const auto& tidx = _db.get_index< tags::tag_index, tags::by_parent_hot >();
-   auto tidx_itr = tidx.lower_bound( boost::make_tuple( tag, parent, std::numeric_limits< double >::max() )  );
-
-   return get_discussions( args, tag, parent, tidx, tidx_itr, args.truncate_body, []( const database_api::api_comment_object& c ) { return c.net_rshares <= 0; } );
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( tags_api_impl, get_discussions_by_feed )
 {
-   args.validate();
-   FC_ASSERT( _db.has_index< follow::feed_index >(), "Node is not running the follow plugin" );
-   auto start_author = args.start_author ? *( args.start_author ) : "";
-   auto start_permlink = args.start_permlink ? *( args.start_permlink ) : "";
+    args.validate();
+    FC_ASSERT( _db.has_index< follow::feed_index >(), "Node is not running the follow plugin" );
+    auto start_author = args.start_author ? *( args.start_author ) : "";
+    auto start_permlink = args.start_permlink ? *( args.start_permlink ) : "";
 
-   const auto& account = _db.get_account( args.tag );
+    const auto& account = _db.get_account( args.tag );
 
-   const auto& c_idx = _db.get_index< follow::feed_index, follow::by_comment >();
-   const auto& f_idx = _db.get_index< follow::feed_index, follow::by_feed >();
-   auto feed_itr = f_idx.lower_bound( account.name );
+    const auto& c_idx = _db.get_index< follow::feed_index, follow::by_comment >();
+    const auto& f_idx = _db.get_index< follow::feed_index, follow::by_feed >();
+    auto feed_itr = f_idx.lower_bound( account.name );
 
-   if( start_author.size() || start_permlink.size() )
-   {
-      auto start_c = c_idx.find( boost::make_tuple( _db.get_comment( start_author, start_permlink ).get_id(), account.name ) );
-      FC_ASSERT( start_c != c_idx.end(), "Comment is not in account's feed" );
-      feed_itr = f_idx.iterator_to( *start_c );
-   }
+    if( start_author.size() || start_permlink.size() )
+    {
+        auto start_c = c_idx.find( boost::make_tuple( _db.get_comment( start_author, start_permlink ).get_id(), account.name ) );
+        FC_ASSERT( start_c != c_idx.end(), "Comment is not in account's feed" );
+        feed_itr = f_idx.iterator_to( *start_c );
+    }
 
-   get_discussions_by_feed_return result;
-   result.discussions.reserve( args.limit );
+    get_discussions_by_feed_return result;
+    result.discussions.reserve( args.limit );
 
-   while( result.discussions.size() < args.limit && feed_itr != f_idx.end() )
-   {
-      if( feed_itr->account != account.name )
-         break;
-      try
-      {
-         result.discussions.push_back( lookup_discussion( feed_itr->comment ) );
-         if( feed_itr->first_reblogged_by != account_name_type() )
-         {
-            result.discussions.back().reblogged_by = vector<account_name_type>( feed_itr->reblogged_by.begin(), feed_itr->reblogged_by.end() );
-            result.discussions.back().first_reblogged_by = feed_itr->first_reblogged_by;
-            result.discussions.back().first_reblogged_on = feed_itr->first_reblogged_on;
-         }
-      }
-      catch ( const fc::exception& e )
-      {
-         edump((e.to_detail_string()));
-      }
+    while( result.discussions.size() < args.limit && feed_itr != f_idx.end() )
+    {
+        if( feed_itr->account != account.name )
+            break;
+        try
+        {
+            result.discussions.push_back( lookup_discussion( feed_itr->comment ) );
+            if( feed_itr->first_reblogged_by != account_name_type() )
+            {
+                result.discussions.back().reblogged_by = vector<account_name_type>( feed_itr->reblogged_by.begin(), feed_itr->reblogged_by.end() );
+                result.discussions.back().first_reblogged_by = feed_itr->first_reblogged_by;
+                result.discussions.back().first_reblogged_on = feed_itr->first_reblogged_on;
+            }
+        }
+        catch ( const fc::exception& e )
+        {
+            edump((e.to_detail_string()));
+        }
 
-      ++feed_itr;
-   }
-   return result;
+        ++feed_itr;
+    }
+    return result;
 }
 
 DEFINE_API_IMPL( tags_api_impl, get_discussions_by_blog )
 {
-   args.validate();
-   FC_ASSERT( _db.has_index< follow::blog_index >(), "Node is not running the follow plugin" );
-   auto start_author = args.start_author ? *( args.start_author ) : "";
-   auto start_permlink = args.start_permlink ? *( args.start_permlink ) : "";
-
-   const auto& account = _db.get_account( args.tag );
-
-   const auto& tag_idx = _db.get_index<tags::tag_index>().indices().get<tags::by_comment>();
-
-   const auto& c_idx = _db.get_index< follow::blog_index, follow::by_comment >();
-   const auto& b_idx = _db.get_index< follow::blog_index, follow::by_blog >();
-   auto blog_itr = b_idx.lower_bound( account.name );
-
-   if( start_author.size() || start_permlink.size() )
-   {
-      auto start_c = c_idx.find( boost::make_tuple( _db.get_comment( start_author, start_permlink ).get_id(), account.name ) );
-      FC_ASSERT( start_c != c_idx.end(), "Comment is not in account's blog" );
-      blog_itr = b_idx.iterator_to( *start_c );
-   }
-
-   get_discussions_by_blog_return result;
-   result.discussions.reserve( args.limit );
-
-   while( result.discussions.size() < args.limit && blog_itr != b_idx.end() )
-   {
-      if( blog_itr->account != account.name )
-         break;
-      try
-      {
-         if( args.select_authors.size() &&
-               args.select_authors.find( blog_itr->account ) == args.select_authors.end() ) {
-            ++blog_itr;
-            continue;
-         }
-
-         if( args.select_tags.size() ) {
-            auto tag_itr = tag_idx.lower_bound( blog_itr->comment );
-
-            bool found = false;
-            while( tag_itr != tag_idx.end() && tag_itr->comment == blog_itr->comment ) {
-               if( args.select_tags.find( tag_itr->tag ) != args.select_tags.end() ) {
-                  found = true; break;
-               }
-               ++tag_itr;
-            }
-            if( !found ) {
-               ++blog_itr;
-               continue;
-            }
-         }
-
-         result.discussions.push_back( lookup_discussion( blog_itr->comment, args.truncate_body ) );
-         if( blog_itr->reblogged_on > time_point_sec() )
-         {
-            result.discussions.back().first_reblogged_on = blog_itr->reblogged_on;
-         }
-      }
-      catch ( const fc::exception& e )
-      {
-         edump((e.to_detail_string()));
-      }
-
-      ++blog_itr;
-   }
-   return result;
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( tags_api_impl, get_discussions_by_comments )
 {
-   get_discussions_by_comments_return result;
-#ifndef IS_LOW_MEM
-   args.validate();
-   FC_ASSERT( args.start_author, "Must get comments for a specific author" );
-   const account_object* start_author = _db.find_account(*( args.start_author ));
-   if( !start_author )
-      return result;
-   auto start_permlink = args.start_permlink ? *( args.start_permlink ) : "";
-
-   const auto& c_idx = _db.get_index< comment_index, by_permlink >();
-   const auto& t_idx = _db.get_index< comment_index, by_author_last_update >();
-   auto comment_itr = t_idx.lower_bound( start_author->get_id() );
-
-   if( start_permlink.size() )
-   {
-      auto start_c = c_idx.find( boost::make_tuple( start_author->get_id(), start_permlink ) );
-      FC_ASSERT( start_c != c_idx.end(), "Comment is not in account's comments" );
-      comment_itr = t_idx.iterator_to( *start_c );
-   }
-
-   result.discussions.reserve( args.limit );
-
-   while( result.discussions.size() < args.limit && comment_itr != t_idx.end() )
-   {
-      if( comment_itr->author_id != start_author->get_id() )
-         break;
-      if( comment_itr->parent_author_id != HIVE_ROOT_POST_PARENT_ID )
-      {
-         try
-         {
-            result.discussions.push_back( lookup_discussion( comment_itr->get_id() ) );
-         }
-         catch( const fc::exception& e )
-         {
-            edump( (e.to_detail_string() ) );
-         }
-      }
-
-      ++comment_itr;
-   }
-#endif
-   return result;
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( tags_api_impl, get_discussions_by_promoted )
 {
-   args.validate();
-   auto tag = fc::to_lower( args.tag );
-   auto parent = get_parent( args );
-
-   const auto& tidx = _db.get_index< tags::tag_index, tags::by_parent_promoted >();
-   auto tidx_itr = tidx.lower_bound( boost::make_tuple( tag, parent, share_type( HIVE_MAX_SHARE_SUPPLY ) )  );
-
-   return get_discussions( args, tag, parent, tidx, tidx_itr, args.truncate_body, filter_default, exit_default, []( const tags::tag_object& t ){ return t.promoted_balance == 0; }  );
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( tags_api_impl, get_replies_by_last_update )
 {
-   get_replies_by_last_update_return result;
-
-#ifndef IS_LOW_MEM
-   FC_ASSERT( args.limit <= 100 );
-   const auto& last_update_idx = _db.get_index< comment_index, by_last_update >();
-   auto itr = last_update_idx.begin();
-   account_id_type parent_author = _db.get_account( args.start_parent_author ).get_id();
-
-   if( args.start_permlink.size() )
-   {
-      const comment_object& comment = _db.get_comment( args.start_parent_author, args.start_permlink );
-      itr = last_update_idx.iterator_to( comment );
-      parent_author = comment.parent_author_id;
-   }
-   else if( args.start_parent_author != HIVE_ROOT_POST_PARENT )
-   {
-      itr = last_update_idx.lower_bound( parent_author );
-   }
-
-   result.discussions.reserve( args.limit );
-
-   while( itr != last_update_idx.end() && result.discussions.size() < args.limit && itr->parent_author_id == parent_author )
-   {
-      result.discussions.push_back( discussion( *itr, _db ) );
-      set_pending_payout( result.discussions.back() );
-      result.discussions.back().active_votes = get_active_votes( get_active_votes_args( { _db.get_account(itr->author_id).name, chain::to_string( itr->permlink ) } ) ).votes;
-      ++itr;
-   }
-
-#endif
-   return result;
+   FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( tags_api_impl, get_discussions_by_author_before_date )
 {
-   try
-   {
-      get_discussions_by_author_before_date_return result;
-#ifndef IS_LOW_MEM
-      FC_ASSERT( args.limit <= 100 );
-
-      const account_object* author = _db.find_account(args.author);
-      if( !author )
-         return result;
-
-      result.discussions.reserve( args.limit );
-      uint32_t count = 0;
-      const auto& didx = _db.get_index< comment_index, by_author_last_update >();
-
-      auto before_date = args.before_date;
-
-      if( before_date == time_point_sec() )
-         before_date = time_point_sec::maximum();
-
-      auto itr = didx.lower_bound( boost::make_tuple( author->get_id(), time_point_sec::maximum() ) );
-      if( args.start_permlink.size() )
-      {
-         const auto& comment = _db.get_comment( author->get_id(), args.start_permlink );
-         if( comment.created < before_date )
-            itr = didx.iterator_to( comment );
-      }
-
-
-      while( itr != didx.end() && itr->author_id == author->get_id() && count < args.limit )
-      {
-         if( itr->parent_author_id == HIVE_ROOT_POST_PARENT_ID )
-         {
-            result.discussions.push_back( discussion( *itr, _db ) );
-            set_pending_payout( result.discussions.back() );
-            result.discussions.back().active_votes = get_active_votes(
-               get_active_votes_args( 
-                  { _db.get_account(itr->author_id).name, chain::to_string( itr->permlink ) } 
-               ) 
-            ).votes;
-            ++count;
-         }
-         ++itr;
-      }
-
-#endif
-      return result;
-   }
-   FC_CAPTURE_AND_RETHROW( (args) )
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( tags_api_impl, get_active_votes )
