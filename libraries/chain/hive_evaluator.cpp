@@ -2605,14 +2605,7 @@ void convert_evaluator::do_apply( const convert_operation& o )
   if( _db.has_hardfork( HIVE_HARDFORK_0_16__551) )
      hive_conversion_delay = HIVE_CONVERSION_DELAY;
 
-  _db.create<convert_request_object>( [&]( convert_request_object& obj )
-  {
-      obj.owner           = o.owner;
-      obj.requestid       = o.requestid;
-      obj.amount          = o.amount;
-      obj.conversion_date = _db.head_block_time() + hive_conversion_delay;
-  });
-
+  _db.create<convert_request_object>( o.owner, o.amount, _db.head_block_time() + hive_conversion_delay, o.requestid );
 }
 
 void limit_order_create_evaluator::do_apply( const limit_order_create_operation& o )

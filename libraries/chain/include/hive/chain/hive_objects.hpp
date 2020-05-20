@@ -26,14 +26,18 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( convert_request_object );
       public:
-         CHAINBASE_DEFAULT_CONSTRUCTOR( convert_request_object )
+         template< typename Allocator >
+         convert_request_object( allocator< Allocator > a, uint64_t _id,
+            const account_name_type& _owner, const asset& _amount, const time_point_sec& _conversion_time, uint32_t _requestid )
+            : id( _id ), owner( _owner ), requestid( _requestid ), amount( _amount ), conversion_date( _conversion_time )
+         {}
 
          //amount of HBD to be converted to HIVE
          const asset& get_convert_amount() const { return amount; }
 
-         account_name_type owner;
+         account_name_type owner; //< TODO: can be replaced with account_id_type
          uint32_t          requestid = 0; ///< id set by owner, the owner,requestid pair must be unique
-         asset             amount;
+         asset             amount; //< TODO: can be replaced with HBD_asset
          time_point_sec    conversion_date; ///< at this time the feed_history_median_price * amount
    };
 
