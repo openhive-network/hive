@@ -84,16 +84,26 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( savings_withdraw_object );
       public:
-         CHAINBASE_DEFAULT_CONSTRUCTOR( savings_withdraw_object, (memo) )
+         template< typename Allocator >
+         savings_withdraw_object( allocator< Allocator > a, uint64_t _id,
+            const account_name_type& _from, const account_name_type& _to, const asset& _amount,
+            const string& _memo, const time_point_sec& _time_of_completion, uint32_t _request_id )
+            : id( _id ), from( _from ), to( _to ), memo( a ), request_id( _request_id ),
+            amount( _amount ), complete( _time_of_completion )
+         {
+#ifndef IS_LOW_MEM
+            from_string( memo, _memo );
+#endif
+         }
 
          //amount of savings to withdraw (HIVE or HBD)
          const asset& get_withdraw_amount() const { return amount; }
 
-         account_name_type from;
-         account_name_type to;
+         account_name_type from; //< TODO: can be replaced with account_id_type
+         account_name_type to; //< TODO: can be replaced with account_id_type
          shared_string     memo;
          uint32_t          request_id = 0;
-         asset             amount;
+         asset             amount; //can be expressed in HIVE or HBD
          time_point_sec    complete;
    };
 
