@@ -1054,18 +1054,7 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
       _db.adjust_balance( from_account, -hive_spent );
       _db.adjust_balance( from_account, -hbd_spent );
 
-      _db.create<escrow_object>([&]( escrow_object& esc )
-      {
-         esc.escrow_id              = o.escrow_id;
-         esc.from                   = o.from;
-         esc.to                     = o.to;
-         esc.agent                  = o.agent;
-         esc.ratification_deadline  = o.ratification_deadline;
-         esc.escrow_expiration      = o.escrow_expiration;
-         esc.hbd_balance            = o.hbd_amount;
-         esc.hive_balance           = o.hive_amount;
-         esc.pending_fee            = o.fee;
-      });
+      _db.create<escrow_object>( o.from, o.to, o.agent, o.hive_amount, o.hbd_amount, o.fee, o.ratification_deadline, o.escrow_expiration, o.escrow_id );
    }
    FC_CAPTURE_AND_RETHROW( (o) )
 }
