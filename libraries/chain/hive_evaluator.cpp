@@ -2585,48 +2585,36 @@ void feed_publish_evaluator::do_apply( const feed_publish_operation& o )
 
 void convert_evaluator::do_apply( const convert_operation& o )
 {
-  _db.adjust_balance( o.owner, -o.amount );
+   _db.adjust_balance( o.owner, -o.amount );
 
-  const auto& fhistory = _db.get_feed_history();
-  FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot convert HBD because there is no price feed." );
+   const auto& fhistory = _db.get_feed_history();
+   FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot convert HBD because there is no price feed." );
 
-  auto hive_conversion_delay = HIVE_CONVERSION_DELAY_PRE_HF_16;
-  if( _db.has_hardfork( HIVE_HARDFORK_0_16__551) )
-     hive_conversion_delay = HIVE_CONVERSION_DELAY;
+   auto hive_conversion_delay = HIVE_CONVERSION_DELAY_PRE_HF_16;
+   if( _db.has_hardfork( HIVE_HARDFORK_0_16__551) )
+      hive_conversion_delay = HIVE_CONVERSION_DELAY;
 
-  _db.create<convert_request_object>( o.owner, o.amount, _db.head_block_time() + hive_conversion_delay, o.requestid );
+   _db.create<convert_request_object>( o.owner, o.amount, _db.head_block_time() + hive_conversion_delay, o.requestid );
 }
 
 void limit_order_create_evaluator::do_apply( const limit_order_create_operation& o )
 {
    FC_ASSERT( o.expiration > _db.head_block_time(), "Limit order has to expire after head block time." );
 
-   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449) )
+   time_point_sec expiration = o.expiration;
+   FC_TODO( "Check past order expirations and cleanup after HF 20" )
+   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449 ) )
    {
       FC_ASSERT( o.expiration <= _db.head_block_time() + HIVE_MAX_LIMIT_ORDER_EXPIRATION, "Limit Order Expiration must not be more than 28 days in the future" );
    }
+   else
+   {
+      uint32_t rand_offset = _db.head_block_id()._hash[ 4 ] % 86400;
+      expiration = std::min( o.expiration, fc::time_point_sec( HIVE_HARDFORK_0_20_TIME + HIVE_MAX_LIMIT_ORDER_EXPIRATION + rand_offset ) );
+   }
 
    _db.adjust_balance( o.owner, -o.amount_to_sell );
-
-   const auto& order = _db.create<limit_order_object>( [&]( limit_order_object& obj )
-   {
-       obj.created    = _db.head_block_time();
-       obj.seller     = o.owner;
-       obj.orderid    = o.orderid;
-       obj.for_sale   = o.amount_to_sell.amount;
-       obj.sell_price = o.get_price();
-
-       FC_TODO( "Check past order expirations and cleanup after HF 20" )
-       if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449 ) )
-       {
-          obj.expiration = o.expiration;
-       }
-       else
-       {
-          uint32_t rand_offset = _db.head_block_id()._hash[4] % 86400;
-          obj.expiration = std::min( o.expiration, fc::time_point_sec( HIVE_HARDFORK_0_20_TIME + HIVE_MAX_LIMIT_ORDER_EXPIRATION + rand_offset ) );
-       }
-   });
+   const auto& order = _db.create<limit_order_object>( o.owner, o.amount_to_sell, o.get_price(), _db.head_block_time(), expiration, o.orderid );
 
    bool filled = _db.apply_order( order );
 
@@ -2637,31 +2625,19 @@ void limit_order_create2_evaluator::do_apply( const limit_order_create2_operatio
 {
    FC_ASSERT( o.expiration > _db.head_block_time(), "Limit order has to expire after head block time." );
 
-   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449) )
+   time_point_sec expiration = o.expiration;
+   FC_TODO( "Check past order expirations and cleanup after HF 20" )
+   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449 ) )
    {
       FC_ASSERT( o.expiration <= _db.head_block_time() + HIVE_MAX_LIMIT_ORDER_EXPIRATION, "Limit Order Expiration must not be more than 28 days in the future" );
    }
+   else
+   {
+      expiration = std::min( o.expiration, fc::time_point_sec( HIVE_HARDFORK_0_20_TIME + HIVE_MAX_LIMIT_ORDER_EXPIRATION ) );
+   }
 
    _db.adjust_balance( o.owner, -o.amount_to_sell );
-
-   const auto& order = _db.create<limit_order_object>( [&]( limit_order_object& obj )
-   {
-       obj.created    = _db.head_block_time();
-       obj.seller     = o.owner;
-       obj.orderid    = o.orderid;
-       obj.for_sale   = o.amount_to_sell.amount;
-       obj.sell_price = o.exchange_rate;
-
-       FC_TODO( "Check past order expirations and cleanup after HF 20" )
-       if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449 ) )
-       {
-          obj.expiration = o.expiration;
-       }
-       else
-       {
-          obj.expiration = std::min( o.expiration, fc::time_point_sec( HIVE_HARDFORK_0_20_TIME + HIVE_MAX_LIMIT_ORDER_EXPIRATION ) );
-       }
-   });
+   const auto& order = _db.create<limit_order_object>( o.owner, o.amount_to_sell, o.exchange_rate, _db.head_block_time(), expiration, o.orderid );
 
    bool filled = _db.apply_order( order );
 
