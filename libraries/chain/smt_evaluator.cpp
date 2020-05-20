@@ -308,13 +308,7 @@ void smt_contribute_evaluator::do_apply( const smt_contribute_operation& o )
 
       _db.adjust_balance( o.contributor, -o.contribution );
 
-      _db.create< smt_contribution_object >( [&] ( smt_contribution_object& obj )
-      {
-         obj.contributor = o.contributor;
-         obj.symbol = o.symbol;
-         obj.contribution_id = o.contribution_id;
-         obj.contribution = o.contribution;
-      } );
+      _db.create< smt_contribution_object >( o.contributor, o.contribution, o.symbol, o.contribution_id );
 
       _db.modify( *token_ico, [&]( smt_ico_object& ico )
       {
