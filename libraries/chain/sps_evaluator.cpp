@@ -24,8 +24,13 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
           as a time for processed next block).
       */
       FC_ASSERT(o.end_date > _db.head_block_time(), "Can't create inactive proposals...");
-
       asset fee_sbd( STEEM_TREASURY_FEE, SBD_SYMBOL );
+      uint32_t proposal_run_time = o.end_date.sec_since_epoch() - o.start_date.sec_since_epoch();
+
+      if (proposal_run_time > STEEM_PROPOSAL_FEE_INCREASE_DAYS_SEC) {
+         uint32_t extra_days = (proposal_run_time / STEEM_ONE_DAY_SECONDS) - STEEM_PROPOSAL_FEE_INCREASE_DAYS;
+         fee_sbd += asset(STEEM_PROPOSAL_FEE_INCREASE_AMOUNT * extra_days, SBD_SYMBOL);
+      }
 
       //treasury account must exist, also we need it later to change its balance
       const auto& treasury_account =_db.get_treasury();

@@ -326,6 +326,8 @@
 #define STEEM_BENEFICIARY_LIMIT              (128)
 #define STEEM_COMMENT_TITLE_LIMIT            (256)
 
+#define STEEM_ONE_DAY_SECONDS             (60*60*24) // One day in seconds
+
 /**
  *  Reserved Account IDs with special meaning
  */
@@ -356,6 +358,9 @@
 #define STEEM_PROPOSAL_SUBJECT_MAX_LENGTH          80
 /// Max number of IDs passed at once to the update_proposal_voter_operation or remove_proposal_operation.
 #define STEEM_PROPOSAL_MAX_IDS_NUMBER              5
+#define STEEM_PROPOSAL_FEE_INCREASE_DAYS             60
+#define STEEM_PROPOSAL_FEE_INCREASE_DAYS_SEC             (60*60*24*STEEM_PROPOSAL_FEE_INCREASE_DAYS) /// 60 days
+#define STEEM_PROPOSAL_FEE_INCREASE_AMOUNT             (1 * STEEM_BLOCKCHAIN_PRECISION)
 
 #ifdef STEEM_ENABLE_SMT
 
