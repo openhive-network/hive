@@ -264,6 +264,11 @@ struct get_impacted_account_visitor
       _impacted.insert( op.receiver );
    }
 
+   void operator()( const update_proposal_operation& op )
+   {
+      _impacted.insert( op.creator );
+   }
+
    void operator()( const update_proposal_votes_operation& op )
    {
       _impacted.insert( op.voter );

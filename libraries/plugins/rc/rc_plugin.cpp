@@ -784,6 +784,11 @@ struct pre_apply_operation_visitor
       regenerate( op.receiver );
    }
 
+   void operator()( const update_proposal_operation& op )const
+   {
+      regenerate( op.creator );
+   }
+
    void operator()( const update_proposal_votes_operation& op )const
    {
       regenerate( op.voter );

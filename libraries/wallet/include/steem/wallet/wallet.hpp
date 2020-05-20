@@ -1086,6 +1086,20 @@ class wallet_api
                            string url,
                            bool broadcast );
       /**
+       * Update worker proposal
+       * @param creator    - the account that creates the proposal,
+       * @param daily_pay  - the amount of HBD that is being requested to be paid out daily,
+       * @param subject    - briefly description of proposal of its title,
+       * @param permlink        - link to page with description of proposal.
+       */
+      condenser_api::legacy_signed_transaction update_proposal(
+                           int64_t proposal_id,
+                           account_name_type creator,
+                           condenser_api::legacy_asset daily_pay,
+                           string subject,
+                           string url,
+                           bool broadcast );
+      /**
        * Update existing worker proposal(s)
        * @param voter     - the account that votes,
        * @param proposals - array with proposal ids,
@@ -1243,6 +1257,7 @@ FC_API( steem::wallet::wallet_api,
 
         ///worker proposal api
         (create_proposal)
+        (update_proposal)
         (update_proposal_votes)
         (list_proposals)
         (find_proposals)

@@ -356,6 +356,14 @@ struct count_operation_visitor
       execution_time_count += _e.create_proposal_operation_exec_time;
    }
 
+   void operator()( const update_proposal_operation& op ) const
+   {
+      state_bytes_count += _w.proposal_object_base_size;
+      state_bytes_count += sizeof( op.subject );
+      state_bytes_count += sizeof( op.permlink );
+      execution_time_count += _e.update_proposal_operation_exec_time;
+   }
+
    void operator()( const update_proposal_votes_operation& op ) const
    {
       state_bytes_count += _w.proposal_vote_object_base_size;

@@ -20,7 +20,28 @@ struct create_proposal_operation : public base_operation
 
    string subject;
 
-   /// Given link shall be a valid permlink. Must be posted by creator or at least receiver.
+   /// Given link shall be a valid permlink. Must be posted by creator the receiver.
+   string permlink;
+
+   extensions_type extensions;
+
+   void validate()const;
+
+   void get_required_active_authorities( flat_set<account_name_type>& a )const { a.insert( creator ); }
+};
+
+struct update_proposal_operation : public base_operation
+{
+   int64_t proposal_id;
+
+   account_name_type creator;
+
+   /// Amount of SBDs to be daily paid to the `receiver` account, if updated, has to be lower or equal to the current amount
+   asset daily_pay;
+
+   string subject;
+
+   /// Given link shall be a valid permlink. Must be posted by creator or the receiver.
    string permlink;
 
    extensions_type extensions;
@@ -131,6 +152,7 @@ namespace fc {
 }
 
 FC_REFLECT( steem::protocol::create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink)(extensions) )
+FC_REFLECT( steem::protocol::update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink)(extensions) )
 FC_REFLECT( steem::protocol::update_proposal_votes_operation, (voter)(proposal_ids)(approve)(extensions) )
 FC_REFLECT( steem::protocol::remove_proposal_operation, (proposal_owner)(proposal_ids)(extensions) )
 

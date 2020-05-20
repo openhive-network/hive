@@ -64,6 +64,7 @@ STEEM_DEFINE_EVALUATOR( smt_create )
 STEEM_DEFINE_EVALUATOR( smt_contribute )
 #endif
 STEEM_DEFINE_EVALUATOR( create_proposal )
+STEEM_DEFINE_EVALUATOR( update_proposal )
 STEEM_DEFINE_EVALUATOR( update_proposal_votes )
 STEEM_DEFINE_EVALUATOR( remove_proposal )
 

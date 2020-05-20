@@ -68,6 +68,35 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
    FC_CAPTURE_AND_RETHROW( (o) )
 }
 
+void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
+{
+   try
+   {
+      FC_ASSERT( _db.has_hardfork( STEEM_HARDFORK_0_24 ), "The update proposal functionality not enabled until hardfork ${hf}", ("hf", STEEM_HARDFORK_0_24) );
+
+      const auto& proposal = _db.get< proposal_object, by_proposal_id >( o.proposal_id );
+
+      FC_ASSERT(o.creator == proposal.creator, "Cannot edit a proposal you are not the creator of");
+
+      const auto* commentObject = _db.find_comment(proposal.creator, o.permlink);
+      if(commentObject == nullptr)
+      {
+         commentObject = _db.find_comment(proposal.receiver, o.permlink);
+         FC_ASSERT(commentObject != nullptr, "Proposal permlink must point to the article posted by creator or the receiver");
+      }
+
+      FC_ASSERT(o.daily_pay <= proposal.daily_pay, "You cannot increase the daily pay");
+
+      _db.modify( proposal, [&]( proposal_object& p )
+      {
+         p.daily_pay = o.daily_pay;
+         p.subject = o.subject.c_str();
+         p.permlink = o.permlink.c_str();
+      });
+   }
+   FC_CAPTURE_AND_RETHROW( (o) )
+}
+
 void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_operation& o )
 {
    try

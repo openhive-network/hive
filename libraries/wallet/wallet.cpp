@@ -2432,6 +2432,30 @@ condenser_api::legacy_signed_transaction wallet_api::follow( string follower, st
       return my->sign_transaction( trx, broadcast );
    }
 
+   condenser_api::legacy_signed_transaction  wallet_api::update_proposal(
+      int64_t proposal_id,
+      account_name_type creator,
+      condenser_api::legacy_asset daily_pay,
+      string subject,
+      string permlink,
+      bool broadcast )
+   {
+      FC_ASSERT( !is_locked() );
+
+      update_proposal_operation up;
+
+      up.proposal_id = proposal_id;
+      up.creator = creator;
+      up.daily_pay = daily_pay;
+      up.subject = subject;
+      up.permlink = permlink;
+
+      signed_transaction trx;
+      trx.operations.push_back( up );
+      trx.validate();
+      return my->sign_transaction( trx, broadcast );
+   }
+
    condenser_api::legacy_signed_transaction  wallet_api::update_proposal_votes(
       account_name_type voter,
       flat_set< int64_t > proposals,
