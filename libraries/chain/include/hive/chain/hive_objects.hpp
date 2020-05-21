@@ -246,14 +246,22 @@ namespace hive { namespace chain {
    {
       CHAINBASE_OBJECT( reward_fund_object );
       public:
-         CHAINBASE_DEFAULT_CONSTRUCTOR( reward_fund_object )
+         template< typename Allocator >
+         reward_fund_object( allocator< Allocator > a, uint64_t _id,
+            const string& _name, const asset& _balance, const uint128_t& _claims, const time_point_sec& _creation_time,
+            const uint128_t& _content_constant, uint16_t _percent_curation, uint16_t _percent_content, 
+            protocol::curve_id _curation_reward_curve, protocol::curve_id _author_reward_curve )
+            : id( _id ), name( _name ), reward_balance( _balance ), recent_claims( _claims ), last_update( _creation_time ),
+            content_constant( _content_constant ), percent_curation_rewards( _percent_curation ), percent_content_rewards( _percent_content ),
+            author_reward_curve( _author_reward_curve ), curation_reward_curve( _curation_reward_curve )
+         {}
 
          //amount of HIVE in reward fund
          const asset& get_reward_balance() const { return reward_balance; }
 
          reward_fund_name_type   name;
          asset                   reward_balance = asset( 0, HIVE_SYMBOL );
-         fc::uint128_t           recent_claims = 0;
+         uint128_t               recent_claims = 0;
          time_point_sec          last_update;
          uint128_t               content_constant = 0;
          uint16_t                percent_curation_rewards = 0;

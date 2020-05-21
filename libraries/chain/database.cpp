@@ -5690,20 +5690,13 @@ void database::apply_hardfork( uint32_t hardfork )
 
             const auto& gpo = get_dynamic_global_properties();
 
-            auto& post_rf = create< reward_fund_object >( [&]( reward_fund_object& rfo )
-            {
-               rfo.name = HIVE_POST_REWARD_FUND_NAME;
-               rfo.last_update = head_block_time();
-               rfo.content_constant = HIVE_CONTENT_CONSTANT_HF0;
-               rfo.percent_curation_rewards = HIVE_1_PERCENT * 25;
-               rfo.percent_content_rewards = HIVE_100_PERCENT;
-               rfo.reward_balance = gpo.get_total_reward_fund_hive();
-#ifndef IS_TEST_NET
-               rfo.recent_claims = HIVE_HF_17_RECENT_CLAIMS;
+            auto& post_rf = create< reward_fund_object >( HIVE_POST_REWARD_FUND_NAME, gpo.get_total_reward_fund_hive(),
+#ifdef IS_TEST_NET
+               0,
+#else
+               HIVE_HF_17_RECENT_CLAIMS,
 #endif
-               rfo.author_reward_curve = curve_id::quadratic;
-               rfo.curation_reward_curve = curve_id::bounded_curation;
-            });
+               head_block_time(), HIVE_CONTENT_CONSTANT_HF0, HIVE_1_PERCENT * 25, HIVE_100_PERCENT, curve_id::bounded_curation, curve_id::quadratic );
 
             // As a shortcut in payout processing, we use the id as an array index.
             // The IDs must be assigned this way. The assertion is a dummy check to ensure this happens.
