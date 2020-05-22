@@ -88,10 +88,11 @@ class HiveNode(object):
     self.hived_lock.release()
 
 class HiveNodeInScreen(object):
-  def __init__(self, hive_executable, working_dir, config_src_path, run_using_existing_data = False):
+  def __init__(self, hive_executable, working_dir, config_src_path, run_using_existing_data = False, node_is_steem = False):
     self.hive_executable = hive_executable
     self.working_dir = working_dir
     self.config_src_path = config_src_path
+    self.node_is_steem = node_is_steem
 
     # usefull when we want to do a replay
     if not run_using_existing_data:
@@ -139,7 +140,7 @@ class HiveNodeInScreen(object):
 
   def run_hive_node(self, additional_params = [], wait_for_blocks = True):
     from .common import detect_process_by_name, save_screen_cfg, save_pid_file, wait_n_blocks, wait_for_string_in_file, kill_process
-    detect_process_by_name("hive", self.ip_address, self.port)
+    detect_process_by_name("hive" if not self.node_is_steem else "steem", self.ip_address, self.port)
 
     logger.info("*** START NODE at {0}:{1} in {2}".format(self.ip_address, self.port, self.working_dir))
 
@@ -188,14 +189,14 @@ class HiveNodeInScreen(object):
       logger.info("Node at {0}:{1} in {2} is up and running...".format(self.ip_address, self.port, self.working_dir))
     except Exception as ex:
       logger.error("Exception during hived run: {0}".format(ex))
-      kill_process(self.pid_file_name, "hive", self.ip_address, self.port)
+      kill_process(self.pid_file_name, "hive" if not self.node_is_steem else "steem", self.ip_address, self.port)
       self.node_running = False
 
 
   def stop_hive_node(self):
     from .common import kill_process
     logger.info("Stopping node at {0}:{1}".format(self.ip_address, self.port))
-    kill_process(self.pid_file_name, "hive", self.ip_address, self.port)
+    kill_process(self.pid_file_name, "hive" if not self.node_is_steem else "steem", self.ip_address, self.port)
     self.node_running = False
 
   def __enter__(self):
