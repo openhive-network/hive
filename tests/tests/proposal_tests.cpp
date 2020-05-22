@@ -107,11 +107,11 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
       auto voter_00 = "carol";
       auto voter_01 = "dan";
 
-      vest(STEEM_INIT_MINER_NAME, voter_00, ASSET( "1.000 TESTS" ));
-      vest(STEEM_INIT_MINER_NAME, voter_01, ASSET( "3.100 TESTS" ));
+      vest(HIVE_INIT_MINER_NAME, voter_00, ASSET( "1.000 TESTS" ));
+      vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "3.100 TESTS" ));
 
-      //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
-      start_date += fc::seconds( STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+      //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
+      start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
       generate_blocks( start_date );
 
       start_date = db->head_block_time();
@@ -165,13 +165,13 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
       }
 
       //skipping interest generating is necessary
-      transfer( STEEM_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ));
+      transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ));
       generate_block( 5 );
-      transfer( STEEM_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+      transfer( HIVE_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 TBD" ) );
       generate_block( 5 );
 
       const auto& dgpo = db->get_dynamic_global_properties();
-      auto old_sbd_supply = dgpo.current_sbd_supply;
+      auto old_sbd_supply = dgpo.current_hbd_supply;
 
 
       const account_object& _creator = db->get_account( creator );
@@ -182,20 +182,20 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
       {
          BOOST_TEST_MESSAGE( "---Payment---" );
 
-         auto before_creator_sbd_balance = _creator.sbd_balance;
-         auto before_receiver_sbd_balance = _receiver.sbd_balance;
-         auto before_voter_01_sbd_balance = _voter_01.sbd_balance;
-         auto before_treasury_sbd_balance = _treasury.sbd_balance;
+         auto before_creator_sbd_balance = _creator.hbd_balance;
+         auto before_receiver_sbd_balance = _receiver.hbd_balance;
+         auto before_voter_01_sbd_balance = _voter_01.hbd_balance;
+         auto before_treasury_sbd_balance = _treasury.hbd_balance;
 
          auto next_block = get_nr_blocks_until_maintenance_block();
          generate_blocks( next_block - 1 );
          generate_blocks( 1 );
 
-         auto treasury_sbd_inflation = dgpo.current_sbd_supply - old_sbd_supply;
-         auto after_creator_sbd_balance = _creator.sbd_balance;
-         auto after_receiver_sbd_balance = _receiver.sbd_balance;
-         auto after_voter_01_sbd_balance = _voter_01.sbd_balance;
-         auto after_treasury_sbd_balance = _treasury.sbd_balance;
+         auto treasury_sbd_inflation = dgpo.current_hbd_supply - old_sbd_supply;
+         auto after_creator_sbd_balance = _creator.hbd_balance;
+         auto after_receiver_sbd_balance = _receiver.hbd_balance;
+         auto after_voter_01_sbd_balance = _voter_01.hbd_balance;
+         auto after_treasury_sbd_balance = _treasury.hbd_balance;
 
          BOOST_REQUIRE( before_creator_sbd_balance == after_creator_sbd_balance );
          BOOST_REQUIRE( before_receiver_sbd_balance == after_receiver_sbd_balance - hourly_pay );
