@@ -3363,6 +3363,7 @@ void database::initialize_evaluators()
 #endif
 
    _my->_evaluator_registry.register_evaluator< create_proposal_evaluator                >();
+   _my->_evaluator_registry.register_evaluator< update_proposal_evaluator                >();
    _my->_evaluator_registry.register_evaluator< update_proposal_votes_evaluator          >();
    _my->_evaluator_registry.register_evaluator< remove_proposal_evaluator                >();
 

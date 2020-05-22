@@ -324,6 +324,8 @@
 #define HIVE_BENEFICIARY_LIMIT                (128)
 #define HIVE_COMMENT_TITLE_LIMIT              (256)
 
+#define HIVE_ONE_DAY_SECONDS                  (60*60*24) // One day in seconds
+
 /**
  *  Reserved Account IDs with special meaning
  */
@@ -354,6 +356,9 @@
 #define HIVE_PROPOSAL_SUBJECT_MAX_LENGTH           80
 /// Max number of IDs passed at once to the update_proposal_voter_operation or remove_proposal_operation.
 #define HIVE_PROPOSAL_MAX_IDS_NUMBER               5
+#define HIVE_PROPOSAL_FEE_INCREASE_DAYS            60
+#define HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC        (60*60*24*HIVE_PROPOSAL_FEE_INCREASE_DAYS) /// 60 days
+#define HIVE_PROPOSAL_FEE_INCREASE_AMOUNT          (1 * HIVE_BLOCKCHAIN_PRECISION)
 
 #ifdef HIVE_ENABLE_SMT
 

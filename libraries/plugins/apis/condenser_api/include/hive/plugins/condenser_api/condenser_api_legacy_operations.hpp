@@ -71,6 +71,7 @@ namespace hive { namespace plugins { namespace condenser_api {
    typedef shutdown_witness_operation             legacy_shutdown_witness_operation;
    typedef hardfork_operation                     legacy_hardfork_operation;
    typedef comment_payout_update_operation        legacy_comment_payout_update_operation;
+   typedef update_proposal_operation        legacy_update_proposal_operation;
    typedef update_proposal_votes_operation        legacy_update_proposal_votes_operation;
    typedef remove_proposal_operation              legacy_remove_proposal_operation;
    typedef clear_null_account_balance_operation   legacy_clear_null_account_balance_operation;
@@ -1184,6 +1185,7 @@ namespace hive { namespace plugins { namespace condenser_api {
             legacy_witness_set_properties_operation,
             legacy_account_update2_operation,
             legacy_create_proposal_operation,
+            legacy_update_proposal_operation,
             legacy_update_proposal_votes_operation,
             legacy_remove_proposal_operation,
             legacy_fill_convert_request_operation,
@@ -1246,6 +1248,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       bool operator()( const shutdown_witness_operation& op )const               { l_op = op; return true; }
       bool operator()( const hardfork_operation& op )const                       { l_op = op; return true; }
       bool operator()( const comment_payout_update_operation& op )const          { l_op = op; return true; }
+      bool operator()( const update_proposal_operation& op )const          { l_op = op; return true; }
       bool operator()( const update_proposal_votes_operation& op )const          { l_op = op; return true; }
       bool operator()( const remove_proposal_operation& op )const                { l_op = op; return true; }
       bool operator()( const clear_null_account_balance_operation& op )const     { l_op = op; return true; }
