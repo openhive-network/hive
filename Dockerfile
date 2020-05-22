@@ -2,7 +2,7 @@
 
 ARG LOW_MEMORY_NODE=ON
 ARG CLEAR_VOTES=ON
-ARG BUILD_STEEM_TESTNET=OFF
+ARG BUILD_HIVE_TESTNET=OFF
 ARG ENABLE_MIRA=OFF
 FROM registry.gitlab.syncad.com/hive/hive/hive-baseenv:latest AS builder
 
@@ -91,17 +91,17 @@ FROM builder AS general_node_builder
 
 ARG LOW_MEMORY_NODE
 ARG CLEAR_VOTES
-ARG BUILD_STEEM_TESTNET
+ARG BUILD_HIVE_TESTNET
 ARG ENABLE_MIRA
 
 ENV LOW_MEMORY_NODE=${LOW_MEMORY_NODE}
 ENV CLEAR_VOTES=${CLEAR_VOTES}
-ENV BUILD_STEEM_TESTNET=${BUILD_STEEM_TESTNET}
+ENV BUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}
 ENV ENABLE_MIRA=${ENABLE_MIRA}
 
 RUN \
   cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_STEEM_TESTNET} ${ENABLE_MIRA}
+    ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${ENABLE_MIRA}
 
 ###################################################################################################
 ##                                    GENERAL NODE CONFIGURATION                                 ##
@@ -140,13 +140,20 @@ ARG ENABLE_MIRA=OFF
 
 ENV LOW_MEMORY_NODE=${LOW_MEMORY_NODE}
 ENV CLEAR_VOTES=${CLEAR_VOTES}
-ENV BUILD_STEEM_TESTNET="ON"
+ENV BUILD_HIVE_TESTNET="ON"
 ENV ENABLE_MIRA=${ENABLE_MIRA}
 
 RUN \
   cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_STEEM_TESTNET} ${ENABLE_MIRA} && \
-    cd build/tests && \
-    ./chain_test && \
-    ./plugin_test 
+      ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${ENABLE_MIRA} && \
+      apt-get update && \
+      apt-get install -y screen && \
+      pip3 install -U secp256k1prp && \
+      git clone https://gitlab.syncad.com/hive/beem.git && \
+      cd beem && \
+        git checkout dk-expiration-fix-for-debug-plugin && \
+        python3 setup.py build && \
+        python3 setup.py install --user && \
+  cd ${src_dir} && \
+        ${src_dir}/ciscripts/run_regressions.sh
 

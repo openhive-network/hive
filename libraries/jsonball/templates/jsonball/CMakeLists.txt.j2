@@ -1,16 +1,16 @@
 
-add_library( steem_jsonball
+add_library( hive_jsonball
    mm_ticks.cpp
    rc_params.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/include/steem/jsonball/jsonball.hpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/include/hive/jsonball/jsonball.hpp
 )
 
-target_link_libraries( steem_jsonball fc )
+target_link_libraries( hive_jsonball fc )
 
-target_include_directories( steem_jsonball PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
+target_include_directories( hive_jsonball PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
 INSTALL( TARGETS
-   steem_jsonball
+   hive_jsonball
 
    RUNTIME DESTINATION bin
    LIBRARY DESTINATION lib

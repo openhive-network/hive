@@ -1,9 +1,9 @@
 
-#include <steem/schema/schema.hpp>
+#include <hive/schema/schema.hpp>
 
 #include <set>
 
-namespace steem { namespace schema {
+namespace hive { namespace schema {
 
 namespace detail {
 

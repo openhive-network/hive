@@ -1,27 +1,27 @@
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
-#include <steem/plugins/market_history/market_history_plugin.hpp>
+#include <hive/plugins/market_history/market_history_plugin.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/index.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/index.hpp>
 
 #include <fc/io/json.hpp>
 
 #define MH_BUCKET_SIZE "market-history-bucket-size"
 #define MH_BUCKETS_PER_SIZE "market-history-buckets-per-size"
 
-namespace steem { namespace plugins { namespace market_history {
+namespace hive { namespace plugins { namespace market_history {
 
 namespace detail {
 
-using steem::protocol::fill_order_operation;
+using hive::protocol::fill_order_operation;
 
 class market_history_plugin_impl
 {
    public:
       market_history_plugin_impl() :
-         _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ) {}
+         _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
       virtual ~market_history_plugin_impl() {}
 
       /**
@@ -68,62 +68,62 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
                b.open = open;
                b.seconds = bucket;
 
-               b.steem.fill( ( op.open_pays.symbol == STEEM_SYMBOL ) ? op.open_pays.amount : op.current_pays.amount );
-#ifdef STEEM_ENABLE_SMT
-                  b.symbol = ( op.open_pays.symbol == STEEM_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
+               b.hive.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.open_pays.amount : op.current_pays.amount );
+#ifdef HIVE_ENABLE_SMT
+                  b.symbol = ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
 #endif
-                  b.non_steem.fill( ( op.open_pays.symbol == STEEM_SYMBOL ) ? op.current_pays.amount : op.open_pays.amount );
+                  b.non_hive.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.amount : op.open_pays.amount );
             });
          }
          else
          {
             _db.modify( *itr, [&]( bucket_object& b )
             {
-#ifdef STEEM_ENABLE_SMT
-               b.symbol = ( op.open_pays.symbol == STEEM_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
+#ifdef HIVE_ENABLE_SMT
+               b.symbol = ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
 #endif
-               if( op.open_pays.symbol == STEEM_SYMBOL )
+               if( op.open_pays.symbol == HIVE_SYMBOL )
                {
-                  b.steem.volume += op.open_pays.amount;
-                  b.steem.close = op.open_pays.amount;
+                  b.hive.volume += op.open_pays.amount;
+                  b.hive.close = op.open_pays.amount;
 
-                  b.non_steem.volume += op.current_pays.amount;
-                  b.non_steem.close = op.current_pays.amount;
+                  b.non_hive.volume += op.current_pays.amount;
+                  b.non_hive.close = op.current_pays.amount;
 
                   if( b.high() < price( op.current_pays, op.open_pays ) )
                   {
-                     b.steem.high = op.open_pays.amount;
+                     b.hive.high = op.open_pays.amount;
 
-                     b.non_steem.high = op.current_pays.amount;
+                     b.non_hive.high = op.current_pays.amount;
                   }
 
                   if( b.low() > price( op.current_pays, op.open_pays ) )
                   {
-                     b.steem.low = op.open_pays.amount;
+                     b.hive.low = op.open_pays.amount;
 
-                     b.non_steem.low = op.current_pays.amount;
+                     b.non_hive.low = op.current_pays.amount;
                   }
                }
                else
                {
-                  b.steem.volume += op.current_pays.amount;
-                  b.steem.close = op.current_pays.amount;
+                  b.hive.volume += op.current_pays.amount;
+                  b.hive.close = op.current_pays.amount;
 
-                  b.non_steem.volume += op.open_pays.amount;
-                  b.non_steem.close = op.open_pays.amount;
+                  b.non_hive.volume += op.open_pays.amount;
+                  b.non_hive.close = op.open_pays.amount;
 
                   if( b.high() < price( op.open_pays, op.current_pays ) )
                   {
-                     b.steem.high = op.current_pays.amount;
+                     b.hive.high = op.current_pays.amount;
 
-                     b.non_steem.high = op.open_pays.amount;
+                     b.non_hive.high = op.open_pays.amount;
                   }
 
                   if( b.low() > price( op.open_pays, op.current_pays ) )
                   {
-                     b.steem.low = op.current_pays.amount;
+                     b.hive.low = op.current_pays.amount;
 
-                     b.non_steem.low = op.open_pays.amount;
+                     b.non_hive.low = op.open_pays.amount;
                   }
                }
             });
@@ -171,8 +171,8 @@ void market_history_plugin::plugin_initialize( const boost::program_options::var
       my = std::make_unique< detail::market_history_plugin_impl >();
 
       my->_post_apply_operation_conn = my->_db.add_post_apply_operation_handler( [&]( const operation_notification& note ){ my->on_post_apply_operation( note ); }, *this, 0 );
-      STEEM_ADD_PLUGIN_INDEX(my->_db, bucket_index);
-      STEEM_ADD_PLUGIN_INDEX(my->_db, order_history_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, bucket_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, order_history_index);
 
       fc::mutable_variant_object state_opts;
 
@@ -212,4 +212,4 @@ uint32_t market_history_plugin::get_max_history_per_bucket() const
    return my->_maximum_history_per_bucket_size;
 }
 
-} } } // steem::plugins::market_history
+} } } // hive::plugins::market_history

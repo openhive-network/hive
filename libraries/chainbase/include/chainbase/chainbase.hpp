@@ -44,6 +44,23 @@
 
 namespace helpers
 {
+   struct environment_extension_resources
+   {
+      using t_plugins = std::set< std::string >;
+      using logger_type = std::function< void( const std::string& ) >;
+
+      const std::string&   version_info;
+      const t_plugins      plugins;
+
+      logger_type          logger;
+
+      environment_extension_resources( const std::string& _version_info, t_plugins&& _plugins, logger_type&& _logger )
+                                 : version_info( _version_info ), plugins( _plugins ), logger( _logger )
+      {
+      }
+
+   };
+
    struct index_statistic_info
    {
       std::string _value_type_name;
@@ -124,6 +141,7 @@ namespace chainbase {
    struct object
    {
       typedef oid<Derived> id_type;
+      typedef oid_ref<Derived> id_ref_type;
       static const uint16_t type_id = TypeNumber;
 
    };
@@ -140,9 +158,56 @@ namespace chainbase {
    #define CHAINBASE_SET_INDEX_TYPE( OBJECT_TYPE, INDEX_TYPE )  \
    namespace chainbase { template<> struct get_index_type<OBJECT_TYPE> { typedef INDEX_TYPE type; }; }
 
-   #define CHAINBASE_DEFAULT_CONSTRUCTOR( OBJECT_TYPE ) \
-   template<typename Constructor, typename Allocator> \
-   OBJECT_TYPE( Constructor&& c, Allocator&&  ) { c(*this); }
+   #ifdef ENABLE_MIRA
+   #define CHAINBASE_COPY_ACCESS public //MIRA is too weird to quench its thirst for object copies
+   #else
+   #define CHAINBASE_COPY_ACCESS private
+   #endif
+
+   #define CHAINBASE_OBJECT_1( object_class ) CHAINBASE_OBJECT_false( object_class )
+   #define CHAINBASE_OBJECT_2( object_class, allow_default ) CHAINBASE_OBJECT_##allow_default( object_class )
+   #define CHAINBASE_OBJECT_true( object_class ) CHAINBASE_OBJECT_COMMON( object_class ); public: object_class() : id(0) {} private:
+   #define CHAINBASE_OBJECT_COMMON( object_class )                      \
+   private:                                                             \
+      id_type id;                                                       \
+   CHAINBASE_COPY_ACCESS:                                               \
+      object_class( const object_class& source ) = default;             \
+      /* problem with this being private? you most likely did           \
+         auto chain_object = db.get(...);                               \
+         instead of                                                     \
+         auto& chain_object_ref = db.get(...);                          \
+         In case you actually need copy, use copy_chain_object() below  \
+      */                                                                \
+      object_class& operator= ( const object_class& source ) = default; \
+   public:                                                              \
+      id_type get_id() const { return id; }                             \
+      object_class( object_class&& source ) = default;                  \
+      object_class& operator= ( object_class&& source ) = default;      \
+      object_class copy_chain_object() const { return *this; }          \
+      friend class fc::reflector< object_class >
+
+   #ifdef ENABLE_MIRA
+   #define CHAINBASE_OBJECT_false( object_class ) CHAINBASE_OBJECT_true( object_class )
+   #else
+   #define CHAINBASE_OBJECT_false( object_class ) CHAINBASE_OBJECT_COMMON( object_class ); object_class() = delete; private:
+   #endif
+
+   /**
+     * use at the start of any class derived from chainbase::object<>, f.e.:
+     * CHAINBASE_OBJECT( account_object ) or
+     * CHAINBASE_OBJECT( dynamic_global_property_object, true )
+     * first parameter is a class name, second (true or false, default false) tells if default constructor should be allowed
+     * Note that with MIRA enabled default constructors will be allowed anyway as it uses them during unpacking of object contents.
+     */
+   #define CHAINBASE_OBJECT( ... ) BOOST_PP_OVERLOAD(CHAINBASE_OBJECT_,__VA_ARGS__)(__VA_ARGS__)
+
+
+   #define CHAINBASE_ALLOCATED_MEMBERS( r, init, member ) , member( init )
+   #define CHAINBASE_DEFAULT_CONSTRUCTOR( OBJECT_TYPE, ALLOCATED_MEMBERS... )                \
+   template<typename Constructor, typename Allocator>                                        \
+   OBJECT_TYPE( Allocator&& a, uint64_t _id, Constructor&& c )                               \
+      : id( _id ) BOOST_PP_SEQ_FOR_EACH( CHAINBASE_ALLOCATED_MEMBERS, a, ALLOCATED_MEMBERS ) \
+   { c(*this); }
 
    template< typename value_type >
    class undo_state
@@ -164,7 +229,7 @@ namespace chainbase {
          id_value_type_map            old_values;
          id_value_type_map            removed_values;
          id_type_set                  new_ids;
-         id_type                      old_next_id = 0;
+         id_type                      old_next_id = id_type(0);
          int64_t                      revision = 0;
    };
 
@@ -196,8 +261,8 @@ namespace chainbase {
    };
 
    /**
-    *  The value_type stored in the multiindex container must have a integer field with the name 'id'.  This will
-    *  be the primary key and it will be assigned and managed by generic_index.
+    *  The value_type stored in the multiindex container must have a integer field accessible through
+    *  constant function 'get_id'.  This will be the primary key and it will be assigned and managed by generic_index.
     *
     *  Additionally, the constructor for value_type must take an allocator
     */
@@ -207,6 +272,7 @@ namespace chainbase {
       public:
          typedef MultiIndexType                                        index_type;
          typedef typename index_type::value_type                       value_type;
+         typedef typename value_type::id_type                          id_type;
          typedef allocator< generic_index >                            allocator_type;
          typedef undo_state< value_type >                              undo_state_type;
 
@@ -235,16 +301,11 @@ namespace chainbase {
           * Construct a new element in the multi_index_container.
           * Set the ID to the next available ID, then increment _next_id and fire off on_create().
           */
-         template<typename Constructor>
-         const value_type& emplace( Constructor&& c ) {
+         template<typename ...Args>
+         const value_type& emplace( Args&&... args ) {
             auto new_id = _next_id;
 
-            auto constructor = [&]( value_type& v ) {
-               v.id = new_id;
-               c( v );
-            };
-
-            auto insert_result = _indices.emplace( constructor, _indices.get_allocator() );
+            auto insert_result = _indices.emplace( _indices.get_allocator(), new_id, std::forward<Args>( args )... );
 
             if( !insert_result.second ) {
                BOOST_THROW_EXCEPTION( std::logic_error("could not insert object, most likely a uniqueness constraint was violated") );
@@ -261,7 +322,8 @@ namespace chainbase {
          template<typename Modifier>
          void modify( const value_type& obj, Modifier&& m ) {
             on_modify( obj );
-            auto ok = _indices.modify( _indices.iterator_to( obj ), m );
+            auto itr = _indices.iterator_to( obj );
+            auto ok = _indices.modify( itr, std::forward<Modifier>( m ) );
             if( !ok ) BOOST_THROW_EXCEPTION( std::logic_error( "Could not modify object, most likely a uniqueness constraint was violated" ) );
          }
 
@@ -281,21 +343,21 @@ namespace chainbase {
          template< typename ByIndex >
          typename MultiIndexType::template index_iterator<ByIndex>::type erase(typename MultiIndexType::template index_iterator<ByIndex>::type objI) {
             auto& idx = _indices.template get< ByIndex >();
-            on_remove(*objI);
+            on_remove( *objI );
             return idx.erase(objI);
          }
 #endif
 
          template<typename CompatibleKey>
          const value_type* find( CompatibleKey&& key )const {
-            auto itr = _indices.find( std::forward<CompatibleKey>(key) );
+            auto itr = _indices.find( std::forward<CompatibleKey>( key ) );
             if( itr != _indices.end() ) return &*itr;
             return nullptr;
          }
 
          template<typename CompatibleKey>
          const value_type& get( CompatibleKey&& key )const {
-            auto ptr = find( key );
+            auto ptr = find( std::forward<CompatibleKey>( key ) );
             if( !ptr ) BOOST_THROW_EXCEPTION( std::out_of_range("key not found") );
             return *ptr;
          }
@@ -311,7 +373,7 @@ namespace chainbase {
          {
             _indices.open( p, o );
             _revision = _indices.revision();
-            typename value_type::id_type next_id = 0;
+            id_type next_id( 0 );
             if( _indices.get_metadata( "next_id", next_id ) )
             {
                _next_id = next_id;
@@ -403,11 +465,11 @@ namespace chainbase {
          void undo() {
             if( !enabled() ) return;
 
-            const auto& head = _stack.back();
+            auto& head = _stack.back();
 
             for( auto& item : head.old_values ) {
                bool ok = false;
-               auto itr = _indices.find( item.second.id );
+               auto itr = _indices.find( item.second.get_id() );
                if( itr != _indices.end() )
                {
                   ok = _indices.modify( itr, [&]( value_type& v ) {
@@ -503,20 +565,20 @@ namespace chainbase {
 
             // We can only be outside type A/AB (the nop path) if B is not nop, so it suffices to iterate through B's three containers.
 
-            for( const auto& item : state.old_values )
+            for( auto& item : state.old_values )
             {
-               if( prev_state.new_ids.find( item.second.id ) != prev_state.new_ids.end() )
+               if( prev_state.new_ids.find( item.second.get_id() ) != prev_state.new_ids.end() )
                {
                   // new+upd -> new, type A
                   continue;
                }
-               if( prev_state.old_values.find( item.second.id ) != prev_state.old_values.end() )
+               if( prev_state.old_values.find( item.second.get_id() ) != prev_state.old_values.end() )
                {
                   // upd(was=X) + upd(was=Y) -> upd(was=X), type A
                   continue;
                }
                // del+upd -> N/A
-               assert( prev_state.removed_values.find(item.second.id) == prev_state.removed_values.end() );
+               assert( prev_state.removed_values.find( item.second.get_id() ) == prev_state.removed_values.end() );
                // nop+upd(was=Y) -> upd(was=Y), type B
                prev_state.old_values.emplace( std::move(item) );
             }
@@ -528,24 +590,24 @@ namespace chainbase {
             // *+del
             for( auto& obj : state.removed_values )
             {
-               if( prev_state.new_ids.find(obj.second.id) != prev_state.new_ids.end() )
+               if( prev_state.new_ids.find( obj.second.get_id() ) != prev_state.new_ids.end() )
                {
                   // new + del -> nop (type C)
-                  prev_state.new_ids.erase(obj.second.id);
+                  prev_state.new_ids.erase( obj.second.get_id() );
                   continue;
                }
-               auto it = prev_state.old_values.find(obj.second.id);
+               auto it = prev_state.old_values.find( obj.second.get_id() );
                if( it != prev_state.old_values.end() )
                {
                   // upd(was=X) + del(was=Y) -> del(was=X)
                   prev_state.removed_values.emplace( std::move(*it) );
-                  prev_state.old_values.erase(obj.second.id);
+                  prev_state.old_values.erase( obj.second.get_id() );
                   continue;
                }
                // del + del -> N/A
-               assert( prev_state.removed_values.find( obj.second.id ) == prev_state.removed_values.end() );
+               assert( prev_state.removed_values.find( obj.second.get_id() ) == prev_state.removed_values.end() );
                // nop + del(was=Y) -> del(was=Y)
-               prev_state.removed_values.emplace( std::move(obj) ); //[obj.second->id] = std::move(obj.second);
+               prev_state.removed_values.emplace( std::move(obj) ); //[obj.second->get_id()] = std::move(obj.second);
             }
 
             _stack.pop_back();
@@ -594,43 +656,43 @@ namespace chainbase {
 
             auto& head = _stack.back();
 
-            if( head.new_ids.find( v.id ) != head.new_ids.end() )
+            if( head.new_ids.find( v.get_id() ) != head.new_ids.end() )
                return;
 
-            auto itr = head.old_values.find( v.id );
+            auto itr = head.old_values.find( v.get_id() );
             if( itr != head.old_values.end() )
                return;
 
-            head.old_values.emplace( std::pair< typename value_type::id_type, const value_type& >( v.id, v ) );
+            head.old_values.emplace( v.get_id(), v.copy_chain_object() );
          }
 
          void on_remove( const value_type& v ) {
             if( !enabled() ) return;
 
             auto& head = _stack.back();
-            if( head.new_ids.count(v.id) ) {
-               head.new_ids.erase( v.id );
+            if( head.new_ids.count( v.get_id() ) ) {
+               head.new_ids.erase( v.get_id() );
                return;
             }
 
-            auto itr = head.old_values.find( v.id );
+            auto itr = head.old_values.find( v.get_id() );
             if( itr != head.old_values.end() ) {
                head.removed_values.emplace( std::move( *itr ) );
-               head.old_values.erase( v.id );
+               head.old_values.erase( v.get_id() );
                return;
             }
 
-            if( head.removed_values.count( v.id ) )
+            if( head.removed_values.count( v.get_id() ) )
                return;
 
-            head.removed_values.emplace( std::pair< typename value_type::id_type, const value_type& >( v.id, v ) );
+            head.removed_values.emplace( v.get_id(), v.copy_chain_object() );
          }
 
          void on_create( const value_type& v ) {
             if( !enabled() ) return;
             auto& head = _stack.back();
 
-            head.new_ids.insert( v.id );
+            head.new_ids.insert( v.get_id() );
          }
 
          boost::interprocess::deque< undo_state_type, allocator<undo_state_type> > _stack;
@@ -642,7 +704,7 @@ namespace chainbase {
           *  Commit will discard all revisions prior to the committed revision.
           */
          int64_t                         _revision = 0;
-         typename value_type::id_type    _next_id = 0;
+         id_type                         _next_id = id_type(0);
          index_type                      _indices;
          uint32_t                        _size_of_value_type = 0;
          uint32_t                        _size_of_this = 0;
@@ -886,7 +948,7 @@ namespace chainbase {
          };
 
       public:
-         void open( const bfs::path& dir, uint32_t flags = 0, size_t shared_file_size = 0, const boost::any& database_cfg = nullptr );
+         void open( const bfs::path& dir, uint32_t flags = 0, size_t shared_file_size = 0, const boost::any& database_cfg = nullptr, const helpers::environment_extension_resources* environment_extension = nullptr );
          void close();
          void flush();
          size_t get_cache_usage() const;
@@ -1105,7 +1167,7 @@ namespace chainbase {
          }
 
          template< typename ObjectType >
-         const ObjectType* find( oid< ObjectType > key = oid< ObjectType >() ) const
+         const ObjectType* find( oid< ObjectType > key = oid_ref< ObjectType >() ) const
          {
              CHAINBASE_REQUIRE_READ_LOCK("find", ObjectType);
              typedef typename get_index_type< ObjectType >::type index_type;
@@ -1128,7 +1190,7 @@ namespace chainbase {
          }
 
          template< typename ObjectType >
-         const ObjectType& get( const oid< ObjectType >& key = oid< ObjectType >() )const
+         const ObjectType& get( const oid< ObjectType >& key = oid_ref< ObjectType >() )const
          {
              CHAINBASE_REQUIRE_READ_LOCK("get", ObjectType);
              auto obj = find< ObjectType >( key );
@@ -1141,7 +1203,7 @@ namespace chainbase {
          {
              CHAINBASE_REQUIRE_WRITE_LOCK("modify", ObjectType);
              typedef typename get_index_type<ObjectType>::type index_type;
-             get_mutable_index<index_type>().modify( obj, m );
+             get_mutable_index<index_type>().modify( obj, std::forward<Modifier>( m ) );
          }
 
          template<typename ObjectType>
@@ -1152,12 +1214,12 @@ namespace chainbase {
              return get_mutable_index<index_type>().remove( obj );
          }
 
-         template<typename ObjectType, typename Constructor>
-         const ObjectType& create( Constructor&& con )
+         template<typename ObjectType, typename ... Args>
+         const ObjectType& create( Args&&... args )
          {
              CHAINBASE_REQUIRE_WRITE_LOCK("create", ObjectType);
              typedef typename get_index_type<ObjectType>::type index_type;
-             return get_mutable_index<index_type>().emplace( std::forward<Constructor>(con) );
+             return get_mutable_index<index_type>().emplace( std::forward<Args>( args )... );
          }
 
          template< typename ObjectType >

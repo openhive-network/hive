@@ -7,7 +7,7 @@ With the right equipment and technical configuration a reindex should take **no 
 
 Physically attached SSD will ensure an optimal reindex time.  SSD over a NAS or some kind of network storage backed by SSD will often have much higher latency. As an example, AWS EBS is not performant enough. A good recommended instance in AWS is the i3.2xlarge, it comes with a physically attached nVME drive (it must be formatted and mounted on instance launch).
 
-You can save a lot of time by replaying from a `block_log`. Using the docker method below, we have made it easy to download a `block_log` at launch and replay from it by passing in the `USE_PUBLIC_BLOCKLOG=1` environment variable. To do this, make sure your data directory is empty and does not contain a block_log. If you are not using docker, you can download a `block_log` from [here](https://gtg.steem.house/get/blockchain), put it in your Hive data directory, and use the `--replay-blockchain` command line option. Be sure to remove the option if you have to stop/restart steemd after already being synced.
+You can save a lot of time by replaying from a `block_log`. Using the docker method below, we have made it easy to download a `block_log` at launch and replay from it by passing in the `USE_PUBLIC_BLOCKLOG=1` environment variable. To do this, make sure your data directory is empty and does not contain a block_log. If you are not using docker, you can download a `block_log` from [here](https://gtg.steem.house/get/blockchain), put it in your Hive data directory, and use the `--replay-blockchain` command line option. Be sure to remove the option if you have to stop/restart hived after already being synced.
 
 We recommend using docker to both build and run Hive for exchanges. Docker is the world's leading containerization platform and using it guarantees that your build and run environment is identical to what our developers use. You can still build from source and you can keep both blockchain data and wallet data outside of the docker container. The instructions below will show you how to do this in just a few easy steps.
 
@@ -62,8 +62,8 @@ To extract the binary you need to start a container and then copy the file from 
 
 ```
 docker run -d --name hived-exchange hiveio/hive
-docker cp hived-exchange:/usr/local/steemd-default/bin/steemd /local/path/to/steemd
-docker cp hived-exchange:/usr/local/steemd-default/bin/cli_wallet /local/path/to/cli_wallet
+docker cp hived-exchange:/usr/local/hived-default/bin/hived /local/path/to/hived
+docker cp hived-exchange:/usr/local/hived-default/bin/cli_wallet /local/path/to/cli_wallet
 docker stop hived-exchange
 ```
 
@@ -73,7 +73,7 @@ For your convenience, we have provided a provided an [example\_config](example\_
 
 ### Custom configuration files when using a Docker image
 
-If you are using our docker image and have a need for using a custom config file, instead use [config-for-docker.ini](https://github.com/openhive-network/hive/blob/master/contrib/config-for-docker.ini). You can place this outside of your container and map to it by adding this argument to your docker run command: `-v /path/to/config.ini:/etc/steemd/config.ini`. In most cases, a custom configuration file is not necessary.
+If you are using our docker image and have a need for using a custom config file, instead use [config-for-docker.ini](https://github.com/openhive-network/hive/blob/master/contrib/config-for-docker.ini). You can place this outside of your container and map to it by adding this argument to your docker run command: `-v /path/to/config.ini:/etc/hived/config.ini`. In most cases, a custom configuration file is not necessary.
 
 ### Account history and limitations
 
@@ -93,7 +93,7 @@ mkdir hivewallet
 The below command will start a daemonized instance opening ports for p2p and RPC  while linking the directories we created for blockchain and wallet data inside the container. Fill in `TRACK_ACCOUNT` with the name of your exchange account that you want to follow. The `-v` flags are how you map directories outside of the container to the inside, you list the path to the directories you created earlier before the `:` for each `-v` flag. The restart policy ensures that the container will automatically restart even if your system is restarted.
 
 ```
-docker run -d --name hived-exchange --env TRACK_ACCOUNT=nameofaccount --env USE_PUBLIC_BLOCKLOG=1 -p 2001:2001 -p 8090:8090 -v /path/to/hivewallet:/var/hivewallet -v /path/to/blockchain:/var/lib/steemd/blockchain --restart always hiveio/hive
+docker run -d --name hived-exchange --env TRACK_ACCOUNT=nameofaccount --env USE_PUBLIC_BLOCKLOG=1 -p 2001:2001 -p 8090:8090 -v /path/to/hivewallet:/var/hivewallet -v /path/to/blockchain:/var/lib/hived/blockchain --restart always hiveio/hive
 ```
 
 You can see that the container is running with the `docker ps` command.
@@ -107,12 +107,12 @@ Initial syncing will take between 6 and 72 hours depending on your equipment, fa
 The command below will run the cli_wallet from inside the running container while mapping the `wallet.json` to the directory you created for it on the host.
 
 ```
-docker exec -it hived-exchange /usr/local/steemd-default/bin/cli_wallet -w /var/hivewallet/wallet.json
+docker exec -it hived-exchange /usr/local/hived-default/bin/cli_wallet -w /var/hivewallet/wallet.json
 ```
 
 ### Upgrading for major releases that require a full reindex
 
-For upgrades that require a full replay, we highly recommend *performing the upgrade on a separate server* in order to minimize downtime of your wallet. When the replay is complete, switch to the server running the newer version of Steem. If for some reason it is absolutely not possible to perform the upgrade on a separate server, you would use the following instructions instead:
+For upgrades that require a full replay, we highly recommend *performing the upgrade on a separate server* in order to minimize downtime of your wallet. When the replay is complete, switch to the server running the newer version of Hive. If for some reason it is absolutely not possible to perform the upgrade on a separate server, you would use the following instructions instead:
 
 Stop the docker container, remove the existing container, clear out your blockchain data directory completely, pull in the latest docker image (or build the image from scratch), and then start a new container using the same command that you previously launched with.
 
@@ -121,7 +121,7 @@ docker stop hived-exchange
 docker rm hived-exchange
 rm -rf blockchain/*
 docker pull hiveio/hive
-docker run -d --name hived-exchange --env TRACK_ACCOUNT=nameofaccount --env USE_PUBLIC_BLOCKLOG=1 -p 2001:2001 -p 8090:8090 -v /path/to/hivewallet:/var/hivewallet -v /path/to/blockchain:/var/lib/steemd/blockchain --restart always hiveio/hive
+docker run -d --name hived-exchange --env TRACK_ACCOUNT=nameofaccount --env USE_PUBLIC_BLOCKLOG=1 -p 2001:2001 -p 8090:8090 -v /path/to/hivewallet:/var/hivewallet -v /path/to/blockchain:/var/lib/hived/blockchain --restart always hiveio/hive
 ```
 
 ### Upgrading for releases that do not require a reindex
@@ -132,5 +132,5 @@ For upgrades that do not require a full replay, you would use the following inst
 docker stop hived-exchange
 docker rm hived-exchange
 docker pull hiveio/hive
-docker run -d --name hived-exchange --env TRACK_ACCOUNT=nameofaccount --env USE_PUBLIC_BLOCKLOG=1 -p 2001:2001 -p 8090:8090 -v /path/to/hivewallet:/var/hivewallet -v /path/to/blockchain:/var/lib/steemd/blockchain --restart always hiveio/hive
+docker run -d --name hived-exchange --env TRACK_ACCOUNT=nameofaccount --env USE_PUBLIC_BLOCKLOG=1 -p 2001:2001 -p 8090:8090 -v /path/to/hivewallet:/var/hivewallet -v /path/to/blockchain:/var/lib/hived/blockchain --restart always hiveio/hive
 ```

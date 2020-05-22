@@ -1,11 +1,11 @@
-#ifndef STEEM_HARDFORK_0_24
-#define STEEM_HARDFORK_0_24 24
-#define STEEM_DAO_RENAME STEEM_HARDFORK_0_24
+#ifndef HIVE_HARDFORK_0_24
+#define HIVE_HARDFORK_0_24 24
+#define HIVE_TREASURY_RENAME_HARDFORK HIVE_HARDFORK_0_24
 
 long hf24_time();
 
-#define STEEM_HARDFORK_0_24_TIME        hf24_time()
+#define HIVE_HARDFORK_0_24_TIME        hf24_time()
 
-#define STEEM_HARDFORK_0_24_VERSION hardfork_version( 0, 24 )
+#define HIVE_HARDFORK_0_24_VERSION hardfork_version( 0, 24 )
 
 #endif

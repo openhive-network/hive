@@ -6,6 +6,7 @@
 #include <boost/throw_exception.hpp>
 
 #include <iostream>
+#include <atomic>
 
 #define APPBASE_VERSION_STRING ("appbase 1.0")
 
@@ -13,6 +14,49 @@ namespace appbase {
 
    namespace bpo = boost::program_options;
    namespace bfs = boost::filesystem;
+
+   class io_handler
+   {
+      public:
+
+         using p_io_handler = std::shared_ptr< io_handler >;
+         using p_signal_set = std::shared_ptr< boost::asio::signal_set >;
+         using final_action_type = std::function< void() >;
+
+      private:
+
+         std::atomic_flag        lock = ATOMIC_FLAG_INIT;
+
+         bool                    closed = false;
+         bool                    allow_close_when_signal_is_received = false;
+         uint32_t                last_signal_code = 0;
+
+         final_action_type       final_action;
+
+         p_signal_set            sigint_set;
+         p_signal_set            sigterm_set;
+
+         boost::asio::io_service io_serv;
+
+         void close_signal( p_signal_set& signal );
+
+         void handle_signal( uint32_t _last_signal_code );
+
+      public:
+
+         io_handler( bool _allow_close_when_signal_is_received, final_action_type&& _final_action );
+
+         boost::asio::io_service& get_io_service();
+
+         void close();
+
+         void attach_signals();
+
+         void run();
+
+         void set_interrupt_request( uint32_t _last_signal_code );
+         bool is_interrupt_request() const;
+   };
 
    class application
    {
@@ -39,7 +83,6 @@ namespace appbase {
           *  Wait until quit(), SIGINT or SIGTERM and then shutdown
           */
          void exec();
-         void quit();
 
          static application& instance( bool reset = false );
 
@@ -85,12 +128,26 @@ namespace appbase {
          const bpo::variables_map& get_args() const;
 
          void set_version_string( const string& version ) { version_info = version; }
+         const std::string& get_version_string() const { return version_info; }
          void set_app_name( const string& name ) { app_name = name; }
 
          template< typename... Plugin >
          void set_default_plugins() { default_plugins = { Plugin::name()... }; }
 
-         boost::asio::io_service& get_io_service() { return *io_serv; }
+         boost::asio::io_service& get_io_service() { return main_io_handler.get_io_service(); }
+
+         void generate_interrupt_request()
+         {
+            if( startup_io_handler )
+               startup_io_handler->set_interrupt_request( SIGINT );
+         }
+
+         bool is_interrupt_request() const
+         {
+            return startup_io_handler ? startup_io_handler->is_interrupt_request() : _is_interrupt_request;
+         }
+
+         std::set< std::string > get_plugins_names() const;
 
       protected:
          template< typename Impl >
@@ -114,7 +171,6 @@ namespace appbase {
          map< string, std::shared_ptr< abstract_plugin > >  plugins; ///< all registered plugins
          vector< abstract_plugin* >                         initialized_plugins; ///< stored in the order they were started running
          vector< abstract_plugin* >                         running_plugins; ///< stored in the order they were started running
-         std::shared_ptr< boost::asio::io_service >         io_serv;
          std::string                                        version_info;
          std::string                                        app_name = "appbase";
          std::vector< std::string >                         default_plugins;
@@ -123,6 +179,12 @@ namespace appbase {
          void write_default_config( const bfs::path& cfg_file );
          std::unique_ptr< class application_impl > my;
 
+         io_handler                 main_io_handler;
+
+         //This handler is designed only for startup purposes
+         io_handler::p_io_handler   startup_io_handler;
+
+         bool _is_interrupt_request = false;
    };
 
    application& app();

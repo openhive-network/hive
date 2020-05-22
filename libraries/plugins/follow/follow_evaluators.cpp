@@ -1,14 +1,14 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
-#include <steem/plugins/follow/follow_plugin.hpp>
-#include <steem/plugins/follow/follow_operations.hpp>
-#include <steem/plugins/follow/follow_objects.hpp>
-#include <steem/plugins/follow/inc_performance.hpp>
+#include <hive/plugins/follow/follow_plugin.hpp>
+#include <hive/plugins/follow/follow_operations.hpp>
+#include <hive/plugins/follow/follow_objects.hpp>
+#include <hive/plugins/follow/inc_performance.hpp>
 
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/comment_object.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/comment_object.hpp>
 
-namespace steem { namespace plugins { namespace follow {
+namespace hive { namespace plugins { namespace follow {
 
 void follow_evaluator::do_apply( const follow_operation& o )
 {
@@ -127,7 +127,7 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
       performance perf( _db );
 
       const auto& c = _db.get_comment( o.author, o.permlink );
-      FC_ASSERT( c.parent_author.size() == 0, "Only top level posts can be reblogged" );
+      FC_ASSERT( c.parent_author_id == HIVE_ROOT_POST_PARENT_ID, "Only top level posts can be reblogged" );
 
       const auto& blog_idx = _db.get_index< blog_index >().indices().get< by_blog >();
       const auto& blog_comment_idx = _db.get_index< blog_index >().indices().get< by_comment >();
@@ -140,20 +140,21 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
          next_blog_id = last_blog->blog_feed_id + 1;
       }
 
-      auto blog_itr = blog_comment_idx.find( boost::make_tuple( c.id, o.account ) );
+      auto blog_itr = blog_comment_idx.find( boost::make_tuple( c.get_id(), o.account ) );
 
       FC_ASSERT( blog_itr == blog_comment_idx.end(), "Account has already reblogged this post" );
       _db.create< blog_object >( [&]( blog_object& b )
       {
          b.account = o.account;
-         b.comment = c.id;
+         b.comment = c.get_id();
          b.reblogged_on = _db.head_block_time();
          b.blog_feed_id = next_blog_id;
       });
 
       const auto& stats_idx = _db.get_index< blog_author_stats_index,by_blogger_guest_count>();
-      auto stats_itr = stats_idx.lower_bound( boost::make_tuple( o.account, c.author ) );
-      if( stats_itr != stats_idx.end() && stats_itr->blogger == o.account && stats_itr->guest == c.author ) {
+      const account_name_type& c_author{ _db.get_account(c.author_id ).name };
+      auto stats_itr = stats_idx.lower_bound( boost::make_tuple( o.account, c_author ) );
+      if( stats_itr != stats_idx.end() && stats_itr->blogger == o.account && stats_itr->guest == c_author ) {
          _db.modify( *stats_itr, [&]( blog_author_stats_object& s ) {
             ++s.count;
          });
@@ -161,7 +162,7 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
          _db.create<blog_author_stats_object>( [&]( blog_author_stats_object& s ) {
             s.count = 1;
             s.blogger = o.account;
-            s.guest   = c.author;
+            s.guest   = c_author;
          });
       }
 
@@ -181,10 +182,10 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
          {
             if( itr->what & ( 1 << blog ) )
             {
-               auto feed_itr = comment_idx.find( boost::make_tuple( c.id, itr->follower ) );
+               auto feed_itr = comment_idx.find( boost::make_tuple( c.get_id(), itr->follower ) );
                bool is_empty = feed_itr == comment_idx.end();
 
-               pd.init( o.account, _db.head_block_time(), c.id, is_empty, is_empty ? 0 : feed_itr->account_feed_id );
+               pd.init( o.account, _db.head_block_time(), c.get_id(), is_empty, is_empty ? 0 : feed_itr->account_feed_id );
                uint32_t next_id = 0;
 #ifndef ENABLE_MIRA
                perf.delete_old_objects< performance_data::t_creation_type::full_feed >( old_feed_idx, itr->follower, _plugin->max_feed_size, pd );
@@ -200,7 +201,7 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
                         f.reblogged_by.push_back( o.account );
                         f.first_reblogged_by = o.account;
                         f.first_reblogged_on = _db.head_block_time();
-                        f.comment = c.id;
+                        f.comment = c.get_id();
                         f.account_feed_id = next_id;
                      });
                   }
@@ -224,4 +225,4 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
    FC_CAPTURE_AND_RETHROW( (o) )
 }
 
-} } } // steem::follow
+} } } // hive::follow

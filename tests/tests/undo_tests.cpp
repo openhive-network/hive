@@ -1,16 +1,16 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
-#include <steem/protocol/exceptions.hpp>
-#include <steem/protocol/hardfork.hpp>
+#include <hive/protocol/exceptions.hpp>
+#include <hive/protocol/hardfork.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/database_exceptions.hpp>
-#include <steem/chain/steem_objects.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/hive_objects.hpp>
 
-#include <steem/chain/util/reward.hpp>
+#include <hive/chain/util/reward.hpp>
 
 #include <fc/macros.hpp>
 #include <fc/crypto/digest.hpp>
@@ -22,9 +22,9 @@
 #include <iostream>
 #include <stdexcept>
 
-using namespace steem;
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive;
+using namespace hive::chain;
+using namespace hive::protocol;
 using fc::string;
 
 BOOST_FIXTURE_TEST_SUITE( undo_tests, clean_database_fixture )
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE( undo_object_disapear )
             It's necessary to write fix, according to issue #2154.
       */
       //Temporary. After fix, this line should be enabled.
-      //STEEM_REQUIRE_THROW( ao.modify( obj1, [&]( account_object& obj ){ obj.name = "name00"; obj.proxy = "proxy00"; } ), boost::exception );
+      //HIVE_REQUIRE_THROW( ao.modify( obj1, [&]( account_object& obj ){ obj.name = "name00"; obj.proxy = "proxy00"; } ), boost::exception );
 
       //Temporary. After fix, this line should be removed.
       ao.modify( obj1, [&]( account_object& obj ){ obj.name = "nameXYZ"; obj.proxy = "proxyXYZ"; } );
@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
       udb.undo_begin();
 
       ao.create( [&]( account_object& obj ){ obj.name = "name00"; } );
-      STEEM_REQUIRE_THROW( ao.create( [&]( account_object& obj ){ obj.name = "name00"; } ), boost::exception );
+      HIVE_REQUIRE_THROW( ao.create( [&]( account_object& obj ){ obj.name = "name00"; } ), boost::exception );
 
       udb.undo_end();
       BOOST_REQUIRE( ao.check< account_index >() );
@@ -230,21 +230,34 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
       BOOST_TEST_MESSAGE( "--- Object 'obj1' retrieves old key from object 'obj0'." );
 
       undo_scenario< comment_object > co( *db );
-      const comment_object& objc0 = co.create( [&]( comment_object& obj ){ obj.cashout_time = time_point_sec( 20 ); obj.author = "a1"; } );
+      undo_scenario< comment_cashout_object > co_cashout( *db );
+      const comment_object& objc0 = co.create( [&]( comment_object& obj ){ obj.author_id = account_object::id_type( 2 ); } );
+      const comment_cashout_object& objc0_cashout = co_cashout.create( objc0, time_point_sec( 20 ) );
+
+      BOOST_REQUIRE( objc0_cashout.get_comment_id() == objc0.get_id() );
 
       co.remember_old_values< comment_index >();
+      co_cashout.remember_old_values< comment_cashout_index >();
+
       udb.undo_begin();
 
       old_size = co.size< comment_index >();
+      uint32_t old_size_cashout = co_cashout.size< comment_cashout_index >();
 
       co.modify( objc0, [&]( comment_object& obj ){ obj.depth = 1; } );
-      co.modify( objc0, [&]( comment_object& obj ){ obj.cashout_time = time_point_sec( 21 ); } );
-      co.create( [&]( comment_object& obj ){ obj.cashout_time = time_point_sec( 20 ); obj.author = "a2"; } );
+      co_cashout.modify( objc0_cashout, [&]( comment_cashout_object& obj ){ obj.cashout_time = time_point_sec( 21 ); } );
+
+      const comment_object& objc1 = co.create( [&]( comment_object& obj ){ obj.author_id = account_object::id_type( 3 ); } );
+      const comment_cashout_object& objc1_cashout = co_cashout.create( objc1, time_point_sec( 20 ) );
+
+      BOOST_REQUIRE( objc1_cashout.get_comment_id() == objc1.get_id() );
 
       BOOST_REQUIRE( old_size + 1 == co.size< comment_index >() );
+      BOOST_REQUIRE( old_size_cashout + 1 == co_cashout.size< comment_cashout_index >() );
 
       udb.undo_end();
       BOOST_REQUIRE( co.check< comment_index >() );
+      BOOST_REQUIRE( co_cashout.check< comment_cashout_index >() );
    }
    FC_LOG_AND_RETHROW()
 }
@@ -275,8 +288,8 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
       BOOST_REQUIRE( std::string( obja0.name ) == "name00" );
       BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
 
-      const comment_object& objc0 = co.create( [&]( comment_object& obj ){ obj.cashout_time = time_point_sec( 11 ); } );
-      BOOST_REQUIRE( objc0.cashout_time.sec_since_epoch() == 11 );
+      const comment_object& objc0 = co.create( [&]( comment_object& obj ){ obj.permlink = "11"; } );
+      BOOST_REQUIRE( objc0.permlink == "11" );
       BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
 
       udb.undo_end();
@@ -300,9 +313,9 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
       ao.remove( obja2 );
       BOOST_REQUIRE( old_size_ao + 2 == ao.size< account_index >() );
 
-      co.create( [&]( comment_object& obj ){ obj.cashout_time = time_point_sec( 11 ); obj.author = "a0"; } );
-      const comment_object& objc1 = co.create( [&]( comment_object& obj ){ obj.cashout_time = time_point_sec( 12 ); obj.author = "a1"; } );
-      co.modify( objc1, [&]( comment_object& obj ){ obj.cashout_time = time_point_sec( 13 ); } );
+      co.create( [&]( comment_object& obj ){ obj.permlink = "11"; obj.author_id = account_object::id_type( 10 ); } );
+      const comment_object& objc1 = co.create( [&]( comment_object& obj ){ obj.permlink = "12"; obj.author_id = account_object::id_type( 3 ); } );
+      co.modify( objc1, [&]( comment_object& obj ){ obj.permlink = "13"; } );
       BOOST_REQUIRE( old_size_co + 2 == co.size< comment_index >() );
 
       udb.undo_end();
@@ -322,13 +335,13 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
       udb.undo_begin();
 
       ao.create( [&]( account_object& obj ){ obj.name = "name01"; } );
-      const comment_object& objc2 = co.create( [&]( comment_object& obj ){ obj.cashout_time = time_point_sec( 12 ); obj.author = "a1"; } );
-      const comment_content_object& objcc1 = cc.create( [&]( comment_content_object& obj ){ obj.comment = 13; } );
+      const comment_object& objc2 = co.create( [&]( comment_object& obj ){ obj.permlink = "12"; obj.author_id = account_object::id_type( 2 ); } );
+      const comment_content_object& objcc1 = cc.create( [&]( comment_content_object& obj ){ obj.comment = comment_object::id_type( 13 ); } );
       BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
       BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
       BOOST_REQUIRE( old_size_cc + 1 == cc.size< comment_content_index >() );
 
-      co.modify( objc2, [&]( comment_object& obj ){ obj.author = "a2"; } );
+      co.modify( objc2, [&]( comment_object& obj ){ obj.author_id = account_object::id_type( 3 ); } );
       cc.remove( objcc1 );
       BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
       BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
@@ -345,8 +358,8 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
       BOOST_TEST_MESSAGE( "--- 'comment_object' - create/5*modify/remove" );
       BOOST_TEST_MESSAGE( "--- 'comment_content_object' - create/remove" );
 
-      const comment_content_object& cc1 = cc.create( [&]( comment_content_object& obj ){ obj.comment = 0; } );
-      const comment_object& co1 = co.create( [&]( comment_object& obj ){ obj.cashout_time = time_point_sec( 12 ); obj.author = std::to_string(0); } );
+      const comment_content_object& cc1 = cc.create( [&]( comment_content_object& obj ){ obj.comment = comment_object::id_type( 0 ); } );
+      const comment_object& co1 = co.create( [&]( comment_object& obj ){ obj.permlink = "12"; obj.author_id = HIVE_ROOT_POST_PARENT_ID; } );
       const account_object& ao1 = ao.create( [&]( account_object& obj ){ obj.name = std::to_string(0); } );
 
       ao.remember_old_values< account_index >();
@@ -359,7 +372,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
 
       for( int32_t i=1; i<=5; ++i )
       {
-         co.modify( co1, [&]( comment_object& obj ){ obj.cashout_time = time_point_sec( 12 ); obj.author = std::to_string(0); } );
+         co.modify( co1, [&]( comment_object& obj ){ obj.permlink = "12"; obj.author_id = HIVE_ROOT_POST_PARENT_ID; } );
          ao.modify( ao1, [&]( account_object& obj ){ obj.name = std::to_string(0); } );
 
          BOOST_REQUIRE( old_size_ao == ao.size< account_index >() );
@@ -412,8 +425,8 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
       };
       _data data[4]=
       {
-        _data( "bob", "post4", std::string(STEEM_ROOT_POST_PARENT), "pl4", "t4", "b4" ),
-        _data( "alice", "post", std::string(STEEM_ROOT_POST_PARENT), "pl", "t", "b" ),
+        _data( "bob", "post4", std::string( HIVE_ROOT_POST_PARENT ), "pl4", "t4", "b4" ),
+        _data( "alice", "post", std::string( HIVE_ROOT_POST_PARENT ), "pl", "t", "b" ),
         _data( "dan", "post2", "bob", "post4", "t2", "b2" ),
         _data( "chuck", "post3", "bob", "post4", "t3", "b3" )
       };
@@ -431,7 +444,7 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
       data[0].fill( op );
       tx.operations.push_back( op );
 
-      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, bob_private_key );
       db->push_transaction( tx, 0 );
       generate_blocks( 1 );
@@ -448,7 +461,7 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
       data[1].fill( op );
       tx.operations.push_back( op );
 
-      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, alice_private_key );
 
       db->push_transaction( tx, 0 );
@@ -468,7 +481,7 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
       data[3].fill( op );
       tx.operations.push_back( op );
 
-      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, dan_private_key );
       sign( tx, chuck_private_key );
 

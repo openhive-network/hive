@@ -339,28 +339,14 @@ struct multi_index_adapter
       );
    }
 
-   template< typename Constructor >
+   template< typename ...Args >
    std::pair< iter_type, bool >
-   emplace( Constructor&& con, allocator_type alloc )
+   emplace( Args&&... args )
    {
       return boost::apply_visitor(
          [&]( auto& index )
          {
-            auto result = index.emplace( std::forward< Constructor >( con ), alloc );
-            return std::pair< iter_type, bool >( iter_type( std::move( result.first ) ), result.second );
-         },
-         _index
-      );
-   }
-
-   template< typename Constructor >
-   std::pair< iter_type, bool >
-   emplace( Constructor&& con )
-   {
-      return boost::apply_visitor(
-         [&]( auto& index )
-         {
-            auto result = index.emplace( std::forward< Constructor >( con ) );
+            auto result = index.emplace( std::forward<Args>( args )... );
             return std::pair< iter_type, bool >( iter_type( std::move( result.first ) ), result.second );
          },
          _index

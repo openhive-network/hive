@@ -1,11 +1,11 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
-#include <steem/plugins/follow/inc_performance.hpp>
+#include <hive/plugins/follow/inc_performance.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/plugins/follow/follow_objects.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/plugins/follow/follow_objects.hpp>
 
-namespace steem { namespace plugins{ namespace follow {
+namespace hive { namespace plugins{ namespace follow {
 
 std::unique_ptr< dumper > dumper::self;
 
@@ -226,4 +226,4 @@ template uint32_t performance::delete_old_objects< performance_data::t_creation_
 template uint32_t performance::delete_old_objects< performance_data::t_creation_type::full_blog >( t_blog& old_idx, const account_name_type& start_account, uint32_t max_size, performance_data& pd ) const;
 #endif
 
-} } } //steem::follow
+} } } //hive::follow

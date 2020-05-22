@@ -21,14 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include <steem/chain/steem_fwd.hpp>
-#include <steem/protocol/protocol.hpp>
-#include <steem/chain/steem_objects.hpp>
+#include <hive/chain/hive_fwd.hpp>
+#include <hive/protocol/protocol.hpp>
+#include <hive/chain/hive_objects.hpp>
 #include <fc/smart_ref_impl.hpp>
 #include <iostream>
 
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive::chain;
+using namespace hive::protocol;
 
 using std::string;
 using std::map;
@@ -58,7 +58,7 @@ string remove_namespace( string str )
    str = remove_tail_if( str, '_', "t" );
    str = remove_tail_if( str, '_', "object" );
    str = remove_tail_if( str, '_', "type" );
-   str = remove_namespace_if( str, "steem::chain" );
+   str = remove_namespace_if( str, "hive::chain" );
    str = remove_namespace_if( str, "chainbase" );
    str = remove_namespace_if( str, "std" );
    str = remove_namespace_if( str, "fc" );
@@ -78,7 +78,7 @@ void register_serializer();
 
 
 map<string, size_t >                st;
-steem::vector<std::function<void()>>       serializers;
+hive::vector<std::function<void()>>       serializers;
 
 bool register_serializer( const string& name, std::function<void()> sr )
 {
@@ -123,7 +123,14 @@ struct js_name<chainbase::oid<O> >
       return "protocol_id_type \"" + remove_namespace(fc::get_typename<O>::name()) + "\"";
    };
 };
-
+template<typename O>
+struct js_name<chainbase::oid_ref<O> >
+{
+   static std::string name()
+   {
+      return "protocol_id_type \"" + remove_namespace( fc::get_typename<O>::name() ) + "\"";
+   };
+};
 
 template<typename T> struct js_name< std::set<T> > { static std::string name(){ return "set " + js_name<T>::name(); } };
 
@@ -265,6 +272,12 @@ struct serializer<fc::optional<T>,false>
 
 template<typename T>
 struct serializer< chainbase::oid<T> ,true>
+{
+   static void init() {}
+   static void generate() {}
+};
+template<typename T>
+struct serializer< chainbase::oid_ref<T>, true>
 {
    static void init() {}
    static void generate() {}

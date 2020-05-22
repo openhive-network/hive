@@ -1,17 +1,17 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
-#include <steem/utilities/git_revision.hpp>
-#include <steem/utilities/key_conversion.hpp>
-#include <steem/utilities/words.hpp>
+#include <hive/utilities/git_revision.hpp>
+#include <hive/utilities/key_conversion.hpp>
+#include <hive/utilities/words.hpp>
 
-#include <steem/protocol/base.hpp>
-#include <steem/protocol/sps_operations.hpp>
-#include <steem/wallet/wallet.hpp>
-#include <steem/wallet/api_documentation.hpp>
-#include <steem/wallet/reflect_util.hpp>
-#include <steem/wallet/remote_node_api.hpp>
+#include <hive/protocol/base.hpp>
+#include <hive/protocol/sps_operations.hpp>
+#include <hive/wallet/wallet.hpp>
+#include <hive/wallet/api_documentation.hpp>
+#include <hive/wallet/reflect_util.hpp>
+#include <hive/wallet/remote_node_api.hpp>
 
-#include <steem/plugins/follow/follow_operations.hpp>
+#include <hive/plugins/follow/follow_operations.hpp>
 
 #include <algorithm>
 #include <cctype>
@@ -62,9 +62,9 @@
 
 #define BRAIN_KEY_WORD_COUNT 16
 
-namespace steem { namespace wallet {
+namespace hive { namespace wallet {
 
-using steem::plugins::condenser_api::legacy_asset;
+using hive::plugins::condenser_api::legacy_asset;
 
 namespace detail {
 
@@ -222,14 +222,14 @@ class wallet_api_impl
 
 public:
    wallet_api& self;
-   wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const steem::protocol::chain_id_type& _steem_chain_id, fc::api< remote_node_api > rapi )
+   wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const hive::protocol::chain_id_type& _hive_chain_id, fc::api< remote_node_api > rapi )
       : self( s ),
         _remote_api( rapi )
    {
       init_prototype_ops();
 
       _wallet.ws_server = initial_data.ws_server;
-      steem_chain_id = _steem_chain_id;
+      hive_chain_id = _hive_chain_id;
    }
    virtual ~wallet_api_impl()
    {}
@@ -296,24 +296,24 @@ public:
                                                                           time_point_sec(time_point::now()),
                                                                           " old");
       result["participation"] = (100*dynamic_props.recent_slots_filled.popcount()) / 128.0;
-      result["median_sbd_price"] = _remote_api->get_current_median_history_price();
+      result["median_hbd_price"] = _remote_api->get_current_median_history_price();
       result["account_creation_fee"] = _remote_api->get_chain_properties().account_creation_fee;
-      result["post_reward_fund"] = fc::variant(_remote_api->get_reward_fund( STEEM_POST_REWARD_FUND_NAME )).get_object();
+      result["post_reward_fund"] = fc::variant(_remote_api->get_reward_fund( HIVE_POST_REWARD_FUND_NAME )).get_object();
       return result;
    }
 
    variant_object about() const
    {
-      string client_version( steem::utilities::git_revision_description );
+      string client_version( hive::utilities::git_revision_description );
       const size_t pos = client_version.find( '/' );
       if( pos != string::npos && client_version.size() > pos )
          client_version = client_version.substr( pos + 1 );
 
       fc::mutable_variant_object result;
-      result["blockchain_version"]       = STEEM_BLOCKCHAIN_VERSION;
+      result["blockchain_version"]       = HIVE_BLOCKCHAIN_VERSION;
       result["client_version"]           = client_version;
-      result["steem_revision"]           = steem::utilities::git_revision_sha;
-      result["steem_revision_age"]       = fc::get_approximate_relative_time_string( fc::time_point_sec( steem::utilities::git_revision_unix_timestamp ) );
+      result["hive_revision"]            = hive::utilities::git_revision_sha;
+      result["hive_revision_age"]        = fc::get_approximate_relative_time_string( fc::time_point_sec( hive::utilities::git_revision_unix_timestamp ) );
       result["fc_revision"]              = fc::git_revision_sha;
       result["fc_revision_age"]          = fc::get_approximate_relative_time_string( fc::time_point_sec( fc::git_revision_unix_timestamp ) );
       result["compile_date"]             = "compiled on " __DATE__ " at " __TIME__;
@@ -336,7 +336,7 @@ public:
       {
          auto v = _remote_api->get_version();
          result["server_blockchain_version"] = v.blockchain_version;
-         result["server_steem_revision"] = v.steem_revision;
+         result["server_hive_revision"] = v.hive_revision;
          result["server_fc_revision"] = v.fc_revision;
       }
       catch( fc::exception& )
@@ -389,7 +389,7 @@ public:
       fc::optional<fc::ecc::private_key> optional_private_key = wif_to_key(wif_key);
       if (!optional_private_key)
          FC_THROW("Invalid private key");
-      steem::chain::public_key_type wif_pub_key = optional_private_key->get_public_key();
+      hive::chain::public_key_type wif_pub_key = optional_private_key->get_public_key();
 
       _keys[wif_pub_key] = wif_key;
       return true;
@@ -460,7 +460,7 @@ public:
       for (int key_index = 0; ; ++key_index)
       {
          fc::ecc::private_key derived_private_key = derive_private_key(key_to_wif(parent_key), key_index);
-         steem::chain::public_key_type derived_public_key = derived_private_key.get_public_key();
+         hive::chain::public_key_type derived_public_key = derived_private_key.get_public_key();
          if( _keys.find(derived_public_key) == _keys.end() )
          {
             if (number_of_consecutive_unused_keys)
@@ -496,9 +496,9 @@ public:
          int memo_key_index = find_first_unused_derived_key_index(active_privkey);
          fc::ecc::private_key memo_privkey = derive_private_key( key_to_wif(active_privkey), memo_key_index);
 
-         steem::chain::public_key_type owner_pubkey = owner_privkey.get_public_key();
-         steem::chain::public_key_type active_pubkey = active_privkey.get_public_key();
-         steem::chain::public_key_type memo_pubkey = memo_privkey.get_public_key();
+         hive::chain::public_key_type owner_pubkey = owner_privkey.get_public_key();
+         hive::chain::public_key_type active_pubkey = active_privkey.get_public_key();
+         hive::chain::public_key_type memo_pubkey = memo_privkey.get_public_key();
 
          account_create_operation account_create_op;
 
@@ -545,7 +545,7 @@ public:
 
    void set_transaction_expiration( uint32_t tx_expiration_seconds )
    {
-      FC_ASSERT( tx_expiration_seconds < STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      FC_ASSERT( tx_expiration_seconds < HIVE_MAX_TIME_UNTIL_EXPIRATION );
       _tx_expiration_seconds = tx_expiration_seconds;
    }
 
@@ -689,7 +689,7 @@ public:
       }
 
       auto minimal_signing_keys = tx.minimize_required_signatures(
-         steem_chain_id,
+         hive_chain_id,
          available_keys,
          [&]( const string& account_name ) -> const authority&
          {
@@ -715,9 +715,9 @@ public:
 
             return null_auth;
          },
-         STEEM_MAX_SIG_CHECK_DEPTH,
-         STEEM_MAX_AUTHORITY_MEMBERSHIP,
-         STEEM_MAX_SIG_CHECK_ACCOUNTS,
+         HIVE_MAX_SIG_CHECK_DEPTH,
+         HIVE_MAX_AUTHORITY_MEMBERSHIP,
+         HIVE_MAX_SIG_CHECK_ACCOUNTS,
          fc::ecc::fc_canonical
          );
 
@@ -725,7 +725,7 @@ public:
       {
          auto it = available_private_keys.find(k);
          FC_ASSERT( it != available_private_keys.end() );
-         tx.sign( it->second, steem_chain_id, fc::ecc::fc_canonical );
+         tx.sign( it->second, hive_chain_id, fc::ecc::fc_canonical );
       }
 
       if( broadcast )
@@ -764,23 +764,23 @@ public:
          std::stringstream out;
 
          auto accounts = result.as<vector<condenser_api::api_account_object>>();
-         asset total_steem;
+         asset total_hive;
          asset total_vest(0, VESTS_SYMBOL );
-         asset total_sbd(0, SBD_SYMBOL );
+         asset total_hbd(0, HBD_SYMBOL );
          for( const auto& a : accounts ) {
-            total_steem += a.balance.to_asset();
+            total_hive += a.balance.to_asset();
             total_vest  += a.vesting_shares.to_asset();
-            total_sbd  += a.sbd_balance.to_asset();
+            total_hbd  += a.hbd_balance.to_asset();
             out << std::left << std::setw( 17 ) << std::string(a.name)
                 << std::right << std::setw(18) << fc::variant(a.balance).as_string() <<" "
                 << std::right << std::setw(26) << fc::variant(a.vesting_shares).as_string() <<" "
-                << std::right << std::setw(16) << fc::variant(a.sbd_balance).as_string() <<"\n";
+                << std::right << std::setw(16) << fc::variant(a.hbd_balance).as_string() <<"\n";
          }
          out << "-------------------------------------------------------------------------\n";
             out << std::left << std::setw( 17 ) << "TOTAL"
-                << std::right << std::setw(18) << legacy_asset::from_asset(total_steem).to_string() <<" "
+                << std::right << std::setw(18) << legacy_asset::from_asset(total_hive).to_string() <<" "
                 << std::right << std::setw(26) << legacy_asset::from_asset(total_vest).to_string() <<" "
-                << std::right << std::setw(16) << legacy_asset::from_asset(total_sbd).to_string() <<"\n";
+                << std::right << std::setw(16) << legacy_asset::from_asset(total_hbd).to_string() <<"\n";
          return out.str();
       };
       m["get_account_history"] = []( variant result, const fc::variants& a ) {
@@ -818,7 +818,7 @@ public:
              ss << ' ' << setw( 10 ) << o.orderid;
              ss << ' ' << setw( 10 ) << o.real_price;
              ss << ' ' << setw( 10 ) << fc::variant( asset( o.for_sale, o.sell_price.base.symbol ) ).as_string();
-             ss << ' ' << setw( 10 ) << (o.sell_price.base.symbol == STEEM_SYMBOL ? "SELL" : "BUY");
+             ss << ' ' << setw( 10 ) << (o.sell_price.base.symbol == HIVE_SYMBOL ? "SELL" : "BUY");
              ss << "\n";
           }
           return ss.str();
@@ -826,8 +826,8 @@ public:
       m["get_order_book"] = []( variant result, const fc::variants& a ) {
          auto orders = result.as< condenser_api::get_order_book_return >();
          std::stringstream ss;
-         asset bid_sum = asset( 0, SBD_SYMBOL );
-         asset ask_sum = asset( 0, SBD_SYMBOL );
+         asset bid_sum = asset( 0, HBD_SYMBOL );
+         asset ask_sum = asset( 0, HBD_SYMBOL );
          int spacing = 24;
 
          ss << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
@@ -848,11 +848,11 @@ public:
          {
             if ( i < orders.bids.size() )
             {
-               bid_sum += asset( orders.bids[i].sbd, SBD_SYMBOL );
+               bid_sum += asset( orders.bids[i].hbd, HBD_SYMBOL );
                ss
                   << ' ' << setw( spacing ) << legacy_asset::from_asset( bid_sum ).to_string()
-                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.bids[i].sbd, SBD_SYMBOL ) ).to_string()
-                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.bids[i].steem, STEEM_SYMBOL ) ).to_string()
+                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.bids[i].hbd, HBD_SYMBOL ) ).to_string()
+                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.bids[i].hive, HIVE_SYMBOL ) ).to_string()
                   << ' ' << setw( spacing ) << orders.bids[i].real_price;
             }
             else
@@ -864,10 +864,10 @@ public:
 
             if ( i < orders.asks.size() )
             {
-               ask_sum += asset( orders.asks[i].sbd, SBD_SYMBOL );
+               ask_sum += asset( orders.asks[i].hbd, HBD_SYMBOL );
                ss << ' ' << setw( spacing ) << orders.asks[i].real_price
-                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.asks[i].steem, STEEM_SYMBOL ) ).to_string()
-                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.asks[i].sbd, SBD_SYMBOL ) ).to_string()
+                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.asks[i].hive, HIVE_SYMBOL ) ).to_string()
+                  << ' ' << setw( spacing ) << legacy_asset::from_asset( asset( orders.asks[i].hbd, HBD_SYMBOL ) ).to_string()
                   << ' ' << setw( spacing ) << legacy_asset::from_asset( ask_sum ).to_string();
             }
 
@@ -915,7 +915,7 @@ public:
 
    string                                  _wallet_filename;
    wallet_data                             _wallet;
-   steem::protocol::chain_id_type          steem_chain_id;
+   hive::protocol::chain_id_type          hive_chain_id;
 
    map<public_key_type,string>             _keys;
    fc::sha512                              _checksum;
@@ -932,14 +932,14 @@ public:
    const string _wallet_filename_extension = ".wallet";
 };
 
-} } } // steem::wallet::detail
+} } } // hive::wallet::detail
 
 
 
-namespace steem { namespace wallet {
+namespace hive { namespace wallet {
 
-wallet_api::wallet_api(const wallet_data& initial_data, const steem::protocol::chain_id_type& _steem_chain_id, fc::api< remote_node_api > rapi)
-   : my(new detail::wallet_api_impl(*this, initial_data, _steem_chain_id, rapi))
+wallet_api::wallet_api(const wallet_data& initial_data, const hive::protocol::chain_id_type& _hive_chain_id, fc::api< remote_node_api > rapi)
+   : my(new detail::wallet_api_impl(*this, initial_data, _hive_chain_id, rapi))
 {}
 
 wallet_api::~wallet_api(){}
@@ -1008,11 +1008,11 @@ brain_key_info wallet_api::suggest_brain_key()const
 
    for( int i=0; i<BRAIN_KEY_WORD_COUNT; i++ )
    {
-      fc::bigint choice = entropy % steem::words::word_list_size;
-      entropy /= steem::words::word_list_size;
+      fc::bigint choice = entropy % hive::words::word_list_size;
+      entropy /= hive::words::word_list_size;
       if( i > 0 )
          brain_key += " ";
-      brain_key += steem::words::word_list[ choice.to_int64() ];
+      brain_key += hive::words::word_list[ choice.to_int64() ];
    }
 
    brain_key = normalize_brain_key(brain_key);
@@ -1262,7 +1262,7 @@ condenser_api::legacy_signed_transaction wallet_api::create_account_with_keys(
  */
 condenser_api::legacy_signed_transaction wallet_api::create_account_with_keys_delegated(
    string creator,
-   condenser_api::legacy_asset steem_fee,
+   condenser_api::legacy_asset hive_fee,
    condenser_api::legacy_asset delegated_vests,
    string new_account_name,
    string json_meta,
@@ -1281,7 +1281,7 @@ condenser_api::legacy_signed_transaction wallet_api::create_account_with_keys_de
    op.posting = authority( 1, posting, 1 );
    op.memo_key = memo;
    op.json_metadata = json_meta;
-   op.fee = steem_fee.to_asset();
+   op.fee = hive_fee.to_asset();
    op.delegation = delegated_vests.to_asset();
 
    signed_transaction tx;
@@ -1678,7 +1678,7 @@ condenser_api::legacy_signed_transaction wallet_api::create_account(
  */
 condenser_api::legacy_signed_transaction wallet_api::create_account_delegated(
    string creator,
-   condenser_api::legacy_asset steem_fee,
+   condenser_api::legacy_asset hive_fee,
    condenser_api::legacy_asset delegated_vests,
    string new_account_name,
    string json_meta,
@@ -1693,7 +1693,7 @@ condenser_api::legacy_signed_transaction wallet_api::create_account_delegated(
    import_key( active.wif_priv_key );
    import_key( posting.wif_priv_key );
    import_key( memo.wif_priv_key );
-   return create_account_with_keys_delegated( creator, steem_fee, delegated_vests, new_account_name, json_meta,  owner.pub_key, active.pub_key, posting.pub_key, memo.pub_key, broadcast );
+   return create_account_with_keys_delegated( creator, hive_fee, delegated_vests, new_account_name, json_meta,  owner.pub_key, active.pub_key, posting.pub_key, memo.pub_key, broadcast );
 } FC_CAPTURE_AND_RETHROW( (creator)(new_account_name)(json_meta) ) }
 
 
@@ -1871,8 +1871,8 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_transfer(
    string to,
    string agent,
    uint32_t escrow_id,
-   condenser_api::legacy_asset sbd_amount,
-   condenser_api::legacy_asset steem_amount,
+   condenser_api::legacy_asset hbd_amount,
+   condenser_api::legacy_asset hive_amount,
    condenser_api::legacy_asset fee,
    time_point_sec ratification_deadline,
    time_point_sec escrow_expiration,
@@ -1885,8 +1885,8 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_transfer(
    op.to = to;
    op.agent = agent;
    op.escrow_id = escrow_id;
-   op.sbd_amount = sbd_amount.to_asset();
-   op.steem_amount = steem_amount.to_asset();
+   op.hbd_amount = hbd_amount.to_asset();
+   op.hive_amount = hive_amount.to_asset();
    op.fee = fee.to_asset();
    op.ratification_deadline = ratification_deadline;
    op.escrow_expiration = escrow_expiration;
@@ -1953,8 +1953,8 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_release(
    string who,
    string receiver,
    uint32_t escrow_id,
-   condenser_api::legacy_asset sbd_amount,
-   condenser_api::legacy_asset steem_amount,
+   condenser_api::legacy_asset hbd_amount,
+   condenser_api::legacy_asset hive_amount,
    bool broadcast )
 {
    FC_ASSERT( !is_locked() );
@@ -1965,8 +1965,8 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_release(
    op.who = who;
    op.receiver = receiver;
    op.escrow_id = escrow_id;
-   op.sbd_amount = sbd_amount.to_asset();
-   op.steem_amount = steem_amount.to_asset();
+   op.hbd_amount = hbd_amount.to_asset();
+   op.hive_amount = hive_amount.to_asset();
 
    signed_transaction tx;
    tx.operations.push_back( op );
@@ -2103,7 +2103,7 @@ condenser_api::legacy_signed_transaction wallet_api::set_withdraw_vesting_route(
    return my->sign_transaction( tx, broadcast );
 }
 
-condenser_api::legacy_signed_transaction wallet_api::convert_sbd(
+condenser_api::legacy_signed_transaction wallet_api::convert_hbd(
    string from,
    condenser_api::legacy_asset amount,
    bool broadcast )
@@ -2204,16 +2204,16 @@ condenser_api::legacy_signed_transaction wallet_api::decline_voting_rights(
 
 condenser_api::legacy_signed_transaction wallet_api::claim_reward_balance(
    string account,
-   condenser_api::legacy_asset reward_steem,
-   condenser_api::legacy_asset reward_sbd,
+   condenser_api::legacy_asset reward_hive,
+   condenser_api::legacy_asset reward_hbd,
    condenser_api::legacy_asset reward_vests,
    bool broadcast )
 {
    FC_ASSERT( !is_locked() );
    claim_reward_balance_operation op;
    op.account = account;
-   op.reward_steem = reward_steem.to_asset();
-   op.reward_sbd = reward_sbd.to_asset();
+   op.reward_hive = reward_hive.to_asset();
+   op.reward_hbd = reward_hbd.to_asset();
    op.reward_vests = reward_vests.to_asset();
 
    signed_transaction tx;
@@ -2354,7 +2354,7 @@ condenser_api::legacy_signed_transaction wallet_api::vote(
    op.voter = voter;
    op.author = author;
    op.permlink = permlink;
-   op.weight = weight * STEEM_1_PERCENT;
+   op.weight = weight * HIVE_1_PERCENT;
 
    signed_transaction tx;
    tx.operations.push_back( op );
@@ -2492,4 +2492,4 @@ condenser_api::legacy_signed_transaction wallet_api::follow( string follower, st
       return my->sign_transaction( trx, broadcast );
    }
 
-} } // steem::wallet
+} } // hive::wallet

@@ -1,27 +1,27 @@
 #include <fc/macros.hpp>
 
-#if defined IS_TEST_NET && defined STEEM_ENABLE_SMT
+#if defined IS_TEST_NET && defined HIVE_ENABLE_SMT
 
 FC_TODO(Extend testing scenarios to support multiple NAIs per account)
 
 #include <boost/test/unit_test.hpp>
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
-#include <steem/protocol/exceptions.hpp>
-#include <steem/protocol/hardfork.hpp>
+#include <hive/protocol/exceptions.hpp>
+#include <hive/protocol/hardfork.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/database_exceptions.hpp>
-#include <steem/chain/steem_objects.hpp>
-#include <steem/chain/smt_objects.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/hive_objects.hpp>
+#include <hive/chain/smt_objects.hpp>
 
-#include <steem/chain/util/smt_token.hpp>
+#include <hive/chain/util/smt_token.hpp>
 
 #include "../db_fixture/database_fixture.hpp"
 
-using namespace steem::chain;
-using namespace steem::protocol;
+using namespace hive::chain;
+using namespace hive::protocol;
 using fc::string;
 using boost::container::flat_set;
 using boost::container::flat_map;
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE( comment_votable_assers_validate )
          }
 
          op.extensions.insert( ava );
-         STEEM_REQUIRE_THROW( op.validate(), fc::assert_exception );
+         HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
       }
 
       {
@@ -159,13 +159,13 @@ BOOST_AUTO_TEST_CASE( comment_votable_assers_validate )
          op.author = "alice";
          op.permlink = "test";
 
-         BOOST_TEST_MESSAGE( "--- Testing invalid configuration of votable_assets - STEEM added to container" );
+         BOOST_TEST_MESSAGE( "--- Testing invalid configuration of votable_assets - HIVE added to container" );
          allowed_vote_assets ava;
          const auto& smt = smts.front();
          ava.add_votable_asset(smt, share_type(20), false);
-         ava.add_votable_asset(STEEM_SYMBOL, share_type(20), true);
+         ava.add_votable_asset(HIVE_SYMBOL, share_type(20), true);
          op.extensions.insert( ava );
-         STEEM_REQUIRE_THROW( op.validate(), fc::assert_exception );
+         HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
       }
    }
    FC_LOG_AND_RETHROW()
@@ -177,17 +177,17 @@ BOOST_AUTO_TEST_CASE( asset_symbol_vesting_methods )
    {
       BOOST_TEST_MESSAGE( "Test asset_symbol vesting methods" );
 
-      asset_symbol_type Steem = STEEM_SYMBOL;
-      FC_ASSERT( Steem.is_vesting() == false );
-      FC_ASSERT( Steem.get_paired_symbol() == VESTS_SYMBOL );
+      asset_symbol_type Hive = HIVE_SYMBOL;
+      FC_ASSERT( Hive.is_vesting() == false );
+      FC_ASSERT( Hive.get_paired_symbol() == VESTS_SYMBOL );
 
       asset_symbol_type Vests = VESTS_SYMBOL;
       FC_ASSERT( Vests.is_vesting() );
-      FC_ASSERT( Vests.get_paired_symbol() == STEEM_SYMBOL );
+      FC_ASSERT( Vests.get_paired_symbol() == HIVE_SYMBOL );
 
-      asset_symbol_type Sbd = SBD_SYMBOL;
-      FC_ASSERT( Sbd.is_vesting() == false );
-      FC_ASSERT( Sbd.get_paired_symbol() == SBD_SYMBOL );
+      asset_symbol_type Hbd = HBD_SYMBOL;
+      FC_ASSERT( Hbd.is_vesting() == false );
+      FC_ASSERT( Hbd.get_paired_symbol() == HBD_SYMBOL );
 
       ACTORS( (alice) )
       generate_block();
@@ -242,31 +242,31 @@ BOOST_AUTO_TEST_CASE( setup_validate )
       asset_symbol_type alice_symbol = create_smt("alice", alice_private_key, 4);
 
       op.control_account = "";
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       //Invalid account
       op.control_account = "&&&&&&";
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       //FC_ASSERT( max_supply > 0 )
       op.control_account = "abcd";
       op.max_supply = -1;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       op.symbol = alice_symbol;
 
       //FC_ASSERT( max_supply > 0 )
       op.max_supply = 0;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      //FC_ASSERT( max_supply <= STEEM_MAX_SHARE_SUPPLY )
-      op.max_supply = STEEM_MAX_SHARE_SUPPLY + 1;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      //FC_ASSERT( max_supply <= HIVE_MAX_SHARE_SUPPLY )
+      op.max_supply = HIVE_MAX_SHARE_SUPPLY + 1;
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      //FC_ASSERT( generation_begin_time > STEEM_GENESIS_TIME )
-      op.max_supply = STEEM_MAX_SHARE_SUPPLY / 1000;
-      op.contribution_begin_time = STEEM_GENESIS_TIME;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      //FC_ASSERT( generation_begin_time > HIVE_GENESIS_TIME )
+      op.max_supply = HIVE_MAX_SHARE_SUPPLY / 1000;
+      op.contribution_begin_time = HIVE_GENESIS_TIME;
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       fc::time_point_sec start_time = fc::variant( "2018-03-07T00:00:00" ).as< fc::time_point_sec >();
       fc::time_point_sec t50 = start_time + fc::seconds( 50 );
@@ -276,155 +276,155 @@ BOOST_AUTO_TEST_CASE( setup_validate )
 
       op.contribution_begin_time = t100;
       op.contribution_end_time = t50;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       op.contribution_begin_time = t100;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       op.launch_time = t200;
       op.contribution_end_time = t300;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       op.contribution_begin_time = t50;
       op.contribution_end_time = t100;
       op.launch_time = t300;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       op.launch_time = t200;
       smt_capped_generation_policy gp = get_capped_generation_policy
       (
          get_generation_unit( { { "xyz", 1 } }, { { "xyz2", 2 } } )/*pre_soft_cap_unit*/,
          get_generation_unit()/*post_soft_cap_unit*/,
-         STEEM_100_PERCENT/*soft_cap_percent*/,
+         HIVE_100_PERCENT/*soft_cap_percent*/,
          1/*min_unit_ratio*/,
          2/*max_unit_ratio*/
       );
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       units to_many_units;
       for( uint32_t i = 0; i < SMT_MAX_UNIT_ROUTES + 1; ++i )
          to_many_units.emplace( "alice" + std::to_string( i ), 1 );
 
-      //FC_ASSERT( steem_unit.size() <= SMT_MAX_UNIT_ROUTES )
-      gp.pre_soft_cap_unit.steem_unit = to_many_units;
+      //FC_ASSERT( hive_unit.size() <= SMT_MAX_UNIT_ROUTES )
+      gp.pre_soft_cap_unit.hive_unit = to_many_units;
       gp.pre_soft_cap_unit.token_unit = { { "bob",3 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "bob2", 33 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "bob2", 33 } };
       gp.pre_soft_cap_unit.token_unit = to_many_units;
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       //Invalid account
-      gp.pre_soft_cap_unit.steem_unit = { { "{}{}", 12 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "{}{}", 12 } };
       gp.pre_soft_cap_unit.token_unit = { { "xyz", 13 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "xyz2", 14 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "xyz2", 14 } };
       gp.pre_soft_cap_unit.token_unit = { { "{}", 15 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       //Invalid account -> valid is '$from'
-      gp.pre_soft_cap_unit.steem_unit = { { "$fromx", 1 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$fromx", 1 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from", 2 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "$from", 3 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$from", 3 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from_", 4 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       //Invalid account -> valid is '$from.vesting'
-      gp.pre_soft_cap_unit.steem_unit = { { "$from.vestingx", 2 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$from.vestingx", 2 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from.vesting", 222 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "$from.vesting", 13 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$from.vesting", 13 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from.vesting.vesting", 3 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      //FC_ASSERT( steem_unit.value > 0 );
-      gp.pre_soft_cap_unit.steem_unit = { { "$from.vesting", 0 } };
+      //FC_ASSERT( hive_unit.value > 0 );
+      gp.pre_soft_cap_unit.hive_unit = { { "$from.vesting", 0 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from.vesting", 2 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "$from.vesting", 10 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$from.vesting", 10 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from.vesting", 0 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      //FC_ASSERT( steem_unit.value > 0 );
-      gp.pre_soft_cap_unit.steem_unit = { { "$from", 0 } };
+      //FC_ASSERT( hive_unit.value > 0 );
+      gp.pre_soft_cap_unit.hive_unit = { { "$from", 0 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from", 100 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "$from", 33 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "$from", 33 } };
       gp.pre_soft_cap_unit.token_unit = { { "$from", 0 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      //FC_ASSERT( steem_unit.value > 0 );
-      gp.pre_soft_cap_unit.steem_unit = { { "qprst", 0 } };
+      //FC_ASSERT( hive_unit.value > 0 );
+      gp.pre_soft_cap_unit.hive_unit = { { "qprst", 0 } };
       gp.pre_soft_cap_unit.token_unit = { { "qprst", 67 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "my_account2", 55 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "my_account2", 55 } };
       gp.pre_soft_cap_unit.token_unit = { { "my_account", 0 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.pre_soft_cap_unit.steem_unit = { { "bob", 2 }, { "$from.vesting", 3 }, { "$from", 4 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "bob", 2 }, { "$from.vesting", 3 }, { "$from", 4 } };
       gp.pre_soft_cap_unit.token_unit = { { "alice", 5 }, { "$from", 3 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
       gp.soft_cap_percent = 0;
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.soft_cap_percent = STEEM_100_PERCENT + 1;
+      gp.soft_cap_percent = HIVE_100_PERCENT + 1;
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.soft_cap_percent = STEEM_100_PERCENT;
-      gp.post_soft_cap_unit.steem_unit = { { "bob", 2 } };
+      gp.soft_cap_percent = HIVE_100_PERCENT;
+      gp.post_soft_cap_unit.hive_unit = { { "bob", 2 } };
       gp.post_soft_cap_unit.token_unit = {};
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.soft_cap_percent = STEEM_100_PERCENT;
-      gp.post_soft_cap_unit.steem_unit = {};
+      gp.soft_cap_percent = HIVE_100_PERCENT;
+      gp.post_soft_cap_unit.hive_unit = {};
       gp.post_soft_cap_unit.token_unit = { { "alice", 3 } };
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.soft_cap_percent = STEEM_100_PERCENT / 2;
-      gp.post_soft_cap_unit.steem_unit = {};
+      gp.soft_cap_percent = HIVE_100_PERCENT / 2;
+      gp.post_soft_cap_unit.hive_unit = {};
       gp.post_soft_cap_unit.token_unit = {};
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      gp.soft_cap_percent = STEEM_100_PERCENT;
-      gp.post_soft_cap_unit.steem_unit = {};
+      gp.soft_cap_percent = HIVE_100_PERCENT;
+      gp.post_soft_cap_unit.hive_unit = {};
       gp.post_soft_cap_unit.token_unit = {};
       op.initial_generation_policy = gp;
-      STEEM_REQUIRE_THROW( op.validate(), fc::exception );
+      HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-      op.steem_units_soft_cap = SMT_MIN_SOFT_CAP_STEEM_UNITS;
-      op.steem_units_hard_cap = SMT_MIN_HARD_CAP_STEEM_UNITS;
+      op.hive_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
+      op.hive_units_hard_cap = SMT_MIN_HARD_CAP_HIVE_UNITS;
       op.validate();
 
-      gp.max_unit_ratio = ( ( 11 * SMT_MIN_HARD_CAP_STEEM_UNITS ) / SMT_MIN_SATURATION_STEEM_UNITS ) * 2;
+      gp.max_unit_ratio = ( ( 11 * SMT_MIN_HARD_CAP_HIVE_UNITS ) / SMT_MIN_SATURATION_HIVE_UNITS ) * 2;
       op.initial_generation_policy = gp;
       op.validate();
 
@@ -435,7 +435,7 @@ BOOST_AUTO_TEST_CASE( setup_validate )
       smt_capped_generation_policy gp_valid = gp;
 
       gp.soft_cap_percent = 1;
-      gp.post_soft_cap_unit.steem_unit = { { "bob", 2 } };
+      gp.post_soft_cap_unit.hive_unit = { { "bob", 2 } };
       op.initial_generation_policy = gp;
       op.validate();
 
@@ -446,9 +446,9 @@ BOOST_AUTO_TEST_CASE( setup_validate )
       uint16_t max_val_16 = std::numeric_limits<uint16_t>::max();
       uint32_t max_val_32 = std::numeric_limits<uint32_t>::max();
 
-      gp.soft_cap_percent = STEEM_100_PERCENT - 1;
+      gp.soft_cap_percent = HIVE_100_PERCENT - 1;
       gp.min_unit_ratio = max_val_32;
-      gp.post_soft_cap_unit.steem_unit = { { "abc", 1 } };
+      gp.post_soft_cap_unit.hive_unit = { { "abc", 1 } };
       gp.post_soft_cap_unit.token_unit = { { "abc1", max_val_16 } };
       gp.pre_soft_cap_unit.token_unit = { { "abc2", max_val_16 } };
       op.initial_generation_policy = gp;
@@ -457,8 +457,8 @@ BOOST_AUTO_TEST_CASE( setup_validate )
       gp.min_unit_ratio = 1;
       gp.post_soft_cap_unit.token_unit = { { "abc1", 1 } };
       gp.pre_soft_cap_unit.token_unit = { { "abc2", 1 } };
-      gp.post_soft_cap_unit.steem_unit = { { "abc3", max_val_16 } };
-      gp.pre_soft_cap_unit.steem_unit = { { "abc34", max_val_16 } };
+      gp.post_soft_cap_unit.hive_unit = { { "abc3", max_val_16 } };
+      gp.pre_soft_cap_unit.hive_unit = { { "abc34", max_val_16 } };
       op.initial_generation_policy = gp;
       op.validate();
    }
@@ -503,14 +503,14 @@ BOOST_AUTO_TEST_CASE( setup_apply )
 
       smt_setup_operation op;
       op.control_account = "alice";
-      op.steem_units_soft_cap = SMT_MIN_SOFT_CAP_STEEM_UNITS;
-      op.steem_units_hard_cap = SMT_MIN_HARD_CAP_STEEM_UNITS;
+      op.hive_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
+      op.hive_units_hard_cap = SMT_MIN_HARD_CAP_HIVE_UNITS;
 
       smt_capped_generation_policy gp = get_capped_generation_policy
       (
          get_generation_unit( { { "xyz", 1 } }, { { "xyz2", 2 } } )/*pre_soft_cap_unit*/,
          get_generation_unit()/*post_soft_cap_unit*/,
-         STEEM_100_PERCENT/*soft_cap_percent*/,
+         HIVE_100_PERCENT/*soft_cap_percent*/,
          1/*min_unit_ratio*/,
          2/*max_unit_ratio*/
       );
@@ -526,9 +526,9 @@ BOOST_AUTO_TEST_CASE( setup_apply )
 
       //SMT doesn't exist
       tx.operations.push_back( op );
-      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, alice_private_key );
-      STEEM_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+      HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
       tx.operations.clear();
       tx.signatures.clear();
 
@@ -540,7 +540,7 @@ BOOST_AUTO_TEST_CASE( setup_apply )
       //Make transaction again. Everything is correct.
       op.symbol = alice_symbol;
       tx.operations.push_back( op );
-      tx.set_expiration( db->head_block_time() + STEEM_MAX_TIME_UNTIL_EXPIRATION );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, alice_private_key );
       db->push_transaction( tx, 0 );
       tx.operations.clear();
@@ -577,24 +577,24 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
       op.precision = op.symbol.decimals();
 
       BOOST_TEST_MESSAGE( " -- SMT create with insufficient HBD balance" );
-      // Fund with STEEM, and set fee with SBD.
+      // Fund with HIVE, and set fee with HBD.
       FUND( "alice", test_amount );
-      // Declare fee in SBD/TBD though alice has none.
-      op.smt_creation_fee = asset( test_amount, SBD_SYMBOL );
-      // Throw due to insufficient balance of SBD/TBD.
+      // Declare fee in HBD/TBD though alice has none.
+      op.smt_creation_fee = asset( test_amount, HBD_SYMBOL );
+      // Throw due to insufficient balance of HBD/TBD.
       FAIL_WITH_OP(op, alice_private_key, fc::assert_exception);
 
       BOOST_TEST_MESSAGE( " -- SMT create with insufficient HIVE balance" );
-      // Now fund with SBD, and set fee with STEEM.
-      convert( "alice", asset( test_amount, STEEM_SYMBOL ) );
-      // Declare fee in STEEM though alice has none.
-      op.smt_creation_fee = asset( test_amount, STEEM_SYMBOL );
-      // Throw due to insufficient balance of STEEM.
+      // Now fund with HBD, and set fee with HIVE.
+      convert( "alice", asset( test_amount, HIVE_SYMBOL ) );
+      // Declare fee in HIVE though alice has none.
+      op.smt_creation_fee = asset( test_amount, HIVE_SYMBOL );
+      // Throw due to insufficient balance of HIVE.
       FAIL_WITH_OP(op, alice_private_key, fc::assert_exception);
 
       BOOST_TEST_MESSAGE( " -- SMT create with available funds" );
       // Push valid operation.
-      op.smt_creation_fee = asset( test_amount, SBD_SYMBOL );
+      op.smt_creation_fee = asset( test_amount, HBD_SYMBOL );
       PUSH_OP( op, alice_private_key );
 
       BOOST_TEST_MESSAGE( " -- SMT cannot be created twice even with different precision" );
@@ -604,7 +604,7 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
       // Check that another user/account can't be used to create duplicating SMT even with different precision.
       create_conflicting_smt(op.symbol, "bob", bob_private_key);
 
-      BOOST_TEST_MESSAGE( " -- Check that an SMT cannot be created with decimals greater than STEEM_MAX_DECIMALS" );
+      BOOST_TEST_MESSAGE( " -- Check that an SMT cannot be created with decimals greater than HIVE_MAX_DECIMALS" );
       // Check that invalid SMT can't be created
       create_invalid_smt("alice", alice_private_key);
 
@@ -620,15 +620,15 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
       op.precision = op.symbol.decimals();
 
       BOOST_TEST_MESSAGE( " -- Check that we cannot create an SMT with an insufficent HIVE creation fee" );
-      // Check too low fee in STEEM.
+      // Check too low fee in HIVE.
       FUND( "bob", too_low_fee_amount );
-      op.smt_creation_fee = asset( too_low_fee_amount, STEEM_SYMBOL );
+      op.smt_creation_fee = asset( too_low_fee_amount, HIVE_SYMBOL );
       FAIL_WITH_OP(op, bob_private_key, fc::assert_exception);
 
       BOOST_TEST_MESSAGE( " -- Check that we cannot create an SMT with an insufficent HBD creation fee" );
-      // Check too low fee in SBD.
-      convert( "bob", asset( too_low_fee_amount, STEEM_SYMBOL ) );
-      op.smt_creation_fee = asset( too_low_fee_amount, SBD_SYMBOL );
+      // Check too low fee in HBD.
+      convert( "bob", asset( too_low_fee_amount, HIVE_SYMBOL ) );
+      op.smt_creation_fee = asset( too_low_fee_amount, HBD_SYMBOL );
       FAIL_WITH_OP(op, bob_private_key, fc::assert_exception);
 
       validate_database();

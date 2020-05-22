@@ -1,9 +1,9 @@
-#include <steem/plugins/follow_api/follow_api_plugin.hpp>
-#include <steem/plugins/follow_api/follow_api.hpp>
+#include <hive/plugins/follow_api/follow_api_plugin.hpp>
+#include <hive/plugins/follow_api/follow_api.hpp>
 
-#include <steem/plugins/follow/follow_objects.hpp>
+#include <hive/plugins/follow/follow_objects.hpp>
 
-namespace steem { namespace plugins { namespace follow {
+namespace hive { namespace plugins { namespace follow {
 
 namespace detail {
 
@@ -18,7 +18,7 @@ inline void set_what( vector< follow::follow_type >& what, uint16_t bitmask )
 class follow_api_impl
 {
    public:
-      follow_api_impl() : _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ) {}
+      follow_api_impl() : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
       DECLARE_API_IMPL(
          (get_followers)
@@ -117,7 +117,7 @@ DEFINE_API_IMPL( follow_api_impl, get_feed_entries )
    {
       const auto& comment = _db.get( itr->comment );
       feed_entry entry;
-      entry.author = comment.author;
+      entry.author = _db.get_account(comment.author_id).name;
       entry.permlink = chain::to_string( comment.permlink );
       entry.entry_id = itr->account_feed_id;
 
@@ -190,7 +190,7 @@ DEFINE_API_IMPL( follow_api_impl, get_blog_entries )
    {
       const auto& comment = _db.get( itr->comment );
       blog_entry entry;
-      entry.author = comment.author;
+      entry.author = _db.get_account(comment.author_id).name;
       entry.permlink = chain::to_string( comment.permlink );
       entry.blog = args.account;
       entry.reblog_on = itr->reblogged_on;
@@ -265,9 +265,9 @@ DEFINE_API_IMPL( follow_api_impl, get_reblogged_by )
    const auto& post = _db.get_comment( args.author, args.permlink );
    const auto& blog_idx = _db.get_index< follow::blog_index, follow::by_comment >();
 
-   auto itr = blog_idx.lower_bound( post.id );
+   auto itr = blog_idx.lower_bound( post.get_id() );
 
-   while( itr != blog_idx.end() && itr->comment == post.id && result.accounts.size() < 2000 )
+   while( itr != blog_idx.end() && itr->comment == post.get_id() && result.accounts.size() < 2000 )
    {
       result.accounts.push_back( itr->account );
       ++itr;
@@ -296,7 +296,7 @@ DEFINE_API_IMPL( follow_api_impl, get_blog_authors )
 
 follow_api::follow_api(): my( new detail::follow_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_FOLLOW_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_FOLLOW_API_PLUGIN_NAME );
 }
 
 follow_api::~follow_api() {}
@@ -314,4 +314,4 @@ DEFINE_READ_APIS( follow_api,
    (get_blog_authors)
 )
 
-} } } // steem::plugins::follow
+} } } // hive::plugins::follow

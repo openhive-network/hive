@@ -1,14 +1,9 @@
 #pragma once
 
-#include <steem/chain/database.hpp>
+#include <hive/chain/database.hpp>
 #include <fstream>
 
-namespace steem { namespace chain {
-
-   namespace u_types
-   {
-      enum op_type { create, modify, remove };
-   };
+namespace hive { namespace chain {
 
    /*
       The class 'undo_scenario' simplifies writing tests from 'undo_tests' group.
@@ -24,37 +19,6 @@ namespace steem { namespace chain {
 
          std::list< Object > old_values;
 
-         //Calls proper method( create, modify, remove ) for given database object.
-         template< typename CALL >
-         const Object* run_impl( const Object* old_obj, u_types::op_type op, CALL call )
-         {
-            switch( op )
-            {
-               case u_types::create:
-                  assert( !old_obj );
-                  return &db.create< Object >( call );
-               break;
-
-               case u_types::modify:
-                  assert( old_obj );
-                  db.modify( *old_obj, call );
-                  return old_obj;
-               break;
-
-               case u_types::remove:
-                  assert( old_obj );
-                  db.remove( *old_obj );
-                  return nullptr;
-               break;
-
-               default:
-                  assert( 0 && "Unknown operation" );
-               break;
-            }
-            return nullptr;
-         }
-
-      protected:
       public:
 
          undo_scenario( chain::database& _db ): db( _db )
@@ -64,24 +28,24 @@ namespace steem { namespace chain {
          virtual ~undo_scenario(){}
 
          //Proxy method for `database::create`.
-         template< typename CALL >
-         const Object& create( CALL call )
+         template< typename ... CALL_ARGS >
+         const Object& create( CALL_ARGS&&... call_args )
          {
-            return *run_impl( nullptr, u_types::create, call );
+            return db.create< Object >( std::forward<CALL_ARGS>( call_args )... );
          }
 
          //Proxy method for `database::modify`.
          template< typename CALL >
-         const Object& modify( const Object& old_obj, CALL call )
+         const Object& modify( const Object& old_obj, CALL&& call )
          {
-            return *run_impl( &old_obj, u_types::modify, call );
+            db.modify( old_obj, std::forward<CALL>( call ) );
+            return old_obj;
          }
 
          //Proxy method for `database::remove`.
          const void remove( const Object& old_obj )
          {
-            static std::function< void( Object& ) > empty;
-            run_impl( &old_obj, u_types::remove, empty );
+            db.remove( old_obj );
          }
 
          //Save old objects before launching 'undo' mechanism.
@@ -95,7 +59,7 @@ namespace steem { namespace chain {
             auto it = idx.begin();
 
             while( it != idx.end() )
-               old_values.emplace_back( *( it++ ) );
+               old_values.emplace_back( ( it++ )->copy_chain_object() );
          }
 
          //Get size of given index.
@@ -129,7 +93,7 @@ namespace steem { namespace chain {
                {
                   const Object& actual = *it;
                   const Object& old = *it_old;
-                  if( actual.id != old.id )
+                  if( actual.get_id() != old.get_id() )
                      return false;
 
                   ++it;

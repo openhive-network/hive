@@ -1,21 +1,21 @@
-#include <steem/plugins/condenser_api/condenser_api.hpp>
-#include <steem/plugins/condenser_api/condenser_api_plugin.hpp>
+#include <hive/plugins/condenser_api/condenser_api.hpp>
+#include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
 
-#include <steem/plugins/database_api/database_api_plugin.hpp>
-#include <steem/plugins/block_api/block_api_plugin.hpp>
-#include <steem/plugins/account_history_api/account_history_api_plugin.hpp>
-#include <steem/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
-#include <steem/plugins/network_broadcast_api/network_broadcast_api_plugin.hpp>
-#include <steem/plugins/tags_api/tags_api_plugin.hpp>
-#include <steem/plugins/follow_api/follow_api_plugin.hpp>
-#include <steem/plugins/reputation_api/reputation_api_plugin.hpp>
-#include <steem/plugins/market_history_api/market_history_api_plugin.hpp>
+#include <hive/plugins/database_api/database_api_plugin.hpp>
+#include <hive/plugins/block_api/block_api_plugin.hpp>
+#include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
+#include <hive/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
+#include <hive/plugins/network_broadcast_api/network_broadcast_api_plugin.hpp>
+#include <hive/plugins/tags_api/tags_api_plugin.hpp>
+#include <hive/plugins/follow_api/follow_api_plugin.hpp>
+#include <hive/plugins/reputation_api/reputation_api_plugin.hpp>
+#include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
 
 
-#include <steem/utilities/git_revision.hpp>
+#include <hive/utilities/git_revision.hpp>
 
-#include <steem/chain/util/reward.hpp>
-#include <steem/chain/util/uint256.hpp>
+#include <hive/chain/util/reward.hpp>
+#include <hive/chain/util/uint256.hpp>
 
 #include <fc/git_revision.hpp>
 
@@ -28,7 +28,7 @@
 #define CHECK_ARG_SIZE( s ) \
    FC_ASSERT( args.size() == s, "Expected #s argument(s), was ${n}", ("n", args.size()) );
 
-namespace steem { namespace plugins { namespace condenser_api {
+namespace hive { namespace plugins { namespace condenser_api {
 
 namespace detail
 {
@@ -38,12 +38,12 @@ namespace detail
    {
       public:
          condenser_api_impl() :
-            _chain( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >() ),
+            _chain( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >() ),
             _db( _chain.db() )
          {
             _on_post_apply_block_conn = _db.add_post_apply_block_handler(
                [&]( const block_notification& note ){ on_post_apply_block( note.block ); },
-               appbase::app().get_plugin< steem::plugins::condenser_api::condenser_api_plugin >(),
+               appbase::app().get_plugin< hive::plugins::condenser_api::condenser_api_plugin >(),
                0 );
          }
 
@@ -143,7 +143,7 @@ namespace detail
 
          void on_post_apply_block( const signed_block& b );
 
-         steem::plugins::chain::chain_plugin&                              _chain;
+         hive::plugins::chain::chain_plugin&                              _chain;
 
          chain::database&                                                  _db;
 
@@ -167,12 +167,7 @@ namespace detail
    DEFINE_API_IMPL( condenser_api_impl, get_version )
    {
       CHECK_ARG_SIZE( 0 )
-      return get_version_return
-      (
-         fc::string( STEEM_BLOCKCHAIN_VERSION ),
-         fc::string( steem::utilities::git_revision_sha ),
-         fc::string( fc::git_revision_sha )
-      );
+      return _database_api->get_version( {} );
    }
 
    DEFINE_API_IMPL( condenser_api_impl, get_trending_tags )
@@ -336,13 +331,14 @@ namespace detail
             {
       #ifndef IS_LOW_MEM
                int count = 0;
+               const account_id_type acnt_id = _db.get_account(acnt).get_id();
                const auto& pidx = _db.get_index< comment_index, by_author_last_update >();
-               auto itr = pidx.lower_bound( acnt );
+               auto itr = pidx.lower_bound( acnt_id );
                eacnt.comments = vector<string>();
 
-               while( itr != pidx.end() && itr->author == acnt && count < 20 )
+               while( itr != pidx.end() && itr->author_id == acnt_id && count < 20 )
                {
-                  if( itr->parent_author.size() )
+                  if( itr->parent_author_id != HIVE_ROOT_POST_PARENT_ID )
                   {
                      const auto link = acnt + "/" + to_string( itr->permlink );
                      eacnt.comments->push_back( link );
@@ -892,7 +888,7 @@ namespace detail
 
    DEFINE_API_IMPL( condenser_api_impl, get_account_references )
    {
-      FC_ASSERT( false, "condenser_api::get_account_references --- Needs to be refactored for Steem." );
+      FC_ASSERT( false, "condenser_api::get_account_references --- Needs to be refactored for Hive." );
    }
 
    DEFINE_API_IMPL( condenser_api_impl, lookup_account_names )
@@ -998,13 +994,15 @@ namespace detail
       if( destination == outgoing || destination == all )
       {
          auto routes = _database_api->find_withdraw_vesting_routes( { account, database_api::by_withdraw_route } ).routes;
-         result.insert( result.end(), routes.begin(), routes.end() );
+         for( auto& route : routes )
+           result.emplace_back( route.copy_chain_object() ); //FIXME: exposes internal chain object as API result
       }
 
       if( destination == incoming || destination == all )
       {
          auto routes = _database_api->find_withdraw_vesting_routes( { account, database_api::by_destination } ).routes;
-         result.insert( result.end(), routes.begin(), routes.end() );
+         for( auto& route : routes )
+            result.emplace_back( route.copy_chain_object() ); //FIXME: exposes internal chain object as API result
       }
 
       return result;
@@ -1114,7 +1112,7 @@ namespace detail
    DEFINE_API_IMPL( condenser_api_impl, get_conversion_requests )
    {
       CHECK_ARG_SIZE( 1 )
-      auto requests = _database_api->find_sbd_conversion_requests(
+      auto requests = _database_api->find_hbd_conversion_requests(
          {
             args[0].as< account_name_type >()
          }).requests;
@@ -1215,7 +1213,7 @@ namespace detail
       {
          result.push_back( *itr );
 
-         // if( itr->sell_price.base.symbol == STEEM_SYMBOL )
+         // if( itr->sell_price.base.symbol == HIVE_SYMBOL )
          //    result.back().real_price = (~result.back().sell_price).to_real();
          // else
          //    result.back().real_price = (result.back().sell_price).to_real();
@@ -1276,7 +1274,7 @@ namespace detail
       vector< tags::vote_state > votes;
       const auto& comment = _db.get_comment( args[0].as< account_name_type >(), args[1].as< string >() );
       const auto& idx = _db.get_index< chain::comment_vote_index, chain::by_comment_voter >();
-      chain::comment_id_type cid(comment.id);
+      chain::comment_id_type cid( comment.get_id() );
       auto itr = idx.lower_bound( cid );
 
       while( itr != idx.end() && itr->comment == cid )
@@ -1315,14 +1313,14 @@ namespace detail
       const auto& voter_acnt = _db.get_account( voter );
       const auto& idx = _db.get_index< comment_vote_index, by_voter_comment >();
 
-      account_id_type aid( voter_acnt.id );
+      account_id_type aid( voter_acnt.get_id() );
       auto itr = idx.lower_bound( aid );
       auto end = idx.upper_bound( aid );
       while( itr != end )
       {
          const auto& vo = _db.get( itr->comment );
          account_vote avote;
-         avote.authorperm = vo.author + "/" + to_string( vo.permlink );
+         avote.authorperm = _db.get_account(vo.author_id).name + "/" + to_string( vo.permlink );
          avote.weight = itr->weight;
          avote.rshares = itr->rshares;
          avote.percent = itr->vote_percent;
@@ -1356,13 +1354,19 @@ namespace detail
    {
       CHECK_ARG_SIZE( 2 )
 
-      account_name_type author = args[0].as< account_name_type >();
+      vector< discussion > result;
+      
+      const account_object* author = _db.find_account( args[0].as< account_name_type >() );
+      account_id_type author_id;
+      if( author == nullptr )
+         return result;
+      else
+         author_id = author->get_id();
       string permlink = args[1].as< string >();
       const auto& by_permlink_idx = _db.get_index< comment_index, by_parent >();
-      auto itr = by_permlink_idx.find( boost::make_tuple( author, permlink ) );
-      vector< discussion > result;
+      auto itr = by_permlink_idx.find( boost::make_tuple( author_id, permlink ) );
 
-      while( itr != by_permlink_idx.end() && itr->parent_author == author && to_string( itr->parent_permlink ) == permlink )
+      while( itr != by_permlink_idx.end() && itr->parent_author_id == author_id && to_string( itr->parent_permlink ) == permlink )
       {
          result.push_back( discussion( database_api::api_comment_object( *itr, _db ) ) );
          set_pending_payout( result.back() );
@@ -1615,26 +1619,35 @@ namespace detail
       FC_ASSERT( limit <= 100 );
       const auto& last_update_idx = _db.get_index< comment_index, by_last_update >();
       auto itr = last_update_idx.begin();
-      const account_name_type* parent_author = &start_parent_author;
+      const account_object* parent_author_obj = nullptr;
 
       if( start_permlink.size() )
       {
-         const auto& comment = _db.get_comment( start_parent_author, start_permlink );
+         const comment_object& comment = _db.get_comment( start_parent_author, start_permlink );
          itr = last_update_idx.iterator_to( comment );
-         parent_author = &comment.parent_author;
+         parent_author_obj = &_db.get_account( comment.parent_author_id );
       }
       else if( start_parent_author.size() )
       {
-         itr = last_update_idx.lower_bound( start_parent_author );
+         parent_author_obj = _db.find_account( start_parent_author );
+         itr = last_update_idx.lower_bound( parent_author_obj->get_id() );
       }
 
       result.reserve( limit );
 
-      while( itr != last_update_idx.end() && result.size() < limit && itr->parent_author == *parent_author )
+      if( parent_author_obj == nullptr )
+      {
+         parent_author_obj = _db.find_account( start_parent_author );
+         if( parent_author_obj == nullptr )
+            return result;
+      }
+      const account_id_type parent_author_id{ parent_author_obj->get_id() };
+
+      while( itr != last_update_idx.end() && result.size() < limit && itr->parent_author_id == parent_author_id )
       {
          result.push_back( discussion( database_api::api_comment_object( *itr, _db ) ) );
          set_pending_payout( result.back() );
-         result.back().active_votes = get_active_votes( { fc::variant( itr->author ), fc::variant( itr->permlink ) } );
+         result.back().active_votes = get_active_votes( { fc::variant( itr->author_id ), fc::variant( itr->permlink ) } );
          ++itr;
       }
 
@@ -1918,16 +1931,18 @@ namespace detail
 
    DEFINE_API_IMPL( condenser_api_impl, list_proposals )
    {
-      FC_ASSERT( args.size() >= 3 && args.size() <= 5, "Expected 3-5 argument, was ${n}", ("n", args.size()) );
+      FC_ASSERT( args.size() >= 3 && args.size() <= 6, "Expected 3-6 argument, was ${n}", ("n", args.size()) );
 
-      steem::plugins::database_api::list_proposals_args list_args;
+      hive::plugins::database_api::list_proposals_args list_args;
       list_args.start           = args[0];
       list_args.limit           = args[1].as< uint32_t >();
-      list_args.order           = args[2].as< steem::plugins::database_api::sort_order_type >();
+      list_args.order           = args[2].as< hive::plugins::database_api::sort_order_type >();
       list_args.order_direction = args.size() > 3 ?
-         args[3].as< steem::plugins::database_api::order_direction_type >() : database_api::ascending;
+         args[3].as< hive::plugins::database_api::order_direction_type >() : database_api::ascending;
       list_args.status          = args.size() > 4 ?
-         args[4].as< steem::plugins::database_api::proposal_status >() : database_api::all;
+         args[4].as< hive::plugins::database_api::proposal_status >() : database_api::all;
+      list_args.last_id         = args.size() > 5 ?
+         fc::optional<uint64_t>( args[5].as< uint64_t >() ) : fc::optional<uint64_t>();
 
       const auto& proposals = _database_api->list_proposals( list_args ).proposals;
       list_proposals_return result;
@@ -1941,7 +1956,7 @@ namespace detail
    {
       CHECK_ARG_SIZE( 1 )
 
-      const auto& proposals = _database_api->find_proposals( { args[0].as< vector< steem::plugins::database_api::api_id_type > >() } ).proposals;
+      const auto& proposals = _database_api->find_proposals( { args[0].as< vector< hive::plugins::database_api::api_id_type > >() } ).proposals;
       find_proposals_return result;
 
       for( const auto& p : proposals ) result.emplace_back( api_proposal_object( p ) );
@@ -1953,14 +1968,14 @@ namespace detail
    {
       FC_ASSERT( args.size() >= 3 && args.size() <= 5, "Expected 3-5 argument, was ${n}", ("n", args.size()) );
 
-      steem::plugins::database_api::list_proposals_args list_args;
+      hive::plugins::database_api::list_proposals_args list_args;
       list_args.start           = args[0];
       list_args.limit           = args[1].as< uint32_t >();
-      list_args.order           = args[2].as< steem::plugins::database_api::sort_order_type >();
+      list_args.order           = args[2].as< hive::plugins::database_api::sort_order_type >();
       list_args.order_direction = args.size() > 3 ?
-         args[3].as< steem::plugins::database_api::order_direction_type >() : database_api::ascending;
+         args[3].as< hive::plugins::database_api::order_direction_type >() : database_api::ascending;
       list_args.status          = args.size() > 4 ?
-         args[4].as< steem::plugins::database_api::proposal_status >() : database_api::all;
+         args[4].as< hive::plugins::database_api::proposal_status >() : database_api::all;
 
       return _database_api->list_proposal_votes( list_args ).proposal_votes;
    }
@@ -2011,7 +2026,7 @@ namespace detail
          auto itr = cidx.lower_bound( d.id );
          if( itr != cidx.end() && itr->comment == d.id )
          {
-            d.promoted = legacy_asset::from_asset( asset( itr->promoted_balance, SBD_SYMBOL ) );
+            d.promoted = legacy_asset::from_asset( asset( itr->promoted_balance, HBD_SYMBOL ) );
          }
       }
 
@@ -2019,25 +2034,25 @@ namespace detail
       const auto& hist  = _db.get_feed_history();
 
       asset pot;
-      if( _db.has_hardfork( STEEM_HARDFORK_0_17__774 ) )
-         pot = _db.get_reward_fund( _db.get_comment( d.author, d.permlink ) ).reward_balance;
+      if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
+         pot = _db.get_reward_fund().reward_balance;
       else
-         pot = props.total_reward_fund_steem;
+         pot = props.get_total_reward_fund_hive();
 
       if( !hist.current_median_history.is_null() ) pot = pot * hist.current_median_history;
 
       u256 total_r2 = 0;
-      if( _db.has_hardfork( STEEM_HARDFORK_0_17__774 ) )
-         total_r2 = chain::util::to256( _db.get_reward_fund( _db.get_comment( d.author, d.permlink ) ).recent_claims );
+      if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
+         total_r2 = chain::util::to256( _db.get_reward_fund().recent_claims );
       else
          total_r2 = chain::util::to256( props.total_reward_shares2 );
 
       if( total_r2 > 0 )
       {
          uint128_t vshares;
-         if( _db.has_hardfork( STEEM_HARDFORK_0_17__774 ) )
+         if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
          {
-            const auto& rf = _db.get_reward_fund( _db.get_comment( d.author, d.permlink ) );
+            const auto& rf = _db.get_reward_fund();
             vshares = d.net_rshares.value > 0 ? chain::util::evaluate_reward_curve( d.net_rshares.value, rf.author_reward_curve, rf.content_constant ) : 0;
          }
          else
@@ -2059,7 +2074,7 @@ namespace detail
          }
       }
 
-      if( d.parent_author != STEEM_ROOT_POST_PARENT )
+      if( d.parent_author != HIVE_ROOT_POST_PARENT )
          d.cashout_time = _db.calculate_discussion_payout_time( _db.get< chain::comment_object >( d.id ) );
 
       if( d.body.size() > 1024*128 )
@@ -2120,7 +2135,7 @@ namespace detail
 
 uint16_t api_account_object::_compute_voting_power( const database_api::api_account_object& a )
 {
-   if( a.voting_manabar.last_update_time < STEEM_HARDFORK_0_20_TIME )
+   if( a.voting_manabar.last_update_time < HIVE_HARDFORK_0_20_TIME )
       return (uint16_t) a.voting_manabar.current_mana;
 
    auto vests = chain::util::get_effective_vesting_shares( a );
@@ -2129,24 +2144,24 @@ uint16_t api_account_object::_compute_voting_power( const database_api::api_acco
 
    //
    // Let t1 = last_vote_time, t2 = last_update_time
-   // vp_t2 = STEEM_100_PERCENT * current_mana / vests
-   // vp_t1 = vp_t2 - STEEM_100_PERCENT * (t2 - t1) / STEEM_VOTING_MANA_REGENERATION_SECONDS
+   // vp_t2 = HIVE_100_PERCENT * current_mana / vests
+   // vp_t1 = vp_t2 - HIVE_100_PERCENT * (t2 - t1) / HIVE_VOTING_MANA_REGENERATION_SECONDS
    //
 
    uint32_t t1 = a.last_vote_time.sec_since_epoch();
    uint32_t t2 = a.voting_manabar.last_update_time;
    uint64_t dt = (t2 > t1) ? (t2 - t1) : 0;
-   uint64_t vp_dt = STEEM_100_PERCENT * dt / STEEM_VOTING_MANA_REGENERATION_SECONDS;
+   uint64_t vp_dt = HIVE_100_PERCENT * dt / HIVE_VOTING_MANA_REGENERATION_SECONDS;
 
-   uint128_t vp_t2 = STEEM_100_PERCENT;
+   uint128_t vp_t2 = HIVE_100_PERCENT;
    vp_t2 *= a.voting_manabar.current_mana;
    vp_t2 /= vests;
 
    uint64_t vp_t2u = vp_t2.to_uint64();
-   if( vp_t2u >= STEEM_100_PERCENT )
+   if( vp_t2u >= HIVE_100_PERCENT )
    {
       wlog( "Truncated vp_t2u to HIVE_100_PERCENT for account ${a}", ("a", a.name) );
-      vp_t2u = STEEM_100_PERCENT;
+      vp_t2u = HIVE_100_PERCENT;
    }
    uint16_t vp_t1 = uint16_t( vp_t2u ) - uint16_t( std::min( vp_t2u, vp_dt ) );
 
@@ -2156,7 +2171,7 @@ uint16_t api_account_object::_compute_voting_power( const database_api::api_acco
 condenser_api::condenser_api()
    : my( new detail::condenser_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_CONDENSER_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_CONDENSER_API_PLUGIN_NAME );
 }
 
 condenser_api::~condenser_api() {}
@@ -2317,4 +2332,4 @@ DEFINE_READ_APIS( condenser_api,
    (find_proposals)
 )
 
-} } } // steem::plugins::condenser_api
+} } } // hive::plugins::condenser_api

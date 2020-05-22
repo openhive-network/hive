@@ -1,6 +1,8 @@
-#include <steem/chain/block_log.hpp>
+#include <hive/chain/block_log.hpp>
 #include <fstream>
 #include <fc/io/raw.hpp>
+
+#include <appbase/application.hpp>
 
 #include <boost/thread/mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
@@ -9,7 +11,7 @@
 #define LOG_READ  (std::ios::in | std::ios::binary)
 #define LOG_WRITE (std::ios::out | std::ios::binary | std::ios::app)
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
    typedef boost::interprocess::scoped_lock< boost::mutex > scoped_lock;
 
@@ -165,7 +167,7 @@ namespace steem { namespace chain {
             else if( block_pos > index_pos )
             {
                ilog( "Index is incomplete" );
-               construct_index();
+               construct_index( true/*resume*/, index_pos );
             }
          }
          else
@@ -318,7 +320,7 @@ namespace steem { namespace chain {
       FC_LOG_AND_RETHROW()
    }
 
-   optional< signed_block > block_log::read_block_by_num( uint32_t block_num )const
+   optional< std::pair< signed_block, uint64_t > > block_log::read_block_by_num( uint32_t block_num )const
    {
       try
       {
@@ -326,17 +328,19 @@ namespace steem { namespace chain {
 
          if( my->use_locking )
          {
-            lock.lock();;
+            lock.lock();
          }
 
-         optional< signed_block > b;
+         optional< std::pair< signed_block, uint64_t > > res;
+
          uint64_t pos = get_block_pos_helper( block_num );
          if( pos != npos )
          {
-            b = read_block_helper( pos ).first;
-            FC_ASSERT( b->block_num() == block_num , "Wrong block was read from block log.", ( "returned", b->block_num() )( "expected", block_num ));
+            res = read_block_helper( pos );
+            const signed_block& b = res->first;
+            FC_ASSERT( b.block_num() == block_num , "Wrong block was read from block log.", ( "returned", b.block_num() )( "expected", block_num ));
          }
-         return b;
+         return res;
       }
       FC_LOG_AND_RETHROW()
    }
@@ -402,17 +406,20 @@ namespace steem { namespace chain {
       return my->head;
    }
 
-   void block_log::construct_index()
+   void block_log::construct_index( bool resume, uint64_t index_pos )
    {
       try
       {
          ilog( "Reconstructing Block Log Index..." );
          my->index_stream.close();
-         fc::remove_all( my->index_file );
+
+         if( !resume )
+            fc::remove_all( my->index_file );
+
          my->index_stream.open( my->index_file.generic_string().c_str(), LOG_WRITE );
          my->index_write = true;
 
-         uint64_t pos = 0;
+         uint64_t pos = resume ? index_pos : 0;
          uint64_t end_pos;
          my->check_block_read();
 
@@ -421,13 +428,27 @@ namespace steem { namespace chain {
          signed_block tmp;
 
          my->block_stream.seekg( pos );
+         if( resume )
+         {
+            my->index_stream.seekg( 0, std::ios::end );
 
-         while( pos < end_pos )
+            fc::raw::unpack( my->block_stream, tmp );
+            my->block_stream.read( (char*)&pos, sizeof( pos ) );
+
+            ilog("Resuming Block Log Index. Last applied: ( block number: ${n} )( trx: ${trx} )( bytes position: ${pos} )",
+                                                                                          ( "n", tmp.block_num() )( "trx", tmp.id() )( "pos", pos ) );
+         }
+
+         while( !appbase::app().is_interrupt_request() && pos < end_pos )
          {
             fc::raw::unpack( my->block_stream, tmp );
             my->block_stream.read( (char*)&pos, sizeof( pos ) );
             my->index_stream.write( (char*)&pos, sizeof( pos ) );
          }
+
+         if( appbase::app().is_interrupt_request() )
+            ilog("Creating Block Log Index is interrupted on user request. Last applied: ( block number: ${n} )( trx: ${trx} )( bytes position: ${pos} )",
+                                                                                          ( "n", tmp.block_num() )( "trx", tmp.id() )( "pos", pos ) );
 
          /// Flush and reopen to be sure that given index file has been saved.
          /// Otherwise just executed replay, next stopped by ctrl+C can again corrupt this file. 
@@ -442,4 +463,4 @@ namespace steem { namespace chain {
    {
       my->use_locking = true;
    }
-} } // steem::chain
+} } // hive::chain

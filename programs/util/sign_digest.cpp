@@ -8,9 +8,9 @@
 #include <fc/reflect/reflect.hpp>
 #include <fc/variant.hpp>
 
-#include <steem/utilities/key_conversion.hpp>
+#include <hive/utilities/key_conversion.hpp>
 
-#include <steem/protocol/types.hpp>
+#include <hive/protocol/types.hpp>
 
 struct signing_request
 {
@@ -21,8 +21,8 @@ struct signing_request
 struct signing_result
 {
    fc::sha256                         dig;
-   steem::protocol::public_key_type key;
-   steem::protocol::signature_type  sig;
+   hive::protocol::public_key_type key;
+   hive::protocol::signature_type  sig;
 };
 
 FC_REFLECT( signing_request, (dig)(wif) )
@@ -45,9 +45,9 @@ int main(int argc, char** argv, char** envp)
       fc::from_variant( v, sreq );
       signing_result sres;
       sres.dig = sreq.dig;
-      fc::ecc::private_key priv_key = *steem::utilities::wif_to_key( sreq.wif );
+      fc::ecc::private_key priv_key = *hive::utilities::wif_to_key( sreq.wif );
       sres.sig = priv_key.sign_compact( sreq.dig );
-      sres.key = steem::protocol::public_key_type( priv_key.get_public_key() );
+      sres.key = hive::protocol::public_key_type( priv_key.get_public_key() );
       std::cout << fc::json::to_string( sres ) << std::endl;
    }
    return 0;

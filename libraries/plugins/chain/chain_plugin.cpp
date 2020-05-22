@@ -1,11 +1,11 @@
-#include <steem/chain/database_exceptions.hpp>
+#include <hive/chain/database_exceptions.hpp>
 
-#include <steem/plugins/chain/abstract_block_producer.hpp>
-#include <steem/plugins/chain/chain_plugin.hpp>
-#include <steem/plugins/statsd/utility.hpp>
+#include <hive/plugins/chain/abstract_block_producer.hpp>
+#include <hive/plugins/chain/chain_plugin.hpp>
+#include <hive/plugins/statsd/utility.hpp>
 
-#include <steem/utilities/benchmark_dumper.hpp>
-#include <steem/utilities/database_configuration.hpp>
+#include <hive/utilities/benchmark_dumper.hpp>
+#include <hive/utilities/database_configuration.hpp>
 
 #include <fc/string.hpp>
 #include <fc/io/json.hpp>
@@ -22,12 +22,19 @@
 #include <memory>
 #include <iostream>
 
-namespace steem { namespace plugins { namespace chain {
+namespace hive { namespace plugins { namespace chain {
 
-using namespace steem;
+#define BENCHMARK_FILE_NAME "replay_benchmark.json"
+
+using namespace hive;
+
 using fc::flat_map;
-using steem::chain::block_id_type;
+using hive::chain::block_id_type;
 namespace asio = boost::asio;
+
+using hive::plugins::chain::synchronization_type;
+using index_memory_details_cntr_t = hive::utilities::benchmark_dumper::index_memory_details_cntr_t;
+using get_indexes_memory_details_type = std::function< void( index_memory_details_cntr_t&, bool ) >;
 
 #define NUM_THREADS 1
 
@@ -68,6 +75,14 @@ class chain_plugin_impl
 
       void start_write_processing();
       void stop_write_processing();
+
+      void start_replay_processing( synchronization_type& on_sync );
+
+      void initial_settings();
+      void open();
+      bool replay_blockchain();
+      void work( synchronization_type& on_sync );
+
       void write_default_database_config( bfs::path& p );
 
       uint64_t                         shared_memory_size = 0;
@@ -85,6 +100,8 @@ class chain_plugin_impl
       bool                             benchmark_is_enabled = false;
       bool                             statsd_on_replay = false;
       uint32_t                         stop_replay_at = 0;
+      bool                             exit_after_replay = false;
+      bool                             resume_replay = false;
       uint32_t                         benchmark_interval = 0;
       uint32_t                         flush_interval = 0;
       bool                             replay_in_memory = false;
@@ -105,6 +122,12 @@ class chain_plugin_impl
       database  db;
       std::string block_generator_registrant;
       std::shared_ptr< abstract_block_producer > block_generator;
+   
+      hive::utilities::benchmark_dumper   dumper;
+      database::open_args                 db_open_args;
+      get_indexes_memory_details_type     get_indexes_memory_details;
+
+      bool                                is_p2p_enabled = true;
 };
 
 struct write_request_visitor
@@ -297,10 +320,214 @@ void chain_plugin_impl::stop_write_processing()
    write_processor_thread.reset();
 }
 
+void chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
+{
+   FC_ASSERT( replay, "Replaying is not enabled" );
+
+   bool replay_is_last_operation = replay_blockchain();
+
+   if( replay_is_last_operation )
+   {
+      if( !appbase::app().is_interrupt_request() )
+      {
+         /*
+            Triggering artifical signal.
+            Whole application should be closed in identical way, as if it was closed by user.
+            This case occurs only when `exit-after-replay` switch is used.
+         */
+        appbase::app().generate_interrupt_request();
+      }
+   }
+   else
+   {
+      //if `stop_replay_at` > 0 stay in API node context( without synchronization )
+      if( stop_replay_at > 0 )
+         is_p2p_enabled = false;
+
+      //Replaying is definitely finished. It's time to synchronization/regular work.
+      work( on_sync );
+   }
+}
+
+void chain_plugin_impl::initial_settings()
+{
+   if( statsd_on_replay )
+   {
+      auto statsd = appbase::app().find_plugin< hive::plugins::statsd::statsd_plugin >();
+      if( statsd != nullptr )
+      {
+         statsd->start_logging();
+      }
+   }
+
+   ilog( "Starting chain with shared_file_size: ${n} bytes", ("n", shared_memory_size) );
+
+   if(resync)
+   {
+      wlog("resync requested: deleting block log and shared memory");
+      db.wipe( app().data_dir() / "blockchain", shared_memory_dir, true );
+   }
+
+   db.set_flush_interval( flush_interval );
+   db.add_checkpoints( loaded_checkpoints );
+   db.set_require_locking( check_locks );
+
+   const auto& abstract_index_cntr = db.get_abstract_index_cntr();
+
+   get_indexes_memory_details = [ this, &abstract_index_cntr ]
+      (index_memory_details_cntr_t& index_memory_details_cntr, bool onlyStaticInfo)
+   {
+      if( dump_memory_details == false )
+         return;
+
+      for (auto idx : abstract_index_cntr)
+      {
+         auto info = idx->get_statistics(onlyStaticInfo);
+         index_memory_details_cntr.emplace_back(std::move(info._value_type_name), info._item_count,
+            info._item_sizeof, info._item_additional_allocation, info._additional_container_allocation);
+      }
+   };
+
+   fc::variant database_config;
+
+#ifdef ENABLE_MIRA
+   try
+   {
+      database_config = fc::json::from_file( database_cfg, fc::json::strict_parser );
+   }
+   catch ( const std::exception& e )
+   {
+      elog( "Error while parsing database configuration: ${e}", ("e", e.what()) );
+      exit( EXIT_FAILURE );
+   }
+   catch ( const fc::exception& e )
+   {
+      elog( "Error while parsing database configuration: ${e}", ("e", e.what()) );
+      exit( EXIT_FAILURE );
+   }
+#endif
+
+   db_open_args.data_dir = app().data_dir() / "blockchain";
+   db_open_args.shared_mem_dir = shared_memory_dir;
+   db_open_args.initial_supply = HIVE_INIT_SUPPLY;
+   db_open_args.hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;
+   db_open_args.shared_file_size = shared_memory_size;
+   db_open_args.shared_file_full_threshold = shared_file_full_threshold;
+   db_open_args.shared_file_scale_rate = shared_file_scale_rate;
+   db_open_args.sps_remove_threshold = sps_remove_threshold;
+   db_open_args.chainbase_flags = chainbase_flags;
+   db_open_args.do_validate_invariants = validate_invariants;
+   db_open_args.stop_replay_at = stop_replay_at;
+   db_open_args.exit_after_replay = exit_after_replay;
+   db_open_args.resume_replay = resume_replay;
+   db_open_args.benchmark_is_enabled = benchmark_is_enabled;
+   db_open_args.database_cfg = database_config;
+   db_open_args.replay_in_memory = replay_in_memory;
+   db_open_args.replay_memory_indices = replay_memory_indices;
+
+   auto benchmark_lambda = [ this ] ( uint32_t current_block_number,
+      const chainbase::database::abstract_index_cntr_t& abstract_index_cntr )
+   {
+      if( current_block_number == 0 ) // initial call
+      {
+         typedef hive::utilities::benchmark_dumper::database_object_sizeof_cntr_t database_object_sizeof_cntr_t;
+         auto get_database_objects_sizeofs = [ this, &abstract_index_cntr ]
+            (database_object_sizeof_cntr_t& database_object_sizeof_cntr)
+         {
+            if ( dump_memory_details == false)
+               return;
+
+            for (auto idx : abstract_index_cntr)
+            {
+               auto info = idx->get_statistics(true);
+               database_object_sizeof_cntr.emplace_back(std::move(info._value_type_name), info._item_sizeof);
+            }
+         };
+
+         dumper.initialize( get_database_objects_sizeofs, BENCHMARK_FILE_NAME );
+         return;
+      }
+
+      const hive::utilities::benchmark_dumper::measurement& measure =
+         dumper.measure( current_block_number, get_indexes_memory_details );
+      ilog( "Performance report at block ${n}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
+         ("n", current_block_number)
+         ("rt", measure.real_ms)
+         ("ct", measure.cpu_ms)
+         ("cm", measure.current_mem)
+         ("pm", measure.peak_mem) );
+   };
+
+   db_open_args.benchmark = hive::chain::database::TBenchmark( benchmark_interval, benchmark_lambda );
+}
+
+void chain_plugin_impl::open()
+{
+   try
+   {
+      ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
+
+      db.open( db_open_args );
+
+      if( dump_memory_details )
+         dumper.dump( true, get_indexes_memory_details );
+   }
+   catch( const fc::exception& e )
+   {
+      wlog( "Error opening database. If the binary or configuration has changed, replay the blockchain explicitly using `--replay-blockchain`." );
+      wlog( "If you know what you are doing you can skip this check and force open the database using `--force-open`." );
+      wlog( "WARNING: THIS MAY CORRUPT YOUR DATABASE. FORCE OPEN AT YOUR OWN RISK." );
+      wlog( " Error: ${e}", ("e", e) );
+      exit(EXIT_FAILURE);
+   }
+}
+
+bool chain_plugin_impl::replay_blockchain()
+{
+   try
+   {
+      ilog("Replaying blockchain on user request.");
+      uint32_t last_block_number = 0;
+      last_block_number = db.reindex( db_open_args );
+
+      if( benchmark_interval > 0 )
+      {
+         const hive::utilities::benchmark_dumper::measurement& total_data = dumper.dump( true, get_indexes_memory_details );
+         ilog( "Performance report (total). Blocks: ${b}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
+               ("b", total_data.block_number)
+               ("rt", total_data.real_ms)
+               ("ct", total_data.cpu_ms)
+               ("cm", total_data.current_mem)
+               ("pm", total_data.peak_mem) );
+      }
+
+      if( stop_replay_at > 0 && stop_replay_at == last_block_number )
+      {
+         ilog("Stopped blockchain replaying on user request. Last applied block number: ${n}.", ("n", last_block_number));
+      }
+
+      /*
+         Returns information if the replay is last operation.
+      */
+      return appbase::app().is_interrupt_request()/*user triggered SIGINT/SIGTERM*/ || exit_after_replay/*shutdown node definitely*/;
+   } FC_CAPTURE_AND_LOG( () )
+
+   return true;
+}
+
+void chain_plugin_impl::work( synchronization_type& on_sync )
+{
+   ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
+
+   on_sync();
+
+   start_write_processing();
+}
+
 void chain_plugin_impl::write_default_database_config( bfs::path &p )
 {
    ilog( "writing database configuration: ${p}", ("p", p.string()) );
-   fc::json::save_to_file( steem::utilities::default_database_configuration(), p );
+   fc::json::save_to_file( hive::utilities::default_database_configuration(), p );
 }
 
 } // detail
@@ -310,7 +537,7 @@ chain_plugin::chain_plugin() : my( new detail::chain_plugin_impl() ) {}
 chain_plugin::~chain_plugin(){}
 
 database& chain_plugin::db() { return my->db; }
-const steem::chain::database& chain_plugin::db() const { return my->db; }
+const hive::chain::database& chain_plugin::db() const { return my->db; }
 
 bfs::path chain_plugin::state_storage_dir() const
 {
@@ -340,7 +567,9 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
          ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
          ("force-open", bpo::bool_switch()->default_value(false), "force open the database, skipping the environment check" )
          ("resync-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and block log" )
-         ("stop-replay-at-block", bpo::value<uint32_t>(), "Stop and exit after reaching given block number")
+         ("stop-replay-at-block", bpo::value<uint32_t>(), "Stop after reaching given block number")
+         ("exit-after-replay", bpo::bool_switch()->default_value(false), "Exit after reaching given block number")
+         ("resume-replay", bpo::bool_switch()->default_value(false), "Resume replaying")
          ("advanced-benchmark", "Make profiling for every plugin.")
          ("set-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks")
          ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
@@ -351,7 +580,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
          ("memory-replay,m", bpo::bool_switch()->default_value(false), "Replay with state in memory instead of on disk")
 #endif
 #ifdef IS_TEST_NET
-         ("chain-id", bpo::value< std::string >()->default_value( STEEM_CHAIN_ID ), "chain ID to connect to")
+         ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
 #endif
          ;
 }
@@ -382,8 +611,9 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
    my->replay              = options.at( "replay-blockchain").as<bool>();
    my->resync              = options.at( "resync-blockchain").as<bool>();
-   my->stop_replay_at      =
-      options.count( "stop-replay-at-block" ) ? options.at( "stop-replay-at-block" ).as<uint32_t>() : 0;
+   my->stop_replay_at      = options.count( "stop-replay-at-block" ) ? options.at( "stop-replay-at-block" ).as<uint32_t>() : 0;
+   my->exit_after_replay   = options.count( "exit-after-replay" ) ? options.at( "exit-after-replay" ).as<bool>() : false;
+   my->resume_replay       = options.count( "resume-replay" ) ? options.at( "resume-replay" ).as<bool>() : false;
    my->benchmark_interval  =
       options.count( "set-benchmark-interval" ) ? options.at( "set-benchmark-interval" ).as<uint32_t>() : 0;
    my->check_locks         = options.at( "check-locks" ).as< bool >();
@@ -452,171 +682,19 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 #endif
 }
 
-#define BENCHMARK_FILE_NAME "replay_benchmark.json"
-
 void chain_plugin::plugin_startup()
 {
-   if( my->statsd_on_replay )
+   my->initial_settings();
+
+   if( my->replay )
    {
-      auto statsd = appbase::app().find_plugin< steem::plugins::statsd::statsd_plugin >();
-      if( statsd != nullptr )
-      {
-         statsd->start_logging();
-      }
-   }
-
-   ilog( "Starting chain with shared_file_size: ${n} bytes", ("n", my->shared_memory_size) );
-
-   if(my->resync)
-   {
-      wlog("resync requested: deleting block log and shared memory");
-      my->db.wipe( app().data_dir() / "blockchain", my->shared_memory_dir, true );
-   }
-
-   my->db.set_flush_interval( my->flush_interval );
-   my->db.add_checkpoints( my->loaded_checkpoints );
-   my->db.set_require_locking( my->check_locks );
-
-   bool dump_memory_details = my->dump_memory_details;
-   steem::utilities::benchmark_dumper dumper;
-
-   const auto& abstract_index_cntr = my->db.get_abstract_index_cntr();
-
-   typedef steem::utilities::benchmark_dumper::index_memory_details_cntr_t index_memory_details_cntr_t;
-   auto get_indexes_memory_details = [dump_memory_details, &abstract_index_cntr]
-      (index_memory_details_cntr_t& index_memory_details_cntr, bool onlyStaticInfo)
-   {
-      if (dump_memory_details == false)
-         return;
-
-      for (auto idx : abstract_index_cntr)
-      {
-         auto info = idx->get_statistics(onlyStaticInfo);
-         index_memory_details_cntr.emplace_back(std::move(info._value_type_name), info._item_count,
-            info._item_sizeof, info._item_additional_allocation, info._additional_container_allocation);
-      }
-   };
-
-   fc::variant database_config;
-
-#ifdef ENABLE_MIRA
-   try
-   {
-      database_config = fc::json::from_file( my->database_cfg, fc::json::strict_parser );
-   }
-   catch ( const std::exception& e )
-   {
-      elog( "Error while parsing database configuration: ${e}", ("e", e.what()) );
-      exit( EXIT_FAILURE );
-   }
-   catch ( const fc::exception& e )
-   {
-      elog( "Error while parsing database configuration: ${e}", ("e", e.what()) );
-      exit( EXIT_FAILURE );
-   }
-#endif
-
-   database::open_args db_open_args;
-   db_open_args.data_dir = app().data_dir() / "blockchain";
-   db_open_args.shared_mem_dir = my->shared_memory_dir;
-   db_open_args.initial_supply = STEEM_INIT_SUPPLY;
-   db_open_args.sbd_initial_supply = STEEM_SBD_INIT_SUPPLY;
-   db_open_args.shared_file_size = my->shared_memory_size;
-   db_open_args.shared_file_full_threshold = my->shared_file_full_threshold;
-   db_open_args.shared_file_scale_rate = my->shared_file_scale_rate;
-   db_open_args.sps_remove_threshold = my->sps_remove_threshold;
-   db_open_args.chainbase_flags = my->chainbase_flags;
-   db_open_args.do_validate_invariants = my->validate_invariants;
-   db_open_args.stop_replay_at = my->stop_replay_at;
-   db_open_args.benchmark_is_enabled = my->benchmark_is_enabled;
-   db_open_args.database_cfg = database_config;
-   db_open_args.replay_in_memory = my->replay_in_memory;
-   db_open_args.replay_memory_indices = my->replay_memory_indices;
-
-   auto benchmark_lambda = [&dumper, &get_indexes_memory_details, dump_memory_details] ( uint32_t current_block_number,
-      const chainbase::database::abstract_index_cntr_t& abstract_index_cntr )
-   {
-      if( current_block_number == 0 ) // initial call
-      {
-         typedef steem::utilities::benchmark_dumper::database_object_sizeof_cntr_t database_object_sizeof_cntr_t;
-         auto get_database_objects_sizeofs = [dump_memory_details, &abstract_index_cntr]
-            (database_object_sizeof_cntr_t& database_object_sizeof_cntr)
-         {
-            if (dump_memory_details == false)
-               return;
-
-            for (auto idx : abstract_index_cntr)
-            {
-               auto info = idx->get_statistics(true);
-               database_object_sizeof_cntr.emplace_back(std::move(info._value_type_name), info._item_sizeof);
-            }
-         };
-
-         dumper.initialize(get_database_objects_sizeofs, BENCHMARK_FILE_NAME);
-         return;
-      }
-
-      const steem::utilities::benchmark_dumper::measurement& measure =
-         dumper.measure(current_block_number, get_indexes_memory_details);
-      ilog( "Performance report at block ${n}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
-         ("n", current_block_number)
-         ("rt", measure.real_ms)
-         ("ct", measure.cpu_ms)
-         ("cm", measure.current_mem)
-         ("pm", measure.peak_mem) );
-   };
-
-   if(my->replay)
-   {
-      ilog("Replaying blockchain on user request.");
-      uint32_t last_block_number = 0;
-      db_open_args.benchmark = steem::chain::database::TBenchmark(my->benchmark_interval, benchmark_lambda);
-      last_block_number = my->db.reindex( db_open_args );
-
-      if( my->benchmark_interval > 0 )
-      {
-         const steem::utilities::benchmark_dumper::measurement& total_data = dumper.dump(true, get_indexes_memory_details);
-         ilog( "Performance report (total). Blocks: ${b}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
-               ("b", total_data.block_number)
-               ("rt", total_data.real_ms)
-               ("ct", total_data.cpu_ms)
-               ("cm", total_data.current_mem)
-               ("pm", total_data.peak_mem) );
-      }
-
-      if( my->stop_replay_at > 0 && my->stop_replay_at == last_block_number )
-      {
-         ilog("Stopped blockchain replaying on user request. Last applied block number: ${n}.", ("n", last_block_number));
-         exit(EXIT_SUCCESS);
-      }
+      my->start_replay_processing( on_sync );
    }
    else
    {
-      db_open_args.benchmark = steem::chain::database::TBenchmark(dump_memory_details, benchmark_lambda);
-
-      try
-      {
-         ilog("Opening shared memory from ${path}", ("path",my->shared_memory_dir.generic_string()));
-
-         my->db.open( db_open_args );
-
-         if( dump_memory_details )
-            dumper.dump( true, get_indexes_memory_details );
-      }
-      catch( const fc::exception& e )
-      {
-         wlog( "Error opening database. If the binary or configuration has changed, replay the blockchain explicitly using `--replay-blockchain`." );
-         wlog( "If you know what you are doing you can skip this check and force open the database using `--force-open`." );
-         wlog( "WARNING: THIS MAY CORRUPT YOUR DATABASE. FORCE OPEN AT YOUR OWN RISK." );
-         wlog( " Error: ${e}", ("e", e) );
-         exit(EXIT_FAILURE);
-      }
+      my->open();
+      my->work( on_sync );
    }
-
-   ilog( "Started on blockchain with ${n} blocks", ("n", my->db.head_block_num()) );
-   on_sync();
-
-   my->start_write_processing();
 }
 
 void chain_plugin::plugin_shutdown()
@@ -633,7 +711,7 @@ void chain_plugin::report_state_options( const string& plugin_name, const fc::va
    my->plugin_state_opts( opts );
 }
 
-bool chain_plugin::accept_block( const steem::chain::signed_block& block, bool currently_syncing, uint32_t skip )
+bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip )
 {
    if (currently_syncing && block.block_num() % 10000 == 0) {
       ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p}",
@@ -659,7 +737,7 @@ bool chain_plugin::accept_block( const steem::chain::signed_block& block, bool c
    return cxt.success;
 }
 
-void chain_plugin::accept_transaction( const steem::chain::signed_transaction& trx )
+void chain_plugin::accept_transaction( const hive::chain::signed_transaction& trx )
 {
    boost::promise< void > prom;
    write_context cxt;
@@ -675,7 +753,7 @@ void chain_plugin::accept_transaction( const steem::chain::signed_transaction& t
    return;
 }
 
-steem::chain::signed_block chain_plugin::generate_block(
+hive::chain::signed_block chain_plugin::generate_block(
    const fc::time_point_sec when,
    const account_name_type& witness_owner,
    const fc::ecc::private_key& block_signing_private_key,
@@ -708,17 +786,17 @@ int16_t chain_plugin::set_write_lock_hold_time( int16_t new_time )
    return old_time;
 }
 
-bool chain_plugin::block_is_on_preferred_chain(const steem::chain::block_id_type& block_id )
+bool chain_plugin::block_is_on_preferred_chain(const hive::chain::block_id_type& block_id )
 {
    // If it's not known, it's not preferred.
    if( !db().is_known_block(block_id) ) return false;
 
    // Extract the block number from block_id, and fetch that block number's ID from the database.
    // If the database's block ID matches block_id, then block_id is on the preferred chain. Otherwise, it's on a fork.
-   return db().get_block_id_for_num( steem::chain::block_header::num_from_id( block_id ) ) == block_id;
+   return db().get_block_id_for_num( hive::chain::block_header::num_from_id( block_id ) ) == block_id;
 }
 
-void chain_plugin::check_time_in_block( const steem::chain::signed_block& block )
+void chain_plugin::check_time_in_block( const hive::chain::signed_block& block )
 {
    time_point_sec now = fc::time_point::now();
 
@@ -738,4 +816,9 @@ void chain_plugin::register_block_generator( const std::string& plugin_name, std
    my->block_generator = block_producer;
 }
 
-} } } // namespace steem::plugis::chain::chain_apis
+bool chain_plugin::is_p2p_enabled() const
+{
+   return my->is_p2p_enabled;
+}
+
+} } } // namespace hive::plugis::chain::chain_apis

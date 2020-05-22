@@ -1,14 +1,14 @@
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
-#include <steem/plugins/tags/tags_plugin.hpp>
+#include <hive/plugins/tags/tags_plugin.hpp>
 
-#include <steem/protocol/config.hpp>
+#include <hive/protocol/config.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/index.hpp>
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/comment_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/index.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/comment_object.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>
@@ -18,7 +18,7 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/algorithm/string.hpp>
 
-namespace steem { namespace plugins { namespace tags {
+namespace hive { namespace plugins { namespace tags {
 
 /**
  * https://medium.com/hacking-and-gonzo/how-reddit-ranking-algorithms-work-ef111e33d0d9#.lcbj6auuw
@@ -50,7 +50,7 @@ inline double calculate_trending( const share_type& score, const time_point_sec&
 
 namespace detail {
 
-using namespace steem::protocol;
+using namespace hive::protocol;
 
 class tags_plugin_impl
 {
@@ -79,7 +79,7 @@ class tags_plugin_impl
 };
 
 tags_plugin_impl::tags_plugin_impl() :
-   _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ) {}
+   _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
 tags_plugin_impl::~tags_plugin_impl() {}
 
@@ -87,7 +87,7 @@ void tags_plugin_impl::remove_stats( const tag_object& tag, const tag_stats_obje
 {
    _db.modify( stats, [&]( tag_stats_object& s )
    {
-        if( tag.parent == comment_id_type() )
+        if( tag.is_post() )
         {
            s.top_posts--;
         }
@@ -104,7 +104,7 @@ void tags_plugin_impl::add_stats( const tag_object& tag, const tag_stats_object&
 {
    _db.modify( stats, [&]( tag_stats_object& s )
    {
-        if( tag.parent == comment_id_type() )
+        if( tag.is_post() )
         {
            s.top_posts++;
         }
@@ -179,8 +179,10 @@ comment_metadata tags_plugin_impl::filter_tags( const comment_object& c, const c
       lower_tags.insert( fc::to_lower( tag ) );
    }
 
+   const comment_cashout_object* comment_cashout = _db.get_comment_cashout( c );
+
    /// the universal tag applies to everything safe for work or nsfw with a non-negative payout
-   if( c.net_rshares >= 0 )
+   if( comment_cashout &&  comment_cashout->net_rshares >= 0 )
    {
       lower_tags.insert( string() ); /// add it to the universal tag
    }
@@ -195,13 +197,16 @@ void tags_plugin_impl::update_tag( const tag_object& current, const comment_obje
     const auto& stats = get_stats( current.tag );
     remove_stats( current, stats );
 
-    if( comment.cashout_time != fc::time_point_sec::maximum() ) {
+   const comment_cashout_object* comment_cashout = _db.get_comment_cashout( comment );
+
+    if( comment_cashout ) {
+
        _db.modify( current, [&]( tag_object& obj ) {
-          obj.active            = comment.active;
+          obj.active            = comment_cashout->active;
           obj.cashout           = _db.calculate_discussion_payout_time( comment );
-          obj.children          = comment.children;
-          obj.net_rshares       = comment.net_rshares.value;
-          obj.net_votes         = comment.net_votes;
+          obj.children          = comment_cashout->children;
+          obj.net_rshares       = comment_cashout->net_rshares.value;
+          obj.net_votes         = comment_cashout->net_votes;
           obj.hot               = hot;
           obj.trending          = trending;
           if( obj.cashout == fc::time_point_sec() )
@@ -215,23 +220,25 @@ void tags_plugin_impl::update_tag( const tag_object& current, const comment_obje
 
 void tags_plugin_impl::create_tag( const string& tag, const comment_object& comment, double hot, double trending )const
 {
-   comment_id_type parent;
-   account_id_type author = _db.get_account( comment.author ).id;
+   comment_id_type parent = comment_object::id_type::null_id();
+   account_id_type author = comment.author_id;
 
-   if( comment.parent_author.size() )
-      parent = _db.get_comment( comment.parent_author, comment.parent_permlink ).id;
+   if( comment.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
+      parent = _db.get_comment( comment.parent_author_id, comment.parent_permlink ).get_id();
+
+   const comment_cashout_object* cc = _db.get_comment_cashout( comment );
 
    const auto& tag_obj = _db.create<tag_object>( [&]( tag_object& obj )
    {
        obj.tag               = tag;
-       obj.comment           = comment.id;
+       obj.comment           = comment.get_id();
        obj.parent            = parent;
        obj.created           = comment.created;
-       obj.active            = comment.active;
-       obj.cashout           = comment.cashout_time;
-       obj.net_votes         = comment.net_votes;
-       obj.children          = comment.children;
-       obj.net_rshares       = comment.net_rshares.value;
+       obj.active            = cc ? cc->active : fc::time_point_sec();
+       obj.cashout           = cc ? cc->cashout_time : fc::time_point_sec::maximum();
+       obj.net_votes         = cc ? cc->net_votes : 0;
+       obj.children          = cc ? cc->children : 0;
+       obj.net_rshares       = cc ? cc->net_rshares.value : 0;
        obj.author            = author;
        obj.hot               = hot;
        obj.trending          = trending;
@@ -264,21 +271,24 @@ void tags_plugin_impl::update_tags( const comment_object& c, bool parse_tags )co
 {
    try {
 
-   auto hot = calculate_hot( c.net_rshares, c.created );
-   auto trending = calculate_trending( c.net_rshares, c.created );
+   const comment_cashout_object* comment_cashout = _db.get_comment_cashout( c );
+   auto net_rshares = comment_cashout ? comment_cashout->net_rshares : 0;
+
+   auto hot = calculate_hot( net_rshares, c.created );
+   auto trending = calculate_trending( net_rshares, c.created );
 
    const auto& comment_idx = _db.get_index< tag_index >().indices().get< by_comment >();
 
 #ifndef IS_LOW_MEM
    if( parse_tags )
    {
-      auto meta = filter_tags( c, _db.get< comment_content_object, chain::by_comment >( c.id ) );
-      auto citr = comment_idx.lower_bound( c.id );
+      auto meta = filter_tags( c, _db.get< comment_content_object, chain::by_comment >( c.get_id() ) );
+      auto citr = comment_idx.lower_bound( c.get_id() );
 
       map< string, const tag_object* > existing_tags;
       vector< const tag_object* > remove_queue;
 
-      while( citr != comment_idx.end() && citr->comment == c.id )
+      while( citr != comment_idx.end() && citr->comment == c.get_id() )
       {
          const tag_object* tag = &*citr;
          ++citr;
@@ -313,18 +323,18 @@ void tags_plugin_impl::update_tags( const comment_object& c, bool parse_tags )co
    else
 #endif
    {
-      auto citr = comment_idx.lower_bound( c.id );
+      auto citr = comment_idx.lower_bound( c.get_id() );
 
-      while( citr != comment_idx.end() && citr->comment == c.id )
+      while( citr != comment_idx.end() && citr->comment == c.get_id() )
       {
          update_tag( *citr, c, hot, trending );
          ++citr;
       }
    }
 
-   if( c.parent_author.size() )
+   if( c.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
    {
-      update_tags( _db.get_comment( c.parent_author, c.parent_permlink ) );
+      update_tags( _db.get_comment( c.parent_author_id, c.parent_permlink ) );
    }
    } FC_CAPTURE_LOG_AND_RETHROW( (c) )
 }
@@ -338,7 +348,7 @@ struct pre_apply_operation_visitor
 
    void operator()( const delete_comment_operation& op )const
    {
-      const auto& comment = _db.find< comment_object, chain::by_permlink >( boost::make_tuple( op.author, op.permlink ) );
+      const auto& comment = _db.find_comment( op.author, op.permlink );
 
       if( comment == nullptr )
          return;
@@ -346,10 +356,10 @@ struct pre_apply_operation_visitor
       const auto& idx = _db.get_index< tag_index, by_author_comment >();
       const auto& auth = _db.get_account( op.author );
 
-      auto tag_itr = idx.lower_bound( boost::make_tuple( auth.id, comment->id ) );
+      auto tag_itr = idx.lower_bound( boost::make_tuple( auth.get_id(), comment->get_id() ) );
       vector< const tag_object* > to_remove;
 
-      while( tag_itr != idx.end() && tag_itr->author == auth.id && tag_itr->comment == comment->id )
+      while( tag_itr != idx.end() && tag_itr->author == auth.get_id() && tag_itr->comment == comment->get_id() )
       {
          to_remove.push_back( &(*tag_itr) );
          ++tag_itr;
@@ -384,7 +394,7 @@ struct operation_visitor
 
    void operator()( const transfer_operation& op )const
    {
-      if( _my._db.head_block_time() >= _my._promoted_start_time && op.to == STEEM_NULL_ACCOUNT && op.amount.symbol == SBD_SYMBOL )
+      if( _my._db.head_block_time() >= _my._promoted_start_time && op.to == HIVE_NULL_ACCOUNT && op.amount.symbol == HBD_SYMBOL )
       {
          vector<string> part; part.reserve(4);
          auto path = op.memo;
@@ -395,11 +405,11 @@ struct operation_visitor
             auto perm = part[1];
 
             auto c = _my._db.find_comment( acnt, perm );
-            if( c && c->parent_author.size() == 0 )
+            if( c && c->parent_author_id == HIVE_ROOT_POST_PARENT_ID )
             {
                const auto& comment_idx = _my._db.get_index<tag_index>().indices().get<by_comment>();
-               auto citr = comment_idx.lower_bound( c->id );
-               while( citr != comment_idx.end() && citr->comment == c->id )
+               auto citr = comment_idx.lower_bound( c->get_id() );
+               while( citr != comment_idx.end() && citr->comment == c->get_id() )
                {
                   _my._db.modify( *citr, [&]( tag_object& t )
                   {
@@ -431,7 +441,7 @@ struct operation_visitor
          _my.update_tags( c );
 
 #ifndef IS_LOW_MEM
-         comment_metadata meta = _my.filter_tags( c, _my._db.get< comment_content_object, chain::by_comment >( c.id ) );
+         comment_metadata meta = _my.filter_tags( c, _my._db.get< comment_content_object, chain::by_comment >( c.get_id() ) );
 
          for( const string& tag : meta.tags )
          {
@@ -522,18 +532,19 @@ void tags_plugin::plugin_initialize(const boost::program_options::variables_map&
          my->_db.with_write_lock( [this]()
          {
             // for each comment that has not been paid, update tags
-            const auto& comment_idx = my->_db.get_index< comment_index, by_cashout_time >();
+            const auto& comment_idx = my->_db.get_index< comment_cashout_index >().indices().get< by_cashout_time >();
             for( auto itr = comment_idx.begin(); itr != comment_idx.end() && itr->cashout_time != fc::time_point_sec::maximum(); ++itr )
             {
-               my->update_tags( *itr, true );
+               const comment_object& comment = my->_db.get_comment( *itr );
+               my->update_tags( comment, true );
             }
          });
       });
    }
 
-   STEEM_ADD_PLUGIN_INDEX(my->_db, tag_index);
-   STEEM_ADD_PLUGIN_INDEX(my->_db, tag_stats_index);
-   STEEM_ADD_PLUGIN_INDEX(my->_db, author_tag_stats_index);
+   HIVE_ADD_PLUGIN_INDEX(my->_db, tag_index);
+   HIVE_ADD_PLUGIN_INDEX(my->_db, tag_stats_index);
+   HIVE_ADD_PLUGIN_INDEX(my->_db, author_tag_stats_index);
 
    fc::mutable_variant_object state_opts;
 
@@ -559,4 +570,4 @@ void tags_plugin::plugin_startup()
    chain::util::disconnect_signal( my->_post_apply_operation_conn );
 }
 
-} } } /// steem::plugins::tags
+} } } /// hive::plugins::tags

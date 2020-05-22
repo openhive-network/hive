@@ -1,21 +1,21 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <appbase/application.hpp>
 
-#include <steem/plugins/database_api/database_api.hpp>
-#include <steem/plugins/database_api/database_api_plugin.hpp>
+#include <hive/plugins/database_api/database_api.hpp>
+#include <hive/plugins/database_api/database_api_plugin.hpp>
 
-#include <steem/protocol/get_config.hpp>
-#include <steem/protocol/exceptions.hpp>
-#include <steem/protocol/transaction_util.hpp>
+#include <hive/protocol/get_config.hpp>
+#include <hive/protocol/exceptions.hpp>
+#include <hive/protocol/transaction_util.hpp>
 
-#include <steem/chain/util/smt_token.hpp>
+#include <hive/chain/util/smt_token.hpp>
 
-#include <steem/utilities/git_revision.hpp>
+#include <hive/utilities/git_revision.hpp>
 
 #include <fc/git_revision.hpp>
 
-namespace steem { namespace plugins { namespace database_api {
+namespace hive { namespace plugins { namespace database_api {
 
 
 
@@ -57,11 +57,10 @@ class database_api_impl
          (find_vesting_delegations)
          (list_vesting_delegation_expirations)
          (find_vesting_delegation_expirations)
-         (list_sbd_conversion_requests)
-         (find_sbd_conversion_requests)
+         (list_hbd_conversion_requests)
+         (find_hbd_conversion_requests)
          (list_decline_voting_rights_requests)
          (find_decline_voting_rights_requests)
-         (list_comments)
          (find_comments)
          (list_votes)
          (find_votes)
@@ -77,7 +76,7 @@ class database_api_impl
          (verify_authority)
          (verify_account_authority)
          (verify_signatures)
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
          (get_nai_pool)
          (list_smt_contributions)
          (find_smt_contributions)
@@ -89,10 +88,48 @@ class database_api_impl
       )
 
       template< typename ResultType >
-      static ResultType on_push_default( const ResultType& r ) { return r; }
+      static ResultType on_push_default( const ResultType& r ) { return r.copy_chain_object(); } //FIXME: exposes internal chain object as API result
 
       template< typename ValueType >
       static bool filter_default( const ValueType& r ) { return true; }
+
+      template<typename IndexType, typename OrderType, typename StartType, typename ResultType, typename OnPushType, typename FilterType>
+      void iterate_results_from_index(
+         uint64_t index,
+         std::vector<ResultType>& result,
+         uint32_t limit,
+         OnPushType&& on_push,
+         FilterType&& filter,
+         order_direction_type direction = ascending )
+      {
+         const auto& idx = _db.get_index< IndexType, OrderType >();
+         typename IndexType::value_type::id_type id( index );
+         if( direction == ascending )
+         {
+            auto itr = idx.iterator_to(*(_db.get_index<IndexType, hive::chain::by_id>().find( id )));
+            auto end = idx.end();
+
+            while( result.size() < limit && itr != end )
+            {
+               if( filter( *itr ) )
+                  result.push_back( on_push( *itr ) );
+               ++itr;
+            }
+         }
+         else if( direction == descending )
+         {
+            auto index_it = idx.iterator_to(*(_db.get_index<IndexType, hive::chain::by_id>().upper_bound( id )));
+            auto iter  = boost::make_reverse_iterator( index_it );
+            auto iter_end = boost::make_reverse_iterator( idx.begin() );
+
+            while( result.size() < limit && iter != iter_end )
+            {
+               if( filter( *iter ) )
+                  result.push_back( on_push( *iter ) );
+               ++iter;
+            }
+         }
+      }
 
       template<typename IndexType, typename OrderType, typename StartType, typename ResultType, typename OnPushType, typename FilterType>
       void iterate_results(
@@ -101,8 +138,15 @@ class database_api_impl
          uint32_t limit,
          OnPushType&& on_push,
          FilterType&& filter,
-         order_direction_type direction = ascending )
+         order_direction_type direction = ascending,
+         fc::optional<uint64_t> last_index = fc::optional<uint64_t>()
+      )
       {
+         if ( last_index.valid() ) {
+            iterate_results_from_index<IndexType, OrderType, StartType>( *last_index, result, limit, std::move(on_push), std::move(filter), direction );
+            return;
+         }
+
          const auto& idx = _db.get_index< IndexType, OrderType >();
          if( direction == ascending )
          {
@@ -119,21 +163,23 @@ class database_api_impl
          }
          else if( direction == descending )
          {
-            auto itr = boost::make_reverse_iterator( idx.lower_bound( start ) );
-            auto end = idx.rend();
+            auto iter = boost::make_reverse_iterator( idx.upper_bound(start) );
+            auto end_iter = boost::make_reverse_iterator( idx.begin() );
 
-            while( result.size() < limit && itr != end )
+            while( result.size() < limit && iter != end_iter )
             {
-               if( filter( *itr ) )
-                  result.push_back( on_push( *itr ) );
-
-               ++itr;
+               if( filter( *iter ) )
+                  result.push_back( on_push( *iter ) );
+               ++iter;
             }
          }
       }
 
       chain::database& _db;
 };
+
+
+
 
 //////////////////////////////////////////////////////////////////////
 //                                                                  //
@@ -144,13 +190,13 @@ class database_api_impl
 database_api::database_api()
    : my( new database_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_DATABASE_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_DATABASE_API_PLUGIN_NAME );
 }
 
 database_api::~database_api() {}
 
 database_api_impl::database_api_impl()
-   : _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ) {}
+   : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
 database_api_impl::~database_api_impl() {}
 
@@ -163,15 +209,15 @@ database_api_impl::~database_api_impl() {}
 
 DEFINE_API_IMPL( database_api_impl, get_config )
 {
-   return steem::protocol::get_config( _db.get_treasury_name(), _db.get_chain_id() );
+   return hive::protocol::get_config( _db.get_treasury_name(), _db.get_chain_id() );
 }
 
 DEFINE_API_IMPL( database_api_impl, get_version )
 {
    return get_version_return
    (
-      fc::string( STEEM_BLOCKCHAIN_VERSION ),
-      fc::string( steem::utilities::git_revision_sha ),
+      fc::string( HIVE_BLOCKCHAIN_VERSION ),
+      fc::string( hive::utilities::git_revision_sha ),
       fc::string( fc::git_revision_sha ),
       _db.get_chain_id()
    );
@@ -179,7 +225,7 @@ DEFINE_API_IMPL( database_api_impl, get_version )
 
 DEFINE_API_IMPL( database_api_impl, get_dynamic_global_properties )
 {
-   return _db.get_dynamic_global_properties();
+   return _db.get_dynamic_global_properties().copy_chain_object(); //FIXME: exposes internal chain object as API result
 }
 
 DEFINE_API_IMPL( database_api_impl, get_witness_schedule )
@@ -201,7 +247,7 @@ DEFINE_API_IMPL( database_api_impl, get_reward_funds )
 
    while( itr != rf_idx.end() )
    {
-      result.funds.push_back( *itr );
+      result.funds.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 
@@ -258,7 +304,7 @@ DEFINE_API_IMPL( database_api_impl, list_witnesses )
       case( by_schedule_time ):
       {
          auto key = args.start.as< std::pair< fc::uint128, account_name_type > >();
-         auto wit_id = _db.get< chain::witness_object, chain::by_name >( key.second ).id;
+         auto wit_id = _db.get< chain::witness_object, chain::by_name >( key.second ).get_id();
          iterate_results< chain::witness_index, chain::by_schedule_time >(
             boost::make_tuple( key.first, wit_id ),
             result.witnesses,
@@ -307,7 +353,7 @@ DEFINE_API_IMPL( database_api_impl, list_witness_votes )
             boost::make_tuple( key.first, key.second ),
             result.votes,
             args.limit,
-            [&]( const witness_vote_object& v ){ return api_witness_vote_object( v ); },
+            [&]( const witness_vote_object& v ){ return v.copy_chain_object(); }, //FIXME: exposes internal chain object as API result
             &database_api_impl::filter_default< api_witness_vote_object > );
          break;
       }
@@ -318,7 +364,7 @@ DEFINE_API_IMPL( database_api_impl, list_witness_votes )
             boost::make_tuple( key.first, key.second ),
             result.votes,
             args.limit,
-            [&]( const witness_vote_object& v ){ return api_witness_vote_object( v ); },
+            [&]( const witness_vote_object& v ){ return v.copy_chain_object(); }, //FIXME: exposes internal chain object as API result
             &database_api_impl::filter_default< api_witness_vote_object > );
          break;
       }
@@ -555,7 +601,7 @@ DEFINE_API_IMPL( database_api_impl, find_change_recovery_account_requests )
       auto request = _db.find< chain::change_recovery_account_request_object, chain::by_account >( a );
 
       if( request != nullptr )
-         result.requests.push_back( *request );
+         result.requests.push_back( request->copy_chain_object() ); //FIXME: exposes internal chain object as API result
    }
 
    return result;
@@ -612,7 +658,7 @@ DEFINE_API_IMPL( database_api_impl, find_escrows )
 
    while( itr != escrow_idx.end() && itr->from == args.from && result.escrows.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
-      result.escrows.push_back( *itr );
+      result.escrows.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 
@@ -673,7 +719,7 @@ DEFINE_API_IMPL( database_api_impl, find_withdraw_vesting_routes )
 
          while( itr != route_idx.end() && itr->from_account == args.account && result.routes.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
          {
-            result.routes.push_back( *itr );
+            result.routes.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
             ++itr;
          }
 
@@ -686,7 +732,7 @@ DEFINE_API_IMPL( database_api_impl, find_withdraw_vesting_routes )
 
          while( itr != route_idx.end() && itr->to_account == args.account && result.routes.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
          {
-            result.routes.push_back( *itr );
+            result.routes.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
             ++itr;
          }
 
@@ -806,7 +852,7 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegations )
 
    while( itr != delegation_idx.end() && itr->delegator == args.account && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
-      result.delegations.push_back( api_vesting_delegation_object( *itr ) );
+      result.delegations.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 
@@ -863,7 +909,7 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegation_expirations )
 
    while( itr != del_exp_idx.end() && itr->delegator == args.account && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
-      result.delegations.push_back( *itr );
+      result.delegations.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 
@@ -871,13 +917,13 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegation_expirations )
 }
 
 
-/* SBD Conversion Requests */
+/* HBD Conversion Requests */
 
-DEFINE_API_IMPL( database_api_impl, list_sbd_conversion_requests )
+DEFINE_API_IMPL( database_api_impl, list_hbd_conversion_requests )
 {
    FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
 
-   list_sbd_conversion_requests_return result;
+   list_hbd_conversion_requests_return result;
    result.requests.reserve( args.limit );
 
    switch( args.order )
@@ -911,15 +957,15 @@ DEFINE_API_IMPL( database_api_impl, list_sbd_conversion_requests )
    return result;
 }
 
-DEFINE_API_IMPL( database_api_impl, find_sbd_conversion_requests )
+DEFINE_API_IMPL( database_api_impl, find_hbd_conversion_requests )
 {
-   find_sbd_conversion_requests_return result;
+   find_hbd_conversion_requests_return result;
    const auto& convert_idx = _db.get_index< chain::convert_request_index, chain::by_owner >();
    auto itr = convert_idx.lower_bound( args.account );
 
    while( itr != convert_idx.end() && itr->owner == args.account && result.requests.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
-      result.requests.push_back( *itr );
+      result.requests.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 
@@ -976,7 +1022,7 @@ DEFINE_API_IMPL( database_api_impl, find_decline_voting_rights_requests )
       auto request = _db.find< chain::decline_voting_rights_request_object, chain::by_account >( a );
 
       if( request != nullptr )
-         result.requests.push_back( *request );
+         result.requests.push_back( request->copy_chain_object() ); //FIXME: exposes internal chain object as API result
    }
 
    return result;
@@ -990,167 +1036,6 @@ DEFINE_API_IMPL( database_api_impl, find_decline_voting_rights_requests )
 //////////////////////////////////////////////////////////////////////
 
 /* Comments */
-
-DEFINE_API_IMPL( database_api_impl, list_comments )
-{
-   FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
-
-   list_comments_return result;
-   result.comments.reserve( args.limit );
-
-   switch( args.order )
-   {
-      case( by_cashout_time ):
-      {
-         auto key = args.start.as< vector< fc::variant > >();
-         FC_ASSERT( key.size() == 3, "by_cashout_time start requires 3 values. (time_point_sec, account_name_type, string)" );
-
-         auto author = key[1].as< account_name_type >();
-         auto permlink = key[2].as< string >();
-         comment_id_type comment_id;
-
-         if( author != account_name_type() || permlink.size() )
-         {
-            auto comment = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( author, permlink ) );
-            FC_ASSERT( comment != nullptr, "Could not find comment ${a}/${p}.", ("a", author)("p", permlink) );
-            comment_id = comment->id;
-         }
-
-         iterate_results< chain::comment_index, chain::by_cashout_time >(
-            boost::make_tuple( key[0].as< fc::time_point_sec >(), comment_id ),
-            result.comments,
-            args.limit,
-            [&]( const comment_object& c ){ return api_comment_object( c, _db ); },
-            &database_api_impl::filter_default< comment_object > );
-         break;
-      }
-      case( by_permlink ):
-      {
-         auto key = args.start.as< std::pair< account_name_type, string > >();
-         iterate_results< chain::comment_index, chain::by_permlink >(
-            boost::make_tuple( key.first, key.second ),
-            result.comments,
-            args.limit,
-            [&]( const comment_object& c ){ return api_comment_object( c, _db ); },
-            &database_api_impl::filter_default< comment_object > );
-         break;
-      }
-      case( by_root ):
-      {
-         auto key = args.start.as< vector< fc::variant > >();
-         FC_ASSERT( key.size() == 4, "by_root start requires 4 values. (account_name_type, string, account_name_type, string)" );
-
-         auto root_author = key[0].as< account_name_type >();
-         auto root_permlink = key[1].as< string >();
-         comment_id_type root_id;
-
-         if( root_author != account_name_type() || root_permlink.size() )
-         {
-            auto root = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( root_author, root_permlink ) );
-            FC_ASSERT( root != nullptr, "Could not find comment ${a}/${p}.", ("a", root_author)("p", root_permlink) );
-            root_id = root->id;
-         }
-
-         auto child_author = key[2].as< account_name_type >();
-         auto child_permlink = key[3].as< string >();
-         comment_id_type child_id;
-
-         if( child_author != account_name_type() || child_permlink.size() )
-         {
-            auto child = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( child_author, child_permlink ) );
-            FC_ASSERT( child != nullptr, "Could not find comment ${a}/${p}.", ("a", child_author)("p", child_permlink) );
-            child_id = child->id;
-         }
-
-         iterate_results< chain::comment_index, chain::by_root >(
-            boost::make_tuple( root_id, child_id ),
-            result.comments,
-            args.limit,
-            [&]( const comment_object& c ){ return api_comment_object( c, _db ); },
-            &database_api_impl::filter_default< comment_object > );
-         break;
-      }
-      case( by_parent ):
-      {
-         auto key = args.start.as< vector< fc::variant > >();
-         FC_ASSERT( key.size() == 4, "by_parent start requires 4 values. (account_name_type, string, account_name_type, string)" );
-
-         auto child_author = key[2].as< account_name_type >();
-         auto child_permlink = key[3].as< string >();
-         comment_id_type child_id;
-
-         if( child_author != account_name_type() || child_permlink.size() )
-         {
-            auto child = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( child_author, child_permlink ) );
-            FC_ASSERT( child != nullptr, "Could not find comment ${a}/${p}.", ("a", child_author)("p", child_permlink) );
-            child_id = child->id;
-         }
-
-         iterate_results< chain::comment_index, chain::by_parent >(
-            boost::make_tuple( key[0].as< account_name_type >(), key[1].as< string >(), child_id ),
-            result.comments,
-            args.limit,
-            [&]( const comment_object& c ){ return api_comment_object( c, _db ); },
-            &database_api_impl::filter_default< comment_object > );
-         break;
-      }
-#ifndef IS_LOW_MEM
-      case( by_last_update ):
-      {
-         auto key = args.start.as< vector< fc::variant > >();
-         FC_ASSERT( key.size() == 4, "by_last_update start requires 4 values. (account_name_type, time_point_sec, account_name_type, string)" );
-
-         auto child_author = key[2].as< account_name_type >();
-         auto child_permlink = key[3].as< string >();
-         comment_id_type child_id;
-
-         if( child_author != account_name_type() || child_permlink.size() )
-         {
-            auto child = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( child_author, child_permlink ) );
-            FC_ASSERT( child != nullptr, "Could not find comment ${a}/${p}.", ("a", child_author)("p", child_permlink) );
-            child_id = child->id;
-         }
-
-         iterate_results< chain::comment_index, chain::by_last_update >(
-            boost::make_tuple( key[0].as< account_name_type >(), key[1].as< fc::time_point_sec >(), child_id ),
-            result.comments,
-            args.limit,
-            [&]( const comment_object& c ){ return api_comment_object( c, _db ); },
-            &database_api_impl::filter_default< comment_object > );
-         break;
-      }
-      case( by_author_last_update ):
-      {
-         auto key = args.start.as< vector< fc::variant > >();
-         FC_ASSERT( key.size() == 4, "by_author_last_update start requires 4 values. (account_name_type, time_point_sec, account_name_type, string)" );
-
-         auto author = key[2].as< account_name_type >();
-         auto permlink = key[3].as< string >();
-         comment_id_type comment_id;
-
-         if( author != account_name_type() || permlink.size() )
-         {
-            auto comment = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( author, permlink ) );
-            FC_ASSERT( comment != nullptr, "Could not find comment ${a}/${p}.", ("a", author)("p", permlink) );
-            comment_id = comment->id;
-         }
-
-         iterate_results< chain::comment_index, chain::by_last_update >(
-            boost::make_tuple( key[0].as< account_name_type >(), key[1].as< fc::time_point_sec >(), comment_id ),
-            result.comments,
-            args.limit,
-            [&]( const comment_object& c ){ return api_comment_object( c, _db ); },
-            &database_api_impl::filter_default< comment_object > );
-         break;
-      }
-#endif
-      default:
-         FC_ASSERT( false, "Unknown or unsupported sort order" );
-   }
-
-   return result;
-}
-
 DEFINE_API_IMPL( database_api_impl, find_comments )
 {
    FC_ASSERT( args.comments.size() <= DATABASE_API_SINGLE_QUERY_LIMIT );
@@ -1159,7 +1044,7 @@ DEFINE_API_IMPL( database_api_impl, find_comments )
 
    for( auto& key: args.comments )
    {
-      auto comment = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( key.first, key.second ) );
+      auto comment = _db.find_comment( key.first, key.second );
 
       if( comment != nullptr )
          result.comments.push_back( api_comment_object( *comment, _db ) );
@@ -1206,14 +1091,14 @@ namespace last_votes_misc
       {
          auto account = _impl._db.find< chain::account_object, chain::by_name >( voter );
          FC_ASSERT( account != nullptr, "Could not find voter ${v}.", ("v", voter ) );
-         voter_id = account->id;
+         voter_id = account->get_id();
       }
 
       if( author != account_name_type() || permlink.size() )
       {
-         auto comment = _impl._db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( author, permlink ) );
+         auto comment = _impl._db.find_comment( author, permlink );
          FC_ASSERT( comment != nullptr, "Could not find comment ${a}/${p}.", ("a", author)("p", permlink) );
-         comment_id = comment->id;
+         comment_id = comment->get_id();
       }
 
       if( SORTORDERTYPE == by_comment_voter )
@@ -1276,13 +1161,13 @@ DEFINE_API_IMPL( database_api_impl, find_votes )
 {
    find_votes_return result;
 
-   auto comment = _db.find< chain::comment_object, chain::by_permlink >( boost::make_tuple( args.author, args.permlink ) );
+   auto comment = _db.find_comment( args.author, args.permlink );
    FC_ASSERT( comment != nullptr, "Could not find comment ${a}/${p}", ("a", args.author)("p", args.permlink ) );
 
    const auto& vote_idx = _db.get_index< chain::comment_vote_index, chain::by_comment_voter >();
-   auto itr = vote_idx.lower_bound( comment->id );
+   auto itr = vote_idx.lower_bound( comment->get_id() );
 
-   while( itr != vote_idx.end() && itr->comment == comment->id && result.votes.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
+   while( itr != vote_idx.end() && itr->comment == comment->get_id() && result.votes.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
       result.votes.push_back( api_comment_vote_object( *itr, _db ) );
       ++itr;
@@ -1346,7 +1231,7 @@ DEFINE_API_IMPL( database_api_impl, find_limit_orders )
 
    while( itr != order_idx.end() && itr->seller == args.account && result.orders.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
-      result.orders.push_back( *itr );
+      result.orders.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 
@@ -1361,36 +1246,36 @@ DEFINE_API_IMPL( database_api_impl, get_order_book )
    FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
    get_order_book_return result;
 
-   auto max_sell = price::max( SBD_SYMBOL, STEEM_SYMBOL );
-   auto max_buy = price::max( STEEM_SYMBOL, SBD_SYMBOL );
+   auto max_sell = price::max( HBD_SYMBOL, HIVE_SYMBOL );
+   auto max_buy = price::max( HIVE_SYMBOL, HBD_SYMBOL );
 
    const auto& limit_price_idx = _db.get_index< chain::limit_order_index >().indices().get< chain::by_price >();
    auto sell_itr = limit_price_idx.lower_bound( max_sell );
    auto buy_itr  = limit_price_idx.lower_bound( max_buy );
    auto end = limit_price_idx.end();
 
-   while( sell_itr != end && sell_itr->sell_price.base.symbol == SBD_SYMBOL && result.bids.size() < args.limit )
+   while( sell_itr != end && sell_itr->sell_price.base.symbol == HBD_SYMBOL && result.bids.size() < args.limit )
    {
       auto itr = sell_itr;
       order cur;
       cur.order_price = itr->sell_price;
       cur.real_price  = 0.0;
       // cur.real_price  = (cur.order_price).to_real();
-      cur.sbd = itr->for_sale;
-      cur.steem = ( asset( itr->for_sale, SBD_SYMBOL ) * cur.order_price ).amount;
+      cur.hbd = itr->for_sale;
+      cur.hive = ( asset( itr->for_sale, HBD_SYMBOL ) * cur.order_price ).amount;
       cur.created = itr->created;
       result.bids.push_back( cur );
       ++sell_itr;
    }
-   while( buy_itr != end && buy_itr->sell_price.base.symbol == STEEM_SYMBOL && result.asks.size() < args.limit )
+   while( buy_itr != end && buy_itr->sell_price.base.symbol == HIVE_SYMBOL && result.asks.size() < args.limit )
    {
       auto itr = buy_itr;
       order cur;
       cur.order_price = itr->sell_price;
       cur.real_price = 0.0;
       // cur.real_price  = (~cur.order_price).to_real();
-      cur.steem   = itr->for_sale;
-      cur.sbd     = ( asset( itr->for_sale, STEEM_SYMBOL ) * cur.order_price ).amount;
+      cur.hive    = itr->for_sale;
+      cur.hbd     = ( asset( itr->for_sale, HIVE_SYMBOL ) * cur.order_price ).amount;
       cur.created = itr->created;
       result.asks.push_back( cur );
       ++buy_itr;
@@ -1442,6 +1327,7 @@ bool filter_proposal_status( const proposal_object& po, proposal_status filter, 
 
 DEFINE_API_IMPL( database_api_impl, list_proposals )
 {
+   using variants = std::vector< fc::variant >;
    FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
 
    list_proposals_return result;
@@ -1449,57 +1335,95 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
 
    const auto current_time = _db.head_block_time();
 
+   constexpr auto LOWEST_PROPOSAL_ID = 0;
+   constexpr auto GREATEST_PROPOSAL_ID = std::numeric_limits<api_id_type>::max();
    switch( args.order )
    {
       case by_creator:
       {
-         auto key = args.start.as< std::pair< account_name_type, api_id_type > >();
-         iterate_results< steem::chain::proposal_index, steem::chain::by_creator >(
-            boost::make_tuple( key.first, key.second ),
+          // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
+         auto start_parameters = args.start.as< variants >();
+         auto start_creator = start_parameters.empty()
+                 ? account_name_type()
+                 : start_parameters.front().as< account_name_type >()
+         ;
+         iterate_results< hive::chain::proposal_index, hive::chain::by_creator >(
+            boost::make_tuple( start_creator, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ),
             result.proposals,
             args.limit,
             [&]( const proposal_object& po ){ return api_proposal_object( po, current_time ); },
             [&]( const proposal_object& po ){ return filter_proposal_status( po, args.status, current_time ); },
-            args.order_direction
+            args.order_direction,
+            args.last_id
          );
          break;
       }
       case by_start_date:
       {
-         auto key = args.start.as< std::pair< time_point_sec, api_id_type > >();
-         iterate_results< steem::chain::proposal_index, steem::chain::by_start_date >(
-            boost::make_tuple( key.first, key.second ),
+         // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
+         auto start_parameters = args.start.as< variants >();
+         auto start_date_string = start_parameters.empty()
+               ? std::string()
+               : start_parameters.front().as< std::string >()
+         ;
+         // check if empty string was passed as the time
+         auto time =  start_date_string.empty() || start_parameters.empty()
+             ? time_point_sec( args.order_direction == ascending ? fc::time_point::min() : fc::time_point::maximum() )
+             : start_parameters.front().as< time_point_sec >()
+         ;
+
+         iterate_results< hive::chain::proposal_index, hive::chain::by_start_date >(
+            boost::make_tuple( time, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ),
             result.proposals,
             args.limit,
             [&]( const proposal_object& po ){ return api_proposal_object( po, current_time ); },
             [&]( const proposal_object& po ){ return filter_proposal_status( po, args.status, current_time ); },
-            args.order_direction
+            args.order_direction,
+            args.last_id
          );
          break;
       }
       case by_end_date:
       {
-         auto key = args.start.as< std::pair< time_point_sec, api_id_type > >();
-         iterate_results< steem::chain::proposal_index, steem::chain::by_end_date >(
-            boost::make_tuple( key.first, key.second ),
+         // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
+         auto start_parameters = args.start.as< variants >();
+         auto end_date_string = start_parameters.empty()
+               ? std::string()
+               : start_parameters.front().as< std::string >()
+         ;
+         // check if empty string was passed as the time
+         auto time = end_date_string.empty() || start_parameters.empty()
+               ? time_point_sec( args.order_direction == ascending ? fc::time_point::min() : fc::time_point::maximum() )
+               : start_parameters.front().as< time_point_sec >()
+         ;
+
+         iterate_results< hive::chain::proposal_index, hive::chain::by_end_date >(
+            boost::make_tuple( time, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ),
             result.proposals,
             args.limit,
             [&]( const proposal_object& po ){ return api_proposal_object( po, current_time ); },
             [&]( const proposal_object& po ){ return filter_proposal_status( po, args.status, current_time ); },
-            args.order_direction
+            args.order_direction,
+            args.last_id
          );
          break;
       }
       case by_total_votes:
       {
-         auto key = args.start.as< std::pair< uint64_t, api_id_type > >();
-         iterate_results< steem::chain::proposal_index, steem::chain::by_total_votes >(
-            boost::make_tuple( key.first, key.second ),
+         // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
+         auto start_parameters = args.start.as< variants >();
+         auto votes = start_parameters.empty()
+               ? uint64_t(0)
+               : start_parameters.front().as< uint64_t >()
+         ;
+         iterate_results< hive::chain::proposal_index, hive::chain::by_total_votes >(
+            boost::make_tuple( votes, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ),
             result.proposals,
             args.limit,
             [&]( const proposal_object& po ){ return api_proposal_object( po, current_time ); },
             [&]( const proposal_object& po ){ return filter_proposal_status( po, args.status, current_time ); },
-            args.order_direction
+            args.order_direction,
+            args.last_id
          );
          break;
       }
@@ -1521,7 +1445,7 @@ DEFINE_API_IMPL( database_api_impl, find_proposals )
 
    std::for_each( args.proposal_ids.begin(), args.proposal_ids.end(), [&](auto& id)
    {
-      auto po = _db.find< steem::chain::proposal_object, steem::chain::by_proposal_id >( id );
+      auto po = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( id );
       if( po != nullptr && !po->removed )
       {
          result.proposals.emplace_back( api_proposal_object( *po, currentTime ) );
@@ -1548,14 +1472,14 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
       case by_voter_proposal:
       {
          auto key = args.start.as< std::pair< account_name_type, api_id_type > >();
-         iterate_results< steem::chain::proposal_vote_index, steem::chain::by_voter_proposal >(
+         iterate_results< hive::chain::proposal_vote_index, hive::chain::by_voter_proposal >(
             boost::make_tuple( key.first, key.second ),
             result.proposal_votes,
             args.limit,
             [&]( const proposal_vote_object& po ){ return api_proposal_vote_object( po, _db ); },
             [&]( const proposal_vote_object& po )
             {
-               auto itr = _db.find< steem::chain::proposal_object, steem::chain::by_id >( po.proposal_id );
+               auto itr = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( po.proposal_id );
                return itr != nullptr && !itr->removed;
             },
             args.order_direction
@@ -1565,14 +1489,14 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
       case by_proposal_voter:
       {
          auto key = args.start.as< std::pair< api_id_type, account_name_type > >();
-         iterate_results< steem::chain::proposal_vote_index, steem::chain::by_proposal_voter >(
+         iterate_results< hive::chain::proposal_vote_index, hive::chain::by_proposal_voter >(
             boost::make_tuple( key.first, key.second ),
             result.proposal_votes,
             args.limit,
             [&]( const proposal_vote_object& po ){ return api_proposal_vote_object( po, _db ); },
             [&]( const proposal_vote_object& po )
             {
-               auto itr = _db.find< steem::chain::proposal_object, steem::chain::by_id >( po.proposal_id );
+               auto itr = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( po.proposal_id );
                return itr != nullptr && !itr->removed;
             },
             args.order_direction
@@ -1606,8 +1530,8 @@ DEFINE_API_IMPL( database_api_impl, get_required_signatures )
                                                    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
                                                    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
                                                    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
-                                                   STEEM_MAX_SIG_CHECK_DEPTH,
-                                                   _db.has_hardfork( STEEM_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
+                                                   HIVE_MAX_SIG_CHECK_DEPTH,
+                                                   _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
 
    return result;
 }
@@ -1639,8 +1563,8 @@ DEFINE_API_IMPL( database_api_impl, get_potential_signatures )
             result.keys.insert( k );
          return authority( auth );
       },
-      STEEM_MAX_SIG_CHECK_DEPTH,
-      _db.has_hardfork( STEEM_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical
+      HIVE_MAX_SIG_CHECK_DEPTH,
+      _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical
    );
 
    return result;
@@ -1652,10 +1576,10 @@ DEFINE_API_IMPL( database_api_impl, verify_authority )
                            [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
                            [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
                            [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
-                           STEEM_MAX_SIG_CHECK_DEPTH,
-                           STEEM_MAX_AUTHORITY_MEMBERSHIP,
-                           STEEM_MAX_SIG_CHECK_ACCOUNTS,
-                           _db.has_hardfork( STEEM_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
+                           HIVE_MAX_SIG_CHECK_DEPTH,
+                           HIVE_MAX_AUTHORITY_MEMBERSHIP,
+                           HIVE_MAX_SIG_CHECK_ACCOUNTS,
+                           _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
    return verify_authority_return( { true } );
 }
 
@@ -1681,7 +1605,7 @@ DEFINE_API_IMPL( database_api_impl, verify_signatures )
    flat_set< public_key_type > sig_keys;
    for( const auto&  sig : args.signatures )
    {
-      STEEM_ASSERT(
+      HIVE_ASSERT(
          sig_keys.insert( fc::ecc::public_key( sig, args.hash ) ).second,
          protocol::tx_duplicate_sig,
          "Duplicate Signature detected" );
@@ -1693,20 +1617,20 @@ DEFINE_API_IMPL( database_api_impl, verify_signatures )
    // verify authority throws on failure, catch and return false
    try
    {
-      steem::protocol::verify_authority< verify_signatures_args >(
+      hive::protocol::verify_authority< verify_signatures_args >(
          { args },
          sig_keys,
          [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).owner ); },
          [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).active ); },
          [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).posting ); },
-         STEEM_MAX_SIG_CHECK_DEPTH );
+         HIVE_MAX_SIG_CHECK_DEPTH );
    }
    catch( fc::exception& ) { result.valid = false; }
 
    return result;
 }
 
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 //////////////////////////////////////////////////////////////////////
 //                                                                  //
 // SMT                                                              //
@@ -1753,11 +1677,11 @@ DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
          auto key = args.start.get_array();
          FC_ASSERT( key.size() == 0 || key.size() == 2, "The parameter 'start' must be an empty array or consist of asset_symbol_type and id" );
 
-         boost::tuple< asset_symbol_type, smt_contribution_object_id_type > start;
+         boost::tuple< asset_symbol_type, smt_contribution_id_type > start;
          if ( key.size() == 0 )
-            start = boost::make_tuple( asset_symbol_type(), 0 );
+            start = boost::make_tuple( asset_symbol_type(), smt_contribution_id_type() );
          else
-            start = boost::make_tuple( key[ 0 ].as< asset_symbol_type >(), key[ 1 ].as< smt_contribution_object_id_type >() );
+            start = boost::make_tuple( key[ 0 ].as< asset_symbol_type >(), key[ 1 ].as< smt_contribution_id_type >() );
 
          iterate_results< chain::smt_contribution_index, chain::by_symbol_id >(
             start,
@@ -1806,7 +1730,7 @@ DEFINE_API_IMPL( database_api_impl, find_smt_contributions )
       auto itr = idx.lower_bound( boost::make_tuple( symbol_contributor.first, symbol_contributor.second, 0 ) );
       while( itr != idx.end() && itr->symbol == symbol_contributor.first && itr->contributor == symbol_contributor.second && result.contributions.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
       {
-         result.contributions.push_back( *itr );
+         result.contributions.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
          ++itr;
       }
    }
@@ -1936,7 +1860,7 @@ DEFINE_API_IMPL( database_api_impl, find_smt_token_emissions )
 
    while( itr != idx.end() && itr->symbol == args.asset_symbol && result.token_emissions.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
    {
-      result.token_emissions.push_back( *itr );
+      result.token_emissions.push_back( itr->copy_chain_object() ); //FIXME: exposes internal chain object as API result
       ++itr;
    }
 
@@ -1976,11 +1900,10 @@ DEFINE_READ_APIS( database_api,
    (find_vesting_delegations)
    (list_vesting_delegation_expirations)
    (find_vesting_delegation_expirations)
-   (list_sbd_conversion_requests)
-   (find_sbd_conversion_requests)
+   (list_hbd_conversion_requests)
+   (find_hbd_conversion_requests)
    (list_decline_voting_rights_requests)
    (find_decline_voting_rights_requests)
-   (list_comments)
    (find_comments)
    (list_votes)
    (find_votes)
@@ -1996,7 +1919,7 @@ DEFINE_READ_APIS( database_api,
    (verify_authority)
    (verify_account_authority)
    (verify_signatures)
-#ifdef STEEM_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
    (get_nai_pool)
    (list_smt_contributions)
    (find_smt_contributions)
@@ -2007,4 +1930,4 @@ DEFINE_READ_APIS( database_api,
 #endif
 )
 
-} } } // steem::plugins::database_api
+} } } // hive::plugins::database_api

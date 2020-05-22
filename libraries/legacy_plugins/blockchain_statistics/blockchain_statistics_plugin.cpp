@@ -1,20 +1,20 @@
-#include <steem/blockchain_statistics/blockchain_statistics_api.hpp>
+#include <hive/blockchain_statistics/blockchain_statistics_api.hpp>
 
-#include <steem/app/impacted.hpp>
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/comment_object.hpp>
-#include <steem/chain/history_object.hpp>
+#include <hive/app/impacted.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/comment_object.hpp>
+#include <hive/chain/history_object.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/index.hpp>
-#include <steem/chain/operation_notification.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/index.hpp>
+#include <hive/chain/operation_notification.hpp>
 
-namespace steem { namespace blockchain_statistics {
+namespace hive { namespace blockchain_statistics {
 
 namespace detail
 {
 
-using namespace steem::protocol;
+using namespace hive::protocol;
 
 class blockchain_statistics_plugin_impl
 {
@@ -53,10 +53,10 @@ struct operation_process
       {
          b.transfers++;
 
-         if( op.amount.symbol == STEEM_SYMBOL )
-            b.steem_transferred += op.amount.amount;
+         if( op.amount.symbol == HIVE_SYMBOL )
+            b.hive_transferred += op.amount.amount;
          else
-            b.sbd_transferred += op.amount.amount;
+            b.hbd_transferred += op.amount.amount;
       });
    }
 
@@ -64,7 +64,7 @@ struct operation_process
    {
       _db.modify( _bucket, [&]( bucket_object& b )
       {
-         b.sbd_paid_as_interest += op.interest.amount;
+         b.hbd_paid_as_interest += op.interest.amount;
       });
    }
 
@@ -108,14 +108,14 @@ struct operation_process
 
          if( comment.created == _db.head_block_time() )
          {
-            if( comment.parent_author.length() )
+            if( comment.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
                b.replies++;
             else
                b.root_comments++;
          }
          else
          {
-            if( comment.parent_author.length() )
+            if( comment.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
                b.reply_edits++;
             else
                b.root_comment_edits++;
@@ -134,14 +134,14 @@ struct operation_process
 
          if( itr->num_changes )
          {
-            if( comment.parent_author.size() )
+            if( comment.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
                b.new_reply_votes++;
             else
                b.new_root_votes++;
          }
          else
          {
-            if( comment.parent_author.size() )
+            if( comment.parent_author_id != HIVE_ROOT_POST_PARENT_ID )
                b.changed_reply_votes++;
             else
                b.changed_root_votes++;
@@ -154,7 +154,7 @@ struct operation_process
       _db.modify( _bucket, [&]( bucket_object& b )
       {
          b.payouts++;
-         b.sbd_paid_to_authors += op.sbd_payout.amount;
+         b.hbd_paid_to_authors += op.hbd_payout.amount;
          b.vests_paid_to_authors += op.vesting_payout.amount;
       });
    }
@@ -180,7 +180,7 @@ struct operation_process
       _db.modify( _bucket, [&]( bucket_object& b )
       {
          b.transfers_to_vesting++;
-         b.steem_vested += op.amount.amount;
+         b.hive_vested += op.amount.amount;
       });
    }
 
@@ -191,7 +191,7 @@ struct operation_process
       _db.modify( _bucket, [&]( bucket_object& b )
       {
          b.vesting_withdrawals_processed++;
-         if( op.deposited.symbol == STEEM_SYMBOL )
+         if( op.deposited.symbol == HIVE_SYMBOL )
             b.vests_withdrawn += op.withdrawn.amount;
          else
             b.vests_transferred += op.withdrawn.amount;
@@ -229,8 +229,8 @@ struct operation_process
    {
       _db.modify( _bucket, [&]( bucket_object& b )
       {
-         b.sbd_conversion_requests_created++;
-         b.sbd_to_be_converted += op.amount.amount;
+         b.hbd_conversion_requests_created++;
+         b.hbd_to_be_converted += op.amount.amount;
       });
    }
 
@@ -238,8 +238,8 @@ struct operation_process
    {
       _db.modify( _bucket, [&]( bucket_object& b )
       {
-         b.sbd_conversion_requests_filled++;
-         b.steem_converted += op.amount_out.amount;
+         b.hbd_conversion_requests_filled++;
+         b.hive_converted += op.amount_out.amount;
       });
    }
 };
@@ -345,7 +345,7 @@ void blockchain_statistics_plugin_impl::pre_operation( const operation_notificat
 
          db.modify( bucket, [&]( bucket_object& b )
          {
-            if( comment.parent_author.length() )
+            if( comment.parent_author != HIVE_ROOT_POST_PARENT_ID )
                b.replies_deleted++;
             else
                b.root_comments_deleted++;
@@ -357,11 +357,11 @@ void blockchain_statistics_plugin_impl::pre_operation( const operation_notificat
          auto& account = db.get_account( op.account );
          const auto& bucket = db.get(bucket_id);
 
-         auto new_vesting_withdrawal_rate = op.vesting_shares.amount / STEEM_VESTING_WITHDRAW_INTERVALS;
+         auto new_vesting_withdrawal_rate = op.vesting_shares.amount / HIVE_VESTING_WITHDRAW_INTERVALS;
          if( op.vesting_shares.amount > 0 && new_vesting_withdrawal_rate == 0 )
             new_vesting_withdrawal_rate = 1;
 
-         if( !db.has_hardfork( STEEM_HARDFORK_0_1 ) )
+         if( !db.has_hardfork( HIVE_HARDFORK_0_1 ) )
             new_vesting_withdrawal_rate *= 1000000;
 
          db.modify( bucket, [&]( bucket_object& b )
@@ -468,6 +468,6 @@ uint32_t blockchain_statistics_plugin::get_max_history_per_bucket() const
    return _my->_maximum_history_per_bucket_size;
 }
 
-} } // steem::blockchain_statistics
+} } // hive::blockchain_statistics
 
-STEEM_DEFINE_PLUGIN( blockchain_statistics, steem::blockchain_statistics::blockchain_statistics_plugin );
+HIVE_DEFINE_PLUGIN( blockchain_statistics, hive::blockchain_statistics::blockchain_statistics_plugin );

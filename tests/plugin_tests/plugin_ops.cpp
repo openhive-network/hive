@@ -1,18 +1,18 @@
 #ifdef IS_TEST_NET
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/generic_custom_operation_interpreter.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/generic_custom_operation_interpreter.hpp>
 
 #include <boost/test/unit_test.hpp>
 
 #include "../db_fixture/database_fixture.hpp"
 
-using namespace steem::chain;
-using namespace steem::chain::test;
+using namespace hive::chain;
+using namespace hive::chain::test;
 /*
-namespace steem { namespace plugin_tests {
+namespace hive { namespace plugin_tests {
 
-using namespace steem::app;
-using namespace steem::chain;
+using namespace hive::app;
+using namespace hive::chain;
 
 struct test_a_operation : base_operation
 {
@@ -42,8 +42,8 @@ class test_plugin : public plugin
       std::shared_ptr< generic_custom_operation_interpreter< test_op > > _evaluator_registry;
 };
 
-STEEM_DEFINE_PLUGIN_EVALUATOR( test_plugin, test_a_operation, test_a );
-STEEM_DEFINE_PLUGIN_EVALUATOR( test_plugin, test_b_operation, test_b );
+HIVE_DEFINE_PLUGIN_EVALUATOR( test_plugin, test_a_operation, test_a );
+HIVE_DEFINE_PLUGIN_EVALUATOR( test_plugin, test_b_operation, test_b );
 
 void test_a_evaluator::do_apply( const test_a_operation& o )
 {
@@ -75,16 +75,16 @@ test_plugin::test_plugin( application* app ) : plugin( app )
    database().set_custom_operation_interpreter( plugin_name(), _evaluator_registry );
 }
 
-} } // steem::plugin_tests
+} } // hive::plugin_tests
 
-STEEM_DEFINE_PLUGIN( test, steem::plugin_tests::test_plugin )
+HIVE_DEFINE_PLUGIN( test, hive::plugin_tests::test_plugin )
 
-FC_REFLECT( steem::plugin_tests::test_a_operation, (account) )
-FC_REFLECT( steem::plugin_tests::test_b_operation, (account) )
+FC_REFLECT( hive::plugin_tests::test_a_operation, (account) )
+FC_REFLECT( hive::plugin_tests::test_b_operation, (account) )
 
-STEEM_DECLARE_OPERATION_TYPE( steem::plugin_tests::test_op );
-FC_REFLECT_TYPENAME( steem::plugin_tests::test_op );
-STEEM_DEFINE_OPERATION_TYPE( steem::plugin_tests::test_op );
+HIVE_DECLARE_OPERATION_TYPE( hive::plugin_tests::test_op );
+FC_REFLECT_TYPENAME( hive::plugin_tests::test_op );
+HIVE_DEFINE_OPERATION_TYPE( hive::plugin_tests::test_op );
 */
 
 

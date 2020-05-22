@@ -1,32 +1,32 @@
 
-#include <steem/plugins/block_data_export/block_data_export_plugin.hpp>
-#include <steem/plugins/block_data_export/exportable_block_data.hpp>
+#include <hive/plugins/block_data_export/block_data_export_plugin.hpp>
+#include <hive/plugins/block_data_export/exportable_block_data.hpp>
 
-#include <steem/plugins/stats_export/stats_export_plugin.hpp>
+#include <hive/plugins/stats_export/stats_export_plugin.hpp>
 
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/chain/global_property_object.hpp>
-#include <steem/chain/index.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/global_property_object.hpp>
+#include <hive/chain/index.hpp>
 
 #include <fstream>
 #include <iostream>
 #include <sstream>
 
-namespace steem { namespace plugins { namespace stats_export {
+namespace hive { namespace plugins { namespace stats_export {
 
-using steem::chain::block_notification;
-using steem::chain::database;
-using steem::chain::dynamic_global_property_object;
+using hive::chain::block_notification;
+using hive::chain::database;
+using hive::chain::dynamic_global_property_object;
 
-using steem::protocol::account_name_type;
-using steem::protocol::authority;
-using steem::protocol::signed_transaction;
+using hive::protocol::account_name_type;
+using hive::protocol::authority;
+using hive::protocol::signed_transaction;
 
-using steem::plugins::block_data_export::block_data_export_plugin;
-using steem::plugins::block_data_export::exportable_block_data;
+using hive::plugins::block_data_export::block_data_export_plugin;
+using hive::plugins::block_data_export::exportable_block_data;
 
-using steem::plugins::chain::chain_plugin;
+using hive::plugins::chain::chain_plugin;
 
 namespace detail {
 
@@ -55,10 +55,10 @@ class api_stats_export_data_object
 
 } } } }
 
-FC_REFLECT( steem::plugins::stats_export::detail::api_stats_transaction_data_object, (user)(size) )
-FC_REFLECT( steem::plugins::stats_export::detail::api_stats_export_data_object, (global_properties)(transaction_stats)(free_memory) )
+FC_REFLECT( hive::plugins::stats_export::detail::api_stats_transaction_data_object, (user)(size) )
+FC_REFLECT( hive::plugins::stats_export::detail::api_stats_export_data_object, (global_properties)(transaction_stats)(free_memory) )
 
-namespace steem { namespace plugins { namespace stats_export { namespace detail {
+namespace hive { namespace plugins { namespace stats_export { namespace detail {
 
 class stats_export_plugin_impl
 {
@@ -98,11 +98,11 @@ account_name_type get_transaction_user( const signed_transaction& tx )
 
 void stats_export_plugin_impl::on_post_apply_block( const block_notification& note )
 {
-   std::shared_ptr< api_stats_export_data_object > stats = _export_plugin.find_export_data< api_stats_export_data_object >( STEEM_STATS_EXPORT_PLUGIN_NAME );
+   std::shared_ptr< api_stats_export_data_object > stats = _export_plugin.find_export_data< api_stats_export_data_object >( HIVE_STATS_EXPORT_PLUGIN_NAME );
    if( !stats )
       return;
 
-   stats->global_properties = _db.get_dynamic_global_properties();
+   stats->global_properties = _db.get_dynamic_global_properties().copy_chain_object(); //FIXME: exposes internal chain object as API result
    for( const signed_transaction& tx : note.block.transactions )
    {
       stats->transaction_stats.emplace_back();
@@ -139,7 +139,7 @@ void stats_export_plugin::plugin_initialize( const boost::program_options::varia
       ilog( "Initializing stats_export plugin" );
       my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
          [&]( const block_notification& note ){ my->on_post_apply_block( note ); }, *this );
-      my->_export_plugin.register_export_data_factory( STEEM_STATS_EXPORT_PLUGIN_NAME,
+      my->_export_plugin.register_export_data_factory( HIVE_STATS_EXPORT_PLUGIN_NAME,
          []() -> std::shared_ptr< exportable_block_data > { return std::make_shared< detail::api_stats_export_data_object >(); } );
    }
    FC_CAPTURE_AND_RETHROW()
@@ -152,4 +152,4 @@ void stats_export_plugin::plugin_shutdown()
    chain::util::disconnect_signal( my->_post_apply_block_conn );
 }
 
-} } } // steem::plugins::stats_export
+} } } // hive::plugins::stats_export

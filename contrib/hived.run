@@ -5,7 +5,7 @@ SCRIPTPATH=`dirname $SCRIPT`
 
 DATADIR="${SCRIPTPATH}/datadir"
 
-HIVED="${SCRIPTPATH}/bin/steemd"
+HIVED="${SCRIPTPATH}/bin/hived"
 
 ARGS=""
 

@@ -22,18 +22,18 @@
  * THE SOFTWARE.
  */
 
-#include <steem/utilities/tempdir.hpp>
+#include <hive/utilities/tempdir.hpp>
 
 #include <cstdlib>
 
-namespace steem { namespace utilities {
+namespace hive { namespace utilities {
 
 fc::path temp_directory_path()
 {
-   const char* steemit_tempdir = getenv("STEEM_TEMPDIR");
-   if( steemit_tempdir != nullptr )
-      return fc::path( steemit_tempdir );
-   return fc::temp_directory_path() / "steem-tmp";
+   const char* hive_tempdir = getenv("HIVE_TEMPDIR");
+   if( hive_tempdir != nullptr )
+      return fc::path( hive_tempdir );
+   return fc::temp_directory_path() / "hive-tmp";
 }
 
-} } // steem::utilities
+} } // hive::utilities

@@ -1,9 +1,9 @@
-#include <steem/chain/util/delayed_voting.hpp>
-#include <steem/chain/util/delayed_voting_processor.hpp>
+#include <hive/chain/util/delayed_voting.hpp>
+#include <hive/chain/util/delayed_voting_processor.hpp>
 
-namespace steem { namespace chain {
+namespace hive { namespace chain {
 
-using steem::protocol::asset;
+using hive::protocol::asset;
 
 void delayed_voting::add_delayed_value( const account_object& account, const time_point_sec& head_time, const ushare_type val )
 {
@@ -84,7 +84,7 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
 
    while( current != idx.end() &&
           current->get_the_earliest_time() != time_point_sec::maximum() &&
-          head_time >= ( current->get_the_earliest_time() + STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
+          head_time >= ( current->get_the_earliest_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
         )
    {
       const ushare_type _val{ current->delayed_votes.begin()->val };
@@ -101,7 +101,7 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
          The operation `transfer_to_vesting` always adds elements to `delayed_votes` collection in `account_object`.
          In terms of performance is necessary to hold size of `delayed_votes` not greater than `30`.
 
-         Why `30`? STEEM_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / STEEM_DELAYED_VOTING_INTERVAL_SECONDS == 30
+         Why `30`? HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / HIVE_DELAYED_VOTING_INTERVAL_SECONDS == 30
 
          Solution:
             The best solution is to add new record at the back and to remove at the front.
@@ -115,4 +115,4 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
    }
 }
 
-} } // namespace steem::chain
+} } // namespace hive::chain

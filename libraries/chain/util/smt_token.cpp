@@ -1,9 +1,9 @@
-#include <steem/chain/steem_fwd.hpp>
-#include <steem/chain/util/smt_token.hpp>
-#include <steem/chain/steem_object_types.hpp>
-#ifdef STEEM_ENABLE_SMT
+#include <hive/chain/hive_fwd.hpp>
+#include <hive/chain/util/smt_token.hpp>
+#include <hive/chain/hive_object_types.hpp>
+#ifdef HIVE_ENABLE_SMT
 
-namespace steem { namespace chain { namespace util { namespace smt {
+namespace hive { namespace chain { namespace util { namespace smt {
 
 const smt_token_object* find_token( const database& db, uint32_t nai )
 {
@@ -68,6 +68,6 @@ fc::optional< time_point_sec > last_emission_time( const database& db, const ass
    return {};
 }
 
-} } } } // steem::chain::util::smt
+} } } } // hive::chain::util::smt
 
 #endif

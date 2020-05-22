@@ -1,28 +1,28 @@
 
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
-#include <steem/plugins/follow/follow_plugin.hpp>
-#include <steem/plugins/follow/follow_objects.hpp>
-#include <steem/plugins/follow/follow_operations.hpp>
-#include <steem/plugins/follow/inc_performance.hpp>
+#include <hive/plugins/follow/follow_plugin.hpp>
+#include <hive/plugins/follow/follow_objects.hpp>
+#include <hive/plugins/follow/follow_operations.hpp>
+#include <hive/plugins/follow/inc_performance.hpp>
 
-#include <steem/chain/util/impacted.hpp>
+#include <hive/chain/util/impacted.hpp>
 
-#include <steem/protocol/config.hpp>
+#include <hive/protocol/config.hpp>
 
-#include <steem/chain/database.hpp>
-#include <steem/chain/index.hpp>
-#include <steem/chain/account_object.hpp>
-#include <steem/chain/comment_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/index.hpp>
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/comment_object.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>
 
 #include <memory>
 
-namespace steem { namespace plugins { namespace follow {
+namespace hive { namespace plugins { namespace follow {
 
-using namespace steem::protocol;
+using namespace hive::protocol;
 
 namespace detail {
 
@@ -30,7 +30,7 @@ class follow_plugin_impl
 {
    public:
       follow_plugin_impl( follow_plugin& _plugin ) :
-         _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ),
+         _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
          _self( _plugin ) {}
       ~follow_plugin_impl() {}
 
@@ -65,7 +65,7 @@ struct pre_operation_visitor
          if( db.calculate_discussion_payout_time( c ) == fc::time_point_sec::maximum() ) return;
 
          const auto& cv_idx = db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-         auto cv = cv_idx.find( boost::make_tuple( c.id, db.get_account( op.voter ).id ) );
+         auto cv = cv_idx.find( boost::make_tuple( c.get_id(), db.get_account( op.voter ).get_id() ) );
 
          if( cv != cv_idx.end() )
          {
@@ -108,12 +108,12 @@ struct pre_operation_visitor
          const auto* comment = db.find_comment( op.author, op.permlink );
 
          if( comment == nullptr ) return;
-         if( comment->parent_author.size() ) return;
+         if( comment->parent_author_id != HIVE_ROOT_POST_PARENT_ID ) return;
 
          const auto& feed_idx = db.get_index< feed_index >().indices().get< by_comment >();
-         auto itr = feed_idx.lower_bound( comment->id );
+         auto itr = feed_idx.lower_bound( comment->get_id() );
 
-         while( itr != feed_idx.end() && itr->comment == comment->id )
+         while( itr != feed_idx.end() && itr->comment == comment->get_id() )
          {
             const auto& old_feed = *itr;
             ++itr;
@@ -121,9 +121,9 @@ struct pre_operation_visitor
          }
 
          const auto& blog_idx = db.get_index< blog_index >().indices().get< by_comment >();
-         auto blog_itr = blog_idx.lower_bound( comment->id );
+         auto blog_itr = blog_idx.lower_bound( comment->get_id() );
 
-         while( blog_itr != blog_idx.end() && blog_itr->comment == comment->id )
+         while( blog_itr != blog_idx.end() && blog_itr->comment == comment->get_id() )
          {
             const auto& old_blog = *blog_itr;
             ++blog_itr;
@@ -152,7 +152,7 @@ struct post_operation_visitor
    {
       try
       {
-         if( op.id == STEEM_FOLLOW_PLUGIN_NAME )
+         if( op.id == HIVE_FOLLOW_PLUGIN_NAME )
          {
             custom_json_operation new_cop;
 
@@ -206,10 +206,10 @@ struct post_operation_visitor
             {
                if( itr->what & ( 1 << blog ) )
                {
-                  auto feed_itr = comment_idx.find( boost::make_tuple( c.id, itr->follower ) );
+                  auto feed_itr = comment_idx.find( boost::make_tuple( c.get_id(), itr->follower ) );
                   bool is_empty = feed_itr == comment_idx.end();
 
-                  pd.init( c.id, is_empty );
+                  pd.init( c.get_id(), is_empty );
                   uint32_t next_id = 0;
 #ifndef ENABLE_MIRA
                   next_id = perf.delete_old_objects< performance_data::t_creation_type::part_feed >( old_feed_idx, itr->follower, _plugin._self.max_feed_size, pd );
@@ -220,7 +220,7 @@ struct post_operation_visitor
                      db.create< feed_object >( [&]( feed_object& f )
                      {
                         f.account = itr->follower;
-                        f.comment = c.id;
+                        f.comment = c.get_id();
                         f.account_feed_id = next_id;
                      });
                   }
@@ -231,14 +231,14 @@ struct post_operation_visitor
          }
 
          const auto& comment_blog_idx = db.get_index< blog_index >().indices().get< by_comment >();
-         auto blog_itr = comment_blog_idx.find( boost::make_tuple( c.id, op.author ) );
+         auto blog_itr = comment_blog_idx.find( boost::make_tuple( c.get_id(), op.author ) );
          bool is_empty = blog_itr == comment_blog_idx.end();
 
 #ifndef ENABLE_MIRA
          const auto& old_blog_idx = db.get_index< blog_index >().indices().get< by_blog >();
 #endif
 
-         pd.init( c.id, is_empty );
+         pd.init( c.get_id(), is_empty );
          uint32_t next_id = 0;
 #ifndef ENABLE_MIRA
          next_id = perf.delete_old_objects< performance_data::t_creation_type::full_blog >( old_blog_idx, op.author, _plugin._self.max_feed_size, pd );
@@ -249,7 +249,7 @@ struct post_operation_visitor
             db.create< blog_object >( [&]( blog_object& b)
             {
                b.account = op.author;
-               b.comment = c.id;
+               b.comment = c.get_id();
                b.blog_feed_id = next_id;
             });
          }
@@ -268,7 +268,7 @@ struct post_operation_visitor
             return;
 
          const auto& cv_idx = db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-         auto cv = cv_idx.find( boost::make_tuple( comment.id, db.get_account( op.voter ).id ) );
+         auto cv = cv_idx.find( boost::make_tuple( comment.get_id(), db.get_account( op.voter ).get_id() ) );
 
          const auto& rep_idx = db.get_index< reputation_index >().indices().get< by_account >();
          auto voter_rep = rep_idx.find( op.voter );
@@ -355,7 +355,7 @@ void follow_plugin::plugin_initialize( const boost::program_options::variables_m
       my = std::make_unique< detail::follow_plugin_impl >( *this );
 
       // Each plugin needs its own evaluator registry.
-      _custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< steem::plugins::follow::follow_plugin_operation > >( my->_db, name() );
+      _custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< hive::plugins::follow::follow_plugin_operation > >( my->_db, name() );
 
       // Add each operation evaluator to the registry
       _custom_operation_interpreter->register_evaluator< follow_evaluator >( this );
@@ -366,12 +366,12 @@ void follow_plugin::plugin_initialize( const boost::program_options::variables_m
 
       my->_pre_apply_operation_conn = my->_db.add_pre_apply_operation_handler( [&]( const operation_notification& note ){ my->pre_operation( note ); }, *this, 0 );
       my->_post_apply_operation_conn = my->_db.add_post_apply_operation_handler( [&]( const operation_notification& note ){ my->post_operation( note ); }, *this, 0 );
-      STEEM_ADD_PLUGIN_INDEX(my->_db, follow_index);
-      STEEM_ADD_PLUGIN_INDEX(my->_db, feed_index);
-      STEEM_ADD_PLUGIN_INDEX(my->_db, blog_index);
-      STEEM_ADD_PLUGIN_INDEX(my->_db, reputation_index);
-      STEEM_ADD_PLUGIN_INDEX(my->_db, follow_count_index);
-      STEEM_ADD_PLUGIN_INDEX(my->_db, blog_author_stats_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, follow_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, feed_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, blog_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, reputation_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, follow_count_index);
+      HIVE_ADD_PLUGIN_INDEX(my->_db, blog_author_stats_index);
 
       fc::mutable_variant_object state_opts;
 
@@ -401,4 +401,4 @@ void follow_plugin::plugin_shutdown()
    chain::util::disconnect_signal( my->_post_apply_operation_conn );
 }
 
-} } } // steem::plugins::follow
+} } } // hive::plugins::follow

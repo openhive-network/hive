@@ -1,16 +1,16 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
-#include <steem/chain/steem_evaluator.hpp>
-#include <steem/chain/database.hpp>
-#include <steem/chain/steem_objects.hpp>
-#include <steem/chain/smt_objects.hpp>
-#include <steem/chain/util/reward.hpp>
-#include <steem/chain/util/smt_token.hpp>
+#include <hive/chain/hive_evaluator.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/hive_objects.hpp>
+#include <hive/chain/smt_objects.hpp>
+#include <hive/chain/util/reward.hpp>
+#include <hive/chain/util/smt_token.hpp>
 
-#include <steem/protocol/smt_operations.hpp>
+#include <hive/protocol/smt_operations.hpp>
 
-#ifdef STEEM_ENABLE_SMT
-namespace steem { namespace chain {
+#ifdef HIVE_ENABLE_SMT
+namespace hive { namespace chain {
 
 namespace {
 
@@ -61,7 +61,7 @@ const smt_token_object& common_pre_setup_evaluation(
 
 void smt_create_evaluator::do_apply( const smt_create_operation& o )
 {
-   FC_ASSERT( _db.has_hardfork( STEEM_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", STEEM_SMT_HARDFORK) );
+   FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
    const dynamic_global_property_object& dgpo = _db.get_dynamic_global_properties();
 
    auto token_ptr = util::smt::find_token( _db, o.symbol, true );
@@ -82,17 +82,17 @@ void smt_create_evaluator::do_apply( const smt_create_operation& o )
          const auto& fhistory = _db.get_feed_history();
          FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot pay the fee using different asset symbol because there is no price feed." );
 
-         if( dgpo.smt_creation_fee.symbol == STEEM_SYMBOL )
-            creation_fee = _db.to_steem( o.smt_creation_fee );
+         if( dgpo.smt_creation_fee.symbol == HIVE_SYMBOL )
+            creation_fee = _db.to_hive( o.smt_creation_fee );
          else
-            creation_fee = _db.to_sbd( o.smt_creation_fee );
+            creation_fee = _db.to_hbd( o.smt_creation_fee );
       }
 
       FC_ASSERT( creation_fee == dgpo.smt_creation_fee,
          "Fee of ${ef} does not match the creation fee of ${sf}", ("ef", creation_fee)("sf", dgpo.smt_creation_fee) );
 
       _db.adjust_balance( o.control_account , -o.smt_creation_fee );
-      _db.adjust_balance( STEEM_NULL_ACCOUNT,  o.smt_creation_fee );
+      _db.adjust_balance( HIVE_NULL_ACCOUNT,  o.smt_creation_fee );
    }
    else // Reset case
    {
@@ -105,12 +105,7 @@ void smt_create_evaluator::do_apply( const smt_create_operation& o )
    }
 
    // Create SMT object common to both liquid and vesting variants of SMT.
-   _db.create< smt_token_object >( [&]( smt_token_object& token )
-   {
-      token.liquid_symbol = o.symbol;
-      token.control_account = o.control_account;
-      token.market_maker.token_balance = asset( 0, token.liquid_symbol );
-   });
+   _db.create< smt_token_object >( o.symbol, o.control_account );
 
    remove_from_nai_pool( _db, o.symbol );
 
@@ -138,7 +133,7 @@ struct smt_setup_evaluator_visitor
 
 void smt_setup_evaluator::do_apply( const smt_setup_operation& o )
 {
-   FC_ASSERT( _db.has_hardfork( STEEM_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", STEEM_SMT_HARDFORK) );
+   FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
 #pragma message ("TODO: Adjust assertion below and add/modify negative tests appropriately.")
    const auto* _token = _db.find< smt_token_object, by_symbol >( o.symbol );
    FC_ASSERT( _token, "SMT ${ac} not elevated yet.",("ac", o.control_account) );
@@ -157,8 +152,8 @@ void smt_setup_evaluator::do_apply( const smt_setup_operation& o )
       token_ico_obj.contribution_begin_time = o.contribution_begin_time;
       token_ico_obj.contribution_end_time = o.contribution_end_time;
       token_ico_obj.launch_time = o.launch_time;
-      token_ico_obj.steem_units_soft_cap = o.steem_units_soft_cap;
-      token_ico_obj.steem_units_hard_cap = o.steem_units_hard_cap;
+      token_ico_obj.hive_units_soft_cap = o.hive_units_soft_cap;
+      token_ico_obj.hive_units_hard_cap = o.hive_units_hard_cap;
    } );
 
    smt_setup_evaluator_visitor visitor( token_ico, _db );
@@ -167,7 +162,7 @@ void smt_setup_evaluator::do_apply( const smt_setup_operation& o )
 
 void smt_setup_emissions_evaluator::do_apply( const smt_setup_emissions_operation& o )
 {
-   FC_ASSERT( _db.has_hardfork( STEEM_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", STEEM_SMT_HARDFORK) );
+   FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
 
    const smt_token_object& smt = common_pre_setup_evaluation( _db, o.symbol, o.control_account );
 
@@ -227,7 +222,7 @@ void smt_setup_emissions_evaluator::do_apply( const smt_setup_emissions_operatio
 
 void smt_set_setup_parameters_evaluator::do_apply( const smt_set_setup_parameters_operation& o )
 {
-   FC_ASSERT( _db.has_hardfork( STEEM_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", STEEM_SMT_HARDFORK) );
+   FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
 
    const smt_token_object& smt_token = common_pre_setup_evaluation( _db, o.symbol, o.control_account );
 
@@ -276,7 +271,7 @@ struct smt_set_runtime_parameters_evaluator_visitor
 
 void smt_set_runtime_parameters_evaluator::do_apply( const smt_set_runtime_parameters_operation& o )
 {
-   FC_ASSERT( _db.has_hardfork( STEEM_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", STEEM_SMT_HARDFORK) );
+   FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
 
    const smt_token_object& token = common_pre_setup_evaluation(_db, o.symbol, o.control_account);
 
@@ -293,7 +288,7 @@ void smt_contribute_evaluator::do_apply( const smt_contribute_operation& o )
 {
    try
    {
-      FC_ASSERT( _db.has_hardfork( STEEM_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", STEEM_SMT_HARDFORK) );
+      FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
 
       const smt_token_object* token = util::smt::find_token( _db, o.symbol );
       FC_ASSERT( token != nullptr, "Cannot contribute to an unknown SMT" );
@@ -302,10 +297,10 @@ void smt_contribute_evaluator::do_apply( const smt_contribute_operation& o )
 
       const smt_ico_object* token_ico = _db.find< smt_ico_object, by_symbol >( token->liquid_symbol );
       FC_ASSERT( token_ico != nullptr, "Unable to find ICO data for symbol: ${sym}", ("sym", token->liquid_symbol) );
-      FC_ASSERT( token_ico->contributed.amount < token_ico->steem_units_hard_cap, "SMT ICO has reached its hard cap and no longer accepts contributions" );
-      FC_ASSERT( token_ico->contributed.amount + o.contribution.amount <= token_ico->steem_units_hard_cap,
+      FC_ASSERT( token_ico->contributed.amount < token_ico->hive_units_hard_cap, "SMT ICO has reached its hard cap and no longer accepts contributions" );
+      FC_ASSERT( token_ico->contributed.amount + o.contribution.amount <= token_ico->hive_units_hard_cap,
          "The proposed contribution would exceed the ICO hard cap, maximum possible contribution: ${c}",
-         ("c", asset( token_ico->steem_units_hard_cap - token_ico->contributed.amount, STEEM_SYMBOL )) );
+         ("c", asset( token_ico->hive_units_hard_cap - token_ico->contributed.amount, HIVE_SYMBOL )) );
 
       auto key = boost::tuple< asset_symbol_type, account_name_type, uint32_t >( o.contribution.symbol, o.contributor, o.contribution_id );
       auto contrib_ptr = _db.find< smt_contribution_object, by_symbol_contributor >( key );
@@ -313,13 +308,7 @@ void smt_contribute_evaluator::do_apply( const smt_contribute_operation& o )
 
       _db.adjust_balance( o.contributor, -o.contribution );
 
-      _db.create< smt_contribution_object >( [&] ( smt_contribution_object& obj )
-      {
-         obj.contributor = o.contributor;
-         obj.symbol = o.symbol;
-         obj.contribution_id = o.contribution_id;
-         obj.contribution = o.contribution;
-      } );
+      _db.create< smt_contribution_object >( o.contributor, o.contribution, o.symbol, o.contribution_id );
 
       _db.modify( *token_ico, [&]( smt_ico_object& ico )
       {
