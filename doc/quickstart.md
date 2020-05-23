@@ -10,10 +10,10 @@ docker run \
 ```
 #### Low memory node?
 Above runs low memory node, which is suitable for:
-- seed nodes
-- witness nodes
-- exchanges, etc.
-For full api node use:
+- Seed nodes
+- Witness nodes
+- Exchanges, third-party programs, etc.
+For full API node use:
 
 ```
 docker run \
@@ -25,20 +25,20 @@ docker run \
 ### Configure for your use case
 #### Full API node
 You need to use `USE_WAY_TOO_MUCH_RAM=1` and `USE_FULL_WEB_NODE=1` as stated above.
-You can Use `contrib/fullnode.config.ini` as a base for your `config.ini` file.
+You can use `contrib/fullnode.config.ini` as a base for your `config.ini` file.
 
 #### Exchanges
 Use low memory node.
 
-Also make sure that your `config.ini` contains:
+Also, make sure that your `config.ini` contains:
 ```
 enable-plugin = account_history
 public-api = database_api login_api
 track-account-range = ["yourexchangeid", "yourexchangeid"]
 ```
-Do not add other APIs or plugins unless you know what you are doing.
+Do not add other APIs or plugins, unless you know exactly what you are doing.
 
-This configuration exists in Docker with the following command
+This configuration exists in Docker with the following command:
 
 ```
 docker run -d --env TRACK_ACCOUNT="yourexchangeid" \
@@ -47,7 +47,7 @@ docker run -d --env TRACK_ACCOUNT="yourexchangeid" \
     hiveio/hive
 ```
 
-### Resources usage
+### Resource Usage
 
 Please make sure that you have enough resources available.
 Check `shared-file-size =` in your `config.ini` to reflect your needs.
