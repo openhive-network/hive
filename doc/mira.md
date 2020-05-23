@@ -1,19 +1,19 @@
-# Basic MIRA configuration
+# Basic MIRA Configuration
 
-MIRA has many options that allow the user to improve performance. For most use cases, the default options will be sufficient. However, one consideration when configuring MIRA is resource limiting.
+MIRA has many options that allow the user to improve performance. For most use cases, the default options will be sufficient. However, one consideration when configuring MIRA is resource-limiting.
 
 MIRA uses a multi-tiered architecture for retrieving and storing data from its databases. Each blockchain index is considered its own distinct database. At a very high level, the tiers can be thought of as follows:
 
 | Database Tier       |   Location    |  Reading | Writing |
 |---------------------|---------------|:--------:|:-------:|
-| Object cache        |   Main memory |  &#9745; | &#9745; |
-| Global shared cache |   Main memory |  &#9745; | &#9744; |
-| Gobal write buffer  |   Main memory |  &#9745; | &#9745; |
-| Tier 0 file based   |   Disk        |  &#9745; | &#9745; |
-| Tier 1 file based   |   Disk        |  &#9745; | &#9745; |
-| ...                 |   Disk        |  &#9745; | &#9745; |
+| Object cache        |   Main memory |  :white_check_mark: | :white_check_mark: |
+| Global shared cache |   Main memory |  :white_check_mark: | &#9744; |
+| Gobal write buffer  |   Main memory |  :white_check_mark: | :white_check_mark: |
+| Tier 0 file based   |   Disk        |  :white_check_mark: | :white_check_mark: |
+| Tier 1 file based   |   Disk        |  :white_check_mark: | :white_check_mark: |
+| ...                 |   Disk        |  :white_check_mark: | :white_check_mark: |
 
-Below is an example of MIRAs default configuration that is designed for a 16GiB node.
+Below is an example of MIRA's default configuration that is designed for a 16 GB node.
 
 ```
 {
@@ -42,13 +42,13 @@ Below is an example of MIRAs default configuration that is designed for a 16GiB 
 }
 ```
 
-Lets break down the most important options with regards to limiting main memory usage.
+Let's break down the most important options, with regards to limiting main memory usage.
 
 ---
 
 ## Object cache
 
-The object cache determines how many database objects MIRA has direct access to. When the application logic accesses the database for reading or writing, it does so through an object within the object cache. Having objects in the object cache circumvents the need to make database accesses to the underlying tiers; this is the most performant layer in the MIRA architecture. Since it is not possible to set the object cache limitations by memory, this layer must be configured according to its heaviest possible usage. The object cache is shared amongst all blockchain index databases. The largest object can be 64KiB, which correlates to the maximum size of one block in the chain. Calculate the heaviest possible usage with the formula `object_count * 64KiB`. Using the default configuration as an example, `62500 * 64 * 1024 = 4096000000` or simply `62500 * 64KiB = 4GiB`.
+The object cache determines how many database objects MIRA has direct access to. When the application logic accesses the database for reading or writing, it does so through an object within the object cache. Having objects in the object cache circumvents the need to make database accesses to the underlying tiers; this is the most performant layer in the MIRA architecture. Since it is not possible to set the object cache limitations by memory, this layer must be configured according to its heaviest possible usage. The object cache is shared amongst all blockchain index databases. The largest object can be 64 KB, which correlates to the maximum size of one block in the chain. Calculate the heaviest possible usage with the formula `object_count * 64 KB`. Using the default configuration as an example, `62500 * 64 * 1024 = 4096000000` or simply `62500 * 64 KB = 4 GB`.
 
 ```
 ...
@@ -67,7 +67,7 @@ The object cache determines how many database objects MIRA has direct access to.
 
 ## Global shared cache
 
-The global shared cache is a section of main memory that will contain data blocks used for the retrieval of data. It is recommended that the user set its capacity to about 1/3 of their total memory budget. The global shared cache is shared between all blockchain index databases. Using the default configuration as an example, `5368709120 = 5GiB`.
+The global shared cache is a section of main memory that will contain data blocks used for the retrieval of data. It is recommended that the user set its capacity to about 1/3 of their total memory budget. The global shared cache is shared between all blockchain index databases. Using the default configuration as an example, `5368709120 = 5 GB`.
 
 ```
 {
@@ -84,7 +84,7 @@ The global shared cache is a section of main memory that will contain data block
 
 ## Global write buffer
 
-The global write buffer is used for performant writes to the database. It lives in main memory and also contains the latest changes to a particular database object. Not only is it used for writing, but also for reading. It is important to ensure there is enough capacity allocated to keep up with the live chain. The global write buffer is contained *within* the global shared cache. Using the default configuration as an example, `1073741824 = 1GiB`.
+The global write buffer is used for performant writes to the database. It lives in main memory and also contains the latest changes to a particular database object. Not only is it used for writing, but also for reading. It is important to ensure there is enough capacity allocated to keep up with the live chain. The global write buffer is contained *within* the global shared cache. Using the default configuration as an example, `1073741824 = 1 GB`.
 
 ```
 ...
@@ -100,7 +100,7 @@ The global write buffer is used for performant writes to the database. It lives 
 
 ## Application memory
 
-When configuring MIRA it is important to consider the normal memory usage of `steemd`. Regardless of the MIRA configuration, `steemd` will tend to use roughly 5.5GiB of memory.
+When configuring MIRA, it is important to consider the normal memory usage of `steemd`. Regardless of the MIRA configuration, `steemd` will tend to use roughly 5.5 GB of memory.
 
 ---
 
@@ -108,29 +108,29 @@ When configuring MIRA it is important to consider the normal memory usage of `st
 
 ### Example 1.
 
-Example 1 is appropriate for a 16GiB node.
+Example 1 is appropriate for a 16 GB node.
 
 Using the default configuration:
 
 1. Object count: `62500`
-2. Global shared cache: `5368709120` or 5GiB
-3. Global write buffer: `1073741824` or 1GiB
-4. Approximate application memory usage: `5905580032` or 5.5GiB
+2. Global shared cache: `5368709120` or 5 GB
+3. Global write buffer: `1073741824` or 1 GB
+4. Approximate application memory usage: `5905580032` or 5.5 GB
 
-Let us calculate the largest total memory usage of MIRA. `(62500 * 64KiB) + 5GiB + 5.5GiB = ~14.5GiB`
+Let us calculate the largest total memory usage of MIRA. `(62500 * 64 KB) + 5 GB + 5.5 GB = ~14.5 GB`
 
 > *__Note:__* *The global write buffer size is not included in the total memory calculation for MIRA because it is contained within the global shared cache.*
 
 ### Example 2.
 
-Example 2 is appropriate for a 32GiB node.
+Example 2 is appropriate for a 32 GB node.
 
 1. Object count: `125000`
-2. Global shared cache: `10737418240` or 10GiB
-3. Global write buffer: `2147483648` or 2GiB
-4. Approximate application memory usage: `5905580032` or 5.5GiB
+2. Global shared cache: `10737418240` or 10 GB
+3. Global write buffer: `2147483648` or 2 GB
+4. Approximate application memory usage: `5905580032` or 5.5 GB
 
-Let us calculate the largest total memory usage of MIRA. `(125000 * 64KiB) + 10GiB + 5.5GiB = ~23.5GiB`
+Let us calculate the largest total memory usage of MIRA. `(125000 * 64 KB) + 10 GB + 5.5 GB = ~23.5 GB`
 
 > *__Note:__* *The global write buffer size is not included in the total memory calculation for MIRA because it is contained within the global shared cache.*
 
