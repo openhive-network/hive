@@ -1,11 +1,11 @@
 Exchange Quickstart
 -------------------
 
-System Requirements: A dedicated server or virtual machine with a minimum of 64GB of RAM, and at least 350GB of fast **local** SSD storage. Hive is one of the most active blockchains in the world and handles an incredibly large amount of transactions per second, as such, it requires fast storage to run efficiently.
+System Requirements: A dedicated server or virtual machine with a minimum of 64GB of RAM and at least 350GB of fast, **local** SSD storage. Hive is one of the most active blockchains in the world and handles an incredibly large amount of transactions per second. Therefore, it requires fast storage to run efficiently.
 
-With the right equipment and technical configuration a reindex should take **no longer than 72 hours**.  If recommendations are not followed precisely, the reindex can drag on for days or even weeks with significant slowdowns towards the end.
+With the right equipment and technical configuration, a reindex should take **no longer than 72 hours**.  If recommendations are not followed precisely, the reindex can drag on for days or even weeks with significant slowdowns towards the end.
 
-Physically attached SSD will ensure an optimal reindex time.  SSD over a NAS or some kind of network storage backed by SSD will often have much higher latency. As an example, AWS EBS is not performant enough. A good recommended instance in AWS is the i3.2xlarge, it comes with a physically attached nVME drive (it must be formatted and mounted on instance launch).
+Physically attached SSD will ensure an optimal reindex time.  SSD over a NAS or some kind of network storage backed by SSD will often have much higher latency. As an example, AWS EBS is not performant enough. A good recommended instance in AWS is the i3.2xlarge. It comes with a physically attached nVME drive, that must be formatted and mounted on instance launch.
 
 You can save a lot of time by replaying from a `block_log`. Using the docker method below, we have made it easy to download a `block_log` at launch and replay from it by passing in the `USE_PUBLIC_BLOCKLOG=1` environment variable. To do this, make sure your data directory is empty and does not contain a block_log. If you are not using docker, you can download a `block_log` from [here](https://gtg.steem.house/get/blockchain), put it in your Hive data directory, and use the `--replay-blockchain` command line option. Be sure to remove the option if you have to stop/restart steemd after already being synced.
 
@@ -18,7 +18,7 @@ On Ubuntu 16.04+:
 apt-get update && apt-get install git docker.io -y
 ```
 
-On other distributions you can install docker with the native package manager or with the script from get.docker.com:
+On other distributions, you can install docker with the native package manager or with the script from get.docker.com:
 ```
 curl -fsSL get.docker.com -o get-docker.sh
 sh get-docker.sh
@@ -26,7 +26,7 @@ sh get-docker.sh
 
 ### Clone the hive repo
 
-Pull in the hive repo from the official source on github and then change into the directory that's created for it.
+Pull in the Hive repo from the official source on GitHub and then change into the directory that's created for it.
 ```
 git clone https://github.com/openhive-network/hive
 cd hive
@@ -34,17 +34,17 @@ cd hive
 
 ### Build the image from source with docker
 
-Docker isn't just for downloading already built images, it can be used to build from source the same way you would otherwise build. By doing this you ensure that your build environment is identical to what we use to develop the software. Use the below command to start the build:
+Docker isn't just for downloading already built images, it can be used to build from source the same way you would otherwise build. By doing this, you ensure that your build environment is identical to what we use to develop the software. Use the below command to start the build:
 
 ```
 docker build -t=hiveio/hive .
 ```
 
-Don't forget the `.` at the end of the line which indicates the build target is in the current directory.
+Don't forget the `.` at the end of the line, which indicates the build target is in the current directory.
 
-This will build everything including running our full suite of tests during the build process. It will anywhere from thirty minutes to a couple hours depending on how fast your equipment is.
+This will build everything including running our full suite of tests during the build process. It will take anywhere from thirty minutes to a couple hours, depending on how fast your equipment is.
 
-When the build completes you will see a message indicating that it is 'successfully built'.
+When the build completes, you will see a message indicating that it has been 'successfully built'.
 
 ### Using our official Docker images without building from source
 
@@ -58,7 +58,7 @@ docker pull hiveio/hive
 
 If you build with Docker but do not want to run hived from within a docker container, you can stop here with this step and instead extract the binary from the container with the commands below. If you are going to run hived with docker (recommended method), skip this step altogether. We're simply providing an option for everyone's use-case. Our binaries are built mostly static, only dynamically linking to linux kernel libraries. We have tested and confirmed binaries built in Docker work on Ubuntu and Fedora and will likely work on many other Linux distrubutions. Building the image yourself or pulling one of our pre-built images both work.
 
-To extract the binary you need to start a container and then copy the file from it.
+To extract the binary, you need to start a container and then copy the file from it.
 
 ```
 docker run -d --name hived-exchange hiveio/hive
@@ -69,7 +69,7 @@ docker stop hived-exchange
 
 ### Configuration files when not using a Docker image
 
-For your convenience, we have provided a provided an [example\_config](example\_config.ini) that we expect should be sufficient to run your exchange node. Be sure to rename it to simply `config.ini`. Be sure to set the account name of your wallet account that you would like to track account history for in the config file. It is defined as `account-history-track-account-range = ["accountname","accountname"]`.
+For your convenience, we have provided a provided an [example\_config](example\_config.ini) that we expect should be sufficient to run your exchange node. Be sure to rename it to simply `config.ini`. Also, set the account name of your wallet account that you would like to track account history for in the config file. It is defined as `account-history-track-account-range = ["accountname","accountname"]`.
 
 ### Custom configuration files when using a Docker image
 
@@ -90,7 +90,7 @@ mkdir hivewallet
 
 ### Run the container
 
-The below command will start a daemonized instance opening ports for p2p and RPC  while linking the directories we created for blockchain and wallet data inside the container. Fill in `TRACK_ACCOUNT` with the name of your exchange account that you want to follow. The `-v` flags are how you map directories outside of the container to the inside, you list the path to the directories you created earlier before the `:` for each `-v` flag. The restart policy ensures that the container will automatically restart even if your system is restarted.
+The below command will start a daemonized instance opening ports for p2p and RPC, while linking the directories we created for blockchain and wallet data inside the container. Fill in `TRACK_ACCOUNT` with the name of your exchange account that you want to follow. The `-v` flags are how you map directories outside of the container to the inside, you list the path to the directories you created earlier before the `:` for each `-v` flag. The restart policy ensures that the container will automatically restart, even if your system is restarted.
 
 ```
 docker run -d --name hived-exchange --env TRACK_ACCOUNT=nameofaccount --env USE_PUBLIC_BLOCKLOG=1 -p 2001:2001 -p 8090:8090 -v /path/to/hivewallet:/var/hivewallet -v /path/to/blockchain:/var/lib/steemd/blockchain --restart always hiveio/hive
@@ -100,11 +100,11 @@ You can see that the container is running with the `docker ps` command.
 
 To follow along with the logs, use `docker logs -f`.
 
-Initial syncing will take between 6 and 72 hours depending on your equipment, faster storage devices will take less time and be more efficient. Subsequent restarts will not take as long.
+Initial syncing will take between 6 and 72 hours, depending on your equipment. Faster storage devices will take less time and be more efficient. Subsequent restarts will not take as long.
 
 ### Running the cli_wallet
 
-The command below will run the cli_wallet from inside the running container while mapping the `wallet.json` to the directory you created for it on the host.
+The command below will run the cli_wallet from inside the running container, while mapping the `wallet.json` to the directory you created for it on the host.
 
 ```
 docker exec -it hived-exchange /usr/local/steemd-default/bin/cli_wallet -w /var/hivewallet/wallet.json
