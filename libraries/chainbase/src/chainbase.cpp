@@ -103,7 +103,7 @@ namespace chainbase {
                BOOST_THROW_EXCEPTION(std::runtime_error("Different persistent & runtime environments. Persistent: `" + dp + "'. Runtime: `"+ dr + "'.Probably database created by a different compiler, build, or operating system"));
             }
 
-          std::cout << "Compiler and build environment read from persistent stoage: `" << env.first->dump() << '\'' << std::endl;
+          std::cout << "Compiler and build environment read from persistent storage: `" << env.first->dump() << '\'' << std::endl;
          }
       } else {
          _file_size = shared_file_size;
