@@ -1,8 +1,8 @@
 # Witness Parameters
 
-The role of a witness in the Steem Blockchain is to verify incoming transactions, produce blocks when scheduled, and partake in the Steem governance model by voting on several parameters.
+The role of a witness in the Hive Blockchain is to verify incoming transactions, produce blocks when scheduled, and partake in the Hive governance model by voting on several parameters.
 
-These parameters control various aspects of the operation of the blockchain that are not easily defined in code at compile time. One example is the STEEM price feed that defines the conversion rate between STEEM and SBD.
+These parameters control various aspects of the operation of the blockchain that are not easily defined in code at compile time. One example is the HIVE price feed that defines the conversion rate between STEEM and SBD.
 
 Witnesses are able to use the `witness_set_properties_operation` to change witness specific properties and vote on paramters.
 
@@ -14,7 +14,7 @@ This operation was added in Steem v0.20.0 to replace the `witness_update_operati
 
 ### account_creation_fee
 
-This is the fee in STEEM that must be paid to create an account. This field must be non-negative.
+This is the fee in HIVE that must be paid to create an account. This field must be non-negative.
 
 ### account_subsidy_budget
 
