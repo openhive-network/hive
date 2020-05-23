@@ -1,12 +1,12 @@
 # Building Hive
 
-Building Steeem requires 8GB of RAM.
+Building Hive requires a minimum of 8GB RAM.
 
 ## Compile-Time Options (cmake)
 
 ### CMAKE_BUILD_TYPE=[Release/Debug]
 
-Specifies whether to build with or without optimization and without or with
+Specifies whether to build with or without optimization and with or without
 the symbol table for debugging. Unless you are specifically debugging or
 running tests, it is recommended to build as release.
 
@@ -125,7 +125,7 @@ Here are the required packages:
 
 The Boost provided in the Ubuntu 14.04 package manager (Boost 1.55) is too old.
 Hive requires Boost 1.58 (as in Ubuntu 16.04) and works with versions up to 1.60 (including).
-So building Hive on Ubuntu 14.04 requires downloading and installing a more recent
+Therefore, building Hive on Ubuntu 14.04 requires downloading and installing a more recent
 version of Boost.
 
 According to [this mailing list
@@ -148,7 +148,7 @@ Here is how to build and install Boost 1.60 into your user's home directory
     ./bootstrap.sh "--prefix=$BOOST_ROOT"
     ./b2 install
 
-Then the instructions are the same as for hive:
+Then, the instructions are the same as for Hive:
 
     git clone https://github.com/openhive-network/hive
     cd hive
@@ -166,7 +166,7 @@ https://guide.macports.org/#installing.xcode.  In OS X 10.11 (El Capitan)
 and newer, you will be prompted to install developer tools when running a
 developer command in the terminal.
 
-Accept the Xcode license if you have not already:
+Accept the Xcode license, if you have not already:
 
     sudo xcodebuild -license accept
 
@@ -177,7 +177,7 @@ Install Homebrew by following the instructions here: http://brew.sh/
     brew doctor
     brew update
 
-### Install hive dependencies:
+### Install Hive dependencies:
 
     brew install \
         autoconf \
@@ -245,6 +245,6 @@ This will only build `steemd`.
 - The developers normally compile with gcc and clang. These compilers should
   be well-supported.
 - Community members occasionally attempt to compile the code with mingw,
-  Intel and Microsoft compilers. These compilers may work, but the
+  Intel, and Microsoft compilers. These compilers may work, but the
   developers do not use them. Pull requests fixing warnings / errors from
   these compilers are accepted.
