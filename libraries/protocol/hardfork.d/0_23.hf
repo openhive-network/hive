@@ -54,6 +54,25 @@ inline static const std::set< std::string >& get_restored_accounts()
       "thebigsweed",
       "farm-mom",
       "soufiani",
+
+      // Won their airdrop appeal (proposal #111)
+      "aellly",
+      "angelina6688",
+      "cheva",
+      "cnfund",
+      "cn-malaysia",
+      "devyleona",
+      "huangzuomin",
+      "jademont",
+      "mrpointp",
+      "mrspointm",
+      "shenchensucc",
+      "softmetal",
+      "stepbie",
+      "windowglass",
+      "wongshiying",
+      "xiaoshancun",
+      "yellowbird",
    };
 
    return restored_accounts;
