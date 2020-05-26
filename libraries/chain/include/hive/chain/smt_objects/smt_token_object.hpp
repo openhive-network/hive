@@ -107,6 +107,8 @@ public:
 
    ///parameters for 'smt_setup_operation'
    int64_t              max_supply = 0;
+
+   CHAINBASE_UNPACK_CONSTRUCTOR(smt_token_object);
 };
 
 class smt_ico_object : public object< smt_ico_object_type, smt_ico_object >
@@ -125,6 +127,8 @@ public:
    share_type                    hive_units_soft_cap = -1;
    share_type                    hive_units_hard_cap = -1;
    asset                         contributed = asset( 0, HIVE_SYMBOL );
+
+   CHAINBASE_UNPACK_CONSTRUCTOR(smt_ico_object);
 };
 
 class smt_token_emissions_object : public object< smt_token_emissions_object_type, smt_token_emissions_object >
@@ -146,6 +150,8 @@ public:
    uint32_t                              lep_rel_amount_numerator = 0;
    uint32_t                              rep_rel_amount_numerator = 0;
    uint8_t                               rel_amount_denom_bits = 0;
+
+   CHAINBASE_UNPACK_CONSTRUCTOR(smt_token_emissions_object);
 };
 
 class smt_contribution_object : public object< smt_contribution_object_type, smt_contribution_object >
@@ -163,6 +169,8 @@ public:
    account_name_type contributor;
    uint32_t          contribution_id;
    HIVE_asset        contribution;
+
+   CHAINBASE_UNPACK_CONSTRUCTOR(smt_contribution_object);
 };
 
 struct by_symbol_contributor;

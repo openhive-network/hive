@@ -1,0 +1,5 @@
+{
+  "plugin_name": "state_snapshot",
+  "plugin_namespace": "state_snapshot",
+  "plugin_project": "state_snapshot_plugin"
+}

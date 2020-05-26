@@ -175,6 +175,8 @@ namespace hive { namespace chain {
                                     proxied_vsf_votes.end(),
                                     share_type() );
          }
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (delayed_votes));
    };
 
    class account_metadata_object : public object< account_metadata_object_type, account_metadata_object >
@@ -186,6 +188,8 @@ namespace hive { namespace chain {
          account_id_type   account;
          shared_string     json_metadata;
          shared_string     posting_json_metadata;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(account_metadata_object, (json_metadata)(posting_json_metadata));
    };
 
    class account_authority_object : public object< account_authority_object_type, account_authority_object >
@@ -201,6 +205,8 @@ namespace hive { namespace chain {
          shared_authority  posting; ///< used for voting and posting
 
          time_point_sec    last_owner_update;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(account_authority_object, (owner)(active)(posting));
    };
 
    class vesting_delegation_object : public object< vesting_delegation_object_type, vesting_delegation_object >
@@ -216,6 +222,8 @@ namespace hive { namespace chain {
          account_name_type delegatee;
          asset             vesting_shares = asset( 0, VESTS_SYMBOL );
          time_point_sec    min_delegation_time;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(vesting_delegation_object);
    };
 
    class vesting_delegation_expiration_object : public object< vesting_delegation_expiration_object_type, vesting_delegation_expiration_object >
@@ -230,6 +238,8 @@ namespace hive { namespace chain {
          account_name_type delegator;
          asset             vesting_shares = asset( 0, VESTS_SYMBOL );
          time_point_sec    expiration;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(vesting_delegation_expiration_object);
    };
 
    class owner_authority_history_object : public object< owner_authority_history_object_type, owner_authority_history_object >
@@ -248,6 +258,7 @@ namespace hive { namespace chain {
          account_name_type account;
          shared_authority  previous_owner_authority;
          time_point_sec    last_valid_time;
+      CHAINBASE_UNPACK_CONSTRUCTOR(owner_authority_history_object, (previous_owner_authority));
    };
 
    class account_recovery_request_object : public object< account_recovery_request_object_type, account_recovery_request_object >
@@ -266,6 +277,7 @@ namespace hive { namespace chain {
          account_name_type account_to_recover;
          shared_authority  new_owner_authority;
          time_point_sec    expires;
+      CHAINBASE_UNPACK_CONSTRUCTOR(account_recovery_request_object, (new_owner_authority));
    };
 
    class change_recovery_account_request_object : public object< change_recovery_account_request_object_type, change_recovery_account_request_object >
@@ -277,6 +289,7 @@ namespace hive { namespace chain {
          account_name_type account_to_recover;
          account_name_type recovery_account;
          time_point_sec    effective_on;
+      CHAINBASE_UNPACK_CONSTRUCTOR(change_recovery_account_request_object);
    };
 
    struct by_proxy;

@@ -329,6 +329,7 @@ public:
          super::_cache->clear();
          rocksdb::CancelAllBackgroundWork( &(*super::_db), true );
          super::cleanup_column_handles();
+         super::_db->Close();
          super::_db.reset();
       }
    }

@@ -3,6 +3,8 @@
 #include <boost/test/unit_test.hpp>
 #include <chainbase/chainbase.hpp>
 
+#include <fc/io/raw.hpp>
+
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/member.hpp>
@@ -32,7 +34,7 @@ typedef oid_ref< book > book_id_type;
 typedef multi_index_container<
   book,
   indexed_by<
-     ordered_unique< const_mem_fun<book,book::id_type,&book::get_id> >,
+     ordered_unique< tag< by_id >, const_mem_fun<book,book::id_type,&book::get_id> >,
      ordered_non_unique< BOOST_MULTI_INDEX_MEMBER(book,int,a) >,
      ordered_non_unique< BOOST_MULTI_INDEX_MEMBER(book,int,b) >
   >,
@@ -40,6 +42,20 @@ typedef multi_index_container<
 > book_index;
 
 CHAINBASE_SET_INDEX_TYPE( book, book_index )
+
+FC_REFLECT(book, (id)(a)(b))
+
+namespace fc {namespace raw {
+template<typename Stream>
+inline void pack(Stream& s, const book&)
+   {
+   }
+
+template<typename Stream>
+inline void unpack(Stream& s, book& id, uint32_t depth = 0)
+   {
+   }
+}}
 
 
 BOOST_AUTO_TEST_CASE( open_and_create ) {

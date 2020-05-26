@@ -17,6 +17,8 @@ class pending_optional_action_object : public object< pending_optional_action_ob
 
       time_point_sec             execution_time;
       optional_automated_action  action;
+
+   CHAINBASE_UNPACK_CONSTRUCTOR(pending_optional_action_object);
 };
 
 typedef multi_index_container<

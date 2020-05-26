@@ -70,6 +70,33 @@ namespace hive { namespace chain {
 
    struct generate_optional_actions_notification {};
 
+   typedef std::function<void(uint32_t, const chainbase::database::abstract_index_cntr_t&)> TBenchmarkMidReport;
+   typedef std::pair<uint32_t, TBenchmarkMidReport> TBenchmark;
+
+   struct open_args
+      {
+      fc::path data_dir;
+      fc::path shared_mem_dir;
+      uint64_t initial_supply = HIVE_INIT_SUPPLY;
+      uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;
+      uint64_t shared_file_size = 0;
+      uint16_t shared_file_full_threshold = 0;
+      uint16_t shared_file_scale_rate = 0;
+      int16_t  sps_remove_threshold = -1;
+      uint32_t chainbase_flags = 0;
+      bool do_validate_invariants = false;
+      bool benchmark_is_enabled = false;
+      fc::variant database_cfg;
+      bool replay_in_memory = false;
+      std::vector< std::string > replay_memory_indices{};
+
+      // The following fields are only used on reindexing
+      uint32_t stop_replay_at = 0;
+      bool exit_after_replay = false;
+      bool resume_replay = false;
+      TBenchmark benchmark = TBenchmark(0, [](uint32_t, const chainbase::database::abstract_index_cntr_t&) {});
+      };
+
    /**
     *   @class database
     *   @brief tracks the blockchain state in an extensible manner
@@ -110,33 +137,6 @@ namespace hive { namespace chain {
             skip_validate_invariants    = 1 << 11, ///< used to skip database invariant check on block application
             skip_undo_block             = 1 << 12, ///< used to skip undo db on reindex
             skip_block_log              = 1 << 13  ///< used to skip block logging on reindex
-         };
-
-         typedef std::function<void(uint32_t, const abstract_index_cntr_t&)> TBenchmarkMidReport;
-         typedef std::pair<uint32_t, TBenchmarkMidReport> TBenchmark;
-
-         struct open_args
-         {
-            fc::path data_dir;
-            fc::path shared_mem_dir;
-            uint64_t initial_supply = HIVE_INIT_SUPPLY;
-            uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;
-            uint64_t shared_file_size = 0;
-            uint16_t shared_file_full_threshold = 0;
-            uint16_t shared_file_scale_rate = 0;
-            int16_t  sps_remove_threshold = -1;
-            uint32_t chainbase_flags = 0;
-            bool do_validate_invariants = false;
-            bool benchmark_is_enabled = false;
-            fc::variant database_cfg;
-            bool replay_in_memory = false;
-            std::vector< std::string > replay_memory_indices{};
-
-            // The following fields are only used on reindexing
-            uint32_t stop_replay_at = 0;
-            bool exit_after_replay  = false;
-            bool resume_replay      = false;
-            TBenchmark benchmark = TBenchmark(0, []( uint32_t, const abstract_index_cntr_t& ){});
          };
 
          /**
@@ -331,6 +331,7 @@ namespace hive { namespace chain {
          using irreversible_block_handler_t = std::function< void(uint32_t) >;
          using reindex_handler_t = std::function< void(const reindex_notification&) >;
          using generate_optional_actions_handler_t = std::function< void(const generate_optional_actions_notification&) >;
+         using prepare_snapshot_handler_t = std::function < void(const database&, const database::abstract_index_cntr_t&)>;
 
 
       private:
@@ -359,6 +360,8 @@ namespace hive { namespace chain {
          boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
          boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
          boost::signals2::connection add_generate_optional_actions_handler ( const generate_optional_actions_handler_t& func, const abstract_plugin& plugin, int32_t group = -1 );
+
+         boost::signals2::connection add_prepare_snapshot_handler          (const prepare_snapshot_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
          //////////////////// db_witness_schedule.cpp ////////////////////
 
@@ -499,6 +502,9 @@ namespace hive { namespace chain {
 
          /// Reset the object graph in-memory
          void initialize_indexes();
+
+         void resetState(const open_args& args);
+
          void init_schema();
          void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
 
@@ -778,6 +784,8 @@ namespace hive { namespace chain {
 
          fc::signal<void(const generate_optional_actions_notification& )> _generate_optional_actions_signal;
 
+         fc::signal<void(const database&, const database::abstract_index_cntr_t&)> _prepare_snapshot_signal;
+
          /**
           *  Emitted After a block has been applied and committed.  The callback
           *  should not yield and should execute quickly.
@@ -797,11 +805,11 @@ namespace hive { namespace chain {
 
    struct reindex_notification
    {
-      reindex_notification( const database::open_args& a ) : args( a ) {}
+      reindex_notification( const open_args& a ) : args( a ) {}
 
       bool reindex_success = false;
       uint32_t last_block_number = 0;
-      const database::open_args& args;
+      const open_args& args;
    };
 
 } }

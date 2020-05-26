@@ -139,6 +139,20 @@ protected:
 
    void cleanup_column_handles()
    {
+      //for(auto& h : _handles)
+      //   {
+      //   if(h.get() == nullptr)
+      //      continue;
+
+      //   auto s = _db->DestroyColumnFamilyHandle(h.get());
+      //   if(s.ok() == false)
+      //      {
+      //      elog("DestroyColumnFamilyHandle failed with error: ${e}", ("e", s.ToString()));
+      //      }
+
+      //   h.reset();
+      //   }
+
       _handles.clear();
    }
 

@@ -10,6 +10,8 @@
 
 namespace hive { namespace plugins { namespace chain {
 
+class state_snapshot_provider;
+
 namespace detail { class chain_plugin_impl; }
 
 using std::unique_ptr;
@@ -36,6 +38,8 @@ public:
    virtual void plugin_initialize( const variables_map& options ) override;
    virtual void plugin_startup() override;
    virtual void plugin_shutdown() override;
+
+   void register_snapshot_provider(state_snapshot_provider& provider);
 
    void report_state_options( const string& plugin_name, const fc::variant_object& opts );
 

@@ -28,6 +28,8 @@ namespace hive { namespace chain {
          buffer_type          serialized_op;
 
          uint64_t             get_virtual_op() const { return virtual_op; }
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(operation_object, (serialized_op));
    };
 
    struct by_location;
@@ -65,6 +67,8 @@ namespace hive { namespace chain {
          account_name_type account;
          uint32_t          sequence = 0;
          operation_id_type op;
+      
+      CHAINBASE_UNPACK_CONSTRUCTOR(account_history_object);
    };
 
    struct by_account;

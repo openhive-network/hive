@@ -22,6 +22,8 @@ namespace hive { namespace chain {
          protocol::hardfork_version  current_hardfork_version;
          protocol::hardfork_version  next_hardfork;
          fc::time_point_sec          next_hardfork_time;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(hardfork_property_object, (processed_hardforks));
    };
 
    typedef multi_index_container<

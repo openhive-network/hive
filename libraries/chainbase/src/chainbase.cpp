@@ -5,6 +5,11 @@
 
 namespace chainbase {
 
+size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache_max_size() const
+   {
+   return 512 * 1024;
+   }
+
    class environment_check {
 
       public:
@@ -20,6 +25,7 @@ namespace chainbase {
          {
             memset( &compiler_version, 0, sizeof( compiler_version ) );
             memcpy( &compiler_version, __VERSION__, std::min<size_t>( strlen(__VERSION__), 256 ) );
+
 #ifndef NDEBUG
             debug = true;
 #endif

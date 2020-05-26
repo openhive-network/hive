@@ -20,6 +20,7 @@
 #include <boost/throw_exception.hpp>
 
 #include <chainbase/allocators.hpp>
+#include <chainbase/state_snapshot_support.hpp>
 #include <chainbase/util/object_id.hpp>
 
 #include <array>
@@ -189,7 +190,8 @@ namespace chainbase {
    #ifdef ENABLE_MIRA
    #define CHAINBASE_OBJECT_false( object_class ) CHAINBASE_OBJECT_true( object_class )
    #else
-   #define CHAINBASE_OBJECT_false( object_class ) CHAINBASE_OBJECT_COMMON( object_class ); object_class() = delete; private:
+   #define CHAINBASE_OBJECT_false( object_class ) CHAINBASE_OBJECT_COMMON( object_class ); object_class() = delete; \
+   private:
    #endif
 
    /**
@@ -208,6 +210,14 @@ namespace chainbase {
    OBJECT_TYPE( Allocator&& a, uint64_t _id, Constructor&& c )                               \
       : id( _id ) BOOST_PP_SEQ_FOR_EACH( CHAINBASE_ALLOCATED_MEMBERS, a, ALLOCATED_MEMBERS ) \
    { c(*this); }
+
+   #define CHAINBASE_UNPACK_CONSTRUCTOR( OBJECT_TYPE, ALLOCATED_MEMBERS... )                 \
+   private: template<typename Allocator>                                                     \
+   OBJECT_TYPE( Allocator&& a, uint64_t _id, std::function<void(OBJECT_TYPE&)> unpackFn)     \
+      : id( _id ) BOOST_PP_SEQ_FOR_EACH( CHAINBASE_ALLOCATED_MEMBERS, a, ALLOCATED_MEMBERS ) \
+   { unpackFn(*this); }                                                                      \
+   template <class T> friend class chainbase::generic_index
+
 
    template< typename value_type >
    class undo_state
@@ -318,6 +328,25 @@ namespace chainbase {
             on_create( *insert_result.first );
             return *insert_result.first;
          }
+
+         /**
+          * Construct a new element and puts in the multi_index_container, basing on snapshot stream.
+          */
+         void unpack_from_snapshot(typename value_type::id_type objectId, std::function<void(value_type&)>&& unpack) {
+            _next_id = objectId;
+            value_type tmp(_indices.get_allocator(), objectId, std::move(unpack));
+            auto insert_result = _indices.emplace(std::move(tmp));
+
+            if(!insert_result.second) {
+               BOOST_THROW_EXCEPTION(std::logic_error("could not insert unpacked object, most likely a uniqueness constraint was violated"));
+               }
+
+            ++_next_id;
+#ifdef ENABLE_MIRA
+            _indices.set_next_id(_next_id);
+#endif
+            on_create(*insert_result.first);
+            }
 
          template<typename Modifier>
          void modify( const value_type& obj, Modifier&& m ) {
@@ -762,6 +791,10 @@ namespace chainbase {
          virtual statistic_info get_statistics(bool onlyStaticInfo) const = 0;
          virtual size_t size() const = 0;
          virtual void clear() = 0;
+
+         virtual void dump_snapshot(snapshot_writer& writer) const = 0;
+         virtual void load_snapshot(snapshot_reader& reader) = 0;
+
 #ifdef ENABLE_MIRA
          virtual void open( const bfs::path&, const boost::any& ) = 0;
          virtual void close() = 0;
@@ -825,6 +858,20 @@ namespace chainbase {
          {
             _base.clear();
          }
+
+         virtual void dump_snapshot(snapshot_writer& writer) const override final
+         {
+            generic_index_snapshot_dumper<BaseIndex> dumper(_base, writer);
+            dumper.dump();
+         }
+
+         virtual void load_snapshot(snapshot_reader& reader) override final
+         {
+            clear();
+            generic_index_snapshot_loader<BaseIndex> loader(_base, reader);
+            loader.load();
+         }
+
 
 #ifdef ENABLE_MIRA
          virtual void open( const bfs::path& p, const boost::any& o ) override final

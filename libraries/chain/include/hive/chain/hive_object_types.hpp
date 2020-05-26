@@ -3,6 +3,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <chainbase/chainbase.hpp>
+#include <chainbase/util/object_id_serialization.hpp>
 
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/authority.hpp>
@@ -39,7 +40,7 @@ using chainbase::shared_string;
 inline std::string to_string( const shared_string& str ) { return std::string( str.begin(), str.end() ); }
 inline void from_string( shared_string& out, const string& in ){ out.assign( in.begin(), in.end() ); }
 
-struct by_id;
+using chainbase::by_id;
 struct by_name;
 
 enum object_type
@@ -225,76 +226,9 @@ inline void from_variant( const variant& var, hive::chain::shared_string& s )
 }
 #endif
 
-template<typename T>
-void to_variant( const chainbase::oid<T>& var,  variant& vo )
-{
-   vo = var.get_value();
-}
-
-template<typename T>
-void to_variant( const chainbase::oid_ref<T>& var, variant& vo )
-{
-   vo = var.get_value();
-}
-
-template<typename T>
-void from_variant( const variant& vo, chainbase::oid<T>& var )
-{
-   var = chainbase::oid<T>(vo.as_int64());
-}
-
-template<typename T>
-void from_variant( const variant& vo, chainbase::oid_ref<T>& var )
-{
-   var = chainbase::oid<T>( vo.as_int64() );
-}
-
-template< typename T >
-struct get_typename< chainbase::oid< T > >
-{
-   static const char* name()
-   {
-      static std::string n = std::string( "chainbase::oid<" ) + get_typename< T >::name() + ">";
-      return n.c_str();
-   }
-};
-
-template< typename T >
-struct get_typename< chainbase::oid_ref< T > >
-{
-   static const char* name()
-   {
-      static std::string n = std::string( "chainbase::oid_ref<" ) + get_typename< T >::name() + ">";
-      return n.c_str();
-   }
-};
 
 namespace raw
 {
-
-template<typename Stream, typename T>
-void pack( Stream& s, const chainbase::oid<T>& id )
-{
-   s.write( (const char*)&id, sizeof(id) );
-}
-
-template<typename Stream, typename T>
-void pack( Stream& s, const chainbase::oid_ref<T>& id )
-{
-   s.write( (const char*)&id, sizeof(id) );
-}
-
-template<typename Stream, typename T>
-void unpack( Stream& s, chainbase::oid<T>& id, uint32_t )
-{
-   s.read( (char*)&id, sizeof(id));
-}
-
-template<typename Stream, typename T>
-void unpack( Stream& s, chainbase::oid_ref<T>& id, uint32_t )
-{
-   s.read( (char*)&id, sizeof(id) );
-}
 
 #ifndef ENABLE_MIRA
 template< typename Stream >

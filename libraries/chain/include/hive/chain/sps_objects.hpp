@@ -51,6 +51,8 @@ class proposal_object : public object< proposal_object_type, proposal_object >
 
          return ret;
       }
+
+   CHAINBASE_UNPACK_CONSTRUCTOR(proposal_object, (subject)(permlink));
 };
 
 class proposal_vote_object : public object< proposal_vote_object_type, proposal_vote_object>
@@ -64,6 +66,8 @@ class proposal_vote_object : public object< proposal_vote_object_type, proposal_
 
       //the voter voted for this proposal number
       uint32_t proposal_id; //note: it cannot be proposal_id_type because we are searching using proposal_object::proposal_id, not proposal_object::id
+   
+   CHAINBASE_UNPACK_CONSTRUCTOR(proposal_vote_object);
 };
 
 struct by_proposal_id;

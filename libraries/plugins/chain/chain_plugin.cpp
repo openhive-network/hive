@@ -1,6 +1,7 @@
 #include <hive/chain/database_exceptions.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
+#include <hive/plugins/chain/state_snapshot_provider.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/statsd/utility.hpp>
 
@@ -73,6 +74,11 @@ class chain_plugin_impl
       chain_plugin_impl() : write_queue( 64 ) {}
       ~chain_plugin_impl() { stop_write_processing(); }
 
+      void register_snapshot_provider(state_snapshot_provider& provider)
+         {
+         snapshot_provider = &provider;
+         }
+
       void start_write_processing();
       void stop_write_processing();
 
@@ -124,9 +130,10 @@ class chain_plugin_impl
       std::shared_ptr< abstract_block_producer > block_generator;
    
       hive::utilities::benchmark_dumper   dumper;
-      database::open_args                 db_open_args;
+      hive::chain::open_args              db_open_args;
       get_indexes_memory_details_type     get_indexes_memory_details;
 
+      state_snapshot_provider*            snapshot_provider = nullptr;
       bool                                is_p2p_enabled = true;
 };
 
@@ -458,7 +465,7 @@ void chain_plugin_impl::initial_settings()
          ("pm", measure.peak_mem) );
    };
 
-   db_open_args.benchmark = hive::chain::database::TBenchmark( benchmark_interval, benchmark_lambda );
+   db_open_args.benchmark = hive::chain::TBenchmark( benchmark_interval, benchmark_lambda );
 }
 
 void chain_plugin_impl::open()
@@ -517,6 +524,9 @@ bool chain_plugin_impl::replay_blockchain()
 
 void chain_plugin_impl::work( synchronization_type& on_sync )
 {
+   if(snapshot_provider != nullptr)
+      snapshot_provider->process_explicit_snapshot_requests(db_open_args);
+
    ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
 
    on_sync();
@@ -704,6 +714,11 @@ void chain_plugin::plugin_shutdown()
    my->db.close();
    ilog("database closed successfully");
 }
+
+void chain_plugin::register_snapshot_provider(state_snapshot_provider& provider)
+   {
+   my->register_snapshot_provider(provider);
+   }
 
 void chain_plugin::report_state_options( const string& plugin_name, const fc::variant_object& opts )
 {

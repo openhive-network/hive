@@ -17,6 +17,7 @@ class pending_required_action_object : public object< pending_required_action_ob
 
       time_point_sec             execution_time;
       required_automated_action  action;
+   CHAINBASE_UNPACK_CONSTRUCTOR(pending_required_action_object);
 };
 
 struct by_execution;

@@ -63,7 +63,7 @@ endif()
 
 file(GLOB HEADERS "include/chainbase/*.hpp" "include/chainbase/util/*.hpp")
 add_library( chainbase src/chainbase.cpp ${HEADERS} )
-target_link_libraries( chainbase  ${Boost_LIBRARIES} )
+target_link_libraries( chainbase  ${Boost_LIBRARIES} hive_protocol fc)
 target_include_directories( chainbase PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"  ${Boost_INCLUDE_DIR} )
 
 if( CLANG_TIDY_EXE )

@@ -39,6 +39,8 @@ namespace hive { namespace chain {
          uint32_t          requestid = 0; ///< id set by owner, the owner,requestid pair must be unique
          asset             amount; //< TODO: can be replaced with HBD_asset
          time_point_sec    conversion_date; ///< at this time the feed_history_median_price * amount
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(convert_request_object);
    };
 
 
@@ -77,6 +79,8 @@ namespace hive { namespace chain {
          bool              to_approved = false; //< TODO: can be replaced with bit field along with all flags
          bool              agent_approved = false;
          bool              disputed = false;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(escrow_object);
    };
 
 
@@ -105,6 +109,8 @@ namespace hive { namespace chain {
          uint32_t          request_id = 0;
          asset             amount; //can be expressed in HIVE or HBD
          time_point_sec    complete;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(savings_withdraw_object, (memo));
    };
 
 
@@ -155,6 +161,7 @@ namespace hive { namespace chain {
          {
             return ( hive_volume > 0 && hbd_volume > 0 ) ? 1 : 0;
          }
+      CHAINBASE_UNPACK_CONSTRUCTOR(liquidity_reward_balance_object);
    };
 
 
@@ -172,6 +179,8 @@ namespace hive { namespace chain {
          using t_price_history = t_deque< price >;
 
          t_deque< price > price_history; ///< tracks this last week of median_feed one per hour
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(feed_history_object, (price_history));
    };
 
 
@@ -213,6 +222,8 @@ namespace hive { namespace chain {
          uint32_t          orderid = 0;
          share_type        for_sale; ///< asset id is sell_price.base.symbol
          price             sell_price;
+
+         CHAINBASE_UNPACK_CONSTRUCTOR(limit_order_object);
    };
 
 
@@ -229,6 +240,8 @@ namespace hive { namespace chain {
          account_name_type to_account;
          uint16_t          percent = 0;
          bool              auto_vest = false;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(withdraw_vesting_route_object);
    };
 
 
@@ -240,6 +253,8 @@ namespace hive { namespace chain {
 
          account_name_type account;
          time_point_sec    effective_date;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(decline_voting_rights_request_object);
    };
 
    class reward_fund_object : public object< reward_fund_object_type, reward_fund_object >
@@ -266,8 +281,10 @@ namespace hive { namespace chain {
          uint128_t               content_constant = 0;
          uint16_t                percent_curation_rewards = 0;
          uint16_t                percent_content_rewards = 0;
-         protocol::curve_id      author_reward_curve;
-         protocol::curve_id      curation_reward_curve;
+         protocol::curve_id      author_reward_curve = protocol::quadratic;
+         protocol::curve_id      curation_reward_curve = protocol::quadratic;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(reward_fund_object);
    };
 
    struct by_price;

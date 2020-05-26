@@ -65,6 +65,8 @@ namespace hive { namespace chain {
          comment_id_type   root_comment;
 
          bool              allow_replies = true;      /// allows a post to disable replies.
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(comment_object, (category)(parent_permlink)(permlink));
    };
 
    /*
@@ -128,6 +130,10 @@ namespace hive { namespace chain {
 #ifdef HIVE_ENABLE_SMT
          using t_votable_assets = t_vector< t_pair< asset_symbol_type, votable_asset_info > >;
          t_votable_assets  allowed_vote_assets;
+
+         CHAINBASE_UNPACK_CONSTRUCTOR(comment_cashout_object, (beneficiaries)(allowed_vote_assets));
+#else
+         CHAINBASE_UNPACK_CONSTRUCTOR(comment_cashout_object, (beneficiaries));
 #endif
    };
 
@@ -142,6 +148,8 @@ namespace hive { namespace chain {
          shared_string     title;
          shared_string     body;
          shared_string     json_metadata;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(comment_content_object, (title)(body)(json_metadata));
    };
 
    /**
@@ -161,6 +169,8 @@ namespace hive { namespace chain {
          int16_t           vote_percent = 0; ///< The percent weight of the vote
          time_point_sec    last_update; ///< The time of the last update of the vote
          int8_t            num_changes = 0;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(comment_vote_object);
    };
 
    struct by_comment_voter;

@@ -3399,6 +3399,12 @@ void database::initialize_indexes()
    _plugin_index_signal();
 }
 
+void database::resetState(const open_args& args)
+{
+   wipe(args.data_dir, args.shared_mem_dir, false);
+   open(args);
+}
+
 const std::string& database::get_json_schema()const
 {
    return _json_schema;
@@ -4494,6 +4500,11 @@ boost::signals2::connection database::add_generate_optional_actions_handler(cons
    const abstract_plugin& plugin, int32_t group )
 {
    return connect_impl(_generate_optional_actions_signal, func, plugin, group, "->generate_optional_actions");
+}
+
+boost::signals2::connection database::add_prepare_snapshot_handler(const prepare_snapshot_handler_t& func, const abstract_plugin& plugin, int32_t group)
+{
+   return connect_impl(_prepare_snapshot_signal, func, plugin, group, "->prepare_snapshot");
 }
 
 const witness_object& database::validate_block_header( uint32_t skip, const signed_block& next_block )const
@@ -6370,4 +6381,6 @@ optional< chainbase::database::session >& database::pending_transaction_session(
    return _pending_tx_session;
 }
 
+
 } } //hive::chain
+

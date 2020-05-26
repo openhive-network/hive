@@ -38,6 +38,8 @@ public:
    account_id_type owner;
    asset           liquid;   /// 'balance' for HIVE
    asset           vesting;  /// 'vesting_shares' for VESTS
+
+   CHAINBASE_UNPACK_CONSTRUCTOR(account_regular_balance_object);
 };
 
 /**
@@ -72,6 +74,8 @@ public:
    asset           pending_liquid;          /// 'reward_hive_balance' for pending HIVE
    asset           pending_vesting_shares;  /// 'reward_vesting_balance' for pending VESTS
    asset           pending_vesting_value;   /// 'reward_vesting_hive' for pending VESTS
+
+   CHAINBASE_UNPACK_CONSTRUCTOR(account_rewards_balance_object);
 };
 
 struct by_owner_liquid_symbol;

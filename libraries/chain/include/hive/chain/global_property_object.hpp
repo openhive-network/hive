@@ -165,6 +165,7 @@ namespace hive { namespace chain {
 #ifdef HIVE_ENABLE_SMT
          asset smt_creation_fee = asset( 1000, HBD_SYMBOL );
 #endif
+      CHAINBASE_UNPACK_CONSTRUCTOR(dynamic_global_property_object);
    };
 
    typedef multi_index_container<

@@ -5,6 +5,7 @@
 
 #include <chainbase/allocators.hpp>
 #include <chainbase/util/object_id.hpp>
+#include <chainbase/util/object_id_serialization.hpp>
 
 #ifdef ENABLE_MIRA
 #include <mira/multi_index_container_fwd.hpp>
@@ -13,15 +14,6 @@
 namespace fc {
 
 namespace raw {
-
-template<typename Stream, typename T>
-inline void pack( Stream& s, const chainbase::oid<T>& id );
-template<typename Stream, typename T>
-inline void pack( Stream& s, const chainbase::oid_ref<T>& id );
-template<typename Stream, typename T>
-inline void unpack( Stream& s, chainbase::oid<T>& id, uint32_t depth = 0 );
-template<typename Stream, typename T>
-inline void unpack( Stream& s, chainbase::oid_ref<T>& id, uint32_t depth = 0 );
 
 #ifndef ENABLE_MIRA
 template<typename Stream>

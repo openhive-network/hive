@@ -39,10 +39,10 @@ public:
       return oid<T>(std::numeric_limits<__id_type>::max());
    }
 
-   friend bool operator < ( const oid& a, const oid& b ) { return a._id < b._id; }
-   friend bool operator > ( const oid& a, const oid& b ) { return a._id > b._id; }
-   friend bool operator == ( const oid& a, const oid& b ) { return a._id == b._id; }
-   friend bool operator != ( const oid& a, const oid& b ) { return a._id != b._id; }
+   bool operator < (const oid & rhs) const { return _id < rhs._id; }
+   bool operator > (const oid& rhs) const { return _id > rhs._id; }
+   bool operator == (const oid& rhs) const { return _id == rhs._id; }
+   bool operator != (const oid& rhs) const { return _id != rhs._id; }
 
    friend class fc::reflector< oid<T> >;
 };
@@ -59,5 +59,7 @@ public:
    oid_ref( const oid<T>& id ) : oid<T>( id ) {}
    oid_ref& operator= ( const oid<T>& id ) { *static_cast< oid<T>* >( this ) = id; return *this; }
 };
+
+struct by_id;
 
 } /// namespace chainbase

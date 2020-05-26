@@ -28,6 +28,8 @@ namespace hive { namespace chain {
          const auto end = nais.begin() + num_available_nais;
          return std::find( nais.begin(), end, asset_symbol_type::from_asset_num( a.get_stripped_precision_smt_num() ) ) != end;
       }
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(nai_pool_object);
    };
 
    typedef multi_index_container <

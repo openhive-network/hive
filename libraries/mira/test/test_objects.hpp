@@ -5,82 +5,6 @@
 #include <fc/reflect/reflect.hpp>
 #include <fc/reflect/variant.hpp>
 
-namespace fc
-{
-
-template<typename T>
-void to_variant( const chainbase::oid<T>& var,  variant& vo )
-{
-   vo = var.get_value();
-}
-
-template<typename T>
-void to_variant( const chainbase::oid_ref<T>& var, variant& vo )
-{
-   vo = var.get_value();
-}
-
-template<typename T>
-void from_variant( const variant& vo, chainbase::oid<T>& var )
-{
-   var = chainbase::oid<T>( vo.as_int64() );
-}
-
-template<typename T>
-void from_variant( const variant& vo, chainbase::oid_ref<T>& var )
-{
-   var = chainbase::oid<T>( vo.as_int64() );
-}
-
-template< typename T >
-struct get_typename< chainbase::oid< T > >
-{
-   static const char* name()
-   {
-      static std::string n = std::string( "chainbase::oid<" ) + get_typename< T >::name() + ">";
-      return n.c_str();
-   }
-};
-
-template< typename T >
-struct get_typename< chainbase::oid_ref< T > >
-{
-   static const char* name()
-   {
-      static std::string n = std::string( "chainbase::oid_ref<" ) + get_typename< T >::name() + ">";
-      return n.c_str();
-   }
-};
-
-namespace raw
-{
-
-template<typename Stream, typename T>
-void pack( Stream& s, const chainbase::oid<T>& id )
-{
-   s.write( (const char*)&id, sizeof(id) );
-}
-
-template<typename Stream, typename T>
-void pack( Stream& s, const chainbase::oid_ref<T>& id )
-{
-   s.write( (const char*)&id, sizeof(id) );
-}
-
-template<typename Stream, typename T>
-void unpack( Stream& s, chainbase::oid<T>& id )
-{
-   s.read( (char*)&id, sizeof(id));
-}
-
-template<typename Stream, typename T>
-void unpack( Stream& s, chainbase::oid_ref<T>& id )
-{
-   s.read( (char*)&id, sizeof(id) );
-}
-
-} }
-
 #include <hive/protocol/fixed_string.hpp>
 
 #include <mira/index_adapter.hpp>
@@ -112,10 +36,27 @@ public:
    int b = 1;
 
    int sum()const { return a + b; }
+
 };
 typedef chainbase::oid_ref< book > book_id_type;
 
-struct by_id;
+
+namespace fc {
+namespace raw {
+template<typename Stream>
+inline void pack(Stream& s, const book&)
+   {
+   }
+
+template<typename Stream>
+inline void unpack(Stream& s, book& id, uint32_t depth = 0)
+   {
+   }
+}
+}
+
+
+using chainbase::by_id;
 struct by_a;
 struct by_b;
 struct by_sum;
@@ -168,16 +109,16 @@ public:
 
    uint32_t val = 0;
    std::string name;
+
 };
 typedef chainbase::oid_ref< test_object > test_id_type;
 
-struct ordered_idx;
 struct composited_ordered_idx;
 
 typedef mira::multi_index_adapter<
    test_object,
    mira::multi_index::indexed_by<
-      mira::multi_index::ordered_unique< mira::multi_index::tag< ordered_idx >,
+      mira::multi_index::ordered_unique< mira::multi_index::tag< by_id >,
          mira::multi_index::const_mem_fun< test_object, test_object::id_type, &test_object::get_id > >,
       mira::multi_index::ordered_unique< mira::multi_index::tag< composited_ordered_idx >,
          mira::multi_index::composite_key< test_object,
@@ -198,16 +139,16 @@ public:
    void set_id( int _id ) { id = id_type( _id ); }
 
    uint32_t val = 0;
+
 };
 typedef chainbase::oid_ref< test_object2 > test2_id_type;
 
-struct ordered_idx2;
 struct composite_ordered_idx2;
 
 typedef mira::multi_index_adapter<
    test_object2,
    mira::multi_index::indexed_by<
-      mira::multi_index::ordered_unique< mira::multi_index::tag< ordered_idx2 >,
+      mira::multi_index::ordered_unique< mira::multi_index::tag< by_id >,
          mira::multi_index::const_mem_fun< test_object2, test_object2::id_type, &test_object2::get_id > >,
       mira::multi_index::ordered_unique< mira::multi_index::tag< composite_ordered_idx2 >,
          mira::multi_index::composite_key< test_object2,
@@ -230,17 +171,18 @@ public:
    uint32_t val = 0;
    uint32_t val2 = 0;
    uint32_t val3 = 0;
+
 };
+
 typedef chainbase::oid_ref< test_object3 > test3_id_type;
 
-struct ordered_idx3;
 struct composite_ordered_idx3a;
 struct composite_ordered_idx3b;
 
 typedef mira::multi_index_adapter<
    test_object3,
    mira::multi_index::indexed_by<
-      mira::multi_index::ordered_unique< mira::multi_index::tag< ordered_idx3 >,
+      mira::multi_index::ordered_unique< mira::multi_index::tag< by_id >,
          mira::multi_index::const_mem_fun< test_object3, test_object3::id_type, &test_object3::get_id > >,
       mira::multi_index::ordered_unique< mira::multi_index::tag< composite_ordered_idx3a >,
          mira::multi_index::composite_key< test_object3,
@@ -269,6 +211,7 @@ public:
    CHAINBASE_DEFAULT_CONSTRUCTOR( account_object )
 
    account_name_type name;
+
 };
 typedef chainbase::oid_ref< account_object > account_id_type;
 

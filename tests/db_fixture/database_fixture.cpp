@@ -145,7 +145,7 @@ void clean_database_fixture::resize_shared_mem( uint64_t size )
    init_account_pub_key = init_account_priv_key.get_public_key();
 
    {
-      database::open_args args;
+      hive::chain::open_args args;
       args.data_dir = data_dir->path();
       args.shared_mem_dir = args.data_dir;
       args.initial_supply = INITIAL_TEST_SUPPLY;
@@ -195,7 +195,7 @@ live_database_fixture::live_database_fixture()
       BOOST_REQUIRE( db );
 
       {
-         database::open_args args;
+         hive::chain::open_args args;
          args.data_dir = _chain_dir;
          args.shared_mem_dir = args.data_dir;
          args.database_cfg = hive::utilities::default_database_configuration();
@@ -259,7 +259,7 @@ void database_fixture::open_database( uint16_t shared_file_size_in_mb )
 
       idump( (data_dir->path()) );
 
-      database::open_args args;
+      hive::chain::open_args args;
       args.data_dir = data_dir->path();
       args.shared_mem_dir = args.data_dir;
       args.initial_supply = INITIAL_TEST_SUPPLY;
