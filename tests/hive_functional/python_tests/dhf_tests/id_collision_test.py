@@ -7,12 +7,19 @@ from time import sleep
 import logging
 import hive_utils
 import threading
+import os
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
-MAIN_LOG_PATH = "./sps_id_collision_test.log"
+MAIN_LOG_PATH = "dhf_id_collision_test.log"
+log_dir = os.environ.get("TEST_LOG_DIR", None)
+if log_dir is not None:
+    MAIN_LOG_PATH = log_dir + "/" + MAIN_LOG_PATH
+else:
+    MAIN_LOG_PATH = "./" + MAIN_LOG_PATH
 
-MODULE_NAME = "SPS-Tester"
+
+MODULE_NAME = "DHF-Tests"
 logger = logging.getLogger(MODULE_NAME)
 logger.setLevel(LOG_LEVEL)
 

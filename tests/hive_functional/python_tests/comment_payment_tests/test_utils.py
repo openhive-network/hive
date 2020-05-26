@@ -8,7 +8,7 @@ import logging
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
-MAIN_LOG_PATH = "./sps_tester_utils.log"
+MAIN_LOG_PATH = "hdf_tester_utils.log"
 
 MODULE_NAME = "Comment-Payment-Tester.Utils"
 logger = logging.getLogger(MODULE_NAME)

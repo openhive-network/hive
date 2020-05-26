@@ -8,12 +8,19 @@ from uuid import uuid4
 from time import sleep
 import logging
 import test_utils
+import os
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
-MAIN_LOG_PATH = "./sps_proposal_payment_002.log"
+MAIN_LOG_PATH = "hdf_proposal_payment_002.log"
+log_dir = os.environ.get("TEST_LOG_DIR", None)
+if log_dir is not None:
+    MAIN_LOG_PATH = log_dir + "/" + MAIN_LOG_PATH
+else:
+    MAIN_LOG_PATH = "./" + MAIN_LOG_PATH
 
-MODULE_NAME = "SPS-Tester"
+
+MODULE_NAME = "DHF-Tests"
 logger = logging.getLogger(MODULE_NAME)
 logger.setLevel(LOG_LEVEL)
 
@@ -51,8 +58,8 @@ if __name__ == '__main__':
     parser.add_argument("wif", help="Private key for creator account")
     parser.add_argument("--node-url", dest="node_url", default="http://127.0.0.1:8090", help="Url of working hive node")
     parser.add_argument("--run-hived", dest="hived_path", help = "Path to hived executable. Warning: using this option will erase contents of selected hived working directory.")
-    parser.add_argument("--working_dir", dest="hived_working_dir", default="/tmp/hived-data/", help = "Path to hived working directory")
-    parser.add_argument("--config_path", dest="hived_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
+    parser.add_argument("--working-dir", dest="hived_working_dir", default="/tmp/hived-data/", help = "Path to hived working directory")
+    parser.add_argument("--config-path", dest="hived_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
     parser.add_argument("--no-erase-proposal", action='store_false', dest = "no_erase_proposal", help = "Do not erase proposal created with this test")
 
 

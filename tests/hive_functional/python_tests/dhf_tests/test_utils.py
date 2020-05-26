@@ -7,13 +7,10 @@ from time import sleep
 import logging
 
 LOG_LEVEL = logging.INFO
-LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
-MAIN_LOG_PATH = "./sps_tester_utils.log"
 
-MODULE_NAME = "SPS-Tester.SPS-Utils"
+MODULE_NAME = "DHF-Tests.DHF-Utils"
 logger = logging.getLogger(MODULE_NAME)
 logger.setLevel(LOG_LEVEL)
-
 
 # create_account "initminer" "pychol" "" true
 def create_accounts(node, creator, accounts):

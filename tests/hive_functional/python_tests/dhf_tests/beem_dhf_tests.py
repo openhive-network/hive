@@ -10,11 +10,17 @@ import logging
 import os
 import test_utils
 
+MODULE_NAME = "Beem-Dhf-Tester"
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
-MAIN_LOG_PATH = "./sps_test.log"
 
-MODULE_NAME = "SPS-Tester"
+MAIN_LOG_PATH = "beem_dhf_tests.log"
+log_dir = os.environ.get("TEST_LOG_DIR", None)
+if log_dir is not None:
+    MAIN_LOG_PATH = log_dir + "/" + MAIN_LOG_PATH
+else:
+    MAIN_LOG_PATH = "./" + MAIN_LOG_PATH
+
 logger = logging.getLogger(MODULE_NAME)
 logger.setLevel(LOG_LEVEL)
 
@@ -33,9 +39,8 @@ if not logger.hasHandlers():
 try:
     from beem import Hive
 except Exception as ex:
-    logger.error("beem library is not installed.")
+    print("beem library is not installed.")
     sys.exit(1)
-
 
 def test_create_proposal(node, creator_account, receiver_account, wif, subject):
     logger.info("Testing: create_proposal")
@@ -51,13 +56,13 @@ def test_create_proposal(node, creator_account, receiver_account, wif, subject):
         creator = Account(creator_account, hive_instance=s)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(creator_account, ex))
-        sys.exit(1)
+        sys.exit(2)
     
     try:
         receiver = Account(receiver_account, hive_instance=s)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(receiver_account, ex))
-        sys.exit(1)
+        sys.exit(2)
 
     ret = s.post("Hivepy proposal title", "Hivepy proposal body", creator["name"], permlink = "hivepy-proposal-title", tags = "proposals")
     from beembase.operations import Create_proposal
@@ -72,7 +77,12 @@ def test_create_proposal(node, creator_account, receiver_account, wif, subject):
             "permlink" : "hivepy-proposal-title"
         }
     )
-    ret = s.finalizeOp(op, creator["name"], "active")
+    ret = None
+    try:
+        ret = s.finalizeOp(op, creator["name"], "active")
+    except Exception as ex:
+        logger.exception("Exception: {}".format(ex))
+        sys.exit(3)
 
     assert ret["operations"][0][1]["creator"] == creator["name"]
     assert ret["operations"][0][1]["receiver"] == receiver["name"]
@@ -153,7 +163,14 @@ def test_vote_proposal(node, account, wif, subject):
             "approve" : True
         }
     )
-    ret = s.finalizeOp(op, account, "active")
+
+    ret = None
+    try:
+        ret = s.finalizeOp(op, account, "active")
+    except Exception as ex:
+        logger.exception("Exception: {}".format(ex))
+        sys.exit(3)
+
     assert ret["operations"][0][1]["voter"] == account
     assert ret["operations"][0][1]["proposal_ids"][0] == proposal_id
     assert ret["operations"][0][1]["approve"] == True
@@ -195,7 +212,12 @@ def test_remove_proposal(node, account, wif, subject):
             'proposal_ids' : [proposal_id]
         }
     )
-    s.finalizeOp(op, account, "active")
+
+    try:
+        s.finalizeOp(op, account, "active")
+    except Exception as ex:
+        logger.exception("Exception: {}".format(ex))
+        sys.exit(3)
 
     # try to find our special proposal
     proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
@@ -226,13 +248,13 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
         creator = Account(creator_account, hive_instance=s)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(creator_account, ex))
-        sys.exit(1)
+        sys.exit(2)
     
     try:
         receiver = Account(receiver_account, hive_instance=s)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(receiver_account, ex))
-        sys.exit(1)
+        sys.exit(2)
 
     import datetime
     now = datetime.datetime.now()
@@ -265,7 +287,11 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
                 'permlink' : "hivepy-proposal-title"
             }
         )
-        s.finalizeOp(op, creator["name"], "active")
+        try:
+            s.finalizeOp(op, creator["name"], "active")
+        except Exception as ex:
+            logger.exception("Exception: {}".format(ex))
+            sys.exit(3)
     hive_utils.common.wait_n_blocks(node, 5)
 
     start_date = test_utils.date_to_iso(now + datetime.timedelta(days = 5))
@@ -316,7 +342,11 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
                     "proposal_ids" : ids
                 }
             )
-            s.finalizeOp(op, creator["name"], "active")
+            try:
+                s.finalizeOp(op, creator["name"], "active")
+            except Exception as ex:
+                logger.exception("Exception: {}".format(ex))
+                sys.exit(3)
             hive_utils.common.wait_n_blocks(node, 3)
 
 
@@ -329,14 +359,14 @@ if __name__ == '__main__':
     parser.add_argument("wif", help="Private key for creator account")
     parser.add_argument("--node-url", dest="node_url", default="http://127.0.0.1:8090", help="Url of working hive node")
     parser.add_argument("--run-hived", dest="hived_path", help = "Path to hived executable. Warning: using this option will erase contents of selected hived working directory.")
-    parser.add_argument("--working_dir", dest="hived_working_dir", default="/tmp/hived-data/", help = "Path to hived working directory")
-    parser.add_argument("--config_path", dest="hived_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
+    parser.add_argument("--working-dir", dest="hived_working_dir", default="/tmp/hived-data/", help = "Path to hived working directory")
+    parser.add_argument("--config-path", dest="hived_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
     parser.add_argument("--no-erase-proposal", action='store_true', dest = "no_erase_proposal", help = "Do not erase proposal created with this test")
 
     args = parser.parse_args()
 
     node = None
-    
+
     if args.hived_path:
         logger.info("Running hived via {} in {} with config {}".format(args.hived_path, 
             args.hived_working_dir, 
@@ -375,10 +405,10 @@ if __name__ == '__main__':
             if node is not None:
                 node.stop_hive_node()
             sys.exit(0)
-        sys.exit(1)
+        sys.exit(4)
     except Exception as ex:
         logger.error("Exception: {}".format(ex))
         if node is not None: 
             node.stop_hive_node()
-        sys.exit(1)
+    sys.exit(5)
 

@@ -8,13 +8,20 @@ from time import sleep
 import logging
 
 import hive_utils
+import os
 
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
-MAIN_LOG_PATH = "./sps_list_proposal.log"
+MAIN_LOG_PATH = "hdf_list_proposal.log"
+log_dir = os.environ.get("TEST_LOG_DIR", None)
+if log_dir is not None:
+    MAIN_LOG_PATH = log_dir + "/" + MAIN_LOG_PATH
+else:
+    MAIN_LOG_PATH = "./" + MAIN_LOG_PATH
 
-MODULE_NAME = "SPS-Tester"
+
+MODULE_NAME = "DHF-Tests"
 logger = logging.getLogger(MODULE_NAME)
 logger.setLevel(LOG_LEVEL)
 
@@ -61,13 +68,13 @@ def create_proposals(node_client, creator_account, receiver_account):
         creator = Account(creator_account, hive_instance=node_client)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(creator_account, ex))
-        sys.exit(1)
+        sys.exit(2)
     
     try:
         receiver = Account(receiver_account, hive_instance=node_client)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(receiver_account, ex))
-        sys.exit(1)
+        sys.exit(2)
 
     logger.info("Creating initial post...")
     node_client.post("Hivepy proposal title", "Hivepy proposal body", creator["name"], permlink = "hivepy-proposal-title", tags = "proposals")
@@ -87,7 +94,12 @@ def create_proposals(node_client, creator_account, receiver_account):
                 'permlink' : "hivepy-proposal-title"
             }
         )
-        node_client.finalizeOp(op, creator["name"], "active")
+        try:
+            node_client.finalizeOp(op, creator["name"], "active")
+        except Exception as ex:
+            logger.exception("Exception: {}".format(ex))
+            sys.exit(3)
+        
         hive_utils.common.wait_n_blocks(node_client.rpc.url, 1)
     hive_utils.common.wait_n_blocks(node_client.rpc.url, 2)
 
@@ -177,8 +189,8 @@ if __name__ == '__main__':
     parser.add_argument("wif", help="Private key for creator account")
     parser.add_argument("--node-url", dest="node_url", default="http://127.0.0.1:8090", help="Url of working hive node")
     parser.add_argument("--run-hived", dest="hived_path", help = "Path to hived executable. Warning: using this option will erase contents of selected hived working directory.")
-    parser.add_argument("--working_dir", dest="hived_working_dir", default="/tmp/hived-data/", help = "Path to hived working directory")
-    parser.add_argument("--config_path", dest="hived_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
+    parser.add_argument("--working-dir", dest="hived_working_dir", default="/tmp/hived-data/", help = "Path to hived working directory")
+    parser.add_argument("--config-path", dest="hived_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
     parser.add_argument("--no-erase-proposal", action='store_false', dest = "no_erase_proposal", help = "Do not erase proposal created with this test")
 
 
@@ -224,10 +236,10 @@ if __name__ == '__main__':
             if node is not None:
                 node.stop_hive_node()
             sys.exit(0)
-        sys.exit(1)
+        sys.exit(4)
     except Exception as ex:
         logger.error("Exception: {}".format(ex))
         if node is not None: 
             node.stop_hive_node()
-sys.exit(1)
+    sys.exit(5)
 

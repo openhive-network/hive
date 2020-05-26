@@ -44,17 +44,21 @@ def get_current_block_number(source_node) -> int:
 def wait_n_blocks(source_node : str, blocks : int, timeout : int = 60):
   from time import sleep
   starting_block = get_current_block_number(source_node)
-  while starting_block == -1:
+  cntr = 0
+  while starting_block == -1 and cntr < timeout:
     starting_block = get_current_block_number(source_node)
     sleep(1)
+    cntr += 1
+  if cntr >= timeout:
+    raise TimeoutError("Timeout in waiting for blocks. Hived is not running?")
   current_block = starting_block
   cntr = 0
   while current_block - starting_block < blocks and cntr < timeout:
     current_block = get_current_block_number(source_node)
     sleep(1)
     cntr += 1
-  if cntr > timeout:
-    raise TimeoutError("Timeout in wait_n_blocks")
+  if cntr >= timeout:
+    raise TimeoutError("Timeout in waiting for blocks. Hived is not running?")
 
 def debug_generate_blocks(target_node : str, debug_key : str, count : int) -> dict:
   if count < 0:
@@ -176,27 +180,26 @@ def wait_for_string_in_file(log_file_name, string, timeout):
       timout -- block timeout in seconds, after this time exception will be raised.
   """
   logger.info("Waiting for string \"{}\" in file {}".format(string, log_file_name))
-  step = 0.5
+  step = 1
   to_timeout = 0.
   from time import sleep
   from os.path import exists
   while True:
     sleep(step)
     to_timeout = to_timeout + step
-    if timeout is not None and to_timeout > timeout:
+    if timeout is not None and to_timeout >= timeout:
       msg = "Timeout during wait for string {0}".format(string)
       logger.error(msg)
       raise TimeoutError(msg)
-    if not exists(log_file_name):
-      continue
-    with open(log_file_name, "r") as log_file:
-      leave = False
-      for line in log_file.readlines():
-        if string in line:
-          leave = True
+    if exists(log_file_name):
+      with open(log_file_name, "r") as log_file:
+        leave = False
+        for line in log_file.readlines():
+          if string in line:
+            leave = True
+            break
+        if leave:
           break
-      if leave:
-        break
 
 def get_last_line_of_file(file_name):
   """Reads and returns last line of given file.
@@ -249,24 +252,24 @@ def kill_process(pid_file_name, proc_name, ip_address, port):
   except Exception as ex:
     logger.error("Process {0} cannot be killed. Reason: {1}".format(proc_name, ex))
 
-def detect_process_by_name(proc_name, ip_address, port):
+def detect_process_by_name(proc_name, exec_path, port):
   """Checks if  process of given name runs on given ip_address and port.
 
   Args:
       proc_name -- process name,
-      ip_address -- process ip address,
+      exec_path -- path to executable,
       port -- process port.
   """
   pids = []
   from os import popen
   for line in popen("ps ax | grep " + proc_name + " | grep -v grep"):
-    if ip_address in line and str(port) in line:
+    if exec_path in line and str(port) in line:
       line = line.strip().split()
       pids.append(line[0])
   if pids:
-    msg = "{0} process is running on {1}:{2}. Please terminate that process and try again.".format(proc_name, ip_address, port)
-    logger.error(msg)
-    raise ProcessLookupError(msg)
+    return True
+  return False
+
 
 BLOCK_TYPE_HEADBLOCK = "within_reversible_block"
 BLOCK_TYPE_IRREVERSIBLE = "within_irreversible_block"

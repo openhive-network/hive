@@ -105,3 +105,7 @@ build_*/
 /.vs
 /out/isenseconfig/Linux-Release
 
+# various log and benchmark files
+advanced_benchmark.json
+r_advanced_benchmark.json
+*.log

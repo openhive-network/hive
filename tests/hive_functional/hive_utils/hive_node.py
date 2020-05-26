@@ -140,7 +140,10 @@ class HiveNodeInScreen(object):
 
   def run_hive_node(self, additional_params = [], wait_for_blocks = True):
     from .common import detect_process_by_name, save_screen_cfg, save_pid_file, wait_n_blocks, wait_for_string_in_file, kill_process
-    detect_process_by_name("hive" if not self.node_is_steem else "steem", self.ip_address, self.port)
+
+    if detect_process_by_name("hived" if not self.node_is_steem else "steemd", self.hive_executable, self.port):
+      msg = "{0} process is running on {1}:{2}. Please terminate that process and try again.".format("hive", self.ip_address, self.port)
+      raise ProcessLookupError(msg)
 
     logger.info("*** START NODE at {0}:{1} in {2}".format(self.ip_address, self.port, self.working_dir))
 
@@ -178,13 +181,22 @@ class HiveNodeInScreen(object):
     try:
       subprocess.Popen(parameters)
       save_pid_file(self.pid_file_name, "hive", self.port, current_time_str)
+      # we will allow for screen to setup and die maybe?
+      from time import sleep
+      sleep(5)
+      # now it should be dead
+
+      if not detect_process_by_name("hived" if not self.node_is_steem else "steemd", self.hive_executable, self.port):
+        msg = "{0} process is not running on {1}:{2}. Please check logs.".format("hive", self.ip_address, self.port)
+        raise ProcessLookupError(msg)
+
       if "--replay-blockchain" in parameters:
         wait_for_string_in_file(log_file_name, "start listening for ws requests", None)
       else:
         if wait_for_blocks:
           wait_n_blocks("{}:{}".format(self.ip_address, self.port), 5)
         else:
-          wait_for_string_in_file(log_file_name, "start listening for ws requests", 240.)
+          wait_for_string_in_file(log_file_name, "start listening for ws requests", 20.)
       self.node_running = True
       logger.info("Node at {0}:{1} in {2} is up and running...".format(self.ip_address, self.port, self.working_dir))
     except Exception as ex:
