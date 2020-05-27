@@ -7,14 +7,6 @@ namespace hive { namespace plugins { namespace follow {
 
 namespace detail {
 
-inline void set_what( vector< follow::follow_type >& what, uint16_t bitmask )
-{
-   if( bitmask & 1 << follow::blog )
-      what.push_back( follow::blog );
-   if( bitmask & 1 << follow::ignore )
-      what.push_back( follow::ignore );
-}
-
 class follow_api_impl
 {
    public:
@@ -53,75 +45,12 @@ DEFINE_API_IMPL( follow_api_impl, get_follow_count )
 
 DEFINE_API_IMPL( follow_api_impl, get_feed_entries )
 {
-   FC_ASSERT( args.limit <= 500, "Cannot retrieve more than 500 feed entries at a time." );
-
-   auto entry_id = args.start_entry_id == 0 ? ~0 : args.start_entry_id;
-
-   get_feed_entries_return result;
-   result.feed.reserve( args.limit );
-
-   const auto& feed_idx = _db.get_index< follow::feed_index >().indices().get< follow::by_feed >();
-   auto itr = feed_idx.lower_bound( boost::make_tuple( args.account, entry_id ) );
-
-   while( itr != feed_idx.end() && itr->account == args.account && result.feed.size() < args.limit )
-   {
-      const auto& comment = _db.get( itr->comment );
-      feed_entry entry;
-      entry.author = _db.get_account(comment.author_id).name;
-      entry.permlink = chain::to_string( comment.permlink );
-      entry.entry_id = itr->account_feed_id;
-
-      if( itr->first_reblogged_by != account_name_type() )
-      {
-         entry.reblog_by.reserve( itr->reblogged_by.size() );
-
-         for( const auto& a : itr->reblogged_by )
-            entry.reblog_by.push_back(a);
-
-         entry.reblog_on = itr->first_reblogged_on;
-      }
-
-      result.feed.push_back( entry );
-      ++itr;
-   }
-
-   return result;
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( follow_api_impl, get_feed )
 {
-   FC_ASSERT( args.limit <= 500, "Cannot retrieve more than 500 feed entries at a time." );
-
-   auto entry_id = args.start_entry_id == 0 ? ~0 : args.start_entry_id;
-
-   get_feed_return result;
-   result.feed.reserve( args.limit );
-
-   const auto& feed_idx = _db.get_index< follow::feed_index >().indices().get< follow::by_feed >();
-   auto itr = feed_idx.lower_bound( boost::make_tuple( args.account, entry_id ) );
-
-   while( itr != feed_idx.end() && itr->account == args.account && result.feed.size() < args.limit )
-   {
-      const auto& comment = _db.get( itr->comment );
-      comment_feed_entry entry;
-      entry.comment = database_api::api_comment_object( comment, _db );
-      entry.entry_id = itr->account_feed_id;
-
-      if( itr->first_reblogged_by != account_name_type() )
-      {
-         entry.reblog_by.reserve( itr->reblogged_by.size() );
-
-         for( const auto& a : itr->reblogged_by )
-            entry.reblog_by.push_back( a );
-
-         entry.reblog_on = itr->first_reblogged_on;
-      }
-
-      result.feed.push_back( entry );
-      ++itr;
-   }
-
-   return result;
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 DEFINE_API_IMPL( follow_api_impl, get_blog_entries )
@@ -146,18 +75,7 @@ DEFINE_API_IMPL( follow_api_impl, get_reblogged_by )
 
 DEFINE_API_IMPL( follow_api_impl, get_blog_authors )
 {
-   get_blog_authors_return result;
-
-   const auto& stats_idx = _db.get_index< follow::blog_author_stats_index, follow::by_blogger_guest_count >();
-   auto itr = stats_idx.lower_bound( args.blog_account );
-
-   while( itr != stats_idx.end() && itr->blogger == args.blog_account && result.blog_authors.size() < 2000 )
-   {
-      result.blog_authors.push_back( reblog_count{ itr->guest, itr->count } );
-      ++itr;
-   }
-
-   return result;
+    FC_ASSERT( false, "Supported by hivemind" );
 }
 
 } // detail
