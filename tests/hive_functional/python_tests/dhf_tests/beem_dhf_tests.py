@@ -229,9 +229,6 @@ def test_remove_proposal(node, account, wif, subject):
     
     assert found is None, "Not found"
 
-## WARNING!
-# THIS TEST WILL NOT WORK BECAUSE SOMEBODY REMOVED LAST_ID FUNCTIONALITY !!!!
-###
 def test_iterate_results_test(node, creator_account, receiver_account, wif, subject, remove):
     logger.info("Testing: test_iterate_results_test")
     # test for iterate prosals
