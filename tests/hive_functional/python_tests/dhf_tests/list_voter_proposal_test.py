@@ -124,7 +124,11 @@ def create_proposals(node, account, start_date, end_date, proposal_count):
                 'permlink' : get_permlink(account['name'])
             }
         )
-        node.finalizeOp(op, account['name'], "active")
+        try:
+            node.finalizeOp(op, account['name'], "active")
+        except Exception as ex:
+            logger.error("Exception: {}".format(ex))
+            raise ex
         hive_utils.common.wait_n_blocks(node.rpc.url, 1)
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
@@ -148,7 +152,11 @@ def vote_proposals(node, account, ids):
             'approve' : True
         }
     )
-    node.finalizeOp(op, account["name"], "active")
+    try:
+        node.finalizeOp(op, account["name"], "active")
+    except Exception as ex:
+        logger.error("Exception: {}".format(ex))
+        raise ex
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
 

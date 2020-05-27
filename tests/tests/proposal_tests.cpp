@@ -2024,6 +2024,78 @@ BOOST_AUTO_TEST_CASE( remove_proposal_012 )
    FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( update_proposal_000 )
+{
+   try {
+      BOOST_TEST_MESSAGE( "Testing: update proposal - update subject" );
+
+      ACTORS( (alice)(bob) )
+      generate_block();
+
+      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      generate_block();
+
+      auto creator = "alice";
+      auto receiver = "bob";
+
+      auto start_date = db->head_block_time() + fc::days( 1 );
+      auto end_date = start_date + fc::days( 2 );
+
+      auto daily_pay = asset( 100, HBD_SYMBOL );
+
+      auto subject = "hello";
+      auto permlink = "somethingpermlink";
+
+      post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+
+      FUND( creator, ASSET( "80.000 TBD" ) );
+
+      signed_transaction tx;
+
+      BOOST_TEST_MESSAGE("-- creating");
+      create_proposal_operation op;
+
+      op.creator = creator;
+      op.receiver = receiver;
+
+      op.start_date = start_date;
+      op.end_date = end_date;
+
+      op.daily_pay = daily_pay;
+
+      op.subject = subject;
+      op.permlink = permlink;
+
+      tx.operations.push_back( op );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      sign( tx, alice_private_key );
+      
+      db->push_transaction( tx, 0 );
+      tx.operations.clear();
+      tx.signatures.clear();
+
+      const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
+      auto found = proposal_idx.find( creator );
+      BOOST_REQUIRE( found != proposal_idx.end() );
+
+      BOOST_REQUIRE( found->creator == creator );
+      BOOST_REQUIRE( found->receiver == receiver );
+      BOOST_REQUIRE( found->start_date == start_date );
+      BOOST_REQUIRE( found->end_date == end_date );
+      BOOST_REQUIRE( found->daily_pay == daily_pay );
+      BOOST_REQUIRE( found->subject == subject );
+      BOOST_REQUIRE( found->permlink == permlink );
+
+      BOOST_TEST_MESSAGE("-- updating");
+      update_proposal(found->proposal_id, creator, daily_pay, "Other subject", permlink, alice_private_key);
+      generate_block();
+      found = proposal_idx.find( creator );
+      BOOST_REQUIRE( found->subject == "Other subject" );
+
+      validate_database();
+   } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
 {
    try

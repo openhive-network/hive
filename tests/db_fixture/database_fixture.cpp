@@ -996,6 +996,27 @@ int64_t sps_proposal_database_fixture::create_proposal( std::string creator, std
    return itr->proposal_id;
 }
 
+void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::string creator, 
+                           asset daily_pay, std::string subject, std::string permlink, 
+                           const fc::ecc::private_key& key )
+{
+   signed_transaction tx;
+   update_proposal_operation op;
+
+   op.proposal_id = proposal_id;
+   op.creator = creator;
+   op.daily_pay = daily_pay;
+   op.subject = subject;
+   op.permlink = permlink;
+
+   tx.operations.push_back( op );
+   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+   sign( tx, key );
+   db->push_transaction( tx, 0 );
+   tx.signatures.clear();
+   tx.operations.clear();
+}
+
 void sps_proposal_database_fixture::vote_proposal( std::string voter, const std::vector< int64_t >& id_proposals, bool approve, const fc::ecc::private_key& key )
 {
    update_proposal_votes_operation op;

@@ -71,7 +71,6 @@ namespace hive { namespace plugins { namespace condenser_api {
    typedef shutdown_witness_operation             legacy_shutdown_witness_operation;
    typedef hardfork_operation                     legacy_hardfork_operation;
    typedef comment_payout_update_operation        legacy_comment_payout_update_operation;
-   typedef update_proposal_operation        legacy_update_proposal_operation;
    typedef update_proposal_votes_operation        legacy_update_proposal_votes_operation;
    typedef remove_proposal_operation              legacy_remove_proposal_operation;
    typedef clear_null_account_balance_operation   legacy_clear_null_account_balance_operation;
@@ -438,6 +437,35 @@ namespace hive { namespace plugins { namespace condenser_api {
       account_name_type receiver;
       time_point_sec start_date;
       time_point_sec end_date;
+      legacy_asset daily_pay;
+      string subject;
+      string permlink;
+   };
+
+   struct legacy_update_proposal_operation
+   {
+      legacy_update_proposal_operation() {}
+      legacy_update_proposal_operation( const update_proposal_operation& op ) :
+         proposal_id( op.proposal_id),
+         creator( op.creator ),
+         daily_pay( legacy_asset::from_asset( op.daily_pay ) ),
+         subject( op.subject ),
+         permlink( op.permlink)
+      {}
+
+      operator update_proposal_operation()const
+      {
+         update_proposal_operation op;
+         op.proposal_id = proposal_id;
+         op.creator = creator;
+         op.daily_pay = daily_pay;
+         op.subject = subject;
+         op.permlink = permlink;
+         return op;
+      }
+
+      uint64_t proposal_id;
+      account_name_type creator;
       legacy_asset daily_pay;
       string subject;
       string permlink;
@@ -1185,9 +1213,9 @@ namespace hive { namespace plugins { namespace condenser_api {
             legacy_witness_set_properties_operation,
             legacy_account_update2_operation,
             legacy_create_proposal_operation,
-            legacy_update_proposal_operation,
             legacy_update_proposal_votes_operation,
             legacy_remove_proposal_operation,
+            legacy_update_proposal_operation,
             legacy_fill_convert_request_operation,
             legacy_author_reward_operation,
             legacy_curation_reward_operation,
@@ -1248,7 +1276,6 @@ namespace hive { namespace plugins { namespace condenser_api {
       bool operator()( const shutdown_witness_operation& op )const               { l_op = op; return true; }
       bool operator()( const hardfork_operation& op )const                       { l_op = op; return true; }
       bool operator()( const comment_payout_update_operation& op )const          { l_op = op; return true; }
-      bool operator()( const update_proposal_operation& op )const          { l_op = op; return true; }
       bool operator()( const update_proposal_votes_operation& op )const          { l_op = op; return true; }
       bool operator()( const remove_proposal_operation& op )const                { l_op = op; return true; }
       bool operator()( const clear_null_account_balance_operation& op )const     { l_op = op; return true; }
@@ -1447,6 +1474,12 @@ namespace hive { namespace plugins { namespace condenser_api {
          return true;
       }
 
+      bool operator()( const update_proposal_operation& op )const
+      {
+         l_op = legacy_update_proposal_operation( op );
+         return true;
+      }
+
       bool operator()( const proposal_pay_operation& op )const
       {
          l_op = legacy_proposal_pay_operation( op );
@@ -1642,6 +1675,11 @@ struct convert_from_legacy_operation_visitor
       return operation( create_proposal_operation( op ) );
    }
 
+   operation operator()( const legacy_update_proposal_operation& op )const
+   {
+      return operation( update_proposal_operation( op ) );
+   }
+
    operation operator()( const legacy_proposal_pay_operation& op )const
    {
       return operation( proposal_pay_operation( op ) );
@@ -1787,6 +1825,7 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_claim_account_operation, (creat
 FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_sps_fund_operation, (fund_account)(additional_funds) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 

@@ -359,6 +359,10 @@ struct sps_proposal_database_fixture : public virtual clean_database_fixture
    int64_t create_proposal(   std::string creator, std::string receiver,
                               time_point_sec start_date, time_point_sec end_date,
                               asset daily_pay, const fc::ecc::private_key& key );
+   
+   void update_proposal( uint64_t proposal_id, std::string creator, 
+                           asset daily_pay, std::string subject, std::string permlink, 
+                           const fc::ecc::private_key& key );
 
    void vote_proposal( std::string voter, const std::vector< int64_t >& id_proposals, bool approve, const fc::ecc::private_key& key );
 

@@ -68,13 +68,13 @@ def create_proposals(node_client, creator_account, receiver_account):
         creator = Account(creator_account, hive_instance=node_client)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(creator_account, ex))
-        sys.exit(2)
+        raise ex
     
     try:
         receiver = Account(receiver_account, hive_instance=node_client)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(receiver_account, ex))
-        sys.exit(2)
+        raise ex
 
     logger.info("Creating initial post...")
     node_client.post("Hivepy proposal title", "Hivepy proposal body", creator["name"], permlink = "hivepy-proposal-title", tags = "proposals")
@@ -98,7 +98,7 @@ def create_proposals(node_client, creator_account, receiver_account):
             node_client.finalizeOp(op, creator["name"], "active")
         except Exception as ex:
             logger.exception("Exception: {}".format(ex))
-            sys.exit(3)
+            raise ex
         
         hive_utils.common.wait_n_blocks(node_client.rpc.url, 1)
     hive_utils.common.wait_n_blocks(node_client.rpc.url, 2)
@@ -271,10 +271,10 @@ if __name__ == '__main__':
             if node is not None:
                 node.stop_hive_node()
             sys.exit(0)
-        sys.exit(4)
+        sys.exit(1)
     except Exception as ex:
         logger.error("Exception: {}".format(ex))
         if node is not None: 
             node.stop_hive_node()
-    sys.exit(5)
+    sys.exit(2)
 

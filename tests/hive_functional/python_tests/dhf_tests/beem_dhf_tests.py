@@ -56,13 +56,13 @@ def test_create_proposal(node, creator_account, receiver_account, wif, subject):
         creator = Account(creator_account, hive_instance=s)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(creator_account, ex))
-        sys.exit(2)
+        raise ex
     
     try:
         receiver = Account(receiver_account, hive_instance=s)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(receiver_account, ex))
-        sys.exit(2)
+        raise ex
 
     ret = s.post("Hivepy proposal title", "Hivepy proposal body", creator["name"], permlink = "hivepy-proposal-title", tags = "proposals")
     from beembase.operations import Create_proposal
@@ -82,7 +82,7 @@ def test_create_proposal(node, creator_account, receiver_account, wif, subject):
         ret = s.finalizeOp(op, creator["name"], "active")
     except Exception as ex:
         logger.exception("Exception: {}".format(ex))
-        sys.exit(3)
+        raise ex
 
     assert ret["operations"][0][1]["creator"] == creator["name"]
     assert ret["operations"][0][1]["receiver"] == receiver["name"]
@@ -169,7 +169,7 @@ def test_vote_proposal(node, account, wif, subject):
         ret = s.finalizeOp(op, account, "active")
     except Exception as ex:
         logger.exception("Exception: {}".format(ex))
-        sys.exit(3)
+        raise ex
 
     assert ret["operations"][0][1]["voter"] == account
     assert ret["operations"][0][1]["proposal_ids"][0] == proposal_id
@@ -217,7 +217,7 @@ def test_remove_proposal(node, account, wif, subject):
         s.finalizeOp(op, account, "active")
     except Exception as ex:
         logger.exception("Exception: {}".format(ex))
-        sys.exit(3)
+        raise ex
 
     # try to find our special proposal
     proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
@@ -245,13 +245,13 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
         creator = Account(creator_account, hive_instance=s)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(creator_account, ex))
-        sys.exit(2)
+        raise ex
     
     try:
         receiver = Account(receiver_account, hive_instance=s)
     except Exception as ex:
         logger.error("Account: {} not found. {}".format(receiver_account, ex))
-        sys.exit(2)
+        raise ex
 
     import datetime
     now = datetime.datetime.now()
@@ -288,7 +288,7 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
             s.finalizeOp(op, creator["name"], "active")
         except Exception as ex:
             logger.exception("Exception: {}".format(ex))
-            sys.exit(3)
+            raise ex
     hive_utils.common.wait_n_blocks(node, 5)
 
     start_date = test_utils.date_to_iso(now + datetime.timedelta(days = 5))
@@ -343,9 +343,33 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
                 s.finalizeOp(op, creator["name"], "active")
             except Exception as ex:
                 logger.exception("Exception: {}".format(ex))
-                sys.exit(3)
+                raise ex
             hive_utils.common.wait_n_blocks(node, 3)
 
+def test_update_proposal(node, creator, wif):
+    logger.info("Testing: update_proposal")
+    s = Hive(node = [node], no_broadcast = False, keys = [wif])
+    proposals = s.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
+    print(proposals[0])
+    from beembase.operations import Update_proposal
+    subject = "Some new proposal subject"
+    op = Update_proposal(**{
+        'proposal_id' : proposals[0]["proposal_id"],
+        'creator' : proposals[0]["creator"],
+        'daily_pay' : "16.000 TBD",
+        'subject' : subject,
+        'permlink': proposals[0]["permlink"]
+    })
+    try:
+        s.finalizeOp(op, creator, "active")
+    except Exception as ex:
+        logger.exception("Exception: {}".format(ex))
+        raise ex
+    hive_utils.common.wait_n_blocks(node, 3)
+
+    proposals = s.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
+    print(proposals[0])
+    assert proposals[0]["subject"] == subject, "Subjects dont match"
 
 if __name__ == '__main__':
     logger.info("Performing SPS tests")
@@ -399,13 +423,14 @@ if __name__ == '__main__':
                 test_remove_proposal(node_url, args.creator, wif, subject)
             test_iterate_results_test(node_url, args.creator, args.receiver, args.wif, str(uuid4()), args.no_erase_proposal)
             hive_utils.common.wait_n_blocks(node_url, 3)
+            test_update_proposal(node_url, args.creator, wif)
             if node is not None:
                 node.stop_hive_node()
             sys.exit(0)
-        sys.exit(4)
+        sys.exit(1)
     except Exception as ex:
         logger.error("Exception: {}".format(ex))
         if node is not None: 
             node.stop_hive_node()
-    sys.exit(5)
+    sys.exit(2)
 

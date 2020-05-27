@@ -151,7 +151,7 @@ RUN \
       pip3 install -U secp256k1prp && \
       git clone https://gitlab.syncad.com/hive/beem.git && \
       cd beem && \
-        git checkout dk-expiration-fix-for-debug-plugin && \
+        git checkout dk-update-proposal-operation && \
         python3 setup.py build && \
         python3 setup.py install --user && \
   cd ${src_dir} && \
