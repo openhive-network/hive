@@ -68,9 +68,9 @@ namespace hive { namespace protocol {
             witness_set_properties_operation,
             account_update2_operation,
             create_proposal_operation,
-            update_proposal_operation,
             update_proposal_votes_operation,
             remove_proposal_operation,
+            update_proposal_operation,
 
 #ifdef HIVE_ENABLE_SMT
             /// SMT operations
