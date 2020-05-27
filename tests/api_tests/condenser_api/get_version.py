@@ -7,6 +7,12 @@ sys.path.append("../")
 import json
 from testbase import SimpleJsonTest
 
+paths = [
+  [ "result", "blockchain_version" ],
+  [ "result", "fc_revision" ],
+  [ "result", "hive_revision" ]
+]
+
 if __name__ == "__main__":
   import argparse
   parser = argparse.ArgumentParser()
@@ -29,7 +35,7 @@ if __name__ == "__main__":
     "params": []
   }
 
-  if tester.compare_results(test_args, True):
+  if tester.compare_results( test_args, True, paths ):
     exit(0)
   exit(1)
 

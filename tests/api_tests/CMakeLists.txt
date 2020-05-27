@@ -3,6 +3,7 @@ set(REFERENCE_NODE https://api.hive.blog)
 set(TEST_NODE http://127.0.0.1:8090)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/testbase.py" "${CMAKE_BINARY_DIR}/tests/api_tests/testbase.py" COPYONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/pattern_corrector.py" "${CMAKE_BINARY_DIR}/tests/api_tests/pattern_corrector.py" COPYONLY)
 
 macro(ADD_API_TEST api_name test_name)
   set(working_dir ${CMAKE_BINARY_DIR}/tests/api_tests/${api_name})

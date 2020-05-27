@@ -19,7 +19,7 @@ ADD_API_TEST(condenser_api find_proposals 0 23)
 ADD_API_TEST(condenser_api get_account_count)
 
 ## get_account_history
-ADD_API_TEST(condenser_api get_account_history steemit -1 10)
+ADD_API_TEST(condenser_api get_account_history steemit 1000 10)
 
 ## get_account_references
 #Not implemented https://developers.steem.io/apidefinitions/#condenser_api.get_account_references
@@ -31,7 +31,7 @@ ADD_API_TEST(condenser_api get_account_reputations steemit 10)
 ADD_API_TEST(condenser_api get_account_votes alice)
 
 ## get_accounts
-ADD_API_TEST(condenser_api get_accounts steemit alice steempeak)
+ADD_API_TEST(condenser_api get_accounts steemit gtg dan alice steempeak)
 
 ## get_active_votes
 ADD_API_TEST(condenser_api get_active_votes drakos open-letter-to-justin-sun-and-the-steem-community)
@@ -40,7 +40,7 @@ ADD_API_TEST(condenser_api get_active_votes drakos open-letter-to-justin-sun-and
 ADD_API_TEST(condenser_api get_active_witnesses)
 
 ## get_block
-ADD_API_TEST(condenser_api get_block 1234)
+ADD_API_TEST(condenser_api get_block 4999999)
 
 ## get_block_header
 ADD_API_TEST(condenser_api get_block_header 123454)
@@ -64,10 +64,10 @@ ADD_API_TEST(condenser_api get_comment_discussions_by_payout [{"tag":"photograph
 ADD_API_TEST(condenser_api get_config)
 
 ## get_content
-ADD_API_TEST(condenser_api get_content tarazkp the-legacy-of-yolo)
+ADD_API_TEST(condenser_api get_content steemit firstpost)
 
 ## get_content_replies
-ADD_API_TEST(condenser_api get_content_replies tarazkp the-legacy-of-yolo)
+ADD_API_TEST(condenser_api get_content_replies steemit firstpost)
 
 ## get_conversion_requests
 ADD_API_TEST(condenser_api get_conversion_requests 1232345)
@@ -82,16 +82,16 @@ ADD_API_TEST(condenser_api get_discussions_by_active [{"tag":"photography","limi
 ADD_API_TEST(condenser_api get_discussions_by_author_before_date flaws my-first-experience-integrating-steem-into-chess-in-my-state-or-a-lot-of-photos-3 2020-03-01T00:00:00 1)
 
 ## get_discussions_by_blog!
-ADD_API_TEST(condenser_api get_discussions_by_blog [{"tag":"tarazkp","limit":2,"truncate_body":0}])
+ADD_API_TEST(condenser_api get_discussions_by_blog [{"tag":"steemit","limit":2,"truncate_body":0}])
 
 ## get_discussions_by_cashout
-ADD_API_TEST(condenser_api get_discussions_by_cashout [{"tag":"tarazkp","limit":2,"truncate_body":0}])
+ADD_API_TEST(condenser_api get_discussions_by_cashout [{"tag":"steemit","limit":2,"truncate_body":0}])
 
 ## get_discussions_by_children
-ADD_API_TEST(condenser_api get_discussions_by_children [{"tag":"tarazkp","limit":2,"truncate_body":0}])
+ADD_API_TEST(condenser_api get_discussions_by_children [{"tag":"steemit","limit":2,"truncate_body":0}])
 
 ## get_discussions_by_comments
-ADD_API_TEST(condenser_api get_discussions_by_comments tarazkp the-legacy-of-yolo 5)
+ADD_API_TEST(condenser_api get_discussions_by_comments steemit firstpost 5)
 
 ## get_discussions_by_created
 ADD_API_TEST(condenser_api get_discussions_by_created [{"tag":"blocktrades","limit":1}])
@@ -208,7 +208,7 @@ ADD_API_TEST(condenser_api get_ticker)
 ADD_API_TEST(condenser_api get_trade_history 2018-01-01T00:00:00 2018-01-02T00:00:00 10)
 
 ## get_transaction
-ADD_API_TEST(condenser_api get_transaction 6fde0190a97835ea6d9e651293e90c89911f933c)
+ADD_API_TEST(condenser_api get_transaction b664e368d117e0b0d4b1b32325a18044f47b5ca5)
 
 ## get_transaction_hex
 ADD_API_TEST(condenser_api get_transaction_hex [{"ref_block_num":1097,"ref_block_prefix":2181793527,"expiration":"2016-03-24T18:00:21","operations":[["pow",{"worker_account":"cloop3","block_id":"00000449f7860b82b4fbe2f317c670e9f01d6d9a","nonce":3899,"work":{"worker":"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F","input":"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0","signature":"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a","work":"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3"},"props":{"account_creation_fee":{"amount":"100000","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000}}]],"extensions":[],"signatures":[]}])

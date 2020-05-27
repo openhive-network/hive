@@ -28,7 +28,7 @@ if __name__ == "__main__":
     "jsonrpc": "2.0",
     "id": 1,
     "method": "condenser_api.find_proposals",
-    "params": args.proposal_id
+    "params": [ args.proposal_id ]
     
   }
 

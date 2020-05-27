@@ -33,6 +33,15 @@ if __name__ == "__main__":
     "id":1
   }
 
-  if tester.compare_results(test_args, True):
+  test_args2 = {
+    "jsonrpc":"2.0", 
+    "method":"database_api.find_sbd_conversion_requests", 
+    "params": {
+      "account" : args.account_name
+    }, 
+    "id":1
+  }
+
+  if tester.compare_results_with_2_queries( test_args, test_args2, True ):
     exit(0)
   exit(1)

@@ -7,6 +7,10 @@ sys.path.append("../")
 import json
 from testbase import SimpleJsonTest
 
+paths = [
+   [ "error", "data", "stack", "context", "line" ]
+]
+
 if __name__ == "__main__":
   import argparse
   parser = argparse.ArgumentParser()
@@ -28,10 +32,10 @@ if __name__ == "__main__":
     "jsonrpc": "2.0",
     "id": 1,
     "method": "condenser_api.get_reward_fund",
-    "params": [args.post]
+    "params": ["{}".format(args.post)]
   }
 
-  if tester.compare_results(test_args, True):
+  if tester.compare_results( test_args, True, paths ):
     exit(0)
   exit(1)
 

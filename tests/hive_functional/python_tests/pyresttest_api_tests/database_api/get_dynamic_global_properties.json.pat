@@ -1,6 +1,4 @@
 {
-    "confidential_hbd_supply": "0.000 TBD",
-    "confidential_supply": "0.000 TESTS",
     "current_aslot": 0,
     "init_hbd_supply": "0.000 TBD",
     "current_hbd_supply": "0.000 TBD",

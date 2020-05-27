@@ -4,20 +4,55 @@ import os
 import json
 import jsondiff
 from pathlib import Path
+from pattern_corrector import PatternCorrector
 
 TEST_NODE_IS_HIVE = True
-REFERENCE_NODE_IS_HIVE = True
+REFERENCE_NODE_IS_HIVE = False
 
 # ignore this tags when comparing results from test and reference nodes
 TAGS_TO_REMOVE = [
+  "delayed_votes",
   "timestamp",
   "post_id",
-  "id"
+  "id",
+  "chain_id",
+  "confidential_supply",
+  "confidential_sbd_supply"
 ]
 
 TAGS_TO_RENAME = {
-  "STEEM_":"HIVE_",
-  "SBD_":"HBD_"
+  "STEEM_"                            : "HIVE_",
+  "SBD_"                              : "HBD_",
+  "steem"                             : "hive",
+  "sbd"                               : "hbd",
+  "reblogged_on"                      : "reblog_on",
+  "sbd_interest_rate"                 : "hbd_interest_rate",
+  "percent_steem_dollars"             : "percent_hbd",
+  "current_sbd_supply"                : "current_hbd_supply",
+  "init_sbd_supply"                   : "init_hbd_supply",
+  "sbd_print_rate"                    : "hbd_print_rate",
+  "sbd_start_percent"                 : "hbd_start_percent",
+  "sbd_stop_percent"                  : "hbd_stop_percent",
+  "sbd_volume"                        : "hbd_volume",
+  "steem_volume"                      : "hbd_volume",
+  "steem_revision"                    : "hive_revision",
+  "sbd_exchange_rate"                 : "hbd_exchange_rate",
+  "last_sbd_exchange_update"          : "last_hbd_exchange_update",
+  "reward_sbd_balance"                : "reward_hbd_balance",
+  "reward_steem_balance"              : "reward_hive_balance",
+  "reward_vesting_steem"              : "reward_vesting_hive",
+  "savings_sbd_balance"               : "savings_hbd_balance",
+  "savings_sbd_last_interest_payment" : "savings_hbd_last_interest_payment",
+  "savings_sbd_seconds"               : "savings_hbd_seconds",
+  "savings_sbd_seconds_last_update"   : "savings_hbd_seconds_last_update",
+  "sbd_balance"                       : "hbd_balance",
+  "sbd_last_interest_payment"         : "hbd_last_interest_payment",
+  "sbd_seconds"                       : "hbd_seconds",
+  "sbd_seconds_last_update"           : "hbd_seconds_last_update",
+  "pending_rewarded_vesting_steem"    : "pending_rewarded_vesting_hive",
+  "total_reward_fund_steem"           : "total_reward_fund_hive",
+  "total_vesting_fund_steem"          : "total_vesting_fund_hive",
+  "percent_hive_dollars"              : "percent_hbd"
 }
 
 def rename_tags(data):
@@ -72,14 +107,16 @@ class SimpleJsonTest(object):
   def json_pretty_string(self, json_obj):
     return json.dumps(json_obj, sort_keys=True, indent=4)
 
-  def compare_results(self, args, print_response = False, test_node_is_hive = TEST_NODE_IS_HIVE, reference_node_is_hive = REFERENCE_NODE_IS_HIVE):
+  def compare_results_internal(self, args, args2, print_response = False, paths = [], test_node_is_hive = TEST_NODE_IS_HIVE, reference_node_is_hive = REFERENCE_NODE_IS_HIVE):
     try:
       from requests import post
 
       print("Sending query:\n{}".format(self.json_pretty_string(args)))
+      if args is not args2:
+        print("Sending query:\n{}".format(self.json_pretty_string(args2)))
 
       resp1 = post(self._test_node, data=json.dumps(args))
-      resp2 = post(self._ref_node, data=json.dumps(args))
+      resp2 = post(self._ref_node, data=json.dumps(args2))
 
       filename1 = self.create_file_name("ref.log")
       filename2 = self.create_file_name("tested.log")
@@ -100,6 +137,12 @@ class SimpleJsonTest(object):
       json2 = remove_tag(json2)
       if test_node_is_hive and not reference_node_is_hive:
         json2 = rename_tags(json2)
+
+      pc1 = PatternCorrector( paths )
+      pc2 = PatternCorrector( paths )
+
+      json1 = pc1.run( json1 )
+      json2 = pc2.run( json2 )
 
       if print_response:
         print("Response from test node at {}:\n{}".format(self._test_node, self.json_pretty_string(json1)))
@@ -144,6 +187,15 @@ class SimpleJsonTest(object):
       # treat exception as test failed
       print("Exception during sending request: {}".format(ex))
       return False
+
+  def compare_results(self, args, print_response = False, paths = [], test_node_is_hive = TEST_NODE_IS_HIVE, reference_node_is_hive = REFERENCE_NODE_IS_HIVE):
+    return self.compare_results_internal( args, args, print_response, paths, test_node_is_hive, reference_node_is_hive )
+
+  def compare_results_with_2_queries(self, args, args2, print_response = False, paths = [], test_node_is_hive = TEST_NODE_IS_HIVE, reference_node_is_hive = REFERENCE_NODE_IS_HIVE):
+    if REFERENCE_NODE_IS_HIVE:
+      return self.compare_results_internal( args, args, print_response, paths, test_node_is_hive, reference_node_is_hive )
+    else:
+      return self.compare_results_internal( args, args2, print_response, paths, test_node_is_hive, reference_node_is_hive )
 
 if __name__ == "__main__":
   import argparse

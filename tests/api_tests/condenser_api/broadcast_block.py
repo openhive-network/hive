@@ -7,6 +7,11 @@ sys.path.append("../")
 import json
 from testbase import SimpleJsonTest
 
+
+paths = [
+   [ "error", "data", "stack", "context", "line" ]
+]
+
 if __name__ == "__main__":
   import argparse
   parser = argparse.ArgumentParser()
@@ -33,7 +38,7 @@ if __name__ == "__main__":
  
   }
 
-  if tester.compare_results(test_args, True):
+  if tester.compare_results(test_args, True, paths ):
     exit(0)
   exit(1)
 
