@@ -64,6 +64,7 @@ HIVE_DEFINE_EVALUATOR( smt_create )
 HIVE_DEFINE_EVALUATOR( smt_contribute )
 #endif
 HIVE_DEFINE_EVALUATOR( create_proposal )
+HIVE_DEFINE_EVALUATOR(update_proposal)
 HIVE_DEFINE_EVALUATOR( update_proposal_votes )
 HIVE_DEFINE_EVALUATOR( remove_proposal )
 

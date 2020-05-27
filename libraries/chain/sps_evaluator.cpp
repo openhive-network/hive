@@ -27,6 +27,13 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
 
       asset fee_hbd( HIVE_TREASURY_FEE, HBD_SYMBOL );
 
+      uint32_t proposal_run_time = o.end_date.sec_since_epoch() - o.start_date.sec_since_epoch();
+
+      if (proposal_run_time > HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC) {
+         uint32_t extra_days = (proposal_run_time / HIVE_ONE_DAY_SECONDS) - HIVE_PROPOSAL_FEE_INCREASE_DAYS;
+         fee_hbd += asset(HIVE_PROPOSAL_FEE_INCREASE_AMOUNT * extra_days, HBD_SYMBOL);
+      }
+
       //treasury account must exist, also we need it later to change its balance
       const auto& treasury_account =_db.get_treasury();
 
@@ -64,6 +71,35 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
       _db.adjust_balance( owner_account, -fee_hbd );
       /// Fee shall be paid to the treasury
       _db.adjust_balance(treasury_account, fee_hbd );
+   }
+   FC_CAPTURE_AND_RETHROW( (o) )
+}
+
+void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
+{
+   try
+   {
+      FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_24 ), "The update proposal functionality not enabled until hardfork ${hf}", ("hf", HIVE_HARDFORK_0_24) );
+
+      const auto& proposal = _db.get< proposal_object, by_proposal_id >( o.proposal_id );
+
+      FC_ASSERT(o.creator == proposal.creator, "Cannot edit a proposal you are not the creator of");
+
+      const auto* commentObject = _db.find_comment(proposal.creator, o.permlink);
+      if(commentObject == nullptr)
+      {
+         commentObject = _db.find_comment(proposal.receiver, o.permlink);
+         FC_ASSERT(commentObject != nullptr, "Proposal permlink must point to the article posted by creator or the receiver");
+      }
+
+      FC_ASSERT(o.daily_pay <= proposal.daily_pay, "You cannot increase the daily pay");
+
+      _db.modify( proposal, [&]( proposal_object& p )
+      {
+         p.daily_pay = o.daily_pay;
+         p.subject = o.subject.c_str();
+         p.permlink = o.permlink.c_str();
+      });
    }
    FC_CAPTURE_AND_RETHROW( (o) )
 }
