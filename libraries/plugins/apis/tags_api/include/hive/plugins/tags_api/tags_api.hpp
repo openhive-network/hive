@@ -227,11 +227,8 @@ class tags_api
       (get_active_votes)
    )
 
-   void set_pending_payout( discussion& d );
-
    private:
       friend class tags_api_plugin;
-      void api_startup();
 
       std::unique_ptr< detail::tags_api_impl > my;
 };
