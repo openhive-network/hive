@@ -176,7 +176,9 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
       fc::raw::unpack_from_vector( itr->second, props.maximum_block_size );
    }
 
-   itr = o.props.find( "hbd_interest_rate" );
+   itr = o.props.find("hbd_interest_rate");
+   if(itr == o.props.end())
+      itr = o.props.find("sbd_interest_rate");
    flags.hbd_interest_changed = itr != o.props.end();
    if( flags.hbd_interest_changed )
    {
@@ -204,7 +206,10 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
       fc::raw::unpack_from_vector( itr->second, signing_key );
    }
 
-   itr = o.props.find( "hbd_exchange_rate" );
+   itr = o.props.find("hbd_exchange_rate");
+   if(itr == o.props.end())
+      itr = o.props.find("sbd_exchange_rate");
+
    flags.hbd_exchange_changed = itr != o.props.end();
    if( flags.hbd_exchange_changed )
    {
