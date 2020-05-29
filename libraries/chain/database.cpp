@@ -213,9 +213,11 @@ void database::open( const open_args& args )
       with_read_lock( [&]()
       {
          const auto& hardforks = get_hardfork_property_object();
-         ilog("Loaded blockchain which had already processed hardfork 24, setting Hive chain id");
          if (hardforks.last_hardfork >= HIVE_HARDFORK_0_24)
+         {
+            ilog("Loaded blockchain which had already processed hardfork 24, setting Hive chain id");
             set_chain_id(HIVE_CHAIN_ID);
+         }
       });
          
       if (args.benchmark.first)
