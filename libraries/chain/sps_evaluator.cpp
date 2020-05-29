@@ -27,11 +27,15 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
 
       asset fee_hbd( HIVE_TREASURY_FEE, HBD_SYMBOL );
 
-      uint32_t proposal_run_time = o.end_date.sec_since_epoch() - o.start_date.sec_since_epoch();
+      if(_db.has_hardfork(HIVE_HARDFORK_0_24))
+      {
+         uint32_t proposal_run_time = o.end_date.sec_since_epoch() - o.start_date.sec_since_epoch();
 
-      if (proposal_run_time > HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC) {
-         uint32_t extra_days = (proposal_run_time / HIVE_ONE_DAY_SECONDS) - HIVE_PROPOSAL_FEE_INCREASE_DAYS;
-         fee_hbd += asset(HIVE_PROPOSAL_FEE_INCREASE_AMOUNT * extra_days, HBD_SYMBOL);
+         if(proposal_run_time > HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC)
+         {
+            uint32_t extra_days = (proposal_run_time / HIVE_ONE_DAY_SECONDS) - HIVE_PROPOSAL_FEE_INCREASE_DAYS;
+            fee_hbd += asset(HIVE_PROPOSAL_FEE_INCREASE_AMOUNT * extra_days, HBD_SYMBOL);
+         }
       }
 
       //treasury account must exist, also we need it later to change its balance
