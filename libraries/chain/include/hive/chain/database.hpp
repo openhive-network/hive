@@ -191,7 +191,8 @@ namespace hive { namespace chain {
          const signed_transaction   get_recent_transaction( const transaction_id_type& trx_id )const;
          std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
-         chain_id_type hive_chain_id = HIVE_CHAIN_ID;
+         /// Warning: to correctly process old blocks initially old chain-id should be set.
+         chain_id_type hive_chain_id = STEEM_CHAIN_ID;
          chain_id_type get_chain_id() const;
          void set_chain_id( const chain_id_type& chain_id );
 

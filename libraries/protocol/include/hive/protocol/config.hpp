@@ -13,6 +13,7 @@
 
 #define HIVE_INIT_PRIVATE_KEY                 (fc::ecc::private_key::regenerate(fc::sha256::hash(std::string("init_key"))))
 #define HIVE_INIT_PUBLIC_KEY_STR              (std::string( hive::protocol::public_key_type(HIVE_INIT_PRIVATE_KEY.get_public_key()) ))
+#define STEEM_CHAIN_ID                        (fc::sha256::hash("testnet"))
 #define HIVE_CHAIN_ID                         (fc::sha256::hash("testnet"))
 #define HIVE_ADDRESS_PREFIX                   "TST"
 
@@ -47,7 +48,8 @@
 #define HIVE_BLOCKCHAIN_VERSION               ( version(0, 24, 0) )
 
 #define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
-#define HIVE_CHAIN_ID fc::sha256("beeab0de00000000000000000000000000000000000000000000000000000000")
+#define STEEM_CHAIN_ID                        fc::sha256()
+#define HIVE_CHAIN_ID                         fc::sha256("beeab0de00000000000000000000000000000000000000000000000000000000")
 #define HIVE_ADDRESS_PREFIX                   "STM"
 
 #define HIVE_GENESIS_TIME                     (fc::time_point_sec(1458835200))

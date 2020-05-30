@@ -43,42 +43,42 @@ string& version_string()
    return v_str;
 }
 
-void info()
-{
+void info(const hive::protocol::chain_id_type& chainId)
+   {
 #ifdef IS_TEST_NET
-      std::cerr << "------------------------------------------------------\n\n";
-      std::cerr << "            STARTING TEST NETWORK\n\n";
-      std::cerr << "------------------------------------------------------\n";
-      auto initminer_private_key = hive::utilities::key_to_wif( HIVE_INIT_PRIVATE_KEY );
-      std::cerr << "initminer public key: " << HIVE_INIT_PUBLIC_KEY_STR << "\n";
-      std::cerr << "initminer private key: " << initminer_private_key << "\n";
-      std::cerr << "blockchain version: " << fc::string( HIVE_BLOCKCHAIN_VERSION ) << "\n";
-      std::cerr << "------------------------------------------------------\n";
+   std::cerr << "------------------------------------------------------\n\n";
+   std::cerr << "            STARTING TEST NETWORK\n\n";
+   std::cerr << "------------------------------------------------------\n";
+   auto initminer_private_key = hive::utilities::key_to_wif(HIVE_INIT_PRIVATE_KEY);
+   std::cerr << "initminer public key: " << HIVE_INIT_PUBLIC_KEY_STR << "\n";
+   std::cerr << "initminer private key: " << initminer_private_key << "\n";
+   std::cerr << "blockchain version: " << fc::string(HIVE_BLOCKCHAIN_VERSION) << "\n";
+   std::cerr << "------------------------------------------------------\n";
 #else
-      std::cerr << "------------------------------------------------------\n\n";      
-      std::cerr << "                @     @@@@@@    ,@@@@@%               \n";
-      std::cerr << "               @@@@    (@@@@@*    @@@@@@              \n";
-      std::cerr << "             %@@@@@@     @@@@@@    %@@@@@,            \n";
-      std::cerr << "            @@@@@@@@@@    @@@@@@     @@@@@@           \n";
-      std::cerr << "          ,@@@@@@@@@@@@     @@@@@@    @@@@@@          \n";
-      std::cerr << "         @@@@@@@@@@@@@@@&    @@@@@@     @@@@@@        \n";
-      std::cerr << "        @@@@@@@@@@@@@@@@@@    .@@@@@%    @@@@@@       \n";
-      std::cerr << "      @@@@@@@@@@@@@@@@@@@@@(              .@@@@@%     \n";
-      std::cerr << "       @@@@@@@@@@@@@@@@@@@@               @@@@@@      \n";
-      std::cerr << "        *@@@@@@@@@@@@@@@@     @@@@@@    @@@@@@.       \n";
-      std::cerr << "          @@@@@@@@@@@@@@    &@@@@@.    @@@@@@         \n";
-      std::cerr << "           #@@@@@@@@@@     @@@@@@    #@@@@@/          \n";
-      std::cerr << "             @@@@@@@@    /@@@@@/    @@@@@@            \n";
-      std::cerr << "              @@@@@(    @@@@@@    .@@@@@&             \n";
-      std::cerr << "                @@     @@@@@&    @@@@@@               \n\n";
-      std::cerr << "                STARTING HIVE NETWORK\n\n";
-      std::cerr << "------------------------------------------------------\n";
-      std::cerr << "initminer public key: " << HIVE_INIT_PUBLIC_KEY_STR << "\n";
-      std::cerr << "chain id: " << std::string( HIVE_CHAIN_ID ) << "\n";
-      std::cerr << "blockchain version: " << fc::string( HIVE_BLOCKCHAIN_VERSION ) << "\n";
-      std::cerr << "------------------------------------------------------\n";
+   std::cerr << "------------------------------------------------------\n\n";
+   std::cerr << "                @     @@@@@@    ,@@@@@%               \n";
+   std::cerr << "               @@@@    (@@@@@*    @@@@@@              \n";
+   std::cerr << "             %@@@@@@     @@@@@@    %@@@@@,            \n";
+   std::cerr << "            @@@@@@@@@@    @@@@@@     @@@@@@           \n";
+   std::cerr << "          ,@@@@@@@@@@@@     @@@@@@    @@@@@@          \n";
+   std::cerr << "         @@@@@@@@@@@@@@@&    @@@@@@     @@@@@@        \n";
+   std::cerr << "        @@@@@@@@@@@@@@@@@@    .@@@@@%    @@@@@@       \n";
+   std::cerr << "      @@@@@@@@@@@@@@@@@@@@@(              .@@@@@%     \n";
+   std::cerr << "       @@@@@@@@@@@@@@@@@@@@               @@@@@@      \n";
+   std::cerr << "        *@@@@@@@@@@@@@@@@     @@@@@@    @@@@@@.       \n";
+   std::cerr << "          @@@@@@@@@@@@@@    &@@@@@.    @@@@@@         \n";
+   std::cerr << "           #@@@@@@@@@@     @@@@@@    #@@@@@/          \n";
+   std::cerr << "             @@@@@@@@    /@@@@@/    @@@@@@            \n";
+   std::cerr << "              @@@@@(    @@@@@@    .@@@@@&             \n";
+   std::cerr << "                @@     @@@@@&    @@@@@@               \n\n";
+   std::cerr << "                STARTING HIVE NETWORK\n\n";
+   std::cerr << "------------------------------------------------------\n";
+   std::cerr << "initminer public key: " << HIVE_INIT_PUBLIC_KEY_STR << "\n";
+   std::cerr << "chain id: " << std::string(chainId) << "\n";
+   std::cerr << "blockchain version: " << fc::string(HIVE_BLOCKCHAIN_VERSION) << "\n";
+   std::cerr << "------------------------------------------------------\n";
 #endif
-}
+   }
 
 int main( int argc, char** argv )
 {
@@ -91,33 +91,37 @@ int main( int argc, char** argv )
       options.add_options()
          ("backtrace", bpo::value< string >()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" );
 
-      appbase::app().add_program_options( bpo::options_description(), options );
+      auto& theApp = appbase::app();
+
+      theApp.add_program_options( bpo::options_description(), options );
 
       hive::plugins::register_plugins();
 
-      appbase::app().set_version_string( version_string() );
-      appbase::app().set_app_name( "hived" );
+      theApp.set_version_string( version_string() );
+      theApp.set_app_name( "hived" );
 
       // These plugins are included in the default config
-      appbase::app().set_default_plugins<
+      theApp.set_default_plugins<
          hive::plugins::witness::witness_plugin,
          hive::plugins::account_by_key::account_by_key_plugin,
          hive::plugins::account_by_key::account_by_key_api_plugin,
          hive::plugins::condenser_api::condenser_api_plugin >();
 
       // These plugins are loaded regardless of the config
-      bool initialized = appbase::app().initialize<
+      bool initialized = theApp.initialize<
             hive::plugins::chain::chain_plugin,
             hive::plugins::p2p::p2p_plugin,
             hive::plugins::webserver::webserver_plugin >
             ( argc, argv );
 
-      info();
+      const auto& chainPlugin = theApp.get_plugin<hive::plugins::chain::chain_plugin>();
+      auto chainId = chainPlugin.db().get_chain_id();
+      info(chainId);
 
       if( !initialized )
          return 0;
 
-      auto& args = appbase::app().get_args();
+      auto& args = theApp.get_args();
 
       try
       {
@@ -136,8 +140,8 @@ int main( int argc, char** argv )
          ilog( "Backtrace on segfault is enabled." );
       }
 
-      appbase::app().startup();
-      appbase::app().exec();
+      theApp.startup();
+      theApp.exec();
       std::cout << "exited cleanly\n";
       return 0;
    }
