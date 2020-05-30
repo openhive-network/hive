@@ -114,12 +114,12 @@ int main( int argc, char** argv )
             hive::plugins::webserver::webserver_plugin >
             ( argc, argv );
 
+      if( !initialized )
+         return 0;
+
       const auto& chainPlugin = theApp.get_plugin<hive::plugins::chain::chain_plugin>();
       auto chainId = chainPlugin.db().get_chain_id();
       info(chainId);
-
-      if( !initialized )
-         return 0;
 
       auto& args = theApp.get_args();
 
