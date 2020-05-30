@@ -72,7 +72,7 @@ will build out of the box without further effort:
         libboost-locale-dev \
         libboost-program-options-dev \
         libboost-serialization-dev \
-        libboost-signals-dev \
+#        libboost-signals-dev \
         libboost-system-dev \
         libboost-test-dev \
         libboost-thread-dev
