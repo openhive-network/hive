@@ -192,7 +192,7 @@ using hive::utilities::benchmark_dumper;
 
 namespace {
 
-#define ITEMS_PER_WORKER ((size_t)2000)
+#define ITEMS_PER_WORKER ((size_t)2000000)
 
 class dumping_worker;
 class loading_worker;
