@@ -664,23 +664,20 @@ class loading_worker final : public chainbase::snapshot_reader::worker
       bfs::path _inputPath;
       std::unique_ptr<::rocksdb::SstFileReader> _reader;
       bool _load_finished;
+      bool _seek_to_first = false;
    };
 
 void loading_worker::load_converted_data(worker_common_base::serialized_object_cache* cache, size_t startId)
    {
    FC_ASSERT(_reader);
 
-   if(_manifestInfo.name == "dynamic_global_property_object")
-      {
-      ilog("Stop here");
-      }
-
    ::rocksdb::ReadOptions rOptions;
    std::unique_ptr<::rocksdb::Iterator> entryIt(_reader->NewIterator(rOptions));
 
-   if(startId == _startId)
+   if(_seek_to_first)
       {
       entryIt->SeekToFirst();
+      _seek_to_first = false;
       }
    else
       {
@@ -699,11 +696,23 @@ void loading_worker::load_converted_data(worker_common_base::serialized_object_c
       auto key = entryIt->key();
       auto value = entryIt->value();
 
-      const size_t* keyId = reinterpret_cast<const size_t *>(key.data());
+      const size_t* keyId = reinterpret_cast<const size_t*>(key.data());
       FC_ASSERT(sizeof(size_t) == key.size());
 
       cache->emplace_back(*keyId, std::vector<char>());
       cache->back().second.insert(cache->back().second.end(), value.data(), value.data() + value.size());
+      }
+
+   if(cache->empty())
+      {
+      ilog("No objects loaded from storage for index: `${i}'", ("i", _manifestInfo.name));
+      }
+   else
+      {
+      size_t b = cache->front().first;
+      size_t e = cache->back().first;
+
+      ilog("Loaded objects from range <${b}, ${e}> for index: `${i}'", ("b", b)("e", e)("i", _manifestInfo.name));
       }
    }
 
@@ -733,8 +742,12 @@ void loading_worker::perform_load()
          throw std::exception();
          }
 
+      _seek_to_first = true;
+
       auto converter = _controller.get_converter();
       converter(this);
+
+      _reader.reset();
       }
    }
 
