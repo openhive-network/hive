@@ -128,9 +128,8 @@ class snapshot_reader : public snapshot_base_serializer
          {
          public:
             /** Allows to load data from snapshot into the cache. 
-                \param startId - begin of object ID range to be loaded into a cache.
             */
-            virtual void load_converted_data(worker_common_base::serialized_object_cache* cache, size_t startId) = 0;
+            virtual void load_converted_data(worker_common_base::serialized_object_cache* cache) = 0;
 
             void update_processed_id(size_t id)
                {
@@ -377,18 +376,22 @@ class generic_index_snapshot_loader final : public generic_index_serialize_base
                {
                typedef typename MultiIndexType::value_type::id_type id_type;
 
-               auto range = worker->get_processing_range();
-
-               ilog("Loading items <${b}, ${e}> from ${s}", ("b", range.first)("e", range.second)("s", _indexDescription));
-
                const uint32_t max_cache_size = worker->get_serialized_object_cache_max_size();
                snapshot_writer::worker::serialized_object_cache serializedCache;
+               serializedCache.reserve(max_cache_size);
 
-               for(size_t id = range.first; true;)
+               while(1)
                   {
-                  serializedCache.reserve(max_cache_size);
+                  serializedCache.clear();
+                  worker->load_converted_data(&serializedCache);
 
-                  worker->load_converted_data(&serializedCache, id);
+                  if(serializedCache.empty())
+                     break;
+
+                  size_t f = serializedCache.front().first;
+                  size_t l = serializedCache.back().first;
+
+                  ilog("Loading items <${b}, ${e}> from ${s}", ("b", f)("e", l)("s", _indexDescription));
 
                   for(const auto& buffer : serializedCache)
                      {
@@ -400,17 +403,11 @@ class generic_index_snapshot_loader final : public generic_index_serialize_base
                         {
                         serialization::unpack_from_buffer(object, buffer.second);
                         }
-                     );
-
-                     id = buffer.first;
+                        );
                      }
 
-                  serializedCache.clear();
-                  if(id == range.second)
-                     break;
+                  ilog("Finished loading items <${b}, ${e}> from ${s}", ("b", f)("e", l)("s", _indexDescription));
                   }
-
-               ilog("Finished loading items <${b}, ${e}> from ${s}", ("b", range.first)("e", range.second)("s", _indexDescription));
                }
 
          private:

@@ -654,7 +654,7 @@ class loading_worker final : public chainbase::snapshot_reader::worker
 
       virtual ~loading_worker() = default;
 
-      virtual void load_converted_data(worker_common_base::serialized_object_cache* cache, size_t startId) override;
+      virtual void load_converted_data(worker_common_base::serialized_object_cache* cache) override;
 
       void perform_load();
 
@@ -663,38 +663,20 @@ class loading_worker final : public chainbase::snapshot_reader::worker
       index_dump_reader& _controller;
       bfs::path _inputPath;
       std::unique_ptr<::rocksdb::SstFileReader> _reader;
+      std::unique_ptr<::rocksdb::Iterator> _entryIt;
       bool _load_finished;
-      bool _seek_to_first = false;
    };
 
-void loading_worker::load_converted_data(worker_common_base::serialized_object_cache* cache, size_t startId)
+void loading_worker::load_converted_data(worker_common_base::serialized_object_cache* cache)
    {
-   FC_ASSERT(_reader);
-
-   ::rocksdb::ReadOptions rOptions;
-   std::unique_ptr<::rocksdb::Iterator> entryIt(_reader->NewIterator(rOptions));
-
-   if(_seek_to_first)
-      {
-      entryIt->SeekToFirst();
-      _seek_to_first = false;
-      }
-   else
-      {
-      ::rocksdb::Slice key(reinterpret_cast<const char*>(&startId), sizeof(startId));
-
-      entryIt->Seek(key);
-      FC_ASSERT(entryIt->Valid());
-      /// We need to continue iteration starting from next id.
-      entryIt->Next();
-      }
+   FC_ASSERT(_entryIt);
 
    const size_t maxSize = get_serialized_object_cache_max_size();
    cache->reserve(maxSize);
-   for(size_t n = 0; entryIt->Valid() && n < maxSize; entryIt->Next(), ++n)
+   for(size_t n = 0; _entryIt->Valid() && n < maxSize; _entryIt->Next(), ++n)
       {
-      auto key = entryIt->key();
-      auto value = entryIt->value();
+      auto key = _entryIt->key();
+      auto value = _entryIt->value();
 
       const size_t* keyId = reinterpret_cast<const size_t*>(key.data());
       FC_ASSERT(sizeof(size_t) == key.size());
@@ -742,12 +724,17 @@ void loading_worker::perform_load()
          throw std::exception();
          }
 
-      _seek_to_first = true;
+      ::rocksdb::ReadOptions rOptions;
+      _entryIt.reset(_reader->NewIterator(rOptions));
+      _entryIt->SeekToFirst();
 
       auto converter = _controller.get_converter();
       converter(this);
 
+      _entryIt.reset();
       _reader.reset();
+
+      ilog("Finished processing of SST file at path: `${p}'", ("p", sstFilePath.string()));
       }
    }
 
