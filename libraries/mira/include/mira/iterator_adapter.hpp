@@ -19,15 +19,9 @@ class iterator_adapter :
    template< typename t > struct type {};
 
    public:
-      iter_variant _itr;
+      mutable iter_variant _itr;
 
       iterator_adapter() {}
-
-      template< typename T >
-      iterator_adapter( T& rhs )
-      {
-         assignment_impl( rhs, type< typename std::remove_reference< T >::type >() );
-      }
 
       template< typename T >
       iterator_adapter( const T& rhs )
@@ -77,25 +71,17 @@ class iterator_adapter :
          );
       }
 
-      const ValueType& operator *()
+      const ValueType& operator *() const
       {
          return *(operator ->());
       }
 
-      const ValueType* operator ->()
+      const ValueType* operator ->() const
       {
          return boost::apply_visitor(
             []( auto& itr ){ return itr.operator->(); },
             _itr
          );
-      }
-
-      template< typename T >
-      iterator_adapter& operator =( T& rhs )
-      {
-         assignment_impl( rhs, type< typename std::remove_reference< T >::type >() );
-
-         return *this;
       }
 
       template< typename T >
