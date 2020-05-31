@@ -39,6 +39,8 @@ namespace bpo = boost::program_options;
 
 namespace {
 
+namespace bfs = boost::filesystem;
+
 struct index_manifest_file_info
    {
    /// Path relative against snapshot main-directory.
@@ -66,7 +68,113 @@ struct index_manifest_info_less
 
 typedef std::set <index_manifest_info, index_manifest_info_less> snapshot_manifest;
 
-}
+class rocksdb_cleanup_helper
+   {
+   public:
+      static rocksdb_cleanup_helper open(const ::rocksdb::Options& opts, const bfs::path& path);
+      void close();
+
+      ::rocksdb::ColumnFamilyHandle* create_column_family(const std::string& name, const ::rocksdb::ColumnFamilyOptions* cfOptions = nullptr);
+
+      rocksdb_cleanup_helper(rocksdb_cleanup_helper&&) = default;
+      rocksdb_cleanup_helper& operator=(rocksdb_cleanup_helper&&) = default;
+
+      rocksdb_cleanup_helper(const rocksdb_cleanup_helper&) = delete;
+      rocksdb_cleanup_helper& operator=(const rocksdb_cleanup_helper&) = delete;
+
+      ~rocksdb_cleanup_helper()
+         {
+         cleanup();
+         }
+
+      ::rocksdb::DB* operator ->() const
+         {
+         return _db.get();
+         }
+
+   private:
+      bool cleanup()
+         {
+         if(_db)
+            {
+            for(auto* ch : _column_handles)
+               {
+               auto s = _db->DestroyColumnFamilyHandle(ch);
+               if(s.ok() == false)
+                  {
+                  elog("Cannot destroy column family handle. Error: `${e}'", ("e", s.ToString()));
+                  return false;
+                  }
+               }
+
+            auto s = _db->Close();
+            if(s.ok() == false)
+               {
+               elog("Cannot Close database. Error: `${e}'", ("e", s.ToString()));
+               return false;
+               }
+
+            _db.reset();
+            }
+
+         return true;
+         }
+
+   private:
+      rocksdb_cleanup_helper() = default;
+
+      typedef std::vector<::rocksdb::ColumnFamilyHandle*> column_handles;
+      std::unique_ptr<::rocksdb::DB> _db;
+      column_handles                 _column_handles;
+   };
+
+rocksdb_cleanup_helper rocksdb_cleanup_helper::open(const ::rocksdb::Options& opts, const bfs::path& path)
+   {
+   rocksdb_cleanup_helper retVal;
+
+   ::rocksdb::DB* db = nullptr;
+   auto status = ::rocksdb::DB::Open(opts, path.string(), &db);
+   retVal._db.reset(db);
+   if(status.ok())
+      {
+      ilog("Successfully opened db at path: `${p}'", ("p", path.string()));
+      }
+   else
+      {
+      elog("Cannot open db at path: `${p}'. Error details: `${e}'.", ("p", path.string())("e", status.ToString()));
+      throw std::exception();
+      }
+
+   return std::move(retVal);
+   }
+
+void rocksdb_cleanup_helper::close()
+   {
+   if(cleanup() == false)
+      throw std::exception();
+   }
+
+::rocksdb::ColumnFamilyHandle* rocksdb_cleanup_helper::create_column_family(const std::string& name, const ::rocksdb::ColumnFamilyOptions* cfOptions/* = nullptr*/)
+   {
+   ::rocksdb::ColumnFamilyOptions actualOptions;
+
+   if(cfOptions != nullptr)
+      actualOptions = *cfOptions;
+
+   ::rocksdb::ColumnFamilyHandle* cf = nullptr;
+   auto status = _db->CreateColumnFamily(actualOptions, name, &cf);
+   if(status.ok() == false)
+      {
+      elog("Cannot create column family. Error details: `${e}'.", ("e", status.ToString()));
+      throw std::exception();
+      }
+
+   _column_handles.emplace_back(cf);
+
+   return cf;
+   }
+
+} /// namespace anonymous
 
 FC_REFLECT(index_manifest_info, (name)(dumpedItems)(firstId)(lastId)(storage_files))
 FC_REFLECT(index_manifest_file_info, (relative_path)(file_size))
@@ -84,7 +192,7 @@ using hive::utilities::benchmark_dumper;
 
 namespace {
 
-#define ITEMS_PER_WORKER ((size_t)2000000)
+#define ITEMS_PER_WORKER ((size_t)2000)
 
 class dumping_worker;
 class loading_worker;
@@ -215,12 +323,21 @@ class snapshot_processor_data : public BaseClass
          return _indexDescription;
          }
 
-   protected:
-      snapshot_processor_data(boost::asio::io_service& executor, const bfs::path& rootPath) :
-         _executor(executor), _rootPath(rootPath) {}
+      /// Returns true if given index shall be processed.
+      bool process_index(const std::string& indexDescription) const
+         {
+         //if(indexDescription == "comment_object")
+            return true;
+
+         //return false;
+         }
+
 
    protected:
-      boost::asio::io_service& _executor;
+      snapshot_processor_data(const bfs::path& rootPath) :
+         _rootPath(rootPath) {}
+
+   protected:
       snapshot_converter_t _converter;
       bfs::path _rootPath;
       std::string _indexDescription;
@@ -231,9 +348,9 @@ class snapshot_processor_data : public BaseClass
 class index_dump_writer final : public snapshot_processor_data<chainbase::snapshot_writer>
    {
    public:
-      index_dump_writer(const chainbase::abstract_index& index, boost::asio::io_service& executor, const bfs::path& outputRootPath,
+      index_dump_writer(const chainbase::abstract_index& index, const bfs::path& outputRootPath,
          bool allow_concurrency) :
-         snapshot_processor_data<chainbase::snapshot_writer>(executor, outputRootPath), _index(index), _firstId(0), _lastId(0),
+         snapshot_processor_data<chainbase::snapshot_writer>(outputRootPath), _index(index), _firstId(0), _lastId(0),
          _allow_concurrency(allow_concurrency) {}
 
       index_dump_writer(const index_dump_writer&) = delete;
@@ -258,8 +375,8 @@ class index_dump_writer final : public snapshot_processor_data<chainbase::snapsh
 class index_dump_reader final : public snapshot_processor_data<chainbase::snapshot_reader>
    {
    public:
-      index_dump_reader(const snapshot_manifest& snapshotManifest, boost::asio::io_service& executor, const bfs::path& rootPath) :
-         snapshot_processor_data<chainbase::snapshot_reader>(executor, rootPath),
+      index_dump_reader(const snapshot_manifest& snapshotManifest, const bfs::path& rootPath) :
+         snapshot_processor_data<chainbase::snapshot_reader>(rootPath),
          _snapshotManifest(snapshotManifest), currentWorker(nullptr) {}
 
       index_dump_reader(const index_dump_reader&) = delete;
@@ -285,7 +402,6 @@ class dumping_worker final : public chainbase::snapshot_writer::worker
          chainbase::snapshot_writer::worker(writer, startId, endId), _controller(writer), _outputFile(outputFile),
          _writtenEntries(0), _write_finished(false)
          {
-         prepareWriter();
          }
 
       virtual ~dumping_worker()
@@ -326,9 +442,6 @@ class dumping_worker final : public chainbase::snapshot_writer::worker
 
 void dumping_worker::perform_dump()
    {
-   if(!_writer)
-      return;
-
    ilog("Performing a dump into file ${p}", ("p", _outputFile.string()));
 
    try
@@ -336,8 +449,11 @@ void dumping_worker::perform_dump()
       auto converter = _controller.get_converter();
       converter(this);
 
-      _writer->Finish(&_sstFileInfo);
-      _writer.release();
+      if(_writer)
+         {
+         _writer->Finish(&_sstFileInfo);
+         _writer.release();
+         }
 
       _write_finished = true;
 
@@ -348,7 +464,8 @@ void dumping_worker::perform_dump()
 
 void dumping_worker::store_index_manifest(index_manifest_info* manifest) const
    {
-   FC_ASSERT(is_write_finished());
+   FC_ASSERT(is_write_finished(), "Write not finished yet for worker processing range: <${b}, ${e}> for index: `${i}'",
+      ("b", _startId)("e", _endId)("i", _controller.getIndexDescription()));
    FC_ASSERT(!_writer);
 
    FC_ASSERT(_writtenEntries == 0 || _sstFileInfo.file_size != 0);
@@ -360,6 +477,9 @@ void dumping_worker::store_index_manifest(index_manifest_info* manifest) const
 
 void dumping_worker::flush_converted_data(const serialized_object_cache& cache)
    {
+   if(!_writer)
+      prepareWriter();
+
    ilog("Flushing converted data <${f}:${b}> for file ${o}", ("f", cache.front().first)("b", cache.back().first)("o", _outputFile.string()));
 
    for(const auto& kv : cache)
@@ -396,6 +516,7 @@ void dumping_worker::prepareWriter()
       {
       elog("Cannot open SST Writer output file: `${p}'. Error details: `${e}'.", ("p", _outputFile.string())("e", status.ToString()));
       _writer.release();
+      throw std::exception();
       }
    }
 
@@ -403,10 +524,11 @@ chainbase::snapshot_writer::workers
 index_dump_writer::prepare(const std::string& indexDescription, size_t firstId, size_t lastId, size_t indexSize,
    snapshot_converter_t converter)
    {
-   if(indexSize == 0)
+   if(indexSize == 0 || process_index(indexDescription) == false)
       return workers();
 
-   ilog("Preparing snapshot writer to store index holding `${d}' items. Index size: ${s}.", ("d", indexDescription)("s", indexSize));
+   ilog("Preparing snapshot writer to store index holding `${d}' items. Index size: ${s}. Index id range: <${f}, ${l}>.",
+      ("d", indexDescription)("s", indexSize)("f", firstId)("l", lastId));
 
    _converter = converter;
    _indexDescription = indexDescription;
@@ -417,7 +539,12 @@ index_dump_writer::prepare(const std::string& indexDescription, size_t firstId, 
 
    size_t workerCount = indexSize / ITEMS_PER_WORKER + 1;
    size_t left = firstId;
-   size_t right = std::min(firstId + ITEMS_PER_WORKER, lastId);
+   size_t right = 0;
+
+   if(indexSize <= ITEMS_PER_WORKER)
+      right = lastId;
+   else
+      right = std::min(firstId + ITEMS_PER_WORKER, lastId);
 
    ilog("Preparing ${n} workers to store index holding `${d}' items.", ("d", indexDescription)("n", workerCount));
 
@@ -435,7 +562,7 @@ index_dump_writer::prepare(const std::string& indexDescription, size_t firstId, 
       retVal.emplace_back(_builtWorkers.back().get());
 
       left = right + 1;
-      if(i == workerCount - 1)
+      if(i == workerCount - 2) /// Last iteration shall cover items up to container end.
          right = lastId + 1;
       else
          right += ITEMS_PER_WORKER;
@@ -452,13 +579,27 @@ void index_dump_writer::start(const workers& workers)
 
    if(num_threads > 1)
       {
+      boost::asio::io_service ioService;
+      boost::thread_group threadpool;
+      std::unique_ptr<boost::asio::io_service::work> work = std::make_unique<boost::asio::io_service::work>(ioService);
+
+      for(unsigned int i = 0; i < num_threads; ++i)
+         threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &ioService));
+
       for(size_t i = 0; i < _builtWorkers.size(); ++i)
          {
          dumping_worker* w = _builtWorkers[i].get();
          FC_ASSERT(w == workers[i]);
 
-         _executor.post(boost::bind(&dumping_worker::perform_dump, w));
+         ioService.post(boost::bind(&dumping_worker::perform_dump, w));
          }
+
+      ilog("Waiting for dumping-workers jobs completion");
+
+      /// Run the horses...
+      work.reset();
+
+      threadpool.join_all();
       }
    else
       {
@@ -474,6 +615,9 @@ void index_dump_writer::start(const workers& workers)
 
 void index_dump_writer::store_index_manifest(index_manifest_info* manifest) const
    {
+   if(process_index(_indexDescription) == false)
+      return;
+
    FC_ASSERT(_processingSuccess);
 
    manifest->name = _indexDescription;
@@ -747,28 +891,8 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
    dbOptions.create_if_missing = true;
    dbOptions.max_open_files = 1024;
 
-   std::unique_ptr<::rocksdb::DB> manifestDbPtr;
-   ::rocksdb::DB* manifestDb = nullptr;
-   auto status = ::rocksdb::DB::Open(dbOptions, manifestDbPath.string(), &manifestDb);
-   manifestDbPtr.reset(manifestDb);
-   if(status.ok())
-      {
-      ilog("Successfully opened snapshot manifest-db at path: `${p}'", ("p", manifestDbPath.string()));
-      }
-   else
-      {
-      elog("Cannot open snapshot manifest-db at path: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
-      throw std::exception();
-      }
-
-   ::rocksdb::ColumnFamilyOptions cfOptions;
-   ::rocksdb::ColumnFamilyHandle* manifestCF = nullptr;
-   status = manifestDb->CreateColumnFamily(cfOptions, "INDEX_MANIFEST", &manifestCF);
-   if(status.ok() == false)
-      {
-      elog("Cannot create column family. Error details: `${e}'.", ("e", status.ToString()));
-      throw std::exception();
-      }
+   rocksdb_cleanup_helper db = rocksdb_cleanup_helper::open(dbOptions, manifestDbPath);
+   ::rocksdb::ColumnFamilyHandle* manifestCF = db.create_column_family("INDEX_MANIFEST");
 
    ::rocksdb::WriteOptions writeOptions;
 
@@ -786,7 +910,7 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
       Slice key(info.name);
       Slice value(storage.data(), storage.size());
 
-      auto status = manifestDb->Put(writeOptions, manifestCF, key, value);
+      auto status = db->Put(writeOptions, manifestCF, key, value);
       if(status.ok() == false)
          {
          elog("Cannot write an index manifest entry to output file: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
@@ -796,18 +920,7 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
          }
       }
 
-   status = manifestDb->DestroyColumnFamilyHandle(manifestCF);
-   if(status.ok() == false)
-      {
-      elog("Cannot destroy column family handle...'. Error details: `${e}'.", ("e", status.ToString()));
-      }
-
-   status = manifestDb->Close();
-   if(status.ok() == false)
-      {
-      elog("Cannot close index manifest db associated to path: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
-      throw std::exception();
-      }
+   db.close();
    }
 
 snapshot_manifest state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath)
@@ -899,6 +1012,8 @@ void state_snapshot_plugin::impl::safe_spawn_snapshot_load(chainbase::abstract_i
 
 void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotName)
    {
+   try
+   {
    benchmark_dumper dumper;
    dumper.initialize([](benchmark_dumper::database_object_sizeof_cntr_t&) {}, "state_snapshot_dump.json");
 
@@ -925,7 +1040,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
 
    for(const chainbase::abstract_index* idx : indices)
       {
-      builtWriters.emplace_back(std::make_unique<index_dump_writer>(*idx, ioService, actualStoragePath, _allow_concurrency));
+      builtWriters.emplace_back(std::make_unique<index_dump_writer>(*idx, actualStoragePath, _allow_concurrency));
       index_dump_writer* writer = builtWriters.back().get();
 
       if(_allow_concurrency)
@@ -953,6 +1068,11 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
       ("pm", measure.peak_mem));
 
    ilog("Snapshot generation finished");
+   return;
+   }
+   FC_CAPTURE_AND_LOG(());
+
+   elog("Snapshot generation FAILED.");
    }
 
 void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName, const hive::chain::open_args& openArgs)
@@ -990,7 +1110,7 @@ void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName,
 
    for(chainbase::abstract_index* idx : indices)
       {
-      builtReaders.emplace_back(std::make_unique<index_dump_reader>(snapshotManifest, ioService, actualStoragePath));
+      builtReaders.emplace_back(std::make_unique<index_dump_reader>(snapshotManifest, actualStoragePath));
       index_dump_reader* reader = builtReaders.back().get();
 
       if(_allow_concurrency)

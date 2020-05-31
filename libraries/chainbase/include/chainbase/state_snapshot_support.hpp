@@ -215,13 +215,40 @@ private:
 
          _start = byIdIdx.lower_bound(id_type(iterationRange.first));
          _end   = byIdIdx.upper_bound(id_type(iterationRange.second));
+
+         if(_start != _end && _start != byIdIdx.end())
+         {
+            const auto& object = *_start;
+            size_t id = object.get_id();
+            if(id > iterationRange.second)
+               _start = _end;
+         }
       }
 
       virtual ~dumper_data() = default;
 
       void doConversion(snapshot_writer::worker* worker) const
-      {
-         ilog("Writing items <${b}, ${e}) from ${s}", ("b", _startId)("e", _endId)("s", _indexDescription));
+         {
+         if(_start == _end)
+            {
+            ilog("No items present for range <${b}, ${e}> for index `${i}", ("b", _startId)("e", _endId)("i", _indexDescription));
+            return;
+            }
+
+         const auto& byIdIdx = _data_source.template get<by_id>();
+
+         size_t firstObjectId = _start->get_id();
+         if(_end != byIdIdx.end())
+            {
+            size_t endObjectId = _end->get_id();
+            ilog("Writing items <${f}, ${l}) found for range <${b}, ${e}) from index ${s}", ("b", _startId)
+               ("e", _endId)("s", _indexDescription)("f", firstObjectId)("l", endObjectId));
+            }
+         else
+            {
+            ilog("Writing items <${f}, container-end) found for range <${b}, ${e}) from index ${s}", ("b", _startId)
+               ("e", _endId)("s", _indexDescription)("f", firstObjectId));
+            }
 
          const uint32_t max_cache_size = worker->get_serialized_object_cache_max_size();
 
@@ -251,9 +278,8 @@ private:
          if(serializedCache.empty() == false)
             worker->flush_converted_data(serializedCache);
 
-         ilog("Finished dumping items <${b}, ${e}) from ${s}", ("b", _startId)("e", _endId)("s", _indexDescription));
+         ilog("Finished dumping items <${b}, ${e}> from ${s}", ("b", _startId)("e", _endId)("s", _indexDescription));
       }
-
 
    private:
       template <class ContainerType>
