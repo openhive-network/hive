@@ -371,6 +371,10 @@ uint32_t database::reindex( const open_args& args )
       if( appbase::app().is_interrupt_request() )
          return 0;
 
+      uint32_t _head_block_num = head_block_num();
+
+      note.replay_clean = args.replay_clean || _head_block_num == 0;
+
       HIVE_TRY_NOTIFY(_pre_reindex_signal, note);
 
 #ifdef ENABLE_MIRA
@@ -394,7 +398,6 @@ uint32_t database::reindex( const open_args& args )
 
          optional< std::pair< signed_block, uint64_t > > start;
 
-         uint32_t _head_block_num = head_block_num();
          bool replay_required = true;
 
          if( _head_block_num > 0 )

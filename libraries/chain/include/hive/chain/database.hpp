@@ -808,6 +808,7 @@ namespace hive { namespace chain {
    {
       reindex_notification( const open_args& a ) : args( a ) {}
 
+      bool replay_clean = false;
       bool reindex_success = false;
       uint32_t last_block_number = 0;
       const open_args& args;
