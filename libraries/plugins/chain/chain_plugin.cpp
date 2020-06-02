@@ -107,7 +107,7 @@ class chain_plugin_impl
       bool                             statsd_on_replay = false;
       uint32_t                         stop_replay_at = 0;
       bool                             exit_after_replay = false;
-      bool                             resume_replay = false;
+      bool                             replay_clean = false;
       uint32_t                         benchmark_interval = 0;
       uint32_t                         flush_interval = 0;
       bool                             replay_in_memory = false;
@@ -426,7 +426,7 @@ void chain_plugin_impl::initial_settings()
    db_open_args.do_validate_invariants = validate_invariants;
    db_open_args.stop_replay_at = stop_replay_at;
    db_open_args.exit_after_replay = exit_after_replay;
-   db_open_args.resume_replay = resume_replay;
+   db_open_args.replay_clean = replay_clean;
    db_open_args.benchmark_is_enabled = benchmark_is_enabled;
    db_open_args.database_cfg = database_config;
    db_open_args.replay_in_memory = replay_in_memory;
@@ -579,7 +579,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
          ("resync-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and block log" )
          ("stop-replay-at-block", bpo::value<uint32_t>(), "Stop after reaching given block number")
          ("exit-after-replay", bpo::bool_switch()->default_value(false), "Exit after reaching given block number")
-         ("resume-replay", bpo::bool_switch()->default_value(false), "Resume replaying")
+         ("replay-clean", bpo::bool_switch()->default_value(false), "Before replaying clean all old files")
          ("advanced-benchmark", "Make profiling for every plugin.")
          ("set-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks")
          ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
@@ -623,7 +623,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
    my->resync              = options.at( "resync-blockchain").as<bool>();
    my->stop_replay_at      = options.count( "stop-replay-at-block" ) ? options.at( "stop-replay-at-block" ).as<uint32_t>() : 0;
    my->exit_after_replay   = options.count( "exit-after-replay" ) ? options.at( "exit-after-replay" ).as<bool>() : false;
-   my->resume_replay       = options.count( "resume-replay" ) ? options.at( "resume-replay" ).as<bool>() : false;
+   my->replay_clean       = options.count( "replay-clean" ) ? options.at( "replay-clean" ).as<bool>() : false;
    my->benchmark_interval  =
       options.count( "set-benchmark-interval" ) ? options.at( "set-benchmark-interval" ).as<uint32_t>() : 0;
    my->check_locks         = options.at( "check-locks" ).as< bool >();

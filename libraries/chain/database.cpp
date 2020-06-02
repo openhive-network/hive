@@ -361,10 +361,10 @@ uint32_t database::reindex( const open_args& args )
       initialize_indexes();
 #endif
 
-      if( args.resume_replay )
-         close();
-      else
+      if( args.replay_clean )
          wipe( args.data_dir, args.shared_mem_dir, false );
+      else
+         close();
 
       open( args );
 
@@ -397,7 +397,7 @@ uint32_t database::reindex( const open_args& args )
          uint32_t _head_block_num = head_block_num();
          bool replay_required = true;
 
-         if( args.resume_replay && _head_block_num > 0 )
+         if( _head_block_num > 0 )
          {
             if( args.stop_replay_at == 0 || args.stop_replay_at > _head_block_num )
                start = _block_log.read_block_by_num( _head_block_num + 1 );
@@ -417,6 +417,10 @@ uint32_t database::reindex( const open_args& args )
 
          if( replay_required )
          {
+            auto _last_block_number = ( *start ).first.block_num();
+            if( _last_block_number && !args.replay_clean )
+               ilog("Resume of replaying. Last applied block: ${n}", ( "n", _last_block_number - 1 ) );
+
             note.last_block_number = reindex_internal( args, *start );
          }
          else
