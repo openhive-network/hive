@@ -93,7 +93,7 @@ namespace hive { namespace chain {
       // The following fields are only used on reindexing
       uint32_t stop_replay_at = 0;
       bool exit_after_replay = false;
-      bool replay_clean = false;
+      bool force_replay = false;
       TBenchmark benchmark = TBenchmark(0, [](uint32_t, const chainbase::database::abstract_index_cntr_t&) {});
       };
 
@@ -154,6 +154,18 @@ namespace hive { namespace chain {
          uint32_t reindex_internal( const open_args& args, std::pair< signed_block, uint64_t >& block_data );
 
       public:
+
+         /**
+          * @brief Check if replaying was finished and all blocks from `block_log` were processed.
+          *
+          * This method is called from a chain plugin, if returns `true` then a synchronization is allowed.
+          * If returns `false`, then opening a node should be forbidden.
+          *
+          * There are output-type arguments: `head_block_num_origin`, `head_block_num_state` for information purposes only.
+          * 
+          * @return information if replaying was finished
+          */
+         bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
 
          /**
           * @brief Rebuild object graph from block history and open detabase
@@ -808,7 +820,7 @@ namespace hive { namespace chain {
    {
       reindex_notification( const open_args& a ) : args( a ) {}
 
-      bool replay_clean = false;
+      bool force_replay = false;
       bool reindex_success = false;
       uint32_t last_block_number = 0;
       const open_args& args;

@@ -345,6 +345,23 @@ uint32_t database::reindex_internal( const open_args& args, std::pair< signed_bl
    return block_data.first.block_num();
 }
 
+bool database::is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const
+{
+   auto _head_block_num_origin = _block_log.head()->block_num();
+   auto _head_block_num_state = head_block_num();
+
+   if( head_block_num_origin )
+      *head_block_num_origin = _head_block_num_origin;
+
+   if( head_block_num_state )
+      *head_block_num_state = _head_block_num_state;
+
+   FC_ASSERT( _head_block_num_state <= _head_block_num_origin, "Incorrect number of blocks in `block_log` vs `state`. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }",
+                        ( "b1", _head_block_num_origin )( "b2", _head_block_num_state ) );
+
+   return _head_block_num_origin == _head_block_num_state;
+}
+
 uint32_t database::reindex( const open_args& args )
 {
    reindex_notification note( args );
@@ -361,7 +378,7 @@ uint32_t database::reindex( const open_args& args )
       initialize_indexes();
 #endif
 
-      if( args.replay_clean )
+      if( args.force_replay )
          wipe( args.data_dir, args.shared_mem_dir, false );
       else
          close();
@@ -373,7 +390,7 @@ uint32_t database::reindex( const open_args& args )
 
       uint32_t _head_block_num = head_block_num();
 
-      note.replay_clean = args.replay_clean || _head_block_num == 0;
+      note.force_replay = args.force_replay || _head_block_num == 0;
 
       HIVE_TRY_NOTIFY(_pre_reindex_signal, note);
 
@@ -421,7 +438,7 @@ uint32_t database::reindex( const open_args& args )
          if( replay_required )
          {
             auto _last_block_number = ( *start ).first.block_num();
-            if( _last_block_number && !args.replay_clean )
+            if( _last_block_number && !args.force_replay )
                ilog("Resume of replaying. Last applied block: ${n}", ( "n", _last_block_number - 1 ) );
 
             note.last_block_number = reindex_internal( args, *start );

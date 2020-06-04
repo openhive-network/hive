@@ -85,7 +85,7 @@ class chain_plugin_impl
       void start_replay_processing( synchronization_type& on_sync );
 
       void initial_settings();
-      void open();
+      bool open();
       bool replay_blockchain();
       void work( synchronization_type& on_sync );
 
@@ -107,7 +107,7 @@ class chain_plugin_impl
       bool                             statsd_on_replay = false;
       uint32_t                         stop_replay_at = 0;
       bool                             exit_after_replay = false;
-      bool                             replay_clean = false;
+      bool                             force_replay = false;
       uint32_t                         benchmark_interval = 0;
       uint32_t                         flush_interval = 0;
       bool                             replay_in_memory = false;
@@ -426,7 +426,7 @@ void chain_plugin_impl::initial_settings()
    db_open_args.do_validate_invariants = validate_invariants;
    db_open_args.stop_replay_at = stop_replay_at;
    db_open_args.exit_after_replay = exit_after_replay;
-   db_open_args.replay_clean = replay_clean;
+   db_open_args.force_replay = force_replay;
    db_open_args.benchmark_is_enabled = benchmark_is_enabled;
    db_open_args.database_cfg = database_config;
    db_open_args.replay_in_memory = replay_in_memory;
@@ -468,7 +468,7 @@ void chain_plugin_impl::initial_settings()
    db_open_args.benchmark = hive::chain::TBenchmark( benchmark_interval, benchmark_lambda );
 }
 
-void chain_plugin_impl::open()
+bool chain_plugin_impl::open()
 {
    try
    {
@@ -478,6 +478,18 @@ void chain_plugin_impl::open()
 
       if( dump_memory_details )
          dumper.dump( true, get_indexes_memory_details );
+
+      uint64_t head_block_num_origin = 0;
+      uint64_t head_block_num_state = 0;
+
+      auto _is_reindex_complete = db.is_reindex_complete( &head_block_num_origin, &head_block_num_state );
+
+      if( !_is_reindex_complete )
+      {
+         wlog( "Replaying is not finished. Synchronization is not allowed. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+         appbase::app().generate_interrupt_request();
+         return false;
+      }
    }
    catch( const fc::exception& e )
    {
@@ -487,6 +499,8 @@ void chain_plugin_impl::open()
       wlog( " Error: ${e}", ("e", e) );
       exit(EXIT_FAILURE);
    }
+
+   return true;
 }
 
 bool chain_plugin_impl::replay_blockchain()
@@ -579,7 +593,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
          ("resync-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and block log" )
          ("stop-replay-at-block", bpo::value<uint32_t>(), "Stop after reaching given block number")
          ("exit-after-replay", bpo::bool_switch()->default_value(false), "Exit after reaching given block number")
-         ("replay-clean", bpo::bool_switch()->default_value(false), "Before replaying clean all old files")
+         ("force-replay", bpo::bool_switch()->default_value(false), "Before replaying clean all old files")
          ("advanced-benchmark", "Make profiling for every plugin.")
          ("set-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks")
          ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
@@ -623,7 +637,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
    my->resync              = options.at( "resync-blockchain").as<bool>();
    my->stop_replay_at      = options.count( "stop-replay-at-block" ) ? options.at( "stop-replay-at-block" ).as<uint32_t>() : 0;
    my->exit_after_replay   = options.count( "exit-after-replay" ) ? options.at( "exit-after-replay" ).as<bool>() : false;
-   my->replay_clean       = options.count( "replay-clean" ) ? options.at( "replay-clean" ).as<bool>() : false;
+   my->force_replay        = options.count( "force-replay" ) ? options.at( "force-replay" ).as<bool>() : false;
    my->benchmark_interval  =
       options.count( "set-benchmark-interval" ) ? options.at( "set-benchmark-interval" ).as<uint32_t>() : 0;
    my->check_locks         = options.at( "check-locks" ).as< bool >();
@@ -702,8 +716,8 @@ void chain_plugin::plugin_startup()
    }
    else
    {
-      my->open();
-      my->work( on_sync );
+      if( my->open() )
+         my->work( on_sync );
    }
 }
 
