@@ -347,7 +347,8 @@ uint32_t database::reindex_internal( const open_args& args, std::pair< signed_bl
 
 bool database::is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const
 {
-   auto _head_block_num_origin = _block_log.head()->block_num();
+   auto _head = _block_log.head();
+   auto _head_block_num_origin = _head.valid() ? _head->block_num() : 0;
    auto _head_block_num_state = head_block_num();
 
    if( head_block_num_origin )
