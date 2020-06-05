@@ -1794,7 +1794,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( db->get_account( "alice" ).vesting_withdraw_rate == ASSET( "0.000000 VESTS" ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).vesting_withdraw_rate.to_asset() == ASSET( "0.000000 VESTS" ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test withdrawing minimal VESTS" );

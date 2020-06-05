@@ -1216,7 +1216,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
     asset vesting_shares = new_alice.get_vesting();
     asset original_vesting = vesting_shares;
-    asset withdraw_rate = new_alice.vesting_withdraw_rate;
+    asset withdraw_rate = new_alice.vesting_withdraw_rate.to_asset();
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
     generate_blocks( next_withdrawal - ( HIVE_BLOCK_INTERVAL / 2 ), true);
@@ -1342,7 +1342,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
       const auto& bob = db->get_account( "bob" );
       const auto& sam = db->get_account( "sam" );
 
-      BOOST_REQUIRE( alice.get_vesting() == old_alice_vesting - vesting_withdraw_rate );
+      BOOST_REQUIRE( alice.get_vesting() == ( old_alice_vesting - vesting_withdraw_rate ).to_asset() );
       BOOST_REQUIRE( alice.get_balance() == old_alice_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 20 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price() );
       BOOST_REQUIRE( bob.get_vesting() == old_bob_vesting + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) );
       BOOST_REQUIRE( bob.get_balance() == old_bob_balance );
@@ -1386,7 +1386,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
       const auto& bob = db->get_account( "bob" );
       const auto& sam = db->get_account( "sam" );
 
-      BOOST_REQUIRE( alice.get_vesting() == old_alice_vesting - vesting_withdraw_rate );
+      BOOST_REQUIRE( alice.get_vesting() == ( old_alice_vesting - vesting_withdraw_rate ).to_asset() );
       BOOST_REQUIRE( alice.get_balance() == old_alice_balance );
       BOOST_REQUIRE( bob.get_vesting() == old_bob_vesting + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) );
       BOOST_REQUIRE( bob.get_balance() == old_bob_balance );

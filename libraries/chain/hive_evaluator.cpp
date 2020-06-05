@@ -402,7 +402,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
           ( "creator.balance", creator.get_balance() )
           ( "required", o.fee ) );
 
-  FC_ASSERT( static_cast<asset>(creator.vesting_shares) - creator.delegated_vesting_shares - asset( creator.to_withdraw - creator.withdrawn, VESTS_SYMBOL ) >= o.delegation, "Insufficient vesting shares to delegate to new account.",
+  FC_ASSERT( ( creator.vesting_shares - creator.delegated_vesting_shares ).to_asset() - asset( creator.to_withdraw - creator.withdrawn, VESTS_SYMBOL ) >= o.delegation, "Insufficient vesting shares to delegate to new account.",
           ( "creator.vesting_shares", creator.vesting_shares )
           ( "creator.delegated_vesting_shares", creator.delegated_vesting_shares )( "required", o.delegation ) );
 
@@ -756,12 +756,12 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
     return;
   }
 
-  if( !o.allow_curation_rewards || !o.allow_votes || o.max_accepted_payout < comment_cashout->max_accepted_payout )
+  if( !o.allow_curation_rewards || !o.allow_votes || o.max_accepted_payout < comment_cashout->max_accepted_payout.to_asset() )
     FC_ASSERT( comment_cashout->abs_rshares == 0, "One of the included comment options requires the comment to have no rshares allocated to it." );
 
   FC_ASSERT( comment_cashout->allow_curation_rewards >= o.allow_curation_rewards, "Curation rewards cannot be re-enabled." );
   FC_ASSERT( comment_cashout->allow_votes >= o.allow_votes, "Voting cannot be re-enabled." );
-  FC_ASSERT( comment_cashout->max_accepted_payout >= o.max_accepted_payout, "A comment cannot accept a greater payout." );
+  FC_ASSERT( comment_cashout->max_accepted_payout.to_asset() >= o.max_accepted_payout, "A comment cannot accept a greater payout." );
   FC_ASSERT( comment_cashout->percent_hbd >= o.percent_hbd, "A comment cannot accept a greater percent HBD." );
 
   _db.modify( *comment_cashout, [&]( comment_cashout_object& c ) {
@@ -1237,8 +1237,8 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
   }
 
 
-  FC_ASSERT( account.vesting_shares >= asset( 0, VESTS_SYMBOL ), "Account does not have sufficient Hive Power for withdraw." );
-  FC_ASSERT( static_cast<asset>(account.vesting_shares) - account.delegated_vesting_shares >= o.vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
+   FC_ASSERT( account.vesting_shares.to_asset() >= asset( 0, VESTS_SYMBOL ), "Account does not have sufficient Hive Power for withdraw." );
+   FC_ASSERT( (account.vesting_shares - account.delegated_vesting_shares).to_asset() >= o.vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
 
   FC_TODO( "Remove this entire block after HF 20" )
   if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1860 ) && !account.mined && _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
@@ -1249,7 +1249,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
     asset min_vests = wso.median_props.account_creation_fee * props.get_vesting_share_price();
     min_vests.amount.value *= 10;
 
-    FC_ASSERT( account.vesting_shares > min_vests || ( _db.has_hardfork( HIVE_HARDFORK_0_16__562 ) && o.vesting_shares.amount == 0 ),
+      FC_ASSERT( account.vesting_shares.to_asset() > min_vests || ( _db.has_hardfork( HIVE_HARDFORK_0_16__562 ) && o.vesting_shares.amount == 0 ),
             "Account registered by another account requires 10x account creation fee worth of Hive Power before it can be powered down." );
   }
 
@@ -1284,7 +1284,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
       }
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_5__57 ) )
-        FC_ASSERT( account.vesting_withdraw_rate  != new_vesting_withdraw_rate, "This operation would not change the vesting withdraw rate." );
+        FC_ASSERT( account.vesting_withdraw_rate.to_asset() != new_vesting_withdraw_rate, "This operation would not change the vesting withdraw rate." );
 
       a.vesting_withdraw_rate = new_vesting_withdraw_rate;
       a.next_vesting_withdrawal = _db.head_block_time() + fc::seconds(HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS);
@@ -3178,7 +3178,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
   }
   else
   {
-    available_shares = delegator.vesting_shares.to_asset() - delegator.delegated_vesting_shares - asset( delegator.to_withdraw - delegator.withdrawn, VESTS_SYMBOL );
+    available_shares = ( delegator.vesting_shares - delegator.delegated_vesting_shares ).to_asset() - asset( delegator.to_withdraw - delegator.withdrawn, VESTS_SYMBOL );
   }
 
   const auto& wso = _db.get_witness_schedule_object();

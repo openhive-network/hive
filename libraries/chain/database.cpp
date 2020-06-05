@@ -941,7 +941,10 @@ void database::remove_old_comments()
 asset database::get_effective_vesting_shares( const account_object& account, asset_symbol_type vested_symbol )const
 {
   if( vested_symbol == VESTS_SYMBOL )
-    return static_cast<asset>(account.vesting_shares) - account.delegated_vesting_shares + account.received_vesting_shares;
+  {
+     auto result = account.vesting_shares - account.delegated_vesting_shares + account.received_vesting_shares;
+     return result.to_asset();
+  }
 
 #ifdef HIVE_ENABLE_SMT
   FC_ASSERT( vested_symbol.space() == asset_symbol_type::smt_nai_space );
@@ -1729,9 +1732,9 @@ bool database::collect_account_total_balance( const account_object& account, ass
 {
   const auto& gpo = get_dynamic_global_properties();
 
-  *vesting_shares_hive_value = account.vesting_shares * gpo.get_vesting_share_price();
+  *vesting_shares_hive_value = account.vesting_shares.to_asset() * gpo.get_vesting_share_price();
   *total_hive = *vesting_shares_hive_value;
-  *total_vests = account.vesting_shares;
+  *total_vests = account.vesting_shares.to_asset();
   *total_hive += account.get_vest_rewards_as_hive();
   *total_vests += account.get_vest_rewards();
 
@@ -1794,7 +1797,7 @@ void database::clear_null_account_balance()
 
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
-      g.total_vesting_shares -= null_account.vesting_shares;
+      g.total_vesting_shares -= null_account.vesting_shares.to_asset();
       g.total_vesting_fund_hive -= vesting_shares_hive_value;
     });
 
@@ -1906,7 +1909,7 @@ void database::consolidate_treasury_balance()
     const auto& gpo = get_dynamic_global_properties();
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
-      g.total_vesting_shares -= old_treasury_account.vesting_shares;
+      g.total_vesting_shares -= old_treasury_account.vesting_shares.to_asset();
       g.total_vesting_fund_hive -= vesting_shares_hive_value;
     } );
 
@@ -2116,8 +2119,8 @@ void database::clear_account( const account_object& account,
     }
 
     auto vests_to_convert = account.vesting_shares;
-    auto converted_hive = vests_to_convert * cprops.get_vesting_share_price();
-    total_converted_vests += account.vesting_shares;
+    auto converted_hive = vests_to_convert.to_asset() * cprops.get_vesting_share_price();
+    total_converted_vests += account.vesting_shares.to_asset();
     total_hive_from_vests += asset( converted_hive, HIVE_SYMBOL );
 
     adjust_proxied_witness_votes( account, -account.vesting_shares.amount );
@@ -2146,7 +2149,7 @@ void database::clear_account( const account_object& account,
     modify( cprops, [&]( dynamic_global_property_object& o )
     {
       o.total_vesting_fund_hive -= converted_hive;
-      o.total_vesting_shares -= vests_to_convert;
+      o.total_vesting_shares -= vests_to_convert.to_asset();
     } );
   }
 
@@ -2587,7 +2590,7 @@ void fill_comment_reward_context_local_state( util::comment_reward_context& ctx,
 {
   ctx.rshares = comment_cashout.net_rshares;
   ctx.reward_weight = comment_cashout.reward_weight;
-  ctx.max_hbd = comment_cashout.max_accepted_payout;
+  ctx.max_hbd = comment_cashout.max_accepted_payout.to_asset();
 }
 
 share_type database::cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment, const comment_cashout_object& comment_cashout, bool forward_curation_remainder )

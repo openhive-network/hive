@@ -30,11 +30,13 @@
 #include <hive/protocol/protocol.hpp>
 
 #include <hive/protocol/hive_operations.hpp>
+#include <hive/protocol/types.hpp>
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/sps_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
+#include <hive/chain/util/tiny_asset.hpp>
 
 #include <hive/chain/util/reward.hpp>
 
@@ -361,6 +363,28 @@ BOOST_AUTO_TEST_CASE( adjust_balance_test )
   db->adjust_balance( "alice", asset( -25000, HBD_SYMBOL ) );
   db->adjust_balance( "alice", asset( -25000, HBD_SYMBOL ) );
   BOOST_REQUIRE( db->get_balance( "alice", HBD_SYMBOL ) == asset( 0, HBD_SYMBOL ) );
+}
+
+BOOST_AUTO_TEST_CASE( tiny_asset_plus_op )
+{
+   share_type lhs_amount = 1000;
+   share_type rhs_amount = 2000;
+   share_type total_amount = lhs_amount + rhs_amount;
+   HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
+   HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
+   HIVE_asset result = lhs + rhs;
+   BOOST_REQUIRE(result.amount == total_amount);
+}
+
+BOOST_AUTO_TEST_CASE( tiny_asset_minus_op )
+{
+   share_type lhs_amount = 2500;
+   share_type rhs_amount = 500;
+   share_type total_amount = lhs_amount - rhs_amount;
+   HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
+   HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
+   HIVE_asset result = lhs - rhs;
+   BOOST_REQUIRE(result.amount == total_amount);
 }
 
 uint8_t find_msb( const uint128_t& u )

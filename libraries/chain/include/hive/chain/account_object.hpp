@@ -50,30 +50,30 @@ namespace hive { namespace chain {
       {}
 
       //liquid HIVE balance
-      asset get_balance() const { return balance; }
+      asset get_balance() const { return balance.to_asset(); }
       //HIVE balance in savings
-      asset get_savings() const { return savings_balance; }
+      asset get_savings() const { return savings_balance.to_asset(); }
       //unclaimed HIVE rewards
-      asset get_rewards() const { return reward_hive_balance; }
+      asset get_rewards() const { return reward_hive_balance.to_asset(); }
 
       //liquid HBD balance
-      asset get_hbd_balance() const { return hbd_balance; }
+      asset get_hbd_balance() const { return hbd_balance.to_asset(); }
       //HBD balance in savings
-      asset get_hbd_savings() const { return savings_hbd_balance; }
+      asset get_hbd_savings() const { return savings_hbd_balance.to_asset(); }
       //unclaimed HBD rewards
-      asset get_hbd_rewards() const { return reward_hbd_balance; }
+      asset get_hbd_rewards() const { return reward_hbd_balance.to_asset(); }
 
       //all VESTS held by the account - use other routines to get active VESTS for specific uses
-      asset get_vesting() const { return vesting_shares; }
+      asset get_vesting() const { return vesting_shares.to_asset(); }
       //VESTS that were delegated to other accounts
-      asset get_delegated_vesting() const { return delegated_vesting_shares; }
+      asset get_delegated_vesting() const { return delegated_vesting_shares.to_asset(); }
       //VESTS that were borrowed from other accounts
-      asset get_received_vesting() const { return received_vesting_shares; }
+      asset get_received_vesting() const { return received_vesting_shares.to_asset(); }
       //TODO: add routines for specific uses, f.e. get_witness_voting_power, get_proposal_voting_power, get_post_voting_power...
       //unclaimed VESTS rewards
-      asset get_vest_rewards() const { return reward_vesting_balance; }
+      asset get_vest_rewards() const { return reward_vesting_balance.to_asset(); }
       //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
-      asset get_vest_rewards_as_hive() const { return reward_vesting_hive; }
+      asset get_vest_rewards_as_hive() const { return reward_vesting_hive.to_asset(); }
 
       account_name_type name;
       public_key_type   memo_key;

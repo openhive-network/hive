@@ -16,17 +16,31 @@ namespace hive
       tiny_asset() {}
       tiny_asset( const asset& val )       { set( val ); }
       tiny_asset( asset&& val )            { set( val ); }
-      asset operator=( const asset& val )  { set( val ); return *this; }
-      asset operator=( asset&& val )       { set( val ); return *this; }
+      asset operator=( const asset& val )  { set( val ); return to_asset(); }
+      asset operator=( asset&& val )       { set( val ); return to_asset(); }
 
-      asset operator+=( const asset& val ) { check( val ); amount += val.amount; return *this; }
-      asset operator-=( const asset& val ) { check( val ); amount -= val.amount; return *this; }
+      asset operator+=( const asset& val ) { check( val ); amount += val.amount; return to_asset(); }
+      asset operator-=( const asset& val ) { check( val ); amount -= val.amount; return to_asset(); }
 
-      operator asset() const               { return to_asset(); }
+      friend tiny_asset< _SYMBOL > operator+( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2)
+      {
+        return tiny_asset< _SYMBOL >( obj1.amount + obj2.amount );
+      }
+
+      friend tiny_asset< _SYMBOL > operator-( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2)
+      {
+        return tiny_asset< _SYMBOL >( obj1.amount - obj2.amount );
+      }
+
+      explicit operator asset() const               { return to_asset(); }
 
       asset to_asset() const               { return asset( amount, asset_symbol_type::from_asset_num( _SYMBOL ) ); }
       
     private:
+
+      tiny_asset( const share_type& amount )
+        : amount {amount}
+      {}
 
       void set( const asset& val )         { check( val ); amount = val.amount; }
       void check( const asset& val ) const { FC_ASSERT( val.symbol.asset_num == _SYMBOL ); }
