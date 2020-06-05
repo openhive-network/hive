@@ -257,7 +257,8 @@ public:
       static KeyFromValue key_from_value = KeyFromValue();
       static KeyCompare compare = KeyCompare();
       //BOOST_ASSERT( valid() );
-      if( !valid() ) _iter.reset( _db->NewIterator( _opts, &*(*_handles)[ _index ] ) );
+      if( !valid() )
+         _iter.reset( _db->NewIterator( _opts, &*(*_handles)[ _index ] ) );
 
       if ( _cache_value != nullptr )
       {

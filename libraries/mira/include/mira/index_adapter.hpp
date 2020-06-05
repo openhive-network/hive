@@ -41,12 +41,12 @@ struct index_adapter
 
          iter_type operator()( mira_type* idx_ptr ) const
          {
-            return iter_type( idx_ptr->erase( _pos.template get< mira_iter_type >() ) );
+            return iter_type::create( idx_ptr->erase( _pos.template get< mira_iter_type >() ) );
          }
 
          iter_type operator()( bmic_type* idx_ptr ) const
          {
-            return iter_type( idx_ptr->erase( _pos.template get< bmic_iter_type >() ) );
+            return iter_type::create( idx_ptr->erase( _pos.template get< bmic_iter_type >() ) );
          }
       };
 
@@ -77,7 +77,7 @@ struct index_adapter
       iter_type iterator_to( const value_type& v )const
       {
          return boost::apply_visitor(
-            [&]( auto* index ){ return iter_type( index->iterator_to( v ) ); },
+            [&]( auto* index ){ return iter_type::create( index->iterator_to( v ) ); },
             _index
          );
       }
@@ -86,7 +86,7 @@ struct index_adapter
       iter_type find( const CompatibleKey& k )const
       {
          return boost::apply_visitor(
-            [&k]( auto* index ){ return iter_type( index->find( k ) ); },
+            [&k]( auto* index ){ return iter_type::create( index->find( k ) ); },
             _index
          );
       }
@@ -95,7 +95,7 @@ struct index_adapter
       iter_type lower_bound( const CompatibleKey& k )const
       {
          return boost::apply_visitor(
-            [&k]( auto* index ){ return iter_type( index->lower_bound( k ) ); },
+            [&k]( auto* index ){ return iter_type::create( index->lower_bound( k ) ); },
             _index
          );
       }
@@ -104,7 +104,7 @@ struct index_adapter
       iter_type upper_bound( const CompatibleKey& k )const
       {
          return boost::apply_visitor(
-            [&k]( auto* index ){ return iter_type( index->upper_bound( k ) ); },
+            [&k]( auto* index ){ return iter_type::create( index->upper_bound( k ) ); },
             _index
          );
       }
@@ -117,8 +117,9 @@ struct index_adapter
             {
                auto result = index->equal_range( k );
                return std::pair< iter_type, iter_type >(
-                  std::move( result.first ),
-                  std::move( result.second ) );
+                  iter_type::create( std::move( result.first ) ),
+                  iter_type::create( std::move( result.second ) )
+               );
             },
             _index
          );
@@ -127,7 +128,7 @@ struct index_adapter
       iter_type begin()const
       {
          return boost::apply_visitor(
-            []( auto* index ){ return iter_type( index->begin() ); },
+            []( auto* index ){ return iter_type::create( index->begin() ); },
             _index
          );
       }
@@ -135,7 +136,7 @@ struct index_adapter
       iter_type end()const
       {
          return boost::apply_visitor(
-            []( auto* index ){ return iter_type( index->end() ); },
+            []( auto* index ){ return iter_type::create( index->end() ); },
             _index
          );
       }
@@ -347,7 +348,7 @@ struct multi_index_adapter
          [&]( auto& index )
          {
             auto result = index.emplace( std::forward<Args>( args )... );
-            return std::pair< iter_type, bool >( iter_type( std::move( result.first ) ), result.second );
+            return std::pair< iter_type, bool >( iter_type::create( std::move( result.first ) ), result.second );
          },
          _index
       );
@@ -373,25 +374,24 @@ struct multi_index_adapter
 
    iter_type erase( iter_type position )
    {
-      iter_type result;
-
       switch( _type )
       {
          case mira:
-            result = boost::get< mira_type >( _index ).erase( position.template get< mira_iter_type >() );
+            return iter_type::create( boost::get< mira_type >( _index ).erase( position.template get< mira_iter_type >() ) );
             break;
          case bmic:
-            result = boost::get< bmic_type >( _index ).erase( position.template get< bmic_iter_type >() );
+            return iter_type::create( boost::get< bmic_type >( _index ).erase( position.template get< bmic_iter_type >() ) );
             break;
       }
 
-      return result;
+      assert( false );
+      return iter_type();
    }
 
    iter_type iterator_to( const value_type& v )
    {
       return boost::apply_visitor(
-         [&]( auto& index ){ return iter_type( index.iterator_to( v ) ); },
+         [&]( auto& index ){ return iter_type::create( index.iterator_to( v ) ); },
          _index
       );
    }
@@ -400,7 +400,7 @@ struct multi_index_adapter
    iter_type find( const CompatibleKey& k )const
    {
       return boost::apply_visitor(
-         [&k]( auto& index ){ return iter_type( index.find( k ) ); },
+         [&k]( auto& index ){ return iter_type::create( index.find( k ) ); },
          _index
       );
    }
@@ -409,7 +409,7 @@ struct multi_index_adapter
    iter_type lower_bound( const CompatibleKey& k )const
    {
       return boost::apply_visitor(
-         [&k]( auto& index ){ return iter_type( index.lower_bound( k ) ); },
+         [&k]( auto& index ){ return iter_type::create( index.lower_bound( k ) ); },
          _index
       );
    }
@@ -418,7 +418,7 @@ struct multi_index_adapter
    iter_type upper_bound( const CompatibleKey& k )const
    {
       return boost::apply_visitor(
-         [&k]( auto& index ){ return iter_type( index.upper_bound( k ) ); },
+         [&k]( auto& index ){ return iter_type::create( index.upper_bound( k ) ); },
          _index
       );
    }
@@ -431,8 +431,9 @@ struct multi_index_adapter
          {
             auto result = index.equal_range( k );
             return std::pair< iter_type, iter_type >(
-               std::move( result.first ),
-               std::move( result.second ) );
+               iter_type::create( std::move( result.first ) ),
+               iter_type::create( std::move( result.second ) )
+            );
          },
          _index
       );
@@ -441,7 +442,7 @@ struct multi_index_adapter
    iter_type begin()const
    {
       return boost::apply_visitor(
-         []( auto& index ){ return iter_type( index.begin() ); },
+         []( auto& index ){ return iter_type::create( index.begin() ); },
          _index
       );
    }
@@ -449,7 +450,7 @@ struct multi_index_adapter
    iter_type end()const
    {
       return boost::apply_visitor(
-         []( auto& index ){ return iter_type( index.end() ); },
+         []( auto& index ){ return iter_type::create( index.end() ); },
          _index
       );
    }
