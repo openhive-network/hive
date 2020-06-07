@@ -392,6 +392,23 @@ struct find_comments_args
    vector< std::pair< account_name_type, string > > comments;
 };
 
+struct get_comment_pending_payouts_args
+{
+   vector< std::pair< account_name_type, string > > comments;
+};
+
+struct comment_pending_payout_info
+   {
+   account_name_type author;
+   string permlink;
+   fc::optional<api_commment_cashout_info> cashout_info;
+   };
+
+struct get_comment_pending_payouts_return
+{
+   vector< comment_pending_payout_info > cashout_infos;
+};
+
 typedef list_comments_return find_comments_return;
 
 
@@ -776,6 +793,20 @@ FC_REFLECT( hive::plugins::database_api::list_comments_return,
 
 FC_REFLECT( hive::plugins::database_api::find_comments_args,
    (comments) )
+
+FC_REFLECT(hive::plugins::database_api::get_comment_pending_payouts_args,
+   (comments)
+)
+
+FC_REFLECT(hive::plugins::database_api::comment_pending_payout_info,
+   (author)
+   (permlink)
+   (cashout_info)
+)
+
+FC_REFLECT(hive::plugins::database_api::get_comment_pending_payouts_return,
+   (cashout_infos)
+)
 
 FC_REFLECT( hive::plugins::database_api::list_votes_return,
    (votes) )

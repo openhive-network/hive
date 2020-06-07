@@ -29,6 +29,35 @@ typedef vesting_delegation_object              api_vesting_delegation_object;
 typedef vesting_delegation_expiration_object   api_vesting_delegation_expiration_object;
 typedef reward_fund_object                     api_reward_fund_object;
 
+struct api_commment_cashout_info
+{
+   api_commment_cashout_info(const comment_cashout_object& o, const database& db);
+
+   uint64_t       total_vote_weight = 0;
+   asset          total_payout_value;
+   asset          curator_payout_value;
+   asset          max_accepted_payout;
+
+   share_type     author_rewards = 0;
+   share_type     children_abs_rshares = 0;
+   share_type     net_rshares = 0;
+   share_type     abs_rshares = 0;
+   share_type     vote_rshares = 0;
+
+   int32_t        net_votes = 0;
+
+   time_point_sec active;
+   time_point_sec last_payout;
+   time_point_sec cashout_time;
+   time_point_sec max_cashout_time;
+
+   uint16_t       percent_hbd = 0;
+   uint16_t       reward_weight = 0;
+   bool           allow_replies = false;
+   bool           allow_votes = false;
+   bool           allow_curation_rewards = false;
+};
+
 struct api_comment_object
 {
    api_comment_object( const comment_object& o, const database& db ):
@@ -647,6 +676,32 @@ struct order_book
 };
 
 } } } // hive::plugins::database_api
+
+FC_REFLECT(hive::plugins::database_api::api_commment_cashout_info,
+   (total_vote_weight)
+   (total_payout_value)
+   (curator_payout_value)
+   (max_accepted_payout)
+
+   (author_rewards)
+   (children_abs_rshares)
+   (net_rshares)
+   (abs_rshares)
+   (vote_rshares)
+
+   (net_votes)
+
+   (active)
+   (last_payout)
+   (cashout_time)
+   (max_cashout_time)
+
+   (percent_hbd)
+   (reward_weight)
+   (allow_replies)
+   (allow_votes)
+   (allow_curation_rewards)
+)
 
 FC_REFLECT( hive::plugins::database_api::api_comment_object,
              (id)(author)(permlink)

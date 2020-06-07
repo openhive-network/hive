@@ -17,6 +17,27 @@
 
 namespace hive { namespace plugins { namespace database_api {
 
+api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_object& cc, const database&)
+{
+   total_vote_weight = cc.total_vote_weight;
+   reward_weight = cc.reward_weight;
+   total_payout_value = cc.total_payout_value;
+   curator_payout_value = cc.curator_payout_value;
+   author_rewards = cc.author_rewards;
+   net_votes = cc.net_votes;
+   active = cc.active;
+   last_payout = cc.last_payout;
+   net_rshares = cc.net_rshares;
+   abs_rshares = cc.abs_rshares;
+   vote_rshares = cc.vote_rshares;
+   children_abs_rshares = cc.children_abs_rshares;
+   cashout_time = cc.cashout_time;
+   max_cashout_time = cc.max_cashout_time;
+   max_accepted_payout = cc.max_accepted_payout;
+   percent_hbd = cc.percent_hbd;
+   allow_votes = cc.allow_votes;
+   allow_curation_rewards = cc.allow_curation_rewards;
+}
 
 
 class database_api_impl
@@ -61,6 +82,7 @@ class database_api_impl
          (find_hbd_conversion_requests)
          (list_decline_voting_rights_requests)
          (find_decline_voting_rights_requests)
+         (get_comment_pending_payouts)
          (find_comments)
          (list_votes)
          (find_votes)
@@ -1065,6 +1087,32 @@ DEFINE_API_IMPL( database_api_impl, find_decline_voting_rights_requests )
 //                                                                  //
 //////////////////////////////////////////////////////////////////////
 
+DEFINE_API_IMPL(database_api_impl, get_comment_pending_payouts)
+{
+   FC_ASSERT(args.comments.size() <= DATABASE_API_SINGLE_QUERY_LIMIT);
+
+   get_comment_pending_payouts_return retval;
+   retval.cashout_infos.reserve(args.comments.size());
+
+   for(const auto& key : args.comments)
+   {
+      const comment_object* comment = _db.find_comment(key.first, key.second);
+      if(comment != nullptr)
+      {
+         retval.cashout_infos.emplace_back();
+         comment_pending_payout_info& info = retval.cashout_infos.back();
+         info.author = key.first;
+         info.permlink = key.second;
+         
+         const comment_cashout_object* cc = _db.get_comment_cashout(*comment);
+         if(cc != nullptr)
+            info.cashout_info = api_commment_cashout_info(*cc, _db);
+      }
+   }
+
+   return std::move(retval);
+}
+
 /* Comments */
 DEFINE_API_IMPL( database_api_impl, find_comments )
 {
@@ -1981,6 +2029,7 @@ DEFINE_READ_APIS( database_api,
    (find_hbd_conversion_requests)
    (list_decline_voting_rights_requests)
    (find_decline_voting_rights_requests)
+   (get_comment_pending_payouts)
    (find_comments)
    (list_votes)
    (find_votes)
