@@ -46,10 +46,24 @@
 
 #include <algorithm>
 #include <random>
+#include <ostream>
 
 using namespace hive;
 using namespace hive::chain;
 using namespace hive::protocol;
+
+namespace hive
+{
+namespace chain
+{
+   template <uint32_t _SYMBOL>
+   std::ostream& boost_test_print_type(std::ostream& stream, const tiny_asset<_SYMBOL>& obj)
+   {
+      asset a = obj.to_asset();
+      return stream << a.amount.value << ' ' << a.symbol.to_string();
+   }
+}
+}
 
 BOOST_FIXTURE_TEST_SUITE( basic_tests, clean_database_fixture )
 
@@ -391,14 +405,14 @@ BOOST_AUTO_TEST_CASE( tiny_asset_compare_ops )
 {
    HIVE_asset bigger = asset(1000, HIVE_SYMBOL);
    HIVE_asset lower = asset(500, HIVE_SYMBOL);
-   BOOST_REQUIRE(bigger > lower);
-   BOOST_REQUIRE(bigger >= lower);
-   BOOST_REQUIRE(lower <= bigger);
-   BOOST_REQUIRE(lower < bigger);
-   BOOST_REQUIRE(!(bigger < lower));
-   BOOST_REQUIRE(!(bigger <= lower));
-   BOOST_REQUIRE(!(lower >= bigger));
-   BOOST_REQUIRE(!(lower > bigger));
+   BOOST_CHECK_GT(bigger, lower);
+   BOOST_CHECK_GE(bigger, lower);
+   BOOST_CHECK_LE(lower, bigger);
+   BOOST_CHECK_LT(lower, bigger);
+   BOOST_CHECK(!(bigger < lower));
+   BOOST_CHECK(!(bigger <= lower));
+   BOOST_CHECK(!(lower >= bigger));
+   BOOST_CHECK(!(lower > bigger));
 }
 
 uint8_t find_msb( const uint128_t& u )
