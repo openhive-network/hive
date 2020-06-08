@@ -425,6 +425,15 @@ BOOST_AUTO_TEST_CASE( tiny_asset_compare_ops )
    BOOST_CHECK(!(lower > bigger));
 }
 
+BOOST_AUTO_TEST_CASE( tiny_asset_equality_op )
+{
+   HIVE_asset objA = asset(1000, HIVE_SYMBOL);
+   HIVE_asset objB = asset(1000, HIVE_SYMBOL);
+   HIVE_asset objX = asset(500, HIVE_SYMBOL);
+   BOOST_CHECK_EQUAL(objA, objB);
+   BOOST_CHECK_NE(objA, objX);
+}
+
 uint8_t find_msb( const uint128_t& u )
 {
   uint64_t x;
