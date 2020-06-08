@@ -387,6 +387,20 @@ BOOST_AUTO_TEST_CASE( tiny_asset_minus_op )
    BOOST_REQUIRE(result.amount == total_amount);
 }
 
+BOOST_AUTO_TEST_CASE( tiny_asset_compare_ops )
+{
+   HIVE_asset bigger = asset(1000, HIVE_SYMBOL);
+   HIVE_asset lower = asset(500, HIVE_SYMBOL);
+   BOOST_REQUIRE(bigger > lower);
+   BOOST_REQUIRE(bigger >= lower);
+   BOOST_REQUIRE(lower <= bigger);
+   BOOST_REQUIRE(lower < bigger);
+   BOOST_REQUIRE(!(bigger < lower));
+   BOOST_REQUIRE(!(bigger <= lower));
+   BOOST_REQUIRE(!(lower >= bigger));
+   BOOST_REQUIRE(!(lower > bigger));
+}
+
 uint8_t find_msb( const uint128_t& u )
 {
   uint64_t x;

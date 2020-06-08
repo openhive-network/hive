@@ -57,6 +57,18 @@ namespace hive
     bool operator!=( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2 ) { return obj1.amount != obj2.amount; }
 
     template< uint32_t _SYMBOL >
+    bool operator<( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2 ) { return obj1.amount < obj2.amount; }
+
+    template< uint32_t _SYMBOL >
+    bool operator<=( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2 ) { return obj1.amount <= obj2.amount; }
+
+    template< uint32_t _SYMBOL >
+    bool operator>=( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2 ) { return obj1.amount >= obj2.amount; }
+
+    template< uint32_t _SYMBOL >
+    bool operator>( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2 ) { return obj1.amount > obj2.amount; }
+
+    template< uint32_t _SYMBOL >
     asset operator-( const tiny_asset< _SYMBOL >& obj1) { return -static_cast< asset >( obj1 ); }
 
   }
