@@ -54,13 +54,23 @@ using namespace hive::protocol;
 
 namespace hive
 {
+namespace protocol
+{
+   std::ostream& boost_test_print_type(std::ostream& stream, const asset& obj)
+   {
+      return stream << obj.amount.value << ' ' << obj.symbol.to_string();
+   }
+}
+}
+
+namespace hive
+{
 namespace chain
 {
    template <uint32_t _SYMBOL>
    std::ostream& boost_test_print_type(std::ostream& stream, const tiny_asset<_SYMBOL>& obj)
    {
-      asset a = obj.to_asset();
-      return stream << a.amount.value << ' ' << a.symbol.to_string();
+      return boost_test_print_type(stream, obj.to_asset());
    }
 }
 }
