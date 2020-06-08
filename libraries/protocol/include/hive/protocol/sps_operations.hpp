@@ -36,7 +36,7 @@ struct update_proposal_operation : public base_operation
 
    account_name_type creator;
 
-   /// Amount of SBDs to be daily paid to the `receiver` account, if updated, has to be lower or equal to the current amount
+   /// Amount of HBDs to be daily paid to the `receiver` account, if updated, has to be lower or equal to the current amount
    asset daily_pay;
 
    string subject;

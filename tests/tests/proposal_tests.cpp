@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
       generate_block( 5 );
 
       const auto& dgpo = db->get_dynamic_global_properties();
-      auto old_sbd_supply = dgpo.current_hbd_supply;
+      auto old_hbd_supply = dgpo.current_hbd_supply;
 
 
       const account_object& _creator = db->get_account( creator );
@@ -182,25 +182,25 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
       {
          BOOST_TEST_MESSAGE( "---Payment---" );
 
-         auto before_creator_sbd_balance = _creator.hbd_balance;
-         auto before_receiver_sbd_balance = _receiver.hbd_balance;
-         auto before_voter_01_sbd_balance = _voter_01.hbd_balance;
-         auto before_treasury_sbd_balance = _treasury.hbd_balance;
+         auto before_creator_hbd_balance = _creator.hbd_balance;
+         auto before_receiver_hbd_balance = _receiver.hbd_balance;
+         auto before_voter_01_hbd_balance = _voter_01.hbd_balance;
+         auto before_treasury_hbd_balance = _treasury.hbd_balance;
 
          auto next_block = get_nr_blocks_until_maintenance_block();
          generate_blocks( next_block - 1 );
          generate_blocks( 1 );
 
-         auto treasury_sbd_inflation = dgpo.current_hbd_supply - old_sbd_supply;
-         auto after_creator_sbd_balance = _creator.hbd_balance;
-         auto after_receiver_sbd_balance = _receiver.hbd_balance;
-         auto after_voter_01_sbd_balance = _voter_01.hbd_balance;
-         auto after_treasury_sbd_balance = _treasury.hbd_balance;
+         auto treasury_hbd_inflation = dgpo.current_hbd_supply - old_hbd_supply;
+         auto after_creator_hbd_balance = _creator.hbd_balance;
+         auto after_receiver_hbd_balance = _receiver.hbd_balance;
+         auto after_voter_01_hbd_balance = _voter_01.hbd_balance;
+         auto after_treasury_hbd_balance = _treasury.hbd_balance;
 
-         BOOST_REQUIRE( before_creator_sbd_balance == after_creator_sbd_balance );
-         BOOST_REQUIRE( before_receiver_sbd_balance == after_receiver_sbd_balance - hourly_pay );
-         BOOST_REQUIRE( before_voter_01_sbd_balance == after_voter_01_sbd_balance );
-         BOOST_REQUIRE( before_treasury_sbd_balance == after_treasury_sbd_balance - treasury_sbd_inflation + hourly_pay );
+         BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
+         BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
+         BOOST_REQUIRE( before_voter_01_hbd_balance == after_voter_01_hbd_balance );
+         BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation + hourly_pay );
       }
       /*
          Reminder:
