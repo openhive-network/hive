@@ -657,4 +657,4 @@ namespace fc
 #include <fc/reflect/reflect.hpp>
 FC_REFLECT_TYPENAME( fc::variant )
 FC_REFLECT_ENUM( fc::variant::type_id, (null_type)(int64_type)(uint64_type)(double_type)(bool_type)(string_type)(array_type)(object_type)(blob_type) )
-FC_REFLECT( fc::blob, (data) );
+FC_REFLECT( fc::blob, (data) )
