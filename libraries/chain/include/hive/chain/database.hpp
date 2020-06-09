@@ -8,6 +8,7 @@
 #include <hive/chain/hardfork_property_object.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
+#include <hive/chain/util/tiny_asset.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/signal.hpp>
@@ -15,6 +16,7 @@
 
 #include <hive/protocol/protocol.hpp>
 #include <hive/protocol/hardfork.hpp>
+#include <hive/protocol/asset.hpp>
 
 #include <appbase/plugin.hpp>
 
@@ -432,6 +434,11 @@ namespace hive { namespace chain {
       {
         adjust_balance( get_account( name ), delta );
       }
+      void adjust_balance( const account_object& a, const HBD_asset& delta );
+      void adjust_balance( const account_name_type& name, const HBD_asset& delta )
+      {
+        adjust_balance( get_account( name ), delta );
+      }
 
       void adjust_savings_balance( const account_object& a, const asset& delta );
 
@@ -658,6 +665,7 @@ namespace hive { namespace chain {
       void adjust_smt_balance( const account_object& owner, const asset& delta, modifier_type&& modifier );
 #endif
       void modify_balance( const account_object& a, const asset& delta, bool check_balance );
+      void modify_balance( const account_object& a, const HBD_asset& delta, bool check_balance );
       void modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta, bool check_balance );
 
       operation_notification create_operation_notification( const operation& op )const

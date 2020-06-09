@@ -5138,6 +5138,46 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
   } );
 }
 
+void database::modify_balance( const account_object& a, const HBD_asset& delta, bool check_balance )
+{
+   modify( a, [&]( account_object& acnt )
+   {
+      if( a.hbd_seconds_last_update != head_block_time() )
+      {
+         acnt.hbd_seconds += fc::uint128_t(a.get_hbd_balance().amount.value) * (head_block_time() - a.hbd_seconds_last_update).to_seconds();
+         acnt.hbd_seconds_last_update = head_block_time();
+
+         if( acnt.hbd_seconds > 0 &&
+             (acnt.hbd_seconds_last_update - acnt.hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
+         {
+            auto interest = acnt.hbd_seconds / HIVE_SECONDS_PER_YEAR;
+            interest *= get_dynamic_global_properties().get_hbd_interest_rate();
+            interest /= HIVE_100_PERCENT;
+            asset interest_paid(interest.to_uint64(), HBD_SYMBOL); // TODO
+            acnt.hbd_balance += interest_paid;
+            acnt.hbd_seconds = 0;
+            acnt.hbd_last_interest_payment = head_block_time();
+
+            if(interest > 0)
+            {
+               push_virtual_operation( interest_operation( a.name, interest_paid ) );
+            }
+
+            modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
+            {
+               props.current_hbd_supply += interest_paid;
+               props.virtual_supply += interest_paid * get_feed_history().current_median_history;
+            } );
+         }
+      }
+      acnt.hbd_balance += delta;
+      if( check_balance )
+      {
+         FC_ASSERT( acnt.get_hbd_balance().amount.value >= 0, "Insufficient HBD funds" );
+      }
+   } );
+}
+
 void database::modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta, bool check_balance )
 {
   modify( a, [&]( account_object& acnt )
@@ -5235,6 +5275,20 @@ void database::adjust_balance( const account_object& a, const asset& delta )
   {
     modify_balance( a, delta, check_balance );
   }
+}
+
+void database::adjust_balance( const account_object& a, const HBD_asset& delta )
+{
+   if ( delta.amount < 0 )
+   {
+      asset available = a.get_hbd_balance();
+      FC_ASSERT( available >= -delta,
+         "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
+            ("acc", a.name)("r", delta)("a", available) );
+   }
+
+   bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
+   modify_balance( a, delta, check_balance );
 }
 
 void database::adjust_savings_balance( const account_object& a, const asset& delta )

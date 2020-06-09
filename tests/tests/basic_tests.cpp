@@ -359,13 +359,13 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   BOOST_CHECK( block.calculate_merkle_root() == c(dO) );
 }
 
-BOOST_AUTO_TEST_CASE( adjust_balance_test )
+BOOST_AUTO_TEST_CASE( adjust_balance_asset_test )
 {
   ACTORS( (alice) );
 
   generate_block();
 
-  BOOST_TEST_MESSAGE( "Testing adjust_balance" );
+  BOOST_TEST_MESSAGE( "Testing adjust_balance for asset objects" );
 
   BOOST_TEST_MESSAGE( " --- Testing adding HIVE_SYMBOL" );
   db->adjust_balance( "alice", asset( 50000, HIVE_SYMBOL ) );
@@ -387,6 +387,26 @@ BOOST_AUTO_TEST_CASE( adjust_balance_test )
   db->adjust_balance( "alice", asset( -25000, HBD_SYMBOL ) );
   db->adjust_balance( "alice", asset( -25000, HBD_SYMBOL ) );
   BOOST_REQUIRE( db->get_balance( "alice", HBD_SYMBOL ) == asset( 0, HBD_SYMBOL ) );
+}
+
+BOOST_AUTO_TEST_CASE( adjust_balance_tiny_asset_test )
+{
+   ACTORS( (alice) );
+
+   generate_block();
+
+   BOOST_TEST_MESSAGE( "Testing adjust_balance for tiny_asset objects" );
+
+   BOOST_TEST_MESSAGE( " --- Testing adding HBD_SYMBOL" );
+   db->adjust_balance( "alice", HBD_asset( 100000 ) );
+   BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == asset( 100000, HBD_SYMBOL ) );
+
+   BOOST_TEST_MESSAGE( " --- Testing deducting HBD_SYMBOL" );
+   HIVE_REQUIRE_THROW( db->adjust_balance( "alice", HBD_asset( -100001 ) ), fc::assert_exception );
+   db->adjust_balance( "alice", HBD_asset( -50000 ) );
+   db->adjust_balance( "alice", HBD_asset( -25000 ) );
+   db->adjust_balance( "alice", HBD_asset( -25000 ) );
+   BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == asset( 0, HBD_SYMBOL ) );
 }
 
 BOOST_AUTO_TEST_CASE( tiny_asset_plus_op )
