@@ -76,8 +76,10 @@ void info(const hive::protocol::chain_id_type& chainId)
    std::cerr << "initminer public key: " << HIVE_INIT_PUBLIC_KEY_STR << "\n";
    std::cerr << "chain id: " << std::string(chainId) << "\n";
    std::cerr << "blockchain version: " << fc::string(HIVE_BLOCKCHAIN_VERSION) << "\n";
-   std::cerr << "------------------------------------------------------\n";
+   std::cerr << "------------------------------------------------------\n\n";
 #endif
+
+   std::cerr << "hived git_revision: \"" + fc::string(hive::utilities::git_revision_sha) + "\"\n\n";
    }
 
 int main( int argc, char** argv )
