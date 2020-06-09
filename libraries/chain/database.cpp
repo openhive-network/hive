@@ -375,9 +375,6 @@ uint32_t database::reindex( const open_args& args )
    {
 
       ilog( "Reindexing Blockchain" );
-#ifdef ENABLE_MIRA
-      initialize_indexes();
-#endif
 
       if( args.force_replay )
          wipe( args.data_dir, args.shared_mem_dir, false );
