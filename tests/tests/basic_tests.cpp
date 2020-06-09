@@ -411,6 +411,28 @@ BOOST_AUTO_TEST_CASE( tiny_asset_minus_op )
    BOOST_REQUIRE(result.amount == total_amount);
 }
 
+BOOST_AUTO_TEST_CASE( tiny_asset_plus_assign_op )
+{
+   share_type lhs_amount = 2500;
+   share_type rhs_amount = 500;
+   share_type total_amount = lhs_amount + rhs_amount;
+   HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
+   HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
+   lhs += rhs;
+   BOOST_REQUIRE(lhs.amount == total_amount);
+}
+
+BOOST_AUTO_TEST_CASE( tiny_asset_minus_assign_op )
+{
+   share_type lhs_amount = 2500;
+   share_type rhs_amount = 500;
+   share_type total_amount = lhs_amount - rhs_amount;
+   HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
+   HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
+   lhs -= rhs;
+   BOOST_REQUIRE(lhs.amount == total_amount);
+}
+
 BOOST_AUTO_TEST_CASE( tiny_asset_compare_ops )
 {
    HIVE_asset bigger = asset(1000, HIVE_SYMBOL);

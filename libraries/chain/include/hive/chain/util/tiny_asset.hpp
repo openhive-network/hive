@@ -26,6 +26,15 @@ namespace hive
       asset operator+=( const asset& val ) { check( val ); amount += val.amount; return to_asset(); }
       asset operator-=( const asset& val ) { check( val ); amount -= val.amount; return to_asset(); }
 
+      tiny_asset< _SYMBOL > operator+=( const tiny_asset< _SYMBOL >& val )
+      {
+        return amount += val.amount;
+      }
+      tiny_asset< _SYMBOL > operator-=( const tiny_asset< _SYMBOL >& val )
+      {
+        return amount -= val.amount;
+      }
+
       friend tiny_asset< _SYMBOL > operator+( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2)
       {
         return tiny_asset< _SYMBOL >( obj1.amount + obj2.amount );
