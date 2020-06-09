@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <limits>
 
 namespace fc
 {
