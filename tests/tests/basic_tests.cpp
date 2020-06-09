@@ -395,6 +395,16 @@ BOOST_AUTO_TEST_CASE( adjust_balance_tiny_asset_test )
 
    generate_block();
 
+   BOOST_TEST_MESSAGE( " --- Testing adding HIVE_SYMBOL" );
+   db->adjust_balance( "alice", HIVE_asset( 50000 ) );
+   BOOST_REQUIRE( db->get_account( "alice" ).get_balance() == asset( 50000, HIVE_SYMBOL ) );
+
+   BOOST_TEST_MESSAGE( " --- Testing deducting HIVE_SYMBOL" );
+   HIVE_REQUIRE_THROW( db->adjust_balance( "alice", asset( -50001, HIVE_SYMBOL ) ), fc::assert_exception );
+   db->adjust_balance( "alice", HIVE_asset( -30000 ) );
+   db->adjust_balance( "alice", HIVE_asset( -20000 ) );
+   BOOST_REQUIRE( db->get_account( "alice" ).get_balance() == asset( 0, HIVE_SYMBOL ) );
+
    BOOST_TEST_MESSAGE( "Testing adjust_balance for tiny_asset objects" );
 
    BOOST_TEST_MESSAGE( " --- Testing adding HBD_SYMBOL" );

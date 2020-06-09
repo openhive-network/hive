@@ -5178,6 +5178,18 @@ void database::modify_balance( const account_object& a, const HBD_asset& delta, 
    } );
 }
 
+void database::modify_balance( const account_object& a, const HIVE_asset& delta, bool check_balance )
+{
+   modify( a, [&]( account_object& acnt )
+   {
+      acnt.balance += delta;
+      if( check_balance )
+      {
+         FC_ASSERT( acnt.get_balance().amount.value >= 0, "Insufficient HIVE funds" );
+      }
+   } );
+}
+
 void database::modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta, bool check_balance )
 {
   modify( a, [&]( account_object& acnt )
@@ -5282,6 +5294,20 @@ void database::adjust_balance( const account_object& a, const HBD_asset& delta )
    if ( delta.amount < 0 )
    {
       asset available = a.get_hbd_balance();
+      FC_ASSERT( available >= -delta,
+         "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
+            ("acc", a.name)("r", delta)("a", available) );
+   }
+
+   bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
+   modify_balance( a, delta, check_balance );
+}
+
+void database::adjust_balance( const account_object& a, const HIVE_asset& delta )
+{
+   if ( delta.amount < 0 )
+   {
+      asset available = a.get_balance();
       FC_ASSERT( available >= -delta,
          "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
             ("acc", a.name)("r", delta)("a", available) );
