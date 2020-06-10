@@ -522,7 +522,7 @@ public:
    }
 
 private:
-   uint32_t get_lib();
+   uint32_t get_lib(const uint32_t* fallbackIrreversibleBlock = nullptr) const;
    void update_lib( uint32_t );
 
    typedef std::vector<ColumnFamilyDescriptor> ColumnDefinitions;
@@ -1070,12 +1070,18 @@ bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol:
   return false;
   }
 
-uint32_t account_history_rocksdb_plugin::impl::get_lib()
+uint32_t account_history_rocksdb_plugin::impl::get_lib(const uint32_t* fallbackIrreversibleBlock /*= nullptr*/) const
 {
    std::string data;
    auto s = _storage->Get(ReadOptions(), _columnHandles[CURRENT_LIB], LIB_ID, &data );
 
-   FC_ASSERT( s.ok(), "Could not find last irreversible block." );
+   if(fallbackIrreversibleBlock != nullptr)
+   {
+      if(s.code() == ::rocksdb::Status::kNotFound)
+         return *fallbackIrreversibleBlock;
+   }
+
+   FC_ASSERT( s.ok(), "Could not find last irreversible block. Error msg: `${e}'", ("e", s.ToString()) );
 
    uint32_t lib = 0;
    load( lib, data.data(), data.size() );
@@ -1496,7 +1502,11 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
 {
    if( _reindexing ) return;
 
-   if( block_num <= get_lib() ) return;
+   uint32_t fallbackIrreversibleBlock = 0;
+   
+   /// In case of genesis block (and fresh testnet) there can be no LIB at begin.
+
+   if( block_num <= get_lib(&fallbackIrreversibleBlock) ) return;
 
    const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
    auto itr = volatile_idx.begin();
