@@ -444,6 +444,11 @@ namespace hive { namespace chain {
       {
         adjust_balance( get_account( name ), delta );
       }
+      void adjust_balance( const account_object& a, const VEST_asset& delta );
+      void adjust_balance( const account_name_type& name, const VEST_asset& delta )
+      {
+        adjust_balance( get_account( name ), delta );
+      }
 
       void adjust_savings_balance( const account_object& a, const asset& delta );
 
@@ -672,6 +677,7 @@ namespace hive { namespace chain {
       void modify_balance( const account_object& a, const asset& delta, bool check_balance );
       void modify_balance( const account_object& a, const HBD_asset& delta, bool check_balance );
       void modify_balance( const account_object& a, const HIVE_asset& delta, bool check_balance );
+      void modify_balance( const account_object& a, const VEST_asset& delta, bool check_balance );
       void modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta, bool check_balance );
 
       operation_notification create_operation_notification( const operation& op )const

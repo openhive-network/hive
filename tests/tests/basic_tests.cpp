@@ -417,6 +417,16 @@ BOOST_AUTO_TEST_CASE( adjust_balance_tiny_asset_test )
    db->adjust_balance( "alice", HBD_asset( -25000 ) );
    db->adjust_balance( "alice", HBD_asset( -25000 ) );
    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == asset( 0, HBD_SYMBOL ) );
+
+   auto initial_vesting = db->get_account( "alice" ).get_vesting();
+
+   BOOST_TEST_MESSAGE( " --- Testing adding VEST_SYMBOL" );
+   BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting );
+   db->adjust_balance( "alice", VEST_asset( 100000 ) );
+   BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting + asset( 100000, VESTS_SYMBOL ) );
+
+   BOOST_TEST_MESSAGE( " --- Testing deducting VESTS_SYMBOL" );
+   HIVE_REQUIRE_THROW( db->adjust_balance( "alice", VEST_asset( -1 ) ), fc::assert_exception );
 }
 
 BOOST_AUTO_TEST_CASE( tiny_asset_plus_op )

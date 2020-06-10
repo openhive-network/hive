@@ -5190,6 +5190,18 @@ void database::modify_balance( const account_object& a, const HIVE_asset& delta,
    } );
 }
 
+void database::modify_balance( const account_object& a, const VEST_asset& delta, bool check_balance )
+{
+   modify( a, [&]( account_object& acnt )
+   {
+      acnt.vesting_shares += delta;
+      if( check_balance )
+      {
+         FC_ASSERT( acnt.vesting_shares.amount.value >= 0, "Insufficient VESTS funds" );
+      }
+   } );
+}
+
 void database::modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta, bool check_balance )
 {
   modify( a, [&]( account_object& acnt )
@@ -5311,6 +5323,18 @@ void database::adjust_balance( const account_object& a, const HIVE_asset& delta 
       FC_ASSERT( available >= -delta,
          "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
             ("acc", a.name)("r", delta)("a", available) );
+   }
+
+   bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
+   modify_balance( a, delta, check_balance );
+}
+
+void database::adjust_balance( const account_object& a, const VEST_asset& delta )
+{
+   if ( delta.amount < 0 )
+   {
+      FC_TODO( "Error inherited from adjust_balance taking asset, does this makes sense?" );
+      FC_ASSERT( false, "Could not adjust balance with negative VEST count" );
    }
 
    bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
