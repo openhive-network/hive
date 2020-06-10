@@ -5086,51 +5086,13 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
     switch( delta.symbol.asset_num )
     {
       case HIVE_ASSET_NUM_HIVE:
-        acnt.balance += delta;
-        if( check_balance )
-        {
-          FC_ASSERT( acnt.get_balance().amount.value >= 0, "Insufficient HIVE funds" );
-        }
+        modify_balance(a, HIVE_asset(delta), check_balance);
         break;
       case HIVE_ASSET_NUM_HBD:
-        if( a.hbd_seconds_last_update != head_block_time() )
-        {
-          acnt.hbd_seconds += fc::uint128_t(a.get_hbd_balance().amount.value) * (head_block_time() - a.hbd_seconds_last_update).to_seconds();
-          acnt.hbd_seconds_last_update = head_block_time();
-
-          if( acnt.hbd_seconds > 0 &&
-              (acnt.hbd_seconds_last_update - acnt.hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
-          {
-            auto interest = acnt.hbd_seconds / HIVE_SECONDS_PER_YEAR;
-            interest *= get_dynamic_global_properties().get_hbd_interest_rate();
-            interest /= HIVE_100_PERCENT;
-            asset interest_paid(interest.to_uint64(), HBD_SYMBOL);
-            acnt.hbd_balance += interest_paid;
-            acnt.hbd_seconds = 0;
-            acnt.hbd_last_interest_payment = head_block_time();
-
-            if(interest > 0)
-              push_virtual_operation( interest_operation( a.name, interest_paid ) );
-
-            modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
-            {
-              props.current_hbd_supply += interest_paid;
-              props.virtual_supply += interest_paid * get_feed_history().current_median_history;
-            } );
-          }
-        }
-        acnt.hbd_balance += delta;
-        if( check_balance )
-        {
-          FC_ASSERT( acnt.get_hbd_balance().amount.value >= 0, "Insufficient HBD funds" );
-        }
+        modify_balance(a, HBD_asset(delta), check_balance);
         break;
       case HIVE_ASSET_NUM_VESTS:
-        acnt.vesting_shares += delta;
-        if( check_balance )
-        {
-          FC_ASSERT( acnt.vesting_shares.amount.value >= 0, "Insufficient VESTS funds" );
-        }
+        modify_balance(a, VEST_asset(delta), check_balance);
         break;
       default:
         FC_ASSERT( false, "invalid symbol" );
