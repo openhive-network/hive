@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/chain/hive_object_types.hpp>
+#include <hive/protocol/asset.hpp>
 
 namespace hive
 {
@@ -9,6 +10,8 @@ namespace hive
     template< uint32_t _SYMBOL >
     class tiny_asset
     {
+      using asset = protocol::asset;
+
     public:
 
       share_type amount;
@@ -47,7 +50,7 @@ namespace hive
 
       explicit operator asset() const               { return to_asset(); }
 
-      asset to_asset() const               { return asset( amount, asset_symbol_type::from_asset_num( _SYMBOL ) ); }
+      asset to_asset() const               { return asset( amount, protocol::asset_symbol_type::from_asset_num( _SYMBOL ) ); }
       
     private:
 
@@ -78,7 +81,7 @@ namespace hive
     bool operator>( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2 ) { return obj1.amount > obj2.amount; }
 
     template< uint32_t _SYMBOL >
-    asset operator-( const tiny_asset< _SYMBOL >& obj1) { return -static_cast< asset >( obj1 ); }
+    protocol::asset operator-( const tiny_asset< _SYMBOL >& obj1) { return -static_cast< protocol::asset >( obj1 ); }
 
   }
 }
