@@ -70,6 +70,14 @@ namespace hive
     template< uint32_t _SYMBOL >
     bool operator>( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2 ) { return obj1.amount > obj2.amount; }
 
+    FC_TODO("Replace with opertor* returning tiny_asset")
+    template< uint32_t _SYMBOL >
+    protocol::asset operator*( const tiny_asset< _SYMBOL >& obj, const protocol::price& p ) { return obj.to_asset() * p; }
+
+    FC_TODO("Replace with opertor* returning tiny_asset")
+    template< uint32_t _SYMBOL >
+    protocol::asset operator*( const protocol::price& p, const tiny_asset< _SYMBOL >& obj ) { return p * obj.to_asset(); }
+
     template< uint32_t _SYMBOL >
     tiny_asset< _SYMBOL > operator+( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2)
     {

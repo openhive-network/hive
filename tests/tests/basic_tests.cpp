@@ -507,6 +507,17 @@ BOOST_AUTO_TEST_CASE( tiny_asset_equality_op )
    BOOST_CHECK_NE(objA, objX);
 }
 
+BOOST_AUTO_TEST_CASE( tiny_asset_mul_price )
+{
+   auto base = asset(1500, HIVE_SYMBOL);
+   auto quote = asset(3000, HBD_SYMBOL);
+   auto p = price(base, quote);
+   auto hbds = HBD_asset(1000);
+   auto hives = HIVE_asset(1000);
+   BOOST_CHECK_EQUAL(hbds * p, asset(500, HIVE_SYMBOL));
+   BOOST_CHECK_EQUAL(hives * p, asset(2000, HBD_SYMBOL));
+}
+
 uint8_t find_msb( const uint128_t& u )
 {
   uint64_t x;
