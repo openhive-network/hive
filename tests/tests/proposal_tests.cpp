@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     auto start_date = db->head_block_time();
 
     auto daily_pay = ASSET( "48.000 TBD" );
-    auto hourly_pay = ASSET( "1.996 TBD" );// hourly_pay != ASSET( "2.000 TBD" ) because lack of rounding
+    auto hourly_pay = HBD_asset( 1996 );// hourly_pay != HBD_asset( 2000 ) because lack of rounding
 
     FUND( creator, ASSET( "160.000 TESTS" ) );
     FUND( creator, ASSET( "80.000 TBD" ) );
@@ -191,7 +191,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
       generate_blocks( next_block - 1 );
       generate_blocks( 1 );
 
-      auto treasury_hbd_inflation = dgpo.current_hbd_supply - old_hbd_supply;
+      auto treasury_hbd_inflation = HBD_asset(dgpo.current_hbd_supply - old_hbd_supply);
       auto after_creator_hbd_balance = _creator.hbd_balance;
       auto after_receiver_hbd_balance = _receiver.hbd_balance;
       auto after_voter_01_hbd_balance = _voter_01.hbd_balance;

@@ -38,16 +38,6 @@ namespace hive
         return amount -= val.amount;
       }
 
-      friend tiny_asset< _SYMBOL > operator+( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2)
-      {
-        return tiny_asset< _SYMBOL >( obj1.amount + obj2.amount );
-      }
-
-      friend tiny_asset< _SYMBOL > operator-( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2)
-      {
-        return tiny_asset< _SYMBOL >( obj1.amount - obj2.amount );
-      }
-
       explicit operator asset() const               { return to_asset(); }
 
       asset to_asset() const               { return asset( amount, protocol::asset_symbol_type::from_asset_num( _SYMBOL ) ); }
@@ -79,6 +69,18 @@ namespace hive
 
     template< uint32_t _SYMBOL >
     bool operator>( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2 ) { return obj1.amount > obj2.amount; }
+
+    template< uint32_t _SYMBOL >
+    tiny_asset< _SYMBOL > operator+( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2)
+    {
+       return tiny_asset< _SYMBOL >( obj1.amount + obj2.amount );
+    }
+
+    template< uint32_t _SYMBOL >
+    tiny_asset< _SYMBOL > operator-( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2)
+    {
+       return tiny_asset< _SYMBOL >( obj1.amount - obj2.amount );
+    }
 
     template< uint32_t _SYMBOL >
     protocol::asset operator-( const tiny_asset< _SYMBOL >& obj1) { return -static_cast< protocol::asset >( obj1 ); }
