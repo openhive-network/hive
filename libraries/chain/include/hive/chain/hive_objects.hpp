@@ -274,8 +274,8 @@ namespace hive { namespace chain {
       reward_fund_name_type   name;
       HIVE_asset              reward_balance = HIVE_asset( 0 );
       uint128_t               recent_claims = 0;
-      time_point_sec          last_update;
       uint128_t               content_constant = HIVE_CONTENT_CONSTANT_HF0;
+      time_point_sec          last_update;
       uint16_t                percent_curation_rewards = HIVE_1_PERCENT * 25;
       uint16_t                percent_content_rewards = HIVE_100_PERCENT;
       protocol::curve_id      author_reward_curve = protocol::curve_id::quadratic;
