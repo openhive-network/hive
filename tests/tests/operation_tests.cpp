@@ -11,6 +11,7 @@
 #include <hive/chain/hive_objects.hpp>
 
 #include <hive/chain/util/reward.hpp>
+#include <hive/chain/util/tiny_asset.hpp>
 
 #include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/rc/resource_count.hpp>
@@ -4633,7 +4634,7 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_apply )
     BOOST_REQUIRE( escrow.agent == op.agent );
     BOOST_REQUIRE( escrow.ratification_deadline == op.ratification_deadline );
     BOOST_REQUIRE( escrow.escrow_expiration == op.escrow_expiration );
-    BOOST_REQUIRE( escrow.get_hbd_balance() == op.hbd_amount );
+    BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset(op.hbd_amount) );
     BOOST_REQUIRE( escrow.get_hive_balance() == op.hive_amount );
     BOOST_REQUIRE( escrow.get_fee() == op.fee );
     BOOST_REQUIRE( !escrow.to_approved );
@@ -4788,7 +4789,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     BOOST_REQUIRE( escrow.agent == "sam" );
     BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
     BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-    BOOST_REQUIRE( escrow.get_hbd_balance() == ASSET( "0.000 TBD" ) );
+    BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( 0 ) );
     BOOST_REQUIRE( escrow.get_hive_balance() == ASSET( "1.000 TESTS" ) );
     BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.100 TESTS" ) );
     BOOST_REQUIRE( escrow.to_approved );
@@ -4807,7 +4808,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     BOOST_REQUIRE( escrow.agent == "sam" );
     BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
     BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-    BOOST_REQUIRE( escrow.get_hbd_balance() == ASSET( "0.000 TBD" ) );
+    BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( 0 ) );
     BOOST_REQUIRE( escrow.get_hive_balance() == ASSET( "1.000 TESTS" ) );
     BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.100 TESTS" ) );
     BOOST_REQUIRE( escrow.to_approved );
@@ -4829,7 +4830,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     BOOST_REQUIRE( escrow.agent == "sam" );
     BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
     BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-    BOOST_REQUIRE( escrow.get_hbd_balance() == ASSET( "0.000 TBD" ) );
+    BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( 0 ) );
     BOOST_REQUIRE( escrow.get_hive_balance() == ASSET( "1.000 TESTS" ) );
     BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.100 TESTS" ) );
     BOOST_REQUIRE( escrow.to_approved );
@@ -4945,7 +4946,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
       BOOST_REQUIRE( escrow.agent == "sam" );
       BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
       BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-      BOOST_REQUIRE( escrow.get_hbd_balance() == ASSET( "0.000 TBD" ) );
+      BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( 0 ) );
       BOOST_REQUIRE( escrow.get_hive_balance() == ASSET( "1.000 TESTS" ) );
       BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
       BOOST_REQUIRE( escrow.to_approved );
@@ -4966,7 +4967,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
       BOOST_REQUIRE( escrow.agent == "sam" );
       BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
       BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-      BOOST_REQUIRE( escrow.get_hbd_balance() == ASSET( "0.000 TBD" ) );
+      BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( 0 ) );
       BOOST_REQUIRE( escrow.get_hive_balance() == ASSET( "1.000 TESTS" ) );
       BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
       BOOST_REQUIRE( escrow.to_approved );
@@ -5090,7 +5091,7 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
     BOOST_REQUIRE( escrow.agent == "sam" );
     BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
     BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-    BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.hbd_amount );
+    BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( et_op.hbd_amount ) );
     BOOST_REQUIRE( escrow.get_hive_balance() == et_op.hive_amount );
     BOOST_REQUIRE( escrow.get_fee() == et_op.fee );
     BOOST_REQUIRE( escrow.to_approved );
@@ -5124,7 +5125,7 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
     BOOST_REQUIRE( escrow.agent == "sam" );
     BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
     BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-    BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.hbd_amount );
+    BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( et_op.hbd_amount ) );
     BOOST_REQUIRE( escrow.get_hive_balance() == et_op.hive_amount );
     BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
     BOOST_REQUIRE( escrow.to_approved );
@@ -5146,7 +5147,7 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
     BOOST_REQUIRE( escrow.agent == "sam" );
     BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
     BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-    BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.hbd_amount );
+    BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( et_op.hbd_amount ) );
     BOOST_REQUIRE( escrow.get_hive_balance() == et_op.hive_amount );
     BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
     BOOST_REQUIRE( escrow.to_approved );
@@ -5171,7 +5172,7 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
       BOOST_REQUIRE( escrow.agent == "sam" );
       BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
       BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-      BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.hbd_amount );
+      BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( et_op.hbd_amount ) );
       BOOST_REQUIRE( escrow.get_hive_balance() == et_op.hive_amount );
       BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
       BOOST_REQUIRE( escrow.to_approved );
@@ -5210,7 +5211,7 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
       BOOST_REQUIRE( escrow.agent == "sam" );
       BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
       BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-      BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.hbd_amount );
+      BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( et_op.hbd_amount ) );
       BOOST_REQUIRE( escrow.get_hive_balance() == et_op.hive_amount );
       BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
       BOOST_REQUIRE( escrow.to_approved );
@@ -5233,7 +5234,7 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
       BOOST_REQUIRE( escrow.agent == "sam" );
       BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
       BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-      BOOST_REQUIRE( escrow.get_hbd_balance() == et_op.hbd_amount );
+      BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( et_op.hbd_amount ) );
       BOOST_REQUIRE( escrow.get_hive_balance() == et_op.hive_amount );
       BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
       BOOST_REQUIRE( escrow.to_approved );

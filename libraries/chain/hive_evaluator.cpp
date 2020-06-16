@@ -1118,7 +1118,7 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
 
     const auto& e = _db.get_escrow( o.from, o.escrow_id );
     FC_ASSERT( e.get_hive_balance() >= o.hive_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hive_amount)("b", e.get_hive_balance()) );
-    FC_ASSERT( e.get_hbd_balance() >= o.hbd_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hbd_amount)("b", e.get_hbd_balance()) );
+    FC_ASSERT( e.get_hbd_balance() >= HBD_asset( o.hbd_amount ), "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hbd_amount)("b", e.get_hbd_balance()) );
     FC_ASSERT( e.to == o.to, "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.to) );
     FC_ASSERT( e.agent == o.agent, "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.agent) );
     FC_ASSERT( o.receiver == e.from || o.receiver == e.to, "Funds must be released to 'from' (${f}) or 'to' (${t})", ("f", e.from)("t", e.to) );

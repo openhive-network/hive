@@ -25,6 +25,7 @@
 #include <hive/chain/shared_db_merkle.hpp>
 #include <hive/chain/witness_schedule.hpp>
 
+#include <hive/chain/util/tiny_asset.hpp>
 #include <hive/chain/util/asset.hpp>
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/uint256.hpp>
@@ -6110,7 +6111,7 @@ void database::validate_invariants()const
     for( auto itr = escrow_idx.begin(); itr != escrow_idx.end(); ++itr )
     {
       total_supply += itr->get_hive_balance();
-      total_hbd += itr->get_hbd_balance();
+      total_hbd += itr->get_hbd_balance().to_asset();
 
       if( itr->get_fee().symbol == HIVE_SYMBOL )
         total_supply += itr->get_fee();
