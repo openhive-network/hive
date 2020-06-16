@@ -2663,7 +2663,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             adjust_total_payout( comment_cashout, hbd_payout.first + to_hbd( hbd_payout.second + asset( vesting_hive, HIVE_SYMBOL ) ), to_hbd( asset( curation_tokens, HIVE_SYMBOL ) ), to_hbd( asset( total_beneficiary, HIVE_SYMBOL ) ) );
 
             post_push_virtual_operation( vop );
-            vop = comment_reward_operation( comment_author, to_string( comment.permlink ), to_hbd( asset( claimed_reward, HIVE_SYMBOL ) ) );
+            vop = comment_reward_operation( comment_author, to_string( comment.permlink ), to_hbd( asset( claimed_reward, HIVE_SYMBOL ) ), author_tokens );
             pre_push_virtual_operation( vop );
             post_push_virtual_operation( vop );
 
