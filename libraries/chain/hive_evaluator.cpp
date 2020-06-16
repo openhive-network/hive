@@ -2190,7 +2190,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
       });
 
       effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
-      vop.vote_percent = newVote.weight;
+      vop.weight = newVote.weight;
       vop.rshares = newVote.rshares;
       vop.vote_percent = newVote.vote_percent;
 
@@ -2298,7 +2298,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
       });
 
       effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
-      vop.vote_percent = vote.weight;
+      vop.weight = vote.weight;
       vop.rshares = vote.rshares;
       vop.vote_percent = vote.vote_percent;
       _db.push_virtual_operation(vop);
