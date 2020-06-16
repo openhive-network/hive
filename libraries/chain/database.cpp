@@ -6110,7 +6110,7 @@ void database::validate_invariants()const
 
     for( auto itr = escrow_idx.begin(); itr != escrow_idx.end(); ++itr )
     {
-      total_supply += itr->get_hive_balance();
+      total_supply += itr->get_hive_balance().to_asset();
       total_hbd += itr->get_hbd_balance().to_asset();
 
       if( itr->get_fee().symbol == HIVE_SYMBOL )
