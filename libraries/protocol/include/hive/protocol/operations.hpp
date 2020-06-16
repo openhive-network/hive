@@ -106,7 +106,8 @@ namespace hive { namespace protocol {
             hardfork_hive_operation,
             hardfork_hive_restore_operation,
             delayed_voting_operation,
-            consolidate_treasury_balance_operation
+            consolidate_treasury_balance_operation,
+            effective_comment_vote_operation
          > operation;
 
    /*void operation_get_required_authorities( const operation& op,

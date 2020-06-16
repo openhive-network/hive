@@ -1541,6 +1541,11 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
             cvo.last_update = _db.head_block_time();
          });
 #endif
+
+      effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
+      vop.vote_percent = o.weight;
+      _db.push_virtual_operation(vop);
+
       return;
    }
 
@@ -1893,14 +1898,20 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
          cc.total_vote_weight -= itr->weight;
       });
 
+      effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
+
       _db.modify( *itr, [&]( comment_vote_object& cv )
       {
          cv.rshares = rshares;
+         vop.rshares = rshares;
          cv.vote_percent = o.weight;
          cv.last_update = _db.head_block_time();
          cv.weight = 0;
+         vop.weight = 0;
          cv.num_changes += 1;
       });
+
+      _db.push_virtual_operation(vop);
 
       if( !_db.has_hardfork( HIVE_HARDFORK_0_17__774) )
          _db.adjust_rshares2( old_rshares, new_rshares );
@@ -1947,6 +1958,11 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
             cvo.last_update = _db.head_block_time();
          });
 #endif
+
+      effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
+      vop.vote_percent = o.weight;
+      _db.push_virtual_operation(vop);
+
       return;
    }
    else
@@ -2125,7 +2141,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
        *  Since W(R_0) = 0, c.total_vote_weight is also bounded above by B and will always fit in a 64 bit integer.
        *
       **/
-      _db.create<comment_vote_object>( [&]( comment_vote_object& cv )
+      const comment_vote_object& newVote = _db.create<comment_vote_object>( [&]( comment_vote_object& cv )
       {
          cv.voter   = voter.get_id();
          cv.comment = comment.get_id();
@@ -2172,6 +2188,14 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
             cv.weight = 0;
          }
       });
+
+      effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
+      vop.vote_percent = newVote.weight;
+      vop.rshares = newVote.rshares;
+      vop.vote_percent = newVote.vote_percent;
+
+      _db.push_virtual_operation(vop);
+
 
       if( max_vote_weight ) // Optimization
       {
@@ -2262,7 +2286,9 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
          c.total_vote_weight -= itr->weight;
       });
 
-      _db.modify( *itr, [&]( comment_vote_object& cv )
+      const comment_vote_object& vote = *itr;
+
+      _db.modify( vote, [&]( comment_vote_object& cv )
       {
          cv.rshares = rshares;
          cv.vote_percent = o.weight;
@@ -2270,6 +2296,12 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
          cv.weight = 0;
          cv.num_changes += 1;
       });
+
+      effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
+      vop.vote_percent = vote.weight;
+      vop.rshares = vote.rshares;
+      vop.vote_percent = vote.vote_percent;
+      _db.push_virtual_operation(vop);
    }
 }
 

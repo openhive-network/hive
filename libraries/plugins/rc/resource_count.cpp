@@ -396,6 +396,7 @@ struct count_operation_visitor
    void operator()( const fill_transfer_from_savings_operation& ) const {}
    void operator()( const hardfork_operation& ) const {}
    void operator()( const comment_payout_update_operation& ) const {}
+   void operator()(const effective_comment_vote_operation&) const {}
    void operator()( const return_vesting_delegation_operation& ) const {}
    void operator()( const comment_benefactor_reward_operation& ) const {}
    void operator()( const producer_reward_operation& ) const {}
