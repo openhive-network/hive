@@ -37,7 +37,7 @@ namespace hive { namespace chain {
 
       account_name_type owner; //< TODO: can be replaced with account_id_type
       uint32_t          requestid = 0; ///< id set by owner, the owner,requestid pair must be unique
-      asset             amount; //< TODO: can be replaced with HBD_asset
+      asset             amount; //< can be either HBD or HIVE
       time_point_sec    conversion_date; ///< at this time the feed_history_median_price * amount
 
     CHAINBASE_UNPACK_CONSTRUCTOR(convert_request_object);
