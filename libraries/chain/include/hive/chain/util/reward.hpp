@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/chain/util/asset.hpp>
+#include <hive/chain/util/tiny_asset.hpp>
 
 #include <hive/protocol/asset.hpp>
 #include <hive/protocol/config.hpp>
@@ -25,7 +26,7 @@ struct comment_reward_context
   uint16_t   reward_weight = 0;
   asset      max_hbd;
   uint128_t  total_reward_shares2;
-  asset      total_reward_fund_hive;
+  HIVE_asset total_reward_fund_hive;
   price      current_hive_price;
   protocol::curve_id   reward_curve = protocol::quadratic;
   uint128_t  content_constant = HIVE_CONTENT_CONSTANT_HF0;

@@ -264,15 +264,15 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       reward_fund_object( allocator< Allocator > a, uint64_t _id,
-        const string& _name, const asset& _balance, const time_point_sec& _creation_time, const uint128_t& _claims = 0 )
+        const string& _name, const HIVE_asset& _balance, const time_point_sec& _creation_time, const uint128_t& _claims = 0 )
         : id( _id ), name( _name ), reward_balance( _balance ), recent_claims( _claims ), last_update( _creation_time )
       {}
 
       //amount of HIVE in reward fund
-      const asset& get_reward_balance() const { return reward_balance; }
+      const HIVE_asset& get_reward_balance() const { return reward_balance; }
 
       reward_fund_name_type   name;
-      asset                   reward_balance = asset( 0, HIVE_SYMBOL );
+      HIVE_asset              reward_balance = HIVE_asset( 0 );
       uint128_t               recent_claims = 0;
       time_point_sec          last_update;
       uint128_t               content_constant = HIVE_CONTENT_CONSTANT_HF0;

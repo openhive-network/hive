@@ -120,7 +120,7 @@ namespace hive { namespace chain {
 struct reward_fund_context
 {
   uint128_t   recent_claims = 0;
-  asset       reward_balance = asset( 0, HIVE_SYMBOL );
+  HIVE_asset  reward_balance = HIVE_asset( 0 );
   share_type  hive_awarded = 0;
 };
 
@@ -6139,7 +6139,7 @@ void database::validate_invariants()const
 
     for( auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr )
     {
-      total_supply += itr->reward_balance;
+      total_supply += itr->reward_balance.to_asset();
       ++reward_fund_no;
     }
 

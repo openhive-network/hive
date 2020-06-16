@@ -649,7 +649,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( proposal_vote_object ), 32 ); //potentially infinite, but limited by account_object and time of proposal_object life
 
   //singletons (size only affects performance, especially with MIRA)
-  BOOST_CHECK_EQUAL( sizeof( reward_fund_object ), 96 );
+  BOOST_CHECK_EQUAL( sizeof( reward_fund_object ), 88 );
   BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 344
 #ifdef HIVE_ENABLE_SMT
     + 16
