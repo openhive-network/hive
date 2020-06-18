@@ -3,6 +3,7 @@ stages:
 
 before_script:
   - docker info
+  - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY_IMAGE
   - echo $CI_REPOSITORY_URL
   - echo $CI_PROJECT_DIR
   - mkdir -p $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME
@@ -58,6 +59,7 @@ development-build:
   variables:
     LC_ALL: "C"
     DOCKER_BUILDKIT: 1
+    DOCKER_CONFIG: $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME
     GIT_STRATEGY: none
     GIT_SUBMODULE_STRATEGY: recursive
 
