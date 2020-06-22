@@ -3115,8 +3115,8 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 
   const auto& gpo = _db.get_dynamic_global_properties();
 
-  asset available_shares;
-  asset available_downvote_shares;
+  VEST_asset available_shares;
+  VEST_asset available_downvote_shares;
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
   {
@@ -3127,20 +3127,20 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
       util::update_manabar( gpo, a, _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ), _db.head_block_num() > HIVE_HF_21_STALL_BLOCK );
     });
 
-    available_shares = asset( delegator.voting_manabar.current_mana, VESTS_SYMBOL );
+    available_shares = VEST_asset( delegator.voting_manabar.current_mana );
     if( gpo.downvote_pool_percent )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
       {
-        available_downvote_shares = asset(
+        available_downvote_shares = VEST_asset(
           ( ( uint128_t( delegator.downvote_manabar.current_mana ) * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
-          + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1 ).to_int64(), VESTS_SYMBOL );
+          + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1 ).to_int64() );
       }
       else
       {
-        available_downvote_shares = asset(
+        available_downvote_shares = VEST_asset(
           ( delegator.downvote_manabar.current_mana * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
-          + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1, VESTS_SYMBOL );
+          + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1 );
       }
     }
     else
@@ -3167,38 +3167,38 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
       The remaining withdrawal needs to be added in but then the current week is double counted.
       */
 
-      auto weekly_withdraw = asset( std::min(
+      auto weekly_withdraw = VEST_asset( std::min(
         delegator.vesting_withdraw_rate.amount.value,           // Weekly amount
         delegator.to_withdraw.value - delegator.withdrawn.value   // Or remainder
         ), VESTS_SYMBOL );
 
-      available_shares += weekly_withdraw - asset( delegator.to_withdraw - delegator.withdrawn, VESTS_SYMBOL );
-      available_downvote_shares += weekly_withdraw - asset( delegator.to_withdraw - delegator.withdrawn, VESTS_SYMBOL );
+      available_shares += weekly_withdraw - VEST_asset( delegator.to_withdraw - delegator.withdrawn );
+      available_downvote_shares += weekly_withdraw - VEST_asset( delegator.to_withdraw - delegator.withdrawn );
     }
   }
   else
   {
-    available_shares = ( delegator.vesting_shares - delegator.delegated_vesting_shares ).to_asset() - asset( delegator.to_withdraw - delegator.withdrawn, VESTS_SYMBOL );
+    available_shares = ( delegator.vesting_shares - delegator.delegated_vesting_shares ) - VEST_asset( delegator.to_withdraw - delegator.withdrawn );
   }
 
   const auto& wso = _db.get_witness_schedule_object();
 
   // HF 20 increase fee meaning by 30x, reduce these thresholds to compensate.
   auto min_delegation = _db.has_hardfork( HIVE_HARDFORK_0_20__1761 ) ?
-    asset( wso.median_props.account_creation_fee.amount / 3, HIVE_SYMBOL ) * gpo.get_vesting_share_price() :
-    asset( wso.median_props.account_creation_fee.amount * 10, HIVE_SYMBOL ) * gpo.get_vesting_share_price();
-  auto min_update = _db.has_hardfork( HIVE_HARDFORK_0_20__1761 ) ?
-    asset( wso.median_props.account_creation_fee.amount / 30, HIVE_SYMBOL ) * gpo.get_vesting_share_price() :
+    HIVE_asset( wso.median_props.account_creation_fee.amount / 3 ) * gpo.get_vesting_share_price() :
+    HIVE_asset( wso.median_props.account_creation_fee.amount * 10 ) * gpo.get_vesting_share_price();
+  VEST_asset min_update = _db.has_hardfork( HIVE_HARDFORK_0_20__1761 ) ?
+    HIVE_asset( wso.median_props.account_creation_fee.amount / 30 ) * gpo.get_vesting_share_price() :
     wso.median_props.account_creation_fee * gpo.get_vesting_share_price();
 
   // If delegation doesn't exist, create it
   if( delegation == nullptr )
   {
-    FC_ASSERT( available_shares >= op.vesting_shares, "Account ${acc} does not have enough mana to delegate. required: ${r} available: ${a}",
+    FC_ASSERT( available_shares >= VEST_asset(op.vesting_shares), "Account ${acc} does not have enough mana to delegate. required: ${r} available: ${a}",
       ("acc", op.delegator)("r", op.vesting_shares)("a", available_shares) );
     FC_TODO( "This hardfork check should not be needed. Remove after HF21 if that is the case." );
     if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
-      FC_ASSERT( available_downvote_shares >= op.vesting_shares, "Account ${acc} does not have enough downvote mana to delegate. required: ${r} available: ${a}",
+      FC_ASSERT( available_downvote_shares >= VEST_asset(op.vesting_shares), "Account ${acc} does not have enough downvote mana to delegate. required: ${r} available: ${a}",
       ("acc", op.delegator)("r", op.vesting_shares)("a", available_downvote_shares) );
     FC_ASSERT( op.vesting_shares >= min_delegation, "Account must delegate a minimum of ${v}", ("v", min_delegation) );
 
@@ -3240,9 +3240,9 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     });
   }
   // Else if the delegation is increasing
-  else if( op.vesting_shares >= delegation->vesting_shares )
+  else if( VEST_asset(op.vesting_shares) >= delegation->vesting_shares )
   {
-    auto delta = op.vesting_shares - delegation->vesting_shares;
+    auto delta = VEST_asset(op.vesting_shares) - delegation->vesting_shares;
 
     FC_ASSERT( delta >= min_update, "Hive Power increase is not enough of a difference. min_update: ${min}", ("min", min_update) );
     FC_ASSERT( available_shares >= delta, "Account ${acc} does not have enough mana to delegate. required: ${r} available: ${a}",
@@ -3289,7 +3289,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
   // Else the delegation is decreasing
   else /* delegation->vesting_shares > op.vesting_shares */
   {
-    auto delta = delegation->vesting_shares - op.vesting_shares;
+    auto delta = delegation->vesting_shares - VEST_asset(op.vesting_shares);
 
     if( op.vesting_shares.amount > 0 )
     {
@@ -3304,7 +3304,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     _db.create< vesting_delegation_expiration_object >( [&]( vesting_delegation_expiration_object& obj )
     {
       obj.delegator = op.delegator;
-      obj.vesting_shares = delta;
+      obj.vesting_shares = delta.to_asset();
       obj.expiration = std::max( _db.head_block_time() + gpo.delegation_return_period, delegation->min_delegation_time );
     });
 

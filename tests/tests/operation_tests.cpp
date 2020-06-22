@@ -7147,7 +7147,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
 
     BOOST_REQUIRE( delegation != nullptr );
     BOOST_REQUIRE( delegation->delegator == op.delegator);
-    BOOST_REQUIRE( delegation->get_vesting() == ASSET( "10000000.000000 VESTS"));
+    BOOST_REQUIRE( delegation->get_vesting() == VEST_asset( 10000000000000 ));
 
     old_manabar = VOTING_MANABAR( "alice" );
     params.max_mana = util::get_effective_vesting_shares( db->get_account( "alice" ) );
@@ -7180,7 +7180,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
 
     BOOST_REQUIRE( delegation != nullptr );
     BOOST_REQUIRE( delegation->delegator == op.delegator);
-    BOOST_REQUIRE( delegation->get_vesting() == ASSET( "20000000.000000 VESTS"));
+    BOOST_REQUIRE( delegation->get_vesting() == VEST_asset( 20000000000000 ));
     BOOST_REQUIRE( alice_acc.get_delegated_vesting() == VEST_asset( 20000000000000 ));
     BOOST_REQUIRE( alice_acc.voting_manabar.current_mana == old_manabar.current_mana - delta );
     BOOST_REQUIRE( alice_acc.downvote_manabar.current_mana == old_downvote_manabar.current_mana - delta / 4 );

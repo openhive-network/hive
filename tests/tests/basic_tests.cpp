@@ -602,7 +602,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( witness_object ), 352 ); //small but potentially as many as account_object
 
   //lasting objects (operation to create and remove, but with potential to grow)
-  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_object ), 64 ); //1M+ (potential of account_object squared !!!)
+  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_object ), 56 ); //1M+ (potential of account_object squared !!!)
   BOOST_CHECK_EQUAL( sizeof( withdraw_vesting_route_object ), 48 ); //45k (potential of 10*account_object)
   BOOST_CHECK_EQUAL( sizeof( witness_vote_object ), 40 ); //450k (potential of 30*account_object)
 

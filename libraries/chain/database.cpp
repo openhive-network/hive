@@ -2076,7 +2076,7 @@ void database::clear_account( const account_object& account,
   if( account.vesting_shares.amount > 0 )
   {
     // Remove all delegations
-    asset freed_delegations = asset( 0, VESTS_SYMBOL );
+    VEST_asset freed_delegations = VEST_asset( 0 );
 
     const auto& delegation_idx = get_index< vesting_delegation_index, by_delegation >();
     auto delegation_itr = delegation_idx.lower_bound( account_name );

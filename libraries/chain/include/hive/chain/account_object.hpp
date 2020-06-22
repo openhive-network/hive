@@ -239,11 +239,11 @@ namespace hive { namespace chain {
       CHAINBASE_DEFAULT_CONSTRUCTOR( vesting_delegation_object )
 
       //amount of delegated VESTS
-      const asset& get_vesting() const { return vesting_shares; }
+      const VEST_asset& get_vesting() const { return vesting_shares; }
 
       account_name_type delegator;
       account_name_type delegatee;
-      asset             vesting_shares = asset( 0, VESTS_SYMBOL );
+      VEST_asset        vesting_shares = VEST_asset( 0 );
       time_point_sec    min_delegation_time;
 
     CHAINBASE_UNPACK_CONSTRUCTOR(vesting_delegation_object);
