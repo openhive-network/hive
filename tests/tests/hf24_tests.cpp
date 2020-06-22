@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
     }
     tx.clear();
 
-    asset initial_treasury_balance = db->get_treasury().get_hbd_balance();
+    asset initial_treasury_balance = db->get_treasury().get_hbd_balance().to_asset();
     generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time );
     BOOST_REQUIRE_EQUAL( get_hbd_balance( OBSOLETE_TREASURY_ACCOUNT ).amount.value, 0 );
     BOOST_REQUIRE_EQUAL( db->get_treasury().get_hbd_balance().amount.value, 1150 + initial_treasury_balance.amount.value );
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       BOOST_REQUIRE_EQUAL( old_treasury.get_vest_rewards().amount.value, vested_3.amount.value );
     }
 
-    asset initial_treasury_balance = db->get_treasury().get_hbd_balance();
+    asset initial_treasury_balance = db->get_treasury().get_hbd_balance().to_asset();
     generate_block();
     database_fixture::validate_database();
 

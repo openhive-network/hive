@@ -50,30 +50,30 @@ namespace hive { namespace chain {
       {}
 
       //liquid HIVE balance
-      asset get_balance() const { return balance.to_asset(); }
+      HIVE_asset get_balance() const { return balance; }
       //HIVE balance in savings
-      asset get_savings() const { return savings_balance.to_asset(); }
+      HIVE_asset get_savings() const { return savings_balance; }
       //unclaimed HIVE rewards
-      asset get_rewards() const { return reward_hive_balance.to_asset(); }
+      HIVE_asset get_rewards() const { return reward_hive_balance; }
 
       //liquid HBD balance
-      asset get_hbd_balance() const { return hbd_balance.to_asset(); }
+      HBD_asset get_hbd_balance() const { return hbd_balance; }
       //HBD balance in savings
-      asset get_hbd_savings() const { return savings_hbd_balance.to_asset(); }
+      HBD_asset get_hbd_savings() const { return savings_hbd_balance; }
       //unclaimed HBD rewards
-      asset get_hbd_rewards() const { return reward_hbd_balance.to_asset(); }
+      HBD_asset get_hbd_rewards() const { return reward_hbd_balance; }
 
       //all VESTS held by the account - use other routines to get active VESTS for specific uses
-      asset get_vesting() const { return vesting_shares.to_asset(); }
+      VEST_asset get_vesting() const { return vesting_shares; }
       //VESTS that were delegated to other accounts
-      asset get_delegated_vesting() const { return delegated_vesting_shares.to_asset(); }
+      VEST_asset get_delegated_vesting() const { return delegated_vesting_shares; }
       //VESTS that were borrowed from other accounts
-      asset get_received_vesting() const { return received_vesting_shares.to_asset(); }
+      VEST_asset get_received_vesting() const { return received_vesting_shares; }
       //TODO: add routines for specific uses, f.e. get_witness_voting_power, get_proposal_voting_power, get_post_voting_power...
       //unclaimed VESTS rewards
-      asset get_vest_rewards() const { return reward_vesting_balance.to_asset(); }
+      VEST_asset get_vest_rewards() const { return reward_vesting_balance; }
       //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
-      asset get_vest_rewards_as_hive() const { return reward_vesting_hive.to_asset(); }
+      HIVE_asset get_vest_rewards_as_hive() const { return reward_vesting_hive; }
 
       account_name_type name;
       public_key_type   memo_key;
@@ -94,8 +94,8 @@ namespace hive { namespace chain {
       util::manabar     voting_manabar;
       util::manabar     downvote_manabar;
 
-      HIVE_asset        balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
-      HIVE_asset        savings_balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
+      HIVE_asset        balance = HIVE_asset( 0 );  ///< total liquid shares held by this account
+      HIVE_asset        savings_balance = HIVE_asset( 0 );  ///< total liquid shares held by this account
 
       /**
         *  HBD Deposits pay interest based upon the interest rate set by witnesses. The purpose of these
@@ -111,13 +111,13 @@ namespace hive { namespace chain {
         *  @defgroup hbd_data HBD Balance Data
         */
       ///@{
-      HBD_asset         hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
+      HBD_asset         hbd_balance = HBD_asset( 0 ); /// total HBD balance
       uint128_t         hbd_seconds; ///< total HBD * how long it has been held
       time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
       time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
 
 
-      HBD_asset         savings_hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
+      HBD_asset         savings_hbd_balance = HBD_asset( 0 ); /// total HBD balance
       uint128_t         savings_hbd_seconds; ///< total HBD * how long it has been held
       time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
       time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
@@ -125,19 +125,19 @@ namespace hive { namespace chain {
       uint8_t           savings_withdraw_requests = 0;
       ///@}
 
-      HBD_asset         reward_hbd_balance = asset( 0, HBD_SYMBOL );
-      HIVE_asset        reward_hive_balance = asset( 0, HIVE_SYMBOL );
-      VEST_asset        reward_vesting_balance = asset( 0, VESTS_SYMBOL );
-      HIVE_asset        reward_vesting_hive = asset( 0, HIVE_SYMBOL );
+      HBD_asset         reward_hbd_balance = HBD_asset( 0 );
+      HIVE_asset        reward_hive_balance = HIVE_asset( 0 );
+      VEST_asset        reward_vesting_balance = VEST_asset( 0 );
+      HIVE_asset        reward_vesting_hive = HIVE_asset( 0 );
 
       share_type        curation_rewards = 0;
       share_type        posting_rewards = 0;
 
-      VEST_asset        vesting_shares = asset( 0, VESTS_SYMBOL ); ///< total vesting shares held by this account, controls its voting power
-      VEST_asset        delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
-      VEST_asset        received_vesting_shares = asset( 0, VESTS_SYMBOL );
+      VEST_asset        vesting_shares = VEST_asset( 0 ); ///< total vesting shares held by this account, controls its voting power
+      VEST_asset        delegated_vesting_shares = VEST_asset( 0 );
+      VEST_asset        received_vesting_shares = VEST_asset( 0 );
 
-      VEST_asset        vesting_withdraw_rate = asset( 0, VESTS_SYMBOL ); ///< at the time this is updated it can be at most vesting_shares/104
+      VEST_asset        vesting_withdraw_rate = VEST_asset( 0 ); ///< at the time this is updated it can be at most vesting_shares/104
       time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
       share_type        withdrawn = 0; /// Track how many shares have been withdrawn
       share_type        to_withdraw = 0; /// Might be able to look this up with operation history.

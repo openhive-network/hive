@@ -398,7 +398,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   const auto& props = _db.get_dynamic_global_properties();
   const witness_schedule_object& wso = _db.get_witness_schedule_object();
 
-  FC_ASSERT( creator.get_balance() >= o.fee, "Insufficient balance to create account.",
+  FC_ASSERT( creator.get_balance().to_asset() >= o.fee, "Insufficient balance to create account.",
           ( "creator.balance", creator.get_balance() )
           ( "required", o.fee ) );
 
@@ -2663,7 +2663,7 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
   const auto& creator = _db.get_account( o.creator );
   const auto& wso = _db.get_witness_schedule_object();
 
-  FC_ASSERT( creator.get_balance() >= o.fee, "Insufficient balance to create account.", ( "creator.balance", creator.get_balance() )( "required", o.fee ) );
+  FC_ASSERT( creator.get_balance().to_asset() >= o.fee, "Insufficient balance to create account.", ( "creator.balance", creator.get_balance() )( "required", o.fee ) );
 
   if( o.fee.amount == 0 )
   {
@@ -2992,16 +2992,16 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 {
   const auto& acnt = _db.get_account( op.account );
 
-  FC_ASSERT( op.reward_hive <= acnt.get_rewards(), "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
+  FC_ASSERT( op.reward_hive <= acnt.get_rewards().to_asset(), "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
     ("c", op.reward_hive)("a", acnt.get_rewards() ) );
-  FC_ASSERT( op.reward_hbd <= acnt.get_hbd_rewards(), "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
+  FC_ASSERT( op.reward_hbd <= acnt.get_hbd_rewards().to_asset(), "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
     ("c", op.reward_hbd)("a", acnt.get_hbd_rewards()) );
-  FC_ASSERT( op.reward_vests <= acnt.get_vest_rewards(), "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
+  FC_ASSERT( op.reward_vests <= acnt.get_vest_rewards().to_asset(), "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
     ("c", op.reward_vests)("a", acnt.get_vest_rewards() ) );
 
   asset reward_vesting_hive_to_move = asset( 0, HIVE_SYMBOL );
-  if( op.reward_vests == acnt.get_vest_rewards() )
-    reward_vesting_hive_to_move = acnt.get_vest_rewards_as_hive();
+  if( op.reward_vests == acnt.get_vest_rewards().to_asset() )
+    reward_vesting_hive_to_move = acnt.get_vest_rewards_as_hive().to_asset();
   else
     reward_vesting_hive_to_move = asset( ( ( uint128_t( op.reward_vests.amount.value ) * uint128_t( acnt.get_vest_rewards_as_hive().amount.value ) )
       / uint128_t( acnt.get_vest_rewards().amount.value ) ).to_uint64(), HIVE_SYMBOL );

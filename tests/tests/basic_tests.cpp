@@ -43,6 +43,7 @@
 #include <fc/crypto/digest.hpp>
 #include <fc/crypto/hex.hpp>
 #include "../db_fixture/database_fixture.hpp"
+#include "ios_utils.hpp"
 
 #include <algorithm>
 #include <random>
@@ -51,29 +52,6 @@
 using namespace hive;
 using namespace hive::chain;
 using namespace hive::protocol;
-
-namespace hive
-{
-namespace protocol
-{
-   std::ostream& boost_test_print_type(std::ostream& stream, const asset& obj)
-   {
-      return stream << obj.amount.value << ' ' << obj.symbol.to_string();
-   }
-}
-}
-
-namespace hive
-{
-namespace chain
-{
-   template <uint32_t _SYMBOL>
-   std::ostream& boost_test_print_type(std::ostream& stream, const tiny_asset<_SYMBOL>& obj)
-   {
-      return boost_test_print_type(stream, obj.to_asset());
-   }
-}
-}
 
 BOOST_FIXTURE_TEST_SUITE( basic_tests, clean_database_fixture )
 
@@ -394,7 +372,7 @@ BOOST_AUTO_TEST_CASE( adjust_balance_asset_test )
   ilog( " --- Testing adding VEST_SYMBOL" );
   BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting );
   db->adjust_balance( "alice", asset( 100000, VESTS_SYMBOL ) );
-  BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting + asset( 100000, VESTS_SYMBOL ) );
+  BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting + VEST_asset( 100000 ) );
 
   BOOST_TEST_MESSAGE( " --- Testing deducting VESTS_SYMBOL" );
   HIVE_REQUIRE_THROW( db->adjust_balance( "alice", asset( -1, VESTS_SYMBOL ) ), fc::assert_exception );
@@ -410,31 +388,31 @@ BOOST_AUTO_TEST_CASE( adjust_balance_tiny_asset_test )
 
    BOOST_TEST_MESSAGE( " --- Testing adding HIVE_SYMBOL" );
    db->adjust_balance( "alice", HIVE_asset( 50000 ) );
-   BOOST_REQUIRE( db->get_account( "alice" ).get_balance() == asset( 50000, HIVE_SYMBOL ) );
+   BOOST_REQUIRE( db->get_account( "alice" ).get_balance() == HIVE_asset( 50000 ) );
 
    BOOST_TEST_MESSAGE( " --- Testing deducting HIVE_SYMBOL" );
    HIVE_REQUIRE_THROW( db->adjust_balance( "alice", asset( -50001, HIVE_SYMBOL ) ), fc::assert_exception );
    db->adjust_balance( "alice", HIVE_asset( -30000 ) );
    db->adjust_balance( "alice", HIVE_asset( -20000 ) );
-   BOOST_REQUIRE( db->get_account( "alice" ).get_balance() == asset( 0, HIVE_SYMBOL ) );
+   BOOST_REQUIRE( db->get_account( "alice" ).get_balance() == HIVE_asset( 0 ) );
 
    BOOST_TEST_MESSAGE( " --- Testing adding HBD_SYMBOL" );
    db->adjust_balance( "alice", HBD_asset( 100000 ) );
-   BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == asset( 100000, HBD_SYMBOL ) );
+   BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 100000 ) );
 
    BOOST_TEST_MESSAGE( " --- Testing deducting HBD_SYMBOL" );
    HIVE_REQUIRE_THROW( db->adjust_balance( "alice", HBD_asset( -100001 ) ), fc::assert_exception );
    db->adjust_balance( "alice", HBD_asset( -50000 ) );
    db->adjust_balance( "alice", HBD_asset( -25000 ) );
    db->adjust_balance( "alice", HBD_asset( -25000 ) );
-   BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == asset( 0, HBD_SYMBOL ) );
+   BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
 
    auto initial_vesting = db->get_account( "alice" ).get_vesting();
 
    BOOST_TEST_MESSAGE( " --- Testing adding VEST_SYMBOL" );
    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting );
    db->adjust_balance( "alice", VEST_asset( 100000 ) );
-   BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting + asset( 100000, VESTS_SYMBOL ) );
+   BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting + VEST_asset( 100000 ) );
 
    BOOST_TEST_MESSAGE( " --- Testing deducting VESTS_SYMBOL" );
    HIVE_REQUIRE_THROW( db->adjust_balance( "alice", VEST_asset( -1 ) ), fc::assert_exception );

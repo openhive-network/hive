@@ -645,47 +645,47 @@ account_id_type database_fixture::get_account_id( const string& account_name )co
 
 asset database_fixture::get_balance( const string& account_name )const
 {
-  return db->get_account( account_name ).get_balance();
+  return db->get_account( account_name ).get_balance().to_asset();
 }
 
 asset database_fixture::get_hbd_balance( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_balance();
+  return db->get_account( account_name ).get_hbd_balance().to_asset();
 }
 
 asset database_fixture::get_savings( const string& account_name )const
 {
-  return db->get_account( account_name ).get_savings();
+  return db->get_account( account_name ).get_savings().to_asset();
 }
 
 asset database_fixture::get_hbd_savings( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_savings();
+  return db->get_account( account_name ).get_hbd_savings().to_asset();
 }
 
 asset database_fixture::get_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_rewards();
+  return db->get_account( account_name ).get_rewards().to_asset();
 }
 
 asset database_fixture::get_hbd_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_rewards();
+  return db->get_account( account_name ).get_hbd_rewards().to_asset();
 }
 
 asset database_fixture::get_vesting( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vesting();
+  return db->get_account( account_name ).get_vesting().to_asset();
 }
 
 asset database_fixture::get_vest_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vest_rewards();
+  return db->get_account( account_name ).get_vest_rewards().to_asset();
 }
 
 asset database_fixture::get_vest_rewards_as_hive( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vest_rewards_as_hive();
+  return db->get_account( account_name ).get_vest_rewards_as_hive().to_asset();
 }
 
 void database_fixture::sign(signed_transaction& trx, const fc::ecc::private_key& key)

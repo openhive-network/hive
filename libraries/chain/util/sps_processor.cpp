@@ -117,7 +117,7 @@ asset sps_processor::get_treasury_fund()
 {
   auto& treasury_account = db.get_treasury();
 
-  return treasury_account.get_hbd_balance();
+  return treasury_account.get_hbd_balance().to_asset();
 }
 
 asset sps_processor::get_daily_inflation()

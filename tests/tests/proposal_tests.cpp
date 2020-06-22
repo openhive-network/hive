@@ -283,7 +283,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     auto start_date = db->head_block_time();
 
     auto daily_pay = ASSET( "48.000 TBD" );
-    auto hourly_pay = ASSET( "1.996 TBD" );// hourly_pay != ASSET( "2.000 TBD" ) because lack of rounding
+    auto hourly_pay = HBD_asset( 1996 );// hourly_pay != HBD_asset( 2000 ) because lack of rounding
 
     FUND( creator, ASSET( "160.000 TESTS" ) );
     FUND( creator, ASSET( "80.000 TBD" ) );
@@ -334,7 +334,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       generate_blocks( next_block - 1 );
       generate_blocks( 1 );
 
-      auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
+      auto treasury_hbd_inflation = HBD_asset(dgpo.get_current_hbd_supply() - old_hbd_supply);
       auto after_creator_hbd_balance = _creator.get_hbd_balance();
       auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
       auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
@@ -366,7 +366,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     //=====================preparing=====================
     const auto nr_proposals = 5;
     std::vector< int64_t > proposals_id;
-    flat_map< std::string, asset > before_tbds;
+    flat_map< std::string, HBD_asset > before_tbds;
 
     struct initial_data
     {
@@ -399,7 +399,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     auto end_date = start_date + end_time_shift;
 
     auto daily_pay = ASSET( "24.000 TBD" );
-    auto paid = ASSET( "4.990 TBD" );// paid != ASSET( "5.000 TBD" ) because lack of rounding
+    auto paid = HBD_asset( 4990 );// paid != HBD_asset( 5000 ) because lack of rounding
 
     FUND( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
     //=====================preparing=====================
@@ -457,7 +457,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
     generate_block();
 
     //=====================preparing=====================
-    flat_map< std::string, asset > before_tbds;
+    flat_map< std::string, HBD_asset > before_tbds;
 
     struct initial_data
     {
@@ -559,7 +559,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
 
     //=====================preparing=====================
     std::vector< int64_t > proposals_id;
-    flat_map< std::string, asset > before_tbds;
+    flat_map< std::string, HBD_asset > before_tbds;
 
     flat_map< std::string, fc::ecc::private_key > inits;
     inits[ "tester00" ] = tester00_private_key;
@@ -618,7 +618,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       before_tbds[ item.first ] = account.get_hbd_balance();
     }
 
-    auto payment_checker = [&]( const std::vector< asset >& payouts )
+    auto payment_checker = [&]( const std::vector< HBD_asset >& payouts )
     {
       idump( (inits) );
       idump( (payouts) );
@@ -650,8 +650,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - no payout, because of lack of votes
     */
     ilog("");
-    payment_checker( { ASSET( "0.998 TBD" ), ASSET( "0.998 TBD" ), ASSET( "0.000 TBD" ) } );
-    //ideally: ASSET( "1.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "0.000 TBD" ) but there is lack of rounding
+    payment_checker( { HBD_asset( 998 ), HBD_asset( 998 ), HBD_asset( 0 ) } );
+    //ideally: HBD_asset( 1000 ), HBD_asset( 1000 ), HBD_asset( 0 ) but there is lack of rounding
 
     {
       BOOST_TEST_MESSAGE( "Setting proxy. The account `tester01` don't want to vote. Every decision is made by account `tester00`" );
@@ -673,8 +673,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - no payout, because of lack of votes
     */
     ilog("");
-    payment_checker( { ASSET( "1.996 TBD" ), ASSET( "0.998 TBD" ), ASSET( "0.000 TBD" ) } );
-    //ideally: ASSET( "2.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "0.000 TBD" ) but there is lack of rounding
+    payment_checker( { HBD_asset( 1996 ), HBD_asset( 998 ), HBD_asset( 0 ) } );
+    //ideally: HBD_asset( 2000 ), HBD_asset( 1000 ), HBD_asset( 0 ) but there is lack of rounding
 
     vote_proposal( tester02_account, {2}, true/*approve*/, inits[ tester02_account ] );
     generate_block();
@@ -686,8 +686,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - got payout, because voted for his proposal
     */
     ilog("");
-    payment_checker( { ASSET( "2.994 TBD" ), ASSET( "0.998 TBD" ), ASSET( "2082.369 TBD" ) } );
-    //ideally: ASSET( "3.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "2082.346 TBD" ) but there is lack of rounding
+    payment_checker( { HBD_asset( 2994 ), HBD_asset( 998 ), HBD_asset( 2082369 ) } );
+    //ideally: HBD_asset( 3000 ), HBD_asset( 1000 ), HBD_asset( 2082346 ) but there is lack of rounding
 
     {
       BOOST_TEST_MESSAGE( "Proxy doesn't exist. Now proposal with id = 3 has the most votes. This proposal grabs all payouts." );
@@ -709,8 +709,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - got payout, because voted for his proposal
     */
     ilog("");
-    payment_checker( { ASSET( "2.994 TBD" ), ASSET( "0.998 TBD" ), ASSET( "4164.874 TBD" ) } );
-    //ideally: ASSET( "3.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "4164.824 TBD" ) but there is lack of rounding
+    payment_checker( { HBD_asset( 2994 ), HBD_asset( 998 ), HBD_asset( 4164874 ) } );
+    //ideally: HBD_asset( 3000 ), HBD_asset( 1000 ), HBD_asset( 4164824 ) but there is lack of rounding
 
     validate_database();
   }
@@ -804,7 +804,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     generate_block();
 
-    auto fee = asset( HIVE_TREASURY_FEE, HBD_SYMBOL );
+    auto fee = HBD_asset( HIVE_TREASURY_FEE );
 
     auto creator = "alice";
     auto receiver = "bob";
@@ -3156,7 +3156,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     //=====================preparing=====================
     const auto nr_proposals = 5;
     std::vector< int64_t > proposals_id;
-    flat_map< std::string, asset > before_tbds;
+    flat_map< std::string, HBD_asset > before_tbds;
 
     auto call = [&]( uint32_t& i, uint32_t max, const std::string& info )
     {
@@ -3193,7 +3193,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     auto end_date = start_date + end_time_shift;
 
     auto daily_pay = ASSET( "24.000 TBD" );
-    auto paid = ASSET( "1.000 TBD" );//because only 1 hour
+    auto paid = HBD_asset( 1000 );//because only 1 hour
 
     FUND( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
     //=====================preparing=====================

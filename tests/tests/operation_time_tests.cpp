@@ -150,8 +150,8 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
     const account_object& bob_account   = db->get_account("bob");
     const account_object& dave_account  = db->get_account("dave");
 
-    BOOST_CHECK( alice_account.get_hbd_rewards() == ASSET( "6236.000 TBD" ) );
-    BOOST_CHECK( bob_account.get_hbd_rewards() == ASSET( "0.000 TBD" ) );
+    BOOST_CHECK( alice_account.get_hbd_rewards() == HBD_asset( 6236000 ) );
+    BOOST_CHECK( bob_account.get_hbd_rewards() == HBD_asset( 0 ) );
     BOOST_CHECK( dave_account.get_hbd_rewards() == alice_account.get_hbd_rewards() );
   }
   FC_LOG_AND_RETHROW()
@@ -1214,14 +1214,14 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     db->push_transaction( tx, 0 );
 
     auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
-    asset vesting_shares = new_alice.get_vesting();
-    asset original_vesting = vesting_shares;
-    asset withdraw_rate = new_alice.vesting_withdraw_rate.to_asset();
+    VEST_asset vesting_shares = new_alice.get_vesting();
+    asset original_vesting = vesting_shares.to_asset();
+    VEST_asset withdraw_rate = new_alice.vesting_withdraw_rate;
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
     generate_blocks( next_withdrawal - ( HIVE_BLOCK_INTERVAL / 2 ), true);
 
-    BOOST_REQUIRE( get_vesting( "alice" ).amount.value == vesting_shares.amount.value );
+    BOOST_REQUIRE( VEST_asset( get_vesting( "alice" ) ) == vesting_shares );
 
     BOOST_TEST_MESSAGE( "Generating block to cause withdrawal" );
     generate_block();
@@ -1229,7 +1229,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     auto fill_op = get_last_operations( 1 )[0].get< fill_vesting_withdraw_operation >();
     auto& gpo = db->get_dynamic_global_properties();
 
-    BOOST_REQUIRE( get_vesting( "alice" ).amount.value == ( vesting_shares - withdraw_rate ).amount.value );
+    BOOST_REQUIRE( VEST_asset( get_vesting( "alice" ) ) == vesting_shares - withdraw_rate );
     BOOST_REQUIRE( ( withdraw_rate * gpo.get_vesting_share_price() ).amount.value - get_balance( "alice" ).amount.value <= 1 ); // Check a range due to differences in the share price
     BOOST_REQUIRE( fill_op.from_account == "alice" );
     BOOST_REQUIRE( fill_op.to_account == "alice" );
@@ -1253,7 +1253,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
       const int shift = ( i == 4 ) ? ( HIVE_MAX_WITNESSES + 1/*alice*/ ) : 0;
       fill_op = get_last_operations( 2 + shift )[ 1 + shift ].get< fill_vesting_withdraw_operation >();
 
-      BOOST_REQUIRE( alice.get_vesting().amount.value == ( vesting_shares - withdraw_rate ).amount.value );
+      BOOST_REQUIRE( alice.get_vesting() == vesting_shares - withdraw_rate );
       BOOST_REQUIRE( balance.amount.value + ( withdraw_rate * gpo.get_vesting_share_price() ).amount.value - alice.get_balance().amount.value <= 1 );
       BOOST_REQUIRE( fill_op.from_account == "alice" );
       BOOST_REQUIRE( fill_op.to_account == "alice" );
@@ -1268,7 +1268,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
       validate_database();
 
       vesting_shares = alice.get_vesting();
-      balance = alice.get_balance();
+      balance = alice.get_balance().to_asset();
       old_next_vesting = alice.next_vesting_withdrawal;
     }
 
@@ -1299,7 +1299,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     BOOST_TEST_MESSAGE( "Setup vesting withdraw" );
     withdraw_vesting_operation wv;
     wv.account = "alice";
-    wv.vesting_shares = withdraw_amount;
+    wv.vesting_shares = withdraw_amount.to_asset();
 
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
@@ -1342,12 +1342,12 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
       const auto& bob = db->get_account( "bob" );
       const auto& sam = db->get_account( "sam" );
 
-      BOOST_REQUIRE( alice.get_vesting() == old_alice_vesting - vesting_withdraw_rate.to_asset() );
-      BOOST_REQUIRE( alice.get_balance() == old_alice_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 20 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price() );
-      BOOST_REQUIRE( bob.get_vesting() == old_bob_vesting + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) );
+      BOOST_REQUIRE( alice.get_vesting() == old_alice_vesting - vesting_withdraw_rate );
+      BOOST_REQUIRE( alice.get_balance().to_asset() == old_alice_balance.to_asset() + VEST_asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 20 ) / HIVE_100_PERCENT ) * db->get_dynamic_global_properties().get_vesting_share_price() );
+      BOOST_REQUIRE( bob.get_vesting() == old_bob_vesting + VEST_asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT ) );
       BOOST_REQUIRE( bob.get_balance() == old_bob_balance );
       BOOST_REQUIRE( sam.get_vesting() == old_sam_vesting );
-      BOOST_REQUIRE( sam.get_balance() ==  old_sam_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 30 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price() );
+      BOOST_REQUIRE( sam.get_balance().to_asset() ==  old_sam_balance.to_asset() + VEST_asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 30 ) / HIVE_100_PERCENT ) * db->get_dynamic_global_properties().get_vesting_share_price() );
 
       old_alice_balance = alice.get_balance();
       old_alice_vesting = alice.get_vesting();
@@ -1386,12 +1386,12 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
       const auto& bob = db->get_account( "bob" );
       const auto& sam = db->get_account( "sam" );
 
-      BOOST_REQUIRE( alice.get_vesting() == old_alice_vesting - vesting_withdraw_rate.to_asset() );
+      BOOST_REQUIRE( alice.get_vesting() == old_alice_vesting - vesting_withdraw_rate );
       BOOST_REQUIRE( alice.get_balance() == old_alice_balance );
-      BOOST_REQUIRE( bob.get_vesting() == old_bob_vesting + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) );
+      BOOST_REQUIRE( bob.get_vesting() == old_bob_vesting + VEST_asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT ) );
       BOOST_REQUIRE( bob.get_balance() == old_bob_balance );
       BOOST_REQUIRE( sam.get_vesting() == old_sam_vesting );
-      BOOST_REQUIRE( sam.get_balance() ==  old_sam_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price() );
+      BOOST_REQUIRE( sam.get_balance().to_asset() ==  old_sam_balance.to_asset() + VEST_asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT ) * db->get_dynamic_global_properties().get_vesting_share_price() );
     }
   }
   FC_LOG_AND_RETHROW()
@@ -2731,7 +2731,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     {
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
+        gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance().to_asset();
         gpo.virtual_supply = gpo.virtual_supply + hbd_balance * exchange_rate;
       });
     }, database::skip_witness_signature );
@@ -2743,7 +2743,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     auto comment_reward = ( gpo.get_total_reward_fund_hive().amount + 2000 ) - ( ( gpo.get_total_reward_fund_hive().amount + 2000 ) * 25 * HIVE_1_PERCENT ) / HIVE_100_PERCENT ;
     comment_reward /= 2;
     auto hbd_reward = ( comment_reward * gpo.get_hbd_print_rate() ) / HIVE_100_PERCENT;
-    auto alice_hbd = get_hbd_balance( "alice" ) + get_hbd_rewards( "alice" ) + asset( hbd_reward, HIVE_SYMBOL ) * exchange_rate;
+    HBD_asset alice_hbd = get_hbd_balance( "alice" ) + get_hbd_rewards( "alice" ) + asset( hbd_reward, HIVE_SYMBOL ) * exchange_rate;
     auto alice_hive = get_balance( "alice" ) + get_rewards( "alice" ) ;
 
     BOOST_TEST_MESSAGE( "Checking printing HBD has slowed" );
@@ -2754,7 +2754,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     validate_database();
 
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) + get_hbd_rewards( "alice" ) == alice_hbd );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) + get_hbd_rewards( "alice" ) == alice_hbd.to_asset() );
     BOOST_REQUIRE( get_balance( "alice" ) + get_rewards( "alice" ) > alice_hive );
 
     BOOST_TEST_MESSAGE( "Letting percent market cap fall to hbd_start_percent to verify printing of HBD turns back on" );
@@ -2768,13 +2768,13 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       });
     }, database::skip_witness_signature );
 
-    auto current_hbd_supply = alice_hbd + asset( ( ( gpo.hbd_start_percent - 9 ) * hbd_balance.amount ) / gpo.hbd_stop_percent, HBD_SYMBOL ) + db->get_treasury().get_hbd_balance();
+    auto current_hbd_supply = alice_hbd + HBD_asset( ( ( gpo.hbd_start_percent - 9 ) * hbd_balance.amount ) / gpo.hbd_stop_percent ) + db->get_treasury().get_hbd_balance();
 
     db_plugin->debug_update( [=]( database& db )
     {
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.current_hbd_supply = current_hbd_supply;
+        gpo.current_hbd_supply = current_hbd_supply.to_asset();
       });
     }, database::skip_witness_signature );
 
