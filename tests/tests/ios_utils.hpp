@@ -1,4 +1,5 @@
 #include <ostream>
+#include <string>
 
 #include <hive/protocol/asset.hpp>
 #include <hive/chain/util/tiny_asset.hpp>
@@ -10,6 +11,12 @@ namespace protocol
   inline std::ostream& operator<<(std::ostream& stream, const asset& obj)
   {
     return stream << obj.amount.value << ' ' << obj.symbol.to_string();
+  }
+
+  template<typename _Storage>
+  inline std::ostream& operator<<(std::ostream& stream, const fixed_string_impl<_Storage>& s)
+  {
+     return stream << static_cast<std::string>(s);
   }
 }
 }
@@ -26,3 +33,10 @@ namespace chain
 }
 }
 
+namespace fc
+{
+  inline std::ostream& operator<<(std::ostream& stream, const time_point_sec& t)
+  {
+     return stream << t.to_iso_string();
+  }
+}

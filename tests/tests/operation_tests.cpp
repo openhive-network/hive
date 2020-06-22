@@ -20,6 +20,7 @@
 #include <fc/crypto/digest.hpp>
 
 #include "../db_fixture/database_fixture.hpp"
+#include "ios_utils.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -4628,24 +4629,24 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_apply )
 
     const auto& escrow = db->get_escrow( op.from, op.escrow_id );
 
-    BOOST_REQUIRE( escrow.escrow_id == op.escrow_id );
-    BOOST_REQUIRE( escrow.from == op.from );
-    BOOST_REQUIRE( escrow.to == op.to );
-    BOOST_REQUIRE( escrow.agent == op.agent );
-    BOOST_REQUIRE( escrow.ratification_deadline == op.ratification_deadline );
-    BOOST_REQUIRE( escrow.escrow_expiration == op.escrow_expiration );
-    BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset(op.hbd_amount) );
-    BOOST_REQUIRE( escrow.get_hive_balance() == HIVE_asset( op.hive_amount ) );
-    BOOST_REQUIRE( escrow.get_fee() == op.fee );
+    BOOST_REQUIRE_EQUAL( escrow.escrow_id, op.escrow_id );
+    BOOST_REQUIRE_EQUAL( escrow.from, op.from );
+    BOOST_REQUIRE_EQUAL( escrow.to, op.to );
+    BOOST_REQUIRE_EQUAL( escrow.agent, op.agent );
+    BOOST_REQUIRE_EQUAL( escrow.ratification_deadline, op.ratification_deadline );
+    BOOST_REQUIRE_EQUAL( escrow.escrow_expiration, op.escrow_expiration );
+    BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), HBD_asset(op.hbd_amount) );
+    BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), HIVE_asset( op.hive_amount ) );
+    BOOST_REQUIRE_EQUAL( escrow.get_fee(), op.fee );
     BOOST_REQUIRE( !escrow.to_approved );
     BOOST_REQUIRE( !escrow.agent_approved );
     BOOST_REQUIRE( !escrow.disputed );
-    BOOST_REQUIRE( alice.get_balance() == alice_hive_balance );
-    BOOST_REQUIRE( alice.get_hbd_balance() == alice_hbd_balance );
-    BOOST_REQUIRE( bob.get_balance() == bob_hive_balance );
-    BOOST_REQUIRE( bob.get_hbd_balance() == bob_hbd_balance );
-    BOOST_REQUIRE( sam.get_balance() == sam_hive_balance );
-    BOOST_REQUIRE( sam.get_hbd_balance() == sam_hbd_balance );
+    BOOST_REQUIRE_EQUAL( alice.get_balance(), alice_hive_balance );
+    BOOST_REQUIRE_EQUAL( alice.get_hbd_balance(), alice_hbd_balance );
+    BOOST_REQUIRE_EQUAL( bob.get_balance(), bob_hive_balance );
+    BOOST_REQUIRE_EQUAL( bob.get_hbd_balance(), bob_hbd_balance );
+    BOOST_REQUIRE_EQUAL( sam.get_balance(), sam_hive_balance );
+    BOOST_REQUIRE_EQUAL( sam.get_hbd_balance(), sam_hbd_balance );
 
     validate_database();
   }
