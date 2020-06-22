@@ -4617,7 +4617,7 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_apply )
     tx.operations.push_back( op );
     sign( tx, alice_private_key );
 
-    auto alice_hive_balance = alice.get_balance() - HIVE_asset(op.hive_amount - op.fee);
+    auto alice_hive_balance = alice.get_balance() - HIVE_asset(op.hive_amount + op.fee);
     auto alice_hbd_balance = alice.get_hbd_balance() - HBD_asset(op.hbd_amount);
     auto bob_hive_balance = bob.get_balance();
     auto bob_hbd_balance = bob.get_hbd_balance();
