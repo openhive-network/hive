@@ -7373,7 +7373,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
 
     BOOST_REQUIRE( exp_obj != end );
     BOOST_REQUIRE( exp_obj->delegator == "sam" );
-    BOOST_REQUIRE( exp_obj->get_vesting() == sam_vest );
+    BOOST_REQUIRE( exp_obj->get_vesting() == VEST_asset( sam_vest ) );
     BOOST_REQUIRE( exp_obj->expiration == db->head_block_time() + gpo.delegation_return_period );
     BOOST_REQUIRE( db->get_account( "sam" ).get_delegated_vesting() == VEST_asset( sam_vest ) );
     BOOST_REQUIRE( db->get_account( "dave" ).get_received_vesting() == VEST_asset( 0 ) );

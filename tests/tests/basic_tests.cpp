@@ -608,7 +608,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
 
   //buffered objects (operation to create, op/vop to remove after certain time)
   BOOST_CHECK_EQUAL( sizeof( transaction_object ), 64 ); //at most <1h> of transactions
-  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_expiration_object ), 48 ); //at most <5d> of undelegates
+  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_expiration_object ), 40 ); //at most <5d> of undelegates
   BOOST_CHECK_EQUAL( sizeof( owner_authority_history_object ), 104 ); //at most <30d> of ownership updates
   BOOST_CHECK_EQUAL( sizeof( account_recovery_request_object ), 104 ); //at most <1d> of account recoveries
   BOOST_CHECK_EQUAL( sizeof( change_recovery_account_request_object ), 48 ); //at most <30d> of recovery account changes

@@ -5026,7 +5026,7 @@ void database::clear_expired_delegations()
 
   while( itr != delegations_by_exp.end() && itr->expiration < now )
   {
-    operation vop = return_vesting_delegation_operation( itr->delegator, itr->vesting_shares );
+    operation vop = return_vesting_delegation_operation( itr->delegator, itr->vesting_shares.to_asset() );
     try{
     pre_push_virtual_operation( vop );
 
