@@ -5358,6 +5358,60 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
   } );
 }
 
+void database::adjust_savings_balance( const account_object& a, const HBD_asset& delta )
+{
+  bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
+
+  modify( a, [&, check_balance]( account_object& acnt )
+  {
+    if( a.savings_hbd_seconds_last_update != head_block_time() )
+    {
+      acnt.savings_hbd_seconds += fc::uint128_t(a.get_hbd_savings().amount.value) * (head_block_time() - a.savings_hbd_seconds_last_update).to_seconds();
+      acnt.savings_hbd_seconds_last_update = head_block_time();
+
+      if( acnt.savings_hbd_seconds > 0 &&
+          (acnt.savings_hbd_seconds_last_update - acnt.savings_hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
+      {
+        auto interest = acnt.savings_hbd_seconds / HIVE_SECONDS_PER_YEAR;
+        interest *= get_dynamic_global_properties().get_hbd_interest_rate();
+        interest /= HIVE_100_PERCENT;
+        asset interest_paid(interest.to_uint64(), HBD_SYMBOL);
+        acnt.savings_hbd_balance += interest_paid;
+        acnt.savings_hbd_seconds = 0;
+        acnt.savings_hbd_last_interest_payment = head_block_time();
+
+        if(interest > 0)
+          push_virtual_operation( interest_operation( a.name, interest_paid ) );
+
+        modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
+        {
+          props.current_hbd_supply += interest_paid;
+          props.virtual_supply += interest_paid * get_feed_history().current_median_history;
+        } );
+      }
+    }
+    acnt.savings_hbd_balance += delta;
+    if( check_balance )
+    {
+      FC_ASSERT( acnt.get_hbd_savings().amount.value >= 0, "Insufficient savings HBD funds" );
+    }
+  } );
+}
+
+void database::adjust_savings_balance( const account_object& a, const HIVE_asset& delta )
+{
+  bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
+
+  modify( a, [&, check_balance]( account_object& acnt )
+  {
+    acnt.savings_balance += delta;
+    if( check_balance )
+    {
+      FC_ASSERT( acnt.get_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
+    }
+  } );
+}
+
 void database::adjust_reward_balance( const account_object& a, const asset& value_delta,
                           const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
 {

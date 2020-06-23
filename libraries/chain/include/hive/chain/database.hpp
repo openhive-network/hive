@@ -451,6 +451,8 @@ namespace hive { namespace chain {
       }
 
       void adjust_savings_balance( const account_object& a, const asset& delta );
+      void adjust_savings_balance( const account_object& a, const HBD_asset& delta );
+      void adjust_savings_balance( const account_object& a, const HIVE_asset& delta );
 
       void adjust_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) );
       void adjust_reward_balance( const account_name_type& name, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) )
