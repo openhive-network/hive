@@ -43,13 +43,14 @@ staging-build:
 
   cache: {}
   tags:
-    - secure-runner
+    - public-runner
 
   allow_failure: false
   only:
    - 0.23.0
    - 0.24.0
    - develop
+   - master
 #  environment:
 #    name: staging
 #    url: http://192.168.6.144:8888/v1/chain/get_info
@@ -80,7 +81,7 @@ development-build:
 
   cache: {}
   tags:
-    - secure-runner
+    - public-runner
 
   allow_failure: false
   when: manual
@@ -88,6 +89,7 @@ development-build:
    - 0.23.0
    - 0.24.0
    - develop
+   - master
 #  environment:  
 #    name: development
 #    url: http://192.168.6.144:8888/v1/chain/get_info
