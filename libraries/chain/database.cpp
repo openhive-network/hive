@@ -1438,7 +1438,7 @@ std::pair< asset, asset > database::create_hbd( const account_object& to_account
       else
       {
         adjust_balance( to_account, hbd );
-        adjust_balance( to_account, asset( to_hive, HIVE_SYMBOL ) );
+        adjust_balance( to_account, HIVE_asset( to_hive ) );
       }
 
       adjust_supply( asset( -to_hbd, HIVE_SYMBOL ) );
@@ -2146,7 +2146,7 @@ void database::clear_account( const account_object& account,
       }
     } );
 
-    adjust_balance( treasury_account, asset( converted_hive, HIVE_SYMBOL ) );
+    adjust_balance( treasury_account, HIVE_asset( converted_hive ) );
     modify( cprops, [&]( dynamic_global_property_object& o )
     {
       o.total_vesting_fund_hive -= converted_hive;
@@ -2233,8 +2233,8 @@ void database::clear_account( const account_object& account,
   // Touch SDB balances (to be sure all interests are added to balances)
   if( has_hardfork( HIVE_HARDFORK_0_24 ) )
   {
-    adjust_balance( account, asset( 0, HBD_SYMBOL ) );
-    adjust_savings_balance( account, asset( 0, HBD_SYMBOL ) );
+    adjust_balance( account, HBD_asset( 0 ) );
+    adjust_savings_balance( account, HBD_asset( 0 ) );
     adjust_reward_balance( account, asset( 0, HBD_SYMBOL ) );
   }
 
