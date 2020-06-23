@@ -1,11 +1,11 @@
-# Defines Steem library target.
-project( Steem )
+# Defines Hive library target.
+project( Hive )
 cmake_minimum_required( VERSION 3.2 )
 
-set( BLOCKCHAIN_NAME "Steem" )
+set( BLOCKCHAIN_NAME "Hive" )
 set( CMAKE_CXX_STANDARD 14 )
 
-set( GUI_CLIENT_EXECUTABLE_NAME Steem )
+set( GUI_CLIENT_EXECUTABLE_NAME Hive )
 set( CUSTOM_URL_SCHEME "gcs" )
 set( INSTALLER_APP_ID "68ad7005-8eee-49c9-95ce-9eed97e5b347" )
 
@@ -50,9 +50,9 @@ LIST(APPEND BOOST_COMPONENTS thread
                              coroutine)
 SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
 
-OPTION( BUILD_STEEM_TESTNET "Build source for test network (ON OR OFF)" OFF )
-MESSAGE( STATUS "BUILD_STEEM_TESTNET: ${BUILD_STEEM_TESTNET}" )
-if( BUILD_STEEM_TESTNET  )
+OPTION( BUILD_HIVE_TESTNET "Build source for test network (ON OR OFF)" OFF )
+MESSAGE( STATUS "BUILD_HIVE_TESTNET: ${BUILD_HIVE_TESTNET}" )
+if( BUILD_HIVE_TESTNET  )
   MESSAGE( STATUS "     " )
   MESSAGE( STATUS "             CONFIGURING FOR TEST NET             " )
   MESSAGE( STATUS "     " )
@@ -66,8 +66,8 @@ if( ENABLE_SMT_SUPPORT  )
   MESSAGE( STATUS "     " )
   MESSAGE( STATUS "             CONFIGURING FOR SMT SUPPORT             " )
   MESSAGE( STATUS "     " )
-  SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSTEEM_ENABLE_SMT" )
-  SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSTEEM_ENABLE_SMT" )
+  SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHIVE_ENABLE_SMT" )
+  SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHIVE_ENABLE_SMT" )
 endif()
 
 OPTION( ENABLE_MIRA "Build source with MIRA (ON OR OFF)" OFF )
@@ -90,6 +90,22 @@ if( LOW_MEMORY_NODE )
   SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIS_LOW_MEM" )
 endif()
 
+OPTION( SUPPORT_COMMENT_CONTENT "Build source with enabled comment content support (ON OR OFF)" OFF )
+MESSAGE( STATUS "SUPPORT_COMMENT_CONTENT: ${SUPPORT_COMMENT_CONTENT}" )
+IF (SUPPORT_COMMENT_CONTENT)
+  if( LOW_MEMORY_NODE )
+    MESSAGE( WARNING "Ignoring SUPPORT_COMMENT_CONTENT setting due to enabled LOW_MEMORY_NODE")
+  ELSE()
+    MESSAGE( STATUS "     " )
+    MESSAGE( STATUS "             CONFIGURING FOR COMMENT_CONTENT_SUPPORT      " )
+    MESSAGE( STATUS "     " )
+    SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSTORE_COMMENT_CONTENT" )
+    SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSTORE_COMMENT_CONTENT" )
+  endif()
+ELSE()
+  MESSAGE( STATUS "             CONFIGURING to skip COMMENT_CONTENT objects      " )
+ENDIF()
+
 OPTION( CHAINBASE_CHECK_LOCKING "Check locks in chainbase (ON or OFF)" ON )
 MESSAGE( STATUS "CHAINBASE_CHECK_LOCKING: ${CHAINBASE_CHECK_LOCKING}" )
 if( CHAINBASE_CHECK_LOCKING )
@@ -111,14 +127,14 @@ if( SKIP_BY_TX_ID )
    SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSKIP_BY_TX_ID" )
 endif()
 
-OPTION( STEEM_STATIC_BUILD "Build steemd as a static library (ON or OFF)" OFF )
-if( STEEM_STATIC_BUILD AND ( ( MSVC AND NOT MINGW ) OR APPLE ) )
+OPTION( HIVE_STATIC_BUILD "Build hived as a static library (ON or OFF)" OFF )
+if( HIVE_STATIC_BUILD AND ( ( MSVC AND NOT MINGW ) OR APPLE ) )
    MESSAGE( STATUS "Statuc build is not available on Windows or OS X" )
-   SET( STEEM_STATIC_BUILD OFF )
+   SET( HIVE_STATIC_BUILD OFF )
 endif()
-MESSAGE( STATUS "STEEM_STATIC_BUILD: ${STEEM_STATIC_BUILD}" )
+MESSAGE( STATUS "HIVE_STATIC_BUILD: ${HIVE_STATIC_BUILD}" )
 
-SET( STEEM_LINT_LEVEL "OFF" CACHE STRING "Lint level during steem build (FULL, HIGH, LOW, OFF)" )
+SET( HIVE_LINT_LEVEL "OFF" CACHE STRING "Lint level during Hive build (FULL, HIGH, LOW, OFF)" )
 find_program(
    CLANG_TIDY_EXE
    NAMES "clang-tidy"
@@ -131,13 +147,13 @@ elseif( VERSION LESS 3.6 )
    messgae( STATUS "clang-tidy found but only supported with CMake version >= 3.6" )
 else()
    message( STATUS "clany-tidy found: ${CLANG_TIDY_EXE}" )
-   if( "${STEEM_LINT_LEVEL}" STREQUAL "FULL" )
+   if( "${HIVE_LINT_LEVEL}" STREQUAL "FULL" )
       message( STATUS "Linting level set to: FULL" )
       set( DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks='*'" )
-   elseif( "${STEEM_LINT_LEVEL}" STREQUAL "HIGH" )
+   elseif( "${HIVE_LINT_LEVEL}" STREQUAL "HIGH" )
       message( STATUS "Linting level set to: HIGH" )
       set( DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks='boost-use-to-string,clang-analyzer-*,cppcoreguidelines-*,llvm-*,misc-*,performance-*,readability-*'" )
-   elseif( "${STEEM_LINT_LEVEL}" STREQUAL "LOW" )
+   elseif( "${HIVE_LINT_LEVEL}" STREQUAL "LOW" )
       message( STATUS "Linting level set to: LOW" )
       set( DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks='clang-analyzer-*'" )
    else()
@@ -161,7 +177,7 @@ endif()
 
 if( WIN32 )
 
-   message( STATUS "Configuring Steem on WIN32")
+   message( STATUS "Configuring Hive on WIN32")
    set( DB_VERSION 60 )
    set( BDB_STATIC_LIBS 1 )
 
@@ -215,11 +231,11 @@ else( WIN32 ) # Apple AND Linux
 
     if( APPLE )
         # Apple Specific Options Here
-        message( STATUS "Configuring Steem on OS X" )
+        message( STATUS "Configuring Hive on OS X" )
         set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11 -stdlib=libc++ -Wall -Wno-conversion -Wno-deprecated-declarations" )
     else( APPLE )
         # Linux Specific Options Here
-        message( STATUS "Configuring Steem on Linux" )
+        message( STATUS "Configuring Hive on Linux" )
         set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11 -Wall" )
         set( rt_library rt )
         set( pthread_library pthread)
@@ -251,7 +267,7 @@ else( WIN32 ) # Apple AND Linux
 
 endif( WIN32 )
 
-set(ENABLE_COVERAGE_TESTING FALSE CACHE BOOL "Build Steem for code coverage analysis")
+set(ENABLE_COVERAGE_TESTING FALSE CACHE BOOL "Build Hive for code coverage analysis")
 
 if(ENABLE_COVERAGE_TESTING)
     SET(CMAKE_CXX_FLAGS "--coverage ${CMAKE_CXX_FLAGS}")
@@ -261,7 +277,7 @@ endif()
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -Werror -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing -Werror -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
 
-# external_plugins needs to be compiled first because libraries/app depends on STEEM_EXTERNAL_PLUGINS being fully populated
+# external_plugins needs to be compiled first because libraries/app depends on HIVE_EXTERNAL_PLUGINS being fully populated
 add_subdirectory( external_plugins )
 add_subdirectory( libraries )
 add_subdirectory( programs )
@@ -281,24 +297,24 @@ set(CPACK_OUTPUT_FILE_PREFIX ${CMAKE_BINARY_DIR}/packages)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
 
 SET(CPACK_PACKAGE_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
-set(CPACK_PACKAGE_NAME "steem")
+set(CPACK_PACKAGE_NAME "hive")
 set(CPACK_PACKAGE_VENDOR "Steemit, Inc.")
 set(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}")
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-set(CPACK_PACKAGE_DESCRIPTION "A client for the Steem network")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A client for the Steem network")
+set(CPACK_PACKAGE_DESCRIPTION "A client for the Hive network")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A client for the Hive network")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.md")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "Steem ${CPACK_PACKAGE_VERSION}")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "Hive ${CPACK_PACKAGE_VERSION}")
 
 if(WIN32)
  SET(CPACK_GENERATOR "ZIP;NSIS")
- set(CPACK_PACKAGE_NAME "Steem") # override above
+ set(CPACK_PACKAGE_NAME "Hive") # override above
  set(CPACK_NSIS_EXECUTABLES_DIRECTORY .)
- set(CPACK_NSIS_PACKAGE_NAME "Steem v${CPACK_PACKAGE_VERSION}")
+ set(CPACK_NSIS_PACKAGE_NAME "Hive v${CPACK_PACKAGE_VERSION}")
  set(CPACK_NSIS_DISPLAY_NAME "${CPACK_NSIS_PACKAGE_NAME}")
- set(CPACK_NSIS_DEFINES "  !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"Steem\\\"")
+ set(CPACK_NSIS_DEFINES "  !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"Hive\\\"")
  # it seems like windows zip files usually don't have a single directory inside them, unix tgz frequently do
  SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
 
@@ -317,10 +333,10 @@ endif(LINUX)
  include(CPack)
 endif(ENABLE_INSTALLER)
 
-if( BUILD_STEEM_TESTNET )
+if( BUILD_HIVE_TESTNET )
   MESSAGE( STATUS "\n\n             CONFIGURED FOR TEST NETWORK             \n\n" )
 else()
-  MESSAGE( STATUS "\n\n             CONFIGURED FOR STEEM NETWORK             \n\n" )
+  MESSAGE( STATUS "\n\n             CONFIGURED FOR HIVE NETWORK             \n\n" )
 endif()
 
 if( ENABLE_SMT_SUPPORT )
@@ -341,4 +357,14 @@ else()
   MESSAGE( STATUS "\n\n             CONFIGURED FOR FULL NODE                \n\n" )
 endif()
 
+set(INDENT_WIDTH 2 CACHE STRING "Determine how many spaces should be used for formating (by default 2)")
+find_program(PYTHON_3_6 "python3.6")
 
+# How to launch?
+# cmake --build . --target format
+if(PYTHON_3_6)
+  add_custom_target(format COMMAND ${PYTHON_3_6} ${CMAKE_SOURCE_DIR}/format.py ${INDENT_WIDTH} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  MESSAGE( STATUS "\n\n             FORMAT IS AVAIABLE                \n\n" )
+else(PYTHON_3_6) 
+  MESSAGE( STATUS "\n\n             FORMAT IS NOT AVAIABLE                \n\n" )
+endif( PYTHON_3_6 )

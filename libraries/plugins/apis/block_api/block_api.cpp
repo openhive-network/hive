@@ -1,25 +1,25 @@
-#include <steem/chain/steem_fwd.hpp>
+#include <hive/chain/hive_fwd.hpp>
 #include <appbase/application.hpp>
 
-#include <steem/plugins/block_api/block_api.hpp>
-#include <steem/plugins/block_api/block_api_plugin.hpp>
+#include <hive/plugins/block_api/block_api.hpp>
+#include <hive/plugins/block_api/block_api_plugin.hpp>
 
-#include <steem/protocol/get_config.hpp>
+#include <hive/protocol/get_config.hpp>
 
-namespace steem { namespace plugins { namespace block_api {
+namespace hive { namespace plugins { namespace block_api {
 
 class block_api_impl
 {
-   public:
-      block_api_impl();
-      ~block_api_impl();
+  public:
+    block_api_impl();
+    ~block_api_impl();
 
-      DECLARE_API_IMPL(
-         (get_block_header)
-         (get_block)
-      )
+    DECLARE_API_IMPL(
+      (get_block_header)
+      (get_block)
+    )
 
-      chain::database& _db;
+    chain::database& _db;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -29,15 +29,15 @@ class block_api_impl
 //////////////////////////////////////////////////////////////////////
 
 block_api::block_api()
-   : my( new block_api_impl() )
+  : my( new block_api_impl() )
 {
-   JSON_RPC_REGISTER_API( STEEM_BLOCK_API_PLUGIN_NAME );
+  JSON_RPC_REGISTER_API( HIVE_BLOCK_API_PLUGIN_NAME );
 }
 
 block_api::~block_api() {}
 
 block_api_impl::block_api_impl()
-   : _db( appbase::app().get_plugin< steem::plugins::chain::chain_plugin >().db() ) {}
+  : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
 block_api_impl::~block_api_impl() {}
 
@@ -49,29 +49,29 @@ block_api_impl::~block_api_impl() {}
 //////////////////////////////////////////////////////////////////////
 DEFINE_API_IMPL( block_api_impl, get_block_header )
 {
-   get_block_header_return result;
-   auto block = _db.fetch_block_by_number( args.block_num );
+  get_block_header_return result;
+  auto block = _db.fetch_block_by_number( args.block_num );
 
-   if( block )
-      result.header = *block;
+  if( block )
+    result.header = *block;
 
-   return result;
+  return result;
 }
 
 DEFINE_API_IMPL( block_api_impl, get_block )
 {
-   get_block_return result;
-   auto block = _db.fetch_block_by_number( args.block_num );
+  get_block_return result;
+  auto block = _db.fetch_block_by_number( args.block_num );
 
-   if( block )
-      result.block = *block;
+  if( block )
+    result.block = *block;
 
-   return result;
+  return result;
 }
 
 DEFINE_READ_APIS( block_api,
-   (get_block_header)
-   (get_block)
+  (get_block_header)
+  (get_block)
 )
 
-} } } // steem::plugins::block_api
+} } } // hive::plugins::block_api

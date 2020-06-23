@@ -653,7 +653,7 @@ Windows call:
 Results:
 At first look it works good but sometimes output differs in:
 `current_aslot
-`current_sbd_supply
+`current_hbd_supply
 `current_supply
 `current_witness
 `head_block_id
@@ -661,7 +661,7 @@ At first look it works good but sometimes output differs in:
 `last_irreversible_block_num
 `sps_interval_ledger
 `time
-`total_vesting_fund_steem
+`total_vesting_fund_hive
 `total_vesting_shares
 `virtual_supply
 
@@ -847,9 +847,9 @@ Results:
 
 #### get_potential_signatures
 Linux call:
-`python3 get_potential_signatures.py https://api.steem.house https://api.steemit.com ./ '[{"ref_block_num":1097,"ref_block_prefix":2181793527,"expiration":"2016-03-24T18:00:21","operations":[["pow",{"worker_account":"cloop3","block_id":"00000449f7860b82b4fbe2f317c670e9f01d6d9a","nonce":3899,"work":{"worker":"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F","input":"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0","signature":"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a","work":"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3"},"props":{"account_creation_fee":{"amount":"100000","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"sbd_interest_rate":1000}}]],"extensions":[],"signatures":[]}]'
+`python3 get_potential_signatures.py https://api.steem.house https://api.steemit.com ./ '[{"ref_block_num":1097,"ref_block_prefix":2181793527,"expiration":"2016-03-24T18:00:21","operations":[["pow",{"worker_account":"cloop3","block_id":"00000449f7860b82b4fbe2f317c670e9f01d6d9a","nonce":3899,"work":{"worker":"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F","input":"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0","signature":"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a","work":"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3"},"props":{"account_creation_fee":{"amount":"100000","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000}}]],"extensions":[],"signatures":[]}]'
 Windows call:
-`python get_potential_signatures.py https://api.steemit.com https://api.steem.house ./ "[{\"ref_block_num\":1097,\"ref_block_prefix\":2181793527,\"expiration\":\"2016-03-24T18:00:21\",\"operations\":[[\"pow\",{\"worker_account\":\"cloop3\",\"block_id\":\"00000449f7860b82b4fbe2f317c670e9f01d6d9a\",\"nonce\":3899,\"work\":{\"worker\":\"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F\",\"input\":\"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0\",\"signature\":\"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a\",\"work\":\"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3\"},\"props\":{\"account_creation_fee\":{\"amount\":\"100000\",\"precision\":3,\"nai\":\"@@000000021\"},\"maximum_block_size\":131072,\"sbd_interest_rate\":1000}}]],\"extensions\":[],\"signatures\":[]}]"
+`python get_potential_signatures.py https://api.steemit.com https://api.steem.house ./ "[{\"ref_block_num\":1097,\"ref_block_prefix\":2181793527,\"expiration\":\"2016-03-24T18:00:21\",\"operations\":[[\"pow\",{\"worker_account\":\"cloop3\",\"block_id\":\"00000449f7860b82b4fbe2f317c670e9f01d6d9a\",\"nonce\":3899,\"work\":{\"worker\":\"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F\",\"input\":\"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0\",\"signature\":\"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a\",\"work\":\"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3\"},\"props\":{\"account_creation_fee\":{\"amount\":\"100000\",\"precision\":3,\"nai\":\"@@000000021\"},\"maximum_block_size\":131072,\"hbd_interest_rate\":1000}}]],\"extensions\":[],\"signatures\":[]}]"
 Result:
 empty `[]
 
@@ -887,9 +887,9 @@ empty `[]
 
 #### get_required_signatures
 Linux call:
-`python3 get_required_signatures.py https://api.steem.house https://api.steemit.com ./ '[{"ref_block_num":1097,"ref_block_prefix":2181793527,"expiration":"2016-03-24T18:00:21","operations":[["pow",{"worker_account":"cloop3","block_id":"00000449f7860b82b4fbe2f317c670e9f01d6d9a","nonce":3899,"work":{"worker":"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F","input":"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0","signature":"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a","work":"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3"},"props":{"account_creation_fee":{"amount":"100000","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"sbd_interest_rate":1000}}]],"extensions":[],"signatures":[]},[]]'
+`python3 get_required_signatures.py https://api.steem.house https://api.steemit.com ./ '[{"ref_block_num":1097,"ref_block_prefix":2181793527,"expiration":"2016-03-24T18:00:21","operations":[["pow",{"worker_account":"cloop3","block_id":"00000449f7860b82b4fbe2f317c670e9f01d6d9a","nonce":3899,"work":{"worker":"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F","input":"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0","signature":"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a","work":"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3"},"props":{"account_creation_fee":{"amount":"100000","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000}}]],"extensions":[],"signatures":[]},[]]'
 Windows call:
-`python get_required_signatures.py https://api.steemit.com https://api.steem.house ./ "[{\"ref_block_num\":1097,\"ref_block_prefix\":2181793527,\"expiration\":\"2016-03-24T18:00:21\",\"operations\":[[\"pow\",{\"worker_account\":\"cloop3\",\"block_id\":\"00000449f7860b82b4fbe2f317c670e9f01d6d9a\",\"nonce\":3899,\"work\":{\"worker\":\"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F\",\"input\":\"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0\",\"signature\":\"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a\",\"work\":\"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3\"},\"props\":{\"account_creation_fee\":{\"amount\":\"100000\",\"precision\":3,\"nai\":\"@@000000021\"},\"maximum_block_size\":131072,\"sbd_interest_rate\":1000}}]],\"extensions\":[],\"signatures\":[]},[]]"
+`python get_required_signatures.py https://api.steemit.com https://api.steem.house ./ "[{\"ref_block_num\":1097,\"ref_block_prefix\":2181793527,\"expiration\":\"2016-03-24T18:00:21\",\"operations\":[[\"pow\",{\"worker_account\":\"cloop3\",\"block_id\":\"00000449f7860b82b4fbe2f317c670e9f01d6d9a\",\"nonce\":3899,\"work\":{\"worker\":\"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F\",\"input\":\"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0\",\"signature\":\"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a\",\"work\":\"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3\"},\"props\":{\"account_creation_fee\":{\"amount\":\"100000\",\"precision\":3,\"nai\":\"@@000000021\"},\"maximum_block_size\":131072,\"hbd_interest_rate\":1000}}]],\"extensions\":[],\"signatures\":[]},[]]"
 Results:
 empty `[]
 
@@ -954,9 +954,9 @@ Results:
 
 #### get_transaction_hex
 Linux call:
-`python3 get_transaction_hex.py https://api.steem.house https://api.steemit.com ./ '[{"ref_block_num":1097,"ref_block_prefix":2181793527,"expiration":"2016-03-24T18:00:21","operations":[["pow",{"worker_account":"cloop3","block_id":"00000449f7860b82b4fbe2f317c670e9f01d6d9a","nonce":3899,"work":{"worker":"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F","input":"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0","signature":"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a","work":"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3"},"props":{"account_creation_fee":{"amount":"100000","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"sbd_interest_rate":1000}}]],"extensions":[],"signatures":[]}]'
+`python3 get_transaction_hex.py https://api.steem.house https://api.steemit.com ./ '[{"ref_block_num":1097,"ref_block_prefix":2181793527,"expiration":"2016-03-24T18:00:21","operations":[["pow",{"worker_account":"cloop3","block_id":"00000449f7860b82b4fbe2f317c670e9f01d6d9a","nonce":3899,"work":{"worker":"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F","input":"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0","signature":"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a","work":"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3"},"props":{"account_creation_fee":{"amount":"100000","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000}}]],"extensions":[],"signatures":[]}]'
 Windows call:
-`python get_transaction_hex.py https://api.steemit.com https://api.steem.house ./ "[{\"ref_block_num\":1097,\"ref_block_prefix\":2181793527,\"expiration\":\"2016-03-24T18:00:21\",\"operations\":[[\"pow\",{\"worker_account\":\"cloop3\",\"block_id\":\"00000449f7860b82b4fbe2f317c670e9f01d6d9a\",\"nonce\":3899,\"work\":{\"worker\":\"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F\",\"input\":\"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0\",\"signature\":\"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a\",\"work\":\"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3\"},\"props\":{\"account_creation_fee\":{\"amount\":\"100000\",\"precision\":3,\"nai\":\"@@000000021\"},\"maximum_block_size\":131072,\"sbd_interest_rate\":1000}}]],\"extensions\":[],\"signatures\":[]}]"
+`python get_transaction_hex.py https://api.steemit.com https://api.steem.house ./ "[{\"ref_block_num\":1097,\"ref_block_prefix\":2181793527,\"expiration\":\"2016-03-24T18:00:21\",\"operations\":[[\"pow\",{\"worker_account\":\"cloop3\",\"block_id\":\"00000449f7860b82b4fbe2f317c670e9f01d6d9a\",\"nonce\":3899,\"work\":{\"worker\":\"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F\",\"input\":\"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0\",\"signature\":\"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a\",\"work\":\"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3\"},\"props\":{\"account_creation_fee\":{\"amount\":\"100000\",\"precision\":3,\"nai\":\"@@000000021\"},\"maximum_block_size\":131072,\"hbd_interest_rate\":1000}}]],\"extensions\":[],\"signatures\":[]}]"
 Results:
 A long chain of unrelated characters, looks fine
 
@@ -981,7 +981,7 @@ I dont know if these are valid values
 ```
 "blockchain_version": "0.22.1",
 "fc_revision": "b0e0336500baac1d1f52dd883ca0b0dcb58d5623",
-"steem_revision": "b0e0336500baac1d1f52dd883ca0b0dcb58d5623"
+"hive_revision": "b0e0336500baac1d1f52dd883ca0b0dcb58d5623"
 ```
 
 #### get_vesting_delegations

@@ -1,90 +1,90 @@
 #pragma once
 #include <appbase/application.hpp>
 
-#include <steem/plugins/json_rpc/json_rpc_plugin.hpp>
+#include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
 
-#define STEEM_EXAMPLE_API_PLUGIN_NAME "example_api"
+#define HIVE_EXAMPLE_API_PLUGIN_NAME "example_api"
 
-namespace steem { namespace example_api_plugin {
+namespace hive { namespace example_api_plugin {
 
-   using namespace appbase;
-
-
-   // Define API method arg and return types
-   typedef json_rpc::void_type hello_world_args;
-
-   struct hello_world_return
-   {
-      string message;
-   };
+  using namespace appbase;
 
 
-   struct echo_args
-   {
-      string call;
-   };
+  // Define API method arg and return types
+  typedef json_rpc::void_type hello_world_args;
 
-   struct echo_return
-   {
-      string response;
-   }
+  struct hello_world_return
+  {
+    string message;
+  };
 
 
-   // All plugins must inherit from appbase::plugin
-   class example_api_plugin : public appbase::plugin< example_api_plugin >
-   {
-      public:
-         example_api_plugin();
-         virtual ~example_api_plugin();
+  struct echo_args
+  {
+    string call;
+  };
 
-         // This defines what plugins are required to run this plugin.
-         // These plugins will load before this one and shutdown after.
-         APPBASE_PLUGIN_REQUIRES( (plugins::json_rpc::json_rpc_plugin) );
+  struct echo_return
+  {
+    string response;
+  }
 
-         // This static method is a required by the appbase::plugin template
-         static const std::string& name() { static std::string name = STEEM_EXAMPLE_API_PLUGIN_NAME; return name; }
 
-         // Specify any config options here
-         virtual void set_program_options( options_description&, options_description& ) override {}
+  // All plugins must inherit from appbase::plugin
+  class example_api_plugin : public appbase::plugin< example_api_plugin >
+  {
+    public:
+      example_api_plugin();
+      virtual ~example_api_plugin();
 
-         // These implement startup and shutdown logic for the plugin.
-         // plugin_initialize and plugin_startup are called such that dependencies go first
-         // plugin_shutdown goes in reverse order such the dependencies are running when shutting down.
-         virtual void plugin_initialize( const variables_map& options ) override;
-         virtual void plugin_startup() override;
-         virtual void plugin_shutdown() override;
+      // This defines what plugins are required to run this plugin.
+      // These plugins will load before this one and shutdown after.
+      APPBASE_PLUGIN_REQUIRES( (plugins::json_rpc::json_rpc_plugin) );
 
-         // These are the API methods defined for the plugin
-         // APIs take struct args and return structs
-         hello_world_return hello_world( const hello_world_args& args );
-         echo_return echo( const echo_args& args );
-   };
+      // This static method is a required by the appbase::plugin template
+      static const std::string& name() { static std::string name = HIVE_EXAMPLE_API_PLUGIN_NAME; return name; }
 
-   example_api_plugin::example_api_plugin() {}
-   example_api_plugin::~example_api_plugin() {}
+      // Specify any config options here
+      virtual void set_program_options( options_description&, options_description& ) override {}
 
-   void example_api_plugin::plugin_initialize( const variables_map& options )
-   {
-      // This registers the API with the json rpc plugin
-      JSON_RPC_REGISTER_API( name(), (hello_world)(echo) );
-   }
+      // These implement startup and shutdown logic for the plugin.
+      // plugin_initialize and plugin_startup are called such that dependencies go first
+      // plugin_shutdown goes in reverse order such the dependencies are running when shutting down.
+      virtual void plugin_initialize( const variables_map& options ) override;
+      virtual void plugin_startup() override;
+      virtual void plugin_shutdown() override;
 
-   void example_api_plugin::plugin_startup() {}
-   void example_api_plugin::plugin_shutdown() {}
+      // These are the API methods defined for the plugin
+      // APIs take struct args and return structs
+      hello_world_return hello_world( const hello_world_args& args );
+      echo_return echo( const echo_args& args );
+  };
 
-   hello_world_return hello_world( const hello_world_args& args )
-   {
-      return hello_world_return{ "Hello World" };
-   }
+  example_api_plugin::example_api_plugin() {}
+  example_api_plugin::~example_api_plugin() {}
 
-   echo_return echo( const echo_args& args )
-   {
-      return echo_return{ args.call };
-   }
+  void example_api_plugin::plugin_initialize( const variables_map& options )
+  {
+    // This registers the API with the json rpc plugin
+    JSON_RPC_REGISTER_API( name(), (hello_world)(echo) );
+  }
 
-} } // steem::example_api_plugin
+  void example_api_plugin::plugin_startup() {}
+  void example_api_plugin::plugin_shutdown() {}
+
+  hello_world_return hello_world( const hello_world_args& args )
+  {
+    return hello_world_return{ "Hello World" };
+  }
+
+  echo_return echo( const echo_args& args )
+  {
+    return echo_return{ args.call };
+  }
+
+} } // hive::example_api_plugin
 
 // Args and return types need to be reflected. hello_world_args does not because it is a typedef of a reflected type
-FC_REFLECT( steem::example_api_plugin::hello_world_return, (message) )
-FC_REFLECT( steem::example_api_plugin::echo_args, (call) )
-FC_REFLECT( steem::example_api_plugin::echo_return, (response) )
+FC_REFLECT( hive::example_api_plugin::hello_world_return, (message) )
+FC_REFLECT( hive::example_api_plugin::echo_args, (call) )
+FC_REFLECT( hive::example_api_plugin::echo_return, (response) )

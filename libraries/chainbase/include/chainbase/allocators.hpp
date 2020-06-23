@@ -2,7 +2,7 @@
 
 #include <boost/interprocess/managed_mapped_file.hpp>
 #include <boost/interprocess/containers/map.hpp>
-#include <boost/interprocess/containers/set.hpp>
+#include <boost/interprocess/containers/flat_set.hpp>
 #include <boost/interprocess/containers/flat_map.hpp>
 #include <boost/interprocess/containers/deque.hpp>
 #include <boost/interprocess/containers/string.hpp>
@@ -19,56 +19,62 @@
 
 namespace chainbase {
 
-   namespace bip = boost::interprocess;
+  namespace bip = boost::interprocess;
 
-   #ifdef ENABLE_MIRA
-      template< typename T >
-      using allocator = std::allocator< T >;
+  #ifdef ENABLE_MIRA
+    template< typename T >
+    using allocator = std::allocator< T >;
 
-      typedef boost::shared_mutex read_write_mutex;
-      typedef boost::shared_lock< read_write_mutex > read_lock;
-   #else
-      template< typename T >
-      using allocator = bip::allocator<T, bip::managed_mapped_file::segment_manager>;
+    typedef boost::shared_mutex read_write_mutex;
+    typedef boost::shared_lock< read_write_mutex > read_lock;
+  #else
+    template< typename T >
+    using allocator = bip::allocator<T, bip::managed_mapped_file::segment_manager>;
 
-      typedef boost::interprocess::interprocess_sharable_mutex read_write_mutex;
-      typedef boost::interprocess::sharable_lock< read_write_mutex > read_lock;
-   #endif
+    typedef boost::interprocess::interprocess_sharable_mutex read_write_mutex;
+    typedef boost::interprocess::sharable_lock< read_write_mutex > read_lock;
+  #endif
 
-   typedef boost::unique_lock< read_write_mutex > write_lock;
+  typedef boost::unique_lock< read_write_mutex > write_lock;
 
-   #ifdef ENABLE_MIRA
-      #define _ENABLE_MIRA 1
-   #else
-      #define _ENABLE_MIRA 0
-   #endif
+  #ifdef ENABLE_MIRA
+    #define _ENABLE_MIRA 1
+  #else
+    #define _ENABLE_MIRA 0
+  #endif
 
-   using shared_string = std::conditional< _ENABLE_MIRA,
-                        std::string,
-                        bip::basic_string< char, std::char_traits< char >, allocator< char > >
-                        >::type;
+  using shared_string = std::conditional< _ENABLE_MIRA,
+                std::string,
+                bip::basic_string< char, std::char_traits< char >, allocator< char > >
+                >::type;
 
-   template<typename T>
-   using t_vector = typename std::conditional< _ENABLE_MIRA,
-                              std::vector<T, allocator<T> >,
-                              bip::vector<T, allocator<T> >
-                              >::type;
+  template<typename T>
+  using t_vector = typename std::conditional< _ENABLE_MIRA,
+                    std::vector<T, allocator<T> >,
+                    bip::vector<T, allocator<T> >
+                    >::type;
 
-   template< typename FIRST_TYPE, typename SECOND_TYPE >
-   using t_pair = std::pair< FIRST_TYPE, SECOND_TYPE >;
+  template< typename FIRST_TYPE, typename SECOND_TYPE >
+  using t_pair = std::pair< FIRST_TYPE, SECOND_TYPE >;
 
-   template< typename FIRST_TYPE, typename SECOND_TYPE >
-   using t_allocator_pair = allocator< t_pair< const FIRST_TYPE, SECOND_TYPE > >;
+  template< typename FIRST_TYPE, typename SECOND_TYPE >
+  using t_allocator_pair = allocator< t_pair< const FIRST_TYPE, SECOND_TYPE > >;
 
-   template< typename KEY_TYPE, typename VALUE_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>>
-   using t_flat_map = typename std::conditional< _ENABLE_MIRA,
-      boost::container::flat_map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, allocator< t_pair< KEY_TYPE, VALUE_TYPE > > >,
-      bip::flat_map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, allocator< t_pair< KEY_TYPE, VALUE_TYPE > > >
-      >::type;
+  template< typename KEY_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>>
+  using t_flat_set = typename std::conditional< _ENABLE_MIRA,
+    boost::container::flat_set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > >,
+    bip::flat_set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > >
+    >::type;
 
-   template< typename T >
-   using t_deque = typename std::conditional< _ENABLE_MIRA,
-                  std::deque< T, allocator< T > >,
-                  bip::deque< T, allocator< T > >
-                  >::type;
+  template< typename KEY_TYPE, typename VALUE_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>>
+  using t_flat_map = typename std::conditional< _ENABLE_MIRA,
+    boost::container::flat_map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, allocator< t_pair< KEY_TYPE, VALUE_TYPE > > >,
+    bip::flat_map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, allocator< t_pair< KEY_TYPE, VALUE_TYPE > > >
+    >::type;
+
+  template< typename T >
+  using t_deque = typename std::conditional< _ENABLE_MIRA,
+            std::deque< T, allocator< T > >,
+            bip::deque< T, allocator< T > >
+            >::type;
 }

@@ -5,163 +5,146 @@
 
 namespace mira {
 
+namespace multi_index {
+namespace detail {
+template< typename Value, typename Key, typename KeyFromValue,
+  typename KeyCompare, typename ID, typename IDFromValue >
+  struct rocksdb_iterator;
+} }
+
 template< typename ValueType, typename... Iters >
 class iterator_adapter :
-   public boost::bidirectional_iterator_helper<
-      iterator_adapter< ValueType, Iters... >,
-      ValueType,
-      std::size_t,
-      const ValueType*,
-      const ValueType& >
+  public boost::bidirectional_iterator_helper<
+    iterator_adapter< ValueType, Iters... >,
+    ValueType,
+    std::size_t,
+    const ValueType*,
+    const ValueType& >
 {
-   typedef boost::variant< Iters... > iter_variant;
+  typedef boost::variant< Iters... > iter_variant;
 
-   template< typename t > struct type {};
+  template< typename t > struct type {};
 
-   public:
-      iter_variant _itr;
+  public:
+    mutable iter_variant _itr;
 
-      iterator_adapter() {}
+    iterator_adapter() = default;
+    iterator_adapter( const iterator_adapter& rhs ) = default;
+    iterator_adapter( iterator_adapter&& rhs ) = default;
 
-      template< typename T >
-      iterator_adapter( T& rhs )
-      {
-         assignment_impl( rhs, type< typename std::remove_reference< T >::type >() );
-      }
+    template< typename T >
+    static iterator_adapter create( const T& rhs )
+    {
+      iterator_adapter itr;
+      itr._itr = rhs;
+      return itr;
+    }
 
-      template< typename T >
-      iterator_adapter( const T& rhs )
-      {
-         assignment_impl( rhs, type< typename std::remove_reference< T >::type >() );
-      }
+    template< typename T >
+    static iterator_adapter create( T&& rhs )
+    {
+      iterator_adapter itr;
+      itr._itr = std::move( rhs );
+      return itr;
+    }
 
-      template< typename T >
-      iterator_adapter( T&& rhs )
-      {
-         assignment_impl( std::move( rhs ), type< typename std::remove_reference< T >::type >() );
-      }
+    bool valid() const
+    {
+      return boost::apply_visitor(
+        [this]( auto& itr ) { return validate_iterator(itr); },
+        _itr
+      );
+    }
 
-      iterator_adapter& operator ++()
-      {
-         boost::apply_visitor(
-            []( auto& itr ){ ++itr; },
-            _itr
-         );
+    template< typename Value, typename Key, typename KeyFromValue,
+      typename KeyCompare, typename ID, typename IDFromValue >
+    bool validate_iterator( const multi_index::detail::rocksdb_iterator<Value, Key, KeyFromValue, KeyCompare, ID, IDFromValue>& i ) const
+    {
+      return i.valid();
+    }
 
-         return *this;
-      }
+    template <class T>
+    bool validate_iterator( const T& i ) const
+    {
+      return true;
+    }
 
-      iterator_adapter operator ++(int)const
-      {
-         return boost::apply_visitor(
-            []( auto& itr ){ return iterator_adapter( itr++ ); },
-            _itr
-         );
-      }
+    iterator_adapter& operator ++()
+    {
+      boost::apply_visitor(
+        []( auto& itr ){ ++itr; },
+        _itr
+      );
 
-      iterator_adapter& operator --()
-      {
-         boost::apply_visitor(
-            []( auto& itr ){ --itr; },
-            _itr
-         );
+      return *this;
+    }
 
-         return *this;
-      }
+    iterator_adapter operator ++(int)const
+    {
+      return boost::apply_visitor(
+        [this]( auto& itr )
+        {
+          iterator_adapter copy( *this );
+          itr++;
+          return copy;
+        },
+        _itr
+      );
+    }
 
-      iterator_adapter operator --(int)const
-      {
-         return boost::apply_visitor(
-            []( auto& itr ){ return iterator_adapter( itr-- ); },
-            _itr
-         );
-      }
+    iterator_adapter& operator --()
+    {
+      boost::apply_visitor(
+        []( auto& itr ){ --itr; },
+        _itr
+      );
 
-      const ValueType& operator *()
-      {
-         return *(operator ->());
-      }
+      return *this;
+    }
 
-      const ValueType* operator ->()
-      {
-         return boost::apply_visitor(
-            []( auto& itr ){ return itr.operator->(); },
-            _itr
-         );
-      }
+    iterator_adapter operator --(int)const
+    {
+      return boost::apply_visitor(
+        [this]( auto& itr )
+        {
+          iterator_adapter copy( *this );
+          itr--;
+          return copy;
+        },
+        _itr
+      );
+    }
 
-      template< typename T >
-      iterator_adapter& operator =( T& rhs )
-      {
-         assignment_impl( rhs, type< typename std::remove_reference< T >::type >() );
+    const ValueType& operator *() const
+    {
+      return *(operator ->());
+    }
 
-         return *this;
-      }
+    const ValueType* operator ->() const
+    {
+      return boost::apply_visitor(
+        []( auto& itr ){ return itr.operator->(); },
+        _itr
+      );
+    }
 
-      template< typename T >
-      iterator_adapter& operator =( const T& rhs )
-      {
-         assignment_impl( rhs, type< typename std::remove_reference< T >::type >() );
+    iterator_adapter& operator =( const iterator_adapter& rhs ) = default;
+    iterator_adapter& operator =( iterator_adapter&& rhs ) = default;
 
-         return *this;
-      }
-
-      template< typename T >
-      iterator_adapter& operator =( T&& rhs )
-      {
-         assignment_impl( std::move( rhs ), type< typename std::remove_reference< T >::type >() );
-
-         return *this;
-      }
-
-      template< typename IterType >
-      IterType& get() { return boost::get< IterType >( _itr ); }
-
-   private:
-      void assignment_impl( iterator_adapter& rhs, type< iterator_adapter > )
-      {
-         _itr = rhs._itr;
-      }
-
-      template< typename T >
-      void assignment_impl( T& rhs, type< T > )
-      {
-         _itr = rhs;
-      }
-
-      void assignment_impl( const iterator_adapter& rhs, type< iterator_adapter > )
-      {
-         _itr = rhs._itr;
-      }
-
-      template< typename T >
-      void assignment_impl( const T& rhs, type< T > )
-      {
-         _itr = rhs;
-      }
-
-      void assignment_impl( iterator_adapter&& rhs, type< iterator_adapter > )
-      {
-         _itr = std::move( rhs._itr );
-      }
-
-      template< typename T >
-      void assignment_impl( T&& rhs, type< T > )
-      {
-         _itr = std::move( rhs );
-      }
+    template< typename IterType >
+    IterType& get() { return boost::get< IterType >( _itr ); }
 };
 
 template< typename ValueType, typename... Iters >
 bool operator ==( const iterator_adapter< ValueType, Iters... >& lhs, const iterator_adapter< ValueType, Iters... >& rhs )
 {
-   return lhs._itr == rhs._itr;
+  return lhs._itr == rhs._itr;
 }
 
 template< typename ValueType, typename... Iters >
 bool operator !=( const iterator_adapter< ValueType, Iters... >& lhs, const iterator_adapter< ValueType, Iters... >& rhs )
 {
-   return !( lhs == rhs );
+  return !( lhs == rhs );
 }
 
 } // mira

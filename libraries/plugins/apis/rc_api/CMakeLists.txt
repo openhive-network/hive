@@ -1,4 +1,4 @@
-file(GLOB HEADERS "include/steem/plugins/rc_api/*.hpp")
+file(GLOB HEADERS "include/hive/plugins/rc_api/*.hpp")
 add_library( rc_api_plugin
              rc_api_plugin.cpp
              rc_api.cpp

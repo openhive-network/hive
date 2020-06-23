@@ -13,7 +13,7 @@ From the root of the repository:
 (Also in the root of the repository.)
 
     docker build --rm=false \
-        -t steemitinc/steem-test \
+        -t steemitinc/hive-test \
         -f Dockerfile.test .
 
 ## To Troubleshoot Failing Tests
@@ -27,21 +27,21 @@ Then, inside the container:
 (These steps are taken from `/Dockerfile.test` in the
 repository root.)
 
-    git clone https://github.com/steemit/steem.git \
-        /usr/local/src/steem
-    cd /usr/local/src/steem
+    git clone https://github.com/steemit/hive.git \
+        /usr/local/src/hive
+    cd /usr/local/src/hive
     git checkout <branch> # e.g. 123-feature
     git submodule update --init --recursive
     mkdir build
     cd build
     cmake \
         -DCMAKE_BUILD_TYPE=Debug \
-        -DBUILD_STEEM_TESTNET=ON \
+        -DBUILD_HIVE_TESTNET=ON \
         -DLOW_MEMORY_NODE=OFF \
         -DCLEAR_VOTES=ON \
         ..
     make -j$(nproc) chain_test
     ./tests/chain_test
-    cd /usr/local/src/steem
+    cd /usr/local/src/hive
     doxygen
     programs/build_helpers/check_reflect.py

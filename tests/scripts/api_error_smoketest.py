@@ -159,7 +159,7 @@ tests = [
    },
    {
       "method": "condenser_api.get_transaction_hex",
-      "params": [{"operations":[["transfer", {"from":"temp", "to":"null", "ammount":"1.000 STEEM"}]]}]
+      "params": [{"operations":[["transfer", {"from":"temp", "to":"null", "ammount":"1.000 HIVE"}]]}]
    },
 # Not currently tracking info required for this
 #   {
@@ -168,11 +168,11 @@ tests = [
 #   },
    {
       "method": "condenser_api.get_required_signatures",
-      "params": [{"operations":[["transfer", {"from":"temp", "to":"null", "ammount":"1.000 STEEM"}]]}, []]
+      "params": [{"operations":[["transfer", {"from":"temp", "to":"null", "ammount":"1.000 HIVE"}]]}, []]
    },
    {
       "method": "condenser_api.verify_authority",
-      "params": [{"operations":[["transfer", {"from":"temp", "to":"null", "ammount":"1.000 STEEM"}]]}]
+      "params": [{"operations":[["transfer", {"from":"temp", "to":"null", "ammount":"1.000 HIVE"}]]}]
    },
    {
       "method": "condenser_api.verify_account_authority",
@@ -644,11 +644,11 @@ tests = [
       "params": {"account":"temp"}
    },
    {
-      "method": "database_api.list_sbd_conversion_requests",
+      "method": "database_api.list_hbd_conversion_requests",
       "params": {"start":["",0], "limit":10, "order":"by_account"}
    },
    {
-      "method": "database_api.find_sbd_conversion_requests",
+      "method": "database_api.find_hbd_conversion_requests",
       "params": {"account":"temp"}
    },
    {
@@ -747,7 +747,7 @@ def main():
    elif len( sys.argv ) == 2:
       url = sys.argv[1]
    else:
-      exit( "Usage: api_error_smoketest.py <steem_api_endpoint>" )
+      exit( "Usage: api_error_smoketest.py <hive_api_endpoint>" )
 
    print( "Testing against endpoint: " + url )
 

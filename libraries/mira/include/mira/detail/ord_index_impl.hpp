@@ -130,7 +130,7 @@ class ordered_index_impl:
 public:
   /* types */
 
-  typedef typename KeyFromValue::result_type         key_type;
+  typedef typename std::remove_const< typename KeyFromValue::result_type >::type         key_type;
   typedef typename super::value_type                 value_type;
   typedef KeyFromValue                               key_from_value;
   typedef slice_comparator<

@@ -1,4 +1,4 @@
-file(GLOB HEADERS "include/steem/plugins/statsd/*.hpp")
+file(GLOB HEADERS "include/hive/plugins/statsd/*.hpp")
 
 add_library( statsd_plugin
              statsd_plugin.cpp

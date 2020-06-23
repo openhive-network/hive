@@ -206,6 +206,8 @@ void print_stacktrace_on_segfault()
 {
    struct sigaction sigact;
 
+   memset( &sigact, 0, sizeof( sigact ) );
+
    sigact.sa_sigaction = segfault_handler;
    sigact.sa_flags = SA_RESTART | SA_SIGINFO;
 
@@ -252,6 +254,8 @@ void print_stacktrace( std::ostream& out, unsigned int max_frames /* = 63 */, vo
 void print_stacktrace_on_segfault()
 {
    struct sigaction sigact;
+
+   memset( &sigact, 0, sizeof( sigact ) );
 
    sigact.sa_handler = &segfault_handler;
    sigact.sa_flags = SA_RESTART | SA_SIGINFO;

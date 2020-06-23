@@ -14,8 +14,8 @@ using ::rocksdb::ColumnFamilyDescriptor;
 class rocksdb_base
 {
 
-   protected:
-      std::vector< ColumnFamilyDescriptor > _column_defs;
+  protected:
+    std::vector< ColumnFamilyDescriptor > _column_defs;
 
 };
 

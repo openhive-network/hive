@@ -1,11 +1,11 @@
-#ifndef STEEM_HARDFORK_0_22
-#define STEEM_HARDFORK_0_22 22
+#ifndef HIVE_HARDFORK_0_22
+#define HIVE_HARDFORK_0_22 22
 
-#define STEEM_HARDFORK_0_22_TIME 1567090800 // Thu, 29 August 2019 15:00:00 UTC (11:00:00 EDT)
+#define HIVE_HARDFORK_0_22_TIME 1567090800 // Thu, 29 August 2019 15:00:00 UTC (11:00:00 EDT)
 
-#define STEEM_HARDFORK_0_22__3485 STEEM_HARDFORK_0_22
+#define HIVE_HARDFORK_0_22__3485 HIVE_HARDFORK_0_22
 
-#define STEEM_HARDFORK_0_22_VERSION hardfork_version( 0, 22 )
+#define HIVE_HARDFORK_0_22_VERSION hardfork_version( 0, 22 )
 
 #endif
 
@@ -14,8 +14,8 @@ namespace hardforkprotect
 
 inline static const std::set< std::string >& get_steemit_accounts()
 {
-   static const std::set< std::string > steemit_accounts
-   {
+  static const std::set< std::string > steemit_accounts
+  {
     // steemit accounts
     "ben",
     "bitdev100",
@@ -351,9 +351,9 @@ inline static const std::set< std::string >& get_steemit_accounts()
     "ksheva1",
     "fadetoblack",
     "autoway"
-   };
+  };
 
-   return steemit_accounts;
+  return steemit_accounts;
 }
 
 }

@@ -1,12 +1,12 @@
 /* Multiply indexed container.
- *
- * Copyright 2003-2018 Joaquin M Lopez Munoz.
- * Distributed under the Boost Software License, Version 1.0.
- * (See accompanying file LICENSE_1_0.txt or copy at
- * http://www.boost.org/LICENSE_1_0.txt)
- *
- * See http://www.boost.org/libs/multi_index for library home page.
- */
+  *
+  * Copyright 2003-2018 Joaquin M Lopez Munoz.
+  * Distributed under the Boost Software License, Version 1.0.
+  * (See accompanying file LICENSE_1_0.txt or copy at
+  * http://www.boost.org/LICENSE_1_0.txt)
+  *
+  * See http://www.boost.org/libs/multi_index for library home page.
+  */
 
 #pragma once
 
@@ -84,20 +84,20 @@ private:
   template <typename,typename,typename> friend class  detail::index_base;
 
   typedef typename detail::multi_index_base_type<
-      Value,IndexSpecifierList,Allocator>::type   super;
+    Value,IndexSpecifierList,Allocator>::type   super;
 
-   int64_t                                         _revision = -1;
+  int64_t                                         _revision = -1;
 
-   std::string                                     _name;
-   std::shared_ptr< ::rocksdb::Statistics >        _stats;
-   ::rocksdb::WriteOptions                         _wopts;
+  std::string                                     _name;
+  std::shared_ptr< ::rocksdb::Statistics >        _stats;
+  ::rocksdb::WriteOptions                         _wopts;
 
-   rocksdb::ReadOptions                            _ropts;
+  rocksdb::ReadOptions                            _ropts;
 
 public:
   /* All types are inherited from super, a few are explicitly
-   * brought forward here to save us some typename's.
-   */
+  * brought forward here to save us some typename's.
+  */
 
   typedef typename super::ctor_args_list           ctor_args_list;
   typedef IndexSpecifierList                       index_specifier_type_list;
@@ -129,241 +129,242 @@ public:
   multi_index_container():
     super(ctor_args_list()),
     entry_count(0)
-   {
-      std::vector< std::string > split_v;
-      auto type = boost::core::demangle( typeid( Value ).name() );
-      boost::split( split_v, type, boost::is_any_of( ":" ) );
-      _wopts.disableWAL = true;
+  {
+    std::vector< std::string > split_v;
+    auto type = boost::core::demangle( typeid( Value ).name() );
+    boost::split( split_v, type, boost::is_any_of( ":" ) );
+    _wopts.disableWAL = true;
 
-      _name = "rocksdb_" + *(split_v.rbegin());
-   }
+    _name = "rocksdb_" + *(split_v.rbegin());
+  }
 
   explicit multi_index_container( const boost::filesystem::path& p, const boost::any& cfg ):
     super(ctor_args_list()),
     entry_count(0)
-   {
-      std::vector< std::string > split_v;
-      auto type = boost::core::demangle( typeid( Value ).name() );
-      boost::split( split_v, type, boost::is_any_of( ":" ) );
+  {
+    std::vector< std::string > split_v;
+    auto type = boost::core::demangle( typeid( Value ).name() );
+    boost::split( split_v, type, boost::is_any_of( ":" ) );
 
-      _name = "rocksdb_" + *(split_v.rbegin());
-      _wopts.disableWAL = true;
+    _name = "rocksdb_" + *(split_v.rbegin());
+    _wopts.disableWAL = true;
 
-      open( p, cfg );
+    open( p, cfg );
 
-      BOOST_MULTI_INDEX_CHECK_INVARIANT;
-   }
+    BOOST_MULTI_INDEX_CHECK_INVARIANT;
+  }
 
-   template< typename InputIterator >
-   explicit multi_index_container( InputIterator& first, InputIterator& last, const boost::filesystem::path& p, const boost::any& cfg ):
+  template< typename InputIterator >
+  explicit multi_index_container( InputIterator& first, InputIterator& last, const boost::filesystem::path& p, const boost::any& cfg ):
     super(ctor_args_list()),
     entry_count(0)
-   {
-      std::vector< std::string > split_v;
-      auto type = boost::core::demangle( typeid( Value ).name() );
-      boost::split( split_v, type, boost::is_any_of( ":" ) );
+  {
+    std::vector< std::string > split_v;
+    auto type = boost::core::demangle( typeid( Value ).name() );
+    boost::split( split_v, type, boost::is_any_of( ":" ) );
 
-      _name = "rocksdb_" + *(split_v.rbegin());
-      _wopts.disableWAL = true;
+    _name = "rocksdb_" + *(split_v.rbegin());
+    _wopts.disableWAL = true;
 
-      open( p, cfg );
+    open( p, cfg );
 
-      while( first != last )
-      {
-         insert_( *(const_cast<value_type*>(first.operator->())) );
-         ++first;
-         ++entry_count;
-      }
+    while( first != last )
+    {
+      insert_( *(const_cast<value_type*>(first.operator->())) );
+      ++first;
+      ++entry_count;
+    }
 
-      BOOST_MULTI_INDEX_CHECK_INVARIANT;
-   }
+    BOOST_MULTI_INDEX_CHECK_INVARIANT;
+  }
 
-   // This really shouldn't be done but is needed for boost variant
-   multi_index_container( const multi_index_container& other ) :
-      super( other ),
-      _revision( other._revision ),
-      _name( other._name ),
-      _stats( other._stats ),
-      _wopts( other._wopts ),
-      _ropts( other._ropts ),
-      entry_count( other.entry_count )
-   {}
+  // This really shouldn't be done but is needed for boost variant
+  multi_index_container( const multi_index_container& other ) :
+    super( other ),
+    _revision( other._revision ),
+    _name( other._name ),
+    _stats( other._stats ),
+    _wopts( other._wopts ),
+    _ropts( other._ropts ),
+    entry_count( other.entry_count )
+  {}
 
-   multi_index_container( multi_index_container&& other ) :
-      super( std::move( other ) ),
-      _revision( other._revision ),
-      _name( std::move( other._name ) ),
-      _stats( std::move( other._stats ) ),
-      _wopts( std::move( other._wopts ) ),
-      _ropts( std::move( other._ropts ) ),
-      entry_count( other.entry_count )
-   {}
+  multi_index_container( multi_index_container&& other ) :
+    super( std::move( other ) ),
+    _revision( other._revision ),
+    _name( std::move( other._name ) ),
+    _stats( std::move( other._stats ) ),
+    _wopts( std::move( other._wopts ) ),
+    _ropts( std::move( other._ropts ) ),
+    entry_count( other.entry_count )
+  {}
 
-   multi_index_container& operator=( const multi_index_container& rhs )
-   {
-      super::operator=( rhs );
-      _revision = rhs._revision;
-      _name = rhs._name;
-      _stats = rhs._stats;
-      _wopts = rhs._wopts;
-      _ropts = rhs._ropts;
-      entry_count = rhs.entry_count;
+  multi_index_container& operator=( const multi_index_container& rhs )
+  {
+    super::operator=( rhs );
+    _revision = rhs._revision;
+    _name = rhs._name;
+    _stats = rhs._stats;
+    _wopts = rhs._wopts;
+    _ropts = rhs._ropts;
+    entry_count = rhs.entry_count;
 
-      return *this;
-   }
+    return *this;
+  }
 
-   multi_index_container& operator=( multi_index_container&& rhs )
-   {
-      super::operator=( std::move( rhs ) );
-      _revision = rhs._revision;
-      _name = std::move( rhs._name );
-      _stats = std::move( rhs._stats );
-      _wopts = std::move( rhs._wopts );
-      _ropts = std::move( rhs._ropts );
-      entry_count = rhs.entry_count;
+  multi_index_container& operator=( multi_index_container&& rhs )
+  {
+    super::operator=( std::move( rhs ) );
+    _revision = rhs._revision;
+    _name = std::move( rhs._name );
+    _stats = std::move( rhs._stats );
+    _wopts = std::move( rhs._wopts );
+    _ropts = std::move( rhs._ropts );
+    entry_count = rhs.entry_count;
 
-      return *this;
-   }
+    return *this;
+  }
 
-   bool open( const boost::filesystem::path& p, const boost::any& cfg = nullptr )
-   {
-      assert( p.is_absolute() );
+  bool open( const boost::filesystem::path& p, const boost::any& cfg = nullptr )
+  {
+    assert( p.is_absolute() );
 
-      std::string str_path = ( p / _name ).string();
+    std::string str_path = ( p / _name ).string();
 
-      maybe_create_schema( str_path );
+    maybe_create_schema( str_path );
 
-      // TODO: Move out of constructor becasuse throwing exceptions in a constuctor is sad...
-      column_definitions column_defs;
-      populate_column_definitions_( column_defs );
+    // TODO: Move out of constructor becasuse throwing exceptions in a constuctor is sad...
+    column_definitions column_defs;
+    populate_column_definitions_( column_defs );
 
-      ::rocksdb::Options opts;
+    ::rocksdb::Options opts;
 
-      try
-      {
-         detail::cache_manager::get()->set_object_threshold( configuration::get_object_count( cfg ) );
+    try
+    {
+      detail::cache_manager::get()->set_object_threshold( configuration::get_object_count( cfg ) );
 
-         opts = configuration::get_options( cfg, boost::core::demangle( typeid( Value ).name() ) );
+      opts = configuration::get_options( cfg, boost::core::demangle( typeid( Value ).name() ) );
 
-         if ( configuration::gather_statistics( cfg ) )
-            opts.statistics = _stats = ::rocksdb::CreateDBStatistics();
-      }
-      catch ( ... )
-      {
-         elog( "Failure while applying configuration for database: ${db}",
-            ("db", boost::core::demangle( typeid( Value ).name())) );
-         throw;
-      }
+      if ( configuration::gather_statistics( cfg ) )
+        opts.statistics = _stats = ::rocksdb::CreateDBStatistics();
+    }
+    catch ( ... )
+    {
+      elog( "Failure while applying configuration for database: ${db}",
+        ("db", boost::core::demangle( typeid( Value ).name())) );
+      throw;
+    }
 
-      std::vector< ::rocksdb::ColumnFamilyHandle* > handles;
+    std::vector< ::rocksdb::ColumnFamilyHandle* > handles;
 
-      ::rocksdb::DB* db = nullptr;
-      ::rocksdb::Status s = ::rocksdb::DB::Open( opts, str_path, column_defs, &handles, &db );
+    ::rocksdb::DB* db = nullptr;
+    ::rocksdb::Status s = ::rocksdb::DB::Open( opts, str_path, column_defs, &handles, &db );
 
-      for( ::rocksdb::ColumnFamilyHandle* h : handles )
-      {
-         super::_handles.push_back( std::shared_ptr< ::rocksdb::ColumnFamilyHandle >( h ) );
-      }
+    for( ::rocksdb::ColumnFamilyHandle* h : handles )
+    {
+      super::_handles.push_back( std::shared_ptr< ::rocksdb::ColumnFamilyHandle >( h ) );
+    }
+
+    if( s.ok() )
+    {
+      // Verify DB Schema
+
+      super::_db.reset( db );
+
+      ::rocksdb::ReadOptions read_opts;
+      ::rocksdb::PinnableSlice value_slice;
+
+      auto ser_count_key = fc::raw::pack_to_vector( ENTRY_COUNT_KEY );
+
+      s = super::_db->Get(
+        read_opts,
+        &*super::_handles[ DEFAULT_COLUMN ],
+        ::rocksdb::Slice( ser_count_key.data(), ser_count_key.size() ),
+        &value_slice );
 
       if( s.ok() )
       {
-         // Verify DB Schema
-
-         super::_db.reset( db );
-
-         ::rocksdb::ReadOptions read_opts;
-         ::rocksdb::PinnableSlice value_slice;
-
-         auto ser_count_key = fc::raw::pack_to_vector( ENTRY_COUNT_KEY );
-
-         s = super::_db->Get(
-            read_opts,
-            &*super::_handles[ DEFAULT_COLUMN ],
-            ::rocksdb::Slice( ser_count_key.data(), ser_count_key.size() ),
-            &value_slice );
-
-         if( s.ok() )
-         {
-            entry_count = fc::raw::unpack_from_char_array< uint64_t >( value_slice.data(), value_slice.size() );
-         }
-
-         auto ser_rev_key = fc::raw::pack_to_vector( REVISION_KEY );
-         value_slice.Reset();
-
-         s = super::_db->Get(
-            read_opts,
-            &*super::_handles[ DEFAULT_COLUMN ],
-            ::rocksdb::Slice( ser_rev_key.data(), ser_rev_key.size() ),
-            &value_slice );
-
-         if( s.ok() )
-         {
-            _revision = fc::raw::unpack_from_char_array< int64_t >( value_slice.data(), value_slice.size() );
-         }
+        entry_count = fc::raw::unpack_from_char_array< uint64_t >( value_slice.data(), value_slice.size() );
       }
-      else
+
+      auto ser_rev_key = fc::raw::pack_to_vector( REVISION_KEY );
+      value_slice.Reset();
+
+      s = super::_db->Get(
+        read_opts,
+        &*super::_handles[ DEFAULT_COLUMN ],
+        ::rocksdb::Slice( ser_rev_key.data(), ser_rev_key.size() ),
+        &value_slice );
+
+      if( s.ok() )
       {
-         std::cout << std::string( s.getState() ) << std::endl;
-         return false;
+        _revision = fc::raw::unpack_from_char_array< int64_t >( value_slice.data(), value_slice.size() );
       }
+    }
+    else
+    {
+      std::cout << std::string( s.getState() ) << std::endl;
+      return false;
+    }
 
-      super::cache_first_key();
+    super::cache_first_key();
 
-      super::object_cache_factory_type::reset();
-      return true;
-   }
+    super::object_cache_factory_type::reset();
+    return true;
+  }
 
-   void close()
-   {
-      if( super::_db && super::_db.unique() )
-      {
-         auto ser_count_key = fc::raw::pack_to_vector( ENTRY_COUNT_KEY );
-         auto ser_count_val = fc::raw::pack_to_vector( entry_count );
+  void close()
+  {
+    if( super::_db && super::_db.unique() )
+    {
+      auto ser_count_key = fc::raw::pack_to_vector( ENTRY_COUNT_KEY );
+      auto ser_count_val = fc::raw::pack_to_vector( entry_count );
 
-         super::_db->Put(
-            _wopts,
-            &*(super::_handles[ DEFAULT_COLUMN ]),
-            ::rocksdb::Slice( ser_count_key.data(), ser_count_key.size() ),
-            ::rocksdb::Slice( ser_count_val.data(), ser_count_val.size() ) );
-
-         super::_cache->clear();
-         rocksdb::CancelAllBackgroundWork( &(*super::_db), true );
-         super::cleanup_column_handles();
-         super::_db.reset();
-      }
-   }
-
-   void wipe( const boost::filesystem::path& p )
-   {
-      assert( !(super::_db) );
-
-      column_definitions column_defs;
-      populate_column_definitions_( column_defs );
-
-      auto s = rocksdb::DestroyDB( ( p / _name ).string(), rocksdb::Options(), column_defs );
-
-      if( !s.ok() ) std::cout << std::string( s.getState() ) << std::endl;
+      super::_db->Put(
+        _wopts,
+        &*(super::_handles[ DEFAULT_COLUMN ]),
+        ::rocksdb::Slice( ser_count_key.data(), ser_count_key.size() ),
+        ::rocksdb::Slice( ser_count_val.data(), ser_count_val.size() ) );
 
       super::_cache->clear();
-   }
+      rocksdb::CancelAllBackgroundWork( &(*super::_db), true );
+      super::cleanup_column_handles();
+      super::_db->Close();
+      super::_db.reset();
+    }
+  }
 
-   ~multi_index_container()
-   {
-      close();
-   }
+  void wipe( const boost::filesystem::path& p )
+  {
+    assert( !(super::_db) );
 
-   void flush()
-   {
-      if( super::_db )
-      {
-         super::flush();
-      }
-   }
+    column_definitions column_defs;
+    populate_column_definitions_( column_defs );
 
-   void trim_cache()
-   {
-      detail::cache_manager::get()->adjust_capacity();
-   }
+    auto s = rocksdb::DestroyDB( ( p / _name ).string(), rocksdb::Options(), column_defs );
+
+    if( !s.ok() ) std::cout << std::string( s.getState() ) << std::endl;
+
+    super::_cache->clear();
+  }
+
+  ~multi_index_container()
+  {
+    close();
+  }
+
+  void flush()
+  {
+    if( super::_db )
+    {
+      super::flush();
+    }
+  }
+
+  void trim_cache()
+  {
+    detail::cache_manager::get()->adjust_capacity();
+  }
 
   allocator_type get_allocator()const BOOST_NOEXCEPT
   {
@@ -399,12 +400,12 @@ public:
   struct index
   {
     typedef typename boost::mpl::find_if<
-      index_type_list,
-      detail::has_tag<Tag>
+    index_type_list,
+    detail::has_tag<Tag>
     >::type                                    iter;
 
     BOOST_STATIC_CONSTANT(
-      bool,index_found=!(boost::is_same<iter,typename boost::mpl::end<index_type_list>::type >::value));
+    bool,index_found=!(boost::is_same<iter,typename boost::mpl::end<index_type_list>::type >::value));
     BOOST_STATIC_ASSERT(index_found);
 
     typedef typename boost::mpl::deref<iter>::type    type;
@@ -457,140 +458,140 @@ int64_t revision() { return _revision; }
 
 int64_t set_revision( int64_t rev )
 {
-   const static auto ser_rev_key = fc::raw::pack_to_vector( REVISION_KEY );
-   const static ::rocksdb::Slice rev_slice( ser_rev_key.data(), ser_rev_key.size() );
-   auto ser_rev_val = fc::raw::pack_to_vector( rev );
+  const static auto ser_rev_key = fc::raw::pack_to_vector( REVISION_KEY );
+  const static ::rocksdb::Slice rev_slice( ser_rev_key.data(), ser_rev_key.size() );
+  auto ser_rev_val = fc::raw::pack_to_vector( rev );
 
-   auto s = super::_db->Put(
-      _wopts, rev_slice,
-      ::rocksdb::Slice( ser_rev_val.data(), ser_rev_val.size() ) );
+  auto s = super::_db->Put(
+    _wopts, rev_slice,
+    ::rocksdb::Slice( ser_rev_val.data(), ser_rev_val.size() ) );
 
-   if( s.ok() ) _revision = rev;
+  if( s.ok() ) _revision = rev;
 
-   return _revision;
+  return _revision;
 }
 
 id_type next_id()
 {
-   id_type id;
-   if ( !get_metadata( "next_id", id ) )
-      id = 0;
-   return id;
+  id_type id( 0 );
+  if ( !get_metadata( "next_id", id ) )
+    id = id_type( 0 );
+  return id;
 }
 
 void set_next_id( id_type id )
 {
-   bool success = put_metadata( "next_id", id );
-   boost::ignore_unused( success );
-   assert( success );
+  bool success = put_metadata( "next_id", id );
+  boost::ignore_unused( success );
+  assert( success );
 }
 
 void print_stats() const
 {
-   if( _stats )
-   {
-      std::cout << _name << " stats:\n";
-      std::cout << _stats->ToString() << "\n";
-   }
+  if( _stats )
+  {
+    std::cout << _name << " stats:\n";
+    std::cout << _stats->ToString() << "\n";
+  }
 }
 
 size_t get_cache_usage() const
 {
-   return super::_cache->usage();
+  return super::_cache->usage();
 }
 
 size_t get_cache_size() const
 {
-   return super::_cache->size();
+  return super::_cache->size();
 }
 
 void dump_lb_call_counts()
 {
-   ilog( "Object ${s}:", ("s",_name) );
-   super::dump_lb_call_counts();
-   ilog( "" );
+  ilog( "Object ${s}:", ("s",_name) );
+  super::dump_lb_call_counts();
+  ilog( "" );
 }
 
 primary_iterator iterator_to( const value_type& x )
 {
-   return primary_index_type::iterator_to( x );
+  return primary_index_type::iterator_to( x );
 }
 
 template< typename CompatibleKey >
 primary_iterator find( const CompatibleKey& x )const
 {
-   return primary_index_type::find( x );
+  return primary_index_type::find( x );
 }
 
 template< typename CompatibleKey >
 primary_iterator lower_bound( const CompatibleKey& x )const
 {
-   return primary_index_type::lower_bound( x );
+  return primary_index_type::lower_bound( x );
 }
 
 primary_iterator upper_bound( const typename primary_index_type::key_type& x )const
 {
-   return primary_index_type::upper_bound( x );
+  return primary_index_type::upper_bound( x );
 }
 
 template< typename CompatibleKey >
 primary_iterator upper_bound( const CompatibleKey& x )const
 {
-   return primary_index_type::upper_bound( x );
+  return primary_index_type::upper_bound( x );
 }
 
 template< typename LowerBounder >
 std::pair< primary_iterator, primary_iterator >
 range( LowerBounder& lower, const typename primary_index_type::key_type upper )const
 {
-   return primary_index_type::range( lower, upper );
+  return primary_index_type::range( lower, upper );
 }
 
 typename primary_index_type::iterator begin() BOOST_NOEXCEPT
-   { return primary_index_type::begin(); }
+  { return primary_index_type::begin(); }
 
 typename primary_index_type::const_iterator begin()const BOOST_NOEXCEPT
-   { return primary_index_type::begin(); }
+  { return primary_index_type::begin(); }
 
 typename primary_index_type::iterator end() BOOST_NOEXCEPT
-   { return primary_index_type::end(); }
+  { return primary_index_type::end(); }
 
 typename primary_index_type::const_iterator end()const BOOST_NOEXCEPT
-   { return primary_index_type::end(); }
+  { return primary_index_type::end(); }
 
 typename primary_index_type::reverse_iterator rbegin() BOOST_NOEXCEPT
-   { return primary_index_type::rbegin(); }
+  { return primary_index_type::rbegin(); }
 
 typename primary_index_type::const_reverse_iterator rbegin() const BOOST_NOEXCEPT
-   { return primary_index_type::rbegin(); }
+  { return primary_index_type::rbegin(); }
 
 typename primary_index_type::reverse_iterator rend() BOOST_NOEXCEPT
-   { return primary_index_type::rend(); }
+  { return primary_index_type::rend(); }
 
 typename primary_index_type::const_reverse_iterator rend() const BOOST_NOEXCEPT
-   { return primary_index_type::rend(); }
+  { return primary_index_type::rend(); }
 
 typename primary_index_type::const_iterator cbegin()const BOOST_NOEXCEPT
-   { return primary_index_type::cbegin(); }
+  { return primary_index_type::cbegin(); }
 
 typename primary_index_type::const_iterator cend()const BOOST_NOEXCEPT
-   { return primary_index_type::cend(); }
+  { return primary_index_type::cend(); }
 
 typename primary_index_type::const_reverse_iterator crbegin()const BOOST_NOEXCEPT
-   { return primary_index_type::crbegin(); }
+  { return primary_index_type::crbegin(); }
 
 typename primary_index_type::const_reverse_iterator crend()const BOOST_NOEXCEPT
-   { return primary_index_type::crend(); }
+  { return primary_index_type::crend(); }
 
 template< typename Modifier >
 bool modify( primary_iterator position, Modifier mod )
 {
-   return primary_index_type::modify( position, mod );
+  return primary_index_type::modify( position, mod );
 }
 
 primary_iterator erase( primary_iterator position )
 {
-   return primary_index_type::erase( position );
+  return primary_index_type::erase( position );
 }
 
   bool empty_()const
@@ -608,60 +609,60 @@ primary_iterator erase( primary_iterator position )
     return static_cast<uint64_t >(-1);
   }
 
-   template< typename... Args >
-   bool emplace_rocksdb_( Args&&... args )
-   {
-      Value v( std::forward< Args >(args)... );
-      return insert_( v );
-   }
+  template< typename... Args >
+  bool emplace_rocksdb_( Args&&... args )
+  {
+    Value v( std::forward< Args >(args)... );
+    return insert_( v );
+  }
 
-   bool insert_( value_type& v )
-   {
-      bool status = false;
-      if( super::insert_rocksdb_( v ) )
-      {
-         auto retval = super::_db->Write( _wopts, super::_write_buffer.GetWriteBatch() );
-         status = retval.ok();
-         if( status )
-         {
-            ++entry_count;
-            super::commit_first_key_update();
-         }
-         else
-         {
-            elog( "${e}", ("e", retval.ToString()) );
-            super::reset_first_key_update();
-         }
-      }
-      else
-      {
-         super::reset_first_key_update();
-      }
-      super::_write_buffer.Clear();
-
-      return status;
-   }
-
-   void erase_( value_type& v )
-   {
-      super::erase_( v );
+  bool insert_( value_type& v )
+  {
+    bool status = false;
+    if( super::insert_rocksdb_( v ) )
+    {
       auto retval = super::_db->Write( _wopts, super::_write_buffer.GetWriteBatch() );
-      bool status = retval.ok();
+      status = retval.ok();
       if( status )
       {
-         --entry_count;
-         std::lock_guard< std::mutex > lock( super::_cache->get_lock() );
-         super::_cache->invalidate( v );
-         super::commit_first_key_update();
+        ++entry_count;
+        super::commit_first_key_update();
       }
       else
       {
-         elog( "${e}", ("e", retval.ToString()) );
-         super::reset_first_key_update();
+        elog( "${e}", ("e", retval.ToString()) );
+        super::reset_first_key_update();
       }
+    }
+    else
+    {
+      super::reset_first_key_update();
+    }
+    super::_write_buffer.Clear();
 
-      super::_write_buffer.Clear();
-   }
+    return status;
+  }
+
+  void erase_( value_type& v )
+  {
+    super::erase_( v );
+    auto retval = super::_db->Write( _wopts, super::_write_buffer.GetWriteBatch() );
+    bool status = retval.ok();
+    if( status )
+    {
+      --entry_count;
+      std::lock_guard< std::mutex > lock( super::_cache->get_lock() );
+      super::_cache->invalidate( v );
+      super::commit_first_key_update();
+    }
+    else
+    {
+      elog( "${e}", ("e", retval.ToString()) );
+      super::reset_first_key_update();
+    }
+
+    super::_write_buffer.Clear();
+  }
 
   void clear_()
   {
@@ -670,188 +671,188 @@ primary_iterator erase( primary_iterator position )
     entry_count=0;
   }
 
-   template< typename Modifier >
-   bool modify_( Modifier& mod, value_type& v )
-   {
-      bool status = false;
-      std::vector< size_t > modified_indices;
-      if( super::modify_( mod, v, modified_indices ) )
-      {
-         auto retval = super::_db->Write( _wopts, super::_write_buffer.GetWriteBatch() );
-         status = retval.ok();
+  template< typename Modifier >
+  bool modify_( Modifier& mod, value_type& v )
+  {
+    bool status = false;
+    std::vector< size_t > modified_indices;
+    if( super::modify_( mod, v, modified_indices ) )
+    {
+      auto retval = super::_db->Write( _wopts, super::_write_buffer.GetWriteBatch() );
+      status = retval.ok();
 
-         if( status )
-         {
-            /* This gets a little weird because the reference passed in
-            most likely belongs to the shared ptr in the cache, so updating
-            the value has already updated the cache, but in case something
-            doesn't line up here, we update by moving the value to itself... */
-            std::lock_guard< std::mutex > lock( super::_cache->get_lock() );
-            super::_cache->get_index_cache( ID_INDEX )->update( (void*)&super::id( v ), std::move( v ), modified_indices );
-            super::commit_first_key_update();
-         }
-         else
-         {
-            elog( "${e}", ("e", retval.ToString()) );
-            super::reset_first_key_update();
-         }
+      if( status )
+      {
+        /* This gets a little weird because the reference passed in
+        most likely belongs to the shared ptr in the cache, so updating
+        the value has already updated the cache, but in case something
+        doesn't line up here, we update by moving the value to itself... */
+        std::lock_guard< std::mutex > lock( super::_cache->get_lock() );
+        super::_cache->get_index_cache( ID_INDEX )->update( (void*)&v, std::move( v ), modified_indices );
+        super::commit_first_key_update();
       }
       else
       {
-         super::reset_first_key_update();
+        elog( "${e}", ("e", retval.ToString()) );
+        super::reset_first_key_update();
       }
+    }
+    else
+    {
+      super::reset_first_key_update();
+    }
 
-      super::_write_buffer.Clear();
+    super::_write_buffer.Clear();
 
-      return status;
-   }
+    return status;
+  }
 
-   template< typename MetaKey, typename MetaValue >
-   bool get_metadata( const MetaKey& k, MetaValue& v )
-   {
-      if( !super::_db ) return false;
+  template< typename MetaKey, typename MetaValue >
+  bool get_metadata( const MetaKey& k, MetaValue& v )
+  {
+    if( !super::_db ) return false;
 
-      rocksdb::PinnableSlice key_slice, value_slice;
+    rocksdb::PinnableSlice key_slice, value_slice;
 
-      pack_to_slice( key_slice, k );
+    pack_to_slice( key_slice, k );
 
-      auto status = super::_db->Get(
-         _ropts,
-         &*super::_handles[ 0 ],
-         key_slice,
-         &value_slice );
+    auto status = super::_db->Get(
+      _ropts,
+      &*super::_handles[ 0 ],
+      key_slice,
+      &value_slice );
 
-      if( status.ok() )
-      {
-         unpack_from_slice( value_slice, v );
-         //ilog( "Retrieved metdata for ${type}: ${key},${value}", ("type",boost::core::demangle(typeid(Value).name()))("key",k)("value",v) );
-      }
-      else
-      {
-         //ilog( "Failed to retrieve metadata for ${type}: ${key}", ("type",boost::core::demangle(typeid(Value).name()))("key",k) );
-      }
+    if( status.ok() )
+    {
+      unpack_from_slice( value_slice, v );
+      //ilog( "Retrieved metdata for ${type}: ${key},${value}", ("type",boost::core::demangle(typeid(Value).name()))("key",k)("value",v) );
+    }
+    else
+    {
+      //ilog( "Failed to retrieve metadata for ${type}: ${key}", ("type",boost::core::demangle(typeid(Value).name()))("key",k) );
+    }
 
-      return status.ok();
-   }
+    return status.ok();
+  }
 
-   template< typename MetaKey, typename MetaValue >
-   bool put_metadata( const MetaKey& k, const MetaValue& v )
-   {
-      if( !super::_db ) return false;
+  template< typename MetaKey, typename MetaValue >
+  bool put_metadata( const MetaKey& k, const MetaValue& v )
+  {
+    if( !super::_db ) return false;
 
-      rocksdb::PinnableSlice key_slice, value_slice;
-      pack_to_slice( key_slice, k );
-      pack_to_slice( value_slice, v );
+    rocksdb::PinnableSlice key_slice, value_slice;
+    pack_to_slice( key_slice, k );
+    pack_to_slice( value_slice, v );
 
-      auto status = super::_db->Put(
-         _wopts,
-         &*super::_handles[0],
-         key_slice,
-         value_slice );
+    auto status = super::_db->Put(
+      _wopts,
+      &*super::_handles[0],
+      key_slice,
+      value_slice );
 
-      if( status.ok() )
-      {
-         //ilog( "Stored metdata for ${type}: ${key},${value}", ("type",boost::core::demangle(typeid(Value).name()))("key",k)("value",v) );
-      }
-      else
-      {
-         //ilog( "Failed to store metadata for ${type}: ${key},${value}", ("type",boost::core::demangle(typeid(Value).name()))("key",k)("value",v) );
-      }
+    if( status.ok() )
+    {
+      //ilog( "Stored metdata for ${type}: ${key},${value}", ("type",boost::core::demangle(typeid(Value).name()))("key",k)("value",v) );
+    }
+    else
+    {
+      //ilog( "Failed to store metadata for ${type}: ${key},${value}", ("type",boost::core::demangle(typeid(Value).name()))("key",k)("value",v) );
+    }
 
-      return status.ok();
-   }
+    return status.ok();
+  }
 
 private:
-   uint64_t entry_count;
+  uint64_t entry_count;
 
-   size_t get_column_size() const { return super::COLUMN_INDEX; }
+  size_t get_column_size() const { return super::COLUMN_INDEX; }
 
-   void populate_column_definitions_( column_definitions& defs ) const
-   {
-      super::populate_column_definitions_( defs );
-   }
+  void populate_column_definitions_( column_definitions& defs ) const
+  {
+    super::populate_column_definitions_( defs );
+  }
 
-   bool maybe_create_schema( const std::string& str_path )
-   {
-      ::rocksdb::DB* db = nullptr;
+  bool maybe_create_schema( const std::string& str_path )
+  {
+    ::rocksdb::DB* db = nullptr;
 
-      column_definitions column_defs;
+    column_definitions column_defs;
+    populate_column_definitions_( column_defs );
+
+    std::vector< ::rocksdb::ColumnFamilyHandle* > handles;
+
+    ::rocksdb::Options opts;
+    //opts.IncreaseParallelism();
+    //opts.OptimizeLevelStyleCompaction();
+    opts.max_open_files = MIRA_MAX_OPEN_FILES_PER_DB;
+
+    ::rocksdb::Status s = ::rocksdb::DB::OpenForReadOnly( opts, str_path, column_defs, &handles, &db );
+
+    if( s.ok() )
+    {
+      for( auto* h : handles ) delete h;
+      delete db;
+      return true;
+    }
+
+    opts.create_if_missing = true;
+
+    s = ::rocksdb::DB::Open( opts, str_path, &db );
+
+    if( s.ok() )
+    {
+      column_defs.clear();
       populate_column_definitions_( column_defs );
+      column_defs.erase( column_defs.begin() );
 
-      std::vector< ::rocksdb::ColumnFamilyHandle* > handles;
-
-      ::rocksdb::Options opts;
-      //opts.IncreaseParallelism();
-      //opts.OptimizeLevelStyleCompaction();
-      opts.max_open_files = MIRA_MAX_OPEN_FILES_PER_DB;
-
-      ::rocksdb::Status s = ::rocksdb::DB::OpenForReadOnly( opts, str_path, column_defs, &handles, &db );
+      s = db->CreateColumnFamilies( column_defs, &handles );
 
       if( s.ok() )
       {
-         for( auto* h : handles ) delete h;
-         delete db;
-         return true;
-      }
+        // Create default column keys
 
-      opts.create_if_missing = true;
+        auto ser_count_key = fc::raw::pack_to_vector( ENTRY_COUNT_KEY );
+        auto ser_count_val = fc::raw::pack_to_vector( uint64_t(0) );
 
-      s = ::rocksdb::DB::Open( opts, str_path, &db );
+        s = db->Put(
+          _wopts,
+          db->DefaultColumnFamily(),
+          ::rocksdb::Slice( ser_count_key.data(), ser_count_key.size() ),
+          ::rocksdb::Slice( ser_count_val.data(), ser_count_val.size() ) );
 
-      if( s.ok() )
-      {
-         column_defs.clear();
-         populate_column_definitions_( column_defs );
-         column_defs.erase( column_defs.begin() );
+        if( !s.ok() ) return false;
 
-         s = db->CreateColumnFamilies( column_defs, &handles );
+        auto ser_rev_key = fc::raw::pack_to_vector( REVISION_KEY );
+        auto ser_rev_val = fc::raw::pack_to_vector( int64_t(0) );
 
-         if( s.ok() )
-         {
-            // Create default column keys
+        db->Put(
+          _wopts,
+          db->DefaultColumnFamily(),
+          ::rocksdb::Slice( ser_rev_key.data(), ser_rev_key.size() ),
+          ::rocksdb::Slice( ser_rev_val.data(), ser_rev_val.size() ) );
 
-            auto ser_count_key = fc::raw::pack_to_vector( ENTRY_COUNT_KEY );
-            auto ser_count_val = fc::raw::pack_to_vector( uint64_t(0) );
+        if( !s.ok() ) return false;
 
-            s = db->Put(
-               _wopts,
-               db->DefaultColumnFamily(),
-               ::rocksdb::Slice( ser_count_key.data(), ser_count_key.size() ),
-               ::rocksdb::Slice( ser_count_val.data(), ser_count_val.size() ) );
+        // Save schema info
 
-            if( !s.ok() ) return false;
-
-            auto ser_rev_key = fc::raw::pack_to_vector( REVISION_KEY );
-            auto ser_rev_val = fc::raw::pack_to_vector( int64_t(0) );
-
-            db->Put(
-               _wopts,
-               db->DefaultColumnFamily(),
-               ::rocksdb::Slice( ser_rev_key.data(), ser_rev_key.size() ),
-               ::rocksdb::Slice( ser_rev_val.data(), ser_rev_val.size() ) );
-
-            if( !s.ok() ) return false;
-
-            // Save schema info
-
-            for( auto* h : handles ) delete h;
-         }
-         else
-         {
-            std::cout << std::string( s.getState() ) << std::endl;
-         }
-
-         delete db;
-
-         return true;
+        for( auto* h : handles ) delete h;
       }
       else
       {
-         std::cout << std::string( s.getState() ) << std::endl;
+        std::cout << std::string( s.getState() ) << std::endl;
       }
 
-      return false;
-   }
+      delete db;
+
+      return true;
+    }
+    else
+    {
+      std::cout << std::string( s.getState() ) << std::endl;
+    }
+
+    return false;
+  }
 
 #if defined(BOOST_MULTI_INDEX_ENABLE_INVARIANT_CHECKING)&&\
     BOOST_WORKAROUND(__MWERKS__,<=0x3003)
@@ -928,8 +929,8 @@ struct index_const_iterator
 } /* namespace multi_index */
 
 /* Associated global functions are promoted to namespace boost, except
- * comparison operators and swap, which are meant to be Koenig looked-up.
- */
+  * comparison operators and swap, which are meant to be Koenig looked-up.
+  */
 
 } /* namespace mira */
 

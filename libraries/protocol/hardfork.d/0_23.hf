@@ -1,11 +1,11 @@
-#ifndef STEEM_HARDFORK_0_23
-#define STEEM_HARDFORK_0_23 23
+#ifndef HIVE_HARDFORK_0_23
+#define HIVE_HARDFORK_0_23 23
 
 long hf23_time();
 
-#define STEEM_HARDFORK_0_23_TIME        hf23_time()
+#define HIVE_HARDFORK_0_23_TIME        hf23_time()
 
-#define STEEM_HARDFORK_0_23_VERSION hardfork_version( 0, 23 )
+#define HIVE_HARDFORK_0_23_VERSION hardfork_version( 0, 23 )
 
 #endif
 
@@ -15,67 +15,67 @@ namespace hardforkprotect
 
 inline static const std::set< std::string >& get_restored_accounts()
 {
-   static const std::set< std::string > restored_accounts
-   {
-      // Errored accounts
-      "akiroq",
-      "balticbadger",
-      "dailychina",
-      "dailystats",
-      "dftba",
-      "double-u",
-      "edgarare1",
-      "electrodo",
-      "fadetoblack",
-      "freedompoint",
-      "friendlystranger",
-      "john371911",
-      "juancar347",
-      "kdtkaren",
-      "lichtblick",
-      "lifeskills-tv",
-      "lotusfleur",
-      "ricko66",
-      "rynow",
-      "scottcbusiness",
-      "seo-boss",
-      "sgbonus",
-      "spoke",
-      "steemchiller",
-      "steemflower",
-      "stimp1024",
-      "travelnepal",
-      "truce",
-      "tuckerjtruman",
-      "yanirauseche"
+  static const std::set< std::string > restored_accounts
+  {
+    // Errored accounts
+    "akiroq",
+    "balticbadger",
+    "dailychina",
+    "dailystats",
+    "dftba",
+    "double-u",
+    "edgarare1",
+    "electrodo",
+    "fadetoblack",
+    "freedompoint",
+    "friendlystranger",
+    "john371911",
+    "juancar347",
+    "kdtkaren",
+    "lichtblick",
+    "lifeskills-tv",
+    "lotusfleur",
+    "ricko66",
+    "rynow",
+    "scottcbusiness",
+    "seo-boss",
+    "sgbonus",
+    "spoke",
+    "steemchiller",
+    "steemflower",
+    "stimp1024",
+    "travelnepal",
+    "truce",
+    "tuckerjtruman",
+    "yanirauseche"
 
-      // Won their aidrop appeal (proposal #104)
-      "lupafilotaxia",
-      "thebigsweed",
-      "farm-mom",
-      "soufiani",
+    // Won their aidrop appeal (proposal #104)
+    "lupafilotaxia",
+    "thebigsweed",
+    "farm-mom",
+    "soufiani",
 
-      // Won their airdrop appeal (proposal #111)
-      "aellly",
-      "angelina6688",
-      "cheva",
-      "cnfund",
-      "cn-malaysia",
-      "devyleona",
-      "huangzuomin",
-      "jademont",
-      "mrpointp",
-      "mrspointm",
-      "shenchensucc",
-      "softmetal",
-      "stepbie",
-      "windowglass",
-      "wongshiying",
-      "xiaoshancun",
-      "yellowbird",
-   };
+    // Won their airdrop appeal (proposal #111)
+    "aellly",
+    "angelina6688",
+    "cheva",
+    "cnfund",
+    "cn-malaysia",
+    "devyleona",
+    "huangzuomin",
+    "jademont",
+    "mrpointp",
+    "mrspointm",
+    "shenchensucc",
+    "softmetal",
+    "stepbie",
+    "windowglass",
+    "wongshiying",
+    "xiaoshancun",
+    "yellowbird",
+  };
 
-   return restored_accounts;
+  return restored_accounts;
 }
 
 }

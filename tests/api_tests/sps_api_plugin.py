@@ -8,7 +8,7 @@ import uuid
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
-MAIN_LOG_PATH = "./sps_rpc_api_test.log"
+MAIN_LOG_PATH = "hdf_rpc_api_test.log"
 
 MODULE_NAME = "SPS API Tester"
 logger = logging.getLogger(MODULE_NAME)

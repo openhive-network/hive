@@ -52,13 +52,14 @@ namespace fc {
   const T& min( const T& a, const T& b ) { return a < b ? a: b; }
 
 }
-  // outside of namespace fc becuase of VC++ conflict with std::swap
-  template<typename T>
-  void fc_swap( T& a, T& b ) {     
-    T tmp = fc::move(a);
-    a = fc::move(b);
-    b = fc::move(tmp);
-  }
+
+// outside of namespace fc becuase of VC++ conflict with std::swap
+template<typename T>
+void fc_swap( T& a, T& b ) {     
+  T tmp = fc::move(a);
+  a = fc::move(b);
+  b = fc::move(tmp);
+}
 
 #define LLCONST(constant)   static_cast<int64_t>(constant##ll)
 #define ULLCONST(constant)  static_cast<uint64_t>(constant##ull)

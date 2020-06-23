@@ -3,11 +3,13 @@ stages:
 
 before_script:
   - docker info
+  - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY_IMAGE
+  - echo $CI_REPOSITORY_URL
   - echo $CI_PROJECT_DIR
   - mkdir -p $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME
   - echo "Working for branch" $CI_COMMIT_REF_NAME " and environment " $CI_ENVIRONMENT_SLUG
   - rm -rf $CI_BUILDS_DIR/hive/$CI_COMMIT_REF_NAME
-  - git clone https://$CI_DEPLOY_USER:$CI_DEPLOY_PASSWORD@gitlab.syncad.com/hive/hive.git $CI_BUILDS_DIR/hive/$CI_COMMIT_REF_NAME
+  - git clone $CI_REPOSITORY_URL $CI_BUILDS_DIR/hive/$CI_COMMIT_REF_NAME
   - cd $CI_BUILDS_DIR/hive/$CI_COMMIT_REF_NAME
   - git checkout $CI_COMMIT_REF_NAME
   - git status
@@ -41,12 +43,13 @@ staging-build:
 
   cache: {}
   tags:
-    - public-runner
-    
+    - secure-runner
+
   allow_failure: false
   only:
    - 0.23.0
    - 0.24.0
+   - develop
 #  environment:
 #    name: staging
 #    url: http://192.168.6.144:8888/v1/chain/get_info
@@ -57,6 +60,7 @@ development-build:
   variables:
     LC_ALL: "C"
     DOCKER_BUILDKIT: 1
+    DOCKER_CONFIG: $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME
     GIT_STRATEGY: none
     GIT_SUBMODULE_STRATEGY: recursive
 
@@ -76,13 +80,14 @@ development-build:
 
   cache: {}
   tags:
-    - public-runner
+    - secure-runner
 
   allow_failure: false
   when: manual
   except:
    - 0.23.0
    - 0.24.0
+   - develop
 #  environment:  
 #    name: development
 #    url: http://192.168.6.144:8888/v1/chain/get_info

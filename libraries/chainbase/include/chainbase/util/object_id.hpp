@@ -3,30 +3,63 @@
 #include <cstdint>
 #include <cstdlib>
 
+namespace fc
+{
+template <typename T>
+class reflector;
+}
+
 namespace chainbase
 {
 
 /**
-*  Object ID type that includes the type of the object it references
+*  Object ID type that includes the type of the object it references.
+*  Each class of chain object has its own ID type and separate object counter.
 */
 template<typename T>
 class oid
 {
+  using __id_type = uint32_t;
+  __id_type _id;
+
 public:
-   oid( int64_t i = 0 ):_id(i){}
+#ifdef ENABLE_MIRA
+  oid( __id_type i = 0 ) : _id( i ) {}
+#else
+  explicit oid( __id_type i ) : _id( i ) {} //lack of default outside of MIRA makes sure all chain-object constructors fill their id members
+#endif
 
-   oid& operator++() { ++_id; return *this; }
+  oid& operator++() { ++_id; return *this; }
 
-   operator size_t () const
-   {
-      return _id;
-   }
+  __id_type get_value() const { return _id; }
+  operator size_t () const { return static_cast<size_t>(_id); }
 
-   friend bool operator < ( const oid& a, const oid& b ) { return a._id < b._id; }
-   friend bool operator > ( const oid& a, const oid& b ) { return a._id > b._id; }
-   friend bool operator == ( const oid& a, const oid& b ) { return a._id == b._id; }
-   friend bool operator != ( const oid& a, const oid& b ) { return a._id != b._id; }
-   int64_t _id = 0;
+  static oid<T> null_id() noexcept
+  {
+    return oid<T>(std::numeric_limits<__id_type>::max());
+  }
+
+  bool operator < (const oid & rhs) const { return _id < rhs._id; }
+  bool operator > (const oid& rhs) const { return _id > rhs._id; }
+  bool operator == (const oid& rhs) const { return _id == rhs._id; }
+  bool operator != (const oid& rhs) const { return _id != rhs._id; }
+
+  friend class fc::reflector< oid<T> >;
 };
+
+/**
+*  Reference to object ID.
+*  Contrary to object ID itself this one has default constructor, but can only be created from object ID
+*/
+template<typename T>
+class oid_ref : public oid<T>
+{
+public:
+  oid_ref() : oid<T>( 0 ) {}
+  oid_ref( const oid<T>& id ) : oid<T>( id ) {}
+  oid_ref& operator= ( const oid<T>& id ) { *static_cast< oid<T>* >( this ) = id; return *this; }
+};
+
+struct by_id;
 
 } /// namespace chainbase

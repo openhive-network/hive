@@ -1,4 +1,4 @@
-file(GLOB HEADERS "include/steem/plugins/webserver/*.hpp")
+file(GLOB HEADERS "include/hive/plugins/webserver/*.hpp")
 
 add_library( webserver_plugin
              webserver_plugin.cpp

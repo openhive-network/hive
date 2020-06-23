@@ -178,13 +178,13 @@ add_boost_test( chain_test
    operation_time_tests/vesting_withdraw_route
    operation_time_tests/feed_publish_mean
    operation_time_tests/convert_delay
-   operation_time_tests/steem_inflation
-   operation_time_tests/sbd_interest
+   operation_time_tests/hive_inflation
+   operation_time_tests/hbd_interest
    operation_time_tests/liquidity_rewards
    operation_time_tests/post_rate_limit
    operation_time_tests/comment_freeze
-   operation_time_tests/sbd_stability
-   operation_time_tests/sbd_price_feed_limit
+   operation_time_tests/hbd_stability
+   operation_time_tests/hbd_price_feed_limit
    operation_time_tests/clear_null_account
    operation_time_tests/generate_account_subsidies
    operation_time_tests/account_subsidy_witness_limits
@@ -248,13 +248,13 @@ add_boost_test( chain_test
    serialization_tests/unpack_clear_test
    serialization_tests/unpack_recursion_test
    undo_tests/undo_basic
-   undo_tests/undo_object_disapear
+   undo_tests/undo_object_disappear
    undo_tests/undo_key_collision
    undo_tests/undo_different_indexes
    undo_tests/undo_generate_blocks
 )
 
-target_link_libraries( chain_test db_fixture chainbase steem_chain steem_protocol account_history_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin fc ${PLATFORM_SPECIFIC_LIBS} )
+target_link_libraries( chain_test db_fixture chainbase hive_chain hive_protocol account_history_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin fc ${PLATFORM_SPECIFIC_LIBS} )
 
 file(GLOB PLUGIN_TESTS "plugin_tests/*.cpp")
 
@@ -274,7 +274,7 @@ add_boost_test( plugin_test
     transaction_status/transaction_status_test
 )
 
-target_link_libraries( plugin_test db_fixture steem_chain steem_protocol account_history_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin transaction_status_plugin transaction_status_api_plugin fc ${PLATFORM_SPECIFIC_LIBS} )
+target_link_libraries( plugin_test db_fixture hive_chain hive_protocol account_history_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin transaction_status_plugin transaction_status_api_plugin fc ${PLATFORM_SPECIFIC_LIBS} )
 
 if(MSVC)
   set_source_files_properties( tests/serialization_tests.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
@@ -282,3 +282,4 @@ endif(MSVC)
 
 #add_subdirectory( generate_empty_blocks )
 add_subdirectory(api_tests)
+add_subdirectory(hive_functional)
