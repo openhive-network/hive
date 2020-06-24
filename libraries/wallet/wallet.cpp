@@ -222,7 +222,7 @@ class wallet_api_impl
 
 public:
   wallet_api& self;
-  wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const hive::protocol::chain_id_type& _hive_chain_id, fc::api< remote_node_api > rapi )
+  wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const hive::protocol::chain_id_type& _hive_chain_id, const fc::api< remote_node_api >& rapi )
     : self( s ),
       _remote_api( rapi )
   {
@@ -246,7 +246,7 @@ public:
     }
   }
 
-  bool copy_wallet_file( string destination_filename )
+  bool copy_wallet_file( const string& destination_filename )
   {
     fc::path src_path = get_wallet_filename();
     if( !fc::exists( src_path ) )
@@ -347,7 +347,7 @@ public:
     return result;
   }
 
-  condenser_api::api_account_object get_account( string account_name ) const
+  condenser_api::api_account_object get_account( const string& account_name ) const
   {
     auto accounts = _remote_api->get_accounts( { account_name } );
     FC_ASSERT( !accounts.empty(), "Unknown account" );
@@ -384,7 +384,7 @@ public:
   // given account name.
   // @returns true if the key matches a current active/owner/memo key for the named
   //          account, false otherwise (but it is stored either way)
-  bool import_key(string wif_key)
+  bool import_key(const string& wif_key)
   {
     fc::optional<fc::ecc::private_key> optional_private_key = wif_to_key(wif_key);
     if (!optional_private_key)
@@ -484,9 +484,9 @@ public:
     }
   }
 
-  signed_transaction create_account_with_private_key(fc::ecc::private_key owner_privkey,
-                                    string account_name,
-                                    string creator_account_name,
+  signed_transaction create_account_with_private_key(const fc::ecc::private_key& owner_privkey,
+                                    const string& account_name,
+                                    const string& creator_account_name,
                                     bool broadcast = false,
                                     bool save_wallet = true)
   { try {
@@ -525,7 +525,7 @@ public:
       return tx;
   } FC_CAPTURE_AND_RETHROW( (account_name)(creator_account_name)(broadcast) ) }
 
-  signed_transaction set_voting_proxy(string account_to_modify, string proxy, bool broadcast /* = false */)
+  signed_transaction set_voting_proxy(const string& account_to_modify, const string& proxy, bool broadcast /* = false */)
   { try {
     account_witness_proxy_operation op;
     op.account = account_to_modify;
@@ -538,7 +538,7 @@ public:
     return sign_transaction( tx, broadcast );
   } FC_CAPTURE_AND_RETHROW( (account_to_modify)(proxy)(broadcast) ) }
 
-  optional< condenser_api::api_witness_object > get_witness( string owner_account )
+  optional< condenser_api::api_witness_object > get_witness( const string& owner_account )
   {
     return _remote_api->get_witness_by_account( owner_account );
   }
@@ -586,16 +586,9 @@ public:
 
     flat_map< string, condenser_api::api_account_object > approving_account_lut;
     size_t i = 0;
-    for( const optional< condenser_api::api_account_object >& approving_acct : approving_account_objects )
+    for( const auto& approving_acct : approving_account_objects )
     {
-      if( !approving_acct.valid() )
-      {
-        wlog( "operation_get_required_auths said approval of non-existing account ${name} was needed",
-            ("name", v_approving_account_names[i]) );
-        i++;
-        continue;
-      }
-      approving_account_lut[ approving_acct->name ] =  *approving_acct;
+      approving_account_lut[ approving_acct.name ] =  approving_acct;
       i++;
     }
     auto get_account_from_lut = [&]( const std::string& name ) -> fc::optional< const condenser_api::api_account_object* >
@@ -938,13 +931,13 @@ public:
 
 namespace hive { namespace wallet {
 
-wallet_api::wallet_api(const wallet_data& initial_data, const hive::protocol::chain_id_type& _hive_chain_id, fc::api< remote_node_api > rapi)
+wallet_api::wallet_api(const wallet_data& initial_data, const hive::protocol::chain_id_type& _hive_chain_id, const fc::api< remote_node_api >& rapi)
   : my(new detail::wallet_api_impl(*this, initial_data, _hive_chain_id, rapi))
 {}
 
 wallet_api::~wallet_api(){}
 
-bool wallet_api::copy_wallet_file(string destination_filename)
+bool wallet_api::copy_wallet_file(const string& destination_filename)
 {
   return my->copy_wallet_file(destination_filename);
 }
@@ -1023,7 +1016,7 @@ brain_key_info wallet_api::suggest_brain_key()const
   return result;
 }
 
-string wallet_api::serialize_transaction( signed_transaction tx )const
+string wallet_api::serialize_transaction( const signed_transaction& tx )const
 {
   return fc::to_hex(fc::raw::pack_to_vector(tx));
 }
@@ -1034,12 +1027,12 @@ string wallet_api::get_wallet_filename() const
 }
 
 
-condenser_api::api_account_object wallet_api::get_account( string account_name ) const
+condenser_api::api_account_object wallet_api::get_account( const string& account_name ) const
 {
   return my->get_account( account_name );
 }
 
-bool wallet_api::import_key(string wif_key)
+bool wallet_api::import_key(const string& wif_key)
 {
   FC_ASSERT(!is_locked());
   // backup wallet
@@ -1060,7 +1053,7 @@ bool wallet_api::import_key(string wif_key)
 
 string wallet_api::normalize_brain_key(string s) const
 {
-  return detail::normalize_brain_key( s );
+   return detail::normalize_brain_key( std::move( s ) );
 }
 
 variant wallet_api::info()
@@ -1085,18 +1078,18 @@ vector< account_name_type > wallet_api::list_witnesses(const string& lowerbound,
   return my->_remote_api->lookup_witness_accounts( lowerbound, limit );
 }
 
-optional< condenser_api::api_witness_object > wallet_api::get_witness(string owner_account)
+optional< condenser_api::api_witness_object > wallet_api::get_witness( const string& owner_account)
 {
   return my->get_witness(owner_account);
 }
 
-condenser_api::legacy_signed_transaction wallet_api::set_voting_proxy(string account_to_modify, string voting_account, bool broadcast /* = false */)
+condenser_api::legacy_signed_transaction wallet_api::set_voting_proxy(const string& account_to_modify, const string& voting_account, bool broadcast /* = false */)
 { return my->set_voting_proxy(account_to_modify, voting_account, broadcast); }
 
-void wallet_api::set_wallet_filename(string wallet_filename) { my->_wallet_filename = wallet_filename; }
+void wallet_api::set_wallet_filename(string wallet_filename) { my->_wallet_filename = std::move(wallet_filename); }
 
 condenser_api::legacy_signed_transaction wallet_api::sign_transaction(
-  condenser_api::legacy_signed_transaction tx, bool broadcast /* = false */)
+  const condenser_api::legacy_signed_transaction& tx, bool broadcast /* = false */)
 { try {
   signed_transaction appbase_tx( tx );
   condenser_api::annotated_signed_transaction result = my->sign_transaction( appbase_tx, broadcast);
@@ -1104,14 +1097,14 @@ condenser_api::legacy_signed_transaction wallet_api::sign_transaction(
 } FC_CAPTURE_AND_RETHROW( (tx) ) }
 
 operation wallet_api::get_prototype_operation(string operation_name) {
-  return my->get_prototype_operation( operation_name );
+  return my->get_prototype_operation( std::move(operation_name) );
 }
 
 string wallet_api::help()const
 {
   std::vector<std::string> method_names = my->method_documentation.get_method_names();
   std::stringstream ss;
-  for (const std::string method_name : method_names)
+  for (const std::string& method_name : method_names)
   {
     try
     {
@@ -1142,12 +1135,12 @@ string wallet_api::gethelp(const string& method)const
 
 bool wallet_api::load_wallet_file( string wallet_filename )
 {
-  return my->load_wallet_file( wallet_filename );
+  return my->load_wallet_file( std::move(wallet_filename) );
 }
 
 void wallet_api::save_wallet_file( string wallet_filename )
 {
-  my->save_wallet_file( wallet_filename );
+  my->save_wallet_file( std::move(wallet_filename) );
 }
 
 std::map<string,std::function<string(fc::variant,const fc::variants&)> >
@@ -1181,7 +1174,7 @@ void wallet_api::lock()
   my->self.lock_changed(true);
 } FC_CAPTURE_AND_RETHROW() }
 
-void wallet_api::unlock(string password)
+void wallet_api::unlock(const string& password)
 { try {
   FC_ASSERT(password.size() > 0);
   auto pw = fc::sha512::hash(password.c_str(), password.size());
@@ -1193,7 +1186,7 @@ void wallet_api::unlock(string password)
   my->self.lock_changed(false);
 } FC_CAPTURE_AND_RETHROW() }
 
-void wallet_api::set_password( string password )
+void wallet_api::set_password( const string& password )
 {
   if( !is_new() )
     FC_ASSERT( !is_locked(), "The wallet must be unlocked before the password can be set" );
@@ -1212,7 +1205,7 @@ string wallet_api::get_private_key( public_key_type pubkey )const
   return key_to_wif( my->get_private_key( pubkey ) );
 }
 
-pair<public_key_type,string> wallet_api::get_private_key_from_password( string account, string role, string password )const {
+pair<public_key_type,string> wallet_api::get_private_key_from_password( const string& account, const string& role, const string& password )const {
   auto seed = account + role + password;
   FC_ASSERT( seed.size() );
   auto secret = fc::sha256::hash( seed.c_str(), seed.size() );
@@ -1228,9 +1221,9 @@ condenser_api::api_feed_history_object wallet_api::get_feed_history()const { ret
   * wallet.
   */
 condenser_api::legacy_signed_transaction wallet_api::create_account_with_keys(
-  string creator,
-  string new_account_name,
-  string json_meta,
+  const string& creator,
+  const string& new_account_name,
+  const string& json_meta,
   public_key_type owner,
   public_key_type active,
   public_key_type posting,
@@ -1261,11 +1254,11 @@ condenser_api::legacy_signed_transaction wallet_api::create_account_with_keys(
   * wallet.
   */
 condenser_api::legacy_signed_transaction wallet_api::create_account_with_keys_delegated(
-  string creator,
-  condenser_api::legacy_asset hive_fee,
-  condenser_api::legacy_asset delegated_vests,
-  string new_account_name,
-  string json_meta,
+  const string& creator,
+  const condenser_api::legacy_asset& hive_fee,
+  const condenser_api::legacy_asset& delegated_vests,
+  const string& new_account_name,
+  const string& json_meta,
   public_key_type owner,
   public_key_type active,
   public_key_type posting,
@@ -1291,13 +1284,13 @@ condenser_api::legacy_signed_transaction wallet_api::create_account_with_keys_de
   return my->sign_transaction( tx, broadcast );
 } FC_CAPTURE_AND_RETHROW( (creator)(new_account_name)(json_meta)(owner)(active)(memo)(broadcast) ) }
 
-condenser_api::legacy_signed_transaction wallet_api::request_account_recovery( string recovery_account, string account_to_recover, authority new_authority, bool broadcast )
+condenser_api::legacy_signed_transaction wallet_api::request_account_recovery( const string& recovery_account, const string& account_to_recover, authority new_authority, bool broadcast )
 {
   FC_ASSERT( !is_locked() );
   request_account_recovery_operation op;
   op.recovery_account = recovery_account;
   op.account_to_recover = account_to_recover;
-  op.new_owner_authority = new_authority;
+  op.new_owner_authority = std::move(new_authority);
 
   signed_transaction tx;
   tx.operations.push_back(op);
@@ -1306,13 +1299,13 @@ condenser_api::legacy_signed_transaction wallet_api::request_account_recovery( s
   return my->sign_transaction( tx, broadcast );
 }
 
-condenser_api::legacy_signed_transaction wallet_api::recover_account( string account_to_recover, authority recent_authority, authority new_authority, bool broadcast ) {
+condenser_api::legacy_signed_transaction wallet_api::recover_account( const string& account_to_recover, authority recent_authority, authority new_authority, bool broadcast ) {
   FC_ASSERT( !is_locked() );
 
   recover_account_operation op;
   op.account_to_recover = account_to_recover;
-  op.new_owner_authority = new_authority;
-  op.recent_owner_authority = recent_authority;
+  op.new_owner_authority = std::move(new_authority);
+  op.recent_owner_authority = std::move(recent_authority);
 
   signed_transaction tx;
   tx.operations.push_back(op);
@@ -1321,7 +1314,7 @@ condenser_api::legacy_signed_transaction wallet_api::recover_account( string acc
   return my->sign_transaction( tx, broadcast );
 }
 
-condenser_api::legacy_signed_transaction wallet_api::change_recovery_account( string owner, string new_recovery_account, bool broadcast ) {
+condenser_api::legacy_signed_transaction wallet_api::change_recovery_account( const string& owner, const string& new_recovery_account, bool broadcast ) {
   FC_ASSERT( !is_locked() );
 
   change_recovery_account_operation op;
@@ -1335,14 +1328,14 @@ condenser_api::legacy_signed_transaction wallet_api::change_recovery_account( st
   return my->sign_transaction( tx, broadcast );
 }
 
-vector< database_api::api_owner_authority_history_object > wallet_api::get_owner_history( string account )const
+vector< database_api::api_owner_authority_history_object > wallet_api::get_owner_history( const string& account )const
 {
   return my->_remote_api->get_owner_history( account );
 }
 
 condenser_api::legacy_signed_transaction wallet_api::update_account(
-  string account_name,
-  string json_meta,
+  const string& account_name,
+  const string& json_meta,
   public_key_type owner,
   public_key_type active,
   public_key_type posting,
@@ -1371,7 +1364,7 @@ condenser_api::legacy_signed_transaction wallet_api::update_account(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::update_account_auth_key(
-  string account_name,
+  const string& account_name,
   authority_type type,
   public_key_type key,
   weight_type weight,
@@ -1443,9 +1436,9 @@ condenser_api::legacy_signed_transaction wallet_api::update_account_auth_key(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::update_account_auth_account(
-  string account_name,
+  const string& account_name,
   authority_type type,
-  string auth_account,
+  const string& auth_account,
   weight_type weight,
   bool broadcast )
 {
@@ -1515,7 +1508,7 @@ condenser_api::legacy_signed_transaction wallet_api::update_account_auth_account
 }
 
 condenser_api::legacy_signed_transaction wallet_api::update_account_auth_threshold(
-  string account_name,
+  const string& account_name,
   authority_type type,
   uint32_t threshold,
   bool broadcast )
@@ -1580,8 +1573,8 @@ condenser_api::legacy_signed_transaction wallet_api::update_account_auth_thresho
 }
 
 condenser_api::legacy_signed_transaction wallet_api::update_account_meta(
-  string account_name,
-  string json_meta,
+  const string& account_name,
+  const string& json_meta,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -1603,7 +1596,7 @@ condenser_api::legacy_signed_transaction wallet_api::update_account_meta(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::update_account_memo_key(
-  string account_name,
+  const string& account_name,
   public_key_type key,
   bool broadcast )
 {
@@ -1626,9 +1619,9 @@ condenser_api::legacy_signed_transaction wallet_api::update_account_memo_key(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares(
-  string delegator,
-  string delegatee,
-  condenser_api::legacy_asset vesting_shares,
+  const string& delegator,
+  const string& delegatee,
+  const condenser_api::legacy_asset& vesting_shares,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -1655,9 +1648,9 @@ condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares(
   *  will be controlable by this wallet.
   */
 condenser_api::legacy_signed_transaction wallet_api::create_account(
-  string creator,
-  string new_account_name,
-  string json_meta,
+  const string& creator,
+  const string& new_account_name,
+  const string& json_meta,
   bool broadcast )
 { try {
   FC_ASSERT( !is_locked() );
@@ -1677,11 +1670,11 @@ condenser_api::legacy_signed_transaction wallet_api::create_account(
   *  will be controlable by this wallet.
   */
 condenser_api::legacy_signed_transaction wallet_api::create_account_delegated(
-  string creator,
-  condenser_api::legacy_asset hive_fee,
-  condenser_api::legacy_asset delegated_vests,
-  string new_account_name,
-  string json_meta,
+  const string& creator,
+  const condenser_api::legacy_asset& hive_fee,
+  const condenser_api::legacy_asset& delegated_vests,
+  const string& new_account_name,
+  const string& json_meta,
   bool broadcast )
 { try {
   FC_ASSERT( !is_locked() );
@@ -1698,8 +1691,8 @@ condenser_api::legacy_signed_transaction wallet_api::create_account_delegated(
 
 
 condenser_api::legacy_signed_transaction wallet_api::update_witness(
-  string witness_account_name,
-  string url,
+  const string& witness_account_name,
+  const string& url,
   public_key_type block_signing_key,
   const condenser_api::api_chain_properties& props,
   bool broadcast  )
@@ -1733,8 +1726,8 @@ condenser_api::legacy_signed_transaction wallet_api::update_witness(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::vote_for_witness(
-  string voting_account,
-  string witness_to_vote_for,
+  const string& voting_account,
+  const string& witness_to_vote_for,
   bool approve,
   bool broadcast )
 { try {
@@ -1810,9 +1803,9 @@ void wallet_api::check_memo(
 }
 
 string wallet_api::get_encrypted_memo(
-  string from,
-  string to,
-  string memo )
+  const string& from,
+  const string& to,
+  const string& memo )
 {
   if( memo.size() > 0 && memo[0] == '#' )
   {
@@ -1844,10 +1837,10 @@ string wallet_api::get_encrypted_memo(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::transfer(
-  string from,
-  string to,
-  condenser_api::legacy_asset amount,
-  string memo,
+  const string& from,
+  const string& to,
+  const condenser_api::legacy_asset& amount,
+  const string& memo,
   bool broadcast )
 { try {
   FC_ASSERT( !is_locked() );
@@ -1867,16 +1860,16 @@ condenser_api::legacy_signed_transaction wallet_api::transfer(
 } FC_CAPTURE_AND_RETHROW( (from)(to)(amount)(memo)(broadcast) ) }
 
 condenser_api::legacy_signed_transaction wallet_api::escrow_transfer(
-  string from,
-  string to,
-  string agent,
+  const string& from,
+  const string& to,
+  const string& agent,
   uint32_t escrow_id,
-  condenser_api::legacy_asset hbd_amount,
-  condenser_api::legacy_asset hive_amount,
-  condenser_api::legacy_asset fee,
-  time_point_sec ratification_deadline,
-  time_point_sec escrow_expiration,
-  string json_meta,
+  const condenser_api::legacy_asset& hbd_amount,
+  const condenser_api::legacy_asset& hive_amount,
+  const condenser_api::legacy_asset& fee,
+  const time_point_sec& ratification_deadline,
+  const time_point_sec& escrow_expiration,
+  const string& json_meta,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -1900,10 +1893,10 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_transfer(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::escrow_approve(
-  string from,
-  string to,
-  string agent,
-  string who,
+  const string& from,
+  const string& to,
+  const string& agent,
+  const string& who,
   uint32_t escrow_id,
   bool approve,
   bool broadcast )
@@ -1924,10 +1917,10 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_approve(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::escrow_dispute(
-  string from,
-  string to,
-  string agent,
-  string who,
+  const string& from,
+  const string& to,
+  const string& agent,
+  const string& who,
   uint32_t escrow_id,
   bool broadcast )
 {
@@ -1947,14 +1940,14 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_dispute(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::escrow_release(
-  string from,
-  string to,
-  string agent,
-  string who,
-  string receiver,
+  const string& from,
+  const string& to,
+  const string& agent,
+  const string& who,
+  const string& receiver,
   uint32_t escrow_id,
-  condenser_api::legacy_asset hbd_amount,
-  condenser_api::legacy_asset hive_amount,
+  const condenser_api::legacy_asset& hbd_amount,
+  const condenser_api::legacy_asset& hive_amount,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -1978,10 +1971,10 @@ condenser_api::legacy_signed_transaction wallet_api::escrow_release(
   *  Transfers into savings happen immediately, transfers from savings take 72 hours
   */
 condenser_api::legacy_signed_transaction wallet_api::transfer_to_savings(
-  string from,
-  string to,
-  condenser_api::legacy_asset amount,
-  string memo,
+  const string& from,
+  const string& to,
+  const condenser_api::legacy_asset& amount,
+  const string& memo,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2003,11 +1996,11 @@ condenser_api::legacy_signed_transaction wallet_api::transfer_to_savings(
   * @param request_id - an unique ID assigned by from account, the id is used to cancel the operation and can be reused after the transfer completes
   */
 condenser_api::legacy_signed_transaction wallet_api::transfer_from_savings(
-  string from,
+  const string& from,
   uint32_t request_id,
-  string to,
-  condenser_api::legacy_asset amount,
-  string memo,
+  const string& to,
+  const condenser_api::legacy_asset& amount,
+  const string& memo,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2031,7 +2024,7 @@ condenser_api::legacy_signed_transaction wallet_api::transfer_from_savings(
   *  @param from the account that initiated the transfer
   */
 condenser_api::legacy_signed_transaction wallet_api::cancel_transfer_from_savings(
-  string from,
+  const string& from,
   uint32_t request_id,
   bool broadcast )
 {
@@ -2047,9 +2040,9 @@ condenser_api::legacy_signed_transaction wallet_api::cancel_transfer_from_saving
 }
 
 condenser_api::legacy_signed_transaction wallet_api::transfer_to_vesting(
-  string from,
-  string to,
-  condenser_api::legacy_asset amount,
+  const string& from,
+  const string& to,
+  const condenser_api::legacy_asset& amount,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2066,8 +2059,8 @@ condenser_api::legacy_signed_transaction wallet_api::transfer_to_vesting(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::withdraw_vesting(
-  string from,
-  condenser_api::legacy_asset vesting_shares,
+  const string& from,
+  const condenser_api::legacy_asset& vesting_shares,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2083,8 +2076,8 @@ condenser_api::legacy_signed_transaction wallet_api::withdraw_vesting(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::set_withdraw_vesting_route(
-  string from,
-  string to,
+  const string& from,
+  const string& to,
   uint16_t percent,
   bool auto_vest,
   bool broadcast )
@@ -2104,8 +2097,8 @@ condenser_api::legacy_signed_transaction wallet_api::set_withdraw_vesting_route(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::convert_hbd(
-  string from,
-  condenser_api::legacy_asset amount,
+  const string& from,
+  const condenser_api::legacy_asset& amount,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2122,8 +2115,8 @@ condenser_api::legacy_signed_transaction wallet_api::convert_hbd(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::publish_feed(
-  string witness,
-  condenser_api::legacy_price exchange_rate,
+  const string& witness,
+  const condenser_api::legacy_price& exchange_rate,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2138,7 +2131,7 @@ condenser_api::legacy_signed_transaction wallet_api::publish_feed(
   return my->sign_transaction( tx, broadcast );
 }
 
-vector< condenser_api::api_convert_request_object > wallet_api::get_conversion_requests( string owner_account )
+vector< condenser_api::api_convert_request_object > wallet_api::get_conversion_requests( const string& owner_account )
 {
   return my->_remote_api->get_conversion_requests( owner_account );
 }
@@ -2186,7 +2179,7 @@ string wallet_api::decrypt_memo( string encrypted_memo )
 }
 
 condenser_api::legacy_signed_transaction wallet_api::decline_voting_rights(
-  string account,
+  const string& account,
   bool decline,
   bool broadcast )
 {
@@ -2203,10 +2196,10 @@ condenser_api::legacy_signed_transaction wallet_api::decline_voting_rights(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::claim_reward_balance(
-  string account,
-  condenser_api::legacy_asset reward_hive,
-  condenser_api::legacy_asset reward_hbd,
-  condenser_api::legacy_asset reward_vests,
+  const string& account,
+  const condenser_api::legacy_asset& reward_hive,
+  const condenser_api::legacy_asset& reward_hbd,
+  const condenser_api::legacy_asset& reward_vests,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2223,7 +2216,7 @@ condenser_api::legacy_signed_transaction wallet_api::claim_reward_balance(
   return my->sign_transaction( tx, broadcast );
 }
 
-map< uint32_t, condenser_api::api_operation_object > wallet_api::get_account_history( string account, uint32_t from, uint32_t limit )
+map< uint32_t, condenser_api::api_operation_object > wallet_api::get_account_history( const string& account, uint32_t from, uint32_t limit )
 {
   auto result = my->_remote_api->get_account_history( account, from, limit );
   if( !is_locked() )
@@ -2252,10 +2245,10 @@ map< uint32_t, condenser_api::api_operation_object > wallet_api::get_account_his
 
 condenser_api::state wallet_api::get_state( string url )
 {
-  return my->_remote_api->get_state( url );
+   return my->_remote_api->get_state( std::move( url ) );
 }
 
-vector< database_api::api_withdraw_vesting_route_object > wallet_api::get_withdraw_routes( string account, condenser_api::withdraw_route_type type )const
+vector< database_api::api_withdraw_vesting_route_object > wallet_api::get_withdraw_routes( const string& account, condenser_api::withdraw_route_type type )const
 {
   return my->_remote_api->get_withdraw_routes( account, type );
 }
@@ -2266,16 +2259,16 @@ condenser_api::get_order_book_return wallet_api::get_order_book( uint32_t limit 
   return my->_remote_api->get_order_book( limit );
 }
 
-vector< condenser_api::api_limit_order_object > wallet_api::get_open_orders( string owner )
+vector< condenser_api::api_limit_order_object > wallet_api::get_open_orders( const string& accountname )
 {
-  return my->_remote_api->get_open_orders( owner );
+  return my->_remote_api->get_open_orders( accountname );
 }
 
 condenser_api::legacy_signed_transaction wallet_api::create_order(
-  string owner,
+  const string& owner,
   uint32_t order_id,
-  condenser_api::legacy_asset amount_to_sell,
-  condenser_api::legacy_asset min_to_receive,
+  const condenser_api::legacy_asset& amount_to_sell,
+  const condenser_api::legacy_asset& min_to_receive,
   bool fill_or_kill,
   uint32_t expiration_sec,
   bool broadcast )
@@ -2297,7 +2290,7 @@ condenser_api::legacy_signed_transaction wallet_api::create_order(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::cancel_order(
-  string owner,
+  const string& owner,
   uint32_t orderid,
   bool broadcast )
 {
@@ -2314,13 +2307,13 @@ condenser_api::legacy_signed_transaction wallet_api::cancel_order(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::post_comment(
-  string author,
-  string permlink,
-  string parent_author,
-  string parent_permlink,
-  string title,
-  string body,
-  string json,
+  const string& author,
+  const string& permlink,
+  const string& parent_author,
+  const string& parent_permlink,
+  const string& title,
+  const string& body,
+  const string& json,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2341,9 +2334,9 @@ condenser_api::legacy_signed_transaction wallet_api::post_comment(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::vote(
-  string voter,
-  string author,
-  string permlink,
+  const string& voter,
+  const string& author,
+  const string& permlink,
   int16_t weight,
   bool broadcast )
 {
@@ -2373,14 +2366,13 @@ condenser_api::legacy_signed_transaction wallet_api::get_transaction( transactio
   return my->_remote_api->get_transaction( id );
 }
 
-condenser_api::legacy_signed_transaction wallet_api::follow( string follower, string following, set<string> what, bool broadcast )
+condenser_api::legacy_signed_transaction wallet_api::follow( const string& follower, string following, set<string> what, bool broadcast )
 {
   auto follwer_account = get_account( follower );
   FC_ASSERT( following.size() );
-  if( following[0] != '@' || following[0] != '#' )
-  {
+
     following = '@' + following;
-  }
+
   if( following[0] == '@' )
   {
     get_account( following.substr(1) );
@@ -2390,7 +2382,7 @@ condenser_api::legacy_signed_transaction wallet_api::follow( string follower, st
   follow::follow_operation fop;
   fop.follower = follower;
   fop.following = following;
-  fop.what = what;
+  fop.what = std::move( what );
   follow::follow_plugin_operation op = fop;
 
   custom_json_operation jop;
@@ -2406,11 +2398,11 @@ condenser_api::legacy_signed_transaction wallet_api::follow( string follower, st
 }
 
   condenser_api::legacy_signed_transaction  wallet_api::create_proposal(
-    account_name_type creator,
-    account_name_type receiver,
+    const account_name_type& creator,
+    const account_name_type& receiver,
     time_point_sec start_date,
     time_point_sec end_date,
-    condenser_api::legacy_asset daily_pay,
+    const condenser_api::legacy_asset& daily_pay,
     string subject,
     string permlink,
     bool broadcast )
@@ -2423,8 +2415,8 @@ condenser_api::legacy_signed_transaction wallet_api::follow( string follower, st
     cp.start_date = start_date;
     cp.end_date = end_date;
     cp.daily_pay = daily_pay;
-    cp.subject = subject;
-    cp.permlink = permlink;
+    cp.subject = std::move( subject );
+    cp.permlink = std::move( permlink );
 
     signed_transaction trx;
     trx.operations.push_back( cp );
@@ -2434,8 +2426,8 @@ condenser_api::legacy_signed_transaction wallet_api::follow( string follower, st
 
   condenser_api::legacy_signed_transaction  wallet_api::update_proposal(
     int64_t proposal_id,
-    account_name_type creator,
-    condenser_api::legacy_asset daily_pay,
+    const account_name_type& creator,
+    const condenser_api::legacy_asset& daily_pay,
     string subject,
     string permlink,
     bool broadcast )
@@ -2447,8 +2439,8 @@ condenser_api::legacy_signed_transaction wallet_api::follow( string follower, st
     up.proposal_id = proposal_id;
     up.creator = creator;
     up.daily_pay = daily_pay;
-    up.subject = subject;
-    up.permlink = permlink;
+    up.subject = std::move(subject);
+    up.permlink = std::move(permlink);
 
     signed_transaction trx;
     trx.operations.push_back( up );
@@ -2457,8 +2449,8 @@ condenser_api::legacy_signed_transaction wallet_api::follow( string follower, st
   }
 
   condenser_api::legacy_signed_transaction  wallet_api::update_proposal_votes(
-    account_name_type voter,
-    flat_set< int64_t > proposals,
+    const account_name_type& voter,
+    const flat_set< int64_t >& proposals,
     bool approve,
     bool broadcast )
   {
@@ -2483,12 +2475,12 @@ condenser_api::legacy_signed_transaction wallet_api::follow( string follower, st
     database_api::order_direction_type order_type,
     database_api::proposal_status status )
   {
-    return my->_remote_api->list_proposals( start, limit, order_by, order_type, status );
+    return my->_remote_api->list_proposals( std::move(start), limit, order_by, order_type, status );
   }
 
   condenser_api::find_proposals_return wallet_api::find_proposals( vector< int64_t > proposal_ids )
   {
-    return my->_remote_api->find_proposals( proposal_ids );
+    return my->_remote_api->find_proposals( std::move( proposal_ids ) );
   }
 
   condenser_api::list_proposal_votes_return wallet_api::list_proposal_votes(
@@ -2498,11 +2490,11 @@ condenser_api::legacy_signed_transaction wallet_api::follow( string follower, st
     database_api::order_direction_type order_type,
     database_api::proposal_status status )
   {
-    return my->_remote_api->list_proposal_votes( start, limit, order_by, order_type, status );
+    return my->_remote_api->list_proposal_votes( std::move( start ), limit, order_by, order_type, status );
   }
 
-  condenser_api::legacy_signed_transaction wallet_api::remove_proposal(account_name_type deleter,
-                                                flat_set< int64_t > ids, bool broadcast )
+   condenser_api::legacy_signed_transaction wallet_api::remove_proposal(const account_name_type& deleter,
+                                                const flat_set< int64_t >& ids, bool broadcast )
   {
     FC_ASSERT( !is_locked() );
 

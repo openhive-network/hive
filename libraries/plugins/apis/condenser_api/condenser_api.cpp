@@ -173,7 +173,7 @@ namespace detail
 
     auto tags = _tags_api->get_trending_tags( { args[0].as< string >(), args[1].as< uint32_t >() } ).tags;
     vector< api_tag_object > result;
-
+    result.reserve( tags.size() );
     for( const auto& t : tags )
     {
       result.push_back( api_tag_object( t ) );
@@ -797,7 +797,7 @@ namespace detail
     auto discussions = _tags_api->get_post_discussions_by_payout(
       args[0].as< tags::get_post_discussions_by_payout_args >() ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );
@@ -814,7 +814,7 @@ namespace detail
     auto discussions = _tags_api->get_comment_discussions_by_payout(
       args[0].as< tags::get_comment_discussions_by_payout_args >() ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );
@@ -831,7 +831,7 @@ namespace detail
     auto discussions = _tags_api->get_discussions_by_trending(
       args[0].as< tags::get_discussions_by_trending_args >() ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );
@@ -848,7 +848,7 @@ namespace detail
     auto discussions = _tags_api->get_discussions_by_created(
       args[0].as< tags::get_discussions_by_created_args >() ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );
@@ -865,7 +865,7 @@ namespace detail
     auto discussions = _tags_api->get_discussions_by_active(
       args[0].as< tags::get_discussions_by_active_args >() ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );
@@ -882,7 +882,7 @@ namespace detail
     auto discussions = _tags_api->get_discussions_by_cashout(
       args[0].as< tags::get_discussions_by_cashout_args >() ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );
@@ -899,7 +899,7 @@ namespace detail
     auto discussions = _tags_api->get_discussions_by_votes(
       args[0].as< tags::get_discussions_by_votes_args >() ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );
@@ -916,7 +916,7 @@ namespace detail
     auto discussions = _tags_api->get_discussions_by_children(
       args[0].as< tags::get_discussions_by_children_args >() ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );
@@ -933,7 +933,7 @@ namespace detail
     auto discussions = _tags_api->get_discussions_by_hot(
       args[0].as< tags::get_discussions_by_hot_args >() ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );
@@ -950,7 +950,7 @@ namespace detail
     auto discussions = _tags_api->get_discussions_by_feed(
       args[0].as< tags::get_discussions_by_feed_args >() ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );
@@ -967,7 +967,7 @@ namespace detail
     auto discussions = _tags_api->get_discussions_by_blog(
       args[0].as< tags::get_discussions_by_blog_args >() ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );
@@ -984,7 +984,7 @@ namespace detail
     auto discussions = _tags_api->get_discussions_by_comments(
       args[0].as< tags::get_discussions_by_comments_args >() ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );
@@ -1001,7 +1001,7 @@ namespace detail
     auto discussions = _tags_api->get_discussions_by_promoted(
       args[0].as< tags::get_discussions_by_promoted_args >() ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );
@@ -1022,7 +1022,7 @@ namespace detail
 
     auto discussions = _tags_api->get_discussions_by_author_before_date( { args[0].as< account_name_type >(), args[1].as< string >(), args[2].as< time_point_sec >(), args[3].as< uint32_t >() } ).discussions;
     vector< discussion > result;
-
+    result.reserve( discussions.size() );
     for( auto& d : discussions )
     {
       result.push_back( discussion( d ) );

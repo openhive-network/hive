@@ -78,7 +78,7 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
     for( string& s : all_appenders )
     {
       std::size_t pos = 0;
-      while ((pos = s.find("{", pos)) != std::string::npos)
+      while ((pos = s.find('{', pos)) != std::string::npos)
       {
         auto appender = fc::json::from_string( s.substr( pos++ ) ).as< appender_args >();
         appender.validate();
@@ -128,7 +128,7 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
       for( string& s : loggers )
       {
         std::size_t pos = 0;
-        while ((pos = s.find("{", pos)) != std::string::npos)
+        while ((pos = s.find('{', pos)) != std::string::npos)
         {
           auto logger = fc::json::from_string( s.substr( pos++ ) ).as< logger_args >();
 

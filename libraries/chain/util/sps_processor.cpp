@@ -12,7 +12,6 @@ using hive::chain::proposal_index;
 using hive::chain::proposal_id_type;
 using hive::chain::proposal_vote_index;
 using hive::chain::by_proposal_voter;
-using hive::chain::by_voter_proposal;
 using hive::protocol::proposal_pay_operation;
 using hive::chain::sps_helper;
 using hive::chain::dynamic_global_property_object;

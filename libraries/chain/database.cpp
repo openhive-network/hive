@@ -116,8 +116,6 @@ FC_REFLECT( hive::chain::db_schema, (types)(object_types)(operation_type)(custom
 
 namespace hive { namespace chain {
 
-using boost::container::flat_set;
-
 struct reward_fund_context
 {
   uint128_t   recent_claims = 0;
@@ -155,7 +153,7 @@ void database::open( const open_args& args )
 
     helpers::environment_extension_resources environment_extension(
                                                 appbase::app().get_version_string(),
-                                                std::move( appbase::app().get_plugins_names() ),
+                                                appbase::app().get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension );
@@ -642,7 +640,7 @@ void database::set_chain_id( const chain_id_type& chain_id )
   idump( (hive_chain_id) );
 }
 
-void database::foreach_block(std::function<bool(const signed_block_header&, const signed_block&)> processor) const
+void database::foreach_block(const std::function<bool(const signed_block_header&, const signed_block&)>& processor) const
 {
   if(!_block_log.head())
     return;
@@ -1039,6 +1037,7 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
   if( blocks.size() > 1 )
   {
     vector< std::pair< account_name_type, fc::time_point_sec > > witness_time_pairs;
+    witness_time_pairs.reserve( blocks.size() );
     for( const auto& b : blocks )
     {
       witness_time_pairs.push_back( std::make_pair( b->data.witness, b->data.timestamp ) );
@@ -1568,7 +1567,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
 // we modify the database.
 // This allows us to implement virtual op pre-notifications in the Before function.
 template< typename Before >
-asset create_vesting2( database& db, const account_object& to_account, asset liquid, bool to_reward_balance, Before&& before_vesting_callback )
+asset create_vesting2( database& db, const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
 {
   try
   {
@@ -1587,7 +1586,7 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
   * @param to_account - the account to receive the new vesting shares
   * @param liquid     - HIVE or liquid SMT to be converted to vesting shares
   */
-asset database::create_vesting( const account_object& to_account, asset liquid, bool to_reward_balance )
+asset database::create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance )
 {
   return create_vesting2( *this, to_account, liquid, to_reward_balance, []( asset vests_created ) {} );
 }
@@ -1670,7 +1669,7 @@ void database::adjust_proxied_witness_votes( const account_object& a, share_type
   }
 }
 
-void database::adjust_witness_votes( const account_object& a, share_type delta )
+void database::adjust_witness_votes( const account_object& a, const share_type& delta )
 {
   const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
   auto itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
@@ -2038,7 +2037,7 @@ void database::restore_accounts( const hf23_helper::hf23_items& balances, const 
 void database::clear_accounts( hf23_helper::hf23_items& balances, const std::set< std::string >& cleared_accounts )
 {
   auto treasury_name = get_treasury_name();
-  for( auto account_name : cleared_accounts )
+  for( const auto& account_name : cleared_accounts )
   {
     const auto* account_ptr = find_account( account_name );
     if( account_ptr == nullptr )
@@ -3048,7 +3047,7 @@ asset database::get_liquidity_reward()const
     return asset( 0, HIVE_SYMBOL );
 
   const auto& props = get_dynamic_global_properties();
-  static_assert( HIVE_LIQUIDITY_REWARD_PERIOD_SEC == 60*60, "this code assumes a 1 hour time interval" );
+  static_assert( HIVE_LIQUIDITY_REWARD_PERIOD_SEC == 60*60, "this code assumes a 1 hour time interval" ); // NOLINT(misc-redundant-expression)
   asset percent( protocol::calc_percent_reward_per_hour< HIVE_LIQUIDITY_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL );
   return std::max( percent, HIVE_MIN_LIQUIDITY_REWARD );
 }
@@ -3161,7 +3160,7 @@ uint16_t database::get_curation_rewards_percent() const
     return HIVE_1_PERCENT * 50;
 }
 
-share_type database::pay_reward_funds( share_type reward )
+share_type database::pay_reward_funds( const share_type& reward )
 {
   const auto& reward_idx = get_index< reward_fund_index, by_id >();
   share_type used_rewards = 0;
@@ -5177,7 +5176,7 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
 
 void database::set_index_delegate( const std::string& n, index_delegate&& d )
 {
-  _index_delegate_map[ n ] = std::move( d );
+  _index_delegate_map[ n ] = d;
 }
 
 const index_delegate& database::get_index_delegate( const std::string& n )

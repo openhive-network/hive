@@ -36,7 +36,6 @@ using graphene::net::block_message;
 using graphene::net::trx_message;
 
 using hive::protocol::block_header;
-using hive::protocol::signed_block_header;
 using hive::protocol::signed_block;
 using hive::protocol::block_id_type;
 
@@ -83,7 +82,6 @@ public:
     handleBlockFinished.second = std::shared_future<void>(handleBlockFinished.first.get_future());
     handleTxFinished.second = std::shared_future<void>(handleTxFinished.first.get_future());
   }
-
   virtual ~p2p_plugin_impl()
   {
     finish( handleBlockFinished );
@@ -157,7 +155,7 @@ private:
     std::atomic_bool&   _activityFlag;
   };
 
-   void finish( handler_state& handler );
+  void finish( handler_state& handler );
 
 };
 
@@ -379,7 +377,7 @@ graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& 
           ("id", id.item_hash)("id2", chain.db().get_block_id_for_num(block_header::num_from_id(id.item_hash))));
       FC_ASSERT( opt_block.valid() );
       // ilog("Serving up block #${num}", ("num", opt_block->block_num()));
-      return block_message(std::move(*opt_block));
+    return block_message(*opt_block);
     });
   }
   return chain.db().with_read_lock( [&]()

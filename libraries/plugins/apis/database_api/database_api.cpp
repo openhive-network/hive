@@ -148,7 +148,7 @@ class database_api_impl
         auto itr = idx.iterator_to(*(_db.get_index<IndexType, hive::chain::by_id>().find( id )));
         auto end = idx.end();
 
-        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
       else if( direction == descending )
       {
@@ -156,7 +156,7 @@ class database_api_impl
         auto iter  = boost::make_reverse_iterator( index_it );
         auto iter_end = boost::make_reverse_iterator( idx.begin() );
 
-        iteration_loop< ResultType, OnPushType, FilterType >( iter, iter_end, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( iter, iter_end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
     }
 
@@ -172,7 +172,7 @@ class database_api_impl
     )
     {
       if ( last_index.valid() ) {
-        iterate_results_from_index< IndexType, OrderType >( *last_index, result, limit, std::move(on_push), std::move(filter), direction );
+        iterate_results_from_index< IndexType, OrderType >( *last_index, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter), direction );
         return;
       }
 
@@ -182,14 +182,14 @@ class database_api_impl
         auto itr = idx.lower_bound( start );
         auto end = idx.end();
 
-        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
       else if( direction == descending )
       {
         auto iter = boost::make_reverse_iterator( idx.upper_bound(start) );
         auto end_iter = boost::make_reverse_iterator( idx.begin() );
 
-        iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
     }
 
@@ -205,7 +205,7 @@ class database_api_impl
     {
       if( last_index.valid() )
       {
-        iterate_results_from_index< IndexType, OrderType >( *last_index, result, limit, std::move( on_push ), std::move( filter ), direction );
+        iterate_results_from_index< IndexType, OrderType >( *last_index, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter), direction );
         return;
       }
 
@@ -215,14 +215,14 @@ class database_api_impl
         auto itr = idx.begin();
         auto end = idx.end();
 
-        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
       else if( direction == descending )
       {
         auto iter = boost::make_reverse_iterator( idx.end() );
         auto end_iter = boost::make_reverse_iterator( idx.begin() );
 
-        iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
     }
 
@@ -1109,7 +1109,7 @@ DEFINE_API_IMPL(database_api_impl, get_comment_pending_payouts)
     }
   }
 
-  return std::move(retval);
+  return retval;
 }
 
 /* Comments */

@@ -212,7 +212,7 @@ namespace hive { namespace chain {
         * const signed_block_header& - header of previous block
         * const signed_block& - block to be processed currently
       */
-      void foreach_block(std::function<bool(const signed_block_header&, const signed_block&)> processor) const;
+      void foreach_block(const std::function<bool(const signed_block_header&, const signed_block&)>& processor) const;
 
       /// Allows to process all blocks visit all transactions held there until processor returns true.
       void foreach_tx(std::function<bool(const signed_block_header&, const signed_block&,
@@ -421,7 +421,7 @@ namespace hive { namespace chain {
       using Before = std::function< void( const asset& ) >;
       asset adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
 
-      asset create_vesting( const account_object& to_account, asset hive, bool to_reward_balance=false );
+      asset create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance=false );
 
       void adjust_total_payout( const comment_cashout_object& a, const asset& hbd, const asset& curator_hbd_value, const asset& beneficiary_value );
 
@@ -461,7 +461,7 @@ namespace hive { namespace chain {
       void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 );
 
       /** this is called by `adjust_proxied_witness_votes` when account proxy to self */
-      void adjust_witness_votes( const account_object& a, share_type delta );
+      void adjust_witness_votes( const account_object& a, const share_type& delta );
 
       /** this updates the vote of a single witness as a result of a vote being added or removed*/
       void adjust_witness_vote( const witness_object& obj, share_type delta );
@@ -492,7 +492,7 @@ namespace hive { namespace chain {
 
       uint16_t get_curation_rewards_percent() const;
 
-      share_type pay_reward_funds( share_type reward );
+      share_type pay_reward_funds( const share_type& reward );
 
       void  pay_liquidity_reward();
 
