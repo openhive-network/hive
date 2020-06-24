@@ -1780,8 +1780,8 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
 
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.current_supply += wso.median_props.account_creation_fee - ASSET( "0.001 TESTS" ) - gpo.get_total_vesting_fund_hive();
-        gpo.total_vesting_fund_hive = wso.median_props.account_creation_fee - ASSET( "0.001 TESTS" );
+        gpo.current_supply += HIVE_asset( wso.median_props.account_creation_fee ) - HIVE_asset( 1 ) - gpo.get_total_vesting_fund_hive();
+        gpo.total_vesting_fund_hive = HIVE_asset( wso.median_props.account_creation_fee ) - HIVE_asset( 1 );
       });
 
       db.update_virtual_supply();

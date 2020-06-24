@@ -319,12 +319,12 @@ void sps_processor::record_funding( const block_notification& note )
   if ( props.sps_interval_ledger.amount.value <= 0 )
     return;
 
-  operation vop = sps_fund_operation( db.get_treasury_name(), props.sps_interval_ledger );
+  operation vop = sps_fund_operation( db.get_treasury_name(), props.sps_interval_ledger.to_asset() );
   db.push_virtual_operation( vop );
 
   db.modify( props, []( dynamic_global_property_object& dgpo )
   {
-    dgpo.sps_interval_ledger = asset( 0, HBD_SYMBOL );
+    dgpo.sps_interval_ledger = HBD_asset( 0 );
   });
 }
 

@@ -628,7 +628,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
 
   //singletons (size only affects performance, especially with MIRA)
   BOOST_CHECK_EQUAL( sizeof( reward_fund_object ), 80 );
-  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 344
+  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 264
 #ifdef HIVE_ENABLE_SMT
     + 16
 #endif

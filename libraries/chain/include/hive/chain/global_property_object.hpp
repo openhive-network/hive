@@ -4,6 +4,7 @@
 #include <fc/uint128.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
+#include <hive/chain/util/tiny_asset.hpp>
 
 #include <hive/protocol/asset.hpp>
 
@@ -28,34 +29,34 @@ namespace hive { namespace chain {
       template< typename Allocator >
       dynamic_global_property_object( allocator< Allocator > a, uint64_t _id,
         const account_name_type& _initial_witness, const asset& _initial_hive_supply, const asset& _initial_hbd_supply )
-        : id( _id ), current_witness( _initial_witness ), virtual_supply( _initial_hive_supply, HIVE_SYMBOL ),
-        current_supply( _initial_hive_supply, HIVE_SYMBOL ), init_hbd_supply( _initial_hbd_supply, HBD_SYMBOL )
+        : id( _id ), current_witness( _initial_witness ), virtual_supply( _initial_hive_supply ),
+        current_supply( _initial_hive_supply ), init_hbd_supply( _initial_hbd_supply )
       {}
 
       //main HIVE token counter (see also get_full_hive_supply)
-      const asset& get_current_supply() const { return current_supply; }
+      const HIVE_asset& get_current_supply() const { return current_supply; }
 
       //initial amount of HBD issued (see also get_full_hbd_supply)
-      const asset& get_init_hbd_supply() const { return init_hbd_supply; }
+      const HBD_asset& get_init_hbd_supply() const { return init_hbd_supply; }
       //main HBD token counter (see also get_full_hbd_supply)
-      const asset& get_current_hbd_supply() const { return current_hbd_supply; }
+      const HBD_asset& get_current_hbd_supply() const { return current_hbd_supply; }
       //rate of interest for holding HBD (in BPS - basis points)
       uint16_t get_hbd_interest_rate() const { return hbd_interest_rate; }
       //percentage of HIVE being converted to HBD during payouts (in BPS - basis points)
       uint16_t get_hbd_print_rate() const { return hbd_print_rate; }
 
       //pool of HIVE tokens vested normally
-      const asset& get_total_vesting_fund_hive() const { return total_vesting_fund_hive; }
+      const HIVE_asset& get_total_vesting_fund_hive() const { return total_vesting_fund_hive; }
       //amount of VESTS produced from HIVE held in normal vested fund
-      const asset& get_total_vesting_shares() const { return total_vesting_shares; }
+      const VEST_asset& get_total_vesting_shares() const { return total_vesting_shares; }
 
       //pool of HIVE tokens for pending (liquid) rewards
-      const asset& get_total_reward_fund_hive() const { return total_reward_fund_hive; }
+      const HIVE_asset& get_total_reward_fund_hive() const { return total_reward_fund_hive; }
 
       //pool of HIVE tokens for pending (vested) rewards
-      const asset& get_pending_rewarded_vesting_hive() const { return pending_rewarded_vesting_hive; }
+      const HIVE_asset& get_pending_rewarded_vesting_hive() const { return pending_rewarded_vesting_hive; }
       //amount of VESTS produced from HIVE held in pending reward vested fund
-      const asset& get_pending_rewarded_vesting_shares() const { return pending_rewarded_vesting_shares; }
+      const VEST_asset& get_pending_rewarded_vesting_shares() const { return pending_rewarded_vesting_shares; }
 
       uint32_t          head_block_number = 0;
       block_id_type     head_block_id;
@@ -73,29 +74,29 @@ namespace hive { namespace chain {
         */
       uint32_t num_pow_witnesses = 0;
 
-      asset       virtual_supply             = asset( 0, HIVE_SYMBOL ); //< TODO: replace with HIVE_asset
-      asset       current_supply             = asset( 0, HIVE_SYMBOL ); //< TODO: replace with HIVE_asset
-      asset       init_hbd_supply            = asset( 0, HBD_SYMBOL ); //< TODO: replace with HBD_asset
-      asset       current_hbd_supply         = asset( 0, HBD_SYMBOL ); //< TODO: replace with HBD_asset
-      asset       total_vesting_fund_hive    = asset( 0, HIVE_SYMBOL ); //< TODO: replace with HIVE_asset
-      asset       total_vesting_shares       = asset( 0, VESTS_SYMBOL ); //< TODO: replace with VEST_asset
-      asset       total_reward_fund_hive     = asset( 0, HIVE_SYMBOL ); //< TODO: replace with HIVE_asset
+      HIVE_asset  virtual_supply             = HIVE_asset( 0 );
+      HIVE_asset  current_supply             = HIVE_asset( 0 );
+      HBD_asset   init_hbd_supply            = HBD_asset( 0 );
+      HBD_asset   current_hbd_supply         = HBD_asset( 0 );
+      HIVE_asset  total_vesting_fund_hive    = HIVE_asset( 0 );
+      VEST_asset  total_vesting_shares       = VEST_asset( 0 );
+      HIVE_asset  total_reward_fund_hive     = HIVE_asset( 0 );
       fc::uint128 total_reward_shares2; ///< the running total of REWARD^2
-      asset       pending_rewarded_vesting_shares = asset( 0, VESTS_SYMBOL ); //< TODO: replace with VEST_asset
-      asset       pending_rewarded_vesting_hive   = asset( 0, HIVE_SYMBOL ); //< TODO: replace with HIVE_asset
+      VEST_asset  pending_rewarded_vesting_shares = VEST_asset( 0 );
+      HIVE_asset  pending_rewarded_vesting_hive   = HIVE_asset( 0 );
 
       price       get_vesting_share_price() const
       {
         if ( total_vesting_fund_hive.amount == 0 || total_vesting_shares.amount == 0 )
           return price ( asset( 1000, HIVE_SYMBOL ), asset( 1000000, VESTS_SYMBOL ) );
 
-        return price( total_vesting_shares, total_vesting_fund_hive );
+        return price( total_vesting_shares.to_asset(), total_vesting_fund_hive.to_asset() );
       }
 
       price get_reward_vesting_share_price() const
       {
-        return price( total_vesting_shares + pending_rewarded_vesting_shares,
-          total_vesting_fund_hive + pending_rewarded_vesting_hive );
+        return price( ( total_vesting_shares + pending_rewarded_vesting_shares ).to_asset(),
+          ( total_vesting_fund_hive + pending_rewarded_vesting_hive ).to_asset() );
       }
 
       /**
@@ -163,12 +164,12 @@ namespace hive { namespace chain {
       uint16_t vesting_reward_percent = HIVE_VESTING_FUND_PERCENT_HF16;
       uint16_t sps_fund_percent = HIVE_PROPOSAL_FUND_PERCENT_HF0;
 
-      asset sps_interval_ledger = asset( 0, HBD_SYMBOL ); //< TODO: replace with HBD_asset
+      HBD_asset sps_interval_ledger = HBD_asset( 0 );
 
       uint16_t downvote_pool_percent = 0;
 
 #ifdef HIVE_ENABLE_SMT
-      asset smt_creation_fee = asset( 1000, HBD_SYMBOL ); //< TODO: replace with HBD_asset
+      HBD_asset smt_creation_fee = HBD_asset( 1000 );
 #endif
     CHAINBASE_UNPACK_CONSTRUCTOR(dynamic_global_property_object);
   };

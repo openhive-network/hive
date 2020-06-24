@@ -2718,7 +2718,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     BOOST_TEST_MESSAGE( "Changing sam and gpo to set up market cap conditions" );
 
-    asset hbd_balance = asset( ( gpo.virtual_supply.amount * ( gpo.hbd_stop_percent + 112 ) ) / HIVE_100_PERCENT, HIVE_SYMBOL ) * exchange_rate;
+    HBD_asset hbd_balance = HIVE_asset( ( gpo.virtual_supply.amount * ( gpo.hbd_stop_percent + 112 ) ) / HIVE_100_PERCENT ) * exchange_rate;
     db_plugin->debug_update( [=]( database& db )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
@@ -2731,8 +2731,8 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     {
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance().to_asset();
-        gpo.virtual_supply = gpo.virtual_supply + hbd_balance * exchange_rate;
+        gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
+        gpo.virtual_supply = gpo.virtual_supply + HIVE_asset( hbd_balance * exchange_rate );
       });
     }, database::skip_witness_signature );
 
@@ -2841,7 +2841,7 @@ BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
 
     db->skip_price_feed_limit_check = false;
     const auto& gpo = db->get_dynamic_global_properties();
-    auto new_exchange_rate = price( gpo.get_current_hbd_supply(), asset( ( HIVE_100_PERCENT ) * gpo.get_current_supply().amount, HIVE_SYMBOL ) );
+    auto new_exchange_rate = price( gpo.get_current_hbd_supply().to_asset(), asset( ( HIVE_100_PERCENT ) * gpo.get_current_supply().amount, HIVE_SYMBOL ) );
     set_price_feed( new_exchange_rate );
     set_price_feed( new_exchange_rate );
 

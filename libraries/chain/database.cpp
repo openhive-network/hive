@@ -4120,7 +4120,7 @@ try {
 
           if( gpo.get_current_hbd_supply().amount > 0 )
           {
-            price min_price( asset( 9 * gpo.get_current_hbd_supply().amount, HBD_SYMBOL ), gpo.current_supply );
+            price min_price( asset( 9 * gpo.get_current_hbd_supply().amount, HBD_SYMBOL ), gpo.current_supply.to_asset() );
 
             if( min_price > fho.current_median_history )
               fho.current_median_history = min_price;
@@ -4632,7 +4632,7 @@ void database::update_virtual_supply()
   modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgp )
   {
     dgp.virtual_supply = dgp.current_supply
-      + ( get_feed_history().current_median_history.is_null() ? asset( 0, HIVE_SYMBOL ) : dgp.get_current_hbd_supply() * get_feed_history().current_median_history );
+      + ( get_feed_history().current_median_history.is_null() ? HIVE_asset( 0 ) : HIVE_asset( dgp.get_current_hbd_supply() * get_feed_history().current_median_history ) );
 
     auto median_price = get_feed_history().current_median_history;
 
@@ -5475,9 +5475,9 @@ void database::adjust_supply( const asset& delta, bool adjust_vesting )
     {
       case HIVE_ASSET_NUM_HIVE:
       {
-        asset new_vesting( (adjust_vesting && delta.amount > 0) ? delta.amount * 9 : 0, HIVE_SYMBOL );
-        props.current_supply += delta + new_vesting;
-        props.virtual_supply += delta + new_vesting;
+        HIVE_asset new_vesting( (adjust_vesting && delta.amount > 0) ? delta.amount * 9 : 0 );
+        props.current_supply += HIVE_asset(delta) + new_vesting;
+        props.virtual_supply += HIVE_asset(delta) + new_vesting;
         props.total_vesting_fund_hive += new_vesting;
         if( check_supply )
         {
@@ -5487,7 +5487,7 @@ void database::adjust_supply( const asset& delta, bool adjust_vesting )
       }
       case HIVE_ASSET_NUM_HBD:
         props.current_hbd_supply += delta;
-        props.virtual_supply = props.get_current_hbd_supply() * get_feed_history().current_median_history + props.current_supply;
+        props.virtual_supply = HIVE_asset( props.get_current_hbd_supply() * get_feed_history().current_median_history ) + props.current_supply;
         if( check_supply )
         {
           FC_ASSERT( props.get_current_hbd_supply().amount.value >= 0 );
@@ -6081,10 +6081,10 @@ void database::validate_invariants()const
   try
   {
     const auto& account_idx = get_index< account_index, by_name >();
-    asset total_supply = asset( 0, HIVE_SYMBOL );
-    asset total_hbd = asset( 0, HBD_SYMBOL );
-    asset total_vesting = asset( 0, VESTS_SYMBOL );
-    asset pending_vesting_hive = asset( 0, HIVE_SYMBOL );
+    auto total_supply = HIVE_asset( 0 );
+    auto total_hbd = HBD_asset( 0 );
+    auto total_vesting = VEST_asset( 0 );
+    auto pending_vesting_hive = HIVE_asset( 0 );
     share_type total_vsf_votes = share_type( 0 );
     ushare_type total_delayed_votes = ushare_type( 0 );
     
@@ -6109,15 +6109,15 @@ void database::validate_invariants()const
 
     for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
     {
-      total_supply += itr->get_balance().to_asset();
-      total_supply += itr->get_savings().to_asset();
-      total_supply += itr->get_rewards().to_asset();
-      total_hbd += itr->get_hbd_balance().to_asset();
-      total_hbd += itr->get_hbd_savings().to_asset();
-      total_hbd += itr->get_hbd_rewards().to_asset();
-      total_vesting += itr->get_vesting().to_asset();
-      total_vesting += itr->get_vest_rewards().to_asset();
-      pending_vesting_hive += itr->get_vest_rewards_as_hive().to_asset();
+      total_supply += itr->get_balance();
+      total_supply += itr->get_savings();
+      total_supply += itr->get_rewards();
+      total_hbd += itr->get_hbd_balance();
+      total_hbd += itr->get_hbd_savings();
+      total_hbd += itr->get_hbd_rewards();
+      total_vesting += itr->get_vesting();
+      total_vesting += itr->get_vest_rewards();
+      pending_vesting_hive += itr->get_vest_rewards_as_hive();
       total_vsf_votes += ( itr->proxy == HIVE_PROXY_TO_SELF_ACCOUNT ?
                       itr->witness_vote_weight() :
                       ( HIVE_MAX_PROXY_RECURSION_DEPTH > 0 ?
@@ -6137,9 +6137,9 @@ void database::validate_invariants()const
     for( auto itr = convert_request_idx.begin(); itr != convert_request_idx.end(); ++itr )
     {
       if( itr->amount.symbol == HIVE_SYMBOL )
-        total_supply += itr->amount;
+        total_supply += HIVE_asset( itr->amount );
       else if( itr->amount.symbol == HBD_SYMBOL )
-        total_hbd += itr->amount;
+        total_hbd += HBD_asset( itr->amount );
       else
         FC_ASSERT( false, "Encountered illegal symbol in convert_request_object" );
       ++convert_no;
@@ -6151,11 +6151,11 @@ void database::validate_invariants()const
     {
       if( itr->sell_price.base.symbol == HIVE_SYMBOL )
       {
-        total_supply += asset( itr->for_sale, HIVE_SYMBOL );
+        total_supply += HIVE_asset( itr->for_sale );
       }
       else if ( itr->sell_price.base.symbol == HBD_SYMBOL )
       {
-        total_hbd += asset( itr->for_sale, HBD_SYMBOL );
+        total_hbd += HBD_asset( itr->for_sale );
       }
       ++order_no;
     }
@@ -6164,13 +6164,13 @@ void database::validate_invariants()const
 
     for( auto itr = escrow_idx.begin(); itr != escrow_idx.end(); ++itr )
     {
-      total_supply += itr->get_hive_balance().to_asset();
-      total_hbd += itr->get_hbd_balance().to_asset();
+      total_supply += itr->get_hive_balance();
+      total_hbd += itr->get_hbd_balance();
 
       if( itr->get_fee().symbol == HIVE_SYMBOL )
-        total_supply += itr->get_fee();
+        total_supply += HIVE_asset( itr->get_fee() );
       else if( itr->get_fee().symbol == HBD_SYMBOL )
-        total_hbd += itr->get_fee();
+        total_hbd += HBD_asset( itr->get_fee() );
       else
         FC_ASSERT( false, "found escrow pending fee that is not HBD or HIVE" );
       ++escrow_no;
@@ -6181,9 +6181,9 @@ void database::validate_invariants()const
     for( auto itr = savings_withdraw_idx.begin(); itr != savings_withdraw_idx.end(); ++itr )
     {
       if( itr->amount.symbol == HIVE_SYMBOL )
-        total_supply += itr->amount;
+        total_supply += HIVE_asset( itr->amount );
       else if( itr->amount.symbol == HBD_SYMBOL )
-        total_hbd += itr->amount;
+        total_hbd += HBD_asset( itr->amount );
       else
         FC_ASSERT( false, "found savings withdraw that is not HBD or HIVE" );
       ++withdrawal_no;
@@ -6193,7 +6193,7 @@ void database::validate_invariants()const
 
     for( auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr )
     {
-      total_supply += itr->reward_balance.to_asset();
+      total_supply += itr->reward_balance;
       ++reward_fund_no;
     }
 
@@ -6218,7 +6218,7 @@ void database::validate_invariants()const
     FC_ASSERT( gpo.virtual_supply >= gpo.current_supply );
     if ( !get_feed_history().current_median_history.is_null() )
     {
-      FC_ASSERT( gpo.get_current_hbd_supply()* get_feed_history().current_median_history + gpo.current_supply
+      FC_ASSERT( HIVE_asset( gpo.get_current_hbd_supply() * get_feed_history().current_median_history ) + gpo.current_supply
         == gpo.virtual_supply, "", ("gpo.current_hbd_supply",gpo.get_current_hbd_supply())("get_feed_history().current_median_history",get_feed_history().current_median_history)("gpo.current_supply",gpo.current_supply)("gpo.virtual_supply",gpo.virtual_supply) );
     }
 
