@@ -141,6 +141,84 @@ find_program(
    DOC "Path to clain-tidy executable"
 )
 
+SET( CLANG_TIDY_IGNORED
+"-fuchsia-default-arguments\
+,-hicpp-*\
+,-cppcoreguidelines-pro-bounds-array-to-pointer-decay\
+,-cert-err60-cpp\
+,-google-readability-*\
+,-llvm-namespace-comment\
+,-cppcoreguidelines-pro-bounds-constant-array-index\
+,-performance-faster-string-find\
+,-warnings-as-errors,modernize-use-auto\
+,-readability-braces-around-statements\
+,-cert-err09-cpp\
+,-cert-err61-cpp\
+,-modernize-use-auto\
+,-cppcoreguidelines-pro-bounds-pointer-arithmetic\
+,-modernize-use-using\
+,-google-runtime-references\
+,-google-explicit-constructor\
+,misc-throw-by-value-catch-by-reference\
+,-fuchsia-overloaded-operator\
+,-misc-throw-by-value-catch-by-reference\
+,-misc-unused-parameters\
+,-clang-analyzer-core.uninitialized.Assign\
+,-llvm-include-order\
+,-modernize-use-equals-default\
+,-clang-diagnostic-unused-lambda-capture\
+,-readability-implicit-bool-conversion\
+,-google-build-using-namespace\
+,-readability-redundant-control-flow\
+,-modernize-use-emplace\
+,-readability-named-parameter\
+,-readability-container-size-empty\
+,-readability-inconsistent-declaration-parameter-name\
+,-misc-macro-parentheses\
+,-performance-inefficient-vector-operation\
+,-modernize-return-braced-init-list\
+,-cppcoreguidelines-special-member-functions\
+,-readability-else-after-return\
+,-misc-unused-using-decls\
+,-modernize-raw-string-literal\
+,-performance-unnecessary-value-param\
+,-cppcoreguidelines-pro-type-member-init\
+,-cppcoreguidelines-slicing\
+,-misc-redundant-expression\
+,-performance-for-range-copy\
+,-readability-static-accessed-through-instance\
+,-boost-use-to-string\
+,-performance-implicit-conversion-in-loop\
+,-misc-lambda-function-name\
+,-readability-redundant-string-init\
+,-modernize-deprecated-headers\
+,-modernize-loop-convert\
+,-cppcoreguidelines-pro-type-cstyle-cast\
+,-google-runtime-int\
+,-cppcoreguidelines-pro-type-vararg\
+,-android-cloexec-fopen\
+,-modernize-use-nullptr\
+,-cppcoreguidelines-owning-memory\
+,-cert-err58-cpp\
+,-modernize-loop-convert\
+,-readability-redundant-member-init\
+,-modernize-pass-by-value\
+,-clang-analyzer-core.UndefinedBinaryOperatorResult\
+,-cert-err34-c\
+,-cppcoreguidelines-interfaces-global-init\
+,-modernize-*\
+,-readability-redundant-string-cstr\
+,-clang-diagnostic-#pragma-messages\
+,-google-*\
+,-performance-*\
+,-readability-*\
+,-clang-diagnostic-pessimizing-move\
+,-clang-analyzer-optin.cplusplus.VirtualCall\
+,-misc-unused-alias-decls\
+,-bugprone-move-forwarding-reference\
+,-bugprone-fold-init-type"
+)
+
 if( NOT CLANG_TIDY_EXE )
    message( STATUS "clang-tidy not found" )
 elseif( VERSION LESS 3.6 )
@@ -149,13 +227,13 @@ else()
    message( STATUS "clany-tidy found: ${CLANG_TIDY_EXE}" )
    if( "${HIVE_LINT_LEVEL}" STREQUAL "FULL" )
       message( STATUS "Linting level set to: FULL" )
-      set( DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks='*'" )
+      set( DO_CLANG_TIDY ${CLANG_TIDY_EXE};-checks=*,${CLANG_TIDY_IGNORED};--warnings-as-errors=* )
    elseif( "${HIVE_LINT_LEVEL}" STREQUAL "HIGH" )
       message( STATUS "Linting level set to: HIGH" )
-      set( DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks='boost-use-to-string,clang-analyzer-*,cppcoreguidelines-*,llvm-*,misc-*,performance-*,readability-*'" )
+      set( DO_CLANG_TIDY ${CLANG_TIDY_EXE};-checks=boost-use-to-string,clang-analyzer-*,cppcoreguidelines-*,llvm-*,misc-*,performance-*,readability-*;--warnings-as-errors=* )
    elseif( "${HIVE_LINT_LEVEL}" STREQUAL "LOW" )
       message( STATUS "Linting level set to: LOW" )
-      set( DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks='clang-analyzer-*'" )
+      set( DO_CLANG_TIDY ${CLANG_TIDY_EXE};-checks=clang-analyzer-*;--warnings-as-errors=* )
    else()
       unset( CLANG_TIDY_EXE )
       message( STATUS "Linting level set to: OFF" )

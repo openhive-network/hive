@@ -4,6 +4,7 @@ ARG LOW_MEMORY_NODE=ON
 ARG CLEAR_VOTES=ON
 ARG BUILD_HIVE_TESTNET=OFF
 ARG ENABLE_MIRA=OFF
+ARG LINT_LEVEL=OFF
 FROM registry.gitlab.syncad.com/hive/hive/hive-baseenv:latest AS builder
 
 ENV src_dir="/usr/local/src/hive"
@@ -21,7 +22,7 @@ FROM builder AS consensus_node_builder
 
 RUN \
   cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh "ON" "ON" "OFF" "OFF"
+    ${src_dir}/ciscripts/build.sh "ON" "ON" "OFF" "OFF" "FULL"
 
 ###################################################################################################
 ##                                  CONSENSUS NODE CONFIGURATION                                 ##
@@ -93,15 +94,17 @@ ARG LOW_MEMORY_NODE
 ARG CLEAR_VOTES
 ARG BUILD_HIVE_TESTNET
 ARG ENABLE_MIRA
+ARG LINT_LEVEL
 
 ENV LOW_MEMORY_NODE=${LOW_MEMORY_NODE}
 ENV CLEAR_VOTES=${CLEAR_VOTES}
 ENV BUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}
 ENV ENABLE_MIRA=${ENABLE_MIRA}
+ENV LINT_LEVEL=${LINT_LEVEL}
 
 RUN \
   cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${ENABLE_MIRA}
+    ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${ENABLE_MIRA} ${LINT_LEVEL}
 
 ###################################################################################################
 ##                                    GENERAL NODE CONFIGURATION                                 ##
@@ -137,16 +140,20 @@ FROM builder AS testnet_node_builder
 ARG LOW_MEMORY_NODE=OFF
 ARG CLEAR_VOTES=OFF
 ARG ENABLE_MIRA=OFF
+ARG LINT_LEVEL=FULL
 
 ENV LOW_MEMORY_NODE=${LOW_MEMORY_NODE}
 ENV CLEAR_VOTES=${CLEAR_VOTES}
 ENV BUILD_HIVE_TESTNET="ON"
 ENV ENABLE_MIRA=${ENABLE_MIRA}
+ENV LINT_LEVEL=${LINT_LEVEL}
 
 RUN \
   cd ${src_dir} && \
-      ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${ENABLE_MIRA} && \
       apt-get update && \
+      apt-get install -y clang && \
+      apt-get install -y clang-tidy && \
+      ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${ENABLE_MIRA} ${LINT_LEVEL} && \
       apt-get install -y screen && \
       pip3 install -U secp256k1prp && \
       git clone https://gitlab.syncad.com/hive/beem.git && \
