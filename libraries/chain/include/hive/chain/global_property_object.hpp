@@ -28,7 +28,7 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       dynamic_global_property_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _initial_witness, const asset& _initial_hive_supply, const asset& _initial_hbd_supply )
+        const account_name_type& _initial_witness, const HIVE_asset& _initial_hive_supply, const HBD_asset& _initial_hbd_supply )
         : id( _id ), current_witness( _initial_witness ), virtual_supply( _initial_hive_supply ),
         current_supply( _initial_hive_supply ), init_hbd_supply( _initial_hbd_supply )
       {}

@@ -3593,7 +3593,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       } );
     }
 
-    create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME, asset( init_supply, HIVE_SYMBOL ), asset( hbd_init_supply, HBD_SYMBOL ) );
+    create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME, HIVE_asset( init_supply ), HBD_asset( hbd_init_supply ) );
     // feed initial token supply to first miner
     modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
     {
