@@ -846,7 +846,7 @@ struct post_apply_operation_visitor
 
   void operator()( const create_claimed_account_operation& op )const
   {
-    create_rc_account( _db, _current_time, op.new_account_name, _db.get_witness_schedule_object().median_props.account_creation_fee );
+    create_rc_account( _db, _current_time, op.new_account_name, _db.get_witness_schedule_object().median_props.account_creation_fee.to_asset() );
   }
 
   void operator()( const pow_operation& op )const

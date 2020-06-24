@@ -318,19 +318,19 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1771 ) )
   {
-    FC_ASSERT( o.fee == wso.median_props.account_creation_fee, "Must pay the exact account creation fee. paid: ${p} fee: ${f}",
+    FC_ASSERT( HIVE_asset( o.fee ) == wso.median_props.account_creation_fee, "Must pay the exact account creation fee. paid: ${p} fee: ${f}",
             ("p", o.fee)
             ("f", wso.median_props.account_creation_fee) );
   }
   else if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1761 ) && _db.has_hardfork( HIVE_HARDFORK_0_19__987 ) )
   {
     FC_ASSERT( o.fee >= asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, HIVE_SYMBOL ), "Insufficient Fee: ${f} required, ${p} provided.",
-            ("f", wso.median_props.account_creation_fee * asset( HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, HIVE_SYMBOL ) )
+            ("f", HIVE_asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER ) )
             ("p", o.fee) );
   }
   else if( _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
   {
-    FC_ASSERT( o.fee >= wso.median_props.account_creation_fee, "Insufficient Fee: ${f} required, ${p} provided.",
+    FC_ASSERT( o.fee >= wso.median_props.account_creation_fee.to_asset(), "Insufficient Fee: ${f} required, ${p} provided.",
             ("f", wso.median_props.account_creation_fee)
             ("p", o.fee) );
   }
@@ -417,7 +417,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
           ( "o.fee", o.fee )
           ( "o.delegation", o.delegation ) );
 
-  FC_ASSERT( o.fee >= wso.median_props.account_creation_fee, "Insufficient Fee: ${f} required, ${p} provided.",
+  FC_ASSERT( o.fee >= wso.median_props.account_creation_fee.to_asset(), "Insufficient Fee: ${f} required, ${p} provided.",
           ("f", wso.median_props.account_creation_fee)
           ("p", o.fee) );
 
@@ -2697,7 +2697,7 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
   }
   else
   {
-    FC_ASSERT( o.fee == wso.median_props.account_creation_fee,
+    FC_ASSERT( o.fee == wso.median_props.account_creation_fee.to_asset(),
       "Cannot pay more than account creation fee. paid: ${p} fee: ${f}",
       ("p", o.fee.amount.value)
       ("f", wso.median_props.account_creation_fee) );

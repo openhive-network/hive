@@ -1908,7 +1908,7 @@ BOOST_AUTO_TEST_CASE( witness_update_apply )
     BOOST_REQUIRE( alice_witness.created == db->head_block_time() );
     BOOST_REQUIRE( to_string( alice_witness.url ) == op.url );
     BOOST_REQUIRE( alice_witness.signing_key == op.block_signing_key );
-    BOOST_REQUIRE( alice_witness.props.account_creation_fee == op.props.account_creation_fee.to_asset<true>() );
+    BOOST_REQUIRE( alice_witness.props.account_creation_fee.to_asset() == op.props.account_creation_fee.to_asset<true>() );
     BOOST_REQUIRE( alice_witness.props.maximum_block_size == op.props.maximum_block_size );
     BOOST_REQUIRE( alice_witness.total_missed == 0 );
     BOOST_REQUIRE( alice_witness.last_aslot == 0 );
@@ -1935,7 +1935,7 @@ BOOST_AUTO_TEST_CASE( witness_update_apply )
     BOOST_REQUIRE( alice_witness.created == db->head_block_time() );
     BOOST_REQUIRE( to_string( alice_witness.url ) == "bar.foo" );
     BOOST_REQUIRE( alice_witness.signing_key == op.block_signing_key );
-    BOOST_REQUIRE( alice_witness.props.account_creation_fee == op.props.account_creation_fee.to_asset<true>() );
+    BOOST_REQUIRE( alice_witness.props.account_creation_fee.to_asset() == op.props.account_creation_fee.to_asset<true>() );
     BOOST_REQUIRE( alice_witness.props.maximum_block_size == op.props.maximum_block_size );
     BOOST_REQUIRE( alice_witness.total_missed == 0 );
     BOOST_REQUIRE( alice_witness.last_aslot == 0 );
@@ -7913,7 +7913,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
     tx.operations.push_back( prop_op );
     sign( tx, signing_key );
     db->push_transaction( tx, 0 );
-    BOOST_REQUIRE( alice_witness.props.account_creation_fee == ASSET( "2.000 TESTS" ) );
+    BOOST_REQUIRE( alice_witness.props.account_creation_fee == HIVE_asset( 2000 ) );
 
     // Setting maximum_block_size
     prop_op.props.erase( "account_creation_fee" );

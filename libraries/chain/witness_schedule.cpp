@@ -4,6 +4,7 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/witness_schedule.hpp>
 
+#include <hive/chain/util/tiny_asset.hpp>
 #include <hive/chain/util/rd_setup.hpp>
 
 #include <hive/protocol/config.hpp>
@@ -50,7 +51,7 @@ void update_median_witness_props( database& db )
   {
     return a->props.account_creation_fee.amount < b->props.account_creation_fee.amount;
   } );
-  asset median_account_creation_fee = active[active.size()/2]->props.account_creation_fee;
+  HIVE_asset median_account_creation_fee = active[active.size()/2]->props.account_creation_fee;
 
   /// sort them by maximum_block_size
   std::sort( active.begin(), active.end(), [&]( const witness_object* a, const witness_object* b )

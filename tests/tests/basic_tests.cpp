@@ -599,7 +599,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 72 ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
   BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 248 ); //as many as account_object
   BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_object ), 48 ); //obsolete - only created/modified up to HF12 (683 objects)
-  BOOST_CHECK_EQUAL( sizeof( witness_object ), 352 ); //small but potentially as many as account_object
+  BOOST_CHECK_EQUAL( sizeof( witness_object ), 344 ); //small but potentially as many as account_object
 
   //lasting objects (operation to create and remove, but with potential to grow)
   BOOST_CHECK_EQUAL( sizeof( vesting_delegation_object ), 56 ); //1M+ (potential of account_object squared !!!)
@@ -636,7 +636,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( block_summary_object ), 24 ); //always 64k objects
   BOOST_CHECK_EQUAL( sizeof( hardfork_property_object ), 88 );
   BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 136 ); //dynamic size worth 7*24 of sizeof(price)
-  BOOST_CHECK_EQUAL( sizeof( witness_schedule_object ), 536 );
+  BOOST_CHECK_EQUAL( sizeof( witness_schedule_object ), 528 );
 
   //TODO: categorize and evaluate size potential of SMT related objects:
   //account_regular_balance_object
