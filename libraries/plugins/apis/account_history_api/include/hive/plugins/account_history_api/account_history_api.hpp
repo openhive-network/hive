@@ -79,17 +79,26 @@ struct get_account_history_return
 /** Allows to specify range of blocks to retrieve virtual operations for.
   *  \param block_range_begin - starting block number (inclusive) to search for virtual operations
   *  \param block_range_end   - last block number (exclusive) to search for virtual operations
+  *  \param operation_begin   - starting virtual operation in given block (inclusive)
+  *  \param limit             - a limit of retrieved operations
+  *  \param block_range_end   - a filter that decides which an operation matches - used bitwise filtering equals to position in `hive::protocol::operation`
   */
 struct enum_virtual_ops_args
 {
   uint32_t block_range_begin = 1;
   uint32_t block_range_end = 2;
+
+  fc::optional< uint32_t > operation_begin;
+  fc::optional< uint32_t > limit;
+  fc::optional< fc::flat_set< std::string > > filter;
 };
 
 struct enum_virtual_ops_return
 {
   vector<api_operation_object> ops;
+ 
   uint32_t                     next_block_range_begin = 0;
+  uint32_t                     next_operation_begin   = 0;
 };
 
 
@@ -131,7 +140,7 @@ FC_REFLECT( hive::plugins::account_history::get_account_history_return,
   (history) )
 
 FC_REFLECT( hive::plugins::account_history::enum_virtual_ops_args,
-  (block_range_begin)(block_range_end) )
+  (block_range_begin)(block_range_end)(operation_begin)(limit)(filter) )
 
 FC_REFLECT( hive::plugins::account_history::enum_virtual_ops_return,
-  (ops)(next_block_range_begin) )
+  (ops)(next_block_range_begin)(next_operation_begin) )

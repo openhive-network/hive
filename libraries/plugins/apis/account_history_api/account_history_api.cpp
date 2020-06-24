@@ -195,17 +195,64 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
 
 }
 
+#define GET_NAME( r, data, CLASS_NAME ) \
+    void operator()( const hive::protocol::CLASS_NAME& op ) { name = BOOST_PP_STRINGIZE(CLASS_NAME); }
+
+#define GET_NAMES( CLASS_NAMES ) \
+	BOOST_PP_SEQ_FOR_EACH( GET_NAME, _, CLASS_NAMES )
+
+struct name_visitor
+{
+  std::string name;
+
+  typedef void result_type;
+
+  template< typename T >
+  void operator()( const T& ) { name = ""; }
+
+  GET_NAMES( (fill_convert_request_operation)(author_reward_operation)(curation_reward_operation)
+  (comment_reward_operation)(liquidity_reward_operation)(interest_operation)
+  (fill_vesting_withdraw_operation)(fill_order_operation)(shutdown_witness_operation)
+  (fill_transfer_from_savings_operation)(hardfork_operation)(comment_payout_update_operation)
+  (return_vesting_delegation_operation)(comment_benefactor_reward_operation)(producer_reward_operation)
+  (clear_null_account_balance_operation)(proposal_pay_operation)(sps_fund_operation)
+  (hardfork_hive_operation)(hardfork_hive_restore_operation)(delayed_voting_operation)
+  (consolidate_treasury_balance_operation)(effective_comment_vote_operation) )
+};
+
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 {
   enum_virtual_ops_return result;
 
-  result.next_block_range_begin = _dataSource.enum_operations_from_block_range(args.block_range_begin,
-    args.block_range_end,
-    [&result](const account_history_rocksdb::rocksdb_operation_object& op)
+    std::pair< uint32_t, uint32_t > next_values = _dataSource.enum_operations_from_block_range(args.block_range_begin,
+    args.block_range_end, args.operation_begin, args.limit,
+    [ &result, &args ](const account_history_rocksdb::rocksdb_operation_object& op)
     {
-      result.ops.emplace_back(api_operation_object(op));
+      if( args.filter.valid() )
+      {
+        api_operation_object _api_obj( op );
+
+        name_visitor _name_visitor;
+        _api_obj.op.visit( _name_visitor );
+
+        if( _name_visitor.name.size() && args.filter->find( _name_visitor.name ) != args.filter->end() )
+        {
+          result.ops.emplace_back(api_operation_object(op));
+          return true;
+        }
+        else
+          return false;
+      }
+      else
+      {
+        result.ops.emplace_back(api_operation_object(op));
+        return true;
+      }
     }
   );
+
+  result.next_block_range_begin = next_values.first;
+  result.next_operation_begin = next_values.second;
 
   return result;
 }

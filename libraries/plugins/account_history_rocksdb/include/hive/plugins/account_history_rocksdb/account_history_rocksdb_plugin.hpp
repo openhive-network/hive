@@ -41,8 +41,9 @@ public:
   bool find_operation_object(size_t opId, rocksdb_operation_object* data) const;
   void find_operations_by_block(size_t blockNum,
     std::function<void(const rocksdb_operation_object&)> processor) const;
-  uint32_t enum_operations_from_block_range(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
-    std::function<void(const rocksdb_operation_object&)> processor) const;
+  std::pair< uint32_t/*nr last block*/, uint32_t/*nr last operation*/ > enum_operations_from_block_range(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
+    fc::optional<uint32_t> operationBegin, fc::optional<uint32_t> limit,
+    std::function<bool(const rocksdb_operation_object&)> processor) const;
   bool find_transaction_info(const protocol::transaction_id_type& trxId, uint32_t* blockNo, uint32_t* txInBlock) const;
 
 private:

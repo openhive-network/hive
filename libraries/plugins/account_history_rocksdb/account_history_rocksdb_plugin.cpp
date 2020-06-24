@@ -506,8 +506,9 @@ public:
   void find_operations_by_block(size_t blockNum,
     std::function<void(const rocksdb_operation_object&)> processor) const;
   /// Allows to enumerate all operations registered in given block range.
-  uint32_t enumVirtualOperationsFromBlockRange(uint32_t blockRangeBegin,
-    uint32_t blockRangeEnd, std::function<void(const rocksdb_operation_object&)> processor) const;
+  std::pair< uint32_t/*nr last block*/, uint32_t/*nr last operation*/ > enumVirtualOperationsFromBlockRange(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
+    fc::optional<uint32_t> operationBegin, fc::optional<uint32_t> limit,
+    std::function<bool(const rocksdb_operation_object&)> processor) const;
 
   bool find_transaction_info(const protocol::transaction_id_type& trxId, uint32_t* blockNo,
     uint32_t* txInBlock) const;
@@ -994,8 +995,9 @@ void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t block
   }
 }
 
-uint32_t account_history_rocksdb_plugin::impl::enumVirtualOperationsFromBlockRange(uint32_t blockRangeBegin,
-  uint32_t blockRangeEnd, std::function<void(const rocksdb_operation_object&)> processor) const
+std::pair< uint32_t, uint32_t > account_history_rocksdb_plugin::impl::enumVirtualOperationsFromBlockRange(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
+  fc::optional<uint32_t> operationBegin, fc::optional<uint32_t> limit, 
+  std::function<bool(const rocksdb_operation_object&)> processor) const
 {
   FC_ASSERT(blockRangeEnd > blockRangeBegin, "Block range must be upward");
 
@@ -1010,6 +1012,11 @@ uint32_t account_history_rocksdb_plugin::impl::enumVirtualOperationsFromBlockRan
 
   uint32_t lastFoundBlock = 0;
 
+  uint32_t cnt = 0;
+  uint32_t cntLimit = 0;
+  uint32_t cntVopInBlock = 0;
+  bool     searchIsRejected = false;
+
   for(it->Seek(rangeBeginSlice); it->Valid(); it->Next())
   {
     auto keySlice = it->key();
@@ -1018,34 +1025,60 @@ uint32_t account_history_rocksdb_plugin::impl::enumVirtualOperationsFromBlockRan
     /// Accept only virtual operations
     if(key.second & VIRTUAL_OP_FLAG)
     {
-      auto valueSlice = it->value();
-      const auto& opId = id_slice_t::unpackSlice(valueSlice);
+      /// Skip `operationBegin` operations
+      if( !operationBegin.valid() || ( cnt >= *operationBegin ) )
+      {
+        auto valueSlice = it->value();
+        const auto& opId = id_slice_t::unpackSlice(valueSlice);
 
-      rocksdb_operation_object op;
-      bool found = find_operation_object(opId, &op);
-      FC_ASSERT(found);
+        rocksdb_operation_object op;
+        bool found = find_operation_object(opId, &op);
+        FC_ASSERT(found);
 
-      processor(op);
-      lastFoundBlock = op.block;
+        if( lastFoundBlock != key.first )
+          cntVopInBlock = 0;
+        else
+          ++cntVopInBlock;
+
+        ///Number of retrieved operations can't be greater then limit
+        if( limit.valid() && ( cntLimit >= *limit ) )
+        {
+            searchIsRejected = true;
+            break;
+        }
+        if( processor(op) )
+          ++cntLimit;
+      }
+      else
+        ++cnt;
+
+      lastFoundBlock = key.first;
     }
   }
 
-  op_by_block_num_slice_t lowerBoundSlice(block_op_id_pair(lastFoundBlock, 0));
-  rOptions = ReadOptions();
-  rOptions.iterate_lower_bound = &lowerBoundSlice;
-  it.reset(_storage->NewIterator(rOptions, _columnHandles[OPERATION_BY_BLOCK]));
-
-  op_by_block_num_slice_t nextRangeBeginSlice(block_op_id_pair(lastFoundBlock + 1, 0));
-  for(it->Seek(nextRangeBeginSlice); it->Valid(); it->Next())
+  if( searchIsRejected )
   {
-    auto keySlice = it->key();
-    const auto& key = op_by_block_num_slice_t::unpackSlice(keySlice);
+    return std::make_pair( lastFoundBlock, cntVopInBlock );
+  }
+  else
+  {
+    op_by_block_num_slice_t lowerBoundSlice(block_op_id_pair(lastFoundBlock, 0));
+    rOptions = ReadOptions();
+    rOptions.iterate_lower_bound = &lowerBoundSlice;
+    it.reset(_storage->NewIterator(rOptions, _columnHandles[OPERATION_BY_BLOCK]));
 
-    if(key.second & VIRTUAL_OP_FLAG)
-      return key.first;
+    op_by_block_num_slice_t nextRangeBeginSlice(block_op_id_pair(lastFoundBlock + 1, 0));
+    for(it->Seek(nextRangeBeginSlice); it->Valid(); it->Next())
+    {
+      auto keySlice = it->key();
+      const auto& key = op_by_block_num_slice_t::unpackSlice(keySlice);
+
+      if(key.second & VIRTUAL_OP_FLAG)
+        return std::make_pair( key.first, 0 );
+    }
   }
 
-  return 0;
+  return std::make_pair( 0, 0 );
 }
 
 bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol::transaction_id_type& trxId,
@@ -1613,10 +1646,11 @@ void account_history_rocksdb_plugin::find_operations_by_block(size_t blockNum,
   _my->find_operations_by_block(blockNum, processor);
 }
 
-uint32_t account_history_rocksdb_plugin::enum_operations_from_block_range(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
-  std::function<void(const rocksdb_operation_object&)> processor) const
+std::pair< uint32_t, uint32_t > account_history_rocksdb_plugin::enum_operations_from_block_range(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
+  fc::optional<uint32_t> operationBegin, fc::optional<uint32_t> limit,
+  std::function<bool(const rocksdb_operation_object&)> processor) const
 {
-  return _my->enumVirtualOperationsFromBlockRange(blockRangeBegin, blockRangeEnd, processor);
+  return _my->enumVirtualOperationsFromBlockRange(blockRangeBegin, blockRangeEnd, operationBegin, limit, processor);
 }
 
 bool account_history_rocksdb_plugin::find_transaction_info(const protocol::transaction_id_type& trxId, uint32_t* blockNo,
