@@ -195,22 +195,29 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
 
 }
 
-#define GET_NAME( r, data, CLASS_NAME ) \
-    void operator()( const hive::protocol::CLASS_NAME& op ) { name = BOOST_PP_STRINGIZE(CLASS_NAME); }
+#define CHECK_OPERATION( r, data, CLASS_NAME ) \
+  void operator()( const hive::protocol::CLASS_NAME& op ) { _accepted = (_filter & enum_vops_filter::CLASS_NAME) == enum_vops_filter::CLASS_NAME; }
 
-#define GET_NAMES( CLASS_NAMES ) \
-	BOOST_PP_SEQ_FOR_EACH( GET_NAME, _, CLASS_NAMES )
+#define CHECK_OPERATIONS( CLASS_NAMES ) \
+  BOOST_PP_SEQ_FOR_EACH( CHECK_OPERATION, _, CLASS_NAMES )
 
-struct name_visitor
+struct filtering_visitor
 {
-  std::string name;
-
   typedef void result_type;
 
-  template< typename T >
-  void operator()( const T& ) { name = ""; }
+  bool check(uint32_t filter, const hive::protocol::operation& op)
+  {
+    _filter = filter;
+    _accepted = false;
+    op.visit(*this);
 
-  GET_NAMES( (fill_convert_request_operation)(author_reward_operation)(curation_reward_operation)
+    return _accepted;
+  }
+
+  template< typename T >
+  void operator()( const T& ) { _accepted = false; }
+
+  CHECK_OPERATIONS( (fill_convert_request_operation)(author_reward_operation)(curation_reward_operation)
   (comment_reward_operation)(liquidity_reward_operation)(interest_operation)
   (fill_vesting_withdraw_operation)(fill_order_operation)(shutdown_witness_operation)
   (fill_transfer_from_savings_operation)(hardfork_operation)(comment_payout_update_operation)
@@ -218,6 +225,10 @@ struct name_visitor
   (clear_null_account_balance_operation)(proposal_pay_operation)(sps_fund_operation)
   (hardfork_hive_operation)(hardfork_hive_restore_operation)(delayed_voting_operation)
   (consolidate_treasury_balance_operation)(effective_comment_vote_operation) )
+
+private:
+  uint32_t _filter = 0;
+  bool     _accepted = false;
 };
 
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
@@ -232,12 +243,11 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
       {
         api_operation_object _api_obj( op );
 
-        name_visitor _name_visitor;
-        _api_obj.op.visit( _name_visitor );
+        filtering_visitor accepting_visitor;
 
-        if( _name_visitor.name.size() && args.filter->find( _name_visitor.name ) != args.filter->end() )
+        if(accepting_visitor.check(*args.filter, _api_obj.op))
         {
-          result.ops.emplace_back(api_operation_object(op));
+          result.ops.emplace_back(std::move(_api_obj));
           return true;
         }
         else

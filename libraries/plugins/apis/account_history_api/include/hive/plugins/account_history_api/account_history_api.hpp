@@ -76,6 +76,33 @@ struct get_account_history_return
   std::map< uint32_t, api_operation_object > history;
 };
 
+enum enum_vops_filter : uint32_t
+{
+  fill_convert_request_operation          = 0x000001,
+  author_reward_operation                 = 0x000002,
+  curation_reward_operation               = 0x000004,
+  comment_reward_operation                = 0x000008,
+  liquidity_reward_operation              = 0x000010,
+  interest_operation                      = 0x000020,
+  fill_vesting_withdraw_operation         = 0x000040,
+  fill_order_operation                    = 0x000080,
+  shutdown_witness_operation              = 0x000100,
+  fill_transfer_from_savings_operation    = 0x000200,
+  hardfork_operation                      = 0x000400,
+  comment_payout_update_operation         = 0x000800,
+  return_vesting_delegation_operation     = 0x001000,
+  comment_benefactor_reward_operation     = 0x002000,
+  producer_reward_operation               = 0x004000,
+  clear_null_account_balance_operation    = 0x008000,
+  proposal_pay_operation                  = 0x010000,
+  sps_fund_operation                      = 0x020000,
+  hardfork_hive_operation                 = 0x040000,
+  hardfork_hive_restore_operation         = 0x080000,
+  delayed_voting_operation                = 0x100000,
+  consolidate_treasury_balance_operation  = 0x200000,
+  effective_comment_vote_operation        = 0x400000
+};
+
 /** Allows to specify range of blocks to retrieve virtual operations for.
   *  \param block_range_begin - starting block number (inclusive) to search for virtual operations
   *  \param block_range_end   - last block number (exclusive) to search for virtual operations
@@ -90,7 +117,7 @@ struct enum_virtual_ops_args
 
   fc::optional< uint32_t > operation_begin;
   fc::optional< uint32_t > limit;
-  fc::optional< fc::flat_set< std::string > > filter;
+  fc::optional< uint32_t > filter;
 };
 
 struct enum_virtual_ops_return
