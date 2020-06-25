@@ -5499,6 +5499,43 @@ void database::adjust_supply( const asset& delta, bool adjust_vesting )
   } );
 }
 
+void database::adjust_supply( const HIVE_asset& delta, bool adjust_vesting )
+{
+  const auto& props = get_dynamic_global_properties();
+  if( props.head_block_number < HIVE_BLOCKS_PER_DAY*7 )
+    adjust_vesting = false;
+
+  modify( props, [&, adjust_vesting]( dynamic_global_property_object& props )
+  {
+    bool check_supply = has_hardfork( HIVE_HARDFORK_0_20__1811 );
+
+    HIVE_asset new_vesting( (adjust_vesting && delta.amount > 0) ? delta.amount * 9 : 0 );
+    props.current_supply += HIVE_asset(delta) + new_vesting;
+    props.virtual_supply += HIVE_asset(delta) + new_vesting;
+    props.total_vesting_fund_hive += new_vesting;
+    if( check_supply )
+    {
+      FC_ASSERT( props.current_supply.amount.value >= 0 );
+    }
+  } );
+}
+
+void database::adjust_supply( const HBD_asset& delta )
+{
+  const auto& props = get_dynamic_global_properties();
+  modify( props, [&]( dynamic_global_property_object& props )
+  {
+    bool check_supply = has_hardfork( HIVE_HARDFORK_0_20__1811 );
+
+    props.current_hbd_supply += delta;
+    props.virtual_supply = HIVE_asset( props.get_current_hbd_supply() * get_feed_history().current_median_history ) + props.current_supply;
+    if( check_supply )
+    {
+      FC_ASSERT( props.get_current_hbd_supply().amount.value >= 0 );
+    }
+  } );
+}
+
 
 asset database::get_balance( const account_object& a, asset_symbol_type symbol )const
 {
