@@ -252,6 +252,7 @@ add_boost_test( chain_test
    undo_tests/undo_key_collision
    undo_tests/undo_different_indexes
    undo_tests/undo_generate_blocks
+   db_lock_tests/push_transactions_and_read_api
 )
 
 target_link_libraries( chain_test db_fixture chainbase hive_chain hive_protocol account_history_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin fc ${PLATFORM_SPECIFIC_LIBS} )
