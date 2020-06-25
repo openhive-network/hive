@@ -30,13 +30,11 @@ staging-build:
 
   script:
     - (docker build --no-cache --target consensus_node .) 2>&1 2> $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/consensus_node_build.log || { tail -n 50 $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/consensus_node_build.log; exit 1; }
-    - (docker build --no-cache --target fat_node .) 2>&1 2> $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/fat_node_build.log || { tail -n 50 $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/fat_node_build.log; exit 2; }
     - (docker build --no-cache --target testnet_node_builder .) 2>&1 2> $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/testnet_node_build.log || { tail -n 50 $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/testnet_node_build.log; exit 3; }
   artifacts:
     paths:
 # Warning: artifact paths *must* be subdirectory of $CI_PROJECT_DIR
     - $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/consensus_node_build.log
-    - $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/fat_node_build.log
     - $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/testnet_node_build.log
     when: always
     expire_in: 1 week
@@ -67,14 +65,12 @@ development-build:
 
   script:
     - (docker build --no-cache --target consensus_node .) 2>&1 2> $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/consensus_node_build.log || { tail -n 50 $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/consensus_node_build.log; exit 1; }
-    - (docker build --no-cache --target fat_node .) 2>&1 2> $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/fat_node_build.log || { tail -n 50 $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/fat_node_build.log; exit 2; }
     - (docker build --no-cache --target testnet_node_builder .) 2>&1 2> $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/testnet_node_build.log || { tail -n 50 $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/testnet_node_build.log; exit 3; }
 
   artifacts:
     paths:
 # Warning: artifact paths *must* be subdirectory of $CI_PROJECT_DIR
     - $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/consensus_node_build.log
-    - $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/fat_node_build.log
     - $CI_PROJECT_DIR/$CI_COMMIT_REF_NAME/testnet_node_build.log
     when: always
     expire_in: 1 week
