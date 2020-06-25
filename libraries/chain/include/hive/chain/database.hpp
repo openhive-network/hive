@@ -683,6 +683,8 @@ namespace hive { namespace chain {
       void modify_balance( const account_object& a, const HIVE_asset& delta, bool check_balance );
       void modify_balance( const account_object& a, const VEST_asset& delta, bool check_balance );
       void modify_reward_balance( const account_object& a, const asset& value_delta, const VEST_asset& share_delta, bool check_balance );
+      void modify_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta, bool check_balance );
+      void modify_reward_balance( const account_object& a, const HBD_asset& value_delta, bool check_balance );
 
       operation_notification create_operation_notification( const operation& op )const
       {

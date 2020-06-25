@@ -5167,39 +5167,52 @@ void database::modify_balance( const account_object& a, const VEST_asset& delta,
 
 void database::modify_reward_balance( const account_object& a, const asset& value_delta, const VEST_asset& share_delta, bool check_balance )
 {
+  switch( value_delta.symbol.asset_num )
+  {
+    case HIVE_ASSET_NUM_HIVE:
+      modify_balance(a, value_delta, share_delta, check_balance);
+      break;
+    case HIVE_ASSET_NUM_HBD:
+      FC_ASSERT( share_delta.amount.value == 0 );
+      modify_balance(a, value_delta, check_balance);
+      break;
+    default:
+      FC_ASSERT( false, "invalid symbol" );
+  }
+}
+
+void database::modify_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta, bool check_balance )
+{
   modify( a, [&, check_balance]( account_object& acnt )
   {
-    switch( value_delta.symbol.asset_num )
+    if( share_delta.amount.value == 0 )
     {
-      case HIVE_ASSET_NUM_HIVE:
-        if( share_delta.amount.value == 0 )
-        {
-          acnt.reward_hive_balance += value_delta;
-          if( check_balance )
-          {
-            FC_ASSERT( acnt.get_rewards().amount.value >= 0, "Insufficient reward HIVE funds" );
-          }
-        }
-        else
-        {
-          acnt.reward_vesting_hive += value_delta;
-          acnt.reward_vesting_balance += share_delta;
-          if( check_balance )
-          {
-            FC_ASSERT( acnt.get_vest_rewards().amount.value >= 0, "Insufficient reward VESTS funds" );
-          }
-        }
-        break;
-      case HIVE_ASSET_NUM_HBD:
-        FC_ASSERT( share_delta.amount.value == 0 );
-        acnt.reward_hbd_balance += value_delta;
-        if( check_balance )
-        {
-          FC_ASSERT( acnt.get_hbd_rewards().amount.value >= 0, "Insufficient reward HBD funds" );
-        }
-        break;
-      default:
-        FC_ASSERT( false, "invalid symbol" );
+      acnt.reward_hive_balance += value_delta;
+      if( check_balance )
+      {
+        FC_ASSERT( acnt.get_rewards().amount.value >= 0, "Insufficient reward HIVE funds" );
+      }
+    }
+    else
+    {
+      acnt.reward_vesting_hive += value_delta;
+      acnt.reward_vesting_balance += share_delta;
+      if( check_balance )
+      {
+        FC_ASSERT( acnt.get_vest_rewards().amount.value >= 0, "Insufficient reward VESTS funds" );
+      }
+    }
+  });
+}
+
+void database::modify_reward_balance( const account_object& a, const HBD_asset& value_delta, bool check_balance )
+{
+  modify( a, [&, check_balance]( account_object& acnt )
+  {
+    acnt.reward_hbd_balance += value_delta;
+    if( check_balance )
+    {
+      FC_ASSERT( acnt.get_hbd_rewards().amount.value >= 0, "Insufficient reward HBD funds" );
     }
   });
 }
