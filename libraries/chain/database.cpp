@@ -5344,13 +5344,13 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
             auto interest = acnt.savings_hbd_seconds / HIVE_SECONDS_PER_YEAR;
             interest *= get_dynamic_global_properties().get_hbd_interest_rate();
             interest /= HIVE_100_PERCENT;
-            asset interest_paid(interest.to_uint64(), HBD_SYMBOL);
+            HBD_asset interest_paid(interest.to_uint64());
             acnt.savings_hbd_balance += interest_paid;
             acnt.savings_hbd_seconds = 0;
             acnt.savings_hbd_last_interest_payment = head_block_time();
 
             if(interest > 0)
-              push_virtual_operation( interest_operation( a.name, interest_paid ) );
+              push_virtual_operation( interest_operation( a.name, interest_paid.to_asset() ) );
 
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
             {
