@@ -236,16 +236,18 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
   enum_virtual_ops_return result;
 
     std::pair< uint32_t, uint32_t > next_values = _dataSource.enum_operations_from_block_range(args.block_range_begin,
-    args.block_range_end, args.operation_begin, args.limit,
+    args.block_range_end,
+    args.constraints.valid() ? args.constraints->operation_begin : fc::optional< uint32_t >(),
+    args.constraints.valid() ? args.constraints->limit : fc::optional< uint32_t >(),
     [ &result, &args ](const account_history_rocksdb::rocksdb_operation_object& op)
     {
-      if( args.filter.valid() )
+      if( args.constraints.valid() )
       {
         api_operation_object _api_obj( op );
 
         filtering_visitor accepting_visitor;
 
-        if(accepting_visitor.check(*args.filter, _api_obj.op))
+        if(accepting_visitor.check( args.constraints->filter, _api_obj.op ))
         {
           result.ops.emplace_back(std::move(_api_obj));
           return true;
