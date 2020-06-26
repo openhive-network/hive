@@ -226,11 +226,11 @@ function(add_boost_test _name)
 		if(TESTS AND ( "${Boost_VERSION}" VERSION_GREATER "103799" ))
 			foreach(_test ${TESTS})
 				add_test(
-					${_name}-${_test}
+					unit/${_name}-${_test}
 					${_test_command} --run_test=${_test} ${Boost_TEST_FLAGS}
 				)
 				if(FAIL_REGULAR_EXPRESSION)
-					set_tests_properties(${_name}-${_test}
+					set_tests_properties(unit/${_name}-${_test}
 						PROPERTIES
 						FAIL_REGULAR_EXPRESSION
 						"${FAIL_REGULAR_EXPRESSION}")
@@ -238,11 +238,11 @@ function(add_boost_test _name)
 			endforeach()
 		else()
 			add_test(
-				${_name}-boost_test
+				unit/${_name}-boost_test
 				${_test_command} ${Boost_TEST_FLAGS}
 			)
 			if(FAIL_REGULAR_EXPRESSION)
-				set_tests_properties(${_name}-boost_test
+				set_tests_properties(unit/${_name}-boost_test
 					PROPERTIES
 					FAIL_REGULAR_EXPRESSION
 					"${FAIL_REGULAR_EXPRESSION}")

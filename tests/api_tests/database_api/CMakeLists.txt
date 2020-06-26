@@ -10,9 +10,6 @@ ADD_API_TEST(database_api find_accounts steemit alice)
 ## find_change_recovery_account_requests
 ADD_API_TEST(database_api find_change_recovery_account_requests steemit alice)
 
-## find_comments
-ADD_API_TEST(database_api find_comments)
-
 ## find_decline_voting_rights_requests
 ADD_API_TEST(database_api find_decline_voting_rights_requests steemit)
 
@@ -113,10 +110,7 @@ ADD_API_TEST(database_api list_accounts \"\" 1 by_name)
 ## list_change_recovery_account_requests 
 ADD_API_TEST(database_api list_change_recovery_account_requests "alice" 1 by_account)
 
-## list_comments 
-ADD_API_TEST(database_api list_comments ["steemit","firstpost","",""] 1 by_root)
-
-## list_decline_voting_rights_requests 
+## list_decline_voting_rights_requests
 ADD_API_TEST(database_api list_decline_voting_rights_requests \"\" 10 by_account)
 
 ## list_escrows 
