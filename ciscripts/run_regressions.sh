@@ -16,6 +16,17 @@ execute_unittest_group()
   fi
 }
 
+# $1 ctest test name
+execute_exactly_one_test()
+{
+  local ctest_test_name=$1
+  echo "Start ctest test '${ctest_test_name}'"
+  if ! ctest -R ^${ctest_test_name}$ --output-on-failure -vv
+  then
+    exit 1
+  fi
+}
+
 execute_hive_functional()
 {
   echo "Start hive functional tests"
@@ -51,8 +62,8 @@ echo "                                                                          
 
 
 
-execute_unittest_group plugin_test
-execute_unittest_group chain_test
+execute_exactly_one_test all_plugin_tests
+execute_exactly_one_test all_chain_tests
 
 execute_hive_functional
 

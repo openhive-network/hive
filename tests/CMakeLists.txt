@@ -254,6 +254,12 @@ add_boost_test( chain_test
    undo_tests/undo_generate_blocks
 )
 
+add_test(
+        NAME all_chain_tests
+        COMMAND chain_test
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
 target_link_libraries( chain_test db_fixture chainbase hive_chain hive_protocol account_history_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin fc ${PLATFORM_SPECIFIC_LIBS} )
 
 file(GLOB PLUGIN_TESTS "plugin_tests/*.cpp")
@@ -272,6 +278,12 @@ add_boost_test( plugin_test
     json_rpc/semantics_validation
     market_history/mh_test
     transaction_status/transaction_status_test
+)
+
+add_test(
+        NAME all_plugin_tests
+        COMMAND plugin_test
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 target_link_libraries( plugin_test db_fixture hive_chain hive_protocol account_history_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin transaction_status_plugin transaction_status_api_plugin fc ${PLATFORM_SPECIFIC_LIBS} )
