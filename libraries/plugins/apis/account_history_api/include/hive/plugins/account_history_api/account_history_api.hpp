@@ -34,6 +34,7 @@ struct api_operation_object
   uint32_t                               trx_in_block = 0;
   uint32_t                               op_in_trx = 0;
   uint32_t                               virtual_op = 0;
+  uint64_t                               operation_id = 0;
   fc::time_point_sec                     timestamp;
   hive::protocol::operation             op;
 
@@ -115,17 +116,32 @@ struct enum_virtual_ops_args
   uint32_t block_range_begin = 1;
   uint32_t block_range_end = 2;
 
-  fc::optional< uint32_t > operation_begin;
+  fc::optional<bool> group_by_block;
+  fc::optional< uint64_t > operation_begin;
   fc::optional< uint32_t > limit;
   fc::optional< uint32_t > filter;
+};
+
+struct ops_array_wrapper
+{
+  ops_array_wrapper(uint32_t _block) : block(_block) {}
+
+  uint32_t block = 0;
+  fc::time_point_sec                timestamp;
+  std::vector<api_operation_object> ops;
+
+  bool operator < (const ops_array_wrapper& rhs) const
+    {
+    return block < rhs.block;
+    }
 };
 
 struct enum_virtual_ops_return
 {
   vector<api_operation_object> ops;
- 
+  std::set<ops_array_wrapper> ops_by_block;
   uint32_t                     next_block_range_begin = 0;
-  uint32_t                     next_operation_begin   = 0;
+  uint64_t                     next_operation_begin   = 0;
 };
 
 
@@ -149,7 +165,7 @@ class account_history_api
 } } } // hive::plugins::account_history
 
 FC_REFLECT( hive::plugins::account_history::api_operation_object,
-  (trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(op) )
+  (trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(op)(operation_id) )
 
 FC_REFLECT( hive::plugins::account_history::get_ops_in_block_args,
   (block_num)(only_virtual) )
@@ -167,7 +183,9 @@ FC_REFLECT( hive::plugins::account_history::get_account_history_return,
   (history) )
 
 FC_REFLECT( hive::plugins::account_history::enum_virtual_ops_args,
-  (block_range_begin)(block_range_end)(operation_begin)(limit)(filter) )
+  (block_range_begin)(block_range_end)(group_by_block)(operation_begin)(limit)(filter) )
+
+FC_REFLECT( hive::plugins::account_history::ops_array_wrapper, (block)(timestamp)(ops) )
 
 FC_REFLECT( hive::plugins::account_history::enum_virtual_ops_return,
-  (ops)(next_block_range_begin)(next_operation_begin) )
+  (ops)(ops_by_block)(next_block_range_begin)(next_operation_begin) )

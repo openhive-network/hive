@@ -235,19 +235,37 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 {
   enum_virtual_ops_return result;
 
-    std::pair< uint32_t, uint32_t > next_values = _dataSource.enum_operations_from_block_range(args.block_range_begin,
+  bool groupOps = args.group_by_block.valid() && *args.group_by_block;
+
+  std::pair< uint32_t, uint64_t > next_values = _dataSource.enum_operations_from_block_range(args.block_range_begin,
     args.block_range_end, args.operation_begin, args.limit,
-    [ &result, &args ](const account_history_rocksdb::rocksdb_operation_object& op)
+    [groupOps, &result, &args ](const account_history_rocksdb::rocksdb_operation_object& op, uint64_t operation_id)
     {
+
       if( args.filter.valid() )
       {
         api_operation_object _api_obj( op );
+
+        _api_obj.operation_id = operation_id;
 
         filtering_visitor accepting_visitor;
 
         if(accepting_visitor.check(*args.filter, _api_obj.op))
         {
-          result.ops.emplace_back(std::move(_api_obj));
+          if(groupOps)
+          {
+            auto ii = result.ops_by_block.emplace(op.block);
+            ops_array_wrapper& w = const_cast<ops_array_wrapper&>(*ii.first);
+
+            if(ii.second)
+              w.timestamp = op.timestamp;
+            
+            w.ops.emplace_back(std::move(_api_obj));
+          }
+          else
+          {
+            result.ops.emplace_back(std::move(_api_obj));
+          }
           return true;
         }
         else
@@ -255,7 +273,25 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
       }
       else
       {
-        result.ops.emplace_back(api_operation_object(op));
+        if(groupOps)
+        {
+          auto ii = result.ops_by_block.emplace(op.block);
+          ops_array_wrapper& w = const_cast<ops_array_wrapper&>(*ii.first);
+
+          if(ii.second)
+            w.timestamp = op.timestamp;
+
+          api_operation_object _api_obj(op);
+          _api_obj.operation_id = operation_id;
+          w.ops.emplace_back(std::move(_api_obj));
+        }
+        else
+        {
+          api_operation_object _api_obj(op);
+          _api_obj.operation_id = operation_id;
+
+          result.ops.emplace_back(std::move(_api_obj));
+        }
         return true;
       }
     }
