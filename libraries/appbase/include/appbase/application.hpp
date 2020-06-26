@@ -33,12 +33,11 @@ namespace appbase {
 
       final_action_type       final_action;
 
-      p_signal_set            sigint_set;
-      p_signal_set            sigterm_set;
+      p_signal_set            signals;
 
       boost::asio::io_service io_serv;
 
-      void close_signal( p_signal_set& current_signal );
+      void close_signal();
 
       void handle_signal( uint32_t _last_signal_code );
 

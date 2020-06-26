@@ -48,25 +48,23 @@ void io_handler::close()
   {
     final_action();
 
-    close_signal( sigint_set );
-    close_signal( sigterm_set );
+    close_signal();
+    io_serv.stop();
 
     closed = true;
-
-    io_serv.stop();
   }
 
   lock.clear( std::memory_order_release );
 }
 
-void io_handler::close_signal( p_signal_set& current_signal )
+void io_handler::close_signal()
 {
-  if( !current_signal )
+  if( !signals )
     return;
 
   boost::system::error_code ec;
-  current_signal->cancel( ec );
-  current_signal.reset();
+  signals->cancel( ec );
+  signals.reset();
 
   if( ec.value() != 0 )
     cout<<"Error during cancelling signal: "<< ec.message() << std::endl;
@@ -87,14 +85,9 @@ void io_handler::attach_signals()
     **/
   signal(SIGPIPE, SIG_IGN);
 
-  sigint_set = p_signal_set( new boost::asio::signal_set( io_serv, SIGINT ) );
-  sigint_set->async_wait([ this ](const boost::system::error_code& err, int num) {
-    handle_signal( SIGINT );
-  });
-
-  sigterm_set = p_signal_set( new boost::asio::signal_set( io_serv, SIGTERM ) );
-  sigterm_set->async_wait([ this ](const boost::system::error_code& err, int num) {
-    handle_signal( SIGTERM );
+  signals = p_signal_set( new boost::asio::signal_set( io_serv, SIGINT, SIGTERM ) );
+  signals->async_wait([ this ](const boost::system::error_code& err, int signal_number ) {
+    handle_signal( signal_number );
   });
 }
 
@@ -145,7 +138,6 @@ void application::startup() {
   std::thread startup_thread = std::thread( [&]()
   {
     startup_io_handler->run();
-    startup_io_handler.reset();
   });
 
   for (const auto& plugin : initialized_plugins)

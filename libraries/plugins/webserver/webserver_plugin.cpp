@@ -115,12 +115,12 @@ using websocket_local_server_type = websocketpp::server<detail::asio_local_with_
 class webserver_plugin_impl
 {
   public:
-    webserver_plugin_impl(thread_pool_size_t thread_pool_size) :
-      thread_pool_work( this->thread_pool_ios )
+    webserver_plugin_impl( thread_pool_size_t _thread_pool_size, plugins::chain::chain_plugin& c ) :
+      thread_pool_size( _thread_pool_size ), chain( c )
     {
-      for( uint32_t i = 0; i < thread_pool_size; ++i )
-        thread_pool.create_thread( boost::bind( &asio::io_service::run, &thread_pool_ios ) );
     }
+
+    void prepare_threads();
 
     void start_webserver();
     void stop_webserver();
@@ -128,6 +128,8 @@ class webserver_plugin_impl
     void handle_ws_message( websocket_server_type*, connection_hdl, const detail::websocket_server_type::message_ptr& );
     void handle_http_message( websocket_server_type*, connection_hdl );
     void handle_http_request( websocket_local_server_type*, connection_hdl );
+
+    thread_pool_size_t         thread_pool_size;
 
     shared_ptr< std::thread >  http_thread;
     asio::io_service           http_ios;
@@ -146,11 +148,21 @@ class webserver_plugin_impl
 
     boost::thread_group        thread_pool;
     asio::io_service           thread_pool_ios;
-    asio::io_service::work     thread_pool_work;
+    std::unique_ptr< asio::io_service::work > thread_pool_work;
 
-    plugins::json_rpc::json_rpc_plugin* api;
+    plugins::json_rpc::json_rpc_plugin* api = nullptr;
     boost::signals2::connection         chain_sync_con;
+
+    plugins::chain::chain_plugin& chain;
 };
+
+void webserver_plugin_impl::prepare_threads()
+{
+  thread_pool_work.reset( new asio::io_service::work( this->thread_pool_ios ) );
+
+  for( uint32_t i = 0; i < thread_pool_size; ++i )
+    thread_pool.create_thread( boost::bind( &asio::io_service::run, &thread_pool_ios ) );
+}
 
 void webserver_plugin_impl::start_webserver()
 {
@@ -431,7 +443,7 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
   auto thread_pool_size = options.at("webserver-thread-pool-size").as<thread_pool_size_t>();
   FC_ASSERT(thread_pool_size > 0, "webserver-thread-pool-size must be greater than 0");
   ilog("configured with ${tps} thread pool size", ("tps", thread_pool_size));
-  my.reset(new detail::webserver_plugin_impl(thread_pool_size));
+  my.reset( new detail::webserver_plugin_impl( thread_pool_size, appbase::app().get_plugin< plugins::chain::chain_plugin >() ) );
 
   if( options.count( "webserver-http-endpoint" ) )
   {
@@ -486,11 +498,12 @@ void webserver_plugin::plugin_startup()
   my->api = appbase::app().find_plugin< plugins::json_rpc::json_rpc_plugin >();
   FC_ASSERT( my->api != nullptr, "Could not find API Register Plugin" );
 
-  plugins::chain::chain_plugin* chain = appbase::app().find_plugin< plugins::chain::chain_plugin >();
-  if( chain != nullptr && chain->get_state() != appbase::abstract_plugin::started )
+  my->prepare_threads();
+
+  if( my->chain.get_state() != appbase::abstract_plugin::started )
   {
     ilog( "Waiting for chain plugin to start" );
-    my->chain_sync_con = chain->on_sync.connect( 0, [this]()
+    my->chain_sync_con = my->chain.on_sync.connect( 0, [this]()
     {
       my->start_webserver();
     });
