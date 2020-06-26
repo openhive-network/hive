@@ -6,22 +6,6 @@ import json
 
 tests = [
    {
-      "method": "condenser_api.get_state",
-      "params": ["trending"]
-   },
-   {
-      "method": "condenser_api.get_state",
-      "params": ["hot"]
-   },
-   {
-      "method": "condenser_api.get_state",
-      "params": ["/@temp"]
-   },
-   {
-      "method": "condenser_api.get_trending_tags",
-      "params": ["", 20]
-   },
-   {
       "method": "condenser_api.get_active_witnesses",
       "params": []
    },
@@ -76,10 +60,6 @@ tests = [
    {
       "method": "condenser_api.get_key_references",
       "params": [["STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"]]
-   },
-   {
-      "method": "condenser_api.get_accounts",
-      "params": [["initminer","temp"]]
    },
    {
       "method": "condenser_api.lookup_account_names",
@@ -179,126 +159,8 @@ tests = [
       "params": ["temp",["STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"]]
    },
    {
-      "method": "condenser_api.get_active_votes",
-      "params": ["temp", "test1"]
-   },
-   {
-      "method": "condenser_api.get_account_votes",
-      "params": ["temp"]
-   },
-   {
-      "method": "condenser_api.get_content",
-      "params": ["temp", "test1"]
-   },
-   {
-      "method": "condenser_api.get_content_replies",
-      "params": ["temp", "foobar"]
-   },
-   {
-      "method": "condenser_api.get_tags_used_by_author",
-      "params": ["temp"]
-   },
-   {
-      "method": "condenser_api.get_comment_discussions_by_payout",
-      "params": [{"tag":"test"}]
-   },
-   {
-      "method": "condenser_api.get_discussions_by_trending",
-      "params": [{"tag":"test"}]
-   },
-   {
-      "method": "condenser_api.get_discussions_by_created",
-      "params": [{"tag":"test"}]
-   },
-   {
-      "method": "condenser_api.get_discussions_by_active",
-      "params": [{"tag":"test"}]
-   },
-   {
-      "method": "condenser_api.get_discussions_by_cashout",
-      "params": [{"tag":"test"}]
-   },
-   {
-      "method": "condenser_api.get_discussions_by_votes",
-      "params": [{"tag":"test"}]
-   },
-   {
-      "method": "condenser_api.get_discussions_by_children",
-      "params": [{"tag":"test"}]
-   },
-   {
-      "method": "condenser_api.get_discussions_by_hot",
-      "params": [{"tag":"test"}]
-   },
-   {
-      "method": "condenser_api.get_discussions_by_feed",
-      "params": [{"tag":"test"}]
-   },
-   {
-      "method": "condenser_api.get_discussions_by_blog",
-      "params": [{"tag":"test"}]
-   },
-   {
-      "method": "condenser_api.get_discussions_by_comments",
-      "params": [{"tag":"test", "start_author":"temp"}]
-   },
-   {
-      "method": "condenser_api.get_discussions_by_promoted",
-      "params": [{"tag":"test"}]
-   },
-   {
-      "method": "condenser_api.get_replies_by_last_update",
-      "params": ["temp", "test1", 10]
-   },
-# Might be broken
-#   {
-#      "method": "condenser_api.get_discussions_by_author_before_date",
-#      "params": ["temp", "test1", "1969-12-31T23:59:59", 10]
-#   },
-   {
       "method": "condenser_api.get_account_history",
       "params": ["temp", -1, 10]
-   },
-   {
-      "method": "condenser_api.get_followers",
-      "params": ["temp", "", "blog", 10]
-   },
-   {
-      "method": "condenser_api.get_following",
-      "params": ["temp", "", "blog", 10]
-   },
-   {
-      "method": "condenser_api.get_follow_count",
-      "params": ["temp"]
-   },
-   {
-      "method": "condenser_api.get_feed_entries",
-      "params": ["temp", -1, 10]
-   },
-   {
-      "method": "condenser_api.get_feed",
-      "params": ["temp", -1, 10]
-   },
-   {
-      "method": "condenser_api.get_blog_entries",
-      "params": ["temp", -1, 10]
-   },
-   {
-      "method": "condenser_api.get_blog",
-      "params": ["temp", -1, 10]
-   },
-   {
-      "method": "condenser_api.get_account_reputations",
-      "params": ["", 10]
-   },
-# Might be broken
-#   {
-#      "method": "condenser_api.get_reblogged_by",
-#      "params": ["temp", "test1"]
-#   },
-   {
-      "method": "condenser_api.get_blog_authors",
-      "params": ["temp"]
    },
    {
       "method": "condenser_api.get_ticker",
@@ -357,47 +219,6 @@ tests = [
       "params": {"block_num":10000}
    },
    {
-      "method": "follow_api.get_followers",
-      "params": {"account":"temp", "start":"", "type":"blog", "limit":10}
-   },
-   {
-      "method": "follow_api.get_following",
-      "params": {"account":"temp", "start":"", "type":"blog", "limit":10}
-   },
-   {
-      "method": "follow_api.get_follow_count",
-      "params": {"account":"temp"}
-   },
-   {
-      "method": "follow_api.get_feed_entries",
-      "params": {"account":"temp", "start":-1, "limit":10}
-   },
-   {
-      "method": "follow_api.get_feed",
-      "params": {"account":"temp", "start":-1, "limit":10}
-   },
-   {
-      "method": "follow_api.get_blog_entries",
-      "params": {"account":"temp", "start":-1, "limit":10}
-   },
-   {
-      "method": "follow_api.get_blog",
-      "params": {"account":"temp", "start":-1, "limit":10}
-   },
-   {
-      "method": "follow_api.get_account_reputations",
-      "params": {"lower_bound":"", "limit":10}
-   },
-# Might be broken
-#   {
-#      "method": "condenser_api.get_reblogged_by",
-#      "params": ["temp", "test1"]
-#   },
-   {
-      "method": "follow_api.get_blog_authors",
-      "params": {"blog_account":"temp"}
-   },
-   {
       "method": "market_history_api.get_ticker",
       "params": {}
    },
@@ -436,92 +257,6 @@ tests = [
    {
       "method": "rc_api.find_rc_accounts",
       "params": {"accounts":["test"]}
-   },
-# Not currently enabled
-#   {
-#      "method": "reputation_api.get_account_reputations",
-#      "params": {"lower_bound":"", "limit":10}
-#   },
-   {
-      "method": "tags_api.get_trending_tags",
-      "params": {"start_tag":"", "limit":20}
-   },
-   {
-      "method": "tags_api.get_tags_used_by_author",
-      "params": {"author":"temp"}
-   },
-   {
-      "method": "tags_api.get_discussion",
-      "params": {"author":"temp", "permlink":"test1"}
-   },
-   {
-      "method": "tags_api.get_content_replies",
-      "params": {"author":"temp", "permlink":"foobar"}
-   },
-   {
-      "method": "tags_api.get_post_discussions_by_payout",
-      "params": {"tag":"test"}
-   },
-   {
-      "method": "tags_api.get_comment_discussions_by_payout",
-      "params": {"tag":"test"}
-   },
-   {
-      "method": "tags_api.get_discussions_by_trending",
-      "params": {"tag":"test"}
-   },
-   {
-      "method": "tags_api.get_discussions_by_created",
-      "params": {"tag":"test"}
-   },
-   {
-      "method": "tags_api.get_discussions_by_active",
-      "params": {"tag":"test"}
-   },
-   {
-      "method": "tags_api.get_discussions_by_cashout",
-      "params": {"tag":"test"}
-   },
-   {
-      "method": "tags_api.get_discussions_by_votes",
-      "params": {"tag":"test"}
-   },
-   {
-      "method": "tags_api.get_discussions_by_children",
-      "params": {"tag":"test"}
-   },
-   {
-      "method": "tags_api.get_discussions_by_hot",
-      "params": {"tag":"test"}
-   },
-   {
-      "method": "tags_api.get_discussions_by_feed",
-      "params": {"tag":"test"}
-   },
-   {
-      "method": "tags_api.get_discussions_by_blog",
-      "params": {"tag":"test"}
-   },
-   {
-      "method": "tags_api.get_discussions_by_comments",
-      "params": {"tag":"test", "start_author":"temp"}
-   },
-   {
-      "method": "tags_api.get_discussions_by_promoted",
-      "params": {"tag":"test"}
-   },
-   {
-      "method": "tags_api.get_replies_by_last_update",
-      "params": {"start_parent_author":"temp", "start_permlink":"test1", "limit":10}
-   },
-# Might be broken
-#   {
-#      "method": "tags_api.get_discussions_by_author_before_date",
-#      "params": {"author":"temp", "start_permlink":"test1", "before_date":"1969-12-31T23:59:59", "limit":10}
-#   },
-   {
-      "method": "tags_api.get_active_votes",
-      "params": {"author":"temp", "permlink":"test1"}
    },
    {
       "method": "database_api.get_config",
@@ -660,22 +395,6 @@ tests = [
       "params": {"accounts":["temp","null"]}
    },
    {
-      "method": "database_api.list_comments",
-      "params": {"start":("1970-01-01T00:00:00","",""), "limit":10, "order":"by_cashout_time"}
-   },
-   {
-      "method": "database_api.find_comments",
-      "params": {"start":[["temp","test1"],["temp","foobar"]], "limit":10, "order":"by_account"}
-   },
-   {
-      "method": "database_api.list_votes",
-      "params": {"start":["","",""], "limit":10, "order":"by_comment_voter"}
-   },
-   {
-      "method": "database_api.find_votes",
-      "params": {"author":"temp", "permlink":"test1"}
-   },
-   {
       "method": "database_api.list_limit_orders",
       "params": {"start":[{"base":{"amount":1000,"precision":3,"nai":"@@000000021"},"quote":{"amount":1,"precision":3,"nai":"@@000000013"}},0], "limit":10, "order":"by_price"}
    },
@@ -707,16 +426,17 @@ tests = [
       "method": "database_api.list_smt_token_emissions",
       "params": {"limit": 100, "order": "by_symbol_time", "start": []}
    },
-   {  "method": "database_api.find_smt_token_emissions",
+   {
+      "method": "database_api.find_smt_token_emissions",
       "params": {"asset_symbol": {"nai":"@@100000006", "decimals": 3}}
-   }
+   },
    {
       "method": "database_api.list_smt_contributions",
       "params": {"limit": 100, "order": "by_symbol_contributor", "start": []}
    },
    {
       "method": "database_api.find_smt_contributions",
-      "params": {"symbol_contributor": [["asset_symbol": {"nai":"@@100000006", "decimals": 3}, "account": "temp"]] }
+      "params": {"symbol_contributor": [{"asset_symbol": {"nai":"@@100000006", "decimals": 3}, "account": "temp"}] }
    }
 ]
 

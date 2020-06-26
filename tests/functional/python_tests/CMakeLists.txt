@@ -1,19 +1,19 @@
 INCLUDE ( CTest )
 ENABLE_TESTING()
 
-SET ( python_funtional_tests_prefix hive_functional )
+SET ( python_funtional_tests_prefix functional )
 SET ( hived_path ${CMAKE_BINARY_DIR}/programs/hived/hived )
 SET ( initminer_key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n )
 
 # It is required to start ctest in ${CMAKE_BINARY_DIR}/tests
-# The test are grouped as follow hive_functional/<subdirectory name>/<test_basefile_name>
-#   example: test script hive_functional/python_tests/dhf_tests/beem_dhf_tests.py will started with ctest as follows:
-#       ctest hive_functional/dhf_tests/beem_dhf_tests
+# The test are grouped as follow functional/<subdirectory name>/<test_basefile_name>
+#   example: test script functional/python_tests/dhf_tests/beem_dhf_tests.py will started with ctest as follows:
+#       ctest functional/dhf_tests/beem_dhf_tests
 # To start group of tests use ctest -R
 #   example: to start all tests in sps_tests group:
-#       ctest -R hive_functional/dhf_tests/.*
+#       ctest -R functional/dhf_tests/.*
 #   example: to start all python_functional tests:
-#       ctest -R hive_functional/.*
+#       ctest -R functional/.*
 
 MACRO ( ADD_PYTHON_FUNCTIONAL_TEST test_script_base_name )
     FILE( RELATIVE_PATH tests_subset "${CMAKE_CURRENT_SOURCE_DIR}/.." "${CMAKE_CURRENT_SOURCE_DIR}" )

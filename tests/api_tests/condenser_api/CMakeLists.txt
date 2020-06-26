@@ -1,6 +1,6 @@
 # Adding python tests to cmake
 MESSAGE( STATUS "### Adding condenser_api python tests")
-## broadcast_block 
+## broadcast_block
 ADD_API_TEST(condenser_api broadcast_block [{"previous":"0000000000000000000000000000000000000000","timestamp":"1970-01-01T00:00:00","witness":"","transaction_merkle_root":"0000000000000000000000000000000000000000","extensions":[],"witness_signature":"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","transactions":[]}])
 
 ## broadcast_transaction
@@ -24,92 +24,29 @@ ADD_API_TEST(condenser_api get_account_history steemit 1000 10)
 ## get_account_references
 #Not implemented https://developers.steem.io/apidefinitions/#condenser_api.get_account_references
 
-## get_account_reputations
-ADD_API_TEST(condenser_api get_account_reputations steemit 10)
-
-## get_account_votes
-ADD_API_TEST(condenser_api get_account_votes alice)
-
 ## get_accounts
 ADD_API_TEST(condenser_api get_accounts steemit gtg dan alice steempeak)
-
-## get_active_votes
-ADD_API_TEST(condenser_api get_active_votes drakos open-letter-to-justin-sun-and-the-steem-community)
 
 ## get_active_witnesses
 ADD_API_TEST(condenser_api get_active_witnesses)
 
 ## get_block
-ADD_API_TEST(condenser_api get_block 4999999)
+ADD_API_TEST(condenser_api get_block 1234)
 
 ## get_block_header
 ADD_API_TEST(condenser_api get_block_header 123454)
 
-## get_blog
-ADD_API_TEST(condenser_api get_blog drakos 0 1)
-
-## get_blog_authors
-ADD_API_TEST(condenser_api get_blog_authors drakos)
-
-## get_blog_entries
-ADD_API_TEST(condenser_api get_blog_entries tarazkp 0 10)
-
 ## get_chain_properties
 ADD_API_TEST(condenser_api get_chain_properties)
 
-## get_comment_discussions_by_payout!
-ADD_API_TEST(condenser_api get_comment_discussions_by_payout [{"tag":"photography","limit":10,"truncate_body":0}])
-
 ## get_config
 ADD_API_TEST(condenser_api get_config)
-
-## get_content
-ADD_API_TEST(condenser_api get_content steemit firstpost)
-
-## get_content_replies
-ADD_API_TEST(condenser_api get_content_replies steemit firstpost)
 
 ## get_conversion_requests
 ADD_API_TEST(condenser_api get_conversion_requests 1232345)
 
 ## get_current_median_history_price
 ADD_API_TEST(condenser_api get_current_median_history_price)
-
-## get_discussions_by_active!
-ADD_API_TEST(condenser_api get_discussions_by_active [{"tag":"photography","limit":10,"truncate_body":0}])
-
-## get_discussions_by_author_before_date
-ADD_API_TEST(condenser_api get_discussions_by_author_before_date flaws my-first-experience-integrating-steem-into-chess-in-my-state-or-a-lot-of-photos-3 2020-03-01T00:00:00 1)
-
-## get_discussions_by_blog!
-ADD_API_TEST(condenser_api get_discussions_by_blog [{"tag":"steemit","limit":2,"truncate_body":0}])
-
-## get_discussions_by_cashout
-ADD_API_TEST(condenser_api get_discussions_by_cashout [{"tag":"steemit","limit":2,"truncate_body":0}])
-
-## get_discussions_by_children
-ADD_API_TEST(condenser_api get_discussions_by_children [{"tag":"steemit","limit":2,"truncate_body":0}])
-
-## get_discussions_by_comments
-ADD_API_TEST(condenser_api get_discussions_by_comments steemit firstpost 5)
-
-## get_discussions_by_created
-ADD_API_TEST(condenser_api get_discussions_by_created [{"tag":"blocktrades","limit":1}])
-
-## get_discussions_by_feed
-ADD_API_TEST(condenser_api get_discussions_by_feed steemtools steempeak introducing-peaklock-and-keys-management 3)
-
-## get_discussions_by_hot
-ADD_API_TEST(condenser_api get_discussions_by_hot [{"tag":"tarazkp","limit":2,"truncate_body":0}])
-
-## get_discussions_by_promoted
-ADD_API_TEST(condenser_api get_discussions_by_promoted [{"tag":"tarazkp","limit":2,"truncate_body":0}])
-
-## get_discussions_by_trending
-ADD_API_TEST(condenser_api get_discussions_by_trending [{"tag":"tarazkp","limit":2,"truncate_body":0}])
-
-## get_discussions_by_votes
-ADD_API_TEST(condenser_api get_discussions_by_votes [{"tag":"tarazkp","limit":2,"truncate_body":0}])
 
 ## get_dynamic_global_properties
 ADD_API_TEST(condenser_api get_dynamic_global_properties)
@@ -120,23 +57,8 @@ ADD_API_TEST(condenser_api get_escrow steemit 1234)
 ## get_expiring_vesting_delegations
 ADD_API_TEST(condenser_api get_expiring_vesting_delegations steempeak 2019-01-01T00:00:00)
 
-## get_feed
-ADD_API_TEST(condenser_api get_feed steemit 0 1)
-
-## get_feed_entries
-ADD_API_TEST(condenser_api get_feed_entries steemit 0 1)
-
 ## get_feed_history
 ADD_API_TEST(condenser_api get_feed_history)
-
-## get_follow_count
-ADD_API_TEST(condenser_api get_follow_count steemmeupscotty)
-
-## get_followers
-ADD_API_TEST(condenser_api get_followers steemit null blog 10)
-
-## get_following
-ADD_API_TEST(condenser_api get_following steemit null blog 10)
 
 ## get_hardfork_version
 ADD_API_TEST(condenser_api get_hardfork_version)
@@ -165,23 +87,14 @@ ADD_API_TEST(condenser_api get_order_book 18)
 ## get_owner_history
 ADD_API_TEST(condenser_api get_owner_history steemit)
 
-## get_post_discussions_by_payout
-ADD_API_TEST(condenser_api get_post_discussions_by_payout [{"tag":"tarazkp","limit":2,"truncate_body":0}])
-
 ## get_potential_signatures
 ADD_API_TEST(condenser_api get_potential_signatures [{"ref_block_num":1097,"ref_block_prefix":2181793527,"expiration":"2016-03-24T18:00:21","operations":[["pow",{"worker_account":"cloop3","block_id":"00000449f7860b82b4fbe2f317c670e9f01d6d9a","nonce":3899,"work":{"worker":"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F","input":"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0","signature":"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a","work":"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3"},"props":{"account_creation_fee":{"amount":"100000","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000}}]],"extensions":[],"signatures":[]}])
-
-## get_reblogged_by
-ADD_API_TEST(condenser_api get_reblogged_by tarazkp the-legacy-of-yolo)
 
 ## get_recent_trades
 ADD_API_TEST(condenser_api get_recent_trades 10)
 
 ## get_recovery_request
 ADD_API_TEST(condenser_api get_recovery_request steemit)
-
-## get_replies_by_last_update
-ADD_API_TEST(condenser_api get_replies_by_last_update tarazkp the-legacy-of-yolo 10)
 
 ## get_required_signatures
 ADD_API_TEST(condenser_api get_required_signatures [{"ref_block_num":1097,"ref_block_prefix":2181793527,"expiration":"2016-03-24T18:00:21","operations":[["pow",{"worker_account":"cloop3","block_id":"00000449f7860b82b4fbe2f317c670e9f01d6d9a","nonce":3899,"work":{"worker":"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F","input":"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0","signature":"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a","work":"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3"},"props":{"account_creation_fee":{"amount":"100000","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000}}]],"extensions":[],"signatures":[]},[]])
@@ -198,9 +111,6 @@ ADD_API_TEST(condenser_api get_savings_withdraw_to steemit)
 ## get_state
 # Deprecated
 
-## get_tags_used_by_author
-ADD_API_TEST(condenser_api get_tags_used_by_author steemit)
-
 ## get_ticker
 ADD_API_TEST(condenser_api get_ticker)
 
@@ -213,9 +123,6 @@ ADD_API_TEST(condenser_api get_transaction b664e368d117e0b0d4b1b32325a18044f47b5
 ## get_transaction_hex
 ADD_API_TEST(condenser_api get_transaction_hex [{"ref_block_num":1097,"ref_block_prefix":2181793527,"expiration":"2016-03-24T18:00:21","operations":[["pow",{"worker_account":"cloop3","block_id":"00000449f7860b82b4fbe2f317c670e9f01d6d9a","nonce":3899,"work":{"worker":"STM7P5TDnA87Pj9T4mf6YHrhzjC1KbPZpNxLWCcVcHxNYXakpoT4F","input":"ae8e7c677119d22385f8c48026fee7aad7bba693bf788d7f27047f40b47738c0","signature":"1f38fe9a3f9989f84bd94aa5bbc88beaf09b67f825aa4450cf5105d111149ba6db560b582c7dbb026c7fc9c2eb5051815a72b17f6896ed59d3851d9a0f9883ca7a","work":"000e7b209d58f2e64b36e9bf12b999c6c7af168cc3fc41eb7f8a4bf796c174c3"},"props":{"account_creation_fee":{"amount":"100000","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000}}]],"extensions":[],"signatures":[]}])
 
-## get_trending_tags
-ADD_API_TEST(condenser_api get_trending_tags blocktrades 1)
-
 ## get_version
 ADD_API_TEST(condenser_api get_version)
 
@@ -225,7 +132,7 @@ ADD_API_TEST(condenser_api get_vesting_delegations tarazkp null 10)
 ## get_volume
 ADD_API_TEST(condenser_api get_volume)
 
-## get_withdraw_routes 
+## get_withdraw_routes
 ADD_API_TEST(condenser_api get_withdraw_routes tarazkp all)
 
 ## get_witness_by_account
@@ -261,5 +168,5 @@ ADD_API_TEST(condenser_api lookup_witness_accounts blocktrades 10)
 ## verify_account_authority
 # Not implemented.
 
-## verify_authority 
+## verify_authority
 ADD_API_TEST(condenser_api verify_authority {"ref_block_num":3738,"ref_block_prefix":1233832719,"expiration":"2020-03-11T08:48:57","operations":[{"type":"vote_operation","value":{"voter":"anthrovegan","author":"carrinm","permlink":"actifit-carrinm-20200311t080841657z","weight":5000}}],"extensions":[],"signatures":["1f4efcb6c7efe9001de42a4f072493de10b8bfd576b3b647532c7facc3d0580a7209544e49a97e7d74124aae86e6012a1f4cd33bf5ca16620bad7077364f820c08"]})

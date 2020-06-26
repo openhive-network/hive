@@ -10,7 +10,7 @@ execute_unittest_group()
 {
   local unit_test_group=$1
   echo "Start unit tests group '${unit_test_group}'"
-  if ! ctest -R ^${unit_test_group}.* --output-on-failure -vv
+  if ! ctest -R ^unit/${unit_test_group}.* --output-on-failure -vv
   then
     exit 1
   fi
@@ -19,7 +19,7 @@ execute_unittest_group()
 execute_hive_functional()
 {
   echo "Start hive functional tests"
-  if ! ctest -R ^hive_functional/.* --output-on-failure -vv
+  if ! ctest -R ^functional/.* --output-on-failure -vv
   then
     exit 1
   fi
