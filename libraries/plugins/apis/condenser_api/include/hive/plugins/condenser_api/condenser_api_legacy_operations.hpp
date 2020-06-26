@@ -1765,6 +1765,35 @@ void old_sv_from_variant( const fc::variant& v, T& sv )
 
 }
 
+#define FC_REFLECT_ALIAS_HANDLER( r, name, elem )                                  \
+  else if( strcmp( name, std::make_pair elem .first ) == 0 )                       \
+    this->operator()< Member, Class, member >( std::make_pair elem .second );
+
+#define FC_REFLECT_ALIASED_NAMES( TYPE, MEMBERS, ALIASES )                         \
+FC_REFLECT( TYPE, MEMBERS )                                                        \
+namespace fc {                                                                     \
+                                                                                   \
+template<>                                                                         \
+class from_variant_visitor<TYPE>                                                   \
+{                                                                                  \
+public:                                                                            \
+from_variant_visitor( const variant_object& _vo, TYPE& v ) :vo( _vo ), val( v ) {} \
+                                                                                   \
+template<typename Member, class Class, Member( Class::* member )>                  \
+void operator()( const char* name )const                                           \
+{                                                                                  \
+  auto itr = vo.find( name );                                                      \
+  if( itr != vo.end() )                                                            \
+    from_variant( itr->value(), val.*member );                                     \
+  BOOST_PP_SEQ_FOR_EACH( FC_REFLECT_ALIAS_HANDLER, name, ALIASES )                 \
+}                                                                                  \
+                                                                                   \
+const variant_object& vo;                                                          \
+TYPE& val;                                                                         \
+};                                                                                 \
+                                                                                   \
+}
+
 FC_REFLECT( hive::plugins::condenser_api::api_chain_properties,
         (account_creation_fee)(maximum_block_size)(hbd_interest_rate)(account_subsidy_budget)(account_subsidy_decay)
         )
@@ -1803,12 +1832,25 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_withdraw_vesting_operation, (ac
 FC_REFLECT( hive::plugins::condenser_api::legacy_witness_update_operation, (owner)(url)(block_signing_key)(props)(fee) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_limit_order_create_operation, (owner)(orderid)(amount_to_sell)(min_to_receive)(fill_or_kill)(expiration) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_limit_order_create2_operation, (owner)(orderid)(amount_to_sell)(exchange_rate)(fill_or_kill)(expiration) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_comment_options_operation, (author)(permlink)(max_accepted_payout)(percent_hbd)(allow_votes)(allow_curation_rewards)(extensions) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_escrow_transfer_operation, (from)(to)(hbd_amount)(hive_amount)(escrow_id)(agent)(fee)(json_meta)(ratification_deadline)(escrow_expiration) );
-FC_REFLECT( hive::plugins::condenser_api::legacy_escrow_release_operation, (from)(to)(agent)(who)(receiver)(escrow_id)(hbd_amount)(hive_amount) );
+FC_REFLECT_ALIASED_NAMES( hive::plugins::condenser_api::legacy_comment_options_operation,
+  (author)(permlink)(max_accepted_payout)(percent_hbd)(allow_votes)(allow_curation_rewards)(extensions),
+  ( ("percent_hbd", "percent_steem_dollars") )
+)
+FC_REFLECT_ALIASED_NAMES( hive::plugins::condenser_api::legacy_escrow_transfer_operation,
+  (from)(to)(hbd_amount)(hive_amount)(escrow_id)(agent)(fee)(json_meta)(ratification_deadline)(escrow_expiration),
+  ( ("hbd_amount", "sbd_amount") )( ("hive_amount", "steem_amount") )
+)
+FC_REFLECT_ALIASED_NAMES( hive::plugins::condenser_api::legacy_escrow_release_operation,
+  (from)(to)(agent)(who)(receiver)(escrow_id)(hbd_amount)(hive_amount),
+  ( ("hbd_amount", "sbd_amount") )( ("hive_amount", "steem_amount") )
+)
 FC_REFLECT( hive::plugins::condenser_api::legacy_pow2_operation, (work)(new_owner_key)(props) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_claim_reward_balance_operation, (account)(reward_hive)(reward_hbd)(reward_vests) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
+
+FC_REFLECT_ALIASED_NAMES( hive::plugins::condenser_api::legacy_claim_reward_balance_operation,
+  (account)(reward_hive)(reward_hbd)(reward_vests),
+  ( ("reward_hive", "reward_steem") ) ( ("reward_hbd", "reward_sbd") )
+)
+FC_REFLECT( hive::plugins::condenser_api::legacy_delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_comment_reward_operation, (author)(permlink)(payout) )
