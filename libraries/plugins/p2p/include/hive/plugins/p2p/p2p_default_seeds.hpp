@@ -20,7 +20,7 @@ const std::vector< std::string > default_seeds = {
   "seed.hivekings.com:2001",             // drakos
   "seed.liondani.com:2016",              // liondani
   "seed.openhive.network:2001",          // gtg
-  "seed.roelandp.nl:2001"                // roelandp
+  "hive-seed.roelandp.nl:2001"           // roelandp
 };
 #endif
 
