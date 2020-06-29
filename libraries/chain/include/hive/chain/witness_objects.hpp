@@ -5,6 +5,7 @@
 #include <hive/protocol/hive_operations.hpp>
 
 #include <hive/chain/util/rd_dynamics.hpp>
+#include <hive/chain/util/tiny_asset.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 

@@ -5170,11 +5170,11 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
   switch( value_delta.symbol.asset_num )
   {
     case HIVE_ASSET_NUM_HIVE:
-      modify_balance(a, value_delta, share_delta, check_balance);
+      modify_reward_balance(a, HIVE_asset(value_delta), share_delta, check_balance);
       break;
     case HIVE_ASSET_NUM_HBD:
       FC_ASSERT( share_delta.amount.value == 0 );
-      modify_balance(a, value_delta, check_balance);
+      modify_reward_balance(a, HBD_asset(value_delta), check_balance);
       break;
     default:
       FC_ASSERT( false, "invalid symbol" );
@@ -5319,57 +5319,19 @@ void database::adjust_balance( const account_object& a, const VEST_asset& delta 
 
 void database::adjust_savings_balance( const account_object& a, const asset& delta )
 {
-  bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
-
-  modify( a, [&]( account_object& acnt )
+  switch( delta.symbol.asset_num )
   {
-    switch( delta.symbol.asset_num )
-    {
-      case HIVE_ASSET_NUM_HIVE:
-        acnt.savings_balance += delta;
-        if( check_balance )
-        {
-          FC_ASSERT( acnt.get_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
-        }
-        break;
-      case HIVE_ASSET_NUM_HBD:
-        if( a.savings_hbd_seconds_last_update != head_block_time() )
-        {
-          acnt.savings_hbd_seconds += fc::uint128_t(a.get_hbd_savings().amount.value) * (head_block_time() - a.savings_hbd_seconds_last_update).to_seconds();
-          acnt.savings_hbd_seconds_last_update = head_block_time();
-
-          if( acnt.savings_hbd_seconds > 0 &&
-              (acnt.savings_hbd_seconds_last_update - acnt.savings_hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
-          {
-            auto interest = acnt.savings_hbd_seconds / HIVE_SECONDS_PER_YEAR;
-            interest *= get_dynamic_global_properties().get_hbd_interest_rate();
-            interest /= HIVE_100_PERCENT;
-            HBD_asset interest_paid(interest.to_uint64());
-            acnt.savings_hbd_balance += interest_paid;
-            acnt.savings_hbd_seconds = 0;
-            acnt.savings_hbd_last_interest_payment = head_block_time();
-
-            if(interest > 0)
-              push_virtual_operation( interest_operation( a.name, interest_paid.to_asset() ) );
-
-            modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
-            {
-              props.current_hbd_supply += interest_paid;
-              props.virtual_supply += interest_paid * get_feed_history().current_median_history;
-            } );
-          }
-        }
-        acnt.savings_hbd_balance += delta;
-        if( check_balance )
-        {
-          FC_ASSERT( acnt.get_hbd_savings().amount.value >= 0, "Insufficient savings HBD funds" );
-        }
-        break;
-      default:
-        FC_ASSERT( !"invalid symbol" );
-    }
-  } );
+    case HIVE_ASSET_NUM_HIVE:
+      adjust_savings_balance(a, HIVE_asset(delta));
+      break;
+    case HIVE_ASSET_NUM_HBD:
+      adjust_savings_balance(a, HBD_asset(delta));
+      break;
+    default:
+      FC_ASSERT( !"invalid symbol" );
+  }
 }
+
 
 void database::adjust_savings_balance( const account_object& a, const HBD_asset& delta )
 {
@@ -5388,13 +5350,13 @@ void database::adjust_savings_balance( const account_object& a, const HBD_asset&
         auto interest = acnt.savings_hbd_seconds / HIVE_SECONDS_PER_YEAR;
         interest *= get_dynamic_global_properties().get_hbd_interest_rate();
         interest /= HIVE_100_PERCENT;
-        asset interest_paid(interest.to_uint64(), HBD_SYMBOL);
+        HBD_asset interest_paid(interest.to_uint64());
         acnt.savings_hbd_balance += interest_paid;
         acnt.savings_hbd_seconds = 0;
         acnt.savings_hbd_last_interest_payment = head_block_time();
 
         if(interest > 0)
-          push_virtual_operation( interest_operation( a.name, interest_paid ) );
+          push_virtual_operation( interest_operation( a.name, interest_paid.to_asset() ) );
 
         modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
         {
@@ -5476,40 +5438,17 @@ void database::adjust_supply( const asset& delta, bool adjust_vesting )
   }
 #endif
 
-  bool check_supply = has_hardfork( HIVE_HARDFORK_0_20__1811 );
-
-  const auto& props = get_dynamic_global_properties();
-  if( props.head_block_number < HIVE_BLOCKS_PER_DAY*7 )
-    adjust_vesting = false;
-
-  modify( props, [&]( dynamic_global_property_object& props )
+  switch( delta.symbol.asset_num )
   {
-    switch( delta.symbol.asset_num )
-    {
-      case HIVE_ASSET_NUM_HIVE:
-      {
-        HIVE_asset new_vesting( (adjust_vesting && delta.amount > 0) ? delta.amount * 9 : 0 );
-        props.current_supply += HIVE_asset(delta) + new_vesting;
-        props.virtual_supply += HIVE_asset(delta) + new_vesting;
-        props.total_vesting_fund_hive += new_vesting;
-        if( check_supply )
-        {
-          FC_ASSERT( props.current_supply.amount.value >= 0 );
-        }
-        break;
-      }
-      case HIVE_ASSET_NUM_HBD:
-        props.current_hbd_supply += delta;
-        props.virtual_supply = HIVE_asset( props.get_current_hbd_supply() * get_feed_history().current_median_history ) + props.current_supply;
-        if( check_supply )
-        {
-          FC_ASSERT( props.get_current_hbd_supply().amount.value >= 0 );
-        }
-        break;
-      default:
-        FC_ASSERT( false, "invalid symbol" );
-    }
-  } );
+    case HIVE_ASSET_NUM_HIVE:
+      adjust_supply( HIVE_asset( delta ) , adjust_vesting);
+      break;
+    case HIVE_ASSET_NUM_HBD:
+      adjust_supply( HBD_asset( delta ) );
+      break;
+    default:
+      FC_ASSERT( false, "invalid symbol" );
+  }
 }
 
 void database::adjust_supply( const HIVE_asset& delta, bool adjust_vesting )
@@ -5523,8 +5462,8 @@ void database::adjust_supply( const HIVE_asset& delta, bool adjust_vesting )
     bool check_supply = has_hardfork( HIVE_HARDFORK_0_20__1811 );
 
     HIVE_asset new_vesting( (adjust_vesting && delta.amount > 0) ? delta.amount * 9 : 0 );
-    props.current_supply += HIVE_asset(delta) + new_vesting;
-    props.virtual_supply += HIVE_asset(delta) + new_vesting;
+    props.current_supply += delta + new_vesting;
+    props.virtual_supply += delta + new_vesting;
     props.total_vesting_fund_hive += new_vesting;
     if( check_supply )
     {
