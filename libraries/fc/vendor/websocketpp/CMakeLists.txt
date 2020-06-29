@@ -74,7 +74,7 @@ include (CMakeHelpers)
 # Override from command line "CMake -D<OPTION>=TRUE/FALSE/0/1/ON/OFF"
 option (ENABLE_CPP11 "Build websocketpp with CPP11 features enabled." TRUE)
 option (BUILD_EXAMPLES "Build websocketpp examples." FALSE)
-option (BUILD_HIVE "Build websocketpp tests." FALSE)
+option (BUILD_TESTS "Build websocketpp tests." FALSE)
 
 if (BUILD_TESTS OR BUILD_EXAMPLES)
 

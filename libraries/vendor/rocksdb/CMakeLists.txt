@@ -840,7 +840,7 @@ if(NOT WIN32 OR ROCKSDB_INSTALL_ON_WINDOWS)
   )
 endif()
 
-option(WITH_HIVE "build with tests" ON)
+option(WITH_TESTS "build with tests" ON)
 if(WITH_TESTS)
   set(TESTS
         cache/cache_test.cc
