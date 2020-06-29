@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from junit_xml import TestCase
+import time
+import traceback
+
 DEFAULT_LOG_FORMAT = '%(asctime)-15s - %(name)s - %(levelname)s - %(message)s'
 DEFAULT_LOG_LEVEL = logging.INFO
 
@@ -302,3 +306,24 @@ def block_until_transaction_in_block(node_url, transaction_id, block_type = BLOC
       msg = "Timeout reached during block_until_transaction_in_block"
       logger.error(msg)
       raise TimeoutError(msg)
+
+
+junit_test_cases = []
+def junit_test_case(method):
+    def log_test_case(*args, **kw):
+        start_time = time.time()
+        error = None
+        try:
+            result = method(*args, **kw)
+        except:
+            e = sys.exc_info()
+            error = traceback.format_exception(e[0], e[1], e[2])
+            raise
+        finally:
+            end_time = time.time()
+            test_case = TestCase(method.__name__, method.__name__, end_time - start_time, '', '')
+            if error is not None:
+                test_case.add_failure_info(output = error)
+            junit_test_cases.append(test_case)
+    return log_test_case
+
