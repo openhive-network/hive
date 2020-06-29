@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
 
     BOOST_REQUIRE( bucket->seconds == 15 );
     BOOST_REQUIRE( bucket->open == time_a );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 TESTS " ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 HIVE " ).amount );
     BOOST_REQUIRE( bucket->non_hive.high == asset( 750, any_smt_symbol ).amount );
     BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 HIVE" ).amount );
     BOOST_REQUIRE( bucket->non_hive.low == asset( 750, any_smt_symbol ).amount );
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
 
     BOOST_REQUIRE( bucket->seconds == 15 );
     BOOST_REQUIRE( bucket->open == time_a + ( 60 * 90 ) );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.500 TESTS " ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.500 HIVE " ).amount );
     BOOST_REQUIRE( bucket->non_hive.high == asset( 250, any_smt_symbol ).amount );
     BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 HIVE" ).amount );
     BOOST_REQUIRE( bucket->non_hive.low == asset( 250, any_smt_symbol ).amount );
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
 
     BOOST_REQUIRE( bucket->seconds == 15 );
     BOOST_REQUIRE( bucket->open == time_a + ( 60 * 90 ) + 60 );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 TESTS " ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 HIVE " ).amount );
     BOOST_REQUIRE( bucket->non_hive.high == asset( 250, any_smt_symbol ).amount );
     BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 HIVE" ).amount );
     BOOST_REQUIRE( bucket->non_hive.low == asset( 250, any_smt_symbol ).amount );
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
 
     BOOST_REQUIRE( bucket->seconds == 60 );
     BOOST_REQUIRE( bucket->open == time_a );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 TESTS " ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 HIVE " ).amount );
     BOOST_REQUIRE( bucket->non_hive.high == asset( 750, any_smt_symbol ).amount );
     BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 HIVE" ).amount );
     BOOST_REQUIRE( bucket->non_hive.low == asset( 750, any_smt_symbol ).amount );
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
 
     BOOST_REQUIRE( bucket->seconds == 60 );
     BOOST_REQUIRE( bucket->open == time_a + ( 60 * 90 ) );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.500 TESTS " ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.500 HIVE " ).amount );
     BOOST_REQUIRE( bucket->non_hive.high == asset( 250, any_smt_symbol ).amount );
     BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 HIVE" ).amount );
     BOOST_REQUIRE( bucket->non_hive.low == asset( 250, any_smt_symbol ).amount );
@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
 
     BOOST_REQUIRE( bucket->seconds == 60 );
     BOOST_REQUIRE( bucket->open == time_a + ( 60 * 90 ) + 60 );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 TESTS " ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 HIVE " ).amount );
     BOOST_REQUIRE( bucket->non_hive.high == asset( 250, any_smt_symbol ).amount );
     BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 HIVE" ).amount );
     BOOST_REQUIRE( bucket->non_hive.low == asset( 250, any_smt_symbol ).amount );
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
 
     BOOST_REQUIRE( bucket->seconds == 300 );
     BOOST_REQUIRE( bucket->open == time_a );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 TESTS " ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 HIVE " ).amount );
     BOOST_REQUIRE( bucket->non_hive.high == asset( 750, any_smt_symbol ).amount );
     BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 HIVE" ).amount );
     BOOST_REQUIRE( bucket->non_hive.low == asset( 750, any_smt_symbol ).amount );
@@ -249,7 +249,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
 
     BOOST_REQUIRE( bucket->seconds == 300 );
     BOOST_REQUIRE( bucket->open == time_a + ( 60 * 90 ) );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 TESTS " ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 HIVE " ).amount );
     BOOST_REQUIRE( bucket->non_hive.high == asset( 250, any_smt_symbol ).amount );
     BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 HIVE" ).amount );
     BOOST_REQUIRE( bucket->non_hive.low == asset( 250, any_smt_symbol ).amount );
@@ -263,7 +263,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
 
     BOOST_REQUIRE( bucket->seconds == 3600 );
     BOOST_REQUIRE( bucket->open == time_a );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 TESTS " ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 HIVE " ).amount );
     BOOST_REQUIRE( bucket->non_hive.high == asset( 750, any_smt_symbol ).amount );
     BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 HIVE" ).amount );
     BOOST_REQUIRE( bucket->non_hive.low == asset( 750, any_smt_symbol ).amount );
@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
 
     BOOST_REQUIRE( bucket->seconds == 3600 );
     BOOST_REQUIRE( bucket->open == time_a + ( 60 * 60 ) );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 TESTS " ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 HIVE " ).amount );
     BOOST_REQUIRE( bucket->non_hive.high == asset( 250, any_smt_symbol ).amount );
     BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 HIVE" ).amount );
     BOOST_REQUIRE( bucket->non_hive.low == asset( 250, any_smt_symbol ).amount );
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
 
     BOOST_REQUIRE( bucket->seconds == 86400 );
     BOOST_REQUIRE( bucket->open == HIVE_GENESIS_TIME );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 TESTS " ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 HIVE " ).amount );
     BOOST_REQUIRE( bucket->non_hive.high == asset( 250, any_smt_symbol ).amount );
     BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 HIVE" ).amount );
     BOOST_REQUIRE( bucket->non_hive.low == asset( 750, any_smt_symbol ).amount );

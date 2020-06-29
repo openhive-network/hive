@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
 
     // const
     const auto TESTS_1000 = ASSET( "1000.000 HIVE" );
-    const auto TBD_100 = ASSET( "100.000 HBD" );
+    const auto HBD_100 = ASSET( "100.000 HBD" );
     
     //setup
     ACTORS( (alice)(bob)(carol) )
@@ -85,9 +85,9 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
     FUND( "bob",   TESTS_1000 );
     FUND( "carol", TESTS_1000 );
 
-    FUND( "alice", TBD_100 );
-    FUND( "bob", TBD_100 );
-    FUND( "carol", TBD_100 );
+    FUND( "alice", HBD_100 );
+    FUND( "bob", HBD_100 );
+    FUND( "carol", HBD_100 );
     generate_block();
     
     // create one proposal
@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
 
     // const
     const auto TESTS_1000 = ASSET( "1000.000 HIVE" );
-    const auto TBD_100 = ASSET( "100.000 HBD" );
+    const auto HBD_100 = ASSET( "100.000 HBD" );
     
     //setup
     ACTORS( (alice)(bob)(carol) )
@@ -150,9 +150,9 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     FUND( "bob",   TESTS_1000 );
     FUND( "carol", TESTS_1000 );
 
-    FUND( "alice", TBD_100 );
-    FUND( "bob", TBD_100 );
-    FUND( "carol", TBD_100 );
+    FUND( "alice", HBD_100 );
+    FUND( "bob", HBD_100 );
+    FUND( "carol", HBD_100 );
     generate_block();
     
     // create one proposal

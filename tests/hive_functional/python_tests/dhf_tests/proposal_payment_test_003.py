@@ -192,7 +192,7 @@ if __name__ == '__main__':
             logger.info("Balances for accounts after creating proposals")
             balances = test_utils.print_balance(node_client, accounts)
             for balance in balances:
-                #should be 390.000 TBD for all
+                #should be 390.000 HBD for all
                 assert balance == '390000', "All balances should be equal to 390.000 HBD"
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
 

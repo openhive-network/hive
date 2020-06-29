@@ -11,7 +11,7 @@ INCLUDE(CTest)
 
 ENABLE_TESTING()
 
-file(GLOB UNIT_TESTS "tests/*.cpp")
+file(GLOB UNIT_HIVE "tests/*.cpp")
 
 include(BoostTestTargets.cmake)
 
@@ -256,7 +256,7 @@ add_boost_test( chain_test
 
 target_link_libraries( chain_test db_fixture chainbase hive_chain hive_protocol account_history_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin fc ${PLATFORM_SPECIFIC_LIBS} )
 
-file(GLOB PLUGIN_TESTS "plugin_tests/*.cpp")
+file(GLOB PLUGIN_HIVE "plugin_tests/*.cpp")
 
 parse_unit_tests(TEST_CASES ${PLUGIN_TESTS})
 

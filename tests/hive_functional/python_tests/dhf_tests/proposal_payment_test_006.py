@@ -192,7 +192,7 @@ if __name__ == '__main__':
             logger.info("Balances for accounts after creating proposals")
             balances = test_utils.print_balance(node_client, accounts)
             for balance in balances:
-                #should be 390.000 TBD for all
+                #should be 390.000 HBD for all
                 assert balance == '390000', "All balances should be equal to 390.000 HBD"
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
 
@@ -223,7 +223,7 @@ if __name__ == '__main__':
             logger.info("Balances for accounts at time: {}".format(test_end_date_iso))
             balances = test_utils.print_balance(node_client, accounts)
             # it should be '414.000 HBD', '414.000 HBD', '414.000 HBD', '29879.682 HBD',
-            # but but because of rounding implementationit is 413.952 TBD,413.952 TBD,413.952 TBD,29833.225 TBD
+            # but but because of rounding implementationit is 413.952 HBD,413.952 HBD,413.952 HBD,29833.225 HBD
             test_balances = [
                 '413952',
                 '413952',

@@ -258,7 +258,7 @@ if __name__ == '__main__':
             logger.info("Balances for accounts at time: {}".format(test_end_date_iso))
             balances = test_utils.print_balance(node_client, accounts)
             # it should be '390.000 HBD', '486.000 HBD', '486.000 HBD', '486.000 HBD',
-            # but because of rounding implementation it is 390.000 TBD,485.808 TBD,485.808 TBD,485.808 TBD
+            # but because of rounding implementation it is 390.000 HBD,485.808 HBD,485.808 HBD,485.808 HBD
             test_balances = [
                 '390000',
                 '485808',

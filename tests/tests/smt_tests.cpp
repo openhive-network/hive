@@ -579,9 +579,9 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
     BOOST_TEST_MESSAGE( " -- SMT create with insufficient HBD balance" );
     // Fund with HIVE, and set fee with HBD.
     FUND( "alice", test_amount );
-    // Declare fee in HBD/TBD though alice has none.
+    // Declare fee in HBD/HBD though alice has none.
     op.smt_creation_fee = asset( test_amount, HBD_SYMBOL );
-    // Throw due to insufficient balance of HBD/TBD.
+    // Throw due to insufficient balance of HBD/HBD.
     FAIL_WITH_OP(op, alice_private_key, fc::assert_exception);
 
     BOOST_TEST_MESSAGE( " -- SMT create with insufficient HIVE balance" );

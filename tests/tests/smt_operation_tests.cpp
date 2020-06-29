@@ -1514,7 +1514,7 @@ BOOST_AUTO_TEST_CASE( smt_create_with_hive_funds )
   {
     BOOST_TEST_MESSAGE( "Testing: smt_create_with_hive_funds" );
 
-    // This test expects 1.000 TBD smt_creation_fee
+    // This test expects 1.000 HBD smt_creation_fee
     db->modify( db->get_dynamic_global_properties(), [&] ( dynamic_global_property_object& dgpo )
     {
       dgpo.smt_creation_fee = asset( 1000, HBD_SYMBOL );
@@ -1555,7 +1555,7 @@ BOOST_AUTO_TEST_CASE( smt_create_with_hbd_funds )
   {
     BOOST_TEST_MESSAGE( "Testing: smt_create_with_hbd_funds" );
 
-    // This test expects 1.000 TBD smt_creation_fee
+    // This test expects 1.000 HBD smt_creation_fee
     db->modify( db->get_dynamic_global_properties(), [&] ( dynamic_global_property_object& dgpo )
     {
       dgpo.smt_creation_fee = asset( 1000, HBD_SYMBOL );
@@ -1660,7 +1660,7 @@ BOOST_AUTO_TEST_CASE( smt_creation_fee_test )
       // Fail because we are 0.001 TESTS short of the fee
       FAIL_WITH_OP( fail_op, alice_private_key, fc::assert_exception );
 
-      BOOST_TEST_MESSAGE( " -- Invalid creation fee, 0.001 TBD short" );
+      BOOST_TEST_MESSAGE( " -- Invalid creation fee, 0.001 HBD short" );
       smt_create_operation fail_op2;
       fail_op2.control_account = "alice";
       fail_op2.smt_creation_fee = ASSET( "0.999 HBD" );
@@ -1668,7 +1668,7 @@ BOOST_AUTO_TEST_CASE( smt_creation_fee_test )
       fail_op2.precision = fail_op2.symbol.decimals();
       fail_op2.validate();
 
-      // Fail because we are 0.001 TBD short of the fee
+      // Fail because we are 0.001 HBD short of the fee
       FAIL_WITH_OP( fail_op2, alice_private_key, fc::assert_exception );
 
       BOOST_TEST_MESSAGE( " -- Valid creation fee, using HIVE" );
@@ -1680,7 +1680,7 @@ BOOST_AUTO_TEST_CASE( smt_creation_fee_test )
       op.precision = op.symbol.decimals();
       op.validate();
 
-      // Succeed because we have paid the equivilant of 1 TBD or 2 TESTS
+      // Succeed because we have paid the equivilant of 1 HBD or 2 TESTS
       PUSH_OP( op, alice_private_key );
 
       BOOST_TEST_MESSAGE( " -- Valid creation fee, using HBD" );
@@ -1692,7 +1692,7 @@ BOOST_AUTO_TEST_CASE( smt_creation_fee_test )
       op2.precision = op.symbol.decimals();
       op2.validate();
 
-      // Succeed because we have paid the equivilant of 1 TBD or 2 TESTS
+      // Succeed because we have paid the equivilant of 1 HBD or 2 TESTS
       PUSH_OP( op2, alice_private_key );
     }
   }

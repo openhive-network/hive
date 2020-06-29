@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE( acct.memo_key == priv_key.get_public_key() );
     BOOST_REQUIRE( acct.proxy == "" );
     BOOST_REQUIRE( acct.created == db->head_block_time() );
-    BOOST_REQUIRE( acct.get_balance().amount.value == ASSET( "0.000 TESTS " ).amount.value );
+    BOOST_REQUIRE( acct.get_balance().amount.value == ASSET( "0.000 HIVE " ).amount.value );
     BOOST_REQUIRE( acct.get_hbd_balance().amount.value == ASSET( "0.000 HBD" ).amount.value );
     BOOST_REQUIRE( acct.get_vesting().amount.value == 0 );
     BOOST_REQUIRE( acct.vesting_withdraw_rate.amount.value == ASSET( "0.000000 VESTS" ).amount.value );
@@ -6317,7 +6317,7 @@ BOOST_AUTO_TEST_CASE( transfer_from_savings_apply )
     HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
     validate_database();
 
-    BOOST_TEST_MESSAGE( "--- Success withdrawing TBD to treasury" );
+    BOOST_TEST_MESSAGE( "--- Success withdrawing HBD to treasury" );
 
     op.amount = ASSET( "1.000 HBD" );
 
