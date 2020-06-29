@@ -228,21 +228,21 @@ void old_pack_symbol(vector<char>& v, asset_symbol_type sym)
 {
   if( sym == HIVE_SYMBOL )
   {
-    v.push_back('\x03'); v.push_back('T' ); v.push_back('E' ); v.push_back('S' );
-    v.push_back('T'   ); v.push_back('S' ); v.push_back('\0'); v.push_back('\0');
-    // 03 54 45 53 54 53 00 00
+    v.push_back('\x03'); v.push_back('S' ); v.push_back('T' ); v.push_back('E' );
+    v.push_back('E'   ); v.push_back('M' ); v.push_back('\0'); v.push_back('\0');
+    // 0x03 0x53 0x54 0x45 0x45 0x4D 0x00 0x00
   }
   else if( sym == HBD_SYMBOL )
   {
-    v.push_back('\x03'); v.push_back('T' ); v.push_back('B' ); v.push_back('D' );
+    v.push_back('\x03'); v.push_back('S' ); v.push_back('B' ); v.push_back('D' );
     v.push_back('\0'  ); v.push_back('\0'); v.push_back('\0'); v.push_back('\0');
-    // 03 54 42 44 00 00 00 00
+    // 0x03 0x53 0x42 0x44 0x00 0x00 0x00 0x00
   }
   else if( sym == VESTS_SYMBOL )
   {
     v.push_back('\x06'); v.push_back('V' ); v.push_back('E' ); v.push_back('S' );
     v.push_back('T'   ); v.push_back('S' ); v.push_back('\0'); v.push_back('\0');
-    // 06 56 45 53 54 53 00 00
+    // 0x06 0x56 0x45 0x53 0x54 0x53 0x00 0x00
   }
   else
   {
@@ -316,6 +316,15 @@ BOOST_AUTO_TEST_CASE( asset_raw_test )
     symbols.push_back( HBD_SYMBOL   );
     symbols.push_back( VESTS_SYMBOL );
 
+    auto display = []( const vector<char>& data )
+    {
+      std::string res;
+      for( auto& item : data )
+        res += ( item < 10 ) ? ( item + 48 ) : item;
+
+      return res;
+    };
+
     for( const share_type& amount : amounts )
     {
       for( const asset_symbol_type& symbol : symbols )
@@ -327,25 +336,26 @@ BOOST_AUTO_TEST_CASE( asset_raw_test )
         vector<char> v_cur = fc::raw::pack_to_vector(a);
         // ilog( "${a} : ${d}", ("a", a)("d", hex_bytes( v_old )) );
         // ilog( "${a} : ${d}", ("a", a)("d", hex_bytes( v_cur )) );
-        BOOST_CHECK( v_cur == v_old );
+        BOOST_TEST_MESSAGE( display( v_old ) + std::string(" ") + display( v_cur ) );
+        BOOST_REQUIRE( v_cur == v_old );
 
         // check raw::unpack() works
         std::istringstream ss( string(v_cur.begin(), v_cur.end()) );
         asset a2;
         fc::raw::unpack( ss, a2 );
-        BOOST_CHECK( a == a2 );
+        BOOST_REQUIRE( a == a2 );
 
         // check conversion to JSON works
         //std::string json_old = old_json_asset(a);
         //std::string json_cur = fc::json::to_string(a);
         // ilog( "json_old: ${j}", ("j", json_old) );
         // ilog( "json_cur: ${j}", ("j", json_cur) );
-        //BOOST_CHECK( json_cur == json_old );
+        //BOOST_REQUIRE( json_cur == json_old );
 
         // check JSON serialization is symmetric
         std::string json_cur = fc::json::to_string(a);
         a2 = fc::json::from_string(json_cur).as< asset >();
-        BOOST_CHECK( a == a2 );
+        BOOST_REQUIRE( a == a2 );
       }
     }
   }
@@ -569,7 +579,7 @@ BOOST_AUTO_TEST_CASE( legacy_operation_test )
 {
   try
   {
-    auto v = fc::json::from_string( "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST1111111111111111111111111111111114T1Anm\", \"props\": {\"account_creation_fee\": \"0.500 TESTS\", \"maximum_block_size\": 65536, \"hbd_interest_rate\": 0}, \"fee\": \"0.000 TESTS\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}" );
+    auto v = fc::json::from_string( "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST1111111111111111111111111111111114T1Anm\", \"props\": {\"account_creation_fee\": \"0.500 HIVE\", \"maximum_block_size\": 65536, \"hbd_interest_rate\": 0}, \"fee\": \"0.000 HIVE\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}" );
     auto ls = v.as< hive::plugins::condenser_api::legacy_signed_transaction >();
     // not throwing an error here is success
   }

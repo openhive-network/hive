@@ -35,9 +35,9 @@
 #define OBD_SYMBOL_U64      (uint64_t('S') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
 #define HBD_SYMBOL_U64      (uint64_t('H') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
 
-#define VESTS_SYMBOL_SER    (uint64_t(6) | (VESTS_SYMBOL_U64 << 8)) ///< VESTS|VESTS with 6 digits of precision
-#define OBSOLETE_SYMBOL_SER (uint64_t(3) | (OBSOLETE_SYMBOL_U64 << 8)) ///< STEEM|TESTS with 3 digits of precision
-#define OBD_SYMBOL_SER      (uint64_t(3) | (OBD_SYMBOL_U64 << 8)) ///< SBD|HBD with 3 digits of precision
+#define VESTS_SYMBOL_SER    (uint64_t(6) | (VESTS_SYMBOL_U64 << 8)) ///< VESTS with 6 digits of precision
+#define OBSOLETE_SYMBOL_SER (uint64_t(3) | (OBSOLETE_SYMBOL_U64 << 8)) ///< STEEM with 3 digits of precision
+#define OBD_SYMBOL_SER      (uint64_t(3) | (OBD_SYMBOL_U64 << 8)) ///< SBD with 3 digits of precision
 
 #define HIVE_ASSET_MAX_DECIMALS  12
 
