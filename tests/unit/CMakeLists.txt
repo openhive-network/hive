@@ -281,5 +281,3 @@ if(MSVC)
 endif(MSVC)
 
 #add_subdirectory( generate_empty_blocks )
-add_subdirectory(hived/api_tests)
-add_subdirectory(hived/hive_functional)
