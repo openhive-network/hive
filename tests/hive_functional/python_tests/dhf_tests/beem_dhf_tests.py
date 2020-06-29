@@ -10,6 +10,9 @@ import logging
 import os
 import test_utils
 
+from hive_utils.common import junit_test_case
+from junit_xml import TestSuite
+
 MODULE_NAME = "Beem-Dhf-Tester"
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
@@ -42,6 +45,7 @@ except Exception as ex:
     print("beem library is not installed.")
     sys.exit(1)
 
+@junit_test_case
 def test_create_proposal(node, creator_account, receiver_account, wif, subject):
     logger.info("Testing: create_proposal")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
@@ -92,6 +96,7 @@ def test_create_proposal(node, creator_account, receiver_account, wif, subject):
     assert ret["operations"][0][1]["subject"] == subject
     assert ret["operations"][0][1]["permlink"] == "hivepy-proposal-title"
 
+@junit_test_case
 def test_list_proposals(node, account, wif, subject):
     logger.info("Testing: list_proposals")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
@@ -123,6 +128,7 @@ def test_list_proposals(node, account, wif, subject):
     
     assert found is not None
 
+@junit_test_case
 def test_find_proposals(node, account, wif, subject):
     logger.info("Testing: find_proposals")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
@@ -140,6 +146,7 @@ def test_find_proposals(node, account, wif, subject):
     ret = s.rpc.find_proposals([proposal_id])
     assert ret[0]["subject"] == found["subject"]
 
+@junit_test_case
 def test_vote_proposal(node, account, wif, subject):
     logger.info("Testing: vote_proposal")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
@@ -176,6 +183,7 @@ def test_vote_proposal(node, account, wif, subject):
     assert ret["operations"][0][1]["approve"] == True
     hive_utils.common.wait_n_blocks(s.rpc.url, 2)
 
+@junit_test_case
 def test_list_voter_proposals(node, account, wif, subject):
     logger.info("Testing: list_voter_proposals")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
@@ -188,6 +196,7 @@ def test_list_voter_proposals(node, account, wif, subject):
     
     assert found is not None
 
+@junit_test_case
 def test_remove_proposal(node, account, wif, subject):
     logger.info("Testing: remove_proposal")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
@@ -229,6 +238,7 @@ def test_remove_proposal(node, account, wif, subject):
     
     assert found is None, "Not found"
 
+@junit_test_case
 def test_iterate_results_test(node, creator_account, receiver_account, wif, subject, remove):
     logger.info("Testing: test_iterate_results_test")
     # test for iterate prosals
@@ -346,6 +356,7 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
                 raise ex
             hive_utils.common.wait_n_blocks(node, 3)
 
+@junit_test_case
 def test_update_proposal(node, creator, wif):
     logger.info("Testing: update_proposal")
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
@@ -383,6 +394,7 @@ if __name__ == '__main__':
     parser.add_argument("--working-dir", dest="hived_working_dir", default="/tmp/hived-data/", help = "Path to hived working directory")
     parser.add_argument("--config-path", dest="hived_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
     parser.add_argument("--no-erase-proposal", action='store_true', dest = "no_erase_proposal", help = "Do not erase proposal created with this test")
+    parser.add_argument("--junit-output", dest="junit_output", default=None, help="Filename for generating jUnit-compatible XML output")
 
     args = parser.parse_args()
 
@@ -432,5 +444,10 @@ if __name__ == '__main__':
         logger.error("Exception: {}".format(ex))
         if node is not None: 
             node.stop_hive_node()
+    finally:
+        if args.junit_output is not None:
+            test_suite = TestSuite('dhf_tests', hive_utils.common.junit_test_cases)
+            with open(args.junit_output, "w") as junit_xml:
+                TestSuite.to_file(junit_xml, [test_suite], prettyprint=False)
     sys.exit(2)
 

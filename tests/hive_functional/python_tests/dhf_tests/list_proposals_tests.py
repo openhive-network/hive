@@ -10,6 +10,8 @@ import logging
 import hive_utils
 import os
 
+from hive_utils.common import junit_test_case
+from junit_xml import TestSuite
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
@@ -42,7 +44,6 @@ try:
 except Exception as ex:
     logger.error("beem library is not installed.")
     sys.exit(1)
-
 
 START_END_SUBJECTS = [
     [1,3,"Subject001"],
@@ -103,7 +104,7 @@ def create_proposals(node_client, creator_account, receiver_account):
         hive_utils.common.wait_n_blocks(node_client.rpc.url, 1)
     hive_utils.common.wait_n_blocks(node_client.rpc.url, 2)
 
-
+@junit_test_case
 def list_proposals_test(node_client, creator):
     logger.info("Testing direction ascending with start field given")
     proposals = node_client.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
@@ -227,6 +228,7 @@ if __name__ == '__main__':
     parser.add_argument("--working-dir", dest="hived_working_dir", default="/tmp/hived-data/", help = "Path to hived working directory")
     parser.add_argument("--config-path", dest="hived_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
     parser.add_argument("--no-erase-proposal", action='store_false', dest = "no_erase_proposal", help = "Do not erase proposal created with this test")
+    parser.add_argument("--junit-output", dest="junit_output", default=None, help="Filename for generating jUnit-compatible XML output")
 
 
     args = parser.parse_args()
@@ -276,5 +278,10 @@ if __name__ == '__main__':
         logger.error("Exception: {}".format(ex))
         if node is not None: 
             node.stop_hive_node()
+    finally:
+        if args.junit_output is not None:
+            test_suite = TestSuite('list_proposals_test', hive_utils.common.junit_test_cases)
+            with open(args.junit_output, "w") as junit_xml:
+                TestSuite.to_file(junit_xml, [test_suite], prettyprint=False)
     sys.exit(2)
 
