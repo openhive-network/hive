@@ -21,7 +21,6 @@
   * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   * THE SOFTWARE.
   */
-#ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
@@ -60,6 +59,8 @@ void open_test_database( database& db, const fc::path& dir )
   args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
   args.shared_file_size = TEST_SHARED_MEM_SIZE;
   args.database_cfg = hive::utilities::default_database_configuration();
+  args.initial_supply = db.config_blockchain.HIVE_INIT_SUPPLY;
+  args.hbd_initial_supply = db.config_blockchain.HIVE_HBD_INIT_SUPPLY;
   db.open( args );
 }
 
@@ -764,8 +765,7 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
     db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
     BOOST_REQUIRE( db );
 
-
-    open_database();
+    open_database( shared_file_size_in_mb_64, false/*allow_init_hardfork*/ );
 
     generate_blocks( 2 );
 
@@ -890,4 +890,3 @@ BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#endif

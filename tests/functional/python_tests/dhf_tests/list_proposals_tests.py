@@ -90,7 +90,7 @@ def create_proposals(node_client, creator_account, receiver_account):
                 'receiver' : receiver["name"],
                 'start_date' : start_date,
                 'end_date' : end_date,
-                'daily_pay' : "16.000 TBD",
+                'daily_pay' : "16.000 HBD",
                 'subject' : start_end_subject[2],
                 'permlink' : "hivepy-proposal-title"
             }

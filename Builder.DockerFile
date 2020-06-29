@@ -38,7 +38,6 @@ RUN \
     cmake \
         -DCMAKE_BUILD_TYPE=Release \
         -DENABLE_STD_ALLOCATOR_SUPPORT=ON \
-        -DBUILD_HIVE_TESTNET=ON \
         -DLOW_MEMORY_NODE=OFF \
         -DCLEAR_VOTES=ON \
         -DSKIP_BY_TX_ID=ON \

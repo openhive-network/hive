@@ -76,7 +76,7 @@ def test_create_proposal(node, creator_account, receiver_account, wif, subject):
             "receiver" : receiver["name"], 
             "start_date" : start_date, 
             "end_date" : end_date,
-            "daily_pay" : "16.000 TBD",
+            "daily_pay" : "16.000 HBD",
             "subject" : subject,
             "permlink" : "hivepy-proposal-title"
         }
@@ -92,7 +92,7 @@ def test_create_proposal(node, creator_account, receiver_account, wif, subject):
     assert ret["operations"][0][1]["receiver"] == receiver["name"]
     assert ret["operations"][0][1]["start_date"] == start_date
     assert ret["operations"][0][1]["end_date"] == end_date
-    assert ret["operations"][0][1]["daily_pay"] == "16.000 TBD"
+    assert ret["operations"][0][1]["daily_pay"] == "16.000 HBD"
     assert ret["operations"][0][1]["subject"] == subject
     assert ret["operations"][0][1]["permlink"] == "hivepy-proposal-title"
 
@@ -289,7 +289,7 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
                 'receiver' : receiver["name"], 
                 'start_date' : start_date, 
                 'end_date' :end_date,
-                'daily_pay' : "16.000 TBD",
+                'daily_pay' : "16.000 HBD",
                 'subject' : subject,
                 'permlink' : "hivepy-proposal-title"
             }
@@ -367,7 +367,7 @@ def test_update_proposal(node, creator, wif):
     op = Update_proposal(**{
         'proposal_id' : proposals[0]["proposal_id"],
         'creator' : proposals[0]["creator"],
-        'daily_pay' : "16.000 TBD",
+        'daily_pay' : "16.000 HBD",
         'subject' : subject,
         'permlink': proposals[0]["permlink"]
     })

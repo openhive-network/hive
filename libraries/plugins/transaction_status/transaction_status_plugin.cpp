@@ -59,14 +59,78 @@ public:
   bool                          rebuild_state_flag = false;
   boost::signals2::connection   post_apply_transaction_connection;
   boost::signals2::connection   post_apply_block_connection;
-  bool                          state_is_valid();
-  void                          rebuild_state();
   uint32_t                      get_earliest_tracked_block_num();
 
-private:
   fc::optional< transaction_id_type >  get_earliest_transaction_in_range( const uint32_t first_block_num, const uint32_t last_block_num );
   fc::optional< transaction_id_type >  get_latest_transaction_in_range( const uint32_t first_block_num, const uint32_t last_block_num );
 };
+
+/**
+  * Determine if the plugin state is valid.
+  *
+  * We determine validity by checking to see if we are aware of the first and last transactions
+  * in the range we are supposed to be tracking.
+  *
+  * \return True if the transaction state is considered valid, otherwise false
+  */
+bool transaction_status_helper::state_is_valid( chain::database& _db, transaction_status_plugin& plugin )
+{
+  const auto head_block_num = _db.head_block_num();
+  uint32_t earliest_tracked_block_num = plugin.get_earliest_tracked_block_num();
+
+  const auto earliest_tx = plugin.get_earliest_transaction_in_range( earliest_tracked_block_num, head_block_num );
+  const auto latest_tx = plugin.get_latest_transaction_in_range( earliest_tracked_block_num, head_block_num );
+
+  bool lower_bound_is_valid = true;
+  bool upper_bound_is_valid = true;
+
+  if ( earliest_tx.valid() )
+    lower_bound_is_valid = _db.find< transaction_status_object, by_trx_id >( *earliest_tx ) != nullptr;
+
+  if ( latest_tx.valid() )
+    upper_bound_is_valid = _db.find< transaction_status_object, by_trx_id >( *latest_tx ) != nullptr;
+  
+  return lower_bound_is_valid && upper_bound_is_valid;
+}
+
+/**
+  * Rebuild the necessary transaction status index objects.
+  *
+  * If the transaction status plugin is enabled at some arbitrary point in time, it may not have
+  * the necessary data to track transaction unless the state is rebuilt. We must clear out the
+  * existing objects and recreate the objects as if it would have during run-time.
+  */
+void transaction_status_helper::rebuild_state( chain::database& _db, transaction_status_plugin& plugin )
+{
+  ilog( "Rebuilding transaction status state" );
+
+  // Clear out the transaction status index
+  const auto& tx_status_idx = _db.get_index< transaction_status_index >().indices().get< by_trx_id >();
+  auto itr = tx_status_idx.begin();
+  while( itr != tx_status_idx.end() )
+  {
+    _db.remove( *itr );
+    itr = tx_status_idx.begin();
+  }
+
+  // Re-build the index from scratch
+  const auto head_block_num = _db.head_block_num();
+  uint32_t earliest_tracked_block_num = plugin.get_earliest_tracked_block_num();
+
+  for ( uint32_t block_num = earliest_tracked_block_num; block_num <= head_block_num; block_num++ )
+  {
+    const auto block = _db.fetch_block_by_number( block_num );
+
+    FC_ASSERT( block.valid(), "Could not read block ${n}", ("n", block_num) );
+
+    for ( const auto& e : block->transactions )
+      _db.create< transaction_status_object >( [&]( transaction_status_object& obj )
+      {
+        obj.transaction_id = e.id();
+        obj.block_num = block_num;
+      } );
+  }
+}
 
 void transaction_status_impl::on_post_apply_transaction( const transaction_notification& note )
 {
@@ -156,73 +220,6 @@ fc::optional< transaction_id_type > transaction_status_impl::get_latest_transact
   }
 
   return {};
-}
-
-/**
-  * Determine if the plugin state is valid.
-  *
-  * We determine validity by checking to see if we are aware of the first and last transactions
-  * in the range we are supposed to be tracking.
-  *
-  * \return True if the transaction state is considered valid, otherwise false
-  */
-bool transaction_status_impl::state_is_valid()
-{
-  const auto head_block_num = _db.head_block_num();
-  uint32_t earliest_tracked_block_num = get_earliest_tracked_block_num();
-
-  const auto earliest_tx = get_earliest_transaction_in_range( earliest_tracked_block_num, head_block_num );
-  const auto latest_tx = get_latest_transaction_in_range( earliest_tracked_block_num, head_block_num );
-
-  bool lower_bound_is_valid = true;
-  bool upper_bound_is_valid = true;
-
-  if ( earliest_tx.valid() )
-    lower_bound_is_valid = _db.find< transaction_status_object, by_trx_id >( *earliest_tx ) != nullptr;
-
-  if ( latest_tx.valid() )
-    upper_bound_is_valid = _db.find< transaction_status_object, by_trx_id >( *latest_tx ) != nullptr;
-  
-  return lower_bound_is_valid && upper_bound_is_valid;
-}
-
-/**
-  * Rebuild the necessary transaction status index objects.
-  *
-  * If the transaction status plugin is enabled at some arbitrary point in time, it may not have
-  * the necessary data to track transaction unless the state is rebuilt. We must clear out the
-  * existing objects and recreate the objects as if it would have during run-time.
-  */
-void transaction_status_impl::rebuild_state()
-{
-  ilog( "Rebuilding transaction status state" );
-
-  // Clear out the transaction status index
-  const auto& tx_status_idx = _db.get_index< transaction_status_index >().indices().get< by_trx_id >();
-  auto itr = tx_status_idx.begin();
-  while( itr != tx_status_idx.end() )
-  {
-    _db.remove( *itr );
-    itr = tx_status_idx.begin();
-  }
-
-  // Re-build the index from scratch
-  const auto head_block_num = _db.head_block_num();
-  uint32_t earliest_tracked_block_num = get_earliest_tracked_block_num();
-
-  for ( uint32_t block_num = earliest_tracked_block_num; block_num <= head_block_num; block_num++ )
-  {
-    const auto block = _db.fetch_block_by_number( block_num );
-
-    FC_ASSERT( block.valid(), "Could not read block ${n}", ("n", block_num) );
-
-    for ( const auto& e : block->transactions )
-      _db.create< transaction_status_object >( [&]( transaction_status_object& obj )
-      {
-        obj.transaction_id = e.id();
-        obj.block_num = block_num;
-      } );
-  }
 }
 
 /**
@@ -319,10 +316,10 @@ void transaction_status_plugin::plugin_startup()
     {
       my->_db.with_write_lock( [&]()
       {
-        my->rebuild_state();
+        detail::transaction_status_helper::rebuild_state( my->_db, *this );
       });
     }
-    else if ( !my->state_is_valid() )
+    else if ( !detail::transaction_status_helper::state_is_valid( my->_db, *this ) )
     {
       wlog( "The transaction status plugin state does not contain tracking information for the last ${num_blocks} blocks. Re-run with the command line argument '--${rebuild_state_key}'.",
         ("num_blocks", my->nominal_block_depth) ("rebuild_state_key", TRANSACTION_STATUS_REBUILD_STATE_KEY) );
@@ -338,23 +335,19 @@ void transaction_status_plugin::plugin_shutdown()
   chain::util::disconnect_signal( my->post_apply_block_connection );
 }
 
-uint32_t transaction_status_plugin::earliest_tracked_block_num()
+uint32_t transaction_status_plugin::get_earliest_tracked_block_num()
 {
   return my->get_earliest_tracked_block_num();
 }
 
-#ifdef IS_TEST_NET
-
-bool transaction_status_plugin::state_is_valid()
+fc::optional< transaction_id_type > transaction_status_plugin::get_earliest_transaction_in_range( const uint32_t first_block_num, const uint32_t last_block_num )
 {
-  return my->state_is_valid();
+  return my->get_earliest_transaction_in_range( first_block_num, last_block_num );
 }
 
-void transaction_status_plugin::rebuild_state()
+fc::optional< transaction_id_type > transaction_status_plugin::get_latest_transaction_in_range( const uint32_t first_block_num, const uint32_t last_block_num )
 {
-  my->rebuild_state();
+  return my->get_latest_transaction_in_range( first_block_num, last_block_num );
 }
-
-#endif
 
 } } } // hive::plugins::transaction_status

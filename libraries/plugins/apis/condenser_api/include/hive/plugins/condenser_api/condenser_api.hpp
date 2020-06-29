@@ -430,7 +430,7 @@ struct extended_dynamic_global_properties
   uint32_t          last_irreversible_block_num = 0;
 
   uint32_t          vote_power_reserve_rate = HIVE_INITIAL_VOTE_POWER_RATE;
-  uint32_t          delegation_return_period = HIVE_DELEGATION_RETURN_PERIOD_HF0;
+  uint32_t          delegation_return_period = 0;
 
   uint64_t          reverse_auction_seconds = 0;
 

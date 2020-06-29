@@ -416,8 +416,8 @@ void chain_plugin_impl::initial_settings()
 
   db_open_args.data_dir = app().data_dir() / "blockchain";
   db_open_args.shared_mem_dir = shared_memory_dir;
-  db_open_args.initial_supply = HIVE_INIT_SUPPLY;
-  db_open_args.hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;
+  db_open_args.initial_supply = db.config_blockchain.HIVE_INIT_SUPPLY;
+  db_open_args.hbd_initial_supply = db.config_blockchain.HIVE_HBD_INIT_SUPPLY;
   db_open_args.shared_file_size = shared_memory_size;
   db_open_args.shared_file_full_threshold = shared_file_full_threshold;
   db_open_args.shared_file_scale_rate = shared_file_scale_rate;
@@ -603,9 +603,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("database-cfg", bpo::value<bfs::path>()->default_value("database.cfg"), "The database configuration file location")
       ("memory-replay,m", bpo::bool_switch()->default_value(false), "Replay with state in memory instead of on disk")
 #endif
-#ifdef IS_TEST_NET
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
-#endif
       ;
 }
 
@@ -689,7 +687,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   }
 #endif
 
-#ifdef IS_TEST_NET
+
   if( options.count( "chain-id" ) )
   {
     auto chain_id_str = options.at("chain-id").as< std::string >();
@@ -703,7 +701,6 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
     }
   }
-#endif
 }
 
 void chain_plugin::plugin_startup()
