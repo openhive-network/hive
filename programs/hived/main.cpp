@@ -42,44 +42,46 @@ string& version_string()
   return v_str;
 }
 
-void info(const hive::protocol::chain_id_type& chainId)
+void info( const hive::protocol::chain_id_type& chainId, std::string hive_init_public_key_str, std::string hive_init_private_key_str, bool is_testnet_mode )
+{
+  if( is_testnet_mode )
   {
-#ifdef IS_TEST_NET
-  std::cerr << "------------------------------------------------------\n\n";
-  std::cerr << "            STARTING TEST NETWORK\n\n";
-  std::cerr << "------------------------------------------------------\n";
-  auto initminer_private_key = hive::utilities::key_to_wif(HIVE_INIT_PRIVATE_KEY);
-  std::cerr << "initminer public key: " << HIVE_INIT_PUBLIC_KEY_STR << "\n";
-  std::cerr << "initminer private key: " << initminer_private_key << "\n";
-  std::cerr << "blockchain version: " << fc::string(HIVE_BLOCKCHAIN_VERSION) << "\n";
-  std::cerr << "------------------------------------------------------\n";
-#else
-  std::cerr << "------------------------------------------------------\n\n";
-  std::cerr << "                @     @@@@@@    ,@@@@@%               \n";
-  std::cerr << "               @@@@    (@@@@@*    @@@@@@              \n";
-  std::cerr << "             %@@@@@@     @@@@@@    %@@@@@,            \n";
-  std::cerr << "            @@@@@@@@@@    @@@@@@     @@@@@@           \n";
-  std::cerr << "          ,@@@@@@@@@@@@     @@@@@@    @@@@@@          \n";
-  std::cerr << "         @@@@@@@@@@@@@@@&    @@@@@@     @@@@@@        \n";
-  std::cerr << "        @@@@@@@@@@@@@@@@@@    .@@@@@%    @@@@@@       \n";
-  std::cerr << "      @@@@@@@@@@@@@@@@@@@@@(              .@@@@@%     \n";
-  std::cerr << "       @@@@@@@@@@@@@@@@@@@@               @@@@@@      \n";
-  std::cerr << "        *@@@@@@@@@@@@@@@@     @@@@@@    @@@@@@.       \n";
-  std::cerr << "          @@@@@@@@@@@@@@    &@@@@@.    @@@@@@         \n";
-  std::cerr << "           #@@@@@@@@@@     @@@@@@    #@@@@@/          \n";
-  std::cerr << "             @@@@@@@@    /@@@@@/    @@@@@@            \n";
-  std::cerr << "              @@@@@(    @@@@@@    .@@@@@&             \n";
-  std::cerr << "                @@     @@@@@&    @@@@@@               \n\n";
-  std::cerr << "                STARTING HIVE NETWORK\n\n";
-  std::cerr << "------------------------------------------------------\n";
-  std::cerr << "initminer public key: " << HIVE_INIT_PUBLIC_KEY_STR << "\n";
-  std::cerr << "chain id: " << std::string(chainId) << "\n";
-  std::cerr << "blockchain version: " << fc::string(HIVE_BLOCKCHAIN_VERSION) << "\n";
-  std::cerr << "------------------------------------------------------\n\n";
-#endif
+    std::cerr << "------------------------------------------------------\n\n";
+    std::cerr << "            STARTING TEST NETWORK\n\n";
+    std::cerr << "------------------------------------------------------\n";
+    std::cerr << "initminer public key: " << hive_init_public_key_str << "\n";
+    std::cerr << "initminer private key: " << hive_init_private_key_str << "\n";
+    std::cerr << "blockchain version: " << fc::string(HIVE_BLOCKCHAIN_VERSION) << "\n";
+    std::cerr << "------------------------------------------------------\n";
+  }
+  else
+  {
+    std::cerr << "------------------------------------------------------\n\n";
+    std::cerr << "                @     @@@@@@    ,@@@@@%               \n";
+    std::cerr << "               @@@@    (@@@@@*    @@@@@@              \n";
+    std::cerr << "             %@@@@@@     @@@@@@    %@@@@@,            \n";
+    std::cerr << "            @@@@@@@@@@    @@@@@@     @@@@@@           \n";
+    std::cerr << "          ,@@@@@@@@@@@@     @@@@@@    @@@@@@          \n";
+    std::cerr << "         @@@@@@@@@@@@@@@&    @@@@@@     @@@@@@        \n";
+    std::cerr << "        @@@@@@@@@@@@@@@@@@    .@@@@@%    @@@@@@       \n";
+    std::cerr << "      @@@@@@@@@@@@@@@@@@@@@(              .@@@@@%     \n";
+    std::cerr << "       @@@@@@@@@@@@@@@@@@@@               @@@@@@      \n";
+    std::cerr << "        *@@@@@@@@@@@@@@@@     @@@@@@    @@@@@@.       \n";
+    std::cerr << "          @@@@@@@@@@@@@@    &@@@@@.    @@@@@@         \n";
+    std::cerr << "           #@@@@@@@@@@     @@@@@@    #@@@@@/          \n";
+    std::cerr << "             @@@@@@@@    /@@@@@/    @@@@@@            \n";
+    std::cerr << "              @@@@@(    @@@@@@    .@@@@@&             \n";
+    std::cerr << "                @@     @@@@@&    @@@@@@               \n\n";
+    std::cerr << "                STARTING HIVE NETWORK\n\n";
+    std::cerr << "------------------------------------------------------\n";
+    std::cerr << "initminer public key: " << hive_init_public_key_str << "\n";
+    std::cerr << "chain id: " << std::string(chainId) << "\n";
+    std::cerr << "blockchain version: " << fc::string(HIVE_BLOCKCHAIN_VERSION) << "\n";
+    std::cerr << "------------------------------------------------------\n\n";
+  }
 
   std::cerr << "hived git_revision: \"" + fc::string(hive::utilities::git_revision_sha) + "\"\n\n";
-  }
+}
 
 int main( int argc, char** argv )
 {
@@ -120,7 +122,10 @@ int main( int argc, char** argv )
 
     const auto& chainPlugin = theApp.get_plugin<hive::plugins::chain::chain_plugin>();
     auto chainId = chainPlugin.db().get_chain_id();
-    info(chainId);
+    info( chainId,
+          chainPlugin.db().config_blockchain.HIVE_INIT_PUBLIC_KEY_STR,
+          chainPlugin.db().config_blockchain.TEST_HIVE_INIT_PRIVATE_KEY_STR,
+          chainPlugin.is_testnet_mode() );
 
     auto& args = theApp.get_args();
 

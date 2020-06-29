@@ -202,6 +202,7 @@ struct database_fixture {
 
   optional<fc::temp_directory> data_dir;
   bool skip_key_index_test = false;
+  bool skip_price_feed_limit_check = true;
 
   database_fixture() {}
   virtual ~database_fixture() { appbase::reset(); }
@@ -214,7 +215,18 @@ struct database_fixture {
   static const uint16_t shared_file_size_in_mb_64 = 64;
   static const uint16_t shared_file_size_in_mb_512 = 512;
 
-  void open_database( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 );
+  private:
+
+    bool try_open_database( uint16_t shared_file_size_in_mb );
+    void init_hardforks();
+    void post_init_hardforks();
+
+  public:
+
+  static void open_database( database& db, const fc::path& dir_path, uint64_t size = 1024 * 1024 * shared_file_size_in_mb_64 );
+
+  void init_database( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64, bool allow_init_hardfork = true );
+
   void generate_block(uint32_t skip = 0,
                       const fc::ecc::private_key& key = generate_private_key("init_key"),
                       int miss_blocks = 0);
@@ -294,16 +306,7 @@ struct clean_database_fixture : public database_fixture
   clean_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
   virtual ~clean_database_fixture();
 
-  void resize_shared_mem( uint64_t size );
   void validate_database();
-};
-
-struct live_database_fixture : public database_fixture
-{
-  live_database_fixture();
-  virtual ~live_database_fixture();
-
-  fc::path _chain_dir;
 };
 
 #ifdef HIVE_ENABLE_SMT

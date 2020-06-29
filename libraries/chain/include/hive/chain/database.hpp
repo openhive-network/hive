@@ -35,6 +35,26 @@ namespace hive { namespace chain {
   using hive::protocol::price;
   using abstract_plugin = appbase::abstract_plugin;
 
+  struct negative_votes_info_type
+  {
+    //A magic number introduced by Steemit Inc
+    uint32_t block = 23'847'548;
+
+    void reset_block()
+    {
+      /*
+        This method should be used only in testing context.
+        Make sure that you know what you do, when you call this method.
+      */
+      block = 0;
+    }
+
+    uint32_t get_block() const
+    {
+      return block;
+    }
+  };
+
   struct hardfork_versions
   {
     fc::time_point_sec         times[ HIVE_NUM_HARDFORKS + 1 ];
@@ -77,8 +97,8 @@ namespace hive { namespace chain {
     {
     fc::path data_dir;
     fc::path shared_mem_dir;
-    uint64_t initial_supply = HIVE_INIT_SUPPLY;
-    uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;
+    uint64_t initial_supply = 0;
+    uint64_t hbd_initial_supply = 0;
     uint64_t shared_file_size = 0;
     uint16_t shared_file_full_threshold = 0;
     uint16_t shared_file_scale_rate = 0;
@@ -204,9 +224,10 @@ namespace hive { namespace chain {
       std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
-      chain_id_type hive_chain_id = STEEM_CHAIN_ID;
+      chain_id_type hive_chain_id;
       chain_id_type get_chain_id() const;
       void set_chain_id( const chain_id_type& chain_id );
+      void init_testnet( bool db_init );
 
       /** Allows to visit all stored blocks until processor returns true. Caller is responsible for block disasembling
         * const signed_block_header& - header of previous block
@@ -522,7 +543,7 @@ namespace hive { namespace chain {
       void resetState(const open_args& args);
 
       void init_schema();
-      void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
+      void init_genesis( uint64_t initial_supply, uint64_t hbd_initial_supply );
 
       /**
         *  This method validates transactions without adding it to the pending state.
@@ -575,13 +596,6 @@ namespace hive { namespace chain {
       const index_delegate& get_index_delegate( const std::string& n );
       bool has_index_delegate( const std::string& n );
       const index_delegate_map& index_delegates();
-
-#ifdef IS_TEST_NET
-      bool liquidity_rewards_enabled = true;
-      bool skip_price_feed_limit_check = true;
-      bool skip_transaction_delta_check = true;
-      bool disable_low_mem_warning = true;
-#endif
 
 #ifdef HIVE_ENABLE_SMT
       ///Smart Media Tokens related methods
@@ -671,6 +685,9 @@ namespace hive { namespace chain {
       }
 
     public:
+
+      negative_votes_info_type negative_votes_info;
+      config_blockchain_type config_blockchain;
 
       const transaction_id_type& get_current_trx() const
       {

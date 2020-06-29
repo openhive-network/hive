@@ -13,7 +13,7 @@ namespace hive { namespace protocol {
     void_t,
     version,                // Normal witness version reporting, for diagnostics and voting
     hardfork_version_vote   // Voting for the next hardfork to trigger
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
 ,
     required_automated_actions,
     optional_automated_actions

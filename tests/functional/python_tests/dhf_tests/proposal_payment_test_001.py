@@ -58,7 +58,7 @@ def create_proposals(node, accounts, start_date, end_date, wif=None):
             acnt['name'], 
             start_date, 
             end_date,
-            "24.000 TBD",
+            "24.000 HBD",
             "Proposal from account {}".format(acnt['name']),
             test_utils.get_permlink(acnt['name'])
         ))
@@ -68,7 +68,7 @@ def create_proposals(node, accounts, start_date, end_date, wif=None):
                 'receiver' : acnt['name'], 
                 'start_date' : start_date, 
                 'end_date' : end_date,
-                'daily_pay' : "24.000 TBD",
+                'daily_pay' : "24.000 HBD",
                 'subject' : "Proposal from account {}".format(acnt['name']),
                 'permlink' : test_utils.get_permlink(acnt['name'])
             }
@@ -122,11 +122,11 @@ if __name__ == '__main__':
 
     accounts = [
         # place accounts here in the format: {'name' : name, 'private_key' : private-key, 'public_key' : public-key}
-        {"name" : "tester001", "private_key" : "5KQeu7SdzxT1DiUzv7jaqwkwv1V8Fi7N8NBZtHugWYXqVFH1AFa", "public_key" : "TST8VfiahQsfS1TLcnBfp4NNfdw67uWweYbbUXymbNiDXVDrzUs7J"},
-        {"name" : "tester002", "private_key" : "5KgfcV9bgEen3v9mxkoGw6Rhuf2giDRZTHZjzwisjkrpF4FUh3N", "public_key" : "TST5gQPYm5bs9dRPHpqBy6dU32M8FcoKYFdF4YWEChUarc9FdYHzn"},
-        {"name" : "tester003", "private_key" : "5Jz3fcrrgKMbL8ncpzTdQmdRVHdxMhi8qScoxSR3TnAFUcdyD5N", "public_key" : "TST57wy5bXyJ4Z337Bo6RbinR6NyTRJxzond5dmGsP4gZ51yN6Zom"},
-        {"name" : "tester004", "private_key" : "5KcmobLVMSAVzETrZxfEGG73Zvi5SKTgJuZXtNgU3az2VK3Krye", "public_key" : "TST8dPte853xAuLMDV7PTVmiNMRwP6itMyvSmaht7J5tVczkDLa5K"},
-        {"name" : "tester005", "private_key" : "5Hy4vEeYmBDvmXipe5JAFPhNwCnx7NfsfyiktBTBURn9Qt1ihcA", "public_key" : "TST7CP7FFjvG55AUeH8riYbfD8NxTTtFH32ekQV4YFXmV6gU8uAg3"}
+        {"name" : "tester001", "private_key" : "5KQeu7SdzxT1DiUzv7jaqwkwv1V8Fi7N8NBZtHugWYXqVFH1AFa", "public_key" : "STM8VfiahQsfS1TLcnBfp4NNfdw67uWweYbbUXymbNiDXVDrzUs7J"},
+        {"name" : "tester002", "private_key" : "5KgfcV9bgEen3v9mxkoGw6Rhuf2giDRZTHZjzwisjkrpF4FUh3N", "public_key" : "STM5gQPYm5bs9dRPHpqBy6dU32M8FcoKYFdF4YWEChUarc9FdYHzn"},
+        {"name" : "tester003", "private_key" : "5Jz3fcrrgKMbL8ncpzTdQmdRVHdxMhi8qScoxSR3TnAFUcdyD5N", "public_key" : "STM57wy5bXyJ4Z337Bo6RbinR6NyTRJxzond5dmGsP4gZ51yN6Zom"},
+        {"name" : "tester004", "private_key" : "5KcmobLVMSAVzETrZxfEGG73Zvi5SKTgJuZXtNgU3az2VK3Krye", "public_key" : "STM8dPte853xAuLMDV7PTVmiNMRwP6itMyvSmaht7J5tVczkDLa5K"},
+        {"name" : "tester005", "private_key" : "5Hy4vEeYmBDvmXipe5JAFPhNwCnx7NfsfyiktBTBURn9Qt1ihcA", "public_key" : "STM7CP7FFjvG55AUeH8riYbfD8NxTTtFH32ekQV4YFXmV6gU8uAg3"}
     ]
 
     if not accounts:
@@ -152,7 +152,7 @@ if __name__ == '__main__':
             test_utils.create_accounts(node_client, args.creator, accounts)
             # tranfer to vesting
             test_utils.transfer_to_vesting(node_client, args.creator, accounts, "300.000", 
-                "TESTS"
+                "HIVE"
             )
 
             logger.info("Wait 30 days for full voting power")
@@ -160,12 +160,12 @@ if __name__ == '__main__':
             
             # transfer assets to accounts
             test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
-                "400.000", "TESTS",
+                "400.000", "HIVE",
                 wif
             )
 
             test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
-                "400.000", "TBD",
+                "400.000", "HBD",
                 wif
             )
 
@@ -173,7 +173,7 @@ if __name__ == '__main__':
             test_utils.print_balance(node_client, accounts)
             # transfer assets to treasury
             test_utils.transfer_assets_to_treasury(node_client, args.creator, args.treasury, 
-                "1000000.000", "TBD", wif
+                "1000000.000", "HBD", wif
             )
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
 
@@ -215,8 +215,8 @@ if __name__ == '__main__':
             logger.info("Balances for accounts after creating proposals")
             balances = test_utils.print_balance(node_client, accounts)
             for balance in balances:
-                #should be 390.000 TBD for all
-                assert balance == "390000", "All balances should be equal to 390.000 TBD"
+                #should be 390.000 HBD for all
+                assert balance == "390000", "All balances should be equal to 390.000 HBD"
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
 
             # move forward in time to see if proposals are paid

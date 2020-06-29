@@ -124,6 +124,8 @@ public:
 
   bool is_p2p_enabled() const;
 
+  bool is_testnet_mode() const;
+
 private:
   std::unique_ptr< detail::chain_plugin_impl > my;
 };

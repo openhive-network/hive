@@ -1,4 +1,3 @@
-#ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/account_object.hpp>
@@ -44,11 +43,7 @@ BOOST_AUTO_TEST_CASE( mh_test )
     db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
     BOOST_REQUIRE( db );
 
-    open_database();
-
-    generate_block();
-    db->set_hardfork( HIVE_NUM_HARDFORKS );
-    generate_block();
+    init_database();
 
     vest( "initminer", 10000 );
 
@@ -65,10 +60,10 @@ BOOST_AUTO_TEST_CASE( mh_test )
     ACTORS( (alice)(bob)(sam) );
     generate_block();
 
-    fund( "alice", ASSET( "1000.000 TESTS" ) );
-    fund( "alice", ASSET( "1000.000 TBD" ) );
-    fund( "bob", ASSET( "1000.000 TESTS" ) );
-    fund( "sam", ASSET( "1000.000 TESTS" ) );
+    fund( "alice", ASSET( "1000.000 HIVE" ) );
+    fund( "alice", ASSET( "1000.000 HBD" ) );
+    fund( "bob", ASSET( "1000.000 HIVE" ) );
+    fund( "sam", ASSET( "1000.000 HIVE" ) );
 
     const auto& bucket_idx = db->get_index< bucket_index >().indices().get< by_bucket >();
     const auto& order_hist_idx = db->get_index< order_history_index >().indices().get< by_id >();
@@ -84,8 +79,8 @@ BOOST_AUTO_TEST_CASE( mh_test )
 
     limit_order_create_operation op;
     op.owner = "alice";
-    op.amount_to_sell = ASSET( "1.000 TBD" );
-    op.min_to_receive = ASSET( "2.000 TESTS" );
+    op.amount_to_sell = ASSET( "1.000 HBD" );
+    op.min_to_receive = ASSET( "2.000 HIVE" );
     op.expiration = db->head_block_time() + fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
@@ -96,8 +91,8 @@ BOOST_AUTO_TEST_CASE( mh_test )
     tx.signatures.clear();
 
     op.owner = "bob";
-    op.amount_to_sell = ASSET( "1.500 TESTS" );
-    op.min_to_receive = ASSET( "0.750 TBD" );
+    op.amount_to_sell = ASSET( "1.500 HIVE" );
+    op.min_to_receive = ASSET( "0.750 HBD" );
     tx.operations.push_back( op );
     sign(tx, bob_private_key);
     db->push_transaction( tx, 0 );
@@ -110,8 +105,8 @@ BOOST_AUTO_TEST_CASE( mh_test )
     tx.signatures.clear();
 
     op.owner = "sam";
-    op.amount_to_sell = ASSET( "1.000 TESTS" );
-    op.min_to_receive = ASSET( "0.500 TBD" );
+    op.amount_to_sell = ASSET( "1.000 HIVE" );
+    op.min_to_receive = ASSET( "0.500 HBD" );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, sam_private_key );
@@ -125,8 +120,8 @@ BOOST_AUTO_TEST_CASE( mh_test )
     tx.signatures.clear();
 
     op.owner = "alice";
-    op.amount_to_sell = ASSET( "0.500 TBD" );
-    op.min_to_receive = ASSET( "0.900 TESTS" );
+    op.amount_to_sell = ASSET( "0.500 HBD" );
+    op.min_to_receive = ASSET( "0.900 HIVE" );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
@@ -136,8 +131,8 @@ BOOST_AUTO_TEST_CASE( mh_test )
     tx.signatures.clear();
 
     op.owner = "bob";
-    op.amount_to_sell = ASSET( "0.450 TESTS" );
-    op.min_to_receive = ASSET( "0.250 TBD" );
+    op.amount_to_sell = ASSET( "0.450 HIVE" );
+    op.min_to_receive = ASSET( "0.250 HBD" );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, bob_private_key );
@@ -148,158 +143,164 @@ BOOST_AUTO_TEST_CASE( mh_test )
 
     BOOST_REQUIRE( bucket->seconds == 15 );
     BOOST_REQUIRE( bucket->open == time_a );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 TESTS " ).amount );
-    BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.open == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.close == ASSET( "1.500 TESTS").amount );
-    BOOST_REQUIRE( bucket->hive.volume == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.750 TBD" ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 HIVE " ).amount );
+    BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.open == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.close == ASSET( "1.500 HIVE").amount );
+    BOOST_REQUIRE( bucket->hive.volume == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.750 HBD" ).amount );
 
     bucket++;
 
     BOOST_REQUIRE( bucket->seconds == 15 );
     BOOST_REQUIRE( bucket->open == time_a + ( 60 * 90 ) );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.500 TESTS " ).amount );
-    BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.open == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.500 TESTS").amount );
-    BOOST_REQUIRE( bucket->hive.volume == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.250 TBD" ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.500 HIVE " ).amount );
+    BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.open == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.500 HIVE").amount );
+    BOOST_REQUIRE( bucket->hive.volume == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.250 HBD" ).amount );
 
     bucket++;
 
     BOOST_REQUIRE( bucket->seconds == 15 );
     BOOST_REQUIRE( bucket->open == time_a + ( 60 * 90 ) + 60 );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 TESTS " ).amount );
-    BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.open == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.450 TESTS").amount );
-    BOOST_REQUIRE( bucket->hive.volume == ASSET( "0.950 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.500 TBD" ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 HIVE " ).amount );
+    BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.open == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.450 HIVE").amount );
+    BOOST_REQUIRE( bucket->hive.volume == ASSET( "0.950 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.500 HBD" ).amount );
     bucket++;
 
     BOOST_REQUIRE( bucket->seconds == 60 );
     BOOST_REQUIRE( bucket->open == time_a );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 TESTS " ).amount );
-    BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.open == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.close == ASSET( "1.500 TESTS").amount );
-    BOOST_REQUIRE( bucket->hive.volume == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.750 TBD" ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 HIVE " ).amount );
+    BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.open == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.close == ASSET( "1.500 HIVE").amount );
+    BOOST_REQUIRE( bucket->hive.volume == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.750 HBD" ).amount );
     bucket++;
 
     BOOST_REQUIRE( bucket->seconds == 60 );
     BOOST_REQUIRE( bucket->open == time_a + ( 60 * 90 ) );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.500 TESTS " ).amount );
-    BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.open == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.500 TESTS").amount );
-    BOOST_REQUIRE( bucket->hive.volume == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.250 TBD" ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.500 HIVE " ).amount );
+    BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.open == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.500 HIVE").amount );
+    BOOST_REQUIRE( bucket->hive.volume == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.250 HBD" ).amount );
     bucket++;
 
     BOOST_REQUIRE( bucket->seconds == 60 );
     BOOST_REQUIRE( bucket->open == time_a + ( 60 * 90 ) + 60 );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 TESTS " ).amount );
-    BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.open == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.450 TESTS").amount );
-    BOOST_REQUIRE( bucket->hive.volume == ASSET( "0.950 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.500 TBD" ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 HIVE " ).amount );
+    BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.open == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.450 HIVE").amount );
+    BOOST_REQUIRE( bucket->hive.volume == ASSET( "0.950 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.500 HBD" ).amount );
     bucket++;
 
     BOOST_REQUIRE( bucket->seconds == 300 );
     BOOST_REQUIRE( bucket->open == time_a );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 TESTS " ).amount );
-    BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.open == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.close == ASSET( "1.500 TESTS").amount );
-    BOOST_REQUIRE( bucket->hive.volume == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.750 TBD" ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 HIVE " ).amount );
+    BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.open == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.close == ASSET( "1.500 HIVE").amount );
+    BOOST_REQUIRE( bucket->hive.volume == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.750 HBD" ).amount );
     bucket++;
 
     BOOST_REQUIRE( bucket->seconds == 300 );
     BOOST_REQUIRE( bucket->open == time_a + ( 60 * 90 ) );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 TESTS " ).amount );
-    BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.open == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.450 TESTS").amount );
-    BOOST_REQUIRE( bucket->hive.volume == ASSET( "1.450 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.750 TBD" ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 HIVE " ).amount );
+    BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.open == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.450 HIVE").amount );
+    BOOST_REQUIRE( bucket->hive.volume == ASSET( "1.450 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.750 HBD" ).amount );
     bucket++;
 
     BOOST_REQUIRE( bucket->seconds == 3600 );
     BOOST_REQUIRE( bucket->open == time_a );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 TESTS " ).amount );
-    BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.open == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.close == ASSET( "1.500 TESTS").amount );
-    BOOST_REQUIRE( bucket->hive.volume == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.750 TBD" ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "1.500 HIVE " ).amount );
+    BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.open == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.close == ASSET( "1.500 HIVE").amount );
+    BOOST_REQUIRE( bucket->hive.volume == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.750 HBD" ).amount );
     bucket++;
 
     BOOST_REQUIRE( bucket->seconds == 3600 );
     BOOST_REQUIRE( bucket->open == time_a + ( 60 * 60 ) );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 TESTS " ).amount );
-    BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.open == ASSET( "0.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.450 TESTS").amount );
-    BOOST_REQUIRE( bucket->hive.volume == ASSET( "1.450 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.750 TBD" ).amount );
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 HIVE " ).amount );
+    BOOST_REQUIRE( bucket->hive.low == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.open == ASSET( "0.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.450 HIVE").amount );
+    BOOST_REQUIRE( bucket->hive.volume == ASSET( "1.450 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "0.750 HBD" ).amount );
     bucket++;
 
     BOOST_REQUIRE( bucket->seconds == 86400 );
-    BOOST_REQUIRE( bucket->open == HIVE_GENESIS_TIME );
-    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 TESTS " ).amount );
-    BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.open == ASSET( "1.500 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.450 TESTS").amount );
-    BOOST_REQUIRE( bucket->hive.volume == ASSET( "2.950 TESTS" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.750 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 TBD" ).amount );
-    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "1.500 TBD" ).amount );
+
+    /*
+      Earlier there was another value of `HIVE_GENESIS_TIME` in testnet resulting exact division.
+      Now is used value of `HIVE_GENESIS_TIME` from mainnet and it's necessary to calculate proper value.
+    */
+    BOOST_REQUIRE( bucket->open.sec_since_epoch() == ( HIVE_GENESIS_TIME.sec_since_epoch() / 86400 ) * 86400 );
+
+    BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 HIVE " ).amount );
+    BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.open == ASSET( "1.500 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->hive.close == ASSET( "0.450 HIVE").amount );
+    BOOST_REQUIRE( bucket->hive.volume == ASSET( "2.950 HIVE" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.high == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.low == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.open == ASSET( "0.750 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.close == ASSET( "0.250 HBD" ).amount );
+    BOOST_REQUIRE( bucket->non_hive.volume == ASSET( "1.500 HBD" ).amount );
     bucket++;
 
     BOOST_REQUIRE( bucket == bucket_idx.end() );
@@ -309,37 +310,37 @@ BOOST_AUTO_TEST_CASE( mh_test )
     BOOST_REQUIRE( order->time == fill_order_a_time );
     BOOST_REQUIRE( order->op.current_owner == "bob" );
     BOOST_REQUIRE( order->op.current_orderid == 0 );
-    BOOST_REQUIRE( order->op.current_pays == ASSET( "1.500 TESTS" ) );
+    BOOST_REQUIRE( order->op.current_pays == ASSET( "1.500 HIVE" ) );
     BOOST_REQUIRE( order->op.open_owner == "alice" );
     BOOST_REQUIRE( order->op.open_orderid == 0 );
-    BOOST_REQUIRE( order->op.open_pays == ASSET( "0.750 TBD" ) );
+    BOOST_REQUIRE( order->op.open_pays == ASSET( "0.750 HBD" ) );
     order++;
 
     BOOST_REQUIRE( order->time == fill_order_b_time );
     BOOST_REQUIRE( order->op.current_owner == "sam" );
     BOOST_REQUIRE( order->op.current_orderid == 0 );
-    BOOST_REQUIRE( order->op.current_pays == ASSET( "0.500 TESTS" ) );
+    BOOST_REQUIRE( order->op.current_pays == ASSET( "0.500 HIVE" ) );
     BOOST_REQUIRE( order->op.open_owner == "alice" );
     BOOST_REQUIRE( order->op.open_orderid == 0 );
-    BOOST_REQUIRE( order->op.open_pays == ASSET( "0.250 TBD" ) );
+    BOOST_REQUIRE( order->op.open_pays == ASSET( "0.250 HBD" ) );
     order++;
 
     BOOST_REQUIRE( order->time == fill_order_c_time );
     BOOST_REQUIRE( order->op.current_owner == "alice" );
     BOOST_REQUIRE( order->op.current_orderid == 0 );
-    BOOST_REQUIRE( order->op.current_pays == ASSET( "0.250 TBD" ) );
+    BOOST_REQUIRE( order->op.current_pays == ASSET( "0.250 HBD" ) );
     BOOST_REQUIRE( order->op.open_owner == "sam" );
     BOOST_REQUIRE( order->op.open_orderid == 0 );
-    BOOST_REQUIRE( order->op.open_pays == ASSET( "0.500 TESTS" ) );
+    BOOST_REQUIRE( order->op.open_pays == ASSET( "0.500 HIVE" ) );
     order++;
 
     BOOST_REQUIRE( order->time == fill_order_c_time );
     BOOST_REQUIRE( order->op.current_owner == "bob" );
     BOOST_REQUIRE( order->op.current_orderid == 0 );
-    BOOST_REQUIRE( order->op.current_pays == ASSET( "0.450 TESTS" ) );
+    BOOST_REQUIRE( order->op.current_pays == ASSET( "0.450 HIVE" ) );
     BOOST_REQUIRE( order->op.open_owner == "alice" );
     BOOST_REQUIRE( order->op.open_orderid == 0 );
-    BOOST_REQUIRE( order->op.open_pays == ASSET( "0.250 TBD" ) );
+    BOOST_REQUIRE( order->op.open_pays == ASSET( "0.250 HBD" ) );
     order++;
 
     BOOST_REQUIRE( order == order_hist_idx.end() );
@@ -348,4 +349,3 @@ BOOST_AUTO_TEST_CASE( mh_test )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#endif

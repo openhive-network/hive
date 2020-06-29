@@ -22,9 +22,7 @@
 // TODO: What should this value be for testnet?
 #define HIVE_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT      2020748973
 
-#ifndef IS_TEST_NET
-#define HIVE_HF20_BLOCK_NUM                              26256743
-#endif
+#define HIVE_HF20_BLOCK_NUM                              26'256'743
 
 // 1.66% is ~2 hours of regen.
 // 2 / ( 24 * 5 ) = 0.01666...
@@ -76,10 +74,6 @@ class rc_plugin_impl
     rc_plugin_skip_flags          _skip;
     std::map< account_name_type, int64_t > _account_to_max_rc;
     uint32_t                      _enable_at_block = 1;
-
-#ifdef IS_TEST_NET
-    std::set< account_name_type > _whitelist;
-#endif
 
     boost::signals2::connection   _pre_reindex_conn;
     boost::signals2::connection   _post_reindex_conn;
@@ -233,10 +227,6 @@ void use_account_rcs(
   const account_name_type& account_name,
   int64_t rc,
   rc_plugin_skip_flags skip
-#ifdef IS_TEST_NET
-  ,
-  const set< account_name_type >& whitelist
-#endif
   )
 {
 
@@ -250,10 +240,6 @@ void use_account_rcs(
     }
     return;
   }
-
-#ifdef IS_TEST_NET
-  if( whitelist.count( account_name ) ) return;
-#endif
 
   // ilog( "use_account_rcs( ${n}, ${rc} )", ("n", account_name)("rc", rc) );
   const account_object& account = db.get< account_object, by_name >( account_name );
@@ -346,12 +332,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   }
 
   tx_info.resource_user = get_resource_user( note.transaction );
-  use_account_rcs( _db, gpo, tx_info.resource_user, total_cost, _skip
-#ifdef IS_TEST_NET
-  ,
-  _whitelist
-#endif
-  );
+  use_account_rcs( _db, gpo, tx_info.resource_user, total_cost, _skip );
 
   std::shared_ptr< exp_rc_data > export_data =
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
@@ -1112,12 +1093,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   }
 
   opt_action_info.resource_user = get_resource_user( note.action );
-  use_account_rcs( _db, gpo, opt_action_info.resource_user, total_cost, _skip
-#ifdef IS_TEST_NET
-  ,
-  _whitelist
-#endif
-  );
+  use_account_rcs( _db, gpo, opt_action_info.resource_user, total_cost, _skip );
 
   std::shared_ptr< exp_rc_data > export_data =
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
@@ -1155,18 +1131,10 @@ void rc_plugin::set_program_options( options_description& cli, options_descripti
   cfg.add_options()
     ("rc-skip-reject-not-enough-rc", bpo::value<bool>()->default_value( false ), "Skip rejecting transactions when account has insufficient RCs. This is not recommended." )
     ("rc-compute-historical-rc", bpo::value<bool>()->default_value( false ), "Generate historical resource credits" )
-#ifdef IS_TEST_NET
-    ("rc-start-at-block", bpo::value<uint32_t>()->default_value(0), "Start calculating RCs at a specific block" )
-    ("rc-account-whitelist", bpo::value< vector<string> >()->composing(), "Ignore RC calculations for the whitelist" )
-#endif
     ;
   cli.add_options()
     ("rc-skip-reject-not-enough-rc", bpo::bool_switch()->default_value( false ), "Skip rejecting transactions when account has insufficient RCs. This is not recommended." )
     ("rc-compute-historical-rc", bpo::bool_switch()->default_value( false ), "Generate historical resource credits" )
-#ifdef IS_TEST_NET
-    ("rc-start-at-block", bpo::value<uint32_t>()->default_value(0), "Start calculating RCs at a specific block" )
-    ("rc-account-whitelist", bpo::value< vector<string> >()->composing(), "Ignore RC calculations for the whitelist" )
-#endif
     ;
 }
 
@@ -1186,7 +1154,8 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
         []() -> std::shared_ptr< exportable_block_data > { return std::make_shared< exp_rc_data >(); } );
     }
 
-    chain::database& db = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
+    auto& _chain_plugin = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >();
+    chain::database& db = _chain_plugin.db();
 
     my->_post_apply_block_conn = db.add_post_apply_block_handler( [&]( const block_notification& note )
       { try { my->on_post_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
@@ -1211,32 +1180,13 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 
     my->_skip.skip_reject_not_enough_rc = options.at( "rc-skip-reject-not-enough-rc" ).as< bool >();
     state_opts["rc-compute-historical-rc"] = options.at( "rc-compute-historical-rc" ).as<bool>();
-#ifndef IS_TEST_NET
-    if( !options.at( "rc-compute-historical-rc" ).as<bool>() )
+    if( !_chain_plugin.is_testnet_mode() )
     {
-      my->_enable_at_block = HIVE_HF20_BLOCK_NUM;
-    }
-#else
-    uint32_t start_block = options.at( "rc-start-at-block" ).as<uint32_t>();
-    if( start_block > 0 )
-    {
-      my->_enable_at_block = start_block;
-    }
-
-    if( options.count( "rc-account-whitelist" ) > 0 )
-    {
-      auto accounts = options.at( "rc-account-whitelist" ).as< vector< string > > ();
-      for( auto& arg : accounts )
+      if( !options.at( "rc-compute-historical-rc" ).as<bool>() )
       {
-        vector< string > names;
-        boost::split( names, arg, boost::is_any_of( " \t" ) );
-        for( const std::string& name : names )
-          my->_whitelist.insert( account_name_type( name ) );
+        my->_enable_at_block = HIVE_HF20_BLOCK_NUM;
       }
-
-      ilog( "Ignoring RC's for accounts: ${w}", ("w", my->_whitelist) );
     }
-#endif
 
     appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
 

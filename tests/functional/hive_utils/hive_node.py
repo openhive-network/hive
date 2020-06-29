@@ -157,7 +157,8 @@ class HiveNodeInScreen(object):
       self.working_dir,
       "--advanced-benchmark",
       "--sps-remove-threshold",
-      "-1"
+      "-1",
+      "--testnet-mode"
     ]
 
     parameters = parameters + additional_params

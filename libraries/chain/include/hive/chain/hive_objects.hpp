@@ -263,7 +263,7 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       reward_fund_object( allocator< Allocator > a, uint64_t _id,
-        const string& _name, const asset& _balance, const time_point_sec& _creation_time, const uint128_t& _claims = 0 )
+        const string& _name, const asset& _balance, const time_point_sec& _creation_time, const uint128_t& _claims )
         : id( _id ), name( _name ), reward_balance( _balance ), recent_claims( _claims ), last_update( _creation_time )
       {}
 

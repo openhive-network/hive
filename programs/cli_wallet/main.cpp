@@ -70,6 +70,8 @@ int main( int argc, char** argv )
 {
   try {
 
+    config_blockchain_type config;
+
     boost::program_options::options_description opts;
       opts.add_options()
       ("help,h", "Print this help message and exit.")
@@ -82,9 +84,7 @@ int main( int argc, char** argv )
       ("daemon,d", "Run the wallet in daemon mode" )
       ("rpc-http-allowip", bpo::value<vector<string>>()->multitoken(), "Allows only specified IPs to connect to the HTTP endpoint" )
       ("wallet-file,w", bpo::value<string>()->implicit_value("wallet.json"), "wallet to load")
-#ifdef IS_TEST_NET
-      ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
-#endif
+      ("chain-id", bpo::value< std::string >()->default_value( config.HIVE_CHAIN_ID ), "chain ID to connect to")
       ;
     vector<string> allowed_ips;
 
@@ -104,7 +104,6 @@ int main( int argc, char** argv )
 
     hive::protocol::chain_id_type _hive_chain_id;
 
-#ifdef IS_TEST_NET
     if( options.count("chain-id") )
     {
       auto chain_id_str = options.at("chain-id").as< std::string >();
@@ -118,7 +117,6 @@ int main( int argc, char** argv )
         FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
       }
     }
-#endif
 
     fc::path data_dir;
     fc::logging_config cfg;

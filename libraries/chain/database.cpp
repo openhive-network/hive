@@ -57,12 +57,7 @@
 
 long hf24_time()
 {
-  long hf24Time =
-#ifdef IS_TEST_NET
-    1588334400; /// Friday, 1 May 2020 12:00:00 GMT
-#else
-    1593604800; // Wednesday, 1 July 2020 12:00:00 GMT
-#endif /// IS_TEST_NET
+  long hf24Time = 1593604800; // Wednesday, 1 July 2020 12:00:00 GMT
   const char* value = getenv("HIVE_HF24_TIME");
   if(value != nullptr)
   {
@@ -214,7 +209,7 @@ void database::open( const open_args& args )
       if (hardforks.last_hardfork >= HIVE_HARDFORK_0_24)
       {
         ilog("Loaded blockchain which had already processed hardfork 24, setting Hive chain id");
-        set_chain_id(HIVE_CHAIN_ID);
+        set_chain_id( config_blockchain.HIVE_CHAIN_ID );
       }
     });
       
@@ -640,6 +635,26 @@ void database::set_chain_id( const chain_id_type& chain_id )
   idump( (hive_chain_id) );
 }
 
+void database::init_testnet( bool db_init )
+{
+  if( db_init )
+  {
+    create< account_object >( OBSOLETE_TREASURY_ACCOUNT );
+    create< account_object >( NEW_HIVE_TREASURY_ACCOUNT );
+
+    modify( get_feed_history(), [&]( feed_history_object& o )
+    {
+      o.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
+    } );
+  }
+  else
+  {
+    config_blockchain.testnet_set_settings();
+
+    set_chain_id( chain_id_type( config_blockchain.HIVE_CHAIN_ID ) );
+  }
+}
+
 void database::foreach_block(const std::function<bool(const signed_block_header&, const signed_block&)>& processor) const
 {
   if(!_block_log.head())
@@ -1050,10 +1065,6 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
 
 bool database::_push_block(const signed_block& new_block)
 { try {
-  #ifdef IS_TEST_NET
-  FC_ASSERT(new_block.block_num() < TESTNET_BLOCK_LIMIT, "Testnet block limit exceeded");
-  #endif /// IS_TEST_NET
-
   uint32_t skip = get_node_properties().skip_flags;
   //uint32_t skip_undo_db = skip & skip_undo_block;
 
@@ -2321,7 +2332,7 @@ void database::adjust_rshares2( fc::uint128_t old_rshares2, fc::uint128_t new_rs
 
 void database::update_owner_authority( const account_object& account, const authority& owner_authority )
 {
-  if( head_block_num() >= HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
+  if( head_block_num() >= config_blockchain.HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
   {
     create< owner_authority_history_object >( account, get< account_authority_object, by_account >( account.name ).owner, head_block_time() );
   }
@@ -2721,7 +2732,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       else if( comment.is_root() )
       {
         if( has_hardfork( HIVE_HARDFORK_0_12__177 ) && c.last_payout == fc::time_point_sec::min() )
-          c.cashout_time = head_block_time() + HIVE_SECOND_CASHOUT_WINDOW;
+          c.cashout_time = head_block_time() + config_blockchain.HIVE_SECOND_CASHOUT_WINDOW;
         else
           c.cashout_time = fc::time_point_sec::maximum();
       }
@@ -3104,11 +3115,9 @@ asset database::get_pow_reward()const
 {
   const auto& props = get_dynamic_global_properties();
 
-#ifndef IS_TEST_NET
   /// 0 block rewards until at least HIVE_MAX_WITNESSES have produced a POW
   if( props.num_pow_witnesses < HIVE_MAX_WITNESSES && props.head_block_number < HIVE_START_VESTING_BLOCK )
     return asset( 0, HIVE_SYMBOL );
-#endif
 
   static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
   static_assert( HIVE_MAX_WITNESSES == 21, "this code assumes 21 per round" );
@@ -3119,11 +3128,6 @@ asset database::get_pow_reward()const
 
 void database::pay_liquidity_reward()
 {
-#ifdef IS_TEST_NET
-  if( !liquidity_rewards_enabled )
-    return;
-#endif
-
   if( (head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS) == 0 )
   {
     auto reward = get_liquidity_reward();
@@ -3253,7 +3257,7 @@ void database::account_recovery_processing()
   const auto& hist_idx = get_index< owner_authority_history_index >().indices(); //by id
   auto hist = hist_idx.begin();
 
-  while( hist != hist_idx.end() && time_point_sec( hist->last_valid_time + HIVE_OWNER_AUTH_RECOVERY_PERIOD ) < head_block_time() )
+  while( hist != hist_idx.end() && time_point_sec( hist->last_valid_time + config_blockchain.HIVE_OWNER_AUTH_RECOVERY_PERIOD ) < head_block_time() )
   {
     remove( *hist );
     hist = hist_idx.begin();
@@ -3417,9 +3421,8 @@ void database::initialize_evaluators()
   _my->_evaluator_registry.register_evaluator< remove_proposal_evaluator                >();
 
 
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
   _my->_req_action_evaluator_registry.register_evaluator< example_required_evaluator    >();
-
   _my->_opt_action_evaluator_registry.register_evaluator< example_optional_evaluator    >();
 #endif
 }
@@ -3537,7 +3540,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
     } inhibitor(*this);
 
     // Create blockchain accounts
-    public_key_type      init_public_key(HIVE_INIT_PUBLIC_KEY);
+    public_key_type      init_public_key( config_blockchain.HIVE_INIT_PUBLIC_KEY_STR );
 
     create< account_object >( HIVE_MINER_ACCOUNT );
     create< account_authority_object >( [&]( account_authority_object& auth )
@@ -3554,11 +3557,6 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
     });
-
-#ifdef IS_TEST_NET
-    create< account_object >( OBSOLETE_TREASURY_ACCOUNT );
-    create< account_object >( NEW_HIVE_TREASURY_ACCOUNT );
-#endif
 
     create< account_object >( HIVE_TEMP_ACCOUNT );
     create< account_authority_object >( [&]( account_authority_object& auth )
@@ -3589,7 +3587,8 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       } );
     }
 
-    create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME, asset( init_supply, HIVE_SYMBOL ), asset( hbd_init_supply, HBD_SYMBOL ) );
+    create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME, asset( init_supply, HIVE_SYMBOL ), asset( hbd_init_supply, HBD_SYMBOL ),
+                                              config_blockchain.HIVE_DELEGATION_RETURN_PERIOD_HF0 );
     // feed initial token supply to first miner
     modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
     {
@@ -3597,15 +3596,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       a.hbd_balance = asset( hbd_init_supply, HBD_SYMBOL );
     } );
 
-#ifdef IS_TEST_NET
-    create< feed_history_object >( [&]( feed_history_object& o )
-    {
-      o.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
-    });
-#else
-    // Nothing to do
     create< feed_history_object >( [&]( feed_history_object& o ) {});
-#endif
 
     for( int i = 0; i < 0x10000; i++ )
       create< block_summary_object >( [&]( block_summary_object& ) {});
@@ -3777,9 +3768,6 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
     {
       uint32_t free_mb = uint32_t( free_mem / (1024*1024) );
 
-  #ifdef IS_TEST_NET
-    if( !disable_low_mem_warning )
-  #endif
       if( free_mb <= 100 && head_block_num() % 10 == 0 )
         elog( "Free memory is now ${n}M. Increase shared file size immediately!" , ("n", free_mb) );
     }
@@ -4028,7 +4016,7 @@ struct process_header_visitor
   }
 
 FC_TODO( "Remove when optional automated actions are created" )
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
   void operator()( const optional_automated_actions& opt_actions ) const
   {
     FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "Automated actions are not enabled until SMT hardfork." );
@@ -4098,10 +4086,6 @@ try {
         std::sort( copy.begin(), copy.end() ); /// TODO: use nth_item
         fho.current_median_history = copy[copy.size()/2];
 
-#ifdef IS_TEST_NET
-        if( skip_price_feed_limit_check )
-          return;
-#endif
         if( has_hardfork( HIVE_HARDFORK_0_14__230 ) )
         {
           // This block limits the effective median price to force HBD to remain at or
@@ -4255,6 +4239,8 @@ struct action_equal_visitor
 
 void database::process_required_actions( const required_automated_actions& actions )
 {
+  if( !has_hardfork( HIVE_SMT_HARDFORK ) ) return;
+
   const auto& pending_action_idx = get_index< pending_required_action_index, by_id >();
   auto actions_itr = actions.begin();
   uint64_t total_actions_size = 0;
@@ -4337,7 +4323,7 @@ void database::process_optional_actions( const optional_automated_actions& actio
   auto lib = fetch_block_by_number( get_dynamic_global_properties().last_irreversible_block_num );
 
   // This is always valid when running on mainnet because there are irreversible blocks
-  // Testnet and unit tests, not so much. Could be ifdeffed with IS_TEST_NET, but seems
+  // Testnet and unit tests, not so much, but seems
   // like a reasonable check and will be optimized via speculative execution.
   if( lib.valid() )
   {
@@ -4578,8 +4564,6 @@ void database::update_global_dynamic_data( const signed_block& b )
         modify( witness_missed, [&]( witness_object& w )
         {
           w.total_missed++;
-FC_TODO( "#ifndef not needed after HF 20 is live" );
-#ifndef IS_TEST_NET
           if( has_hardfork( HIVE_HARDFORK_0_14__278 ) && !has_hardfork( HIVE_HARDFORK_0_20__SP190 ) )
           {
             if( head_block_num() - w.last_confirmed_block_num  > HIVE_BLOCKS_PER_DAY )
@@ -4588,7 +4572,6 @@ FC_TODO( "#ifndef not needed after HF 20 is live" );
               push_virtual_operation( shutdown_witness_operation( w.owner ) );
             }
           }
-#endif
         } );
       }
     }
@@ -5505,7 +5488,7 @@ void database::init_hardforks()
   FC_ASSERT( HIVE_HARDFORK_0_24 == 24, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_0_24 ] = fc::time_point_sec( HIVE_HARDFORK_0_24_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_0_24 ] = HIVE_HARDFORK_0_24_VERSION;
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
   FC_ASSERT( HIVE_HARDFORK_0_25 == 25, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_0_25 ] = fc::time_point_sec( HIVE_HARDFORK_0_25_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_0_25 ] = HIVE_HARDFORK_0_25_VERSION;
@@ -5655,7 +5638,7 @@ void database::apply_hardfork( uint32_t hardfork )
             {
               modify( *itr, [&]( comment_cashout_object & c )
               {
-                c.cashout_time = head_block_time() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
+                c.cashout_time = head_block_time() + config_blockchain.HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
               });
             }
             // Has been paid out, needs to be on second cashout window
@@ -5663,7 +5646,7 @@ void database::apply_hardfork( uint32_t hardfork )
             {
               modify( *itr, [&]( comment_cashout_object& c )
               {
-                c.cashout_time = c.last_payout + HIVE_SECOND_CASHOUT_WINDOW;
+                c.cashout_time = c.last_payout + config_blockchain.HIVE_SECOND_CASHOUT_WINDOW;
               });
             }
           }
@@ -5721,11 +5704,8 @@ void database::apply_hardfork( uint32_t hardfork )
 
         const auto& gpo = get_dynamic_global_properties();
 
-        auto& post_rf = create< reward_fund_object >( HIVE_POST_REWARD_FUND_NAME, gpo.get_total_reward_fund_hive(), head_block_time()
-#ifndef IS_TEST_NET
-          , HIVE_HF_17_RECENT_CLAIMS
-#endif
-          );
+        auto& post_rf = create< reward_fund_object >( HIVE_POST_REWARD_FUND_NAME,
+                        gpo.get_total_reward_fund_hive(), head_block_time(), HIVE_HF_17_RECENT_CLAIMS );
 
         // As a shortcut in payout processing, we use the id as an array index.
         // The IDs must be assigned this way. The assertion is a dummy check to ensure this happens.
@@ -5772,7 +5752,7 @@ void database::apply_hardfork( uint32_t hardfork )
         {
           modify( *itr, [&]( comment_cashout_object& c )
           {
-            c.cashout_time = std::max( c.get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS, c.cashout_time );
+            c.cashout_time = std::max( c.get_creation_time() + config_blockchain.HIVE_CASHOUT_WINDOW_SECONDS, c.cashout_time );
           });
         }
 
@@ -5780,7 +5760,7 @@ void database::apply_hardfork( uint32_t hardfork )
         {
           modify( *itr, [&]( comment_cashout_object& c )
           {
-            c.cashout_time = std::max( calculate_discussion_payout_time( c ), itr->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+            c.cashout_time = std::max( calculate_discussion_payout_time( c ), itr->get_creation_time() + config_blockchain.HIVE_CASHOUT_WINDOW_SECONDS );
           });
         }
       }
@@ -5796,9 +5776,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
         modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object &rfo )
         {
-#ifndef IS_TEST_NET
           rfo.recent_claims = HIVE_HF_19_RECENT_CLAIMS;
-#endif
           rfo.author_reward_curve = curve_id::linear;
           rfo.curation_reward_curve = curve_id::square_root;
         });
@@ -5873,9 +5851,7 @@ void database::apply_hardfork( uint32_t hardfork )
         rfo.author_reward_curve = convergent_linear;
         rfo.curation_reward_curve = convergent_square_root;
         rfo.content_constant = HIVE_CONTENT_CONSTANT_HF21;
-#ifndef  IS_TEST_NET
         rfo.recent_claims = HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS;
-#endif
       });
     }
     break;
@@ -5899,7 +5875,7 @@ void database::apply_hardfork( uint32_t hardfork )
     case HIVE_HARDFORK_0_24:
     {
       restore_accounts( _hf23_items, hardforkprotect::get_restored_accounts() );
-      set_chain_id(HIVE_CHAIN_ID);
+      set_chain_id( config_blockchain.HIVE_CHAIN_ID );
       break;
     }
     case HIVE_SMT_HARDFORK:

@@ -134,6 +134,8 @@ class chain_plugin_impl
 
     state_snapshot_provider*            snapshot_provider = nullptr;
     bool                                is_p2p_enabled = true;
+
+    bool                                is_testnet_mode = false;
 };
 
 struct write_request_visitor
@@ -415,8 +417,8 @@ void chain_plugin_impl::initial_settings()
 
   db_open_args.data_dir = app().data_dir() / "blockchain";
   db_open_args.shared_mem_dir = shared_memory_dir;
-  db_open_args.initial_supply = HIVE_INIT_SUPPLY;
-  db_open_args.hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;
+  db_open_args.initial_supply = db.config_blockchain.HIVE_INIT_SUPPLY;
+  db_open_args.hbd_initial_supply = db.config_blockchain.HIVE_HBD_INIT_SUPPLY;
   db_open_args.shared_file_size = shared_memory_size;
   db_open_args.shared_file_full_threshold = shared_file_full_threshold;
   db_open_args.shared_file_scale_rate = shared_file_scale_rate;
@@ -474,6 +476,9 @@ bool chain_plugin_impl::open()
     ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
 
     db.open( db_open_args );
+
+    if( is_testnet_mode )
+      db.init_testnet( true/*init_testnet*/ );
 
     if( dump_memory_details )
       dumper.dump( true, get_indexes_memory_details );
@@ -602,9 +607,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("database-cfg", bpo::value<bfs::path>()->default_value("database.cfg"), "The database configuration file location")
       ("memory-replay,m", bpo::bool_switch()->default_value(false), "Replay with state in memory instead of on disk")
 #endif
-#ifdef IS_TEST_NET
-      ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
-#endif
+      ("testnet-mode", bpo::bool_switch()->default_value(false), "set node in testnet mode" )
       ;
 }
 
@@ -688,21 +691,17 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   }
 #endif
 
-#ifdef IS_TEST_NET
-  if( options.count( "chain-id" ) )
-  {
-    auto chain_id_str = options.at("chain-id").as< std::string >();
+  my->is_testnet_mode = options.at( "testnet-mode").as<bool>();
 
-    try
-    {
-      my->db.set_chain_id( chain_id_type( chain_id_str) );
-    }
-    catch( fc::exception& )
-    {
-      FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
-    }
+  try
+  {
+    if( my->is_testnet_mode )
+      my->db.init_testnet( false/*init_testnet*/ );
   }
-#endif
+  catch( fc::exception& )
+  {
+    FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ( "s", my->db.config_blockchain.HIVE_CHAIN_ID ) );
+  }
 }
 
 void chain_plugin::plugin_startup()
@@ -847,6 +846,11 @@ void chain_plugin::register_block_generator( const std::string& plugin_name, std
 bool chain_plugin::is_p2p_enabled() const
 {
   return my->is_p2p_enabled;
+}
+
+bool chain_plugin::is_testnet_mode() const
+{
+  return my->is_testnet_mode;
 }
 
 } } } // namespace hive::plugis::chain::chain_apis

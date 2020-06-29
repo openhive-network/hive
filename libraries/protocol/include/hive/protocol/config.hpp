@@ -4,77 +4,97 @@
 #pragma once
 #include <hive/protocol/hardfork.hpp>
 
+#include <fc/crypto/sha256.hpp>
+
 // WARNING!
 // Every symbol defined here needs to be handled appropriately in get_config.cpp
 // This is checked by get_config_check.sh called from Dockerfile
 
-#ifdef IS_TEST_NET
-#define HIVE_BLOCKCHAIN_VERSION               ( version(0, 25, 0) )
+class config_blockchain_type
+{
+  const uint32_t      hour = 60*60;
 
-#define HIVE_INIT_PRIVATE_KEY                 (fc::ecc::private_key::regenerate(fc::sha256::hash(std::string("init_key"))))
-#define HIVE_INIT_PUBLIC_KEY_STR              (std::string( hive::protocol::public_key_type(HIVE_INIT_PRIVATE_KEY.get_public_key()) ))
-#define STEEM_CHAIN_ID                        (fc::sha256::hash("testnet"))
-#define HIVE_CHAIN_ID                         (fc::sha256::hash("testnet"))
-#define HIVE_ADDRESS_PREFIX                   "TST"
+  const std::string   TEST_CHAIN_ID                                     = "18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e";
+  const std::string   TEST_HIVE_INIT_PUBLIC_KEY_STR                     = "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
 
-#define HIVE_GENESIS_TIME                     (fc::time_point_sec(1451606400))
-#define HIVE_MINING_TIME                      (fc::time_point_sec(1451606400))
-#define HIVE_CASHOUT_WINDOW_SECONDS           (60*60) /// 1 hr
-#define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12  (HIVE_CASHOUT_WINDOW_SECONDS)
-#define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17  (HIVE_CASHOUT_WINDOW_SECONDS)
-#define HIVE_SECOND_CASHOUT_WINDOW            (60*60*24*3) /// 3 days
-#define HIVE_MAX_CASHOUT_WINDOW_SECONDS       (60*60*24) /// 1 day
-#define HIVE_UPVOTE_LOCKOUT_HF7               (fc::minutes(1))
-#define HIVE_UPVOTE_LOCKOUT_SECONDS           (60*5)    /// 5 minutes
-#define HIVE_UPVOTE_LOCKOUT_HF17              (fc::minutes(5))
+  public:
 
+    const std::string   TEST_HIVE_INIT_PRIVATE_KEY_STR                    = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n";
+    
 
-#define HIVE_MIN_ACCOUNT_CREATION_FEE         0
-#define HIVE_MAX_ACCOUNT_CREATION_FEE         int64_t(1000000000)
+    fc::sha256          HIVE_CHAIN_ID                                     = fc::sha256("beeab0de00000000000000000000000000000000000000000000000000000000");
 
-#define HIVE_OWNER_AUTH_RECOVERY_PERIOD                   fc::seconds(60)
-#define HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   fc::seconds(12)
-#define HIVE_OWNER_UPDATE_LIMIT                           fc::seconds(0)
-#define HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  1
+    std::string         HIVE_INIT_PUBLIC_KEY_STR                          = "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX";
 
-#define HIVE_INIT_SUPPLY                      (int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 ))
-#define HIVE_HBD_INIT_SUPPLY                  (int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 ))
+    uint32_t            HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12              = 24*hour;                    // 1 day
+    uint32_t            HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17              = 12*hour;                    // 12 hours
+    uint32_t            HIVE_CASHOUT_WINDOW_SECONDS                       = 7*24*hour;                  // 7 days
+    uint32_t            HIVE_SECOND_CASHOUT_WINDOW                        = 30*24*hour;                 // 30 days
+    uint32_t            HIVE_MAX_CASHOUT_WINDOW_SECONDS                   = 24*14*hour;                 // 14 days
 
-/// Allows to limit number of total produced blocks.
-#define TESTNET_BLOCK_LIMIT                   (3000000)
+    uint32_t            HIVE_UPVOTE_LOCKOUT_SECONDS                       = 12*hour;                    //12 hours
+    fc::microseconds    HIVE_UPVOTE_LOCKOUT_HF17                          = fc::seconds( 12*hour );     //12 hours
 
-#else // IS LIVE HIVE NETWORK
+    fc::microseconds    HIVE_OWNER_AUTH_RECOVERY_PERIOD                   = fc::seconds( 30*24*hour );  // 30 days
+    fc::microseconds    HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   = fc::seconds( 1*24*hour );   // 1 day
+    fc::microseconds    HIVE_OWNER_UPDATE_LIMIT                           = fc::seconds( hour );
+    uint32_t            HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  = 3186477;
+    int64_t             HIVE_INIT_SUPPLY                                  = 0;
+    int64_t             HIVE_HBD_INIT_SUPPLY                              = 0;
 
-#define HIVE_BLOCKCHAIN_VERSION               ( version(0, 24, 0) )
+    //Variables automatically calculated by values delivered from arguments
+    uint32_t            HIVE_DELEGATION_RETURN_PERIOD_HF0                 = HIVE_CASHOUT_WINDOW_SECONDS;
+    fc::time_point_sec  HIVE_HF_19_SQRT_PRE_CALC                          = fc::time_point_sec( HIVE_HARDFORK_0_19_ACTUAL_TIME - HIVE_CASHOUT_WINDOW_SECONDS );
 
-#define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
-#define STEEM_CHAIN_ID                        fc::sha256()
-#define HIVE_CHAIN_ID                         fc::sha256("beeab0de00000000000000000000000000000000000000000000000000000000")
-#define HIVE_ADDRESS_PREFIX                   "STM"
+  private: 
+
+    void set_fast_intervals()
+    {
+      HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12              = hour;
+      HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17              = hour;
+      HIVE_CASHOUT_WINDOW_SECONDS                       = hour;
+      HIVE_SECOND_CASHOUT_WINDOW                        = 3*24*hour;            //3 days
+      HIVE_MAX_CASHOUT_WINDOW_SECONDS                   = 24*hour;              //1 day
+
+      HIVE_UPVOTE_LOCKOUT_SECONDS                       = 5*60;                 // 5 minutes
+      HIVE_UPVOTE_LOCKOUT_HF17                          = fc::seconds( 5*60 );  // 5 minutes
+
+      HIVE_OWNER_AUTH_RECOVERY_PERIOD                   = fc::seconds( 60 );
+      HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   = fc::seconds( 12 );
+      HIVE_OWNER_UPDATE_LIMIT                           = fc::seconds( 0 );
+
+      //Variables automatically calculated by values delivered from arguments
+      HIVE_DELEGATION_RETURN_PERIOD_HF0                 = HIVE_CASHOUT_WINDOW_SECONDS;
+      HIVE_HF_19_SQRT_PRE_CALC                          = fc::time_point_sec( HIVE_HARDFORK_0_19_ACTUAL_TIME - HIVE_CASHOUT_WINDOW_SECONDS );
+    }
+
+    void set_basic_settings()
+    {
+      HIVE_CHAIN_ID                                     = fc::sha256( TEST_CHAIN_ID );
+      HIVE_INIT_PUBLIC_KEY_STR                          = TEST_HIVE_INIT_PUBLIC_KEY_STR;
+
+      HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  = 1;
+      HIVE_INIT_SUPPLY                                  = int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 );
+      HIVE_HBD_INIT_SUPPLY                              = int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 );
+    }
+
+  public:
+
+    void testnet_set_settings()
+    {
+      set_basic_settings();
+      set_fast_intervals();
+    }
+};
+
+#define HIVE_BLOCKCHAIN_VERSION               ( version(0, HIVE_NUM_HARDFORKS, 0) )
 
 #define HIVE_GENESIS_TIME                     (fc::time_point_sec(1458835200))
 #define HIVE_MINING_TIME                      (fc::time_point_sec(1458838800))
-#define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12  (60*60*24)    /// 1 day
-#define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17  (60*60*12)    /// 12 hours
-#define HIVE_CASHOUT_WINDOW_SECONDS           (60*60*24*7)  /// 7 days
-#define HIVE_SECOND_CASHOUT_WINDOW            (60*60*24*30) /// 30 days
-#define HIVE_MAX_CASHOUT_WINDOW_SECONDS       (60*60*24*14) /// 2 weeks
+#define HIVE_ADDRESS_PREFIX                   "STM"
 #define HIVE_UPVOTE_LOCKOUT_HF7               (fc::minutes(1))
-#define HIVE_UPVOTE_LOCKOUT_SECONDS           (60*60*12)    /// 12 hours
-#define HIVE_UPVOTE_LOCKOUT_HF17              (fc::hours(12))
-
 #define HIVE_MIN_ACCOUNT_CREATION_FEE         1
 #define HIVE_MAX_ACCOUNT_CREATION_FEE         int64_t(1000000000)
-
-#define HIVE_OWNER_AUTH_RECOVERY_PERIOD                   fc::days(30)
-#define HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   fc::days(1)
-#define HIVE_OWNER_UPDATE_LIMIT                           fc::minutes(60)
-#define HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  3186477
-
-#define HIVE_INIT_SUPPLY                      int64_t(0)
-#define HIVE_HBD_INIT_SUPPLY                  int64_t(0)
-
-#endif
 
 #define VESTS_SYMBOL  (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_VESTS ) )
 #define HIVE_SYMBOL   (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_HIVE ) )
@@ -287,7 +307,6 @@
 #define HIVE_REDUCED_VOTE_POWER_RATE          (10)
 
 #define HIVE_MAX_LIMIT_ORDER_EXPIRATION       (60*60*24*28) // 28 days
-#define HIVE_DELEGATION_RETURN_PERIOD_HF0     (HIVE_CASHOUT_WINDOW_SECONDS)
 #define HIVE_DELEGATION_RETURN_PERIOD_HF20    (HIVE_VOTING_MANA_REGENERATION_SECONDS)
 
 #define HIVE_RD_MIN_DECAY_BITS                6

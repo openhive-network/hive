@@ -21,7 +21,6 @@
   * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   * THE SOFTWARE.
   */
-#ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
@@ -47,21 +46,7 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins;
 
-#define TEST_SHARED_MEM_SIZE (1024 * 1024 * 8)
-
 BOOST_AUTO_TEST_SUITE(block_tests)
-
-void open_test_database( database& db, const fc::path& dir )
-{
-  hive::chain::open_args args;
-  args.data_dir = dir;
-  args.shared_mem_dir = dir;
-  args.initial_supply = INITIAL_TEST_SUPPLY;
-  args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
-  args.shared_file_size = TEST_SHARED_MEM_SIZE;
-  args.database_cfg = hive::utilities::default_database_configuration();
-  db.open( args );
-}
 
 BOOST_AUTO_TEST_CASE( generate_empty_blocks )
 {
@@ -77,7 +62,7 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
       database db;
       witness::block_producer bp( db );
       db._log_hardforks = false;
-      open_test_database( db, data_dir.path() );
+      database_fixture::open_database( db, data_dir.path() );
       b = bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
 
       // TODO:  Change this test when we correct #406
@@ -105,7 +90,7 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
       database db;
       witness::block_producer bp( db );
       db._log_hardforks = false;
-      open_test_database( db, data_dir.path() );
+      database_fixture::open_database( db, data_dir.path() );
 
 #ifndef ENABLE_MIRA
       BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block.block_num() );
@@ -142,7 +127,7 @@ BOOST_AUTO_TEST_CASE( undo_block )
       database db;
       witness::block_producer bp( db );
       db._log_hardforks = false;
-      open_test_database( db, data_dir.path() );
+      database_fixture::open_database( db, data_dir.path() );
       fc::time_point_sec now( HIVE_TESTING_GENESIS_TIMESTAMP );
       std::vector< time_point_sec > time_stack;
 
@@ -195,11 +180,11 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
     database db1;
     witness::block_producer bp1( db1 );
     db1._log_hardforks = false;
-    open_test_database( db1, data_dir1.path() );
+    database_fixture::open_database( db1, data_dir1.path() );
     database db2;
     witness::block_producer bp2( db2 );
     db2._log_hardforks = false;
-    open_test_database( db2, data_dir2.path() );
+    database_fixture::open_database( db2, data_dir2.path() );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     for( uint32_t i = 0; i < 10; ++i )
@@ -263,9 +248,9 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     witness::block_producer bp1( db1 ),
                     bp2( db2 );
     db1._log_hardforks = false;
-    open_test_database( db1, dir1.path() );
+    database_fixture::open_database( db1, dir1.path() );
     db2._log_hardforks = false;
-    open_test_database( db2, dir2.path() );
+    database_fixture::open_database( db2, dir2.path() );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     public_key_type init_account_pub_key  = init_account_priv_key.get_public_key();
@@ -323,9 +308,9 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
           db2;
     witness::block_producer bp1( db1 );
     db1._log_hardforks = false;
-    open_test_database( db1, dir1.path() );
+    database_fixture::open_database( db1, dir1.path() );
     db2._log_hardforks = false;
-    open_test_database( db2, dir2.path() );
+    database_fixture::open_database( db2, dir2.path() );
     BOOST_CHECK( db1.get_chain_id() == db2.get_chain_id() );
 
     auto skip_sigs = database::skip_transaction_signatures | database::skip_authority_check;
@@ -376,7 +361,7 @@ BOOST_AUTO_TEST_CASE( tapos )
     database db1;
     witness::block_producer bp1( db1 );
     db1._log_hardforks = false;
-    open_test_database( db1, dir1.path() );
+    database_fixture::open_database( db1, dir1.path() );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     public_key_type init_account_pub_key  = init_account_priv_key.get_public_key();
@@ -764,8 +749,7 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
     db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
     BOOST_REQUIRE( db );
 
-
-    open_database();
+    init_database( shared_file_size_in_mb_64, false/*allow_init_hardfork*/ );
 
     generate_blocks( 2 );
 
@@ -890,4 +874,3 @@ BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#endif

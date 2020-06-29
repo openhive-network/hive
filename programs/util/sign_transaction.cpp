@@ -42,8 +42,9 @@ FC_REFLECT( error_result, (error) )
 int main(int argc, char** argv, char** envp)
 {
   fc::sha256 chainId;
+  config_blockchain_type config;
 
-  chainId = HIVE_CHAIN_ID;
+  chainId = config.HIVE_CHAIN_ID;
 
   const size_t chainIdLen = strlen(CHAIN_ID_PARAM);
 

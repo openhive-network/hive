@@ -113,10 +113,10 @@ if __name__ == '__main__':
 
     accounts = [
         # place accounts here in the format: {'name' : name, 'private_key' : private-key, 'public_key' : public-key}
-        {"name" : "tester001", "private_key" : "5KQeu7SdzxT1DiUzv7jaqwkwv1V8Fi7N8NBZtHugWYXqVFH1AFa", "public_key" : "TST8VfiahQsfS1TLcnBfp4NNfdw67uWweYbbUXymbNiDXVDrzUs7J"},
-        {"name" : "tester002", "private_key" : "5KgfcV9bgEen3v9mxkoGw6Rhuf2giDRZTHZjzwisjkrpF4FUh3N", "public_key" : "TST5gQPYm5bs9dRPHpqBy6dU32M8FcoKYFdF4YWEChUarc9FdYHzn"},
-        {"name" : "tester003", "private_key" : "5Jz3fcrrgKMbL8ncpzTdQmdRVHdxMhi8qScoxSR3TnAFUcdyD5N", "public_key" : "TST57wy5bXyJ4Z337Bo6RbinR6NyTRJxzond5dmGsP4gZ51yN6Zom"},
-        {"name" : "tester004", "private_key" : "5KcmobLVMSAVzETrZxfEGG73Zvi5SKTgJuZXtNgU3az2VK3Krye", "public_key" : "TST8dPte853xAuLMDV7PTVmiNMRwP6itMyvSmaht7J5tVczkDLa5K"},
+        {"name" : "tester001", "private_key" : "5KQeu7SdzxT1DiUzv7jaqwkwv1V8Fi7N8NBZtHugWYXqVFH1AFa", "public_key" : "STM8VfiahQsfS1TLcnBfp4NNfdw67uWweYbbUXymbNiDXVDrzUs7J"},
+        {"name" : "tester002", "private_key" : "5KgfcV9bgEen3v9mxkoGw6Rhuf2giDRZTHZjzwisjkrpF4FUh3N", "public_key" : "STM5gQPYm5bs9dRPHpqBy6dU32M8FcoKYFdF4YWEChUarc9FdYHzn"},
+        {"name" : "tester003", "private_key" : "5Jz3fcrrgKMbL8ncpzTdQmdRVHdxMhi8qScoxSR3TnAFUcdyD5N", "public_key" : "STM57wy5bXyJ4Z337Bo6RbinR6NyTRJxzond5dmGsP4gZ51yN6Zom"},
+        {"name" : "tester004", "private_key" : "5KcmobLVMSAVzETrZxfEGG73Zvi5SKTgJuZXtNgU3az2VK3Krye", "public_key" : "STM8dPte853xAuLMDV7PTVmiNMRwP6itMyvSmaht7J5tVczkDLa5K"},
     ]
 
     if not accounts:
@@ -139,24 +139,24 @@ if __name__ == '__main__':
             test_utils.create_accounts(node_client, args.creator, accounts)
             # tranfer to vesting
             test_utils.transfer_to_vesting(node_client, args.creator, accounts, "300.000", 
-                "TESTS"
+                "HIVE"
             )
             logger.info("Wait 30 days for full voting power")
             hive_utils.debug_generate_blocks(node_client.rpc.url, wif, 30 * 24 * 3600 / 3 + 10)
             # transfer assets to accounts
             test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
-                "400.000", "TESTS", wif
+                "400.000", "HIVE", wif
             )
 
             test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
-                "400.000", "TBD", wif
+                "400.000", "HBD", wif
             )
 
             logger.info("Balances for accounts after initial transfer")
             test_utils.print_balance(node_client, accounts)
             # transfer assets to treasury
             test_utils.transfer_assets_to_treasury(node_client, args.creator, args.treasury, 
-                "999950.000", "TBD", wif
+                "999950.000", "HBD", wif
             )
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
 
@@ -169,10 +169,10 @@ if __name__ == '__main__':
             now = test_utils.date_from_iso(now)
 
             proposal_data = [
-                ['tester001', 1 + 0, 4, '24.000 TBD'], # starts 1 day from now and lasts 3 day
-                ['tester002', 1 + 0, 4, '24.000 TBD'], # starts 1 days from now and lasts 3 day
-                ['tester003', 1 + 0, 4, '24.000 TBD'], # starts 1 days from now and lasts 3 day
-                ['tester004', 1 + 0, 4, '24.000 TBD'], # starts 1 day from now and lasts 3 days
+                ['tester001', 1 + 0, 4, '24.000 HBD'], # starts 1 day from now and lasts 3 day
+                ['tester002', 1 + 0, 4, '24.000 HBD'], # starts 1 days from now and lasts 3 day
+                ['tester003', 1 + 0, 4, '24.000 HBD'], # starts 1 days from now and lasts 3 day
+                ['tester004', 1 + 0, 4, '24.000 HBD'], # starts 1 day from now and lasts 3 days
             ]
 
             proposals = [
@@ -257,8 +257,8 @@ if __name__ == '__main__':
             hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_end_date_iso, False)
             logger.info("Balances for accounts at time: {}".format(test_end_date_iso))
             balances = test_utils.print_balance(node_client, accounts)
-            # it should be '390.000 TBD', '486.000 TBD', '486.000 TBD', '486.000 TBD',
-            # but because of rounding implementation it is 390.000 TBD,485.808 TBD,485.808 TBD,485.808 TBD
+            # it should be '390.000 HBD', '486.000 HBD', '486.000 HBD', '486.000 HBD',
+            # but because of rounding implementation it is 390.000 HBD,485.808 HBD,485.808 HBD,485.808 HBD
             test_balances = [
                 '390000',
                 '485808',

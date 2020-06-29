@@ -1312,7 +1312,7 @@ namespace chainbase {
         int_incrementer ii( _write_lock_count );
 #endif
 
-#if !defined ENABLE_MIRA || defined IS_TEST_NET
+#if !defined ENABLE_MIRA
         if( wait_micro )
         {
           while( !lock.timed_lock( boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds( wait_micro ) ) )

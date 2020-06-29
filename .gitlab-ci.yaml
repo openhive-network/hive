@@ -14,8 +14,8 @@ testnet_node_build:
   stage: build
   image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
   script:
-    # LOW_MEMORY=OFF CLEAR_VOTES=OFF TESTNET=ON ENABLE_MIRA=OFF HIVE_LINT=ON
-    - ./ciscripts/build.sh OFF OFF ON OFF ON
+    # LOW_MEMORY=OFF CLEAR_VOTES=OFF ENABLE_MIRA=OFF HIVE_LINT=ON
+    - ./ciscripts/build.sh OFF OFF OFF ON
     - mkdir -p "$CI_JOB_NAME"/tests/unit
     - mv build/install-root "$CI_JOB_NAME"
     - mv contrib/hived.run "$CI_JOB_NAME"
@@ -34,8 +34,8 @@ consensus_build:
   stage: build
   image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
   script:
-    # LOW_MEMORY=ON CLEAR_VOTES=ON TESTNET=OFF ENABLE_MIRA=OFF HIVE_LINT=ON
-    - ./ciscripts/build.sh ON ON OFF OFF ON
+    # LOW_MEMORY=ON CLEAR_VOTES=ON ENABLE_MIRA=OFF HIVE_LINT=ON
+    - ./ciscripts/build.sh ON ON OFF ON
     - mkdir "$CI_JOB_NAME"
     - mv build/install-root "$CI_JOB_NAME"
     - mv contrib/hived.run "$CI_JOB_NAME"
