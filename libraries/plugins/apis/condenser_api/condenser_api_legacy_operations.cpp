@@ -5,6 +5,8 @@
 
 namespace fc {
 
+bool obsolete_call_detector::enable_obsolete_call_detection = true;
+
 std::string name_from_legacy_type( const std::string& type_name )
 {
   auto start = type_name.find( LEGACY_PREFIX );
