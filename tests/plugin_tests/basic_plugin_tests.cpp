@@ -31,7 +31,11 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
     //BOOST_CHECK_EQUAL( sizeof( block_log_info::block_log_hash_state_object ), 0 );
     //BOOST_CHECK_EQUAL( sizeof( block_log_info::block_log_pending_message_object ), 0 );
 
-    BOOST_CHECK_EQUAL( sizeof( market_history::bucket_object ), 104 );
+    BOOST_CHECK_EQUAL( sizeof( market_history::bucket_object ), 96
+#ifdef HIVE_ENABLE_SMT
+      + 8
+#endif
+    );
     //temporary, regulated amount, ~13k
     BOOST_CHECK_EQUAL( sizeof( market_history::order_history_object ), 88 );
     //permanent, growing with executed limit_order_object, 2.5M atm
