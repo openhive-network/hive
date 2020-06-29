@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE( legacy_asset_test )
 
     BOOST_CHECK_THROW( legacy_asset::from_string( "1.00000000000000000000 HIVE" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "1.000TESTS" ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( "1. 333 HIVE" ), fc::exception ); // Fails because symbol is '333 TESTS', which is too long
+    BOOST_CHECK_THROW( legacy_asset::from_string( "1. 333 HIVE" ), fc::exception ); // Fails because symbol is '333 HBD', which is too long
     BOOST_CHECK_THROW( legacy_asset::from_string( "1 .333 HIVE" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "1. 333 X" ), fc::exception ); // Not a system asset
     BOOST_CHECK_THROW( legacy_asset::from_string( "1 .333 X" ), fc::exception );

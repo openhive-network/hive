@@ -54,7 +54,7 @@ def create_accounts(node, creator, account):
         memo_key=account['public_key'],
         store_keys = False,
         creator=creator,
-        asset='TESTS'
+        asset='HBD'
     )
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 

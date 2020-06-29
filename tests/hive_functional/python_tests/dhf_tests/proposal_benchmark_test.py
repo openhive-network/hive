@@ -91,7 +91,7 @@ def create_accounts(node, creator, accounts):
             memo_key=account['public_key'],
             store_keys = False,
             creator=creator,
-            asset='TESTS')
+            asset='HBD')
     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
 
@@ -100,7 +100,7 @@ def transfer_to_vesting(node, from_account, accounts, vests ):
     for acnt in accounts:
         logger.info("Transfer to vesting from {} to {} amount {} {}".format(from_account, acnt['name'], vests, "TESTS"))
         node.commit.transfer_to_vesting(vests, to = acnt['name'], 
-            account = from_account, asset='TESTS')
+            account = from_account, asset='HBD')
     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
 
