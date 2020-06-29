@@ -81,13 +81,13 @@ namespace hive
     template< uint32_t _SYMBOL >
     tiny_asset< _SYMBOL > operator+( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2)
     {
-       return tiny_asset< _SYMBOL >( obj1.amount + obj2.amount );
+      return tiny_asset< _SYMBOL >( obj1.amount + obj2.amount );
     }
 
     template< uint32_t _SYMBOL >
     tiny_asset< _SYMBOL > operator-( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2)
     {
-       return tiny_asset< _SYMBOL >( obj1.amount - obj2.amount );
+      return tiny_asset< _SYMBOL >( obj1.amount - obj2.amount );
     }
 
     template <uint32_t _SYMBOL>

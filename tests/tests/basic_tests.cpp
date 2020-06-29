@@ -380,120 +380,120 @@ BOOST_AUTO_TEST_CASE( adjust_balance_asset_test )
 
 BOOST_AUTO_TEST_CASE( adjust_balance_tiny_asset_test )
 {
-   ACTORS( (alice) );
+  ACTORS( (alice) );
 
-   generate_block();
+  generate_block();
 
-   BOOST_TEST_MESSAGE( "Testing adjust_balance for tiny_asset objects" );
+  BOOST_TEST_MESSAGE( "Testing adjust_balance for tiny_asset objects" );
 
-   BOOST_TEST_MESSAGE( " --- Testing adding HIVE_SYMBOL" );
-   db->adjust_balance( "alice", HIVE_asset( 50000 ) );
-   BOOST_REQUIRE( db->get_account( "alice" ).get_balance() == HIVE_asset( 50000 ) );
+  BOOST_TEST_MESSAGE( " --- Testing adding HIVE_SYMBOL" );
+  db->adjust_balance( "alice", HIVE_asset( 50000 ) );
+  BOOST_REQUIRE( db->get_account( "alice" ).get_balance() == HIVE_asset( 50000 ) );
 
-   BOOST_TEST_MESSAGE( " --- Testing deducting HIVE_SYMBOL" );
-   HIVE_REQUIRE_THROW( db->adjust_balance( "alice", asset( -50001, HIVE_SYMBOL ) ), fc::assert_exception );
-   db->adjust_balance( "alice", HIVE_asset( -30000 ) );
-   db->adjust_balance( "alice", HIVE_asset( -20000 ) );
-   BOOST_REQUIRE( db->get_account( "alice" ).get_balance() == HIVE_asset( 0 ) );
+  BOOST_TEST_MESSAGE( " --- Testing deducting HIVE_SYMBOL" );
+  HIVE_REQUIRE_THROW( db->adjust_balance( "alice", asset( -50001, HIVE_SYMBOL ) ), fc::assert_exception );
+  db->adjust_balance( "alice", HIVE_asset( -30000 ) );
+  db->adjust_balance( "alice", HIVE_asset( -20000 ) );
+  BOOST_REQUIRE( db->get_account( "alice" ).get_balance() == HIVE_asset( 0 ) );
 
-   BOOST_TEST_MESSAGE( " --- Testing adding HBD_SYMBOL" );
-   db->adjust_balance( "alice", HBD_asset( 100000 ) );
-   BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 100000 ) );
+  BOOST_TEST_MESSAGE( " --- Testing adding HBD_SYMBOL" );
+  db->adjust_balance( "alice", HBD_asset( 100000 ) );
+  BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 100000 ) );
 
-   BOOST_TEST_MESSAGE( " --- Testing deducting HBD_SYMBOL" );
-   HIVE_REQUIRE_THROW( db->adjust_balance( "alice", HBD_asset( -100001 ) ), fc::assert_exception );
-   db->adjust_balance( "alice", HBD_asset( -50000 ) );
-   db->adjust_balance( "alice", HBD_asset( -25000 ) );
-   db->adjust_balance( "alice", HBD_asset( -25000 ) );
-   BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
+  BOOST_TEST_MESSAGE( " --- Testing deducting HBD_SYMBOL" );
+  HIVE_REQUIRE_THROW( db->adjust_balance( "alice", HBD_asset( -100001 ) ), fc::assert_exception );
+  db->adjust_balance( "alice", HBD_asset( -50000 ) );
+  db->adjust_balance( "alice", HBD_asset( -25000 ) );
+  db->adjust_balance( "alice", HBD_asset( -25000 ) );
+  BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
 
-   auto initial_vesting = db->get_account( "alice" ).get_vesting();
+  auto initial_vesting = db->get_account( "alice" ).get_vesting();
 
-   BOOST_TEST_MESSAGE( " --- Testing adding VEST_SYMBOL" );
-   BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting );
-   db->adjust_balance( "alice", VEST_asset( 100000 ) );
-   BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting + VEST_asset( 100000 ) );
+  BOOST_TEST_MESSAGE( " --- Testing adding VEST_SYMBOL" );
+  BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting );
+  db->adjust_balance( "alice", VEST_asset( 100000 ) );
+  BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting + VEST_asset( 100000 ) );
 
-   BOOST_TEST_MESSAGE( " --- Testing deducting VESTS_SYMBOL" );
-   HIVE_REQUIRE_THROW( db->adjust_balance( "alice", VEST_asset( -1 ) ), fc::assert_exception );
+  BOOST_TEST_MESSAGE( " --- Testing deducting VESTS_SYMBOL" );
+  HIVE_REQUIRE_THROW( db->adjust_balance( "alice", VEST_asset( -1 ) ), fc::assert_exception );
 }
 
 BOOST_AUTO_TEST_CASE( tiny_asset_plus_op )
 {
-   share_type lhs_amount = 1000;
-   share_type rhs_amount = 2000;
-   share_type total_amount = lhs_amount + rhs_amount;
-   HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
-   HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
-   HIVE_asset result = lhs + rhs;
-   BOOST_REQUIRE(result.amount == total_amount);
+  share_type lhs_amount = 1000;
+  share_type rhs_amount = 2000;
+  share_type total_amount = lhs_amount + rhs_amount;
+  HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
+  HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
+  HIVE_asset result = lhs + rhs;
+  BOOST_REQUIRE(result.amount == total_amount);
 }
 
 BOOST_AUTO_TEST_CASE( tiny_asset_minus_op )
 {
-   share_type lhs_amount = 2500;
-   share_type rhs_amount = 500;
-   share_type total_amount = lhs_amount - rhs_amount;
-   HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
-   HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
-   HIVE_asset result = lhs - rhs;
-   BOOST_REQUIRE(result.amount == total_amount);
+  share_type lhs_amount = 2500;
+  share_type rhs_amount = 500;
+  share_type total_amount = lhs_amount - rhs_amount;
+  HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
+  HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
+  HIVE_asset result = lhs - rhs;
+  BOOST_REQUIRE(result.amount == total_amount);
 }
 
 BOOST_AUTO_TEST_CASE( tiny_asset_plus_assign_op )
 {
-   share_type lhs_amount = 2500;
-   share_type rhs_amount = 500;
-   share_type total_amount = lhs_amount + rhs_amount;
-   HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
-   HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
-   lhs += rhs;
-   BOOST_REQUIRE(lhs.amount == total_amount);
+  share_type lhs_amount = 2500;
+  share_type rhs_amount = 500;
+  share_type total_amount = lhs_amount + rhs_amount;
+  HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
+  HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
+  lhs += rhs;
+  BOOST_REQUIRE(lhs.amount == total_amount);
 }
 
 BOOST_AUTO_TEST_CASE( tiny_asset_minus_assign_op )
 {
-   share_type lhs_amount = 2500;
-   share_type rhs_amount = 500;
-   share_type total_amount = lhs_amount - rhs_amount;
-   HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
-   HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
-   lhs -= rhs;
-   BOOST_REQUIRE(lhs.amount == total_amount);
+  share_type lhs_amount = 2500;
+  share_type rhs_amount = 500;
+  share_type total_amount = lhs_amount - rhs_amount;
+  HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
+  HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
+  lhs -= rhs;
+  BOOST_REQUIRE(lhs.amount == total_amount);
 }
 
 BOOST_AUTO_TEST_CASE( tiny_asset_compare_ops )
 {
-   HIVE_asset bigger = asset(1000, HIVE_SYMBOL);
-   HIVE_asset lower = asset(500, HIVE_SYMBOL);
-   BOOST_CHECK_GT(bigger, lower);
-   BOOST_CHECK_GE(bigger, lower);
-   BOOST_CHECK_LE(lower, bigger);
-   BOOST_CHECK_LT(lower, bigger);
-   BOOST_CHECK(!(bigger < lower));
-   BOOST_CHECK(!(bigger <= lower));
-   BOOST_CHECK(!(lower >= bigger));
-   BOOST_CHECK(!(lower > bigger));
+  HIVE_asset bigger = asset(1000, HIVE_SYMBOL);
+  HIVE_asset lower = asset(500, HIVE_SYMBOL);
+  BOOST_CHECK_GT(bigger, lower);
+  BOOST_CHECK_GE(bigger, lower);
+  BOOST_CHECK_LE(lower, bigger);
+  BOOST_CHECK_LT(lower, bigger);
+  BOOST_CHECK(!(bigger < lower));
+  BOOST_CHECK(!(bigger <= lower));
+  BOOST_CHECK(!(lower >= bigger));
+  BOOST_CHECK(!(lower > bigger));
 }
 
 BOOST_AUTO_TEST_CASE( tiny_asset_equality_op )
 {
-   HIVE_asset objA = asset(1000, HIVE_SYMBOL);
-   HIVE_asset objB = asset(1000, HIVE_SYMBOL);
-   HIVE_asset objX = asset(500, HIVE_SYMBOL);
-   BOOST_CHECK_EQUAL(objA, objB);
-   BOOST_CHECK_NE(objA, objX);
+  HIVE_asset objA = asset(1000, HIVE_SYMBOL);
+  HIVE_asset objB = asset(1000, HIVE_SYMBOL);
+  HIVE_asset objX = asset(500, HIVE_SYMBOL);
+  BOOST_CHECK_EQUAL(objA, objB);
+  BOOST_CHECK_NE(objA, objX);
 }
 
 BOOST_AUTO_TEST_CASE( tiny_asset_mul_price )
 {
-   auto base = asset(1500, HIVE_SYMBOL);
-   auto quote = asset(3000, HBD_SYMBOL);
-   auto p = price(base, quote);
-   auto hbds = HBD_asset(1000);
-   auto hives = HIVE_asset(1000);
-   BOOST_CHECK_EQUAL(hbds * p, asset(500, HIVE_SYMBOL));
-   BOOST_CHECK_EQUAL(hives * p, asset(2000, HBD_SYMBOL));
+  auto base = asset(1500, HIVE_SYMBOL);
+  auto quote = asset(3000, HBD_SYMBOL);
+  auto p = price(base, quote);
+  auto hbds = HBD_asset(1000);
+  auto hives = HIVE_asset(1000);
+  BOOST_CHECK_EQUAL(hbds * p, asset(500, HIVE_SYMBOL));
+  BOOST_CHECK_EQUAL(hives * p, asset(2000, HBD_SYMBOL));
 }
 
 uint8_t find_msb( const uint128_t& u )
