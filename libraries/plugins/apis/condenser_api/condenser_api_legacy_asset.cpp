@@ -146,8 +146,8 @@ legacy_asset legacy_asset::from_string( const string& from )
   try
   {
     string s = fc::trim( from );
-    auto space_pos = s.find( " " );
-    auto dot_pos = s.find( "." );
+    auto space_pos = s.find( ' ' );
+    auto dot_pos = s.find( '.' );
 
     FC_ASSERT( space_pos != std::string::npos );
 

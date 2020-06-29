@@ -41,21 +41,21 @@ static std::shared_ptr< rocksdb::Cache > global_shared_cache;
 static std::shared_ptr< rocksdb::WriteBufferManager > global_write_buffer_manager;
 
 static std::map< std::string, std::function< void( ::rocksdb::Options&, fc::variant ) > > global_database_option_map {
-  { ALLOW_MMAP_READS,                  []( ::rocksdb::Options& o, fc::variant v ) { o.allow_mmap_reads = v.as< bool >(); }                 },
-  { WRITE_BUFFER_SIZE,                 []( ::rocksdb::Options& o, fc::variant v ) { o.write_buffer_size = v.as< uint64_t >(); }            },
-  { MAX_BYTES_FOR_LEVEL_BASE,          []( ::rocksdb::Options& o, fc::variant v ) { o.max_bytes_for_level_base = v.as< uint64_t >(); }     },
-  { TARGET_FILE_SIZE_BASE,             []( ::rocksdb::Options& o, fc::variant v ) { o.target_file_size_base = v.as< uint64_t >(); }        },
-  { MAX_WRITE_BUFFER_NUMBER,           []( ::rocksdb::Options& o, fc::variant v ) { o.max_write_buffer_number = v.as< int >(); }           },
-  { MAX_BACKGROUND_COMPACTIONS,        []( ::rocksdb::Options& o, fc::variant v ) { o.max_background_compactions = v.as< int >(); }        },
-  { MAX_BACKGROUND_FLUSHES,            []( ::rocksdb::Options& o, fc::variant v ) { o.max_background_flushes = v.as< int >(); }            },
-  { MIN_WRITE_BUFFER_NUMBER_TO_MERGE,  []( ::rocksdb::Options& o, fc::variant v ) { o.min_write_buffer_number_to_merge = v.as< int >(); }  },
-  { OPTIMIZE_LEVEL_STYLE_COMPACTION,   []( ::rocksdb::Options& o, fc::variant v )
+  { ALLOW_MMAP_READS,                  []( ::rocksdb::Options& o, const fc::variant& v ) { o.allow_mmap_reads = v.as< bool >(); }                 },
+  { WRITE_BUFFER_SIZE,                 []( ::rocksdb::Options& o, const fc::variant& v ) { o.write_buffer_size = v.as< uint64_t >(); }            },
+  { MAX_BYTES_FOR_LEVEL_BASE,          []( ::rocksdb::Options& o, const fc::variant& v ) { o.max_bytes_for_level_base = v.as< uint64_t >(); }     },
+  { TARGET_FILE_SIZE_BASE,             []( ::rocksdb::Options& o, const fc::variant& v ) { o.target_file_size_base = v.as< uint64_t >(); }        },
+  { MAX_WRITE_BUFFER_NUMBER,           []( ::rocksdb::Options& o, const fc::variant& v ) { o.max_write_buffer_number = v.as< int >(); }           },
+  { MAX_BACKGROUND_COMPACTIONS,        []( ::rocksdb::Options& o, const fc::variant& v ) { o.max_background_compactions = v.as< int >(); }        },
+  { MAX_BACKGROUND_FLUSHES,            []( ::rocksdb::Options& o, const fc::variant& v ) { o.max_background_flushes = v.as< int >(); }            },
+  { MIN_WRITE_BUFFER_NUMBER_TO_MERGE,  []( ::rocksdb::Options& o, const fc::variant& v ) { o.min_write_buffer_number_to_merge = v.as< int >(); }  },
+  { OPTIMIZE_LEVEL_STYLE_COMPACTION,   []( ::rocksdb::Options& o, const fc::variant& v )
     {
       if ( v.as< bool >() )
         o.OptimizeLevelStyleCompaction();
     }
   },
-  { INCREASE_PARALLELISM, []( ::rocksdb::Options& o, fc::variant v )
+  { INCREASE_PARALLELISM, []( ::rocksdb::Options& o, const fc::variant& v )
     {
       if ( v.as< bool >() )
         o.IncreaseParallelism();
@@ -294,7 +294,7 @@ bool configuration::gather_statistics( const boost::any& cfg )
   // We assign the global write buffer manager to all databases
   opts.write_buffer_manager = global_write_buffer_manager;
 
-  fc::variant_object config = retrieve_active_configuration( obj, type_name );
+  fc::variant_object config = retrieve_active_configuration( obj, std::move( type_name ) );
 
   for ( auto it = config.begin(); it != config.end(); ++it )
   {

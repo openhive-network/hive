@@ -15,7 +15,6 @@ using namespace hive::protocol;
 
 using chain::database;
 using chain::operation_notification;
-using chain::operation_object;
 
 namespace detail {
 

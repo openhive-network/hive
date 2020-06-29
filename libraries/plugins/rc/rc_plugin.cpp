@@ -235,7 +235,7 @@ void use_account_rcs(
   rc_plugin_skip_flags skip
 #ifdef IS_TEST_NET
   ,
-  set< account_name_type > whitelist
+  const set< account_name_type >& whitelist
 #endif
   )
 {
@@ -829,7 +829,7 @@ struct post_apply_operation_visitor
     database& db,
     uint32_t t,
     uint32_t b,
-    account_name_type w
+    const account_name_type& w
     ) : _mod_accounts(ma), _db(db), _current_time(t), _current_block_number(b), _current_witness(w)
   {}
 
