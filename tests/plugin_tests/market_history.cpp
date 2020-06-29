@@ -1,4 +1,3 @@
-#ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/account_object.hpp>
@@ -348,4 +347,3 @@ BOOST_AUTO_TEST_CASE( mh_test )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#endif

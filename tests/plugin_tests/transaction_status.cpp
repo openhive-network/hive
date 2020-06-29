@@ -1,4 +1,3 @@
-#if defined IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 #include <hive/chain/account_object.hpp>
 #include <hive/protocol/hive_operations.hpp>
@@ -471,5 +470,3 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#endif
-

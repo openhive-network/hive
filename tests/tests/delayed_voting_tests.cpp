@@ -1,5 +1,3 @@
-//#if defined(IS_TEST_NET)
-
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
@@ -2820,5 +2818,3 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 BOOST_AUTO_TEST_SUITE_END()
 
 #pragma GCC diagnostic pop
-
-//#endif // #if defined(IS_TEST_NET)

@@ -1,6 +1,6 @@
 #include <fc/macros.hpp>
 
-#if defined IS_TEST_NET && defined HIVE_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 
 FC_TODO(Extend testing scenarios to support multiple NAIs per account)
 

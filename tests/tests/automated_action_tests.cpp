@@ -1,4 +1,3 @@
-#ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
@@ -337,4 +336,3 @@ BOOST_AUTO_TEST_CASE( reject_optional_action )
 
 
 BOOST_AUTO_TEST_SUITE_END()
-#endif

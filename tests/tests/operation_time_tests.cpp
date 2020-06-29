@@ -1,4 +1,3 @@
-#ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
@@ -3106,4 +3105,3 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#endif
