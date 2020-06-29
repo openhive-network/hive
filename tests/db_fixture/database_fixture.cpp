@@ -737,7 +737,7 @@ asset_symbol_type t_smt_database_fixture< T >::create_smt_with_nai( const string
     fund( account_name, 10 * 1000 * 1000 );
     this->generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     convert( account_name, ASSET( "5000.000 HIVE" ) );
 
     op.symbol = asset_symbol_type::from_nai( nai, token_decimal_places );
@@ -804,7 +804,7 @@ std::array<asset_symbol_type, 3> t_smt_database_fixture< T >::create_smt_3(const
     fund( control_account_name, 10 * 1000 * 1000 );
     this->generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     convert( control_account_name, ASSET( "5000.000 HIVE" ) );
 
     set_create_op( &op0, control_account_name, 0, *this->db );

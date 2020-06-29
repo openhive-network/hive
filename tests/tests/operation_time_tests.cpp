@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
     std::vector< voter_actor > voters;
 
     authors.emplace_back( "alice", alice_private_key );
-    authors.emplace_back( "bob"  , bob_private_key, ASSET( "0.000 TBD" ) );
+    authors.emplace_back( "bob"  , bob_private_key, ASSET( "0.000 HBD" ) );
     authors.emplace_back( "dave" , dave_private_key );
     voters.emplace_back( "ulysses", ulysses_private_key, "alice");
     voters.emplace_back( "vivian" , vivian_private_key , "bob"  );
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
     // U,V,W : voters
 
     // set a ridiculously high HIVE price ($1 / satoshi) to disable dust threshold
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "0.001 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "0.001 HIVE" ) ) );
 
     for( const auto& voter : voters )
     {
@@ -150,8 +150,8 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
     const account_object& bob_account   = db->get_account("bob");
     const account_object& dave_account  = db->get_account("dave");
 
-    BOOST_CHECK( alice_account.get_hbd_rewards() == ASSET( "6236.000 TBD" ) );
-    BOOST_CHECK( bob_account.get_hbd_rewards() == ASSET( "0.000 TBD" ) );
+    BOOST_CHECK( alice_account.get_hbd_rewards() == ASSET( "6236.000 HBD" ) );
+    BOOST_CHECK( bob_account.get_hbd_rewards() == ASSET( "0.000 HBD" ) );
     BOOST_CHECK( dave_account.get_hbd_rewards() == alice_account.get_hbd_rewards() );
   }
   FC_LOG_AND_RETHROW()
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 HIVE" ) );
     vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "10.000 HIVE" ) );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
 
     generate_block();
     validate_database();
@@ -244,7 +244,7 @@ BOOST_AUTO_TEST_CASE( reward_funds )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 HIVE" ), ASSET( "1.000 TBD" ) ) );
+    set_price_feed( price( ASSET( "1.000 HIVE" ), ASSET( "1.000 HBD" ) ) );
     generate_block();
 
     comment_operation comment;
@@ -316,7 +316,7 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     comment_operation comment;
@@ -406,7 +406,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     fund( "dave", 5000 );
     vest( "dave", 5000 );
 
-    price exchange_rate( ASSET( "1.000 HIVE" ), ASSET( "1.000 TBD" ) );
+    price exchange_rate( ASSET( "1.000 HIVE" ), ASSET( "1.000 HBD" ) );
     set_price_feed( exchange_rate );
 
     signed_transaction tx;
@@ -574,7 +574,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     fund( "dave", 5000 );
     vest( "dave", 5000 );
 
-    price exchange_rate( ASSET( "1.000 HIVE" ), ASSET( "1.000 TBD" ) );
+    price exchange_rate( ASSET( "1.000 HIVE" ), ASSET( "1.000 HBD" ) );
     set_price_feed( exchange_rate );
 
     auto& gpo = db->get_dynamic_global_properties();
@@ -887,7 +887,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
     fund( "dave", 10000 );
     vest( "dave", 10000 );
 
-    price exchange_rate( ASSET( "1.000 HIVE" ), ASSET( "1.000 TBD" ) );
+    price exchange_rate( ASSET( "1.000 HIVE" ), ASSET( "1.000 HBD" ) );
     set_price_feed( exchange_rate );
 
     signed_transaction tx;
@@ -1505,14 +1505,14 @@ BOOST_AUTO_TEST_CASE( convert_delay )
     ACTORS( (alice) )
     generate_block();
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 HIVE" ) );
-    fund( "alice", ASSET( "25.000 TBD" ) );
+    fund( "alice", ASSET( "25.000 HBD" ) );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.250 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.250 HIVE" ) ) );
 
     convert_operation op;
     signed_transaction tx;
 
-    auto start_balance = ASSET( "25.000 TBD" );
+    auto start_balance = ASSET( "25.000 HBD" );
 
     BOOST_TEST_MESSAGE( "Setup conversion to HIVE" );
     tx.operations.clear();
@@ -1551,7 +1551,7 @@ BOOST_AUTO_TEST_CASE( convert_delay )
     BOOST_REQUIRE( alice_3.get_hbd_balance().amount.value == ( start_balance - op.amount ).amount.value );
     BOOST_REQUIRE( vop.owner == "alice" );
     BOOST_REQUIRE( vop.requestid == 2 );
-    BOOST_REQUIRE( vop.amount_in.amount.value == ASSET( "2.000 TBD" ).amount.value );
+    BOOST_REQUIRE( vop.amount_in.amount.value == ASSET( "2.000 HBD" ).amount.value );
     BOOST_REQUIRE( vop.amount_out.amount.value == ASSET( "2.500 HIVE" ).amount.value );
     validate_database();
   }
@@ -1743,14 +1743,14 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 HIVE" ) );
     vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "10.000 HIVE" ) );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
 
     BOOST_TEST_MESSAGE( "Testing interest over smallest interest period" );
 
     convert_operation op;
     signed_transaction tx;
 
-    fund( "alice", ASSET( "31.903 TBD" ) );
+    fund( "alice", ASSET( "31.903 HBD" ) );
 
     auto start_time = db->get_account( "alice" ).hbd_seconds_last_update;
     auto alice_hbd = get_hbd_balance( "alice" );
@@ -1760,7 +1760,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     transfer_operation transfer;
     transfer.to = "bob";
     transfer.from = "alice";
-    transfer.amount = ASSET( "1.000 TBD" );
+    transfer.amount = ASSET( "1.000 HBD" );
     tx.operations.clear();
     tx.signatures.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
@@ -1772,9 +1772,9 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     auto interest_op = get_last_operations( 1 )[0].get< interest_operation >();
 
     BOOST_REQUIRE( gpo.get_hbd_interest_rate() > 0 );
-    BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
+    BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 HBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
     BOOST_REQUIRE( interest_op.owner == "alice" );
-    BOOST_REQUIRE( interest_op.interest.amount.value == get_hbd_balance( "alice" ).amount.value - ( alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value ) );
+    BOOST_REQUIRE( interest_op.interest.amount.value == get_hbd_balance( "alice" ).amount.value - ( alice_hbd.amount.value - ASSET( "1.000 HBD" ).amount.value ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "Testing interest under interest period" );
@@ -1791,7 +1791,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == alice_hbd.amount.value - ASSET( "1.000 HBD" ).amount.value );
     validate_database();
 
     auto alice_coindays = uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds();
@@ -1809,7 +1809,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() + alice_coindays ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
+    BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 HBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() + alice_coindays ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
     validate_database();
   }
   FC_LOG_AND_RETHROW();
@@ -1832,12 +1832,12 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
 
     BOOST_TEST_MESSAGE( "Rewarding Bob with HIVE" );
 
-    auto exchange_rate = price( ASSET( "1.000 TBD" ), ASSET( "1.250 HIVE" ) );
+    auto exchange_rate = price( ASSET( "1.000 HBD" ), ASSET( "1.250 HIVE" ) );
     set_price_feed( exchange_rate );
 
     signed_transaction tx;
 
-    fund( "alice", ASSET( "25.522 TBD" ) );
+    fund( "alice", ASSET( "25.522 HBD" ) );
     asset alice_hbd = get_hbd_balance( "alice" );
 
     generate_block();
@@ -2396,7 +2396,7 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.owner = "sam";
     op.orderid = 14;
     op.amount_to_sell = ASSET( "1.000 HIVE" );
-    op.min_to_receive = ASSET( "1.000 TBD" );
+    op.min_to_receive = ASSET( "1.000 HBD" );
     tx.operations.clear();
     tx.signatures.clear();
     tx.operations.push_back( op );
@@ -2426,7 +2426,7 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
 
-    sam_hbd_volume = ASSET( "1.000 TBD" ).amount.value;
+    sam_hbd_volume = ASSET( "1.000 HBD" ).amount.value;
     sam_hive_volume = 0;
     sam_reward_last_update = db->head_block_time();
 
@@ -2536,7 +2536,7 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     vest( "sam", 10000 );
     vest( "dave", 10000 );
 
-    auto exchange_rate = price( ASSET( "1.000 TBD" ), ASSET( "1.250 HIVE" ) );
+    auto exchange_rate = price( ASSET( "1.000 HBD" ), ASSET( "1.250 HIVE" ) );
     set_price_feed( exchange_rate );
 
     signed_transaction tx;
@@ -2679,7 +2679,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     vest( "alice", 10000 );
     vest( "bob", 10000 );
 
-    auto exchange_rate = price( ASSET( "1.000 TBD" ), ASSET( "10.000 HIVE" ) );
+    auto exchange_rate = price( ASSET( "1.000 HBD" ), ASSET( "10.000 HIVE" ) );
     set_price_feed( exchange_rate );
 
     BOOST_REQUIRE( db->get_dynamic_global_properties().get_hbd_print_rate() == HIVE_100_PERCENT );
@@ -2812,7 +2812,7 @@ BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
     generate_block();
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 HIVE" ) );
 
-    price exchange_rate( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) );
+    price exchange_rate( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) );
     set_price_feed( exchange_rate );
 
     comment_operation comment;
@@ -2859,10 +2859,10 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
     ACTORS( (alice) );
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
 
     fund( "alice", ASSET( "10.000 HIVE" ) );
-    fund( "alice", ASSET( "10.000 TBD" ) );
+    fund( "alice", ASSET( "10.000 HBD" ) );
 
     transfer_operation transfer1;
     transfer1.from = "alice";
@@ -2872,7 +2872,7 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
     transfer_operation transfer2;
     transfer2.from = "alice";
     transfer2.to = HIVE_NULL_ACCOUNT;
-    transfer2.amount = ASSET( "2.000 TBD" );
+    transfer2.amount = ASSET( "2.000 HBD" );
 
     transfer_to_vesting_operation vest;
     vest.from = "alice";
@@ -2887,7 +2887,7 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
     transfer_to_savings_operation save2;
     save2.from = "alice";
     save2.to = HIVE_NULL_ACCOUNT;
-    save2.amount = ASSET( "5.000 TBD" );
+    save2.amount = ASSET( "5.000 HBD" );
 
     BOOST_TEST_MESSAGE( "--- Transferring to NULL Account" );
 
@@ -2907,7 +2907,7 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
       db.modify( db.get_account( HIVE_NULL_ACCOUNT ), [&]( account_object& a )
       {
         a.reward_hive_balance = ASSET( "1.000 HIVE" );
-        a.reward_hbd_balance = ASSET( "1.000 TBD" );
+        a.reward_hbd_balance = ASSET( "1.000 HBD" );
         a.reward_vesting_balance = ASSET( "1.000000 VESTS" );
         a.reward_vesting_hive = ASSET( "1.000 HIVE" );
       });
@@ -2916,7 +2916,7 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
       {
         gpo.current_supply += ASSET( "2.000 HIVE" );
         gpo.virtual_supply += ASSET( "3.000 HIVE" );
-        gpo.current_hbd_supply += ASSET( "1.000 TBD" );
+        gpo.current_hbd_supply += ASSET( "1.000 HBD" );
         gpo.pending_rewarded_vesting_shares += ASSET( "1.000000 VESTS" );
         gpo.pending_rewarded_vesting_hive += ASSET( "1.000 HIVE" );
       });
@@ -2925,32 +2925,32 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
     validate_database();
 
     BOOST_REQUIRE( get_balance( HIVE_NULL_ACCOUNT ) == ASSET( "1.000 HIVE" ) );
-    BOOST_REQUIRE( get_hbd_balance( HIVE_NULL_ACCOUNT ) == ASSET( "2.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( HIVE_NULL_ACCOUNT ) == ASSET( "2.000 HBD" ) );
     BOOST_REQUIRE( get_vesting( HIVE_NULL_ACCOUNT ) > ASSET( "0.000000 VESTS" ) );
     BOOST_REQUIRE( get_savings( HIVE_NULL_ACCOUNT ) == ASSET( "4.000 HIVE" ) );
-    BOOST_REQUIRE( get_hbd_savings( HIVE_NULL_ACCOUNT ) == ASSET( "5.000 TBD" ) );
-    BOOST_REQUIRE( get_hbd_rewards( HIVE_NULL_ACCOUNT ) == ASSET( "1.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_savings( HIVE_NULL_ACCOUNT ) == ASSET( "5.000 HBD" ) );
+    BOOST_REQUIRE( get_hbd_rewards( HIVE_NULL_ACCOUNT ) == ASSET( "1.000 HBD" ) );
     BOOST_REQUIRE( get_rewards( HIVE_NULL_ACCOUNT ) == ASSET( "1.000 HIVE" ) );
     BOOST_REQUIRE( get_vest_rewards( HIVE_NULL_ACCOUNT ) == ASSET( "1.000000 VESTS" ) );
     BOOST_REQUIRE( get_vest_rewards_as_hive( HIVE_NULL_ACCOUNT ) == ASSET( "1.000 HIVE" ) );
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "2.000 HIVE" ) );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "3.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "3.000 HBD" ) );
 
     BOOST_TEST_MESSAGE( "--- Generating block to clear balances" );
     generate_block();
     validate_database();
 
     BOOST_REQUIRE( get_balance( HIVE_NULL_ACCOUNT ) == ASSET( "0.000 HIVE" ) );
-    BOOST_REQUIRE( get_hbd_balance( HIVE_NULL_ACCOUNT ) == ASSET( "0.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( HIVE_NULL_ACCOUNT ) == ASSET( "0.000 HBD" ) );
     BOOST_REQUIRE( get_vesting( HIVE_NULL_ACCOUNT ) == ASSET( "0.000000 VESTS" ) );
     BOOST_REQUIRE( get_savings( HIVE_NULL_ACCOUNT ) == ASSET( "0.000 HIVE" ) );
-    BOOST_REQUIRE( get_hbd_savings( HIVE_NULL_ACCOUNT ) == ASSET( "0.000 TBD" ) );
-    BOOST_REQUIRE( get_hbd_rewards( HIVE_NULL_ACCOUNT ) == ASSET( "0.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_savings( HIVE_NULL_ACCOUNT ) == ASSET( "0.000 HBD" ) );
+    BOOST_REQUIRE( get_hbd_rewards( HIVE_NULL_ACCOUNT ) == ASSET( "0.000 HBD" ) );
     BOOST_REQUIRE( get_rewards( HIVE_NULL_ACCOUNT ) == ASSET( "0.000 HIVE" ) );
     BOOST_REQUIRE( get_vest_rewards( HIVE_NULL_ACCOUNT ) == ASSET( "0.000000 VESTS" ) );
     BOOST_REQUIRE( get_vest_rewards_as_hive( HIVE_NULL_ACCOUNT ) == ASSET( "0.000 HIVE" ) );
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "2.000 HIVE" ) );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "3.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "3.000 HBD" ) );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -3017,7 +3017,7 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     ACTORS( (alice) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
 
     claim_account_operation op;
     signed_transaction tx;

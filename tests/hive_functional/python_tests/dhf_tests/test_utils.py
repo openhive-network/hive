@@ -41,7 +41,7 @@ def transfer_to_vesting(node, from_account, accounts, amount, asset):
 
 
 # transfer initminer pychol "399.000 HIVE" "initial transfer" true
-# transfer initminer pychol "398.000 TBD" "initial transfer" true
+# transfer initminer pychol "398.000 HBD" "initial transfer" true
 def transfer_assets_to_accounts(node, from_account, accounts, amount, asset, wif=None):
     from beem.account import Account
     for acnt in accounts:

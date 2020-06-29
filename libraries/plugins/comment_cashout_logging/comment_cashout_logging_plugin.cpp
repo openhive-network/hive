@@ -77,9 +77,9 @@ std::string asset_num_to_string(uint32_t asset_num)
   {
 #ifdef IS_TEST_NET
     case HIVE_ASSET_NUM_HIVE:
-      return "TESTS";
+      return "HIVE";
     case HIVE_ASSET_NUM_HBD:
-      return "TBD";
+      return "HBD";
 #else
     case HIVE_ASSET_NUM_HIVE:
       return "HIVE";

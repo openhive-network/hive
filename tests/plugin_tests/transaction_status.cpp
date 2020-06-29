@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     generate_block();
 
     fund( "alice", ASSET( "1000.000 HIVE" ) );
-    fund( "alice", ASSET( "1000.000 TBD" ) );
+    fund( "alice", ASSET( "1000.000 HBD" ) );
     fund( "bob", ASSET( "1000.000 HIVE" ) );
 
     generate_block();

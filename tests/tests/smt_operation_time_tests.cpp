@@ -614,7 +614,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     op.owner = "sam";
     op.orderid = 14;
     op.amount_to_sell = ASSET( "1.000 HIVE" );
-    op.min_to_receive = ASSET( "1.000 TBD" );
+    op.min_to_receive = ASSET( "1.000 HBD" );
     tx.operations.clear();
     tx.signatures.clear();
     tx.operations.push_back( op );
@@ -644,7 +644,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
 
-    sam_smt_volume = ASSET( "1.000 TBD" ).amount.value;
+    sam_smt_volume = ASSET( "1.000 HBD" ).amount.value;
     sam_hive_volume = 0;
     sam_reward_last_update = db->head_block_time();
 

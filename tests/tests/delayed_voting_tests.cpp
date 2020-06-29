@@ -73,12 +73,12 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
 
     // const
     const auto TESTS_1000 = ASSET( "1000.000 HIVE" );
-    const auto TBD_100 = ASSET( "100.000 TBD" );
+    const auto TBD_100 = ASSET( "100.000 HBD" );
     
     //setup
     ACTORS( (alice)(bob)(carol) )
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     FUND( "alice", TESTS_1000 );
@@ -138,12 +138,12 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
 
     // const
     const auto TESTS_1000 = ASSET( "1000.000 HIVE" );
-    const auto TBD_100 = ASSET( "100.000 TBD" );
+    const auto TBD_100 = ASSET( "100.000 HBD" );
     
     //setup
     ACTORS( (alice)(bob)(carol) )
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     FUND( "alice", TESTS_1000 );
@@ -322,7 +322,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
     {
       BOOST_TEST_MESSAGE( "Preparing accounts..." );
 
-      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+      set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
       generate_block();
 
       FUND( "alice", ASSET( "10000.000 HIVE" ) );
@@ -833,7 +833,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
     {
       BOOST_TEST_MESSAGE( "Preparing accounts..." );
 
-      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+      set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
       generate_block();
 
       FUND( "alice", ASSET( "10000.000 HIVE" ) );
@@ -974,7 +974,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
     {
       BOOST_TEST_MESSAGE( "Preparing accounts..." );
 
-      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+      set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
       generate_block();
 
       FUND( "alice", ASSET( "10000.000 HIVE" ) );
@@ -1072,7 +1072,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
     ACTORS( (alice)(bob)(witness) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //auto start_time = db->head_block_time();
@@ -1119,7 +1119,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_04 )
     ACTORS( (bob)(witness) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //auto start_time = db->head_block_time();
@@ -1167,7 +1167,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
     ACTORS( (bob)(witness1)(witness2) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //auto start_time = db->head_block_time();
@@ -1225,7 +1225,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_06 )
     ACTORS( (bob)(witness) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //auto start_time = db->head_block_time();
@@ -1421,7 +1421,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
     const auto start_time = db->head_block_time();
     ACTORS( (alice)(celine)(bob)(witness) )
     generate_block();
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
     FUND( "bob", ASSET( "100000.000 HIVE" ) );
     FUND( "celine", ASSET( "100000.000 HIVE" ) );
@@ -1590,7 +1590,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
   ACTORS( (alice)(bob) )
   generate_block();
 
-  set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+  set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
   generate_block();
 
   FUND( "alice", ASSET( "10000.000 HIVE" ) );
@@ -2000,7 +2000,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_01 )
     ACTORS( (bob)(alice)(witness) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     // auto start_time = db->head_block_time();
@@ -2050,7 +2050,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
     ACTORS( (bob)(alice)(witness) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     FUND( "bob", ASSET( "10000.000 HIVE" ) );
@@ -2118,7 +2118,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_03 )
     ACTORS( (bob)(alice)(witness)(witness2) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     // auto start_time = db->head_block_time();
@@ -2194,7 +2194,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
     ACTORS( (bob)(alice)(witness) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     // auto start_time = db->head_block_time();
@@ -2250,7 +2250,7 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
     ACTORS( (alice)(witness) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //auto start_time = db->head_block_time();

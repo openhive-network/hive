@@ -30,7 +30,7 @@ if __name__ == "__main__":
         log.info("proposals_before {0}".format(proposals_before))
 
         wallet.post_comment(creator, "lorem", "", "ipsum", "Lorem Ipsum", "body", "{}", "true")
-        wallet.create_proposal(creator, receiver, "2029-06-02T00:00:00", "2029-08-01T00:00:00", "1.000 TBD", "this is subject", "lorem", "true")
+        wallet.create_proposal(creator, receiver, "2029-06-02T00:00:00", "2029-08-01T00:00:00", "1.000 HBD", "this is subject", "lorem", "true")
         
         resp = find_creator_proposals(creator, last_message_as_json(wallet.list_proposals(creator, "creator", "asc", 50, "all", "")))
         new_proposal_id = 0

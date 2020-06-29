@@ -499,7 +499,7 @@ BOOST_AUTO_TEST_CASE( setup_apply )
     FUND( "alice", 10 * 1000 * 1000 );
     FUND( "bob", 10 * 1000 * 1000 );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
 
     smt_setup_operation op;
     op.control_account = "alice";
@@ -565,7 +565,7 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
 
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
 
     const dynamic_global_property_object& dgpo = db->get_dynamic_global_properties();
     asset required_creation_fee = dgpo.smt_creation_fee;

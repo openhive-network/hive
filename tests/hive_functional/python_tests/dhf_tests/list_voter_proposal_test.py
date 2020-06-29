@@ -70,7 +70,7 @@ def transfer_to_vesting(node, from_account, account, amount, asset):
 
 
 # transfer initminer pychol "399.000 HIVE" "initial transfer" true
-# transfer initminer pychol "398.000 TBD" "initial transfer" true
+# transfer initminer pychol "398.000 HBD" "initial transfer" true
 def transfer_assets_to_accounts(node, from_account, account, amount, asset):
     from beem.account import Account
     logger.info("Transfer from {} to {} amount {} {}".format(from_account, 
@@ -109,7 +109,7 @@ def create_proposals(node, account, start_date, end_date, proposal_count):
             account['name'], 
             start_date, 
             end_date,
-            "24.000 TBD",
+            "24.000 HBD",
             "Proposal from account {} {}/{}".format(account['name'], idx, proposal_count),
             get_permlink(account['name'])
         ))
@@ -119,7 +119,7 @@ def create_proposals(node, account, start_date, end_date, proposal_count):
                 'receiver' : account['name'], 
                 'start_date' : start_date, 
                 'end_date' : end_date,
-                'daily_pay' : "24.000 TBD",
+                'daily_pay' : "24.000 HBD",
                 'subject' : "Proposal from account {}".format(account['name']),
                 'permlink' : get_permlink(account['name'])
             }
@@ -233,15 +233,15 @@ if __name__ == '__main__':
             create_accounts(node_client, args.creator, account)
             # tranfer to vesting
             transfer_to_vesting(node_client, args.creator, account, "300.000", 
-                "TESTS"
+                "HIVE"
             )
             # transfer assets to accounts
             transfer_assets_to_accounts(node_client, args.creator, account, 
-                "400.000", "TESTS"
+                "400.000", "HIVE"
             )
 
             transfer_assets_to_accounts(node_client, args.creator, account, 
-                "400.000", "TBD"
+                "400.000", "HBD"
             )
 
             # create post for valid permlinks

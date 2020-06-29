@@ -31,7 +31,7 @@ if __name__ == "__main__":
         log.info("proposals_before {0}".format(proposals_before))
 
         wallet.post_comment(creator, "lorem", "", "ipsum", "Lorem Ipsum", "body", "{}", "true")
-        create_prop = wallet.create_proposal(creator, receiver, "2029-06-02T00:00:00", "2029-08-01T00:00:00", "-1.000 TBD", "this is subject", "lorem", "true")
+        create_prop = wallet.create_proposal(creator, receiver, "2029-06-02T00:00:00", "2029-08-01T00:00:00", "-1.000 HBD", "this is subject", "lorem", "true")
         if not create_prop.find("daily_pay.amount >= 0: Daily pay can't be negative value") != -1:
             raise ArgsCheckException("Assertion `{0}` is required.".format("daily_pay.amount >= 0: Daily pay can't be negative value"))
 

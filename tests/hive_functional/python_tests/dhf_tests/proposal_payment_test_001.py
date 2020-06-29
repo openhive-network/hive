@@ -58,7 +58,7 @@ def create_proposals(node, accounts, start_date, end_date, wif=None):
             acnt['name'], 
             start_date, 
             end_date,
-            "24.000 TBD",
+            "24.000 HBD",
             "Proposal from account {}".format(acnt['name']),
             test_utils.get_permlink(acnt['name'])
         ))
@@ -68,7 +68,7 @@ def create_proposals(node, accounts, start_date, end_date, wif=None):
                 'receiver' : acnt['name'], 
                 'start_date' : start_date, 
                 'end_date' : end_date,
-                'daily_pay' : "24.000 TBD",
+                'daily_pay' : "24.000 HBD",
                 'subject' : "Proposal from account {}".format(acnt['name']),
                 'permlink' : test_utils.get_permlink(acnt['name'])
             }
@@ -152,7 +152,7 @@ if __name__ == '__main__':
             test_utils.create_accounts(node_client, args.creator, accounts)
             # tranfer to vesting
             test_utils.transfer_to_vesting(node_client, args.creator, accounts, "300.000", 
-                "TESTS"
+                "HIVE"
             )
 
             logger.info("Wait 30 days for full voting power")
@@ -160,12 +160,12 @@ if __name__ == '__main__':
             
             # transfer assets to accounts
             test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
-                "400.000", "TESTS",
+                "400.000", "HIVE",
                 wif
             )
 
             test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
-                "400.000", "TBD",
+                "400.000", "HBD",
                 wif
             )
 
@@ -173,7 +173,7 @@ if __name__ == '__main__':
             test_utils.print_balance(node_client, accounts)
             # transfer assets to treasury
             test_utils.transfer_assets_to_treasury(node_client, args.creator, args.treasury, 
-                "1000000.000", "TBD", wif
+                "1000000.000", "HBD", wif
             )
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
 
@@ -216,7 +216,7 @@ if __name__ == '__main__':
             balances = test_utils.print_balance(node_client, accounts)
             for balance in balances:
                 #should be 390.000 TBD for all
-                assert balance == "390000", "All balances should be equal to 390.000 TBD"
+                assert balance == "390000", "All balances should be equal to 390.000 HBD"
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
 
             # move forward in time to see if proposals are paid

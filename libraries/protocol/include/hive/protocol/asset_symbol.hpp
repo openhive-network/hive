@@ -32,14 +32,8 @@
 
 #define OBSOLETE_SYMBOL_U64 (uint64_t('S') | (uint64_t('T') << 8) | (uint64_t('E') << 16) | (uint64_t('E') << 24) | (uint64_t('M') << 32))
 #define HIVE_SYMBOL_U64     (uint64_t('H') | (uint64_t('I') << 8) | (uint64_t('V') << 16) | (uint64_t('E') << 24))
-
-#ifdef IS_TEST_NET
-#define OBD_SYMBOL_U64      (uint64_t('T') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
-#define HBD_SYMBOL_U64      OBD_SYMBOL_U64
-#else
 #define OBD_SYMBOL_U64      (uint64_t('S') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
 #define HBD_SYMBOL_U64      (uint64_t('H') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
-#endif
 
 #define VESTS_SYMBOL_SER    (uint64_t(6) | (VESTS_SYMBOL_U64 << 8)) ///< VESTS|VESTS with 6 digits of precision
 #define OBSOLETE_SYMBOL_SER (uint64_t(3) | (OBSOLETE_SYMBOL_U64 << 8)) ///< STEEM|TESTS with 3 digits of precision

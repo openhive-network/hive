@@ -139,24 +139,24 @@ if __name__ == '__main__':
             test_utils.create_accounts(node_client, args.creator, accounts)
             # tranfer to vesting
             test_utils.transfer_to_vesting(node_client, args.creator, accounts, "300.000", 
-                "TESTS"
+                "HIVE"
             )
             logger.info("Wait 30 days for full voting power")
             hive_utils.debug_generate_blocks(node_client.rpc.url, wif, 30 * 24 * 3600 / 3 + 10)
             # transfer assets to accounts
             test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
-                "400.000", "TESTS", wif
+                "400.000", "HIVE", wif
             )
 
             test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
-                "400.000", "TBD", wif
+                "400.000", "HBD", wif
             )
 
             logger.info("Balances for accounts after initial transfer")
             test_utils.print_balance(node_client, accounts)
             # transfer assets to treasury
             test_utils.transfer_assets_to_treasury(node_client, args.creator, args.treasury, 
-                "999950.000", "TBD", wif
+                "999950.000", "HBD", wif
             )
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
 
@@ -169,10 +169,10 @@ if __name__ == '__main__':
             now = test_utils.date_from_iso(now)
 
             proposal_data = [
-                ['tester001', 1 + 0, 4, '24.000 TBD'], # starts 1 day from now and lasts 3 day
-                ['tester002', 1 + 0, 4, '24.000 TBD'], # starts 1 days from now and lasts 3 day
-                ['tester003', 1 + 0, 4, '24.000 TBD'],  # starts 1 days from now and lasts 3 day
-                ['tester004', 1 + 0, 4, '24.000 TBD'], # starts 1 day from now and lasts 3 days
+                ['tester001', 1 + 0, 4, '24.000 HBD'], # starts 1 day from now and lasts 3 day
+                ['tester002', 1 + 0, 4, '24.000 HBD'], # starts 1 days from now and lasts 3 day
+                ['tester003', 1 + 0, 4, '24.000 HBD'],  # starts 1 days from now and lasts 3 day
+                ['tester004', 1 + 0, 4, '24.000 HBD'], # starts 1 day from now and lasts 3 days
             ]
 
             proposals = [
@@ -186,7 +186,7 @@ if __name__ == '__main__':
                 proposals.append(proposal)
 
             start_date, end_date = test_utils.get_start_and_end_date(now, 1, 4)
-            proposals.append({'creator' : 'tester001', 'receiver' : 'hive.fund', 'start_date' : start_date, 'end_date' : end_date, 'daily_pay' : '96.000 TBD'})
+            proposals.append({'creator' : 'tester001', 'receiver' : 'hive.fund', 'start_date' : start_date, 'end_date' : end_date, 'daily_pay' : '96.000 HBD'})
 
             import datetime
             test_start_date = now + datetime.timedelta(days = 1)
@@ -249,7 +249,7 @@ if __name__ == '__main__':
             hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_end_date_iso, False)
             logger.info("Balances for accounts at time: {}".format(test_end_date_iso))
             balances = test_utils.print_balance(node_client, accounts)
-            # it should be '476.000 TBD', '486.000 TBD', '486.000 TBD', '486.000 TBD',
+            # it should be '476.000 HBD', '486.000 HBD', '486.000 HBD', '486.000 HBD',
             # but because of rounding implementation it is 475.808 TBD,485.808 TBD,485.808 TBD,485.808 TBD
             test_balances = [
                 '475808',

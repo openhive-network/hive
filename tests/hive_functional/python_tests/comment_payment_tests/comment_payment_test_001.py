@@ -152,10 +152,10 @@ if __name__ == '__main__':
             # create accounts
             test_utils.create_accounts(node_client, args.creator, accounts)
             # tranfer to vesting
-            test_utils.transfer_to_vesting(node_client, args.creator, accounts, "3000000.000", "TESTS")
+            test_utils.transfer_to_vesting(node_client, args.creator, accounts, "3000000.000", "HIVE")
             # transfer assets to accounts
-            test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, "10000.000", "TESTS")
-            test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, "10000.000", "TBD")
+            test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, "10000.000", "HIVE")
+            test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, "10000.000", "HBD")
 
             logger.info("Balances for accounts after initial transfer")
             test_utils.print_balance(node_client, accounts)

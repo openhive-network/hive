@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
 
     BOOST_TEST_MESSAGE( "--- Test failure when expiration is too long" );
     op.amount_to_sell = ASSET( "10.000 HIVE" );
-    op.min_to_receive = ASSET( "15.000 TBD" );
+    op.min_to_receive = ASSET( "15.000 HBD" );
     op.expiration = db->head_block_time() + fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION + 1 );
     tx.operations.clear();
     tx.signatures.clear();
@@ -695,7 +695,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
 
     BOOST_TEST_MESSAGE( "--- Test failure when expiration is too long" );
     op.amount_to_sell = ASSET( "10.000 HIVE" );
-    op.exchange_rate = price( ASSET( "2.000 HIVE" ), ASSET( "3.000 TBD" ) );
+    op.exchange_rate = price( ASSET( "2.000 HIVE" ), ASSET( "3.000 HBD" ) );
     op.expiration = db->head_block_time() + fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION + 1 );
     tx.operations.clear();
     tx.signatures.clear();
@@ -980,7 +980,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_validate )
     op.reward_tokens.push_back( ASSET( "0.000 HIVE" ) );
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
     op.reward_tokens.clear();
-    op.reward_tokens.push_back( ASSET( "0.000 TBD" ) );
+    op.reward_tokens.push_back( ASSET( "0.000 HBD" ) );
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
     op.reward_tokens.clear();
     op.reward_tokens.push_back( ASSET( "0.000000 VESTS" ) );
@@ -1001,7 +1001,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_validate )
     op.validate();
     op.reward_tokens.clear();
 
-    op.reward_tokens.push_back( ASSET( "1.000 TBD" ) );
+    op.reward_tokens.push_back( ASSET( "1.000 HBD" ) );
     op.validate();
     op.reward_tokens.clear();
 
@@ -1022,7 +1022,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_validate )
     op.reward_tokens.clear();
 
     BOOST_TEST_MESSAGE( "Testing multiple rewards" );
-    op.reward_tokens.push_back( ASSET( "1.000 TBD" ) );
+    op.reward_tokens.push_back( ASSET( "1.000 HBD" ) );
     op.reward_tokens.push_back( ASSET( "1.000 HIVE" ) );
     op.reward_tokens.push_back( ASSET( "1.000000 VESTS" ) );
     op.reward_tokens.push_back( asset( 1, smt1 ) );
@@ -1035,7 +1035,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_validate )
     op.reward_tokens.push_back( ASSET( "-1.000 HIVE" ) );
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
     op.reward_tokens.clear();
-    op.reward_tokens.push_back( ASSET( "-1.000 TBD" ) );
+    op.reward_tokens.push_back( ASSET( "-1.000 HBD" ) );
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
     op.reward_tokens.clear();
     op.reward_tokens.push_back( ASSET( "-1.000000 VESTS" ) );
@@ -1059,7 +1059,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_validate )
 
     BOOST_TEST_MESSAGE( "Testing inconsistencies of manually inserted reward tokens." );
     op.reward_tokens.push_back( ASSET( "1.000 HIVE" ) );
-    op.reward_tokens.push_back( ASSET( "1.000 TBD" ) );
+    op.reward_tokens.push_back( ASSET( "1.000 HBD" ) );
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
     op.reward_tokens.push_back( asset( 1, smt3 ) );
     op.reward_tokens.push_back( asset( 1, smt1 ) );
@@ -1120,7 +1120,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     {
       db.modify( db.get_account( "alice" ), []( account_object& a )
       {
-        a.reward_hbd_balance = ASSET( "10.000 TBD" );
+        a.reward_hbd_balance = ASSET( "10.000 HBD" );
         a.reward_hive_balance = ASSET( "10.000 HIVE" );
         a.reward_vesting_balance = ASSET( "10.000000 VESTS" );
         a.reward_vesting_hive = ASSET( "10.000 HIVE" );
@@ -1128,7 +1128,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
 
       db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
       {
-        gpo.current_hbd_supply += ASSET( "10.000 TBD" );
+        gpo.current_hbd_supply += ASSET( "10.000 HBD" );
         gpo.current_supply += ASSET( "20.000 HIVE" );
         gpo.virtual_supply += ASSET( "20.000 HIVE" );
         gpo.pending_rewarded_vesting_shares += ASSET( "10.000000 VESTS" );
@@ -1151,7 +1151,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
 
     BOOST_TEST_MESSAGE( "--- Attempting to claim more than exists in the reward balance." );
     // Legacy symbols
-    op.reward_tokens.push_back( ASSET( "0.000 TBD" ) );
+    op.reward_tokens.push_back( ASSET( "0.000 HBD" ) );
     op.reward_tokens.push_back( ASSET( "20.000 HIVE" ) );
     op.reward_tokens.push_back( ASSET( "0.000000 VESTS" ) );
     FAIL_WITH_OP(op, alice_private_key, fc::assert_exception);
@@ -1166,14 +1166,14 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     BOOST_TEST_MESSAGE( "--- Claiming a partial reward balance" );
     // Legacy symbols
     asset partial_vests = ASSET( "5.000000 VESTS" );
-    op.reward_tokens.push_back( ASSET( "0.000 TBD" ) );
+    op.reward_tokens.push_back( ASSET( "0.000 HBD" ) );
     op.reward_tokens.push_back( ASSET( "0.000 HIVE" ) );
     op.reward_tokens.push_back( partial_vests );
     PUSH_OP(op, alice_private_key);
     BOOST_REQUIRE( get_balance( "alice" ) == alice_hive + ASSET( "0.000 HIVE" ) );
     BOOST_REQUIRE( get_rewards( "alice" ) == ASSET( "10.000 HIVE" ) );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd + ASSET( "0.000 TBD" ) );
-    BOOST_REQUIRE( get_hbd_rewards( "alice" ) == ASSET( "10.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd + ASSET( "0.000 HBD" ) );
+    BOOST_REQUIRE( get_hbd_rewards( "alice" ) == ASSET( "10.000 HBD" ) );
     BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + partial_vests );
     BOOST_REQUIRE( get_vest_rewards( "alice" ) == ASSET( "5.000000 VESTS" ) );
     BOOST_REQUIRE( get_vest_rewards_as_hive( "alice" ) == ASSET( "5.000 HIVE" ) );
@@ -1196,7 +1196,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     BOOST_TEST_MESSAGE( "--- Claiming the full reward balance" );
     // Legacy symbols
     asset full_hive = ASSET( "10.000 HIVE" );
-    asset full_hbd = ASSET( "10.000 TBD" );
+    asset full_hbd = ASSET( "10.000 HBD" );
     op.reward_tokens.push_back( full_hbd );
     op.reward_tokens.push_back( full_hive );
     op.reward_tokens.push_back( partial_vests );
@@ -1204,7 +1204,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     BOOST_REQUIRE( get_balance( "alice" ) == alice_hive + full_hive );
     BOOST_REQUIRE( get_rewards( "alice" ) == ASSET( "0.000 HIVE" ) );
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd + full_hbd );
-    BOOST_REQUIRE( get_hbd_rewards( "alice" ) == ASSET( "0.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_rewards( "alice" ) == ASSET( "0.000 HBD" ) );
     BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + partial_vests );
     BOOST_REQUIRE( get_vest_rewards( "alice" ) == ASSET( "0.000000 VESTS" ) );
     BOOST_REQUIRE( get_vest_rewards_as_hive( "alice" ) == ASSET( "0.000 HIVE" ) );
@@ -1520,7 +1520,7 @@ BOOST_AUTO_TEST_CASE( smt_create_with_hive_funds )
       dgpo.smt_creation_fee = asset( 1000, HBD_SYMBOL );
     } );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
 
     ACTORS( (alice) )
 
@@ -1561,17 +1561,17 @@ BOOST_AUTO_TEST_CASE( smt_create_with_hbd_funds )
       dgpo.smt_creation_fee = asset( 1000, HBD_SYMBOL );
     } );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
 
     ACTORS( (alice) )
 
     generate_block();
 
-    FUND( "alice", ASSET( "0.999 TBD" ) );
+    FUND( "alice", ASSET( "0.999 HBD" ) );
 
     smt_create_operation op;
     op.control_account = "alice";
-    op.smt_creation_fee = ASSET( "1.000 TBD" );
+    op.smt_creation_fee = ASSET( "1.000 HBD" );
     op.symbol = get_new_smt_symbol( 3, db );
     op.precision = op.symbol.decimals();
     op.validate();
@@ -1581,7 +1581,7 @@ BOOST_AUTO_TEST_CASE( smt_create_with_hbd_funds )
 
     BOOST_REQUIRE( util::smt::find_token( *db, op.symbol, true ) == nullptr );
 
-    FUND( "alice", ASSET( "0.001 TBD" ) );
+    FUND( "alice", ASSET( "0.001 HBD" ) );
 
     PUSH_OP( op, alice_private_key );
 
@@ -1623,7 +1623,7 @@ BOOST_AUTO_TEST_CASE( smt_creation_fee_test )
     ACTORS( (alice) );
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "2.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "2.000 HIVE" ) ) );
 
     // This ensures that our actual smt_creation_fee is sane in production (either HIVE or HBD)
     const dynamic_global_property_object& dgpo = db->get_dynamic_global_properties();
@@ -1635,7 +1635,7 @@ BOOST_AUTO_TEST_CASE( smt_creation_fee_test )
     for ( int i = 0; i < 2; i++ )
     {
       FUND( "alice", ASSET( "2.000 HIVE" ) );
-      FUND( "alice", ASSET( "1.000 TBD" ) );
+      FUND( "alice", ASSET( "1.000 HBD" ) );
 
       // These values should be equivilant as per our price feed and all tests here should work either way
       if ( !i ) // First pass
@@ -1663,7 +1663,7 @@ BOOST_AUTO_TEST_CASE( smt_creation_fee_test )
       BOOST_TEST_MESSAGE( " -- Invalid creation fee, 0.001 TBD short" );
       smt_create_operation fail_op2;
       fail_op2.control_account = "alice";
-      fail_op2.smt_creation_fee = ASSET( "0.999 TBD" );
+      fail_op2.smt_creation_fee = ASSET( "0.999 HBD" );
       fail_op2.symbol = get_new_smt_symbol( 3, db );
       fail_op2.precision = fail_op2.symbol.decimals();
       fail_op2.validate();
@@ -1687,7 +1687,7 @@ BOOST_AUTO_TEST_CASE( smt_creation_fee_test )
       // We should be able to pay with HBD
       smt_create_operation op2;
       op2.control_account = "alice";
-      op2.smt_creation_fee = ASSET( "1.000 TBD" );
+      op2.smt_creation_fee = ASSET( "1.000 HBD" );
       op2.symbol = get_new_smt_symbol( 3, db );
       op2.precision = op.symbol.decimals();
       op2.validate();
@@ -1708,7 +1708,7 @@ BOOST_AUTO_TEST_CASE( smt_create_reset )
     ACTORS( (alice) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     fund( "alice", ASSET( "100.000 HIVE" ) );
 
       SMT_SYMBOL( alice, 3, db )
@@ -1794,7 +1794,7 @@ BOOST_AUTO_TEST_CASE( smt_create_reset )
     HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- Failure resetting SMT with token emissions" );
-    op.smt_creation_fee = ASSET( "0.000 TBD" );
+    op.smt_creation_fee = ASSET( "0.000 HBD" );
     tx.clear();
     tx.operations.push_back( op );
     sign( tx, alice_private_key );
@@ -1817,7 +1817,7 @@ BOOST_AUTO_TEST_CASE( smt_create_reset )
     db->push_transaction( tx, 0 );
 
     BOOST_TEST_MESSAGE( "--- Success resetting SMT" );
-    op.smt_creation_fee = ASSET( "0.000 TBD" );
+    op.smt_creation_fee = ASSET( "0.000 HBD" );
     tx.clear();
     tx.operations.push_back( op );
     sign( tx, alice_private_key );
@@ -1893,7 +1893,7 @@ BOOST_AUTO_TEST_CASE( smt_nai_pool_count )
     fund( "alice", 10 * 1000 * 1000 );
     this->generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     convert( "alice", ASSET( "10000.000 HIVE" ) );
 
     // Drain the NAI pool one at a time
@@ -2254,7 +2254,7 @@ BOOST_AUTO_TEST_CASE( set_setup_parameters_apply )
     FUND( "alice", 5000000 );
     FUND( "bob", 5000000 );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     convert( "alice", ASSET( "5000.000 HIVE" ) );
     convert( "bob", ASSET( "5000.000 HIVE" ) );
 

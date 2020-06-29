@@ -166,7 +166,7 @@ if __name__ == "__main__":
                 'receiver' : args.receiver,
                 'start_date' : start_date_str,
                 'end_date' : end_date_str,
-                'daily_pay' : "24.000 TBD",
+                'daily_pay' : "24.000 HBD",
                 'subject' : subject,
                 'permlink' : get_permlink(args.creator)
             }

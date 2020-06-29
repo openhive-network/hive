@@ -1,7 +1,7 @@
 {
     "current_aslot": 0,
-    "init_hbd_supply": "0.000 TBD",
-    "current_hbd_supply": "0.000 TBD",
+    "init_hbd_supply": "0.000 HBD",
+    "current_hbd_supply": "0.000 HBD",
     "current_supply": "0.000 HIVE",
     "current_witness": "initminer",
     "head_block_id": "0000000000000000000000000000000000000000",
@@ -16,7 +16,7 @@
     "recent_slots_filled": "340282366920938463463374607431768211455",
     "hbd_interest_rate": 0,
     "hbd_print_rate": 10000,
-    "smt_creation_fee": "1000.000 TBD",
+    "smt_creation_fee": "1000.000 HBD",
     "time": "2016-01-01T00:00:00",
     "total_pow": "18446744073709551615",
     "total_reward_fund_hive": "0.000 HIVE",
