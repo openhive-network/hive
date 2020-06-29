@@ -9,7 +9,11 @@ import os.path
 from subprocess import check_output
 from datetime import datetime
 
+cnt = 0
+
 def try_generate_crash( command_line, dump_file_str, crash_time, wait_time, exec_name ):
+
+    global cnt
 
     with open( dump_file_str, "w") as dump_file:
         subprocess.Popen( command_line, shell=True, stdout=dump_file, stderr=subprocess.STDOUT )
@@ -20,13 +24,14 @@ def try_generate_crash( command_line, dump_file_str, crash_time, wait_time, exec
         try:
             pid = check_output( [ "pidof", exec_name ], stderr=subprocess.STDOUT )
         except subprocess.CalledProcessError as e:
-            print( "An error occured during PID retrieving {} Maybe replaying is finished completely".format( e.output ) )
+            print( "An error occured during PID retrieving {}. Maybe replaying is finished completely".format( e.output ) )
             return False
 
         pid = str( pid )
         pid = pid[ 2: len(pid) - 3 ]
 
-        print( "Random delay: {}s pid: {}".format( crash_time, pid ) )
+        cnt += 1
+        print( "cnt: {} wait-time: {}s pid: {}".format( cnt, crash_time, pid ) )
 
         command = "kill -2 " + str( pid )
         os.system( command )
