@@ -1763,18 +1763,31 @@ void old_sv_from_variant( const fc::variant& v, T& sv )
   sv.visit( to_old_static_variant(ar[1]) );
 }
 
+// allows detection of pre-rebranding calls and special error reaction
+// note: that and related code will be removed some time after HF24
+//       since all nodes and libraries should be updated by then
+struct obsolete_call_detector
+{
+  static bool enable_obsolete_call_detection;
+
+  static void report_error()
+  {
+    FC_ASSERT( false, "Obsolete form of transaction detected, update your wallet." );
+  }
+};
+
 }
 
 #define FC_REFLECT_ALIAS_HANDLER( r, name, elem )                                  \
-  else if( strcmp( name, std::make_pair elem .first ) == 0 )                       \
-    this->operator()< Member, Class, member >( std::make_pair elem .second );
+  || ( ( strcmp( name, std::make_pair elem .first ) == 0 ) &&                      \
+       ( vo.find( std::make_pair elem .second ) != vo.end() ) )
 
 #define FC_REFLECT_ALIASED_NAMES( TYPE, MEMBERS, ALIASES )                         \
 FC_REFLECT( TYPE, MEMBERS )                                                        \
 namespace fc {                                                                     \
                                                                                    \
 template<>                                                                         \
-class from_variant_visitor<TYPE>                                                   \
+class from_variant_visitor<TYPE> : obsolete_call_detector                          \
 {                                                                                  \
 public:                                                                            \
 from_variant_visitor( const variant_object& _vo, TYPE& v ) :vo( _vo ), val( v ) {} \
@@ -1785,7 +1798,10 @@ void operator()( const char* name )const                                        
   auto itr = vo.find( name );                                                      \
   if( itr != vo.end() )                                                            \
     from_variant( itr->value(), val.*member );                                     \
-  BOOST_PP_SEQ_FOR_EACH( FC_REFLECT_ALIAS_HANDLER, name, ALIASES )                 \
+  else if( enable_obsolete_call_detection && ( false                               \
+    BOOST_PP_SEQ_FOR_EACH( FC_REFLECT_ALIAS_HANDLER, name, ALIASES )               \
+  ) )                                                                              \
+    report_error();                                                                \
 }                                                                                  \
                                                                                    \
 const variant_object& vo;                                                          \
