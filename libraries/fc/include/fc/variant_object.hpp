@@ -258,3 +258,4 @@ namespace fc
    }
 
 } // namespace fc
+FC_REFLECT_TYPENAME(fc::variant_object)
