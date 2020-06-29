@@ -30,7 +30,7 @@
     "max_runner_witnesses": 1,
     "max_voted_witnesses": 19,
     "median_props": {
-        "account_creation_fee": "0.000 TESTS",
+        "account_creation_fee": "0.000 HIVE",
         "maximum_block_size": 131072,
         "hbd_interest_rate": 1000
     },

@@ -74,7 +74,10 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb 
   rc_skip.skip_deduct_rc = 0;
   rc_skip.skip_negative_rc_balance = 1;
   rc_skip.skip_reject_unknown_delta_vests = 0;
-  appbase::app().get_plugin< hive::plugins::rc::rc_plugin >().set_rc_plugin_skip_flags( rc_skip );
+
+  auto& rc_plugin = appbase::app().get_plugin< hive::plugins::rc::rc_plugin >();
+  rc_plugin.set_rc_plugin_skip_flags( rc_skip );
+  rc_plugin.set_initial_block();
 
   db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
   BOOST_REQUIRE( db );
@@ -82,10 +85,6 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb 
   init_account_pub_key = init_account_priv_key.get_public_key();
 
   open_database( shared_file_size_in_mb );
-
-  generate_block();
-  db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-  generate_block();
 
   vest( "initminer", 10000 );
 
@@ -129,105 +128,51 @@ void clean_database_fixture::validate_database()
   appbase::app().get_plugin< hive::plugins::rc::rc_plugin >().validate_database();
 }
 
-void clean_database_fixture::resize_shared_mem( uint64_t size )
-{
-  db->wipe( data_dir->path(), data_dir->path(), true );
-  int argc = boost::unit_test::framework::master_test_suite().argc;
-  char** argv = boost::unit_test::framework::master_test_suite().argv;
-  for( int i=1; i<argc; i++ )
-  {
-    const std::string arg = argv[i];
-    if( arg == "--record-assert-trip" )
-      fc::enable_record_assert_trip = true;
-    if( arg == "--show-test-names" )
-      std::cout << "running test " << boost::unit_test::framework::current_test_case().p_name << std::endl;
-  }
-  init_account_pub_key = init_account_priv_key.get_public_key();
+//void clean_database_fixture::resize_shared_mem( uint64_t size )
+// {
+//   db->wipe( data_dir->path(), data_dir->path(), true );
+//   int argc = boost::unit_test::framework::master_test_suite().argc;
+//   char** argv = boost::unit_test::framework::master_test_suite().argv;
+//   for( int i=1; i<argc; i++ )
+//   {
+//     const std::string arg = argv[i];
+//     if( arg == "--record-assert-trip" )
+//       fc::enable_record_assert_trip = true;
+//     if( arg == "--show-test-names" )
+//       std::cout << "running test " << boost::unit_test::framework::current_test_case().p_name << std::endl;
+//   }
+//   init_account_pub_key = init_account_priv_key.get_public_key();
 
-  {
-    hive::chain::open_args args;
-    args.data_dir = data_dir->path();
-    args.shared_mem_dir = args.data_dir;
-    args.initial_supply = INITIAL_TEST_SUPPLY;
-    args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
-    args.shared_file_size = size;
-    args.database_cfg = hive::utilities::default_database_configuration();
-    db->open( args );
-  }
+//   {
+//     hive::chain::open_args args;
+//     args.data_dir = data_dir->path();
+//     args.shared_mem_dir = args.data_dir;
+//     args.initial_supply = INITIAL_TEST_SUPPLY;
+//     args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
+//     args.shared_file_size = size;
+//     args.database_cfg = hive::utilities::default_database_configuration();
+//     db->open( args );
+//   }
 
-  boost::program_options::variables_map options;
+//   boost::program_options::variables_map options;
 
 
-  generate_block();
-  db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-  generate_block();
+//   generate_block();
+//   db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+//   generate_block();
 
-  vest( "initminer", 10000 );
+//   vest( "initminer", 10000 );
 
-  // Fill up the rest of the required miners
-  for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
-  {
-    account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_pub_key );
-    fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD.amount.value );
-    witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_priv_key, "foo.bar", init_account_pub_key, HIVE_MIN_PRODUCER_REWARD.amount );
-  }
+//   // Fill up the rest of the required miners
+//   for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
+//   {
+//     account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_pub_key );
+//     fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD.amount.value );
+//     witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_priv_key, "foo.bar", init_account_pub_key, HIVE_MIN_PRODUCER_REWARD.amount );
+//   }
 
-  validate_database();
-}
-
-live_database_fixture::live_database_fixture()
-{
-  try
-  {
-    int argc = boost::unit_test::framework::master_test_suite().argc;
-    char** argv = boost::unit_test::framework::master_test_suite().argv;
-
-    ilog( "Loading saved chain" );
-    _chain_dir = fc::current_path() / "test_blockchain";
-    FC_ASSERT( fc::exists( _chain_dir ), "Requires blockchain to test on in ./test_blockchain" );
-
-    appbase::app().register_plugin< hive::plugins::account_history::account_history_plugin >();
-    appbase::app().initialize<
-      hive::plugins::account_history::account_history_plugin
-      >( argc, argv );
-
-    db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
-    BOOST_REQUIRE( db );
-
-    {
-      hive::chain::open_args args;
-      args.data_dir = _chain_dir;
-      args.shared_mem_dir = args.data_dir;
-      args.database_cfg = hive::utilities::default_database_configuration();
-      db->open( args );
-    }
-
-    validate_database();
-    generate_block();
-
-    ilog( "Done loading saved chain" );
-  }
-  FC_LOG_AND_RETHROW()
-}
-
-live_database_fixture::~live_database_fixture()
-{
-  try
-  {
-    // If we're unwinding due to an exception, don't do any more checks.
-    // This way, boost test's last checkpoint tells us approximately where the error was.
-    if( !std::uncaught_exception() )
-    {
-      BOOST_CHECK( db->get_node_properties().skip_flags == database::skip_nothing );
-    }
-
-    db->pop_block();
-    db->close();
-    return;
-  }
-  FC_CAPTURE_AND_LOG( () )
-  exit(1);
-}
+//   validate_database();
+// }
 
 fc::ecc::private_key database_fixture::generate_private_key(string seed)
 {
@@ -250,28 +195,86 @@ asset_symbol_type database_fixture::get_new_smt_symbol( uint8_t token_decimal_pl
 }
 #endif
 
-void database_fixture::open_database( uint16_t shared_file_size_in_mb )
+void database_fixture::try_open_database_internal( uint64_t size )
+{
+  idump( (data_dir->path()) );
+
+  hive::chain::open_args args;
+  args.data_dir = data_dir->path();
+  args.shared_mem_dir = args.data_dir;
+  args.initial_supply = INITIAL_TEST_SUPPLY;
+  args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
+  args.shared_file_size = size;
+  args.database_cfg = hive::utilities::default_database_configuration();
+  args.sps_remove_threshold = 20;
+  args.initial_supply = db->config_blockchain.HIVE_INIT_SUPPLY;
+  args.hbd_initial_supply = db->config_blockchain.HIVE_HBD_INIT_SUPPLY;
+
+  db->config_blockchain.switch_to_testnet_settings();
+
+  db->open(args);
+}
+
+bool database_fixture::try_open_database( uint16_t shared_file_size_in_mb )
 {
   if( !data_dir )
   {
     data_dir = fc::temp_directory( hive::utilities::temp_directory_path() );
     db->_log_hardforks = false;
 
-    idump( (data_dir->path()) );
+    try_open_database_internal( 1024 * 1024 * shared_file_size_in_mb );
 
-    hive::chain::open_args args;
-    args.data_dir = data_dir->path();
-    args.shared_mem_dir = args.data_dir;
-    args.initial_supply = INITIAL_TEST_SUPPLY;
-    args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
-    args.shared_file_size = 1024 * 1024 * shared_file_size_in_mb; // 8MB(default) or more:  file for testing
-    args.database_cfg = hive::utilities::default_database_configuration();
-    args.sps_remove_threshold = 20;
-    db->open(args);
+    return true;
   }
   else
   {
     idump( (data_dir->path()) );
+    return false;
+  }
+}
+
+void database_fixture::post_open_database()
+{
+  db->create< account_object >( OBSOLETE_TREASURY_ACCOUNT );
+  db->create< account_object >( NEW_HIVE_TREASURY_ACCOUNT );
+
+  db->modify( db->get_feed_history(), [&]( feed_history_object& o )
+  {
+    o.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
+  } );
+}
+
+void database_fixture::init_hardforks()
+{
+  generate_block();
+  db->set_hardfork( HIVE_NUM_HARDFORKS );
+  generate_block();
+}
+
+void database_fixture::post_init_hardforks()
+{
+  /*
+    Maybe it's worth changing this specific "testnet" values into values that they are in a mainnet.
+    No doubt it's connected with changing some tests.
+  */
+  db_plugin->debug_update( []( database& db )
+  {
+    db.modify( db.get_reward_fund(), [&]( reward_fund_object& o )
+    {
+      o.recent_claims = 0;
+    } );
+  } );
+}
+
+void database_fixture::open_database( uint16_t shared_file_size_in_mb, bool allow_init_hardfork )
+{
+  if( try_open_database( shared_file_size_in_mb ) )
+    post_open_database();
+
+  if( allow_init_hardfork )
+  {
+    init_hardforks();
+    post_init_hardforks();
   }
 }
 
@@ -523,7 +526,7 @@ void database_fixture::vest( const string& from, const string& to, const asset& 
 {
   try
   {
-    FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest TESTS" );
+    FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest HIVE" );
 
     transfer_to_vesting_operation op;
     op.from = from;
@@ -600,12 +603,7 @@ void database_fixture::set_price_feed( const price& new_price )
 
   generate_blocks( HIVE_BLOCKS_PER_HOUR );
 
-  BOOST_REQUIRE(
-#ifdef IS_TEST_NET
-    !db->skip_price_feed_limit_check ||
-#endif
-    db->get(feed_history_id_type()).current_median_history == new_price
-  );
+  BOOST_REQUIRE( !skip_price_feed_limit_check || db->get(feed_history_id_type()).current_median_history == new_price );
 }
 
 void database_fixture::set_witness_props( const flat_map< string, vector< char > >& props )
@@ -737,8 +735,8 @@ asset_symbol_type t_smt_database_fixture< T >::create_smt_with_nai( const string
     fund( account_name, 10 * 1000 * 1000 );
     this->generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-    convert( account_name, ASSET( "5000.000 TESTS" ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
+    convert( account_name, ASSET( "5000.000 HIVE" ) );
 
     op.symbol = asset_symbol_type::from_nai( nai, token_decimal_places );
     op.precision = op.symbol.decimals();
@@ -804,8 +802,8 @@ std::array<asset_symbol_type, 3> t_smt_database_fixture< T >::create_smt_3(const
     fund( control_account_name, 10 * 1000 * 1000 );
     this->generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-    convert( control_account_name, ASSET( "5000.000 TESTS" ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
+    convert( control_account_name, ASSET( "5000.000 HIVE" ) );
 
     set_create_op( &op0, control_account_name, 0, *this->db );
     set_create_op( &op1, control_account_name, 1, *this->db );
@@ -945,11 +943,6 @@ void sps_proposal_database_fixture::plugin_prepare()
   BOOST_REQUIRE( db );
 
   open_database();
-
-  generate_block();
-  db->set_hardfork( HIVE_NUM_HARDFORKS );
-  generate_block();
-
 
   validate_database();
 }
@@ -1114,7 +1107,7 @@ void hf23_database_fixture::push_transaction( const operation& op, const fc::ecc
 
 void hf23_database_fixture::vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )
 {
-  FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest TESTS" );
+  FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest HIVE" );
 
   transfer_to_vesting_operation op;
   op.from = from;
@@ -1156,7 +1149,7 @@ void delayed_vote_database_fixture::witness_vote( const std::string& account, co
 
 void delayed_vote_database_fixture::vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )
 {
-  FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest TESTS" );
+  FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest HIVE" );
 
   transfer_to_vesting_operation op;
   op.from = from;
@@ -1348,10 +1341,6 @@ json_rpc_database_fixture::json_rpc_database_fixture()
   init_account_pub_key = init_account_priv_key.get_public_key();
 
   open_database();
-
-  generate_block();
-  db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-  generate_block();
 
   vest( "initminer", 10000 );
 

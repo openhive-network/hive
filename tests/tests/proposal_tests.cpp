@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     ACTORS( (alice)(bob)(carol)(dan) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -97,18 +97,18 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
 
     auto start_date = db->head_block_time();
 
-    auto daily_pay = ASSET( "48.000 TBD" );
-    auto hourly_pay = ASSET( "1.996 TBD" );// hourly_pay != ASSET( "2.000 TBD" ) because lack of rounding
+    auto daily_pay = ASSET( "48.000 HBD" );
+    auto hourly_pay = ASSET( "1.996 HBD" );// hourly_pay != ASSET( "2.000 HBD" ) because lack of rounding
 
-    FUND( creator, ASSET( "160.000 TESTS" ) );
-    FUND( creator, ASSET( "80.000 TBD" ) );
-    FUND( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
+    FUND( creator, ASSET( "160.000 HIVE" ) );
+    FUND( creator, ASSET( "80.000 HBD" ) );
+    FUND( db->get_treasury_name(), ASSET( "5000.000 HBD" ) );
 
     auto voter_00 = "carol";
     auto voter_01 = "dan";
 
-    vest(HIVE_INIT_MINER_NAME, voter_00, ASSET( "1.000 TESTS" ));
-    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "3.100 TESTS" ));
+    vest(HIVE_INIT_MINER_NAME, voter_00, ASSET( "1.000 HIVE" ));
+    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "3.100 HIVE" ));
 
     //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
     start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
@@ -165,9 +165,9 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     }
 
     //skipping interest generating is necessary
-    transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ));
+    transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 HBD" ));
     generate_block( 5 );
-    transfer( HIVE_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+    transfer( HIVE_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 HBD" ) );
     generate_block( 5 );
 
     const auto& dgpo = db->get_dynamic_global_properties();
@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     ACTORS( (alice)(bob)(carol) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -282,16 +282,16 @@ BOOST_AUTO_TEST_CASE( generating_payments )
 
     auto start_date = db->head_block_time();
 
-    auto daily_pay = ASSET( "48.000 TBD" );
-    auto hourly_pay = ASSET( "1.996 TBD" );// hourly_pay != ASSET( "2.000 TBD" ) because lack of rounding
+    auto daily_pay = ASSET( "48.000 HBD" );
+    auto hourly_pay = ASSET( "1.996 HBD" );// hourly_pay != ASSET( "2.000 HBD" ) because lack of rounding
 
-    FUND( creator, ASSET( "160.000 TESTS" ) );
-    FUND( creator, ASSET( "80.000 TBD" ) );
-    FUND( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
+    FUND( creator, ASSET( "160.000 HIVE" ) );
+    FUND( creator, ASSET( "80.000 HBD" ) );
+    FUND( db->get_treasury_name(), ASSET( "5000.000 HBD" ) );
 
     auto voter_01 = "carol";
 
-    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "1.000 TESTS" ));
+    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "1.000 HIVE" ));
 
     //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
     start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
@@ -308,9 +308,9 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     generate_blocks( 1 );
 
     //skipping interest generating is necessary
-    transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ));
+    transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 HBD" ));
     generate_block( 5 );
-    transfer( HIVE_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+    transfer( HIVE_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 HBD" ) );
     generate_block( 5 );
 
     const auto& dgpo = db->get_dynamic_global_properties();
@@ -360,7 +360,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     ACTORS( (tester001)(tester002)(tester003)(tester004)(tester005) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -384,9 +384,9 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
 
     for( auto item : inits )
     {
-      FUND( item.account, ASSET( "400.000 TESTS" ) );
-      FUND( item.account, ASSET( "400.000 TBD" ) );
-      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "300.000 TESTS" ));
+      FUND( item.account, ASSET( "400.000 HIVE" ) );
+      FUND( item.account, ASSET( "400.000 HBD" ) );
+      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "300.000 HIVE" ));
     }
 
     auto start_date = db->head_block_time();
@@ -398,10 +398,10 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
 
     auto end_date = start_date + end_time_shift;
 
-    auto daily_pay = ASSET( "24.000 TBD" );
-    auto paid = ASSET( "4.990 TBD" );// paid != ASSET( "5.000 TBD" ) because lack of rounding
+    auto daily_pay = ASSET( "24.000 HBD" );
+    auto paid = ASSET( "4.990 HBD" );// paid != ASSET( "5.000 HBD" ) because lack of rounding
 
-    FUND( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
+    FUND( db->get_treasury_name(), ASSET( "5000000.000 HBD" ) );
     //=====================preparing=====================
     for( int32_t i = 0; i < nr_proposals; ++i )
     {
@@ -453,7 +453,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
         )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -480,9 +480,9 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
 
     for( auto item : inits )
     {
-      FUND( item.account, ASSET( "400.000 TESTS" ) );
-      FUND( item.account, ASSET( "400.000 TBD" ) );
-      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "300.000 TESTS" ));
+      FUND( item.account, ASSET( "400.000 HIVE" ) );
+      FUND( item.account, ASSET( "400.000 HBD" ) );
+      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "300.000 HIVE" ));
     }
 
     const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_proposal_id >();
@@ -493,10 +493,10 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
 
     const auto block_interval = fc::seconds( HIVE_BLOCK_INTERVAL );
 
-    FUND( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
+    FUND( db->get_treasury_name(), ASSET( "5000000.000 HBD" ) );
     //=====================preparing=====================
     auto item_creator = inits[ 0 ];
-    create_proposal( item_creator.account, item_creator.account, start_date, end_date, ASSET( "24.000 TBD" ), item_creator.key );
+    create_proposal( item_creator.account, item_creator.account, start_date, end_date, ASSET( "24.000 HBD" ), item_creator.key );
     generate_block();
 
     for( auto item : inits )
@@ -554,7 +554,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     ACTORS( (tester00)(tester01)(tester02) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -570,15 +570,15 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     {
       if( item.first == tester02_account )
       {
-        FUND( item.first, ASSET( "41.000 TESTS" ) );
-        FUND( item.first, ASSET( "41.000 TBD" ) );
-        vest(HIVE_INIT_MINER_NAME, item.first, ASSET( "31.000 TESTS" ));
+        FUND( item.first, ASSET( "41.000 HIVE" ) );
+        FUND( item.first, ASSET( "41.000 HBD" ) );
+        vest(HIVE_INIT_MINER_NAME, item.first, ASSET( "31.000 HIVE" ));
       }
       else
       {
-        FUND( item.first, ASSET( "40.000 TESTS" ) );
-        FUND( item.first, ASSET( "40.000 TBD" ) );
-        vest(HIVE_INIT_MINER_NAME, item.first, ASSET( "30.000 TESTS" ));
+        FUND( item.first, ASSET( "40.000 HIVE" ) );
+        FUND( item.first, ASSET( "40.000 HBD" ) );
+        vest(HIVE_INIT_MINER_NAME, item.first, ASSET( "30.000 HIVE" ));
       }
     }
 
@@ -593,10 +593,10 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     std::vector< fc::microseconds > end_time_shift = { fc::hours( 1 ), fc::hours( 2 ), fc::hours( 3 ), fc::hours( 4 ) };
     auto end_date = start_date + end_time_shift[ 3 ];
 
-    auto huge_daily_pay = ASSET( "50000001.000 TBD" );
-    auto daily_pay = ASSET( "24.000 TBD" );
+    auto huge_daily_pay = ASSET( "50000001.000 HBD" );
+    auto daily_pay = ASSET( "24.000 HBD" );
 
-    FUND( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
+    FUND( db->get_treasury_name(), ASSET( "5000000.000 HBD" ) );
     //=====================preparing=====================
     uint16_t i = 0;
     for( auto item : inits )
@@ -650,8 +650,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - no payout, because of lack of votes
     */
     ilog("");
-    payment_checker( { ASSET( "0.998 TBD" ), ASSET( "0.998 TBD" ), ASSET( "0.000 TBD" ) } );
-    //ideally: ASSET( "1.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "0.000 TBD" ) but there is lack of rounding
+    payment_checker( { ASSET( "0.998 HBD" ), ASSET( "0.998 HBD" ), ASSET( "0.000 HBD" ) } );
+    //ideally: ASSET( "1.000 HBD" ), ASSET( "1.000 HBD" ), ASSET( "0.000 HBD" ) but there is lack of rounding
 
     {
       BOOST_TEST_MESSAGE( "Setting proxy. The account `tester01` don't want to vote. Every decision is made by account `tester00`" );
@@ -673,8 +673,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - no payout, because of lack of votes
     */
     ilog("");
-    payment_checker( { ASSET( "1.996 TBD" ), ASSET( "0.998 TBD" ), ASSET( "0.000 TBD" ) } );
-    //ideally: ASSET( "2.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "0.000 TBD" ) but there is lack of rounding
+    payment_checker( { ASSET( "1.996 HBD" ), ASSET( "0.998 HBD" ), ASSET( "0.000 HBD" ) } );
+    //ideally: ASSET( "2.000 HBD" ), ASSET( "1.000 HBD" ), ASSET( "0.000 HBD" ) but there is lack of rounding
 
     vote_proposal( tester02_account, {2}, true/*approve*/, inits[ tester02_account ] );
     generate_block();
@@ -686,8 +686,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - got payout, because voted for his proposal
     */
     ilog("");
-    payment_checker( { ASSET( "2.994 TBD" ), ASSET( "0.998 TBD" ), ASSET( "2082.369 TBD" ) } );
-    //ideally: ASSET( "3.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "2082.346 TBD" ) but there is lack of rounding
+    payment_checker( { ASSET( "2.994 HBD" ), ASSET( "0.998 HBD" ), ASSET( "2082.369 HBD" ) } );
+    //ideally: ASSET( "3.000 HBD" ), ASSET( "1.000 HBD" ), ASSET( "2082.346 HBD" ) but there is lack of rounding
 
     {
       BOOST_TEST_MESSAGE( "Proxy doesn't exist. Now proposal with id = 3 has the most votes. This proposal grabs all payouts." );
@@ -709,8 +709,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - got payout, because voted for his proposal
     */
     ilog("");
-    payment_checker( { ASSET( "2.994 TBD" ), ASSET( "0.998 TBD" ), ASSET( "4164.874 TBD" ) } );
-    //ideally: ASSET( "3.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "4164.824 TBD" ) but there is lack of rounding
+    payment_checker( { ASSET( "2.994 HBD" ), ASSET( "0.998 HBD" ), ASSET( "4164.874 HBD" ) } );
+    //ideally: ASSET( "3.000 HBD" ), ASSET( "1.000 HBD" ), ASSET( "4164.824 HBD" ) but there is lack of rounding
 
     validate_database();
   }
@@ -726,7 +726,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance)
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -746,7 +746,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance)
 
     auto daily_pay = asset( 100, HBD_SYMBOL );
 
-    FUND( creator, ASSET( "100.000 TBD" ) );
+    FUND( creator, ASSET( "100.000 HBD" ) );
     //=====================preparing=====================
 
     int64_t id_proposal_00 = create_proposal( creator, receiver, start_date_00, end_date_00, daily_pay, alice_private_key );
@@ -801,7 +801,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     auto fee = asset( HIVE_TREASURY_FEE, HBD_SYMBOL );
@@ -819,7 +819,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
 
     post_comment(creator, permlink, "title", "body", "test", alice_private_key);
 
-    FUND( creator, ASSET( "80.000 TBD" ) );
+    FUND( creator, ASSET( "80.000 HBD" ) );
 
     signed_transaction tx;
 
@@ -890,7 +890,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_apply )
     ACTORS( (alice)(bob)(carol)(dan) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     auto creator = "alice";
@@ -901,7 +901,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_apply )
 
     auto daily_pay = asset( 100, HBD_SYMBOL );
 
-    FUND( creator, ASSET( "80.000 TBD" ) );
+    FUND( creator, ASSET( "80.000 HBD" ) );
 
     int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key );
 
@@ -962,7 +962,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
     ACTORS( (alice)(bob)(carol)(dan) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     auto creator = "alice";
@@ -975,7 +975,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
     auto daily_pay_01 = asset( 101, HBD_SYMBOL );
     auto daily_pay_02 = asset( 102, HBD_SYMBOL );
 
-    FUND( creator, ASSET( "80.000 TBD" ) );
+    FUND( creator, ASSET( "80.000 HBD" ) );
 
     int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay_00, alice_private_key );
     int64_t id_proposal_01 = create_proposal( creator, receiver, start_date, end_date, daily_pay_01, alice_private_key );
@@ -1221,7 +1221,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_000 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     auto creator    = "alice";
@@ -1230,7 +1230,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_000 )
     auto end_date   = start_date + fc::days( 2 );
     auto daily_pay  = asset( 100, HBD_SYMBOL );
 
-    FUND( creator, ASSET( "80.000 TBD" ) );
+    FUND( creator, ASSET( "80.000 HBD" ) );
     {
       int64_t proposal = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key );
       BOOST_REQUIRE( proposal >= 0 );
@@ -1248,7 +1248,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_001 )
       create_proposal_data cpd(db->head_block_time());
       ACTORS( (alice)(bob) )
       generate_block();
-      FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+      FUND( cpd.creator, ASSET( "80.000 HBD" ) );
       HIVE_REQUIRE_THROW( create_proposal( "", cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key ), fc::exception);
 
     }
@@ -1265,7 +1265,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_002 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     HIVE_REQUIRE_THROW(create_proposal( cpd.creator, "", cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key ), fc::exception);
     validate_database();
   }
@@ -1280,7 +1280,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_003 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     cpd.start_date = cpd.end_date + fc::days(2);
     HIVE_REQUIRE_THROW(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key ), fc::exception);
     validate_database();
@@ -1296,7 +1296,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_004 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     cpd.end_date = cpd.start_date - fc::days(2);
     HIVE_REQUIRE_THROW(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key ), fc::exception);
     validate_database();
@@ -1319,7 +1319,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_005 )
     cpo.daily_pay  = asset( 100, HBD_SYMBOL );
     cpo.subject    = "";
     cpo.permlink        = "http:://something.html";
-    FUND( cpo.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpo.creator, ASSET( "80.000 HBD" ) );
     generate_block();
     signed_transaction tx;
     tx.operations.push_back( cpo );
@@ -1348,7 +1348,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_006 )
     cpo.daily_pay  = asset( 100, HBD_SYMBOL );
     cpo.subject    = "very very very very very very long long long long long long subject subject subject subject subject subject";
     cpo.permlink        = "http:://something.html";
-    FUND( cpo.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpo.creator, ASSET( "80.000 HBD" ) );
     generate_block();
     signed_transaction tx;
     tx.operations.push_back( cpo );
@@ -1404,7 +1404,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_008 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
     generate_block();
     cpd.end_date = cpd.start_date + fc::days(20);
@@ -1423,7 +1423,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_000 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
@@ -1443,7 +1443,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_001 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
@@ -1463,7 +1463,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_002 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
@@ -1483,7 +1483,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_003 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
     std::vector< int64_t > proposals = {-1, -2, -3, -4, -5};
@@ -1501,7 +1501,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_004 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
@@ -1521,7 +1521,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_005 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
     std::vector< int64_t > proposals;
@@ -1573,7 +1573,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_000 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
@@ -1604,7 +1604,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_001 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
 
@@ -1656,7 +1656,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_002 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
     int64_t proposal = -1;
@@ -1703,7 +1703,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_003 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
     int64_t proposal = -1;
@@ -1750,7 +1750,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_004 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
     int64_t proposal = -1;
@@ -1815,7 +1815,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_005 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
@@ -1852,7 +1852,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_006 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
@@ -1890,7 +1890,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_007 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
@@ -1931,7 +1931,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_008 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
     flat_set<int64_t> proposals = { 0 };
     remove_proposal(cpd.creator, proposals, alice_private_key);
@@ -1948,7 +1948,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_009 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
     flat_set<int64_t> proposals = { proposal_1 };
@@ -1966,7 +1966,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_010 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
     flat_set<int64_t> proposals;
     HIVE_REQUIRE_THROW(remove_proposal(cpd.creator, proposals, bob_private_key), fc::exception);
@@ -1983,7 +1983,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_011 )
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
-    FUND( cpd.creator, ASSET( "80.000 TBD" ) );
+    FUND( cpd.creator, ASSET( "80.000 HBD" ) );
     generate_block();
     flat_set<int64_t> proposals;
     for(int i = 0; i <= HIVE_PROPOSAL_MAX_IDS_NUMBER; i++) {
@@ -2032,7 +2032,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     auto creator = "alice";
@@ -2048,7 +2048,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
 
     post_comment(creator, permlink, "title", "body", "test", alice_private_key);
 
-    FUND( creator, ASSET( "80.000 TBD" ) );
+    FUND( creator, ASSET( "80.000 HBD" ) );
 
     signed_transaction tx;
 
@@ -2105,7 +2105,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
     ACTORS( (a00)(a01)(a02)(a03)(a04) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -2141,7 +2141,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
 
     for( auto item : inits )
     {
-      FUND( item.account, ASSET( "10000.000 TBD" ) );
+      FUND( item.account, ASSET( "10000.000 HBD" ) );
     }
     //=====================preparing=====================
 
@@ -2191,7 +2191,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
     ACTORS( (a00)(a01)(a02)(a03)(a04) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -2227,7 +2227,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
 
     for( auto item : inits ) 
     {
-      FUND( item.account, ASSET( "10000.000 TBD" ) );
+      FUND( item.account, ASSET( "10000.000 HBD" ) );
     }
     //=====================preparing=====================
 
@@ -2295,7 +2295,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
     ACTORS( (a00)(a01)(a02)(a03)(a04) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -2330,7 +2330,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
 
     for( auto item : inits ) 
     {
-      FUND( item.account, ASSET( "10000.000 TBD" ) );
+      FUND( item.account, ASSET( "10000.000 HBD" ) );
     }
     //=====================preparing=====================
 
@@ -2393,7 +2393,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
     ACTORS( (a00)(a01)(a02)(a03)(a04)(a05) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -2429,7 +2429,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
 
     for( auto item : inits )
     {
-      FUND( item.account, ASSET( "10000.000 TBD" ) );
+      FUND( item.account, ASSET( "10000.000 HBD" ) );
     }
     //=====================preparing=====================
 
@@ -2637,7 +2637,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
         )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -2677,7 +2677,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
 
     for( auto item : inits ) 
     {
-      FUND( item.account, ASSET( "10000.000 TBD" ) );
+      FUND( item.account, ASSET( "10000.000 HBD" ) );
     }
     //=====================preparing=====================
 
@@ -3046,7 +3046,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
 
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -3074,7 +3074,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
 
     for( auto item : inits )
     {
-      FUND( item.account, ASSET( "10000.000 TBD" ) );
+      FUND( item.account, ASSET( "10000.000 HBD" ) );
     }
     //=====================preparing=====================
 
@@ -3150,7 +3150,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
 
     std::vector< initial_data > inits = generate_accounts( this, 30000 );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -3173,9 +3173,9 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     {
       if( i < 5 )
       {
-        FUND( item.account, ASSET( "11.000 TBD" ) );
+        FUND( item.account, ASSET( "11.000 HBD" ) );
       }
-      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "30.000 TESTS" ));
+      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "30.000 HIVE" ));
 
       call( i, 50, "${x} accounts got VESTS" );
     }
@@ -3192,10 +3192,10 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     auto start_date = start_time + start_time_shift;
     auto end_date = start_date + end_time_shift;
 
-    auto daily_pay = ASSET( "24.000 TBD" );
-    auto paid = ASSET( "1.000 TBD" );//because only 1 hour
+    auto daily_pay = ASSET( "24.000 HBD" );
+    auto paid = ASSET( "1.000 HBD" );//because only 1 hour
 
-    FUND( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
+    FUND( db->get_treasury_name(), ASSET( "5000000.000 HBD" ) );
     //=====================preparing=====================
     for( int32_t i = 0; i < nr_proposals; ++i )
     {

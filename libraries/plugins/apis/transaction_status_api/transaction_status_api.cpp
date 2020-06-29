@@ -22,7 +22,7 @@ public:
 
 DEFINE_API_IMPL( transaction_status_api_impl, find_transaction )
 {
-  uint32_t earliest_tracked_block_num = _tsp.earliest_tracked_block_num();
+  uint32_t earliest_tracked_block_num = _tsp.get_earliest_tracked_block_num();
 
   // Have we begun tracking?
   if ( _db.head_block_num() >= earliest_tracked_block_num )

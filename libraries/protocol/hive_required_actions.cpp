@@ -3,7 +3,7 @@
 
 namespace hive { namespace protocol {
 
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
 void example_required_action::validate()const
 {
   validate_account_name( account );

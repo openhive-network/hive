@@ -12,14 +12,14 @@
             "owner": "initminer",
             "pow_worker": 0,
             "props": {
-                "account_creation_fee": "0.000 TESTS",
+                "account_creation_fee": "0.000 HIVE",
                 "maximum_block_size": 131072,
                 "hbd_interest_rate": 1000
             },
             "running_version": "0.0.0",
             "hbd_exchange_rate": {
-                "base": "0.000 TESTS",
-                "quote": "0.000 TESTS"
+                "base": "0.000 HIVE",
+                "quote": "0.000 HIVE"
             },
             "signing_key": "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
             "total_missed": 0,

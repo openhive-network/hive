@@ -21,7 +21,6 @@
   * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   * THE SOFTWARE.
   */
-#ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
@@ -97,49 +96,49 @@ BOOST_AUTO_TEST_CASE( legacy_asset_test )
     using hive::plugins::condenser_api::legacy_asset;
 
     BOOST_CHECK_EQUAL( legacy_asset().symbol.decimals(), 3 );
-    BOOST_CHECK_EQUAL( legacy_asset().to_string(), "0.000 TESTS" );
+    BOOST_CHECK_EQUAL( legacy_asset().to_string(), "0.000 HIVE" );
 
     BOOST_TEST_MESSAGE( "Asset Test" );
-    legacy_asset hive = legacy_asset::from_string( "123.456 TESTS" );
-    legacy_asset hbd = legacy_asset::from_string( "654.321 TBD" );
-    legacy_asset tmp = legacy_asset::from_string( "0.456 TESTS" );
+    legacy_asset hive = legacy_asset::from_string( "123.456 HIVE" );
+    legacy_asset hbd = legacy_asset::from_string( "654.321 HBD" );
+    legacy_asset tmp = legacy_asset::from_string( "0.456 HIVE" );
     BOOST_CHECK_EQUAL( tmp.amount.value, 456 );
-    tmp = legacy_asset::from_string( "0.056 TESTS" );
+    tmp = legacy_asset::from_string( "0.056 HIVE" );
     BOOST_CHECK_EQUAL( tmp.amount.value, 56 );
 
     BOOST_CHECK_EQUAL( hive.amount.value, 123456 );
     BOOST_CHECK_EQUAL( hive.symbol.decimals(), 3 );
-    BOOST_CHECK_EQUAL( hive.to_string(), "123.456 TESTS" );
+    BOOST_CHECK_EQUAL( hive.to_string(), "123.456 HIVE" );
     BOOST_CHECK( hive.symbol == HIVE_SYMBOL );
-    BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset( 50, HIVE_SYMBOL ) ).to_string(), "0.050 TESTS" );
-    BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset(50000, HIVE_SYMBOL ) ) .to_string(), "50.000 TESTS" );
+    BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset( 50, HIVE_SYMBOL ) ).to_string(), "0.050 HIVE" );
+    BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset(50000, HIVE_SYMBOL ) ) .to_string(), "50.000 HIVE" );
 
     BOOST_CHECK_EQUAL( hbd.amount.value, 654321 );
     BOOST_CHECK_EQUAL( hbd.symbol.decimals(), 3 );
-    BOOST_CHECK_EQUAL( hbd.to_string(), "654.321 TBD" );
+    BOOST_CHECK_EQUAL( hbd.to_string(), "654.321 HBD" );
     BOOST_CHECK( hbd.symbol == HBD_SYMBOL );
-    BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset(50, HBD_SYMBOL ) ).to_string(), "0.050 TBD" );
-    BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset(50000, HBD_SYMBOL ) ).to_string(), "50.000 TBD" );
+    BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset(50, HBD_SYMBOL ) ).to_string(), "0.050 HBD" );
+    BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset(50000, HBD_SYMBOL ) ).to_string(), "50.000 HBD" );
 
-    BOOST_CHECK_THROW( legacy_asset::from_string( "1.00000000000000000000 TESTS" ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( "1.000TESTS" ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( "1. 333 TESTS" ), fc::exception ); // Fails because symbol is '333 TESTS', which is too long
-    BOOST_CHECK_THROW( legacy_asset::from_string( "1 .333 TESTS" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( "1.00000000000000000000 HIVE" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( "1.000HIVE" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( "1. 333 HIVE" ), fc::exception ); // Fails because symbol is '333 HBD', which is too long
+    BOOST_CHECK_THROW( legacy_asset::from_string( "1 .333 HIVE" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "1. 333 X" ), fc::exception ); // Not a system asset
     BOOST_CHECK_THROW( legacy_asset::from_string( "1 .333 X" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "1 .333" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "1 1.1" ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( "11111111111111111111111111111111111111111111111 TESTS" ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( "1.1.1 TESTS" ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( "1.abc TESTS" ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( " TESTS" ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( "TESTS" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( "11111111111111111111111111111111111111111111111 HIVE" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( "1.1.1 HIVE" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( "1.abc HIVE" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( " HIVE" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( "HIVE" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "1.333" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "1.333 " ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( " " ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "  " ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( "100 TESTS" ), fc::exception ); // Does not match system asset precision
+    BOOST_CHECK_THROW( legacy_asset::from_string( "100 HIVE" ), fc::exception ); // Does not match system asset precision
   }
   FC_LOG_AND_RETHROW()
 }
@@ -228,21 +227,21 @@ void old_pack_symbol(vector<char>& v, asset_symbol_type sym)
 {
   if( sym == HIVE_SYMBOL )
   {
-    v.push_back('\x03'); v.push_back('T' ); v.push_back('E' ); v.push_back('S' );
-    v.push_back('T'   ); v.push_back('S' ); v.push_back('\0'); v.push_back('\0');
-    // 03 54 45 53 54 53 00 00
+    v.push_back('\x03'); v.push_back('S' ); v.push_back('T' ); v.push_back('E' );
+    v.push_back('E'   ); v.push_back('M' ); v.push_back('\0'); v.push_back('\0');
+    // 0x03 0x53 0x54 0x45 0x45 0x4D 0x00 0x00
   }
   else if( sym == HBD_SYMBOL )
   {
-    v.push_back('\x03'); v.push_back('T' ); v.push_back('B' ); v.push_back('D' );
+    v.push_back('\x03'); v.push_back('S' ); v.push_back('B' ); v.push_back('D' );
     v.push_back('\0'  ); v.push_back('\0'); v.push_back('\0'); v.push_back('\0');
-    // 03 54 42 44 00 00 00 00
+    // 0x03 0x53 0x42 0x44 0x00 0x00 0x00 0x00
   }
   else if( sym == VESTS_SYMBOL )
   {
     v.push_back('\x06'); v.push_back('V' ); v.push_back('E' ); v.push_back('S' );
     v.push_back('T'   ); v.push_back('S' ); v.push_back('\0'); v.push_back('\0');
-    // 06 56 45 53 54 53 00 00
+    // 0x06 0x56 0x45 0x53 0x54 0x53 0x00 0x00
   }
   else
   {
@@ -278,9 +277,9 @@ std::string old_json_asset( const asset& a )
   std::string result = ss.str();
   result.insert( result.length() - decimal_places, 1, '.' );
   if( a.symbol == HIVE_SYMBOL )
-    result += " TESTS";
+    result += " HIVE";
   else if( a.symbol == HBD_SYMBOL )
-    result += " TBD";
+    result += " HBD";
   else if( a.symbol == VESTS_SYMBOL )
     result += " VESTS";
   result.insert(0, 1, '"');
@@ -316,6 +315,15 @@ BOOST_AUTO_TEST_CASE( asset_raw_test )
     symbols.push_back( HBD_SYMBOL   );
     symbols.push_back( VESTS_SYMBOL );
 
+    auto display = []( const vector<char>& data )
+    {
+      std::string res;
+      for( auto& item : data )
+        res += ( item < 10 ) ? ( item + 48 ) : item;
+
+      return res;
+    };
+
     for( const share_type& amount : amounts )
     {
       for( const asset_symbol_type& symbol : symbols )
@@ -327,25 +335,26 @@ BOOST_AUTO_TEST_CASE( asset_raw_test )
         vector<char> v_cur = fc::raw::pack_to_vector(a);
         // ilog( "${a} : ${d}", ("a", a)("d", hex_bytes( v_old )) );
         // ilog( "${a} : ${d}", ("a", a)("d", hex_bytes( v_cur )) );
-        BOOST_CHECK( v_cur == v_old );
+        BOOST_TEST_MESSAGE( display( v_old ) + std::string(" ") + display( v_cur ) );
+        BOOST_REQUIRE( v_cur == v_old );
 
         // check raw::unpack() works
         std::istringstream ss( string(v_cur.begin(), v_cur.end()) );
         asset a2;
         fc::raw::unpack( ss, a2 );
-        BOOST_CHECK( a == a2 );
+        BOOST_REQUIRE( a == a2 );
 
         // check conversion to JSON works
         //std::string json_old = old_json_asset(a);
         //std::string json_cur = fc::json::to_string(a);
         // ilog( "json_old: ${j}", ("j", json_old) );
         // ilog( "json_cur: ${j}", ("j", json_cur) );
-        //BOOST_CHECK( json_cur == json_old );
+        //BOOST_REQUIRE( json_cur == json_old );
 
         // check JSON serialization is symmetric
         std::string json_cur = fc::json::to_string(a);
         a2 = fc::json::from_string(json_cur).as< asset >();
-        BOOST_CHECK( a == a2 );
+        BOOST_REQUIRE( a == a2 );
       }
     }
   }
@@ -569,7 +578,7 @@ BOOST_AUTO_TEST_CASE( legacy_operation_test )
 {
   try
   {
-    auto v = fc::json::from_string( "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST1111111111111111111111111111111114T1Anm\", \"props\": {\"account_creation_fee\": \"0.500 TESTS\", \"maximum_block_size\": 65536, \"hbd_interest_rate\": 0}, \"fee\": \"0.000 TESTS\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}" );
+    auto v = fc::json::from_string( "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST1111111111111111111111111111111114T1Anm\", \"props\": {\"account_creation_fee\": \"0.500 HIVE\", \"maximum_block_size\": 65536, \"hbd_interest_rate\": 0}, \"fee\": \"0.000 HIVE\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}" );
     auto ls = v.as< hive::plugins::condenser_api::legacy_signed_transaction >();
     // not throwing an error here is success
   }
@@ -726,4 +735,3 @@ BOOST_AUTO_TEST_CASE( unpack_recursion_test )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#endif

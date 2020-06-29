@@ -1,4 +1,4 @@
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
@@ -88,7 +88,6 @@ BOOST_AUTO_TEST_CASE( push_pending_optional_actions )
 
 BOOST_AUTO_TEST_CASE( full_block )
 { try {
-  resize_shared_mem( 1024 * 1024 * 32 ); // Due to number of objects in the test, it requires a large file. (32 MB)
 
   // Verify correct delay semantics when a 25% of the block is full of required actions
   BOOST_TEST_MESSAGE( "Testing full block action delay" );
@@ -337,4 +336,5 @@ BOOST_AUTO_TEST_CASE( reject_optional_action )
 
 
 BOOST_AUTO_TEST_SUITE_END()
+
 #endif

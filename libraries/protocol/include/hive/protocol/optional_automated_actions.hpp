@@ -9,7 +9,7 @@ namespace hive { namespace protocol {
   /** NOTE: do not change the order of any actions or it will trigger a hardfork.
     */
   typedef fc::static_variant<
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
         example_optional_action
 #endif
       > optional_automated_action;
@@ -19,6 +19,6 @@ namespace hive { namespace protocol {
 HIVE_DECLARE_OPERATION_TYPE( hive::protocol::optional_automated_action );
 
 FC_TODO( "Remove ifdef when first optional automated action is added" )
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
 FC_REFLECT_TYPENAME( hive::protocol::optional_automated_action );
 #endif

@@ -122,9 +122,9 @@ def get_valid_hive_account_name():
             break
 
 def make_user_for_tests(_cli_wallet, _value_for_vesting = None,  _value_for_transfer_tests = None, _value_for_transfer_tbd = None):
-    value_for_vesting           = _value_for_vesting        if _value_for_vesting else "20.000 TESTS"
-    value_for_transfer_tests    = _value_for_transfer_tests if _value_for_transfer_tests else "20.000 TESTS"
-    value_for_transfer_tbd      = _value_for_transfer_tbd   if _value_for_transfer_tbd else "20.000 TBD"
+    value_for_vesting           = _value_for_vesting        if _value_for_vesting else "20.000 HIVE"
+    value_for_transfer_tests    = _value_for_transfer_tests if _value_for_transfer_tests else "20.000 HIVE"
+    value_for_transfer_tbd      = _value_for_transfer_tbd   if _value_for_transfer_tbd else "20.000 HBD"
 
     receiver = get_valid_hive_account_name()
 

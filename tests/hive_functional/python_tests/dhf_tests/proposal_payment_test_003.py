@@ -122,24 +122,24 @@ if __name__ == '__main__':
             test_utils.create_accounts(node_client, args.creator, accounts)
             # tranfer to vesting
             test_utils.transfer_to_vesting(node_client, args.creator, accounts, "300.000", 
-                "TESTS"
+                "HIVE"
             )
             logger.info("Wait 30 days for full voting power")
             hive_utils.debug_generate_blocks(node_client.rpc.url, wif, 30 * 24 * 3600 / 3 + 10)
             # transfer assets to accounts
             test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
-                "400.000", "TESTS", wif
+                "400.000", "HIVE", wif
             )
 
             test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
-                "400.000", "TBD", wif
+                "400.000", "HBD", wif
             )
 
             logger.info("Balances for accounts after initial transfer")
             test_utils.print_balance(node_client, accounts)
             # transfer assets to treasury
             test_utils.transfer_assets_to_treasury(node_client, args.creator, args.treasury, 
-                "1000000.000", "TBD", wif
+                "1000000.000", "HBD", wif
             )
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
 
@@ -152,10 +152,10 @@ if __name__ == '__main__':
             now = test_utils.date_from_iso(now)
 
             proposal_data = [
-                ['tester001', 1 + 0, 3, '240000.000 TBD'], # starts 1 day from now and lasts 3 days
-                ['tester002', 1 + 0, 3, '24.000 TBD'], # starts 1 day from now and lasts 3 days
-                ['tester003', 1 + 0, 3, '24.000 TBD'], # starts 1 days from now and lasts 3 day
-                ['tester004', 1 + 0, 3, '24.000 TBD']  # starts 1 days from now and lasts 3 day
+                ['tester001', 1 + 0, 3, '240000.000 HBD'], # starts 1 day from now and lasts 3 days
+                ['tester002', 1 + 0, 3, '24.000 HBD'], # starts 1 day from now and lasts 3 days
+                ['tester003', 1 + 0, 3, '24.000 HBD'], # starts 1 days from now and lasts 3 day
+                ['tester004', 1 + 0, 3, '24.000 HBD']  # starts 1 days from now and lasts 3 day
             ]
 
             proposals = [
@@ -192,8 +192,8 @@ if __name__ == '__main__':
             logger.info("Balances for accounts after creating proposals")
             balances = test_utils.print_balance(node_client, accounts)
             for balance in balances:
-                #should be 390.000 TBD for all
-                assert balance == '390000', "All balances should be equal to 390.000 TBD"
+                #should be 390.000 HBD for all
+                assert balance == '390000', "All balances should be equal to 390.000 HBD"
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
 
             # move forward in time to see if proposals are paid

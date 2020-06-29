@@ -1,5 +1,5 @@
 
-#if defined IS_TEST_NET && defined HIVE_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 
 #include <boost/test/unit_test.hpp>
 
@@ -35,8 +35,6 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
 
   try
   {
-    db->liquidity_rewards_enabled = false;
-
     ACTORS( (alice)(bob)(sam)(dave)(smtcreator) )
 
     //Create SMT and give some SMT to creators.
@@ -44,17 +42,17 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     asset_symbol_type any_smt_symbol = create_smt( "smtcreator", smtcreator_private_key, 3);
 
     generate_block();
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "sam", ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "dave", ASSET( "10.000 TESTS" ) );
+    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 HIVE" ) );
+    vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "10.000 HIVE" ) );
+    vest( HIVE_INIT_MINER_NAME, "sam", ASSET( "10.000 HIVE" ) );
+    vest( HIVE_INIT_MINER_NAME, "dave", ASSET( "10.000 HIVE" ) );
 
     tx.operations.clear();
     tx.signatures.clear();
 
-    BOOST_TEST_MESSAGE( "Rewarding Bob with TESTS" );
+    BOOST_TEST_MESSAGE( "Rewarding Bob with HIVE" );
 
-    auto exchange_rate = price( ASSET( "1.250 TESTS" ), asset( 1000, any_smt_symbol ) );
+    auto exchange_rate = price( ASSET( "1.250 HIVE" ), asset( 1000, any_smt_symbol ) );
 
     const account_object& alice_account = db->get_account( "alice" );
     FUND( "alice", asset( 25522, any_smt_symbol ) );
@@ -565,7 +563,6 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
 
     BOOST_TEST_MESSAGE( "Generating Blocks to trigger liquidity rewards" );
 
-    db->liquidity_rewards_enabled = true;
     generate_blocks( HIVE_LIQUIDITY_REWARD_BLOCKS - ( db->head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS ) - 1 );
 
     BOOST_REQUIRE( db->head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS == HIVE_LIQUIDITY_REWARD_BLOCKS - 1 );
@@ -613,8 +610,8 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
 
     op.owner = "sam";
     op.orderid = 14;
-    op.amount_to_sell = ASSET( "1.000 TESTS" );
-    op.min_to_receive = ASSET( "1.000 TBD" );
+    op.amount_to_sell = ASSET( "1.000 HIVE" );
+    op.min_to_receive = ASSET( "1.000 HBD" );
     tx.operations.clear();
     tx.signatures.clear();
     tx.operations.push_back( op );
@@ -644,7 +641,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
 
-    sam_smt_volume = ASSET( "1.000 TBD" ).amount.value;
+    sam_smt_volume = ASSET( "1.000 HBD" ).amount.value;
     sam_hive_volume = 0;
     sam_reward_last_update = db->head_block_time();
 
