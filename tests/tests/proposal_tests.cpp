@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     ACTORS( (alice)(bob)(carol)(dan) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -100,15 +100,15 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     auto daily_pay = ASSET( "48.000 TBD" );
     auto hourly_pay = ASSET( "1.996 TBD" );// hourly_pay != ASSET( "2.000 TBD" ) because lack of rounding
 
-    FUND( creator, ASSET( "160.000 TESTS" ) );
+    FUND( creator, ASSET( "160.000 HIVE" ) );
     FUND( creator, ASSET( "80.000 TBD" ) );
     FUND( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
 
     auto voter_00 = "carol";
     auto voter_01 = "dan";
 
-    vest(HIVE_INIT_MINER_NAME, voter_00, ASSET( "1.000 TESTS" ));
-    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "3.100 TESTS" ));
+    vest(HIVE_INIT_MINER_NAME, voter_00, ASSET( "1.000 HIVE" ));
+    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "3.100 HIVE" ));
 
     //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
     start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     ACTORS( (alice)(bob)(carol) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -285,13 +285,13 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     auto daily_pay = ASSET( "48.000 TBD" );
     auto hourly_pay = ASSET( "1.996 TBD" );// hourly_pay != ASSET( "2.000 TBD" ) because lack of rounding
 
-    FUND( creator, ASSET( "160.000 TESTS" ) );
+    FUND( creator, ASSET( "160.000 HIVE" ) );
     FUND( creator, ASSET( "80.000 TBD" ) );
     FUND( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
 
     auto voter_01 = "carol";
 
-    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "1.000 TESTS" ));
+    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "1.000 HIVE" ));
 
     //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
     start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
@@ -360,7 +360,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     ACTORS( (tester001)(tester002)(tester003)(tester004)(tester005) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -384,9 +384,9 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
 
     for( auto item : inits )
     {
-      FUND( item.account, ASSET( "400.000 TESTS" ) );
+      FUND( item.account, ASSET( "400.000 HIVE" ) );
       FUND( item.account, ASSET( "400.000 TBD" ) );
-      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "300.000 TESTS" ));
+      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "300.000 HIVE" ));
     }
 
     auto start_date = db->head_block_time();
@@ -453,7 +453,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
         )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -480,9 +480,9 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
 
     for( auto item : inits )
     {
-      FUND( item.account, ASSET( "400.000 TESTS" ) );
+      FUND( item.account, ASSET( "400.000 HIVE" ) );
       FUND( item.account, ASSET( "400.000 TBD" ) );
-      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "300.000 TESTS" ));
+      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "300.000 HIVE" ));
     }
 
     const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_proposal_id >();
@@ -554,7 +554,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     ACTORS( (tester00)(tester01)(tester02) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -570,15 +570,15 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     {
       if( item.first == tester02_account )
       {
-        FUND( item.first, ASSET( "41.000 TESTS" ) );
+        FUND( item.first, ASSET( "41.000 HIVE" ) );
         FUND( item.first, ASSET( "41.000 TBD" ) );
-        vest(HIVE_INIT_MINER_NAME, item.first, ASSET( "31.000 TESTS" ));
+        vest(HIVE_INIT_MINER_NAME, item.first, ASSET( "31.000 HIVE" ));
       }
       else
       {
-        FUND( item.first, ASSET( "40.000 TESTS" ) );
+        FUND( item.first, ASSET( "40.000 HIVE" ) );
         FUND( item.first, ASSET( "40.000 TBD" ) );
-        vest(HIVE_INIT_MINER_NAME, item.first, ASSET( "30.000 TESTS" ));
+        vest(HIVE_INIT_MINER_NAME, item.first, ASSET( "30.000 HIVE" ));
       }
     }
 
@@ -726,7 +726,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance)
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -801,7 +801,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     auto fee = asset( HIVE_TREASURY_FEE, HBD_SYMBOL );
@@ -890,7 +890,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_apply )
     ACTORS( (alice)(bob)(carol)(dan) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     auto creator = "alice";
@@ -962,7 +962,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
     ACTORS( (alice)(bob)(carol)(dan) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     auto creator = "alice";
@@ -1221,7 +1221,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_000 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     auto creator    = "alice";
@@ -2032,7 +2032,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     auto creator = "alice";
@@ -2105,7 +2105,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
     ACTORS( (a00)(a01)(a02)(a03)(a04) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -2191,7 +2191,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
     ACTORS( (a00)(a01)(a02)(a03)(a04) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -2295,7 +2295,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
     ACTORS( (a00)(a01)(a02)(a03)(a04) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -2393,7 +2393,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
     ACTORS( (a00)(a01)(a02)(a03)(a04)(a05) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -2637,7 +2637,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
         )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -3046,7 +3046,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
 
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -3150,7 +3150,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
 
     std::vector< initial_data > inits = generate_accounts( this, 30000 );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
     //=====================preparing=====================
@@ -3175,7 +3175,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       {
         FUND( item.account, ASSET( "11.000 TBD" ) );
       }
-      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "30.000 TESTS" ));
+      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "30.000 HIVE" ));
 
       call( i, 50, "${x} accounts got VESTS" );
     }

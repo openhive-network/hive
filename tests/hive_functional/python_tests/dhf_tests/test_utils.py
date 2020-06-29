@@ -28,7 +28,7 @@ def create_accounts(node, creator, accounts):
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
 
-# transfer_to_vesting initminer pychol "310.000 TESTS" true
+# transfer_to_vesting initminer pychol "310.000 HIVE" true
 def transfer_to_vesting(node, from_account, accounts, amount, asset):
     from beem.account import Account
     for acnt in accounts:
@@ -40,7 +40,7 @@ def transfer_to_vesting(node, from_account, accounts, amount, asset):
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
 
-# transfer initminer pychol "399.000 TESTS" "initial transfer" true
+# transfer initminer pychol "399.000 HIVE" "initial transfer" true
 # transfer initminer pychol "398.000 TBD" "initial transfer" true
 def transfer_assets_to_accounts(node, from_account, accounts, amount, asset, wif=None):
     from beem.account import Account

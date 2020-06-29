@@ -97,22 +97,22 @@ BOOST_AUTO_TEST_CASE( legacy_asset_test )
     using hive::plugins::condenser_api::legacy_asset;
 
     BOOST_CHECK_EQUAL( legacy_asset().symbol.decimals(), 3 );
-    BOOST_CHECK_EQUAL( legacy_asset().to_string(), "0.000 TESTS" );
+    BOOST_CHECK_EQUAL( legacy_asset().to_string(), "0.000 HIVE" );
 
     BOOST_TEST_MESSAGE( "Asset Test" );
-    legacy_asset hive = legacy_asset::from_string( "123.456 TESTS" );
+    legacy_asset hive = legacy_asset::from_string( "123.456 HIVE" );
     legacy_asset hbd = legacy_asset::from_string( "654.321 TBD" );
-    legacy_asset tmp = legacy_asset::from_string( "0.456 TESTS" );
+    legacy_asset tmp = legacy_asset::from_string( "0.456 HIVE" );
     BOOST_CHECK_EQUAL( tmp.amount.value, 456 );
-    tmp = legacy_asset::from_string( "0.056 TESTS" );
+    tmp = legacy_asset::from_string( "0.056 HIVE" );
     BOOST_CHECK_EQUAL( tmp.amount.value, 56 );
 
     BOOST_CHECK_EQUAL( hive.amount.value, 123456 );
     BOOST_CHECK_EQUAL( hive.symbol.decimals(), 3 );
-    BOOST_CHECK_EQUAL( hive.to_string(), "123.456 TESTS" );
+    BOOST_CHECK_EQUAL( hive.to_string(), "123.456 HIVE" );
     BOOST_CHECK( hive.symbol == HIVE_SYMBOL );
-    BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset( 50, HIVE_SYMBOL ) ).to_string(), "0.050 TESTS" );
-    BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset(50000, HIVE_SYMBOL ) ) .to_string(), "50.000 TESTS" );
+    BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset( 50, HIVE_SYMBOL ) ).to_string(), "0.050 HIVE" );
+    BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset(50000, HIVE_SYMBOL ) ) .to_string(), "50.000 HIVE" );
 
     BOOST_CHECK_EQUAL( hbd.amount.value, 654321 );
     BOOST_CHECK_EQUAL( hbd.symbol.decimals(), 3 );
@@ -121,25 +121,25 @@ BOOST_AUTO_TEST_CASE( legacy_asset_test )
     BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset(50, HBD_SYMBOL ) ).to_string(), "0.050 TBD" );
     BOOST_CHECK_EQUAL( legacy_asset::from_asset( asset(50000, HBD_SYMBOL ) ).to_string(), "50.000 TBD" );
 
-    BOOST_CHECK_THROW( legacy_asset::from_string( "1.00000000000000000000 TESTS" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( "1.00000000000000000000 HIVE" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "1.000TESTS" ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( "1. 333 TESTS" ), fc::exception ); // Fails because symbol is '333 TESTS', which is too long
-    BOOST_CHECK_THROW( legacy_asset::from_string( "1 .333 TESTS" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( "1. 333 HIVE" ), fc::exception ); // Fails because symbol is '333 TESTS', which is too long
+    BOOST_CHECK_THROW( legacy_asset::from_string( "1 .333 HIVE" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "1. 333 X" ), fc::exception ); // Not a system asset
     BOOST_CHECK_THROW( legacy_asset::from_string( "1 .333 X" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "1 .333" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "1 1.1" ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( "11111111111111111111111111111111111111111111111 TESTS" ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( "1.1.1 TESTS" ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( "1.abc TESTS" ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( " TESTS" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( "11111111111111111111111111111111111111111111111 HIVE" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( "1.1.1 HIVE" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( "1.abc HIVE" ), fc::exception );
+    BOOST_CHECK_THROW( legacy_asset::from_string( " HIVE" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "TESTS" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "1.333" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "1.333 " ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "" ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( " " ), fc::exception );
     BOOST_CHECK_THROW( legacy_asset::from_string( "  " ), fc::exception );
-    BOOST_CHECK_THROW( legacy_asset::from_string( "100 TESTS" ), fc::exception ); // Does not match system asset precision
+    BOOST_CHECK_THROW( legacy_asset::from_string( "100 HIVE" ), fc::exception ); // Does not match system asset precision
   }
   FC_LOG_AND_RETHROW()
 }
@@ -278,7 +278,7 @@ std::string old_json_asset( const asset& a )
   std::string result = ss.str();
   result.insert( result.length() - decimal_places, 1, '.' );
   if( a.symbol == HIVE_SYMBOL )
-    result += " TESTS";
+    result += " HIVE";
   else if( a.symbol == HBD_SYMBOL )
     result += " TBD";
   else if( a.symbol == VESTS_SYMBOL )

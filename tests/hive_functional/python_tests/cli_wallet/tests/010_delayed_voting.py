@@ -66,7 +66,7 @@ if __name__ == "__main__":
         before_val = get_votes( wallet, receiver )
 
         #=================Vest liquid again=================
-        wallet.transfer_to_vesting( creator, receiver, "1.000 TESTS", "true" )
+        wallet.transfer_to_vesting( creator, receiver, "1.000 HIVE", "true" )
 
         #=================Adding delayed votes=================
         after_val = get_votes( wallet, receiver )

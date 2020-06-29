@@ -42,10 +42,6 @@ uint32_t string_to_asset_num( const char* p, uint8_t decimals )
       }
       switch( name_u64 )
       {
-#ifndef IS_TEST_NET
-        /// Has same value as HIVE_SYMBOL_U64
-        case OBSOLETE_SYMBOL_U64:
-#endif /// IS_TEST_NET
         case HIVE_SYMBOL_U64:
           FC_ASSERT( decimals == 3, "Incorrect decimal places" );
           asset_num = HIVE_ASSET_NUM_HIVE;

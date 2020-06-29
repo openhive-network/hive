@@ -92,9 +92,9 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     ACTORS( (alice)(bob) );
     generate_block();
 
-    fund( "alice", ASSET( "1000.000 TESTS" ) );
+    fund( "alice", ASSET( "1000.000 HIVE" ) );
     fund( "alice", ASSET( "1000.000 TBD" ) );
-    fund( "bob", ASSET( "1000.000 TESTS" ) );
+    fund( "bob", ASSET( "1000.000 HIVE" ) );
 
     generate_block();
 
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     op0.from = "alice";
     op0.to = "bob";
-    op0.amount = ASSET( "5.000 TESTS" );
+    op0.amount = ASSET( "5.000 HIVE" );
 
     // Create transaction 0
     tx0.operations.push_back( op0 );
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     op1.from = "alice";
     op1.to = "bob";
-    op1.amount = ASSET( "5.000 TESTS" );
+    op1.amount = ASSET( "5.000 HIVE" );
 
     // Create transaction 1
     tx1.operations.push_back( op1 );
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     op2.from = "alice";
     op2.to = "bob";
-    op2.amount = ASSET( "5.000 TESTS" );
+    op2.amount = ASSET( "5.000 HIVE" );
 
     tx2.operations.push_back( op2 );
     tx2.set_expiration( tx2_expiration );
@@ -189,7 +189,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     op3.from = "bob";
     op3.to = "alice";
-    op3.amount = ASSET( "5.000 TESTS" );
+    op3.amount = ASSET( "5.000 HIVE" );
 
     tx3.operations.push_back( op3 );
     tx3.set_expiration( tx3_expiration );
@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     op4.from = "alice";
     op4.to = "bob";
-    op4.amount = ASSET( "5.000 TESTS" );
+    op4.amount = ASSET( "5.000 HIVE" );
 
     tx4.operations.push_back( op4 );
     tx4.set_expiration( tx4_expiration );
@@ -448,7 +448,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     op5.from = "alice";
     op5.to = "bob";
-    op5.amount = ASSET( "5.000 TESTS" );
+    op5.amount = ASSET( "5.000 HIVE" );
 
     tx5.operations.push_back( op5 );
     tx5.set_expiration( tx5_expiration );

@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
 
     ACTORS( ( alice ) )
     generate_block();
-    fund( "alice", ASSET( "10.000 TESTS" ) );
+    fund( "alice", ASSET( "10.000 HIVE" ) );
     fund( "alice", ASSET( "10.000 TBD" ) );
     generate_block();
 
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       transfer_operation op;
       op.from = "alice";
       op.to = OBSOLETE_TREASURY_ACCOUNT;
-      op.amount = ASSET( "1.000 TESTS" );
+      op.amount = ASSET( "1.000 HIVE" );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
       BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception ); //still blocked even though old is no longer active treasury
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       transfer_to_vesting_operation op;
       op.from = "alice";
       op.to = OBSOLETE_TREASURY_ACCOUNT;
-      op.amount = ASSET( "1.000 TESTS" );
+      op.amount = ASSET( "1.000 HIVE" );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
       BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       transfer_to_savings_operation op;
       op.from = "alice";
       op.to = OBSOLETE_TREASURY_ACCOUNT;
-      op.amount = ASSET( "1.000 TESTS" );
+      op.amount = ASSET( "1.000 HIVE" );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
       BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
 
       tx.clear();
-      op.amount = ASSET( "1.000 TESTS" );
+      op.amount = ASSET( "1.000 HIVE" );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
       BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
       db->push_transaction( tx, 0 );
-      BOOST_REQUIRE( get_savings( "alice" ) == ASSET( "1.000 TESTS" ) );
+      BOOST_REQUIRE( get_savings( "alice" ) == ASSET( "1.000 HIVE" ) );
     }
     tx.clear();
 
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       transfer_from_savings_operation op;
       op.from = "alice";
       op.to = OBSOLETE_TREASURY_ACCOUNT;
-      op.amount = ASSET( "1.000 TESTS" );
+      op.amount = ASSET( "1.000 HIVE" );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
       BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
         gpo.sps_fund_percent = 0;
       } );
     } );
-    fund( "alice", ASSET( "10.000 TESTS" ) );
+    fund( "alice", ASSET( "10.000 HIVE" ) );
     fund( "alice", ASSET( "10.000 TBD" ) );
     generate_block();
 
@@ -248,22 +248,22 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
     db_plugin->debug_update( [&]( database& db )
     {
       auto& dgpo = db.get_dynamic_global_properties();
-      db.adjust_supply( ASSET( "20.000 TESTS" ) );
+      db.adjust_supply( ASSET( "20.000 HIVE" ) );
       db.adjust_supply( ASSET( "10.000 TBD" ) );
-      vested_3 = ASSET( "3.000 TESTS" ) * dgpo.get_vesting_share_price();
-      vested_7 = ASSET( "7.000 TESTS" ) * dgpo.get_vesting_share_price();
+      vested_3 = ASSET( "3.000 HIVE" ) * dgpo.get_vesting_share_price();
+      vested_7 = ASSET( "7.000 HIVE" ) * dgpo.get_vesting_share_price();
       db.modify( dgpo, []( dynamic_global_property_object& gpo )
       {
         gpo.sps_fund_percent = 0;
       } );
       auto& old_treasury = db.get_account( OBSOLETE_TREASURY_ACCOUNT );
-      db.create_vesting( old_treasury, ASSET( "7.000 TESTS" ) );
-      db.create_vesting( old_treasury, ASSET( "3.000 TESTS" ), true );
+      db.create_vesting( old_treasury, ASSET( "7.000 HIVE" ) );
+      db.create_vesting( old_treasury, ASSET( "3.000 HIVE" ), true );
       db.modify( old_treasury, [&]( account_object& t )
       {
-        t.balance = ASSET( "5.000 TESTS" );
-        t.savings_balance = ASSET( "3.000 TESTS" );
-        t.reward_hive_balance = ASSET( "2.000 TESTS" );
+        t.balance = ASSET( "5.000 HIVE" );
+        t.savings_balance = ASSET( "3.000 HIVE" );
+        t.reward_hive_balance = ASSET( "2.000 HIVE" );
         t.hbd_balance = ASSET( "5.000 TBD" );
         t.savings_hbd_balance = ASSET( "3.000 TBD" );
         t.reward_hbd_balance = ASSET( "2.000 TBD" );

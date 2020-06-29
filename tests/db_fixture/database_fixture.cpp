@@ -523,7 +523,7 @@ void database_fixture::vest( const string& from, const string& to, const asset& 
 {
   try
   {
-    FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest TESTS" );
+    FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest HIVE" );
 
     transfer_to_vesting_operation op;
     op.from = from;
@@ -737,8 +737,8 @@ asset_symbol_type t_smt_database_fixture< T >::create_smt_with_nai( const string
     fund( account_name, 10 * 1000 * 1000 );
     this->generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-    convert( account_name, ASSET( "5000.000 TESTS" ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    convert( account_name, ASSET( "5000.000 HIVE" ) );
 
     op.symbol = asset_symbol_type::from_nai( nai, token_decimal_places );
     op.precision = op.symbol.decimals();
@@ -804,8 +804,8 @@ std::array<asset_symbol_type, 3> t_smt_database_fixture< T >::create_smt_3(const
     fund( control_account_name, 10 * 1000 * 1000 );
     this->generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-    convert( control_account_name, ASSET( "5000.000 TESTS" ) );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 HIVE" ) ) );
+    convert( control_account_name, ASSET( "5000.000 HIVE" ) );
 
     set_create_op( &op0, control_account_name, 0, *this->db );
     set_create_op( &op1, control_account_name, 1, *this->db );
@@ -1114,7 +1114,7 @@ void hf23_database_fixture::push_transaction( const operation& op, const fc::ecc
 
 void hf23_database_fixture::vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )
 {
-  FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest TESTS" );
+  FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest HIVE" );
 
   transfer_to_vesting_operation op;
   op.from = from;
@@ -1156,7 +1156,7 @@ void delayed_vote_database_fixture::witness_vote( const std::string& account, co
 
 void delayed_vote_database_fixture::vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )
 {
-  FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest TESTS" );
+  FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest HIVE" );
 
   transfer_to_vesting_operation op;
   op.from = from;

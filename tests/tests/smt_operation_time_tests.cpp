@@ -44,17 +44,17 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     asset_symbol_type any_smt_symbol = create_smt( "smtcreator", smtcreator_private_key, 3);
 
     generate_block();
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "sam", ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "dave", ASSET( "10.000 TESTS" ) );
+    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 HIVE" ) );
+    vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "10.000 HIVE" ) );
+    vest( HIVE_INIT_MINER_NAME, "sam", ASSET( "10.000 HIVE" ) );
+    vest( HIVE_INIT_MINER_NAME, "dave", ASSET( "10.000 HIVE" ) );
 
     tx.operations.clear();
     tx.signatures.clear();
 
-    BOOST_TEST_MESSAGE( "Rewarding Bob with TESTS" );
+    BOOST_TEST_MESSAGE( "Rewarding Bob with HIVE" );
 
-    auto exchange_rate = price( ASSET( "1.250 TESTS" ), asset( 1000, any_smt_symbol ) );
+    auto exchange_rate = price( ASSET( "1.250 HIVE" ), asset( 1000, any_smt_symbol ) );
 
     const account_object& alice_account = db->get_account( "alice" );
     FUND( "alice", asset( 25522, any_smt_symbol ) );
@@ -613,7 +613,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
 
     op.owner = "sam";
     op.orderid = 14;
-    op.amount_to_sell = ASSET( "1.000 TESTS" );
+    op.amount_to_sell = ASSET( "1.000 HIVE" );
     op.min_to_receive = ASSET( "1.000 TBD" );
     tx.operations.clear();
     tx.signatures.clear();
