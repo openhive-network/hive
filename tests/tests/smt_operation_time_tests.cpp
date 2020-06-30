@@ -35,8 +35,6 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
 
   try
   {
-    db->liquidity_rewards_enabled = false;
-
     ACTORS( (alice)(bob)(sam)(dave)(smtcreator) )
 
     //Create SMT and give some SMT to creators.
@@ -565,7 +563,6 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
 
     BOOST_TEST_MESSAGE( "Generating Blocks to trigger liquidity rewards" );
 
-    db->liquidity_rewards_enabled = true;
     generate_blocks( HIVE_LIQUIDITY_REWARD_BLOCKS - ( db->head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS ) - 1 );
 
     BOOST_REQUIRE( db->head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS == HIVE_LIQUIDITY_REWARD_BLOCKS - 1 );

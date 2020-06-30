@@ -3109,11 +3109,6 @@ asset database::get_pow_reward()const
 
 void database::pay_liquidity_reward()
 {
-#ifdef IS_TEST_NET
-  if( !liquidity_rewards_enabled )
-    return;
-#endif
-
   if( (head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS) == 0 )
   {
     auto reward = get_liquidity_reward();
