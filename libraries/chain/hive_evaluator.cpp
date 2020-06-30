@@ -1204,7 +1204,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   */
   if( _db.has_hardfork( HIVE_HARDFORK_0_24 ) )
   {
-    asset new_vesting = _db.adjust_account_vesting_balance( to_account, o.amount, false/*to_reward_balance*/, []( asset vests_created ) {} );
+    VEST_asset new_vesting = _db.adjust_account_vesting_balance( to_account, o.amount, false/*to_reward_balance*/, []( VEST_asset vests_created ) {} );
 
     delayed_voting dv( _db );
     dv.add_delayed_value( to_account, _db.head_block_time(), new_vesting.amount.value );

@@ -1457,11 +1457,11 @@ std::pair< asset, asset > database::create_hbd( const account_object& to_account
   return assets;
 }
 
-asset database::adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
+VEST_asset database::adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
 {
   try
   {
-    auto calculate_new_vesting = [ liquid ] ( price vesting_share_price ) -> asset
+    auto calculate_new_vesting = [ liquid ] ( price vesting_share_price ) -> VEST_asset
       {
       /**
         *  The ratio of total_vesting_shares / total_vesting_fund_hive should not
@@ -1476,7 +1476,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
         *
         *  128 bit math is requred due to multiplying of 64 bit numbers. This is done in asset and price.
         */
-      asset new_vesting = liquid * ( vesting_share_price );
+      auto new_vesting = VEST_asset(liquid * vesting_share_price);
       return new_vesting;
       };
 
@@ -1489,7 +1489,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
       FC_ASSERT( smt.allow_voting == to_reward_balance, "No voting - no rewards" );
       price vesting_share_price = to_reward_balance ? smt.get_reward_vesting_share_price() : smt.get_vesting_share_price();
       // Calculate new vesting from provided liquid using share price.
-      asset new_vesting = calculate_new_vesting( vesting_share_price );
+      VEST_asset new_vesting = calculate_new_vesting( vesting_share_price );
       before_vesting_callback( new_vesting );
       // Add new vesting to owner's balance.
       if( to_reward_balance )
@@ -1523,7 +1523,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
     const auto& cprops = get_dynamic_global_properties();
     price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price();
     // Calculate new vesting from provided liquid using share price.
-    asset new_vesting = calculate_new_vesting( vesting_share_price );
+    VEST_asset new_vesting = calculate_new_vesting( vesting_share_price );
     before_vesting_callback( new_vesting );
     // Add new vesting to owner's balance.
     if( to_reward_balance )
@@ -1552,13 +1552,13 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
     {
       if( to_reward_balance )
       {
-        props.pending_rewarded_vesting_shares += new_vesting;
+        props.pending_rewarded_vesting_shares += new_vesting.to_asset();
         props.pending_rewarded_vesting_hive += liquid;
       }
       else
       {
         props.total_vesting_fund_hive += liquid;
-        props.total_vesting_shares += new_vesting;
+        props.total_vesting_shares += new_vesting.to_asset();
       }
     } );
 
@@ -1571,11 +1571,11 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
 // we modify the database.
 // This allows us to implement virtual op pre-notifications in the Before function.
 template< typename Before >
-asset create_vesting2( database& db, const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
+VEST_asset create_vesting2( database& db, const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
 {
   try
   {
-    asset new_vesting = db.adjust_account_vesting_balance( to_account, liquid, to_reward_balance, std::forward<Before>( before_vesting_callback ) );
+    VEST_asset new_vesting = db.adjust_account_vesting_balance( to_account, liquid, to_reward_balance, std::forward<Before>( before_vesting_callback ) );
 
     // Update witness voting numbers.
     if( !to_reward_balance )
@@ -1590,9 +1590,9 @@ asset create_vesting2( database& db, const account_object& to_account, const ass
   * @param to_account - the account to receive the new vesting shares
   * @param liquid     - HIVE or liquid SMT to be converted to vesting shares
   */
-asset database::create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance )
+VEST_asset database::create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance )
 {
-  return create_vesting2( *this, to_account, liquid, to_reward_balance, []( asset vests_created ) {} );
+  return create_vesting2( *this, to_account, liquid, to_reward_balance, []( VEST_asset vests_created ) {} );
 }
 
 fc::sha256 database::get_pow_target()const
@@ -2565,9 +2565,9 @@ share_type database::pay_curators( const comment_object& comment, const comment_
           const auto& voter = get( item->voter );
           operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.permlink ) );
           create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
-            [&]( const asset& reward )
+            [&]( const VEST_asset& reward )
             {
-              vop.get< curation_reward_operation >().reward = reward;
+              vop.get< curation_reward_operation >().reward = reward.to_asset();
               pre_push_virtual_operation( vop );
             } );
 
@@ -2654,9 +2654,9 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           }
 
           create_vesting2( *this, get_account( b.account ), asset( benefactor_vesting_hive, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
-          [&]( const asset& reward )
+          [&]( const VEST_asset& reward )
           {
-            vop.vesting_payout = reward;
+            vop.vesting_payout = reward.to_asset();
             pre_push_virtual_operation( vop );
           });
 
@@ -2673,9 +2673,9 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         operation vop = author_reward_operation( comment_author, to_string( comment_cashout.permlink ), hbd_payout.first, hbd_payout.second, asset( 0, VESTS_SYMBOL ) );
 
         create_vesting2( *this, author, asset( vesting_hive, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
-          [&]( const asset& vesting_payout )
+          [&]( const VEST_asset& vesting_payout )
           {
-            vop.get< author_reward_operation >().vesting_payout = vesting_payout;
+            vop.get< author_reward_operation >().vesting_payout = vesting_payout.to_asset();
             pre_push_virtual_operation( vop );
           } );
 
@@ -2971,9 +2971,9 @@ void database::process_funds()
 
     operation vop = producer_reward_operation( cwit.owner, asset( 0, VESTS_SYMBOL ) );
     create_vesting2( *this, get_account( cwit.owner ), asset( witness_reward, HIVE_SYMBOL ), false,
-      [&]( const asset& vesting_shares )
+      [&]( const VEST_asset& vesting_shares )
       {
-        vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
+        vop.get< producer_reward_operation >().vesting_shares = vesting_shares.to_asset();
         pre_push_virtual_operation( vop );
       } );
     post_push_virtual_operation( vop );
@@ -3086,9 +3086,9 @@ asset database::get_producer_reward()
     // const auto& witness_obj = get_witness( props.current_witness );
     operation vop = producer_reward_operation( witness_account.name, asset( 0, VESTS_SYMBOL ) );
     create_vesting2( *this, witness_account, pay, false,
-      [&]( const asset& vesting_shares )
+      [&]( const VEST_asset& vesting_shares )
       {
-        vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
+        vop.get< producer_reward_operation >().vesting_shares = vesting_shares.to_asset();
         pre_push_virtual_operation( vop );
       } );
     post_push_virtual_operation( vop );
@@ -5165,9 +5165,9 @@ void database::modify_balance( const account_object& a, const VEST_asset& delta,
    } );
 }
 
-void database::modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta, bool check_balance )
+void database::modify_reward_balance( const account_object& a, const asset& value_delta, const VEST_asset& share_delta, bool check_balance )
 {
-  modify( a, [&]( account_object& acnt )
+  modify( a, [&, check_balance]( account_object& acnt )
   {
     switch( value_delta.symbol.asset_num )
     {
@@ -5413,10 +5413,10 @@ void database::adjust_savings_balance( const account_object& a, const HIVE_asset
 }
 
 void database::adjust_reward_balance( const account_object& a, const asset& value_delta,
-                          const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
+                                      const VEST_asset& share_delta /*= VEST_asset(0)*/ )
 {
   bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
-  FC_ASSERT( value_delta.symbol.is_vesting() == false && share_delta.symbol.is_vesting() );
+  FC_ASSERT( value_delta.symbol.is_vesting() == false );
 
 #ifdef HIVE_ENABLE_SMT
   // No account object modification for SMT balance, hence separate handling here.
@@ -5428,7 +5428,7 @@ void database::adjust_reward_balance( const account_object& a, const asset& valu
       if( share_delta.amount.value != 0 )
       {
         bo.pending_vesting_value += value_delta;
-        bo.pending_vesting_shares += share_delta;
+        bo.pending_vesting_shares += share_delta.to_asset();
         // Check result to avoid negative balance storing.
         FC_ASSERT( bo.pending_vesting_value.amount >= 0, "Insufficient SMT ${smt} funds", ( "smt", value_delta.symbol ) );
       }

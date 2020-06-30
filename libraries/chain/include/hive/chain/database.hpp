@@ -420,10 +420,10 @@ namespace hive { namespace chain {
       /** @return the HBD created and deposited to_account, may return HIVE if there is no median feed */
       std::pair< asset, asset > create_hbd( const account_object& to_account, asset hive, bool to_reward_balance=false );
 
-      using Before = std::function< void( const asset& ) >;
-      asset adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
+      using Before = std::function< void( const VEST_asset& ) >;
+      VEST_asset adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
 
-      asset create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance=false );
+      VEST_asset create_vesting( const account_object& to_account, const asset& hive, bool to_reward_balance=false );
 
       void adjust_total_payout( const comment_cashout_object& a, const asset& hbd, const asset& curator_hbd_value, const asset& beneficiary_value );
 
@@ -454,8 +454,8 @@ namespace hive { namespace chain {
       void adjust_savings_balance( const account_object& a, const HBD_asset& delta );
       void adjust_savings_balance( const account_object& a, const HIVE_asset& delta );
 
-      void adjust_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) );
-      void adjust_reward_balance( const account_name_type& name, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) )
+      void adjust_reward_balance( const account_object& a, const asset& value_delta, const VEST_asset& share_delta = VEST_asset(0) );
+      void adjust_reward_balance( const account_name_type& name, const asset& value_delta, const VEST_asset& share_delta = VEST_asset(0) )
       {
         adjust_reward_balance( get_account( name ), value_delta, share_delta );
       }
@@ -680,7 +680,7 @@ namespace hive { namespace chain {
       void modify_balance( const account_object& a, const HBD_asset& delta, bool check_balance );
       void modify_balance( const account_object& a, const HIVE_asset& delta, bool check_balance );
       void modify_balance( const account_object& a, const VEST_asset& delta, bool check_balance );
-      void modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta, bool check_balance );
+      void modify_reward_balance( const account_object& a, const asset& value_delta, const VEST_asset& share_delta, bool check_balance );
 
       operation_notification create_operation_notification( const operation& op )const
       {
