@@ -1812,12 +1812,12 @@ void database::clear_null_account_balance()
 
   if( null_account.get_rewards().amount > 0 )
   {
-    adjust_reward_balance( null_account, -null_account.get_rewards() );
+    adjust_reward_balance( null_account, ( -null_account.get_rewards() ).to_asset() );
   }
 
   if( null_account.get_hbd_rewards().amount > 0 )
   {
-    adjust_reward_balance( null_account, -null_account.get_hbd_rewards() );
+    adjust_reward_balance( null_account, ( -null_account.get_hbd_rewards() ).to_asset() );
   }
 
   if( null_account.get_vest_rewards().amount > 0 )
@@ -1925,13 +1925,13 @@ void database::consolidate_treasury_balance()
   if( old_treasury_account.get_rewards().amount > 0 )
   {
     adjust_reward_balance( treasury_account, old_treasury_account.get_rewards().to_asset() );
-    adjust_reward_balance( old_treasury_account, -old_treasury_account.get_rewards() );
+    adjust_reward_balance( old_treasury_account, ( -old_treasury_account.get_rewards() ).to_asset() );
   }
 
   if( old_treasury_account.get_hbd_rewards().amount > 0 )
   {
     adjust_reward_balance( treasury_account, old_treasury_account.get_hbd_rewards().to_asset() );
-    adjust_reward_balance( old_treasury_account, -old_treasury_account.get_hbd_rewards() );
+    adjust_reward_balance( old_treasury_account, ( -old_treasury_account.get_hbd_rewards() ).to_asset() );
   }
 
   if( old_treasury_account.get_vest_rewards().amount > 0 )
@@ -2258,9 +2258,9 @@ void database::clear_account( const account_object& account,
   total_transferred_hive += account.get_rewards().to_asset();
   total_transferred_hbd += account.get_hbd_rewards().to_asset();
   adjust_balance( treasury_account, account.get_rewards() );
-  adjust_reward_balance( account, -account.get_rewards() );
+  adjust_reward_balance( account, ( -account.get_rewards() ).to_asset() );
   adjust_balance( treasury_account, account.get_hbd_rewards() );
-  adjust_reward_balance( account, -account.get_hbd_rewards() );
+  adjust_reward_balance( account, ( -account.get_hbd_rewards() ).to_asset() );
 
   // Convert and transfer vesting rewards
   adjust_balance( treasury_account, account.get_vest_rewards_as_hive() );
@@ -5268,10 +5268,10 @@ void database::adjust_balance( const account_object& a, const HBD_asset& delta )
 {
    if ( delta.amount < 0 )
    {
-     asset available = a.get_hbd_balance().to_asset();
-      FC_ASSERT( available >= -delta,
-         "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
-            ("acc", a.name)("r", delta)("a", available) );
+     HBD_asset available = a.get_hbd_balance();
+     FC_ASSERT( available >= -delta,
+       "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
+       ("acc", a.name)("r", delta)("a", available) );
    }
 
    bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
@@ -5282,7 +5282,7 @@ void database::adjust_balance( const account_object& a, const HIVE_asset& delta 
 {
    if ( delta.amount < 0 )
    {
-      asset available = a.get_balance().to_asset();
+      HIVE_asset available = a.get_balance();
       FC_ASSERT( available >= -delta,
          "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
             ("acc", a.name)("r", delta)("a", available) );

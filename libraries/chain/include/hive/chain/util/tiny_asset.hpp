@@ -90,8 +90,10 @@ namespace hive
        return tiny_asset< _SYMBOL >( obj1.amount - obj2.amount );
     }
 
-    template< uint32_t _SYMBOL >
-    protocol::asset operator-( const tiny_asset< _SYMBOL >& obj1) { return -static_cast< protocol::asset >( obj1 ); }
+    template <uint32_t _SYMBOL>
+    tiny_asset< _SYMBOL > operator-( const tiny_asset<_SYMBOL> &obj ) {
+      return tiny_asset< _SYMBOL >( -obj.amount );
+    }
 
   }
 }
