@@ -3170,7 +3170,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
       auto weekly_withdraw = VEST_asset( std::min(
         delegator.vesting_withdraw_rate.amount.value,           // Weekly amount
         delegator.to_withdraw.value - delegator.withdrawn.value   // Or remainder
-        ), VESTS_SYMBOL );
+        ) );
 
       available_shares += weekly_withdraw - VEST_asset( delegator.to_withdraw - delegator.withdrawn );
       available_downvote_shares += weekly_withdraw - VEST_asset( delegator.to_withdraw - delegator.withdrawn );
