@@ -1,8 +1,0 @@
-add_subdirectory(account_by_key_api)
-add_subdirectory(account_history_api)
-add_subdirectory(condenser_api)
-add_subdirectory(database_api)
-add_subdirectory(jsonrpc_api)
-add_subdirectory(market_history_api)
-add_subdirectory(rc_api)
-add_subdirectory(reputation_api)

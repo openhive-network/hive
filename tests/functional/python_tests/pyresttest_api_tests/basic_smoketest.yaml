@@ -1,9 +1,0 @@
-- config:
-  - testset: "Basic hived API Smoke Test"
-
-- test:
-  - name: "Test ip address"
-  - group: "basic_smoketest"
-  - url: "/rpc"
-  - method: "POST"
-  - body: '{}'
