@@ -1,6 +1,7 @@
 #include <hive/plugins/statsd/statsd_plugin.hpp>
 
 #include <fc/network/resolve.hpp>
+#include <fc/thread/thread.hpp>
 
 #include <boost/algorithm/string.hpp>
 
@@ -24,13 +25,20 @@ namespace detail
   class statsd_plugin_impl
   {
     public:
-      statsd_plugin_impl() {}
+      statsd_plugin_impl()
+      {
+        _shutdown_in_progress.store( false );
+      }
+
       ~statsd_plugin_impl() {}
 
       void start();
       void shutdown();
 
+      bool is_accessible() const;
       bool filter_by_namespace( const std::string& ns, const std::string& stat ) const;
+
+      void execute_operation( const std::string& ns, const std::string& stat, std::function< void() > op ) const;
 
       void increment( const std::string& ns, const std::string& stat, const std::string& key,                       const float frequency ) const noexcept;
       void decrement( const std::string& ns, const std::string& stat, const std::string& key,                       const float frequency ) const noexcept;
@@ -42,6 +50,7 @@ namespace detail
       bool                                               _filter_stats = false;
       bool                                               _blacklist    = false;
       bool                                               _started      = false;
+      std::atomic_bool                                   _shutdown_in_progress;
 
       std::set< std::string >                            _stat_namespaces;
       std::map< std::string, std::set< std::string > >   _stat_list;
@@ -54,6 +63,8 @@ namespace detail
 
   void statsd_plugin_impl::start()
   {
+    _shutdown_in_progress.store( false );
+
     if( _started )
     {
       return;
@@ -74,7 +85,22 @@ namespace detail
 
   void statsd_plugin_impl::shutdown()
   {
+    ilog("Shutting down statsd Plugin");
+
+    _shutdown_in_progress.store( true );
+
+    //Wait until all operations will be finished during 2 seconds
+    uint32_t cnt = 0;
+    const uint32_t cnt_max = 10;
+    while( cnt++ < cnt_max )
+      fc::usleep( fc::milliseconds( 200 ) );
+
     _statsd.reset();
+  }
+
+  bool statsd_plugin_impl::is_accessible() const
+  {
+    return !_shutdown_in_progress.load();
   }
 
   bool statsd_plugin_impl::filter_by_namespace( const std::string& ns, const std::string& stat ) const
@@ -106,34 +132,37 @@ namespace detail
     return _blacklist != found;
   }
 
+  void statsd_plugin_impl::execute_operation( const std::string& ns, const std::string& stat, std::function< void() > op ) const
+  {
+    if( !is_accessible() ) return;
+    if( !filter_by_namespace( ns, stat ) ) return;
+
+    op();
+  }
+
   void statsd_plugin_impl::increment( const std::string& ns, const std::string& stat, const std::string& key, const float frequency ) const noexcept
   {
-    if( !filter_by_namespace( ns, stat ) ) return;
-    _statsd->increment( compose_key( ns, stat, key ), frequency );
+    execute_operation( ns, stat, [ &, this ](){ _statsd->increment( compose_key( ns, stat, key ), frequency ); } );
   }
 
   void statsd_plugin_impl::decrement( const std::string& ns, const std::string& stat, const std::string& key, const float frequency ) const noexcept
   {
-    if( !filter_by_namespace( ns, stat ) ) return;
-    _statsd->decrement( compose_key( ns, stat, key ), frequency );
+    execute_operation( ns, stat, [ &, this ](){ _statsd->decrement( compose_key( ns, stat, key ), frequency ); } );
   }
 
   void statsd_plugin_impl::count( const std::string& ns, const std::string& stat, const std::string& key, const int64_t delta, const float frequency ) const noexcept
   {
-    if( !filter_by_namespace( ns, stat ) ) return;
-    _statsd->count( compose_key( ns, stat, key ), delta, frequency );
+    execute_operation( ns, stat, [ &, this ](){ _statsd->count( compose_key( ns, stat, key ), delta, frequency ); } );
   }
 
   void statsd_plugin_impl::gauge( const std::string& ns, const std::string& stat, const std::string& key, const uint64_t value, const float frequency ) const noexcept
   {
-    if( !filter_by_namespace( ns, stat ) ) return;
-    _statsd->gauge( compose_key( ns, stat, key ), value, frequency );
+    execute_operation( ns, stat, [ &, this ](){ _statsd->gauge( compose_key( ns, stat, key ), value, frequency ); } );
   }
 
   void statsd_plugin_impl::timing( const std::string& ns, const std::string& stat, const std::string& key, const uint32_t ms, const float frequency ) const noexcept
   {
-    if( !filter_by_namespace( ns, stat ) ) return;
-    _statsd->timing( compose_key( ns, stat, key ), ms, frequency );
+    execute_operation( ns, stat, [ &, this ](){ _statsd->timing( compose_key( ns, stat, key ), ms, frequency ); } );
   }
 }
 
