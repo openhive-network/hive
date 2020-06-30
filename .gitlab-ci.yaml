@@ -7,15 +7,15 @@ variables:
   GIT_DEPTH: 1
   # pin to specific docker images for build repeatability
   RUNTIME_IMAGE_TAG: "@sha256:e1995e7b44d58436ce97fbcd28a5200d8e877f476c9c4bd3e1cc394c17be050b"
-  BUILDER_IMAGE_TAG: "@sha256:13933b563395cc3c6ea8bcbd95b717eb4c9fcc33c4cd7194e620713aca03180d"
+  BUILDER_IMAGE_TAG: "@sha256:11190dbdeab07d026fdf422340e3a757fe5c63f64c60f4e04db82b767f50219d"
   TEST_IMAGE_TAG: "@sha256:fc78e92864645317c82c4703edd5b679c3d22c24bb7253612fb350b629681637"
 
 testnet_node_build:
   stage: build
   image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
   script:
-    # LOW_MEMORY=OFF CLEAR_VOTES=OFF TESTNET=ON ENABLE_MIRA=OFF
-    - ./ciscripts/build.sh OFF OFF ON OFF
+    # LOW_MEMORY=OFF CLEAR_VOTES=OFF TESTNET=ON ENABLE_MIRA=OFF HIVE_LINT=ON
+    - ./ciscripts/build.sh OFF OFF ON OFF ON
     - mkdir -p "$CI_JOB_NAME"/tests
     - mv build/install-root "$CI_JOB_NAME"
     - mv contrib/hived.run "$CI_JOB_NAME"
@@ -33,8 +33,8 @@ consensus_build:
   stage: build
   image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
   script:
-    # LOW_MEMORY=ON CLEAR_VOTES=ON TESTNET=OFF ENABLE_MIRA=OFF
-    - ./ciscripts/build.sh ON ON OFF OFF
+    # LOW_MEMORY=ON CLEAR_VOTES=ON TESTNET=OFF ENABLE_MIRA=OFF HIVE_LINT=ON
+    - ./ciscripts/build.sh ON ON OFF OFF ON
     - mkdir "$CI_JOB_NAME"
     - mv build/install-root "$CI_JOB_NAME"
     - mv contrib/hived.run "$CI_JOB_NAME"
@@ -51,8 +51,8 @@ fat_build:
   stage: build
   image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
   script:
-    # LOW_MEMORY=OFF CLEAR_VOTES=OFF TESTNET=OFF ENABLE_MIRA=ON
-    - ./ciscripts/build.sh OFF OFF OFF ON
+    # LOW_MEMORY=OFF CLEAR_VOTES=OFF TESTNET=OFF ENABLE_MIRA=ON HIVE_LINT=OFF
+    - ./ciscripts/build.sh OFF OFF OFF ON OFF
     - mkdir "$CI_JOB_NAME"
     - mv build/install-root "$CI_JOB_NAME"
     - mv contrib/hived.run "$CI_JOB_NAME"
