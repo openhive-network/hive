@@ -17,6 +17,7 @@ class abstract_account_history_api_impl
     virtual get_transaction_return get_transaction( const get_transaction_args& ) = 0;
     virtual get_account_history_return get_account_history( const get_account_history_args& ) = 0;
     virtual enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) = 0;
+    virtual enum_block_operations_return enum_block_operations(const enum_block_operations_args&) = 0;
 
     chain::database& _db;
 };
@@ -31,6 +32,7 @@ class account_history_api_chainbase_impl : public abstract_account_history_api_i
     get_transaction_return get_transaction( const get_transaction_args& ) override;
     get_account_history_return get_account_history( const get_account_history_args& ) override;
     enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) override;
+    virtual enum_block_operations_return enum_block_operations(const enum_block_operations_args&) override;
 };
 
 DEFINE_API_IMPL( account_history_api_chainbase_impl, get_ops_in_block )
@@ -119,6 +121,11 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, enum_virtual_ops )
   FC_ASSERT( false, "This API is not supported for account history backed by Chainbase" );
 }
 
+DEFINE_API_IMPL(account_history_api_chainbase_impl, enum_block_operations)
+{
+  FC_ASSERT(false, "This API is not supported for account history backed by Chainbase");
+}
+
 class account_history_api_rocksdb_impl : public abstract_account_history_api_impl
 {
   public:
@@ -126,11 +133,14 @@ class account_history_api_rocksdb_impl : public abstract_account_history_api_imp
       abstract_account_history_api_impl(), _dataSource( appbase::app().get_plugin< hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin >() ) {}
     ~account_history_api_rocksdb_impl() {}
 
-    get_ops_in_block_return get_ops_in_block( const get_ops_in_block_args& ) override;
-    get_transaction_return get_transaction( const get_transaction_args& ) override;
-    get_account_history_return get_account_history( const get_account_history_args& ) override;
-    enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) override;
+    virtual get_ops_in_block_return get_ops_in_block( const get_ops_in_block_args& ) override;
+    virtual get_transaction_return get_transaction( const get_transaction_args& ) override;
+    virtual get_account_history_return get_account_history( const get_account_history_args& ) override;
+    virtual enum_virtual_ops_return enum_virtual_ops(const enum_virtual_ops_args&) override;
+    virtual enum_block_operations_return enum_block_operations(const enum_block_operations_args&) override;
 
+private:
+    block_info supplement_block_info(uint32_t block_num);
     const account_history_rocksdb::account_history_rocksdb_plugin& _dataSource;
 };
 
@@ -235,11 +245,9 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 {
   enum_virtual_ops_return result;
 
-  bool groupOps = args.group_by_block.valid() && *args.group_by_block;
-
   std::pair< uint32_t, uint64_t > next_values = _dataSource.enum_operations_from_block_range(args.block_range_begin,
     args.block_range_end, args.operation_begin, args.limit,
-    [groupOps, &result, &args ](const account_history_rocksdb::rocksdb_operation_object& op, uint64_t operation_id)
+    [&result, &args ](const account_history_rocksdb::rocksdb_operation_object& op, uint64_t operation_id, bool is_virtual_op)
     {
 
       if( args.filter.valid() )
@@ -252,20 +260,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 
         if(accepting_visitor.check(*args.filter, _api_obj.op))
         {
-          if(groupOps)
-          {
-            auto ii = result.ops_by_block.emplace(op.block);
-            ops_array_wrapper& w = const_cast<ops_array_wrapper&>(*ii.first);
-
-            if(ii.second)
-              w.timestamp = op.timestamp;
-            
-            w.ops.emplace_back(std::move(_api_obj));
-          }
-          else
-          {
-            result.ops.emplace_back(std::move(_api_obj));
-          }
+          result.ops.emplace_back(std::move(_api_obj));
           return true;
         }
         else
@@ -273,28 +268,105 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
       }
       else
       {
-        if(groupOps)
+        api_operation_object _api_obj(op);
+        _api_obj.operation_id = operation_id;
+
+        result.ops.emplace_back(std::move(_api_obj));
+        return true;
+      }
+    }, false
+  );
+
+  result.next_block_range_begin = next_values.first;
+  result.next_operation_begin = next_values.second;
+
+  return result;
+}
+
+block_info account_history_api_rocksdb_impl::supplement_block_info(uint32_t block_num)
+{
+  auto block = _db.fetch_block_by_number(block_num);
+  block_info binfo;
+  binfo.block = block_num;
+  binfo.timestamp = block->timestamp;
+  binfo.block_id = block->id();
+  binfo.previous = block->previous;
+
+  return binfo;
+}
+
+DEFINE_API_IMPL(account_history_api_rocksdb_impl, enum_block_operations)
+{
+  enum_block_operations_return result;
+
+  auto next_values = _dataSource.enum_operations_from_block_range(args.block_range_begin,
+    args.block_range_end, args.last_returned_operation_id, args.limit,
+    [&result, &args, this](const account_history_rocksdb::rocksdb_operation_object& op, uint64_t operation_id, bool is_virtual_op)
+    {
+      if(args.vops_filter.valid())
+      {
+        api_operation_object _api_obj(op);
+        _api_obj.operation_id = operation_id;
+
+        if(is_virtual_op)
         {
-          auto ii = result.ops_by_block.emplace(op.block);
-          ops_array_wrapper& w = const_cast<ops_array_wrapper&>(*ii.first);
+          filtering_visitor accepting_visitor;
 
-          if(ii.second)
-            w.timestamp = op.timestamp;
+          if(accepting_visitor.check(*args.vops_filter, _api_obj.op))
+          {
+            auto ii = result.ops_by_block.emplace(op.block);
+            ops_array_wrapper& w = const_cast<ops_array_wrapper&>(*ii.first);
+            if(ii.second)
+              w.block = supplement_block_info(op.block);
 
-          api_operation_object _api_obj(op);
-          _api_obj.operation_id = operation_id;
-          w.ops.emplace_back(std::move(_api_obj));
+            ++w.block.vops;
+
+            w.vops.emplace_back(std::move(_api_obj));
+          }
+          else
+          {
+            return false;
+          }
         }
         else
         {
-          api_operation_object _api_obj(op);
-          _api_obj.operation_id = operation_id;
-
-          result.ops.emplace_back(std::move(_api_obj));
+          // non-virtual op
+          auto ii = result.ops_by_block.emplace(op.block);
+          ops_array_wrapper& w = const_cast<ops_array_wrapper&>(*ii.first);
+          if(ii.second)
+            w.block = supplement_block_info(op.block);
+          ++w.block.ops;
+          w.ops.emplace_back(std::move(_api_obj));
         }
+
         return true;
       }
-    }
+      else
+      {
+        // No filter specified.
+        auto ii = result.ops_by_block.emplace(op.block);
+        ops_array_wrapper& w = const_cast<ops_array_wrapper&>(*ii.first);
+
+        if(ii.second)
+          w.block = supplement_block_info(op.block);
+
+        api_operation_object _api_obj(op);
+        _api_obj.operation_id = operation_id;
+
+        if(is_virtual_op)
+        {
+          w.vops.emplace_back(std::move(_api_obj));
+          ++w.block.vops;
+        }
+        else
+        {
+          ++w.block.ops;
+          w.ops.emplace_back(std::move(_api_obj));
+        }
+
+        return true;
+      }
+    }, true
   );
 
   result.next_block_range_begin = next_values.first;
@@ -336,6 +408,7 @@ DEFINE_LOCKLESS_APIS( account_history_api ,
   (get_transaction)
   (get_account_history)
   (enum_virtual_ops)
+  (enum_block_operations)
 )
 
 } } } // hive::plugins::account_history
