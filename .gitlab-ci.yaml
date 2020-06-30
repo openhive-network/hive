@@ -7,7 +7,7 @@ variables:
   GIT_DEPTH: 1
   # pin to specific docker images for build repeatability
   RUNTIME_IMAGE_TAG: "@sha256:e1995e7b44d58436ce97fbcd28a5200d8e877f476c9c4bd3e1cc394c17be050b"
-  BUILDER_IMAGE_TAG: "@sha256:11190dbdeab07d026fdf422340e3a757fe5c63f64c60f4e04db82b767f50219d"
+  BUILDER_IMAGE_TAG: "@sha256:d30907ed827be5524423d187686814ac27a8d9300a099d60a09958ef21fbc941"
   TEST_IMAGE_TAG: "@sha256:fc78e92864645317c82c4703edd5b679c3d22c24bb7253612fb350b629681637"
 
 testnet_node_build:
