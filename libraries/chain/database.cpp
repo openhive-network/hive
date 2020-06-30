@@ -5116,20 +5116,20 @@ void database::modify_balance( const account_object& a, const HBD_asset& delta, 
         auto interest = acnt.hbd_seconds / HIVE_SECONDS_PER_YEAR;
         interest *= get_dynamic_global_properties().get_hbd_interest_rate();
         interest /= HIVE_100_PERCENT;
-        asset interest_paid(interest.to_uint64(), HBD_SYMBOL); // TODO
+        HBD_asset interest_paid(interest.to_uint64());
         acnt.hbd_balance += interest_paid;
         acnt.hbd_seconds = 0;
         acnt.hbd_last_interest_payment = head_block_time();
 
         if(interest > 0)
         {
-          push_virtual_operation( interest_operation( a.name, interest_paid ) );
+          push_virtual_operation( interest_operation( a.name, interest_paid.to_asset() ) );
         }
 
         modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
         {
           props.current_hbd_supply += interest_paid;
-          props.virtual_supply += interest_paid * get_feed_history().current_median_history;
+          props.virtual_supply += HIVE_asset(interest_paid * get_feed_history().current_median_history);
         } );
       }
     }
