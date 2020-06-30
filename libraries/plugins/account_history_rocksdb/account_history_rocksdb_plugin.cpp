@@ -1025,6 +1025,9 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
     auto keySlice = it->key();
     const auto& key = op_by_block_num_slice_t::unpackSlice(keySlice);
 
+    lastFoundBlock = key.first;
+    lastProcessedOperationId = key.second;
+
     bool is_virtual_op = (key.second & VIRTUAL_OP_FLAG);
 
     /// Accept only virtual operations if needed
@@ -1041,8 +1044,6 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
         {
         ++cntLimit;
 
-        lastProcessedOperationId = key.second;
-
         ///Number of retrieved operations can't be greater then limit
         if(limit.valid() && (cntLimit >= *limit))
           {
@@ -1050,14 +1051,12 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
           break;
           }
         }
-
-      lastFoundBlock = key.first;
     }
   }
 
   if(limitExceeded)
   {
-    return std::make_pair( lastFoundBlock, lastProcessedOperationId );
+    return std::make_pair( lastFoundBlock, lastProcessedOperationId + 1); /// Operation already included in result set, so next time shall be skipped.
   }
   else
   {
