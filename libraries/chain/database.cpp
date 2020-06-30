@@ -3096,11 +3096,9 @@ asset database::get_pow_reward()const
 {
   const auto& props = get_dynamic_global_properties();
 
-#ifndef IS_TEST_NET
   /// 0 block rewards until at least HIVE_MAX_WITNESSES have produced a POW
   if( props.num_pow_witnesses < HIVE_MAX_WITNESSES && props.head_block_number < HIVE_START_VESTING_BLOCK )
     return asset( 0, HIVE_SYMBOL );
-#endif
 
   static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
   static_assert( HIVE_MAX_WITNESSES == 21, "this code assumes 21 per round" );
