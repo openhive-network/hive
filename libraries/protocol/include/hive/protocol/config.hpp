@@ -40,9 +40,6 @@
 #define HIVE_INIT_SUPPLY                      (int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 ))
 #define HIVE_HBD_INIT_SUPPLY                  (int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 ))
 
-/// Allows to limit number of total produced blocks.
-#define TESTNET_BLOCK_LIMIT                   (3000000)
-
 #else // IS LIVE HIVE NETWORK
 
 #define HIVE_BLOCKCHAIN_VERSION               ( version(0, 24, 0) )
