@@ -643,8 +643,8 @@ namespace hive { namespace chain {
       void create_block_summary(const signed_block& next_block);
 
       //calculates sum of all balances stored on given account, returns true if any is nonzero
-      bool collect_account_total_balance( const account_object& account, asset* total_hive, asset* total_hbd,
-        asset* total_vests, asset* vesting_shares_hive_value );
+      bool collect_account_total_balance( const account_object& account, HIVE_asset* total_hive, HBD_asset* total_hbd,
+        VEST_asset* total_vests, HIVE_asset* vesting_shares_hive_value );
       //removes (burns) balances held on null account
       void clear_null_account_balance();
       //moves balances from old treasury account to current one

@@ -1728,24 +1728,24 @@ void database::clear_witness_votes( const account_object& a )
     });
 }
 
-bool database::collect_account_total_balance( const account_object& account, asset* total_hive, asset* total_hbd,
-  asset* total_vests, asset* vesting_shares_hive_value )
+bool database::collect_account_total_balance( const account_object& account, HIVE_asset* total_hive, HBD_asset* total_hbd,
+  VEST_asset* total_vests, HIVE_asset* vesting_shares_hive_value )
 {
   const auto& gpo = get_dynamic_global_properties();
 
-  *vesting_shares_hive_value = account.vesting_shares.to_asset() * gpo.get_vesting_share_price();
+  *vesting_shares_hive_value = account.vesting_shares * gpo.get_vesting_share_price();
   *total_hive = *vesting_shares_hive_value;
-  *total_vests = account.vesting_shares.to_asset();
-  *total_hive += account.get_vest_rewards_as_hive().to_asset();
-  *total_vests += account.get_vest_rewards().to_asset();
+  *total_vests = account.vesting_shares;
+  *total_hive += account.get_vest_rewards_as_hive();
+  *total_vests += account.get_vest_rewards();
 
-  *total_hive += account.get_balance().to_asset();
-  *total_hive += account.get_savings().to_asset();
-  *total_hive += account.get_rewards().to_asset();
+  *total_hive += account.get_balance();
+  *total_hive += account.get_savings();
+  *total_hive += account.get_rewards();
 
-  *total_hbd = account.get_hbd_balance().to_asset();
-  *total_hbd += account.get_hbd_savings().to_asset();
-  *total_hbd += account.get_hbd_rewards().to_asset();
+  *total_hbd = account.get_hbd_balance();
+  *total_hbd += account.get_hbd_savings();
+  *total_hbd += account.get_hbd_rewards();
 
   return ( total_hive->amount.value != 0 ) || ( total_hbd->amount.value != 0 ) || ( total_vests->amount.value != 0 );
 }
@@ -1755,7 +1755,9 @@ void database::clear_null_account_balance()
   if( !has_hardfork( HIVE_HARDFORK_0_14__327 ) ) return;
 
   const auto& null_account = get_account( HIVE_NULL_ACCOUNT );
-  asset total_hive, total_hbd, total_vests, vesting_shares_hive_value;
+  HIVE_asset total_hive, vesting_shares_hive_value;
+  HBD_asset total_hbd;
+  VEST_asset total_vests;
 
   if( !( collect_account_total_balance( null_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
     return;
@@ -1763,11 +1765,11 @@ void database::clear_null_account_balance()
   operation vop_op = clear_null_account_balance_operation();
   clear_null_account_balance_operation& vop = vop_op.get< clear_null_account_balance_operation >();
   if( total_hive.amount.value > 0 )
-    vop.total_cleared.push_back( total_hive );
+    vop.total_cleared.push_back( total_hive.to_asset() );
   if( total_vests.amount.value > 0 )
-    vop.total_cleared.push_back( total_vests );
+    vop.total_cleared.push_back( total_vests.to_asset() );
   if( total_hbd.amount.value > 0 )
-    vop.total_cleared.push_back( total_hbd );
+    vop.total_cleared.push_back( total_hbd.to_asset() );
   pre_push_virtual_operation( vop_op );
 
   /////////////////////////////////////////////////////////////////////////////////////
@@ -1857,7 +1859,9 @@ void database::consolidate_treasury_balance()
   auto old_treasury_name = get_treasury_name( HIVE_TREASURY_RENAME_HARDFORK - 1 );
 
   const auto& old_treasury_account = get_account( old_treasury_name );
-  asset total_hive, total_hbd, total_vests, vesting_shares_hive_value;
+  HIVE_asset total_hive, vesting_shares_hive_value;
+  HBD_asset total_hbd;
+  VEST_asset total_vests;
 
   if( treasury_name == old_treasury_name || //ABW: once we actually include change of treasury in HF24 that part of condition can be removed
     !( collect_account_total_balance( old_treasury_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
@@ -1868,11 +1872,11 @@ void database::consolidate_treasury_balance()
   operation vop_op = consolidate_treasury_balance_operation();
   consolidate_treasury_balance_operation& vop = vop_op.get< consolidate_treasury_balance_operation >();
   if( total_hive.amount.value > 0 )
-    vop.total_moved.push_back( total_hive );
+    vop.total_moved.push_back( total_hive.to_asset() );
   if( total_vests.amount.value > 0 )
-    vop.total_moved.push_back( total_vests );
+    vop.total_moved.push_back( total_vests.to_asset() );
   if( total_hbd.amount.value > 0 )
-    vop.total_moved.push_back( total_hbd );
+    vop.total_moved.push_back( total_hbd.to_asset() );
   pre_push_virtual_operation( vop_op );
 
   /////////////////////////////////////////////////////////////////////////////////////
