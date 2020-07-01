@@ -1428,7 +1428,7 @@ std::pair< asset, asset > database::create_hbd( const account_object& to_account
       auto to_hbd = ( gpo.hbd_print_rate * hive.amount ) / HIVE_100_PERCENT;
       auto to_hive = hive.amount - to_hbd;
 
-      auto hbd = asset( to_hbd, HIVE_SYMBOL ) * median_price;
+      auto hbd = HIVE_asset( to_hbd ) * median_price;
 
       if( to_reward_balance )
       {
@@ -1441,7 +1441,7 @@ std::pair< asset, asset > database::create_hbd( const account_object& to_account
         adjust_balance( to_account, HIVE_asset( to_hive ) );
       }
 
-      adjust_supply( asset( -to_hbd, HIVE_SYMBOL ) );
+      adjust_supply( HIVE_asset( -to_hbd ) );
       adjust_supply( hbd );
       assets.first = hbd;
       assets.second = asset( to_hive, HIVE_SYMBOL );
@@ -2138,9 +2138,9 @@ void database::clear_account( const account_object& account,
       util::update_manabar( cprops, a, true, true );
       a.voting_manabar.current_mana = 0;
       a.downvote_manabar.current_mana = 0;
-      a.vesting_shares = asset( 0, VESTS_SYMBOL );
+      a.vesting_shares = VEST_asset( 0 );
       //FC_ASSERT( a.delegated_vesting_shares == freed_delegations, "Inconsistent amount of delegations" );
-      a.delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
+      a.delegated_vesting_shares = VEST_asset( 0 );
       a.vesting_withdraw_rate.amount = 0;
       a.next_vesting_withdrawal = fc::time_point_sec::maximum();
       a.to_withdraw = 0;
@@ -2282,8 +2282,8 @@ void database::clear_account( const account_object& account,
 
   modify( account, []( account_object &a )
   {
-    a.reward_vesting_balance = asset( 0, VESTS_SYMBOL );
-    a.reward_vesting_hive = asset( 0, HIVE_SYMBOL );
+    a.reward_vesting_balance = VEST_asset( 0 );
+    a.reward_vesting_hive = HIVE_asset( 0 );
   } );
 
   if( transferred_hbd_ptr != nullptr )
@@ -2450,7 +2450,7 @@ void database::process_vesting_withdrawals()
     share_type to_convert = to_withdraw - vests_deposited;
     FC_ASSERT( to_convert >= 0, "Deposited more vests than were supposed to be withdrawn" );
 
-    auto converted_hive = asset( to_convert, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
+    auto converted_hive = VEST_asset( to_convert ) * cprops.get_vesting_share_price();
     operation vop = fill_vesting_withdraw_operation( from_account.name, from_account.name, asset( to_convert, VESTS_SYMBOL ), converted_hive );
     pre_push_virtual_operation( vop );
 
@@ -2647,7 +2647,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             benefactor_vesting_hive = 0;
             vop.hbd_payout = asset( benefactor_tokens, HIVE_SYMBOL ) * get_feed_history().current_median_history;
             adjust_balance( get_treasury(), vop.hbd_payout );
-            adjust_supply( asset( -benefactor_tokens, HIVE_SYMBOL ) );
+            adjust_supply( HIVE_asset( -benefactor_tokens ) );
             adjust_supply( vop.hbd_payout );
           }
           else if( has_hardfork( HIVE_HARDFORK_0_20__2022 ) )
@@ -2898,7 +2898,7 @@ void database::process_comment_cashout()
       modify( get< reward_fund_object, by_id >( reward_fund_object::id_type( i ) ), [&]( reward_fund_object& rfo )
       {
         rfo.recent_claims = funds[ i ].recent_claims;
-        rfo.reward_balance -= asset( funds[ i ].hive_awarded, HIVE_SYMBOL );
+        rfo.reward_balance -= HIVE_asset( funds[ i ].hive_awarded );
       });
     }
   }
@@ -2955,11 +2955,11 @@ void database::process_funds()
 
     witness_reward /= wso.witness_pay_normalization_factor;
 
-    auto new_hbd = asset( 0, HBD_SYMBOL );
+    auto new_hbd = HBD_asset( 0 );
 
     if( sps_fund.value )
     {
-      new_hbd = asset( sps_fund, HIVE_SYMBOL ) * feed.current_median_history;
+      new_hbd = HBD_asset( HIVE_asset( sps_fund ) * feed.current_median_history );
       adjust_balance( get_treasury_name(), new_hbd );
     }
 
@@ -2967,12 +2967,12 @@ void database::process_funds()
 
     modify( props, [&]( dynamic_global_property_object& p )
     {
-      p.total_vesting_fund_hive += asset( vesting_reward, HIVE_SYMBOL );
+      p.total_vesting_fund_hive += HIVE_asset( vesting_reward );
       if( !has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-        p.total_reward_fund_hive += asset( content_reward, HIVE_SYMBOL );
-      p.current_supply      += asset( new_hive, HIVE_SYMBOL );
+        p.total_reward_fund_hive += HIVE_asset( content_reward );
+      p.current_supply      += HIVE_asset( new_hive );
       p.current_hbd_supply  += new_hbd;
-      p.virtual_supply      += asset( new_hive + sps_fund, HIVE_SYMBOL );
+      p.virtual_supply      += HIVE_asset( new_hive + sps_fund );
       p.sps_interval_ledger += new_hbd;
     });
 
@@ -3183,7 +3183,7 @@ share_type database::pay_reward_funds( const share_type& reward )
 
     modify( *itr, [&]( reward_fund_object& rfo )
     {
-      rfo.reward_balance += asset( r, HIVE_SYMBOL );
+      rfo.reward_balance += HIVE_asset( r );
     });
 
     used_rewards += r;
@@ -3604,8 +3604,8 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
     // feed initial token supply to first miner
     modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
     {
-      a.balance = asset( init_supply, HIVE_SYMBOL );
-      a.hbd_balance = asset( hbd_init_supply, HBD_SYMBOL );
+      a.balance = HIVE_asset( init_supply );
+      a.hbd_balance = HBD_asset( hbd_init_supply );
     } );
 
 #ifdef IS_TEST_NET
@@ -5853,7 +5853,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
         modify( gpo, [&]( dynamic_global_property_object& g )
         {
-          g.total_reward_fund_hive = asset( 0, HIVE_SYMBOL );
+          g.total_reward_fund_hive = HIVE_asset( 0 );
           g.total_reward_shares2 = 0;
         });
 
@@ -5964,14 +5964,14 @@ void database::apply_hardfork( uint32_t hardfork )
           {
             modify( get< witness_object, by_name >( witness ), [&]( witness_object& w )
             {
-              w.props.account_creation_fee = asset( w.props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, HIVE_SYMBOL );
+              w.props.account_creation_fee = HIVE_asset( w.props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER );
             });
           }
         }
 
         modify( wso, [&]( witness_schedule_object& wso )
         {
-          wso.median_props.account_creation_fee = asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, HIVE_SYMBOL );
+          wso.median_props.account_creation_fee = HIVE_asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER );
         });
       }
       break;
@@ -6368,7 +6368,7 @@ void database::perform_vesting_share_split( uint32_t magnitude )
         a.vesting_shares.amount *= magnitude;
         a.withdrawn             *= magnitude;
         a.to_withdraw           *= magnitude;
-        a.vesting_withdraw_rate  = asset( a.to_withdraw / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
+        a.vesting_withdraw_rate  = VEST_asset( a.to_withdraw / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 );
         if( a.vesting_withdraw_rate.amount == 0 )
           a.vesting_withdraw_rate.amount = 1;
 
