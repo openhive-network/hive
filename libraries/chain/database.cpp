@@ -2051,20 +2051,23 @@ void database::clear_accounts( hf23_helper::hf23_items& balances, const std::set
     if( account_ptr == nullptr )
       continue;
 
-    asset total_transferred_hbd, total_transferred_hive, total_converted_vests, total_hive_from_vests;
+    HBD_asset total_transferred_hbd;
+    HIVE_asset total_transferred_hive, total_hive_from_vests;
+    VEST_asset total_converted_vests;
     clear_account( *account_ptr, &total_transferred_hbd, &total_transferred_hive, &total_converted_vests, &total_hive_from_vests );
 
-    hf23_helper::gather_balance( balances, account_name, total_transferred_hive, total_transferred_hbd );
+    hf23_helper::gather_balance( balances, account_name, total_transferred_hive.to_asset(), total_transferred_hbd.to_asset() );
 
     operation vop = hardfork_hive_operation( account_name, treasury_name,
-      total_transferred_hbd, total_transferred_hive, total_converted_vests, total_hive_from_vests );
+      total_transferred_hbd.to_asset(), total_transferred_hive.to_asset(),
+      total_converted_vests.to_asset(), total_hive_from_vests.to_asset() );
     push_virtual_operation( vop );
   }
 }
 
 void database::clear_account( const account_object& account,
-  asset* transferred_hbd_ptr, asset* transferred_hive_ptr,
-  asset* converted_vests_ptr, asset* hive_from_vests_ptr )
+  HBD_asset* transferred_hbd_ptr, HIVE_asset* transferred_hive_ptr,
+  VEST_asset* converted_vests_ptr, HIVE_asset* hive_from_vests_ptr )
 {
   const auto& account_name = account.name;
   FC_ASSERT( account_name != get_treasury_name(), "Can't clear treasury account" );
@@ -2072,10 +2075,10 @@ void database::clear_account( const account_object& account,
   const auto& treasury_account = get_treasury();
   const auto& cprops = get_dynamic_global_properties();
 
-  asset total_transferred_hive = asset( 0, HIVE_SYMBOL );
-  asset total_transferred_hbd = asset( 0, HBD_SYMBOL );
-  asset total_converted_vests = asset( 0, VESTS_SYMBOL );
-  asset total_hive_from_vests = asset( 0, HIVE_SYMBOL );
+  HIVE_asset total_transferred_hive = HIVE_asset( 0 );
+  HBD_asset total_transferred_hbd = HBD_asset( 0 );
+  VEST_asset total_converted_vests = VEST_asset( 0 );
+  HIVE_asset total_hive_from_vests = HIVE_asset( 0 );
 
   if( account.vesting_shares.amount > 0 )
   {
@@ -2125,8 +2128,8 @@ void database::clear_account( const account_object& account,
 
     auto vests_to_convert = account.vesting_shares;
     auto converted_hive = vests_to_convert.to_asset() * cprops.get_vesting_share_price();
-    total_converted_vests += account.vesting_shares.to_asset();
-    total_hive_from_vests += asset( converted_hive, HIVE_SYMBOL );
+    total_converted_vests += account.vesting_shares;
+    total_hive_from_vests += HIVE_asset( converted_hive );
 
     adjust_proxied_witness_votes( account, -account.vesting_shares.amount );
 
@@ -2243,24 +2246,24 @@ void database::clear_account( const account_object& account,
   }
 
   // Remove remaining savings balances
-  total_transferred_hive += account.get_savings().to_asset();
-  total_transferred_hbd += account.get_hbd_savings().to_asset();
+  total_transferred_hive += account.get_savings();
+  total_transferred_hbd += account.get_hbd_savings();
   adjust_balance( treasury_account, account.get_savings() );
   adjust_savings_balance( account, -account.get_savings() );
   adjust_balance( treasury_account, account.get_hbd_savings() );
   adjust_savings_balance( account, -account.get_hbd_savings() );
 
   // Remove HBD and HIVE balances
-  total_transferred_hive += account.get_balance().to_asset();
-  total_transferred_hbd += account.get_hbd_balance().to_asset();
+  total_transferred_hive += account.get_balance();
+  total_transferred_hbd += account.get_hbd_balance();
   adjust_balance( treasury_account, account.get_balance() );
   adjust_balance( account, -account.get_balance() );
   adjust_balance( treasury_account, account.get_hbd_balance() );
   adjust_balance( account, -account.get_hbd_balance() );
 
   // Transfer reward balances
-  total_transferred_hive += account.get_rewards().to_asset();
-  total_transferred_hbd += account.get_hbd_rewards().to_asset();
+  total_transferred_hive += account.get_rewards();
+  total_transferred_hbd += account.get_hbd_rewards();
   adjust_balance( treasury_account, account.get_rewards() );
   adjust_reward_balance( account, ( -account.get_rewards() ).to_asset() );
   adjust_balance( treasury_account, account.get_hbd_rewards() );
@@ -2268,8 +2271,8 @@ void database::clear_account( const account_object& account,
 
   // Convert and transfer vesting rewards
   adjust_balance( treasury_account, account.get_vest_rewards_as_hive() );
-  total_converted_vests += account.get_vest_rewards().to_asset();
-  total_hive_from_vests += account.get_vest_rewards_as_hive().to_asset();
+  total_converted_vests += account.get_vest_rewards();
+  total_hive_from_vests += account.get_vest_rewards_as_hive();
 
   modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
   {

@@ -617,8 +617,8 @@ namespace hive { namespace chain {
       //Clears all pending operations on account that involve balance, moves tokens to treasury account
       void clear_accounts( hf23_helper::hf23_items& balances, const std::set< std::string >& cleared_accounts );
       void clear_account( const account_object& account,
-        asset* transferred_hbd_ptr = nullptr, asset* transferred_hive_ptr = nullptr,
-        asset* converted_vests_ptr = nullptr, asset* hive_from_vests_ptr = nullptr );
+        HBD_asset* transferred_hbd_ptr = nullptr, HIVE_asset* transferred_hive_ptr = nullptr,
+        VEST_asset* converted_vests_ptr = nullptr, HIVE_asset* hive_from_vests_ptr = nullptr );
 
   protected:
       //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead
