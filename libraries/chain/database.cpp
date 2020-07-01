@@ -3402,9 +3402,8 @@ void database::initialize_evaluators()
   _my->_evaluator_registry.register_evaluator< remove_proposal_evaluator                >();
 
 
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
   _my->_req_action_evaluator_registry.register_evaluator< example_required_evaluator    >();
-
   _my->_opt_action_evaluator_registry.register_evaluator< example_optional_evaluator    >();
 #endif
 }
@@ -4013,7 +4012,7 @@ struct process_header_visitor
   }
 
 FC_TODO( "Remove when optional automated actions are created" )
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
   void operator()( const optional_automated_actions& opt_actions ) const
   {
     FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "Automated actions are not enabled until SMT hardfork." );
@@ -4240,6 +4239,8 @@ struct action_equal_visitor
 
 void database::process_required_actions( const required_automated_actions& actions )
 {
+  if( !has_hardfork( HIVE_SMT_HARDFORK ) ) return;
+
   const auto& pending_action_idx = get_index< pending_required_action_index, by_id >();
   auto actions_itr = actions.begin();
   uint64_t total_actions_size = 0;

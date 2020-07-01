@@ -207,7 +207,7 @@ void block_producer::apply_pending_transactions(
   }
 
 FC_TODO( "Remove ifdef when required actions are added" )
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
   if( required_actions.size() )
   {
     pending_block.extensions.insert( required_actions );
@@ -238,7 +238,7 @@ FC_TODO( "Remove ifdef when required actions are added" )
   }
 
 FC_TODO( "Remove ifdef when optional actions are added" )
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
   if( optional_actions.size() )
   {
     pending_block.extensions.insert( optional_actions );

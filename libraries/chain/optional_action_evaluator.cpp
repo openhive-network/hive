@@ -2,7 +2,7 @@
 
 namespace hive { namespace chain {
 
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
 
 void example_optional_evaluator::do_apply( const example_optional_action& a ) {}
 
