@@ -215,7 +215,16 @@ struct database_fixture {
   static const uint16_t shared_file_size_in_mb_64 = 64;
   static const uint16_t shared_file_size_in_mb_512 = 512;
 
+  private:
+
+    void try_open_database_internal( uint64_t size );
+    bool try_open_database( uint16_t shared_file_size_in_mb );
+    void post_open_database();
+
+  public:
+
   void open_database( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 );
+
   void generate_block(uint32_t skip = 0,
                       const fc::ecc::private_key& key = generate_private_key("init_key"),
                       int miss_blocks = 0);
@@ -295,16 +304,7 @@ struct clean_database_fixture : public database_fixture
   clean_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
   virtual ~clean_database_fixture();
 
-  void resize_shared_mem( uint64_t size );
   void validate_database();
-};
-
-struct live_database_fixture : public database_fixture
-{
-  live_database_fixture();
-  virtual ~live_database_fixture();
-
-  fc::path _chain_dir;
 };
 
 #ifdef HIVE_ENABLE_SMT

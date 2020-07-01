@@ -3539,11 +3539,6 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       auth.active.weight_threshold = 1;
     });
 
-#ifdef IS_TEST_NET
-    create< account_object >( OBSOLETE_TREASURY_ACCOUNT );
-    create< account_object >( NEW_HIVE_TREASURY_ACCOUNT );
-#endif
-
     create< account_object >( HIVE_TEMP_ACCOUNT );
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
@@ -3581,15 +3576,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       a.hbd_balance = asset( hbd_init_supply, HBD_SYMBOL );
     } );
 
-#ifdef IS_TEST_NET
-    create< feed_history_object >( [&]( feed_history_object& o )
-    {
-      o.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
-    });
-#else
-    // Nothing to do
     create< feed_history_object >( [&]( feed_history_object& o ) {});
-#endif
 
     for( int i = 0; i < 0x10000; i++ )
       create< block_summary_object >( [&]( block_summary_object& ) {});
