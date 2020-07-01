@@ -3761,9 +3761,6 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
     {
       uint32_t free_mb = uint32_t( free_mem / (1024*1024) );
 
-  #ifdef IS_TEST_NET
-    if( !disable_low_mem_warning )
-  #endif
       if( free_mb <= 100 && head_block_num() % 10 == 0 )
         elog( "Free memory is now ${n}M. Increase shared file size immediately!" , ("n", free_mb) );
     }
@@ -4082,10 +4079,6 @@ try {
         std::sort( copy.begin(), copy.end() ); /// TODO: use nth_item
         fho.current_median_history = copy[copy.size()/2];
 
-#ifdef IS_TEST_NET
-        if( skip_price_feed_limit_check )
-          return;
-#endif
         if( has_hardfork( HIVE_HARDFORK_0_14__230 ) )
         {
           // This block limits the effective median price to force HBD to remain at or

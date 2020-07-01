@@ -22,6 +22,7 @@ BOOST_FIXTURE_TEST_SUITE( transaction_status, database_fixture );
 BOOST_AUTO_TEST_CASE( transaction_status_test )
 {
   using namespace hive::plugins::transaction_status;
+  using trx_status_helper = hive::plugins::transaction_status::detail::transaction_status_helper;
 
   try
   {
@@ -70,7 +71,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_trx_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_block_num >().empty() );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     generate_block();
     db->set_hardfork( HIVE_NUM_HARDFORKS );
@@ -236,7 +237,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.status == within_mempool );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     generate_blocks( TRANSACTION_STATUS_TEST_BLOCK_DEPTH );
 
@@ -283,7 +284,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( *api_return.block_num > 0 );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     generate_blocks( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL );
 
@@ -329,7 +330,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( *api_return.block_num > 0 );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     generate_block();
 
@@ -362,7 +363,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_trx_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_block_num >().empty() );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     generate_block();
 
@@ -405,7 +406,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.status == too_old );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     /**
       * Testing transaction status plugin state
@@ -428,17 +429,17 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     generate_block();
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     const auto& tx_status_obj = db->get< transaction_status_object, by_trx_id >( tx4.id() );
     db->remove( tx_status_obj );
 
     // Upper bound of transaction status state should cause state to be invalid
-    BOOST_REQUIRE( tx_status->state_is_valid() == false );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) == false );
 
-    tx_status->rebuild_state();
+    trx_status_helper::rebuild_state( *db, *tx_status );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     // Create transaction 5
     signed_transaction tx5;
@@ -460,11 +461,11 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     db->remove( tx_status_obj2 );
 
     // Lower bound of transaction status state should cause state to be invalid
-    BOOST_REQUIRE( tx_status->state_is_valid() == false );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) == false );
 
-    tx_status->rebuild_state();
+    trx_status_helper::rebuild_state( *db, *tx_status );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
   }
   FC_LOG_AND_RETHROW()
 }

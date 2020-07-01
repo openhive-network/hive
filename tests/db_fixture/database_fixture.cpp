@@ -600,12 +600,7 @@ void database_fixture::set_price_feed( const price& new_price )
 
   generate_blocks( HIVE_BLOCKS_PER_HOUR );
 
-  BOOST_REQUIRE(
-#ifdef IS_TEST_NET
-    !db->skip_price_feed_limit_check ||
-#endif
-    db->get(feed_history_id_type()).current_median_history == new_price
-  );
+  BOOST_REQUIRE( !skip_price_feed_limit_check || db->get(feed_history_id_type()).current_median_history == new_price );
 }
 
 void database_fixture::set_witness_props( const flat_map< string, vector< char > >& props )

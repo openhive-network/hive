@@ -576,12 +576,6 @@ namespace hive { namespace chain {
       bool has_index_delegate( const std::string& n );
       const index_delegate_map& index_delegates();
 
-#ifdef IS_TEST_NET
-      bool skip_price_feed_limit_check = true;
-      bool skip_transaction_delta_check = true;
-      bool disable_low_mem_warning = true;
-#endif
-
 #ifdef HIVE_ENABLE_SMT
       ///Smart Media Tokens related methods
       ///@{

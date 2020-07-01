@@ -202,6 +202,7 @@ struct database_fixture {
 
   optional<fc::temp_directory> data_dir;
   bool skip_key_index_test = false;
+  bool skip_price_feed_limit_check = true;
 
   database_fixture() {}
   virtual ~database_fixture() { appbase::reset(); }

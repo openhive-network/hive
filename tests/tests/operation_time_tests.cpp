@@ -2835,7 +2835,7 @@ BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
 
     BOOST_TEST_MESSAGE( "Setting HBD percent to greater than 10% market cap." );
 
-    db->skip_price_feed_limit_check = false;
+    skip_price_feed_limit_check = false;
     const auto& gpo = db->get_dynamic_global_properties();
     auto new_exchange_rate = price( gpo.get_current_hbd_supply(), asset( ( HIVE_100_PERCENT ) * gpo.get_current_supply().amount, HIVE_SYMBOL ) );
     set_price_feed( new_exchange_rate );
