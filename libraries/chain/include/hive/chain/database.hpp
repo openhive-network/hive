@@ -35,6 +35,26 @@ namespace hive { namespace chain {
   using hive::protocol::price;
   using abstract_plugin = appbase::abstract_plugin;
 
+  struct negative_votes_info_type
+  {
+    //A magic number introduced by Steemit Inc
+    uint32_t block = 23'847'548;
+
+    void reset_block()
+    {
+      /*
+        This method should be used only in testing context.
+        Make sure that you know what you do, when you call this method.
+      */
+      block = 0;
+    }
+
+    uint32_t get_block() const
+    {
+      return block;
+    }
+  };
+
   struct hardfork_versions
   {
     fc::time_point_sec         times[ HIVE_NUM_HARDFORKS + 1 ];
@@ -664,6 +684,8 @@ namespace hive { namespace chain {
       }
 
     public:
+
+      negative_votes_info_type negative_votes_info;
 
       const transaction_id_type& get_current_trx() const
       {

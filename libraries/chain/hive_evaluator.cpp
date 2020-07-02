@@ -1218,15 +1218,11 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
   if( o.vesting_shares.amount < 0 )
   {
     // TODO: Update this to a HF 20 check
-#ifndef IS_TEST_NET
-    if( _db.head_block_num() > 23847548 )
+    if( _db.head_block_num() > _db.negative_votes_info.get_block() )
     {
-#endif
       FC_ASSERT( false, "Cannot withdraw negative VESTS. account: ${account}, vests:${vests}",
         ("account", o.account)("vests", o.vesting_shares) );
-#ifndef IS_TEST_NET
     }
-#endif
 
     // else, no-op
     return;

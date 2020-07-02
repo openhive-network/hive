@@ -1672,6 +1672,8 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: withdraw_vesting_apply" );
 
+    db->negative_votes_info.reset_block();
+
     ACTORS( (alice)(bob) )
     generate_block();
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 HIVE" ) );
