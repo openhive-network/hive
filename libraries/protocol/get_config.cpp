@@ -10,11 +10,6 @@ fc::variant_object get_config( const std::string& treasury_name, const fc::sha25
 {
   fc::mutable_variant_object result;
 
-#ifdef IS_TEST_NET
-  result[ "IS_TEST_NET" ] = true;
-#else
-  result[ "IS_TEST_NET" ] = false;
-#endif
 #ifdef HIVE_ENABLE_SMT
   result[ "HIVE_ENABLE_SMT" ] = true;
   result["SMT_MAX_VOTABLE_ASSETS"] = SMT_MAX_VOTABLE_ASSETS;
