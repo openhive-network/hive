@@ -5756,9 +5756,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
         modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object &rfo )
         {
-#ifndef IS_TEST_NET
           rfo.recent_claims = HIVE_HF_19_RECENT_CLAIMS;
-#endif
           rfo.author_reward_curve = curve_id::linear;
           rfo.curation_reward_curve = curve_id::square_root;
         });
@@ -5833,9 +5831,7 @@ void database::apply_hardfork( uint32_t hardfork )
         rfo.author_reward_curve = convergent_linear;
         rfo.curation_reward_curve = convergent_square_root;
         rfo.content_constant = HIVE_CONTENT_CONSTANT_HF21;
-#ifndef  IS_TEST_NET
         rfo.recent_claims = HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS;
-#endif
       });
     }
     break;
