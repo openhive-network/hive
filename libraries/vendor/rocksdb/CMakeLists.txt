@@ -85,10 +85,17 @@ else()
   endif()
 
   if(WITH_SNAPPY)
-    find_package(snappy REQUIRED)
-    add_definitions(-DSNAPPY)
-    include_directories(${SNAPPY_INCLUDE_DIR})
-    list(APPEND THIRDPARTY_LIBS ${SNAPPY_LIBRARIES})
+      find_package(snappy REQUIRED)
+      add_definitions(-DSNAPPY)
+      include_directories(${SNAPPY_INCLUDE_DIR})
+    if(ROCKSDB_STATIC)
+      set (CMAKE_FIND_LIBRARY_SUFFIXES .a)
+      find_library(STATIC_SNAPPY snappy REQUIRED)
+      list(APPEND THIRDPARTY_LIBS ${STATIC_SNAPPY})
+      set (CMAKE_FIND_LIBRARY_SUFFIXES .so .a)
+    else()
+      list(APPEND THIRDPARTY_LIBS ${SNAPPY_LIBRARIES})
+    endif()
   endif()
 
   if(WITH_ZLIB)
@@ -743,6 +750,7 @@ else()
   target_link_libraries(${ROCKSDB_SHARED_LIB}
     ${THIRDPARTY_LIBS} ${SYSTEM_LIBS})
   set_target_properties(${ROCKSDB_SHARED_LIB} PROPERTIES
+                        EXCLUDE_FROM_ALL 1
                         LINKER_LANGUAGE CXX
                         VERSION ${ROCKSDB_VERSION}
                         SOVERSION ${ROCKSDB_VERSION_MAJOR}
