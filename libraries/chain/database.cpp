@@ -4303,7 +4303,7 @@ void database::process_optional_actions( const optional_automated_actions& actio
   auto lib = fetch_block_by_number( get_dynamic_global_properties().last_irreversible_block_num );
 
   // This is always valid when running on mainnet because there are irreversible blocks
-  // Testnet and unit tests, not so much. Could be ifdeffed with IS_TEST_NET, but seems
+  // Testnet and unit tests, not so much, but seems
   // like a reasonable check and will be optimized via speculative execution.
   if( lib.valid() )
   {
@@ -4544,8 +4544,6 @@ void database::update_global_dynamic_data( const signed_block& b )
         modify( witness_missed, [&]( witness_object& w )
         {
           w.total_missed++;
-FC_TODO( "#ifndef not needed after HF 20 is live" );
-#ifndef IS_TEST_NET
           if( has_hardfork( HIVE_HARDFORK_0_14__278 ) && !has_hardfork( HIVE_HARDFORK_0_20__SP190 ) )
           {
             if( head_block_num() - w.last_confirmed_block_num  > HIVE_BLOCKS_PER_DAY )
@@ -4554,7 +4552,6 @@ FC_TODO( "#ifndef not needed after HF 20 is live" );
               push_virtual_operation( shutdown_witness_operation( w.owner ) );
             }
           }
-#endif
         } );
       }
     }
