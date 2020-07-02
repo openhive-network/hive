@@ -516,10 +516,8 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 
   if( o.owner )
   {
-#ifndef IS_TEST_NET
     if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
       FC_ASSERT( _db.head_block_time() - account_auth.last_owner_update > HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
-#endif
 
     if( ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) )
       verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
@@ -584,9 +582,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
 
   if( o.owner )
   {
-#ifndef IS_TEST_NET
     FC_ASSERT( _db.head_block_time() - account_auth.last_owner_update > HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
-#endif
 
     verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
 
