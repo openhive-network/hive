@@ -83,10 +83,6 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb 
 
   open_database( shared_file_size_in_mb );
 
-  generate_block();
-  db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-  generate_block();
-
   vest( "initminer", 10000 );
 
   // Fill up the rest of the required miners
@@ -241,10 +237,38 @@ void database_fixture::post_open_database()
   } );
 }
 
-void database_fixture::open_database( uint16_t shared_file_size_in_mb )
+void database_fixture::init_hardforks()
+{
+  generate_block();
+  db->set_hardfork( HIVE_NUM_HARDFORKS );
+  generate_block();
+}
+
+void database_fixture::post_init_hardforks()
+{
+  /*
+    Maybe it's worth changing this specific "testnet" values into values that they are in a mainnet.
+    No doubt it's connected with changing some tests.
+  */
+  db_plugin->debug_update( []( database& db )
+  {
+    db.modify( db.get_reward_fund(), [&]( reward_fund_object& o )
+    {
+      o.recent_claims = 0;
+    } );
+  } );
+}
+
+void database_fixture::open_database( uint16_t shared_file_size_in_mb, bool allow_init_hardfork )
 {
   if( try_open_database( shared_file_size_in_mb ) )
     post_open_database();
+
+  if( allow_init_hardfork )
+  {
+    init_hardforks();
+    post_init_hardforks();
+  }
 }
 
 void database_fixture::generate_block(uint32_t skip, const fc::ecc::private_key& key, int miss_blocks)
@@ -913,11 +937,6 @@ void sps_proposal_database_fixture::plugin_prepare()
 
   open_database();
 
-  generate_block();
-  db->set_hardfork( HIVE_NUM_HARDFORKS );
-  generate_block();
-
-
   validate_database();
 }
 
@@ -1315,10 +1334,6 @@ json_rpc_database_fixture::json_rpc_database_fixture()
   init_account_pub_key = init_account_priv_key.get_public_key();
 
   open_database();
-
-  generate_block();
-  db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-  generate_block();
 
   vest( "initminer", 10000 );
 

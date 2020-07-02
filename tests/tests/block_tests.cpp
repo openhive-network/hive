@@ -763,8 +763,7 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
     db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
     BOOST_REQUIRE( db );
 
-
-    open_database();
+    open_database( shared_file_size_in_mb_64, false/*allow_init_hardfork*/ );
 
     generate_blocks( 2 );
 

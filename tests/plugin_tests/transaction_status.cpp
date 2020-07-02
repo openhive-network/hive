@@ -73,10 +73,6 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
-    generate_block();
-    db->set_hardfork( HIVE_NUM_HARDFORKS );
-    generate_block();
-
     vest( "initminer", 10000 );
 
     // Fill up the rest of the required miners

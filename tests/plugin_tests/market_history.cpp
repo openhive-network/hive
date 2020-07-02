@@ -45,10 +45,6 @@ BOOST_AUTO_TEST_CASE( mh_test )
 
     open_database();
 
-    generate_block();
-    db->set_hardfork( HIVE_NUM_HARDFORKS );
-    generate_block();
-
     vest( "initminer", 10000 );
 
     // Fill up the rest of the required miners

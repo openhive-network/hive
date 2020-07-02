@@ -5684,11 +5684,8 @@ void database::apply_hardfork( uint32_t hardfork )
 
         const auto& gpo = get_dynamic_global_properties();
 
-        auto& post_rf = create< reward_fund_object >( HIVE_POST_REWARD_FUND_NAME, gpo.get_total_reward_fund_hive(), head_block_time()
-#ifndef IS_TEST_NET
-          , HIVE_HF_17_RECENT_CLAIMS
-#endif
-          );
+        auto& post_rf = create< reward_fund_object >( HIVE_POST_REWARD_FUND_NAME,
+                        gpo.get_total_reward_fund_hive(), head_block_time(), HIVE_HF_17_RECENT_CLAIMS );
 
         // As a shortcut in payout processing, we use the id as an array index.
         // The IDs must be assigned this way. The assertion is a dummy check to ensure this happens.
