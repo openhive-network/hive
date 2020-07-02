@@ -74,7 +74,10 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb 
   rc_skip.skip_deduct_rc = 0;
   rc_skip.skip_negative_rc_balance = 1;
   rc_skip.skip_reject_unknown_delta_vests = 0;
-  appbase::app().get_plugin< hive::plugins::rc::rc_plugin >().set_rc_plugin_skip_flags( rc_skip );
+
+  auto& rc_plugin = appbase::app().get_plugin< hive::plugins::rc::rc_plugin >();
+  rc_plugin.set_rc_plugin_skip_flags( rc_skip );
+  rc_plugin.set_initial_block();
 
   db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
   BOOST_REQUIRE( db );
