@@ -6,7 +6,7 @@
 
 namespace hive { namespace protocol {
 
-fc::variant_object get_config( const config_blockchain_type<>& config, const std::string& treasury_name, const fc::sha256& chain_id )
+fc::variant_object get_config( const config_blockchain_type& config, const std::string& treasury_name, const fc::sha256& chain_id )
 {
   fc::mutable_variant_object result;
 

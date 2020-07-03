@@ -81,8 +81,8 @@ int main( int argc, char** argv, char** envp )
   db_args.data_dir = "tempdata";
   db_args.shared_mem_dir = "tempdata/blockchain";
   db_args.shared_file_size = 1024*1024*8;
-  db_args.initial_supply = db.config_blockchain->HIVE_INIT_SUPPLY;
-  db_args.hbd_initial_supply = db.config_blockchain->HIVE_HBD_INIT_SUPPLY;
+  db_args.initial_supply = db.config_blockchain.HIVE_INIT_SUPPLY;
+  db_args.hbd_initial_supply = db.config_blockchain.HIVE_HBD_INIT_SUPPLY;
 
   std::map< std::string, schema_info > schema_map;
 

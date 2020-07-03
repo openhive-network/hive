@@ -10,45 +10,52 @@
 // Every symbol defined here needs to be handled appropriately in get_config.cpp
 // This is checked by get_config_check.sh called from Dockerfile
 
-template
-<
-  uint32_t  _HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12              = 60*60*24,
-  uint32_t  _HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17              = 60*60*12,
-  uint32_t  _HIVE_CASHOUT_WINDOW_SECONDS                       = 60*60*24*7,
-  uint32_t  _HIVE_SECOND_CASHOUT_WINDOW                        = 60*60*24*30,
-  uint32_t  _HIVE_MAX_CASHOUT_WINDOW_SECONDS                   = 60*60*24*14,
-
-  uint32_t  _HIVE_UPVOTE_LOCKOUT_SECONDS                       = 60*60*12,
-  int64_t   _HIVE_UPVOTE_LOCKOUT_HF17                          = 12,
-
-  int64_t   _HIVE_OWNER_AUTH_RECOVERY_PERIOD                   = 30,
-  int64_t   _HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   = 1,
-  int64_t   _HIVE_OWNER_UPDATE_LIMIT                           = 60,
-  uint32_t  _HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  = 3186477,
-  int64_t   _HIVE_INIT_SUPPLY                                  = 0,
-  int64_t   _HIVE_HBD_INIT_SUPPLY                              = 0
->
 struct config_blockchain_type
 {
-  const uint32_t            HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12              = _HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
-  const uint32_t            HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17              = _HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
-  const uint32_t            HIVE_CASHOUT_WINDOW_SECONDS                       = _HIVE_CASHOUT_WINDOW_SECONDS;
-  const uint32_t            HIVE_SECOND_CASHOUT_WINDOW                        = _HIVE_SECOND_CASHOUT_WINDOW;
-  const uint32_t            HIVE_MAX_CASHOUT_WINDOW_SECONDS                   = _HIVE_MAX_CASHOUT_WINDOW_SECONDS;
+  const uint32_t hour = 60*60;
 
-  const uint32_t            HIVE_UPVOTE_LOCKOUT_SECONDS                       = _HIVE_UPVOTE_LOCKOUT_SECONDS;
-  const fc::microseconds    HIVE_UPVOTE_LOCKOUT_HF17                          = fc::hours( _HIVE_UPVOTE_LOCKOUT_HF17 );
+  uint32_t            HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12              = 24*hour;                    // 1 day
+  uint32_t            HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17              = 12*hour;                    // 12 hours
+  uint32_t            HIVE_CASHOUT_WINDOW_SECONDS                       = 7*24*hour;                  // 7 days
+  uint32_t            HIVE_SECOND_CASHOUT_WINDOW                        = 30*24*hour;                 // 30 days
+  uint32_t            HIVE_MAX_CASHOUT_WINDOW_SECONDS                   = 24*14*hour;                 // 14 days
 
-  const fc::microseconds    HIVE_OWNER_AUTH_RECOVERY_PERIOD                   = fc::days( _HIVE_OWNER_AUTH_RECOVERY_PERIOD );
-  const fc::microseconds    HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   = fc::days( _HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
-  const fc::microseconds    HIVE_OWNER_UPDATE_LIMIT                           = fc::minutes( _HIVE_OWNER_UPDATE_LIMIT );
-  const uint32_t            HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  = _HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM;
-  const int64_t             HIVE_INIT_SUPPLY                                  = _HIVE_INIT_SUPPLY;
-  const int64_t             HIVE_HBD_INIT_SUPPLY                              = _HIVE_HBD_INIT_SUPPLY;
+  uint32_t            HIVE_UPVOTE_LOCKOUT_SECONDS                       = 12*hour;                    //12 hours
+  fc::microseconds    HIVE_UPVOTE_LOCKOUT_HF17                          = fc::seconds( 12*hour );     //12 hours
 
-  //Variables automatically calculated by values delivered from template arguments
-  const uint32_t            HIVE_DELEGATION_RETURN_PERIOD_HF0                 = _HIVE_CASHOUT_WINDOW_SECONDS;
-  const fc::time_point_sec  HIVE_HF_19_SQRT_PRE_CALC                          = fc::time_point_sec( HIVE_HARDFORK_0_19_ACTUAL_TIME - HIVE_CASHOUT_WINDOW_SECONDS );
+  fc::microseconds    HIVE_OWNER_AUTH_RECOVERY_PERIOD                   = fc::seconds( 30*24*hour );  // 30 days
+  fc::microseconds    HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   = fc::seconds( 1*24*hour );   // 1 day
+  fc::microseconds    HIVE_OWNER_UPDATE_LIMIT                           = fc::seconds( hour );
+  uint32_t            HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  = 3186477;
+  int64_t             HIVE_INIT_SUPPLY                                  = 0;
+  int64_t             HIVE_HBD_INIT_SUPPLY                              = 0;
+
+  //Variables automatically calculated by values delivered from arguments
+  uint32_t            HIVE_DELEGATION_RETURN_PERIOD_HF0                 = HIVE_CASHOUT_WINDOW_SECONDS;
+  fc::time_point_sec  HIVE_HF_19_SQRT_PRE_CALC                          = fc::time_point_sec( HIVE_HARDFORK_0_19_ACTUAL_TIME - HIVE_CASHOUT_WINDOW_SECONDS );
+
+  void switch_to_testnet_settings()
+  {
+    HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12              = hour;
+    HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17              = hour;
+    HIVE_CASHOUT_WINDOW_SECONDS                       = hour;
+    HIVE_SECOND_CASHOUT_WINDOW                        = 3*24*hour;            //3 days
+    HIVE_MAX_CASHOUT_WINDOW_SECONDS                   = 24*hour;              //1 day
+
+    HIVE_UPVOTE_LOCKOUT_SECONDS                       = 5*60;                 // 5 minutes
+    HIVE_UPVOTE_LOCKOUT_HF17                          = fc::seconds( 5*60 );  // 5 minutes
+
+    HIVE_OWNER_AUTH_RECOVERY_PERIOD                   = fc::seconds( 60 );
+    HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   = fc::seconds( 12 );
+    HIVE_OWNER_UPDATE_LIMIT                           = fc::seconds( 0 );
+    HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  = 1;
+    HIVE_INIT_SUPPLY                                  = int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 );
+    HIVE_HBD_INIT_SUPPLY                              = int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 );
+
+    //Variables automatically calculated by values delivered from arguments
+    HIVE_DELEGATION_RETURN_PERIOD_HF0                 = HIVE_CASHOUT_WINDOW_SECONDS;
+    HIVE_HF_19_SQRT_PRE_CALC                          = fc::time_point_sec( HIVE_HARDFORK_0_19_ACTUAL_TIME - HIVE_CASHOUT_WINDOW_SECONDS );
+  }
 };
 
 #define HIVE_BLOCKCHAIN_VERSION               ( version(0, HIVE_NUM_HARDFORKS, 0) )

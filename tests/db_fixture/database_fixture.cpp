@@ -207,8 +207,10 @@ void database_fixture::try_open_database_internal( uint64_t size )
   args.shared_file_size = size;
   args.database_cfg = hive::utilities::default_database_configuration();
   args.sps_remove_threshold = 20;
-  args.initial_supply = db->config_blockchain->HIVE_INIT_SUPPLY;
-  args.hbd_initial_supply = db->config_blockchain->HIVE_HBD_INIT_SUPPLY;
+  args.initial_supply = db->config_blockchain.HIVE_INIT_SUPPLY;
+  args.hbd_initial_supply = db->config_blockchain.HIVE_HBD_INIT_SUPPLY;
+
+  db->config_blockchain.switch_to_testnet_settings();
 
   db->open(args);
 }

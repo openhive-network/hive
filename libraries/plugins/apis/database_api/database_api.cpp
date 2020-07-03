@@ -260,8 +260,7 @@ database_api_impl::~database_api_impl() {}
 
 DEFINE_API_IMPL( database_api_impl, get_config )
 {
-  FC_ASSERT( _db.config_blockchain );
-  return hive::protocol::get_config( *_db.config_blockchain, _db.get_treasury_name(), _db.get_chain_id() );
+  return hive::protocol::get_config( _db.config_blockchain, _db.get_treasury_name(), _db.get_chain_id() );
 }
 
 DEFINE_API_IMPL( database_api_impl, get_version )

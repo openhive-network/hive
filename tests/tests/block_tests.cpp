@@ -59,8 +59,8 @@ void open_test_database( database& db, const fc::path& dir )
   args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
   args.shared_file_size = TEST_SHARED_MEM_SIZE;
   args.database_cfg = hive::utilities::default_database_configuration();
-  args.initial_supply = db.config_blockchain->HIVE_INIT_SUPPLY;
-  args.hbd_initial_supply = db.config_blockchain->HIVE_HBD_INIT_SUPPLY;
+  args.initial_supply = db.config_blockchain.HIVE_INIT_SUPPLY;
+  args.hbd_initial_supply = db.config_blockchain.HIVE_HBD_INIT_SUPPLY;
   db.open( args );
 }
 
