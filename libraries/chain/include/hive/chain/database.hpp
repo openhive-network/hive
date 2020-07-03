@@ -686,6 +686,7 @@ namespace hive { namespace chain {
     public:
 
       negative_votes_info_type negative_votes_info;
+      std::unique_ptr< config_blockchain_type<> > config_blockchain;
 
       const transaction_id_type& get_current_trx() const
       {

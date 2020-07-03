@@ -135,7 +135,7 @@ database_impl::database_impl( database& self )
   : _self(self), _evaluator_registry(self), _req_action_evaluator_registry(self), _opt_action_evaluator_registry(self) {}
 
 database::database()
-  : _my( new database_impl(*this) ) {}
+  : config_blockchain( new config_blockchain_type<>() ), _my( new database_impl(*this) ) {}
 
 database::~database()
 {
