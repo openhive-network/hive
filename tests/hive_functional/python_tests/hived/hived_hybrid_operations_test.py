@@ -175,6 +175,7 @@ if __name__ == '__main__':
             # use hybrid op with old keys
             logger.info("Using hybrid op with old keys")
             try:
+                exit_code = 1
                 tx = TransactionBuilder(hive_instance=node_client)
                 ops = []
                 op = operations.Comment_options(**{
@@ -191,9 +192,13 @@ if __name__ == '__main__':
                 tx.appendWif(accounts[0]['private_key'])
                 tx.sign()
                 tx.broadcast()
+                logger.exception( "Expected exception for old style op was not thrown" )
             except Exception as ex:
-                logger.exception("Exception on old style op: {}".format(ex))
-                exit_code = 1
+                if  str(ex) == "Assert Exception:false: Obsolete form of transaction detected, update your wallet.":
+                    logger.info("Expected exception on old style op: {}".format(ex))
+                    exit_code = 0
+                else:
+                    logger.info("Unexpected exception on old style op: {}".format(ex))
 
             hive_utils.common.wait_n_blocks(node_client.rpc.url, 5)
 
