@@ -8,8 +8,9 @@
 // Every symbol defined here needs to be handled appropriately in get_config.cpp
 // This is checked by get_config_check.sh called from Dockerfile
 
+#define HIVE_BLOCKCHAIN_VERSION               ( version(0, HIVE_NUM_HARDFORKS, 0) )
+
 #ifdef IS_TEST_NET
-#define HIVE_BLOCKCHAIN_VERSION               ( version(0, 25, 0) )
 
 #define HIVE_INIT_PRIVATE_KEY                 (fc::ecc::private_key::regenerate(fc::sha256::hash(std::string("init_key"))))
 #define HIVE_INIT_PUBLIC_KEY_STR              (std::string( hive::protocol::public_key_type(HIVE_INIT_PRIVATE_KEY.get_public_key()) ))
@@ -41,8 +42,6 @@
 #define HIVE_HBD_INIT_SUPPLY                  (int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 ))
 
 #else // IS LIVE HIVE NETWORK
-
-#define HIVE_BLOCKCHAIN_VERSION               ( version(0, 24, 0) )
 
 #define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
 #define STEEM_CHAIN_ID                        fc::sha256()
