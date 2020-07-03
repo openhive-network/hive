@@ -2313,7 +2313,7 @@ void database::adjust_rshares2( fc::uint128_t old_rshares2, fc::uint128_t new_rs
 
 void database::update_owner_authority( const account_object& account, const authority& owner_authority )
 {
-  if( head_block_num() >= HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
+  if( head_block_num() >= config_blockchain->HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
   {
     create< owner_authority_history_object >( account, get< account_authority_object, by_account >( account.name ).owner, head_block_time() );
   }
@@ -2713,7 +2713,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       else if( comment.is_root() )
       {
         if( has_hardfork( HIVE_HARDFORK_0_12__177 ) && c.last_payout == fc::time_point_sec::min() )
-          c.cashout_time = head_block_time() + HIVE_SECOND_CASHOUT_WINDOW;
+          c.cashout_time = head_block_time() + config_blockchain->HIVE_SECOND_CASHOUT_WINDOW;
         else
           c.cashout_time = fc::time_point_sec::maximum();
       }
@@ -3238,7 +3238,7 @@ void database::account_recovery_processing()
   const auto& hist_idx = get_index< owner_authority_history_index >().indices(); //by id
   auto hist = hist_idx.begin();
 
-  while( hist != hist_idx.end() && time_point_sec( hist->last_valid_time + HIVE_OWNER_AUTH_RECOVERY_PERIOD ) < head_block_time() )
+  while( hist != hist_idx.end() && time_point_sec( hist->last_valid_time + config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD ) < head_block_time() )
   {
     remove( *hist );
     hist = hist_idx.begin();
@@ -3568,7 +3568,8 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       } );
     }
 
-    create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME, asset( init_supply, HIVE_SYMBOL ), asset( hbd_init_supply, HBD_SYMBOL ) );
+    create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME, asset( init_supply, HIVE_SYMBOL ), asset( hbd_init_supply, HBD_SYMBOL ),
+                                              config_blockchain->HIVE_DELEGATION_RETURN_PERIOD_HF0 );
     // feed initial token supply to first miner
     modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
     {
@@ -5618,7 +5619,7 @@ void database::apply_hardfork( uint32_t hardfork )
             {
               modify( *itr, [&]( comment_cashout_object & c )
               {
-                c.cashout_time = head_block_time() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
+                c.cashout_time = head_block_time() + config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
               });
             }
             // Has been paid out, needs to be on second cashout window
@@ -5626,7 +5627,7 @@ void database::apply_hardfork( uint32_t hardfork )
             {
               modify( *itr, [&]( comment_cashout_object& c )
               {
-                c.cashout_time = c.last_payout + HIVE_SECOND_CASHOUT_WINDOW;
+                c.cashout_time = c.last_payout + config_blockchain->HIVE_SECOND_CASHOUT_WINDOW;
               });
             }
           }
@@ -5732,7 +5733,7 @@ void database::apply_hardfork( uint32_t hardfork )
         {
           modify( *itr, [&]( comment_cashout_object& c )
           {
-            c.cashout_time = std::max( c.get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS, c.cashout_time );
+            c.cashout_time = std::max( c.get_creation_time() + config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS, c.cashout_time );
           });
         }
 
@@ -5740,7 +5741,7 @@ void database::apply_hardfork( uint32_t hardfork )
         {
           modify( *itr, [&]( comment_cashout_object& c )
           {
-            c.cashout_time = std::max( calculate_discussion_payout_time( c ), itr->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+            c.cashout_time = std::max( calculate_discussion_payout_time( c ), itr->get_creation_time() + config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS );
           });
         }
       }

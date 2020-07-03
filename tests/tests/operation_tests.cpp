@@ -492,7 +492,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_REQUIRE( alice_comment_cashout->get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( alice_comment_cashout->net_rshares.value == 0 );
     BOOST_REQUIRE( alice_comment_cashout->abs_rshares.value == 0 );
-    BOOST_REQUIRE( alice_comment_cashout->cashout_time == fc::time_point_sec( db->head_block_time() + fc::seconds( HIVE_CASHOUT_WINDOW_SECONDS ) ) );
+    BOOST_REQUIRE( alice_comment_cashout->cashout_time == fc::time_point_sec( db->head_block_time() + fc::seconds( db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS ) ) );
 
     #if !defined(IS_LOW_MEM) && defined(STORE_COMMENT_CONTENT)
       const auto& alice_comment_content = db->get< comment_content_object, by_comment >( alice_comment.get_id() );
@@ -540,7 +540,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_REQUIRE( bob_comment_cashout->get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( bob_comment_cashout->net_rshares.value == 0 );
     BOOST_REQUIRE( bob_comment_cashout->abs_rshares.value == 0 );
-    BOOST_REQUIRE( bob_comment_cashout->cashout_time == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+    BOOST_REQUIRE( bob_comment_cashout->cashout_time == bob_comment_cashout->get_creation_time() + db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS );
     BOOST_REQUIRE( bob_comment.get_root_id() == alice_comment.get_id() );
     validate_database();
 
@@ -570,7 +570,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_REQUIRE( sam_comment_cashout->get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( sam_comment_cashout->net_rshares.value == 0 );
     BOOST_REQUIRE( sam_comment_cashout->abs_rshares.value == 0 );
-    BOOST_REQUIRE( sam_comment_cashout->cashout_time == sam_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+    BOOST_REQUIRE( sam_comment_cashout->cashout_time == sam_comment_cashout->get_creation_time() + db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS );
     BOOST_REQUIRE( sam_comment.get_root_id() == alice_comment.get_id() );
     validate_database();
 
@@ -616,7 +616,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_REQUIRE( mod_sam_comment.get_parent_id() == mod_bob_comment.get_id() );
     BOOST_REQUIRE( mod_sam_comment_cashout->active == db->head_block_time() );
     BOOST_REQUIRE( mod_sam_comment_cashout->get_creation_time() == created );
-    BOOST_REQUIRE( mod_sam_comment_cashout->cashout_time == mod_sam_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+    BOOST_REQUIRE( mod_sam_comment_cashout->cashout_time == mod_sam_comment_cashout->get_creation_time() + db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test comment edit rate limit" );
@@ -726,7 +726,7 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
 
-    generate_blocks( HIVE_CASHOUT_WINDOW_SECONDS / HIVE_BLOCK_INTERVAL );
+    generate_blocks( db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS / HIVE_BLOCK_INTERVAL );
 
     const comment_object& _comment = db->get_comment( "alice", string( "test1" ) );
     const comment_cashout_object* _comment_cashout = db->find_comment_cashout( _comment );
@@ -873,7 +873,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       BOOST_REQUIRE( alice.last_vote_time == db->head_block_time() );
       BOOST_REQUIRE( alice_comment_cashout->net_rshares.value == ( old_mana - alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
-      BOOST_REQUIRE( alice_comment_cashout->cashout_time == alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( alice_comment_cashout->cashout_time == alice_comment_cashout->get_creation_time() + db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( itr->rshares == ( old_mana - alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
       BOOST_REQUIRE( itr != vote_idx.end() );
       validate_database();
@@ -911,7 +911,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       itr = vote_idx.find( boost::make_tuple( bob_comment.get_id(), alice.get_id() ) );
 
       BOOST_REQUIRE( bob_comment_cashout->net_rshares.value == ( old_manabar.current_mana - db->get_account( "alice" ).voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
-      BOOST_REQUIRE( bob_comment_cashout->cashout_time == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( bob_comment_cashout->cashout_time == bob_comment_cashout->get_creation_time() + db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( itr != vote_idx.end() );
       validate_database();
 
@@ -920,7 +920,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       old_mana = VOTING_MANABAR( "bob" ).current_mana;
       auto old_abs_rshares = db->find_comment_cashout( db->get_comment( "alice", string( "foo" ) ) )->abs_rshares.value;
 
-      generate_blocks( db->head_block_time() + fc::seconds( ( HIVE_CASHOUT_WINDOW_SECONDS / 2 ) ), true );
+      generate_blocks( db->head_block_time() + fc::seconds( ( db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS / 2 ) ), true );
 
       const auto& new_bob = db->get_account( "bob" );
       const auto& new_alice_comment = db->get_comment( "alice", string( "foo" ) );
@@ -940,7 +940,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       itr = vote_idx.find( boost::make_tuple( new_alice_comment.get_id(), new_bob.get_id() ) );
 
       BOOST_REQUIRE( new_alice_comment_cashout->net_rshares.value == old_abs_rshares + ( old_mana - new_bob.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
-      BOOST_REQUIRE( new_alice_comment_cashout->cashout_time == new_alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( new_alice_comment_cashout->cashout_time == new_alice_comment_cashout->get_creation_time() + db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( itr != vote_idx.end() );
       validate_database();
 
@@ -975,7 +975,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       BOOST_REQUIRE( new_bob_comment_cashout->net_rshares.value == old_abs_rshares - sam_weight );
       BOOST_REQUIRE( new_bob_comment_cashout->abs_rshares.value == old_abs_rshares + sam_weight );
-      BOOST_REQUIRE( new_bob_comment_cashout->cashout_time == new_bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( new_bob_comment_cashout->cashout_time == new_bob_comment_cashout->get_creation_time() + db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( itr != vote_idx.end() );
       validate_database();
 
@@ -1011,7 +1011,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       {
         auto* alice_cashout = db->find_comment_cashout( db->get_comment( "alice", string( "foo" ) ) );
-        BOOST_REQUIRE( alice_cashout->cashout_time == alice_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+        BOOST_REQUIRE( alice_cashout->cashout_time == alice_cashout->get_creation_time() + db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS );
       }
 
       validate_database();
@@ -1047,7 +1047,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       BOOST_REQUIRE( new_bob_comment_cashout->net_rshares == old_net_rshares - old_vote_rshares + new_rshares );
       BOOST_REQUIRE( new_bob_comment_cashout->abs_rshares == old_abs_rshares + new_rshares );
-      BOOST_REQUIRE( new_bob_comment_cashout->cashout_time == new_bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( new_bob_comment_cashout->cashout_time == new_bob_comment_cashout->get_creation_time() + db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( alice_bob_vote->rshares == new_rshares );
       BOOST_REQUIRE( alice_bob_vote->last_update == db->head_block_time() );
       BOOST_REQUIRE( alice_bob_vote->vote_percent == op.weight );
@@ -1084,7 +1084,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       BOOST_REQUIRE( new_bob_comment_cashout->net_rshares == old_net_rshares - old_vote_rshares - new_rshares );
       BOOST_REQUIRE( new_bob_comment_cashout->abs_rshares == old_abs_rshares + new_rshares );
-      BOOST_REQUIRE( new_bob_comment_cashout->cashout_time == new_bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( new_bob_comment_cashout->cashout_time == new_bob_comment_cashout->get_creation_time() + db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( alice_bob_vote->rshares == -1 * new_rshares );
       BOOST_REQUIRE( alice_bob_vote->last_update == db->head_block_time() );
       BOOST_REQUIRE( alice_bob_vote->vote_percent == op.weight );
@@ -1108,7 +1108,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       BOOST_REQUIRE( new_bob_comment_cashout->net_rshares == old_net_rshares - old_vote_rshares );
       BOOST_REQUIRE( new_bob_comment_cashout->abs_rshares == old_abs_rshares );
-      BOOST_REQUIRE( new_bob_comment_cashout->cashout_time == new_bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( new_bob_comment_cashout->cashout_time == new_bob_comment_cashout->get_creation_time() + db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( alice_bob_vote->rshares == 0 );
       BOOST_REQUIRE( alice_bob_vote->last_update == db->head_block_time() );
       BOOST_REQUIRE( alice_bob_vote->vote_percent == op.weight );
@@ -1171,7 +1171,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       BOOST_TEST_MESSAGE( "--- Test reduced effectiveness when increasing rshares within lockout period" );
 
-      generate_blocks( fc::time_point_sec( ( new_bob_comment_cashout->cashout_time - HIVE_UPVOTE_LOCKOUT_HF17 ).sec_since_epoch() + HIVE_BLOCK_INTERVAL ), true );
+      generate_blocks( fc::time_point_sec( ( new_bob_comment_cashout->cashout_time - db->config_blockchain->HIVE_UPVOTE_LOCKOUT_HF17 ).sec_since_epoch() + HIVE_BLOCK_INTERVAL ), true );
 
       old_manabar = VOTING_MANABAR( "dave" );
       params.max_mana = util::get_effective_vesting_shares( db->get_account( "dave" ) );
@@ -1186,7 +1186,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       db->push_transaction( tx, 0 );
 
       new_rshares = old_manabar.current_mana - VOTING_MANABAR( "dave" ).current_mana - HIVE_VOTE_DUST_THRESHOLD;
-      new_rshares = ( new_rshares * ( HIVE_UPVOTE_LOCKOUT_SECONDS - HIVE_BLOCK_INTERVAL ) ) / HIVE_UPVOTE_LOCKOUT_SECONDS;
+      new_rshares = ( new_rshares * ( db->config_blockchain->HIVE_UPVOTE_LOCKOUT_SECONDS - HIVE_BLOCK_INTERVAL ) ) / db->config_blockchain->HIVE_UPVOTE_LOCKOUT_SECONDS;
       account_id_type dave_id = get_account_id( "dave" );
       comment_id_type bob_comment_id = db->get_comment( "bob", string( "foo" ) ).get_id();
 
@@ -1216,7 +1216,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       db->push_transaction( tx, 0 );
 
       new_rshares = old_manabar.current_mana - VOTING_MANABAR( "dave" ).current_mana - HIVE_VOTE_DUST_THRESHOLD;
-      new_rshares = ( new_rshares * ( HIVE_UPVOTE_LOCKOUT_SECONDS - HIVE_BLOCK_INTERVAL - HIVE_BLOCK_INTERVAL ) ) / HIVE_UPVOTE_LOCKOUT_SECONDS;
+      new_rshares = ( new_rshares * ( _db.config_blockchain->HIVE_UPVOTE_LOCKOUT_SECONDS - HIVE_BLOCK_INTERVAL - HIVE_BLOCK_INTERVAL ) ) / _db.config_blockchain->HIVE_UPVOTE_LOCKOUT_SECONDS;
 
       {
         auto& dave_bob_vote = db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( bob_comment_id, dave_id ) );
@@ -1891,7 +1891,7 @@ BOOST_AUTO_TEST_CASE( witness_update_apply )
     op.url = "foo.bar";
     op.fee = ASSET( "1.000 HIVE" );
     op.block_signing_key = signing_key.get_public_key();
-    op.props.account_creation_fee = legacy_hive_asset::from_asset( asset(HIVE_MIN_ACCOUNT_CREATION_FEE + 10, HIVE_SYMBOL) );
+    op.props.account_creation_fee = legacy_hive_asset::from_asset( asset( HIVE_MIN_ACCOUNT_CREATION_FEE + 10, HIVE_SYMBOL) );
     op.props.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT + 100;
 
     signed_transaction tx;
@@ -4175,7 +4175,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
 
     BOOST_TEST_MESSAGE( "Recovering bob's account with original owner auth and new secret" );
 
-    generate_blocks( db->head_block_time() + HIVE_OWNER_UPDATE_LIMIT );
+    generate_blocks( db->head_block_time() + db->config_blockchain->HIVE_OWNER_UPDATE_LIMIT );
 
     recover_account_operation recover;
     recover.account_to_recover = "bob";
@@ -4208,7 +4208,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
 
     BOOST_TEST_MESSAGE( "Testing failure when bob does not have new authority" );
 
-    generate_blocks( db->head_block_time() + HIVE_OWNER_UPDATE_LIMIT + fc::seconds( HIVE_BLOCK_INTERVAL ) );
+    generate_blocks( db->head_block_time() + db->config_blockchain->HIVE_OWNER_UPDATE_LIMIT + fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     recover.new_owner_authority = authority( 1, generate_private_key( "idontknow" ).get_public_key(), 1 );
 
@@ -4271,7 +4271,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
 
     BOOST_REQUIRE( req_itr->account_to_recover == "bob" );
     BOOST_REQUIRE( req_itr->new_owner_authority == authority( 1, generate_private_key( "expire" ).get_public_key(), 1 ) );
-    BOOST_REQUIRE( req_itr->expires == db->head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
+    BOOST_REQUIRE( req_itr->expires == db->head_block_time() + db->config_blockchain->HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
     auto expires = req_itr->expires;
     ++req_itr;
     BOOST_REQUIRE( req_itr == request_idx.end() );
@@ -4311,7 +4311,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     sign( tx, generate_private_key( "foo bar" ) );
     db->push_transaction( tx, 0 );
 
-    generate_blocks( db->head_block_time() + ( HIVE_OWNER_AUTH_RECOVERY_PERIOD - HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD ) );
+    generate_blocks( db->head_block_time() + ( db->config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD - db->config_blockchain->HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD ) );
     generate_block();
 
     request.new_owner_authority = authority( 1, generate_private_key( "last key" ).get_public_key(), 1 );
@@ -4434,7 +4434,7 @@ BOOST_AUTO_TEST_CASE( change_recovery_account )
     fc::ecc::private_key alice_priv2 = fc::ecc::private_key::regenerate( fc::sha256::hash( "alice_k2" ) );
     public_key_type alice_pub1 = public_key_type( alice_priv1.get_public_key() );
 
-    generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD - fc::seconds( HIVE_BLOCK_INTERVAL ), true );
+    generate_blocks( db->head_block_time() + db->config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD - fc::seconds( HIVE_BLOCK_INTERVAL ), true );
     // cannot request account recovery until recovery account is approved
     HIVE_REQUIRE_THROW( request_account_recovery( "sam", sam_private_key, "alice", alice_pub1 ), fc::exception );
     generate_blocks(1);
@@ -6654,7 +6654,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_apply )
     const auto& request_idx = db->get_index< decline_voting_rights_request_index >().indices().get< by_account >();
     auto itr = request_idx.find( db->get_account( "alice" ).name );
     BOOST_REQUIRE( itr != request_idx.end() );
-    BOOST_REQUIRE( itr->effective_date == db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
+    BOOST_REQUIRE( itr->effective_date == db->head_block_time() + db->config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD );
 
 
     BOOST_TEST_MESSAGE( "--- failure revoking voting rights with existing request" );
@@ -6693,7 +6693,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_apply )
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
 
-    generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD - fc::seconds( HIVE_BLOCK_INTERVAL ), true );
+    generate_blocks( db->head_block_time() + db->config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD - fc::seconds( HIVE_BLOCK_INTERVAL ), true );
     BOOST_REQUIRE( db->get_account( "alice" ).can_vote );
     witness_create( "alice", alice_private_key, "foo.bar", alice_private_key.get_public_key(), 0 );
 
@@ -7715,7 +7715,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_validate )
     op.url = "foo.bar";
     op.fee = ASSET( "1.000 HIVE" );
     op.block_signing_key = signing_key.get_public_key();
-    op.props.account_creation_fee = legacy_hive_asset::from_asset( asset(HIVE_MIN_ACCOUNT_CREATION_FEE + 10, HIVE_SYMBOL) );
+    op.props.account_creation_fee = legacy_hive_asset::from_asset( asset( HIVE_MIN_ACCOUNT_CREATION_FEE + 10, HIVE_SYMBOL) );
     op.props.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT + 100;
 
     signed_transaction tx;
@@ -7891,7 +7891,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
     op.url = "foo.bar";
     op.fee = ASSET( "1.000 HIVE" );
     op.block_signing_key = signing_key.get_public_key();
-    op.props.account_creation_fee = legacy_hive_asset::from_asset( asset(HIVE_MIN_ACCOUNT_CREATION_FEE + 10, HIVE_SYMBOL) );
+    op.props.account_creation_fee = legacy_hive_asset::from_asset( asset( HIVE_MIN_ACCOUNT_CREATION_FEE + 10, HIVE_SYMBOL) );
     op.props.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT + 100;
 
     signed_transaction tx;

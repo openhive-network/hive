@@ -637,7 +637,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
 
     BOOST_TEST_MESSAGE( "Generating blocks..." );
 
-    generate_blocks( fc::time_point_sec( db->head_block_time().sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS / 2 ), true );
+    generate_blocks( fc::time_point_sec( db->head_block_time().sec_since_epoch() + db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS / 2 ), true );
 
     BOOST_TEST_MESSAGE( "Second round of votes." );
 

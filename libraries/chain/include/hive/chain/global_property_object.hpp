@@ -27,9 +27,10 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       dynamic_global_property_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _initial_witness, const asset& _initial_hive_supply, const asset& _initial_hbd_supply )
+        const account_name_type& _initial_witness, const asset& _initial_hive_supply, const asset& _initial_hbd_supply, uint32_t _initial_delegation_return_period )
         : id( _id ), current_witness( _initial_witness ), virtual_supply( _initial_hive_supply, HIVE_SYMBOL ),
-        current_supply( _initial_hive_supply, HIVE_SYMBOL ), init_hbd_supply( _initial_hbd_supply, HBD_SYMBOL )
+        current_supply( _initial_hive_supply, HIVE_SYMBOL ), init_hbd_supply( _initial_hbd_supply, HBD_SYMBOL ),
+        delegation_return_period( _initial_delegation_return_period )
       {}
 
       //main HIVE token counter (see also get_full_hive_supply)
@@ -146,7 +147,7 @@ namespace hive { namespace chain {
         */
       uint32_t vote_power_reserve_rate = HIVE_INITIAL_VOTE_POWER_RATE;
 
-      uint32_t delegation_return_period = HIVE_DELEGATION_RETURN_PERIOD_HF0;
+      uint32_t delegation_return_period = 0;
 
       uint64_t reverse_auction_seconds = HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6;
 

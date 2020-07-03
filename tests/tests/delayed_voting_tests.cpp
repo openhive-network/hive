@@ -2027,7 +2027,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_01 )
 
     // blocked bob - do
     decline_voting_rights("bob", true, bob_private_key);
-    generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD, true );
+    generate_blocks( db->head_block_time() + db->config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD, true );
     BOOST_REQUIRE( CAN_VOTE("bob") == false );
     HIVE_REQUIRE_THROW( witness_vote( "bob", "witness", true, bob_private_key ), fc::assert_exception );
     generate_block();
@@ -2075,14 +2075,14 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
 
     // bob block
     decline_voting_rights("bob", true, bob_private_key);
-    generate_blocks( db->head_block_time() + (HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true );
+    generate_blocks( db->head_block_time() + (db->config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true );
 
     // bob check
     BOOST_REQUIRE( CAN_VOTE("bob") );
     
     // bob account is voting
     witness_vote( "bob", "witness", true, bob_private_key );
-    generate_blocks( db->head_block_time() + (HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 3), true );
+    generate_blocks( db->head_block_time() + (db->config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 3), true );
     
     // bob check
     BOOST_REQUIRE( CAN_VOTE("bob") );
@@ -2091,7 +2091,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
     BOOST_REQUIRE( get_votes("witness") == basic_votes + alice_power + bob_power );
 
     // bobs block request is active
-    generate_blocks( db->head_block_time() + (HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 3), true );
+    generate_blocks( db->head_block_time() + (db->config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 3), true );
     
     // blocked bob - check
     HIVE_REQUIRE_THROW( witness_vote( "bob", "witness", true, bob_private_key ), fc::assert_exception );
@@ -2147,7 +2147,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_03 )
 
     // bob block
     decline_voting_rights("bob", true, bob_private_key);
-    generate_blocks( db->head_block_time() + (HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true );
+    generate_blocks( db->head_block_time() + (db->config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true );
 
     // bob check
     BOOST_REQUIRE( CAN_VOTE("bob") );
@@ -2220,7 +2220,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
 
     // bob block
     decline_voting_rights("bob", true, bob_private_key);
-    generate_blocks( db->head_block_time() + (HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true ); 
+    generate_blocks( db->head_block_time() + (db->config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2), true ); 
 
     // bob check
     BOOST_REQUIRE( CAN_VOTE("bob") );

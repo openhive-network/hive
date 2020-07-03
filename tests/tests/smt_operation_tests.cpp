@@ -1829,7 +1829,7 @@ BOOST_AUTO_TEST_CASE( smt_create_reset )
       BOOST_REQUIRE( token.liquid_symbol == op.symbol );
       BOOST_REQUIRE( token.control_account == "alice" );
       BOOST_REQUIRE( token.allow_voting == true );
-      BOOST_REQUIRE( token.cashout_window_seconds == HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( token.cashout_window_seconds == db->config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( token.reverse_auction_window_seconds == HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20 );
       BOOST_REQUIRE( token.vote_regeneration_period_seconds == HIVE_VOTING_MANA_REGENERATION_SECONDS );
       BOOST_REQUIRE( token.votes_per_regeneration_period == SMT_DEFAULT_VOTES_PER_REGEN_PERIOD );

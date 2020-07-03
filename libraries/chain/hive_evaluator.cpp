@@ -517,7 +517,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
   if( o.owner )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
-      FC_ASSERT( _db.head_block_time() - account_auth.last_owner_update > HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
+      FC_ASSERT( _db.head_block_time() - account_auth.last_owner_update > _db.config_blockchain->HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
 
     if( ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) )
       verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
@@ -582,7 +582,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
 
   if( o.owner )
   {
-    FC_ASSERT( _db.head_block_time() - account_auth.last_owner_update > HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
+    FC_ASSERT( _db.head_block_time() - account_auth.last_owner_update > _db.config_blockchain->HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
 
     verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
 
@@ -867,9 +867,9 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
     fc::time_point_sec cashout_time;
     if( _db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
-      cashout_time = _now + HIVE_CASHOUT_WINDOW_SECONDS;
+      cashout_time = _now + _db.config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS;
     else if( ( o.parent_author == HIVE_ROOT_POST_PARENT ) && _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) )
-      cashout_time = _now + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
+      cashout_time = _now + _db.config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
     else
       cashout_time = fc::time_point_sec::maximum();
 
@@ -1582,7 +1582,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     if( rshares > 0 )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_17__900 ) )
-        FC_ASSERT( _db.head_block_time() < comment_cashout->cashout_time - HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
+        FC_ASSERT( _db.head_block_time() < comment_cashout->cashout_time - _db.config_blockchain->HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
       else if( _db.has_hardfork( HIVE_HARDFORK_0_7 ) )
         FC_ASSERT( _db.head_block_time() < _db.calculate_discussion_payout_time( *comment_cashout ) - HIVE_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
     }
@@ -1610,9 +1610,9 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       fc::uint128_t new_cashout_time_sec;
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && !_db.has_hardfork( HIVE_HARDFORK_0_13__257)  )
-        new_cashout_time_sec = _db.head_block_time().sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
+        new_cashout_time_sec = _db.head_block_time().sec_since_epoch() + _db.config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
       else
-        new_cashout_time_sec = _db.head_block_time().sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
+        new_cashout_time_sec = _db.head_block_time().sec_since_epoch() + _db.config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
 
       avg_cashout_sec = ( cur_cashout_time_sec * old_root_abs_rshares + new_cashout_time_sec * abs_rshares ) / ( old_root_abs_rshares + abs_rshares );
     }
@@ -1643,12 +1643,12 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
         if( !_db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
         {
           if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && c.last_payout > fc::time_point_sec::min() )
-            c.cashout_time = c.last_payout + HIVE_SECOND_CASHOUT_WINDOW;
+            c.cashout_time = c.last_payout + _db.config_blockchain->HIVE_SECOND_CASHOUT_WINDOW;
           else
             c.cashout_time = fc::time_point_sec( std::min( uint32_t( avg_cashout_sec.to_uint64() ), c.max_cashout_time.sec_since_epoch() ) );
 
           if( c.max_cashout_time == fc::time_point_sec::maximum() )
-            c.max_cashout_time = _db.head_block_time() + fc::seconds( HIVE_MAX_CASHOUT_WINDOW_SECONDS );
+            c.max_cashout_time = _db.head_block_time() + fc::seconds( _db.config_blockchain->HIVE_MAX_CASHOUT_WINDOW_SECONDS );
         }
       });
     }
@@ -1713,7 +1713,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
           if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
           {
             const auto& reward_fund = _db.get_reward_fund();
-            auto curve = !_db.has_hardfork( HIVE_HARDFORK_0_19__1052 ) && comment_cashout->get_creation_time() > HIVE_HF_19_SQRT_PRE_CALC
+            auto curve = !_db.has_hardfork( HIVE_HARDFORK_0_19__1052 ) && comment_cashout->get_creation_time() > _db.config_blockchain->HIVE_HF_19_SQRT_PRE_CALC
                       ? curve_id::square_root : reward_fund.curation_reward_curve;
             uint64_t old_weight = util::evaluate_reward_curve( old_vote_rshares.value, curve, reward_fund.content_constant ).to_uint64();
             uint64_t new_weight = util::evaluate_reward_curve( comment_cashout->vote_rshares.value, curve, reward_fund.content_constant ).to_uint64();
@@ -1775,7 +1775,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     if( itr->rshares < rshares )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_17__900 ) )
-        FC_ASSERT( _db.head_block_time() < comment_cashout->cashout_time - HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
+        FC_ASSERT( _db.head_block_time() < comment_cashout->cashout_time - _db.config_blockchain->HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
       else if( _db.has_hardfork( HIVE_HARDFORK_0_7 ) )
         FC_ASSERT( _db.head_block_time() < _db.calculate_discussion_payout_time( *comment_cashout ) - HIVE_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
     }
@@ -1800,9 +1800,9 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       fc::uint128_t new_cashout_time_sec;
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && ! _db.has_hardfork( HIVE_HARDFORK_0_13__257 )  )
-        new_cashout_time_sec = _db.head_block_time().sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
+        new_cashout_time_sec = _db.head_block_time().sec_since_epoch() + _db.config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
       else
-        new_cashout_time_sec = _db.head_block_time().sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
+        new_cashout_time_sec = _db.head_block_time().sec_since_epoch() + _db.config_blockchain->HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 )
         avg_cashout_sec = cur_cashout_time_sec;
@@ -1840,12 +1840,12 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
         if( !_db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
         {
           if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && c.last_payout > fc::time_point_sec::min() )
-            c.cashout_time = c.last_payout + HIVE_SECOND_CASHOUT_WINDOW;
+            c.cashout_time = c.last_payout + _db.config_blockchain->HIVE_SECOND_CASHOUT_WINDOW;
           else
             c.cashout_time = fc::time_point_sec( std::min( uint32_t( avg_cashout_sec.to_uint64() ), c.max_cashout_time.sec_since_epoch() ) );
 
           if( c.max_cashout_time == fc::time_point_sec::maximum() )
-            c.max_cashout_time = _db.head_block_time() + fc::seconds( HIVE_MAX_CASHOUT_WINDOW_SECONDS );
+            c.max_cashout_time = _db.head_block_time() + fc::seconds( _db.config_blockchain->HIVE_MAX_CASHOUT_WINDOW_SECONDS );
         }
       });
     }
@@ -2010,9 +2010,9 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   uint32_t cashout_delta = ( comment_cashout->cashout_time - _db.head_block_time() ).to_seconds();
 
-  if( cashout_delta < HIVE_UPVOTE_LOCKOUT_SECONDS )
+  if( cashout_delta < _db.config_blockchain->HIVE_UPVOTE_LOCKOUT_SECONDS )
   {
-    abs_rshares = (int64_t) ( ( uint128_t( abs_rshares ) * cashout_delta ) / HIVE_UPVOTE_LOCKOUT_SECONDS ).to_uint64();
+    abs_rshares = (int64_t) ( ( uint128_t( abs_rshares ) * cashout_delta ) / _db.config_blockchain->HIVE_UPVOTE_LOCKOUT_SECONDS ).to_uint64();
   }
 
   if( itr == comment_vote_idx.end() )
@@ -2781,7 +2781,7 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
     }
 
     _db.create< account_recovery_request_object >( o.account_to_recover, o.new_owner_authority,
-      _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
+      _db.head_block_time() + _db.config_blockchain->HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
   }
   else if( o.new_owner_authority.weight_threshold == 0 ) // Cancel Request if authority is open
   {
@@ -2803,7 +2803,7 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
     _db.modify( *request, [&]( account_recovery_request_object& req )
     {
       req.new_owner_authority = o.new_owner_authority;
-      req.expires = _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD;
+      req.expires = _db.head_block_time() + _db.config_blockchain->HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD;
     });
   }
 }
@@ -2813,7 +2813,7 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   const auto& account = _db.get_account( o.account_to_recover );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_12 ) )
-    FC_ASSERT( _db.head_block_time() - account.last_account_recovery > HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
+    FC_ASSERT( _db.head_block_time() - account.last_account_recovery > _db.config_blockchain->HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
 
   const auto& recovery_request_idx = _db.get_index< account_recovery_request_index >().indices().get< by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
@@ -2856,7 +2856,7 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
     {
       req.account_to_recover = o.account_to_recover;
       req.recovery_account = o.new_recovery_account;
-      req.effective_on = _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD;
+      req.effective_on = _db.head_block_time() + _db.config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD;
     });
   }
   else if( account_to_recover.recovery_account != o.new_recovery_account ) // Change existing request
@@ -2864,7 +2864,7 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
     _db.modify( *request, [&]( change_recovery_account_request_object& req )
     {
       req.recovery_account = o.new_recovery_account;
-      req.effective_on = _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD;
+      req.effective_on = _db.head_block_time() + _db.config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD;
     });
   }
   else // Request exists and changing back to current recovery account
@@ -2939,7 +2939,7 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
     _db.create< decline_voting_rights_request_object >( [&]( decline_voting_rights_request_object& req )
     {
       req.account = account.name;
-      req.effective_date = _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD;
+      req.effective_date = _db.head_block_time() + _db.config_blockchain->HIVE_OWNER_AUTH_RECOVERY_PERIOD;
     });
   }
   else
