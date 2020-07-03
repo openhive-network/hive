@@ -103,7 +103,7 @@ plugin_test:
   tags:
     - public-runner-docker
 
-beem_dhf_test:
+beem_tests:
   stage: test
   needs:
     - job: testnet_node_build
@@ -121,9 +121,12 @@ beem_dhf_test:
     - mkdir -p build/tests/hive-node-data
     - cd tests/hive_functional/python_tests/dhf_tests
     - "python3 beem_dhf_tests.py initminer initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --no-erase-proposal --junit-output=beem_dhf_test.xml"
+    - cd ../hived
+    - "python3 hived_hybrid_operations_test.py initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data"
   artifacts:
     paths:
     - tests/hive_functional/python_tests/dhf_tests/beem_dhf_tests.log
+    - tests/hive_functional/python_tests/hived/hived_hybrid_operations_test.log
     reports:
       junit: tests/hive_functional/python_tests/dhf_tests/beem_dhf_test.xml
     when: always
