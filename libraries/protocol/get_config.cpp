@@ -84,7 +84,7 @@ fc::variant_object get_config( const config_blockchain_type& config, const std::
   result["HIVE_INFLATION_RATE_START_PERCENT"] = HIVE_INFLATION_RATE_START_PERCENT;
   result["HIVE_INFLATION_RATE_STOP_PERCENT"] = HIVE_INFLATION_RATE_STOP_PERCENT;
   result["HIVE_INIT_MINER_NAME"] = HIVE_INIT_MINER_NAME;
-  result["HIVE_INIT_PUBLIC_KEY_STR"] = HIVE_INIT_PUBLIC_KEY_STR;
+  result["HIVE_INIT_PUBLIC_KEY_STR"] = config.HIVE_INIT_PUBLIC_KEY_STR;
 
 #if 0
   // do not expose private key, period.

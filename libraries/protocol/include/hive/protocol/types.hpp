@@ -106,8 +106,6 @@ namespace hive {
       friend bool operator != ( const public_key_type& p1, const public_key_type& p2);
     };
 
-    #define HIVE_INIT_PUBLIC_KEY (hive::protocol::public_key_type(HIVE_INIT_PUBLIC_KEY_STR))
-
     struct extended_public_key_type
     {
       struct binary_key

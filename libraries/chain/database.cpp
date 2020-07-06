@@ -3521,7 +3521,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
     } inhibitor(*this);
 
     // Create blockchain accounts
-    public_key_type      init_public_key(HIVE_INIT_PUBLIC_KEY);
+    public_key_type      init_public_key( config_blockchain.HIVE_INIT_PUBLIC_KEY_STR );
 
     create< account_object >( HIVE_MINER_ACCOUNT );
     create< account_authority_object >( [&]( account_authority_object& auth )
