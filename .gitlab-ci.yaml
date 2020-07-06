@@ -27,6 +27,7 @@ variables:
     paths:
     - "$CI_JOB_NAME"
     expire_in: 6 hours
+  allow_failure: false
 #====================
 #######################################################################
 testnet_node_build:
