@@ -88,7 +88,7 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb 
 
   init_account_pub_key = init_account_priv_key.get_public_key();
 
-  open_database( shared_file_size_in_mb );
+  init_database( shared_file_size_in_mb );
 
   vest( "initminer", 10000 );
 
@@ -199,14 +199,14 @@ asset_symbol_type database_fixture::get_new_smt_symbol( uint8_t token_decimal_pl
 }
 #endif
 
-void database_fixture::try_open_database_internal( uint64_t size )
+void database_fixture::open_database( database& db, const fc::path& dir_path, uint64_t size )
 {
-  idump( (data_dir->path()) );
+  idump( ( dir_path ) );
 
-  db->config_blockchain.switch_to_testnet_settings();
+  db.config_blockchain.switch_to_testnet_settings();
 
   hive::chain::open_args args;
-  args.data_dir = data_dir->path();
+  args.data_dir = dir_path;
   args.shared_mem_dir = args.data_dir;
   args.initial_supply = INITIAL_TEST_SUPPLY;
   args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
@@ -214,7 +214,7 @@ void database_fixture::try_open_database_internal( uint64_t size )
   args.database_cfg = hive::utilities::default_database_configuration();
   args.sps_remove_threshold = 20;
 
-  db->open(args);
+  db.open( args );
 }
 
 bool database_fixture::try_open_database( uint16_t shared_file_size_in_mb )
@@ -224,7 +224,7 @@ bool database_fixture::try_open_database( uint16_t shared_file_size_in_mb )
     data_dir = fc::temp_directory( hive::utilities::temp_directory_path() );
     db->_log_hardforks = false;
 
-    try_open_database_internal( 1024 * 1024 * shared_file_size_in_mb );
+    open_database( *db, data_dir->path(), 1024 * 1024 * shared_file_size_in_mb );
 
     return true;
   }
@@ -268,7 +268,7 @@ void database_fixture::post_init_hardforks()
   } );
 }
 
-void database_fixture::open_database( uint16_t shared_file_size_in_mb, bool allow_init_hardfork )
+void database_fixture::init_database( uint16_t shared_file_size_in_mb, bool allow_init_hardfork )
 {
   if( try_open_database( shared_file_size_in_mb ) )
     post_open_database();
@@ -944,7 +944,7 @@ void sps_proposal_database_fixture::plugin_prepare()
   db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
   BOOST_REQUIRE( db );
 
-  open_database();
+  init_database();
 
   validate_database();
 }
@@ -1342,7 +1342,7 @@ json_rpc_database_fixture::json_rpc_database_fixture()
 
   init_account_pub_key = init_account_priv_key.get_public_key();
 
-  open_database();
+  init_database();
 
   vest( "initminer", 10000 );
 
