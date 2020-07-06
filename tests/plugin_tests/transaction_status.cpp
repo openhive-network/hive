@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     auto tx_status = &appbase::app().get_plugin< hive::plugins::transaction_status::transaction_status_plugin >();
     BOOST_REQUIRE( tx_status );
 
-    open_database();
+    init_database();
 
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_trx_id >().empty() );

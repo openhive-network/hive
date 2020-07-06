@@ -217,7 +217,6 @@ struct database_fixture {
 
   private:
 
-    void try_open_database_internal( uint64_t size );
     bool try_open_database( uint16_t shared_file_size_in_mb );
     void post_open_database();
     void init_hardforks();
@@ -225,7 +224,9 @@ struct database_fixture {
 
   public:
 
-  void open_database( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64, bool allow_init_hardfork = true );
+  static void open_database( database& db, const fc::path& dir_path, uint64_t size = 1024 * 1024 * shared_file_size_in_mb_64 );
+
+  void init_database( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64, bool allow_init_hardfork = true );
 
   void generate_block(uint32_t skip = 0,
                       const fc::ecc::private_key& key = generate_private_key("init_key"),
