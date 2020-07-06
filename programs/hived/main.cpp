@@ -43,7 +43,7 @@ string& version_string()
   return v_str;
 }
 
-void info(const hive::protocol::chain_id_type& chainId)
+void info( const hive::protocol::chain_id_type& chainId, std::string hive_init_public_key_str )
   {
   std::cerr << "------------------------------------------------------\n\n";
   std::cerr << "                @     @@@@@@    ,@@@@@%               \n";
@@ -63,7 +63,7 @@ void info(const hive::protocol::chain_id_type& chainId)
   std::cerr << "                @@     @@@@@&    @@@@@@               \n\n";
   std::cerr << "                STARTING HIVE NETWORK\n\n";
   std::cerr << "------------------------------------------------------\n";
-  std::cerr << "initminer public key: " << HIVE_INIT_PUBLIC_KEY_STR << "\n";
+  std::cerr << "initminer public key: " << hive_init_public_key_str << "\n";
   std::cerr << "chain id: " << std::string(chainId) << "\n";
   std::cerr << "blockchain version: " << fc::string(HIVE_BLOCKCHAIN_VERSION) << "\n";
   std::cerr << "------------------------------------------------------\n\n";
@@ -110,7 +110,7 @@ int main( int argc, char** argv )
 
     const auto& chainPlugin = theApp.get_plugin<hive::plugins::chain::chain_plugin>();
     auto chainId = chainPlugin.db().get_chain_id();
-    info(chainId);
+    info( chainId, chainPlugin.db().config_blockchain.HIVE_INIT_PUBLIC_KEY_STR );
 
     auto& args = theApp.get_args();
 

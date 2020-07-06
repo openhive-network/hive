@@ -61,13 +61,17 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb 
   appbase::app().register_plugin< hive::plugins::rc::rc_plugin >();
   appbase::app().register_plugin< hive::plugins::witness::witness_plugin >();
 
+  int test_argc = 2;
+  const char* test_argv[] = { boost::unit_test::framework::master_test_suite().argv[0],
+                              "--p2p-block-default-seeds"};
+
   db_plugin->logging = false;
   appbase::app().initialize<
     hive::plugins::account_history::account_history_plugin,
     hive::plugins::debug_node::debug_node_plugin,
     hive::plugins::rc::rc_plugin,
     hive::plugins::witness::witness_plugin
-    >( argc, argv );
+    >( test_argc, (char**)test_argv );
 
   hive::plugins::rc::rc_plugin_skip_flags rc_skip;
   rc_skip.skip_reject_not_enough_rc = 1;
@@ -199,6 +203,8 @@ void database_fixture::try_open_database_internal( uint64_t size )
 {
   idump( (data_dir->path()) );
 
+  db->config_blockchain.switch_to_testnet_settings();
+
   hive::chain::open_args args;
   args.data_dir = data_dir->path();
   args.shared_mem_dir = args.data_dir;
@@ -207,10 +213,6 @@ void database_fixture::try_open_database_internal( uint64_t size )
   args.shared_file_size = size;
   args.database_cfg = hive::utilities::default_database_configuration();
   args.sps_remove_threshold = 20;
-  args.initial_supply = db->config_blockchain.HIVE_INIT_SUPPLY;
-  args.hbd_initial_supply = db->config_blockchain.HIVE_HBD_INIT_SUPPLY;
-
-  db->config_blockchain.switch_to_testnet_settings();
 
   db->open(args);
 }

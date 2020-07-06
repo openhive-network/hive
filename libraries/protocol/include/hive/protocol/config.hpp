@@ -12,7 +12,9 @@
 
 struct config_blockchain_type
 {
-  const uint32_t hour = 60*60;
+  const uint32_t      hour = 60*60;
+
+  std::string         HIVE_INIT_PUBLIC_KEY_STR                          = "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX";
 
   uint32_t            HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12              = 24*hour;                    // 1 day
   uint32_t            HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17              = 12*hour;                    // 12 hours
@@ -36,6 +38,7 @@ struct config_blockchain_type
 
   void switch_to_testnet_settings()
   {
+    HIVE_INIT_PUBLIC_KEY_STR                          = "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
     HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12              = hour;
     HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17              = hour;
     HIVE_CASHOUT_WINDOW_SECONDS                       = hour;
@@ -60,7 +63,6 @@ struct config_blockchain_type
 
 #define HIVE_BLOCKCHAIN_VERSION               ( version(0, HIVE_NUM_HARDFORKS, 0) )
 
-#define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
 #define STEEM_CHAIN_ID                        fc::sha256()
 #define HIVE_CHAIN_ID                         fc::sha256("beeab0de00000000000000000000000000000000000000000000000000000000")
 #define HIVE_GENESIS_TIME                     (fc::time_point_sec(1458835200))
