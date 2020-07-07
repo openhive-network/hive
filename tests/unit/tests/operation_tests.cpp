@@ -7037,6 +7037,14 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_authorities )
 {
   try
   {
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
+      {
+        wso.median_props.account_creation_fee = ASSET( "0.000 HIVE" );
+      });
+    });
+
     BOOST_TEST_MESSAGE( "Testing: delegate_vesting_shares_authorities" );
     signed_transaction tx;
     ACTORS( (alice)(bob) )
