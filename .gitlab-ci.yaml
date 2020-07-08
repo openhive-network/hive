@@ -158,7 +158,7 @@ variables:
     DOCKER_TLS_CERTDIR: "/certs"
   script:
     - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
-    - "docker build -f ciscripts/Dockerfile.ci --target=$TARGET --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA ."
+    - "docker build -f ciscripts/Dockerfile.ci --target=$TARGET --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_SLUG --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_SLUG/$TARGET:$CI_COMMIT_SHORT_SHA ."
     - "docker push $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_SLUG/$TARGET:$CI_COMMIT_SHORT_SHA"
     - "echo ===> the $TARGET_NAME node image for this build is: $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA"
 
