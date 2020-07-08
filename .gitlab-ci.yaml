@@ -23,6 +23,7 @@ variables:
     - mv contrib/hived.run "$CI_JOB_NAME"
     - mv contrib/config-for-docker.ini "$CI_JOB_NAME"
     - $MOVE_DIR
+  allow_failure: false
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     paths:
