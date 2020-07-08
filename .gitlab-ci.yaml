@@ -357,8 +357,8 @@ replay-test:
 #    - merge_request
 #    - 0.24.0
 #    - schedules
-#  tags:
-#    - hived-for-tests
+  tags:
+    - hived-for-tests
 #  after_script:
     
 #**********************</TESTS>*********************#
