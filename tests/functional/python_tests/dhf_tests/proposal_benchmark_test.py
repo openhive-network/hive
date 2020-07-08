@@ -288,7 +288,7 @@ if __name__ == '__main__':
 
     accounts = []
     for i in range( args.nr_accounts ):
-        accounts.append( {"name" : "", "private_key" : "5JBuekd1sVXXK3wBu6nvPB1LWypZ83BYdu7tGcUNYVd42xQGGh1", "public_key" : "TST5kSj1yTzBz3PDoJ5QUyVVagdgYfs8Y4vVsZG3dqKJU8hg7WmQN"} )
+        accounts.append( {"name" : "", "private_key" : "5JBuekd1sVXXK3wBu6nvPB1LWypZ83BYdu7tGcUNYVd42xQGGh1", "public_key" : "STM5kSj1yTzBz3PDoJ5QUyVVagdgYfs8Y4vVsZG3dqKJU8hg7WmQN"} )
         accounts[ len( accounts ) - 1 ]["name"] = "tester" + str( i )
 
     keys = [wif]

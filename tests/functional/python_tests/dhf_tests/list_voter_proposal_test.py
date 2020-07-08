@@ -212,7 +212,7 @@ if __name__ == '__main__':
     logger.info("Using private-key: {}".format(wif))
 
     #account = {"name" : "tester001", "private_key" : "", "public_key" : ""}
-    account = {"name" : "tester001", "private_key" : "5KQeu7SdzxT1DiUzv7jaqwkwv1V8Fi7N8NBZtHugWYXqVFH1AFa", "public_key" : "TST8VfiahQsfS1TLcnBfp4NNfdw67uWweYbbUXymbNiDXVDrzUs7J"}
+    account = {"name" : "tester001", "private_key" : "5KQeu7SdzxT1DiUzv7jaqwkwv1V8Fi7N8NBZtHugWYXqVFH1AFa", "public_key" : "STM8VfiahQsfS1TLcnBfp4NNfdw67uWweYbbUXymbNiDXVDrzUs7J"}
     
     assert len(account["private_key"]) != 0, "Private key is empty"
 
