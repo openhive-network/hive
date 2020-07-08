@@ -284,7 +284,13 @@ BOOST_AUTO_TEST_CASE( mh_test )
     bucket++;
 
     BOOST_REQUIRE( bucket->seconds == 86400 );
-    BOOST_REQUIRE( bucket->open == HIVE_GENESIS_TIME );
+
+    /*
+      Earlier there was another value of `HIVE_GENESIS_TIME` in testnet resulting exact division.
+      Now is used value of `HIVE_GENESIS_TIME` from mainnet and it's necessary to calculate proper value.
+    */
+    BOOST_REQUIRE( bucket->open.sec_since_epoch() == ( HIVE_GENESIS_TIME.sec_since_epoch() / 86400 ) * 86400 );
+
     BOOST_REQUIRE( bucket->hive.high == ASSET( "0.450 HIVE " ).amount );
     BOOST_REQUIRE( bucket->hive.low == ASSET( "1.500 HIVE" ).amount );
     BOOST_REQUIRE( bucket->hive.open == ASSET( "1.500 HIVE" ).amount );
