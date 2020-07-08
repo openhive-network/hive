@@ -33,7 +33,7 @@ variables:
 .testnet_node_template: &testnet_node
   variables:
     BUILD_OPTS: OFF OFF ON OFF # LOW_MEMORY=OFF CLEAR_VOTES=OFF TESTNET=ON ENABLE_MIRA=OFF
-    CREATE_BUILD_DIRECTORY: mkdir -p "$CI_JOB_NAME/"/tests
+    CREATE_BUILD_DIRECTORY: mkdir -p $CI_JOB_NAME/tests
     MOVE_DIR: mv build/tests/chain_test build/tests/plugin_test "$CI_JOB_NAME"/tests #this is only for testnet node
   tags:
      - public-runner-docker
@@ -41,14 +41,14 @@ variables:
 .consensus_node_template: &consensus_node
   variables:
     BUILD_OPTS: ON ON OFF OFF # LOW_MEMORY=ON CLEAR_VOTES=ON TESTNET=OFF ENABLE_MIRA=OFF
-    CREATE_BUILD_DIRECTORY: mkdir "$CI_JOB_NAME"
+    CREATE_BUILD_DIRECTORY: mkdir $CI_JOB_NAME
   tags:
     - public-runner-docker
 
 .fat_node_template: &fat_node
   variables:
     BUILD_OPTS: OFF OFF OFF ON # LOW_MEMORY=ON CLEAR_VOTES=ON TESTNET=OFF ENABLE_MIRA=OFF
-    CREATE_BUILD_DIRECTORY: mkdir "$CI_JOB_NAME"
+    CREATE_BUILD_DIRECTORY: mkdir $CI_JOB_NAME
   tags:
     - public-runner-docker
 
