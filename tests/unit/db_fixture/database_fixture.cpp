@@ -61,9 +61,12 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb 
   appbase::app().register_plugin< hive::plugins::rc::rc_plugin >();
   appbase::app().register_plugin< hive::plugins::witness::witness_plugin >();
 
-  int test_argc = 2;
+  int test_argc = 4;
   const char* test_argv[] = { boost::unit_test::framework::master_test_suite().argv[0],
-                              "--p2p-block-default-seeds"};
+                              "--p2p-block-default-seeds",
+                              "--chain-id",
+                              "18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e"
+                              };
 
   db_plugin->logging = false;
   appbase::app().initialize<
