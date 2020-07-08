@@ -34,8 +34,8 @@ testnet_node_build:
   <<: *node_build
   variables:
     BUILD_OPTS: OFF OFF ON OFF # LOW_MEMORY=OFF CLEAR_VOTES=OFF TESTNET=ON ENABLE_MIRA=OFF
-    CREATE_BUILD_DIRECTORY: mkdir -p "$CI_JOB_NAME/"/tests
-    MOVE_DIR: mv build/tests/chain_test build/tests/plugin_test "$CI_JOB_NAME"/tests #this is only for testnet node
+    CREATE_BUILD_DIRECTORY: mkdir -p $CI_JOB_NAME/tests
+    MOVE_DIR: mv build/tests/chain_test build/tests/plugin_test $CI_JOB_NAME/tests #this is only for testnet node
   when: manual
   #environment: staging
   tags:
@@ -45,7 +45,7 @@ consensus_build:
   <<: *node_build
   variables:
     BUILD_OPTS: ON ON OFF OFF # LOW_MEMORY=ON CLEAR_VOTES=ON TESTNET=OFF ENABLE_MIRA=OFF
-    CREATE_BUILD_DIRECTORY: mkdir "$CI_JOB_NAME"
+    CREATE_BUILD_DIRECTORY: mkdir $CI_JOB_NAME
   when: manual
   #environment: staging
   tags:
@@ -55,7 +55,7 @@ fat_build:
   <<: *node_build
   variables:
     BUILD_OPTS: OFF OFF OFF ON # LOW_MEMORY=ON CLEAR_VOTES=ON TESTNET=OFF ENABLE_MIRA=OFF
-    CREATE_BUILD_DIRECTORY: mkdir "$CI_JOB_NAME"
+    CREATE_BUILD_DIRECTORY: mkdir $CI_JOB_NAME
   #enviroment: staging
   when: manual
   tags:
