@@ -135,20 +135,20 @@ if __name__ == '__main__':
                 memo_key=accounts[0]['public_key'],
                 store_keys = False,
                 creator=args.creator,
-                asset='TESTS'
+                asset='HIVE'
             )
             hive_utils.common.wait_n_blocks(node_client.rpc.url, 5)
 
             transfer_to_vesting(node_client, args.creator, accounts, "300.000", 
-                "TESTS"
+                "HIVE"
             )
 
             transfer_assets_to_accounts(node_client, args.creator, accounts, 
-                "400.000", "TESTS",
+                "400.000", "HIVE",
             )
 
             transfer_assets_to_accounts(node_client, args.creator, accounts, 
-                "400.000", "TBD",
+                "400.000", "HBD",
             )
 
             # create comment
@@ -181,7 +181,7 @@ if __name__ == '__main__':
                 op = operations.Comment_options(**{
                     'author' : accounts[0]['name'],
                     'permlink' : "hivepy-proposal-title-{}".format(accounts[0]['name']),
-                    'max_accepted_payout' : '1000.000 TBD',
+                    'max_accepted_payout' : '1000.000 HBD',
                     'percent_steem_dollars' : 5000,
                     'allow_votes' : True,
                     'allow_curation_rewards' : True,
@@ -210,7 +210,7 @@ if __name__ == '__main__':
                 op = operations.Comment_options(**{
                     'author' : accounts[0]['name'],
                     'permlink' : "hivepy-proposal-title-{}".format(accounts[0]['name']),
-                    'max_accepted_payout' : '1000.000 TBD',
+                    'max_accepted_payout' : '1000.000 HBD',
                     'percent_hbd' : 5000,
                     'allow_votes' : True,
                     'allow_curation_rewards' : True,

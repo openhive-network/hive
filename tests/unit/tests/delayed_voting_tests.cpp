@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
     )");
 
     // const
-    const auto TESTS_1000 = ASSET( "1000.000 HIVE" );
+    const auto HIVE_1000 = ASSET( "1000.000 HIVE" );
     const auto HBD_100 = ASSET( "100.000 HBD" );
     
     //setup
@@ -79,9 +79,9 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
     set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
-    FUND( "alice", TESTS_1000 );
-    FUND( "bob",   TESTS_1000 );
-    FUND( "carol", TESTS_1000 );
+    FUND( "alice", HIVE_1000 );
+    FUND( "bob",   HIVE_1000 );
+    FUND( "carol", HIVE_1000 );
 
     FUND( "alice", HBD_100 );
     FUND( "bob", HBD_100 );
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     )");
 
     // const
-    const auto TESTS_1000 = ASSET( "1000.000 HIVE" );
+    const auto HIVE_1000 = ASSET( "1000.000 HIVE" );
     const auto HBD_100 = ASSET( "100.000 HBD" );
     
     //setup
@@ -144,9 +144,9 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
     generate_block();
 
-    FUND( "alice", TESTS_1000 );
-    FUND( "bob",   TESTS_1000 );
-    FUND( "carol", TESTS_1000 );
+    FUND( "alice", HIVE_1000 );
+    FUND( "bob",   HIVE_1000 );
+    FUND( "carol", HIVE_1000 );
 
     FUND( "alice", HBD_100 );
     FUND( "bob", HBD_100 );

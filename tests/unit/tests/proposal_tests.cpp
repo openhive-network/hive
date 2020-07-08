@@ -366,7 +366,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     //=====================preparing=====================
     const auto nr_proposals = 5;
     std::vector< int64_t > proposals_id;
-    flat_map< std::string, asset > before_tbds;
+    flat_map< std::string, asset > before_hbds;
 
     struct initial_data
     {
@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     for( auto item : inits )
     {
       const account_object& account = db->get_account( item.account );
-      before_tbds[ item.account ] = account.get_hbd_balance();
+      before_hbds[ item.account ] = account.get_hbd_balance();
     }
 
     generate_blocks( start_date + end_time_shift + fc::seconds( 10 ), false );
@@ -428,9 +428,9 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     for( auto item : inits )
     {
       const account_object& account = db->get_account( item.account );
-      auto after_tbd = account.get_hbd_balance();
-      auto before_tbd = before_tbds[ item.account ];
-      BOOST_REQUIRE( before_tbd == after_tbd - paid );
+      auto after_hbd = account.get_hbd_balance();
+      auto before_hbd = before_hbds[ item.account ];
+      BOOST_REQUIRE( before_hbd == after_hbd - paid );
     }
 
     validate_database();
@@ -457,7 +457,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
     generate_block();
 
     //=====================preparing=====================
-    flat_map< std::string, asset > before_tbds;
+    flat_map< std::string, asset > before_hbds;
 
     struct initial_data
     {
@@ -506,7 +506,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
       generate_block();
 
       const account_object& account = db->get_account( item.account );
-      before_tbds[ item.account ] = account.get_hbd_balance();
+      before_hbds[ item.account ] = account.get_hbd_balance();
     }
 
     generate_blocks( start_date, false );
@@ -531,9 +531,9 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
     for( auto item : inits )
     {
       const account_object& account = db->get_account( item.account );
-      auto after_tbd = account.get_hbd_balance();
-      auto before_tbd = before_tbds[ item.account ];
-      BOOST_REQUIRE( before_tbd == after_tbd );
+      auto after_hbd = account.get_hbd_balance();
+      auto before_hbd = before_hbds[ item.account ];
+      BOOST_REQUIRE( before_hbd == after_hbd );
     }
 
     validate_database();
@@ -559,7 +559,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
 
     //=====================preparing=====================
     std::vector< int64_t > proposals_id;
-    flat_map< std::string, asset > before_tbds;
+    flat_map< std::string, asset > before_hbds;
 
     flat_map< std::string, fc::ecc::private_key > inits;
     inits[ "tester00" ] = tester00_private_key;
@@ -615,7 +615,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     for( auto item : inits )
     {
       const account_object& account = db->get_account( item.first );
-      before_tbds[ item.first ] = account.get_hbd_balance();
+      before_hbds[ item.first ] = account.get_hbd_balance();
     }
 
     auto payment_checker = [&]( const std::vector< asset >& payouts )
@@ -626,13 +626,13 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       for( const auto& item : inits )
       {
         const account_object& account = db->get_account( item.first );
-        auto after_tbd = account.get_hbd_balance();
-        auto before_tbd = before_tbds[ item.first ];
-        idump( (before_tbd) );
-        idump( (after_tbd) );
+        auto after_hbd = account.get_hbd_balance();
+        auto before_hbd = before_hbds[ item.first ];
+        idump( (before_hbd) );
+        idump( (after_hbd) );
         idump( (payouts[i]) );
-        //idump( (after_tbd - payouts[i++]) );
-        BOOST_REQUIRE( before_tbd == after_tbd - payouts[i++] );
+        //idump( (after_hbd - payouts[i++]) );
+        BOOST_REQUIRE( before_hbd == after_hbd - payouts[i++] );
       }
     };
 
@@ -3156,7 +3156,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     //=====================preparing=====================
     const auto nr_proposals = 5;
     std::vector< int64_t > proposals_id;
-    flat_map< std::string, asset > before_tbds;
+    flat_map< std::string, asset > before_hbds;
 
     auto call = [&]( uint32_t& i, uint32_t max, const std::string& info )
     {
@@ -3216,7 +3216,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     {
       auto item = inits[ i % inits.size() ];
       const account_object& account = db->get_account( item.account );
-      before_tbds[ item.account ] = account.get_hbd_balance();
+      before_hbds[ item.account ] = account.get_hbd_balance();
     }
 
     generate_blocks( start_time + ( start_time_shift - block_interval ) );
@@ -3228,12 +3228,12 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       auto item = inits[ i % inits.size() ];
       const account_object& account = db->get_account( item.account );
 
-      auto after_tbd = account.get_hbd_balance();
-      auto before_tbd = before_tbds[ item.account ];
-      idump( (before_tbd) );
-      idump( (after_tbd) );
+      auto after_hbd = account.get_hbd_balance();
+      auto before_hbd = before_hbds[ item.account ];
+      idump( (before_hbd) );
+      idump( (after_hbd) );
       idump( (paid) );
-      BOOST_REQUIRE( before_tbd == after_tbd - paid );
+      BOOST_REQUIRE( before_hbd == after_hbd - paid );
     }
 
     validate_database();
