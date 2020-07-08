@@ -779,7 +779,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
 
     //escrow transfer requested but neither receiver nor agent approved yet
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.100", get_balance, "HIVE" );
+
+    REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.871", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.136", get_hbd_balance, "HBD" );
     BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
     BOOST_REQUIRE( db->get_account( "alice" ).pending_transfers == 0 );
@@ -805,7 +806,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
 
     //escrow transfer approved by agent but not by receiver
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.100", get_balance, "HIVE" );
+    REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.871", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.145", get_hbd_balance, "HBD" );
     BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
     BOOST_REQUIRE( db->get_account( "alice" ).pending_transfers == 0 );
@@ -831,7 +832,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
 
     //escrow transfer approved by all parties (agent got fee) but the transfer itself wasn't released yet
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.100", get_balance, "HIVE" );
+    REQUIRE_BALANCE( "0.000", "0.000", "0.000", "10.871", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "0.000", "0.100", "10.054", get_hbd_balance, "HBD" );
     BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
     BOOST_REQUIRE( db->get_account( "alice" ).pending_transfers == 0 );
@@ -860,7 +861,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
 
     //escrow transfer released partially by sender prior to escrow expiration
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "2.000", "0.000", "8.100", get_balance, "HIVE" );
+    REQUIRE_BALANCE( "0.000", "2.000", "0.000", "8.872", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "3.000", "0.100", "7.063", get_hbd_balance, "HBD" );
     BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
     BOOST_REQUIRE( db->get_account( "alice" ).pending_transfers == 0 );
@@ -889,7 +890,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
 
     //escrow transfer released partially by receiver prior to escrow expiration
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "2.000", "0.000", "8.100", get_balance, "HIVE" );
+    REQUIRE_BALANCE( "0.000", "2.000", "0.000", "8.872", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "3.000", "0.100", "7.072", get_hbd_balance, "HBD" );
     BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
     BOOST_REQUIRE( db->get_account( "alice" ).pending_transfers == 0 );
@@ -917,7 +918,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
 
     //escrow transfer disputed by sender
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "2.000", "0.000", "8.100", get_balance, "HIVE" );
+    REQUIRE_BALANCE( "0.000", "2.000", "0.000", "8.872", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "3.000", "0.100", "7.081", get_hbd_balance, "HBD" );
     BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
     BOOST_REQUIRE( db->get_account( "alice" ).pending_transfers == 0 );
@@ -958,7 +959,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
 
     //escrow transfer released partially by agent to sender and partially to receiver
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "4.000", "0.000", "6.100", get_balance, "HIVE" );
+    REQUIRE_BALANCE( "0.000", "4.000", "0.000", "6.873", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "6.000", "0.100", "4.090", get_hbd_balance, "HBD" );
     BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
     BOOST_REQUIRE( db->get_account( "alice" ).pending_transfers == 0 );
@@ -987,7 +988,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
 
     //escrow transfer released by agent to receiver and finished (transfer fully executed)
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "6.000", "0.000", "4.100", get_balance, "HIVE" );
+    REQUIRE_BALANCE( "0.000", "6.000", "0.000", "4.873", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "6.000", "0.100", "4.099", get_hbd_balance, "HBD" );
     BOOST_REQUIRE( db->find_escrow( "alice", 30 ) == nullptr );
     BOOST_REQUIRE( db->get_account( "alice" ).pending_transfers == 0 );
@@ -1040,7 +1041,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
 
     //limit order set but not matched yet
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "0.000", "10.100", get_balance, "HIVE" );
+    REQUIRE_BALANCE( "0.000", "0.000", "10.871", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "5.000", "0.036", get_hbd_balance, "HBD" );
     BOOST_REQUIRE( db->find_limit_order( "alice", 0 ) == nullptr );
     UNDO_CLEAR;
@@ -1065,7 +1066,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
 
     //limit order partially matched
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "4.000", "6.100", get_balance, "HIVE" );
+    REQUIRE_BALANCE( "0.000", "4.000", "6.871", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "3.000", "2.045", get_hbd_balance, "HBD" );
     BOOST_REQUIRE( db->find_limit_order( "alice", 0 ) == nullptr );
     UNDO_CLEAR;
@@ -1090,7 +1091,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
 
     //limit order partially matched after counter-order in fill_or_kill mode that failed (no change)
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "4.000", "6.100", get_balance, "HIVE" );
+    REQUIRE_BALANCE( "0.000", "4.000", "6.871", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "3.000", "2.054", get_hbd_balance, "HBD" );
     BOOST_REQUIRE( db->find_limit_order( "alice", 0 ) == nullptr );
     UNDO_CLEAR;
@@ -1115,7 +1116,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
 
     //limit order fully matched
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "10.000", "0.100", get_balance, "HIVE" );
+    REQUIRE_BALANCE( "0.000", "10.000", "0.872", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "0.000", "5.063", get_hbd_balance, "HBD" );
     BOOST_REQUIRE( db->find_limit_order( "alice", 0 ) == nullptr );
     UNDO_CLEAR;
@@ -1163,7 +1164,7 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
 
     //conversion request created but not executed yet
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "0.100", get_balance, "HIVE" );
+    REQUIRE_BALANCE( "0.000", "0.871", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "5.036", get_hbd_balance, "HBD" );
     UNDO_CLEAR;
 
@@ -1175,7 +1176,7 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
 
     //conversion request executed
     CLEAR( "alice" );
-    REQUIRE_BALANCE( "0.000", "5.100", get_balance, "HIVE" );
+    REQUIRE_BALANCE( "0.000", "5.872", get_balance, "HIVE" );
     REQUIRE_BALANCE( "0.000", "0.063", get_hbd_balance, "HBD" );
     UNDO_CLEAR;
   }
