@@ -245,6 +245,11 @@ development_chain_test:
     - job: testnet_node_development_build
       artifacts: true
   <<: *chaintest
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
   environment: development
 
 development_plugin_test:
@@ -252,6 +257,11 @@ development_plugin_test:
     - job: testnet_node_development_build
       artifacts: true
   <<: *plugintest
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
   environment: development
 
 development_beem_dhf_test:
@@ -259,6 +269,11 @@ development_beem_dhf_test:
     - job: testnet_node_development_build
       artifacts: true
   <<: *beemdhftest
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
   environment: development
 
 development_list_proposals_tests:
@@ -273,6 +288,11 @@ develompment_hived_options_tests:
     - job: testnet_node_development_build
       artifacts: true
   <<: *hivedoptstest
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
   environment: development
 
 
@@ -282,7 +302,7 @@ staging_chain_test:
     - job: testnet_node_staging_build
       artifacts: true
   <<: *chaintest
-  except:
+  only:
     - master
     - merge_request
     - 0.24.0
@@ -294,7 +314,7 @@ staging_plugin_test:
     - job: testnet_node_staging_build
       artifacts: true
   <<: *plugintest
-  except:
+  only:
     - master
     - merge_request
     - 0.24.0
@@ -306,7 +326,7 @@ staging_beem_dhf_test:
     - job: testnet_node_staging_build
       artifacts: true
   <<: *beemdhftest
-  except:
+  only:
     - master
     - merge_request
     - 0.24.0
@@ -318,7 +338,7 @@ staging_list_proposals_tests:
     - job: testnet_node_staging_build
       artifacts: true
   <<: *listproposalstests
-  except:
+  only:
     - master
     - merge_request
     - 0.24.0
@@ -330,7 +350,7 @@ staging_hived_options_tests:
     - job: testnet_node_staging_build
       artifacts: true
   <<: *hivedoptstest
-  except:
+  only:
     - master
     - merge_request
     - 0.24.0
