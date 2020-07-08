@@ -158,7 +158,7 @@ variables:
     DOCKER_TLS_CERTDIR: "/certs"
   script:
     - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
-    - "docker build -f ciscripts/Dockerfile.ci --target=$TARGET --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_SLUG --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_SLUG/$TARGET:$CI_COMMIT_SHORT_SHA ."
+    - "docker build -f ciscripts/Dockerfile.ci --target=$TARGET --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_SLUG/$TARGET:$CI_COMMIT_SHORT_SHA ."
     - "docker push $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_SLUG/$TARGET:$CI_COMMIT_SHORT_SHA"
     - "echo ===> the $TARGET_NAME node image for this build is: $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA"
 
@@ -337,14 +337,11 @@ replay-test:
   needs:
     - job: consensus_development_build
       artifacts: true
-#  before_script:
-#    - mkdir ./replay-test
-#    - cp $CI_JOB_NAME/consensus_node_build/install-root/bin/hived ./replay-test
-#    - cp $CI_JOB_NAME/consensus_node_build/install-root/bin/cli_wallet ./replay-test
-#    - cp $CI_JOB_NAME/config-for-docker.ini ./replay-test/config.ini #? under a question mark as we can specify path for config.ini using the -d flag
-#    - cp <block_log path> ./replay-test/blockchain
-  script:
-    - pwd
+ script:
+    - mkdir ./replay
+    - cp $CI_JOB_NAME/consensus_node_build/install-root/bin/hived ./replay
+    - cp $CI_JOB_NAME/consensus_node_build/install-root/bin/cli_wallet ./replay
+    - cp $CI_JOB_NAME/config-for-docker.ini /home/syncad/config.ini
    # - ./ciscripts/replay.sh
 #  artifacts:
 #    paths:
