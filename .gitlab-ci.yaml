@@ -1,4 +1,4 @@
-include: ./.job_templates.yaml
+include: ./ci_templates/.ci_job_templates.yaml
 
 stages:
 - build
