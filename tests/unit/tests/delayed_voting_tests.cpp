@@ -2329,9 +2329,8 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
 #define CHECK_WITNESS_VOTES( witness ) \
   BOOST_REQUIRE( WITNESS_VOTES( #witness ) == expected_ ## witness ## _votes )
 
-#define DAY_CHECK \
+#define DAY_CHECK_BASIC \
   BOOST_REQUIRE( get_balance( "alice" ).amount.value != 0 ); \
-  BOOST_REQUIRE( get_balance( "alice" ) == get_balance( "carol" ) ); \
   BOOST_TEST_MESSAGE( "[scenario_01]: " << "expected_alice_vests = " << asset_to_string( expected_alice_vests ) ); \
   CHECK_ACCOUNT_VESTS( alice ); \
   BOOST_REQUIRE( DELAYED_VOTES( "alice0bp" ) == expected_alice0bp_delayed_votes ); \
@@ -2340,6 +2339,21 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
   CHECK_ACCOUNT_VESTS( bob ); \
   BOOST_REQUIRE( DELAYED_VOTES( "bob0bp" ) == expected_bob0bp_delayed_votes ); \
   BOOST_REQUIRE( VOTING_POWER( "bob" ) == WITNESS_VOTES( "bob0bp" ) )
+
+#define DAY_CHECK \
+  BOOST_REQUIRE( get_balance( "alice" ) == get_balance( "carol" ) ); \
+  DAY_CHECK_BASIC
+
+/*
+  So far there was a value for test-net `HIVE_MIN_ACCOUNT_CREATION_FEE == 0`, but for `main-net` `HIVE_MIN_ACCOUNT_CREATION_FEE == 1`
+  In general the same value should be for unit-tests and for main-net, so in unit-tests now is used value '1'.
+  Unfortunately a test `scenario_01` was written for old value, so the fastest way how to correct this test, it's taking into consideration rounding-errors.
+*/
+#define DAY_CHECK_ROUND_PROBLEMS \
+  BOOST_REQUIRE( get_balance( "alice" ).symbol == get_balance( "carol" ).symbol ); \
+  BOOST_REQUIRE( get_balance( "alice" ).amount.value == get_balance( "carol" ).amount.value || \
+                 get_balance( "alice" ).amount.value == get_balance( "carol" ).amount.value + 1 ); \
+  DAY_CHECK_BASIC
 
 #define GOTO_DAY( day ) \
   generate_days_blocks( day - today ); \
@@ -2540,7 +2554,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_alice_vests  = initial_alice_vests - asset( 2 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 2 * portion, VESTS_SYMBOL );
   expected_bob_vests = initial_bob_vests + asset( 2 * portion, VESTS_SYMBOL );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
 
 /*
   Day 30: 1000 vests matures on alice, alice.bp receives 1000 vests of new voting power (1000v)
@@ -2551,7 +2565,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 
   expected_alice0bp_delayed_votes = 0;
   expected_bob0bp_delayed_votes = 0;
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 31: PD of 100 vests from alice
@@ -2563,7 +2577,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_alice_vests  = initial_alice_vests - asset( 3 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 3 * portion, VESTS_SYMBOL );
   expected_bob_vests = initial_bob_vests + asset( 3 * portion, VESTS_SYMBOL );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 35: remaining 75 vests mature on alice, alice.bp receives 75 vests of new voting power (1075v)
@@ -2571,7 +2585,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 35 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 38: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (1000v)
@@ -2583,7 +2597,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_alice_vests  = initial_alice_vests - asset( 4 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 4 * portion, VESTS_SYMBOL );
   expected_bob_vests = initial_bob_vests + asset( 4 * portion, VESTS_SYMBOL );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 45: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (925v)
@@ -2595,7 +2609,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_alice_vests  = initial_alice_vests - asset( 5 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 5 * portion, VESTS_SYMBOL );
   expected_bob_vests = initial_bob_vests + asset( 5 * portion, VESTS_SYMBOL );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 47: first 25 vests mature on bob, bob.bp receives 25 vests of new voting power (25v)
@@ -2603,7 +2617,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 47 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 52: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (850v)
@@ -2615,7 +2629,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_alice_vests  = initial_alice_vests - asset( 6 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 6 * portion, VESTS_SYMBOL );
   expected_bob_vests = initial_bob_vests + asset( 6 * portion, VESTS_SYMBOL );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 54: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (50v)
@@ -2623,7 +2637,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 54 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 59: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (775v)
@@ -2635,7 +2649,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_alice_vests  = initial_alice_vests - asset( 7 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 7 * portion, VESTS_SYMBOL );
   expected_bob_vests = initial_bob_vests + asset( 7 * portion, VESTS_SYMBOL );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 61: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (75v)
@@ -2643,7 +2657,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 61 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 66: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (700v)
@@ -2655,7 +2669,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_alice_vests  = initial_alice_vests - asset( 8 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 8 * portion, VESTS_SYMBOL );
   expected_bob_vests = initial_bob_vests + asset( 8 * portion, VESTS_SYMBOL );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 68: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (100v)
@@ -2663,7 +2677,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 68 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 73: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (625v)
@@ -2675,7 +2689,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_alice_vests  = initial_alice_vests - asset( 9 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 9 * portion, VESTS_SYMBOL );
   expected_bob_vests = initial_bob_vests + asset( 9 * portion, VESTS_SYMBOL );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 75: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (125v)
@@ -2683,7 +2697,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 75 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 80: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (550v)
@@ -2695,7 +2709,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_alice_vests  = initial_alice_vests - asset( 10 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 10 * portion, VESTS_SYMBOL );
   expected_bob_vests = initial_bob_vests + asset( 10 * portion, VESTS_SYMBOL );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 82: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (150v)
@@ -2703,7 +2717,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 82 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 87: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (475v)
@@ -2715,7 +2729,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_alice_vests  = initial_alice_vests - asset( 11 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 11 * portion, VESTS_SYMBOL );
   expected_bob_vests = initial_bob_vests + asset( 11 * portion, VESTS_SYMBOL );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 89: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (175v)
@@ -2723,7 +2737,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 89 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 94: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (400v)
@@ -2735,7 +2749,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_alice_vests  = initial_alice_vests - asset( 12 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 12 * portion, VESTS_SYMBOL );
   expected_bob_vests = initial_bob_vests + asset( 12 * portion, VESTS_SYMBOL );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 96: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (200v)
@@ -2743,7 +2757,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 96 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 101: last scheduled PD of 100 vests from alice, alice.bp loses 75 vests of voting power (325v)
@@ -2756,7 +2770,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_alice_vests += asset( quarter - 3, VESTS_SYMBOL );
   expected_bob_vests = initial_bob_vests + asset( quarter - 3, VESTS_SYMBOL );
   BOOST_REQUIRE( get_vesting( "alice" ) == get_vesting( "bob" ) );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 103: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (225v)
@@ -2764,7 +2778,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 103 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 110: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (250v)
@@ -2772,7 +2786,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 110 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 117: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (275v)
@@ -2780,7 +2794,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 117 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 124: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (300v)
@@ -2788,7 +2802,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 124 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
   
 /*
   Day 131: last 25 vests mature on bob, bob.bp receives 25 vests of new voting power (325v)
@@ -2796,7 +2810,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 */
   GOTO_DAY( 131 );
   DAY_REPORT( today );
-  DAY_CHECK;
+  DAY_CHECK_ROUND_PROBLEMS;
 
   }
   FC_LOG_AND_RETHROW()
