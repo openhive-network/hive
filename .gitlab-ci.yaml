@@ -1,9 +1,10 @@
-include: ./ci_templates/.ci_job_templates.yaml
-
 stages:
 - build
 - test
 - package
+
+before_script:
+  include: ./ci_templates/.ci_job_templates.yaml
 
 variables:
   GIT_DEPTH: 1
