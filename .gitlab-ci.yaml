@@ -282,6 +282,11 @@ staging_chain_test:
     - job: testnet_node_staging_build
       artifacts: true
   <<: *chaintest
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
   environment: staging
 
 staging_plugin_test:
@@ -289,6 +294,11 @@ staging_plugin_test:
     - job: testnet_node_staging_build
       artifacts: true
   <<: *plugintest
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
   environment: staging
 
 staging_beem_dhf_test:
@@ -296,6 +306,11 @@ staging_beem_dhf_test:
     - job: testnet_node_staging_build
       artifacts: true
   <<: *beemdhftest
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
   environment: staging
 
 staging_list_proposals_tests:
@@ -303,6 +318,11 @@ staging_list_proposals_tests:
     - job: testnet_node_staging_build
       artifacts: true
   <<: *listproposalstests
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
   environment: staging
 
 staging_hived_options_tests:
@@ -310,6 +330,11 @@ staging_hived_options_tests:
     - job: testnet_node_staging_build
       artifacts: true
   <<: *hivedoptstest
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
   environment: staging
 
 replay-test:
