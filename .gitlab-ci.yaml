@@ -342,13 +342,14 @@ replay-test:
   script:
     - rm -rf ./replay
     - mkdir ./replay
+
     #- chmod 0444 /home/syncad/blockchain/block_log
     #- ls /home/syncad/blockchain
     - ls .
-    - ls $CI_JOB_NAME/consensus_node_build/install-root/bin
-    - cp $CI_JOB_NAME/consensus_node_build/install-root/bin/hived ./replay
-    - cp $CI_JOB_NAME/consensus_node_build/install-root/bin/cli_wallet ./replay
-    - cp $CI_JOB_NAME/config-for-docker.ini /home/syncad/config.ini
+    - ls ./consensus_build/install-root/bin
+    - cp ./consensus_build/install-root/bin/hived ./replay
+    - cp ./consensus_build/install-root/bin/cli_wallet ./replay
+    - cp ./config-for-docker.ini /home/syncad/config.ini
     - ./ciscripts/replay.sh 100000 1000000 #benchmark interval = 100000 / stop replay at block 1000000
   artifacts:
     paths:
