@@ -43,11 +43,7 @@ BOOST_AUTO_TEST_CASE( mh_test )
     db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
     BOOST_REQUIRE( db );
 
-    open_database();
-
-    generate_block();
-    db->set_hardfork( HIVE_NUM_HARDFORKS );
-    generate_block();
+    init_database();
 
     vest( "initminer", 10000 );
 
