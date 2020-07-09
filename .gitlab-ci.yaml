@@ -334,13 +334,15 @@ consensus_staging_build:
 
 replay-test:
   stage: test
+  variables:
+    GIT_STRATEGY: none
   needs:
     - job: consensus_build
       artifacts: true
   script:
     - mkdir ./replay
-    - chmod 0444 /home/syncad/blockchain/block_log
-    - ls /home/syncad/
+    #- chmod 0444 /home/syncad/blockchain/block_log
+    - ls /home/syncad/blockchain
     - ls $CI_JOB_NAME/consensus_node_build/install-root/bin
     - cp $CI_JOB_NAME/consensus_node_build/install-root/bin/hived ./replay
     - cp $CI_JOB_NAME/consensus_node_build/install-root/bin/cli_wallet ./replay
