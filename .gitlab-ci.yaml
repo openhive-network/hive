@@ -349,7 +349,7 @@ replay-test:
     - ls ./consensus_build/install-root/bin
     - cp ./consensus_build/install-root/bin/hived ./replay
     - cp ./consensus_build/install-root/bin/cli_wallet ./replay
-    - cp ./config-for-docker.ini /home/syncad/config.ini
+    - cp ./consensus_build/config-for-docker.ini /home/syncad/config.ini
     - ./ciscripts/replay.sh 100000 1000000 #benchmark interval = 100000 / stop replay at block 1000000
   artifacts:
     paths:
