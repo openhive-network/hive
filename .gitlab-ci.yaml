@@ -334,8 +334,6 @@ consensus_staging_build:
 
 replay-test:
   stage: test
-  volumes: 
-    /home/syncad:$CI_PROJECT_DIR/replay:ro
   needs:
     - job: consensus_development_build
       artifacts: true
