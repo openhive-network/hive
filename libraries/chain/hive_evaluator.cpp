@@ -1172,7 +1172,7 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
 void transfer_evaluator::do_apply( const transfer_operation& o )
 {
   FC_TODO("Remove is producing after HF 24");
-  /*if ( _db.is_producing() || _db.has_hardfork(HIVE_HARDFORK_0_24) ) {
+  if ( _db.is_producing() || _db.has_hardfork(HIVE_HARDFORK_0_24) ) {
     if (o.amount.symbol == HIVE_SYMBOL && o.to == _db.get_treasury_name()) {
       const auto &fhistory = _db.get_feed_history();
 
@@ -1195,7 +1195,7 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
   {
     FC_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ),
                "Can only transfer HBD to ${s}", ("s", o.to ) );
-  }*/
+  }
 
   _db.adjust_balance( o.from, -o.amount );
   _db.adjust_balance( o.to, o.amount );
