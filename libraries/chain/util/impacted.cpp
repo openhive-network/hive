@@ -302,7 +302,7 @@ struct get_impacted_account_visitor
 
   void operator()( const sps_convert_operation& op )
    {
-      _impacted.insert( STEEM_TREASURY_ACCOUNT );
+      _impacted.insert( HIVE_TREASURY_ACCOUNT );
    }
 
    void operator()( const hardfork_operation& op )

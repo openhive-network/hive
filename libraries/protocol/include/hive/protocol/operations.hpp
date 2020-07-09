@@ -103,6 +103,7 @@ namespace hive { namespace protocol {
         clear_null_account_balance_operation,
         proposal_pay_operation,
         sps_fund_operation,
+        sps_convert_operation,
         hardfork_hive_operation,
         hardfork_hive_restore_operation,
         delayed_voting_operation,

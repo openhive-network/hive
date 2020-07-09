@@ -362,4 +362,38 @@ void sps_processor::convert_funds( const block_notification& note )
    db.push_virtual_operation( vop );
 }
 
+void sps_processor::convert_funds( const block_notification& note )
+{
+  if( !is_maintenance_period( note.block.timestamp ) )
+    return;
+
+  const auto treasury_name = db.get_treasury_name();
+  const auto &treasury_account = db.get_account(treasury_name);
+  if (treasury_account.balance.amount == 0) {
+    return;
+  }
+
+  FC_TODO(" Find out how much we want to covnert per maintenance period")
+  const auto to_convert_amount = ( HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.balance.amount ) / HIVE_100_PERCENT;
+  const auto to_convert = asset(to_convert_amount, HIVE_SYMBOL);
+  elog( "total balance is  ${bal} to convert is ${conv}" , ("bal", treasury_account.balance.amount ) ("conv", to_convert) );
+
+  FC_TODO("Do something dust threshold here ?")
+  if( to_convert.amount == 0 )
+    return;
+
+  const feed_history_object& fhistory = db.get_feed_history();
+
+  if( fhistory.current_median_history.is_null() )
+    return;
+
+  auto converted_sbd = to_convert * fhistory.current_median_history;
+
+  db.adjust_balance( treasury_name, -to_convert );
+  db.adjust_balance( treasury_name, converted_sbd );
+
+  operation vop = sps_convert_operation( to_convert, converted_sbd );
+  db.push_virtual_operation( vop );
+}
+
 } } // namespace hive::chain

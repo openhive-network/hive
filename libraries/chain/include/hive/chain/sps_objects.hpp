@@ -2,6 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
+#include <steem/chain/hive_objects.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <hive/protocol/asset.hpp>
 

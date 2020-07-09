@@ -74,6 +74,9 @@
 #define HIVE_INIT_SUPPLY                      int64_t(0)
 #define HIVE_HBD_INIT_SUPPLY                  int64_t(0)
 
+#define HIVE_PROPOSAL_MAINTENANCE_PERIOD          60
+#define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*5) /// 5 minutes
+
 #endif
 
 #define VESTS_SYMBOL  (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_VESTS ) )
@@ -362,6 +365,8 @@
 #define HIVE_PROPOSAL_FEE_INCREASE_DAYS            60
 #define HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC        (60*60*24*HIVE_PROPOSAL_FEE_INCREASE_DAYS) /// 60 days
 #define HIVE_PROPOSAL_FEE_INCREASE_AMOUNT          (1 * HIVE_BLOCKCHAIN_PRECISION)
+#define HIVE_PROPOSAL_CONVERSION_RATE             (1 * HIVE_1_PERCENT)
+
 
 #ifdef HIVE_ENABLE_SMT
 
