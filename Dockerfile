@@ -101,7 +101,7 @@ ENV HIVE_LINT=${HIVE_LINT}
 
 RUN \
   cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${ENABLE_MIRA} ${HIVE_LINT}
+    ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${ENABLE_MIRA} ${HIVE_LINT}
 
 ###################################################################################################
 ##                                    GENERAL NODE CONFIGURATION                                 ##
@@ -149,7 +149,7 @@ RUN \
       apt-get update && \
       apt-get install -y clang && \
       apt-get install -y clang-tidy && \
-      ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${ENABLE_MIRA} ${HIVE_LINT} && \
+      ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${ENABLE_MIRA} ${HIVE_LINT} && \
       apt-get install -y screen && \
       pip3 install -U secp256k1prp && \
       git clone https://gitlab.syncad.com/hive/beem.git && \
