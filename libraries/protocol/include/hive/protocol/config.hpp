@@ -43,6 +43,9 @@
 /// Allows to limit number of total produced blocks.
 #define TESTNET_BLOCK_LIMIT                   (3000000)
 
+#define HIVE_PROPOSAL_MAINTENANCE_PERIOD          60
+#define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*60) // 1 hour
+
 #else // IS LIVE HIVE NETWORK
 
 #define HIVE_BLOCKCHAIN_VERSION               ( version(0, 24, 0) )
@@ -74,8 +77,8 @@
 #define HIVE_INIT_SUPPLY                      int64_t(0)
 #define HIVE_HBD_INIT_SUPPLY                  int64_t(0)
 
-#define HIVE_PROPOSAL_MAINTENANCE_PERIOD          60
-#define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*5) /// 5 minutes
+#define HIVE_PROPOSAL_MAINTENANCE_PERIOD           3600
+#define HIVE_PROPOSAL_MAINTENANCE_CLEANUP          (60*60*24*1) /// 1 day
 
 #endif
 
@@ -150,7 +153,7 @@
 #define HIVE_PROPOSAL_FUND_PERCENT_HF0        (0)
 
 #define HIVE_CONTENT_REWARD_PERCENT_HF21      (65*HIVE_1_PERCENT)
-#define HIVE_PROPOSAL_FUND_PERCENT_HF21       (10*HIVE_1_PERCENT)
+#define HIVE_PROPOSAL_FUND_PERCENT_HF21       (0*HIVE_1_PERCENT)
 
 #define HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS (fc::uint128_t(0,503600561838938636ull))
 #define HIVE_CONTENT_CONSTANT_HF21            (fc::uint128_t(0,2000000000000ull))
@@ -357,15 +360,13 @@
 /// HIVE PROPOSAL SYSTEM support
 
 #define HIVE_TREASURY_FEE                          (10 * HIVE_BLOCKCHAIN_PRECISION)
-#define HIVE_PROPOSAL_MAINTENANCE_PERIOD           3600
-#define HIVE_PROPOSAL_MAINTENANCE_CLEANUP          (60*60*24*1) /// 1 day
 #define HIVE_PROPOSAL_SUBJECT_MAX_LENGTH           80
 /// Max number of IDs passed at once to the update_proposal_voter_operation or remove_proposal_operation.
 #define HIVE_PROPOSAL_MAX_IDS_NUMBER               5
 #define HIVE_PROPOSAL_FEE_INCREASE_DAYS            60
 #define HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC        (60*60*24*HIVE_PROPOSAL_FEE_INCREASE_DAYS) /// 60 days
 #define HIVE_PROPOSAL_FEE_INCREASE_AMOUNT          (1 * HIVE_BLOCKCHAIN_PRECISION)
-#define HIVE_PROPOSAL_CONVERSION_RATE             (1 * HIVE_1_PERCENT)
+#define HIVE_PROPOSAL_CONVERSION_RATE             (0.05 * HIVE_1_PERCENT)
 
 
 #ifdef HIVE_ENABLE_SMT
