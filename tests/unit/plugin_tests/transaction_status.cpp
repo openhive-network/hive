@@ -1,4 +1,3 @@
-#if defined IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 #include <hive/chain/account_object.hpp>
 #include <hive/protocol/hive_operations.hpp>
@@ -23,6 +22,7 @@ BOOST_FIXTURE_TEST_SUITE( transaction_status, database_fixture );
 BOOST_AUTO_TEST_CASE( transaction_status_test )
 {
   using namespace hive::plugins::transaction_status;
+  using trx_status_helper = hive::plugins::transaction_status::detail::transaction_status_helper;
 
   try
   {
@@ -65,17 +65,13 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     auto tx_status = &appbase::app().get_plugin< hive::plugins::transaction_status::transaction_status_plugin >();
     BOOST_REQUIRE( tx_status );
 
-    open_database();
+    init_database();
 
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_trx_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_block_num >().empty() );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
-
-    generate_block();
-    db->set_hardfork( HIVE_NUM_HARDFORKS );
-    generate_block();
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     vest( "initminer", 10000 );
 
@@ -92,9 +88,9 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     ACTORS( (alice)(bob) );
     generate_block();
 
-    fund( "alice", ASSET( "1000.000 TESTS" ) );
-    fund( "alice", ASSET( "1000.000 TBD" ) );
-    fund( "bob", ASSET( "1000.000 TESTS" ) );
+    fund( "alice", ASSET( "1000.000 HIVE" ) );
+    fund( "alice", ASSET( "1000.000 HBD" ) );
+    fund( "bob", ASSET( "1000.000 HIVE" ) );
 
     generate_block();
 
@@ -108,7 +104,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     op0.from = "alice";
     op0.to = "bob";
-    op0.amount = ASSET( "5.000 TESTS" );
+    op0.amount = ASSET( "5.000 HIVE" );
 
     // Create transaction 0
     tx0.operations.push_back( op0 );
@@ -141,7 +137,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     op1.from = "alice";
     op1.to = "bob";
-    op1.amount = ASSET( "5.000 TESTS" );
+    op1.amount = ASSET( "5.000 HIVE" );
 
     // Create transaction 1
     tx1.operations.push_back( op1 );
@@ -175,7 +171,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     op2.from = "alice";
     op2.to = "bob";
-    op2.amount = ASSET( "5.000 TESTS" );
+    op2.amount = ASSET( "5.000 HIVE" );
 
     tx2.operations.push_back( op2 );
     tx2.set_expiration( tx2_expiration );
@@ -189,7 +185,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     op3.from = "bob";
     op3.to = "alice";
-    op3.amount = ASSET( "5.000 TESTS" );
+    op3.amount = ASSET( "5.000 HIVE" );
 
     tx3.operations.push_back( op3 );
     tx3.set_expiration( tx3_expiration );
@@ -237,7 +233,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.status == within_mempool );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     generate_blocks( TRANSACTION_STATUS_TEST_BLOCK_DEPTH );
 
@@ -284,7 +280,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( *api_return.block_num > 0 );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     generate_blocks( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL );
 
@@ -330,7 +326,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( *api_return.block_num > 0 );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     generate_block();
 
@@ -363,7 +359,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_trx_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_block_num >().empty() );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     generate_block();
 
@@ -406,7 +402,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.status == too_old );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     /**
       * Testing transaction status plugin state
@@ -420,7 +416,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     op4.from = "alice";
     op4.to = "bob";
-    op4.amount = ASSET( "5.000 TESTS" );
+    op4.amount = ASSET( "5.000 HIVE" );
 
     tx4.operations.push_back( op4 );
     tx4.set_expiration( tx4_expiration );
@@ -429,17 +425,17 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     generate_block();
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     const auto& tx_status_obj = db->get< transaction_status_object, by_trx_id >( tx4.id() );
     db->remove( tx_status_obj );
 
     // Upper bound of transaction status state should cause state to be invalid
-    BOOST_REQUIRE( tx_status->state_is_valid() == false );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) == false );
 
-    tx_status->rebuild_state();
+    trx_status_helper::rebuild_state( *db, *tx_status );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
 
     // Create transaction 5
     signed_transaction tx5;
@@ -448,7 +444,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     op5.from = "alice";
     op5.to = "bob";
-    op5.amount = ASSET( "5.000 TESTS" );
+    op5.amount = ASSET( "5.000 HIVE" );
 
     tx5.operations.push_back( op5 );
     tx5.set_expiration( tx5_expiration );
@@ -461,15 +457,13 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     db->remove( tx_status_obj2 );
 
     // Lower bound of transaction status state should cause state to be invalid
-    BOOST_REQUIRE( tx_status->state_is_valid() == false );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) == false );
 
-    tx_status->rebuild_state();
+    trx_status_helper::rebuild_state( *db, *tx_status );
 
-    BOOST_REQUIRE( tx_status->state_is_valid() );
+    BOOST_REQUIRE( trx_status_helper::state_is_valid( *db, *tx_status ) );
   }
   FC_LOG_AND_RETHROW()
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#endif
-

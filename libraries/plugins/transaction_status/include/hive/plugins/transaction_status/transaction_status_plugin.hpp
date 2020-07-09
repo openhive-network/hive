@@ -10,6 +10,8 @@ namespace hive { namespace plugins { namespace transaction_status {
 
 namespace detail { class transaction_status_impl; }
 
+using hive::chain::transaction_id_type;
+
 class transaction_status_plugin : public appbase::plugin< transaction_status_plugin >
 {
   public:
@@ -25,15 +27,21 @@ class transaction_status_plugin : public appbase::plugin< transaction_status_plu
     virtual void plugin_startup() override;
     virtual void plugin_shutdown() override;
 
-    uint32_t earliest_tracked_block_num();
+    uint32_t get_earliest_tracked_block_num();
 
-#ifdef IS_TEST_NET
-    bool     state_is_valid();
-    void     rebuild_state();
-#endif
+    fc::optional< transaction_id_type >  get_earliest_transaction_in_range( const uint32_t first_block_num, const uint32_t last_block_num );
+    fc::optional< transaction_id_type >  get_latest_transaction_in_range( const uint32_t first_block_num, const uint32_t last_block_num );
 
   private:
     std::unique_ptr< detail::transaction_status_impl > my;
 };
+
+namespace detail {
+  struct transaction_status_helper
+  {
+    static bool state_is_valid( chain::database& _db, transaction_status_plugin& plugin );
+    static void rebuild_state( chain::database& _db, transaction_status_plugin& plugin );
+  };
+}
 
 } } } // hive::plugins::transaction_status

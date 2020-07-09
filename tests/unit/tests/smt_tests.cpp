@@ -1,6 +1,6 @@
 #include <fc/macros.hpp>
 
-#if defined IS_TEST_NET && defined HIVE_ENABLE_SMT
+#ifdef HIVE_ENABLE_SMT
 
 FC_TODO(Extend testing scenarios to support multiple NAIs per account)
 
@@ -499,7 +499,7 @@ BOOST_AUTO_TEST_CASE( setup_apply )
     FUND( "alice", 10 * 1000 * 1000 );
     FUND( "bob", 10 * 1000 * 1000 );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
 
     smt_setup_operation op;
     op.control_account = "alice";
@@ -565,7 +565,7 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
 
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( price( ASSET( "1.000 HBD" ), ASSET( "1.000 HIVE" ) ) );
 
     const dynamic_global_property_object& dgpo = db->get_dynamic_global_properties();
     asset required_creation_fee = dgpo.smt_creation_fee;
@@ -579,9 +579,9 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
     BOOST_TEST_MESSAGE( " -- SMT create with insufficient HBD balance" );
     // Fund with HIVE, and set fee with HBD.
     FUND( "alice", test_amount );
-    // Declare fee in HBD/TBD though alice has none.
+    // Declare fee in HBD/HBD though alice has none.
     op.smt_creation_fee = asset( test_amount, HBD_SYMBOL );
-    // Throw due to insufficient balance of HBD/TBD.
+    // Throw due to insufficient balance of HBD/HBD.
     FAIL_WITH_OP(op, alice_private_key, fc::assert_exception);
 
     BOOST_TEST_MESSAGE( " -- SMT create with insufficient HIVE balance" );

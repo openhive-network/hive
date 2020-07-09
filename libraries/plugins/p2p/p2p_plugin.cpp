@@ -589,22 +589,17 @@ p2p_plugin::~p2p_plugin() {}
 
 void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg)
 {
-  std::stringstream seed_ss;
-  for( auto& s : default_seeds )
-  {
-    seed_ss << s << ' ';
-  }
-
   cfg.add_options()
     ("p2p-endpoint", bpo::value<string>()->implicit_value("127.0.0.1:9876"), "The local IP address and port to listen for incoming connections.")
     ("p2p-max-connections", bpo::value<uint32_t>(), "Maxmimum number of incoming connections on P2P endpoint.")
     ("seed-node", bpo::value<vector<string>>()->composing(), "The IP address and port of a remote peer to sync with. Deprecated in favor of p2p-seed-node.")
-    ("p2p-seed-node", bpo::value<vector<string>>()->composing()->default_value( default_seeds, seed_ss.str() ), "The IP address and port of a remote peer to sync with.")
+    ("p2p-seed-node", bpo::value<vector<string>>()->composing(), "The IP address and port of a remote peer to sync with.")
     ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
     ;
   cli.add_options()
     ("force-validate", bpo::bool_switch()->default_value(false), "Force validation of all transactions. Deprecated in favor of p2p-force-validate" )
     ("p2p-force-validate", bpo::bool_switch()->default_value(false), "Force validation of all transactions." )
+    ("p2p-block-default-seeds", bpo::bool_switch()->default_value(false), "Block all default seeds." )
     ;
 }
 
@@ -620,9 +615,15 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
   if( options.count( "p2p-max-connections" ) )
     my->max_connections = options.at( "p2p-max-connections" ).as< uint32_t >();
 
+  auto process_default_seeds = [ &options ]( vector< string > &seeds )
+  {
+    if( !options.at("p2p-block-default-seeds").as<bool>() )
+      seeds.insert( seeds.end(), default_seeds.begin(), default_seeds.end() );
+  };
+
+  vector< string > seeds;
   if( options.count( "seed-node" ) || options.count( "p2p-seed-node" ) )
   {
-    vector< string > seeds;
     if( options.count( "seed-node" ) )
     {
       wlog( "Option seed-node is deprecated in favor of p2p-seed-node" );
@@ -645,19 +646,23 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
         seeds.insert( seeds.end(), addresses.begin(), addresses.end() );
       }
     }
+    else
+      process_default_seeds( seeds );
+  }
+  else
+    process_default_seeds( seeds );
 
-    for( const string& endpoint_string : seeds )
+  for( const string& endpoint_string : seeds )
+  {
+    try
     {
-      try
-      {
-        std::vector<fc::ip::endpoint> endpoints = detail::resolve_string_to_ip_endpoints(endpoint_string);
-        my->seeds.insert( my->seeds.end(), endpoints.begin(), endpoints.end() );
-      }
-      catch( const fc::exception& e )
-      {
-        wlog( "caught exception ${e} while adding seed node ${endpoint}",
-          ("e", e.to_detail_string())("endpoint", endpoint_string) );
-      }
+      std::vector<fc::ip::endpoint> endpoints = detail::resolve_string_to_ip_endpoints(endpoint_string);
+      my->seeds.insert( my->seeds.end(), endpoints.begin(), endpoints.end() );
+    }
+    catch( const fc::exception& e )
+    {
+      wlog( "caught exception ${e} while adding seed node ${endpoint}",
+        ("e", e.to_detail_string())("endpoint", endpoint_string) );
     }
   }
 

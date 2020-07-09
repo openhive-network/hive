@@ -4,7 +4,7 @@
 
 namespace hive { namespace protocol {
 
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
   struct example_optional_action : public base_operation
   {
     account_name_type account;
@@ -16,6 +16,6 @@ namespace hive { namespace protocol {
 
 } } // hive::protocol
 
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
 FC_REFLECT( hive::protocol::example_optional_action, (account) )
 #endif

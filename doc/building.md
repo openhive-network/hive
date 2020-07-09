@@ -20,10 +20,6 @@ recommended for witnesses and seed-nodes.
 
 Clears old votes from memory that are no longer required for consensus.
 
-### BUILD_HIVE_TESTNET=[OFF/ON]
-
-Builds hived for use in a private testnet. Also required for building unit tests.
-
 ### SKIP_BY_TX_ID=[OFF/ON]
 
 By default this is off. Enabling will prevent the account history plugin querying transactions 

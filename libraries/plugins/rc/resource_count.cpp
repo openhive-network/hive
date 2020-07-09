@@ -409,7 +409,7 @@ struct count_operation_visitor
   void operator()( const hardfork_hive_restore_operation& ) const {}
 
   // Optional Actions
-#ifdef IS_TEST_NET
+#ifdef HIVE_ENABLE_SMT
   void operator()( const example_optional_action& ) const {}
 #endif
 

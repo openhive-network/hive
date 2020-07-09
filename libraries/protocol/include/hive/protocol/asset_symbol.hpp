@@ -28,26 +28,16 @@
 #define HIVE_ASSET_NUM_HIVE   (uint32_t(((SMT_MAX_NAI + HIVE_NAI_HIVE)  << HIVE_NAI_SHIFT) | HIVE_PRECISION_HIVE))
 #define HIVE_ASSET_NUM_VESTS  (uint32_t(((SMT_MAX_NAI + HIVE_NAI_VESTS) << HIVE_NAI_SHIFT) | HIVE_PRECISION_VESTS))
 
-#ifdef IS_TEST_NET
-
 #define VESTS_SYMBOL_U64    (uint64_t('V') | (uint64_t('E') << 8) | (uint64_t('S') << 16) | (uint64_t('T') << 24) | (uint64_t('S') << 32))
-#define OBSOLETE_SYMBOL_U64 (uint64_t('T') | (uint64_t('E') << 8) | (uint64_t('S') << 16) | (uint64_t('T') << 24) | (uint64_t('S') << 32))
-#define HIVE_SYMBOL_U64     OBSOLETE_SYMBOL_U64
-#define OBD_SYMBOL_U64      (uint64_t('T') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
-#define HBD_SYMBOL_U64      OBD_SYMBOL_U64
-#else
 
-#define VESTS_SYMBOL_U64    (uint64_t('V') | (uint64_t('E') << 8) | (uint64_t('S') << 16) | (uint64_t('T') << 24) | (uint64_t('S') << 32))
 #define OBSOLETE_SYMBOL_U64 (uint64_t('S') | (uint64_t('T') << 8) | (uint64_t('E') << 16) | (uint64_t('E') << 24) | (uint64_t('M') << 32))
 #define HIVE_SYMBOL_U64     (uint64_t('H') | (uint64_t('I') << 8) | (uint64_t('V') << 16) | (uint64_t('E') << 24))
 #define OBD_SYMBOL_U64      (uint64_t('S') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
 #define HBD_SYMBOL_U64      (uint64_t('H') | (uint64_t('B') << 8) | (uint64_t('D') << 16))
 
-#endif
-
-#define VESTS_SYMBOL_SER    (uint64_t(6) | (VESTS_SYMBOL_U64 << 8)) ///< VESTS|VESTS with 6 digits of precision
-#define OBSOLETE_SYMBOL_SER (uint64_t(3) | (OBSOLETE_SYMBOL_U64 << 8)) ///< STEEM|TESTS with 3 digits of precision
-#define OBD_SYMBOL_SER      (uint64_t(3) | (OBD_SYMBOL_U64 << 8)) ///< SBD|TBD with 3 digits of precision
+#define VESTS_SYMBOL_SER    (uint64_t(6) | (VESTS_SYMBOL_U64 << 8)) ///< VESTS with 6 digits of precision
+#define OBSOLETE_SYMBOL_SER (uint64_t(3) | (OBSOLETE_SYMBOL_U64 << 8)) ///< STEEM with 3 digits of precision
+#define OBD_SYMBOL_SER      (uint64_t(3) | (OBD_SYMBOL_U64 << 8)) ///< SBD with 3 digits of precision
 
 #define HIVE_ASSET_MAX_DECIMALS  12
 

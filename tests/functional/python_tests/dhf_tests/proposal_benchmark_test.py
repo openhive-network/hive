@@ -91,29 +91,29 @@ def create_accounts(node, creator, accounts):
             memo_key=account['public_key'],
             store_keys = False,
             creator=creator,
-            asset='TESTS')
+            asset='HBD')
     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
 
-# transfer_to_vesting initminer pychol "310.000 TESTS" true
+# transfer_to_vesting initminer pychol "310.000 HIVE" true
 def transfer_to_vesting(node, from_account, accounts, vests ):
     for acnt in accounts:
-        logger.info("Transfer to vesting from {} to {} amount {} {}".format(from_account, acnt['name'], vests, "TESTS"))
+        logger.info("Transfer to vesting from {} to {} amount {} {}".format(from_account, acnt['name'], vests, "HIVE"))
         node.commit.transfer_to_vesting(vests, to = acnt['name'], 
-            account = from_account, asset='TESTS')
+            account = from_account, asset='HBD')
     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
 
-# transfer initminer pychol "399.000 TESTS" "initial transfer" true
-# transfer initminer pychol "398.000 TBD" "initial transfer" true
+# transfer initminer pychol "399.000 HIVE" "initial transfer" true
+# transfer initminer pychol "398.000 HBD" "initial transfer" true
 def transfer_assets_to_accounts(node, from_account, accounts, hives, hbds):
     for acnt in accounts:
-        logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt['name'], hives, "TESTS"))
-        node.commit.transfer(acnt['name'], hives, "TESTS", memo = "initial transfer", account = from_account)
+        logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt['name'], hives, "HIVE"))
+        node.commit.transfer(acnt['name'], hives, "HIVE", memo = "initial transfer", account = from_account)
      hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
     for acnt in accounts:
-        logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt['name'], hbds, "TBD"))
-        node.commit.transfer(acnt['name'], hbds, "TBD", memo = "initial transfer", account = from_account)
+        logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt['name'], hbds, "HBD"))
+        node.commit.transfer(acnt['name'], hbds, "HBD", memo = "initial transfer", account = from_account)
     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
 def create_permlink( node, account ):
@@ -170,7 +170,7 @@ def create_proposals(node, accounts, start_date, end_date, nr_proposals):
             acnt["name"],
             start_date,
             end_date,
-            "16.000 TBD",
+            "16.000 HBD",
             "subject: %d" % (cnt),
             create_permlink( node, acnt["name"] )
             )
@@ -288,7 +288,7 @@ if __name__ == '__main__':
 
     accounts = []
     for i in range( args.nr_accounts ):
-        accounts.append( {"name" : "", "private_key" : "5JBuekd1sVXXK3wBu6nvPB1LWypZ83BYdu7tGcUNYVd42xQGGh1", "public_key" : "TST5kSj1yTzBz3PDoJ5QUyVVagdgYfs8Y4vVsZG3dqKJU8hg7WmQN"} )
+        accounts.append( {"name" : "", "private_key" : "5JBuekd1sVXXK3wBu6nvPB1LWypZ83BYdu7tGcUNYVd42xQGGh1", "public_key" : "STM5kSj1yTzBz3PDoJ5QUyVVagdgYfs8Y4vVsZG3dqKJU8hg7WmQN"} )
         accounts[ len( accounts ) - 1 ]["name"] = "tester" + str( i )
 
     keys = [wif]

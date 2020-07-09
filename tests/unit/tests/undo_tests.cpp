@@ -1,4 +1,3 @@
-#ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
@@ -526,4 +525,3 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#endif

@@ -4,9 +4,6 @@
 
 namespace hive{ namespace plugins { namespace p2p {
 
-#ifdef IS_TEST_NET
-const std::vector< std::string > default_seeds;
-#else
 const std::vector< std::string > default_seeds = {
   "anyx.io:2001",                        // anyx
   "hive-seed.arcange.eu:2001",           // arcange
@@ -22,6 +19,5 @@ const std::vector< std::string > default_seeds = {
   "seed.openhive.network:2001",          // gtg
   "hive-seed.roelandp.nl:2001"           // roelandp
 };
-#endif
 
 } } } // hive::plugins::p2p

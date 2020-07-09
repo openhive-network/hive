@@ -1,4 +1,3 @@
-#ifdef IS_TEST_NET
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/generic_custom_operation_interpreter.hpp>
 
@@ -86,6 +85,3 @@ HIVE_DECLARE_OPERATION_TYPE( hive::plugin_tests::test_op );
 FC_REFLECT_TYPENAME( hive::plugin_tests::test_op );
 HIVE_DEFINE_OPERATION_TYPE( hive::plugin_tests::test_op );
 */
-
-
-#endif
