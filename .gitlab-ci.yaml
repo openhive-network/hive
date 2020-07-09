@@ -339,18 +339,21 @@ replay-test:
   needs:
     - job: consensus_development_build
       artifacts: true
- script:
+  script:
     - mkdir ./replay
+    - chmod 0444 /home/syncad/blockchain/block_log
+    - ls /home/syncad/
+    - ls $CI_JOB_NAME/consensus_node_build/install-root/bin
     - cp $CI_JOB_NAME/consensus_node_build/install-root/bin/hived ./replay
     - cp $CI_JOB_NAME/consensus_node_build/install-root/bin/cli_wallet ./replay
     - cp $CI_JOB_NAME/config-for-docker.ini /home/syncad/config.ini
-   # - ./ciscripts/replay.sh
-#  artifacts:
-#    paths:
-#    - ./replay-test/replay.log
-    #reports:
-#    when: always
-#    expire_in: 6 months
+    - ./ciscripts/replay.sh 1000000 5000000 #benchmark interval = 1000000 / stop replay at block 5000000
+  artifacts:
+    paths:
+    - $CI_PROJECT_DIR/replay/replay.log
+    reports:
+    when: always
+    expire_in: 6 months
 #  only:
 #    - master
 #    - merge_request
