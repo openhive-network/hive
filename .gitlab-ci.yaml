@@ -158,27 +158,29 @@ variables:
     DOCKER_TLS_CERTDIR: "/certs"
   script:
     - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
-    - "docker build -f ciscripts/Dockerfile.ci --target=$TARGET --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA ."
-    - "docker push $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA"
-    - "echo ===> the $TARGET_NAME node image for this build is: $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA"
+    - "docker build -f ciscripts/Dockerfile.ci --target=$CI_JOB_NAME --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/$CI_JOB_NAME:$CI_COMMIT_SHORT_SHA ."
+    - "docker push $CI_REGISTRY_IMAGE/$CI_JOB_NAME:$CI_COMMIT_SHORT_SHA"
+    - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/$CI_JOB_NAME:$CI_COMMIT_SHORT_SHA"
+  tags:
+    - public-runner-docker
 
 #*****************</JOB TEMPLATES>********************#
 
 
 #*********************<BUILDS>**********************#
 #====================DEVELOPMENT=====================
-#testnet_node_development_build:
-#  <<: *node_build
-#  <<: *testnet_node
-#  environment: development
-#  except:
-#    - master
-#    - merge_request
-#    - 0.24.0
-#    - schedules
-#  when: manual
+testnet_node_development_build:
+  <<: *node_build
+  <<: *testnet_node
+  environment: development
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  when: manual
 
-consensus_build:
+consensus_development_build:
   <<: *node_build
   <<: *consensus_node
   environment: development
@@ -190,15 +192,15 @@ consensus_build:
   when: manual
 
 #======================STAGING=======================
-#testnet_node_staging_build:
-#  <<: *node_build
-#  <<: *testnet_node
-#  environment: staging
-#  only:
-#    - master
-#    - merge_request
-#    - 0.24.0
-#    - schedules
+testnet_node_staging_build:
+  <<: *node_build
+  <<: *testnet_node
+  environment: staging
+  only:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
 
 consensus_staging_build:
   <<: *node_build
@@ -215,122 +217,122 @@ consensus_staging_build:
 
 #*********************<TESTS>***********************#
 #====================DEVELOPMENT=====================
-#development_chain_test:
-#  needs:
-#    - job: testnet_node_development_build
-#      artifacts: true
-#  <<: *chaintest
-#  except:
-#    - master
-#    - merge_request
-#    - 0.24.0
-#    - schedules
-#  environment: development
+development_chain_test:
+  needs:
+    - job: testnet_node_development_build
+      artifacts: true
+  <<: *chaintest
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  environment: development
 
-#development_plugin_test:
-#  needs:
-#    - job: testnet_node_development_build
-#      artifacts: true
-#  <<: *plugintest
-#  except:
-#    - master
-#    - merge_request
-#    - 0.24.0
-#    - schedules
-#  environment: development
+development_plugin_test:
+  needs:
+    - job: testnet_node_development_build
+      artifacts: true
+  <<: *plugintest
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  environment: development
 
-#development_beem_dhf_test:
-#  needs:
-#    - job: testnet_node_development_build
-#      artifacts: true
-#  <<: *beemdhftest
-#  except:
-#    - master
-#    - merge_request
-#    - 0.24.0
-#    - schedules
-#  environment: development
+development_beem_dhf_test:
+  needs:
+    - job: testnet_node_development_build
+      artifacts: true
+  <<: *beemdhftest
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  environment: development
 
-#development_list_proposals_tests:
-#  needs:
-#    - job: testnet_node_development_build
-#      artifacts: true
-#  <<: *listproposalstests
-#  environment: development
+development_list_proposals_tests:
+  needs:
+    - job: testnet_node_development_build
+      artifacts: true
+  <<: *listproposalstests
+  environment: development
 
-#develompment_hived_options_tests:
-#  needs:
-#    - job: testnet_node_development_build
-#      artifacts: true
-#  <<: *hivedoptstest
-#  except:
-#    - master
-#    - merge_request
-#    - 0.24.0
-#    - schedules
-#  environment: development
+develompment_hived_options_tests:
+  needs:
+    - job: testnet_node_development_build
+      artifacts: true
+  <<: *hivedoptstest
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  environment: development
 
 
 #======================STAGING=======================
-#staging_chain_test:
-#  needs:
-#    - job: testnet_node_staging_build
-#      artifacts: true
-#  <<: *chaintest
-#  only:
-#    - master
-#    - merge_request
-#    - 0.24.0
-#    - schedules
-#  environment: staging
+staging_chain_test:
+  needs:
+    - job: testnet_node_staging_build
+      artifacts: true
+  <<: *chaintest
+  only:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  environment: staging
 
-#staging_plugin_test:
-#  needs:
-#    - job: testnet_node_staging_build
-#      artifacts: true
-#  <<: *plugintest
-#  only:
-#    - master
-#    - merge_request
-#    - 0.24.0
-#    - schedules
-#  environment: staging
+staging_plugin_test:
+  needs:
+    - job: testnet_node_staging_build
+      artifacts: true
+  <<: *plugintest
+  only:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  environment: staging
 
-#staging_beem_dhf_test:
-#  needs:
-#    - job: testnet_node_staging_build
-#      artifacts: true
-#  <<: *beemdhftest
-#  only:
-#    - master
-#    - merge_request
-#    - 0.24.0
-#    - schedules
-#  environment: staging
+staging_beem_dhf_test:
+  needs:
+    - job: testnet_node_staging_build
+      artifacts: true
+  <<: *beemdhftest
+  only:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  environment: staging
 
-#staging_list_proposals_tests:
-#  needs:
-#    - job: testnet_node_staging_build
-#      artifacts: true
-#  <<: *listproposalstests
-#  only:
-#    - master
-#    - merge_request
-#    - 0.24.0
-#    - schedules
-#  environment: staging
+staging_list_proposals_tests:
+  needs:
+    - job: testnet_node_staging_build
+      artifacts: true
+  <<: *listproposalstests
+  only:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  environment: staging
 
-#staging_hived_options_tests:
-#  needs:
-#    - job: testnet_node_staging_build
-#      artifacts: true
-#  <<: *hivedoptstest
-#  only:
-#    - master
-#    - merge_request
-#    - 0.24.0
-#    - schedules
-#  environment: staging
+staging_hived_options_tests:
+  needs:
+    - job: testnet_node_staging_build
+      artifacts: true
+  <<: *hivedoptstest
+  only:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  environment: staging
 
 replay-test:
   stage: test
@@ -407,7 +409,5 @@ staging_package_consensus_node:
     - merge_request
     - 0.24.0
     - schedules
-  tags:
-    - public-runner-docker
 
 #******************</PACKAGING>*********************#
