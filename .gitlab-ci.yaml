@@ -340,7 +340,7 @@ replay-test:
   variables:
     GIT_STRATEGY: none
   needs:
-    - job: consensus_build
+    - job: consensus_development_build
       artifacts: true
   before_script:
     - mkdir ./replay 
