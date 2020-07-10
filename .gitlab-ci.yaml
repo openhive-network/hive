@@ -1,3 +1,5 @@
+Resource Group: $CI_ENVIRONMENT_NAME
+
 stages:
 - build
 - test
@@ -35,7 +37,7 @@ variables:
   variables:
     BUILD_OPTS: OFF OFF ON OFF # LOW_MEMORY=OFF CLEAR_VOTES=OFF TESTNET=ON ENABLE_MIRA=OFF
     CREATE_BUILD_DIRECTORY: mkdir -p $CI_JOB_NAME/tests/unit
-    MOVE_DIR: mv build/tests/unit/chain_test build/tests/unit/plugin_test "$CI_JOB_NAME"/tests/unit #this is only for testnet node
+    MOVE_DIR: mv build/tests/unit/chain_test build/tests/unit/plugin_test $CI_JOB_NAME/tests/unit #this is only for testnet node
   tags:
      - public-runner-docker
 
