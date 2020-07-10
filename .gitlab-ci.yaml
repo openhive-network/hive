@@ -344,7 +344,7 @@ replay-test:
     - mkdir ./replay
     - ls .
     - ls ./consensus_build/install-root/bin
-    - ls /home/syncad/blockchain
+    - ls /home/syncad/blockchain/block_log
     - cp ./consensus_build/install-root/bin/hived ./replay
     - cp ./consensus_build/install-root/bin/cli_wallet ./replay
     - cp ./consensus_build/config-for-docker.ini /home/syncad/blockchain/config.ini
