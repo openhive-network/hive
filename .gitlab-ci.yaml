@@ -362,7 +362,8 @@ replay-test:
     expire_in: 6 months
   after_script: 
     - rm -rf ./replay
-
+  environment:
+    - development
 #  only:
 #    - master
 #    - merge_request
@@ -380,10 +381,10 @@ replay-test:
 package_consensus_node:
   <<: *node_package
   variables:
-    TARGET: consensus_build
-    TARGET_NAME: consensus node
+    TARGET: consensus_development_build
+    TARGET_NAME: consensus development node
   needs:
-    - job: consensus_build
+    - job: consensus_development_build
       artifacts: true
   environment: development
   except:
