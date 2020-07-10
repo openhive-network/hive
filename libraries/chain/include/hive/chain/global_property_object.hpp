@@ -155,9 +155,11 @@ namespace hive { namespace chain {
       uint16_t hbd_stop_percent = HIVE_HBD_STOP_PERCENT_HF14;
       uint16_t hbd_start_percent = HIVE_HBD_START_PERCENT_HF14;
 
-      //settings used to compute payments for every proposal
+      // Settings used to compute payments for every proposal
       time_point_sec next_maintenance_time = HIVE_GENESIS_TIME;
       time_point_sec last_budget_time = HIVE_GENESIS_TIME;
+      // Setting to convert hive to HBD in the treasury account
+      time_point_sec next_daily_maintenance_time = HIVE_GENESIS_TIME;
 
       uint16_t content_reward_percent = HIVE_CONTENT_REWARD_PERCENT_HF16;
       uint16_t vesting_reward_percent = HIVE_VESTING_FUND_PERCENT_HF16;
@@ -226,6 +228,7 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (hbd_start_percent)
           (next_maintenance_time)
           (last_budget_time)
+          (next_daily_maintenance_time)
           (content_reward_percent)
           (vesting_reward_percent)
           (sps_fund_percent)

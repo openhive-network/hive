@@ -30,6 +30,7 @@ class sps_processor
     chain::database& db;
 
     bool is_maintenance_period( const time_point_sec& head_time ) const;
+    bool is_daily_maintenance_period( const time_point_sec& head_time ) const;
 
     void remove_proposals( const time_point_sec& head_time );
 

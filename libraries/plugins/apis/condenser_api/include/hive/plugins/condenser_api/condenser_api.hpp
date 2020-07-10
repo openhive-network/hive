@@ -391,6 +391,7 @@ struct extended_dynamic_global_properties
     hbd_start_percent( o.hbd_start_percent ),
     next_maintenance_time( o.next_maintenance_time ),
     last_budget_time( o.last_budget_time ),
+    next_daily_maintenance_time( o.next_daily_maintenance_time ),
     content_reward_percent( o.content_reward_percent ),
     vesting_reward_percent( o.vesting_reward_percent ),
     sps_fund_percent( o.sps_fund_percent ),
@@ -441,6 +442,8 @@ struct extended_dynamic_global_properties
 
   time_point_sec    next_maintenance_time;
   time_point_sec    last_budget_time;
+
+  time_point_sec    next_daily_maintenance_time;
 
   uint16_t          content_reward_percent = HIVE_CONTENT_REWARD_PERCENT_HF16;
   uint16_t          vesting_reward_percent = HIVE_VESTING_FUND_PERCENT_HF16;
@@ -1236,7 +1239,7 @@ FC_REFLECT( hive::plugins::condenser_api::extended_dynamic_global_properties,
         (hbd_interest_rate)(hbd_print_rate)
         (maximum_block_size)(required_actions_partition_percent)(current_aslot)(recent_slots_filled)(participation_count)(last_irreversible_block_num)
         (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)(available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)
-        (next_maintenance_time)(last_budget_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)(sps_interval_ledger)(downvote_pool_percent)
+        (next_maintenance_time)(last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)(sps_interval_ledger)(downvote_pool_percent)
         )
 
 FC_REFLECT( hive::plugins::condenser_api::api_witness_object,

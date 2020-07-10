@@ -25,6 +25,11 @@ bool sps_processor::is_maintenance_period( const time_point_sec& head_time ) con
   return db.get_dynamic_global_properties().next_maintenance_time <= head_time;
 }
 
+bool sps_processor::is_daily_maintenance_period( const time_point_sec& head_time ) const
+{
+  return db.get_dynamic_global_properties().next_daily_maintenance_time <= head_time;
+}
+
 void sps_processor::remove_proposals( const time_point_sec& head_time )
 {
   FC_TODO("implement proposal removal based on automatic actions")
@@ -331,8 +336,13 @@ void sps_processor::record_funding( const block_notification& note )
 
 void sps_processor::convert_funds( const block_notification& note )
 {
-  if( !is_maintenance_period( note.block.timestamp ) )
+  if( !is_daily_maintenance_period( note.block.timestamp ) )
     return;
+
+  db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& _dgpo )
+  {
+    _dgpo.next_daily_maintenance_time = note.block.timestamp + fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD );
+  } );
 
   const auto &treasury_account = db.get_account(db.get_treasury_name());
   if (treasury_account.balance.amount == 0) {
