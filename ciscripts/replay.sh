@@ -1,2 +1,2 @@
 #!/bin/bash
-../replay/hived --replay-blockchain --set-benchmark-interval ${BENCHMARK_INTERVAL} --stop-replay-at-block ${STOP_REPLAY_AT} --exit-after-replay --advanced-benchmark --dump-memory-details  -d /home/syncad/blockchain --shared-file-dir $CI_PROJECT_DIR/replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
+../replay/hived --replay-blockchain --set-benchmark-interval ${BENCHMARK_INTERVAL} --stop-replay-at-block ${STOP_REPLAY_AT} --exit-after-replay --advanced-benchmark --dump-memory-details  -d / --shared-file-dir $CI_PROJECT_DIR/replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
