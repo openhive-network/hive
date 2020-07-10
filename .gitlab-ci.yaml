@@ -336,15 +336,12 @@ replay-test:
   stage: test
   variables:
     GIT_STRATEGY: none
-  before_script:
-    - docker run -itd --name temp_container_$CI_COMMIT_SHORT_SHA -v /home/syncad/:$CI_PROJECT_DIR/replay
   needs:
     - job: consensus_build
       artifacts: true
   script:
     - rm -rf ./replay
     - mkdir ./replay
-
     - ls .
     - ls ./consensus_build/install-root/bin
     - ls /home/syncad/blockchain
@@ -358,9 +355,6 @@ replay-test:
     reports:
     when: always
     expire_in: 6 months
-  after_script:
-    - docker container stop temp_container_$CI_COMMIT_SHORT_SHA
-    - docker container rm temp_container_$CI_COMMIT_SHORT_SHA
 
 #  only:
 #    - master
