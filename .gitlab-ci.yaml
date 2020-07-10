@@ -1,4 +1,4 @@
-Resource Group: $CI_ENVIRONMENT_NAME
+resource_group: $CI_ENVIRONMENT_NAME
 
 stages:
 - build
