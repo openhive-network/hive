@@ -344,10 +344,10 @@ replay-test:
     - mkdir ./replay
     - ls .
     - ls ./consensus_build/install-root/bin
-    #- ls /home/syncad/blockchain/block_log
+    - ls /blockchain
     - cp ./consensus_build/install-root/bin/hived ./replay
     - cp ./consensus_build/install-root/bin/cli_wallet ./replay
-    - cp ./consensus_build/config-for-docker.ini /home/syncad/blockchain/config.ini
+    - cp ./consensus_build/config-for-docker.ini /blockchain/config.ini
     - ./ciscripts/replay.sh 100000 1000000 #benchmark interval = 100000 / stop replay at block 1000000
   artifacts:
     paths:
