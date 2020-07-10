@@ -1,5 +1,3 @@
-resource_group: $CI_ENVIRONMENT_NAME
-
 stages:
 - build
 - test
@@ -27,6 +25,7 @@ variables:
     - mv contrib/config-for-docker.ini "$CI_JOB_NAME"
     - $MOVE_DIR
   allow_failure: false
+  resource_group: $CI_ENVIRONMENT_NAME
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     paths:
@@ -53,6 +52,7 @@ variables:
 .chain_test_template: &chaintest
   stage: test
   image: "$CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG"
+  resource_group: $CI_ENVIRONMENT_NAME
   variables:
     GIT_STRATEGY: none
   script:
@@ -69,6 +69,7 @@ variables:
 .plugin_test_template: &plugintest
   stage: test
   image: "$CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG"
+  resource_group: $CI_ENVIRONMENT_NAME
   variables:
     GIT_STRATEGY: none
   script:
@@ -86,6 +87,7 @@ variables:
 .beem_test_template: &beemdhftest
   stage: test
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  resource_group: $CI_ENVIRONMENT_NAME
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
@@ -115,6 +117,7 @@ variables:
 .list_proposals_tests_template: &listproposalstests
   stage: test
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  resource_group: $CI_ENVIRONMENT_NAME
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
@@ -141,6 +144,7 @@ variables:
 .hived_options_tests_template: &hivedoptstest
   stage: test
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  resource_group: $CI_ENVIRONMENT_NAME
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
@@ -153,6 +157,7 @@ variables:
 .packaging_nodes_template: &node_package
   stage: package
   image: docker:19.03.11
+  resource_group: $CI_ENVIRONMENT_NAME
   services:
     - docker:19.03.11-dind
   variables:
@@ -340,6 +345,7 @@ staging_hived_options_tests:
 replay-test:
   stage: test
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  resource_group: $CI_ENVIRONMENT_NAME
   variables:
     GIT_STRATEGY: none
   needs:
