@@ -339,16 +339,16 @@ replay-test:
   needs:
     - job: consensus_build
       artifacts: true
+  after_script: 
+    - mkdir ./replay 
   script:
-    - rm -rf ./replay
-    - mkdir ./replay
     - ls .
     - ls ./consensus_build/install-root/bin
     - ls -ld /blockchain
     - ls -l /blockchain
     - cp ./consensus_build/install-root/bin/hived ./replay
     - cp ./consensus_build/install-root/bin/cli_wallet ./replay
-    - cp ./consensus_build/config-for-docker.ini /blockchain/config.ini
+    - cp ./consensus_build/config-for-docker.ini ./replay/config.ini
     - ./ciscripts/replay.sh 100000 1000000 #benchmark interval = 100000 / stop replay at block 1000000
   artifacts:
     paths:
@@ -356,6 +356,8 @@ replay-test:
     reports:
     when: always
     expire_in: 6 months
+  before_script:
+    - rm -rf ./replay
 
 #  only:
 #    - master
