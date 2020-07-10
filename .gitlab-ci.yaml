@@ -344,8 +344,8 @@ replay-test:
     - mkdir ./replay
     - ls .
     - ls ./consensus_build/install-root/bin
-    - ls -l /blockchain
     - ls -ld /blockchain
+    - ls -l /blockchain
     - cp ./consensus_build/install-root/bin/hived ./replay
     - cp ./consensus_build/install-root/bin/cli_wallet ./replay
     - cp ./consensus_build/config-for-docker.ini /blockchain/config.ini
@@ -363,6 +363,7 @@ replay-test:
 #    - 0.24.0
 #    - schedules
   tags:
+    - public-runner-docker
     - hived-for-tests
     
 #**********************</TESTS>*********************#
