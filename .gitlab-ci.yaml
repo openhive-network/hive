@@ -334,6 +334,7 @@ consensus_staging_build:
 
 replay-test:
   stage: test
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
     GIT_STRATEGY: none
   needs:
