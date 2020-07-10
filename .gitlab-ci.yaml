@@ -346,11 +346,12 @@ replay-test:
     - ls ./consensus_build/install-root/bin
     - ls -ld /blockchain
     - ls -l /blockchain
+    - ls ../
     - cp ./consensus_build/install-root/bin/hived ./replay
     - cp ./consensus_build/install-root/bin/cli_wallet ./replay
     - cp ./consensus_build/config-for-docker.ini ./replay
     - mv ./replay/config-for-docker.ini ./replay/config.ini
-    - ./ciscripts/replay.sh 100000 1000000 #benchmark interval = 100000 / stop replay at block 1000000
+    - ../ciscripts/replay.sh 100000 1000000 #benchmark interval = 100000 / stop replay at block 1000000
   artifacts:
     paths:
     - $CI_PROJECT_DIR/replay/replay.log
