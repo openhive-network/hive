@@ -342,12 +342,15 @@ replay-test:
       artifacts: true
   before_script:
     - mkdir ./replay 
+    - mkdir ./replay/blockchain
   script:
     - cp ./consensus_build/install-root/bin/hived ./replay
     - cp ./consensus_build/install-root/bin/cli_wallet ./replay
     - cp ./consensus_build/config-for-docker.ini ./replay
     - mv ./replay/config-for-docker.ini ./replay/config.ini
-    - ./replay/hived --replay-blockchain --set-benchmark-interval 100000 --stop-replay-at-block 1000000 --exit-after-replay --advanced-benchmark --dump-memory-details  -d / --shared-file-dir $CI_PROJECT_DIR/replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
+    - cp ./consensus_build/install-root/bin/truncate_block_log
+    - ./truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log 1000000
+    - ./replay/hived --replay-blockchain --set-benchmark-interval 100000 --stop-replay-at-block 1000000 --exit-after-replay --advanced-benchmark --dump-memory-details  -d ./replay --shared-file-dir ./replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
     #- ../ciscripts/replay.sh 100000 1000000 #benchmark interval = 100000 / stop replay at block 1000000
   artifacts:
     paths:
