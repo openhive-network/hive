@@ -362,8 +362,7 @@ replay-test:
     expire_in: 6 months
   after_script: 
     - rm -rf ./replay
-  environment:
-    - development
+  environment: development
 #  only:
 #    - master
 #    - merge_request
