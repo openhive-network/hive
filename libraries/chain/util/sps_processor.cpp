@@ -351,7 +351,6 @@ void sps_processor::convert_funds( const block_notification& note )
 
   const auto to_convert_amount = HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.balance.amount / HIVE_100_PERCENT;
   const auto to_convert = asset(to_convert_amount, HIVE_SYMBOL);
-  elog( "total balance is  ${bal} to convert is ${conv}" , ("bal", treasury_account.balance.amount ) ("conv", to_convert) );
 
   const feed_history_object& fhistory = db.get_feed_history();
   if( fhistory.current_median_history.is_null() )
