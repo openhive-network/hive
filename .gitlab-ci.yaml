@@ -348,30 +348,28 @@ replay-test:
   resource_group: $CI_ENVIRONMENT_NAME_consensus
   variables:
     GIT_STRATEGY: none
+    STOP_REPLAY_AT: 5000000
   needs:
     - job: consensus_development_build
       artifacts: true
-  before_script:
+  script:
     - mkdir ./replay 
     - mkdir ./replay/blockchain
-  script:
     - cp ./consensus_development_build/install-root/bin/hived ./replay
     - cp ./consensus_development_build/install-root/bin/cli_wallet ./replay
     - cp ./consensus_development_build/config-for-docker.ini ./replay
     - mv ./replay/config-for-docker.ini ./replay/config.ini
     - cp ./consensus_development_build/install-root/bin/truncate_block_log ./replay
     - ls ./ciscripts
-    - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log 1000000
-    - ./replay/hived --replay-blockchain --set-benchmark-interval 100000 --stop-replay-at-block 1000000 --exit-after-replay --advanced-benchmark --dump-memory-details  -d ./replay --shared-file-dir ./replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
-    #- ../ciscripts/replay.sh 100000 1000000 #benchmark interval = 100000 / stop replay at block 1000000
+    - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
+    - ./replay/hived --replay-blockchain --set-benchmark-interval 1000000 --stop-replay-at-block $STOP_REPLAY_AT --exit-after-replay --advanced-benchmark --dump-memory-details  -d ./replay --shared-file-dir ./replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
+    #- ../ciscripts/replay.sh 100000 1000000 #benchmark interval = 1000000 / stop replay at block $STOP_REPLAY_AT
   artifacts:
     paths:
     - $CI_PROJECT_DIR/replay/replay.log
     reports:
     when: always
     expire_in: 6 months
-  after_script: 
-    - rm -rf ./replay
 #  only:
 #    - master
 #    - merge_request
