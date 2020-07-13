@@ -35,7 +35,29 @@ RUN apt-get update && \
 #    ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
 
 #####################################################################
-FROM $CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG AS $TARGET
+FROM $CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG AS consensus_development_node
+
+ARG TRACKED_ACCOUNT_NAME
+ENV TRACKED_ACCOUNT_NAME=${TRACKED_ACCOUNT_NAME}
+ARG USE_PUBLIC_BLOCKLOG
+ENV USE_PUBLIC_BLOCKLOG=${USE_PUBLIC_BLOCKLOG}
+ENV install_base_dir="/usr/local/hive"
+
+# rpc
+EXPOSE 8090
+
+# p2p
+EXPOSE 2001
+
+WORKDIR "${install_base_dir}/consensus"
+COPY $TARGET_JOB/install-root/ consensus_build/hived.run ./
+COPY $TARGET_JOB/config-for-docker.ini datadir/config.ini
+RUN chmod 755 hived.run
+
+CMD "${install_base_dir}/consensus/hived.run"
+
+#####################################################################
+FROM $CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG AS consensus_staging_node
 
 ARG TRACKED_ACCOUNT_NAME
 ENV TRACKED_ACCOUNT_NAME=${TRACKED_ACCOUNT_NAME}
