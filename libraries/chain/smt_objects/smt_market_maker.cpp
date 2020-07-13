@@ -23,6 +23,7 @@ static std::vector< rational_u64 > load_mm_ticks()
   std::vector< std::pair< uint64_t, uint64_t > > mm_ticks_pairs;
   fc::from_variant( mm_ticks_var, mm_ticks_pairs );
   std::vector< rational_u64 > mm_ticks;
+  mm_ticks.reserve( mm_ticks_pairs.size() );
   for( const std::pair< uint64_t, uint64_t >& p : mm_ticks_pairs )
     mm_ticks.emplace_back( p );
   return mm_ticks;

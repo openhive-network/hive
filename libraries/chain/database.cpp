@@ -5082,7 +5082,7 @@ void database::adjust_smt_balance( const account_object& owner, const asset& del
     bo = &new_balance_object;
   }
 
-  modify( *bo, std::move( modifier ) );
+  modify( *bo, std::forward<modifier_type>( modifier ) );
   if( bo->is_empty() )
   {
     // Zero balance is the same as non object balance at all.

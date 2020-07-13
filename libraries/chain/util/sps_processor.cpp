@@ -2,7 +2,6 @@
 
 namespace hive { namespace chain {
 
-using hive::protocol::asset;
 using hive::protocol::operation;
 
 using hive::chain::proposal_object;
