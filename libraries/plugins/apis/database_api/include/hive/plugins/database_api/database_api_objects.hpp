@@ -11,6 +11,8 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/database.hpp>
 
+#define HIVEMIND_ASSERT_SUPPORT() FC_ASSERT( false, "Supported by hivemind" );
+
 namespace hive { namespace plugins { namespace database_api {
 
 using namespace hive::chain;
