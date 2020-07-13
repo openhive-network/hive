@@ -57,7 +57,7 @@ variables:
   variables:
     GIT_STRATEGY: none
   script:
-    - ./testnet_node_build/tests/unit/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > /dev/null 2>&1
+    - ./$SOURCE_NODE/tests/unit/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > /dev/null 2>&1
   artifacts:
     reports:
       junit: chain_test_results.xml
@@ -75,7 +75,7 @@ variables:
     GIT_STRATEGY: none
   script:
     # note: consider using --result_code=no to force exit code 0 even when tests fail because they currently fail and I want a nice green checkmark
-    - ./testnet_node_build/tests/unit/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > /dev/null 2>&1
+    - ./$SOURCE_NODE/tests/unit/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > /dev/null 2>&1
   artifacts:
     reports:
       junit: plugin_test_results.xml
@@ -100,9 +100,9 @@ variables:
     # stuff specific to this test
     - mkdir -p build/tests/hive-node-data
     - cd tests/functional/python_tests/dhf_tests
-    - "python3 beem_dhf_tests.py initminer initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --no-erase-proposal --junit-output=beem_dhf_test.xml"
+    - "python3 beem_dhf_tests.py initminer initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/$SOURCE_NODE/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --no-erase-proposal --junit-output=beem_dhf_test.xml"
     - cd ../hived
-    - "python3 hived_hybrid_operations_test.py initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data"
+    - "python3 hived_hybrid_operations_test.py initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/$SOURCE_NODE/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data"
   artifacts:
     paths:
     - tests/functional/python_tests/dhf_tests/beem_dhf_tests.log
@@ -130,7 +130,7 @@ variables:
     # stuff specific to this test
     - mkdir -p build/tests/hive-node-data
     - cd tests/functional/python_tests/dhf_tests
-    - "python3 list_proposals_tests.py initminer initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --junit-output=list_proposals_tests.xml"
+    - "python3 list_proposals_tests.py initminer initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/$SOURCE_NODE/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --junit-output=list_proposals_tests.xml"
   artifacts:
     paths:
     - tests/functional/python_tests/dhf_tests/hdf_list_proposal.log
@@ -150,7 +150,7 @@ variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
     - cd tests/functional/python_tests/hived
-    - "python3 hived_options_tests.py --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
+    - "python3 hived_options_tests.py --run-hived $CI_PROJECT_DIR/$SOURCE_NODE/install-root/bin/hived"
   tags:
     - public-runner-docker
 
@@ -227,8 +227,10 @@ consensus_staging_build:
 #*********************<TESTS>***********************#
 #====================DEVELOPMENT=====================
 development_chain_test:
+  variables:
+    SOURCE_NODE: testnet_node_development_build
   needs:
-    - job: testnet_node_development_build
+    - job: $SOURCE_NODE
       artifacts: true
   <<: *chaintest
   except:
@@ -238,8 +240,10 @@ development_chain_test:
     - schedules
 
 development_plugin_test:
+  variables:
+    SOURCE_NODE: testnet_node_development_build
   needs:
-    - job: testnet_node_development_build
+    - job: $SOURCE_NODE
       artifacts: true
   <<: *plugintest
   except:
@@ -249,8 +253,10 @@ development_plugin_test:
     - schedules
 
 development_beem_dhf_test:
+  variables:
+    SOURCE_NODE: testnet_node_development_build
   needs:
-    - job: testnet_node_development_build
+    - job: $SOURCE_NODE
       artifacts: true
   <<: *beemdhftest
   except:
@@ -260,14 +266,18 @@ development_beem_dhf_test:
     - schedules
 
 development_list_proposals_tests:
+  variables:
+    SOURCE_NODE: testnet_node_development_build
   needs:
-    - job: testnet_node_development_build
+    - job: $SOURCE_NODE
       artifacts: true
   <<: *listproposalstests
 
 develompment_hived_options_tests:
+  variables:
+    SOURCE_NODE: testnet_node_development_build
   needs:
-    - job: testnet_node_development_build
+    - job: $SOURCE_NODE
       artifacts: true
   <<: *hivedoptstest
   except:
@@ -279,8 +289,10 @@ develompment_hived_options_tests:
 
 #======================STAGING=======================
 staging_chain_test:
+  variables:
+    SOURCE_NODE: testnet_node_staging_build
   needs:
-    - job: testnet_node_staging_build
+    - job: $SOURCE_NODE
       artifacts: true
   <<: *chaintest
   only:
@@ -290,8 +302,10 @@ staging_chain_test:
     - schedules
 
 staging_plugin_test:
+  variables:
+    SOURCE_NODE: testnet_node_staging_build
   needs:
-    - job: testnet_node_staging_build
+    - job: $SOURCE_NODE
       artifacts: true
   <<: *plugintest
   only:
@@ -301,8 +315,10 @@ staging_plugin_test:
     - schedules
 
 staging_beem_dhf_test:
+  variables:
+    SOURCE_NODE: testnet_node_staging_build
   needs:
-    - job: testnet_node_staging_build
+    - job: $SOURCE_NODE
       artifacts: true
   <<: *beemdhftest
   only:
@@ -312,8 +328,10 @@ staging_beem_dhf_test:
     - schedules
 
 staging_list_proposals_tests:
+  variables:
+    SOURCE_NODE: testnet_node_staging_build
   needs:
-    - job: testnet_node_staging_build
+    - job: $SOURCE_NODE
       artifacts: true
   <<: *listproposalstests
   only:
@@ -323,8 +341,10 @@ staging_list_proposals_tests:
     - schedules
 
 staging_hived_options_tests:
+  variables:
+    SOURCE_NODE: testnet_node_staging_build
   needs:
-    - job: testnet_node_staging_build
+    - job: $SOURCE_NODE
       artifacts: true
   <<: *hivedoptstest
   only:
@@ -352,8 +372,8 @@ replay-test:
     - mv ./replay/config-for-docker.ini ./replay/config.ini
     - cp ./consensus_development_build/install-root/bin/truncate_block_log ./replay
     - ls ../
-    - ls ../../
-    - ls ../../../hived
+    - ls ../hive
+    - ls ../hive.tmp
     - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log 1000000
     - ./replay/hived --replay-blockchain --set-benchmark-interval 100000 --stop-replay-at-block 1000000 --exit-after-replay --advanced-benchmark --dump-memory-details  -d ./replay --shared-file-dir ./replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
     #- ../ciscripts/replay.sh 100000 1000000 #benchmark interval = 100000 / stop replay at block 1000000
