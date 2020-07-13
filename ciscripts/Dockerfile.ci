@@ -2,6 +2,8 @@
 # project's registry (e.g. registry.gitlab.syncad.com/hive/hive)
 ARG CI_REGISTRY_IMAGE
 ARG RUNTIME_IMAGE_TAG=:latest
+ARG TARGET
+ARG TARGET_JOB
 
 FROM ubuntu:18.04 AS runtime
 ENV LANG=en_US.UTF-8
@@ -33,7 +35,7 @@ RUN apt-get update && \
 #    ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
 
 #####################################################################
-FROM $CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG AS consensus_node
+FROM $CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG AS $TARGET
 
 ARG TRACKED_ACCOUNT_NAME
 ENV TRACKED_ACCOUNT_NAME=${TRACKED_ACCOUNT_NAME}
@@ -48,8 +50,8 @@ EXPOSE 8090
 EXPOSE 2001
 
 WORKDIR "${install_base_dir}/consensus"
-COPY consensus_build/install-root/ consensus_build/hived.run ./
-COPY consensus_build/config-for-docker.ini datadir/config.ini
+COPY $TARGET_JOB/install-root/ consensus_build/hived.run ./
+COPY $TARGET_JOB/config-for-docker.ini datadir/config.ini
 RUN chmod 755 hived.run
 
 CMD "${install_base_dir}/consensus/hived.run"
