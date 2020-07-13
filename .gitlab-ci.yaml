@@ -6,7 +6,6 @@ stages:
 variables:
   GIT_DEPTH: 1
   GIT_SUBMODULE_STRATEGY: recursive
-  STOP_REPLAY_AT: 5000000
   # pin to specific docker images for build repeatability
   RUNTIME_IMAGE_TAG: "@sha256:e1995e7b44d58436ce97fbcd28a5200d8e877f476c9c4bd3e1cc394c17be050b"
   BUILDER_IMAGE_TAG: "@sha256:13933b563395cc3c6ea8bcbd95b717eb4c9fcc33c4cd7194e620713aca03180d"
@@ -146,7 +145,7 @@ variables:
     - docker:19.03.11-dind
   script:
     - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
-    - "docker build -f ciscripts/Dockerfile.ci --target=$TARGET --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --build-arg TARGET=$TARGET --build-arg TARGET_JOB=$TARGET_JOB --tag $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA ."
+    - "docker build -f ciscripts/Dockerfile.ci --target=$TARGET --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA ."
     - "docker push $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA"
     - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA"
   tags:
@@ -348,6 +347,7 @@ replay-test:
   resource_group: $CI_ENVIRONMENT_NAME_consensus
   variables:
     GIT_STRATEGY: none
+    STOP_REPLAY_AT: 2000000
   needs:
     - job: consensus_development_build
       artifacts: true
