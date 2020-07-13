@@ -819,11 +819,11 @@ struct market_trade
   legacy_asset   open_pays;
 };
 
-struct dummy_struct {};
-using discussion_api_object = dummy_struct;
-using discussion_api_object_collection = dummy_struct;
-using comment_feed_entry = dummy_struct;
-using comment_blog_entry = dummy_struct;
+struct no_return {};
+using discussion_api_object = no_return;
+using discussion_api_object_collection = no_return;
+using comment_feed_entry = no_return;
+using comment_blog_entry = no_return;
 
 #define DEFINE_API_ARGS( api_name, arg_type, return_type )  \
 typedef arg_type api_name ## _args;                         \
@@ -1184,4 +1184,4 @@ FC_REFLECT( hive::plugins::condenser_api::order_book,
 FC_REFLECT( hive::plugins::condenser_api::market_trade,
         (date)(current_pays)(open_pays) )
 
-FC_REFLECT_EMPTY( hive::plugins::condenser_api::dummy_struct )
+FC_REFLECT_EMPTY( hive::plugins::condenser_api::no_return )
