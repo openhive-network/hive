@@ -48,7 +48,7 @@ EXPOSE 8090
 EXPOSE 2001
 
 WORKDIR "${install_base_dir}/consensus"
-COPY consensus_development_build/install-root/ consensus_build/hived.run ./
+COPY consensus_development_build/install-root/ consensus_development_build/hived.run ./
 COPY consensus_development_build/config-for-docker.ini datadir/config.ini
 RUN chmod 755 hived.run
 
@@ -70,7 +70,7 @@ EXPOSE 8090
 EXPOSE 2001
 
 WORKDIR "${install_base_dir}/consensus"
-COPY consensus_staging_build/install-root/ consensus_build/hived.run ./
+COPY consensus_staging_build/install-root/ consensus_staging_build/hived.run ./
 COPY consensus_staging_build/config-for-docker.ini datadir/config.ini
 RUN chmod 755 hived.run
 
