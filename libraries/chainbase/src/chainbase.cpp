@@ -293,6 +293,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       _segment.reset();
       _meta.reset();
       _data_dir = bfs::path();
+
+      wipe_indexes();
+
 #else
       undo_all();
 
@@ -300,9 +303,16 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       {
         item->close();
       }
+      wipe_indexes();
 #endif
       _is_open = false;
     }
+  }
+
+  void database::wipe_indexes()
+  {
+    _index_list.clear();
+    _index_map.clear();
   }
 
   void database::wipe( const bfs::path& dir )
@@ -314,16 +324,17 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     bfs::remove_all( dir / "shared_memory.bin" );
     bfs::remove_all( dir / "shared_memory.meta" );
     _data_dir = bfs::path();
-    _index_list.clear();
-    _index_map.clear();
+
+    wipe_indexes();
+
 #else
     for( auto& item : _index_list )
     {
       item->wipe( dir );
     }
 
-    _index_list.clear();
-    _index_map.clear();
+    wipe_indexes();
+
     _index_types.clear();
 #endif
   }
@@ -339,8 +350,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
     open( _data_dir, 0, new_shared_file_size );
 
-    _index_list.clear();
-    _index_map.clear();
+    wipe_indexes();
 
     for( auto& index_type : _index_types )
     {

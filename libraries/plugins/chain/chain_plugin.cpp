@@ -87,7 +87,7 @@ class chain_plugin_impl
     bool check_data_consistency( bool before_snapshot_activities );
     bool open();
     bool replay_blockchain();
-    void work( synchronization_type& on_sync );
+    bool work( synchronization_type& on_sync );
 
     void write_default_database_config( bfs::path& p );
 
@@ -134,6 +134,7 @@ class chain_plugin_impl
     get_indexes_memory_details_type     get_indexes_memory_details;
 
     state_snapshot_provider*            snapshot_provider = nullptr;
+    bool                                snapshot_loaded = false;
     bool                                is_p2p_enabled = true;
 };
 
@@ -329,8 +330,6 @@ void chain_plugin_impl::stop_write_processing()
 
 void chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
 {
-  FC_ASSERT( replay, "Replaying is not enabled" );
-
   bool replay_is_last_operation = replay_blockchain();
 
   if( replay_is_last_operation )
@@ -480,7 +479,7 @@ bool chain_plugin_impl::check_data_consistency( bool before_snapshot_activities 
 
   if( !_execute_check )
   {
-    wlog( "Data consistency checking was deferred due to the snapshot." );
+    ilog( "Data consistency checking was deferred due to the snapshot." );
     return true;
   }
 
@@ -491,8 +490,15 @@ bool chain_plugin_impl::check_data_consistency( bool before_snapshot_activities 
 
   if( !_is_reindex_complete )
   {
-    wlog( "Replaying is not finished. Synchronization is not allowed. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
-    appbase::app().generate_interrupt_request();
+    if( snapshot_provider && snapshot_provider->is_immediate_activity() )
+    {
+      wlog( "Replaying has to be forced, after snapshot's loading. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+    }
+    else
+    {
+      wlog( "Replaying is not finished. Synchronization is not allowed. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+      appbase::app().generate_interrupt_request();
+    }
     return false;
   }
 
@@ -559,14 +565,16 @@ bool chain_plugin_impl::replay_blockchain()
   return true;
 }
 
-void chain_plugin_impl::work( synchronization_type& on_sync )
+bool chain_plugin_impl::work( synchronization_type& on_sync )
 {
   if(snapshot_provider != nullptr)
   {
-    snapshot_provider->process_explicit_snapshot_requests(db_open_args);
+    if( !snapshot_loaded )
+      snapshot_provider->process_explicit_snapshot_requests(db_open_args);
+    snapshot_loaded = true;
 
     if( !check_data_consistency( false/*before_snapshot_activities*/ ) )
-      return;
+      return false;
   }
 
   ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
@@ -574,6 +582,8 @@ void chain_plugin_impl::work( synchronization_type& on_sync )
   on_sync();
 
   start_write_processing();
+
+  return true;
 }
 
 void chain_plugin_impl::write_default_database_config( bfs::path &p )
@@ -745,7 +755,13 @@ void chain_plugin::plugin_startup()
   else
   {
     if( my->open() )
-      my->work( on_sync );
+    {
+      if( !my->work( on_sync ) )
+      {
+        //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
+        my->start_replay_processing( on_sync );
+      }
+    }
   }
 }
 
