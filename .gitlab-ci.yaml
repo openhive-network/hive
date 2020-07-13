@@ -236,7 +236,6 @@ development_chain_test:
     - merge_request
     - 0.24.0
     - schedules
-  environment: development_testnet
 
 development_plugin_test:
   needs:
@@ -248,7 +247,6 @@ development_plugin_test:
     - merge_request
     - 0.24.0
     - schedules
-  environment: development_testnet
 
 development_beem_dhf_test:
   needs:
@@ -260,14 +258,12 @@ development_beem_dhf_test:
     - merge_request
     - 0.24.0
     - schedules
-  environment: development_testnet
 
 development_list_proposals_tests:
   needs:
     - job: testnet_node_development_build
       artifacts: true
   <<: *listproposalstests
-  environment: development_testnet
 
 develompment_hived_options_tests:
   needs:
@@ -279,7 +275,6 @@ develompment_hived_options_tests:
     - merge_request
     - 0.24.0
     - schedules
-  environment: development_testnet
 
 
 #======================STAGING=======================
@@ -293,7 +288,6 @@ staging_chain_test:
     - merge_request
     - 0.24.0
     - schedules
-  environment: staging
 
 staging_plugin_test:
   needs:
@@ -305,7 +299,6 @@ staging_plugin_test:
     - merge_request
     - 0.24.0
     - schedules
-  environment: staging
 
 staging_beem_dhf_test:
   needs:
@@ -317,7 +310,6 @@ staging_beem_dhf_test:
     - merge_request
     - 0.24.0
     - schedules
-  environment: staging
 
 staging_list_proposals_tests:
   needs:
@@ -329,7 +321,6 @@ staging_list_proposals_tests:
     - merge_request
     - 0.24.0
     - schedules
-  environment: staging
 
 staging_hived_options_tests:
   needs:
@@ -341,7 +332,6 @@ staging_hived_options_tests:
     - merge_request
     - 0.24.0
     - schedules
-  environment: staging
 
 replay-test:
   stage: test
@@ -372,7 +362,6 @@ replay-test:
     expire_in: 6 months
   after_script: 
     - rm -rf ./replay
-  environment: development_consensus
 #  only:
 #    - master
 #    - merge_request
