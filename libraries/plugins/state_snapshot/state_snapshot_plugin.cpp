@@ -831,7 +831,17 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       bool                    _do_immediate_load = false;
       bool                    _do_immediate_dump = false;
       bool                    _allow_concurrency = true;
+
+    public:
+
+      virtual bool is_immediate_activity() const override;
+     
   };
+
+bool state_snapshot_plugin::impl::is_immediate_activity() const
+{
+  return _do_immediate_load || _do_immediate_dump;
+}
 
 void state_snapshot_plugin::impl::collectOptions(const bpo::variables_map& options)
   {

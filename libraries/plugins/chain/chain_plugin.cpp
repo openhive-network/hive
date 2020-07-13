@@ -84,6 +84,7 @@ class chain_plugin_impl
     void start_replay_processing( synchronization_type& on_sync );
 
     void initial_settings();
+    bool check_data_consistency( bool before_snapshot_activities );
     bool open();
     bool replay_blockchain();
     void work( synchronization_type& on_sync );
@@ -467,6 +468,37 @@ void chain_plugin_impl::initial_settings()
   db_open_args.benchmark = hive::chain::TBenchmark( benchmark_interval, benchmark_lambda );
 }
 
+bool chain_plugin_impl::check_data_consistency( bool before_snapshot_activities )
+{
+  bool _execute_check = true;
+
+  if( before_snapshot_activities )
+  {
+    if( snapshot_provider && snapshot_provider->is_immediate_activity() )
+      _execute_check = false;
+  }
+
+  if( !_execute_check )
+  {
+    wlog( "Data consistency checking was deferred due to the snapshot." );
+    return true;
+  }
+
+  uint64_t head_block_num_origin = 0;
+  uint64_t head_block_num_state = 0;
+
+  auto _is_reindex_complete = db.is_reindex_complete( &head_block_num_origin, &head_block_num_state );
+
+  if( !_is_reindex_complete )
+  {
+    wlog( "Replaying is not finished. Synchronization is not allowed. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+    appbase::app().generate_interrupt_request();
+    return false;
+  }
+
+  return true;
+}
+
 bool chain_plugin_impl::open()
 {
   try
@@ -478,17 +510,9 @@ bool chain_plugin_impl::open()
     if( dump_memory_details )
       dumper.dump( true, get_indexes_memory_details );
 
-    uint64_t head_block_num_origin = 0;
-    uint64_t head_block_num_state = 0;
-
-    auto _is_reindex_complete = db.is_reindex_complete( &head_block_num_origin, &head_block_num_state );
-
-    if( !_is_reindex_complete )
-    {
-      wlog( "Replaying is not finished. Synchronization is not allowed. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
-      appbase::app().generate_interrupt_request();
+    if( !check_data_consistency( true/*before_snapshot_activities*/ ) )
       return false;
-    }
+
   }
   catch( const fc::exception& e )
   {
@@ -538,7 +562,12 @@ bool chain_plugin_impl::replay_blockchain()
 void chain_plugin_impl::work( synchronization_type& on_sync )
 {
   if(snapshot_provider != nullptr)
+  {
     snapshot_provider->process_explicit_snapshot_requests(db_open_args);
+
+    if( !check_data_consistency( false/*before_snapshot_activities*/ ) )
+      return;
+  }
 
   ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
 
