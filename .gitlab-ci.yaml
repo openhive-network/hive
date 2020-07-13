@@ -230,7 +230,7 @@ development_chain_test:
   variables:
     SOURCE_NODE: testnet_node_development_build
   needs:
-    - job: $SOURCE_NODE
+    - job: testnet_node_development_build
       artifacts: true
   <<: *chaintest
   except:
@@ -243,7 +243,7 @@ development_plugin_test:
   variables:
     SOURCE_NODE: testnet_node_development_build
   needs:
-    - job: $SOURCE_NODE
+    - job: testnet_node_development_build
       artifacts: true
   <<: *plugintest
   except:
@@ -256,7 +256,7 @@ development_beem_dhf_test:
   variables:
     SOURCE_NODE: testnet_node_development_build
   needs:
-    - job: $SOURCE_NODE
+    - job: testnet_node_development_build
       artifacts: true
   <<: *beemdhftest
   except:
@@ -269,7 +269,7 @@ development_list_proposals_tests:
   variables:
     SOURCE_NODE: testnet_node_development_build
   needs:
-    - job: $SOURCE_NODE
+    - job: testnet_node_development_build
       artifacts: true
   <<: *listproposalstests
 
@@ -277,7 +277,7 @@ develompment_hived_options_tests:
   variables:
     SOURCE_NODE: testnet_node_development_build
   needs:
-    - job: $SOURCE_NODE
+    - job: testnet_node_development_build
       artifacts: true
   <<: *hivedoptstest
   except:
@@ -292,7 +292,7 @@ staging_chain_test:
   variables:
     SOURCE_NODE: testnet_node_staging_build
   needs:
-    - job: $SOURCE_NODE
+    - job: testnet_node_staging_build
       artifacts: true
   <<: *chaintest
   only:
@@ -305,7 +305,7 @@ staging_plugin_test:
   variables:
     SOURCE_NODE: testnet_node_staging_build
   needs:
-    - job: $SOURCE_NODE
+    - job: testnet_node_staging_build
       artifacts: true
   <<: *plugintest
   only:
@@ -318,7 +318,7 @@ staging_beem_dhf_test:
   variables:
     SOURCE_NODE: testnet_node_staging_build
   needs:
-    - job: $SOURCE_NODE
+    - job: testnet_node_staging_build
       artifacts: true
   <<: *beemdhftest
   only:
@@ -331,7 +331,7 @@ staging_list_proposals_tests:
   variables:
     SOURCE_NODE: testnet_node_staging_build
   needs:
-    - job: $SOURCE_NODE
+    - job: testnet_node_staging_build
       artifacts: true
   <<: *listproposalstests
   only:
@@ -344,7 +344,7 @@ staging_hived_options_tests:
   variables:
     SOURCE_NODE: testnet_node_staging_build
   needs:
-    - job: $SOURCE_NODE
+    - job: testnet_node_staging_build
       artifacts: true
   <<: *hivedoptstest
   only:
