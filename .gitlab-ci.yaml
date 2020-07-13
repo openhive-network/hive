@@ -143,11 +143,20 @@ variables:
   image: docker:19.03.11
   services:
     - docker:19.03.11-dind
+  variables:
+    DOCKER_BUILDKIT: 1
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: "/certs"
   script:
     - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
-    - "docker build -f ciscripts/Dockerfile.ci --target=$TARGET --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA ."
-    - "docker push $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA"
-    - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA"
+    - "docker build -f ciscripts/Dockerfile.ci --target=consensus_node --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA ."
+    - "docker push $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA"
+    - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA"
+
+#    - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
+#    - "docker build -f ciscripts/Dockerfile.ci --target=$TARGET --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA ."
+#    - "docker push $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA"
+#    - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA"
   tags:
     - public-runner-docker
 
@@ -354,6 +363,7 @@ replay-test:
   script:
     - mkdir ./replay 
     - mkdir ./replay/blockchain
+    - find ../../../ -name "replay.sh"
     - cp ./consensus_development_build/install-root/bin/hived ./replay
     - cp ./consensus_development_build/install-root/bin/cli_wallet ./replay
     - cp ./consensus_development_build/config-for-docker.ini ./replay
@@ -382,14 +392,8 @@ replay-test:
 
 #********************<PACKAGING>********************#
 #====================DEVELOPMENT=====================
-package_consensus_node:
+package_development_consensus_node:
   <<: *node_package
-  variables:
-    TARGET: consensus_development_build
-    TARGET_NAME: consensus development node
-    DOCKER_BUILDKIT: 1
-    DOCKER_DRIVER: overlay2
-    DOCKER_TLS_CERTDIR: "/certs"
   needs:
     - job: consensus_development_build
       artifacts: true
@@ -403,14 +407,8 @@ package_consensus_node:
     - public-runner-docker
 
 #======================STAGING=======================
-staging_package_consensus_node:
+package_staging_consensus_node:
   <<: *node_package
-  variables:
-    TARGET: consensus_staging_build
-    TARGET_NAME: consensus staging node
-    DOCKER_BUILDKIT: 1
-    DOCKER_DRIVER: overlay2
-    DOCKER_TLS_CERTDIR: "/certs"
   needs:
     - job: consensus_staging_build
       artifacts: true
