@@ -141,14 +141,13 @@ variables:
 .packaging_nodes_template: &node_package
   stage: package
   image: docker:19.03.11
-  resource_group: $CI_ENVIRONMENT_NAME_consensus
   services:
     - docker:19.03.11-dind
   script:
     - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
-    - "docker build -f ciscripts/Dockerfile.ci --target=$CI_JOB_NAME --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/$CI_JOB_NAME:$CI_COMMIT_SHORT_SHA ."
-    - "docker push $CI_REGISTRY_IMAGE/$CI_JOB_NAME:$CI_COMMIT_SHORT_SHA"
-    - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/$CI_JOB_NAME:$CI_COMMIT_SHORT_SHA"
+    - "docker build -f ciscripts/Dockerfile.ci --target=$TARGET --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA ."
+    - "docker push $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA"
+    - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_SHORT_SHA"
   tags:
     - public-runner-docker
 
@@ -360,7 +359,6 @@ replay-test:
     - cp ./consensus_development_build/config-for-docker.ini ./replay
     - mv ./replay/config-for-docker.ini ./replay/config.ini
     - cp ./consensus_development_build/install-root/bin/truncate_block_log ./replay
-    - ls ./ciscripts
     - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
     - ./replay/hived --replay-blockchain --set-benchmark-interval 1000000 --stop-replay-at-block $STOP_REPLAY_AT --exit-after-replay --advanced-benchmark --dump-memory-details  -d ./replay --shared-file-dir ./replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
     #- ../ciscripts/replay.sh 100000 1000000 #benchmark interval = 1000000 / stop replay at block $STOP_REPLAY_AT
@@ -389,6 +387,9 @@ package_consensus_node:
   variables:
     TARGET: consensus_development_build
     TARGET_NAME: consensus development node
+    DOCKER_BUILDKIT: 1
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: "/certs"
   needs:
     - job: consensus_development_build
       artifacts: true
