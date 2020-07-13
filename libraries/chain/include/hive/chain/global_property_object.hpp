@@ -74,17 +74,27 @@ namespace hive { namespace chain {
         */
       uint32_t num_pow_witnesses = 0;
 
-      HIVE_asset  virtual_supply             = HIVE_asset( 0 );
-      HIVE_asset  current_supply             = HIVE_asset( 0 );
-      HBD_asset   init_hbd_supply            = HBD_asset( 0 );
-      HBD_asset   current_hbd_supply         = HBD_asset( 0 );
-      HIVE_asset  total_vesting_fund_hive    = HIVE_asset( 0 );
-      VEST_asset  total_vesting_shares       = VEST_asset( 0 );
-      HIVE_asset  total_reward_fund_hive     = HIVE_asset( 0 );
+      HIVE_asset  virtual_supply;
+      HIVE_asset  current_supply;
+      HBD_asset   init_hbd_supply;
+      HBD_asset   current_hbd_supply;
+      HIVE_asset  total_vesting_fund_hive;
+      VEST_asset  total_vesting_shares;
+      HIVE_asset  total_reward_fund_hive;
       fc::uint128 total_reward_shares2; ///< the running total of REWARD^2
-      VEST_asset  pending_rewarded_vesting_shares = VEST_asset( 0 );
-      HIVE_asset  pending_rewarded_vesting_hive   = HIVE_asset( 0 );
+      VEST_asset  pending_rewarded_vesting_shares;
+      HIVE_asset  pending_rewarded_vesting_hive;
 
+      VEST_asset  calculate_vesting( const HIVE_asset& value ) const
+      {
+        auto vests = value.to_asset() * get_vesting_share_price();
+        return to_VEST( vests );
+      }
+      HIVE_asset  calculate_vesting( const VEST_asset& value ) const
+      {
+        auto hive = value.to_asset() * get_vesting_share_price();
+        return to_HIVE( hive );
+      }
       price       get_vesting_share_price() const
       {
         if ( total_vesting_fund_hive.amount == 0 || total_vesting_shares.amount == 0 )
@@ -93,6 +103,16 @@ namespace hive { namespace chain {
         return price( total_vesting_shares.to_asset(), total_vesting_fund_hive.to_asset() );
       }
 
+      VEST_asset  calculate_reward_vesting( const HIVE_asset& value ) const
+      {
+        auto vests = value.to_asset() * get_reward_vesting_share_price();
+        return to_VEST( vests );
+      }
+      HIVE_asset  calculate_reward_vesting( const VEST_asset& value ) const
+      {
+        auto hive = value.to_asset() * get_reward_vesting_share_price();
+        return to_HIVE( hive );
+      }
       price get_reward_vesting_share_price() const
       {
         return price( ( total_vesting_shares + pending_rewarded_vesting_shares ).to_asset(),
@@ -164,12 +184,12 @@ namespace hive { namespace chain {
       uint16_t vesting_reward_percent = HIVE_VESTING_FUND_PERCENT_HF16;
       uint16_t sps_fund_percent = HIVE_PROPOSAL_FUND_PERCENT_HF0;
 
-      HBD_asset sps_interval_ledger = HBD_asset( 0 );
+      HBD_asset sps_interval_ledger;
 
       uint16_t downvote_pool_percent = 0;
 
 #ifdef HIVE_ENABLE_SMT
-      HBD_asset smt_creation_fee = HBD_asset( 1000 );
+      asset smt_creation_fee = asset( 1000, HBD_SYMBOL ); //can be HIVE or HBD
 #endif
     CHAINBASE_UNPACK_CONSTRUCTOR(dynamic_global_property_object);
   };

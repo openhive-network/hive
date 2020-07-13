@@ -164,7 +164,7 @@ namespace hive { namespace chain {
         * If returns `false`, then opening a node should be forbidden.
         *
         * There are output-type arguments: `head_block_num_origin`, `head_block_num_state` for information purposes only.
-        * 
+        *
         * @return information if replaying was finished
         */
       bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
@@ -232,10 +232,10 @@ namespace hive { namespace chain {
       const account_object&  get_treasury()const { return get_account( get_treasury_name() ); }
       /// Returns true for any account name that was ever a treasury account
       bool                   is_treasury( const account_name_type& name )const;
-      
+
       const account_object&  get_account(  const account_id_type      id )const;
       const account_object*  find_account( const account_id_type&     id )const;
-      
+
       const account_object&  get_account(  const account_name_type& name )const;
       const account_object*  find_account( const account_name_type& name )const;
 
@@ -418,14 +418,14 @@ namespace hive { namespace chain {
       uint32_t get_slot_at_time(fc::time_point_sec when)const;
 
       /** @return the HBD created and deposited to_account, may return HIVE if there is no median feed */
-      std::pair< asset, asset > create_hbd( const account_object& to_account, asset hive, bool to_reward_balance=false );
+      std::pair< HBD_asset, HIVE_asset > create_hbd( const account_object& to_account, const HIVE_asset& hive, bool to_reward_balance=false );
 
-      using Before = std::function< void( const VEST_asset& ) >;
-      VEST_asset adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
+      using Before = std::function< void( const asset& ) >;
+      asset adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
 
-      VEST_asset create_vesting( const account_object& to_account, const asset& hive, bool to_reward_balance=false );
+      void create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance=false );
 
-      void adjust_total_payout( const comment_cashout_object& a, const asset& hbd, const asset& curator_hbd_value, const asset& beneficiary_value );
+      void adjust_total_payout( const comment_cashout_object& a, const HBD_asset& hbd, const HBD_asset& curator_hbd_value, const HBD_asset& beneficiary_value );
 
       void adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_hbd );
 
@@ -444,20 +444,25 @@ namespace hive { namespace chain {
       {
         adjust_balance( get_account( name ), delta );
       }
-      void adjust_balance( const account_object& a, const VEST_asset& delta );
-      void adjust_balance( const account_name_type& name, const VEST_asset& delta )
-      {
-        adjust_balance( get_account( name ), delta );
-      }
 
       void adjust_savings_balance( const account_object& a, const asset& delta );
       void adjust_savings_balance( const account_object& a, const HBD_asset& delta );
       void adjust_savings_balance( const account_object& a, const HIVE_asset& delta );
 
-      void adjust_reward_balance( const account_object& a, const asset& value_delta, const VEST_asset& share_delta = VEST_asset(0) );
-      void adjust_reward_balance( const account_name_type& name, const asset& value_delta, const VEST_asset& share_delta = VEST_asset(0) )
+      void adjust_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) );
+      void adjust_reward_balance( const account_name_type& name, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) )
       {
         adjust_reward_balance( get_account( name ), value_delta, share_delta );
+      }
+      void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta = VEST_asset(0) );
+      void adjust_reward_balance( const account_name_type& name, const HIVE_asset& value_delta, const VEST_asset& share_delta = VEST_asset(0) )
+      {
+        adjust_reward_balance( get_account( name ), value_delta, share_delta );
+      }
+      void adjust_reward_balance( const account_object& a, const HBD_asset& value_delta );
+      void adjust_reward_balance( const account_name_type& name, const HBD_asset& value_delta )
+      {
+        adjust_reward_balance( get_account( name ), value_delta );
       }
 
       void adjust_supply( const asset& delta, bool adjust_vesting = false );
@@ -493,8 +498,8 @@ namespace hive { namespace chain {
         */
       void clear_witness_votes( const account_object& a );
       void process_vesting_withdrawals();
-      share_type pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout, share_type& max_rewards );
-      share_type cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment, const comment_cashout_object& comment_cashout, bool forward_curation_remainder = true );
+      HIVE_asset pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout, HIVE_asset& max_rewards );
+      HIVE_asset cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment, const comment_cashout_object& comment_cashout, bool forward_curation_remainder = true );
       void process_comment_cashout();
       void process_funds();
       void process_conversions();
@@ -505,15 +510,15 @@ namespace hive { namespace chain {
       void process_decline_voting_rights();
       void update_median_feed();
 
-      asset get_liquidity_reward()const;
-      asset get_content_reward()const;
-      asset get_producer_reward();
-      asset get_curation_reward()const;
-      asset get_pow_reward()const;
+      HIVE_asset get_liquidity_reward()const;
+      HIVE_asset get_content_reward()const;
+      HIVE_asset get_producer_reward();
+      HIVE_asset get_curation_reward()const;
+      HIVE_asset get_pow_reward()const;
 
       uint16_t get_curation_rewards_percent() const;
 
-      share_type pay_reward_funds( const share_type& reward );
+      HIVE_asset pay_reward_funds( const HIVE_asset& reward );
 
       void  pay_liquidity_reward();
 
@@ -521,8 +526,8 @@ namespace hive { namespace chain {
         * Helper method to return the current HBD value of a given amount of
         * HIVE.  Return 0 HBD if there isn't a current_median_history
         */
-      asset to_hbd( const asset& hive )const;
-      asset to_hive( const asset& hbd )const;
+      HBD_asset to_hbd( const HIVE_asset& hive )const;
+      HIVE_asset to_hive( const HBD_asset& hbd )const;
 
       time_point_sec   head_block_time()const;
       uint32_t         head_block_num()const;
@@ -543,7 +548,7 @@ namespace hive { namespace chain {
       void resetState(const open_args& args);
 
       void init_schema();
-      void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
+      void init_genesis( const HIVE_asset& initial_supply, const HBD_asset& hbd_initial_supply );
 
       /**
         *  This method validates transactions without adding it to the pending state.
@@ -678,13 +683,6 @@ namespace hive { namespace chain {
       template< typename smt_balance_object_type, typename modifier_type >
       void adjust_smt_balance( const account_object& owner, const asset& delta, modifier_type&& modifier );
 #endif
-      void modify_balance( const account_object& a, const asset& delta, bool check_balance );
-      void modify_balance( const account_object& a, const HBD_asset& delta, bool check_balance );
-      void modify_balance( const account_object& a, const HIVE_asset& delta, bool check_balance );
-      void modify_balance( const account_object& a, const VEST_asset& delta, bool check_balance );
-      void modify_reward_balance( const account_object& a, const asset& value_delta, const VEST_asset& share_delta, bool check_balance );
-      void modify_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta, bool check_balance );
-      void modify_reward_balance( const account_object& a, const HBD_asset& value_delta, bool check_balance );
 
       operation_notification create_operation_notification( const operation& op )const
       {

@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
   {
     BOOST_TEST_MESSAGE( "After HF24 even if steem.dao gets some funds they will be transfered to new treasury account" );
     generate_block();
-    
+
     //instead of trying to find a way to fund various balances of steem.dao, just write to them directly
     asset vested_3, vested_7;
     db_plugin->debug_update( [&]( database& db )
@@ -261,12 +261,12 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       db.create_vesting( old_treasury, ASSET( "3.000 TESTS" ), true );
       db.modify( old_treasury, [&]( account_object& t )
       {
-        t.balance = ASSET( "5.000 TESTS" );
-        t.savings_balance = ASSET( "3.000 TESTS" );
-        t.reward_hive_balance = ASSET( "2.000 TESTS" );
-        t.hbd_balance = ASSET( "5.000 TBD" );
-        t.savings_hbd_balance = ASSET( "3.000 TBD" );
-        t.reward_hbd_balance = ASSET( "2.000 TBD" );
+        t.balance = to_HIVE( ASSET( "5.000 TESTS" ) );
+        t.savings_balance = to_HIVE( ASSET( "3.000 TESTS" ) );
+        t.reward_hive_balance = to_HIVE( ASSET( "2.000 TESTS" ) );
+        t.hbd_balance = to_HBD( ASSET( "5.000 TBD" ) );
+        t.savings_hbd_balance = to_HBD( ASSET( "3.000 TBD" ) );
+        t.reward_hbd_balance = to_HBD( ASSET( "2.000 TBD" ) );
       } );
     } );
     database_fixture::validate_database();

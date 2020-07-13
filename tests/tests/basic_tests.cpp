@@ -30,13 +30,11 @@
 #include <hive/protocol/protocol.hpp>
 
 #include <hive/protocol/hive_operations.hpp>
-#include <hive/protocol/types.hpp>
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/sps_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
-#include <hive/chain/util/tiny_asset.hpp>
 
 #include <hive/chain/util/reward.hpp>
 
@@ -47,7 +45,6 @@
 
 #include <algorithm>
 #include <random>
-#include <ostream>
 
 using namespace hive;
 using namespace hive::chain;
@@ -365,17 +362,6 @@ BOOST_AUTO_TEST_CASE( adjust_balance_asset_test )
   db->adjust_balance( "alice", asset( -25000, HBD_SYMBOL ) );
   db->adjust_balance( "alice", asset( -25000, HBD_SYMBOL ) );
   BOOST_REQUIRE( db->get_balance( "alice", HBD_SYMBOL ) == asset( 0, HBD_SYMBOL ) );
-
-  auto initial_vesting = db->get_account( "alice" ).get_vesting();
-
-  BOOST_TEST_MESSAGE( " --- Testing adding VEST_SYMBOL" );
-  ilog( " --- Testing adding VEST_SYMBOL" );
-  BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting );
-  db->adjust_balance( "alice", asset( 100000, VESTS_SYMBOL ) );
-  BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting + VEST_asset( 100000 ) );
-
-  BOOST_TEST_MESSAGE( " --- Testing deducting VESTS_SYMBOL" );
-  HIVE_REQUIRE_THROW( db->adjust_balance( "alice", asset( -1, VESTS_SYMBOL ) ), fc::assert_exception );
 }
 
 BOOST_AUTO_TEST_CASE( adjust_balance_tiny_asset_test )
@@ -406,16 +392,6 @@ BOOST_AUTO_TEST_CASE( adjust_balance_tiny_asset_test )
   db->adjust_balance( "alice", HBD_asset( -25000 ) );
   db->adjust_balance( "alice", HBD_asset( -25000 ) );
   BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
-
-  auto initial_vesting = db->get_account( "alice" ).get_vesting();
-
-  BOOST_TEST_MESSAGE( " --- Testing adding VEST_SYMBOL" );
-  BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting );
-  db->adjust_balance( "alice", VEST_asset( 100000 ) );
-  BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting(), initial_vesting + VEST_asset( 100000 ) );
-
-  BOOST_TEST_MESSAGE( " --- Testing deducting VESTS_SYMBOL" );
-  HIVE_REQUIRE_THROW( db->adjust_balance( "alice", VEST_asset( -1 ) ), fc::assert_exception );
 }
 
 BOOST_AUTO_TEST_CASE( tiny_asset_plus_op )
@@ -423,8 +399,8 @@ BOOST_AUTO_TEST_CASE( tiny_asset_plus_op )
   share_type lhs_amount = 1000;
   share_type rhs_amount = 2000;
   share_type total_amount = lhs_amount + rhs_amount;
-  HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
-  HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
+  HIVE_asset lhs( lhs_amount );
+  HIVE_asset rhs( rhs_amount );
   HIVE_asset result = lhs + rhs;
   BOOST_REQUIRE(result.amount == total_amount);
 }
@@ -434,9 +410,42 @@ BOOST_AUTO_TEST_CASE( tiny_asset_minus_op )
   share_type lhs_amount = 2500;
   share_type rhs_amount = 500;
   share_type total_amount = lhs_amount - rhs_amount;
-  HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
-  HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
+  HIVE_asset lhs( lhs_amount );
+  HIVE_asset rhs( rhs_amount );
   HIVE_asset result = lhs - rhs;
+  BOOST_REQUIRE(result.amount == total_amount);
+}
+
+BOOST_AUTO_TEST_CASE( tiny_asset_mul_op )
+{
+  share_type lhs_amount = 123;
+  share_type rhs_amount = 456;
+  share_type total_amount = lhs_amount * rhs_amount;
+  HIVE_asset lhs( lhs_amount );
+  HIVE_asset rhs( rhs_amount );
+  HIVE_asset result1 = lhs * rhs_amount;
+  HIVE_asset result2 = lhs_amount * rhs;
+  BOOST_REQUIRE(result1.amount == total_amount);
+  BOOST_REQUIRE(result2.amount == total_amount);
+}
+
+BOOST_AUTO_TEST_CASE( tiny_asset_div_op )
+{
+  share_type lhs_amount = 1234;
+  share_type rhs_amount = 500;
+  share_type total_amount = lhs_amount / rhs_amount;
+  HIVE_asset lhs( lhs_amount );
+  HIVE_asset result = lhs / rhs_amount;
+  BOOST_REQUIRE(result.amount == total_amount);
+}
+
+BOOST_AUTO_TEST_CASE( tiny_asset_mod_op )
+{
+  share_type lhs_amount = 1234;
+  share_type rhs_amount = 500;
+  share_type total_amount = lhs_amount % rhs_amount;
+  HIVE_asset lhs( lhs_amount );
+  HIVE_asset result = lhs % rhs_amount;
   BOOST_REQUIRE(result.amount == total_amount);
 }
 
@@ -445,8 +454,8 @@ BOOST_AUTO_TEST_CASE( tiny_asset_plus_assign_op )
   share_type lhs_amount = 2500;
   share_type rhs_amount = 500;
   share_type total_amount = lhs_amount + rhs_amount;
-  HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
-  HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
+  HIVE_asset lhs( lhs_amount );
+  HIVE_asset rhs( rhs_amount );
   lhs += rhs;
   BOOST_REQUIRE(lhs.amount == total_amount);
 }
@@ -456,16 +465,46 @@ BOOST_AUTO_TEST_CASE( tiny_asset_minus_assign_op )
   share_type lhs_amount = 2500;
   share_type rhs_amount = 500;
   share_type total_amount = lhs_amount - rhs_amount;
-  HIVE_asset lhs = asset( lhs_amount, HIVE_SYMBOL );
-  HIVE_asset rhs = asset( rhs_amount, HIVE_SYMBOL );
+  HIVE_asset lhs( lhs_amount );
+  HIVE_asset rhs( rhs_amount );
   lhs -= rhs;
+  BOOST_REQUIRE(lhs.amount == total_amount);
+}
+
+BOOST_AUTO_TEST_CASE( tiny_asset_mul_assign_op )
+{
+  share_type lhs_amount = 123;
+  share_type rhs_amount = 456;
+  share_type total_amount = lhs_amount * rhs_amount;
+  HIVE_asset lhs( lhs_amount );
+  lhs *= rhs_amount;
+  BOOST_REQUIRE(lhs.amount == total_amount);
+}
+
+BOOST_AUTO_TEST_CASE( tiny_asset_div_assign_op )
+{
+  share_type lhs_amount = 1234;
+  share_type rhs_amount = 500;
+  share_type total_amount = lhs_amount / rhs_amount;
+  HIVE_asset lhs( lhs_amount );
+  lhs /= rhs_amount;
+  BOOST_REQUIRE(lhs.amount == total_amount);
+}
+
+BOOST_AUTO_TEST_CASE( tiny_asset_mod_assign_op )
+{
+  share_type lhs_amount = 1234;
+  share_type rhs_amount = 500;
+  share_type total_amount = lhs_amount % rhs_amount;
+  HIVE_asset lhs( lhs_amount );
+  lhs %= rhs_amount;
   BOOST_REQUIRE(lhs.amount == total_amount);
 }
 
 BOOST_AUTO_TEST_CASE( tiny_asset_compare_ops )
 {
-  HIVE_asset bigger = asset(1000, HIVE_SYMBOL);
-  HIVE_asset lower = asset(500, HIVE_SYMBOL);
+  HIVE_asset bigger( 1000 );
+  HIVE_asset lower( 500 );
   BOOST_CHECK_GT(bigger, lower);
   BOOST_CHECK_GE(bigger, lower);
   BOOST_CHECK_LE(lower, bigger);
@@ -478,22 +517,11 @@ BOOST_AUTO_TEST_CASE( tiny_asset_compare_ops )
 
 BOOST_AUTO_TEST_CASE( tiny_asset_equality_op )
 {
-  HIVE_asset objA = asset(1000, HIVE_SYMBOL);
-  HIVE_asset objB = asset(1000, HIVE_SYMBOL);
-  HIVE_asset objX = asset(500, HIVE_SYMBOL);
+  HIVE_asset objA( 1000 );
+  HIVE_asset objB( 1000 );
+  HIVE_asset objX( 500 );
   BOOST_CHECK_EQUAL(objA, objB);
   BOOST_CHECK_NE(objA, objX);
-}
-
-BOOST_AUTO_TEST_CASE( tiny_asset_mul_price )
-{
-  auto base = asset(1500, HIVE_SYMBOL);
-  auto quote = asset(3000, HBD_SYMBOL);
-  auto p = price(base, quote);
-  auto hbds = HBD_asset(1000);
-  auto hives = HIVE_asset(1000);
-  BOOST_CHECK_EQUAL(hbds * p, asset(500, HIVE_SYMBOL));
-  BOOST_CHECK_EQUAL(hives * p, asset(2000, HBD_SYMBOL));
 }
 
 uint8_t find_msb( const uint128_t& u )
@@ -616,14 +644,14 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
 #ifdef HIVE_ENABLE_SMT
     + 32
 #endif
-  ); 
+  );
   BOOST_CHECK_EQUAL( sizeof( comment_vote_object ), 48 ); //at most <7d> of votes on unpaid comments
-  BOOST_CHECK_EQUAL( sizeof( convert_request_object ), 56 ); //at most <3.5d> of conversion requests
+  BOOST_CHECK_EQUAL( sizeof( convert_request_object ), 48 ); //at most <3.5d> of conversion requests
   BOOST_CHECK_EQUAL( sizeof( escrow_object ), 104 ); //small but potentially lasting forever, limited to 255*account_object
   BOOST_CHECK_EQUAL( sizeof( savings_withdraw_object ), 104 ); //at most <3d> of saving withdrawals
   BOOST_CHECK_EQUAL( sizeof( limit_order_object ), 80 ); //at most <28d> of limit orders
   BOOST_CHECK_EQUAL( sizeof( decline_voting_rights_request_object ), 32 ); //at most <30d> of decline requests
-  BOOST_CHECK_EQUAL( sizeof( proposal_object ), 144 ); //potentially infinite, but costs a lot to make (especially after HF24)
+  BOOST_CHECK_EQUAL( sizeof( proposal_object ), 136 ); //potentially infinite, but costs a lot to make (especially after HF24)
   BOOST_CHECK_EQUAL( sizeof( proposal_vote_object ), 32 ); //potentially infinite, but limited by account_object and time of proposal_object life
 
   //singletons (size only affects performance, especially with MIRA)

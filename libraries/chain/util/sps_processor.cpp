@@ -113,69 +113,30 @@ void sps_processor::sort_by_votes( t_proposals& proposals )
   } );
 }
 
-asset sps_processor::get_treasury_fund()
+HBD_asset sps_processor::get_treasury_fund() const
 {
   auto& treasury_account = db.get_treasury();
 
-  return treasury_account.get_hbd_balance().to_asset();
+  return treasury_account.get_hbd_balance();
 }
 
-asset sps_processor::get_daily_inflation()
-{
-  FC_TODO( "to invent how to get inflation needed for HIVE_TREASURY_ACCOUNT" )
-  return asset( 0, HBD_SYMBOL );
-}
-
-asset sps_processor::calculate_maintenance_budget( const time_point_sec& head_time )
+HBD_asset sps_processor::calculate_maintenance_budget( const time_point_sec& head_time )
 {
   //Get funds from 'treasury' account ( treasury_fund )
-  asset treasury_fund = get_treasury_fund();
-
-  //Get daily proposal inflation ( daily_proposal_inflation )
-  asset daily_inflation = get_daily_inflation();
-
-  FC_ASSERT( treasury_fund.symbol == daily_inflation.symbol, "symbols must be the same" );
+  HBD_asset treasury_fund = get_treasury_fund();
 
   //Calculate budget for given maintenance period
   uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().last_budget_time ).to_seconds();
 
   //Calculate daily_budget_limit
-  int64_t daily_budget_limit = treasury_fund.amount.value / total_amount_divider + daily_inflation.amount.value;
+  int64_t daily_budget_limit = treasury_fund.amount.value / total_amount_divider;
 
   daily_budget_limit = ( ( uint128_t( passed_time_seconds ) * daily_budget_limit ) / daily_seconds ).to_uint64();
 
-  //Transfer daily_proposal_inflation to `treasury account`
-  transfer_daily_inflation_to_treasury( daily_inflation );
-
-  return asset( daily_budget_limit, treasury_fund.symbol );
+  return HBD_asset( daily_budget_limit );
 }
 
-void sps_processor::transfer_daily_inflation_to_treasury( const asset& daily_inflation )
-{
-  /*
-    Now `daily_inflation` is always zero. Take a look at `get_daily_inflation`
-
-    Comment from Michael Vandeberg:
-
-      Is this printing new HBD?
-
-      That's not how we have handled inflation in the past.
-      Either inflation should be paid, per block,
-      in to the treasury account in database::process_funds or added to a temp fund in the dgpo
-      that is then transferred in to the treasury account during maintenance.
-  */
-  FC_TODO( "to choose how to transfer inflation into HIVE_TREASURY_ACCOUNT" )
-  // Ifdeffing this out so that no inflation is accidentally created on main net.
-#ifdef IS_TEST_NET
-  if( daily_inflation.amount.value > 0 )
-  {
-    const auto& treasury_account = db.get_treasury();
-    db.adjust_balance( treasury_account, daily_inflation );
-  }
-#endif
-}
-
-void sps_processor::transfer_payments( const time_point_sec& head_time, asset& maintenance_budget_limit, const t_proposals& proposals )
+void sps_processor::transfer_payments( const time_point_sec& head_time, HBD_asset& maintenance_budget_limit, const t_proposals& proposals )
 {
   if( maintenance_budget_limit.amount.value == 0 )
     return;
@@ -185,11 +146,12 @@ void sps_processor::transfer_payments( const time_point_sec& head_time, asset& m
   uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().last_budget_time ).to_seconds();
   uint128_t ratio = ( passed_time_seconds * HIVE_100_PERCENT ) / daily_seconds;
 
-  auto processing = [this, &treasury_account]( const proposal_object& _item, const asset& payment )
+  auto processing = [this, &treasury_account]( const proposal_object& _item, const HBD_asset& payment )
   {
     const auto& receiver_account = db.get_account( _item.receiver );
 
-    operation vop = proposal_pay_operation( _item.receiver, db.get_treasury_name(), payment, db.get_current_trx(), db.get_current_op_in_trx() );
+    operation vop = proposal_pay_operation( _item.receiver, db.get_treasury_name(), payment.to_asset(),
+      db.get_current_trx(), db.get_current_op_in_trx() );
     /// Push vop to be recorded by other parts (like AH plugin etc.)
     db.push_virtual_operation(vop);
     /// Virtual ops have no evaluators, so operation must be immediately "evaluated"
@@ -205,7 +167,7 @@ void sps_processor::transfer_payments( const time_point_sec& head_time, asset& m
     if( _item.total_votes == 0 )
       break;
 
-    asset period_pay = asset( ( ratio * _item.daily_pay.amount.value ).to_uint64() / HIVE_100_PERCENT, _item.daily_pay.symbol );
+    HBD_asset period_pay( ( ratio * _item.daily_pay.amount.value ).to_uint64() / HIVE_100_PERCENT );
 
     if( period_pay >= maintenance_budget_limit )
     {
@@ -280,7 +242,7 @@ void sps_processor::make_payments( const block_notification& note )
   sort_by_votes( active_proposals );
 
   //Calculate budget for given maintenance period
-  asset maintenance_budget_limit = calculate_maintenance_budget( head_time );
+  HBD_asset maintenance_budget_limit = calculate_maintenance_budget( head_time );
 
   //Execute transfer for every active proposal
   transfer_payments( head_time, maintenance_budget_limit, active_proposals );
@@ -325,7 +287,7 @@ void sps_processor::record_funding( const block_notification& note )
   db.modify( props, []( dynamic_global_property_object& dgpo )
   {
     dgpo.sps_interval_ledger = HBD_asset( 0 );
-  });
+  } );
 }
 
 } } // namespace hive::chain

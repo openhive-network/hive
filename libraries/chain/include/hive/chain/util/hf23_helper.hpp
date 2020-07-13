@@ -1,8 +1,8 @@
 #pragma once
 
-#include <hive/protocol/asset.hpp>
+#include <hive/chain/util/tiny_asset.hpp>
 
-#include<string>
+#include <string>
 
 namespace hive { namespace chain {
 
@@ -14,10 +14,15 @@ class hf23_helper
 
     struct hf23_item
     {
+      hf23_item() {}
+      hf23_item( const std::string& _name ) : name( _name ) {}
+      hf23_item( const std::string& _name, const HIVE_asset& hive, const HBD_asset& hbd )
+        : name( _name ), balance( hive ), hbd_balance( hbd ) {}
+
       std::string name;
 
-      asset       balance;
-      asset       hbd_balance;
+      HIVE_asset  balance;
+      HBD_asset   hbd_balance;
     };
 
     struct cmp_hf23_item
@@ -32,7 +37,7 @@ class hf23_helper
 
   public:
 
-    static void gather_balance( hf23_items& source, const std::string& name, const asset& balance, const asset& hbd_balance );
+    static void gather_balance( hf23_items& source, const std::string& name, const HIVE_asset& balance, const HBD_asset& hbd_balance );
 };
 
 } } // namespace hive::chain

@@ -95,35 +95,14 @@ struct manabar
   }
 };
 
-template< typename T >
-int64_t get_effective_vesting_shares( const T& account )
-{
-  int64_t effective_vesting_shares =
-      account.vesting_shares.amount.value              // base vesting shares
-    + account.received_vesting_shares.amount.value     // incoming delegations
-    - account.delegated_vesting_shares.amount.value;   // outgoing delegations
-
-  // If there is a power down occuring, also reduce effective vesting shares by this week's power down amount
-  if( account.next_vesting_withdrawal != fc::time_point_sec::maximum() )
-  {
-    effective_vesting_shares -=
-      std::min(
-        account.vesting_withdraw_rate.amount.value,           // Weekly amount
-        account.to_withdraw.value - account.withdrawn.value   // Or remainder
-        );
-  }
-
-  return effective_vesting_shares;
-}
-
 template< typename PropType, typename AccountType >
 void update_manabar( const PropType& gpo, AccountType& account, bool downvote_mana = false, bool check_overflow = true, int64_t new_mana = 0 )
 {
-  auto effective_vests = util::get_effective_vesting_shares( account );
+  auto effective_vests = account.get_effective_vesting_shares().amount.value;
   try {
-  manabar_params params( effective_vests, HIVE_VOTING_MANA_REGENERATION_SECONDS );
-  account.voting_manabar.regenerate_mana( params, gpo.time );
-  account.voting_manabar.use_mana( -new_mana );
+    manabar_params params( effective_vests, HIVE_VOTING_MANA_REGENERATION_SECONDS );
+    account.voting_manabar.regenerate_mana( params, gpo.time );
+    account.voting_manabar.use_mana( -new_mana );
   } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
 
   FC_TODO( "This hardfork check should not be needed. Remove after HF21 if that is the case." );

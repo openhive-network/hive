@@ -83,9 +83,9 @@ void smt_create_evaluator::do_apply( const smt_create_operation& o )
       FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot pay the fee using different asset symbol because there is no price feed." );
 
       if( dgpo.smt_creation_fee.symbol == HIVE_SYMBOL )
-        creation_fee = _db.to_hive( o.smt_creation_fee );
+        creation_fee = _db.to_hive( to_HBD( o.smt_creation_fee ) ).to_asset();
       else
-        creation_fee = _db.to_hbd( o.smt_creation_fee );
+        creation_fee = _db.to_hbd( to_HIVE( o.smt_creation_fee ) ).to_asset();
     }
 
     FC_ASSERT( creation_fee == dgpo.smt_creation_fee,
@@ -289,6 +289,7 @@ void smt_contribute_evaluator::do_apply( const smt_contribute_operation& o )
   try
   {
     FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
+    const HIVE_asset o_contribution = to_HIVE( o.contribution );
 
     const smt_token_object* token = util::smt::find_token( _db, o.symbol );
     FC_ASSERT( token != nullptr, "Cannot contribute to an unknown SMT" );
@@ -298,21 +299,21 @@ void smt_contribute_evaluator::do_apply( const smt_contribute_operation& o )
     const smt_ico_object* token_ico = _db.find< smt_ico_object, by_symbol >( token->liquid_symbol );
     FC_ASSERT( token_ico != nullptr, "Unable to find ICO data for symbol: ${sym}", ("sym", token->liquid_symbol) );
     FC_ASSERT( token_ico->contributed.amount < token_ico->hive_units_hard_cap, "SMT ICO has reached its hard cap and no longer accepts contributions" );
-    FC_ASSERT( token_ico->contributed.amount + o.contribution.amount <= token_ico->hive_units_hard_cap,
+    FC_ASSERT( token_ico->contributed.amount + o_contribution.amount <= token_ico->hive_units_hard_cap,
       "The proposed contribution would exceed the ICO hard cap, maximum possible contribution: ${c}",
       ("c", asset( token_ico->hive_units_hard_cap - token_ico->contributed.amount, HIVE_SYMBOL )) );
 
-    auto key = boost::tuple< asset_symbol_type, account_name_type, uint32_t >( o.contribution.symbol, o.contributor, o.contribution_id );
+    auto key = boost::tuple< asset_symbol_type, account_name_type, uint32_t >( o.symbol, o.contributor, o.contribution_id );
     auto contrib_ptr = _db.find< smt_contribution_object, by_symbol_contributor >( key );
     FC_ASSERT( contrib_ptr == nullptr, "The provided contribution ID must be unique. Current: ${id}", ("id", o.contribution_id) );
 
-    _db.adjust_balance( o.contributor, -o.contribution );
+    _db.adjust_balance( o.contributor, -o_contribution );
 
-    _db.create< smt_contribution_object >( o.contributor, o.contribution, o.symbol, o.contribution_id );
+    _db.create< smt_contribution_object >( o.contributor, o_contribution, o.symbol, o.contribution_id );
 
     _db.modify( *token_ico, [&]( smt_ico_object& ico )
     {
-      ico.contributed += o.contribution;
+      ico.contributed += o_contribution;
     } );
   }
   FC_CAPTURE_AND_RETHROW( (o) )

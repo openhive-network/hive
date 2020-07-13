@@ -40,15 +40,11 @@ class sps_processor
 
     void sort_by_votes( t_proposals& proposals );
 
-    asset get_treasury_fund();
+    HBD_asset get_treasury_fund() const;
 
-    asset get_daily_inflation();
+    HBD_asset calculate_maintenance_budget( const time_point_sec& head_time );
 
-    asset calculate_maintenance_budget( const time_point_sec& head_time );
-
-    void transfer_daily_inflation_to_treasury( const asset& daily_inflation );
-
-    void transfer_payments( const time_point_sec& head_time, asset& maintenance_budget_limit, const t_proposals& proposals );
+    void transfer_payments( const time_point_sec& head_time, HBD_asset& maintenance_budget_limit, const t_proposals& proposals );
 
     void update_settings( const time_point_sec& head_time );
 

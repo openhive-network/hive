@@ -29,16 +29,16 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       convert_request_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _owner, const asset& _amount, const time_point_sec& _conversion_time, uint32_t _requestid )
+        const account_name_type& _owner, const HBD_asset& _amount, const time_point_sec& _conversion_time, uint32_t _requestid )
         : id( _id ), owner( _owner ), requestid( _requestid ), amount( _amount ), conversion_date( _conversion_time )
       {}
 
       //amount of HBD to be converted to HIVE
-      const asset& get_convert_amount() const { return amount; }
+      const HBD_asset& get_convert_amount() const { return amount; }
 
       account_name_type owner; //< TODO: can be replaced with account_id_type
       uint32_t          requestid = 0; ///< id set by owner, the owner,requestid pair must be unique
-      asset             amount; //< can be either HBD or HIVE
+      HBD_asset         amount;
       time_point_sec    conversion_date; ///< at this time the feed_history_median_price * amount
 
     CHAINBASE_UNPACK_CONSTRUCTOR(convert_request_object);
@@ -272,7 +272,7 @@ namespace hive { namespace chain {
       const HIVE_asset& get_reward_balance() const { return reward_balance; }
 
       reward_fund_name_type   name;
-      HIVE_asset              reward_balance = HIVE_asset( 0 );
+      HIVE_asset              reward_balance;
       uint128_t               recent_claims = 0;
       uint128_t               content_constant = HIVE_CONTENT_CONSTANT_HF0;
       time_point_sec          last_update;

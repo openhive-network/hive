@@ -94,7 +94,7 @@ class rc_plugin_impl
 
 inline int64_t get_next_vesting_withdrawal( const account_object& account )
 {
-  int64_t total_left = account.to_withdraw.value - account.withdrawn.value;
+  int64_t total_left = account.to_withdraw.amount.value - account.withdrawn.amount.value;
   int64_t withdraw_per_period = account.vesting_withdraw_rate.amount.value;
   int64_t next_withdrawal = (withdraw_per_period <= total_left) ? withdraw_per_period : total_left;
   bool is_done = (account.next_vesting_withdrawal == fc::time_point_sec::maximum());

@@ -4,7 +4,6 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/witness_schedule.hpp>
 
-#include <hive/chain/util/tiny_asset.hpp>
 #include <hive/chain/util/rd_setup.hpp>
 
 #include <hive/protocol/config.hpp>

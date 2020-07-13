@@ -23,18 +23,19 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
         since passed date should be adjusted by potential transaction execution delay (i.e. 3 sec
         as a time for processed next block).
     */
-    FC_ASSERT(o.end_date > _db.head_block_time(), "Can't create inactive proposals...");
+    FC_ASSERT( o.end_date > _db.head_block_time(), "Can't create inactive proposals..." );
 
-    asset fee_hbd( HIVE_TREASURY_FEE, HBD_SYMBOL );
+    HBD_asset fee_hbd( HIVE_TREASURY_FEE );
+    const HBD_asset o_daily_pay = to_HBD( o.daily_pay );
 
-    if(_db.has_hardfork(HIVE_HARDFORK_0_24))
+    if( _db.has_hardfork(HIVE_HARDFORK_0_24) )
     {
       uint32_t proposal_run_time = o.end_date.sec_since_epoch() - o.start_date.sec_since_epoch();
 
-      if(proposal_run_time > HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC)
+      if( proposal_run_time > HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC )
       {
-        uint32_t extra_days = (proposal_run_time / HIVE_ONE_DAY_SECONDS) - HIVE_PROPOSAL_FEE_INCREASE_DAYS;
-        fee_hbd += asset(HIVE_PROPOSAL_FEE_INCREASE_AMOUNT * extra_days, HBD_SYMBOL);
+        uint32_t extra_days = ( proposal_run_time / HIVE_ONE_DAY_SECONDS ) - HIVE_PROPOSAL_FEE_INCREASE_DAYS;
+        fee_hbd += HBD_asset( HIVE_PROPOSAL_FEE_INCREASE_AMOUNT * extra_days );
       }
     }
 
@@ -45,14 +46,14 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
     const auto* receiver_account = _db.find_account( o.receiver );
 
     /// Just to check the receiver account exists.
-    FC_ASSERT(receiver_account != nullptr, "Specified receiver account: ${r} must exist in the blockchain",
-      ("r", o.receiver));
+    FC_ASSERT( receiver_account != nullptr, "Specified receiver account: ${r} must exist in the blockchain",
+      ("r", o.receiver) );
 
-    const auto* commentObject = _db.find_comment(o.creator, o.permlink);
-    if(commentObject == nullptr)
+    const auto* commentObject = _db.find_comment( o.creator, o.permlink );
+    if( commentObject == nullptr )
     {
-      commentObject = _db.find_comment(o.receiver, o.permlink);
-      FC_ASSERT(commentObject != nullptr, "Proposal permlink must point to the article posted by creator or receiver");
+      commentObject = _db.find_comment( o.receiver, o.permlink );
+      FC_ASSERT( commentObject != nullptr, "Proposal permlink must point to the article posted by creator or receiver" );
     }
 
     _db.create< proposal_object >( [&]( proposal_object& proposal )
@@ -65,16 +66,16 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
       proposal.start_date = o.start_date;
       proposal.end_date = o.end_date;
 
-      proposal.daily_pay = o.daily_pay;
+      proposal.daily_pay = o_daily_pay;
 
       proposal.subject = o.subject.c_str();
 
       proposal.permlink = o.permlink.c_str();
-    });
+    } );
 
     _db.adjust_balance( owner_account, -fee_hbd );
     /// Fee shall be paid to the treasury
-    _db.adjust_balance(treasury_account, fee_hbd );
+    _db.adjust_balance( treasury_account, fee_hbd );
   }
   FC_CAPTURE_AND_RETHROW( (o) )
 }
@@ -84,26 +85,27 @@ void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
   try
   {
     FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_24 ), "The update proposal functionality not enabled until hardfork ${hf}", ("hf", HIVE_HARDFORK_0_24) );
+    const HBD_asset o_daily_pay = to_HBD( o.daily_pay );
 
     const auto& proposal = _db.get< proposal_object, by_proposal_id >( o.proposal_id );
 
-    FC_ASSERT(o.creator == proposal.creator, "Cannot edit a proposal you are not the creator of");
+    FC_ASSERT( o.creator == proposal.creator, "Cannot edit a proposal you are not the creator of" );
 
-    const auto* commentObject = _db.find_comment(proposal.creator, o.permlink);
-    if(commentObject == nullptr)
+    const auto* commentObject = _db.find_comment( proposal.creator, o.permlink );
+    if( commentObject == nullptr )
     {
-      commentObject = _db.find_comment(proposal.receiver, o.permlink);
-      FC_ASSERT(commentObject != nullptr, "Proposal permlink must point to the article posted by creator or the receiver");
+      commentObject = _db.find_comment( proposal.receiver, o.permlink );
+      FC_ASSERT( commentObject != nullptr, "Proposal permlink must point to the article posted by creator or the receiver" );
     }
 
-    FC_ASSERT(o.daily_pay <= proposal.daily_pay, "You cannot increase the daily pay");
+    FC_ASSERT( o_daily_pay <= proposal.daily_pay, "You cannot increase the daily pay" );
 
     _db.modify( proposal, [&]( proposal_object& p )
     {
-      p.daily_pay = o.daily_pay;
+      p.daily_pay = o_daily_pay;
       p.subject = o.subject.c_str();
       p.permlink = o.permlink.c_str();
-    });
+    } );
   }
   FC_CAPTURE_AND_RETHROW( (o) )
 }

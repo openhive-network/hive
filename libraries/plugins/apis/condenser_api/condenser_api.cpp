@@ -362,7 +362,7 @@ namespace detail
     bool delayed_votes_active = true;
     if( args.size() == 2 )
       delayed_votes_active = args[1].as< bool >();
-    
+
     vector< optional< api_account_object > > result;
     result.reserve( account_names.size() );
 
@@ -1389,7 +1389,7 @@ uint16_t api_account_object::_compute_voting_power( const database_api::api_acco
   if( a.voting_manabar.last_update_time < HIVE_HARDFORK_0_20_TIME )
     return (uint16_t) a.voting_manabar.current_mana;
 
-  auto vests = chain::util::get_effective_vesting_shares( a );
+  auto vests = a.get_effective_vesting_shares().amount.value;
   if( vests <= 0 )
     return 0;
 

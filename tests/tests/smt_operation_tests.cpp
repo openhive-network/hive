@@ -157,9 +157,9 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     asset alice_smt_balance = asset( 1000000, alice_symbol );
     asset bob_smt_balance = asset( 1000000, alice_symbol );
 
-    asset alice_balance = alice_account.get_balance();
+    asset alice_balance = alice_account.get_balance().to_asset();
 
-    asset bob_balance = bob_account.get_balance();
+    asset bob_balance = bob_account.get_balance().to_asset();
 
     FUND( "alice", alice_smt_balance );
     FUND( "bob", bob_smt_balance );
@@ -561,7 +561,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_apply )
     tx.signatures.clear();
 
     asset alice_smt_balance = asset( 1000000, alice_symbol );
-    asset alice_balance = alice_account.get_balance();
+    asset alice_balance = alice_account.get_balance().to_asset();
 
     FUND( "alice", alice_smt_balance );
 
@@ -631,9 +631,9 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     asset alice_smt_balance = asset( 1000000, alice_symbol );
     asset bob_smt_balance = asset( 1000000, alice_symbol );
 
-    asset alice_balance = alice_account.get_balance();
+    asset alice_balance = alice_account.get_balance().to_asset();
 
-    asset bob_balance = bob_account.get_balance();
+    asset bob_balance = bob_account.get_balance().to_asset();
 
     FUND( "alice", alice_smt_balance );
     FUND( "bob", bob_smt_balance );
@@ -1120,19 +1120,19 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     {
       db.modify( db.get_account( "alice" ), []( account_object& a )
       {
-        a.reward_hbd_balance = ASSET( "10.000 TBD" );
-        a.reward_hive_balance = ASSET( "10.000 TESTS" );
-        a.reward_vesting_balance = ASSET( "10.000000 VESTS" );
-        a.reward_vesting_hive = ASSET( "10.000 TESTS" );
+        a.reward_hbd_balance = to_HBD( ASSET( "10.000 TBD" ) );
+        a.reward_hive_balance = to_HIVE( ASSET( "10.000 TESTS" ) );
+        a.reward_vesting_balance = to_VEST( ASSET( "10.000000 VESTS" ) );
+        a.reward_vesting_hive = to_HIVE( ASSET( "10.000 TESTS" ) );
       });
 
       db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
       {
-        gpo.current_hbd_supply += ASSET( "10.000 TBD" );
-        gpo.current_supply += ASSET( "20.000 TESTS" );
-        gpo.virtual_supply += ASSET( "20.000 TESTS" );
-        gpo.pending_rewarded_vesting_shares += ASSET( "10.000000 VESTS" );
-        gpo.pending_rewarded_vesting_hive += ASSET( "10.000 TESTS" );
+        gpo.current_hbd_supply += to_HBD( ASSET( "10.000 TBD" ) );
+        gpo.current_supply += to_HIVE( ASSET( "20.000 TESTS" ) );
+        gpo.virtual_supply += to_HIVE( ASSET( "20.000 TESTS" ) );
+        gpo.pending_rewarded_vesting_shares += to_VEST( ASSET( "10.000000 VESTS" ) );
+        gpo.pending_rewarded_vesting_hive += to_HIVE( ASSET( "10.000 TESTS" ) );
       });
     });
 
@@ -2953,7 +2953,7 @@ BOOST_AUTO_TEST_CASE( smt_contribute_apply )
     auto itr = idx.lower_bound( boost::make_tuple( alice_symbol, account_name_type( "alice" ), 0 ) );
     while( itr != idx.end() && itr->contributor == account_name_type( "alice" ) )
     {
-      alices_contributions += itr->contribution;
+      alices_contributions += itr->contribution.to_asset();
       alices_num_contributions++;
       ++itr;
     }
@@ -2961,7 +2961,7 @@ BOOST_AUTO_TEST_CASE( smt_contribute_apply )
     itr = idx.lower_bound( boost::make_tuple( alice_symbol, account_name_type( "bob" ), 0 ) );
     while( itr != idx.end() && itr->contributor == account_name_type( "bob" ) )
     {
-      bobs_contributions += itr->contribution;
+      bobs_contributions += itr->contribution.to_asset();
       bobs_num_contributions++;
       ++itr;
     }
@@ -2969,7 +2969,7 @@ BOOST_AUTO_TEST_CASE( smt_contribute_apply )
     itr = idx.lower_bound( boost::make_tuple( alice_symbol, account_name_type( "sam" ), 0 ) );
     while( itr != idx.end() && itr->contributor == account_name_type( "sam" ) )
     {
-      sams_contributions += itr->contribution;
+      sams_contributions += itr->contribution.to_asset();
       sams_num_contributions++;
       ++itr;
     }
@@ -2991,7 +2991,7 @@ BOOST_AUTO_TEST_CASE( smt_contribute_apply )
 
     BOOST_TEST_MESSAGE( " -- Checking ICO total contributions" );
     const auto* ico_obj = db->find< smt_ico_object, by_symbol >( alice_symbol );
-    BOOST_REQUIRE( ico_obj->contributed == alice_asset_accumulator + bob_asset_accumulator + sam_asset_accumulator );
+    BOOST_REQUIRE( ico_obj->contributed.to_asset() == alice_asset_accumulator + bob_asset_accumulator + sam_asset_accumulator );
 
     validate_database();
   }

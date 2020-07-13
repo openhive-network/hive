@@ -438,10 +438,10 @@ void database_fixture::fund(
       db.modify( db.get_account( account_name ), [&]( account_object& a )
       {
         if( amount.symbol == HIVE_SYMBOL )
-          a.balance += amount;
+          a.balance += to_HIVE( amount );
         else if( amount.symbol == HBD_SYMBOL )
         {
-          a.hbd_balance += amount;
+          a.hbd_balance += to_HBD( amount );
           a.hbd_seconds_last_update = db.head_block_time();
         }
       });
@@ -449,9 +449,9 @@ void database_fixture::fund(
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         if( amount.symbol == HIVE_SYMBOL )
-          gpo.current_supply += amount;
+          gpo.current_supply += to_HIVE( amount );
         else if( amount.symbol == HBD_SYMBOL )
-          gpo.current_hbd_supply += amount;
+          gpo.current_hbd_supply += to_HBD( amount );
       });
 
       if( amount.symbol == HBD_SYMBOL )
@@ -476,19 +476,21 @@ void database_fixture::convert(
 {
   try
   {
-    if ( amount.symbol == HIVE_SYMBOL )
+    if( amount.symbol == HIVE_SYMBOL )
     {
-      db->adjust_balance( account_name, -amount );
-      db->adjust_balance( account_name, db->to_hbd( amount ) );
-      db->adjust_supply( -amount );
-      db->adjust_supply( db->to_hbd( amount ) );
+      const HIVE_asset hive = to_HIVE( amount );
+      db->adjust_balance( account_name, -hive );
+      db->adjust_balance( account_name, db->to_hbd( hive ) );
+      db->adjust_supply( -hive );
+      db->adjust_supply( db->to_hbd( hive ) );
     }
-    else if ( amount.symbol == HBD_SYMBOL )
+    else if( amount.symbol == HBD_SYMBOL )
     {
-      db->adjust_balance( account_name, -amount );
-      db->adjust_balance( account_name, db->to_hive( amount ) );
-      db->adjust_supply( -amount );
-      db->adjust_supply( db->to_hive( amount ) );
+      const HBD_asset hbd = to_HBD( amount );
+      db->adjust_balance( account_name, -hbd );
+      db->adjust_balance( account_name, db->to_hive( hbd ) );
+      db->adjust_supply( -hbd );
+      db->adjust_supply( db->to_hive( hbd ) );
     }
   } FC_CAPTURE_AND_RETHROW( (account_name)(amount) )
 }
@@ -996,8 +998,8 @@ int64_t sps_proposal_database_fixture::create_proposal( std::string creator, std
   return itr->proposal_id;
 }
 
-void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::string creator, 
-                  asset daily_pay, std::string subject, std::string permlink, 
+void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::string creator,
+                  asset daily_pay, std::string subject, std::string permlink,
                   const fc::ecc::private_key& key )
 {
   signed_transaction tx;

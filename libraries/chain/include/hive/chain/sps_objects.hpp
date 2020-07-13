@@ -2,8 +2,8 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
+#include <hive/chain/util/tiny_asset.hpp>
 #include <boost/multi_index/composite_key.hpp>
-#include <hive/protocol/asset.hpp>
 
 namespace hive { namespace chain {
 
@@ -31,7 +31,7 @@ class proposal_object : public object< proposal_object_type, proposal_object >
     time_point_sec end_date;
 
     //daily_pay (the amount of HBD that is being requested to be paid out daily)
-    asset daily_pay;
+    HBD_asset daily_pay;
 
     //subject (a very brief description or title for the proposal)
     shared_string subject;
@@ -66,7 +66,7 @@ class proposal_vote_object : public object< proposal_vote_object_type, proposal_
 
     //the voter voted for this proposal number
     uint32_t proposal_id; //note: it cannot be proposal_id_type because we are searching using proposal_object::proposal_id, not proposal_object::id
-  
+
   CHAINBASE_UNPACK_CONSTRUCTOR(proposal_vote_object);
 };
 

@@ -20,7 +20,7 @@ struct api_reward_fund_object
   api_reward_fund_object( const reward_fund_object& o, const database& db ):
     id( o.get_id() ),
     name( o.name ),
-    reward_balance( o.reward_balance ),
+    reward_balance( o.reward_balance.to_asset() ),
     recent_claims( o.recent_claims ),
     last_update( o.last_update ),
     content_constant( o.content_constant ),
@@ -65,8 +65,8 @@ struct api_escrow_object
     agent( o.agent ),
     ratification_deadline( o.ratification_deadline ),
     escrow_expiration( o.escrow_expiration ),
-    hbd_balance( o.hbd_balance ),
-    hive_balance( o.hive_balance ),
+    hbd_balance( o.hbd_balance.to_asset() ),
+    hive_balance( o.hive_balance.to_asset() ),
     pending_fee( o.pending_fee ),
     to_approved( o.to_approved ),
     agent_approved( o.agent_approved ),
@@ -113,7 +113,7 @@ struct api_vesting_delegation_object
     id( o.get_id() ),
     delegator( o.delegator ),
     delegatee( o.delegatee ),
-    vesting_shares( o.vesting_shares ),
+    vesting_shares( o.vesting_shares.to_asset() ),
     min_delegation_time( o.min_delegation_time )
   {}
 
@@ -129,7 +129,7 @@ struct api_vesting_delegation_expiration_object
   api_vesting_delegation_expiration_object( const vesting_delegation_expiration_object& o, const database& db ):
     id( o.get_id() ),
     delegator( o.delegator ),
-    vesting_shares( o.vesting_shares ),
+    vesting_shares( o.vesting_shares.to_asset() ),
     expiration( o.expiration )
   {}
 
@@ -145,7 +145,7 @@ struct api_convert_request_object
     id( o.get_id() ),
     owner( o.owner ),
     requestid( o.requestid ),
-    amount( o.amount ),
+    amount( o.amount.to_asset() ),
     conversion_date( o.conversion_date )
   {}
 
@@ -200,16 +200,16 @@ struct api_dynamic_global_property_object
     current_witness( o.current_witness ),
     total_pow( o.total_pow ),
     num_pow_witnesses( o.num_pow_witnesses ),
-    virtual_supply( o.virtual_supply ),
-    current_supply( o.current_supply ),
-    init_hbd_supply( o.init_hbd_supply ),
-    current_hbd_supply( o.current_hbd_supply ),
-    total_vesting_fund_hive( o.total_vesting_fund_hive ),
-    total_vesting_shares( o.total_vesting_shares ),
-    total_reward_fund_hive( o.total_reward_fund_hive ),
+    virtual_supply( o.virtual_supply.to_asset() ),
+    current_supply( o.current_supply.to_asset() ),
+    init_hbd_supply( o.init_hbd_supply.to_asset() ),
+    current_hbd_supply( o.current_hbd_supply.to_asset() ),
+    total_vesting_fund_hive( o.total_vesting_fund_hive.to_asset() ),
+    total_vesting_shares( o.total_vesting_shares.to_asset() ),
+    total_reward_fund_hive( o.total_reward_fund_hive.to_asset() ),
     total_reward_shares2( o.total_reward_shares2 ),
-    pending_rewarded_vesting_shares( o.pending_rewarded_vesting_shares ),
-    pending_rewarded_vesting_hive( o.pending_rewarded_vesting_hive ),
+    pending_rewarded_vesting_shares( o.pending_rewarded_vesting_shares.to_asset() ),
+    pending_rewarded_vesting_hive( o.pending_rewarded_vesting_hive.to_asset() ),
     hbd_interest_rate( o.hbd_interest_rate ),
     hbd_print_rate( o.hbd_print_rate ),
     maximum_block_size( o.maximum_block_size ),
@@ -229,7 +229,7 @@ struct api_dynamic_global_property_object
     content_reward_percent( o.content_reward_percent ),
     vesting_reward_percent( o.vesting_reward_percent ),
     sps_fund_percent( o.sps_fund_percent ),
-    sps_interval_ledger( o.sps_interval_ledger ),
+    sps_interval_ledger( o.sps_interval_ledger.to_asset() ),
     downvote_pool_percent( o.downvote_pool_percent )
 #ifdef HIVE_ENABLE_SMT
     , smt_creation_fee( o.smt_creation_fee )
@@ -468,30 +468,30 @@ struct api_account_object
     can_vote( a.can_vote ),
     voting_manabar( a.voting_manabar ),
     downvote_manabar( a.downvote_manabar ),
-    balance( a.get_balance() ),
-    savings_balance( a.get_savings() ),
-    hbd_balance( a.hbd_balance ),
+    balance( a.get_balance().to_asset() ),
+    savings_balance( a.get_savings().to_asset() ),
+    hbd_balance( a.get_hbd_balance().to_asset() ),
     hbd_seconds( a.hbd_seconds ),
     hbd_seconds_last_update( a.hbd_seconds_last_update ),
     hbd_last_interest_payment( a.hbd_last_interest_payment ),
-    savings_hbd_balance( a.get_hbd_savings() ),
+    savings_hbd_balance( a.get_hbd_savings().to_asset() ),
     savings_hbd_seconds( a.savings_hbd_seconds ),
     savings_hbd_seconds_last_update( a.savings_hbd_seconds_last_update ),
     savings_hbd_last_interest_payment( a.savings_hbd_last_interest_payment ),
     savings_withdraw_requests( a.savings_withdraw_requests ),
-    reward_hbd_balance( a.get_hbd_rewards() ),
-    reward_hive_balance( a.get_rewards() ),
-    reward_vesting_balance( a.get_vest_rewards() ),
-    reward_vesting_hive( a.get_vest_rewards_as_hive() ),
+    reward_hbd_balance( a.get_hbd_rewards().to_asset() ),
+    reward_hive_balance( a.get_rewards().to_asset() ),
+    reward_vesting_balance( a.get_vest_rewards().to_asset() ),
+    reward_vesting_hive( a.get_vest_rewards_as_hive().to_asset() ),
     curation_rewards( a.curation_rewards ),
     posting_rewards( a.posting_rewards ),
-    vesting_shares( a.vesting_shares ),
-    delegated_vesting_shares( a.delegated_vesting_shares ),
-    received_vesting_shares( a.received_vesting_shares ),
-    vesting_withdraw_rate( a.vesting_withdraw_rate ),
+    vesting_shares( a.vesting_shares.to_asset() ),
+    delegated_vesting_shares( a.delegated_vesting_shares.to_asset() ),
+    received_vesting_shares( a.received_vesting_shares.to_asset() ),
+    vesting_withdraw_rate( a.vesting_withdraw_rate.to_asset() ),
     next_vesting_withdrawal( a.next_vesting_withdrawal ),
-    withdrawn( a.withdrawn ),
-    to_withdraw( a.to_withdraw ),
+    withdrawn( a.withdrawn.amount ),
+    to_withdraw( a.to_withdraw.amount ),
     withdraw_routes( a.withdraw_routes ),
     pending_transfers( a.pending_transfers ),
     witnesses_voted_for( a.witnesses_voted_for ),
@@ -533,6 +533,14 @@ struct api_account_object
 
 
   api_account_object(){}
+
+  asset get_effective_vesting_shares( bool account_for_pending_withdrawal = true ) const
+  {
+    asset result = vesting_shares - delegated_vesting_shares + received_vesting_shares;
+    if( account_for_pending_withdrawal && ( next_vesting_withdrawal != fc::time_point_sec::maximum() ) )
+      result -= std::min( vesting_withdraw_rate, asset( to_withdraw - withdrawn, VESTS_SYMBOL ) );
+    return result;
+  }
 
   account_id_type   id;
 
@@ -689,6 +697,24 @@ struct api_feed_history_object
   deque< price >       price_history;
 };
 
+struct api_chain_properties
+{
+  api_chain_properties() {}
+  api_chain_properties( const chain_properties& c ) :
+    account_creation_fee( c.account_creation_fee.to_asset() ),
+    maximum_block_size( c.maximum_block_size ),
+    hbd_interest_rate( c.hbd_interest_rate ),
+    account_subsidy_budget( c.account_subsidy_budget ),
+    account_subsidy_decay( c.account_subsidy_decay )
+  {}
+
+  asset    account_creation_fee = asset( HIVE_MIN_ACCOUNT_CREATION_FEE, HIVE_SYMBOL );
+  uint32_t maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
+  uint16_t hbd_interest_rate = HIVE_DEFAULT_HBD_INTEREST_RATE;
+  int32_t  account_subsidy_budget = HIVE_DEFAULT_ACCOUNT_SUBSIDY_BUDGET;
+  uint32_t account_subsidy_decay = HIVE_DEFAULT_ACCOUNT_SUBSIDY_DECAY;
+};
+
 struct api_witness_object
 {
   api_witness_object( const witness_object& w, const database& db ) :
@@ -717,27 +743,27 @@ struct api_witness_object
 
   api_witness_object() {}
 
-  witness_id_type   id;
-  account_name_type owner;
-  time_point_sec    created;
-  string            url;
-  uint32_t          total_missed = 0;
-  uint64_t          last_aslot = 0;
-  uint64_t          last_confirmed_block_num = 0;
-  uint64_t          pow_worker = 0;
-  public_key_type   signing_key;
-  chain_properties  props;
-  price             hbd_exchange_rate;
-  time_point_sec    last_hbd_exchange_update;
-  share_type        votes;
-  fc::uint128       virtual_last_update;
-  fc::uint128       virtual_position;
-  fc::uint128       virtual_scheduled_time;
-  digest_type       last_work;
-  version           running_version;
-  hardfork_version  hardfork_version_vote;
-  time_point_sec    hardfork_time_vote;
-  int64_t           available_witness_account_subsidies = 0;
+  witness_id_type      id;
+  account_name_type    owner;
+  time_point_sec       created;
+  string               url;
+  uint32_t             total_missed = 0;
+  uint64_t             last_aslot = 0;
+  uint64_t             last_confirmed_block_num = 0;
+  uint64_t             pow_worker = 0;
+  public_key_type      signing_key;
+  api_chain_properties props;
+  price                hbd_exchange_rate;
+  time_point_sec       last_hbd_exchange_update;
+  share_type           votes;
+  fc::uint128          virtual_last_update;
+  fc::uint128          virtual_position;
+  fc::uint128          virtual_scheduled_time;
+  digest_type          last_work;
+  version              running_version;
+  hardfork_version     hardfork_version_vote;
+  time_point_sec       hardfork_time_vote;
+  int64_t              available_witness_account_subsidies = 0;
 };
 
 struct api_witness_schedule_object
@@ -781,7 +807,7 @@ struct api_witness_schedule_object
   uint8_t                    timeshare_weight;
   uint8_t                    miner_weight;
   uint32_t                   witness_pay_normalization_factor;
-  chain_properties           median_props;
+  api_chain_properties       median_props;
   version                    majority_version;
 
   uint8_t                    max_voted_witnesses;
@@ -893,7 +919,7 @@ struct api_smt_contribution_object
     symbol( o.symbol ),
     contributor( o.contributor ),
     contribution_id( o.contribution_id ),
-    contribution( o.contribution )
+    contribution( o.contribution.to_asset() )
   {}
 
   smt_contribution_id_type id;
@@ -922,18 +948,18 @@ struct api_proposal_object
 {
   api_proposal_object() = default;
 
-  api_proposal_object(const proposal_object& po, const time_point_sec& current_time) :
-    id(po.get_id()),
-    proposal_id(po.proposal_id),
-    creator(po.creator),
-    receiver(po.receiver),
-    start_date(po.start_date),
-    end_date(po.end_date),
-    daily_pay(po.daily_pay),
-    subject(to_string(po.subject)),
-    permlink(to_string(po.permlink)),
-    total_votes(po.total_votes),
-    status(get_proposal_status(po,current_time))
+  api_proposal_object( const proposal_object& po, const time_point_sec& current_time ) :
+    id( po.get_id() ),
+    proposal_id( po.proposal_id ),
+    creator( po.creator ),
+    receiver( po.receiver ),
+    start_date( po.start_date ),
+    end_date( po.end_date ),
+    daily_pay( po.daily_pay.to_asset() ),
+    subject( to_string( po.subject ) ),
+    permlink( to_string( po.permlink ) ),
+    total_votes( po.total_votes ),
+    status( get_proposal_status( po, current_time ) )
   {}
 
   api_id_type       id;
@@ -1133,6 +1159,14 @@ FC_REFLECT( hive::plugins::database_api::api_feed_history_object,
           (current_median_history)
           (price_history)
         )
+
+FC_REFLECT( hive::plugins::database_api::api_chain_properties,
+            (account_creation_fee)
+            (maximum_block_size)
+            (hbd_interest_rate)
+            (account_subsidy_budget)
+            (account_subsidy_decay)
+          )
 
 FC_REFLECT( hive::plugins::database_api::api_witness_object,
           (id)

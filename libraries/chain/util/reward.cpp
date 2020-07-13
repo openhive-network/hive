@@ -57,7 +57,7 @@ uint64_t get_rshare_reward( const comment_reward_context& ctx )
   if( is_comment_payout_dust( ctx.current_hive_price, payout ) )
     payout = 0;
 
-  asset max_hive = to_hive( ctx.current_hive_price, ctx.max_hbd );
+  asset max_hive = to_hive( ctx.current_hive_price, ctx.max_hbd.to_asset() );
 
   payout = std::min( payout, uint64_t( max_hive.amount.value ) );
 

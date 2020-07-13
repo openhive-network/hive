@@ -31,7 +31,7 @@ namespace hive { namespace chain {
         const account_name_type& _name, const public_key_type& _memo_key,
         const time_point_sec& _creation_time, bool _mined,
         const account_name_type& _recovery_account,
-        bool _fill_mana, const asset& incoming_delegation )
+        bool _fill_mana, const VEST_asset& incoming_delegation )
         : id( _id ), name( _name ), memo_key( _memo_key ), created( _creation_time ), mined( _mined ),
         recovery_account( _recovery_account ), delayed_votes( a )
       {
@@ -69,6 +69,13 @@ namespace hive { namespace chain {
       VEST_asset get_delegated_vesting() const { return delegated_vesting_shares; }
       //VESTS that were borrowed from other accounts
       VEST_asset get_received_vesting() const { return received_vesting_shares; }
+      //VESTS available when delegations are considered (and optionally power down)
+      VEST_asset get_effective_vesting_shares( bool account_for_pending_withdrawal = true ) const
+      {
+        return vesting_shares - delegated_vesting_shares + received_vesting_shares -
+          ( ( account_for_pending_withdrawal && ( next_vesting_withdrawal != fc::time_point_sec::maximum() ) ) ?
+          std::min( vesting_withdraw_rate, to_withdraw - withdrawn ) : VEST_asset( 0 ) );
+      }
       //TODO: add routines for specific uses, f.e. get_witness_voting_power, get_proposal_voting_power, get_post_voting_power...
       //unclaimed VESTS rewards
       VEST_asset get_vest_rewards() const { return reward_vesting_balance; }
@@ -94,8 +101,8 @@ namespace hive { namespace chain {
       util::manabar     voting_manabar;
       util::manabar     downvote_manabar;
 
-      HIVE_asset        balance = HIVE_asset( 0 );  ///< total liquid shares held by this account
-      HIVE_asset        savings_balance = HIVE_asset( 0 );  ///< total liquid shares held by this account
+      HIVE_asset        balance; ///< total liquid shares held by this account
+      HIVE_asset        savings_balance; ///< total liquid shares held by this account
 
       /**
         *  HBD Deposits pay interest based upon the interest rate set by witnesses. The purpose of these
@@ -111,13 +118,13 @@ namespace hive { namespace chain {
         *  @defgroup hbd_data HBD Balance Data
         */
       ///@{
-      HBD_asset         hbd_balance = HBD_asset( 0 ); /// total HBD balance
+      HBD_asset         hbd_balance; /// total HBD balance
       uint128_t         hbd_seconds; ///< total HBD * how long it has been held
       time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
       time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
 
 
-      HBD_asset         savings_hbd_balance = HBD_asset( 0 ); /// total HBD balance
+      HBD_asset         savings_hbd_balance; /// total HBD balance
       uint128_t         savings_hbd_seconds; ///< total HBD * how long it has been held
       time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
       time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
@@ -125,22 +132,22 @@ namespace hive { namespace chain {
       uint8_t           savings_withdraw_requests = 0;
       ///@}
 
-      HBD_asset         reward_hbd_balance = HBD_asset( 0 );
-      HIVE_asset        reward_hive_balance = HIVE_asset( 0 );
-      VEST_asset        reward_vesting_balance = VEST_asset( 0 );
-      HIVE_asset        reward_vesting_hive = HIVE_asset( 0 );
+      HBD_asset         reward_hbd_balance;
+      HIVE_asset        reward_hive_balance;
+      VEST_asset        reward_vesting_balance;
+      HIVE_asset        reward_vesting_hive;
 
       share_type        curation_rewards = 0;
       share_type        posting_rewards = 0;
 
-      VEST_asset        vesting_shares = VEST_asset( 0 ); ///< total vesting shares held by this account, controls its voting power
-      VEST_asset        delegated_vesting_shares = VEST_asset( 0 );
-      VEST_asset        received_vesting_shares = VEST_asset( 0 );
+      VEST_asset        vesting_shares; ///< total vesting shares held by this account, controls its voting power
+      VEST_asset        delegated_vesting_shares;
+      VEST_asset        received_vesting_shares;
 
-      VEST_asset        vesting_withdraw_rate = VEST_asset( 0 ); ///< at the time this is updated it can be at most vesting_shares/104
+      VEST_asset        vesting_withdraw_rate; ///< at the time this is updated it can be at most vesting_shares/104
       time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
-      share_type        withdrawn = 0; /// Track how many shares have been withdrawn
-      share_type        to_withdraw = 0; /// Might be able to look this up with operation history.
+      VEST_asset        withdrawn; /// Track how many shares have been withdrawn
+      VEST_asset        to_withdraw; /// Might be able to look this up with operation history.
       uint16_t          withdraw_routes = 0; //max 10, why is it 16bit?
       uint16_t          pending_transfers = 0; //for now max is 255, but it might change
 
@@ -179,24 +186,23 @@ namespace hive { namespace chain {
       share_type get_real_vesting_shares() const
       {
         FC_ASSERT( sum_delayed_votes.value <= vesting_shares.amount, "",
-                ( "sum_delayed_votes",     sum_delayed_votes )
-                ( "vesting_shares.amount", vesting_shares.amount )
-                ( "account",               name ) );
-  
-        return asset( vesting_shares.amount - sum_delayed_votes.value, VESTS_SYMBOL ).amount;
+          ( "sum_delayed_votes",     sum_delayed_votes )
+          ( "vesting_shares.amount", vesting_shares.amount )
+          ( "account",               name ) );
+
+        return vesting_shares.amount - sum_delayed_votes.value;
       }
 
       /// This function should be used only when the account votes for a witness directly
-      share_type        witness_vote_weight()const {
+      share_type witness_vote_weight() const
+      {
         return std::accumulate( proxied_vsf_votes.begin(),
-                        proxied_vsf_votes.end(),
-                        get_real_vesting_shares()
-                        );
+          proxied_vsf_votes.end(), get_real_vesting_shares() );
       }
-      share_type        proxied_vsf_votes_total()const {
+      share_type proxied_vsf_votes_total() const
+      {
         return std::accumulate( proxied_vsf_votes.begin(),
-                        proxied_vsf_votes.end(),
-                        share_type() );
+          proxied_vsf_votes.end(), share_type() );
       }
 
     CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (delayed_votes));
@@ -243,7 +249,7 @@ namespace hive { namespace chain {
 
       account_name_type delegator;
       account_name_type delegatee;
-      VEST_asset        vesting_shares = VEST_asset( 0 );
+      VEST_asset        vesting_shares;
       time_point_sec    min_delegation_time;
 
     CHAINBASE_UNPACK_CONSTRUCTOR(vesting_delegation_object);
@@ -259,7 +265,7 @@ namespace hive { namespace chain {
       const VEST_asset& get_vesting() const { return vesting_shares; }
 
       account_name_type delegator;
-      VEST_asset        vesting_shares = VEST_asset( 0 );
+      VEST_asset        vesting_shares;
       time_point_sec    expiration;
 
     CHAINBASE_UNPACK_CONSTRUCTOR(vesting_delegation_expiration_object);
