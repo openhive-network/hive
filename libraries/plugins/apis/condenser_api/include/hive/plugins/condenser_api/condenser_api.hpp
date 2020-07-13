@@ -742,46 +742,6 @@ struct broadcast_transaction_synchronous_return
   bool                  expired   = false;
 };
 
-struct comment_feed_entry
-{
-  comment_feed_entry( const follow::comment_feed_entry& c ) :
-    // comment( c.comment ),
-    reblog_on( c.reblog_on ),
-    entry_id( c.entry_id )
-  {
-    reblog_by.resize( c.reblog_by.size() );
-
-    for( auto& a : c.reblog_by )
-    {
-      reblog_by.push_back( a );
-    }
-  }
-
-  comment_feed_entry() {}
-
-  // api_comment_object            comment;
-  vector< account_name_type >   reblog_by;
-  time_point_sec                reblog_on;
-  uint32_t                      entry_id = 0;
-};
-
-struct comment_blog_entry
-{
-  comment_blog_entry( const follow::comment_blog_entry& c ) :
-    // comment( c.comment ),
-    blog( c.blog ),
-    reblog_on( c.reblog_on ),
-    entry_id( c.entry_id )
-  {}
-
-  comment_blog_entry() {}
-
-  // api_comment_object   comment;
-  string               blog;
-  time_point_sec       reblog_on;
-  uint32_t             entry_id = 0;
-};
-
 struct ticker
 {
   ticker() {}
@@ -859,9 +819,11 @@ struct market_trade
   legacy_asset   open_pays;
 };
 
-struct dummy_return {};
-using discussion_api_object = dummy_return;
-using discussion_api_object_collection = dummy_return;
+struct dummy_struct {};
+using discussion_api_object = dummy_struct;
+using discussion_api_object_collection = dummy_struct;
+using comment_feed_entry = dummy_struct;
+using comment_blog_entry = dummy_struct;
 
 #define DEFINE_API_ARGS( api_name, arg_type, return_type )  \
 typedef arg_type api_name ## _args;                         \
@@ -1207,12 +1169,6 @@ FC_REFLECT_ENUM( hive::plugins::condenser_api::withdraw_route_type, (incoming)(o
 FC_REFLECT( hive::plugins::condenser_api::broadcast_transaction_synchronous_return,
         (id)(block_num)(trx_num)(expired) )
 
-FC_REFLECT( hive::plugins::condenser_api::comment_feed_entry,
-        /*(comment)*/(reblog_by)(reblog_on)(entry_id) )
-
-FC_REFLECT( hive::plugins::condenser_api::comment_blog_entry,
-        /*(comment)*/(blog)(reblog_on)(entry_id) )
-
 FC_REFLECT( hive::plugins::condenser_api::ticker,
         (latest)(lowest_ask)(highest_bid)(percent_change)(hive_volume)(hbd_volume) )
 
@@ -1228,4 +1184,4 @@ FC_REFLECT( hive::plugins::condenser_api::order_book,
 FC_REFLECT( hive::plugins::condenser_api::market_trade,
         (date)(current_pays)(open_pays) )
 
-FC_REFLECT_EMPTY( hive::plugins::condenser_api::dummy_return )
+FC_REFLECT_EMPTY( hive::plugins::condenser_api::dummy_struct )
