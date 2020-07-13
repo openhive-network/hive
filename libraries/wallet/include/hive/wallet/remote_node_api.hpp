@@ -66,25 +66,7 @@ struct remote_node_api
   bool verify_account_authority( string, flat_set< public_key_type > );
   vector< tags::vote_state > get_active_votes( account_name_type, string );
   vector< condenser_api::account_vote > get_account_votes( account_name_type );
-  condenser_api::discussion get_content( account_name_type, string );
-  vector< condenser_api::discussion > get_content_replies( account_name_type, string );
   vector< tags::tag_count_object > get_tags_used_by_author( account_name_type );
-  vector< condenser_api::discussion > get_discussions_by_payout( tags::discussion_query );
-  vector< condenser_api::discussion > get_post_discussions_by_payout( tags::discussion_query );
-  vector< condenser_api::discussion > get_comment_discussions_by_payout( tags::discussion_query );
-  vector< condenser_api::discussion > get_discussions_by_trending( tags::discussion_query );
-  vector< condenser_api::discussion > get_discussions_by_created( tags::discussion_query );
-  vector< condenser_api::discussion > get_discussions_by_active( tags::discussion_query );
-  vector< condenser_api::discussion > get_discussions_by_cashout( tags::discussion_query );
-  vector< condenser_api::discussion > get_discussions_by_votes( tags::discussion_query );
-  vector< condenser_api::discussion > get_discussions_by_children( tags::discussion_query );
-  vector< condenser_api::discussion > get_discussions_by_hot( tags::discussion_query );
-  vector< condenser_api::discussion > get_discussions_by_feed( tags::discussion_query );
-  vector< condenser_api::discussion > get_discussions_by_blog( tags::discussion_query );
-  vector< condenser_api::discussion > get_discussions_by_comments( tags::discussion_query );
-  vector< condenser_api::discussion > get_discussions_by_promoted( tags::discussion_query );
-  vector< condenser_api::discussion > get_replies_by_last_update( tags::discussion_query );
-  vector< condenser_api::discussion > get_discussions_by_author_before_date( tags::discussion_query );
   map< uint32_t, condenser_api::api_operation_object > get_account_history( account_name_type, uint64_t, uint32_t );
   void broadcast_transaction( condenser_api::legacy_signed_transaction );
   condenser_api::broadcast_transaction_synchronous_return broadcast_transaction_synchronous( condenser_api::legacy_signed_transaction );
@@ -159,25 +141,7 @@ FC_API( hive::wallet::remote_node_api,
       (verify_account_authority)
       (get_active_votes)
       (get_account_votes)
-      (get_content)
-      (get_content_replies)
       (get_tags_used_by_author)
-      (get_discussions_by_payout)
-      (get_post_discussions_by_payout)
-      (get_comment_discussions_by_payout)
-      (get_discussions_by_trending)
-      (get_discussions_by_created)
-      (get_discussions_by_active)
-      (get_discussions_by_cashout)
-      (get_discussions_by_votes)
-      (get_discussions_by_children)
-      (get_discussions_by_hot)
-      (get_discussions_by_feed)
-      (get_discussions_by_blog)
-      (get_discussions_by_comments)
-      (get_discussions_by_promoted)
-      (get_replies_by_last_update)
-      (get_discussions_by_author_before_date)
       (get_account_history)
       (broadcast_transaction)
       (broadcast_transaction_synchronous)
