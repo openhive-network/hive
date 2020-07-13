@@ -1034,6 +1034,15 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
 
   if(bfs::exists(actualStoragePath) == false)
     bfs::create_directories(actualStoragePath);
+  else
+  {
+    if( !bfs::is_empty(actualStoragePath) )
+    {
+      wlog("Directory ${p} is not empty. Creating snapshot rejected.", ("p", actualStoragePath.string()));
+      return;
+    }
+  }
+  
 
   const auto& indices = _mainDb.get_abstract_index_cntr();
 
