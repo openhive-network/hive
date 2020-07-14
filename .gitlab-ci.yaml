@@ -159,7 +159,7 @@ variables:
 testnet_node_development_build:
   <<: *node_build
   <<: *testnet_node
-  environment: development_testnet
+  environment: development
   except:
     - master
     - merge_request
@@ -170,7 +170,7 @@ testnet_node_development_build:
 consensus_development_build:
   <<: *node_build
   <<: *consensus_node
-  environment: development_consensus
+  environment: development
   except:
     - master
     - merge_request
@@ -344,7 +344,6 @@ staging_hived_options_tests:
 replay-test:
   stage: test
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
-  resource_group: $CI_ENVIRONMENT_NAME_consensus
   variables:
     GIT_STRATEGY: none
     STOP_REPLAY_AT: 2000000
@@ -393,7 +392,7 @@ package_development_consensus_node:
   needs:
     - job: consensus_development_build
       artifacts: true
-  environment: development_consensus
+  environment: development
   except:
     - master
     - merge_request
