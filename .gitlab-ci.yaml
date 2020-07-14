@@ -137,6 +137,36 @@ variables:
   tags:
     - public-runner-docker
 
+#replay
+.replay_test_template: &replaytest
+  stage: test
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 5000000
+    BENCHMARK_INTERVAL: 1000000
+  script:
+    - mkdir ./replay 
+    - mkdir ./replay/blockchain
+    - cp ./consensus_development_build/install-root/bin/hived ./replay
+    - cp ./consensus_development_build/install-root/bin/cli_wallet ./replay
+    - cp ./consensus_development_build/config-for-docker.ini ./replay
+    - mv ./replay/config-for-docker.ini ./replay/config.ini
+    - cp ./consensus_development_build/install-root/bin/truncate_block_log ./replay
+    - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
+    - chmod 0777 ./ciscripts/replay.sh
+    #- ./replay/hived --replay-blockchain --set-benchmark-interval 1000000 --stop-replay-at-block $STOP_REPLAY_AT --exit-after-replay --advanced-benchmark --dump-memory-details  -d ./replay --shared-file-dir ./replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
+    - ./ciscripts/replay.sh "$BENCHMARK_INTERVAL" "$STOP_REPLAY_AT" 
+  artifacts:
+    paths:
+    - $CI_PROJECT_DIR/replay/replay.log
+    reports:
+    when: always
+    expire_in: 6 months
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+
 #====================<PACKAGING>====================#
 .packaging_nodes_template: &node_package
   stage: package
@@ -269,7 +299,26 @@ develompment_hived_options_tests:
     - 0.24.0
     - schedules
 
-
+development_replay_test:
+  <<: *replaytest
+  needs:
+    - job: consensus_development_build
+      artifacts: true
+  only:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+    
+    
 #======================STAGING=======================
 staging_chain_test:
   variables:
@@ -341,39 +390,16 @@ staging_hived_options_tests:
     - 0.24.0
     - schedules
 
-replay-test:
-  stage: test
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
-  variables:
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 2000000
-    BENCHMARK_INTERVAL: 1000000
+staging_replay_test:
+  <<: *replaytest
   needs:
-    - job: consensus_development_build
+    - job: consensus_staging_build
       artifacts: true
-  script:
-    - mkdir ./replay 
-    - mkdir ./replay/blockchain
-    - cp ./consensus_development_build/install-root/bin/hived ./replay
-    - cp ./consensus_development_build/install-root/bin/cli_wallet ./replay
-    - cp ./consensus_development_build/config-for-docker.ini ./replay
-    - mv ./replay/config-for-docker.ini ./replay/config.ini
-    - cp ./consensus_development_build/install-root/bin/truncate_block_log ./replay
-    - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
-    - chmod 0777 ./ciscripts/replay.sh
-    #- ./replay/hived --replay-blockchain --set-benchmark-interval 1000000 --stop-replay-at-block $STOP_REPLAY_AT --exit-after-replay --advanced-benchmark --dump-memory-details  -d ./replay --shared-file-dir ./replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
-    - ./ciscripts/replay.sh "$BENCHMARK_INTERVAL" "$STOP_REPLAY_AT" 
-  artifacts:
-    paths:
-    - $CI_PROJECT_DIR/replay/replay.log
-    reports:
-    when: always
-    expire_in: 6 months
-#  only:
-#    - master
-#    - merge_request
-#    - 0.24.0
-#    - schedules
+  only:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
   tags:
     - public-runner-docker
     - hived-for-tests
