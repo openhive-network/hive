@@ -345,7 +345,7 @@ replay-test:
   stage: test
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
-    GIT_STRATEGY: none
+    GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 2000000
   needs:
     - job: consensus_development_build
@@ -359,8 +359,8 @@ replay-test:
     - mv ./replay/config-for-docker.ini ./replay/config.ini
     - cp ./consensus_development_build/install-root/bin/truncate_block_log ./replay
     - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
-    - ./replay/hived --replay-blockchain --set-benchmark-interval 1000000 --stop-replay-at-block $STOP_REPLAY_AT --exit-after-replay --advanced-benchmark --dump-memory-details  -d ./replay --shared-file-dir ./replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
-    #- ../ciscripts/replay.sh 100000 1000000 #benchmark interval = 1000000 / stop replay at block $STOP_REPLAY_AT
+    #- ./replay/hived --replay-blockchain --set-benchmark-interval 1000000 --stop-replay-at-block $STOP_REPLAY_AT --exit-after-replay --advanced-benchmark --dump-memory-details  -d ./replay --shared-file-dir ./replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
+    - ../ciscripts/replay.sh 100000 1000000 #benchmark interval = 1000000 / stop replay at block $STOP_REPLAY_AT
   artifacts:
     paths:
     - $CI_PROJECT_DIR/replay/replay.log
