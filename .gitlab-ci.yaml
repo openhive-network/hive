@@ -418,7 +418,7 @@ staging_hived_options_tests:
     - merge_request
     - 0.24.0
     - schedules
-========================================
+
 staging_replay_5M:
   variables:
     GIT_STRATEGY: fetch
