@@ -160,6 +160,7 @@ testnet_node_development_build:
   <<: *node_build
   <<: *testnet_node
   environment: development
+  resource_group: testnet
   except:
     - master
     - merge_request
@@ -171,6 +172,7 @@ consensus_development_build:
   <<: *node_build
   <<: *consensus_node
   environment: development
+  resource_group: consensus
   except:
     - master
     - merge_request
@@ -183,6 +185,7 @@ testnet_node_staging_build:
   <<: *node_build
   <<: *testnet_node
   environment: staging
+  resource_group: testnet
   only:
     - master
     - merge_request
@@ -193,6 +196,7 @@ consensus_staging_build:
   <<: *node_build
   <<: *consensus_node
   environment: staging
+  resource_group: consensus
   only:
     - master
     - merge_request
@@ -393,6 +397,7 @@ package_development_consensus_node:
     - job: consensus_development_build
       artifacts: true
   environment: development
+  resource_group: consensus
   except:
     - master
     - merge_request
@@ -414,6 +419,7 @@ package_staging_consensus_node:
     - job: consensus_staging_build
       artifacts: true
   environment: staging
+  resource_group: consensus
   only:
     - master
     - merge_request
