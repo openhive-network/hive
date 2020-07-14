@@ -304,11 +304,6 @@ development_replay_test:
   needs:
     - job: consensus_development_build
       artifacts: true
-  only:
-    - master
-    - merge_request
-    - 0.24.0
-    - schedules
   tags:
     - public-runner-docker
     - hived-for-tests
