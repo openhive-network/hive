@@ -141,10 +141,6 @@ variables:
 .replay_test_template: &replaytest
   stage: test
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
-  variables:
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 5000000
-    BENCHMARK_INTERVAL: 1000000
   script:
     - mkdir ./replay 
     - mkdir ./replay/blockchain
@@ -155,8 +151,7 @@ variables:
     - cp ./consensus_development_build/install-root/bin/truncate_block_log ./replay
     - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
     - chmod 0777 ./ciscripts/replay.sh
-    #- ./replay/hived --replay-blockchain --set-benchmark-interval 1000000 --stop-replay-at-block $STOP_REPLAY_AT --exit-after-replay --advanced-benchmark --dump-memory-details  -d ./replay --shared-file-dir ./replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
-    - ./ciscripts/replay.sh "$BENCHMARK_INTERVAL" "$STOP_REPLAY_AT" 
+    - ./ciscripts/replay.sh "$STOP_REPLAY_AT" 
   artifacts:
     paths:
     - $CI_PROJECT_DIR/replay/replay.log
@@ -299,7 +294,10 @@ develompment_hived_options_tests:
     - 0.24.0
     - schedules
 
-development_replay_test:
+development_replay_5M:
+  variables:
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 5000000
   <<: *replaytest
   needs:
     - job: consensus_development_build
@@ -312,7 +310,43 @@ development_replay_test:
     - merge_request
     - 0.24.0
     - schedules
+  when: manual
     
+development_replay_20M:
+  variables:
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 20000000
+  <<: *replaytest
+  needs:
+    - job: consensus_development_build
+      artifacts: true
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  when: manual
+  
+development_replay_45M:
+  variables:
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 45000000
+  <<: *replaytest
+  needs:
+    - job: consensus_development_build
+      artifacts: true
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  when: manual
     
 #======================STAGING=======================
 staging_chain_test:
@@ -384,21 +418,78 @@ staging_hived_options_tests:
     - merge_request
     - 0.24.0
     - schedules
-
-staging_replay_test:
+========================================
+staging_replay_5M:
+  variables:
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 5000000
   <<: *replaytest
   needs:
     - job: consensus_staging_build
       artifacts: true
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  except:
+    - schedules
   only:
     - master
     - merge_request
     - 0.24.0
-    - schedules
+  when: manual
+    
+staging_replay_20M:
+  variables:
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 20000000
+  <<: *replaytest
+  needs:
+    - job: consensus_staging_build
+      artifacts: true
   tags:
     - public-runner-docker
     - hived-for-tests
-    
+  except:
+    - schedules
+  only:
+    - master
+    - merge_request
+    - 0.24.0
+  when: manual
+  
+staging_replay_45M:
+  variables:
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 45000000
+  <<: *replaytest
+  needs:
+    - job: consensus_staging_build
+      artifacts: true
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  except:
+    - schedules
+  only:
+    - master
+    - merge_request
+    - 0.24.0
+  when: manual
+  
+staging_replay_scheduled:
+  variables:
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 45000000
+  <<: *replaytest
+  needs:
+    - job: consensus_staging_build
+      artifacts: true
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  only:
+    - schedules
+  
 #**********************</TESTS>*********************#
 
 
