@@ -345,7 +345,7 @@ replay-test:
   stage: test
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
-    GIT_STRATEGY: fetch
+    GIT_STRATEGY: clone
     STOP_REPLAY_AT: 2000000
   needs:
     - job: consensus_development_build
