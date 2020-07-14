@@ -357,6 +357,7 @@ replay-test:
     - cp ./consensus_development_build/install-root/bin/cli_wallet ./replay
     - cp ./consensus_development_build/config-for-docker.ini ./replay
     - mv ./replay/config-for-docker.ini ./replay/config.ini
+    - find $CI_PROJECT_DIR/../ -xdev -name replay.sh
     - cp ./consensus_development_build/install-root/bin/truncate_block_log ./replay
     - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
     #- ./replay/hived --replay-blockchain --set-benchmark-interval 1000000 --stop-replay-at-block $STOP_REPLAY_AT --exit-after-replay --advanced-benchmark --dump-memory-details  -d ./replay --shared-file-dir ./replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
