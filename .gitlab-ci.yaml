@@ -347,6 +347,7 @@ replay-test:
   variables:
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 2000000
+    BENCHMARK_INTERVAL: 1000000
   needs:
     - job: consensus_development_build
       artifacts: true
@@ -361,7 +362,7 @@ replay-test:
     - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
     - chmod 0777 ./ciscripts/replay.sh
     #- ./replay/hived --replay-blockchain --set-benchmark-interval 1000000 --stop-replay-at-block $STOP_REPLAY_AT --exit-after-replay --advanced-benchmark --dump-memory-details  -d ./replay --shared-file-dir ./replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
-    - ./ciscripts/replay.sh 100000 $STOP_REPLAY_AT #benchmark interval = 1000000 / stop replay at block $STOP_REPLAY_AT
+    - ./ciscripts/replay.sh "$BENCHMARK_INTERVAL" "$STOP_REPLAY_AT" 
   artifacts:
     paths:
     - $CI_PROJECT_DIR/replay/replay.log
