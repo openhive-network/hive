@@ -7,27 +7,28 @@
 
 namespace hive { namespace protocol {
 
-  struct author_reward_operation : public virtual_operation {
+  struct author_reward_operation : public virtual_operation
+  {
     author_reward_operation(){}
-    author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v )
+    author_reward_operation( const account_name_type& a, const string& p, const HBD_asset& s, const HIVE_asset& st, const VEST_asset& v )
       :author(a), permlink(p), hbd_payout(s), hive_payout(st), vesting_payout(v){}
 
     account_name_type author;
     string            permlink;
-    asset             hbd_payout;
-    asset             hive_payout;
-    asset             vesting_payout;
+    asset             hbd_payout; //in HBD
+    asset             hive_payout; //in HIVE
+    asset             vesting_payout; //in VESTS
   };
 
 
   struct curation_reward_operation : public virtual_operation
   {
     curation_reward_operation(){}
-    curation_reward_operation( const string& c, const asset& r, const string& a, const string& p )
+    curation_reward_operation( const string& c, const VEST_asset& r, const string& a, const string& p )
       :curator(c), reward(r), comment_author(a), comment_permlink(p) {}
 
     account_name_type curator;
-    asset             reward;
+    asset             reward; //in VESTS
     account_name_type comment_author;
     string            comment_permlink;
   };
@@ -35,67 +36,69 @@ namespace hive { namespace protocol {
 
   struct comment_reward_operation : public virtual_operation
   {
-    comment_reward_operation() = default;
-    comment_reward_operation( const account_name_type& a, const string& pl, const asset& p, share_type ar)
+    comment_reward_operation(){}
+    comment_reward_operation( const account_name_type& a, const string& pl, const HBD_asset& p, share_type ar)
       :author(a), permlink(pl), payout(p), author_rewards(ar) {}
 
     account_name_type author;
     string            permlink;
-    asset             payout;
+    asset             payout; //in HBD
     share_type        author_rewards;
   };
 
 
   struct liquidity_reward_operation : public virtual_operation
   {
-    liquidity_reward_operation( string o = string(), asset p = asset() )
-    :owner(o), payout(p) {}
+    liquidity_reward_operation(){}
+    liquidity_reward_operation( const account_name_type& o, const HIVE_asset& p )
+      :owner(o), payout(p) {}
 
     account_name_type owner;
-    asset             payout;
+    asset             payout; //in HIVE
   };
 
 
   struct interest_operation : public virtual_operation
   {
-    interest_operation( const string& o = "", const asset& i = asset(0,HBD_SYMBOL) )
-      :owner(o),interest(i){}
+    interest_operation(){}
+    interest_operation( const account_name_type& o, const HBD_asset& i )
+      :owner(o), interest(i) {}
 
     account_name_type owner;
-    asset             interest;
+    asset             interest; //in HBD
   };
 
 
   struct fill_convert_request_operation : public virtual_operation
   {
     fill_convert_request_operation(){}
-    fill_convert_request_operation( const string& o, const uint32_t id, const asset& in, const asset& out )
+    fill_convert_request_operation( const account_name_type& o, const uint32_t id, const HBD_asset& in, const HIVE_asset& out )
       :owner(o), requestid(id), amount_in(in), amount_out(out) {}
 
     account_name_type owner;
     uint32_t          requestid = 0;
-    asset             amount_in;
-    asset             amount_out;
+    asset             amount_in; //in HBD
+    asset             amount_out; //in HIVE
   };
 
 
   struct fill_vesting_withdraw_operation : public virtual_operation
   {
     fill_vesting_withdraw_operation(){}
-    fill_vesting_withdraw_operation( const string& f, const string& t, const asset& w, const asset& d )
+    fill_vesting_withdraw_operation( const account_name_type& f, const account_name_type& t, const VEST_asset& w, const asset& d )
       :from_account(f), to_account(t), withdrawn(w), deposited(d) {}
 
     account_name_type from_account;
     account_name_type to_account;
-    asset             withdrawn;
-    asset             deposited;
+    asset             withdrawn; //in VESTS
+    asset             deposited; //in VESTS or HIVE
   };
 
 
   struct shutdown_witness_operation : public virtual_operation
   {
     shutdown_witness_operation(){}
-    shutdown_witness_operation( const string& o ):owner(o) {}
+    shutdown_witness_operation( const account_name_type& o ):owner(o) {}
 
     account_name_type owner;
   };
@@ -104,15 +107,16 @@ namespace hive { namespace protocol {
   struct fill_order_operation : public virtual_operation
   {
     fill_order_operation(){}
-    fill_order_operation( const string& c_o, uint32_t c_id, const asset& c_p, const string& o_o, uint32_t o_id, const asset& o_p )
+    fill_order_operation( const account_name_type& c_o, uint32_t c_id, const asset& c_p,
+                          const account_name_type& o_o, uint32_t o_id, const asset& o_p )
     :current_owner(c_o), current_orderid(c_id), current_pays(c_p), open_owner(o_o), open_orderid(o_id), open_pays(o_p) {}
 
     account_name_type current_owner;
     uint32_t          current_orderid = 0;
-    asset             current_pays;
+    asset             current_pays; //in HIVE or HBD (any liquid asset?)
     account_name_type open_owner;
     uint32_t          open_orderid = 0;
-    asset             open_pays;
+    asset             open_pays; //in HBD or HIVE (any liquid asset?)
   };
 
 
@@ -124,7 +128,7 @@ namespace hive { namespace protocol {
 
     account_name_type from;
     account_name_type to;
-    asset             amount;
+    asset             amount; //in HIVE or HBD
     uint32_t          request_id = 0;
     string            memo;
   };
@@ -148,7 +152,7 @@ namespace hive { namespace protocol {
 
   struct effective_comment_vote_operation : public virtual_operation
   {
-    effective_comment_vote_operation() = default;
+    effective_comment_vote_operation() {}
     effective_comment_vote_operation(const account_name_type& _voter, const account_name_type& _author, const string& _permlink) :
       voter(_voter), author(_author), permlink(_permlink) {}
 
@@ -163,44 +167,46 @@ namespace hive { namespace protocol {
   struct return_vesting_delegation_operation : public virtual_operation
   {
     return_vesting_delegation_operation() {}
-    return_vesting_delegation_operation( const account_name_type& a, const asset& v ) : account( a ), vesting_shares( v ) {}
+    return_vesting_delegation_operation( const account_name_type& a, const VEST_asset& v ) : account( a ), vesting_shares( v ) {}
 
     account_name_type account;
-    asset             vesting_shares;
+    asset             vesting_shares; //in VESTS
   };
 
   struct comment_benefactor_reward_operation : public virtual_operation
   {
     comment_benefactor_reward_operation() {}
-    comment_benefactor_reward_operation( const account_name_type& b, const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v )
+    comment_benefactor_reward_operation( const account_name_type& b, const account_name_type& a, const string& p,
+                                         const HBD_asset& s, const HIVE_asset& st, const VEST_asset& v )
       : benefactor( b ), author( a ), permlink( p ), hbd_payout( s ), hive_payout( st ), vesting_payout( v ) {}
 
     account_name_type benefactor;
     account_name_type author;
     string            permlink;
-    asset             hbd_payout;
-    asset             hive_payout;
-    asset             vesting_payout;
+    asset             hbd_payout; //in HBD
+    asset             hive_payout; //in HIVE
+    asset             vesting_payout; //in VESTS
   };
 
   struct producer_reward_operation : public virtual_operation
   {
     producer_reward_operation(){}
-    producer_reward_operation( const string& p, const asset& v ) : producer( p ), vesting_shares( v ) {}
+    producer_reward_operation( const account_name_type& p, const VEST_asset& v )
+      : producer( p ), vesting_shares( v ) {}
 
     account_name_type producer;
-    asset             vesting_shares;
+    asset             vesting_shares; //in VESTS
 
   };
 
   struct clear_null_account_balance_operation : public virtual_operation
   {
-    vector< asset >   total_cleared;
+    vector< asset >   total_cleared; //in order (skipping 0): HIVE, VESTS, HBD
   };
 
   struct consolidate_treasury_balance_operation : public virtual_operation
   {
-    vector< asset >   total_moved;
+    vector< asset >   total_moved; //in order (skipping 0): HIVE, VESTS, HBD
   };
 
   struct delayed_voting_operation : public virtual_operation
@@ -215,10 +221,10 @@ namespace hive { namespace protocol {
   struct sps_fund_operation : public virtual_operation
   {
     sps_fund_operation() {}
-    sps_fund_operation( const account_name_type& _fund, const asset& v ) : fund_account( _fund ), additional_funds( v ) {}
+    sps_fund_operation( const account_name_type& _fund, const HBD_asset& v ) : fund_account( _fund ), additional_funds( v ) {}
 
     account_name_type fund_account;
-    asset additional_funds;
+    asset additional_funds; //in HBD
   };
 
   // TODO : Fix legacy error itr != to_full_tag.end(): Invalid operation name: hardfork_hive {"n":"hardfork_hive"}
@@ -226,28 +232,30 @@ namespace hive { namespace protocol {
   {
     hardfork_hive_operation() {}
     hardfork_hive_operation( const account_name_type& acc, const account_name_type& _treasury,
-      const asset& s, const asset& st, const asset& v, const asset& cs )
+      const HBD_asset& s, const HIVE_asset& st, const VEST_asset& v, const HIVE_asset& cs )
       : account( acc ), treasury( _treasury ), hbd_transferred( s ), hive_transferred( st ), vests_converted( v ), total_hive_from_vests(cs)
     {}
 
     account_name_type account;
     account_name_type treasury;
-    asset             hbd_transferred;
-    asset             hive_transferred;
-    asset             vests_converted; // Amount of converted vests
-    asset             total_hive_from_vests; // Resulting HIVE from conversion
+    asset             hbd_transferred; //in HBD
+    asset             hive_transferred; //in HIVE
+    // Amount of converted vests
+    asset             vests_converted; //in VESTS
+    // Resulting HIVE from VESTS conversion
+    asset             total_hive_from_vests; //in HIVE
   };
 
   struct hardfork_hive_restore_operation : public virtual_operation
   {
     hardfork_hive_restore_operation() {}
-    hardfork_hive_restore_operation( const account_name_type& acc, const account_name_type& _treasury, const asset& s, const asset& st )
+    hardfork_hive_restore_operation( const account_name_type& acc, const account_name_type& _treasury, const HBD_asset& s, const HIVE_asset& st )
       : account( acc ), treasury( _treasury ), hbd_transferred( s ), hive_transferred( st ) {}
 
     account_name_type account;
     account_name_type treasury;
-    asset             hbd_transferred;
-    asset             hive_transferred;
+    asset             hbd_transferred; //in HBD
+    asset             hive_transferred; //in HIVE
   };
 
 } } //hive::protocol

@@ -13,7 +13,7 @@ namespace hive { namespace protocol {
 
   struct account_create_operation : public base_operation
   {
-    asset             fee;
+    asset             fee; //in HIVE
     account_name_type creator;
     account_name_type new_account_name;
     authority         owner;
@@ -29,8 +29,8 @@ namespace hive { namespace protocol {
 
   struct account_create_with_delegation_operation : public base_operation
   {
-    asset             fee;
-    asset             delegation;
+    asset             fee; //in HIVE
+    asset             delegation; //in VESTS
     account_name_type creator;
     account_name_type new_account_name;
     authority         owner;
@@ -215,7 +215,7 @@ namespace hive { namespace protocol {
     account_name_type author;
     string            permlink;
 
-    asset             max_accepted_payout    = asset( 1000000000, HBD_SYMBOL ); /// HBD value of the maximum payout this post will receive
+    asset             max_accepted_payout    = asset( 1000000000, HBD_SYMBOL ); /// HBD value of the maximum payout this post will receive (in HBD)
     uint16_t          percent_hbd            = HIVE_100_PERCENT; /// the percent of HBD to key, unkept amounts will be received in form of VESTS
     bool              allow_votes            = true; /// allows a post to receive votes
     bool              allow_curation_rewards = true; /// allows voters to recieve curation rewards. Rewards return to reward fund.
@@ -229,7 +229,7 @@ namespace hive { namespace protocol {
   struct claim_account_operation : public base_operation
   {
     account_name_type creator;
-    asset             fee;
+    asset             fee; //in HIVE
     extensions_type   extensions;
 
     void get_required_active_authorities( flat_set< account_name_type >& a ) const { a.insert( creator ); }
@@ -286,7 +286,7 @@ namespace hive { namespace protocol {
     /// Account to transfer asset to
     account_name_type to;
     /// The amount of asset to transfer from @ref from to @ref to
-    asset             amount;
+    asset             amount; //in any liquid asset
 
     /// The memo is plain-text, any encryption on the memo is up to a higher level protocol.
     string            memo;
@@ -321,9 +321,9 @@ namespace hive { namespace protocol {
     account_name_type agent;
     uint32_t          escrow_id = 30;
 
-    asset             hbd_amount = asset( 0, HBD_SYMBOL );
-    asset             hive_amount = asset( 0, HIVE_SYMBOL );
-    asset             fee;
+    asset             hbd_amount = asset( 0, HBD_SYMBOL ); //in HBD
+    asset             hive_amount = asset( 0, HIVE_SYMBOL ); //in HIVE
+    asset             fee; //in HBD or HIVE
 
     time_point_sec    ratification_deadline;
     time_point_sec    escrow_expiration;
@@ -393,8 +393,8 @@ namespace hive { namespace protocol {
     account_name_type receiver; ///< the account that should receive funds (might be from, might be to)
 
     uint32_t          escrow_id = 30;
-    asset             hbd_amount = asset( 0, HBD_SYMBOL ); ///< the amount of HBD to release
-    asset             hive_amount = asset( 0, HIVE_SYMBOL ); ///< the amount of HIVE to release
+    asset             hbd_amount = asset( 0, HBD_SYMBOL ); ///< the amount of HBD to release (in HBD)
+    asset             hive_amount = asset( 0, HIVE_SYMBOL ); ///< the amount of HIVE to release (in HIVE)
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(who); }
@@ -431,7 +431,7 @@ namespace hive { namespace protocol {
   struct withdraw_vesting_operation : public base_operation
   {
     account_name_type account;
-    asset             vesting_shares;
+    asset             vesting_shares; //in VESTS
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(account); }
@@ -514,7 +514,7 @@ namespace hive { namespace protocol {
     string            url;
     public_key_type   block_signing_key;
     legacy_chain_properties  props;
-    asset             fee; ///< the fee paid to register a new witness, should be 10x current block production pay
+    asset             fee; ///< the fee paid to register a new witness, should be 10x current block production pay (in HIVE)
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(owner); }
@@ -641,7 +641,7 @@ namespace hive { namespace protocol {
   {
     account_name_type owner;
     uint32_t          requestid = 0;
-    asset             amount;
+    asset             amount; //in HBD
 
     void  validate()const;
     void  get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(owner); }
@@ -655,7 +655,7 @@ namespace hive { namespace protocol {
   {
     account_name_type owner;
     uint32_t          orderid = 0; /// an ID assigned by owner, must be unique
-    asset             amount_to_sell;
+    asset             amount_to_sell; //only HIVE + HBD/SMT pairs allowed
     asset             min_to_receive;
     bool              fill_or_kill = false;
     time_point_sec    expiration = time_point_sec::maximum();
@@ -682,7 +682,7 @@ namespace hive { namespace protocol {
   {
     account_name_type owner;
     uint32_t          orderid = 0; /// an ID assigned by owner, must be unique
-    asset             amount_to_sell;
+    asset             amount_to_sell; //only HIVE + HBD/SMT pairs allowed
     bool              fill_or_kill = false;
     price             exchange_rate;
     time_point_sec    expiration = time_point_sec::maximum();
@@ -988,7 +988,7 @@ namespace hive { namespace protocol {
   struct transfer_to_savings_operation : public base_operation {
     account_name_type from;
     account_name_type to;
-    asset             amount;
+    asset             amount; //in HIVE or HBD
     string            memo;
 
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert( from ); }
@@ -1000,7 +1000,7 @@ namespace hive { namespace protocol {
     account_name_type from;
     uint32_t          request_id = 0;
     account_name_type to;
-    asset             amount;
+    asset             amount; //in HIVE or HBD
     string            memo;
 
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert( from ); }
@@ -1029,9 +1029,9 @@ namespace hive { namespace protocol {
   struct claim_reward_balance_operation : public base_operation
   {
     account_name_type account;
-    asset             reward_hive;
-    asset             reward_hbd;
-    asset             reward_vests;
+    asset             reward_hive; //in HIVE
+    asset             reward_hbd; //in HBD
+    asset             reward_vests; //in VESTS
 
     void get_required_posting_authorities( flat_set< account_name_type >& a )const{ a.insert( account ); }
     void validate() const;
@@ -1069,7 +1069,7 @@ namespace hive { namespace protocol {
   {
     account_name_type delegator;        ///< The account delegating vesting shares
     account_name_type delegatee;        ///< The account receiving vesting shares
-    asset             vesting_shares;   ///< The amount of vesting shares delegated
+    asset             vesting_shares;   ///< The amount of vesting shares delegated (in VESTS)
 
     void get_required_active_authorities( flat_set< account_name_type >& a ) const { a.insert( delegator ); }
     void validate() const;

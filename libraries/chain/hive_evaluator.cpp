@@ -71,7 +71,7 @@ inline void validate_permlink_0_1( const string& permlink )
 template< bool force_canon >
 void copy_legacy_chain_properties( chain_properties& dest, const legacy_chain_properties& src )
 {
-  dest.account_creation_fee = to_HIVE( src.account_creation_fee.to_asset< force_canon >() );
+  dest.account_creation_fee = src.account_creation_fee.to_asset< force_canon >().to_HIVE();
   dest.maximum_block_size = src.maximum_block_size;
   dest.hbd_interest_rate = src.hbd_interest_rate;
 }
@@ -309,7 +309,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   const auto& props = _db.get_dynamic_global_properties();
 
   const witness_schedule_object& wso = _db.get_witness_schedule_object();
-  const HIVE_asset o_fee = to_HIVE( o.fee );
+  const HIVE_asset o_fee = o.fee.to_HIVE();
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) || _db.is_producing() )
   {
@@ -388,8 +388,8 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 void account_create_with_delegation_evaluator::do_apply( const account_create_with_delegation_operation& o )
 {
   FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_20__1760 ), "Account creation with delegation is deprecated as of Hardfork 20" );
-  const HIVE_asset o_fee = to_HIVE( o.fee );
-  const VEST_asset o_delegation = to_VEST( o.delegation );
+  const HIVE_asset o_fee = o.fee.to_HIVE();
+  const VEST_asset o_delegation = o.delegation.to_VEST();
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) || _db.is_producing() )
   {
@@ -747,7 +747,7 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
   const auto& comment = _db.get_comment( o.author, o.permlink );
   const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
 
-  const HBD_asset o_max_accepted_payout = to_HBD( o.max_accepted_payout );
+  const HBD_asset o_max_accepted_payout = o.max_accepted_payout.to_HBD();
 
   /*
     If `comment_cashout` doesn't exist then setting members needed for payout is not necessary
@@ -1005,8 +1005,8 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
     const auto& from_account = _db.get_account(o.from);
     _db.get_account(o.to);
     _db.get_account(o.agent);
-    const HIVE_asset o_hive_amount = to_HIVE( o.hive_amount );
-    const HBD_asset o_hbd_amount = to_HBD( o.hbd_amount );
+    const HIVE_asset o_hive_amount = o.hive_amount.to_HIVE();
+    const HBD_asset o_hbd_amount = o.hbd_amount.to_HBD();
 
     FC_ASSERT( o.ratification_deadline > _db.head_block_time(), "The escrow ratification deadline must be after head block time." );
     FC_ASSERT( o.escrow_expiration > _db.head_block_time(), "The escrow expiration must be after head block time." );
@@ -1114,8 +1114,8 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
   try
   {
     const auto& from_account = _db.get_account( o.from );
-    const HIVE_asset o_hive_amount = to_HIVE( o.hive_amount );
-    const HBD_asset o_hbd_amount = to_HBD( o.hbd_amount );
+    const HIVE_asset o_hive_amount = o.hive_amount.to_HIVE();
+    const HBD_asset o_hbd_amount = o.hbd_amount.to_HBD();
 
     const auto& e = _db.get_escrow( o.from, o.escrow_id );
     FC_ASSERT( e.get_hive_balance() >= o_hive_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hive_amount)("b", e.get_hive_balance()) );
@@ -1219,7 +1219,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
 {
   const auto& account = _db.get_account( o.account );
-  const VEST_asset o_vesting_shares = to_VEST( o.vesting_shares );
+  const VEST_asset o_vesting_shares = o.vesting_shares.to_VEST();
 
   if( o_vesting_shares.amount < 0 )
   {
@@ -2589,7 +2589,7 @@ void feed_publish_evaluator::do_apply( const feed_publish_operation& o )
 
 void convert_evaluator::do_apply( const convert_operation& o )
 {
-  const HBD_asset o_amount = to_HBD( o.amount );
+  const HBD_asset o_amount = o.amount.to_HBD();
   _db.adjust_balance( o.owner, -o_amount );
 
   const auto& fhistory = _db.get_feed_history();
@@ -2665,7 +2665,7 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
 
   const auto& creator = _db.get_account( o.creator );
   const auto& wso = _db.get_witness_schedule_object();
-  const HIVE_asset o_fee = to_HIVE( o.fee );
+  const HIVE_asset o_fee = o.fee.to_HIVE();
 
   FC_ASSERT( creator.get_balance() >= o_fee, "Insufficient balance to create account.", ( "creator.balance", creator.get_balance() )( "required", o.fee ) );
 
@@ -2994,9 +2994,9 @@ void set_reset_account_evaluator::do_apply( const set_reset_account_operation& o
 void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operation& op )
 {
   const auto& acnt = _db.get_account( op.account );
-  const HIVE_asset op_reward_hive = to_HIVE( op.reward_hive );
-  const HBD_asset op_reward_hbd = to_HBD( op.reward_hbd );
-  const VEST_asset op_reward_vests = to_VEST( op.reward_vests );
+  const HIVE_asset op_reward_hive = op.reward_hive.to_HIVE();
+  const HBD_asset op_reward_hbd = op.reward_hbd.to_HBD();
+  const VEST_asset op_reward_vests = op.reward_vests.to_VEST();
 
   FC_ASSERT( op_reward_hive <= acnt.get_rewards(), "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
     ("c", op.reward_hive)("a", acnt.get_rewards() ) );
@@ -3067,7 +3067,7 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
 
       if( token.symbol == VESTS_SYMBOL )
       {
-        const VEST_asset vest_token = to_VEST( token );
+        const VEST_asset vest_token = token.to_VEST();
         FC_ASSERT( vest_token <= a->get_vest_rewards(), "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
           ("c", token)("a", a->get_vest_rewards() ) );
 
@@ -3098,7 +3098,7 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
       }
       else if( token.symbol == HIVE_SYMBOL )
       {
-        const HIVE_asset hive_token = to_HIVE( token );
+        const HIVE_asset hive_token = token.to_HIVE();
         FC_ASSERT( hive_token <= a->get_rewards(),
           "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}", ( "c", token )( "a", a->get_rewards() ) );
         _db.adjust_reward_balance( *a, -hive_token );
@@ -3106,7 +3106,7 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
       }
       else if( token.symbol == HBD_SYMBOL )
       {
-        const HBD_asset hbd_token = to_HBD( token );
+        const HBD_asset hbd_token = token.to_HBD();
         FC_ASSERT( hbd_token <= a->get_hbd_rewards(),
           "Cannot claim that much HBD. Claim: ${c} Actual: ${a}", ( "c", token )( "a", a->get_hbd_rewards() ) );
         _db.adjust_reward_balance( *a, -hbd_token );
@@ -3128,7 +3128,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
   const auto& delegator = _db.get_account( op.delegator );
   const auto& delegatee = _db.get_account( op.delegatee );
   auto delegation = _db.find< vesting_delegation_object, by_delegation >( boost::make_tuple( op.delegator, op.delegatee ) );
-  const VEST_asset op_vesting_shares = to_VEST( op.vesting_shares );
+  const VEST_asset op_vesting_shares = op.vesting_shares.to_VEST();
 
   const auto& gpo = _db.get_dynamic_global_properties();
 

@@ -8,7 +8,6 @@
 #include <hive/chain/hardfork_property_object.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
-#include <hive/chain/util/tiny_asset.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/signal.hpp>
@@ -32,6 +31,9 @@ namespace hive { namespace chain {
   using hive::protocol::signed_transaction;
   using hive::protocol::operation;
   using hive::protocol::authority;
+  using hive::protocol::HBD_asset;
+  using hive::protocol::HIVE_asset;
+  using hive::protocol::VEST_asset;
   using hive::protocol::asset;
   using hive::protocol::asset_symbol_type;
   using hive::protocol::price;
@@ -526,8 +528,8 @@ namespace hive { namespace chain {
         * Helper method to return the current HBD value of a given amount of
         * HIVE.  Return 0 HBD if there isn't a current_median_history
         */
-      HBD_asset to_hbd( const HIVE_asset& hive )const;
-      HIVE_asset to_hive( const HBD_asset& hbd )const;
+      HBD_asset compute_hbd( const HIVE_asset& hive )const;
+      HIVE_asset compute_hive( const HBD_asset& hbd )const;
 
       time_point_sec   head_block_time()const;
       uint32_t         head_block_num()const;

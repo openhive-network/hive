@@ -148,18 +148,18 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     const account_object& alice_account = db->get_account( "alice" );
     const account_object& bob_account = db->get_account( "bob" );
 
-    asset alice_0 = asset( 0, alice_symbol );
+    asset alice_0( 0, alice_symbol );
 
     FUND( "bob", 1000000 );
     convert( "bob", ASSET("1000.000 TESTS" ) );
     generate_block();
 
-    asset alice_smt_balance = asset( 1000000, alice_symbol );
-    asset bob_smt_balance = asset( 1000000, alice_symbol );
+    asset alice_smt_balance( 1000000, alice_symbol );
+    asset bob_smt_balance( 1000000, alice_symbol );
 
-    asset alice_balance = alice_account.get_balance().to_asset();
+    asset alice_balance( alice_account.get_balance() );
 
-    asset bob_balance = bob_account.get_balance().to_asset();
+    asset bob_balance( bob_account.get_balance() );
 
     FUND( "alice", alice_smt_balance );
     FUND( "bob", bob_smt_balance );
@@ -560,8 +560,8 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_apply )
     tx.operations.clear();
     tx.signatures.clear();
 
-    asset alice_smt_balance = asset( 1000000, alice_symbol );
-    asset alice_balance = alice_account.get_balance().to_asset();
+    asset alice_smt_balance( 1000000, alice_symbol );
+    asset alice_balance( alice_account.get_balance() );
 
     FUND( "alice", alice_smt_balance );
 
@@ -622,18 +622,18 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     const account_object& alice_account = db->get_account( "alice" );
     const account_object& bob_account = db->get_account( "bob" );
 
-    asset alice_0 = asset( 0, alice_symbol );
+    asset alice_0( 0, alice_symbol );
 
     FUND( "bob", 1000000 );
     convert( "bob", ASSET("1000.000 TESTS" ) );
     generate_block();
 
-    asset alice_smt_balance = asset( 1000000, alice_symbol );
-    asset bob_smt_balance = asset( 1000000, alice_symbol );
+    asset alice_smt_balance( 1000000, alice_symbol );
+    asset bob_smt_balance( 1000000, alice_symbol );
 
-    asset alice_balance = alice_account.get_balance().to_asset();
+    asset alice_balance( alice_account.get_balance() );
 
-    asset bob_balance = bob_account.get_balance().to_asset();
+    asset bob_balance( bob_account.get_balance() );
 
     FUND( "alice", alice_smt_balance );
     FUND( "bob", bob_smt_balance );
@@ -1120,19 +1120,19 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     {
       db.modify( db.get_account( "alice" ), []( account_object& a )
       {
-        a.reward_hbd_balance = to_HBD( ASSET( "10.000 TBD" ) );
-        a.reward_hive_balance = to_HIVE( ASSET( "10.000 TESTS" ) );
-        a.reward_vesting_balance = to_VEST( ASSET( "10.000000 VESTS" ) );
-        a.reward_vesting_hive = to_HIVE( ASSET( "10.000 TESTS" ) );
+        a.reward_hbd_balance = ASSET( "10.000 TBD" ).to_HBD();
+        a.reward_hive_balance = ASSET( "10.000 TESTS" ).to_HIVE();
+        a.reward_vesting_balance = ASSET( "10.000000 VESTS" ).to_VEST();
+        a.reward_vesting_hive = ASSET( "10.000 TESTS" ).to_HIVE();
       });
 
       db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
       {
-        gpo.current_hbd_supply += to_HBD( ASSET( "10.000 TBD" ) );
-        gpo.current_supply += to_HIVE( ASSET( "20.000 TESTS" ) );
-        gpo.virtual_supply += to_HIVE( ASSET( "20.000 TESTS" ) );
-        gpo.pending_rewarded_vesting_shares += to_VEST( ASSET( "10.000000 VESTS" ) );
-        gpo.pending_rewarded_vesting_hive += to_HIVE( ASSET( "10.000 TESTS" ) );
+        gpo.current_hbd_supply += ASSET( "10.000 TBD" ).to_HBD();
+        gpo.current_supply += ASSET( "20.000 TESTS" ).to_HIVE();
+        gpo.virtual_supply += ASSET( "20.000 TESTS" ).to_HIVE();
+        gpo.pending_rewarded_vesting_shares += ASSET( "10.000000 VESTS" ).to_VEST();
+        gpo.pending_rewarded_vesting_hive += ASSET( "10.000 TESTS" ).to_HIVE();
       });
     });
 
@@ -1181,7 +1181,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     alice_vests += partial_vests;
     op.reward_tokens.clear();
     // SMTs
-    asset partial_smt2 = asset( 5*std::pow(10, smt2.decimals()), smt2 );
+    asset partial_smt2( 5*std::pow(10, smt2.decimals()), smt2 );
     op.reward_tokens.push_back( asset( 0, smt1 ) );
     op.reward_tokens.push_back( partial_smt2 );
     op.reward_tokens.push_back( asset( 0, smt3 ) );
@@ -1211,8 +1211,8 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance2_apply )
     validate_database();
     op.reward_tokens.clear();
     // SMTs
-    asset full_smt1 = asset( 10*std::pow(10, smt1.decimals()), smt1 );
-    asset full_smt3 = asset( 10*std::pow(10, smt3.decimals()), smt3 );
+    asset full_smt1( 10*std::pow(10, smt1.decimals()), smt1 );
+    asset full_smt3( 10*std::pow(10, smt3.decimals()), smt3 );
     op.reward_tokens.push_back( full_smt1 );
     op.reward_tokens.push_back( partial_smt2 );
     op.reward_tokens.push_back( full_smt3 );

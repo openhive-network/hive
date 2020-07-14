@@ -21,8 +21,8 @@ api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_objec
 {
   total_vote_weight = cc.total_vote_weight;
   reward_weight = cc.reward_weight;
-  total_payout_value = cc.total_payout_value.to_asset();
-  curator_payout_value = cc.curator_payout_value.to_asset();
+  total_payout_value = cc.total_payout_value;
+  curator_payout_value = cc.curator_payout_value;
   author_rewards = cc.author_rewards;
   net_votes = cc.net_votes;
   active = cc.active;
@@ -33,7 +33,7 @@ api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_objec
   children_abs_rshares = cc.children_abs_rshares;
   cashout_time = cc.cashout_time;
   max_cashout_time = cc.max_cashout_time;
-  max_accepted_payout = cc.max_accepted_payout.to_asset();
+  max_accepted_payout = cc.max_accepted_payout;
   percent_hbd = cc.percent_hbd;
   allow_votes = cc.allow_votes;
   allow_curation_rewards = cc.allow_curation_rewards;

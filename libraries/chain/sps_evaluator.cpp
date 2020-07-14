@@ -26,7 +26,7 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
     FC_ASSERT( o.end_date > _db.head_block_time(), "Can't create inactive proposals..." );
 
     HBD_asset fee_hbd( HIVE_TREASURY_FEE );
-    const HBD_asset o_daily_pay = to_HBD( o.daily_pay );
+    const HBD_asset o_daily_pay = o.daily_pay.to_HBD();
 
     if( _db.has_hardfork(HIVE_HARDFORK_0_24) )
     {
@@ -85,7 +85,7 @@ void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
   try
   {
     FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_24 ), "The update proposal functionality not enabled until hardfork ${hf}", ("hf", HIVE_HARDFORK_0_24) );
-    const HBD_asset o_daily_pay = to_HBD( o.daily_pay );
+    const HBD_asset o_daily_pay = o.daily_pay.to_HBD();
 
     const auto& proposal = _db.get< proposal_object, by_proposal_id >( o.proposal_id );
 

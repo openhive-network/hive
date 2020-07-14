@@ -16,7 +16,7 @@ struct create_proposal_operation : public base_operation
   time_point_sec end_date;
 
   /// Amount of HBD to be daily paid to the `receiver` account.
-  asset daily_pay;
+  asset daily_pay; //in HBD
 
   string subject;
 
@@ -37,7 +37,7 @@ struct update_proposal_operation : public base_operation
   account_name_type creator;
 
   /// Amount of HBDs to be daily paid to the `receiver` account, if updated, has to be lower or equal to the current amount
-  asset daily_pay;
+  asset daily_pay; //in HBD
 
   string subject;
 
@@ -89,8 +89,8 @@ struct remove_proposal_operation : public base_operation
 */
 struct proposal_pay_operation : public virtual_operation
 {
-  proposal_pay_operation() = default;
-  proposal_pay_operation( const account_name_type _receiver, const account_name_type _treasury, const asset& _payment,
+  proposal_pay_operation(){}
+  proposal_pay_operation( const account_name_type _receiver, const account_name_type _treasury, const HBD_asset& _payment,
     transaction_id_type _trx_id, uint16_t _op_in_trx )
     : receiver( _receiver ), payer( _treasury ), payment( _payment ), trx_id( _trx_id ), op_in_trx( _op_in_trx ) {}
 
@@ -99,7 +99,7 @@ struct proposal_pay_operation : public virtual_operation
   /// Name of the treasury account that is source of payment
   account_name_type payer;
   /// Amount of HBD paid.
-  asset             payment;
+  asset             payment; //in HBD
 
   /// Transaction id + position of operation where appeared a proposal being a source of given operation.
   transaction_id_type trx_id;

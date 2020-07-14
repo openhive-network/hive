@@ -438,10 +438,10 @@ void database_fixture::fund(
       db.modify( db.get_account( account_name ), [&]( account_object& a )
       {
         if( amount.symbol == HIVE_SYMBOL )
-          a.balance += to_HIVE( amount );
+          a.balance += amount.to_HIVE();
         else if( amount.symbol == HBD_SYMBOL )
         {
-          a.hbd_balance += to_HBD( amount );
+          a.hbd_balance += amount.to_HBD();
           a.hbd_seconds_last_update = db.head_block_time();
         }
       });
@@ -449,9 +449,9 @@ void database_fixture::fund(
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         if( amount.symbol == HIVE_SYMBOL )
-          gpo.current_supply += to_HIVE( amount );
+          gpo.current_supply += amount.to_HIVE();
         else if( amount.symbol == HBD_SYMBOL )
-          gpo.current_hbd_supply += to_HBD( amount );
+          gpo.current_hbd_supply += amount.to_HBD();
       });
 
       if( amount.symbol == HBD_SYMBOL )
@@ -478,19 +478,19 @@ void database_fixture::convert(
   {
     if( amount.symbol == HIVE_SYMBOL )
     {
-      const HIVE_asset hive = to_HIVE( amount );
+      const HIVE_asset hive = amount.to_HIVE();
       db->adjust_balance( account_name, -hive );
-      db->adjust_balance( account_name, db->to_hbd( hive ) );
+      db->adjust_balance( account_name, db->compute_hbd( hive ) );
       db->adjust_supply( -hive );
-      db->adjust_supply( db->to_hbd( hive ) );
+      db->adjust_supply( db->compute_hbd( hive ) );
     }
     else if( amount.symbol == HBD_SYMBOL )
     {
-      const HBD_asset hbd = to_HBD( amount );
+      const HBD_asset hbd = amount.to_HBD();
       db->adjust_balance( account_name, -hbd );
-      db->adjust_balance( account_name, db->to_hive( hbd ) );
+      db->adjust_balance( account_name, db->compute_hive( hbd ) );
       db->adjust_supply( -hbd );
-      db->adjust_supply( db->to_hive( hbd ) );
+      db->adjust_supply( db->compute_hive( hbd ) );
     }
   } FC_CAPTURE_AND_RETHROW( (account_name)(amount) )
 }

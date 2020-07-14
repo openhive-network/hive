@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
     }
     tx.clear();
 
-    asset initial_treasury_balance = db->get_treasury().get_hbd_balance().to_asset();
+    asset initial_treasury_balance( db->get_treasury().get_hbd_balance() );
     generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time );
     BOOST_REQUIRE_EQUAL( get_hbd_balance( OBSOLETE_TREASURY_ACCOUNT ).amount.value, 0 );
     BOOST_REQUIRE_EQUAL( db->get_treasury().get_hbd_balance().amount.value, 1150 + initial_treasury_balance.amount.value );
@@ -261,12 +261,12 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       db.create_vesting( old_treasury, ASSET( "3.000 TESTS" ), true );
       db.modify( old_treasury, [&]( account_object& t )
       {
-        t.balance = to_HIVE( ASSET( "5.000 TESTS" ) );
-        t.savings_balance = to_HIVE( ASSET( "3.000 TESTS" ) );
-        t.reward_hive_balance = to_HIVE( ASSET( "2.000 TESTS" ) );
-        t.hbd_balance = to_HBD( ASSET( "5.000 TBD" ) );
-        t.savings_hbd_balance = to_HBD( ASSET( "3.000 TBD" ) );
-        t.reward_hbd_balance = to_HBD( ASSET( "2.000 TBD" ) );
+        t.balance = ASSET( "5.000 TESTS" ).to_HIVE();
+        t.savings_balance = ASSET( "3.000 TESTS" ).to_HIVE();
+        t.reward_hive_balance = ASSET( "2.000 TESTS" ).to_HIVE();
+        t.hbd_balance = ASSET( "5.000 TBD" ).to_HBD();
+        t.savings_hbd_balance = ASSET( "3.000 TBD" ).to_HBD();
+        t.reward_hbd_balance = ASSET( "2.000 TBD" ).to_HBD();
       } );
     } );
     database_fixture::validate_database();
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       BOOST_REQUIRE_EQUAL( old_treasury.get_vest_rewards().amount.value, vested_3.amount.value );
     }
 
-    asset initial_treasury_balance = db->get_treasury().get_hbd_balance().to_asset();
+    asset initial_treasury_balance( db->get_treasury().get_hbd_balance() );
     generate_block();
     database_fixture::validate_database();
 

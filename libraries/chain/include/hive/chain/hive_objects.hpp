@@ -6,13 +6,15 @@
 #include <hive/protocol/misc_utilities.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/util/tiny_asset.hpp>
 
 #include <boost/multiprecision/cpp_int.hpp>
 
 
 namespace hive { namespace chain {
 
+  using hive::protocol::HBD_asset;
+  using hive::protocol::HIVE_asset;
+  using hive::protocol::VEST_asset;
   using hive::protocol::asset;
   using hive::protocol::price;
   using hive::protocol::asset_symbol_type;

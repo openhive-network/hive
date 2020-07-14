@@ -1,7 +1,6 @@
 #pragma once
 
 #include <hive/chain/util/asset.hpp>
-#include <hive/chain/util/tiny_asset.hpp>
 
 #include <hive/protocol/asset.hpp>
 #include <hive/protocol/config.hpp>
@@ -14,7 +13,8 @@
 
 namespace hive { namespace chain { namespace util {
 
-using hive::protocol::asset;
+using hive::protocol::HBD_asset;
+using hive::protocol::HIVE_asset;
 using hive::protocol::price;
 using hive::protocol::share_type;
 
@@ -43,7 +43,7 @@ uint128_t evaluate_reward_curve( const uint128_t& rshares, const protocol::curve
 
 inline bool is_comment_payout_dust( const price& p, uint64_t hive_payout )
 {
-  return to_hbd( p, asset( hive_payout, HIVE_SYMBOL ) ) < HIVE_MIN_PAYOUT_HBD;
+  return compute_hbd( p, HIVE_asset( hive_payout ) ) < HIVE_MIN_PAYOUT_HBD;
 }
 
 } } } // hive::chain::util

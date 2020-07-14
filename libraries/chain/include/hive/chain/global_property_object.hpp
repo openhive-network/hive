@@ -4,12 +4,14 @@
 #include <fc/uint128.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/util/tiny_asset.hpp>
 
 #include <hive/protocol/asset.hpp>
 
 namespace hive { namespace chain {
 
+  using hive::protocol::HBD_asset;
+  using hive::protocol::HIVE_asset;
+  using hive::protocol::VEST_asset;
   using hive::protocol::asset;
   using hive::protocol::price;
 
@@ -88,12 +90,12 @@ namespace hive { namespace chain {
       VEST_asset  calculate_vesting( const HIVE_asset& value ) const
       {
         auto vests = value.to_asset() * get_vesting_share_price();
-        return to_VEST( vests );
+        return vests.to_VEST();
       }
       HIVE_asset  calculate_vesting( const VEST_asset& value ) const
       {
         auto hive = value.to_asset() * get_vesting_share_price();
-        return to_HIVE( hive );
+        return hive.to_HIVE();
       }
       price       get_vesting_share_price() const
       {
@@ -106,12 +108,12 @@ namespace hive { namespace chain {
       VEST_asset  calculate_reward_vesting( const HIVE_asset& value ) const
       {
         auto vests = value.to_asset() * get_reward_vesting_share_price();
-        return to_VEST( vests );
+        return vests.to_VEST();
       }
       HIVE_asset  calculate_reward_vesting( const VEST_asset& value ) const
       {
         auto hive = value.to_asset() * get_reward_vesting_share_price();
-        return to_HIVE( hive );
+        return hive.to_HIVE();
       }
       price get_reward_vesting_share_price() const
       {

@@ -8,8 +8,6 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/account_object.hpp>
 
-#include <hive/chain/util/tiny_asset.hpp>
-
 #include <fc/crypto/ripemd160.hpp>
 
 #define HIVE_ROOT_POST_PARENT_ID hive::chain::account_id_type::null_id()

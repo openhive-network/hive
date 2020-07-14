@@ -20,7 +20,7 @@ struct api_reward_fund_object
   api_reward_fund_object( const reward_fund_object& o, const database& db ):
     id( o.get_id() ),
     name( o.name ),
-    reward_balance( o.reward_balance.to_asset() ),
+    reward_balance( o.reward_balance ),
     recent_claims( o.recent_claims ),
     last_update( o.last_update ),
     content_constant( o.content_constant ),
@@ -65,8 +65,8 @@ struct api_escrow_object
     agent( o.agent ),
     ratification_deadline( o.ratification_deadline ),
     escrow_expiration( o.escrow_expiration ),
-    hbd_balance( o.hbd_balance.to_asset() ),
-    hive_balance( o.hive_balance.to_asset() ),
+    hbd_balance( o.hbd_balance ),
+    hive_balance( o.hive_balance ),
     pending_fee( o.pending_fee ),
     to_approved( o.to_approved ),
     agent_approved( o.agent_approved ),
@@ -113,7 +113,7 @@ struct api_vesting_delegation_object
     id( o.get_id() ),
     delegator( o.delegator ),
     delegatee( o.delegatee ),
-    vesting_shares( o.vesting_shares.to_asset() ),
+    vesting_shares( o.vesting_shares ),
     min_delegation_time( o.min_delegation_time )
   {}
 
@@ -129,7 +129,7 @@ struct api_vesting_delegation_expiration_object
   api_vesting_delegation_expiration_object( const vesting_delegation_expiration_object& o, const database& db ):
     id( o.get_id() ),
     delegator( o.delegator ),
-    vesting_shares( o.vesting_shares.to_asset() ),
+    vesting_shares( o.vesting_shares ),
     expiration( o.expiration )
   {}
 
@@ -145,7 +145,7 @@ struct api_convert_request_object
     id( o.get_id() ),
     owner( o.owner ),
     requestid( o.requestid ),
-    amount( o.amount.to_asset() ),
+    amount( o.amount ),
     conversion_date( o.conversion_date )
   {}
 
@@ -200,16 +200,16 @@ struct api_dynamic_global_property_object
     current_witness( o.current_witness ),
     total_pow( o.total_pow ),
     num_pow_witnesses( o.num_pow_witnesses ),
-    virtual_supply( o.virtual_supply.to_asset() ),
-    current_supply( o.current_supply.to_asset() ),
-    init_hbd_supply( o.init_hbd_supply.to_asset() ),
-    current_hbd_supply( o.current_hbd_supply.to_asset() ),
-    total_vesting_fund_hive( o.total_vesting_fund_hive.to_asset() ),
-    total_vesting_shares( o.total_vesting_shares.to_asset() ),
-    total_reward_fund_hive( o.total_reward_fund_hive.to_asset() ),
+    virtual_supply( o.virtual_supply ),
+    current_supply( o.current_supply ),
+    init_hbd_supply( o.init_hbd_supply ),
+    current_hbd_supply( o.current_hbd_supply ),
+    total_vesting_fund_hive( o.total_vesting_fund_hive ),
+    total_vesting_shares( o.total_vesting_shares ),
+    total_reward_fund_hive( o.total_reward_fund_hive ),
     total_reward_shares2( o.total_reward_shares2 ),
-    pending_rewarded_vesting_shares( o.pending_rewarded_vesting_shares.to_asset() ),
-    pending_rewarded_vesting_hive( o.pending_rewarded_vesting_hive.to_asset() ),
+    pending_rewarded_vesting_shares( o.pending_rewarded_vesting_shares ),
+    pending_rewarded_vesting_hive( o.pending_rewarded_vesting_hive ),
     hbd_interest_rate( o.hbd_interest_rate ),
     hbd_print_rate( o.hbd_print_rate ),
     maximum_block_size( o.maximum_block_size ),
@@ -229,7 +229,7 @@ struct api_dynamic_global_property_object
     content_reward_percent( o.content_reward_percent ),
     vesting_reward_percent( o.vesting_reward_percent ),
     sps_fund_percent( o.sps_fund_percent ),
-    sps_interval_ledger( o.sps_interval_ledger.to_asset() ),
+    sps_interval_ledger( o.sps_interval_ledger ),
     downvote_pool_percent( o.downvote_pool_percent )
 #ifdef HIVE_ENABLE_SMT
     , smt_creation_fee( o.smt_creation_fee )
@@ -336,8 +336,8 @@ struct api_comment_object
     {
       total_vote_weight       = cc->total_vote_weight;
       reward_weight           = cc->reward_weight;
-      total_payout_value      = cc->total_payout_value.to_asset();
-      curator_payout_value    = cc->curator_payout_value.to_asset();
+      total_payout_value      = cc->total_payout_value;
+      curator_payout_value    = cc->curator_payout_value;
       author_rewards          = cc->author_rewards;
       net_votes               = cc->net_votes;
       active                  = cc->active;
@@ -351,7 +351,7 @@ struct api_comment_object
       last_update             = active;
       cashout_time            = cc->cashout_time;
       max_cashout_time        = cc->max_cashout_time;
-      max_accepted_payout     = cc->max_accepted_payout.to_asset();
+      max_accepted_payout     = cc->max_accepted_payout;
       percent_hbd             = cc->percent_hbd;
       allow_votes             = cc->allow_votes;
       allow_curation_rewards  = cc->allow_curation_rewards;
@@ -468,27 +468,27 @@ struct api_account_object
     can_vote( a.can_vote ),
     voting_manabar( a.voting_manabar ),
     downvote_manabar( a.downvote_manabar ),
-    balance( a.get_balance().to_asset() ),
-    savings_balance( a.get_savings().to_asset() ),
-    hbd_balance( a.get_hbd_balance().to_asset() ),
+    balance( a.get_balance() ),
+    savings_balance( a.get_savings() ),
+    hbd_balance( a.get_hbd_balance() ),
     hbd_seconds( a.hbd_seconds ),
     hbd_seconds_last_update( a.hbd_seconds_last_update ),
     hbd_last_interest_payment( a.hbd_last_interest_payment ),
-    savings_hbd_balance( a.get_hbd_savings().to_asset() ),
+    savings_hbd_balance( a.get_hbd_savings() ),
     savings_hbd_seconds( a.savings_hbd_seconds ),
     savings_hbd_seconds_last_update( a.savings_hbd_seconds_last_update ),
     savings_hbd_last_interest_payment( a.savings_hbd_last_interest_payment ),
     savings_withdraw_requests( a.savings_withdraw_requests ),
-    reward_hbd_balance( a.get_hbd_rewards().to_asset() ),
-    reward_hive_balance( a.get_rewards().to_asset() ),
-    reward_vesting_balance( a.get_vest_rewards().to_asset() ),
-    reward_vesting_hive( a.get_vest_rewards_as_hive().to_asset() ),
+    reward_hbd_balance( a.get_hbd_rewards() ),
+    reward_hive_balance( a.get_rewards() ),
+    reward_vesting_balance( a.get_vest_rewards() ),
+    reward_vesting_hive( a.get_vest_rewards_as_hive() ),
     curation_rewards( a.curation_rewards ),
     posting_rewards( a.posting_rewards ),
-    vesting_shares( a.vesting_shares.to_asset() ),
-    delegated_vesting_shares( a.delegated_vesting_shares.to_asset() ),
-    received_vesting_shares( a.received_vesting_shares.to_asset() ),
-    vesting_withdraw_rate( a.vesting_withdraw_rate.to_asset() ),
+    vesting_shares( a.vesting_shares ),
+    delegated_vesting_shares( a.delegated_vesting_shares ),
+    received_vesting_shares( a.received_vesting_shares ),
+    vesting_withdraw_rate( a.vesting_withdraw_rate ),
     next_vesting_withdrawal( a.next_vesting_withdrawal ),
     withdrawn( a.withdrawn.amount ),
     to_withdraw( a.to_withdraw.amount ),
@@ -701,7 +701,7 @@ struct api_chain_properties
 {
   api_chain_properties() {}
   api_chain_properties( const chain_properties& c ) :
-    account_creation_fee( c.account_creation_fee.to_asset() ),
+    account_creation_fee( c.account_creation_fee ),
     maximum_block_size( c.maximum_block_size ),
     hbd_interest_rate( c.hbd_interest_rate ),
     account_subsidy_budget( c.account_subsidy_budget ),
@@ -919,7 +919,7 @@ struct api_smt_contribution_object
     symbol( o.symbol ),
     contributor( o.contributor ),
     contribution_id( o.contribution_id ),
-    contribution( o.contribution.to_asset() )
+    contribution( o.contribution )
   {}
 
   smt_contribution_id_type id;
@@ -955,7 +955,7 @@ struct api_proposal_object
     receiver( po.receiver ),
     start_date( po.start_date ),
     end_date( po.end_date ),
-    daily_pay( po.daily_pay.to_asset() ),
+    daily_pay( po.daily_pay ),
     subject( to_string( po.subject ) ),
     permlink( to_string( po.permlink ) ),
     total_votes( po.total_votes ),

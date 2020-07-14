@@ -149,7 +149,7 @@ void sps_processor::transfer_payments( const time_point_sec& head_time, HBD_asse
   {
     const auto& receiver_account = db.get_account( _item.receiver );
 
-    operation vop = proposal_pay_operation( _item.receiver, db.get_treasury_name(), payment.to_asset(),
+    operation vop = proposal_pay_operation( _item.receiver, db.get_treasury_name(), payment,
       db.get_current_trx(), db.get_current_op_in_trx() );
     /// Push vop to be recorded by other parts (like AH plugin etc.)
     db.push_virtual_operation(vop);
@@ -280,12 +280,12 @@ void sps_processor::record_funding( const block_notification& note )
   if ( props.sps_interval_ledger.amount.value <= 0 )
     return;
 
-  operation vop = sps_fund_operation( db.get_treasury_name(), props.sps_interval_ledger.to_asset() );
+  operation vop = sps_fund_operation( db.get_treasury_name(), props.sps_interval_ledger );
   db.push_virtual_operation( vop );
 
   db.modify( props, []( dynamic_global_property_object& dgpo )
   {
-    dgpo.sps_interval_ledger = HBD_asset( 0 );
+    dgpo.sps_interval_ledger.amount = 0;
   } );
 }
 

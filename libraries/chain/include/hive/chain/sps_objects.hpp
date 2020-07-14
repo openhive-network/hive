@@ -2,12 +2,12 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/util/tiny_asset.hpp>
+#include <hive/protocol/asset.hpp>
 #include <boost/multi_index/composite_key.hpp>
 
 namespace hive { namespace chain {
 
-using hive::protocol::asset;
+using hive::protocol::HBD_asset;
 
 class proposal_object : public object< proposal_object_type, proposal_object >
 {

@@ -576,7 +576,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
 
     generate_block();
 
-    //alice_balance += HIVE_MIN_LIQUIDITY_REWARD;
+    //alice_balance += HIVE_MIN_LIQUIDITY_REWARD.to_asset();
 
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == alice_balance.amount.value );
     BOOST_REQUIRE( get_balance( "bob" ).amount.value == bob_balance.amount.value );
@@ -590,7 +590,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
 
     generate_blocks( HIVE_LIQUIDITY_REWARD_BLOCKS );
 
-    //bob_balance += HIVE_MIN_LIQUIDITY_REWARD;
+    //bob_balance += HIVE_MIN_LIQUIDITY_REWARD.to_asset();
 
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == alice_balance.amount.value );
     BOOST_REQUIRE( get_balance( "bob" ).amount.value == bob_balance.amount.value );

@@ -29,7 +29,7 @@ struct smt_create_operation : public base_operation
   asset_symbol_type symbol;
 
   /// The amount to be transfered from @account to null account as elevation fee.
-  asset             smt_creation_fee;
+  asset             smt_creation_fee; //in HIVE or HBD
   /// Separately provided precision for clarity and redundancy.
   uint8_t           precision;
 
@@ -114,8 +114,8 @@ struct smt_setup_emissions_operation : public base_operation
   time_point_sec      lep_time;
   time_point_sec      rep_time;
 
-  asset               lep_abs_amount;
-  asset               rep_abs_amount;
+  asset               lep_abs_amount; //in liquid SMT == symbol
+  asset               rep_abs_amount; //in liquid SMT == symbol
   uint32_t            lep_rel_amount_numerator = 0;
   uint32_t            rep_rel_amount_numerator = 0;
 
@@ -202,7 +202,7 @@ struct smt_contribute_operation : public base_operation
   account_name_type  contributor;
   asset_symbol_type  symbol;
   uint32_t           contribution_id;
-  asset              contribution;
+  asset              contribution; //in HIVE
   extensions_type    extensions;
 
   void validate() const;

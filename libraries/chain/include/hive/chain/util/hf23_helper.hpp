@@ -1,12 +1,13 @@
 #pragma once
 
-#include <hive/chain/util/tiny_asset.hpp>
+#include <hive/protocol/asset.hpp>
 
 #include <string>
 
 namespace hive { namespace chain {
 
-using hive::protocol::asset;
+using hive::protocol::HBD_asset;
+using hive::protocol::HIVE_asset;
 
 class hf23_helper
 {

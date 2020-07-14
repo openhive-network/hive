@@ -292,7 +292,7 @@ BOOST_AUTO_TEST_CASE( save_test_02 )
     const std::set< std::string > accounts{ "alice", "bob" };
 
     {
-      hf23_helper::gather_balance( _hf23_items, "alice", to_HIVE( get_balance( "alice" ) ), to_HBD( get_hbd_balance( "alice" ) ) );
+      hf23_helper::gather_balance( _hf23_items, "alice", get_balance( "alice" ).to_HIVE(), get_hbd_balance( "alice" ).to_HBD() );
     }
     {
       BOOST_REQUIRE_EQUAL( _hf23_items.size(), 1u );
@@ -334,8 +334,8 @@ BOOST_AUTO_TEST_CASE( save_test_01 )
       vest( "alice", "alice", ASSET( "10.000 TESTS" ), alice_private_key );
       vest( "bob", "bob", ASSET( "10.000 TESTS" ), bob_private_key );
 
-      hf23_helper::gather_balance( _hf23_items, "alice", to_HIVE( get_balance( "alice" ) ), to_HBD( get_hbd_balance( "alice" ) ) );
-      hf23_helper::gather_balance( _hf23_items, "bob", to_HIVE( get_balance( "bob" ) ), to_HBD( get_hbd_balance( "bob" ) ) );
+      hf23_helper::gather_balance( _hf23_items, "alice", get_balance( "alice" ).to_HIVE(), get_hbd_balance( "alice" ).to_HBD() );
+      hf23_helper::gather_balance( _hf23_items, "bob", get_balance( "bob" ).to_HIVE(), get_hbd_balance( "bob" ).to_HBD() );
     }
     {
       auto alice_balances = get_balances( db->get_account( "alice" ) );

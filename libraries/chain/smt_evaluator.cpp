@@ -83,9 +83,9 @@ void smt_create_evaluator::do_apply( const smt_create_operation& o )
       FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot pay the fee using different asset symbol because there is no price feed." );
 
       if( dgpo.smt_creation_fee.symbol == HIVE_SYMBOL )
-        creation_fee = _db.to_hive( to_HBD( o.smt_creation_fee ) ).to_asset();
+        creation_fee = _db.compute_hive( o.smt_creation_fee.to_HBD() );
       else
-        creation_fee = _db.to_hbd( to_HIVE( o.smt_creation_fee ) ).to_asset();
+        creation_fee = _db.compute_hbd( o.smt_creation_fee.to_HIVE() );
     }
 
     FC_ASSERT( creation_fee == dgpo.smt_creation_fee,
@@ -289,7 +289,7 @@ void smt_contribute_evaluator::do_apply( const smt_contribute_operation& o )
   try
   {
     FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
-    const HIVE_asset o_contribution = to_HIVE( o.contribution );
+    const HIVE_asset o_contribution = o.contribution.to_HIVE();
 
     const smt_token_object* token = util::smt::find_token( _db, o.symbol );
     FC_ASSERT( token != nullptr, "Cannot contribute to an unknown SMT" );

@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     for( auto item : inits )
     {
       const account_object& account = db->get_account( item.account );
-      before_tbds[ item.account ] = account.get_hbd_balance().to_asset();
+      before_tbds[ item.account ] = account.get_hbd_balance();
     }
 
     generate_blocks( start_date + end_time_shift + fc::seconds( 10 ), false );
@@ -506,7 +506,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
       generate_block();
 
       const account_object& account = db->get_account( item.account );
-      before_tbds[ item.account ] = account.get_hbd_balance().to_asset();
+      before_tbds[ item.account ] = account.get_hbd_balance();
     }
 
     generate_blocks( start_date, false );
@@ -615,7 +615,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     for( auto item : inits )
     {
       const account_object& account = db->get_account( item.first );
-      before_tbds[ item.first ] = account.get_hbd_balance().to_asset();
+      before_tbds[ item.first ] = account.get_hbd_balance();
     }
 
     auto payment_checker = [&]( const std::vector< asset >& payouts )
@@ -3216,7 +3216,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     {
       auto item = inits[ i % inits.size() ];
       const account_object& account = db->get_account( item.account );
-      before_tbds[ item.account ] = account.get_hbd_balance().to_asset();
+      before_tbds[ item.account ] = account.get_hbd_balance();
     }
 
     generate_blocks( start_time + ( start_time_shift - block_interval ) );
