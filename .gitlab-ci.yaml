@@ -152,6 +152,7 @@ variables:
     - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" 
+  allow_failure: false
   artifacts:
     paths:
     - $CI_PROJECT_DIR/replay/replay.log
