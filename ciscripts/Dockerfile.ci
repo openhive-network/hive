@@ -33,7 +33,7 @@ RUN apt-get update && \
 #    ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
 
 #####################################################################
-FROM $CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG AS consensus_development_node
+FROM $CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG AS development_consensus_build
 
 ARG TRACKED_ACCOUNT_NAME
 ENV TRACKED_ACCOUNT_NAME=${TRACKED_ACCOUNT_NAME}
@@ -48,14 +48,14 @@ EXPOSE 8090
 EXPOSE 2001
 
 WORKDIR "${install_base_dir}/consensus"
-COPY consensus_development_build/install-root/ consensus_development_build/hived.run ./
-COPY consensus_development_build/config-for-docker.ini datadir/config.ini
+COPY development_consensus_build/install-root/ development_consensus_build/hived.run ./
+COPY development_consensus_build/config-for-docker.ini datadir/config.ini
 RUN chmod 755 hived.run
 
 CMD "${install_base_dir}/consensus/hived.run"
 
 #####################################################################
-FROM $CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG AS consensus_staging_node
+FROM $CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG AS staging_consensus_build
 
 ARG TRACKED_ACCOUNT_NAME
 ENV TRACKED_ACCOUNT_NAME=${TRACKED_ACCOUNT_NAME}
@@ -70,8 +70,8 @@ EXPOSE 8090
 EXPOSE 2001
 
 WORKDIR "${install_base_dir}/consensus"
-COPY consensus_staging_build/install-root/ consensus_staging_build/hived.run ./
-COPY consensus_staging_build/config-for-docker.ini datadir/config.ini
+COPY staging_consensus_build/install-root/ staging_consensus_build/hived.run ./
+COPY staging_consensus_build/config-for-docker.ini datadir/config.ini
 RUN chmod 755 hived.run
 
 CMD "${install_base_dir}/consensus/hived.run"
