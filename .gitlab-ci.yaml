@@ -347,7 +347,7 @@ package_and_deploy_dev_consensus_node:
       artifacts: true
   image: docker:19.03.11
   services:
-    - docker: 19.03.11-dind
+    - docker:19.03.11-dind
   variables:
     DOCKER_BUILDKIT: 1
     DOCKER_DRIVER: overlay2
@@ -373,7 +373,7 @@ package_and_deploy_staging_consensus_node:
       artifacts: true
   image: docker:19.03.11
   services:
-    - docker: 19.03.11-dind
+    - docker:19.03.11-dind
   variables:
     DOCKER_BUILDKIT: 1
     DOCKER_DRIVER: overlay2
@@ -396,7 +396,7 @@ deploy_to_staging:
   stage: package
   image: docker:19.03.11
   services:
-    - docker: 19.03.11-dind
+    - docker:19.03.11-dind
   script:
     - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
     - "docker push $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_NAME/staging_consensus_build:$CI_COMMIT_SHORT_SHA"
