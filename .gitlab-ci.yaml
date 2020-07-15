@@ -97,6 +97,7 @@ beem_tests:
     # boilerplate for installing latested beem
     - git clone --depth=1 --single-branch --branch mt-tests-improvement https://gitlab.syncad.com/hive/beem.git
     - cd beem
+    - python3 setup.py build
     - python3 setup.py install --user
     - cd ..
     # stuff specific to this test
@@ -128,6 +129,7 @@ list_proposals_tests:
     # boilerplate for installing latested beem
     - git clone --depth=1 --single-branch --branch mt-tests-improvement https://gitlab.syncad.com/hive/beem.git
     - cd beem
+    - python3 setup.py build
     - python3 setup.py install --user
     - cd ..
     # stuff specific to this test
