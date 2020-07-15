@@ -1200,11 +1200,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
     bfs::create_directories(actualStoragePath);
   else
   {
-    if( !bfs::is_empty(actualStoragePath) )
-    {
-      wlog("Directory ${p} is not empty. Creating snapshot rejected.", ("p", actualStoragePath.string()));
-      return;
-    }
+    FC_ASSERT(bfs::is_empty(actualStoragePath), "Directory ${p} is not empty. Creating snapshot rejected.", ("p", actualStoragePath.string()));
   }
   
 
