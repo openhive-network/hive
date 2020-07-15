@@ -95,7 +95,7 @@ beem_tests:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
     # boilerplate for installing latested beem
-    - git clone --depth=1 --single-branch --branch mt-tests-improvement https://gitlab.syncad.com/hive/beem.git
+    - git clone --single-branch --branch mt-tests-improvement https://gitlab.syncad.com/hive/beem.git
     - cd beem
     - python3 setup.py build
     - python3 setup.py install --user
@@ -127,7 +127,7 @@ list_proposals_tests:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
     # boilerplate for installing latested beem
-    - git clone --depth=1 --single-branch --branch mt-tests-improvement https://gitlab.syncad.com/hive/beem.git
+    - git clone --single-branch --branch mt-tests-improvement https://gitlab.syncad.com/hive/beem.git
     - cd beem
     - python3 setup.py build
     - python3 setup.py install --user
