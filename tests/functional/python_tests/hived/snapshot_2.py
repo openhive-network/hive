@@ -89,7 +89,6 @@ def run_for_n_blocks(Node, blocks : int, additional_args : list = []):
 	with Node:
 		Node.wait_till_end()
 
-
 def require_success(node):
 	assert node.last_returncode == 0
 
@@ -124,6 +123,10 @@ node = hive_utils.hive_node.HiveNode(
 print("waiting for replay of {} blocks...".format(int(args.blocks)))
 with node:
 	node.wait_till_end()
+
+# replay
+wait_for_node(node, "waiting for replay of {} blocks...".format(int(args.blocks)))
+>>>>>>> added class for config and first snapshot test
 require_success(node)
 print("replay completed, creating snapshot")
 

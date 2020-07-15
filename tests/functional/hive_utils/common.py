@@ -389,4 +389,3 @@ def compare_snapshots(path_to_first_snapshot : str, path_to_second_snapshot : st
     if first_md5 != second_md5:
       ret.append(key)
   return ret
-
