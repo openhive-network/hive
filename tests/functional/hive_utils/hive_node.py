@@ -66,6 +66,8 @@ class HiveNode(object):
 
     if self.hived_process.returncode:
       raise Exception("Error during starting node")
+    
+    self.last_returncode = None
 
   def get_output(self):
     out, err = self.hived_process.communicate()
@@ -88,6 +90,7 @@ class HiveNode(object):
           self.hived_process.poll()
           if self.hived_process.returncode != 0:
             raise Exception("Error during stopping node. Manual intervention required.")
+    self.last_returncode = self.hived_process.returncode
     self.hived_process = None
     self.hived_lock.release()
 
