@@ -194,11 +194,11 @@ hived_options_tests:
   script:
     - mkdir ./replay 
     - mkdir ./replay/blockchain
-    - cp ./consensus_development_build/install-root/bin/hived ./replay
-    - cp ./consensus_development_build/install-root/bin/cli_wallet ./replay
-    - cp ./consensus_development_build/config-for-docker.ini ./replay
+    - cp ./$SOURCE_NODE/install-root/bin/hived ./replay
+    - cp ./$SOURCE_NODE/install-root/bin/cli_wallet ./replay
+    - cp ./$SOURCE_NODE/config-for-docker.ini ./replay
     - mv ./replay/config-for-docker.ini ./replay/config.ini
-    - cp ./consensus_development_build/install-root/bin/truncate_block_log ./replay
+    - cp ./$SOURCE_NODE/install-root/bin/truncate_block_log ./replay
     - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" 
@@ -215,6 +215,7 @@ hived_options_tests:
 
 development_replay_5M:
   variables:
+    SOURCE_NODE: development_consensus_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 5000000
   <<: *replaytest
@@ -233,6 +234,7 @@ development_replay_5M:
     
 development_replay_20M:
   variables:
+    SOURCE_NODE: development_consensus_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 20000000
   <<: *replaytest
@@ -251,6 +253,7 @@ development_replay_20M:
   
 development_replay_45M:
   variables:
+    SOURCE_NODE: development_consensus_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 45000000
   <<: *replaytest
@@ -270,6 +273,7 @@ development_replay_45M:
 
 staging_replay_5M:
   variables:
+    SOURCE_NODE: staging_consensus_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 5000000
   <<: *replaytest
@@ -289,6 +293,7 @@ staging_replay_5M:
     
 staging_replay_20M:
   variables:
+    SOURCE_NODE: staging_consensus_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 20000000
   <<: *replaytest
@@ -308,6 +313,7 @@ staging_replay_20M:
   
 staging_replay_45M:
   variables:
+    SOURCE_NODE: staging_consensus_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 45000000
   <<: *replaytest
@@ -327,6 +333,7 @@ staging_replay_45M:
   
 staging_replay_scheduled:
   variables:
+    SOURCE_NODE: staging_consensus_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 45000000
   <<: *replaytest
