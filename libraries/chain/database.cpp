@@ -357,8 +357,9 @@ bool database::is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* h
   if( head_block_num_state )
     *head_block_num_state = _head_block_num_state;
 
-  FC_ASSERT( _head_block_num_state <= _head_block_num_origin, "Incorrect number of blocks in `block_log` vs `state`. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }",
-                ( "b1", _head_block_num_origin )( "b2", _head_block_num_state ) );
+  if( _head_block_num_state > _head_block_num_origin )
+  elog( "Incorrect number of blocks in `block_log` vs `state`. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }",
+      ( "b1", _head_block_num_origin )( "b2", _head_block_num_state ) );
 
   return _head_block_num_origin == _head_block_num_state;
 }

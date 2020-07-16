@@ -82,11 +82,14 @@ class chain_plugin_impl
     void start_write_processing();
     void stop_write_processing();
 
-    void start_replay_processing( synchronization_type& on_sync );
+    bool start_replay_processing( synchronization_type& on_sync );
 
     void initial_settings();
-    bool open();
+    void open();
     bool replay_blockchain();
+    void process_snapshot();
+    bool check_data_consistency();
+
     void work( synchronization_type& on_sync );
 
     void write_default_database_config( bfs::path& p );
@@ -327,10 +330,8 @@ void chain_plugin_impl::stop_write_processing()
   write_processor_thread.reset();
 }
 
-void chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
+bool chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
 {
-  FC_ASSERT( replay, "Replaying is not enabled" );
-
   bool replay_is_last_operation = replay_blockchain();
 
   if( replay_is_last_operation )
@@ -350,10 +351,9 @@ void chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
     //if `stop_replay_at` > 0 stay in API node context( without p2p connections )
     if( stop_replay_at > 0 )
       is_p2p_enabled = false;
-
-    //Replaying is definitely finished. It's time to synchronization/regular work.
-    work( on_sync );
   }
+
+  return replay_is_last_operation;
 }
 
 void chain_plugin_impl::initial_settings()
@@ -468,7 +468,36 @@ void chain_plugin_impl::initial_settings()
   db_open_args.benchmark = hive::chain::TBenchmark( benchmark_interval, benchmark_lambda );
 }
 
-bool chain_plugin_impl::open()
+bool chain_plugin_impl::check_data_consistency()
+{
+  uint64_t head_block_num_origin = 0;
+  uint64_t head_block_num_state = 0;
+
+  auto _is_reindex_complete = db.is_reindex_complete( &head_block_num_origin, &head_block_num_state );
+
+  if( !_is_reindex_complete )
+  {
+    if( head_block_num_state > head_block_num_origin )
+    {
+      appbase::app().generate_interrupt_request();
+      return false;
+    }
+    if( db.get_snapshot_loaded() )
+    {
+      wlog( "Replaying has to be forced, after snapshot's loading. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+    }
+    else
+    {
+      wlog( "Replaying is not finished. Synchronization is not allowed. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+      appbase::app().generate_interrupt_request();
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void chain_plugin_impl::open()
 {
   try
   {
@@ -478,18 +507,6 @@ bool chain_plugin_impl::open()
 
     if( dump_memory_details )
       dumper.dump( true, get_indexes_memory_details );
-
-    uint64_t head_block_num_origin = 0;
-    uint64_t head_block_num_state = 0;
-
-    auto _is_reindex_complete = db.is_reindex_complete( &head_block_num_origin, &head_block_num_state );
-
-    if( !_is_reindex_complete )
-    {
-      wlog( "Replaying is not finished. Synchronization is not allowed. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
-      appbase::app().generate_interrupt_request();
-      return false;
-    }
   }
   catch( const fc::exception& e )
   {
@@ -499,8 +516,6 @@ bool chain_plugin_impl::open()
     wlog( " Error: ${e}", ("e", e) );
     exit(EXIT_FAILURE);
   }
-
-  return true;
 }
 
 bool chain_plugin_impl::replay_blockchain()
@@ -536,11 +551,14 @@ bool chain_plugin_impl::replay_blockchain()
   return true;
 }
 
+void chain_plugin_impl::process_snapshot()
+{
+  if( snapshot_provider != nullptr )
+    snapshot_provider->process_explicit_snapshot_requests( db_open_args );
+}
+
 void chain_plugin_impl::work( synchronization_type& on_sync )
 {
-  if(snapshot_provider != nullptr)
-    snapshot_provider->process_explicit_snapshot_requests(db_open_args);
-
   ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
 
   on_sync();
@@ -708,17 +726,49 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
 void chain_plugin::plugin_startup()
 {
+  ilog("Chain plugin initialization...");
+
   my->initial_settings();
+
+  ilog("Database opening...");
+  my->open();
+
+  ilog("Snapshot processing...");
+  my->process_snapshot();
 
   if( my->replay )
   {
-    my->start_replay_processing( on_sync );
+    ilog("Replaying...");
+    if( !my->start_replay_processing( on_sync ) )
+    {
+      ilog("P2P enabling after replaying...");
+      my->work( on_sync );
+    }
   }
   else
   {
-    if( my->open() )
-      my->work( on_sync );
+    ilog("Consistency data checking...");
+    if( my->check_data_consistency() )
+    {
+      if( my->db.get_snapshot_loaded() )
+      {
+        ilog("Replaying...");
+        //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
+        if( !my->start_replay_processing( on_sync ) )
+        {
+          ilog("P2P enabling after replaying...");
+          my->work( on_sync );
+        }
+      }
+      else
+      {
+        ilog("P2P enabling...");
+        my->work( on_sync );
+      }
+    }
   }
+
+  ilog("Chain plugin initialization finished...");
 }
 
 void chain_plugin::plugin_shutdown()

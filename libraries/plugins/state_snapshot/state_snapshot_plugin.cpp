@@ -1024,6 +1024,15 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
 
   if(bfs::exists(actualStoragePath) == false)
     bfs::create_directories(actualStoragePath);
+  else
+  {
+    if( !bfs::is_empty(actualStoragePath) )
+    {
+      wlog("Directory ${p} is not empty. Creating snapshot rejected.", ("p", actualStoragePath.string()));
+      return;
+    }
+  }
+  
 
   const auto& indices = _mainDb.get_abstract_index_cntr();
 
@@ -1141,6 +1150,8 @@ void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName,
   ilog("Snapshot loading finished, starting validate_invariants to check consistency...");
   _mainDb.validate_invariants();
   ilog("Validate_invariants finished...");
+
+  _mainDb.set_snapshot_loaded();
   }
 
 void state_snapshot_plugin::impl::process_explicit_snapshot_requests(const hive::chain::open_args& openArgs)

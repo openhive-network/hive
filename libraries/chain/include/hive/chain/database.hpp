@@ -691,6 +691,16 @@ namespace hive { namespace chain {
         _sps_remove_threshold = val;
       }
 
+      int16_t get_snapshot_loaded() const
+      {
+        return snapshot_loaded;
+      }
+
+      void set_snapshot_loaded()
+      {
+        snapshot_loaded = true;
+      }
+
       util::advanced_benchmark_dumper& get_benchmark_dumper()
       {
         return _benchmark_dumper;
@@ -734,6 +744,8 @@ namespace hive { namespace chain {
       uint16_t                      _shared_file_full_threshold = 0;
       uint16_t                      _shared_file_scale_rate = 0;
       int16_t                       _sps_remove_threshold = -1;
+
+      bool                          snapshot_loaded = false;
 
       flat_map< custom_id_type, std::shared_ptr< custom_operation_interpreter > >   _custom_operation_interpreters;
       std::string                   _json_schema;
