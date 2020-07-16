@@ -1687,6 +1687,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       *  Since W(R_0) = 0, c.total_vote_weight is also bounded above by B and will always fit in a 64 bit integer.
       *
     **/
+    effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
     _db.create<comment_vote_object>( [&]( comment_vote_object& cv ){
       cv.voter   = voter.get_id();
       cv.comment = comment.get_id();
@@ -1758,6 +1759,10 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       {
         cv.weight = 0;
       }
+
+      vop.weight = cv.weight;
+      vop.rshares = cv.rshares;
+      vop.vote_percent = cv.weight;
     });
 
     if( max_vote_weight ) // Optimization
@@ -1769,6 +1774,8 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     }
     if( !_db.has_hardfork( HIVE_HARDFORK_0_17__774) )
       _db.adjust_rshares2( old_rshares, new_rshares );
+
+    _db.push_virtual_operation(vop);
   }
   else
   {
@@ -1876,6 +1883,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       cv.rshares = rshares;
       vop.rshares = rshares;
       cv.vote_percent = o.weight;
+      vop.vote_percent = cv.weight;
       cv.last_update = _db.head_block_time();
       cv.weight = 0;
       vop.weight = 0;
