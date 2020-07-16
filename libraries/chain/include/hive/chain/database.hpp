@@ -691,7 +691,7 @@ namespace hive { namespace chain {
         _sps_remove_threshold = val;
       }
 
-      int16_t get_snapshot_loaded() const
+      bool get_snapshot_loaded() const
       {
         return snapshot_loaded;
       }
