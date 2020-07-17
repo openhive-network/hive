@@ -158,6 +158,7 @@ namespace hive { namespace protocol {
     uint64_t          weight = 0; ///< defines the score this vote receives, used by vote payout calc. 0 if a negative vote or changed votes.
     int64_t           rshares = 0; ///< The number of rshares this vote is responsible for
     int16_t           vote_percent = 0;
+    asset             pending_payout_value;
   };
 
   struct return_vesting_delegation_operation : public virtual_operation
@@ -264,7 +265,7 @@ FC_REFLECT( hive::protocol::fill_order_operation, (current_owner)(current_orderi
 FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
 FC_REFLECT( hive::protocol::hardfork_operation, (hardfork_id) )
 FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink) )
-FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(vote_percent) )
+FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(vote_percent)(pending_payout_value) )
 FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesting_shares) )
 FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
 FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares) )

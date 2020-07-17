@@ -1514,6 +1514,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
     effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
     vop.vote_percent = o.weight;
+    vop.pending_payout_value = _db.calculate_pending_payout_value( *comment_cashout );
     _db.push_virtual_operation(vop);
 
     return;
@@ -1763,6 +1764,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       vop.weight = cv.weight;
       vop.rshares = cv.rshares;
       vop.vote_percent = cv.weight;
+      vop.pending_payout_value = _db.calculate_pending_payout_value( *comment_cashout );
     });
 
     if( max_vote_weight ) // Optimization
@@ -1889,6 +1891,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       vop.weight = 0;
       cv.num_changes += 1;
     });
+    vop.pending_payout_value = _db.calculate_pending_payout_value( *comment_cashout );
 
     _db.push_virtual_operation(vop);
 
@@ -1940,6 +1943,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
     effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
     vop.vote_percent = o.weight;
+    vop.pending_payout_value = _db.calculate_pending_payout_value( *comment_cashout );
     _db.push_virtual_operation(vop);
 
     return;
@@ -2172,6 +2176,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     vop.weight = newVote.weight;
     vop.rshares = newVote.rshares;
     vop.vote_percent = newVote.vote_percent;
+    vop.pending_payout_value = _db.calculate_pending_payout_value( *comment_cashout );
 
     _db.push_virtual_operation(vop);
 
@@ -2280,6 +2285,8 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     vop.weight = vote.weight;
     vop.rshares = vote.rshares;
     vop.vote_percent = vote.vote_percent;
+    vop.pending_payout_value = _db.calculate_pending_payout_value( *comment_cashout );
+
     _db.push_virtual_operation(vop);
   }
 }
