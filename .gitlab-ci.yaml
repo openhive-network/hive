@@ -12,9 +12,10 @@ variables:
   TEST_IMAGE_TAG: "@sha256:fc78e92864645317c82c4703edd5b679c3d22c24bb7253612fb350b629681637"
 
 custom_node_build:
+  stage: build
+  image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
   variables:
     GIT_STRATEGY: fetch
-  stage: build
   script:
     - chmod 777 ./ciscripts/custom_build.sh
     - ./ciscripts/custom_build.sh
