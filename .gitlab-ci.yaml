@@ -290,7 +290,7 @@ staging_replay_scheduled:
   only:
     - schedules
 
-package_and_deploy_dev_consensus_node:
+package_dev_consensus_node:
   stage: package
   needs:
     - job: development_consensus_build
@@ -308,6 +308,7 @@ package_and_deploy_dev_consensus_node:
     - "docker push $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_NAME/development_consensus_build:$CI_COMMIT_SHORT_SHA"
     - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_NAME/development_consensus_build:$CI_COMMIT_SHORT_SHA"
   environment: development
+  needs: ["development_replay"]
   except:
     - master
     - merge_request
@@ -316,7 +317,7 @@ package_and_deploy_dev_consensus_node:
   tags:
     - public-runner-docker
 
-package_and_deploy_staging_consensus_node:
+package_staging_consensus_node:
   stage: package
   needs:
     - job: staging_consensus_build
@@ -334,6 +335,7 @@ package_and_deploy_staging_consensus_node:
     - "docker push $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_NAME/staging_consensus_build:$CI_COMMIT_SHORT_SHA"
     - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_NAME/staging_consensus_build:$CI_COMMIT_SHORT_SHA"
   environment: staging
+  needs: ["staging_replay"]
   only:
     - master
     - merge_request
