@@ -362,3 +362,19 @@ def compare_snapshots(path_to_first_snapshot : str, path_to_second_snapshot : st
     if first_md5 != second_md5:
       ret.append(key)
   return ret
+
+
+from hive_utils.hive_node import HiveNode
+def wait_for_node(node_to_wait : HiveNode, msg = ""):
+  from time import sleep
+  from psutil import pid_exists, Process, STATUS_ZOMBIE
+  print(msg)
+  with node_to_wait:
+    pid = node_to_wait.hived_process.pid
+    while pid_exists(pid) and Process(pid).status() != STATUS_ZOMBIE:
+      sleep(0.25)
+
+# TEMPORARY SOLUTION: Downloads 10k block_log (1.4 MB) from old testnet
+def get_testnet_block_log(path : str):
+  from wget import download
+  download("https://gitlab.syncad.com/hive/hive/-/wikis/uploads/aa5dd684a29ce9909bf45a7861371c93/block_log", path, bar=None)

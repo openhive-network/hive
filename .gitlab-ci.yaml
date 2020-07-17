@@ -158,6 +158,23 @@ hived_options_tests:
   tags:
     - public-runner-docker
 
+hived_snapshots_tests:
+  stage: test
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    PYTHONPATH: $CI_PROJECT_DIR/tests/functional
+  script:
+    - cd tests/functional/python_tests/hived
+    - pip3 install -U wget psutil
+    - "python3 snapshot_1.py --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
+    - "python3 snapshot_2.py --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
+  tags:
+    - public-runner-docker
+
+
 package_consensus_node:
   stage: package
   needs:
