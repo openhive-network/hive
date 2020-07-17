@@ -2590,6 +2590,47 @@ void fill_comment_reward_context_local_state( util::comment_reward_context& ctx,
   ctx.max_hbd = comment_cashout.max_accepted_payout;
 }
 
+asset database::calculate_pending_payout_value( const comment_cashout_object& comment_cashout )
+{
+  const auto& props = get_dynamic_global_properties();
+  const auto& hist  = get_feed_history();
+
+  asset pending_payout_value;
+
+  asset pot;
+  if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
+      pot = get_reward_fund().reward_balance;
+  else
+      pot = props.total_reward_fund_hive;
+
+  if( !hist.current_median_history.is_null() ) pot = pot * hist.current_median_history;
+
+  u256 total_r2 = 0;
+  if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
+      total_r2 = chain::util::to256( get_reward_fund().recent_claims );
+  else
+      total_r2 = chain::util::to256( props.total_reward_shares2 );
+
+  if( total_r2 > 0 )
+  {
+      uint128_t vshares;
+      if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
+      {
+        const auto& rf = get_reward_fund();
+        vshares = comment_cashout.net_rshares.value > 0 ? chain::util::evaluate_reward_curve( comment_cashout.net_rshares.value, rf.author_reward_curve, rf.content_constant ) : 0;
+      }
+      else
+        vshares = comment_cashout.net_rshares.value > 0 ? chain::util::evaluate_reward_curve( comment_cashout.net_rshares.value ) : 0;
+
+      u256 r2 = chain::util::to256( vshares ); //to256(abs_net_rshares);
+      r2 *= pot.amount.value;
+      r2 /= total_r2;
+
+      pending_payout_value.amount = static_cast< uint64_t >( r2 );
+  }
+  return pending_payout_value;
+}
+
 share_type database::cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment, const comment_cashout_object& comment_cashout, bool forward_curation_remainder )
 {
   try
