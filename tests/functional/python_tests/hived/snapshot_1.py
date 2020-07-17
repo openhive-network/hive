@@ -9,12 +9,13 @@ sys.path.append("../../")
 
 import hive_utils
 from hive_utils.resources.configini import config as configuration
+from hive_utils.common import wait_for_node
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--hived-path", dest="hived", help = "Path to hived executable", required=True, type=str)
+parser.add_argument("--run-hived", dest="hived", help = "Path to hived executable", required=True, type=str)
 parser.add_argument("--block-log", dest="block_log_path", help = "Path to block log", required=False, type=str, default=None)
-parser.add_argument("--blocks", dest="blocks", help = "Blocks to replay", required=False, type=int, default=100000)
+parser.add_argument("--blocks", dest="blocks", help = "Blocks to replay", required=False, type=int, default=1000)
 parser.add_argument("--leave", dest="leave", action='store_true')
 
 args = parser.parse_args()
@@ -38,10 +39,13 @@ snapshot_root = os.path.join(work_dir, "snapshots")
 os.mkdir(snapshot_root)
 
 # (optional) setting up block log
+blockchain_dir = os.path.join(work_dir, "blockchain")
+os.mkdir( blockchain_dir )
 if args.block_log_path:
-	blockchain_dir = os.path.join(work_dir, "blockchain")
-	os.mkdir( blockchain_dir )
 	os.symlink(args.block_log_path, os.path.join(blockchain_dir, "block_log"))
+else:
+	from hive_utils.common import get_testnet_block_log
+	get_testnet_block_log(os.path.join(blockchain_dir, "block_log"))
 
 # config
 config = configuration()
@@ -52,15 +56,6 @@ config.plugin = config.plugin + " state_snapshot"	# this plugin is required
 
 # config generation
 config.generate(path_to_config)
-
-def wait_for_node(node_to_wait, exit_msg, msg):
-	from time import sleep
-	print(msg)
-	with node_to_wait:
-		ret = node_to_wait.get_output().decode('utf-8')
-		while not ret.find(exit_msg):
-			sleep(0.25)
-			ret = node_to_wait.get_output().decode('utf-8')
 
 base_hv_args = [ "--stop-replay-at-block", str(args.blocks), "--exit-after-replay" ]
 hv_args = base_hv_args.copy()
@@ -74,7 +69,7 @@ node = hive_utils.hive_node.HiveNode(
 )
 
 # replay
-wait_for_node(node, "exited cleanly", "waiting for replay of {} blocks...".format(int(args.blocks)))
+wait_for_node(node, "waiting for replay of {} blocks...".format(int(args.blocks)))
 print("replay completed, creating snapshot")
 
 # setup for first snapshot
@@ -84,7 +79,7 @@ hv_args.extend(["--dump-snapshot", first_snapshot_name])
 node.hived_args = hv_args.copy()
 
 # creating snapshot
-wait_for_node(node, "Snapshot generation finished", "creating snapshot '{}' ...".format(first_snapshot_name))
+wait_for_node(node, "creating snapshot '{}' ...".format(first_snapshot_name))
 
 # setup for loading snapshot
 hv_args = base_hv_args.copy()
@@ -93,7 +88,7 @@ node.hived_args = hv_args.copy()
 os.remove(os.path.join(blockchain_dir, "shared_memory.bin"))
 
 # loading snapshot
-wait_for_node(node, "Validate_invariants finished", "creating snapshot '{}' ...".format(first_snapshot_name))
+wait_for_node(node, "creating snapshot '{}' ...".format(first_snapshot_name))
 
 # setup for redumping snapshot
 second_snapshot_name = "second_snapshot"
@@ -102,7 +97,7 @@ hv_args.extend(["--dump-snapshot", second_snapshot_name])
 node.hived_args = hv_args.copy()
 
 # redumpping snapshot
-wait_for_node(node, "Snapshot generation finished", "creating snapshot '{}' ...".format(second_snapshot_name))
+wait_for_node(node, "creating snapshot '{}' ...".format(second_snapshot_name))
 
 path_to_first_snapshot = os.path.join(snapshot_root, first_snapshot_name)
 path_to_second_snapshot = os.path.join(snapshot_root, second_snapshot_name)
