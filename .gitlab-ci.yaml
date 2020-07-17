@@ -34,7 +34,7 @@ testnet_node_build:
 development_consensus_build:
   stage: build
   image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
-  variable: TEST_VARIABLE
+  variables: TEST_VARIABLE
   script:
     - echo "printing variable TEST_VARIABLE"
     - echo $TEST_VARIABLE
