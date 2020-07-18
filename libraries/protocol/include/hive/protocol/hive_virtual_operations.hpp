@@ -158,6 +158,8 @@ namespace hive { namespace protocol {
     uint64_t          weight = 0; ///< defines the score this vote receives, used by vote payout calc. 0 if a negative vote or changed votes.
     int64_t           rshares = 0; ///< The number of rshares this vote is responsible for
     int16_t           vote_percent = 0;
+    //potential payout of related comment at the moment of this vote
+    asset             pending_payout = asset( 0, HBD_SYMBOL ); //supplemented by account history RocksDB plugin (needed by HiveMind)
   };
 
   struct return_vesting_delegation_operation : public virtual_operation

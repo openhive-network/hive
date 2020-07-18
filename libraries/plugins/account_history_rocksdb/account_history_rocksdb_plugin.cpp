@@ -5,8 +5,11 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/history_object.hpp>
+#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/util/impacted.hpp>
+#include <hive/chain/util/reward.hpp>
+#include <hive/chain/util/uint256.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 
@@ -399,6 +402,74 @@ private:
   std::map<account_name_type, account_history_info> _ahInfoCache;
 };
 
+struct supplement_operations_visitor
+{
+  supplement_operations_visitor( chain::database& db ) : _db( db ) {}
+  typedef void result_type;
+
+  template<typename T>
+  void operator()( const T& op ) {}
+
+  void operator()( const effective_comment_vote_operation& op )
+  {
+    if( op.pending_payout.amount != 0 )
+      return; //estimated payout was already calculated
+
+    const auto* cashout = _db.find_comment_cashout( _db.get_comment( op.author, op.permlink ) );
+    if( cashout == nullptr && cashout->net_rshares.value <= 0 )
+      return; //voting can happen even after cashout; there will be no new payout though
+
+    const auto& props = _db.get_dynamic_global_properties();
+    const auto& hist = _db.get_feed_history();
+
+    const chain::reward_fund_object* rf = nullptr;
+    if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
+      rf = &_db.get_reward_fund();
+
+    u256 total_r2 = 0;
+    if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
+      total_r2 = chain::util::to256( rf->recent_claims );
+    else
+      total_r2 = chain::util::to256( props.total_reward_shares2 );
+
+    if( total_r2 > 0 )
+    {
+      asset pot;
+      uint128_t vshares = 0;
+
+      if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
+      {
+        pot = rf->reward_balance;
+        vshares = chain::util::evaluate_reward_curve( cashout->net_rshares.value, rf->author_reward_curve, rf->content_constant );
+      }
+      else
+      {
+        pot = props.total_reward_fund_hive;
+        vshares = chain::util::evaluate_reward_curve( cashout->net_rshares.value );
+      }
+
+      if( !hist.current_median_history.is_null() )
+        pot = pot * hist.current_median_history;
+
+      u256 r2 = chain::util::to256( vshares );
+      r2 *= pot.amount.value;
+      r2 /= total_r2;
+
+      //ABW: yes, formally we should be making copy of the operation, however all things considered
+      //it would be a waste of time
+      effective_comment_vote_operation& _op = const_cast< effective_comment_vote_operation& >( op );
+      _op.pending_payout = asset( static_cast< uint64_t >( r2 ), pot.symbol );
+    }
+  }
+
+  chain::database& _db;
+};
+
+void supplement_operation( const operation& op, database& db )
+{
+  supplement_operations_visitor vtor( db );
+  op.visit( vtor );
+}
 
 } /// anonymous
 
@@ -759,7 +830,7 @@ private:
 
 void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_options::variables_map& options)
 {
-    fc::mutable_variant_object state_opts;
+  fc::mutable_variant_object state_opts;
 
   typedef std::pair< account_name_type, account_name_type > pairstring;
   HIVE_LOAD_VALUE_SET(options, "account-history-rocksdb-track-account-range", _tracked_accounts, pairstring);
@@ -1432,9 +1503,10 @@ void account_history_rocksdb_plugin::impl::importData(unsigned int blockLimit)
     }
 
     auto impacted = getImpactedAccounts( op );
-
     if( impacted.empty() )
       return true;
+
+    supplement_operation( op, _mainDb );
 
     rocksdb_operation_object obj;
     obj.trx_id = tx.id();
@@ -1489,9 +1561,10 @@ void account_history_rocksdb_plugin::impl::on_post_apply_operation(const operati
   }
 
   auto impacted = getImpactedAccounts(n.op);
-
   if( impacted.empty() )
     return; // Ignore operations not impacting any account (according to original implementation)
+
+  supplement_operation( n.op, _mainDb );
 
   if( _reindexing )
   {
