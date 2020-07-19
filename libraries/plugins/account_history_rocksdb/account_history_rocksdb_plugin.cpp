@@ -416,7 +416,7 @@ struct supplement_operations_visitor
       return; //estimated payout was already calculated
 
     const auto* cashout = _db.find_comment_cashout( _db.get_comment( op.author, op.permlink ) );
-    if( cashout == nullptr && cashout->net_rshares.value <= 0 )
+    if( cashout == nullptr || cashout->net_rshares.value <= 0 )
       return; //voting can happen even after cashout; there will be no new payout though
 
     const auto& props = _db.get_dynamic_global_properties();
