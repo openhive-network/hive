@@ -44,8 +44,8 @@
 #define TESTNET_BLOCK_LIMIT                   (3000000)
 
 #define HIVE_PROPOSAL_MAINTENANCE_PERIOD          3600
-#define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*60*24*1) // 1 hour
-#define HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD           (60*60*24*1) /// 3 minutes
+#define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*60*24*1) // 1 day
+#define HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD           (60*60*24*1) /// 1 day
 
 #else // IS LIVE HIVE NETWORK
 
