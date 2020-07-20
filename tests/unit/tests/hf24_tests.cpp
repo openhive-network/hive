@@ -50,24 +50,6 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
-    //check transfer of non-HBD
-    {
-      transfer_operation op;
-      op.from = "alice";
-      op.to = OBSOLETE_TREASURY_ACCOUNT;
-      op.amount = ASSET( "1.000 TESTS" );
-      tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception ); //still blocked even though old is no longer active treasury
-
-      tx.clear();
-      op.to = NEW_HIVE_TREASURY_ACCOUNT;
-      tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception ); //blocked for new treasury as well
-    }
-    tx.clear();
-
     //check vesting of non-HBD
     {
       transfer_to_vesting_operation op;
