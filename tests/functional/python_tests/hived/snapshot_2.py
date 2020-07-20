@@ -85,7 +85,10 @@ def run_for_n_blocks(Node, blocks : int, additional_args : list = []):
 	wait_for_node(Node, "waiting for {} blocks...".format(int(args.blocks)))
 
 
-def check_success(node):
+def require_success(node):
+	assert node.last_returncode == 0
+
+def require_fail(node):
 	assert node.last_returncode == 0
 
 hv_args = get_base_hv_args()
@@ -100,36 +103,40 @@ node = hive_utils.hive_node.HiveNode(
 
 # replay
 wait_for_node(node, "waiting for replay of {} blocks...".format(int(args.blocks)))
-check_success(node)
+require_success(node)
 print("replay completed, creating snapshot")
 
 
 # try to create snapshot, while directory not exist
 assert not os.path.exists(snapshot_root)
 dump_snapshot(node, "snap_1")
-check_success(node)
+require_success(node)
 assert os.path.exists(snapshot_root)
 assert os.path.exists(os.path.join(snapshot_root, "snap_1"))
 
 # load snapshot
 load_snapshot(node, "snap_1")
-check_success(node)
+require_success(node)
 
 # check is replaying 
 run_for_n_blocks(node, 100, ["--replay-blockchain"])
-check_success(node)
+require_success(node)
 
 # dump to same directory
 dump_snapshot(node, "snap_1")
-check_success(node)
+require_fail(node)
+from shutil import rmtree
+rmtree(os.path.join(config.snapshot_root_dir, "snap_1"))
+dump_snapshot(node, "snap_1")
+require_success(node)
 
 # load snapshot
 load_snapshot(node, "snap_1")
-check_success(node)
+require_success(node)
 
 # check is replaying 
 run_for_n_blocks(node, 100, ["--replay-blockchain"])
-check_success(node)
+require_success(node)
 
 print("success")
 

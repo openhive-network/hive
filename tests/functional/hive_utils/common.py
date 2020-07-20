@@ -376,5 +376,6 @@ def wait_for_node(node_to_wait : HiveNode, msg = ""):
 
 # TEMPORARY SOLUTION: Downloads 10k block_log (1.4 MB) from old testnet
 def get_testnet_block_log(path : str):
+  raise NotImplementedError()
   from wget import download
   download("https://gitlab.syncad.com/hive/hive/-/wikis/uploads/aa5dd684a29ce9909bf45a7861371c93/block_log", path, bar=None)

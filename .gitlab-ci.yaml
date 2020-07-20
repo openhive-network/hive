@@ -161,18 +161,21 @@ hived_options_tests:
 hived_snapshots_tests:
   stage: test
   needs:
-    - job: testnet_node_build
+    - job: consensus_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
     - cd tests/functional/python_tests/hived
-    - pip3 install -U wget psutil
-    - "python3 snapshot_1.py --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
-    - "python3 snapshot_2.py --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
+    - apt-get update -y && apt-get install -y python3 python3-pip
+    - pip3 install -U wget psutil junit_xml gcovr secp256k1prp
+    - $CI_PROJECT_DIR/consensus_build/install-root/bin/truncate_block_log /blockchain/block_log /tmp/block_log 10000
+    - "python3 snapshot_1.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --block-log /tmp/block_log"
+    - "python3 snapshot_2.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --block-log /tmp/block_log"
   tags:
     - public-runner-docker
+    - hived-for-tests
 
 
 package_consensus_node:
