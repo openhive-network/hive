@@ -304,9 +304,9 @@ package_dev_consensus_node:
     DOCKER_TLS_CERTDIR: "/certs"
   script:
     - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
-    - "docker build -f ciscripts/Dockerfile.ci --target=development_consensus_build --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/development_consensus_build:$CI_COMMIT_SHORT_SHA ."
-    - "docker push $CI_REGISTRY_IMAGE/development_consensus_build:$CI_COMMIT_SHORT_SHA"
-    - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/development_consensus_build:$CI_COMMIT_SHORT_SHA"
+    - "docker build -f ciscripts/Dockerfile.ci --target=development_consensus_build --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_NAME/development_consensus_build:$CI_COMMIT_SHORT_SHA ."
+    - "docker push $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_NAME/development_consensus_build:$CI_COMMIT_SHORT_SHA"
+    - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_NAME/development_consensus_build:$CI_COMMIT_SHORT_SHA"
   environment: development
   except:
     - master
@@ -330,9 +330,9 @@ package_staging_consensus_node:
     DOCKER_TLS_CERTDIR: "/certs"
   script:
     - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
-    - "docker build -f ciscripts/Dockerfile.ci --target=staging_consensus_build --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/staging_consensus_build:$CI_COMMIT_SHORT_SHA ."
-    - "docker push $CI_REGISTRY_IMAGE/staging_consensus_build:$CI_COMMIT_SHORT_SHA"
-    - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/staging_consensus_build:$CI_COMMIT_SHORT_SHA"
+    - "docker build -f ciscripts/Dockerfile.ci --target=staging_consensus_build --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_NAME/staging_consensus_build:$CI_COMMIT_SHORT_SHA ."
+    - "docker push $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_NAME/staging_consensus_build:$CI_COMMIT_SHORT_SHA"
+    - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_NAME/staging_consensus_build:$CI_COMMIT_SHORT_SHA"
   environment: staging
   only:
     - master
