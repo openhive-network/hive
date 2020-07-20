@@ -168,7 +168,7 @@ hived_snapshots_tests:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
     - cd tests/functional/python_tests/hived
-    - apt-get upday -y && apt-get install -y python3 python3-pip
+    - apt-get update -y && apt-get install -y python3 python3-pip
     - pip3 install -U wget psutil
     - "python3 snapshot_1.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --block-log /blockchain/block_log"
     - "python3 snapshot_2.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --block-log /blockchain/block_log"
