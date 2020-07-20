@@ -14,7 +14,7 @@ from hive_utils.common import wait_for_node
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--run-hived", dest="hived", help = "Path to hived executable", required=True, type=str)
-parser.add_argument("--block-log", dest="block_log_path", help = "Path to block log", required=False, type=str, default=None)
+parser.add_argument("--block-log", dest="block_log_path", help = "Path to block log", required=True, type=str, default=None)
 parser.add_argument("--blocks", dest="blocks", help = "Blocks to replay", required=False, type=int, default=1000)
 parser.add_argument("--leave", dest="leave", action='store_true')
 
@@ -38,14 +38,11 @@ path_to_config = os.path.join(work_dir, config_file_name)
 snapshot_root = os.path.join(work_dir, "snapshots")
 os.mkdir(snapshot_root)
 
-# (optional) setting up block log
+# setting up block log
 blockchain_dir = os.path.join(work_dir, "blockchain")
 os.mkdir( blockchain_dir )
-if args.block_log_path:
-	os.symlink(args.block_log_path, os.path.join(blockchain_dir, "block_log"))
-else:
-	from hive_utils.common import get_testnet_block_log
-	get_testnet_block_log(os.path.join(blockchain_dir, "block_log"))
+assert args.block_log_path
+os.symlink(args.block_log_path, os.path.join(blockchain_dir, "block_log"))
 
 # config
 config = configuration()
