@@ -1089,7 +1089,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
   uint32_t lastFoundBlock = 0;
 
   uint32_t cntLimit = 0;
-  bool     limitExceeded = false;
+  fc::optional< uint64_t > nextElementAfterLimit;
 
   for(it->Seek(rangeBeginSlice); it->Valid(); it->Next())
   {
@@ -1106,27 +1106,26 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
       bool found = find_operation_object(opId, &op);
       FC_ASSERT(found);
 
+      ///Number of retrieved operations can't be greater then limit
+      if(limit.valid() && (cntLimit >= *limit))
+      {
+        nextElementAfterLimit = key.second;
+        break;
+      }
+
       if(processor(op, key.second))
-        {
+      {
         ++cntLimit;
-
         lastProcessedOperationId = key.second;
-
-        ///Number of retrieved operations can't be greater then limit
-        if(limit.valid() && (cntLimit >= *limit))
-          {
-          limitExceeded = true;
-          break;
-          }
-        }
+      }
 
       lastFoundBlock = key.first;
     }
   }
 
-  if(limitExceeded)
+  if( nextElementAfterLimit.valid() )
   {
-    return std::make_pair( lastFoundBlock, lastProcessedOperationId );
+    return std::make_pair( lastFoundBlock, *nextElementAfterLimit );
   }
   else
   {
