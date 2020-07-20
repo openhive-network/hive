@@ -170,6 +170,7 @@ hived_snapshots_tests:
     - cd tests/functional/python_tests/hived
     - apt-get update -y && apt-get install -y python3 python3-pip
     - pip3 install -U wget psutil junit_xml gcovr secp256k1prp
+    - ls -la /blockchain
     - "python3 snapshot_1.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --block-log /blockchain/block_log"
     - "python3 snapshot_2.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --block-log /blockchain/block_log"
   tags:
