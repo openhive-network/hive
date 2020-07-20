@@ -349,22 +349,24 @@ void sps_processor::convert_funds( const block_notification& note )
     return;
   }
 
-  const auto to_convert_amount = HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.balance.amount / HIVE_100_PERCENT;
-  const auto to_convert = asset(to_convert_amount, HIVE_SYMBOL);
+  const auto to_convert = asset(HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.balance.amount / HIVE_100_PERCENT, HIVE_SYMBOL);
 
   const feed_history_object& fhistory = db.get_feed_history();
   if( fhistory.current_median_history.is_null() )
     return;
 
-  auto converted_sbd = to_convert * fhistory.current_median_history;
+  auto converted_hbd = to_convert * fhistory.current_median_history;
   // Don't convert if the conversion would result in an amount lower than the dust threshold
-  if( converted_sbd < HIVE_MIN_PAYOUT_HBD )
+  if(converted_hbd < HIVE_MIN_PAYOUT_HBD )
     return;
 
   db.adjust_balance( db.get_treasury_name(), -to_convert );
-  db.adjust_balance( db.get_treasury_name(), converted_sbd );
+  db.adjust_balance(db.get_treasury_name(), converted_hbd );
 
-  operation vop = sps_convert_operation(db.get_treasury_name(), to_convert, converted_sbd );
+  db.adjust_supply( -to_convert );
+  db.adjust_supply( converted_hbd );
+
+  operation vop = sps_convert_operation(db.get_treasury_name(), to_convert, converted_hbd );
   db.push_virtual_operation( vop );
 }
 

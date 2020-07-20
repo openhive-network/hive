@@ -230,6 +230,7 @@ add_boost_test( chain_test
    proposal_tests/proposals_removing_with_threshold
    proposal_tests/proposals_removing_with_threshold_01
    proposal_tests/proposals_removing_with_threshold_02
+   proposal_tests/converting_hive_to_dhf
    serialization_tests/serialization_raw_test
    serialization_tests/serialization_json_test
    serialization_tests/legacy_asset_test
