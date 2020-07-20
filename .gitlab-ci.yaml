@@ -171,8 +171,10 @@ hived_snapshots_tests:
     - apt-get update -y && apt-get install -y python3 python3-pip
     - pip3 install -U wget psutil junit_xml gcovr secp256k1prp
     - ls -la /blockchain
-    - "python3 snapshot_1.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --block-log /blockchain/block_log"
-    - "python3 snapshot_2.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --block-log /blockchain/block_log"
+    - $CI_PROJECT_DIR/consensus_build/install-root/bin/truncate_block_log /blockchain/block_log /tmp/block_log 10000
+    - ls -la /tmp
+    - "python3 snapshot_1.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --block-log /tmp/block_log"
+    - "python3 snapshot_2.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --block-log /tmp/block_log"
   tags:
     - public-runner-docker
     - hived-for-tests
