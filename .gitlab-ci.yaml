@@ -321,7 +321,6 @@ package_staging_consensus_node:
   stage: package
   needs:
     - job: staging_consensus_build
-      artifacts: true
   image: docker:19.03.11
   services:
     - docker:19.03.11-dind
