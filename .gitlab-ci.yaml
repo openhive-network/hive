@@ -308,7 +308,6 @@ package_dev_consensus_node:
     - "docker push $CI_REGISTRY_IMAGE/development_consensus_build:$CI_COMMIT_SHORT_SHA"
     - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/development_consensus_build:$CI_COMMIT_SHORT_SHA"
   environment: development
-  needs: ["development_replay"]
   except:
     - master
     - merge_request
@@ -335,7 +334,6 @@ package_staging_consensus_node:
     - "docker push $CI_REGISTRY_IMAGE/staging_consensus_build:$CI_COMMIT_SHORT_SHA"
     - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/staging_consensus_build:$CI_COMMIT_SHORT_SHA"
   environment: staging
-  needs: ["staging_replay"]
   only:
     - master
     - merge_request
