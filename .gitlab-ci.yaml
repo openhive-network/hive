@@ -222,7 +222,7 @@ hived_options_tests:
     - cp ./$SOURCE_NODE/config-for-docker.ini ./replay
     - mv ./replay/config-for-docker.ini ./replay/config.ini
     - cp ./$SOURCE_NODE/install-root/bin/truncate_block_log ./replay
-    - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
+    - nohup ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT &
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" 
   allow_failure: false
