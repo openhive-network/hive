@@ -450,6 +450,8 @@ struct supplement_operations_visitor
 
       if( !hist.current_median_history.is_null() )
         pot = pot * hist.current_median_history;
+      else
+        pot = asset( 0, HBD_SYMBOL );
 
       u256 r2 = chain::util::to256( vshares );
       r2 *= pot.amount.value;
@@ -458,7 +460,7 @@ struct supplement_operations_visitor
       //ABW: yes, formally we should be making copy of the operation, however all things considered
       //it would be a waste of time
       effective_comment_vote_operation& _op = const_cast< effective_comment_vote_operation& >( op );
-      _op.pending_payout = asset( static_cast< uint64_t >( r2 ), pot.symbol );
+      _op.pending_payout.amount = static_cast< uint64_t >( r2 );
     }
   }
 
