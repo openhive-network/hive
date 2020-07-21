@@ -1762,7 +1762,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
       vop.weight = cv.weight;
       vop.rshares = cv.rshares;
-      vop.vote_percent = cv.weight;
+      vop.vote_percent = cv.vote_percent;
     });
 
     if( max_vote_weight ) // Optimization
