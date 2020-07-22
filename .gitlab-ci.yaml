@@ -226,13 +226,13 @@ hived_options_tests:
     - cp ./$SOURCE_NODE/install-root/bin/truncate_block_log ./replay
     - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
     - chmod 0777 ./ciscripts/replay.sh
-    - nohup ./ciscripts/replay.sh "$STOP_REPLAY_AT" > ./replay/replay-test-nohup.log &
+    - ./ciscripts/replay.sh "$STOP_REPLAY_AT"
   allow_failure: false
   artifacts:
     paths:
     - $CI_PROJECT_DIR/replay/replay.log
-    - $CI_PROJECT_DIR/replay/replay-test-nohup.log
     reports:
+      metrics: ./replay/advanced_benchmark.json
     when: always
     expire_in: 6 months
   tags:
@@ -277,7 +277,13 @@ staging_replay:
     - merge_request
     - 0.24.0
   when: manual
-
+  
+custom_replay:
+  variables:
+    SOURCE_NODE: custom_node_build
+    GIT_STRATEGY: fetch
+    
+    
 staging_replay_scheduled:
   variables:
     SOURCE_NODE: staging_consensus_build
@@ -345,21 +351,3 @@ package_staging_consensus_node:
   tags:
     - public-runner-docker
 
-deploy_to_staging:
-  stage: package
-  image: docker:19.03.11
-  services:
-    - docker:19.03.11-dind
-  script:
-    - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
-    - "docker push $CI_REGISTRY_IMAGE/$CI_ENVIRONMENT_NAME/staging_consensus_build:$CI_COMMIT_SHORT_SHA"
-  environment: staging
-  when: manual
-  allow_failure: false
-  only:
-    - master
-    - merge_request
-    - 0.24.0
-    - schedules
-  tags:
-    - public-runner-docker
