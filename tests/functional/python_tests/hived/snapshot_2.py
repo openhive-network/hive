@@ -4,12 +4,13 @@ import sys
 import os
 import tempfile
 import argparse
+from subprocess import PIPE, STDOUT
 
 sys.path.append("../../")
 
 import hive_utils
 from hive_utils.resources.configini import config as configuration
-from hive_utils.common import wait_n_blocks, wait_for_node
+from hive_utils.common import wait_n_blocks
 
 
 parser = argparse.ArgumentParser()
@@ -17,6 +18,7 @@ parser.add_argument("--run-hived", dest="hived", help = "Path to hived executabl
 parser.add_argument("--block-log", dest="block_log_path", help = "Path to block log", required=True, type=str, default=None)
 parser.add_argument("--blocks", dest="blocks", help = "Blocks to replay", required=False, type=int, default=1000)
 parser.add_argument("--leave", dest="leave", action='store_true')
+parser.add_argument("--artifact-directory", dest="artifacts", help = "Path to directory where logs will be stored", required=False, type=str)
 
 args = parser.parse_args()
 node = None
@@ -63,7 +65,9 @@ def dump_snapshot(Node, snapshot_name):
 	hv_args.extend(["--dump-snapshot", snapshot_name])
 	Node.hived_args = hv_args
 # creating snapshot
-	wait_for_node(Node, "creating snapshot '{}' ...".format(snapshot_name))
+	print("creating snapshot '{}' ...".format(snapshot_name))
+	with Node:
+		Node.wait_till_end()
 
 def load_snapshot(Node, snapshot_name):
 # setup for loading snapshot
@@ -72,34 +76,54 @@ def load_snapshot(Node, snapshot_name):
 	Node.hived_args = hv_args
 	os.remove(os.path.join(blockchain_dir, "shared_memory.bin"))
 # loading snapshot
-	wait_for_node(Node, "loading snapshot '{}' ...".format(snapshot_name))
+	print( "loading snapshot '{}' ...".format(snapshot_name))
+	with Node:
+		Node.wait_till_end()
 
 def run_for_n_blocks(Node, blocks : int, additional_args : list = []):
 	args.blocks += blocks
 	Node.hived_args = get_base_hv_args()
 	if len(additional_args) > 0:
 		Node.hived_args.extend(additional_args)
-	wait_for_node(Node, "waiting for {} blocks...".format(int(args.blocks)))
+	print("waiting for {} blocks...".format(int(args.blocks)))
+	with Node:
+		Node.wait_till_end()
 
 
 def require_success(node):
 	assert node.last_returncode == 0
 
-def require_fail(node):
-	assert node.last_returncode == 0
+def require_fail(node, filepath):
+	with open(filepath, 'r') as fff:
+		for line in fff:
+			if line.find("Snapshot generation FAILED."):
+				return
+	assert False
 
 hv_args = get_base_hv_args()
 hv_args.append("--replay-blockchain")
+
+# setting up logging
+stdout = PIPE
+stderr = None
+
+if args.artifacts:
+	stderr = STDOUT
+	stdout = open(os.path.join(args.artifacts, "replayed_node_snapshot_2.log"), 'w', 1)
 
 # setup for replay
 node = hive_utils.hive_node.HiveNode(
 	args.hived,
 	work_dir, 
-	hv_args
+	hv_args,
+	stdout,
+	stderr
 )
 
 # replay
-wait_for_node(node, "waiting for replay of {} blocks...".format(int(args.blocks)))
+print("waiting for replay of {} blocks...".format(int(args.blocks)))
+with node:
+	node.wait_till_end()
 require_success(node)
 print("replay completed, creating snapshot")
 
@@ -120,8 +144,27 @@ run_for_n_blocks(node, 100, ["--replay-blockchain"])
 require_success(node)
 
 # dump to same directory
+# change output stream
+tmp_filel = "tmp_file.log"
+tmp_output = open(tmp_filel, 'w')
+current_outuput = node.stdout_stream
+node.stdout_stream = tmp_output
+
+# gather output
 dump_snapshot(node, "snap_1")
-require_fail(node)
+
+# optionally append output to artiffacts
+tmp_output.close()
+node.stdout_stream = current_outuput
+if stderr is not None:
+	with open(tmp_filel, 'r'):
+		for line in tmp_filel:
+			stdout.write(line)
+
+# check is failed
+require_fail(node, tmp_filel)
+os.remove(tmp_filel)
+
 from shutil import rmtree
 rmtree(os.path.join(config.snapshot_root_dir, "snap_1"))
 dump_snapshot(node, "snap_1")
@@ -137,12 +180,14 @@ require_success(node)
 
 print("success")
 
-
 if not args.leave:
 	from shutil import rmtree
 	rmtree( work_dir )
 	print("deleted: {}".format(work_dir))
 else:
 	print("datadir not deleted: {}".format(work_dir))
+
+if stderr is not None:
+	stdout.close()
 
 exit(0)

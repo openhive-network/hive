@@ -48,15 +48,17 @@ class config:
 					file.write("{} = {}\n".format(key.replace("_", "-"), value))
 
 	def load(self, path_to_file : str):
-		keys = self.__dict__.keys()
-		for key in keys:
-			key = key.replace("_", "-")
+		_keys = list(self.__dict__.keys())
+		keys = []
+		for key in _keys:
+			setattr(self, key, None)
+			keys.append(key.replace("_", "-"))
 
 		def proc_line(line : str):
 			values = line.split("=")
 			return values[0].strip(), values[1].strip()
 
-		def match_property(self, line : str):
+		def match_property(line : str):
 			if line.startswith('#'):
 				return
 			key, value = proc_line(line)
@@ -66,3 +68,46 @@ class config:
 		with open(path_to_file, 'r') as file:
 			for line in file:
 				match_property(line)
+
+	def update_plugins(self, required_plugins : list):
+		plugins = self.plugin.split(" ")
+		plugins.extend(x for x in required_plugins if x not in plugins)
+		self.plugin = " ".join(plugins)
+
+	def exclude_plugins(self, plugins_to_exclude : list):
+		current_plugins = self.plugin.split(" ")
+		for plugin in plugins_to_exclude:
+			try:
+				current_plugins.remove(plugin)
+			except ValueError:
+				pass
+		self.plugin = " ".join(current_plugins)
+
+
+def validate_address(val : str) -> bool:
+	try:
+		val = val.strip()
+		address, port = val.split(":")
+		port = int(port)
+		
+		assert port >= 0
+		assert port < 0xffff
+
+		def validate_ip(ip : list):
+			addr = ip.split('.')
+			assert len(ip) == 4
+			for part in addr:
+				x = int(part)
+				assert x >= 0
+				assert x <= 255
+		
+		try:
+			validate_address(address)
+		except:
+			from socket import gethostbyname as get_ip
+			validate_address(get_ip(address))
+
+		return True
+
+	except:
+		return False
