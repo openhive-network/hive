@@ -204,17 +204,17 @@ hived_options_tests:
   tags:
     - public-runner-docker
     - hived-for-tests
-	
+
 replay:
   variables:
     COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./replay
     RENAME_CONFIG: mv ./replay/config-for-docker.ini ./replay/config.ini
-    SOURCE_NODE: consensus_node
+    SOURCE_NODE: consensus_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
   <<: *replaytest
   needs:
-    - job: consensus_node
+    - job: consensus_build
       artifacts: true
   tags:
     - public-runner-docker
@@ -243,12 +243,12 @@ custom_dev_replay:
     
 replay_scheduled:
   variables:
-    SOURCE_NODE: consensus_node
+    SOURCE_NODE: consensus_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 42000000
   <<: *replaytest
   needs:
-    - job: consensus_node
+    - job: consensus_build
       artifacts: true
   tags:
     - public-runner-docker
@@ -375,7 +375,7 @@ consensus_deploy_to_development:
     STOP_DEPLOY_AT: 5000000 #default value, its possible to set this variable before running job
   <<: *dep
   needs:
-    - job: consensus_node
+    - job: consensus_build
       artifacts: true
   environment: development
   tags:
@@ -411,7 +411,7 @@ consensus_deploy_to_staging:
     STOP_DEPLOY_AT: 5000000 #default value, its possible to set this variable before running job
   <<: *dep
   needs:
-    - job: consensus_node
+    - job: consensus_build
       artifacts: true
   environment: staging
   tags:
