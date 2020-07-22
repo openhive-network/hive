@@ -31,7 +31,7 @@ class HiveNode(object):
   hived_data_dir = None
   hived_args = list()
 
-  def __init__(self, binary_path : str, working_dir : str, binary_args : list):
+  def __init__(self, binary_path : str, working_dir : str, binary_args : list, print_out_node_output : bool = True):
     logger.info("New hive node")
     if not os.path.exists(binary_path):
       raise ValueError("Path to hived binary is not valid.")
@@ -48,10 +48,12 @@ class HiveNode(object):
     if binary_args:
       self.hived_args.extend(binary_args)
 
+    self.print_out_node_output = print_out_node_output
+
   def __enter__(self):
     self.hived_lock.acquire()
 
-    from subprocess import Popen, PIPE
+    from subprocess import Popen, PIPE, DEVNULL
     from time import sleep
 
     hived_command = [
@@ -59,8 +61,11 @@ class HiveNode(object):
       "--data-dir={}".format(self.hived_data_dir)
     ]
     hived_command.extend(self.hived_args)
+    if self.print_out_node_output:
+      self.hived_process = Popen(hived_command, stdout=PIPE, stderr=None)
+    else:
+      self.hived_process = Popen(hived_command, stdout=DEVNULL, stderr=DEVNULL)
 
-    self.hived_process = Popen(hived_command, stdout=PIPE, stderr=None)
     self.hived_process.poll()
     sleep(5)
 
@@ -90,6 +95,18 @@ class HiveNode(object):
             raise Exception("Error during stopping node. Manual intervention required.")
     self.hived_process = None
     self.hived_lock.release()
+
+  # waits for node, to close. Recomended to use with `--exit-after-replay` flag
+  def wait_till_end(self):
+    assert self.hived_process is not None
+    # assert "--exit-after-replay" in self.hived_args
+
+    from time import sleep
+    from psutil import pid_exists, Process, STATUS_ZOMBIE
+
+    pid = self.hived_process.pid
+    while pid_exists(pid) and Process(pid).status() != STATUS_ZOMBIE:
+      sleep(0.25)
 
 class HiveNodeInScreen(object):
   def __init__(self, hive_executable, working_dir, config_src_path, run_using_existing_data = False, node_is_steem = False):
