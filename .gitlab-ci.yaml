@@ -19,7 +19,10 @@ custom_node_build:
     GIT_STRATEGY: fetch
   script:
     - chmod 777 ./ciscripts/custom_build.sh
-    - ./ciscripts/custom_build.sh
+    - ./ciscripts/custom_build.sh #defaults to consensus
+    - mkdir "$CI_JOB_NAME"
+    - mv build/install-root "$CI_JOB_NAME"
+    - mv contrib/hived.run "$CI_JOB_NAME"
   when: manual
   allow_failure: false
   artifacts:
@@ -46,6 +49,8 @@ testnet_node_build:
     paths:
     - "$CI_JOB_NAME"
     expire_in: 6 hours
+  when: manual
+  allow_failure: false
   tags:
      - public-runner-docker
 
@@ -64,6 +69,8 @@ consensus_build:
     paths:
     - "$CI_JOB_NAME"
     expire_in: 6 hours
+  when: manual
+  allow_failure: false
   tags:
     - public-runner-docker
 
