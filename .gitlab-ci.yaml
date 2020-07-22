@@ -233,7 +233,7 @@ replay:
     - schedules
   when: manual
 
-custom_dev_replay:
+custom_replay:
   variables:
     COPY_CONFIG: cp ./$SOURCE_NODE/config.ini ./replay
     SOURCE_NODE: custom_node_build
