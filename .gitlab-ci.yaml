@@ -235,7 +235,8 @@ replay:
 
 custom_replay:
   variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/config.ini ./replay
+    COPY_CONFIG: cp ./$SOURCE_NODE/custom_node_build/CONFIG_INI ./replay
+    RENAME_CONFIG: mv ./replay/CONFIG_INI ./replay/config.ini
     SOURCE_NODE: custom_node_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
@@ -355,8 +356,8 @@ package_custom_node:
 #    
 #custom_deploy_to_production:
 #  variables:
-#    COPY_CONFIG: cp $CONFIG_INI ./replay #CONFIG_INI is a file variable it defaults to config-for-docker.ini
-#    RENAME_CONFIG: mv $CONFIG_INI ./replay/config.ini
+#    COPY_CONFIG: cp ./$SOURCE_NODE/custom_node_build/CONFIG_INI ./replay
+#    RENAME_CONFIG: mv ./replay/CONFIG_INI ./replay/config.ini
 #    SOURCE_NODE: custom_node_build
 #    GIT_STRATEGY: fetch
 #    STOP_DEPLOY_AT: 5000000 #default value, its possible to set this variable before running job
@@ -395,7 +396,8 @@ consensus_deploy_to_development:
     
 custom_deploy_to_development:
   variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/config.ini ./replay
+    COPY_CONFIG: cp ./$SOURCE_NODE/custom_node_build/CONFIG_INI ./replay
+    RENAME_CONFIG: mv ./replay/CONFIG_INI ./replay/config.ini
     SOURCE_NODE: custom_node_build
     GIT_STRATEGY: fetch
     STOP_DEPLOY_AT: 5000000 #default value, its possible to set this variable before running job
@@ -433,7 +435,8 @@ consensus_deploy_to_staging:
     
 custom_deploy_to_staging:
   variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/config.ini ./replay
+    COPY_CONFIG: cp ./$SOURCE_NODE/custom_node_build/CONFIG_INI ./replay
+    RENAME_CONFIG: mv ./replay/CONFIG_INI ./replay/config.ini
     SOURCE_NODE: custom_node_build
     GIT_STRATEGY: fetch
     STOP_DEPLOY_AT: 5000000 #default value, its possible to set this variable before running job
