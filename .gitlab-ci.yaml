@@ -278,10 +278,24 @@ staging_replay:
     - 0.24.0
   when: manual
   
-custom_replay:
+custom_dev_replay:
   variables:
     SOURCE_NODE: custom_node_build
     GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
+  <<: *replaytest
+  needs:
+    - job: custom_node_build
+      artifacts: true
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  except:
+    - master
+    - merge_request
+    - 0.24.0
+    - schedules
+  when: manual
     
     
 staging_replay_scheduled:
