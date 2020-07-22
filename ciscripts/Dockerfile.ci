@@ -48,8 +48,8 @@ EXPOSE 8090
 EXPOSE 2001
 
 WORKDIR "${install_base_dir}/consensus"
-COPY consensus_node/install-root/ consensus_node/hived.run ./
-COPY consensus_node/config-for-docker.ini datadir/config.ini
+COPY consensus_build/install-root/ consensus_build/hived.run ./
+COPY consensus_build/config-for-docker.ini datadir/config.ini
 RUN chmod 755 hived.run
 
 CMD "${install_base_dir}/consensus/hived.run"
@@ -69,12 +69,12 @@ EXPOSE 8090
 # p2p
 EXPOSE 2001
 
-WORKDIR "${install_base_dir}/consensus"
-COPY custom_node/install-root/ custom_node/hived.run ./
+WORKDIR "${install_base_dir}/custom"
+COPY custom_node_build/install-root/ custom_node_build/hived.run ./
 COPY $CONFIG_INI datadir/config.ini
 RUN chmod 755 hived.run
 
-CMD "${install_base_dir}/consensus/hived.run"
+CMD "${install_base_dir}/custom/hived.run"
 
 #####################################################################
 FROM $CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG AS fat_node
