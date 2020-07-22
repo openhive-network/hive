@@ -126,7 +126,6 @@ with node:
 
 # replay
 wait_for_node(node, "waiting for replay of {} blocks...".format(int(args.blocks)))
->>>>>>> added class for config and first snapshot test
 require_success(node)
 print("replay completed, creating snapshot")
 
