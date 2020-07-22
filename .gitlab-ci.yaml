@@ -232,7 +232,7 @@ hived_options_tests:
     paths:
     - $CI_PROJECT_DIR/replay/replay.log
     reports:
-      metrics: ./replay/advanced_benchmark.json
+      metrics: ./advanced_benchmark.json
     when: always
     expire_in: 6 months
   tags:
