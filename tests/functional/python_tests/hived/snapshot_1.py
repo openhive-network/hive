@@ -9,7 +9,7 @@ sys.path.append("../../")
 
 import hive_utils
 from hive_utils.resources.configini import config as configuration
-from hive_utils.common import wait_for_node
+from subprocess import PIPE, STDOUT
 
 
 parser = argparse.ArgumentParser()
@@ -17,6 +17,7 @@ parser.add_argument("--run-hived", dest="hived", help = "Path to hived executabl
 parser.add_argument("--block-log", dest="block_log_path", help = "Path to block log", required=True, type=str, default=None)
 parser.add_argument("--blocks", dest="blocks", help = "Blocks to replay", required=False, type=int, default=1000)
 parser.add_argument("--leave", dest="leave", action='store_true')
+parser.add_argument("--artifact-directory", dest="artifacts", help = "Path to directory where logs will be stored", required=False, type=str)
 
 args = parser.parse_args()
 node = None
@@ -58,15 +59,27 @@ base_hv_args = [ "--stop-replay-at-block", str(args.blocks), "--exit-after-repla
 hv_args = base_hv_args.copy()
 hv_args.append("--replay-blockchain")
 
+# setting up logging
+stdout = PIPE
+stderr = None
+
+if args.artifacts:
+	stderr = STDOUT
+	stdout = open(os.path.join(args.artifacts, "replayed_node_snapshot_1.log"), 'w', 1)
+
 # setup for replay
 node = hive_utils.hive_node.HiveNode(
 	args.hived,
 	work_dir, 
-	hv_args.copy()
+	hv_args.copy(),
+	stdout,
+	stderr
 )
 
 # replay
-wait_for_node(node, "waiting for replay of {} blocks...".format(int(args.blocks)))
+print(f"waiting for replay of {args.blocks} blocks...")
+with node:
+	node.wait_till_end()
 print("replay completed, creating snapshot")
 
 # setup for first snapshot
@@ -76,7 +89,9 @@ hv_args.extend(["--dump-snapshot", first_snapshot_name])
 node.hived_args = hv_args.copy()
 
 # creating snapshot
-wait_for_node(node, "creating snapshot '{}' ...".format(first_snapshot_name))
+print("creating snapshot '{}' ...".format(first_snapshot_name))
+with node:
+	node.wait_till_end()
 
 # setup for loading snapshot
 hv_args = base_hv_args.copy()
@@ -85,7 +100,9 @@ node.hived_args = hv_args.copy()
 os.remove(os.path.join(blockchain_dir, "shared_memory.bin"))
 
 # loading snapshot
-wait_for_node(node, "creating snapshot '{}' ...".format(first_snapshot_name))
+print("creating snapshot '{}' ...".format(first_snapshot_name))
+with node:
+	node.wait_till_end()
 
 # setup for redumping snapshot
 second_snapshot_name = "second_snapshot"
@@ -94,7 +111,9 @@ hv_args.extend(["--dump-snapshot", second_snapshot_name])
 node.hived_args = hv_args.copy()
 
 # redumpping snapshot
-wait_for_node(node, "creating snapshot '{}' ...".format(second_snapshot_name))
+print("creating snapshot '{}' ...".format(second_snapshot_name))
+with node:
+	node.wait_till_end()
 
 path_to_first_snapshot = os.path.join(snapshot_root, first_snapshot_name)
 path_to_second_snapshot = os.path.join(snapshot_root, second_snapshot_name)
@@ -116,5 +135,8 @@ if not args.leave:
 	print("deleted: {}".format(work_dir))
 else:
 	print("datadir not deleted: {}".format(work_dir))
+
+if stderr is not None:
+	stdout.close()
 
 exit(len(miss_list))
