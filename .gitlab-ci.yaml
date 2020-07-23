@@ -168,8 +168,8 @@ hived_replay_tests:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
     - cd tests/functional/python_tests/hived/replay_based_tests
-    - apt-get update -y && apt-get install -y python3 python3-pip
-    - pip3 install -U wget psutil junit_xml gcovr secp256k1prp
+    - apt-get update -y && apt-get install -y python3 python3-pip python3-dev
+    - pip3 install -U wget psutil junit_xml gcovr secp256k1prp requests
     - $CI_PROJECT_DIR/consensus_build/install-root/bin/truncate_block_log /blockchain/block_log /tmp/block_log 1000000
     - "python3 vop_pagnation.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --block-log /tmp/block_log --blocks 1000000 --mute"
   tags:
