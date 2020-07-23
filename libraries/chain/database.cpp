@@ -2733,7 +2733,9 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       c.last_payout = head_block_time();
     } );
 
-    push_virtual_operation( comment_payout_update_operation( get_account(comment_cashout.author_id).name, to_string( comment_cashout.permlink ) ) );
+    push_virtual_operation( comment_payout_update_operation(  get_account(comment_cashout.author_id).name,
+                                                              to_string( comment_cashout.permlink ),
+                                                              comment_cashout.cashout_time == fc::time_point_sec::maximum() ) );
 
     const auto& vote_idx = get_index< comment_vote_index >().indices().get< by_comment_voter >();
     auto vote_itr = vote_idx.lower_bound( comment.get_id() );
