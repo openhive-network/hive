@@ -310,20 +310,20 @@ package_custom_node:
   stage: deploy
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
-    - mkdir ./deploy 
-    - mkdir ./deploy/blockchain
-    - cp ./$SOURCE_NODE/install-root/bin/hived ./deploy
-    - cp ./$SOURCE_NODE/install-root/bin/cli_wallet ./deploy
+    - mkdir ./$CI_ENVIRONMENT_NAME/deploy 
+    - mkdir ./$CI_ENVIRONMENT_NAME/deploy/blockchain
+    - cp ./$SOURCE_NODE/install-root/bin/hived ./$CI_ENVIRONMENT_NAME/deploy
+    - cp ./$SOURCE_NODE/install-root/bin/cli_wallet ./$CI_ENVIRONMENT_NAME/deploy
     - $COPY_CONFIG
     - $RENAME_CONFIG
-    - cp ./$SOURCE_NODE/install-root/bin/truncate_block_log ./deploy
-    - ./deploy/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/deploy/blockchain/block_log $STOP_DEPLOY_AT
+    - cp ./$SOURCE_NODE/install-root/bin/truncate_block_log ./$CI_ENVIRONMENT_NAME/deploy
+    - ./$CI_ENVIRONMENT_NAME/deploy/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/$CI_ENVIRONMENT_NAME/deploy/blockchain/block_log $STOP_DEPLOY_AT
     - chmod 0777 ./ciscripts/deploy.sh
     - ./ciscripts/deploy.sh "$STOP_REPLAY_AT"
   allow_failure: false
   artifacts:
     paths:
-    - $CI_PROJECT_DIR/deploy/deploy.log
+    - $CI_PROJECT_DIR/$CI_ENVIRONMENT_NAME/deploy/deploy.log
     reports:
       metrics: ./advanced_benchmark.json
     when: always
@@ -334,8 +334,8 @@ package_custom_node:
 
 #consensus_deploy_to_production:
 #  variables:
-#    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./replay
-#    RENAME_CONFIG: mv ./replay/config-for-docker.ini ./replay/config.ini
+#    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./$CI_ENVIRONMENT_NAME/deploy
+#    RENAME_CONFIG: mv ./$CI_ENVIRONMENT_NAME/deploy/config-for-docker.ini ./$CI_ENVIRONMENT_NAME/deploy/config.ini
 #    SOURCE_NODE: consensus_build
 #    GIT_STRATEGY: fetch
 #    STOP_DEPLOY_AT: 5000000 #default value, its possible to set this variable before running job
@@ -356,8 +356,8 @@ package_custom_node:
 #    
 #custom_deploy_to_production:
 #  variables:
-#    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./replay
-#    RENAME_CONFIG: mv ./replay/CONFIG_INI ./replay/config.ini
+#    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./$CI_ENVIRONMENT_NAME/deploy
+#    RENAME_CONFIG: mv ./$CI_ENVIRONMENT_NAME/deploy/CONFIG_INI ./$CI_ENVIRONMENT_NAME/deploy/config.ini
 #    SOURCE_NODE: custom_node_build
 #    GIT_STRATEGY: fetch
 #    STOP_DEPLOY_AT: 5000000 #default value, its possible to set this variable before running job
@@ -378,8 +378,8 @@ package_custom_node:
 
 consensus_deploy_to_development:
   variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./replay
-    RENAME_CONFIG: mv ./replay/config-for-docker.ini ./replay/config.ini
+    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./$CI_ENVIRONMENT_NAME/deploy
+    RENAME_CONFIG: mv ./$CI_ENVIRONMENT_NAME/deploy/config-for-docker.ini ./$CI_ENVIRONMENT_NAME/deploy/config.ini
     SOURCE_NODE: consensus_build
     GIT_STRATEGY: fetch
     STOP_DEPLOY_AT: 5000000 #default value, its possible to set this variable before running job
@@ -396,8 +396,8 @@ consensus_deploy_to_development:
     
 custom_deploy_to_development:
   variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./replay
-    RENAME_CONFIG: mv ./replay/CONFIG_INI ./replay/config.ini
+    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./$CI_ENVIRONMENT_NAME/deploy
+    RENAME_CONFIG: mv ./$CI_ENVIRONMENT_NAME/deploy/CONFIG_INI ./$CI_ENVIRONMENT_NAME/deploy/config.ini
     SOURCE_NODE: custom_node_build
     GIT_STRATEGY: fetch
     STOP_DEPLOY_AT: 5000000 #default value, its possible to set this variable before running job
@@ -414,8 +414,8 @@ custom_deploy_to_development:
     
 consensus_deploy_to_staging:
   variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./replay
-    RENAME_CONFIG: mv ./replay/config-for-docker.ini ./replay/config.ini
+    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./$CI_ENVIRONMENT_NAME/deploy
+    RENAME_CONFIG: mv ./$CI_ENVIRONMENT_NAME/deploy/config-for-docker.ini ./$CI_ENVIRONMENT_NAME/deploy/config.ini
     SOURCE_NODE: consensus_build
     GIT_STRATEGY: fetch
     STOP_DEPLOY_AT: 5000000 #default value, its possible to set this variable before running job
@@ -435,8 +435,8 @@ consensus_deploy_to_staging:
     
 custom_deploy_to_staging:
   variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./replay
-    RENAME_CONFIG: mv ./replay/CONFIG_INI ./replay/config.ini
+    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./$CI_ENVIRONMENT_NAME/deploy
+    RENAME_CONFIG: mv ./$CI_ENVIRONMENT_NAME/deploy/CONFIG_INI ./$CI_ENVIRONMENT_NAME/deploy/config.ini
     SOURCE_NODE: custom_node_build
     GIT_STRATEGY: fetch
     STOP_DEPLOY_AT: 5000000 #default value, its possible to set this variable before running job
