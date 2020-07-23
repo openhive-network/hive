@@ -317,7 +317,7 @@ package_custom_node:
     - $COPY_CONFIG
     - $RENAME_CONFIG
     - cp ./$SOURCE_NODE/install-root/bin/truncate_block_log ./deploy
-    - ./deploy/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/deploy/blockchain/block_log $STOP_REPLAY_AT
+    - ./deploy/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/deploy/blockchain/block_log $STOP_DEPLOY_AT
     - chmod 0777 ./ciscripts/deploy.sh
     - ./ciscripts/deploy.sh "$STOP_REPLAY_AT"
   allow_failure: false
