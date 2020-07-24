@@ -360,8 +360,8 @@ replay_scheduled:
     SOURCE_NODE: consensus_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 42000000
-    HTTP_ENDPOINT: 
-    WS_ENDPOINT:
+    HTTP_ENDPOINT: 127.0.0.1:8090
+    WS_ENDPOINT: 127.0.0.1:8091
   <<: *replaytest
   needs:
     - job: consensus_build
