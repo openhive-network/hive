@@ -2730,6 +2730,9 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           c.cashout_time = fc::time_point_sec::maximum();
       }
 
+      if( comment.get_parent_id() != HIVE_ROOT_POST_PARENT_ID )
+        c.cashout_time = calculate_discussion_payout_time( c );
+
       c.last_payout = head_block_time();
     } );
 
