@@ -2730,13 +2730,10 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           c.cashout_time = fc::time_point_sec::maximum();
       }
 
-      if( comment.get_parent_id() != HIVE_ROOT_POST_PARENT_ID )
-        c.cashout_time = calculate_discussion_payout_time( c );
-
       c.last_payout = head_block_time();
     } );
 
-    if( comment_cashout.cashout_time == fc::time_point_sec::maximum() )
+    if( calculate_discussion_payout_time( comment_cashout ) == fc::time_point_sec::maximum() )
     {
       push_virtual_operation( comment_payout_update_operation( get_account(comment_cashout.author_id).name, to_string( comment_cashout.permlink ) ) );
     }
