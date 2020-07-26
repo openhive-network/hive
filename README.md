@@ -2,7 +2,7 @@
 
 ![Hive](https://files.peakd.com/file/peakd-hive/netuoso/jMHldwMV-horizontal.png)
 
-Hive is a Graphene based, social blockchain that was created as a fork of Steem and born on the core idea of decentralization. Originally, Hive was announced on the [Steem blockchain](https://peakd.com/communityfork/@hiveio/announcing-the-launch-of-hive-blockchain) prior to the initial token airdrop. Hive did not have any ICO or mining period.
+Hive is a ChainBase (an upgrade of Graphene) based, social blockchain that was created as a fork of Steem and born on the core idea of decentralization. Originally, Hive was announced on the [Steem blockchain](https://peakd.com/communityfork/@hiveio/announcing-the-launch-of-hive-blockchain) prior to the initial token airdrop. Hive did not have any ICO or mining period.
 
 The Hive blockchain removes the elements of centralization and imbalanced control that have plagued the Steem blockchain over the last 4 years. Since it’s launch on March 20, 2020 Hive is growing and evolving day by day. Hive's prime selling points are its decentralization, 3 second transaction speed and ability to handle large volumes. It is ideal real estate for a variety of innovative projects focused on a broad range of fields, from open source development to games.
 
@@ -33,7 +33,7 @@ The technical development of the Hive blockchain itself is carried out by the fo
 
 * Currency symbol HIVE
 * HBD - Hive's very own stable coin with a one-way peg
-* Delegated Proof-of-Stake Consensus (DPoS)
+* Delegated Proof-of-Stake Consensus (DPoS), Proof-of-Brain
 * 10% APR inflation narrowing to 1% APR over 20 years
     * 65% of inflation to authors/curators.
     * 15% of inflation to stakeholders.
