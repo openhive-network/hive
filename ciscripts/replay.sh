@@ -1,2 +1,2 @@
 #!/bin/bash
-$CI_PROJECT_DIR/replay/hived --replay-blockchain --set-benchmark-interval 100000 --stop-replay-at-block ${STOP_REPLAY_AT} --exit-after-replay --advanced-benchmark --dump-memory-details  -d $CI_PROJECT_DIR/replay --shared-file-dir $CI_PROJECT_DIR/replay 2>&1 | tee $CI_PROJECT_DIR/replay/replay.log
+$CI_PROJECT_DIR/$CI_ENVIRONMENT_NAME/sync/hived --replay-blockchain --set-benchmark-interval 100000 --stop-replay-at-block ${STOP_REPLAY_AT} --exit-after-replay --advanced-benchmark --dump-memory-details  -d $CI_PROJECT_DIR/$CI_ENVIRONMENT_NAME/sync --shared-file-dir $CI_PROJECT_DIR/$CI_ENVIRONMENT_NAME/sync 2>&1 | tee $CI_PROJECT_DIR/$CI_ENVIRONMENT_NAME/sync/replay.log
