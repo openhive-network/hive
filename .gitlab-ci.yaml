@@ -264,7 +264,7 @@ sync_production:
   <<: *sync
   needs:
     - job: consensus_build
-      #artifacts: true
+      artifacts: true
   tags:
     - public-runner-docker
     - hived-for-tests
@@ -287,7 +287,7 @@ custom_sync_production:
   <<: *sync
   needs:
     - job: custom_node_build
-      #artifacts: true
+      artifacts: true
   tags:
     - public-runner-docker
     - hived-for-tests
