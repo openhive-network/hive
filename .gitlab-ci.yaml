@@ -239,7 +239,7 @@ package_custom_node:
     - $RENAME_CONFIG
     - echo $CI_CONCURRENT_ID
     - echo "config.ini:"
-    - cat ./sync/config.ini
+    - cat ./sync/$CI_ENVIRONMENT_NAME/config.ini
     - cp ./$SOURCE_NODE/install-root/bin/truncate_block_log ./sync/$CI_ENVIRONMENT_NAME
     - ./sync/$CI_ENVIRONMENT_NAME/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/sync/blockchain/block_log $STOP_REPLAY_AT
     - chmod 0777 ./ciscripts/replay.sh
