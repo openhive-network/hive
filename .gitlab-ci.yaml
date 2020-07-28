@@ -287,6 +287,7 @@ start_deploy_staging:
   needs:
     - job: sync_staging
   script:
+    - chmod 0777 ./ciscripts/staging_deploy.sh
     - ./ciscripts/staging_deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
   artifacts:
     paths:
@@ -295,6 +296,7 @@ start_deploy_staging:
   tags:
     - public-runner-docker
     - hived-for-tests
+  allow_failure: false
   environment: staging
   except:
     - schedules
@@ -310,11 +312,13 @@ stop_deploy_staging:
     GIT_STRATEGY: none
   when: manual
   script:
+    - chmod 0777 ./ciscripts/stop_deploy_staging.sh
     - ./ciscripts/stop_deploy_staging.sh ID.txt
   environment: staging
   tags:
     - public-runner-docker
     - hived-for-tests
+  allow_failure: false
   except:
     - schedules
     - master
@@ -334,10 +338,12 @@ start_deploy_development:
   needs:
     - job: sync_development
   script:
+    - chmod 0777 ./ciscripts/deploy.sh
     - ./ciscripts/deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
   tags:
     - public-runner-docker
     - hived-for-tests
+  allow_failure: false
   environment: development
   artifacts:
     paths:
@@ -355,6 +361,7 @@ stop_deploy_development:
   tags:
     - public-runner-docker
     - hived-for-tests
+  allow_failure: false
   script:
     - screen -S hived-deploy-$CI_ENVIRONMENT_NAME -X quit
   only:
@@ -372,10 +379,12 @@ start_deploy_production:
   needs:
     - job: sync_production
   script:
+    - chmod 0777 ./ciscripts/deploy.sh
     - ./ciscripts/deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
   tags:
     - public-runner-docker
     - hived-for-tests
+  allow_failure: false
   environment: production
   artifacts:
     paths:
@@ -395,6 +404,7 @@ stop_deploy_production:
   tags:
     - public-runner-docker
     - hived-for-tests
+  allow_failure: false
   script:
     - screen -S hived-deploy-$CI_ENVIRONMENT_NAME -X quit
   only:
