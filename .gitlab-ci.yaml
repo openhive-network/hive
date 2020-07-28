@@ -2,6 +2,7 @@ stages:
 - build
 - test
 - package
+- data-supply
 - deploy
 
 variables:
@@ -185,193 +186,6 @@ hived_options_tests:
   tags:
     - public-runner-docker
 
-.replay_test_template: &replaytest
-  stage: deploy
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
-  before_script:
-  - echo "Blockchain will stop at $STOP_REPLAY_AT block"
-  script:
-    - mkdir ./replay 
-    - mkdir ./replay/blockchain
-    - cp ./$SOURCE_NODE/install-root/bin/hived ./replay
-    - cp ./$SOURCE_NODE/install-root/bin/cli_wallet ./replay
-    - $COPY_CONFIG
-    - $RENAME_CONFIG
-    - echo $CI_CONCURRENT_ID
-    - echo "config.ini:"
-    - cat ./replay/config.ini
-    - echo "\n"
-    - cp ./$SOURCE_NODE/install-root/bin/truncate_block_log ./replay
-    - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
-    - chmod 0777 ./ciscripts/replay.sh
-    - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
-  allow_failure: false
-  artifacts:
-    paths:
-    - $CI_PROJECT_DIR/replay/replay.log
-    reports:
-      metrics: ./advanced_benchmark.json
-    when: always
-    expire_in: 6 months
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-
-replay_production:
-  variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./replay
-    RENAME_CONFIG: mv ./replay/config-for-docker.ini ./replay/config.ini
-    SOURCE_NODE: consensus_build
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-    HTTP_ENDPOINT: 127.0.0.1:10090
-    WS_ENDPOINT: 127.0.0.1:10091
-  <<: *replaytest
-  needs:
-    - job: consensus_build
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  environment: production
-  except:
-    - schedules
-    - master
-    - merge_request
-    - 0.24.0
-    - development
-  when: manual
-
-custom_replay_production:
-  variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./replay
-    RENAME_CONFIG: mv ./replay/CONFIG_INI ./replay/config.ini
-    SOURCE_NODE: custom_node_build
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-    HTTP_ENDPOINT: 127.0.0.1:10090
-    WS_ENDPOINT: 127.0.0.1:10091
-  <<: *replaytest
-  needs:
-    - job: custom_node_build
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  environment: production
-  except:
-    - schedules
-    - master
-    - merge_request
-    - 0.24.0
-    - development
-  when: manual
-
-replay_development:
-  variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./replay
-    RENAME_CONFIG: mv ./replay/config-for-docker.ini ./replay/config.ini
-    SOURCE_NODE: consensus_build
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-    HTTP_ENDPOINT: 127.0.0.1:9090
-    WS_ENDPOINT: 127.0.0.1:9091
-  <<: *replaytest
-  needs:
-    - job: consensus_build
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  environment: development
-  only:
-    - development
-  when: manual
-
-custom_replay_development:
-  variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./replay
-    RENAME_CONFIG: mv ./replay/CONFIG_INI ./replay/config.ini
-    SOURCE_NODE: custom_node_build
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-    HTTP_ENDPOINT: 127.0.0.1:9090
-    WS_ENDPOINT: 127.0.0.1:9091
-  <<: *replaytest
-  needs:
-    - job: custom_node_build
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  environment: development
-  only:
-    - development
-  when: manual
-
-replay_staging:
-  variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./replay
-    RENAME_CONFIG: mv ./replay/config-for-docker.ini ./replay/config.ini
-    SOURCE_NODE: consensus_build
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-    HTTP_ENDPOINT: 127.0.0.1:8090
-    WS_ENDPOINT: 127.0.0.1:8091
-  <<: *replaytest
-  needs:
-    - job: consensus_build
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  environment: staging
-  only:
-    - master
-    - merge_request
-    - 0.24.0
-  when: manual
-
-custom_replay_staging:
-  variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./replay
-    RENAME_CONFIG: mv ./replay/CONFIG_INI ./replay/config.ini
-    SOURCE_NODE: custom_node_build
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-    HTTP_ENDPOINT: 127.0.0.1:8090
-    WS_ENDPOINT: 127.0.0.1:8091
-  <<: *replaytest
-  needs:
-    - job: custom_node_build
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  environment: staging
-  only:
-    - master
-    - merge_request
-    - 0.24.0
-  when: manual
-
-replay_scheduled:
-  variables:
-    SOURCE_NODE: consensus_build
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 42000000
-    HTTP_ENDPOINT: 127.0.0.1:8090
-    WS_ENDPOINT: 127.0.0.1:8091
-  <<: *replaytest
-  needs:
-    - job: consensus_build
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  only:
-    - schedules
-
 package_consensus_node:
   stage: package
   needs:
@@ -411,3 +225,205 @@ package_custom_node:
     - "echo ===> the custom node image for this build is: $CI_REGISTRY_IMAGE/custom_node:$CI_COMMIT_SHORT_SHA"
   tags:
     - public-runner-docker
+    
+.sync_template: &sync
+  stage: data-supply
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  before_script:
+  - echo "Blockchain will stop at $STOP_REPLAY_AT block"
+  script:
+    - mkdir -p ./sync/$CI_ENVIRONMENT_NAME/blockchain
+    - cp ./$SOURCE_NODE/install-root/bin/hived ./sync/$CI_ENVIRONMENT_NAME
+    - cp ./$SOURCE_NODE/install-root/bin/cli_wallet ./sync/$CI_ENVIRONMENT_NAME
+    - $COPY_CONFIG
+    - $RENAME_CONFIG
+    - echo $CI_CONCURRENT_ID
+    - echo "config.ini:"
+    - cat ./sync/config.ini
+    - cp ./$SOURCE_NODE/install-root/bin/truncate_block_log ./sync/$CI_ENVIRONMENT_NAME
+    - ./sync/$CI_ENVIRONMENT_NAME/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/sync/blockchain/block_log $STOP_REPLAY_AT
+    - chmod 0777 ./ciscripts/replay.sh
+    - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
+  allow_failure: false
+  artifacts:
+    paths:
+    - $CI_PROJECT_DIR/sync
+    when: always
+    expire_in: 6 months
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+
+sync_production:
+  variables:
+    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME
+    RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME/config.ini
+    SOURCE_NODE: consensus_build
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
+  <<: *sync
+  needs:
+    - job: consensus_build
+      #artifacts: true
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  environment: production
+  except:
+    - schedules
+    - master
+    - merge_request
+    - 0.24.0
+    - development
+  when: manual
+
+custom_sync_production:
+  variables:
+    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME
+    RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME/config.ini
+    SOURCE_NODE: custom_node_build
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
+  <<: *sync
+  needs:
+    - job: custom_node_build
+      #artifacts: true
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  environment: production
+  except:
+    - schedules
+    - master
+    - merge_request
+    - 0.24.0
+    - development
+  when: manual
+
+sync_development:
+  variables:
+    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME
+    RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME/config.ini
+    SOURCE_NODE: consensus_build
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
+  <<: *sync
+  needs:
+    - job: consensus_build
+      artifacts: true
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  environment: development
+  only:
+    - development
+  when: manual
+
+custom_sync_development:
+  variables:
+    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME
+    RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME/config.ini
+    SOURCE_NODE: custom_node_build
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
+  <<: *sync
+  needs:
+    - job: custom_node_build
+      artifacts: true
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  environment: development
+  only:
+    - development
+  when: manual
+
+sync_staging:
+  variables:
+    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME
+    RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME/config.ini
+    SOURCE_NODE: consensus_build
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
+  <<: *sync
+  needs:
+    - job: consensus_build
+      artifacts: true
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  environment: staging
+  only:
+    - master
+    - merge_request
+    - 0.24.0
+  when: manual
+
+custom_sync_staging:
+  variables:
+    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME
+    RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME/config.ini
+    SOURCE_NODE: custom_node_build
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
+  <<: *sync
+  needs:
+    - job: custom_node_build
+      artifacts: true
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  environment: staging
+  only:
+    - master
+    - merge_request
+    - 0.24.0
+  when: manual
+
+#.deploy_template: &dep
+#  stage: deploy
+#  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+#  variables:
+#    GIT_STRATEGY: fetch
+#    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
+#    HTTP_ENDPOINT: 127.0.0.1:8090
+#    WS_ENDPOINT: 127.0.0.1:8091
+#  tags:
+#    - public-runner-docker
+#    - hived-for-tests
+    
+#deploy_production:
+#  stage: deploy
+#  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+#  variables:
+#    GIT_STRATEGY: fetch
+#    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
+#    HTTP_ENDPOINT: 127.0.0.1:10090
+#    WS_ENDPOINT: 127.0.0.1:10091
+#  needs:
+#    - job: sync_production
+#      artifacts: true
+#  script:
+#    - ./deploy.sh $STOP_REPLAY_AT $HTTP_ENDPOINT $WS_ENDPOINT
+#  tags:
+#    - public-runner-docker
+#    - hived-for-tests
+#  when: manual
+
+#custom_deploy_production:
+#  stage: deploy
+#  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+#  variables:
+#    GIT_STRATEGY: fetch
+#    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
+#    HTTP_ENDPOINT: 127.0.0.1:10090
+#    WS_ENDPOINT: 127.0.0.1:10091
+#  needs:
+#    - job: custom_sync_production
+#      artifacts: true
+#  script:
+#    - ./deploy.sh $STOP_REPLAY_AT $HTTP_ENDPOINT $WS_ENDPOINT
+#  tags:
+#    - public-runner-docker
+#    - hived-for-tests
+#  when: manual
