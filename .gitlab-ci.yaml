@@ -312,6 +312,9 @@ stop_deploy_staging:
   script:
     - ./ciscripts/stop_deploy_staging.sh ID.txt
   environment: staging
+  tags:
+    - public-runner-docker
+    - hived-for-tests
   except:
     - schedules
     - master
@@ -349,6 +352,9 @@ stop_deploy_development:
     GIT_STRATEGY: none
   when: manual
   environment: development
+  tags:
+    - public-runner-docker
+    - hived-for-tests
   script:
     - screen -S hived-deploy-$CI_ENVIRONMENT_NAME -X quit
   only:
@@ -386,6 +392,9 @@ stop_deploy_production:
     GIT_STRATEGY: none
   when: manual
   environment: production
+  tags:
+    - public-runner-docker
+    - hived-for-tests
   script:
     - screen -S hived-deploy-$CI_ENVIRONMENT_NAME -X quit
   only:
