@@ -241,7 +241,7 @@ package_custom_node:
     - echo "config.ini:"
     - cat ./sync/$CI_ENVIRONMENT_NAME/config.ini
     - cp ./$SOURCE_NODE/install-root/bin/truncate_block_log ./sync/$CI_ENVIRONMENT_NAME
-    - ./sync/$CI_ENVIRONMENT_NAME/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/sync/blockchain/block_log $STOP_REPLAY_AT
+    - ./sync/$CI_ENVIRONMENT_NAME/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/sync/$CI_ENVIRONMENT_NAME/blockchain/block_log $STOP_REPLAY_AT
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
   allow_failure: false
