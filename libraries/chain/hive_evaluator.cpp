@@ -1512,10 +1512,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       });
 #endif
 
-    effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
-    vop.vote_percent = o.weight;
-    _db.push_virtual_operation(vop);
-
     return;
   }
 
@@ -1937,10 +1933,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         cvo.last_update = _db.head_block_time();
       });
 #endif
-
-    effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
-    vop.vote_percent = o.weight;
-    _db.push_virtual_operation(vop);
 
     return;
   }
