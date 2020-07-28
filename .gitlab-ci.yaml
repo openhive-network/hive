@@ -13,28 +13,6 @@ variables:
   BUILDER_IMAGE_TAG: "@sha256:13933b563395cc3c6ea8bcbd95b717eb4c9fcc33c4cd7194e620713aca03180d"
   TEST_IMAGE_TAG: "@sha256:fc78e92864645317c82c4703edd5b679c3d22c24bb7253612fb350b629681637"
 
-custom_node_build:
-  stage: build
-  image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
-  variables:
-    GIT_STRATEGY: fetch
-  script:
-    - chmod 777 ./ciscripts/custom_build.sh
-    - ./ciscripts/custom_build.sh #It wont run untill you manually specify variables: LOW_MEMORY_NODE, CLEAR_VOTES and BUILD_HIVE_TESTNET
-    - mkdir "$CI_JOB_NAME"
-    - mv build/install-root "$CI_JOB_NAME"
-    - mv contrib/hived.run "$CI_JOB_NAME"
-    - mv $CONFIG_INI "$CI_JOB_NAME"
-  when: manual
-  allow_failure: false
-  artifacts:
-    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
-    paths:
-    - "$CI_JOB_NAME"
-    expire_in: 6 hours
-  tags:
-     - public-runner-docker
- 
 testnet_node_build:
   stage: build
   image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
@@ -206,26 +184,6 @@ package_consensus_node:
   tags:
     - public-runner-docker
     
-package_custom_node:
-  stage: package
-  needs:
-    - job: custom_node_build
-      artifacts: true
-  image: docker:19.03.11
-  services:
-    - docker:19.03.11-dind
-  variables:
-    DOCKER_BUILDKIT: 1
-    DOCKER_DRIVER: overlay2
-    DOCKER_TLS_CERTDIR: "/certs"
-  script:
-    - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
-    - "docker build -f ciscripts/Dockerfile.ci --target=custom_node --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/custom_node:$CI_COMMIT_SHORT_SHA ."
-    - "docker push $CI_REGISTRY_IMAGE/custom_node:$CI_COMMIT_SHORT_SHA"
-    - "echo ===> the custom node image for this build is: $CI_REGISTRY_IMAGE/custom_node:$CI_COMMIT_SHORT_SHA"
-  tags:
-    - public-runner-docker
-    
 .sync_template: &sync
   stage: data-supply
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
@@ -254,7 +212,7 @@ package_custom_node:
     - public-runner-docker
     - hived-for-tests
 
-sync_production:
+sync_staging:
   variables:
     COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME
     RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME/config.ini
@@ -268,30 +226,7 @@ sync_production:
   tags:
     - public-runner-docker
     - hived-for-tests
-  environment: production
-  except:
-    - schedules
-    - master
-    - merge_request
-    - 0.24.0
-    - development
-  when: manual
-
-custom_sync_production:
-  variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME
-    RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME/config.ini
-    SOURCE_NODE: custom_node_build
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-  <<: *sync
-  needs:
-    - job: custom_node_build
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  environment: production
+  environment: staging
   except:
     - schedules
     - master
@@ -319,26 +254,7 @@ sync_development:
     - development
   when: manual
 
-custom_sync_development:
-  variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME
-    RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME/config.ini
-    SOURCE_NODE: custom_node_build
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-  <<: *sync
-  needs:
-    - job: custom_node_build
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  environment: development
-  only:
-    - development
-  when: manual
-
-sync_staging:
+sync_production:
   variables:
     COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME
     RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME/config.ini
@@ -352,78 +268,135 @@ sync_staging:
   tags:
     - public-runner-docker
     - hived-for-tests
-  environment: staging
+  environment: production
   only:
     - master
     - merge_request
     - 0.24.0
   when: manual
 
-custom_sync_staging:
+
+start_deploy_staging:
+  stage: deploy
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME
-    RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME/config.ini
-    SOURCE_NODE: custom_node_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-  <<: *sync
+    HTTPS_ENDPOINT_PORT: 10090
+    WS_ENDPOINT_PORT: 10091
   needs:
-    - job: custom_node_build
-      artifacts: true
+    - job: sync_staging
+  script:
+    - ./ciscripts/staging_deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
+  artifacts:
+    paths:
+      - ID.txt
+      - deploy.log
   tags:
     - public-runner-docker
     - hived-for-tests
   environment: staging
+  except:
+    - schedules
+    - master
+    - merge_request
+    - 0.24.0
+    - development
+  when: manual
+
+stop_deploy_staging:
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
+  when: manual
+  needs:
+    - job: start_deploy_staging
+  script:
+    - ./ciscripts/stop_deploy_staging.sh ID.txt
+  environment: staging
+  except:
+    - schedules
+    - master
+    - merge_request
+    - 0.24.0
+    - development
+  when: manual
+
+start_deploy_development:
+  stage: deploy
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
+    HTTPS_ENDPOINT_PORT: 9090
+    WS_ENDPOINT_PORT: 9091
+  needs:
+    - job: sync_development
+  script:
+    - ./ciscripts/deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  environment: development
+  artifacts:
+    paths:
+      - deploy.log
+  only:
+    - development
+  when: manual
+
+stop_deploy_development:
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
+  when: manual
+  needs:
+    - job: start_deploy_development
+  environment: development
+  script:
+    - screen -S hived-deploy-$CI_ENVIRONMENT_NAME -X quit
+  only:
+    - development
+  when: manual
+
+start_deploy_production:
+  stage: deploy
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
+    HTTPS_ENDPOINT_PORT: 8090
+    WS_ENDPOINT_PORT: 8091
+  needs:
+    - job: sync_production
+  script:
+    - ./ciscripts/deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  environment: production
+  artifacts:
+    paths:
+      - deploy.log
   only:
     - master
     - merge_request
     - 0.24.0
   when: manual
 
-#.deploy_template: &dep
-#  stage: deploy
-#  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
-#  variables:
-#    GIT_STRATEGY: fetch
-#    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-#    HTTP_ENDPOINT: 127.0.0.1:8090
-#    WS_ENDPOINT: 127.0.0.1:8091
-#  tags:
-#    - public-runner-docker
-#    - hived-for-tests
-    
-#deploy_production:
-#  stage: deploy
-#  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
-#  variables:
-#    GIT_STRATEGY: fetch
-#    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-#    HTTP_ENDPOINT: 127.0.0.1:10090
-#    WS_ENDPOINT: 127.0.0.1:10091
-#  needs:
-#    - job: sync_production
-#      artifacts: true
-#  script:
-#    - ./deploy.sh $STOP_REPLAY_AT $HTTP_ENDPOINT $WS_ENDPOINT
-#  tags:
-#    - public-runner-docker
-#    - hived-for-tests
-#  when: manual
+stop_deploy_production:
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
+  when: manual
+  needs:
+    - job: start_deploy_production
+  environment: production
+  script:
+    - screen -S hived-deploy-$CI_ENVIRONMENT_NAME -X quit
+  only:
+    - master
+    - merge_request
+    - 0.24.0
+  when: manual
 
-#custom_deploy_production:
-#  stage: deploy
-#  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
-#  variables:
-#    GIT_STRATEGY: fetch
-#    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-#    HTTP_ENDPOINT: 127.0.0.1:10090
-#    WS_ENDPOINT: 127.0.0.1:10091
-#  needs:
-#    - job: custom_sync_production
-#      artifacts: true
-#  script:
-#    - ./deploy.sh $STOP_REPLAY_AT $HTTP_ENDPOINT $WS_ENDPOINT
-#  tags:
-#    - public-runner-docker
-#    - hived-for-tests
-#  when: manual
