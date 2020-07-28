@@ -309,8 +309,6 @@ stop_deploy_staging:
   variables:
     GIT_STRATEGY: none
   when: manual
-  needs:
-    - job: start_deploy_staging
   script:
     - ./ciscripts/stop_deploy_staging.sh ID.txt
   environment: staging
@@ -350,8 +348,6 @@ stop_deploy_development:
   variables:
     GIT_STRATEGY: none
   when: manual
-  needs:
-    - job: start_deploy_development
   environment: development
   script:
     - screen -S hived-deploy-$CI_ENVIRONMENT_NAME -X quit
@@ -389,8 +385,6 @@ stop_deploy_production:
   variables:
     GIT_STRATEGY: none
   when: manual
-  needs:
-    - job: start_deploy_production
   environment: production
   script:
     - screen -S hived-deploy-$CI_ENVIRONMENT_NAME -X quit
