@@ -9,14 +9,15 @@ namespace hive { namespace protocol {
 
   struct author_reward_operation : public virtual_operation {
     author_reward_operation(){}
-    author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v )
-      :author(a), permlink(p), hbd_payout(s), hive_payout(st), vesting_payout(v){}
+    author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v, const asset& c )
+      :author(a), permlink(p), hbd_payout(s), hive_payout(st), vesting_payout(v), curators_vesting_payout(c) {}
 
     account_name_type author;
     string            permlink;
     asset             hbd_payout;
     asset             hive_payout;
     asset             vesting_payout;
+    asset             curators_vesting_payout;
   };
 
 
@@ -259,7 +260,7 @@ namespace hive { namespace protocol {
 
 } } //hive::protocol
 
-FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
+FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout) )
 FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink) )
 FC_REFLECT( hive::protocol::comment_reward_operation, (author)(permlink)(payout)(author_rewards)(total_payout_value)(curator_payout_value)(beneficiary_payout_value) )
 FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )

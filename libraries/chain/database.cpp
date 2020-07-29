@@ -1455,39 +1455,57 @@ std::pair< asset, asset > database::create_hbd( const account_object& to_account
   return assets;
 }
 
-asset database::adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
+asset calculate_vesting( database& db, const asset& liquid, bool to_reward_balance )
 {
-  try
+  auto calculate_new_vesting = [ liquid ] ( price vesting_share_price ) -> asset
   {
-    auto calculate_new_vesting = [ liquid ] ( price vesting_share_price ) -> asset
-      {
-      /**
-        *  The ratio of total_vesting_shares / total_vesting_fund_hive should not
-        *  change as the result of the user adding funds
-        *
-        *  V / C  = (V+Vn) / (C+Cn)
-        *
-        *  Simplifies to Vn = (V * Cn ) / C
-        *
-        *  If Cn equals o.amount, then we must solve for Vn to know how many new vesting shares
-        *  the user should receive.
-        *
-        *  128 bit math is requred due to multiplying of 64 bit numbers. This is done in asset and price.
-        */
-      asset new_vesting = liquid * ( vesting_share_price );
-      return new_vesting;
-      };
+    /**
+      *  The ratio of total_vesting_shares / total_vesting_fund_hive should not
+      *  change as the result of the user adding funds
+      *
+      *  V / C  = (V+Vn) / (C+Cn)
+      *
+      *  Simplifies to Vn = (V * Cn ) / C
+      *
+      *  If Cn equals o.amount, then we must solve for Vn to know how many new vesting shares
+      *  the user should receive.
+      *
+      *  128 bit math is requred due to multiplying of 64 bit numbers. This is done in asset and price.
+      */
+    asset new_vesting = liquid * ( vesting_share_price );
+    return new_vesting;
+  };
 
 #ifdef HIVE_ENABLE_SMT
     if( liquid.symbol.space() == asset_symbol_type::smt_nai_space )
     {
       FC_ASSERT( liquid.symbol.is_vesting() == false );
       // Get share price.
-      const auto& smt = get< smt_token_object, by_symbol >( liquid.symbol );
+      const auto& smt = db.get< smt_token_object, by_symbol >( liquid.symbol );
       FC_ASSERT( smt.allow_voting == to_reward_balance, "No voting - no rewards" );
       price vesting_share_price = to_reward_balance ? smt.get_reward_vesting_share_price() : smt.get_vesting_share_price();
       // Calculate new vesting from provided liquid using share price.
-      asset new_vesting = calculate_new_vesting( vesting_share_price );
+      return calculate_new_vesting( vesting_share_price );
+    }
+#endif
+
+    FC_ASSERT( liquid.symbol == HIVE_SYMBOL );
+    // ^ A novelty, needed but risky in case someone managed to slip HBD/TESTS here in blockchain history.
+    // Get share price.
+    const auto& cprops = db.get_dynamic_global_properties();
+    price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price();
+    // Calculate new vesting from provided liquid using share price.
+    return calculate_new_vesting( vesting_share_price );
+}
+
+asset database::adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
+{
+  try
+  {
+#ifdef HIVE_ENABLE_SMT
+    if( liquid.symbol.space() == asset_symbol_type::smt_nai_space )
+    {
+      asset new_vesting = calculate_vesting( *this, liquid, to_reward_balance );
       before_vesting_callback( new_vesting );
       // Add new vesting to owner's balance.
       if( to_reward_balance )
@@ -1514,16 +1532,12 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
       return new_vesting;
     }
 #endif
-
-    FC_ASSERT( liquid.symbol == HIVE_SYMBOL );
-    // ^ A novelty, needed but risky in case someone managed to slip HBD/TESTS here in blockchain history.
-    // Get share price.
-    const auto& cprops = get_dynamic_global_properties();
-    price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price();
-    // Calculate new vesting from provided liquid using share price.
-    asset new_vesting = calculate_new_vesting( vesting_share_price );
+    asset new_vesting = calculate_vesting( *this, liquid, to_reward_balance );
     before_vesting_callback( new_vesting );
     // Add new vesting to owner's balance.
+
+    const auto& cprops = get_dynamic_global_properties();
+
     if( to_reward_balance )
     {
       adjust_reward_balance( to_account, liquid, new_vesting );
@@ -2668,7 +2682,15 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         auto vesting_hive = author_tokens - hbd_hive;
 
         auto hbd_payout = create_hbd( author, asset( hbd_hive, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
-        operation vop = author_reward_operation( comment_author, to_string( comment_cashout.permlink ), hbd_payout.first, hbd_payout.second, asset( 0, VESTS_SYMBOL ) );
+
+        /*
+          Total payout for curators is calculated due to the performance in third party softwares(f.e. `hivemind`).
+          During payments calculations it's enough to catch `author_reward_operation`, without adding all values from `curation_reward_operation`.
+        */
+        auto curators_vesting_payout = calculate_vesting( *this, asset( curation_tokens, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
+
+        operation vop = author_reward_operation( comment_author, to_string( comment_cashout.permlink ), hbd_payout.first, hbd_payout.second, asset( 0, VESTS_SYMBOL ),
+                                                curators_vesting_payout );
 
         create_vesting2( *this, author, asset( vesting_hive, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
           [&]( const asset& vesting_payout )
