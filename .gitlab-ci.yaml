@@ -193,7 +193,7 @@ package_consensus_node:
     - mkdir -p ./sync/$CI_ENVIRONMENT_NAME/blockchain
     - cp ./$SOURCE_NODE/install-root/bin/hived ./sync/$CI_ENVIRONMENT_NAME
     - cp ./$SOURCE_NODE/install-root/bin/cli_wallet ./sync/$CI_ENVIRONMENT_NAME
-    - cp ./$SOURCE_NODE/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME
+    - cp $CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME
     - mv ./sync/$CI_ENVIRONMENT_NAME/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME/config.ini
     - echo "config.ini:"
     - cat ./sync/$CI_ENVIRONMENT_NAME/config.ini
