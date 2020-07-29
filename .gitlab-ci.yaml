@@ -280,8 +280,8 @@ start_deploy_staging:
   needs:
     - job: sync_staging
   before_script:
-    - sudo apt-get update -y
-    - sudo apt-get install -y netcat
+    - apt-get update -y
+    - apt-get install -y netcat
   script:
     - chmod 0777 ./ciscripts/staging_deploy.sh
     - ./ciscripts/staging_deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
@@ -321,7 +321,8 @@ stop_deploy_staging:
     - merge_request
     - 0.24.0
     - development
-  when: manual
+  when: delayed
+  start_in: 6 hours
 
 start_deploy_development:
   stage: deploy
@@ -334,8 +335,8 @@ start_deploy_development:
   needs:
     - job: sync_development
   before_script:
-    - sudo apt-get update -y
-    - sudo apt-get install -y netcat
+    - apt-get update -y
+    - apt-get install -y netcat
   script:
     - chmod 0777 ./ciscripts/deploy.sh
     - ./ciscripts/deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
@@ -378,8 +379,8 @@ start_deploy_production:
   needs:
     - job: sync_production
   before_script:
-    - sudo apt-get update -y
-    - sudo apt-get install -y netcat
+    - apt-get update -y
+    - apt-get install -y netcat
   script:
     - chmod 0777 ./ciscripts/deploy.sh
     - ./ciscripts/deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
