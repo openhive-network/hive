@@ -1,3 +1,4 @@
+#!/bin/bash
 HTTPS_PORT=$HTTPS_ENDPOINT_PORT
 WS_PORT=$WS_ENDPOINT_PORT
 ID=0
@@ -12,9 +13,9 @@ screen -L -Logfile deploy.log -dmS hived-deploy-$CI_ENVIRONMENT_NAME-$ID ./hived
 
 if nc -z 127.0.0.1 $HTTPS_PORT && nc -z 127.0.0.1 $WS_PORT
  then
-   echo: "Hive server started successfully..."
-   echo: "webserver http endpoint: 127.0.0.1:$HTTPS_PORT"
-   echo: "webserver websocket endpoint: 127.0.0.1:$WS_PORT"
+   echo "Hive server started successfully..."
+   echo "webserver http endpoint: 127.0.0.1:$HTTPS_PORT"
+   echo "webserver websocket endpoint: 127.0.0.1:$WS_PORT"
  else
-   echo: "Hive server start failure..."
+   echo "Hive server start failure..."
 fi
