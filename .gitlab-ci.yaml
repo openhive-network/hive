@@ -193,9 +193,8 @@ package_consensus_node:
     - mkdir -p ./sync/$CI_ENVIRONMENT_NAME/blockchain
     - cp ./$SOURCE_NODE/install-root/bin/hived ./sync/$CI_ENVIRONMENT_NAME
     - cp ./$SOURCE_NODE/install-root/bin/cli_wallet ./sync/$CI_ENVIRONMENT_NAME
-    - $COPY_CONFIG
-    - $RENAME_CONFIG
-    - echo $CI_CONCURRENT_ID
+    - cp ./$SOURCE_NODE/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME
+    - mv ./sync/$CI_ENVIRONMENT_NAME/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME/config.ini
     - echo "config.ini:"
     - cat ./sync/$CI_ENVIRONMENT_NAME/config.ini
     - cp ./$SOURCE_NODE/install-root/bin/truncate_block_log ./sync/$CI_ENVIRONMENT_NAME
@@ -214,8 +213,6 @@ package_consensus_node:
 
 sync_staging:
   variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME
-    RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME/config.ini
     SOURCE_NODE: consensus_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
@@ -237,8 +234,6 @@ sync_staging:
 
 sync_development:
   variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME
-    RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME/config.ini
     SOURCE_NODE: consensus_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
@@ -256,8 +251,6 @@ sync_development:
 
 sync_production:
   variables:
-    COPY_CONFIG: cp ./$SOURCE_NODE/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME
-    RENAME_CONFIG: mv ./sync/$CI_ENVIRONMENT_NAME/config-for-docker.ini ./sync/$CI_ENVIRONMENT_NAME/config.ini
     SOURCE_NODE: consensus_build
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
@@ -286,6 +279,9 @@ start_deploy_staging:
     WS_ENDPOINT_PORT: 10091
   needs:
     - job: sync_staging
+  before_script:
+    - sudo apt-get update -y
+    - sudo apt-get install -y netcat
   script:
     - chmod 0777 ./ciscripts/staging_deploy.sh
     - ./ciscripts/staging_deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
@@ -337,6 +333,9 @@ start_deploy_development:
     WS_ENDPOINT_PORT: 9091
   needs:
     - job: sync_development
+  before_script:
+    - sudo apt-get update -y
+    - sudo apt-get install -y netcat
   script:
     - chmod 0777 ./ciscripts/deploy.sh
     - ./ciscripts/deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
@@ -378,6 +377,9 @@ start_deploy_production:
     WS_ENDPOINT_PORT: 8091
   needs:
     - job: sync_production
+  before_script:
+    - sudo apt-get update -y
+    - sudo apt-get install -y netcat
   script:
     - chmod 0777 ./ciscripts/deploy.sh
     - ./ciscripts/deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
