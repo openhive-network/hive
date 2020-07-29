@@ -204,6 +204,7 @@ package_consensus_node:
   allow_failure: false
   artifacts:
     paths:
+    - $CI_PROJECT_DIR/sync
     - $CI_PROJECT_DIR/sync/$CI_ENVIRONMENT_NAME/replay.log
     when: always
     expire_in: 6 months
