@@ -201,6 +201,11 @@ package_consensus_node:
     - ./sync/$CI_ENVIRONMENT_NAME/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/sync/$CI_ENVIRONMENT_NAME/blockchain/block_log $STOP_REPLAY_AT
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
+    
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker run -itd --name temp_container_$CI_COMMIT_SHORT_SHA -v $CI_PROJECT_DIR/sync:/usr/local $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA
+    - docker cp $CI_PROJECT_DIR/sync temp_container_$CI_COMMIT_SHORT_SHA:/usr/local/sync
+
   allow_failure: false
   artifacts:
     paths:
@@ -283,6 +288,10 @@ start_deploy_staging:
   before_script:
     - apt-get update -y
     - apt-get install -y netcat
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker cp temp_container_$CI_COMMIT_SHORT_SHA:/usr/local/sync $CI_PROJECT_DIR/sync 
+    - docker container stop temp_container_$CI_COMMIT_SHORT_SHA
+    - docker container rm temp_container_$CI_COMMIT_SHORT_SHA
     - ls ./
     - ls ./sync
     - ls ./sync/$CI_ENVIRONMENT_NAME
