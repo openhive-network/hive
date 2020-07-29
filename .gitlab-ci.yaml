@@ -321,8 +321,7 @@ stop_deploy_staging:
     - merge_request
     - 0.24.0
     - development
-  when: delayed
-  start_in: 6 hours
+  when: manual
 
 start_deploy_development:
   stage: deploy
