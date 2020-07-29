@@ -204,7 +204,7 @@ package_consensus_node:
   allow_failure: false
   artifacts:
     paths:
-    - $CI_PROJECT_DIR/sync
+#    - $CI_PROJECT_DIR/sync
     - $CI_PROJECT_DIR/sync/$CI_ENVIRONMENT_NAME/replay.log
     when: always
     expire_in: 6 months
@@ -283,6 +283,9 @@ start_deploy_staging:
   before_script:
     - apt-get update -y
     - apt-get install -y netcat
+    - ls ./
+    - ls ./sync
+    - ls ./sync/$CI_ENVIRONMENT_NAME
   script:
     - chmod 0777 ./ciscripts/staging_deploy.sh
     - ./ciscripts/staging_deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
@@ -307,6 +310,8 @@ stop_deploy_staging:
   stage: deploy
   variables:
     GIT_STRATEGY: none
+  needs:
+    - job: sync_staging
   script:
     - chmod 0777 ./ciscripts/stop_deploy_staging.sh
     - ./ciscripts/stop_deploy_staging.sh ./ID.txt
@@ -321,7 +326,8 @@ stop_deploy_staging:
     - merge_request
     - 0.24.0
     - development
-  when: manual
+  when: delayed
+  start_in: 40 minutes
 
 start_deploy_development:
   stage: deploy
@@ -355,6 +361,8 @@ stop_deploy_development:
   stage: deploy
   variables:
     GIT_STRATEGY: none
+  needs:
+    - job: sync_development
   when: manual
   environment: development
   tags:
@@ -401,6 +409,8 @@ stop_deploy_production:
   stage: deploy
   variables:
     GIT_STRATEGY: none
+  needs:
+    - job: sync_production
   when: manual
   environment: production
   tags:
