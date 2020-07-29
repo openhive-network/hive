@@ -17,4 +17,4 @@ if nc -z 127.0.0.1 $HTTPS_PORT && nc -z 127.0.0.1 $WS_PORT
    echo: "webserver websocket endpoint: 127.0.0.1:$WS_PORT"
  else
    echo: "Hive server start failure..."
-   
+fi
