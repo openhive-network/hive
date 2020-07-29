@@ -309,7 +309,7 @@ stop_deploy_staging:
   when: manual
   script:
     - chmod 0777 ./ciscripts/stop_deploy_staging.sh
-    - ./ciscripts/stop_deploy_staging.sh ID.txt
+    - ./ciscripts/stop_deploy_staging.sh ./ID.txt
   environment: staging
   tags:
     - public-runner-docker
