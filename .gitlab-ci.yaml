@@ -266,7 +266,6 @@ start_deploy_staging:
   <<: *deploy
   environment: 
     name: staging
-    url: hive-builder-4:$HTTPS_ENDPOINT_PORT
   except:
     - schedules
     - master
