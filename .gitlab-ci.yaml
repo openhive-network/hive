@@ -186,7 +186,7 @@ package_consensus_node:
     
 .sync_template: &sync
   stage: data-supply
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  image: docker:19.03.11
   services: 
     - docker:19.03.11-dind
   before_script:
@@ -207,7 +207,8 @@ package_consensus_node:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker run -itd --name temp_container_$CI_COMMIT_SHORT_SHA -v $CI_PROJECT_DIR/sync:/usr/local $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA
     - docker cp $CI_PROJECT_DIR/sync temp_container_$CI_COMMIT_SHORT_SHA:/usr/local/sync
-
+  needs:
+    - job: package_consensus_node
   allow_failure: false
   artifacts:
     paths:
