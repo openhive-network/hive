@@ -186,7 +186,7 @@ package_consensus_node:
     
 .sync_template: &sync
   stage: data-supply
-  image: docker:19.03.11
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   services: 
     - docker:19.03.11
   before_script:
