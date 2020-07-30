@@ -2,7 +2,6 @@ stages:
 - build
 - test
 - package
-- data-supply
 - deploy
 
 variables:
@@ -164,6 +163,41 @@ hived_options_tests:
   tags:
     - public-runner-docker
 
+replay-test:
+  stage: test
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    SOURCE_NODE: consensus_build
+    GIT_STRATEGY: fetch
+    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
+  before_script:
+  - echo "Blockchain will stop at $STOP_REPLAY_AT block"
+  script:
+    - mkdir -p ./replay/$CI_ENVIRONMENT_NAME/blockchain
+    - cp ./consensus_build/install-root/bin/hived ./replay/$CI_ENVIRONMENT_NAME
+    - cp ./consensus_build/install-root/bin/cli_wallet ./replay/$CI_ENVIRONMENT_NAME
+    - cp $CONFIG_INI ./replay/$CI_ENVIRONMENT_NAME
+    - mv ./replay/$CI_ENVIRONMENT_NAME/CONFIG_INI ./replay/$CI_ENVIRONMENT_NAME/config.ini
+    - echo "config.ini:"
+    - cat ./replay/$CI_ENVIRONMENT_NAME/config.ini
+    - cp ./consensus_build/install-root/bin/truncate_block_log ./replay/$CI_ENVIRONMENT_NAME
+    - ./replay/$CI_ENVIRONMENT_NAME/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/blockchain/block_log $STOP_REPLAY_AT
+    - chmod 0777 ./ciscripts/replay.sh
+    - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
+  needs:
+    - job: consensus_build
+      artifacts: true
+  allow_failure: false
+  artifacts:
+    paths:
+    - $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/replay.log
+    when: always
+    expire_in: 6 months
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+  when: manual
+  
 package_consensus_node:
   stage: package
   needs:
@@ -184,98 +218,42 @@ package_consensus_node:
   tags:
     - public-runner-docker
     
-.sync_template: &sync
-  stage: data-supply
+.start_deploy: &deploy
+  stage: deploy
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  needs:
+    - job: consensus_build
+      artifacts: true
   before_script:
-  - echo "Blockchain will stop at $STOP_REPLAY_AT block"
+    - apt-get update -y
+    - apt-get install -y netcat
   script:
-    - mkdir -p ./sync/$CI_ENVIRONMENT_NAME/blockchain
-    - cp ./$SOURCE_NODE/install-root/bin/hived ./sync/$CI_ENVIRONMENT_NAME
-    - cp ./$SOURCE_NODE/install-root/bin/cli_wallet ./sync/$CI_ENVIRONMENT_NAME
-    - cp $CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME
-    - mv ./sync/$CI_ENVIRONMENT_NAME/CONFIG_INI ./sync/$CI_ENVIRONMENT_NAME/config.ini
+    - mkdir -p ./replay/$CI_ENVIRONMENT_NAME/blockchain
+    - cp ./consensus_build/install-root/bin/hived ./replay/$CI_ENVIRONMENT_NAME
+    - cp ./consensus_build/install-root/bin/cli_wallet ./replay/$CI_ENVIRONMENT_NAME
+    - cp $CONFIG_INI ./replay/$CI_ENVIRONMENT_NAME
+    - mv ./replay/$CI_ENVIRONMENT_NAME/CONFIG_INI ./replay/$CI_ENVIRONMENT_NAME/config.ini
     - echo "config.ini:"
-    - cat ./sync/$CI_ENVIRONMENT_NAME/config.ini
-    - cp ./$SOURCE_NODE/install-root/bin/truncate_block_log ./sync/$CI_ENVIRONMENT_NAME
-    - ./sync/$CI_ENVIRONMENT_NAME/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/sync/$CI_ENVIRONMENT_NAME/blockchain/block_log $STOP_REPLAY_AT
+    - cat ./replay/$CI_ENVIRONMENT_NAME/config.ini
+    - cp ./consensus_build/install-root/bin/truncate_block_log ./replay/$CI_ENVIRONMENT_NAME
+    - ./replay/$CI_ENVIRONMENT_NAME/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/blockchain/block_log $STOP_REPLAY_AT
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
     
-    #- docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    #- docker run -itd --name temp_container_$CI_COMMIT_SHORT_SHA -v $CI_PROJECT_DIR/sync:/usr/local $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA
-    #- docker cp $CI_PROJECT_DIR/sync temp_container_$CI_COMMIT_SHORT_SHA:/usr/local/sync
-  needs:
-    - job: package_consensus_node
-  workspace: $CI_PROJECT_DIR/sync/
-  allow_failure: false
+    - chmod 0777 ./ciscripts/$SCRIPT_NAME
+    - ./ciscripts/$SCRIPT_NAME $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
+    
   artifacts:
     paths:
-    - $CI_PROJECT_DIR/sync/$CI_ENVIRONMENT_NAME/replay.log
-    when: always
-    expire_in: 6 months
+      - ID.txt
+      - deploy.log
+      - $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/replay.log
   tags:
     - public-runner-docker
-    - hived-for-tests
-
-sync_staging:
-  variables:
-    SOURCE_NODE: consensus_build
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-  <<: *sync
-  needs:
-    - job: consensus_build
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  environment: staging
-  except:
-    - schedules
-    - master
-    - merge_request
-    - 0.24.0
-    - development
+    - hived-for-tests    
+  allow_failure: false    
   when: manual
-
-sync_development:
-  variables:
-    SOURCE_NODE: consensus_build
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-  <<: *sync
-  needs:
-    - job: consensus_build
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  environment: development
-  only:
-    - development
-  when: manual
-
-sync_production:
-  variables:
-    SOURCE_NODE: consensus_build
-    GIT_STRATEGY: fetch
-    STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
-  <<: *sync
-  needs:
-    - job: consensus_build
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  environment: production
-  only:
-    - master
-    - merge_request
-    - 0.24.0
-  when: manual
-
-
+  
 start_deploy_staging:
   stage: deploy
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
@@ -284,30 +262,8 @@ start_deploy_staging:
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
     HTTPS_ENDPOINT_PORT: 10090
     WS_ENDPOINT_PORT: 10091
-  needs:
-    - job: sync_staging
-  before_script:
-    - apt-get update -y
-    - apt-get install -y netcat
-    #- docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    #- docker cp temp_container_$CI_COMMIT_SHORT_SHA:/usr/local/sync $CI_PROJECT_DIR/sync 
-    #- docker container stop temp_container_$CI_COMMIT_SHORT_SHA
-    #- docker container rm temp_container_$CI_COMMIT_SHORT_SHA
-    - ls ./
-    - ls ./sync
-    - ls ./sync/$CI_ENVIRONMENT_NAME
-  script:
-    - chmod 0777 ./ciscripts/staging_deploy.sh
-    - ./ciscripts/staging_deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
-  workspace: $CI_PROJECT_DIR/sync/
-  artifacts:
-    paths:
-      - ID.txt
-      - deploy.log
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  allow_failure: false
+    SCRIPT_NAME: staging_deploy.sh
+  <<: *deploy
   environment: staging
   except:
     - schedules
@@ -315,14 +271,14 @@ start_deploy_staging:
     - merge_request
     - 0.24.0
     - development
-  when: manual
 
 stop_deploy_staging:
   stage: deploy
   variables:
     GIT_STRATEGY: none
   needs:
-    - job: sync_staging
+    - job: start_deploy_staging
+      artifacts: true
   script:
     - chmod 0777 ./ciscripts/stop_deploy_staging.sh
     - ./ciscripts/stop_deploy_staging.sh ./ID.txt
@@ -338,7 +294,7 @@ stop_deploy_staging:
     - 0.24.0
     - development
   when: delayed
-  start_in: 40 minutes
+  start_in: 5 hours
 
 start_deploy_development:
   stage: deploy
@@ -348,22 +304,9 @@ start_deploy_development:
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
     HTTPS_ENDPOINT_PORT: 9090
     WS_ENDPOINT_PORT: 9091
-  needs:
-    - job: sync_development
-  before_script:
-    - apt-get update -y
-    - apt-get install -y netcat
-  script:
-    - chmod 0777 ./ciscripts/deploy.sh
-    - ./ciscripts/deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  allow_failure: false
+    SCRIPT_NAME: deploy.sh
+  <<: *deploy
   environment: development
-  artifacts:
-    paths:
-      - deploy.log
   only:
     - development
   when: manual
@@ -373,7 +316,7 @@ stop_deploy_development:
   variables:
     GIT_STRATEGY: none
   needs:
-    - job: sync_development
+    - job: start_deploy_development
   when: manual
   environment: development
   tags:
@@ -394,18 +337,8 @@ start_deploy_production:
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
     HTTPS_ENDPOINT_PORT: 8090
     WS_ENDPOINT_PORT: 8091
-  needs:
-    - job: sync_production
-  before_script:
-    - apt-get update -y
-    - apt-get install -y netcat
-  script:
-    - chmod 0777 ./ciscripts/deploy.sh
-    - ./ciscripts/deploy.sh $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
-  tags:
-    - public-runner-docker
-    - hived-for-tests
-  allow_failure: false
+    SCRIPT_NAME: deploy.sh
+  <<: *deploy
   environment: production
   artifacts:
     paths:
@@ -421,7 +354,7 @@ stop_deploy_production:
   variables:
     GIT_STRATEGY: none
   needs:
-    - job: sync_production
+    - job: start_deploy_production
   when: manual
   environment: production
   tags:
