@@ -264,7 +264,9 @@ start_deploy_staging:
     WS_ENDPOINT_PORT: 10091
     SCRIPT_NAME: staging_deploy.sh
   <<: *deploy
-  environment: staging
+  environment: 
+    name: staging
+    url: hive-builder-4:$HTTPS_ENDPOINT_PORT
   except:
     - schedules
     - master
