@@ -276,7 +276,7 @@ start_deploy_staging:
 stop_deploy_staging:
   stage: stop-deploy
   variables:
-    GIT_STRATEGY: none
+    GIT_STRATEGY: fetch
   needs:
     - job: start_deploy_staging
       artifacts: true
