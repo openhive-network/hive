@@ -3,6 +3,7 @@ stages:
 - test
 - package
 - deploy
+- stop-deploy
 
 variables:
   GIT_DEPTH: 1
@@ -273,7 +274,7 @@ start_deploy_staging:
     - development
 
 stop_deploy_staging:
-  stage: deploy
+  stage: stop-deploy
   variables:
     GIT_STRATEGY: none
   needs:
@@ -294,7 +295,7 @@ stop_deploy_staging:
     - 0.24.0
     - development
   when: delayed
-  start_in: 5 hours
+  start_in: 10 hours
 
 start_deploy_development:
   stage: deploy
@@ -312,7 +313,7 @@ start_deploy_development:
   when: manual
 
 stop_deploy_development:
-  stage: deploy
+  stage: stop-deploy
   variables:
     GIT_STRATEGY: none
   needs:
@@ -350,7 +351,7 @@ start_deploy_production:
   when: manual
 
 stop_deploy_production:
-  stage: deploy
+  stage: stop-deploy
   variables:
     GIT_STRATEGY: none
   needs:
