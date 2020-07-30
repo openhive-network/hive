@@ -259,7 +259,7 @@ start_deploy_staging:
   stage: deploy
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
-    GIT_STRATEGY: none
+    GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
     HTTPS_ENDPOINT_PORT: 10090
     WS_ENDPOINT_PORT: 10091
