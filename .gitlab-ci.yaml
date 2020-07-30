@@ -188,7 +188,7 @@ package_consensus_node:
   stage: data-supply
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   services: 
-    - docker:19.03.11
+    - docker:19.03.11-dind
   before_script:
   - echo "Blockchain will stop at $STOP_REPLAY_AT block"
   script:
@@ -282,7 +282,7 @@ start_deploy_staging:
   stage: deploy
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   services: 
-    - docker:19.03.11
+    - docker:19.03.11-dind
   variables:
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
