@@ -361,10 +361,18 @@ void chain_plugin_impl::initial_settings()
   if( statsd_on_replay )
   {
     auto statsd = appbase::app().find_plugin< hive::plugins::statsd::statsd_plugin >();
+    const hive::plugins::statsd::statsd_plugin& statsd_plugin = *statsd;
     if( statsd != nullptr )
     {
       statsd->start_logging();
     }
+
+    STATSD_GAUGE( HIVE_CHAIN_PLUGIN_NAME, "hardfork", "current", 0, 1.0f )
+    db.add_post_apply_operation_handler([&]( const operation_notification& note )
+    {
+      if(note.op.which() == operation::tag<hardfork_operation>::value )
+        STATSD_GAUGE(HIVE_CHAIN_PLUGIN_NAME, "hardfork", "current", note.op.get<hardfork_operation>().hardfork_id, 1.0f) 
+    }, statsd_plugin, 0);
   }
 
   ilog( "Starting chain with shared_file_size: ${n} bytes", ("n", shared_memory_size) );
@@ -463,6 +471,21 @@ void chain_plugin_impl::initial_settings()
       ("ct", measure.cpu_ms)
       ("cm", measure.current_mem)
       ("pm", measure.peak_mem) );
+
+    STATSD_GAUGE(HIVE_CHAIN_PLUGIN_NAME, "replay_benchmark", "current_block_number", current_block_number, 1.0f)
+    STATSD_GAUGE(HIVE_CHAIN_PLUGIN_NAME, "replay_benchmark", "real_ms", measure.real_ms, 1.0f)
+    STATSD_GAUGE(HIVE_CHAIN_PLUGIN_NAME, "replay_benchmark", "cpu_ms", measure.cpu_ms, 1.0f)
+    STATSD_GAUGE(HIVE_CHAIN_PLUGIN_NAME, "replay_benchmark", "current_mem", measure.current_mem, 1.0f)
+    STATSD_GAUGE(HIVE_CHAIN_PLUGIN_NAME, "replay_benchmark", "peak_mem", measure.peak_mem, 1.0f)
+
+    double total_index_usage = 0ul;
+    for(const auto& var : measure.index_memory_details_cntr)
+    {
+      const double value = static_cast<double>(var.total_index_mem_usage) / 1024.0 / 1024.0;   // MB
+      STATSD_GAUGE(HIVE_CHAIN_PLUGIN_NAME, var.index_name, "total_size", value, 1.0f)
+      total_index_usage += value;
+    }
+    STATSD_GAUGE(HIVE_CHAIN_PLUGIN_NAME, "replay_benchmark", "indexes_size", total_index_usage, 1.0f)
   };
 
   db_open_args.benchmark = hive::chain::TBenchmark( benchmark_interval, benchmark_lambda );

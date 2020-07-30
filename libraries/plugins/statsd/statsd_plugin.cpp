@@ -43,7 +43,7 @@ namespace detail
       void increment( const std::string& ns, const std::string& stat, const std::string& key,                       const float frequency ) const noexcept;
       void decrement( const std::string& ns, const std::string& stat, const std::string& key,                       const float frequency ) const noexcept;
       void count(     const std::string& ns, const std::string& stat, const std::string& key, const int64_t delta,  const float frequency ) const noexcept;
-      void gauge(     const std::string& ns, const std::string& stat, const std::string& key, const uint64_t value, const float frequency ) const noexcept;
+      void gauge(     const std::string& ns, const std::string& stat, const std::string& key, const double value,   const float frequency ) const noexcept;
       void timing(    const std::string& ns, const std::string& stat, const std::string& key, const uint32_t ms,    const float frequency ) const noexcept;
 
 
@@ -155,7 +155,7 @@ namespace detail
     execute_operation( ns, stat, [ &, this ](){ _statsd->count( compose_key( ns, stat, key ), delta, frequency ); } );
   }
 
-  void statsd_plugin_impl::gauge( const std::string& ns, const std::string& stat, const std::string& key, const uint64_t value, const float frequency ) const noexcept
+  void statsd_plugin_impl::gauge( const std::string& ns, const std::string& stat, const std::string& key, const double value, const float frequency ) const noexcept
   {
     execute_operation( ns, stat, [ &, this ](){ _statsd->gauge( compose_key( ns, stat, key ), value, frequency ); } );
   }
@@ -279,7 +279,7 @@ void statsd_plugin::count( const std::string& ns, const std::string& stat, const
   my->count( ns, stat, key, delta, frequency );
 }
 
-void statsd_plugin::gauge( const std::string& ns, const std::string& stat, const std::string& key, const uint64_t value, const float frequency ) const noexcept
+void statsd_plugin::gauge( const std::string& ns, const std::string& stat, const std::string& key, const double value, const float frequency ) const noexcept
 {
   my->gauge( ns, stat, key, value, frequency );
 }

@@ -37,7 +37,7 @@ class statsd_plugin : public appbase::plugin< statsd_plugin >
     void increment( const std::string& ns, const std::string& stat, const std::string& key,                       const float frequency = 1.0f ) const noexcept;
     void decrement( const std::string& ns, const std::string& stat, const std::string& key,                       const float frequency = 1.0f ) const noexcept;
     void count(     const std::string& ns, const std::string& stat, const std::string& key, const int64_t delta,  const float frequency = 1.0f ) const noexcept;
-    void gauge(     const std::string& ns, const std::string& stat, const std::string& key, const uint64_t value, const float frequency = 1.0f ) const noexcept;
+    void gauge(     const std::string& ns, const std::string& stat, const std::string& key, const double value,   const float frequency = 1.0f ) const noexcept;
     void timing(    const std::string& ns, const std::string& stat, const std::string& key, const uint32_t ms,    const float frequency = 1.0f ) const noexcept;
 
   private:
