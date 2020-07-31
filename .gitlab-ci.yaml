@@ -245,7 +245,7 @@ package_consensus_node:
     
     - chmod 0777 ./ciscripts/$SCRIPT_NAME
     - ./ciscripts/$SCRIPT_NAME $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
-    
+    - echo `screen -ls` > screen-ls_right_after.txt
   after_script:
     - echo "screen list after:"
     - echo `screen -ls` > screen-ls_after.txt
@@ -256,6 +256,7 @@ package_consensus_node:
       - deploy.log
       - $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/replay.log
       - screen-ls_before.txt
+      - screen-ls_right_after.txt
       - screen-ls_after.txt
   tags:
     - public-runner-docker
