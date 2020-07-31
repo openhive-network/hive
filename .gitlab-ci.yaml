@@ -228,6 +228,11 @@ package_consensus_node:
   before_script:
     - apt-get update -y
     - apt-get install -y netcat
+    - echo "screen list before:"
+    - screen -ls
+  after_script:
+    - echo "screen list after:"
+    - screen -ls
   script:
     - mkdir -p ./replay/$CI_ENVIRONMENT_NAME/blockchain
     - cp ./consensus_build/install-root/bin/hived ./replay/$CI_ENVIRONMENT_NAME
@@ -281,6 +286,12 @@ stop_deploy_staging:
   needs:
     - job: start_deploy_staging
       artifacts: true
+  before_script:
+    - echo "screen list before:"
+    - screen -ls
+  after_script:
+    - echo "screen list after:"
+    - screen -ls
   script:
     - chmod 0777 ./ciscripts/stop_deploy_staging.sh
     - ./ciscripts/stop_deploy_staging.sh ./ID.txt
