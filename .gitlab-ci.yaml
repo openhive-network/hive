@@ -380,7 +380,7 @@ stop_deploy_production:
   tags:
     - public-runner-docker
     - hived-for-tests
-  allow_failure: false
+  allow_failure: true
   script:
     - screen -S hived-deploy-$CI_ENVIRONMENT_NAME -X quit
   only:
