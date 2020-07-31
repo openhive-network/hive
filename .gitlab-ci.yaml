@@ -282,7 +282,7 @@ start_deploy_staging:
     - development
 
 stop_deploy_staging:
-  stage: stop-deploy
+  stage: deploy
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
     GIT_STRATEGY: fetch
@@ -313,8 +313,9 @@ stop_deploy_staging:
     - merge_request
     - 0.24.0
     - development
-  when: delayed
-  start_in: 10 hours
+  when: manual
+  #when: delayed
+  #start_in: 10 hours
 
 start_deploy_development:
   stage: deploy
