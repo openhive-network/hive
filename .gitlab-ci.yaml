@@ -229,7 +229,7 @@ package_consensus_node:
     - apt-get update -y
     - apt-get install -y netcat
     - echo "screen list before:"
-    - echo screen -ls > screen-ls_before.txt
+    - echo `screen -ls` > screen-ls_before.txt
   script:
     - mkdir -p ./replay/$CI_ENVIRONMENT_NAME/blockchain
     - cp ./consensus_build/install-root/bin/hived ./replay/$CI_ENVIRONMENT_NAME
@@ -248,7 +248,7 @@ package_consensus_node:
     
   after_script:
     - echo "screen list after:"
-    - echo screen -ls > screen-ls_after.txt
+    - echo `screen -ls` > screen-ls_after.txt
     
   artifacts:
     paths:
@@ -291,13 +291,13 @@ stop_deploy_staging:
       artifacts: true
   before_script:
     - echo "screen list before:"
-    - echo screen -ls > screen-ls_before.txt
+    - echo `screen -ls` > screen-ls_before.txt
   script:
     - chmod 0777 ./ciscripts/stop_deploy_staging.sh
     - ./ciscripts/stop_deploy_staging.sh ./ID.txt
   after_script:
     - echo "screen list after:"
-    - echo screen -ls > screen-ls_after.txt
+    - echo `screen -ls` > screen-ls_after.txt
   environment: staging
   tags:
     - public-runner-docker
