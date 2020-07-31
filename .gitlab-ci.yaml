@@ -302,7 +302,7 @@ stop_deploy_staging:
   tags:
     - public-runner-docker
     - hived-for-tests
-  allow_failure: false
+  allow_failure: true
   artifacts:
     paths:
       - screen-ls_after.txt
@@ -380,7 +380,7 @@ stop_deploy_production:
   tags:
     - public-runner-docker
     - hived-for-tests
-  allow_failure: true
+  allow_failure: false
   script:
     - screen -S hived-deploy-$CI_ENVIRONMENT_NAME -X quit
   only:
