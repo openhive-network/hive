@@ -252,7 +252,7 @@ package_consensus_node:
     
   artifacts:
     paths:
-      - ID.txt
+      - pid.txt
       - deploy.log
       - $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/replay.log
       - screen-ls_before.txt
@@ -295,7 +295,7 @@ stop_deploy_staging:
     - echo `screen -ls` > screen-ls_before.txt
   script:
     - chmod 0777 ./ciscripts/stop_deploy_staging.sh
-    - ./ciscripts/stop_deploy_staging.sh ./ID.txt
+    - ./ciscripts/stop_deploy_staging.sh ./pid.txt
   after_script:
     - echo "screen list after:"
     - echo `screen -ls` > screen-ls_after.txt
