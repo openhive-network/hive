@@ -1,15 +1,19 @@
 #!/bin/bash
 HTTPS_PORT=$HTTPS_ENDPOINT_PORT
 WS_PORT=$WS_ENDPOINT_PORT
-ID=0
+#ID=0
 while (nc -z 127.0.0.1 $HTTPS_PORT && nc -z 127.0.0.1 $WS_PORT)
 do
-  ID=$(($ID +1))
+#  ID=$(($ID +1))
   HTTPS_PORT=$(($HTTPS_PORT +2))
   WS_PORT=$(($WS_PORT +2))
 done
-echo $ID > ID.txt
-screen -L -Logfile deploy.log -dmS hived-deploy-$CI_ENVIRONMENT_NAME-$ID $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/hived --replay-blockchain --set-benchmark-interval 100000 --stop-replay-at-block $STOP_REPLAY_AT --webserver-http-endpoint 127.0.0.1:$HTTPS_PORT --webserver-ws-endpoint 127.0.0.1:$WS_PORT --advanced-benchmark --dump-memory-details  -d $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME --shared-file-dir $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME
+#echo $ID > ID.txt
+#screen -L -Logfile deploy.log -dmS hived-deploy-$CI_ENVIRONMENT_NAME-$ID $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/hived --replay-blockchain --set-benchmark-interval 100000 --stop-replay-at-block $STOP_REPLAY_AT --webserver-http-endpoint 127.0.0.1:$HTTPS_PORT --webserver-ws-endpoint 127.0.0.1:$WS_PORT --advanced-benchmark --dump-memory-details  -d $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME --shared-file-dir $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME
+nohup $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/hived --replay-blockchain --set-benchmark-interval 100000 --stop-replay-at-block $STOP_REPLAY_AT --webserver-http-endpoint 127.0.0.1:$HTTPS_PORT --webserver-ws-endpoint 127.0.0.1:$WS_PORT --advanced-benchmark --dump-memory-details  -d $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME --shared-file-dir $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME > deploy.log 2>&1 &
+echo $! > pid.txt
+
+
 sleep 15s
 if nc -z 127.0.0.1 $HTTPS_PORT && nc -z 127.0.0.1 $WS_PORT
  then
