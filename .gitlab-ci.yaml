@@ -229,10 +229,7 @@ package_consensus_node:
     - apt-get update -y
     - apt-get install -y netcat
     - echo "screen list before:"
-    - screen -ls
-  after_script:
-    - echo "screen list after:"
-    - screen -ls
+    - echo screen -ls > screen-ls_before.txt
   script:
     - mkdir -p ./replay/$CI_ENVIRONMENT_NAME/blockchain
     - cp ./consensus_build/install-root/bin/hived ./replay/$CI_ENVIRONMENT_NAME
@@ -249,11 +246,17 @@ package_consensus_node:
     - chmod 0777 ./ciscripts/$SCRIPT_NAME
     - ./ciscripts/$SCRIPT_NAME $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
     
+  after_script:
+    - echo "screen list after:"
+    - echo screen -ls > screen-ls_after.txt
+    
   artifacts:
     paths:
       - ID.txt
       - deploy.log
       - $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/replay.log
+      - screen-ls_before.txt
+      - screen-ls_after.txt
   tags:
     - public-runner-docker
     - hived-for-tests    
@@ -288,18 +291,22 @@ stop_deploy_staging:
       artifacts: true
   before_script:
     - echo "screen list before:"
-    - screen -ls
-  after_script:
-    - echo "screen list after:"
-    - screen -ls
+    - echo screen -ls > screen-ls_before.txt
   script:
     - chmod 0777 ./ciscripts/stop_deploy_staging.sh
     - ./ciscripts/stop_deploy_staging.sh ./ID.txt
+  after_script:
+    - echo "screen list after:"
+    - echo screen -ls > screen-ls_after.txt
   environment: staging
   tags:
     - public-runner-docker
     - hived-for-tests
   allow_failure: false
+  artifacts:
+    paths:
+      - screen-ls_after.txt
+      - screen-ls_before.txt
   except:
     - schedules
     - master
