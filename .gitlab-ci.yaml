@@ -221,6 +221,7 @@ package_consensus_node:
     
 .start_deploy: &deploy
   stage: deploy
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   needs:
     - job: consensus_build
       artifacts: true
@@ -274,6 +275,7 @@ start_deploy_staging:
 
 stop_deploy_staging:
   stage: stop-deploy
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
     GIT_STRATEGY: fetch
   needs:
@@ -312,6 +314,7 @@ start_deploy_development:
 
 stop_deploy_development:
   stage: stop-deploy
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
     GIT_STRATEGY: none
   needs:
@@ -349,6 +352,7 @@ start_deploy_production:
 
 stop_deploy_production:
   stage: stop-deploy
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
     GIT_STRATEGY: none
   needs:
