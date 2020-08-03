@@ -228,8 +228,6 @@ package_consensus_node:
   before_script:
     - apt-get update -y
     - apt-get install -y netcat
-    - echo "screen list before:"
-    - echo `screen -ls` > screen-ls_before.txt
   script:
     - mkdir -p ./replay/$CI_ENVIRONMENT_NAME/blockchain
     - cp ./consensus_build/install-root/bin/hived ./replay/$CI_ENVIRONMENT_NAME
@@ -245,19 +243,12 @@ package_consensus_node:
     
     - chmod 0777 ./ciscripts/$SCRIPT_NAME
     - ./ciscripts/$SCRIPT_NAME $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
-    - echo `screen -ls` > screen-ls_right_after.txt
-  after_script:
-    - echo "screen list after:"
-    - echo `screen -ls` > screen-ls_after.txt
     
   artifacts:
     paths:
       - pid.txt
       - deploy.log
       - $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/replay.log
-      - screen-ls_before.txt
-      - screen-ls_right_after.txt
-      - screen-ls_after.txt
   tags:
     - public-runner-docker
     - hived-for-tests    
@@ -290,24 +281,14 @@ stop_deploy_staging:
   needs:
     - job: start_deploy_staging
       artifacts: true
-  before_script:
-    - echo "screen list before:"
-    - echo `screen -ls` > screen-ls_before.txt
   script:
     - chmod 0777 ./ciscripts/stop_deploy_staging.sh
     - ./ciscripts/stop_deploy_staging.sh ./pid.txt
-  after_script:
-    - echo "screen list after:"
-    - echo `screen -ls` > screen-ls_after.txt
   environment: staging
   tags:
     - public-runner-docker
     - hived-for-tests
   allow_failure: true
-  artifacts:
-    paths:
-      - screen-ls_after.txt
-      - screen-ls_before.txt
   except:
     - schedules
     - master
@@ -345,7 +326,8 @@ stop_deploy_development:
     - hived-for-tests
   allow_failure: false
   script:
-    - screen -S hived-deploy-$CI_ENVIRONMENT_NAME -X quit
+    - chmod 0777 ./ciscripts/stop_deploy_staging.sh
+    - ./ciscripts/stop_deploy_staging.sh ./pid.txt
   only:
     - development
   when: manual
@@ -360,9 +342,6 @@ start_deploy_production:
     SCRIPT_NAME: deploy.sh
   <<: *deploy
   environment: production
-  artifacts:
-    paths:
-      - deploy.log
   only:
     - master
     - merge_request
@@ -383,7 +362,8 @@ stop_deploy_production:
     - hived-for-tests
   allow_failure: false
   script:
-    - screen -S hived-deploy-$CI_ENVIRONMENT_NAME -X quit
+    - chmod 0777 ./ciscripts/stop_deploy_staging.sh
+    - ./ciscripts/stop_deploy_staging.sh ./pid.txt
   only:
     - master
     - merge_request
