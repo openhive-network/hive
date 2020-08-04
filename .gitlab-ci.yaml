@@ -187,7 +187,7 @@ package_consensus_node:
     
 replay-test:
   stage: data-supply
-  image: $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA
+  #image: $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA
 #  services:
 #    - docker:19.03.11-dind  
   variables:
@@ -215,7 +215,7 @@ replay-test:
     - cp ./consensus_build/install-root/bin/truncate_block_log ./replay/
     
     - ls ./replay/
-    - chmod 0777 ./ciscripts/truncate_block_log    
+    - chmod 0777 ./replay/truncate_block_log    
     - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
 
     - chmod 0777 ./ciscripts/replay.sh
