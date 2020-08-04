@@ -293,15 +293,16 @@ stop_deploy_staging:
   tags:
     - public-runner-docker
     - hived-for-tests
-  allow_failure: true
+  allow_failure: false
   except:
     - schedules
     - master
     - merge_request
     - 0.24.0
     - development
-  when: delayed
-  start_in: 10 hours
+  when: manual
+  #when: delayed
+  #start_in: 10 hours
 
 start_deploy_development:
   stage: deploy
