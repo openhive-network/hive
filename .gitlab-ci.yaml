@@ -212,12 +212,12 @@ replay-test:
     
     - echo "config.ini:"
     - cat ./replay/config.ini
-    #- cp ./consensus_build/install-root/bin/truncate_block_log ./replay/
+    - cp ./consensus_build/install-root/bin/truncate_block_log ./replay/
     
     - ls ./replay/
-    
-    #- ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
-    - ./consensus_build/install-root/bin/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
+    - chmod 0777 ./ciscripts/truncate_block_log    
+    - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
+
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
     - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
