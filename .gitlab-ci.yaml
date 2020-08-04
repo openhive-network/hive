@@ -207,6 +207,8 @@ replay-test:
     - ./replay/$CI_ENVIRONMENT_NAME/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/blockchain/block_log $STOP_REPLAY_AT
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
+    - echo "docker containers:"
+    - docker container ls
   needs:
     - job: consensus_build
       artifacts: true
