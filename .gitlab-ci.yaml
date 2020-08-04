@@ -20,6 +20,7 @@ testnet_node_build:
   script:
     # LOW_MEMORY=OFF CLEAR_VOTES=OFF TESTNET=ON
     - ./ciscripts/build.sh OFF OFF ON
+    - docker info
     - mkdir -p "$CI_JOB_NAME"/tests/unit
     - mv build/install-root "$CI_JOB_NAME"
     - mv contrib/hived.run "$CI_JOB_NAME"
@@ -178,6 +179,7 @@ package_consensus_node:
     DOCKER_DRIVER: overlay2
     DOCKER_TLS_CERTDIR: "/certs"
   script:
+    - docker info
     - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
     - "docker build -f ciscripts/Dockerfile.ci --target=consensus_node --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg RUNTIME_IMAGE_TAG=$RUNTIME_IMAGE_TAG --tag $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA ."
     - "docker push $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA"
@@ -196,6 +198,7 @@ replay-test:
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
   before_script:
   - echo "Blockchain will stop at $STOP_REPLAY_AT block"
+  - docker info
   script:
   
     - ls ./
