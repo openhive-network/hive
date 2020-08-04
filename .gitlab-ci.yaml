@@ -196,6 +196,8 @@ replay-test:
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
   before_script:
   - ls ./
+  - ls ./consensus_build
+  - ls ./consensus_build/install-root/bin
   - echo "Blockchain will stop at $STOP_REPLAY_AT block"
   script:
     - mkdir -p ./replay/$CI_ENVIRONMENT_NAME/blockchain
