@@ -188,6 +188,8 @@ package_consensus_node:
 replay-test:
   stage: data-supply
   image: "$CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA"
+  services:
+    - docker:19.03.11-dind  
   variables:
     SOURCE_NODE: consensus_build
     GIT_STRATEGY: fetch
@@ -207,6 +209,7 @@ replay-test:
     - ./replay/$CI_ENVIRONMENT_NAME/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/blockchain/block_log $STOP_REPLAY_AT
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
+    - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
     - echo "docker containers:"
     - docker container ls
   needs:
