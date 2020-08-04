@@ -195,19 +195,27 @@ replay-test:
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
   before_script:
-  - ls ./
-  - ls ./consensus_build
-  - ls ./consensus_build/install-root/bin
   - echo "Blockchain will stop at $STOP_REPLAY_AT block"
   script:
+  
+    - ls ./
+    - ls ./consensus_build
+    - ls ./consensus_build/install-root/bin
+    
     - mkdir -p ./replay/$CI_ENVIRONMENT_NAME/blockchain
     - cp ./consensus_build/install-root/bin/hived ./replay/$CI_ENVIRONMENT_NAME
     - cp ./consensus_build/install-root/bin/cli_wallet ./replay/$CI_ENVIRONMENT_NAME
     - cp $CONFIG_INI ./replay/$CI_ENVIRONMENT_NAME
     - mv ./replay/$CI_ENVIRONMENT_NAME/CONFIG_INI ./replay/$CI_ENVIRONMENT_NAME/config.ini
+    
+    - ls ./replay/$CI_ENVIRONMENT_NAME
+    
     - echo "config.ini:"
     - cat ./replay/$CI_ENVIRONMENT_NAME/config.ini
     - cp ./consensus_build/install-root/bin/truncate_block_log ./replay/$CI_ENVIRONMENT_NAME
+    
+    - ls ./replay/$CI_ENVIRONMENT_NAME
+    
     - ./replay/$CI_ENVIRONMENT_NAME/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/blockchain/block_log $STOP_REPLAY_AT
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
