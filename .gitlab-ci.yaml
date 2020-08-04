@@ -202,21 +202,21 @@ replay-test:
     - ls ./consensus_build
     - ls ./consensus_build/install-root/bin
     
-    - mkdir -p ./replay/$CI_ENVIRONMENT_NAME/blockchain
-    - cp ./consensus_build/install-root/bin/hived ./replay/$CI_ENVIRONMENT_NAME
-    - cp ./consensus_build/install-root/bin/cli_wallet ./replay/$CI_ENVIRONMENT_NAME
-    - cp $CONFIG_INI ./replay/$CI_ENVIRONMENT_NAME
-    - mv ./replay/$CI_ENVIRONMENT_NAME/CONFIG_INI ./replay/$CI_ENVIRONMENT_NAME/config.ini
+    - mkdir -p ./replay/blockchain
+    - cp ./consensus_build/install-root/bin/hived ./replay/
+    - cp ./consensus_build/install-root/bin/cli_wallet ./replay/
+    - cp $CONFIG_INI ./replay/
+    - mv ./replay/CONFIG_INI ./replay/config.ini
     
-    - ls ./replay/$CI_ENVIRONMENT_NAME
+    - ls ./replay/
     
     - echo "config.ini:"
-    - cat ./replay/$CI_ENVIRONMENT_NAME/config.ini
-    - cp ./consensus_build/install-root/bin/truncate_block_log ./replay/$CI_ENVIRONMENT_NAME
+    - cat ./replay/config.ini
+    - cp ./consensus_build/install-root/bin/truncate_block_log ./replay/
     
-    - ls ./replay/$CI_ENVIRONMENT_NAME
+    - ls ./replay/
     
-    - ./replay/$CI_ENVIRONMENT_NAME/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/$CI_ENVIRONMENT_NAME/blockchain/block_log $STOP_REPLAY_AT
+    - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
     - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
