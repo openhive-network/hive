@@ -187,9 +187,9 @@ package_consensus_node:
     
 replay-test:
   stage: data-supply
-  image: docker:19.03.11
-  services:
-    - docker:19.03.11-dind  
+#  image: docker:19.03.11
+#  services:
+#    - docker:19.03.11-dind  
   variables:
     SOURCE_NODE: consensus_build
     GIT_STRATEGY: fetch
