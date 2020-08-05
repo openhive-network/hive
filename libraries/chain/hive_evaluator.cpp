@@ -1758,7 +1758,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
       vop.weight = cv.weight;
       vop.rshares = cv.rshares;
-      vop.vote_percent = cv.vote_percent;
     });
 
     if( max_vote_weight ) // Optimization
@@ -1879,7 +1878,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       cv.rshares = rshares;
       vop.rshares = rshares;
       cv.vote_percent = o.weight;
-      vop.vote_percent = cv.weight;
       cv.last_update = _db.head_block_time();
       cv.weight = 0;
       vop.weight = 0;
@@ -2163,7 +2161,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
     vop.weight = newVote.weight;
     vop.rshares = newVote.rshares;
-    vop.vote_percent = newVote.vote_percent;
 
     _db.push_virtual_operation(vop);
 
@@ -2271,7 +2268,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
     vop.weight = vote.weight;
     vop.rshares = vote.rshares;
-    vop.vote_percent = vote.vote_percent;
     _db.push_virtual_operation(vop);
   }
 }
