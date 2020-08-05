@@ -189,7 +189,7 @@ package_consensus_node:
     
 replay-test:
   stage: data-supply
-  image: docker:19.03.11
+  image: $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA
   services:
     - docker:19.03.11-dind  
   variables:
@@ -197,8 +197,11 @@ replay-test:
     GIT_STRATEGY: fetch
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
   before_script:
-  - echo "Blockchain will stop at $STOP_REPLAY_AT block"
-  - docker info
+    - echo "Blockchain will stop at $STOP_REPLAY_AT block"
+    - docker info
+    - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
+    - echo "docker containers:"
+    - docker container ls
   script:
   
     - ls -a -l ./
@@ -219,13 +222,10 @@ replay-test:
     
     - ls -a -l ./replay/
     - chmod 0777 ./replay/truncate_block_log    
-    - sudo ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
+    - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
 
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
-    - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
-    - echo "docker containers:"
-    - docker container ls
   needs:
     - job: consensus_build
       artifacts: true
