@@ -201,9 +201,9 @@ replay-test:
   - docker info
   script:
   
-    - ls ./
-    - ls ./consensus_build
-    - ls ./consensus_build/install-root/bin
+    - ls -a -l ./
+    - ls -a -l ./consensus_build
+    - ls -a -l ./consensus_build/install-root/bin
     
     - mkdir -p ./replay/blockchain
     - cp ./consensus_build/install-root/bin/hived ./replay/
@@ -211,13 +211,13 @@ replay-test:
     - cp $CONFIG_INI ./replay/
     - mv ./replay/CONFIG_INI ./replay/config.ini
     
-    - ls ./replay/
+    - ls -a -l ./replay/
     
     - echo "config.ini:"
     - cat ./replay/config.ini
     - cp ./consensus_build/install-root/bin/truncate_block_log ./replay/
     
-    - ls ./replay/
+    - ls -a -l ./replay/
     - chmod 0777 ./replay/truncate_block_log    
     - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
 
