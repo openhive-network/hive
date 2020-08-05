@@ -219,7 +219,7 @@ replay-test:
     
     - ls -a -l ./replay/
     - chmod 0777 ./replay/truncate_block_log    
-    - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
+    - sudo ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
 
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
