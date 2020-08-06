@@ -194,7 +194,7 @@ replay-test:
     STOP_REPLAY_AT: 5000000 #default value, its possible to set this variable before running job
   before_script:
     - echo "Blockchain will stop at $STOP_REPLAY_AT block"
-    - ls -a -l /usr/bin/docker
+    - ls -a -l /usr/bin
     - docker info
     - "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY"
     - echo "docker containers:"
