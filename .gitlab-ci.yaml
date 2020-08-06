@@ -187,7 +187,10 @@ package_consensus_node:
     
 replay-test:
   stage: data-supply
-  image: docker:19.03.11
+  image: $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA
+  volumes:
+    - /usr/bin/docker $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA:usr/bin
+
   services:
     - docker:19.03.11-dind
   variables:
