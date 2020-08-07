@@ -167,6 +167,16 @@ namespace hive { namespace protocol {
     asset             pending_payout = asset( 0, HBD_SYMBOL ); //supplemented by account history RocksDB plugin (needed by HiveMind)
   };
 
+  struct ineffective_delete_comment_operation : public virtual_operation
+  {
+    ineffective_delete_comment_operation() = default;
+    ineffective_delete_comment_operation(const account_name_type& _author, const string& _permlink) :
+      author(_author), permlink(_permlink) {}
+
+    account_name_type author;
+    string            permlink;
+  };
+
   struct return_vesting_delegation_operation : public virtual_operation
   {
     return_vesting_delegation_operation() {}
@@ -272,6 +282,7 @@ FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amo
 FC_REFLECT( hive::protocol::hardfork_operation, (hardfork_id) )
 FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink) )
 FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(pending_payout))
+FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink))
 FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesting_shares) )
 FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
 FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares) )

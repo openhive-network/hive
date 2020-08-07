@@ -650,7 +650,11 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
   if( _db.has_hardfork( HIVE_HARDFORK_0_19__977 ) )
     FC_ASSERT( comment_cashout->net_rshares <= 0, "Cannot delete a comment with net positive votes." );
 
-  if( comment_cashout->net_rshares > 0 ) return;
+  if( comment_cashout->net_rshares > 0 )
+  {
+    _db.push_virtual_operation( ineffective_delete_comment_operation( o.author, o.permlink ) );
+    return;
+  }
 
   const auto& vote_idx = _db.get_index<comment_vote_index>().indices().get<by_comment_voter>();
 

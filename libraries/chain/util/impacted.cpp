@@ -252,6 +252,11 @@ struct get_impacted_account_visitor
     _impacted.emplace(op.voter);
   }
 
+  void operator()(const ineffective_delete_comment_operation& op)
+  {
+    _impacted.emplace(op.author);
+  }
+
   void operator()(const comment_payout_update_operation& op)
   {
     _impacted.insert(op.author);

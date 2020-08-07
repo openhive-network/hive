@@ -224,7 +224,7 @@ struct filtering_visitor
   (return_vesting_delegation_operation)(comment_benefactor_reward_operation)(producer_reward_operation)
   (clear_null_account_balance_operation)(proposal_pay_operation)(sps_fund_operation)
   (hardfork_hive_operation)(hardfork_hive_restore_operation)(delayed_voting_operation)
-  (consolidate_treasury_balance_operation)(effective_comment_vote_operation) )
+  (consolidate_treasury_balance_operation)(effective_comment_vote_operation)(ineffective_delete_comment_operation) )
 
 private:
   uint32_t _filter = 0;

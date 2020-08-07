@@ -101,7 +101,8 @@ enum enum_vops_filter : uint32_t
   hardfork_hive_restore_operation         = 0x080000,
   delayed_voting_operation                = 0x100000,
   consolidate_treasury_balance_operation  = 0x200000,
-  effective_comment_vote_operation        = 0x400000
+  effective_comment_vote_operation        = 0x400000,
+  ineffective_delete_comment_operation    = 0x800000
 };
 
 /** Allows to specify range of blocks to retrieve virtual operations for.
