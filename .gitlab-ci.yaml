@@ -187,7 +187,7 @@ package_consensus_node:
     
 replay-test:
   stage: data-supply
-  image: $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
     SOURCE_NODE: consensus_build
     GIT_STRATEGY: fetch
