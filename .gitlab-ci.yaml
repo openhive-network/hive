@@ -187,7 +187,7 @@ package_consensus_node:
     
 replay-test:
   stage: data-supply
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  image: $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA
   variables:
     SOURCE_NODE: consensus_build
     GIT_STRATEGY: fetch
@@ -199,29 +199,27 @@ replay-test:
     - echo "docker containers:"
     - docker container ls
   script:
-  
-    - ls -a -l ./
-    - ls -a -l ./consensus_build
-    - ls -a -l ./consensus_build/install-root/bin
-    
     - mkdir -p ./replay/blockchain
     - cp ./consensus_build/install-root/bin/hived ./replay/
     - cp ./consensus_build/install-root/bin/cli_wallet ./replay/
     - cp $CONFIG_INI ./replay/
     - mv ./replay/CONFIG_INI ./replay/config.ini
-    
-    - ls -a -l ./replay/
-    
     - echo "config.ini:"
     - cat ./replay/config.ini
     - cp ./consensus_build/install-root/bin/truncate_block_log ./replay/
-    
-    - ls -a -l ./replay/
+
     - chmod 0777 ./replay/truncate_block_log    
     - ./replay/truncate_block_log /blockchain/block_log $CI_PROJECT_DIR/replay/blockchain/block_log $STOP_REPLAY_AT
 
     - chmod 0777 ./ciscripts/replay.sh
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
+    
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker run -itd --name temp_container_$CI_COMMIT_SHORT_SHA -v ./replay:./replay $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA
+    - docker cp ./replay temp_container_$CI_COMMIT_SHORT_SHA:./
+    - docker commit temp_container_$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE/consensus_node_ready_to_deploy_$CI_COMMIT_SHORT_SHA
+    - docker container stop temp_container_$CI_COMMIT_SHORT_SHA
+    - docker container rm temp_container_$CI_COMMIT_SHORT_SHA
   needs:
     - job: consensus_build
       artifacts: true
@@ -239,7 +237,7 @@ replay-test:
     
 .start_deploy: &deploy
   stage: deploy
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  image: $CI_REGISTRY_IMAGE/consensus_node_ready_to_deploy_$CI_COMMIT_SHORT_SHA
   needs:
     - job: replay-test
       artifacts: true
@@ -247,8 +245,11 @@ replay-test:
     - apt-get update -y
     - apt-get install -y netcat
   script:
-    - chmod 0777 ./ciscripts/$SCRIPT_NAME
-    - ./ciscripts/$SCRIPT_NAME $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
+    - ls ./
+    - ls ./replay
+    - ls ./replay/blockchain
+    #- chmod 0777 ./ciscripts/$SCRIPT_NAME
+    #- ./ciscripts/$SCRIPT_NAME $STOP_REPLAY_AT $HTTPS_ENDPOINT_PORT $WS_ENDPOINT_PORT
     
   artifacts:
     paths:
