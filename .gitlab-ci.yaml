@@ -215,8 +215,8 @@ replay-test:
     - ./ciscripts/replay.sh "$STOP_REPLAY_AT" "$HTTP_ENDPOINT" "$WS_ENDPOINT"
     
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker run -itd --name temp_container_$CI_COMMIT_SHORT_SHA -v ./replay:./replay $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA
-    - docker cp ./replay temp_container_$CI_COMMIT_SHORT_SHA:./
+    - docker run -itd --name temp_container_$CI_COMMIT_SHORT_SHA -v $CI_BUILDS_DIR/replay:/replay $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA
+    - docker cp ./replay temp_container_$CI_COMMIT_SHORT_SHA:/replay
     - docker commit temp_container_$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE/consensus_node_ready_to_deploy_$CI_COMMIT_SHORT_SHA
     - docker container stop temp_container_$CI_COMMIT_SHORT_SHA
     - docker container rm temp_container_$CI_COMMIT_SHORT_SHA
@@ -246,6 +246,8 @@ replay-test:
     - apt-get install -y netcat
   script:
     - ls ./
+    - ls /
+    - ls /replay
     - ls ./replay
     - ls ./replay/blockchain
     #- chmod 0777 ./ciscripts/$SCRIPT_NAME
