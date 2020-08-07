@@ -218,7 +218,7 @@ replay-test:
     - docker run -itd --name temp_container_$CI_COMMIT_SHORT_SHA -v $CI_BUILDS_DIR/replay:/replay $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA
     - docker cp ./replay temp_container_$CI_COMMIT_SHORT_SHA:/replay
     - docker commit temp_container_$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE/consensus_node_ready_to_deploy_$CI_JOB_ID
-    - docker push $CI_REGISTRY_IMAGE/consensus_node_ready_to_deploy:$CI_COMMIT_SHORT_SHA
+    - docker push $CI_REGISTRY_IMAGE/consensus_node_ready_to_deploy_$CI_JOB_ID:$CI_COMMIT_SHORT_SHA
     - docker container stop temp_container_$CI_COMMIT_SHORT_SHA
     - docker container rm temp_container_$CI_COMMIT_SHORT_SHA
   needs:
