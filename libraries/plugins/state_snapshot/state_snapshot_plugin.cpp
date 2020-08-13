@@ -174,6 +174,58 @@ void rocksdb_cleanup_helper::close()
   return cf;
   }
 
+struct plugin_external_data_info
+{
+  fc::path path;
+};
+
+typedef std::map<std::string, plugin_external_data_info> plugin_external_data_index;
+
+class snapshot_dump_supplement_helper final : public hive::plugins::chain::snapshot_dump_helper
+{
+public:
+  const plugin_external_data_index& get_external_data_index() const
+  {
+    return external_data_index;
+  }
+
+  virtual void store_external_data_info(const hive::chain::abstract_plugin& plugin, const fc::path& storage_path) override
+  {
+    plugin_external_data_info info;
+    info.path = storage_path;
+    auto ii = external_data_index.emplace(plugin.get_name(), info);
+    FC_ASSERT(ii.second, "Only one external data path allowed per plugin");
+  }
+
+private:
+  plugin_external_data_index external_data_index;
+};
+
+class snapshot_load_supplement_helper final : public hive::plugins::chain::snapshot_load_helper
+{
+public:
+  explicit snapshot_load_supplement_helper(const plugin_external_data_index& idx) : ext_data_idx(idx) {}
+
+  virtual bool load_external_data_info(const hive::chain::abstract_plugin& plugin, fc::path* storage_path) override
+  {
+    const std::string& name = plugin.get_name();
+
+    auto i = ext_data_idx.find(name);
+
+    if(i == ext_data_idx.end())
+    {
+      *storage_path = fc::path();
+      return false;
+    }
+
+    *storage_path = i->second.path;
+    return true;
+  }
+
+private:
+  const plugin_external_data_index& ext_data_idx;
+};
+
 } /// namespace anonymous
 
 FC_REFLECT(index_manifest_info, (name)(dumpedItems)(firstId)(lastId)(storage_files))
@@ -818,8 +870,11 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       std::string generate_name() const;
       void safe_spawn_snapshot_dump(const chainbase::abstract_index* idx, index_dump_writer* writer);
       void safe_spawn_snapshot_load(chainbase::abstract_index* idx, index_dump_reader* reader);
-      void store_snapshot_manifest(const bfs::path& actualStoragePath, const std::vector<std::unique_ptr<index_dump_writer>>& builtWriters) const;
-      snapshot_manifest load_snapshot_manifest(const bfs::path& actualStoragePath);
+      void store_snapshot_manifest(const bfs::path& actualStoragePath, const std::vector<std::unique_ptr<index_dump_writer>>& builtWriters,
+        const snapshot_dump_supplement_helper& dumpHelper) const;
+
+      std::pair<snapshot_manifest, plugin_external_data_index> load_snapshot_manifest(const bfs::path& actualStoragePath);
+      void load_snapshot_external_data(const plugin_external_data_index& idx);
 
     private:
       state_snapshot_plugin&  _self;
@@ -879,7 +934,7 @@ void state_snapshot_plugin::impl::safe_spawn_snapshot_dump(const chainbase::abst
   }
 
 void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actualStoragePath,
-  const std::vector<std::unique_ptr<index_dump_writer>>& builtWriters) const
+  const std::vector<std::unique_ptr<index_dump_writer>>& builtWriters, const snapshot_dump_supplement_helper& dumpHelper) const
   {
   bfs::path manifestDbPath(actualStoragePath);
   manifestDbPath /= "snapshot-manifest";
@@ -893,6 +948,7 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
 
   rocksdb_cleanup_helper db = rocksdb_cleanup_helper::open(dbOptions, manifestDbPath);
   ::rocksdb::ColumnFamilyHandle* manifestCF = db.create_column_family("INDEX_MANIFEST");
+  ::rocksdb::ColumnFamilyHandle* externalDataCF = db.create_column_family("EXTERNAL_DATA");
 
   ::rocksdb::WriteOptions writeOptions;
 
@@ -920,10 +976,34 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
       }
     }
 
+  const auto& extDataIdx = dumpHelper.get_external_data_index();
+
+  for(const auto& d : extDataIdx)
+  {
+    const auto& plugin_name = d.first;
+    const auto& path = d.second.path;
+
+    auto relativePath = bfs::relative(path, actualStoragePath);
+    auto relativePathStr = relativePath.string();
+
+    Slice key(plugin_name);
+    Slice value(relativePathStr);
+
+    auto status = db->Put(writeOptions, externalDataCF, key, value);
+    if(status.ok() == false)
+    {
+      elog("Cannot write an index manifest entry to output file: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
+      ilog("Failing key value: ${k}", ("k", plugin_name));
+
+      throw std::exception();
+    }
+
+  }
+
   db.close();
   }
 
-snapshot_manifest state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath)
+std::pair<snapshot_manifest, plugin_external_data_index> state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath)
   {
   bfs::path manifestDbPath(actualStoragePath);
   manifestDbPath /= "snapshot-manifest";
@@ -934,8 +1014,13 @@ snapshot_manifest state_snapshot_plugin::impl::load_snapshot_manifest(const bfs:
   
   ::rocksdb::ColumnFamilyDescriptor cfDescriptor;
   cfDescriptor.name = "INDEX_MANIFEST";
+
   std::vector <::rocksdb::ColumnFamilyDescriptor> cfDescriptors;
   cfDescriptors.emplace_back(::rocksdb::kDefaultColumnFamilyName, ::rocksdb::ColumnFamilyOptions());
+  cfDescriptors.push_back(cfDescriptor);
+
+  cfDescriptor = ::rocksdb::ColumnFamilyDescriptor();
+  cfDescriptor.name = "EXTERNAL_DATA";
   cfDescriptors.push_back(cfDescriptor);
 
   std::vector<::rocksdb::ColumnFamilyHandle*> cfHandles;
@@ -984,6 +1069,40 @@ snapshot_manifest state_snapshot_plugin::impl::load_snapshot_manifest(const bfs:
     }
   }
 
+  plugin_external_data_index extDataIdx;
+
+  {
+    ::rocksdb::ReadOptions rOptions;
+
+    std::unique_ptr<::rocksdb::Iterator> indexIterator(manifestDb->NewIterator(rOptions, cfHandles[2]));
+
+    std::vector<char> buffer;
+    for(indexIterator->SeekToFirst(); indexIterator->Valid(); indexIterator->Next())
+    {
+      auto keySlice = indexIterator->key();
+      auto valueSlice = indexIterator->value();
+
+      std::string plugin_name = keySlice.data();
+      std::string relative_path = valueSlice.data();
+
+      ilog("Loaded external data info for plugin ${p} having storage of external files inside: `${d}' (relative path)", ("p", plugin_name)("d", relative_path));
+
+      bfs::path extDataPath(actualStoragePath);
+      extDataPath /= relative_path;
+
+      if(bfs::exists(extDataPath) == false)
+      {
+        elog("Specified path to the external data does not exists: `${d}'.", ("d", extDataPath.string()));
+        throw std::exception();
+      }
+
+      plugin_external_data_info info;
+      info.path = extDataPath;
+      auto ii = extDataIdx.emplace(plugin_name, info);
+      FC_ASSERT(ii.second, "Multiple entries for plugin: ${p}", ("p", plugin_name));
+    }
+  }
+
   for(auto* cfh : cfHandles)
     {
     status = manifestDb->DestroyColumnFamilyHandle(cfh);
@@ -996,7 +1115,16 @@ snapshot_manifest state_snapshot_plugin::impl::load_snapshot_manifest(const bfs:
   manifestDb->Close();
   manifestDbPtr.release();
 
-  return std::move(retVal);
+  return std::make_pair(retVal, extDataIdx);
+  }
+
+void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_external_data_index& idx)
+  {
+  snapshot_load_supplement_helper load_helper(idx);
+
+  hive::chain::load_snapshot_supplement_notification notification(load_helper);
+
+  _mainDb.notify_load_snapshot_data_supplement(notification);
   }
 
 void state_snapshot_plugin::impl::safe_spawn_snapshot_load(chainbase::abstract_index* idx, index_dump_reader* reader)
@@ -1065,7 +1193,19 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
 
   threadpool.join_all();
 
-  store_snapshot_manifest(actualStoragePath, builtWriters);
+  fc::path external_data_storage_base_path(actualStoragePath);
+  external_data_storage_base_path /= "ext_data";
+
+  if(bfs::exists(external_data_storage_base_path) == false)
+    bfs::create_directories(external_data_storage_base_path);
+
+  snapshot_dump_supplement_helper dump_helper;
+  
+  hive::chain::prepare_snapshot_supplement_notification notification(external_data_storage_base_path, dump_helper);
+
+  _mainDb.notify_prepare_snapshot_data_supplement(notification);
+
+  store_snapshot_manifest(actualStoragePath, builtWriters, dump_helper);
 
   auto blockNo = _mainDb.head_block_num();
 
@@ -1119,7 +1259,7 @@ void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName,
 
   for(chainbase::abstract_index* idx : indices)
     {
-    builtReaders.emplace_back(std::make_unique<index_dump_reader>(snapshotManifest, actualStoragePath));
+    builtReaders.emplace_back(std::make_unique<index_dump_reader>(snapshotManifest.first, actualStoragePath));
     index_dump_reader* reader = builtReaders.back().get();
 
     if(_allow_concurrency)
@@ -1134,6 +1274,15 @@ void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName,
   work.reset();
 
   threadpool.join_all();
+
+  if(snapshotManifest.second.empty())
+  {
+    ilog("Skipping external data load due to lack of data saved to the snapshot");
+  }
+  else
+  {
+    load_snapshot_external_data(snapshotManifest.second);
+  }
 
   auto blockNo = _mainDb.head_block_num();
 

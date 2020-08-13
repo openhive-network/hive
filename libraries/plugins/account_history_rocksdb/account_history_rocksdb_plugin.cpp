@@ -12,6 +12,7 @@
 #include <hive/chain/util/uint256.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
+#include <hive/plugins/chain/state_snapshot_provider.hpp>
 
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/utilities/plugin_utilities.hpp>
@@ -21,6 +22,7 @@
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
+#include <rocksdb/utilities/backupable_db.h>
 #include <rocksdb/utilities/write_batch_with_index.h>
 
 #include <boost/type.hpp>
@@ -496,6 +498,16 @@ public:
         on_post_reindex( note );
       }, _self, 0);
 
+    _mainDb.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
+      {
+        supplement_snapshot(note);
+      }, _self, 0);
+
+    _mainDb.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
+      {
+        load_additional_data_from_snapshot(note);
+      }, _self, 0);
+
     HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
     }
 
@@ -596,6 +608,9 @@ public:
   }
 
 private:
+  void supplement_snapshot(const hive::chain::prepare_snapshot_supplement_notification& note);
+  void load_additional_data_from_snapshot(const hive::chain::load_snapshot_supplement_notification& note);
+
   uint32_t get_lib(const uint32_t* fallbackIrreversibleBlock = nullptr) const;
   void update_lib( uint32_t );
 
@@ -1171,6 +1186,57 @@ bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol:
 
   return false;
   }
+
+void account_history_rocksdb_plugin::impl::supplement_snapshot(const hive::chain::prepare_snapshot_supplement_notification& note)
+{
+  fc::path actual_path(note.external_data_storage_base_path);
+  actual_path /= "account_history_rocksdb_data";
+
+  if(bfs::exists(actual_path) == false)
+    bfs::create_directories(actual_path);
+
+  auto pathString = actual_path.to_native_ansi_path();
+
+  ::rocksdb::Env* backupEnv = ::rocksdb::Env::Default();
+  ::rocksdb::BackupableDBOptions backupableDbOptions(pathString);
+
+  std::unique_ptr<::rocksdb::BackupEngine> backupEngine;
+  ::rocksdb::BackupEngine* _backupEngine = nullptr;
+  auto status = ::rocksdb::BackupEngine::Open(backupEnv, backupableDbOptions, &_backupEngine);
+
+  checkStatus(status);
+
+  backupEngine.reset(_backupEngine);
+
+  ilog("Attempting to create a AccountHistoryRocksDB backup in the location: `${p}'", ("p", pathString));
+
+  std::string meta_data = "Account History RocksDB plugin data. Current head block: ";
+  meta_data += std::to_string(_mainDb.head_block_num());
+
+  status = _backupEngine->CreateNewBackupWithMetadata(this->_storage.get(), meta_data, true);
+  checkStatus(status);
+
+  std::vector<::rocksdb::BackupInfo> backupInfos;
+  _backupEngine->GetBackupInfo(&backupInfos);
+
+  FC_ASSERT(backupInfos.size() == 1);
+
+  note.dump_helper.store_external_data_info(_self, actual_path);
+}
+
+void account_history_rocksdb_plugin::impl::load_additional_data_from_snapshot(const hive::chain::load_snapshot_supplement_notification& note)
+{
+  fc::path extdata_path;
+  if(note.load_helper.load_external_data_info(_self, &extdata_path) == false)
+  {
+    wlog("No external data present for Account History RocksDB plugin...");
+    return;
+  }
+
+  ilog("Attempting to load external data for Account History RocksDB plugin from location: `${p}'", ("p", extdata_path.string()));
+
+
+}
 
 uint32_t account_history_rocksdb_plugin::impl::get_lib(const uint32_t* fallbackIrreversibleBlock /*= nullptr*/) const
 {

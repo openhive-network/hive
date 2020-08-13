@@ -25,7 +25,17 @@
 #include <functional>
 #include <map>
 
-namespace hive { namespace chain {
+namespace hive { 
+
+namespace plugins {namespace chain
+{
+  class snapshot_dump_helper;
+  class snapshot_load_helper;
+} /// namespace chain
+
+} /// namespace plugins
+
+namespace chain {
 
   using hive::protocol::signed_transaction;
   using hive::protocol::operation;
@@ -35,6 +45,10 @@ namespace hive { namespace chain {
   using hive::protocol::price;
   using abstract_plugin = appbase::abstract_plugin;
 
+  struct prepare_snapshot_supplement_notification;
+  struct load_snapshot_supplement_notification;
+
+  
   struct hardfork_versions
   {
     fc::time_point_sec         times[ HIVE_NUM_HARDFORKS + 1 ];
@@ -348,7 +362,11 @@ namespace hive { namespace chain {
       using reindex_handler_t = std::function< void(const reindex_notification&) >;
       using generate_optional_actions_handler_t = std::function< void(const generate_optional_actions_notification&) >;
       using prepare_snapshot_handler_t = std::function < void(const database&, const database::abstract_index_cntr_t&)>;
+      using prepare_snapshot_data_supplement_handler_t = std::function < void(const prepare_snapshot_supplement_notification&) >;
+      using load_snapshot_data_supplement_handler_t = std::function < void(const load_snapshot_supplement_notification&) >;
 
+      void notify_prepare_snapshot_data_supplement(const prepare_snapshot_supplement_notification& n);
+      void notify_load_snapshot_data_supplement(const load_snapshot_supplement_notification& n);
 
     private:
       template <typename TSignal,
@@ -378,6 +396,24 @@ namespace hive { namespace chain {
       boost::signals2::connection add_generate_optional_actions_handler ( const generate_optional_actions_handler_t& func, const abstract_plugin& plugin, int32_t group = -1 );
 
       boost::signals2::connection add_prepare_snapshot_handler          (const prepare_snapshot_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
+      /// <summary>
+      ///  All plugins storing data in different way than chainbase::generic_index (wrapping
+      ///  a multi_index) should register to this handler to add its own data to the prepared snapshot.
+      /// </summary>
+      /// <param name="func">function to be called on notification</param>
+      /// <param name="plugin">the plugin be registering its handler</param>
+      /// <param name="group"></param>
+      /// <returns></returns>
+      boost::signals2::connection add_snapshot_supplement_handler       (const prepare_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
+      /// <summary>
+      ///  All plugins storing data in different way than chainbase::generic_index (wrapping
+      ///  a multi_index) should register to this handler to load its own data from the loaded snapshot.
+      /// </summary>
+      /// <param name="func"></param>
+      /// <param name="plugin"></param>
+      /// <param name="group"></param>
+      /// <returns></returns>
+      boost::signals2::connection add_snapshot_supplement_handler       (const load_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
       //////////////////// db_witness_schedule.cpp ////////////////////
 
@@ -814,6 +850,15 @@ namespace hive { namespace chain {
 
       fc::signal<void(const database&, const database::abstract_index_cntr_t&)> _prepare_snapshot_signal;
 
+      /// <summary>
+      ///  Emitted by snapshot plugin implementation to allow all registered plugins to include theirs custom-stored data in the snapshot
+      /// </summary>
+      fc::signal<void(const prepare_snapshot_supplement_notification&)> _prepare_snapshot_supplement_signal;
+      /// <summary>
+      /// Emitted by snapshot plugin implementation to allow all registered plugins to load theirs custom-stored data from the snapshot
+      /// </summary>
+      fc::signal<void(const load_snapshot_supplement_notification&)> _load_snapshot_supplement_signal;
+
       /**
         *  Emitted After a block has been applied and committed.  The callback
         *  should not yield and should execute quickly.
@@ -839,6 +884,22 @@ namespace hive { namespace chain {
     bool reindex_success = false;
     uint32_t last_block_number = 0;
     const open_args& args;
+  };
+
+  struct prepare_snapshot_supplement_notification
+  {
+    prepare_snapshot_supplement_notification(const fc::path& _external_data_storage_base_path, hive::plugins::chain::snapshot_dump_helper& _dump_helper) :
+      external_data_storage_base_path(_external_data_storage_base_path), dump_helper(_dump_helper) {}
+    fc::path              external_data_storage_base_path;
+    hive::plugins::chain::snapshot_dump_helper& dump_helper;
+  };
+
+  struct load_snapshot_supplement_notification
+  {
+    explicit load_snapshot_supplement_notification(hive::plugins::chain::snapshot_load_helper& _load_helper) :
+      load_helper(_load_helper) {}
+
+    hive::plugins::chain::snapshot_load_helper& load_helper;
   };
 
 } }

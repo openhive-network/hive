@@ -1364,6 +1364,16 @@ void database::notify_post_apply_transaction( const transaction_notification& no
   HIVE_TRY_NOTIFY( _post_apply_transaction_signal, note )
 }
 
+void database::notify_prepare_snapshot_data_supplement(const prepare_snapshot_supplement_notification& note)
+{
+  HIVE_TRY_NOTIFY(_prepare_snapshot_supplement_signal, note)
+}
+
+void database::notify_load_snapshot_data_supplement(const load_snapshot_supplement_notification& note)
+{
+  HIVE_TRY_NOTIFY(_load_snapshot_supplement_signal, note) 
+}
+
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
 {
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
@@ -4554,6 +4564,16 @@ boost::signals2::connection database::add_generate_optional_actions_handler(cons
 boost::signals2::connection database::add_prepare_snapshot_handler(const prepare_snapshot_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
   return connect_impl(_prepare_snapshot_signal, func, plugin, group, "->prepare_snapshot");
+}
+
+boost::signals2::connection database::add_snapshot_supplement_handler(const prepare_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group)
+{
+  return connect_impl(_prepare_snapshot_supplement_signal, func, plugin, group, "->prepare_snapshot_data_supplement");
+}
+
+boost::signals2::connection database::add_snapshot_supplement_handler(const load_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group)
+{
+  return connect_impl(_load_snapshot_supplement_signal, func, plugin, group, "->load_snapshot_data_supplement");
 }
 
 const witness_object& database::validate_block_header( uint32_t skip, const signed_block& next_block )const
