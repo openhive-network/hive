@@ -604,6 +604,7 @@ public:
     chain::util::disconnect_signal(_on_irreversible_block_conn);
     flushStorage();
     cleanupColumnHandles();
+    _storage->Close();
     _storage.reset();
   }
 
@@ -622,8 +623,19 @@ private:
 
   void cleanupColumnHandles()
   {
+    cleanupColumnHandles(_storage.get());
+  }
+
+  void cleanupColumnHandles(::rocksdb::DB* db)
+  {
     for(auto* h : _columnHandles)
-      delete h;
+    {
+      auto s = db->DestroyColumnFamilyHandle(h);
+      if(s.ok() == false)
+      {
+        elog("Cannot destroy column family handle. Error: `${e}'", ("e", s.ToString()));
+      }
+    }
     _columnHandles.clear();
   }
 
@@ -1208,7 +1220,7 @@ void account_history_rocksdb_plugin::impl::supplement_snapshot(const hive::chain
 
   backupEngine.reset(_backupEngine);
 
-  ilog("Attempting to create a AccountHistoryRocksDB backup in the location: `${p}'", ("p", pathString));
+  ilog("Attempting to create an AccountHistoryRocksDB backup in the location: `${p}'", ("p", pathString));
 
   std::string meta_data = "Account History RocksDB plugin data. Current head block: ";
   meta_data += std::to_string(_mainDb.head_block_num());
@@ -1233,9 +1245,37 @@ void account_history_rocksdb_plugin::impl::load_additional_data_from_snapshot(co
     return;
   }
 
-  ilog("Attempting to load external data for Account History RocksDB plugin from location: `${p}'", ("p", extdata_path.string()));
+  auto pathString = extdata_path.to_native_ansi_path();
 
+  ilog("Attempting to load external data for Account History RocksDB plugin from location: `${p}'", ("p", pathString));
 
+  ::rocksdb::Env* backupEnv = ::rocksdb::Env::Default();
+  ::rocksdb::BackupableDBOptions backupableDbOptions(pathString);
+
+  std::unique_ptr<::rocksdb::BackupEngineReadOnly> backupEngine;
+  ::rocksdb::BackupEngineReadOnly* _backupEngine = nullptr;
+  auto status = ::rocksdb::BackupEngineReadOnly::Open(backupEnv, backupableDbOptions, &_backupEngine);
+
+  checkStatus(status);
+
+  backupEngine.reset(_backupEngine);
+
+  ilog("Attempting to restore an AccountHistoryRocksDB backup from the backup location: `${p}'", ("p", pathString));
+
+  shutdownDb();
+
+  ilog("Attempting to destroy current AHR storage...");
+  ::rocksdb::Options destroyOpts;
+  ::rocksdb::DestroyDB(_storagePath.string(), destroyOpts);
+
+  bfs::path walDir(_storagePath);
+  walDir /= "WAL";
+  status = backupEngine->RestoreDBFromLatestBackup(_storagePath.string(), walDir.string());
+  checkStatus(status);
+
+  ilog("Restoring AccountHistoryRocksDB backup from the location: `${p}' finished", ("p", pathString));
+
+  openDb();
 }
 
 uint32_t account_history_rocksdb_plugin::impl::get_lib(const uint32_t* fallbackIrreversibleBlock /*= nullptr*/) const
@@ -1308,7 +1348,7 @@ bool account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
 
   if(s.ok())
   {
-    cleanupColumnHandles();
+    cleanupColumnHandles(db);
     delete db;
     return false; /// DB does not need data import.
   }
@@ -1326,7 +1366,7 @@ bool account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
       saveStoreVersion();
       /// Store initial values of Seq-IDs for held objects.
       flushWriteBuffer(db);
-      cleanupColumnHandles();
+      cleanupColumnHandles(db);
     }
     else
     {
