@@ -1174,8 +1174,7 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
   if ( _db.has_hardfork(HIVE_HARDFORK_0_24)  && o.amount.symbol == HIVE_SYMBOL && _db.is_treasury( o.to ) ) {
       const auto &fhistory = _db.get_feed_history();
 
-      FC_ASSERT(!fhistory.current_median_history.is_null(),
-                "Cannot convert treasury balance because there is no price feed.");
+      FC_ASSERT(!fhistory.current_median_history.is_null(), "Cannot send HIVE to ${s} because there is no price feed.", ("s", o.to ));
 
       auto amount_to_transfer = o.amount * fhistory.current_median_history;
 
@@ -1190,8 +1189,7 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
       return;
   } else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
-    FC_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ),
-               "Can only transfer HBD to ${s}", ("s", o.to ) );
+    FC_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ), "Can only transfer HBD or HIVE to ${s}", ("s", o.to ) );
   }
 
   _db.adjust_balance( o.from, -o.amount );
