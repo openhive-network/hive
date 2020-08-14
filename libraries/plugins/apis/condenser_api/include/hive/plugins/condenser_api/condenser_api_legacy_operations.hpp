@@ -94,7 +94,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   struct api_chain_properties
   {
     api_chain_properties() {}
-    api_chain_properties( const chain::chain_properties& c ) :
+    api_chain_properties( const hive::chain::chain_properties& c ) :
       account_creation_fee( legacy_asset::from_asset( c.account_creation_fee ) ),
       maximum_block_size( c.maximum_block_size ),
       hbd_interest_rate( c.hbd_interest_rate ),
