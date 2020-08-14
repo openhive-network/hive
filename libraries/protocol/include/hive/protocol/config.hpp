@@ -92,7 +92,7 @@
 
 #define HIVE_100_PERCENT                      10000
 #define HIVE_1_PERCENT                        (HIVE_100_PERCENT/100)
-#define HIVE_0_0_1_PERCENT                    (HIVE_100_PERCENT/10000) // 0.01%
+#define HIVE_1_BASIS_POINT                    (HIVE_100_PERCENT/10000) // 0.01%
 
 #define HIVE_BLOCK_INTERVAL                   3
 #define HIVE_BLOCKS_PER_YEAR                  (365*24*60*60/HIVE_BLOCK_INTERVAL)
@@ -369,7 +369,7 @@
 #define HIVE_PROPOSAL_FEE_INCREASE_DAYS            60
 #define HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC        (60*60*24*HIVE_PROPOSAL_FEE_INCREASE_DAYS) /// 60 days
 #define HIVE_PROPOSAL_FEE_INCREASE_AMOUNT          (1 * HIVE_BLOCKCHAIN_PRECISION)
-#define HIVE_PROPOSAL_CONVERSION_RATE             (5 * HIVE_0_0_1_PERCENT)
+#define HIVE_PROPOSAL_CONVERSION_RATE             (5 * HIVE_1_BASIS_POINT)
 
 
 #ifdef HIVE_ENABLE_SMT

@@ -4639,7 +4639,7 @@ void database::update_virtual_supply()
       if( has_hardfork( HIVE_HARDFORK_0_24 ) )
       {
         // Removing the hbd in the treasury from the debt ratio calculations
-        const auto &treasury_account = get_account(get_treasury_name());
+        const auto &treasury_account = get_treasury();
         const auto hdb_supply_without_treasury = (dgp.get_current_hbd_supply() - treasury_account.hbd_balance).amount < 0 ? asset(0, HBD_SYMBOL) : (dgp.get_current_hbd_supply() - treasury_account.hbd_balance) ;
         const auto virtual_supply_without_treasury = hdb_supply_without_treasury * get_feed_history().current_median_history + dgp.current_supply;
         percent_hbd = uint16_t( ( ( fc::uint128_t( ( hdb_supply_without_treasury * get_feed_history().current_median_history ).amount.value ) * HIVE_100_PERCENT + virtual_supply_without_treasury.amount.value/2 )

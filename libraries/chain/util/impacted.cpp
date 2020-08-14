@@ -301,9 +301,9 @@ struct get_impacted_account_visitor
   }
 
   void operator()( const sps_convert_operation& op )
-   {
-      _impacted.insert( op.fund_account );
-   }
+  {
+    _impacted.insert( op.fund_account );
+  }
 
    void operator()( const hardfork_operation& op )
    {

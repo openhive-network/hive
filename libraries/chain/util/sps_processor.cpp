@@ -344,7 +344,7 @@ void sps_processor::convert_funds( const block_notification& note )
     _dgpo.next_daily_maintenance_time = note.block.timestamp + fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD );
   } );
 
-  const auto &treasury_account = db.get_account(db.get_treasury_name());
+  const auto &treasury_account = db.get_treasury();
   if (treasury_account.balance.amount == 0) {
     return;
   }
@@ -360,13 +360,13 @@ void sps_processor::convert_funds( const block_notification& note )
   if(converted_hbd < HIVE_MIN_PAYOUT_HBD )
     return;
 
-  db.adjust_balance( db.get_treasury_name(), -to_convert );
-  db.adjust_balance(db.get_treasury_name(), converted_hbd );
+  db.adjust_balance( treasury_account, -to_convert );
+  db.adjust_balance(treasury_account, converted_hbd );
 
   db.adjust_supply( -to_convert );
   db.adjust_supply( converted_hbd );
 
-  operation vop = sps_convert_operation(db.get_treasury_name(), to_convert, converted_hbd );
+  operation vop = sps_convert_operation(treasury_account.name, to_convert, converted_hbd );
   db.push_virtual_operation( vop );
 }
 
