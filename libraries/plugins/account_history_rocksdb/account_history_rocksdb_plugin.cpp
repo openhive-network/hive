@@ -602,10 +602,13 @@ public:
   {
     chain::util::disconnect_signal(_on_post_apply_operation_con);
     chain::util::disconnect_signal(_on_irreversible_block_conn);
-    flushStorage();
-    cleanupColumnHandles();
-    _storage->Close();
-    _storage.reset();
+    if(_storage)
+    {
+      flushStorage();
+      cleanupColumnHandles();
+      _storage->Close();
+      _storage.reset();
+    }
   }
 
 private:
@@ -623,7 +626,8 @@ private:
 
   void cleanupColumnHandles()
   {
-    cleanupColumnHandles(_storage.get());
+    if(_storage)
+      cleanupColumnHandles(_storage.get());
   }
 
   void cleanupColumnHandles(::rocksdb::DB* db)
