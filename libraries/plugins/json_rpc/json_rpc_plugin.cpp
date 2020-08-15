@@ -24,7 +24,7 @@ namespace detail
       : code( 0 ) {}
 
     json_rpc_error( int32_t c, std::string m, fc::optional< fc::variant > d = fc::optional< fc::variant >() )
-      : code( c ), message( m ), data( d ) {}
+      : code( c ), message( std::move( m ) ), data( d ) {}
 
     int32_t                          code;
     std::string                      message;

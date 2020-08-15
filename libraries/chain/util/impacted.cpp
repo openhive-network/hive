@@ -1,5 +1,5 @@
 #include <hive/protocol/authority.hpp>
-
+#include <hive/chain/database.hpp>
 #include <hive/chain/util/impacted.hpp>
 
 #include <fc/utility.hpp>
@@ -310,9 +310,14 @@ struct get_impacted_account_visitor
     _impacted.insert( op.voter );
   }
 
-  void operator()( const hardfork_operation& op )
+  void operator()( const sps_convert_operation& op )
   {
-    _impacted.insert( HIVE_INIT_MINER_NAME );
+    _impacted.insert( op.fund_account );
+  }
+
+   void operator()( const hardfork_operation& op )
+   {
+      _impacted.insert( HIVE_INIT_MINER_NAME );
   }
 
   void operator()( const hardfork_hive_operation& op )

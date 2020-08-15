@@ -1085,6 +1085,18 @@ uint64_t sps_proposal_database_fixture::get_nr_blocks_until_maintenance_block()
   return ret;
 }
 
+uint64_t sps_proposal_database_fixture::get_nr_blocks_until_daily_maintenance_block()
+{
+  auto block_time = db->head_block_time();
+
+  auto next_maintenance_time = db->get_dynamic_global_properties().next_daily_maintenance_time;
+  auto ret = ( next_maintenance_time - block_time ).to_seconds() / HIVE_BLOCK_INTERVAL;
+
+  FC_ASSERT( next_maintenance_time >= block_time );
+
+  return ret;
+}
+
 void sps_proposal_database_fixture::post_comment( std::string _authro, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key)
 {
   generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );

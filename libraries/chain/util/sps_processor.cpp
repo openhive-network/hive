@@ -12,7 +12,6 @@ using hive::chain::proposal_index;
 using hive::chain::proposal_id_type;
 using hive::chain::proposal_vote_index;
 using hive::chain::by_proposal_voter;
-using hive::chain::by_voter_proposal;
 using hive::protocol::proposal_pay_operation;
 using hive::chain::sps_helper;
 using hive::chain::dynamic_global_property_object;
@@ -24,6 +23,11 @@ const std::string sps_processor::calculating_name = "sps_processor_calculate";
 bool sps_processor::is_maintenance_period( const time_point_sec& head_time ) const
 {
   return db.get_dynamic_global_properties().next_maintenance_time <= head_time;
+}
+
+bool sps_processor::is_daily_maintenance_period( const time_point_sec& head_time ) const
+{
+  return db.get_dynamic_global_properties().next_daily_maintenance_time <= head_time;
 }
 
 void sps_processor::remove_proposals( const time_point_sec& head_time )
@@ -307,6 +311,7 @@ void sps_processor::run( const block_notification& note )
 {
   remove_old_proposals( note );
   record_funding( note );
+  convert_funds( note );
   make_payments( note );
 }
 
@@ -327,6 +332,42 @@ void sps_processor::record_funding( const block_notification& note )
   {
     dgpo.sps_interval_ledger = asset( 0, HBD_SYMBOL );
   });
+}
+
+void sps_processor::convert_funds( const block_notification& note )
+{
+  if( !is_daily_maintenance_period( note.block.timestamp ) )
+    return;
+
+  db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& _dgpo )
+  {
+    _dgpo.next_daily_maintenance_time = note.block.timestamp + fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD );
+  } );
+
+  const auto &treasury_account = db.get_treasury();
+  if (treasury_account.balance.amount == 0) {
+    return;
+  }
+
+  const auto to_convert = asset(HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.balance.amount / HIVE_100_PERCENT, HIVE_SYMBOL);
+
+  const feed_history_object& fhistory = db.get_feed_history();
+  if( fhistory.current_median_history.is_null() )
+    return;
+
+  auto converted_hbd = to_convert * fhistory.current_median_history;
+  // Don't convert if the conversion would result in an amount lower than the dust threshold
+  if(converted_hbd < HIVE_MIN_PAYOUT_HBD )
+    return;
+
+  db.adjust_balance( treasury_account, -to_convert );
+  db.adjust_balance(treasury_account, converted_hbd );
+
+  db.adjust_supply( -to_convert );
+  db.adjust_supply( converted_hbd );
+
+  operation vop = sps_convert_operation(treasury_account.name, to_convert, converted_hbd );
+  db.push_virtual_operation( vop );
 }
 
 } } // namespace hive::chain

@@ -233,7 +233,7 @@ shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number( uint3
 
 void fork_database::set_head(shared_ptr<fork_item> h)
 {
-  _head = h;
+  _head = std::move( h );
 }
 
 void fork_database::remove(block_id_type id)

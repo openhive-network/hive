@@ -83,10 +83,10 @@ class wallet_api_impl;
 class wallet_api
 {
   public:
-    wallet_api( const wallet_data& initial_data, const hive::protocol::chain_id_type& _hive_chain_id, fc::api< remote_node_api > rapi );
+    wallet_api( const wallet_data& initial_data, const hive::protocol::chain_id_type& _hive_chain_id, const fc::api< remote_node_api >& rapi );
     virtual ~wallet_api();
 
-    bool copy_wallet_file( string destination_filename );
+    bool copy_wallet_file( const string& destination_filename );
 
 
     /** Returns a list of all commands supported by the wallet API.
@@ -145,7 +145,7 @@ class wallet_api
       * @param account Account to query routes
       * @param type Withdraw type type [incoming, outgoing, all]
       */
-    vector< database_api::api_withdraw_vesting_route_object > get_withdraw_routes( string account, condenser_api::withdraw_route_type type = condenser_api::all )const;
+    vector< database_api::api_withdraw_vesting_route_object > get_withdraw_routes( const string& account, condenser_api::withdraw_route_type type = condenser_api::all )const;
 
     /**
       *  Gets the account information for all accounts for which this wallet has a private key
@@ -179,7 +179,7 @@ class wallet_api
       * @param account_name the name of the account to provide information about
       * @returns the public account data stored in the blockchain
       */
-    condenser_api::api_account_object get_account( string account_name ) const;
+    condenser_api::api_account_object get_account( const string& account_name ) const;
 
     /** Returns the current wallet filename.
       *
@@ -202,7 +202,7 @@ class wallet_api
       *  @param password - the password to be used at key generation
       *  @return public key corresponding to generated private key, and private key in WIF format.
       */
-    pair<public_key_type,string>  get_private_key_from_password( string account, string role, string password )const;
+    pair<public_key_type,string>  get_private_key_from_password( const string& account, const string& role, const string& password )const;
 
 
     /**
@@ -238,7 +238,7 @@ class wallet_api
       * @param password the password previously set with \c set_password()
       * @ingroup Wallet Management
       */
-    void    unlock(string password);
+    void    unlock(const string& password);
 
     /** Sets a new password on the wallet.
       *
@@ -246,7 +246,7 @@ class wallet_api
       * execute this command.
       * @ingroup Wallet Management
       */
-    void    set_password(string password);
+    void    set_password(const string& password);
 
     /** Dumps all private keys owned by the wallet.
       *
@@ -316,7 +316,7 @@ class wallet_api
       *          this returns a raw string that may have null characters embedded
       *          in it
       */
-    string serialize_transaction(signed_transaction tx) const;
+    string serialize_transaction( const signed_transaction& tx) const;
 
     /** Imports a WIF Private Key into the wallet to be used to sign transactions by an account.
       *
@@ -324,7 +324,7 @@ class wallet_api
       *
       * @param wif_key the WIF Private Key to import
       */
-    bool import_key( string wif_key );
+    bool import_key( const string& wif_key );
 
     /** Transforms a brain key to reduce the chance of errors when re-entering the key from memory.
       *
@@ -347,7 +347,7 @@ class wallet_api
       *  @param json_meta JSON Metadata associated with the new account
       *  @param broadcast true if you wish to broadcast the transaction
       */
-    condenser_api::legacy_signed_transaction create_account( string creator, string new_account_name, string json_meta, bool broadcast );
+    condenser_api::legacy_signed_transaction create_account( const string& creator, const string& new_account_name, const string& json_meta, bool broadcast );
 
     /**
       * This method is used by faucets to create new accounts for other users which must
@@ -365,9 +365,9 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction create_account_with_keys(
-      string creator,
-      string newname,
-      string json_meta,
+      const string& creator,
+      const string& newname,
+      const string& json_meta,
       public_key_type owner,
       public_key_type active,
       public_key_type posting,
@@ -390,11 +390,11 @@ class wallet_api
       *  @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction create_account_delegated(
-      string creator,
-      condenser_api::legacy_asset hive_fee,
-      condenser_api::legacy_asset delegated_vests,
-      string new_account_name,
-      string json_meta,
+      const string& creator,
+      const condenser_api::legacy_asset& hive_fee,
+      const condenser_api::legacy_asset& delegated_vests,
+      const string& new_account_name,
+      const string& json_meta,
       bool broadcast );
 
     /**
@@ -417,11 +417,11 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction create_account_with_keys_delegated(
-      string creator,
-      condenser_api::legacy_asset hive_fee,
-      condenser_api::legacy_asset delegated_vests,
-      string newname,
-      string json_meta,
+      const string& creator,
+      const condenser_api::legacy_asset& hive_fee,
+      const condenser_api::legacy_asset& delegated_vests,
+      const string& newname,
+      const string& json_meta,
       public_key_type owner,
       public_key_type active,
       public_key_type posting,
@@ -440,8 +440,8 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction update_account(
-      string accountname,
-      string json_meta,
+      const string& accountname,
+      const string& json_meta,
       public_key_type owner,
       public_key_type active,
       public_key_type posting,
@@ -461,7 +461,7 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction.
       */
     condenser_api::legacy_signed_transaction update_account_auth_key(
-      string account_name,
+      const string& account_name,
       authority_type type,
       public_key_type key,
       weight_type weight,
@@ -480,9 +480,9 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction.
       */
     condenser_api::legacy_signed_transaction update_account_auth_account(
-      string account_name,
+      const string& account_name,
       authority_type type,
-      string auth_account,
+      const string& auth_account,
       weight_type weight,
       bool broadcast );
 
@@ -499,7 +499,7 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction update_account_auth_threshold(
-      string account_name,
+      const string& account_name,
       authority_type type,
       uint32_t threshold,
       bool broadcast );
@@ -512,8 +512,8 @@ class wallet_api
       * @param broadcast ture if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction update_account_meta(
-      string account_name,
-      string json_meta,
+      const string& account_name,
+      const string& json_meta,
       bool broadcast );
 
     /**
@@ -524,7 +524,7 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction update_account_memo_key(
-      string account_name,
+      const string& account_name,
       public_key_type key,
       bool broadcast );
 
@@ -538,9 +538,9 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
       condenser_api::legacy_signed_transaction delegate_vesting_shares(
-        string delegator,
-        string delegatee,
-        condenser_api::legacy_asset vesting_shares,
+        const string& delegator,
+        const string& delegatee,
+        const condenser_api::legacy_asset& vesting_shares,
         bool broadcast );
 
 
@@ -568,7 +568,7 @@ class wallet_api
       * @param owner_account the name or id of the witness account owner, or the id of the witness
       * @returns the information about the witness stored in the block chain
       */
-    optional< condenser_api::api_witness_object > get_witness(string owner_account);
+    optional< condenser_api::api_witness_object > get_witness(const string& owner_account);
 
     /** Returns conversion requests by an account
       *
@@ -576,7 +576,7 @@ class wallet_api
       *
       * @returns All pending conversion requests by account
       */
-    vector< condenser_api::api_convert_request_object > get_conversion_requests( string owner );
+    vector< condenser_api::api_convert_request_object > get_conversion_requests( const string& owner );
 
 
     /**
@@ -589,8 +589,8 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction.
       */
     condenser_api::legacy_signed_transaction update_witness(
-      string witness_name,
-      string url,
+      const string& witness_name,
+      const string& url,
       public_key_type block_signing_key,
       const condenser_api::api_chain_properties& props,
       bool broadcast = false);
@@ -611,8 +611,8 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction set_voting_proxy(
-      string account_to_modify,
-      string proxy,
+      const string& account_to_modify,
+      const string& proxy,
       bool broadcast = false);
 
     /**
@@ -627,8 +627,8 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction vote_for_witness(
-      string account_to_vote_with,
-      string witness_to_vote_for,
+      const string& account_to_vote_with,
+      const string& witness_to_vote_for,
       bool approve = true,
       bool broadcast = false);
 
@@ -642,10 +642,10 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction transfer(
-      string from,
-      string to,
-      condenser_api::legacy_asset amount,
-      string memo,
+      const string& from,
+      const string& to,
+      const condenser_api::legacy_asset& amount,
+      const string& memo,
       bool broadcast = false);
 
     /**
@@ -664,16 +664,16 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction escrow_transfer(
-      string from,
-      string to,
-      string agent,
+      const string& from,
+      const string& to,
+      const string& agent,
       uint32_t escrow_id,
-      condenser_api::legacy_asset hbd_amount,
-      condenser_api::legacy_asset hive_amount,
-      condenser_api::legacy_asset fee,
-      time_point_sec ratification_deadline,
-      time_point_sec escrow_expiration,
-      string json_meta,
+      const condenser_api::legacy_asset& hbd_amount,
+      const condenser_api::legacy_asset& hive_amount,
+      const condenser_api::legacy_asset& fee,
+      const time_point_sec& ratification_deadline,
+      const time_point_sec& escrow_expiration,
+      const string& json_meta,
       bool broadcast = false
     );
 
@@ -690,10 +690,10 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction escrow_approve(
-      string from,
-      string to,
-      string agent,
-      string who,
+      const string& from,
+      const string& to,
+      const string& agent,
+      const string& who,
       uint32_t escrow_id,
       bool approve,
       bool broadcast = false
@@ -710,10 +710,10 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction escrow_dispute(
-      string from,
-      string to,
-      string agent,
-      string who,
+      const string& from,
+      const string& to,
+      const string& agent,
+      const string& who,
       uint32_t escrow_id,
       bool broadcast = false
     );
@@ -732,14 +732,14 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction escrow_release(
-      string from,
-      string to,
-      string agent,
-      string who,
-      string receiver,
+      const string& from,
+      const string& to,
+      const string& agent,
+      const string& who,
+      const string& receiver,
       uint32_t escrow_id,
-      condenser_api::legacy_asset hbd_amount,
-      condenser_api::legacy_asset hive_amount,
+      const condenser_api::legacy_asset& hbd_amount,
+      const condenser_api::legacy_asset& hive_amount,
       bool broadcast = false
     );
 
@@ -754,19 +754,19 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction transfer_to_vesting(
-      string from,
-      string to,
-      condenser_api::legacy_asset amount,
+      const string& from,
+      const string& to,
+      const condenser_api::legacy_asset& amount,
       bool broadcast = false);
 
     /**
       *  Transfers into savings happen immediately, transfers from savings take 72 hours
       */
     condenser_api::legacy_signed_transaction transfer_to_savings(
-      string from,
-      string to,
-      condenser_api::legacy_asset amount,
-      string memo,
+      const string& from,
+      const string& to,
+      const condenser_api::legacy_asset& amount,
+      const string& memo,
       bool broadcast = false );
 
     /**
@@ -778,11 +778,11 @@ class wallet_api
       *  @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction transfer_from_savings(
-      string from,
+      const string& from,
       uint32_t request_id,
-      string to,
-      condenser_api::legacy_asset amount,
-      string memo,
+      const string& to,
+      const condenser_api::legacy_asset& amount,
+      const string& memo,
       bool broadcast = false );
 
     /**
@@ -791,7 +791,7 @@ class wallet_api
       *  @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction cancel_transfer_from_savings(
-      string from, uint32_t
+      const string& from, uint32_t
       request_id,
       bool broadcast = false );
 
@@ -804,8 +804,8 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction withdraw_vesting(
-      string from,
-      condenser_api::legacy_asset vesting_shares,
+      const string& from,
+      const condenser_api::legacy_asset& vesting_shares,
       bool broadcast = false );
 
     /**
@@ -821,8 +821,8 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction.
       */
     condenser_api::legacy_signed_transaction set_withdraw_vesting_route(
-      string from,
-      string to,
+      const string& from,
+      const string& to,
       uint16_t percent,
       bool auto_vest,
       bool broadcast = false );
@@ -836,8 +836,8 @@ class wallet_api
       *  @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction convert_hbd(
-      string from,
-      condenser_api::legacy_asset amount,
+      const string& from,
+      const condenser_api::legacy_asset& amount,
       bool broadcast = false );
 
     /**
@@ -849,8 +849,8 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction publish_feed(
-      string witness,
-      condenser_api::legacy_price exchange_rate,
+      const string& witness,
+      const condenser_api::legacy_price& exchange_rate,
       bool broadcast );
 
     /** Signs a transaction.
@@ -862,7 +862,7 @@ class wallet_api
       * @return the signed version of the transaction
       */
     condenser_api::legacy_signed_transaction sign_transaction(
-      condenser_api::legacy_signed_transaction tx,
+      const condenser_api::legacy_signed_transaction& tx,
       bool broadcast = false);
 
     /** Returns an uninitialized object representing a given blockchain operation.
@@ -889,7 +889,7 @@ class wallet_api
       * @param limit Maximum number of orders to return for bids and asks. Max is 1000.
       */
     condenser_api::get_order_book_return get_order_book( uint32_t limit = 1000 );
-    vector< condenser_api::api_limit_order_object > get_open_orders( string accountname );
+    vector< condenser_api::api_limit_order_object > get_open_orders( const string& accountname );
 
     /**
       *  Creates a limit order at the price amount_to_sell / min_to_receive and will deduct amount_to_sell from account
@@ -903,10 +903,10 @@ class wallet_api
       *  @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction create_order(
-      string owner,
+      const string& owner,
       uint32_t order_id,
-      condenser_api::legacy_asset amount_to_sell,
-      condenser_api::legacy_asset min_to_receive,
+      const condenser_api::legacy_asset& amount_to_sell,
+      const condenser_api::legacy_asset& min_to_receive,
       bool fill_or_kill,
       uint32_t expiration,
       bool broadcast );
@@ -919,7 +919,7 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction cancel_order(
-      string owner,
+      const string& owner,
       uint32_t orderid,
       bool broadcast );
 
@@ -936,13 +936,13 @@ class wallet_api
       *  @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction post_comment(
-      string author,
-      string permlink,
-      string parent_author,
-      string parent_permlink,
-      string title,
-      string body,
-      string json,
+      const string& author,
+      const string& permlink,
+      const string& parent_author,
+      const string& parent_permlink,
+      const string& title,
+      const string& body,
+      const string& json,
       bool broadcast );
 
     /**
@@ -955,9 +955,9 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction vote(
-      string voter,
-      string author,
-      string permlink,
+      const string& voter,
+      const string& author,
+      const string& permlink,
       int16_t weight,
       bool broadcast );
 
@@ -978,8 +978,8 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction request_account_recovery(
-      string recovery_account,
-      string account_to_recover,
+      const string& recovery_account,
+      const string& account_to_recover,
       authority new_authority,
       bool broadcast );
 
@@ -995,7 +995,7 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction recover_account(
-      string account_to_recover,
+      const string& account_to_recover,
       authority recent_authority,
       authority new_authority,
       bool broadcast );
@@ -1008,11 +1008,11 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction change_recovery_account(
-      string owner,
-      string new_recovery_account,
+      const string& owner,
+      const string& new_recovery_account,
       bool broadcast );
 
-    vector< database_api::api_owner_authority_history_object > get_owner_history( string account )const;
+    vector< database_api::api_owner_authority_history_object > get_owner_history( const string& account )const;
 
     /**
       *  Account operations have sequence numbers from 0 to N where N is the most recent operation. This method
@@ -1022,7 +1022,7 @@ class wallet_api
       *  @param from - the absolute sequence number, -1 means most recent, limit is the number of operations before from.
       *  @param limit - the maximum number of items that can be queried (0 to 1000], must be less than from
       */
-    map< uint32_t, condenser_api::api_operation_object > get_account_history( string account, uint32_t from, uint32_t limit );
+    map< uint32_t, condenser_api::api_operation_object > get_account_history( const string& account, uint32_t from, uint32_t limit );
 
 
     FC_TODO(Supplement API argument description)
@@ -1034,7 +1034,7 @@ class wallet_api
       *  @param what - a set of things to follow: posts, comments, votes, ignore
       *  @param broadcast true if you wish to broadcast the transaction
       */
-    condenser_api::legacy_signed_transaction follow( string follower, string following, set<string> what, bool broadcast );
+    condenser_api::legacy_signed_transaction follow( const string& follower, string following, set<string> what, bool broadcast );
 
 
     std::map<string,std::function<string(fc::variant,const fc::variants&)>> get_result_formatters() const;
@@ -1051,20 +1051,20 @@ class wallet_api
     /**
       *  Returns the encrypted memo if memo starts with '#' otherwise returns memo
       */
-    string get_encrypted_memo( string from, string to, string memo );
+    string get_encrypted_memo( const string& from, const string& to, const string& memo );
 
     /**
       * Returns the decrypted memo if possible given wallet's known private keys
       */
     string decrypt_memo( string memo );
 
-    condenser_api::legacy_signed_transaction decline_voting_rights( string account, bool decline, bool broadcast );
+    condenser_api::legacy_signed_transaction decline_voting_rights( const string& account, bool decline, bool broadcast );
 
     condenser_api::legacy_signed_transaction claim_reward_balance(
-      string account,
-      condenser_api::legacy_asset reward_hive,
-      condenser_api::legacy_asset reward_hbd,
-      condenser_api::legacy_asset reward_vests,
+      const string& account,
+      const condenser_api::legacy_asset& reward_hive,
+      const condenser_api::legacy_asset& reward_hbd,
+      const condenser_api::legacy_asset& reward_vests,
       bool broadcast );
 
     /**
@@ -1077,11 +1077,11 @@ class wallet_api
       * @param subject    - briefly description of proposal of its title,
       * @param url        - link to page with description of proposal.
       */
-    condenser_api::legacy_signed_transaction create_proposal( account_name_type creator,
-                  account_name_type receiver,
+    condenser_api::legacy_signed_transaction create_proposal( const account_name_type& creator,
+                  const account_name_type& receiver,
                   time_point_sec start_date,
                   time_point_sec end_date,
-                  condenser_api::legacy_asset daily_pay,
+                  const condenser_api::legacy_asset& daily_pay,
                   string subject,
                   string url,
                   bool broadcast );
@@ -1094,8 +1094,8 @@ class wallet_api
       */
     condenser_api::legacy_signed_transaction update_proposal(
                   int64_t proposal_id,
-                  account_name_type creator,
-                  condenser_api::legacy_asset daily_pay,
+                  const account_name_type& creator,
+                  const condenser_api::legacy_asset& daily_pay,
                   string subject,
                   string url,
                   bool broadcast );
@@ -1105,8 +1105,8 @@ class wallet_api
       * @param proposals - array with proposal ids,
       * @param approve   - set if proposal(s) should be approved or not.
       */
-    condenser_api::legacy_signed_transaction update_proposal_votes(account_name_type voter,
-                                              flat_set< int64_t > proposals,
+    condenser_api::legacy_signed_transaction update_proposal_votes(const account_name_type& voter,
+                                              const flat_set< int64_t >& proposals,
                                               bool approve,
                                               bool broadcast );
     /**
@@ -1148,8 +1148,8 @@ class wallet_api
       * @param deleter   - authorized account,
       * @param ids       - proposal ids to be removed.
       */
-    condenser_api::legacy_signed_transaction remove_proposal( account_name_type deleter,
-                                            flat_set< int64_t > ids,
+    condenser_api::legacy_signed_transaction remove_proposal( const account_name_type& deleter,
+                                            const flat_set< int64_t >& ids,
                                             bool broadcast );
 };
 

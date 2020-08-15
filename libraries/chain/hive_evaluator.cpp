@@ -1175,11 +1175,25 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
 
 void transfer_evaluator::do_apply( const transfer_operation& o )
 {
-  FC_TODO( "Remove is producing after HF 21" );
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
+  if ( _db.has_hardfork(HIVE_HARDFORK_0_24)  && o.amount.symbol == HIVE_SYMBOL && _db.is_treasury( o.to ) ) {
+      const auto &fhistory = _db.get_feed_history();
+
+      FC_ASSERT(!fhistory.current_median_history.is_null(), "Cannot send HIVE to ${s} because there is no price feed.", ("s", o.to ));
+
+      auto amount_to_transfer = o.amount * fhistory.current_median_history;
+
+      _db.adjust_balance(o.from, -o.amount);
+      _db.adjust_balance(o.to, amount_to_transfer);
+
+      _db.adjust_supply(-o.amount);
+
+      if (amount_to_transfer.amount > 0)
+        _db.adjust_supply(amount_to_transfer);
+
+      return;
+  } else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
-    FC_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ),
-      "Can only transfer HBD to ${s}", ("s", o.to ) );
+    FC_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ), "Can only transfer HBD or HIVE to ${s}", ("s", o.to ) );
   }
 
   _db.adjust_balance( o.from, -o.amount );

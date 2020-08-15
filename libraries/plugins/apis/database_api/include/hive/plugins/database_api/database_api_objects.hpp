@@ -226,6 +226,7 @@ struct api_dynamic_global_property_object
     hbd_start_percent( o.hbd_start_percent ),
     next_maintenance_time( o.next_maintenance_time ),
     last_budget_time( o.last_budget_time ),
+    next_daily_maintenance_time( o.next_daily_maintenance_time ),
     content_reward_percent( o.content_reward_percent ),
     vesting_reward_percent( o.vesting_reward_percent ),
     sps_fund_percent( o.sps_fund_percent ),
@@ -271,6 +272,7 @@ struct api_dynamic_global_property_object
   uint16_t                        hbd_start_percent;
   time_point_sec                  next_maintenance_time;
   time_point_sec                  last_budget_time;
+  time_point_sec                  next_daily_maintenance_time;
   uint16_t                        content_reward_percent;
   uint16_t                        vesting_reward_percent;
   uint16_t                        sps_fund_percent;
@@ -1056,7 +1058,7 @@ FC_REFLECT( hive::plugins::database_api::api_dynamic_global_property_object,
           (current_aslot)(recent_slots_filled)(participation_count)(last_irreversible_block_num)
           (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)
           (available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)(next_maintenance_time)
-          (last_budget_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)
+          (last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)
           (sps_interval_ledger)(downvote_pool_percent)
 #ifdef HIVE_ENABLE_SMT
           (smt_creation_fee)

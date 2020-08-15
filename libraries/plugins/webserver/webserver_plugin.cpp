@@ -29,7 +29,6 @@ namespace hive { namespace plugins { namespace webserver {
 
 namespace asio = boost::asio;
 
-using std::map;
 using std::string;
 using boost::optional;
 using boost::asio::ip::tcp;
@@ -126,7 +125,7 @@ class webserver_plugin_impl
     void start_webserver();
     void stop_webserver();
 
-    void handle_ws_message( websocket_server_type*, connection_hdl, detail::websocket_server_type::message_ptr );
+    void handle_ws_message( websocket_server_type*, connection_hdl, const detail::websocket_server_type::message_ptr& );
     void handle_http_message( websocket_server_type*, connection_hdl );
     void handle_http_request( websocket_local_server_type*, connection_hdl );
 
@@ -293,9 +292,9 @@ void webserver_plugin_impl::stop_webserver()
   }
 }
 
-void webserver_plugin_impl::handle_ws_message( websocket_server_type* server, connection_hdl hdl, detail::websocket_server_type::message_ptr msg )
+void webserver_plugin_impl::handle_ws_message( websocket_server_type* server, connection_hdl hdl, const detail::websocket_server_type::message_ptr& msg )
 {
-  auto con = server->get_con_from_hdl( hdl );
+  auto con = server->get_con_from_hdl( std::move( hdl ) );
 
   thread_pool_ios.post( [con, msg, this]()
   {
@@ -333,7 +332,7 @@ void webserver_plugin_impl::handle_ws_message( websocket_server_type* server, co
 
 void webserver_plugin_impl::handle_http_message( websocket_server_type* server, connection_hdl hdl )
 {
-  auto con = server->get_con_from_hdl( hdl );
+  auto con = server->get_con_from_hdl( std::move( hdl ) );
   con->defer_http_response();
 
   thread_pool_ios.post( [con, this]()
@@ -378,7 +377,7 @@ void webserver_plugin_impl::handle_http_message( websocket_server_type* server, 
 }
 
 void webserver_plugin_impl::handle_http_request(websocket_local_server_type* server, connection_hdl hdl ) {
-  auto con = server->get_con_from_hdl( hdl );
+  auto con = server->get_con_from_hdl( std::move( hdl ) );
   con->defer_http_response();
 
   thread_pool_ios.post( [con, this]()

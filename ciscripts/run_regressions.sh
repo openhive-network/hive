@@ -51,8 +51,8 @@ echo "                                                                          
 
 
 
-execute_unittest_group plugin_test
-execute_unittest_group chain_test
+execute_exactly_one_test all_plugin_tests
+execute_exactly_one_test all_chain_tests
 
 execute_hive_functional
 

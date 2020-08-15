@@ -43,6 +43,10 @@
 /// Allows to limit number of total produced blocks.
 #define TESTNET_BLOCK_LIMIT                   (3000000)
 
+#define HIVE_PROPOSAL_MAINTENANCE_PERIOD          3600
+#define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*60*24*1) // 1 day
+#define HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD           (60*60) /// 1 hour
+
 #else // IS LIVE HIVE NETWORK
 
 #define HIVE_BLOCKCHAIN_VERSION               ( version(0, 24, 0) )
@@ -74,6 +78,10 @@
 #define HIVE_INIT_SUPPLY                      int64_t(0)
 #define HIVE_HBD_INIT_SUPPLY                  int64_t(0)
 
+#define HIVE_PROPOSAL_MAINTENANCE_PERIOD           3600
+#define HIVE_PROPOSAL_MAINTENANCE_CLEANUP          (60*60*24*1) /// 1 day
+#define HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD           HIVE_ONE_DAY_SECONDS
+
 #endif
 
 #define VESTS_SYMBOL  (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_VESTS ) )
@@ -84,6 +92,7 @@
 
 #define HIVE_100_PERCENT                      10000
 #define HIVE_1_PERCENT                        (HIVE_100_PERCENT/100)
+#define HIVE_1_BASIS_POINT                    (HIVE_100_PERCENT/10000) // 0.01%
 
 #define HIVE_BLOCK_INTERVAL                   3
 #define HIVE_BLOCKS_PER_YEAR                  (365*24*60*60/HIVE_BLOCK_INTERVAL)
@@ -354,14 +363,14 @@
 /// HIVE PROPOSAL SYSTEM support
 
 #define HIVE_TREASURY_FEE                          (10 * HIVE_BLOCKCHAIN_PRECISION)
-#define HIVE_PROPOSAL_MAINTENANCE_PERIOD           3600
-#define HIVE_PROPOSAL_MAINTENANCE_CLEANUP          (60*60*24*1) /// 1 day
 #define HIVE_PROPOSAL_SUBJECT_MAX_LENGTH           80
 /// Max number of IDs passed at once to the update_proposal_voter_operation or remove_proposal_operation.
 #define HIVE_PROPOSAL_MAX_IDS_NUMBER               5
 #define HIVE_PROPOSAL_FEE_INCREASE_DAYS            60
 #define HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC        (60*60*24*HIVE_PROPOSAL_FEE_INCREASE_DAYS) /// 60 days
 #define HIVE_PROPOSAL_FEE_INCREASE_AMOUNT          (1 * HIVE_BLOCKCHAIN_PRECISION)
+#define HIVE_PROPOSAL_CONVERSION_RATE             (5 * HIVE_1_BASIS_POINT)
+
 
 #ifdef HIVE_ENABLE_SMT
 

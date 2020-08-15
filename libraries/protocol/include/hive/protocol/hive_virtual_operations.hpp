@@ -238,6 +238,16 @@ namespace hive { namespace protocol {
     asset additional_funds;
   };
 
+  struct sps_convert_operation : public virtual_operation
+  {
+    sps_convert_operation() {}
+    sps_convert_operation(account_name_type f, const asset& c, const asset& a) : fund_account(f), hive_amount_in( c ), hbd_amount_out( a ) {}
+
+    account_name_type fund_account;
+    asset hive_amount_in;
+    asset hbd_amount_out;
+  };
+
   // TODO : Fix legacy error itr != to_full_tag.end(): Invalid operation name: hardfork_hive {"n":"hardfork_hive"}
   struct hardfork_hive_operation : public virtual_operation
   {
@@ -290,5 +300,6 @@ FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared
 FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
 FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
 FC_REFLECT( hive::protocol::sps_fund_operation, (fund_account)(additional_funds) )
+FC_REFLECT( hive::protocol::sps_convert_operation, (hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )

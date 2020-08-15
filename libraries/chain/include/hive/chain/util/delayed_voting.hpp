@@ -43,7 +43,7 @@ class delayed_voting
     delayed_voting( chain::database& _db ) : db( _db ){}
 
     void add_delayed_value( const account_object& account, const time_point_sec& head_time, const ushare_type val );
-    void add_votes( opt_votes_update_data_items& items, const bool withdraw_executor, const share_type val, const account_object& account );
+    void add_votes( opt_votes_update_data_items& items, const bool withdraw_executor, const share_type& val, const account_object& account );
     fc::optional< ushare_type > update_votes( const opt_votes_update_data_items& items, const time_point_sec& head_time );
 
     void run( const fc::time_point_sec& head_time );
