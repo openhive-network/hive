@@ -998,9 +998,7 @@ int64_t sps_proposal_database_fixture::create_proposal( std::string creator, std
   return itr->proposal_id;
 }
 
-void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::string creator, 
-                  asset daily_pay, std::string subject, std::string permlink, 
-                  const fc::ecc::private_key& key )
+void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key)
 {
   signed_transaction tx;
   update_proposal_operation op;
@@ -1068,9 +1066,9 @@ void sps_proposal_database_fixture::remove_proposal(account_name_type _deleter, 
 
 bool sps_proposal_database_fixture::find_vote_for_proposal(const std::string& _user, int64_t _proposal_id)
 {
-    const auto& proposal_vote_idx = db->get_index< proposal_vote_index >().indices(). template get< by_voter_proposal >();
-    auto found_vote = proposal_vote_idx.find( boost::make_tuple(_user, _proposal_id ) );
-    return found_vote != proposal_vote_idx.end();
+  const auto& proposal_vote_idx = db->get_index< proposal_vote_index >().indices(). template get< by_voter_proposal >();
+  auto found_vote = proposal_vote_idx.find( boost::make_tuple(_user, _proposal_id ) );
+  return found_vote != proposal_vote_idx.end();
 }
 
 uint64_t sps_proposal_database_fixture::get_nr_blocks_until_maintenance_block()
