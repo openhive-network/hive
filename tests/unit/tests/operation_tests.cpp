@@ -1442,22 +1442,25 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     BOOST_REQUIRE( new_bob.get_balance().amount.value == ASSET( "10.000 TESTS" ).amount.value );
     validate_database();
 
-    BOOST_TEST_MESSAGE( "--- Test failure transfering HIVE to treasury" );
+    BOOST_TEST_MESSAGE( "--- Test successfully transfering HIVE to treasury and converting it to HBD" );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+    auto treasury_hbd_balance = db->get_treasury().get_hbd_balance();
     op.from = "bob";
     op.to = db->get_treasury_name();
     op.amount = ASSET( "1.000 TESTS" );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.signatures.clear();
     tx.operations.clear();
     tx.operations.push_back( op );
     sign( tx, bob_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx ), fc::exception );
-
-    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
-    BOOST_REQUIRE( db->get_treasury().get_balance() == ASSET( "0.000 TESTS" ) );
+    db->push_transaction( tx );
+    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "9.000 TESTS" ) );
+    BOOST_REQUIRE( db->get_treasury().get_hbd_balance() == treasury_hbd_balance + ASSET( "1.000 TBD" ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test transfering HBD to treasury" );
-    auto treasury_hbd_balance = db->get_treasury().get_hbd_balance();
+    treasury_hbd_balance = db->get_treasury().get_hbd_balance();
     op.amount = ASSET( "1.000 TBD" );
     tx.signatures.clear();
     tx.operations.clear();

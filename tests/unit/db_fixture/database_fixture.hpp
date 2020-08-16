@@ -374,6 +374,7 @@ struct sps_proposal_database_fixture : public virtual clean_database_fixture
   bool find_vote_for_proposal(const std::string& _user, int64_t _proposal_id);
 
   uint64_t get_nr_blocks_until_maintenance_block();
+  uint64_t get_nr_blocks_until_daily_maintenance_block();
 
   void post_comment( std::string _authro, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key);
 

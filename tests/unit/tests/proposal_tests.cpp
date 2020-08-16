@@ -3241,4 +3241,47 @@ BOOST_AUTO_TEST_CASE( generating_payments )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: converting hive to hbd in the dhf" );
+    const auto& dgpo = db->get_dynamic_global_properties();
+    const account_object& _treasury = db->get_treasury();
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+
+    auto before_inflation_treasury_hbd_balance =  _treasury.get_hbd_balance();
+    generate_block();
+    auto treasury_per_block_inflation =  _treasury.get_hbd_balance() - before_inflation_treasury_hbd_balance;
+
+    FUND( db->get_treasury_name(), ASSET( "100.000 TESTS" ) );
+    generate_block();
+
+    auto before_treasury_hbd_balance =  _treasury.get_hbd_balance();
+    auto before_treasury_hive_balance =  _treasury.get_balance();
+
+    const auto hive_converted = asset(HIVE_PROPOSAL_CONVERSION_RATE * before_treasury_hive_balance.amount / HIVE_100_PERCENT, HIVE_SYMBOL);
+    // Same because of the 1:1 tests to tbd ratio
+    const auto hbd_converted = asset(hive_converted.amount, HBD_SYMBOL);
+    // Generate until the next daily maintenance
+    auto next_block = get_nr_blocks_until_daily_maintenance_block();
+    auto before_daily_maintenance_time = dgpo.next_daily_maintenance_time;
+    generate_blocks( next_block - 1);
+
+    auto treasury_hbd_inflation =  _treasury.get_hbd_balance() - before_treasury_hbd_balance;
+    generate_block();
+
+    treasury_hbd_inflation += treasury_per_block_inflation;
+    auto after_daily_maintenance_time = dgpo.next_daily_maintenance_time;
+    auto after_treasury_hbd_balance =  _treasury.get_hbd_balance();
+    auto after_treasury_hive_balance =  _treasury.get_balance();
+
+    BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation - hbd_converted );
+    BOOST_REQUIRE( before_treasury_hive_balance == after_treasury_hive_balance + hive_converted );
+    BOOST_REQUIRE( before_daily_maintenance_time == after_daily_maintenance_time - fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD )  );
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()

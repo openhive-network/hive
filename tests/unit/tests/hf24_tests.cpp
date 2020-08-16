@@ -50,24 +50,6 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
-    //check transfer of non-HBD
-    {
-      transfer_operation op;
-      op.from = "alice";
-      op.to = OBSOLETE_TREASURY_ACCOUNT;
-      op.amount = ASSET( "1.000 TESTS" );
-      tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception ); //still blocked even though old is no longer active treasury
-
-      tx.clear();
-      op.to = NEW_HIVE_TREASURY_ACCOUNT;
-      tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception ); //blocked for new treasury as well
-    }
-    tx.clear();
-
     //check vesting of non-HBD
     {
       transfer_to_vesting_operation op;
@@ -308,6 +290,31 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       BOOST_REQUIRE_EQUAL( treasury.get_vesting().amount.value, 0 );
       BOOST_REQUIRE_EQUAL( treasury.get_vest_rewards().amount.value, 0 );
     }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( treasury_debt_ratio )
+{
+  try
+  {
+    ACTORS((alice))
+    BOOST_TEST_MESSAGE( "After HF24 funds in the treasury don't count towards the HBD debt ratio" );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "10.000 TESTS" ) ) );
+    generate_block();
+    auto& dgpo = db->get_dynamic_global_properties();
+    const auto before_hbd_print_rate = dgpo.hbd_print_rate;
+
+    FUND("alice", ASSET( "1000000.000 TBD" ));
+    const auto during_hbd_print_rate = dgpo.hbd_print_rate;
+
+    transfer( "alice", db->get_treasury_name(), asset( 1000000000, HBD_SYMBOL ) );
+    generate_block();
+    const auto after_hbd_print_rate = dgpo.hbd_print_rate;
+
+    BOOST_REQUIRE( after_hbd_print_rate == before_hbd_print_rate );
+    BOOST_REQUIRE( after_hbd_print_rate != during_hbd_print_rate );
+    database_fixture::validate_database();
   }
   FC_LOG_AND_RETHROW()
 }

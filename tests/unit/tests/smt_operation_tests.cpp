@@ -3077,6 +3077,8 @@ BOOST_AUTO_TEST_CASE( smt_transfer_apply )
 
     BOOST_REQUIRE( db->get_balance( "alice", symbol ) == asset( 5000, symbol ) );
     BOOST_REQUIRE( db->get_balance( "bob", symbol ) == asset( 5000, symbol ) );
+    tx.signatures.clear();
+    tx.operations.clear();
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Generating a block" );
@@ -3086,7 +3088,28 @@ BOOST_AUTO_TEST_CASE( smt_transfer_apply )
     BOOST_REQUIRE( db->get_balance( "bob", symbol ) == asset( 5000, symbol ) );
     validate_database();
 
+    BOOST_TEST_MESSAGE( "--- Test transfer to old treasury account" );
+    op.to = OBSOLETE_TREASURY_ACCOUNT;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception ); //still blocked even though old is no longer active treasury
+    tx.signatures.clear();
+    tx.operations.clear();
+    validate_database();
+
+    BOOST_TEST_MESSAGE( "--- Test transfer to new treasury account" );
+    op.to = NEW_HIVE_TREASURY_ACCOUNT;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+    tx.signatures.clear();
+    tx.operations.clear();
+    validate_database();
+
     BOOST_TEST_MESSAGE( "--- Test emptying an account" );
+    op.to = "bob";
     tx.signatures.clear();
     tx.operations.clear();
     tx.operations.push_back( op );
