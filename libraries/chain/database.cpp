@@ -61,7 +61,7 @@ long hf24_time()
 #ifdef IS_TEST_NET
     1588334400; /// Friday, 1 May 2020 12:00:00 GMT
 #else
-    1593604800; // Wednesday, 1 July 2020 12:00:00 GMT
+    1604836800; // Sunday, 8 November 2020 12:00:00 GMT
 #endif /// IS_TEST_NET
   const char* value = getenv("HIVE_HF24_TIME");
   if(value != nullptr)
