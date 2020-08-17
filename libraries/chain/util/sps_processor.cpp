@@ -29,7 +29,7 @@ bool sps_processor::is_maintenance_period( const time_point_sec& head_time ) con
 bool sps_processor::is_daily_maintenance_period( const time_point_sec& head_time ) const
 {
   /// No DHF conversion until HF24 !
-  return db.has_hardfork(HIVE_HARDFORK_0_24) && db.get_dynamic_global_properties().next_daily_maintenance_time <= head_time;
+  return db.has_hardfork(HIVE_HARDFORK_1_24) && db.get_dynamic_global_properties().next_daily_maintenance_time <= head_time;
 }
 
 void sps_processor::remove_proposals( const time_point_sec& head_time )
