@@ -756,7 +756,7 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
   */
   if( !comment_cashout )
   {
-    FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_24 ), "Updating parameters for comment that is paid out is forbidden." );
+    FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_1_24 ), "Updating parameters for comment that is paid out is forbidden." );
     return;
   }
 
@@ -1175,7 +1175,7 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
 
 void transfer_evaluator::do_apply( const transfer_operation& o )
 {
-  if ( _db.has_hardfork(HIVE_HARDFORK_0_24) && o.amount.symbol == HIVE_SYMBOL && _db.is_treasury( o.to ) ) {
+  if ( _db.has_hardfork(HIVE_HARDFORK_1_24) && o.amount.symbol == HIVE_SYMBOL && _db.is_treasury( o.to ) ) {
     const auto &fhistory = _db.get_feed_history();
 
     FC_ASSERT(!fhistory.current_median_history.is_null(), "Cannot send HIVE to ${s} because there is no price feed.", ("s", o.to ));
@@ -1220,7 +1220,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
     Therefore an idea is based on voting deferring. Default value is 30 days.
     This range of time is enough long to defeat/block potential malicious intention.
   */
-  if( _db.has_hardfork( HIVE_HARDFORK_0_24 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
     asset new_vesting = _db.adjust_account_vesting_balance( to_account, o.amount, false/*to_reward_balance*/, []( asset vests_created ) {} );
 
@@ -1925,7 +1925,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   else
   {
-    FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_24 ), "Votes evaluating for comment that is paid out is forbidden." );
+    FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_1_24 ), "Votes evaluating for comment that is paid out is forbidden." );
   }
 
   if( !comment_cashout || _db.calculate_discussion_payout_time( *comment_cashout ) == fc::time_point_sec::maximum() )

@@ -214,7 +214,7 @@ void database::open( const open_args& args )
     with_read_lock( [&]()
     {
       const auto& hardforks = get_hardfork_property_object();
-      if (hardforks.last_hardfork >= HIVE_HARDFORK_0_24)
+      if (hardforks.last_hardfork >= HIVE_HARDFORK_1_24)
       {
         ilog("Loaded blockchain which had already processed hardfork 24, setting Hive chain id");
         set_chain_id(HIVE_CHAIN_ID);
@@ -2162,7 +2162,7 @@ void database::clear_account( const account_object& account,
       a.to_withdraw = 0;
       a.withdrawn = 0;
 
-      if( has_hardfork( HIVE_HARDFORK_0_24 ) )
+      if( has_hardfork( HIVE_HARDFORK_1_24 ) )
       {
         a.delayed_votes.clear();
         a.sum_delayed_votes = 0;
@@ -2254,7 +2254,7 @@ void database::clear_account( const account_object& account,
   }
 
   // Touch SDB balances (to be sure all interests are added to balances)
-  if( has_hardfork( HIVE_HARDFORK_0_24 ) )
+  if( has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
     adjust_balance( account, asset( 0, HBD_SYMBOL ) );
     adjust_savings_balance( account, asset( 0, HBD_SYMBOL ) );
@@ -2323,7 +2323,7 @@ void database::process_proposals( const block_notification& note )
 
 void database::process_delayed_voting( const block_notification& note )
 {
-  if( has_hardfork( HIVE_HARDFORK_0_24 ) )
+  if( has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
     delayed_voting dv( *this );
     dv.run( note.block.timestamp );
@@ -2389,7 +2389,7 @@ void database::process_vesting_withdrawals()
     optional< delayed_voting > dv;
     delayed_voting::opt_votes_update_data_items _votes_update_data_items;
 
-    if( has_hardfork( HIVE_HARDFORK_0_24 ) )
+    if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
       dv = delayed_voting( *this );
       _votes_update_data_items = delayed_voting::votes_update_data_items();
@@ -2429,7 +2429,7 @@ void database::process_vesting_withdrawals()
 
             if( auto_vest_mode )
             {
-              if( has_hardfork( HIVE_HARDFORK_0_24 ) )
+              if( has_hardfork( HIVE_HARDFORK_1_24 ) )
               {
                 FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
 
@@ -2470,7 +2470,7 @@ void database::process_vesting_withdrawals()
     operation vop = fill_vesting_withdraw_operation( from_account.name, from_account.name, asset( to_convert, VESTS_SYMBOL ), converted_hive );
     pre_push_virtual_operation( vop );
 
-    if( has_hardfork( HIVE_HARDFORK_0_24 ) )
+    if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
       FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
 
@@ -2504,7 +2504,7 @@ void database::process_vesting_withdrawals()
       o.total_vesting_shares.amount -= to_convert;
     });
 
-    if( has_hardfork( HIVE_HARDFORK_0_24 ) )
+    if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
       FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
 
@@ -4686,7 +4686,7 @@ void database::update_virtual_supply()
     {
       uint16_t percent_hbd = 0;
 
-      if( has_hardfork( HIVE_HARDFORK_0_24 ) )
+      if( has_hardfork( HIVE_HARDFORK_1_24 ) )
       {
         // Removing the hbd in the treasury from the debt ratio calculations
         const auto &treasury_account = get_treasury();
@@ -5560,13 +5560,13 @@ void database::init_hardforks()
   FC_ASSERT( HIVE_HARDFORK_0_23 == 23, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_0_23 ] = fc::time_point_sec( HIVE_HARDFORK_0_23_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_0_23 ] = HIVE_HARDFORK_0_23_VERSION;
-  FC_ASSERT( HIVE_HARDFORK_0_24 == 24, "Invalid hardfork configuration" );
-  _hardfork_versions.times[ HIVE_HARDFORK_0_24 ] = fc::time_point_sec( HIVE_HARDFORK_0_24_TIME );
-  _hardfork_versions.versions[ HIVE_HARDFORK_0_24 ] = HIVE_HARDFORK_0_24_VERSION;
+  FC_ASSERT( HIVE_HARDFORK_1_24 == 24, "Invalid hardfork configuration" );
+  _hardfork_versions.times[ HIVE_HARDFORK_1_24 ] = fc::time_point_sec( HIVE_HARDFORK_1_24_TIME );
+  _hardfork_versions.versions[ HIVE_HARDFORK_1_24 ] = HIVE_HARDFORK_1_24_VERSION;
 #ifdef IS_TEST_NET
-  FC_ASSERT( HIVE_HARDFORK_0_25 == 25, "Invalid hardfork configuration" );
-  _hardfork_versions.times[ HIVE_HARDFORK_0_25 ] = fc::time_point_sec( HIVE_HARDFORK_0_25_TIME );
-  _hardfork_versions.versions[ HIVE_HARDFORK_0_25 ] = HIVE_HARDFORK_0_25_VERSION;
+  FC_ASSERT( HIVE_HARDFORK_1_25 == 25, "Invalid hardfork configuration" );
+  _hardfork_versions.times[ HIVE_HARDFORK_1_25 ] = fc::time_point_sec( HIVE_HARDFORK_1_25_TIME );
+  _hardfork_versions.versions[ HIVE_HARDFORK_1_25 ] = HIVE_HARDFORK_1_25_VERSION;
 #endif
 
   const auto& hardforks = get_hardfork_property_object();
@@ -5954,7 +5954,7 @@ void database::apply_hardfork( uint32_t hardfork )
       }
       break;
     }
-    case HIVE_HARDFORK_0_24:
+    case HIVE_HARDFORK_1_24:
     {
       restore_accounts( _hf23_items, hardforkprotect::get_restored_accounts() );
       set_chain_id(HIVE_CHAIN_ID);
