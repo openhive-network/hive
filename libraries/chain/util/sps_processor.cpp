@@ -28,7 +28,8 @@ bool sps_processor::is_maintenance_period( const time_point_sec& head_time ) con
 
 bool sps_processor::is_daily_maintenance_period( const time_point_sec& head_time ) const
 {
-  return db.get_dynamic_global_properties().next_daily_maintenance_time <= head_time;
+  /// No DHF conversion until HF24 !
+  return db.has_hardfork(HIVE_HARDFORK_0_24) && db.get_dynamic_global_properties().next_daily_maintenance_time <= head_time;
 }
 
 void sps_processor::remove_proposals( const time_point_sec& head_time )
@@ -337,7 +338,7 @@ void sps_processor::record_funding( const block_notification& note )
 
 void sps_processor::convert_funds( const block_notification& note )
 {
-  if( !is_daily_maintenance_period( note.block.timestamp ) )
+  if( !is_daily_maintenance_period( note.block.timestamp ))
     return;
 
   db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& _dgpo )
