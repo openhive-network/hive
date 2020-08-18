@@ -1785,6 +1785,9 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
         c.total_vote_weight += max_vote_weight;
       });
     }
+
+    vop.total_vote_weight = comment_cashout->total_vote_weight;
+
     if( !_db.has_hardfork( HIVE_HARDFORK_0_17__774) )
       _db.adjust_rshares2( old_rshares, new_rshares );
 
@@ -1890,6 +1893,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     });
 
     effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
+    vop.total_vote_weight = comment_cashout->total_vote_weight;
 
     _db.modify( *itr, [&]( comment_vote_object& cv )
     {
@@ -2180,9 +2184,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     vop.weight = newVote.weight;
     vop.rshares = newVote.rshares;
 
-    _db.push_virtual_operation(vop);
-
-
     if( max_vote_weight ) // Optimization
     {
       _db.modify( *comment_cashout, [&]( comment_cashout_object& cc )
@@ -2190,6 +2191,10 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         cc.total_vote_weight += max_vote_weight;
       });
     }
+
+    vop.total_vote_weight = comment_cashout->total_vote_weight;
+
+    _db.push_virtual_operation(vop);
   }
   else
   {
@@ -2284,6 +2289,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     });
 
     effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
+    vop.total_vote_weight = comment_cashout->total_vote_weight;
     vop.weight = vote.weight;
     vop.rshares = vote.rshares;
     _db.push_virtual_operation(vop);
