@@ -269,9 +269,9 @@ namespace hive { namespace protocol {
       FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT, "maximum_block_size smaller than minimum max block size" );
     }
 
-    itr = props.find( "hbd_interest_rate" );
+    itr = props.find( "sbd_interest_rate" );
     if( itr == props.end() )
-      itr = props.find( "sbd_interest_rate" );
+      itr = props.find( "hbd_interest_rate" );
 
     if( itr != props.end() )
     {
@@ -289,9 +289,9 @@ namespace hive { namespace protocol {
       FC_UNUSED( signing_key ); // This tests the deserialization of the key
     }
 
-    itr = props.find( "hbd_exchange_rate" );
+    itr = props.find( "sbd_exchange_rate" );
     if( itr == props.end() )
-      itr = props.find( "sbd_exchange_rate" );
+      itr = props.find( "hbd_exchange_rate" );
 
     if( itr != props.end() )
     {
