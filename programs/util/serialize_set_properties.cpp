@@ -52,6 +52,12 @@ class serialize_member_visitor
         return;
 
       vector<char> v = fc::raw::pack_to_vector( *(_in.*member) );
+      if(strcmp("hbd_interest_rate", name) == 0)
+        name = "sbd_interest_rate";
+      else
+      if(strcmp("hbd_exchange_rate", name) == 0)
+        name = "sbd_exchange_rate";
+
       _out.emplace( name, std::move( v ) );
     }
 
