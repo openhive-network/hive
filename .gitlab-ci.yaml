@@ -95,7 +95,6 @@ beem_tests:
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
-    - pip3 install --user tox
     - cd tests/functional/
     - tox -e beem_dhf
     - tox -e hived_hybrid_operations
@@ -119,7 +118,6 @@ list_proposals_tests:
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
-    - pip3 install --user tox
     - cd tests/functional/
     - tox -e list_proposals
   artifacts:
@@ -141,7 +139,6 @@ hived_options_tests:
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
-    - pip3 install --user tox
     - cd tests/functional/
     - tox -e hived_options
   tags:
