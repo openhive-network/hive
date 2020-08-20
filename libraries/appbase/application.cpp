@@ -186,7 +186,8 @@ void application::set_program_options()
       ("version,v", "Print version information.")
       ("dump-config", "Dump configuration and exit")
       ("data-dir,d", bpo::value<bfs::path>(), data_dir_ss.str().c_str() )
-      ("config,c", bpo::value<bfs::path>()->default_value( "config.ini" ), "Configuration file name relative to data-dir");
+      ("config,c", bpo::value<bfs::path>()->default_value( "config.ini" ), "Configuration file name relative to data-dir")
+      ("completion", "Generate completion file for bash");
 
   my->_cfg_options.add(app_cfg_opts);
   my->_app_options.add(app_cfg_opts);
@@ -214,6 +215,29 @@ void application::set_program_options()
   }
 }
 
+void application::generate_completion_file(const options_description& od) const
+{
+  std::ofstream file{ "hive-completion.bash" };
+  if( file.good() )
+  {
+    file << "#!/bin/bash" << std::endl;
+    file << R"(
+
+# if you want to have completion everywhere, execute theese commands
+# ln $PWD/hived-completion.bash $HOME/.local/
+# echo "source $HOME/.local/hived-completion.bash" >> $HOME/.bashrc
+# source $HOME/.bashrc
+# Make sure, that hived is installed (Ex. `sudo install hived /usr/bin/hived`)
+
+    )" << std::endl;
+    file << "complete -f -W \"";
+    for( const auto& option : od.options() )
+      file << option->canonical_display_name(1) << " ";
+    file << "\" hived" << std::endl;
+  }
+  file.close();
+}
+
 bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*> autostart_plugins)
 {
   try
@@ -229,6 +253,12 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
     if( my->_args.count( "version" ) )
     {
       cout << version_info << "\n";
+      return false;
+    }
+
+    if( my->_args.count("completion") )
+    {
+      generate_completion_file( my->_app_options );
       return false;
     }
 

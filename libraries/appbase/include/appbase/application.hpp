@@ -175,6 +175,7 @@ namespace appbase {
       std::vector< std::string >                         default_plugins;
 
       void set_program_options();
+	  void generate_completion_file(const options_description&) const;
       void write_default_config( const bfs::path& cfg_file );
       std::unique_ptr< class application_impl > my;
 
