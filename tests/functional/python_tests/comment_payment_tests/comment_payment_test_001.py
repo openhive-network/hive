@@ -39,7 +39,7 @@ if not logger.hasHandlers():
 try:
     from beem import Hive
 except Exception as ex:
-    logger.error("beem library is not installed.")
+    logger.exception("beem library is not installed.")
     sys.exit(1)
 
 def print_comment_rewards(node_client, accounts):
@@ -214,7 +214,7 @@ if __name__ == '__main__':
             if node is not None:
                 node.stop_hive_node()
     except Exception as ex:
-        logger.error("Exception: {}".format(ex))
+        logger.exception("Exception: {}".format(ex))
         if node is not None: 
             node.stop_hive_node()
         sys.exit(1)

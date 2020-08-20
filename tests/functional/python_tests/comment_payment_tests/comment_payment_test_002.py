@@ -39,7 +39,7 @@ if not logger.hasHandlers():
 try:
     from beem import Hive
 except Exception as ex:
-    logger.error("beem library is not installed.")
+    logger.exception("beem library is not installed.")
     sys.exit(1)
 
 def compare_files_by_line(file1, file2):
@@ -55,7 +55,7 @@ def compare_files_by_line(file1, file2):
     logger.info("OK. Compared {} lines.".format(line_cnt))
     return True
   except Exception as ex:
-    logger.info("Exception: {}".format(ex))
+    logger.exception("Exception: {}".format(ex))
     return False
 
 def prepare_work_dir(work_dir_path, block_log_path, config_file_path, overwrite = False):

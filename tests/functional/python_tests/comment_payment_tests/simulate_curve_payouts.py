@@ -39,7 +39,7 @@ if not logger.hasHandlers():
 try:
     from beem import Hive
 except Exception as ex:
-    logger.error("beem library is not installed.")
+    logger.exception("beem library is not installed.")
     sys.exit(1)
 
 def prepare_work_dir(work_dir_path, block_log_path, config_file_path):
