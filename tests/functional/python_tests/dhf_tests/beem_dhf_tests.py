@@ -42,7 +42,7 @@ if not logger.hasHandlers():
 try:
     from beem import Hive
 except Exception as ex:
-    print("beem library is not installed.")
+    logger.exception("beem library is not installed.")
     sys.exit(1)
 
 @junit_test_case
@@ -59,13 +59,13 @@ def test_create_proposal(node, creator_account, receiver_account, wif, subject):
     try:
         creator = Account(creator_account, hive_instance=s)
     except Exception as ex:
-        logger.error("Account: {} not found. {}".format(creator_account, ex))
+        logger.exception("Account: {} not found. {}".format(creator_account, ex))
         raise ex
     
     try:
         receiver = Account(receiver_account, hive_instance=s)
     except Exception as ex:
-        logger.error("Account: {} not found. {}".format(receiver_account, ex))
+        logger.exception("Account: {} not found. {}".format(receiver_account, ex))
         raise ex
 
     ret = s.post("Hivepy proposal title", "Hivepy proposal body", creator["name"], permlink = "hivepy-proposal-title", tags = "proposals")
@@ -254,13 +254,13 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
     try:
         creator = Account(creator_account, hive_instance=s)
     except Exception as ex:
-        logger.error("Account: {} not found. {}".format(creator_account, ex))
+        logger.exception("Account: {} not found. {}".format(creator_account, ex))
         raise ex
     
     try:
         receiver = Account(receiver_account, hive_instance=s)
     except Exception as ex:
-        logger.error("Account: {} not found. {}".format(receiver_account, ex))
+        logger.exception("Account: {} not found. {}".format(receiver_account, ex))
         raise ex
 
     import datetime
@@ -441,7 +441,7 @@ if __name__ == '__main__':
             sys.exit(0)
         sys.exit(1)
     except Exception as ex:
-        logger.error("Exception: {}".format(ex))
+        logger.exception("Exception: {}".format(ex))
         if node is not None: 
             node.stop_hive_node()
     finally:

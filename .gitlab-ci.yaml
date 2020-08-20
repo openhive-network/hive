@@ -95,17 +95,10 @@ beem_tests:
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
-    # boilerplate for installing latested beem
-    - git clone --depth=1 --single-branch --branch dk-hybrid-operations https://gitlab.syncad.com/hive/beem.git
-    - cd beem
-    - python3 setup.py install
-    - cd ..
-    # stuff specific to this test
-    - mkdir -p build/tests/hive-node-data
-    - cd tests/functional/python_tests/dhf_tests
-    - "python3 beem_dhf_tests.py initminer initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --no-erase-proposal --junit-output=beem_dhf_test.xml"
-    - cd ../hived
-    - "python3 hived_hybrid_operations_test.py initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data"
+    - pip3 install --user tox
+    - cd tests/functional/
+    - tox -e beem_dhf
+    - tox -e hived_hybrid_operations
   artifacts:
     paths:
     - tests/functional/python_tests/dhf_tests/beem_dhf_tests.log
@@ -126,15 +119,9 @@ list_proposals_tests:
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
-    # boilerplate for installing latested beem
-    - git clone --depth=1 --single-branch --branch dk-hybrid-operations https://gitlab.syncad.com/hive/beem.git
-    - cd beem
-    - python3 setup.py install
-    - cd ..
-    # stuff specific to this test
-    - mkdir -p build/tests/hive-node-data
-    - cd tests/functional/python_tests/dhf_tests
-    - "python3 list_proposals_tests.py initminer initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --junit-output=list_proposals_tests.xml"
+    - pip3 install --user tox
+    - cd tests/functional/
+    - tox -e list_proposals
   artifacts:
     paths:
     - tests/functional/python_tests/dhf_tests/hdf_list_proposal.log
@@ -154,8 +141,9 @@ hived_options_tests:
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
-    - cd tests/functional/python_tests/hived
-    - "python3 hived_options_tests.py --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
+    - pip3 install --user tox
+    - cd tests/functional/
+    - tox -e hived_options
   tags:
     - public-runner-docker
 

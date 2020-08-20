@@ -42,7 +42,7 @@ if not logger.hasHandlers():
 try:
     from beem import Hive
 except Exception as ex:
-    logger.error("beem library is not installed.")
+    logger.exception("beem library is not installed.")
     sys.exit(1)
 
 def create_accounts(node, creator, account):
@@ -127,7 +127,7 @@ def create_proposals(node, account, start_date, end_date, proposal_count):
         try:
             node.finalizeOp(op, account['name'], "active")
         except Exception as ex:
-            logger.error("Exception: {}".format(ex))
+            logger.exception("Exception: {}".format(ex))
             raise ex
         hive_utils.common.wait_n_blocks(node.rpc.url, 1)
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
@@ -155,7 +155,7 @@ def vote_proposals(node, account, ids):
     try:
         node.finalizeOp(op, account["name"], "active")
     except Exception as ex:
-        logger.error("Exception: {}".format(ex))
+        logger.exception("Exception: {}".format(ex))
         raise ex
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
@@ -295,7 +295,7 @@ if __name__ == '__main__':
             sys.exit(0)
         sys.exit(1)
     except Exception as ex:
-        logger.error("Exception: {}".format(ex))
+        logger.exception("Exception: {}".format(ex))
         if node is not None: 
             node.stop_hive_node()
         sys.exit(1)

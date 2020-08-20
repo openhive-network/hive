@@ -39,7 +39,7 @@ if not logger.hasHandlers():
 try:
     from beem import Hive
 except Exception as ex:
-    logger.error("beem library is not installed.")
+    logger.exception("beem library is not installed.")
     sys.exit(1)
 
 def transfer_assets_to_accounts(node, from_account, accounts, amount, asset, wif=None):
@@ -195,10 +195,10 @@ if __name__ == '__main__':
                 logger.exception( "Expected exception for old style op was not thrown" )
             except Exception as ex:
                 if  str(ex) == "Assert Exception:false: Obsolete form of transaction detected, update your wallet.":
-                    logger.info("Expected exception on old style op: {}".format(ex))
+                    logger.exception("Expected exception on old style op: {}".format(ex))
                     exit_code = 0
                 else:
-                    logger.info("Unexpected exception on old style op: {}".format(ex))
+                    logger.exception("Unexpected exception on old style op: {}".format(ex))
 
             hive_utils.common.wait_n_blocks(node_client.rpc.url, 5)
 
@@ -232,7 +232,7 @@ if __name__ == '__main__':
             sys.exit(exit_code)
         sys.exit(1)
     except Exception as ex:
-        logger.error("Exception: {}".format(ex))
+        logger.exception("Exception: {}".format(ex))
         if node is not None: 
             node.stop_hive_node()
         sys.exit(1)

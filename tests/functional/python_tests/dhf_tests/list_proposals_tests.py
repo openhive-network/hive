@@ -42,7 +42,7 @@ if not logger.hasHandlers():
 try:
     from beem import Hive
 except Exception as ex:
-    logger.error("beem library is not installed.")
+    logger.exception("beem library is not installed.")
     sys.exit(1)
 
 START_END_SUBJECTS = [
@@ -68,13 +68,13 @@ def create_proposals(node_client, creator_account, receiver_account):
     try:
         creator = Account(creator_account, hive_instance=node_client)
     except Exception as ex:
-        logger.error("Account: {} not found. {}".format(creator_account, ex))
+        logger.exception("Account: {} not found. {}".format(creator_account, ex))
         raise ex
     
     try:
         receiver = Account(receiver_account, hive_instance=node_client)
     except Exception as ex:
-        logger.error("Account: {} not found. {}".format(receiver_account, ex))
+        logger.exception("Account: {} not found. {}".format(receiver_account, ex))
         raise ex
 
     logger.info("Creating initial post...")
@@ -275,7 +275,7 @@ if __name__ == '__main__':
             sys.exit(0)
         sys.exit(1)
     except Exception as ex:
-        logger.error("Exception: {}".format(ex))
+        logger.exception("Exception: {}".format(ex))
         if node is not None: 
             node.stop_hive_node()
     finally:
