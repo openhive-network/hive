@@ -28,7 +28,7 @@ FROM builder-tester-base AS test
 RUN apt-get update && \
     DEBIAN_FRONTEND=noniteractive apt-get install -y screen python3-pip python3-dateutil tzdata python3-junit.xml && \
     apt-get clean && rm -r /var/lib/apt/lists/* && \
-    pip3 install -U secp256k1prp \
+    pip3 install -U secp256k1prp && \
     pip3 install -U tox
 # the above will leave the timezone in UTC, if you want run:
 #    ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
