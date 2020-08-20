@@ -9,7 +9,7 @@ variables:
   # pin to specific docker images for build repeatability
   RUNTIME_IMAGE_TAG: "@sha256:e1995e7b44d58436ce97fbcd28a5200d8e877f476c9c4bd3e1cc394c17be050b"
   BUILDER_IMAGE_TAG: "@sha256:13933b563395cc3c6ea8bcbd95b717eb4c9fcc33c4cd7194e620713aca03180d"
-  TEST_IMAGE_TAG: ":latest"
+  TEST_IMAGE_TAG: "@sha256:a984097e150307f90e18e9d864da10323fc4523d288bea4fb0a9ae2f70cb51ba"
 
 testnet_node_build:
   stage: build
