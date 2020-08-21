@@ -99,6 +99,7 @@ public:
   {
   public:
     virtual void flush_converted_data(const worker_common_base::serialized_object_cache& cache) = 0;
+    virtual std::string prettifyObject(const fc::variant& object, const std::vector<char>& buffer) const = 0;
 
   protected:
     worker(chainbase::snapshot_writer& controller, size_t startId, size_t endId) :
@@ -130,6 +131,7 @@ class snapshot_reader : public snapshot_base_serializer
         /** Allows to load data from snapshot into the cache. 
         */
         virtual void load_converted_data(worker_common_base::serialized_object_cache* cache) = 0;
+        virtual std::string prettifyObject(const fc::variant& object, const std::vector<char>& buffer) const = 0;
 
         void update_processed_id(size_t id)
           {
@@ -264,8 +266,11 @@ private:
           ("i", id)("l", _startId)("r", _endId));
 
         serializedCache.emplace_back(id, std::vector<char>());
-
         serialization::pack_to_buffer(serializedCache.back().second, object);
+
+        //std::string dump = worker->prettifyObject(fc::variant(object), serializedCache.back().second);
+        //if(dump.empty() == false)
+        //  ilog("Dumping object: id: ${id}, `${o}'", ("id", id)("o", dump));
 
         if(serializedCache.size() >= max_cache_size)
         {
@@ -398,11 +403,17 @@ class generic_index_snapshot_loader final : public generic_index_serialize_base
               /// Just to catch loading context on some caught exception.
               worker->update_processed_id(buffer.first);
 
+              auto prettyDump = [&buffer, worker](fc::variant object) -> std::string
+              {
+                return worker->prettifyObject(object, buffer.second);
+              };
+
               _generic_index.unpack_from_snapshot(id_type(buffer.first),
                 [this, &buffer](typename MultiIndexType::value_type& object)
                 {
                 serialization::unpack_from_buffer(object, buffer.second);
-                }
+                },
+                std::move(prettyDump)
                 );
               }
 

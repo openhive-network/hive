@@ -332,13 +332,22 @@ namespace chainbase {
       /**
         * Construct a new element and puts in the multi_index_container, basing on snapshot stream.
         */
-      void unpack_from_snapshot(typename value_type::id_type objectId, std::function<void(value_type&)>&& unpack) {
+      void unpack_from_snapshot(typename value_type::id_type objectId, std::function<void(value_type&)>&& unpack,
+        std::function<std::string(const fc::variant&)>&& preetify) {
         _next_id = objectId;
         value_type tmp(_indices.get_allocator(), objectId, std::move(unpack));
+
         auto insert_result = _indices.emplace(std::move(tmp));
 
         if(!insert_result.second) {
-          BOOST_THROW_EXCEPTION(std::logic_error("could not insert unpacked object, most likely a uniqueness constraint was violated"));
+          std::string s = preetify(fc::variant(tmp));
+
+          const auto& conflictingObject = *insert_result.first;
+          std::string s2 = preetify(fc::variant(conflictingObject));
+          std::string msg = "could not insert unpacked object, most likely a uniqueness constraint was violated: `" + s +
+            std::string("' conflicting object:`") + s2 + "'";
+
+          BOOST_THROW_EXCEPTION(std::logic_error(msg));
           }
 
         ++_next_id;
