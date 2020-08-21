@@ -87,6 +87,7 @@ namespace fc {
                value.emplace_back( std::move( tmp ) );
              }
           } else {
+              value.resize(size);
              s.read( (char*)value.data(), value.size() );
           }
        }
