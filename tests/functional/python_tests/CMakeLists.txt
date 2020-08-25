@@ -37,5 +37,5 @@ MACRO ( ADD_PYTHON_FUNCTIONAL_TEST test_script_base_name )
 ENDMACRO( ADD_PYTHON_FUNCTIONAL_TEST )
 
 # Add here directories with subsets of tests
-ADD_SUBDIRECTORY ( dhf_tests )
+# ADD_SUBDIRECTORY ( dhf_tests )
 ADD_SUBDIRECTORY ( hived )

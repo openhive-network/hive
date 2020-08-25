@@ -1,49 +1,15 @@
-#!/usr/bin/python3
-
-import sys
-sys.path.append("../../")
-
-from uuid import uuid4
-from time import sleep
+import pytest
 import logging
 
 import hive_utils
-import os
 
-from hive_utils.common import junit_test_case
-from junit_xml import TestSuite
-
-LOG_LEVEL = logging.INFO
-LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
-MAIN_LOG_PATH = "hdf_list_proposal.log"
-log_dir = os.environ.get("TEST_LOG_DIR", None)
-if log_dir is not None:
-    MAIN_LOG_PATH = log_dir + "/" + MAIN_LOG_PATH
-else:
-    MAIN_LOG_PATH = "./" + MAIN_LOG_PATH
-
-
-MODULE_NAME = "DHF-Tests"
-logger = logging.getLogger(MODULE_NAME)
-logger.setLevel(LOG_LEVEL)
-
-ch = logging.StreamHandler(sys.stdout)
-ch.setLevel(LOG_LEVEL)
-ch.setFormatter(logging.Formatter(LOG_FORMAT))
-
-fh = logging.FileHandler(MAIN_LOG_PATH)
-fh.setLevel(LOG_LEVEL)
-fh.setFormatter(logging.Formatter(LOG_FORMAT))
-
-if not logger.hasHandlers():
-    logger.addHandler(ch)
-    logger.addHandler(fh)
+logger = logging.getLogger()
 
 try:
     from beem import Hive
 except Exception as ex:
-    logger.error("beem library is not installed.")
-    sys.exit(1)
+    logger.exception("beem library is not installed.")
+    raise ex
 
 START_END_SUBJECTS = [
     [1,3,"Subject001"],
@@ -58,7 +24,22 @@ START_END_SUBJECTS = [
 ]
 
 
-def create_proposals(node_client, creator_account, receiver_account):
+def test_create_proposals(hive_node_provider, pytestconfig):
+    assert hive_node_provider is not None, "Node is None"
+    assert hive_node_provider.is_running(), "Node is not running"
+    node = pytestconfig.getoption('--node-url', None)
+    assert node is not None, '--node-url option not set'
+    wif = pytestconfig.getoption('--wif', None)
+    assert wif is not None, '--wif option not set'
+    account =  pytestconfig.getoption('--creator', None)
+    assert account is not None, '--creator option not set'
+    creator_account =  pytestconfig.getoption('--creator', None)
+    assert creator_account is not None, '--creator option not set'
+    receiver_account =  pytestconfig.getoption('--receiver', None)
+    assert receiver_account is not None, '--receiver option not set'
+
+    node_client = Hive(node = [node], no_broadcast = False, keys = [wif])
+
     import datetime
     now = datetime.datetime.now()
 
@@ -104,9 +85,21 @@ def create_proposals(node_client, creator_account, receiver_account):
         hive_utils.common.wait_n_blocks(node_client.rpc.url, 1)
     hive_utils.common.wait_n_blocks(node_client.rpc.url, 2)
 
-@junit_test_case
-def list_proposals_test(node_client, creator):
+def test_list_proposals(hive_node_provider, pytestconfig):
     logger.info("Testing direction ascending with start field given")
+    assert hive_node_provider is not None, "Node is None"
+    assert hive_node_provider.is_running(), "Node is not running"
+    node = pytestconfig.getoption('--node-url', None)
+    assert node is not None, '--node-url option not set'
+    wif = pytestconfig.getoption('--wif', None)
+    assert wif is not None, '--wif option not set'
+    account =  pytestconfig.getoption('--creator', None)
+    assert account is not None, '--creator option not set'
+    creator =  pytestconfig.getoption('--creator', None)
+    assert creator is not None, '--creator option not set'
+    
+    node_client = Hive(node = [node], no_broadcast = False, keys = [wif])
+
     proposals = node_client.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
     # we should get len(START_END_SUBJECTS) proposals with wirs proposal with subject Subject001
     # and last with subject Subject009
@@ -214,74 +207,3 @@ def list_proposals_test(node_client, creator):
     logger.info("Testing not empty start string and descending direction and last_id set to the last element")
     proposals = node_client.rpc.list_proposals([creator], 100, "by_creator", "descending", "all", id_last)
     assert len(proposals) == len(START_END_SUBJECTS)
-
-
-if __name__ == '__main__':
-    logger.info("Performing SPS tests")
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("creator", help = "Account to create test accounts with")
-    parser.add_argument("receiver", help = "Account to receive payment")
-    parser.add_argument("wif", help="Private key for creator account")
-    parser.add_argument("--node-url", dest="node_url", default="http://127.0.0.1:8090", help="Url of working hive node")
-    parser.add_argument("--run-hived", dest="hived_path", help = "Path to hived executable. Warning: using this option will erase contents of selected hived working directory.")
-    parser.add_argument("--working-dir", dest="hived_working_dir", default="/tmp/hived-data/", help = "Path to hived working directory")
-    parser.add_argument("--config-path", dest="hived_config_path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
-    parser.add_argument("--no-erase-proposal", action='store_false', dest = "no_erase_proposal", help = "Do not erase proposal created with this test")
-    parser.add_argument("--junit-output", dest="junit_output", default=None, help="Filename for generating jUnit-compatible XML output")
-
-
-    args = parser.parse_args()
-
-    node = None
-
-    if args.hived_path:
-        logger.info("Running hived via {} in {} with config {}".format(args.hived_path, 
-            args.hived_working_dir, 
-            args.hived_config_path)
-        )
-        
-        node = hive_utils.hive_node.HiveNodeInScreen(
-            args.hived_path, 
-            args.hived_working_dir, 
-            args.hived_config_path
-        )
-    
-    node_url = args.node_url
-    wif = args.wif
-
-    if len(wif) == 0:
-        logger.error("Private-key is not set in config.ini")
-        sys.exit(1)
-
-    logger.info("Using node at: {}".format(node_url))
-    logger.info("Using private-key: {}".format(wif))
-
-    keys = [wif]
-    
-    if node is not None:
-        node.run_hive_node(["--enable-stale-production"])
-    try:
-        if node is None or node.is_running():
-            node_client = Hive(node = [node_url], no_broadcast = False, 
-                keys = keys
-            )
-
-            create_proposals(node_client, args.creator, args.receiver)
-            list_proposals_test(node_client, args.creator)
-
-            if node is not None:
-                node.stop_hive_node()
-            sys.exit(0)
-        sys.exit(1)
-    except Exception as ex:
-        logger.error("Exception: {}".format(ex))
-        if node is not None: 
-            node.stop_hive_node()
-    finally:
-        if args.junit_output is not None:
-            test_suite = TestSuite('list_proposals_test', hive_utils.common.junit_test_cases)
-            with open(args.junit_output, "w") as junit_xml:
-                TestSuite.to_file(junit_xml, [test_suite], prettyprint=False)
-    sys.exit(2)
-
