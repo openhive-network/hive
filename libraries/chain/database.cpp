@@ -59,7 +59,7 @@ long hf24_time()
 {
   long hf24Time =
 #ifdef IS_TEST_NET
-    1588334400; /// Friday, 1 May 2020 12:00:00 GMT
+    1598547600; /// Tuesday, 27 August 2020 17:00:00 GMT
 #else
     1599573600; //   Tuesday, 8 September 2020 14:00:00
 
