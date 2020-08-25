@@ -6,84 +6,84 @@ import hive_utils
 logger = logging.getLogger()
 
 try:
-    from beem import Hive
+  from beem import Hive
 except Exception as ex:
-    logger.exception("beem library is not installed.")
-    raise ex
+  logger.exception("beem library is not installed.")
+  raise ex
 
 START_END_SUBJECTS = [
-    [1,3,"Subject001"],
-    [2,3,"Subject002"],
-    [3,3,"Subject003"],
-    [4,3,"Subject004"],
-    [5,3,"Subject005"],
-    [6,3,"Subject006"],
-    [7,3,"Subject007"],
-    [8,3,"Subject008"],
-    [9,3,"Subject009"]
+  [1,3,"Subject001"],
+  [2,3,"Subject002"],
+  [3,3,"Subject003"],
+  [4,3,"Subject004"],
+  [5,3,"Subject005"],
+  [6,3,"Subject006"],
+  [7,3,"Subject007"],
+  [8,3,"Subject008"],
+  [9,3,"Subject009"]
 ]
 
 
 def test_create_proposals(hive_node_provider, pytestconfig):
-    assert hive_node_provider is not None, "Node is None"
-    assert hive_node_provider.is_running(), "Node is not running"
-    node = pytestconfig.getoption('--node-url', None)
-    assert node is not None, '--node-url option not set'
-    wif = pytestconfig.getoption('--wif', None)
-    assert wif is not None, '--wif option not set'
-    account =  pytestconfig.getoption('--creator', None)
-    assert account is not None, '--creator option not set'
-    creator_account =  pytestconfig.getoption('--creator', None)
-    assert creator_account is not None, '--creator option not set'
-    receiver_account =  pytestconfig.getoption('--receiver', None)
-    assert receiver_account is not None, '--receiver option not set'
+  assert hive_node_provider is not None, "Node is None"
+  assert hive_node_provider.is_running(), "Node is not running"
+  node = pytestconfig.getoption('--node-url', None)
+  assert node is not None, '--node-url option not set'
+  wif = pytestconfig.getoption('--wif', None)
+  assert wif is not None, '--wif option not set'
+  account =  pytestconfig.getoption('--creator', None)
+  assert account is not None, '--creator option not set'
+  creator_account =  pytestconfig.getoption('--creator', None)
+  assert creator_account is not None, '--creator option not set'
+  receiver_account =  pytestconfig.getoption('--receiver', None)
+  assert receiver_account is not None, '--receiver option not set'
 
-    node_client = Hive(node = [node], no_broadcast = False, keys = [wif])
+  node_client = Hive(node = [node], no_broadcast = False, keys = [wif])
 
-    import datetime
-    now = datetime.datetime.now()
+  import datetime
+  now = datetime.datetime.now()
 
-    start_date, end_date = hive_utils.common.get_isostr_start_end_date(now, 10, 2)
+  start_date, end_date = hive_utils.common.get_isostr_start_end_date(now, 10, 2)
 
-    from beem.account import Account
+  from beem.account import Account
+  try:
+    creator = Account(creator_account, hive_instance=node_client)
+  except Exception as ex:
+    logger.error("Account: {} not found. {}".format(creator_account, ex))
+    raise ex
+
+  try:
+    receiver = Account(receiver_account, hive_instance=node_client)
+  except Exception as ex:
+    logger.error("Account: {} not found. {}".format(receiver_account, ex))
+    raise ex
+
+  logger.info("Creating initial post...")
+  node_client.post("Hivepy proposal title", "Hivepy proposal body", creator["name"], permlink = "hivepy-proposal-title", tags = "proposals")
+
+  logger.info("Creating proposals...")
+  from beembase.operations import Create_proposal
+  for start_end_subject in START_END_SUBJECTS:
+    start_date, end_date = hive_utils.common.get_isostr_start_end_date(now, start_end_subject[0], start_end_subject[1])
+    op = Create_proposal(
+      **{
+        'creator' : creator["name"],
+        'receiver' : receiver["name"],
+        'start_date' : start_date,
+        'end_date' : end_date,
+        'daily_pay' : "16.000 TBD",
+        'subject' : start_end_subject[2],
+        'permlink' : "hivepy-proposal-title"
+      }
+    )
     try:
-        creator = Account(creator_account, hive_instance=node_client)
+      node_client.finalizeOp(op, creator["name"], "active")
     except Exception as ex:
-        logger.error("Account: {} not found. {}".format(creator_account, ex))
-        raise ex
-    
-    try:
-        receiver = Account(receiver_account, hive_instance=node_client)
-    except Exception as ex:
-        logger.error("Account: {} not found. {}".format(receiver_account, ex))
-        raise ex
+      logger.exception("Exception: {}".format(ex))
+      raise ex
 
-    logger.info("Creating initial post...")
-    node_client.post("Hivepy proposal title", "Hivepy proposal body", creator["name"], permlink = "hivepy-proposal-title", tags = "proposals")
-
-    logger.info("Creating proposals...")
-    from beembase.operations import Create_proposal
-    for start_end_subject in START_END_SUBJECTS:
-        start_date, end_date = hive_utils.common.get_isostr_start_end_date(now, start_end_subject[0], start_end_subject[1])
-        op = Create_proposal(
-            **{
-                'creator' : creator["name"],
-                'receiver' : receiver["name"],
-                'start_date' : start_date,
-                'end_date' : end_date,
-                'daily_pay' : "16.000 TBD",
-                'subject' : start_end_subject[2],
-                'permlink' : "hivepy-proposal-title"
-            }
-        )
-        try:
-            node_client.finalizeOp(op, creator["name"], "active")
-        except Exception as ex:
-            logger.exception("Exception: {}".format(ex))
-            raise ex
-        
-        hive_utils.common.wait_n_blocks(node_client.rpc.url, 1)
-    hive_utils.common.wait_n_blocks(node_client.rpc.url, 2)
+    hive_utils.common.wait_n_blocks(node_client.rpc.url, 1)
+  hive_utils.common.wait_n_blocks(node_client.rpc.url, 2)
 
 def test_list_proposals(hive_node_provider, pytestconfig):
     logger.info("Testing direction ascending with start field given")

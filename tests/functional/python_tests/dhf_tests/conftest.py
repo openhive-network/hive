@@ -13,7 +13,7 @@ def pytest_addoption(parser):
   parser.addoption("--working-dir", default="/tmp/hived-data/", help = "Path to hived working directory")
   parser.addoption("--config-path", default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
   parser.addoption("--no-erase-proposal", action='store_true', help = "Do not erase proposal created with this test")
-  
+
 
 @pytest.fixture(scope="module")
 def hive_node_provider(pytestconfig):
@@ -27,14 +27,14 @@ def hive_node_provider(pytestconfig):
   hived_config_path = pytestconfig.getoption('--config-path', None)
   assert hived_config_path, '--config-path option not set'
   logger.info("Running hived via {} in {} with config {}".format(hived_path, 
-      hived_working_dir, 
-      hived_config_path)
+    hived_working_dir, 
+    hived_config_path)
   )
   
   node = hive_utils.hive_node.HiveNodeInScreen(
-      hived_path, 
-      hived_working_dir, 
-      hived_config_path
+    hived_path, 
+    hived_working_dir, 
+    hived_config_path
   )
   node.run_hive_node(["--enable-stale-production"])
   assert node is not None, "Node is None"
