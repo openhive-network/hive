@@ -47,7 +47,7 @@ inline static const std::set< std::string >& get_restored_accounts()
     "travelnepal",
     "truce",
     "tuckerjtruman",
-    "yanirauseche"
+    "yanirauseche",
 
     // Won their aidrop appeal (proposal #104)
     "lupafilotaxia",
