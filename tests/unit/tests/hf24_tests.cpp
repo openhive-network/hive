@@ -13,7 +13,6 @@
 #include <hive/chain/hive_objects.hpp>
 
 #include <hive/chain/util/reward.hpp>
-#include <hive/chain/util/hf23_helper.hpp>
 
 #include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/rc/resource_count.hpp>

@@ -13,7 +13,6 @@
 #include <hive/chain/hive_objects.hpp>
 
 #include <hive/chain/util/reward.hpp>
-#include <hive/chain/util/hf23_helper.hpp>
 
 #include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/rc/resource_count.hpp>
@@ -74,7 +73,6 @@ BOOST_AUTO_TEST_CASE( restore_accounts_02 )
       return std::strcmp( a.name.c_str(), b.name.c_str() ) < 0;
     };
     std::set< tmp_data, decltype( cmp ) > old_balances( cmp );
-    hf23_helper::hf23_items _balances;
 
     uint32_t cnt = 1;
     for( auto& account : accounts )
@@ -91,7 +89,7 @@ BOOST_AUTO_TEST_CASE( restore_accounts_02 )
       generate_block();
     }
     {
-      db->clear_accounts( _balances, accounts );
+      db->clear_accounts( accounts );
 
       for( auto& account : accounts )
       {
@@ -110,7 +108,7 @@ BOOST_AUTO_TEST_CASE( restore_accounts_02 )
       accounts_ex.insert( "dude" );
       accounts_ex.insert( "devil" );
 
-      db->restore_accounts( _balances, accounts_ex );
+      db->restore_accounts( accounts_ex );
 
       auto itr_old_balances = old_balances.begin();
       for( auto& account : accounts )
@@ -151,8 +149,6 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
     FUND( "carol", ASSET( "3600.000 TESTS" ) );
     FUND( "carol", ASSET( "3500.000 TBD" ) );
 
-    hf23_helper::hf23_items _hf23_items;
-
     const std::set< std::string > accounts{ "alice", "bob" };
 
     {
@@ -165,14 +161,14 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
       auto bob_hbd_balance    = _bob.get_hbd_balance();
 
       {
-        hf23_helper::gather_balance( _hf23_items, _alice.name, _alice.get_balance(), _alice.get_hbd_balance() );
+        db->gather_balance( _alice.name, _alice.get_balance(), _alice.get_hbd_balance() );
         db->adjust_balance( db->get_treasury_name(), _alice.get_balance() );
         db->adjust_balance( db->get_treasury_name(), _alice.get_hbd_balance() );
         db->adjust_balance( "alice", -_alice.get_balance() );
         db->adjust_balance( "alice", -_alice.get_hbd_balance() );
       }
       {
-        hf23_helper::gather_balance( _hf23_items, _bob.name, _bob.get_balance(), _bob.get_hbd_balance() );
+        db->gather_balance( _bob.name, _bob.get_balance(), _bob.get_hbd_balance() );
         db->adjust_balance( db->get_treasury_name(), _bob.get_balance() );
         db->adjust_balance( db->get_treasury_name(), _bob.get_hbd_balance() );
         db->adjust_balance( "bob", -_bob.get_balance() );
@@ -235,7 +231,7 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
 
       database_fixture::validate_database();
 
-      db->restore_accounts( _hf23_items, restored_accounts );
+      db->restore_accounts( restored_accounts );
 
       auto& _alice2           = db->get_account( "alice" );
       auto& _bob2             = db->get_account( "bob" );
@@ -255,21 +251,14 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
   FC_LOG_AND_RETHROW()
 }
 
-hf23_helper::hf23_item get_balances( const account_object& obj )
+hive::chain::hf23_item get_balances( const account_object& obj )
 {
-  hf23_helper::hf23_item res;
-
-  res.name          = obj.name;
-
-  res.balance       = obj.get_balance();
-  res.hbd_balance   = obj.get_hbd_balance();
-
-  return res;
+  return hive::chain::hf23_item{ obj.get_balance(), obj.get_hbd_balance() };
 }
 
-bool cmp_hf23_item( const hf23_helper::hf23_item& a, const hf23_helper::hf23_item& b )
+bool cmp_hf23_item( const hive::chain::hf23_item& a, const hive::chain::hf23_item& b )
 {
-  return a.name == b.name && a.balance == b.balance && a.hbd_balance == b.hbd_balance;
+  return a.balance == b.balance && a.hbd_balance == b.hbd_balance;
 }
 
 BOOST_AUTO_TEST_CASE( save_test_02 )
@@ -287,22 +276,18 @@ BOOST_AUTO_TEST_CASE( save_test_02 )
     FUND( "alice", ASSET( "1000.000 TESTS" ) );
     FUND( "alice", ASSET( "20.000 TBD" ) );
 
-    hf23_helper::hf23_items _hf23_items;
-
     const std::set< std::string > accounts{ "alice", "bob" };
 
     {
-      hf23_helper::gather_balance( _hf23_items, "alice", get_balance( "alice" ), get_hbd_balance( "alice" ) );
+      db->gather_balance( "alice", get_balance( "alice" ), get_hbd_balance( "alice" ) );
     }
     {
-      BOOST_REQUIRE_EQUAL( _hf23_items.size(), 1u );
+      BOOST_REQUIRE_EQUAL( db->get_hardfork_property_object().h23_balances.size(), 1u );
 
       auto alice_balances = get_balances( db->get_account( "alice" ) );
 
-      hf23_helper::hf23_items cmp_balances = { alice_balances };
-
-      BOOST_REQUIRE_EQUAL( _hf23_items.size(), cmp_balances.size() );
-      BOOST_REQUIRE( cmp_hf23_item( *_hf23_items.begin(), *cmp_balances.begin() ) );
+      BOOST_REQUIRE_EQUAL( db->get_hardfork_property_object().h23_balances.size(), 1u );
+      BOOST_REQUIRE( cmp_hf23_item( db->get_hardfork_property_object().h23_balances.begin()->second, alice_balances ) );
     }
 
     database_fixture::validate_database();
@@ -328,32 +313,25 @@ BOOST_AUTO_TEST_CASE( save_test_01 )
     FUND( "alice", ASSET( "20.000 TBD" ) );
 
     const std::set< std::string > accounts{ "alice", "bob" };
-    hf23_helper::hf23_items _hf23_items;
 
     {
       vest( "alice", "alice", ASSET( "10.000 TESTS" ), alice_private_key );
       vest( "bob", "bob", ASSET( "10.000 TESTS" ), bob_private_key );
 
-      hf23_helper::gather_balance( _hf23_items, "alice", get_balance( "alice" ), get_hbd_balance( "alice" ) );
-      hf23_helper::gather_balance( _hf23_items, "bob", get_balance( "bob" ), get_hbd_balance( "bob" ) );
+      db->gather_balance( "alice", get_balance( "alice" ), get_hbd_balance( "alice" ) );
+      db->gather_balance( "bob", get_balance( "bob" ), get_hbd_balance( "bob" ) );
     }
     {
       auto alice_balances = get_balances( db->get_account( "alice" ) );
       auto bob_balances = get_balances( db->get_account( "bob" ) );
 
-      hf23_helper::hf23_items cmp_balances = { alice_balances, bob_balances };
+      BOOST_REQUIRE_EQUAL( db->get_hardfork_property_object().h23_balances.size(), 2u );
 
-      BOOST_REQUIRE_EQUAL( _hf23_items.size(), cmp_balances.size() );
+      auto iter = db->get_hardfork_property_object().h23_balances.begin();
 
-      auto iter = _hf23_items.begin();
-      auto cmp_iter = cmp_balances.begin();
-
-      for( uint32_t i = 0; i < cmp_balances.size(); ++i )
-      {
-        BOOST_REQUIRE( cmp_hf23_item( *iter, *cmp_iter ) );
-        ++iter;
-        ++cmp_iter;
-      }
+      BOOST_REQUIRE( cmp_hf23_item( iter->second, alice_balances ) );
+      ++iter;
+      BOOST_REQUIRE( cmp_hf23_item( iter->second, bob_balances ) );
     }
 
     database_fixture::validate_database();

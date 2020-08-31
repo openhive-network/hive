@@ -11,7 +11,6 @@
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/signal.hpp>
-#include <hive/chain/util/hf23_helper.hpp>
 
 #include <hive/protocol/protocol.hpp>
 #include <hive/protocol/hardfork.hpp>
@@ -627,10 +626,11 @@ namespace chain {
 #endif
 
       //Restores balances for some accounts, which were cleared by mistake during HF23
-      void restore_accounts( const hf23_helper::hf23_items& balances, const std::set< std::string >& restored_accounts );
+      void restore_accounts( const std::set< std::string >& restored_accounts );
 
       //Clears all pending operations on account that involve balance, moves tokens to treasury account
-      void clear_accounts( hf23_helper::hf23_items& balances, const std::set< std::string >& cleared_accounts );
+      void gather_balance( const std::string& name, const asset& balance, const asset& hbd_balance );
+      void clear_accounts( const std::set< std::string >& cleared_accounts );
       void clear_account( const account_object& account,
         asset* transferred_hbd_ptr = nullptr, asset* transferred_hive_ptr = nullptr,
         asset* converted_vests_ptr = nullptr, asset* hive_from_vests_ptr = nullptr );
@@ -788,8 +788,6 @@ namespace chain {
 
       util::advanced_benchmark_dumper  _benchmark_dumper;
       index_delegate_map            _index_delegate_map;
-
-      hf23_helper::hf23_items _hf23_items;
 
       fc::signal<void(const required_action_notification&)> _pre_apply_required_action_signal;
       fc::signal<void(const required_action_notification&)> _post_apply_required_action_signal;

@@ -2023,19 +2023,18 @@ void database::lock_account( const account_object& account )
     remove( *change_request );
 }
 
-void database::restore_accounts( const hf23_helper::hf23_items& balances, const std::set< std::string >& restored_accounts )
+void database::restore_accounts( const std::set< std::string >& restored_accounts )
 {
-  auto zero_hive = asset( 0 , HIVE_SYMBOL );
-  auto zero_hbd = asset( 0 , HBD_SYMBOL );
+  const auto& hardforks = get_hardfork_property_object();
 
   const auto& treasury_account = get_treasury();
   auto treasury_name = get_treasury_name();
 
   for( auto& name : restored_accounts )
   {
-    auto found = balances.find( hf23_helper::hf23_item{ name, zero_hive, zero_hbd } );
+    auto found = hardforks.h23_balances.find( name );
 
-    if( found == balances.end() )
+    if( found == hardforks.h23_balances.end() )
     {
       ilog( "The account ${acc} hadn't removed balances, balances can't be restored", ( "acc", name ) );
       continue;
@@ -2048,20 +2047,28 @@ void database::restore_accounts( const hf23_helper::hf23_items& balances, const 
       continue;
     }
 
-    adjust_balance( treasury_account, -found->hbd_balance );
-    adjust_balance( treasury_account, -found->balance );
+    adjust_balance( treasury_account, -found->second.hbd_balance );
+    adjust_balance( treasury_account, -found->second.balance );
 
-    adjust_balance( *account_ptr, found->hbd_balance );
-    adjust_balance( *account_ptr, found->balance );
+    adjust_balance( *account_ptr, found->second.hbd_balance );
+    adjust_balance( *account_ptr, found->second.balance );
 
-    operation vop = hardfork_hive_restore_operation( name, treasury_name, found->hbd_balance, found->balance );
+    operation vop = hardfork_hive_restore_operation( name, treasury_name, found->second.hbd_balance, found->second.balance );
     push_virtual_operation( vop );
 
-    ilog( "Balances ${hbd} and ${hive} for the account ${acc} were restored", ( "hbd", found->hbd_balance )( "hive", found->balance )( "acc", name ) );
+    ilog( "Balances ${hbd} and ${hive} for the account ${acc} were restored", ( "hbd", found->second.hbd_balance )( "hive", found->second.balance )( "acc", name ) );
   }
 }
 
-void database::clear_accounts( hf23_helper::hf23_items& balances, const std::set< std::string >& cleared_accounts )
+void database::gather_balance( const std::string& name, const asset& balance, const asset& hbd_balance )
+{
+  modify( get_hardfork_property_object(), [&]( hardfork_property_object& hfp )
+  {
+    hfp.h23_balances.emplace( std::make_pair( name, hf23_item{ balance, hbd_balance } ) );
+  } );
+}
+
+void database::clear_accounts( const std::set< std::string >& cleared_accounts )
 {
   auto treasury_name = get_treasury_name();
   for( auto account_name : cleared_accounts )
@@ -2073,7 +2080,7 @@ void database::clear_accounts( hf23_helper::hf23_items& balances, const std::set
     asset total_transferred_hbd, total_transferred_hive, total_converted_vests, total_hive_from_vests;
     clear_account( *account_ptr, &total_transferred_hbd, &total_transferred_hive, &total_converted_vests, &total_hive_from_vests );
 
-    hf23_helper::gather_balance( balances, account_name, total_transferred_hive, total_transferred_hbd );
+    gather_balance( account_name, total_transferred_hive, total_transferred_hbd );
 
     operation vop = hardfork_hive_operation( account_name, treasury_name,
       total_transferred_hbd, total_transferred_hive, total_converted_vests, total_hive_from_vests );
@@ -5941,7 +5948,7 @@ void database::apply_hardfork( uint32_t hardfork )
       break;
     case HIVE_HARDFORK_0_23:
     {
-      clear_accounts( _hf23_items,hardforkprotect::get_steemit_accounts() );
+      clear_accounts( hardforkprotect::get_steemit_accounts() );
 
       // Reset TAPOS buffer to avoid replay attack
       auto empty_block_id = block_id_type();
@@ -5956,7 +5963,7 @@ void database::apply_hardfork( uint32_t hardfork )
     }
     case HIVE_HARDFORK_1_24:
     {
-      restore_accounts( _hf23_items, hardforkprotect::get_restored_accounts() );
+      restore_accounts( hardforkprotect::get_restored_accounts() );
       set_chain_id(HIVE_CHAIN_ID);
       break;
     }
