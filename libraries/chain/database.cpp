@@ -303,7 +303,7 @@ uint32_t database::reindex_internal( const open_args& args, std::pair< signed_bl
     auto cur_block_num = block_data.first.block_num();
     if( cur_block_num % 100000 == 0 )
     {
-      std::cerr << "   " << double( cur_block_num * 100 ) / last_block_num << "%   " << cur_block_num << " of " << last_block_num << "   (" <<
+      std::cerr << "   " << double( cur_block_num ) * 100 / last_block_num << "%   " << cur_block_num << " of " << last_block_num << "   (" <<
 #ifdef ENABLE_MIRA
       get_cache_size()  << " objects cached using " << (get_cache_usage() >> 20) << "M"
 #else
