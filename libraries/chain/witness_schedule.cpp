@@ -285,6 +285,21 @@ void update_witness_schedule4( database& db )
       }
     }
     else
+    if(hpo.current_hardfork_version == HIVE_HARDFORK_0_23_VERSION)
+    {
+      if(hpo.next_hardfork != HIVE_HARDFORK_1_24_VERSION)
+      {
+        ilog("Forcing HF24 without need to have witness majority version");
+
+        /// Force HF24 even no witness majority.
+        db.modify(hpo, [&](hardfork_property_object& _hpo)
+          {
+            _hpo.next_hardfork = HIVE_HARDFORK_1_24_VERSION;
+            _hpo.next_hardfork_time = fc::time_point_sec(HIVE_HARDFORK_1_24_TIME);
+          });
+      }
+    }
+    else
     {
       // The map should be sorted highest version to smallest, so we iterate until we hit the majority of witnesses on at least this version
       while( ver_itr != witness_versions.end() )
