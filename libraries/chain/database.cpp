@@ -4197,7 +4197,7 @@ void database::_apply_transaction(const signed_transaction& trx)
     trx.validate();
 
   auto& trx_idx = get_index<transaction_index>();
-  const chain_id_type& chain_id = get_chain_id();
+  const chain_id_type& chain_id = has_hardfork( HIVE_HARDFORK_1_24 ) ? get_chain_id() : get_old_chain_id();
   // idump((trx_id)(skip&skip_transaction_dupe_check));
   FC_ASSERT( (skip & skip_transaction_dupe_check) ||
           trx_idx.indices().get<by_trx_id>().find(trx_id) == trx_idx.indices().get<by_trx_id>().end(),
