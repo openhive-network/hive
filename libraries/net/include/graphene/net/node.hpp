@@ -74,6 +74,7 @@ namespace graphene { namespace net {
 
           The simplest solution is softening a condition regarding 'chain_id'( see usage in 'node_impl::on_hello_message' method ).
         */
+         virtual hive::protocol::chain_id_type get_old_chain_id() const = 0;
          virtual hive::protocol::chain_id_type get_new_chain_id() const = 0;
          virtual hive::protocol::chain_id_type get_chain_id() const = 0;
 
