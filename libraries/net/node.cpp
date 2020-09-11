@@ -353,6 +353,7 @@ namespace graphene { namespace net {
 
       fc::variant_object get_call_statistics();
 
+      hive::protocol::chain_id_type get_old_chain_id() const override;
       hive::protocol::chain_id_type get_new_chain_id() const override;
       hive::protocol::chain_id_type get_chain_id() const override;
       bool has_item( const net::item_id& id ) override;
@@ -2011,10 +2012,10 @@ namespace graphene { namespace net {
           }
         }
         if ( !originating_peer->chain_id ||
-              ( ( *originating_peer->chain_id != _delegate->get_chain_id() ) && ( *originating_peer->chain_id != _delegate->get_new_chain_id() ) ) )
+              ( ( *originating_peer->chain_id != _delegate->get_old_chain_id() ) && ( *originating_peer->chain_id != _delegate->get_new_chain_id() ) ) )
         {
-            wlog("Received hello message from peer running a node for different blockchain. My chain-id: '${my_chain_id}'. New chain-id: '${new_chain_id}'. Their chain-id: '${their_chain_id}'.",
-               ("my_chain_id", _delegate->get_chain_id())("new_chain_id", _delegate->get_new_chain_id())("their_chain_id", originating_peer->chain_id) );
+            wlog("Received hello message from peer running a node for different blockchain. Old chain-id: '${old_chain_id}'. New chain-id: '${new_chain_id}'. Their chain-id: '${their_chain_id}'.",
+               ("old_chain_id", _delegate->get_old_chain_id())("new_chain_id", _delegate->get_new_chain_id())("their_chain_id", originating_peer->chain_id) );
 
             std::ostringstream rejection_message;
             rejection_message << "Your client is running a different chain id";
@@ -5591,6 +5592,11 @@ namespace graphene { namespace net {
       }, "invoke " BOOST_STRINGIZE(method_name)).wait()
 */
 #endif
+
+    hive::protocol::chain_id_type statistics_gathering_node_delegate_wrapper::get_old_chain_id() const
+    {
+      INVOKE_AND_COLLECT_STATISTICS(get_old_chain_id);
+    }
 
     hive::protocol::chain_id_type statistics_gathering_node_delegate_wrapper::get_new_chain_id() const
     {

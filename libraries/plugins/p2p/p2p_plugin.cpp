@@ -91,6 +91,7 @@ public:
   }
 
   bool is_included_block(const block_id_type& block_id);
+  virtual hive::protocol::chain_id_type get_old_chain_id() const override;
   virtual hive::protocol::chain_id_type get_new_chain_id() const override;
   virtual hive::protocol::chain_id_type get_chain_id() const override;
 
@@ -388,6 +389,11 @@ graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& 
     return trx_message( chain.db().get_recent_transaction( id.item_hash ) );
   });
 } FC_CAPTURE_AND_RETHROW( (id) ) }
+
+hive::protocol::chain_id_type p2p_plugin_impl::get_old_chain_id() const
+{
+  return STEEM_CHAIN_ID;
+}
 
 hive::protocol::chain_id_type p2p_plugin_impl::get_new_chain_id() const
 {
