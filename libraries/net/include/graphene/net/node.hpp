@@ -65,7 +65,7 @@ namespace graphene { namespace net {
          virtual ~node_delegate(){}
 
 
-         virtual hive::protocol::chain_id_type get_old_chain_id() const = 0;
+         virtual hive::protocol::chain_id_type get_new_chain_id() const = 0;
          virtual hive::protocol::chain_id_type get_chain_id() const = 0;
 
          /**

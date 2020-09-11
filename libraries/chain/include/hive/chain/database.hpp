@@ -217,7 +217,7 @@ namespace chain {
       std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
       /*
-        Old `chain_id` is needed during switching from HF23 into HF24,
+        New `chain_id` is needed during switching from HF23 into HF24,
         because some nodes can be after HF24, some nodes can be before HF24.
 
         In such case a communication between "before-HF24"-node and "after-HF24"-node is impossible,
@@ -225,7 +225,7 @@ namespace chain {
 
         The simplest solution is softening a condition regarding 'chain_id'( see usage in 'node_impl::on_hello_message' method ).
       */
-      chain_id_type get_old_chain_id() const;
+      chain_id_type get_new_chain_id() const;
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = STEEM_CHAIN_ID;
