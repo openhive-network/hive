@@ -632,11 +632,6 @@ std::vector< block_id_type > database::get_block_ids_on_fork( block_id_type head
   return result;
 } FC_CAPTURE_AND_RETHROW() }
 
-chain_id_type database::get_new_chain_id() const
-{
-  return HIVE_CHAIN_ID;
-}
-
 chain_id_type database::get_chain_id() const
 {
   return hive_chain_id;
