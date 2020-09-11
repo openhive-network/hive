@@ -65,6 +65,15 @@ namespace graphene { namespace net {
          virtual ~node_delegate(){}
 
 
+        /*
+          New `chain_id` is needed during switching from HF23 into HF24,
+          because some nodes can be after HF24, some nodes can be before HF24.
+
+          In such case a communication between "before-HF24"-node and "after-HF24"-node is impossible,
+          because 'chain_id' for such nodes is different.
+
+          The simplest solution is softening a condition regarding 'chain_id'( see usage in 'node_impl::on_hello_message' method ).
+        */
          virtual hive::protocol::chain_id_type get_new_chain_id() const = 0;
          virtual hive::protocol::chain_id_type get_chain_id() const = 0;
 
