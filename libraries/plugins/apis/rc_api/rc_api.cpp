@@ -2,11 +2,12 @@
 #include <hive/plugins/rc_api/rc_api.hpp>
 
 #include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/rc_config.hpp>
 #include <hive/plugins/rc/resource_sizes.hpp>
 
 #include <hive/chain/account_object.hpp>
 
-#include <hive/plugins/database_api/util/iterate_results.hpp>
+#include <hive/plugins/database_api/iterate_results.hpp>
 
 #include <fc/variant_object.hpp>
 #include <fc/reflect/variant.hpp>

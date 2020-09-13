@@ -1,6 +1,7 @@
 #pragma once
 #include <hive/plugins/json_rpc/utility.hpp>
 #include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/rc_config.hpp>
 
 #include <hive/protocol/types.hpp>
 #include <hive/chain/comment_object.hpp>

@@ -3,6 +3,7 @@
 
 #include <hive/plugins/rc/rc_utility.hpp>
 #include <hive/plugins/rc/resource_count.hpp>
+#include <hive/plugins/rc/rc_config.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/protocol/asset.hpp>
