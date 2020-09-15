@@ -240,6 +240,37 @@ namespace hive { namespace chain {
     outFile.close();
     }
 
+  void block_log::iterate_over_block_log(const fc::path& block_log_path, custom_process_block_fun_t fun)
+  {
+    if(my->block_stream.is_open()) my->block_stream.close();
+    if(my->index_stream.is_open()) my->index_stream.close();
+    my->index_write = false;
+    my->block_file = block_log_path;
+
+    my->block_stream.open(my->block_file.generic_string().c_str(), LOG_READ);
+    my->block_write = false;
+
+    uint64_t pos = 0;
+    uint64_t end_pos = 0;
+
+    my->block_stream.seekg(-sizeof(uint64_t), std::ios::end);
+    my->block_stream.read((char*)&end_pos, sizeof(end_pos));
+    signed_block blck;
+
+    my->block_stream.seekg(pos);
+
+    uint32_t blockNo = 0;
+
+    while(pos < end_pos)
+    {
+      fc::raw::unpack(my->block_stream, blck);
+      my->block_stream.read((char*)&pos, sizeof(pos));
+      if(!fun(blck)) break;
+      if(blockNo % 1000 == 0) printf("Rewritten block: %u\r", blockNo);
+    }
+  }
+
+
   void block_log::close()
   {
     my.reset( new detail::block_log_impl() );

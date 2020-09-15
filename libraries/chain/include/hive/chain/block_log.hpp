@@ -5,6 +5,7 @@
 namespace hive { namespace chain {
 
   using namespace hive::protocol;
+  using custom_process_block_fun_t = std::function<bool(const hive::protocol::signed_block&)>;
 
   namespace detail { class block_log_impl; }
 
@@ -41,6 +42,7 @@ namespace hive { namespace chain {
       void open( const fc::path& file );
 
       void rewrite(const fc::path& inputFile, const fc::path& outputFile, uint32_t maxBlockNo);
+	  void iterate_over_block_log(const fc::path& block_log_path, custom_process_block_fun_t fun);
 
       void close();
       bool is_open()const;
