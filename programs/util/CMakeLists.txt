@@ -115,6 +115,18 @@ install( TARGETS
    ARCHIVE DESTINATION lib
 )
 
+add_executable( block_log_to_json block_log_to_json.cpp )
+target_link_libraries( block_log_to_json
+                       PRIVATE hive_chain hive_protocol fc ${CMAKE_DL_LIB} ${PLATFORM_SPECIFIC_LIBS} )
+
+install( TARGETS
+   block_log_to_json
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
+
 add_executable( test_fixed_string test_fixed_string.cpp )
 target_link_libraries( test_fixed_string
                        PRIVATE hive_chain hive_protocol fc ${CMAKE_DL_LIB} ${PLATFORM_SPECIFIC_LIBS} )
@@ -136,3 +148,4 @@ install( TARGETS
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
+
