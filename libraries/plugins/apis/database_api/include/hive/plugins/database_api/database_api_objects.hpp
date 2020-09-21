@@ -531,8 +531,9 @@ struct api_account_object
 
     if( delayed_votes_active )
       delayed_votes = vector< delayed_votes_data >{ a.delayed_votes.begin(), a.delayed_votes.end() };
-  }
 
+    post_voting_power = db.get_effective_vesting_shares(a, VESTS_SYMBOL);
+  }
 
   api_account_object(){}
 
@@ -590,6 +591,9 @@ struct api_account_object
   asset             delegated_vesting_shares;
   asset             received_vesting_shares;
   asset             vesting_withdraw_rate;
+  
+  asset             post_voting_power;
+
   time_point_sec    next_vesting_withdrawal;
   share_type        withdrawn;
   share_type        to_withdraw;
@@ -1096,7 +1100,7 @@ FC_REFLECT( hive::plugins::database_api::api_account_object,
           (hbd_balance)(hbd_seconds)(hbd_seconds_last_update)(hbd_last_interest_payment)
           (savings_hbd_balance)(savings_hbd_seconds)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)(savings_withdraw_requests)
           (reward_hbd_balance)(reward_hive_balance)(reward_vesting_balance)(reward_vesting_hive)
-          (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)(vesting_withdraw_rate)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
+          (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)(vesting_withdraw_rate)(post_voting_power)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
           (pending_transfers)(curation_rewards)
           (posting_rewards)
           (proxied_vsf_votes)(witnesses_voted_for)

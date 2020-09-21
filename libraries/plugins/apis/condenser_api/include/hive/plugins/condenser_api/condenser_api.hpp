@@ -139,6 +139,7 @@ struct api_account_object
     delegated_vesting_shares( legacy_asset::from_asset( a.delegated_vesting_shares ) ),
     received_vesting_shares( legacy_asset::from_asset( a.received_vesting_shares ) ),
     vesting_withdraw_rate( legacy_asset::from_asset( a.vesting_withdraw_rate ) ),
+    post_voting_power( legacy_asset::from_asset(a.post_voting_power) ),
     next_vesting_withdrawal( a.next_vesting_withdrawal ),
     withdrawn( a.withdrawn ),
     to_withdraw( a.to_withdraw ),
@@ -217,6 +218,8 @@ struct api_account_object
   legacy_asset      delegated_vesting_shares;
   legacy_asset      received_vesting_shares;
   legacy_asset      vesting_withdraw_rate;
+  legacy_asset      post_voting_power;
+
   time_point_sec    next_vesting_withdrawal;
   share_type        withdrawn;
   share_type        to_withdraw;
@@ -1205,7 +1208,7 @@ FC_REFLECT( hive::plugins::condenser_api::api_account_object,
           (hbd_balance)(hbd_seconds)(hbd_seconds_last_update)(hbd_last_interest_payment)
           (savings_hbd_balance)(savings_hbd_seconds)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)(savings_withdraw_requests)
           (reward_hbd_balance)(reward_hive_balance)(reward_vesting_balance)(reward_vesting_hive)
-          (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)(vesting_withdraw_rate)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
+          (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)(vesting_withdraw_rate)(post_voting_power)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
           (pending_transfers)(curation_rewards)
           (posting_rewards)
           (proxied_vsf_votes)(witnesses_voted_for)
