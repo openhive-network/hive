@@ -10,8 +10,8 @@ HIVED="${SCRIPTPATH}/bin/hived"
 ARGS=""
 
 if [[ ! -z "$TRACK_ACCOUNT" ]]; then
-    ARGS+=" --plugin=account_history --plugin=account_history_api"
-    ARGS+=" --account-history-track-account-range=[\"$TRACK_ACCOUNT\",\"$TRACK_ACCOUNT\"]"
+    ARGS+=" --plugin=account_history_rocksdb --plugin=account_history_api"
+    ARGS+=" --account-history-rocksdb-track-account-range=[\"$TRACK_ACCOUNT\",\"$TRACK_ACCOUNT\"]"
 fi
 
 if [[ "$USE_PUBLIC_BLOCKLOG" ]]; then
@@ -21,10 +21,12 @@ if [[ "$USE_PUBLIC_BLOCKLOG" ]]; then
     fi
     echo "Hived: Downloading a block_log and replaying the blockchain"
     echo "This may take a little while..."
-    wget -O ${DATADIR}/blockchain/block_log https://gtg.steem.house/get/blockchain/block_log
+    wget -O ${DATADIR}/blockchain/block_log https://gtg.openhive.network/get/blokchain/block_log
     ARGS+=" --replay-blockchain"
   fi
 fi
+
+echo ARGS $ARGS
 
 "$HIVED" \
   --webserver-ws-endpoint=0.0.0.0:8090 \
