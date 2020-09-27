@@ -40,7 +40,7 @@ if [[ "$USE_PUBLIC_BLOCKLOG" ]]; then
     fi
     echo "Hived: Downloading a block_log and replaying the blockchain"
     echo "This may take a little while..."
-    wget -O ${DATADIR}/blockchain/block_log https://gtg.openhive.network/get/blokchain/block_log
+    wget -O ${DATADIR}/blockchain/block_log https://gtg.openhive.network/get/blockchain/block_log
     ARGS+=" --replay-blockchain"
   fi
 fi
