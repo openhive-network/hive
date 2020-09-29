@@ -111,7 +111,9 @@ namespace PSQL
     {
       std::stringstream ss;
       fun(ss);
-      return ss.str();
+      const std::string s{ ss.str() };
+      std::cout << "generated: " << s << std::endl;
+      return s;
     }
   };
 

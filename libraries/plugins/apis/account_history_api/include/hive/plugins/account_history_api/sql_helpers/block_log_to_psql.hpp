@@ -77,16 +77,10 @@ namespace PSQL
 
   std::future<void> async_db_pusher(const std::string& db_con_str, queue<command>& src_queue)
   {
-    connection ___c{db_con_str};
-    nontransaction w{___c};
-    auto ret = w.exec("SELECT * FROM hive_blocks");
-
     return std::async(
       std::launch::async, [&]() -> void {
-        std::cout << "connecting..." << std::endl;
         connection conn{db_con_str.c_str()};
         FC_ASSERT(conn.is_open());
-        std::cout << "connected" << std::endl;
         try
         {
           auto flusher = [&](const TABLE k) {
@@ -96,10 +90,7 @@ namespace PSQL
             std::stringstream ss;
             ss << "INSERT INTO " << it.first << " VALUES " << it.second[0];
             for (size_t i = 1; i < it.second.size(); i++)
-            {
-              std::cout << "pushing: " << it.second[i] << std::endl;
               ss << "," << it.second[i];
-            }
             nontransaction w{conn};
             w.exec(ss.str());
             it.second.clear();
