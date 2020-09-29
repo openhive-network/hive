@@ -30,4 +30,4 @@
 #endif /// __GNUC__
 
 /// Macro to force printing of TODO message at compiler output.
-#define FC_TODO(msg) DO_PRAGMA(message("TODO: " #msg))
+#define FC_TODO(msg) // DO_PRAGMA(message("TODO: " #msg))

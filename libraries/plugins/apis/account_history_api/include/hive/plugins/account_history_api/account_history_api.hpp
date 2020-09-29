@@ -123,6 +123,27 @@ struct enum_virtual_ops_args
   fc::optional< uint32_t > filter;
 };
 
+struct dump_to_postgres_args
+{
+  using str = std::string;
+  
+  str db_host;
+  str db_user;
+  str db_pass;
+  str db_name;
+  uint16_t db_port;
+
+  uint32_t block_range_begin = 1;
+  uint32_t block_range_end = 2;
+
+  str get_db_connection_str() const
+  {
+    std::stringstream ss;
+    ss << "dbname=" << db_name << " user=" << db_user << " password=" << db_pass << " hostaddr=" << db_host << " port=" << db_port;
+    return ss.str();
+  }
+};
+
 struct ops_array_wrapper
 {
   ops_array_wrapper(uint32_t _block) : block(_block) {}
@@ -146,6 +167,11 @@ struct enum_virtual_ops_return
 };
 
 
+struct dump_to_postgres_return
+{
+  int64_t time_for_dump;
+};
+
 class account_history_api
 {
   public:
@@ -157,6 +183,7 @@ class account_history_api
       (get_transaction)
       (get_account_history)
       (enum_virtual_ops)
+      (dump_to_postgres)
     )
 
   private:
@@ -186,7 +213,13 @@ FC_REFLECT( hive::plugins::account_history::get_account_history_return,
 FC_REFLECT( hive::plugins::account_history::enum_virtual_ops_args,
   (block_range_begin)(block_range_end)(group_by_block)(operation_begin)(limit)(filter) )
 
+FC_REFLECT( hive::plugins::account_history::dump_to_postgres_args,
+  (db_host)(db_user)(db_pass)(db_name)(db_port)(block_range_begin)(block_range_end) )
+
 FC_REFLECT( hive::plugins::account_history::ops_array_wrapper, (block)(timestamp)(ops) )
 
 FC_REFLECT( hive::plugins::account_history::enum_virtual_ops_return,
   (ops)(ops_by_block)(next_block_range_begin)(next_operation_begin) )
+
+FC_REFLECT( hive::plugins::account_history::dump_to_postgres_return,
+  (time_for_dump) )

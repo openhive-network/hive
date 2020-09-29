@@ -591,7 +591,7 @@ public:
   void find_operations_by_block(size_t blockNum,
     std::function<void(const rocksdb_operation_object&)> processor) const;
   /// Allows to enumerate all operations registered in given block range.
-  std::pair< uint32_t/*nr last block*/, uint64_t/*operation-id to resume from*/ > enumVirtualOperationsFromBlockRange(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
+  std::pair< uint32_t/*nr last block*/, uint64_t/*operation-id to resume from*/ > enumOperationsFromBlockRange(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
     fc::optional<uint64_t> operationBegin, fc::optional<uint32_t> limit,
     std::function<bool(const rocksdb_operation_object&, uint64_t)> processor) const;
 
@@ -1100,7 +1100,7 @@ void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t block
   }
 }
 
-std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtualOperationsFromBlockRange(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
+std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumOperationsFromBlockRange(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
   fc::optional<uint64_t> resumeFromOperation, fc::optional<uint32_t> limit, 
   std::function<bool(const rocksdb_operation_object&, uint64_t)> processor) const
 {
@@ -1831,7 +1831,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::enum_operations_
   fc::optional<uint64_t> operationBegin, fc::optional<uint32_t> limit,
   std::function<bool(const rocksdb_operation_object&, uint64_t)> processor) const
 {
-  return _my->enumVirtualOperationsFromBlockRange(blockRangeBegin, blockRangeEnd, operationBegin, limit, processor);
+  return _my->enumOperationsFromBlockRange(blockRangeBegin, blockRangeEnd, operationBegin, limit, processor);
 }
 
 bool account_history_rocksdb_plugin::find_transaction_info(const protocol::transaction_id_type& trxId, uint32_t* blockNo,
