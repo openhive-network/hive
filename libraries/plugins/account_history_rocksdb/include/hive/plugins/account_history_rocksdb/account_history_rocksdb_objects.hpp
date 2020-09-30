@@ -55,18 +55,21 @@ class rocksdb_operation_object
       virtual_op( o.virtual_op ),
       timestamp( o.timestamp )
     {
+      impacted.reserve(o.impacted.size());
+      for(const auto& a : o.impacted) impacted.emplace_back(a);
       serialized_op.insert( serialized_op.end(), o.serialized_op.begin(), o.serialized_op.end() );
     }
 
     int64_t                    id = 0;
 
     chain::transaction_id_type trx_id;
-    uint32_t                   block = 0;
-    uint32_t                   trx_in_block = 0;
+    int32_t                    block = 0;
+    int32_t                    trx_in_block = 0;
     uint16_t                   op_in_trx = 0;
     uint16_t                   virtual_op = 0;
     time_point_sec             timestamp;
     serialize_buffer_t         serialized_op;
+    std::vector< account_name_type > impacted;
 };
 
 struct by_block;

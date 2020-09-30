@@ -6,6 +6,7 @@
 
 namespace hive { namespace plugins { namespace account_history {
 
+// using namespace hive::plugins::account_history;
 namespace detail {
 
 class abstract_account_history_api_impl
@@ -315,6 +316,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, dump_to_postgres)
 {
   using namespace PSQL;
+  init_flushes();
   const auto _start = fc::time_point::now();
 
   const std::string conn_str = args.get_db_connection_str();
@@ -323,16 +325,18 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, dump_to_postgres)
 
   std::thread bl = rip_block_log_to_psql( params );
   std::thread ah = rip_vops_to_psql( params, _dataSource );
-  std::thread pushers{ [&](){
-    std::array< std::future<void>, 3 > fvec = {async_db_pusher(conn_str, work_queue),async_db_pusher(conn_str, work_queue),async_db_pusher(conn_str, work_queue)};
-    for(auto& f : fvec)
-      f.wait();
-    }
-  };
+  std::thread p_1{ [&](){ async_db_pusher(conn_str, work_queue); }};
+  std::thread p_2{ [&](){ async_db_pusher(conn_str, work_queue); }};
+  std::thread p_3{ [&](){ async_db_pusher(conn_str, work_queue); }};
 
   bl.join();
   ah.join();
-  pushers.join();
+  work_queue.push(command{PSQL::TABLE::END, "NULL"});
+  work_queue.push(command{PSQL::TABLE::END, "NULL"});
+  work_queue.push(command{PSQL::TABLE::END, "NULL"});
+  p_1.join();
+  p_2.join();
+  p_3.join();
 
   return dump_to_postgres_return{ (fc::time_point::now() - _start).count() };
 }
