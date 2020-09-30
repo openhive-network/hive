@@ -1124,8 +1124,12 @@ std::pair<snapshot_manifest, plugin_external_data_index> state_snapshot_plugin::
       auto keySlice = indexIterator->key();
       auto valueSlice = indexIterator->value();
 
+      buffer.insert(buffer.end(), valueSlice.data(), valueSlice.data() + valueSlice.size());
+
       std::string plugin_name = keySlice.data();
-      std::string relative_path = valueSlice.data();
+      std::string relative_path = { buffer.begin(), buffer.end() };
+
+      buffer.clear();
 
       ilog("Loaded external data info for plugin ${p} having storage of external files inside: `${d}' (relative path)", ("p", plugin_name)("d", relative_path));
 
