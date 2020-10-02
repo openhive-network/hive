@@ -7,12 +7,7 @@
 
 namespace PSQL
 {
-	using hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin;
-	using hive::plugins::account_history_rocksdb::rocksdb_operation_object;
-	using aob = hive::plugins::account_history::api_operation_object;
-	using hive::protocol::signed_block;
 	using namespace pqxx;
-	using namespace PSQL;
 
 	std::thread rip_block_log_to_psql(const psql_serialization_params &params)
 	{
@@ -35,7 +30,18 @@ namespace PSQL
 										", '" + trx.id().str().c_str() + "' )"});
 						for (int64_t i = 0; i < static_cast<int64_t>(trx.operations.size()); i++)
 						{
-							const sql_command_t vec = trx.operations[i].visit(PSQL::sql_serializer_visitor{block.block_num(), tx, i, trx.operations[i].which()});
+							fc::flat_set<account_name_type> ret;
+							hive::app::operation_get_impacted_accounts(trx.operations[i], ret);
+							const sql_command_t vec = trx.operations[i].visit(
+								PSQL::sql_serializer_visitor{
+									block.block_num(), /* block number */
+									tx, /* trx number in block */
+									i, /* op number in transaction */
+									trx.operations[i].which(), /* operation type */
+									false,  /* is_virtual */
+									std::vector<account_name_type>( ret.begin(), ret.end() ) /* impacted */
+								}
+							);
 							for (const auto &v : vec)
 								params.command_queue.push(v);
 						}
@@ -55,23 +61,59 @@ namespace PSQL
 		}};
 	}
 
-	std::thread rip_vops_to_psql(const psql_serialization_params &params, const account_history_rocksdb_plugin &_dataSource)
+	std::thread post_process(queue<post_process_command> &qu, queue<command> &command_queue)
 	{
-		return std::thread{[&]() -> void {
+		return std::thread{[&]() {
+			// std::mutex mtx;
+			auto fun = [&]() {
+				post_process_command ret;
+				qu.wait_pull(ret);
+				while (ret.op.valid())
+				{
+					aob _api_obj{*ret.op};
+					_api_obj.operation_id = ret.op_id;
+					const sql_command_t vec = _api_obj.op.visit(
+						PSQL::sql_serializer_visitor{
+							_api_obj.block, 
+							_api_obj.trx_in_block, 
+							_api_obj.op_in_trx, 
+							_api_obj.op.which(), /* operation type */
+							true, /* is_virtual */
+							ret.op->impacted /* impacted */
+						}
+					);
+					for (const auto &v : vec)
+						command_queue.wait_push(v);
+					qu.wait_pull(ret);
+				}
+				std::cout << "vop support thread finished" << std::endl;
+			};
+
+			std::array< std::shared_ptr< std::thread >, 1 > threads;
+			for (auto &th : threads)
+				th = std::make_shared<std::thread>(fun);
+			for (auto &th : threads)
+			{
+				th->join();
+				th.reset();
+			}
+		}};
+	}
+
+	std::thread rip_vops_to_psql(const psql_serialization_params& params, const account_history_rocksdb_plugin &_dataSource, queue<post_process_command> &qqq)
+	{
+		return std::thread{[params, &qqq, &_dataSource]() -> void {
+			std::cout << "started thread: " << params.start_block << " ; " << params.end_block << std::endl;
 			_dataSource.enum_operations_from_block_range(
 				params.start_block,
 				params.end_block,
 				fc::optional<uint64_t>{}, std::numeric_limits<uint32_t>::max(),
 				[&](const rocksdb_operation_object &op, uint64_t operation_id) -> bool {
-					aob _api_obj{op};
-					_api_obj.operation_id = operation_id;
-					// std::cout << "trx pos vops: " << _api_obj.trx_in_block << ", " << _api_obj.virtual_op << ", " << _api_obj.block << std::endl;
-					const sql_command_t vec = _api_obj.op.visit(PSQL::sql_serializer_visitor{_api_obj.block, _api_obj.trx_in_block, _api_obj.op_in_trx, _api_obj.op.which()});
-					for (const auto &v : vec)
-						params.command_queue.wait_push(v);
+					qqq.wait_push(post_process_command{op, operation_id});
 					return true;
-				});
-			std::cout << "vop thread finished" << std::endl;
+				},
+				true);
+			std::cout << "vop thread finished in range: " << params.start_block << " ; " << params.end_block << std::endl;
 		}};
 	}
 
@@ -86,16 +128,13 @@ namespace PSQL
 				if (it.to_dump->empty())
 					return;
 				std::stringstream ss;
-				std::lock_guard<std::mutex> lck{*(it).mtx};
 
 				std::string str;
-				str = it.to_dump->front().c_str();
-				it.to_dump->pop();
+				it.to_dump->pull(str);
 				ss << "INSERT INTO " << it.table_name << " VALUES " << str;
 				while (!it.to_dump->empty())
 				{
-					str = it.to_dump->front().c_str();
-					it.to_dump->pop();
+					it.to_dump->pull(str);
 					ss << "," << str;
 				}
 				nontransaction w{conn};
@@ -110,16 +149,20 @@ namespace PSQL
 			{
 				{
 					std::lock_guard<std::mutex> lck{*(flushes.at(ret.first).mtx)};
-					flushes.at(ret.first).to_dump->emplace(ret.second);
+					flushes.at(ret.first).to_dump->push(ret.second);
+					if (flushes.at(ret.first).to_dump->size() == buff_size)
+						flusher(ret.first);
 				}
-				if (flushes.at(ret.first).to_dump->size() == buff_size)
-					flusher(ret.first);
 				src_queue.wait_pull(ret);
 			}
 			std::cout << "flush break!" << std::endl;
 
 			for (auto &kv : flushes)
-				flusher(kv.first);
+				if (!kv.second.to_dump->empty())
+				{
+					std::lock_guard<std::mutex> lck{*(kv.second.mtx)};
+					flusher(kv.first);
+				}
 		}
 		catch (const std::exception &e)
 		{

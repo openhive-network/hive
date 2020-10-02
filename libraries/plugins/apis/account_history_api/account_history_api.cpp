@@ -316,27 +316,39 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, dump_to_postgres)
 {
   using namespace PSQL;
+  const uint32_t step = 500'000;
   init_flushes();
-  const auto _start = fc::time_point::now();
-
   const std::string conn_str = args.get_db_connection_str();
   queue<command> work_queue;
+  queue<post_process_command> pp_queue;
+
   psql_serialization_params params{ args.block_range_begin, args.block_range_end, work_queue, _db };
+  
+  const uint32_t _end =std::min(args.block_range_begin+step, args.block_range_end);
+  psql_serialization_params moving_params{ args.block_range_begin, _end, work_queue, _db };
+  std::vector<std::thread> pushers; pushers.reserve(10);
+  queue<std::thread> ah;
 
+  const auto _start = fc::time_point::now();
+
+  // starting
   std::thread bl = rip_block_log_to_psql( params );
-  std::thread ah = rip_vops_to_psql( params, _dataSource );
-  std::thread p_1{ [&](){ async_db_pusher(conn_str, work_queue); }};
-  std::thread p_2{ [&](){ async_db_pusher(conn_str, work_queue); }};
-  std::thread p_3{ [&](){ async_db_pusher(conn_str, work_queue); }};
+  std::thread pp = post_process(pp_queue, work_queue);
+  for(int i = 0; i < 3; i++) pushers.emplace_back( [&](){ async_db_pusher(conn_str, work_queue); } );
+  do
+  {
+    std::cout << "starting thread: " << moving_params.start_block << " ; " << moving_params.end_block << std::endl;
+    ah.wait_push(rip_vops_to_psql( moving_params, _dataSource, pp_queue ));
+    if(ah.size() == 3) ah.pull().join();
+  }while(moving_params.move_range(step, args.block_range_end));
 
+  // syncing
   bl.join();
-  ah.join();
-  work_queue.push(command{PSQL::TABLE::END, "NULL"});
-  work_queue.push(command{PSQL::TABLE::END, "NULL"});
-  work_queue.push(command{PSQL::TABLE::END, "NULL"});
-  p_1.join();
-  p_2.join();
-  p_3.join();
+  while(!ah.empty()) ah.pull().join();
+  pp_queue.wait_push( post_process_command{} );
+  pp.join();
+  for(size_t i = 0; i < pushers.size(); i++) work_queue.wait_push(command{});
+  for(auto& th : pushers) th.join();
 
   return dump_to_postgres_return{ (fc::time_point::now() - _start).count() };
 }

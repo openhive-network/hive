@@ -270,7 +270,7 @@ namespace hive { namespace chain {
       my->block_stream.read((char*)&pos, sizeof(pos));
       if(!fun(blck)) break;
       else blockNo++;
-      if(blockNo % 1000 == 0) printf("Iterated block: %u\r", blockNo);
+    //   if(blockNo % 1000 == 0) printf("Iterated block: %u\r", blockNo);
     }
   }
 

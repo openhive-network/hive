@@ -88,6 +88,8 @@ using ::rocksdb::ColumnFamilyOptions;
 using ::rocksdb::ColumnFamilyHandle;
 using ::rocksdb::WriteBatch;
 
+using collumn_familly_handle_collection_t = std::vector<ColumnFamilyHandle*>;
+
 /** Represents an AH entry in mapped to account name.
   *  Holds additional informations, which are needed to simplify pruning process.
   *  All operations specific to given account, are next mapped to ID of given object.
@@ -358,7 +360,7 @@ private:
 class CachableWriteBatch : public WriteBatch
 {
 public:
-  CachableWriteBatch(const std::unique_ptr<DB>& storage, const std::vector<ColumnFamilyHandle*>& columnHandles) :
+  CachableWriteBatch(const std::unique_ptr<DB>& storage, const collumn_familly_handle_collection_t& columnHandles) :
     _storage(storage), _columnHandles(columnHandles) {}
 
   bool getAHInfo(const account_name_type& name, account_history_info* ahInfo) const
@@ -400,7 +402,7 @@ public:
 
 private:
   const std::unique_ptr<DB>&                        _storage;
-  const std::vector<ColumnFamilyHandle*>&           _columnHandles;
+  const collumn_familly_handle_collection_t&           _columnHandles;
   std::map<account_name_type, account_history_info> _ahInfoCache;
 };
 
@@ -577,6 +579,38 @@ public:
     }
   }
 
+  using self_destruction_connection = std::unique_ptr< rocksdb::DB, std::function<void(DB*)>>;
+  self_destruction_connection get_read_only_connection() const
+  {
+    static std::map<uint64_t, std::shared_ptr<collumn_familly_handle_collection_t > > column_handles; 
+    self_destruction_connection ret( nullptr, [& ](DB* ptr){
+        if(ptr == nullptr) return;
+        cleanupColumnHandles(ptr, *column_handles[ reinterpret_cast<uint64_t>(ptr) ]);
+        column_handles.erase(reinterpret_cast<uint64_t>(ptr));
+        ptr->Close();
+        delete ptr;
+        ptr = nullptr;
+      }
+    );
+
+    auto columnDefs = prepareColumnDefinitions(true);
+    DB* s_db = nullptr;
+    auto strPath = _storagePath.string();
+    Options options;
+    // options.IncreaseParallelism();
+    options.max_open_files = OPEN_FILE_LIMIT;
+    DBOptions dbOptions(options);
+    std::shared_ptr<collumn_familly_handle_collection_t> temp_column_family{new collumn_familly_handle_collection_t{}};
+
+    auto status = DB::OpenForReadOnly(dbOptions, strPath, columnDefs, temp_column_family.get(), &s_db, false);
+    if(status.ok())
+    {
+      ret.reset(s_db);
+      column_handles[reinterpret_cast<uint64_t>(s_db)] = temp_column_family;
+    }
+    return ret;
+  }
+
   void printReport(uint32_t blockNo, const char* detailText) const;
   void on_pre_reindex( const hive::chain::reindex_notification& note );
   void on_post_reindex( const hive::chain::reindex_notification& note );
@@ -593,7 +627,7 @@ public:
   /// Allows to enumerate all operations registered in given block range.
   std::pair< uint32_t/*nr last block*/, uint64_t/*operation-id to resume from*/ > enumOperationsFromBlockRange(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
     fc::optional<uint64_t> operationBegin, fc::optional<uint32_t> limit,
-    std::function<bool(const rocksdb_operation_object&, uint64_t)> processor) const;
+    std::function<bool(const rocksdb_operation_object&, uint64_t)> processor, const bool = false) const;
 
   bool find_transaction_info(const protocol::transaction_id_type& trxId, uint32_t* blockNo,
     uint32_t* txInBlock) const;
@@ -619,7 +653,7 @@ private:
   void update_lib( uint32_t );
 
   typedef std::vector<ColumnFamilyDescriptor> ColumnDefinitions;
-  ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn);
+  ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn) const;
 
   /// Returns true if database will need data import.
   bool createDbSchema(const bfs::path& path);
@@ -627,12 +661,12 @@ private:
   void cleanupColumnHandles()
   {
     if(_storage)
-      cleanupColumnHandles(_storage.get());
+      cleanupColumnHandles(_storage.get(), _columnHandles);
   }
 
-  void cleanupColumnHandles(::rocksdb::DB* db)
+  void cleanupColumnHandles(::rocksdb::DB* db, collumn_familly_handle_collection_t& vCFH) const
   {
-    for(auto* h : _columnHandles)
+    for(auto* h : vCFH)
     {
       auto s = db->DestroyColumnFamilyHandle(h);
       if(s.ok() == false)
@@ -640,7 +674,7 @@ private:
         elog("Cannot destroy column family handle. Error: `${e}'", ("e", s.ToString()));
       }
     }
-    _columnHandles.clear();
+    vCFH.clear();
   }
 
   template< typename T >
@@ -824,7 +858,7 @@ private:
   chain::database&                 _mainDb;
   bfs::path                        _storagePath;
   std::unique_ptr<DB>              _storage;
-  std::vector<ColumnFamilyHandle*> _columnHandles;
+  collumn_familly_handle_collection_t _columnHandles;
   CachableWriteBatch               _writeBuffer;
 
   boost::signals2::connection      _on_post_apply_operation_con;
@@ -1100,9 +1134,10 @@ void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t block
   }
 }
 
+
 std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumOperationsFromBlockRange(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
   fc::optional<uint64_t> resumeFromOperation, fc::optional<uint32_t> limit, 
-  std::function<bool(const rocksdb_operation_object&, uint64_t)> processor) const
+  std::function<bool(const rocksdb_operation_object&, uint64_t)> processor, const bool create_new_connection) const
 {
   FC_ASSERT(blockRangeEnd > blockRangeBegin, "Block range must be upward");
 
@@ -1117,7 +1152,16 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumOperat
   ReadOptions rOptions;
   rOptions.iterate_upper_bound = &upperBoundSlice;
 
-  std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(rOptions, _columnHandles[OPERATION_BY_BLOCK]));
+  DB* conn = nullptr;
+  auto new_connection =  get_read_only_connection();
+  if(create_new_connection) conn = new_connection.get();
+  else
+  {
+    conn = const_cast<DB*>(_storage.get());
+    new_connection.reset(nullptr);
+  }
+
+  std::unique_ptr<::rocksdb::Iterator> it(conn->NewIterator(rOptions, _columnHandles[OPERATION_BY_BLOCK]));
 
   uint32_t lastFoundBlock = 0;
 
@@ -1165,7 +1209,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumOperat
     op_by_block_num_slice_t lowerBoundSlice(block_op_id_pair(lastFoundBlock, 0));
     rOptions = ReadOptions();
     rOptions.iterate_lower_bound = &lowerBoundSlice;
-    it.reset(_storage->NewIterator(rOptions, _columnHandles[OPERATION_BY_BLOCK]));
+    it.reset(conn->NewIterator(rOptions, _columnHandles[OPERATION_BY_BLOCK]));
 
     op_by_block_num_slice_t nextRangeBeginSlice(block_op_id_pair(lastFoundBlock + 1, 0));
     for(it->Seek(nextRangeBeginSlice); it->Valid(); it->Next())
@@ -1306,7 +1350,7 @@ void account_history_rocksdb_plugin::impl::update_lib( uint32_t lib )
   checkStatus( s );
 }
 
-account_history_rocksdb_plugin::impl::ColumnDefinitions account_history_rocksdb_plugin::impl::prepareColumnDefinitions(bool addDefaultColumn)
+account_history_rocksdb_plugin::impl::ColumnDefinitions account_history_rocksdb_plugin::impl::prepareColumnDefinitions(bool addDefaultColumn) const
 {
   ColumnDefinitions columnDefs;
   if(addDefaultColumn)
@@ -1352,7 +1396,7 @@ bool account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
 
   if(s.ok())
   {
-    cleanupColumnHandles(db);
+    cleanupColumnHandles(db, _columnHandles);
     delete db;
     return false; /// DB does not need data import.
   }
@@ -1370,7 +1414,7 @@ bool account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
       saveStoreVersion();
       /// Store initial values of Seq-IDs for held objects.
       flushWriteBuffer(db);
-      cleanupColumnHandles(db);
+      cleanupColumnHandles(db, _columnHandles);
     }
     else
     {
@@ -1829,9 +1873,9 @@ void account_history_rocksdb_plugin::find_operations_by_block(size_t blockNum,
 
 std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::enum_operations_from_block_range(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
   fc::optional<uint64_t> operationBegin, fc::optional<uint32_t> limit,
-  std::function<bool(const rocksdb_operation_object&, uint64_t)> processor) const
+  std::function<bool(const rocksdb_operation_object&, uint64_t)> processor, const bool create_new_connection) const
 {
-  return _my->enumOperationsFromBlockRange(blockRangeBegin, blockRangeEnd, operationBegin, limit, processor);
+  return _my->enumOperationsFromBlockRange(blockRangeBegin, blockRangeEnd, operationBegin, limit, processor, create_new_connection);
 }
 
 bool account_history_rocksdb_plugin::find_transaction_info(const protocol::transaction_id_type& trxId, uint32_t* blockNo,
