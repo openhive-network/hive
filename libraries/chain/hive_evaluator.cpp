@@ -360,7 +360,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, o.creator );
 
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
   {
     meta.account = new_account.get_id();
@@ -458,7 +458,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, o.creator, o.delegation );
 
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
   {
     meta.account = new_account.get_id();
@@ -540,7 +540,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     acc.last_account_update = _db.head_block_time();
   });
 
-  #ifndef IS_LOW_MEM
+  #ifdef COLLECT_ACCOUNT_METADATA
   if( o.json_metadata.size() > 0 )
   {
     _db.modify( _db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
@@ -606,7 +606,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
     acc.last_account_update = _db.head_block_time();
   });
 
-  #ifndef IS_LOW_MEM
+  #ifdef COLLECT_ACCOUNT_METADATA
   if( o.json_metadata.size() > 0 || o.posting_json_metadata.size() > 0 )
   {
     _db.modify( _db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
@@ -2424,7 +2424,7 @@ void pow_apply( database& db, Operation o )
     const auto& new_account = create_account( db, o.get_worker_account(), o.work.worker, dgp.time, true /*mined*/, account_name_type() );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
       meta.account = new_account.get_id();
@@ -2543,7 +2543,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time, true /*mined*/, account_name_type() );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
       meta.account = new_account.get_id();
@@ -2753,7 +2753,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, o.creator );
 
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
   {
     meta.account = new_account.get_id();

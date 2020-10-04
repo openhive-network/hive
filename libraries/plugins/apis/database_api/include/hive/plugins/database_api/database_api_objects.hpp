@@ -514,7 +514,7 @@ struct api_account_object
     active = authority( auth.active );
     posting = authority( auth.posting );
     last_owner_update = auth.last_owner_update;
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
     const auto* maybe_meta = db.find< account_metadata_object, by_account >( id );
     if( maybe_meta )
     {

@@ -8423,7 +8423,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     BOOST_REQUIRE( bob_auth.active == authority( 2, priv_key.get_public_key(), 2 ) );
     BOOST_REQUIRE( bob_auth.posting == authority( 3, priv_key.get_public_key(), 3 ) );
     BOOST_REQUIRE( bob.memo_key == priv_key.get_public_key() );
-#ifndef IS_LOW_MEM // json_metadata is not stored on low memory nodes
+#ifdef COLLECT_ACCOUNT_METADATA // json_metadata is stored conditionally
     const auto& bob_meta = db->get< account_metadata_object, by_account >( bob.get_id() );
     BOOST_REQUIRE( bob_meta.json_metadata == "{\"foo\":\"bar\"}" );
 #endif
@@ -8889,7 +8889,7 @@ BOOST_AUTO_TEST_CASE( account_update2_apply )
     BOOST_REQUIRE( acct_auth.active == authority( 2, new_private_key.get_public_key(), 2 ) );
     BOOST_REQUIRE( acct.memo_key == new_private_key.get_public_key() );
 
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
     const account_metadata_object& acct_metadata = db->get< account_metadata_object, by_account >( acct.get_id() );
     BOOST_REQUIRE( acct_metadata.json_metadata == "{\"bar\":\"foo\"}" );
     BOOST_REQUIRE( acct_metadata.posting_json_metadata == "{\"success\":true}" );
