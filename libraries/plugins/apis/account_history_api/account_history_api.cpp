@@ -2,9 +2,11 @@
 #include <hive/plugins/account_history_api/account_history_api.hpp>
 
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
+#include <hive/plugins/account_history_api/sql_helpers/block_log_to_psql.hpp>
 
 namespace hive { namespace plugins { namespace account_history {
 
+// using namespace hive::plugins::account_history;
 namespace detail {
 
 class abstract_account_history_api_impl
@@ -17,6 +19,7 @@ class abstract_account_history_api_impl
     virtual get_transaction_return get_transaction( const get_transaction_args& ) = 0;
     virtual get_account_history_return get_account_history( const get_account_history_args& ) = 0;
     virtual enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) = 0;
+    virtual dump_to_postgres_return dump_to_postgres( const dump_to_postgres_args& ) = 0;
 
     chain::database& _db;
 };
@@ -31,6 +34,7 @@ class account_history_api_chainbase_impl : public abstract_account_history_api_i
     get_transaction_return get_transaction( const get_transaction_args& ) override;
     get_account_history_return get_account_history( const get_account_history_args& ) override;
     enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) override;
+    dump_to_postgres_return dump_to_postgres( const dump_to_postgres_args& ) override;
 };
 
 DEFINE_API_IMPL( account_history_api_chainbase_impl, get_ops_in_block )
@@ -125,6 +129,11 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, enum_virtual_ops )
   FC_ASSERT( false, "This API is not supported for account history backed by Chainbase" );
 }
 
+DEFINE_API_IMPL( account_history_api_chainbase_impl, dump_to_postgres )
+{
+  FC_ASSERT( false, "This API is not supported for account history backed by Chainbase" );
+}
+
 class account_history_api_rocksdb_impl : public abstract_account_history_api_impl
 {
   public:
@@ -136,6 +145,7 @@ class account_history_api_rocksdb_impl : public abstract_account_history_api_imp
     get_transaction_return get_transaction( const get_transaction_args& ) override;
     get_account_history_return get_account_history( const get_account_history_args& ) override;
     enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) override;
+    dump_to_postgres_return dump_to_postgres( const dump_to_postgres_args& ) override;
 
     const account_history_rocksdb::account_history_rocksdb_plugin& _dataSource;
 };
@@ -370,6 +380,50 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
   return result;
 }
 
+DEFINE_API_IMPL( account_history_api_rocksdb_impl, dump_to_postgres)
+{
+  using namespace PSQL;
+  
+  // config
+  const size_t ah_thread_readers = 3;
+  const size_t pushing_threads = 3;
+  const size_t async_per_pusher = 2;
+  const uint32_t step{ ( args.block_step.valid() ? *args.block_step : 500'000 ) };
+  const std::string conn_str = args.get_db_connection_str();
+  queue<command> work_queue;
+  queue<post_process_command> pp_queue;
+  psql_serialization_params params{ args.block_range_begin, args.block_range_end, work_queue, _db };
+  const uint32_t _end =std::min(args.block_range_begin+step, args.block_range_end);
+  psql_serialization_params moving_params{ args.block_range_begin, _end, work_queue, _db };
+  std::vector<std::thread> pushers; pushers.reserve(10);
+  queue<std::thread> ah;
+
+  const auto _start = fc::time_point::now();
+  init_psql_database(conn_str);
+
+  // starting
+  std::thread bl = rip_block_log_to_psql( params );
+  std::thread pp = post_process(pp_queue, work_queue);
+  for(size_t i = 0; i < pushing_threads; i++) pushers.emplace_back( [&](){ async_db_pusher(conn_str, work_queue, async_per_pusher); } );
+  do
+  {
+    ah.wait_push(rip_vops_to_psql( moving_params, _dataSource, pp_queue ));
+    if(ah.size() == ah_thread_readers) ah.pull().join();
+  }while(moving_params.move_range(step, args.block_range_end));
+
+  // syncing
+  bl.join();
+  while(!ah.empty()) ah.pull().join();
+  pp_queue.wait_push( post_process_command{} );
+  pp.join();
+  for(size_t i = 0; i < pushers.size() * async_per_pusher; i++) work_queue.wait_push(command{});
+  for(auto& th : pushers) th.join();
+
+  finish_psql_database( conn_str );
+
+  return dump_to_postgres_return{ (fc::time_point::now() - _start).count() };
+}
+
 } // detail
 
 account_history_api::account_history_api()
@@ -403,6 +457,7 @@ DEFINE_LOCKLESS_APIS( account_history_api ,
   (get_transaction)
   (get_account_history)
   (enum_virtual_ops)
+  (dump_to_postgres)
 )
 
 } } } // hive::plugins::account_history

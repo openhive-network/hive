@@ -749,6 +749,11 @@ namespace chain {
         return _hardfork_versions;
       }
 
+      block_log& get_block_log()
+      {
+        return _block_log;
+      }
+
     private:
 
       std::unique_ptr< database_impl > _my;

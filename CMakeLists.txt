@@ -2,6 +2,15 @@
 project( Hive )
 cmake_minimum_required( VERSION 3.2 )
 
+# prevent build in source and
+option( PROTECT_FROM_SOURCE_MESS "if set, cmake will prevent in-source build. default: ON" ON )
+if( PROTECT_FROM_SOURCE_MESS )
+  set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+  if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
+    message(FATAL_ERROR "In-source builds are not allowed, remove CMakeFiles and CMakeCache.txt")
+  endif()
+endif()
+
 set( BLOCKCHAIN_NAME "Hive" )
 set( CMAKE_CXX_STANDARD 14 )
 
@@ -35,6 +44,18 @@ list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libraries/fc/CMakeMo
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libraries/fc/GitVersionGen" )
 include( GetGitRevisionDescription )
 get_git_head_revision( GIT_REFSPEC GIT_SHA2 )
+
+# auto-update submodules
+option( AUTO_UPDATE_SUBMODULES "if set cmake will automatically update submodules. default: True" ON )
+if(AUTO_UPDATE_SUBMODULES)
+  find_program(GIT_PROGRAM git)
+  if(NOT GIT_PROGRAM)
+    message(WARNING "git not found, make sure that submodules are updated")
+  else()
+    message("git found, updating submodules")
+    execute_process(COMMAND ${GIT_PROGRAM} submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} )
+  endif()
+endif()
 
 SET(BOOST_COMPONENTS)
 LIST(APPEND BOOST_COMPONENTS thread
