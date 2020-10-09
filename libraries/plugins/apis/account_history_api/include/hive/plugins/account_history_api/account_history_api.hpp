@@ -47,8 +47,10 @@ struct api_operation_object
 
 struct get_ops_in_block_args
 {
-  uint32_t block_num;
-  bool     only_virtual;
+  uint32_t block_num = 0;
+  bool     only_virtual = false;
+  /// if set to true also operations from reversible block will be included if block_num points to such block.
+  bool     include_reversible = false;
 };
 
 struct get_ops_in_block_return
@@ -60,6 +62,8 @@ struct get_ops_in_block_return
 struct get_transaction_args
 {
   hive::protocol::transaction_id_type id;
+  /// if set to true transaction from reversible block will be returned if id matches given one.
+  bool     include_reversible = false;
 };
 
 typedef hive::protocol::annotated_signed_transaction get_transaction_return;
@@ -68,8 +72,10 @@ typedef hive::protocol::annotated_signed_transaction get_transaction_return;
 struct get_account_history_args
 {
   hive::protocol::account_name_type   account;
-  uint64_t                               start = -1;
-  uint32_t                               limit = 1000;
+  uint64_t                            start = -1;
+  uint32_t                            limit = 1000;
+  /// if set to true operations from reversible block will be also returned.
+  bool     include_reversible = false;
 };
 
 struct get_account_history_return
@@ -116,6 +122,8 @@ struct enum_virtual_ops_args
 {
   uint32_t block_range_begin = 1;
   uint32_t block_range_end = 2;
+  /// if set to true operations from reversible block will be also returned.
+  bool     include_reversible = false;
 
   fc::optional<bool> group_by_block;
   fc::optional< uint64_t > operation_begin;
@@ -175,16 +183,16 @@ FC_REFLECT( hive::plugins::account_history::get_ops_in_block_return,
   (ops) )
 
 FC_REFLECT( hive::plugins::account_history::get_transaction_args,
-  (id) )
+  (id)(include_reversible) )
 
 FC_REFLECT( hive::plugins::account_history::get_account_history_args,
-  (account)(start)(limit) )
+  (account)(start)(limit)(include_reversible))
 
 FC_REFLECT( hive::plugins::account_history::get_account_history_return,
   (history) )
 
 FC_REFLECT( hive::plugins::account_history::enum_virtual_ops_args,
-  (block_range_begin)(block_range_end)(group_by_block)(operation_begin)(limit)(filter) )
+  (block_range_begin)(block_range_end)(include_reversible)(group_by_block)(operation_begin)(limit)(filter) )
 
 FC_REFLECT( hive::plugins::account_history::ops_array_wrapper, (block)(timestamp)(ops) )
 

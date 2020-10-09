@@ -584,18 +584,19 @@ public:
   /// Allows to start immediate data import (outside replay process).
   void importData(unsigned int blockLimit);
 
-  void find_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit,
+  void find_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit, bool include_reversible,
     std::function<void(unsigned int, const rocksdb_operation_object&)> processor) const;
   bool find_operation_object(size_t opId, rocksdb_operation_object* op) const;
   /// Allows to look for all operations present in given block and call `processor` for them.
-  void find_operations_by_block(size_t blockNum,
+  void find_operations_by_block(size_t blockNum, bool include_reversible,
     std::function<void(const rocksdb_operation_object&)> processor) const;
   /// Allows to enumerate all operations registered in given block range.
-  std::pair< uint32_t/*nr last block*/, uint64_t/*operation-id to resume from*/ > enumVirtualOperationsFromBlockRange(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
+  std::pair< uint32_t/*nr last block*/, uint64_t/*operation-id to resume from*/ > enumVirtualOperationsFromBlockRange(
+    uint32_t blockRangeBegin, uint32_t blockRangeEnd, bool include_reversible,
     fc::optional<uint64_t> operationBegin, fc::optional<uint32_t> limit,
     std::function<bool(const rocksdb_operation_object&, uint64_t)> processor) const;
 
-  bool find_transaction_info(const protocol::transaction_id_type& trxId, uint32_t* blockNo,
+  bool find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo,
     uint32_t* txInBlock) const;
 
   void shutdownDb()
@@ -1005,7 +1006,7 @@ void account_history_rocksdb_plugin::impl::storeOpFilteringParameters(const std:
   }
 
 void account_history_rocksdb_plugin::impl::find_account_history_data(const account_name_type& name, uint64_t start,
-  uint32_t limit, std::function<void(unsigned int, const rocksdb_operation_object&)> processor) const
+  uint32_t limit, bool include_reversible, std::function<void(unsigned int, const rocksdb_operation_object&)> processor) const
 {
   ReadOptions rOptions;
 
@@ -1080,7 +1081,7 @@ bool account_history_rocksdb_plugin::impl::find_operation_object(size_t opId, ro
   return false;
 }
 
-void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t blockNum,
+void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t blockNum, bool include_reversible,
   std::function<void(const rocksdb_operation_object&)> processor) const
 {
   std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(ReadOptions(), _columnHandles[OPERATION_BY_BLOCK]));
@@ -1100,7 +1101,8 @@ void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t block
   }
 }
 
-std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtualOperationsFromBlockRange(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
+std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtualOperationsFromBlockRange(
+  uint32_t blockRangeBegin, uint32_t blockRangeEnd, bool include_reversible,
   fc::optional<uint64_t> resumeFromOperation, fc::optional<uint32_t> limit, 
   std::function<bool(const rocksdb_operation_object&, uint64_t)> processor) const
 {
@@ -1182,7 +1184,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
 }
 
 bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol::transaction_id_type& trxId,
-  uint32_t* blockNo, uint32_t* txInBlock) const
+  bool include_reversible, uint32_t* blockNo, uint32_t* txInBlock) const
   {
   ReadOptions rOptions;
   TransactionIdSlice idSlice(trxId);
@@ -1811,9 +1813,9 @@ void account_history_rocksdb_plugin::plugin_shutdown()
 }
 
 void account_history_rocksdb_plugin::find_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit,
-  std::function<void(unsigned int, const rocksdb_operation_object&)> processor) const
+  bool include_reversible, std::function<void(unsigned int, const rocksdb_operation_object&)> processor) const
 {
-  _my->find_account_history_data(name, start, limit, processor);
+  _my->find_account_history_data(name, start, limit, include_reversible, processor);
 }
 
 bool account_history_rocksdb_plugin::find_operation_object(size_t opId, rocksdb_operation_object* op) const
@@ -1821,23 +1823,23 @@ bool account_history_rocksdb_plugin::find_operation_object(size_t opId, rocksdb_
   return _my->find_operation_object(opId, op);
 }
 
-void account_history_rocksdb_plugin::find_operations_by_block(size_t blockNum,
+void account_history_rocksdb_plugin::find_operations_by_block(size_t blockNum, bool include_reversible,
   std::function<void(const rocksdb_operation_object&)> processor) const
 {
-  _my->find_operations_by_block(blockNum, processor);
+  _my->find_operations_by_block(blockNum, include_reversible, processor);
 }
 
 std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::enum_operations_from_block_range(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
-  fc::optional<uint64_t> operationBegin, fc::optional<uint32_t> limit,
+  bool include_reversible, fc::optional<uint64_t> operationBegin, fc::optional<uint32_t> limit,
   std::function<bool(const rocksdb_operation_object&, uint64_t)> processor) const
 {
-  return _my->enumVirtualOperationsFromBlockRange(blockRangeBegin, blockRangeEnd, operationBegin, limit, processor);
+  return _my->enumVirtualOperationsFromBlockRange(blockRangeBegin, blockRangeEnd, include_reversible, operationBegin, limit, processor);
 }
 
-bool account_history_rocksdb_plugin::find_transaction_info(const protocol::transaction_id_type& trxId, uint32_t* blockNo,
+bool account_history_rocksdb_plugin::find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo,
   uint32_t* txInBlock) const
   {
-  return _my->find_transaction_info(trxId, blockNo, txInBlock);
+  return _my->find_transaction_info(trxId, include_reversible, blockNo, txInBlock);
   }
 
 } } }
