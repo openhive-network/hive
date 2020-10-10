@@ -135,7 +135,8 @@ struct ops_array_wrapper
 {
   ops_array_wrapper(uint32_t _block) : block(_block) {}
 
-  uint32_t block = 0;
+  uint32_t                          block = 0;
+  bool                              irreversible = false;
   fc::time_point_sec                timestamp;
   std::vector<api_operation_object> ops;
 
@@ -194,7 +195,7 @@ FC_REFLECT( hive::plugins::account_history::get_account_history_return,
 FC_REFLECT( hive::plugins::account_history::enum_virtual_ops_args,
   (block_range_begin)(block_range_end)(include_reversible)(group_by_block)(operation_begin)(limit)(filter) )
 
-FC_REFLECT( hive::plugins::account_history::ops_array_wrapper, (block)(timestamp)(ops) )
+FC_REFLECT( hive::plugins::account_history::ops_array_wrapper, (block)(irreversible)(timestamp)(ops) )
 
 FC_REFLECT( hive::plugins::account_history::enum_virtual_ops_return,
   (ops)(ops_by_block)(next_block_range_begin)(next_operation_begin) )

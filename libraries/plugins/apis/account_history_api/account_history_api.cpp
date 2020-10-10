@@ -245,7 +245,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 
   std::pair< uint32_t, uint64_t > next_values = _dataSource.enum_operations_from_block_range(args.block_range_begin,
     args.block_range_end, args.include_reversible, args.operation_begin, args.limit,
-    [groupOps, &result, &args ](const account_history_rocksdb::rocksdb_operation_object& op, uint64_t operation_id)
+    [groupOps, &result, &args ](const account_history_rocksdb::rocksdb_operation_object& op, uint64_t operation_id, bool irreversible)
     {
 
       if( args.filter.valid() )
@@ -264,7 +264,10 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
             ops_array_wrapper& w = const_cast<ops_array_wrapper&>(*ii.first);
 
             if(ii.second)
+            {
               w.timestamp = op.timestamp;
+              w.irreversible = irreversible;
+            }
             
             w.ops.emplace_back(std::move(_api_obj));
           }
@@ -285,7 +288,10 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
           ops_array_wrapper& w = const_cast<ops_array_wrapper&>(*ii.first);
 
           if(ii.second)
+          {
             w.timestamp = op.timestamp;
+            w.irreversible = irreversible;
+          }
 
           api_operation_object _api_obj(op);
           _api_obj.operation_id = operation_id;

@@ -508,6 +508,9 @@ public:
         load_additional_data_from_snapshot(note);
       }, _self, 0);
 
+    _cached_irreversible_block.store(0);
+    _currently_processed_block.store(0);
+
     HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
     }
 
@@ -569,6 +572,22 @@ public:
         },
         rocksdb_plugin
       );
+
+      _on_pre_apply_block_conn = _mainDb.add_pre_apply_block_handler(
+        [&](const block_notification& bn)
+        {
+          on_pre_apply_block(bn);
+        },
+        rocksdb_plugin
+      );
+
+      _on_post_apply_block_conn = _mainDb.add_post_apply_block_handler(
+        [&](const block_notification& bn)
+        {
+          on_post_apply_block(bn);
+        },
+        rocksdb_plugin
+      );
     }
     else
     {
@@ -594,7 +613,7 @@ public:
   std::pair< uint32_t/*nr last block*/, uint64_t/*operation-id to resume from*/ > enumVirtualOperationsFromBlockRange(
     uint32_t blockRangeBegin, uint32_t blockRangeEnd, bool include_reversible,
     fc::optional<uint64_t> operationBegin, fc::optional<uint32_t> limit,
-    std::function<bool(const rocksdb_operation_object&, uint64_t)> processor) const;
+    std::function<bool(const rocksdb_operation_object&, uint64_t, bool)> processor) const;
 
   bool find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo,
     uint32_t* txInBlock) const;
@@ -794,6 +813,9 @@ private:
 
   void on_irreversible_block( uint32_t block_num );
 
+  void on_post_apply_block(const block_notification& bn);
+  void on_pre_apply_block(const  block_notification& bn);
+
   void collectOptions(const bpo::variables_map& options);
 
   /** Returns true if given account is tracked.
@@ -817,6 +839,9 @@ private:
   void storeOpFilteringParameters(const std::vector<std::string>& opList,
     flat_set<std::string>* storage) const;
 
+  std::vector<rocksdb_operation_object> collectReversibleOps(uint32_t* blockRangeBegin, uint32_t* blockRangeEnd,
+    uint32_t* collectedIrreversibleBlock) const;
+
 /// Class attributes:
 private:
   typedef flat_map< account_name_type, account_name_type > account_name_range_index;
@@ -830,6 +855,8 @@ private:
 
   boost::signals2::connection      _on_post_apply_operation_con;
   boost::signals2::connection      _on_irreversible_block_conn;
+  boost::signals2::connection      _on_pre_apply_block_conn;
+  boost::signals2::connection      _on_post_apply_block_conn;
 
   /// Helper member to be able to detect another incomming tx and increment tx-counter.
   transaction_id_type              _lastTx;
@@ -853,6 +880,23 @@ private:
     */
   unsigned int                     _collectedOpsWriteLimit = 1;
 
+  /// <summary>
+  /// Node being irreversible atm.
+  /// </summary>
+  std::atomic_uint                 _cached_irreversible_block;
+  /// <summary>
+  ///  Block currently processed by node
+  /// </summary>
+  std::atomic_uint                 _currently_processed_block;
+  /// <summary>
+  ///  Allows to hold API threads trying to read data coming from currently processed block until it will
+  ///  finish its processing and data will be complete.
+  /// </summary>
+  std::mutex                       _currently_processed_block_mtx;
+  /// <summary>
+  /// Controls MT access to the volatile_operation_index being cleared during `on_irreversible_block` handler execution.
+  /// </summary>
+  mutable std::mutex               _volatile_index_mtx;
   account_name_range_index         _tracked_accounts;
   flat_set<std::string>            _op_list;
   flat_set<std::string>            _blacklisted_op_list;
@@ -1005,6 +1049,43 @@ void account_history_rocksdb_plugin::impl::storeOpFilteringParameters(const std:
     }
   }
 
+std::vector<rocksdb_operation_object> 
+account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeBegin, uint32_t* blockRangeEnd,
+  uint32_t* collectedIrreversibleBlock) const
+{
+  FC_ASSERT(*blockRangeBegin < *blockRangeEnd, "Wrong block range");
+
+  *collectedIrreversibleBlock = _cached_irreversible_block;
+
+  if(*blockRangeEnd < _cached_irreversible_block)
+    return std::vector<rocksdb_operation_object>();
+
+  std::vector<rocksdb_operation_object> retVal;
+
+  const auto& volatileIdx = _mainDb.get_index< volatile_operation_index, by_block >();
+
+  retVal.reserve(volatileIdx.size());
+
+  auto opIterator = volatileIdx.lower_bound(*blockRangeBegin);
+  for(; opIterator != volatileIdx.end() && opIterator->block < *blockRangeEnd; ++opIterator)
+  {
+    uint64_t opId = opIterator->op_in_trx;
+    opId |= static_cast<uint64_t>(opIterator->trx_in_block) << 32;
+
+    rocksdb_operation_object persistentOp(*opIterator);
+    persistentOp.id = opId;
+    retVal.emplace_back(std::move(persistentOp));
+  }
+
+  if(retVal.empty() == false)
+  {
+    *blockRangeBegin = retVal.front().block;
+    *blockRangeEnd = retVal.back().block + 1;
+  }
+
+  return std::move(retVal);
+}
+
 void account_history_rocksdb_plugin::impl::find_account_history_data(const account_name_type& name, uint64_t start,
   uint32_t limit, bool include_reversible, std::function<void(unsigned int, const rocksdb_operation_object&)> processor) const
 {
@@ -1084,6 +1165,21 @@ bool account_history_rocksdb_plugin::impl::find_operation_object(size_t opId, ro
 void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t blockNum, bool include_reversible,
   std::function<void(const rocksdb_operation_object&)> processor) const
 {
+  if(include_reversible)
+  {
+    uint32_t collectedIrreversibleBlock = 0;
+    uint32_t rangeBegin = blockNum;
+    uint32_t rangeEnd = blockNum + 1;
+    auto reversibleOps = collectReversibleOps(&rangeBegin, &rangeEnd, &collectedIrreversibleBlock);
+    for(const auto& op : reversibleOps)
+    {
+      processor(op);
+    }
+
+    if(blockNum > collectedIrreversibleBlock)
+      return; /// If requested block was reversible, there is no more data in the persistent storage to process.
+  }
+
   std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(ReadOptions(), _columnHandles[OPERATION_BY_BLOCK]));
   by_block_slice_t blockNumSlice(blockNum);
   op_by_block_num_slice_t key(block_op_id_pair(blockNum, 0));
@@ -1104,13 +1200,68 @@ void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t block
 std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtualOperationsFromBlockRange(
   uint32_t blockRangeBegin, uint32_t blockRangeEnd, bool include_reversible,
   fc::optional<uint64_t> resumeFromOperation, fc::optional<uint32_t> limit, 
-  std::function<bool(const rocksdb_operation_object&, uint64_t)> processor) const
+  std::function<bool(const rocksdb_operation_object&, uint64_t, bool)> processor) const
 {
   FC_ASSERT(blockRangeEnd > blockRangeBegin, "Block range must be upward");
 
   uint64_t lastProcessedOperationId = 0;
   if(resumeFromOperation.valid())
     lastProcessedOperationId = *resumeFromOperation;
+
+  std::vector<rocksdb_operation_object> reversibleOps;
+  uint32_t collectedIrreversibleBlock = false;
+  auto collectedReversibleRangeBegin = blockRangeBegin;
+  auto collectedReversibleRangeEnd = blockRangeEnd;
+  bool hasTrailingReversibleBlocks = false;
+
+  uint32_t cntLimit = 0;
+  fc::optional< uint64_t > nextElementAfterLimit;
+  uint32_t lastFoundBlock = 0;
+
+  if(include_reversible)
+  {
+    auto collection = collectReversibleOps(&collectedReversibleRangeBegin, &collectedReversibleRangeEnd,
+      &collectedIrreversibleBlock);
+    reversibleOps = std::move(collection);
+
+    if(blockRangeBegin > collectedIrreversibleBlock)
+    {
+      /// Simplest case, whole requested range is located inside reversible space
+
+      for(const auto& op : reversibleOps)
+      {
+        if(limit.valid() && (cntLimit >= *limit) && op.block != lastFoundBlock)
+        {
+          /** There is no available any stable identifier to be next stored inside persistent storage.
+          *   Such identifier would be required for case when paging will be supported here and
+          *   block have been converted into irreversible between calls.
+          *   So for simplicity, just all ops will be returned up to processed next block.
+          */
+          nextElementAfterLimit = 0;
+          lastFoundBlock = op.block;
+          break;
+        }
+
+        if(processor(op, op.id, false))
+          ++cntLimit;
+
+        lastFoundBlock = op.block;
+      }
+
+      if(nextElementAfterLimit.valid())
+        return std::make_pair(lastFoundBlock, *nextElementAfterLimit);
+      else
+        return std::make_pair(0, 0);
+    }
+
+    /// Partial case: rangeBegin is <= collectedIrreversibleBlock but blockRangeEnd > collectedIrreversibleBlock
+    if(blockRangeEnd > collectedIrreversibleBlock)
+    {
+      FC_ASSERT(collectedReversibleRangeBegin > collectedIrreversibleBlock);
+      blockRangeEnd = collectedReversibleRangeBegin; /// strip processing to irreversible subrange
+      hasTrailingReversibleBlocks = true;
+    }
+  }
 
   op_by_block_num_slice_t upperBoundSlice(block_op_id_pair(blockRangeEnd, 0));
 
@@ -1120,11 +1271,6 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
   rOptions.iterate_upper_bound = &upperBoundSlice;
 
   std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(rOptions, _columnHandles[OPERATION_BY_BLOCK]));
-
-  uint32_t lastFoundBlock = 0;
-
-  uint32_t cntLimit = 0;
-  fc::optional< uint64_t > nextElementAfterLimit;
 
   for(it->Seek(rangeBeginSlice); it->Valid(); it->Next())
   {
@@ -1148,11 +1294,8 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
         break;
       }
 
-      if(processor(op, key.second))
-      {
+      if(processor(op, key.second, true))
         ++cntLimit;
-        lastProcessedOperationId = key.second;
-      }
 
       lastFoundBlock = key.first;
     }
@@ -1164,12 +1307,42 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
   }
   else
   {
+    if(include_reversible && hasTrailingReversibleBlocks)
+    {
+      for(const auto& op : reversibleOps)
+      {
+        if(limit.valid() && (cntLimit >= *limit) && op.block != lastFoundBlock)
+        {
+          /** There is no available any stable identifier to be next stored inside persistent storage.
+          *   Such identifier would be required for case when paging will be supported here and
+          *   block have been converted into irreversible between calls.
+          *   So for simplicity, just all ops will be returned up to processed next block.
+          */
+          nextElementAfterLimit = 0;
+          lastFoundBlock = op.block;
+          break;
+        }
+
+        if(processor(op, op.id, false))
+          ++cntLimit;
+
+        lastFoundBlock = op.block;
+      }
+
+      if(nextElementAfterLimit.valid())
+        return std::make_pair(lastFoundBlock, *nextElementAfterLimit);
+      else
+        return std::make_pair(0, 0);
+    }
+
+    lastFoundBlock = blockRangeEnd; /// start lookup from next block basing on processed range end
+
     op_by_block_num_slice_t lowerBoundSlice(block_op_id_pair(lastFoundBlock, 0));
     rOptions = ReadOptions();
     rOptions.iterate_lower_bound = &lowerBoundSlice;
     it.reset(_storage->NewIterator(rOptions, _columnHandles[OPERATION_BY_BLOCK]));
 
-    op_by_block_num_slice_t nextRangeBeginSlice(block_op_id_pair(lastFoundBlock + 1, 0));
+    op_by_block_num_slice_t nextRangeBeginSlice(block_op_id_pair(lastFoundBlock, 0));
     for(it->Seek(nextRangeBeginSlice); it->Valid(); it->Next())
     {
       auto keySlice = it->key();
@@ -1304,6 +1477,7 @@ uint32_t account_history_rocksdb_plugin::impl::get_lib(const uint32_t* fallbackI
 
 void account_history_rocksdb_plugin::impl::update_lib( uint32_t lib )
 {
+  _cached_irreversible_block.store(lib);
   auto s = _writeBuffer.Put( _columnHandles[ CURRENT_LIB ], LIB_ID, lib_slice_t( lib ) );
   checkStatus( s );
 }
@@ -1729,20 +1903,37 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
 
   vector< const volatile_operation_object* > to_delete;
 
-  while( itr != volatile_idx.end() && itr->block <= block_num )
+  while(itr != volatile_idx.end() && itr->block <= block_num)
   {
-    rocksdb_operation_object obj( *itr );
-    importOperation( obj , itr->impacted );
-    to_delete.push_back( &(*itr) );
+    rocksdb_operation_object obj(*itr);
+    importOperation(obj, itr->impacted);
+    to_delete.push_back(&(*itr));
     ++itr;
   }
 
-  for( const volatile_operation_object* o : to_delete )
+  for(const volatile_operation_object* o : to_delete)
   {
-    _mainDb.remove( *o );
+    _mainDb.remove(*o);
   }
 
-  update_lib( block_num );
+  update_lib(block_num);
+
+}
+
+void account_history_rocksdb_plugin::impl::on_pre_apply_block(const block_notification& bn)
+{
+  if(_reindexing) return;
+
+  _currently_processed_block_mtx.lock();
+  _currently_processed_block.store(bn.block_num);
+}
+
+void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notification& bn)
+{
+  if(_reindexing) return;
+
+  _currently_processed_block.store(0);
+  _currently_processed_block_mtx.unlock();
 }
 
 account_history_rocksdb_plugin::account_history_rocksdb_plugin()
@@ -1831,7 +2022,7 @@ void account_history_rocksdb_plugin::find_operations_by_block(size_t blockNum, b
 
 std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::enum_operations_from_block_range(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
   bool include_reversible, fc::optional<uint64_t> operationBegin, fc::optional<uint32_t> limit,
-  std::function<bool(const rocksdb_operation_object&, uint64_t)> processor) const
+  std::function<bool(const rocksdb_operation_object&, uint64_t, bool)> processor) const
 {
   return _my->enumVirtualOperationsFromBlockRange(blockRangeBegin, blockRangeEnd, include_reversible, operationBegin, limit, processor);
 }
