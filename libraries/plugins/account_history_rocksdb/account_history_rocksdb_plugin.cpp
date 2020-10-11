@@ -29,6 +29,9 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/container/flat_set.hpp>
 
+#include <condition_variable>
+#include <mutex>
+
 #include <limits>
 #include <string>
 #include <typeindex>
@@ -881,7 +884,7 @@ private:
   unsigned int                     _collectedOpsWriteLimit = 1;
 
   /// <summary>
-  /// Node being irreversible atm.
+  /// Block being irreversible atm.
   /// </summary>
   std::atomic_uint                 _cached_irreversible_block;
   /// <summary>
@@ -892,11 +895,16 @@ private:
   ///  Allows to hold API threads trying to read data coming from currently processed block until it will
   ///  finish its processing and data will be complete.
   /// </summary>
-  std::mutex                       _currently_processed_block_mtx;
+  mutable std::mutex               _currently_processed_block_mtx;
+
+  mutable std::condition_variable  _currently_processed_block_cv;
   /// <summary>
   /// Controls MT access to the volatile_operation_index being cleared during `on_irreversible_block` handler execution.
   /// </summary>
-  mutable std::mutex               _volatile_index_mtx;
+  mutable std::mutex               _currently_persisted_irreversible_mtx;
+  std::atomic_uint                 _currently_persisted_irreversible_block;
+  mutable std::condition_variable  _currently_persisted_irreversible_cv;
+
   account_name_range_index         _tracked_accounts;
   flat_set<std::string>            _op_list;
   flat_set<std::string>            _blacklisted_op_list;
@@ -1055,13 +1063,53 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
 {
   FC_ASSERT(*blockRangeBegin < *blockRangeEnd, "Wrong block range");
 
+  if(_currently_persisted_irreversible_block >= *blockRangeBegin && _currently_persisted_irreversible_block <= *blockRangeEnd)
+  {
+    ilog("Awaiting for the end of save current irreversible block ${b} block, requested by call: [${rb}, ${re}]",
+      ("b", _currently_persisted_irreversible_block.operator unsigned int())("rb", *blockRangeBegin)("re", *blockRangeEnd));
+
+    /** Api requests data of currently saved irreversible block, so it must wait for the end of storage and cleanup of 
+    *   volatile ops container.
+    */
+    std::unique_lock<std::mutex> lk(_currently_persisted_irreversible_mtx);
+
+    _currently_persisted_irreversible_cv.wait(lk,
+      [this, blockRangeBegin, blockRangeEnd]() -> bool
+      {
+        return _currently_persisted_irreversible_block < *blockRangeBegin || _currently_persisted_irreversible_block > * blockRangeEnd;
+      }
+    );
+
+    ilog("Resumed evaluation a range containing currently just written irreversible block, requested by call: [${rb}, ${re}]",
+      ("rb", *blockRangeBegin)("re", *blockRangeEnd));
+  }
+
   *collectedIrreversibleBlock = _cached_irreversible_block;
 
   if(*blockRangeEnd < _cached_irreversible_block)
     return std::vector<rocksdb_operation_object>();
 
-  std::vector<rocksdb_operation_object> retVal;
+  if(_currently_processed_block >= *blockRangeBegin && _currently_processed_block <= *blockRangeEnd)
+  {
+    ilog("Awaiting for the end of evaluation of ${b} block, requested by call: [${rb}, ${re}]",
+      ("b", _currently_processed_block.operator unsigned int())("rb", *blockRangeBegin)("re", *blockRangeEnd));
+    /** Api requests data of currently processed (evaluated) block, so it must wait for the end of evaluation
+    *   to collect all contained operations.
+    */
+    std::unique_lock<std::mutex> lk(_currently_processed_block_mtx);
 
+    _currently_processed_block_cv.wait(lk,
+      [this, blockRangeBegin, blockRangeEnd]() -> bool
+        {
+          return _currently_processed_block < *blockRangeBegin || _currently_processed_block > *blockRangeEnd;
+        }
+    );
+
+    ilog("Resumed evaluation a range containing currently processed block, requested by call: [${rb}, ${re}]",
+      ("rb", *blockRangeBegin)("re", *blockRangeEnd));
+  }
+
+  std::vector<rocksdb_operation_object> retVal;
   const auto& volatileIdx = _mainDb.get_index< volatile_operation_index, by_block >();
 
   retVal.reserve(volatileIdx.size());
@@ -1257,8 +1305,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
     /// Partial case: rangeBegin is <= collectedIrreversibleBlock but blockRangeEnd > collectedIrreversibleBlock
     if(blockRangeEnd > collectedIrreversibleBlock)
     {
-      FC_ASSERT(collectedReversibleRangeBegin > collectedIrreversibleBlock);
-      blockRangeEnd = collectedReversibleRangeBegin; /// strip processing to irreversible subrange
+      blockRangeEnd = collectedIrreversibleBlock; /// strip processing to irreversible subrange
       hasTrailingReversibleBlocks = true;
     }
   }
@@ -1898,34 +1945,42 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
 
   if( block_num <= get_lib(&fallbackIrreversibleBlock) ) return;
 
+  _currently_persisted_irreversible_block.store(block_num);
+
   const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
   auto itr = volatile_idx.begin();
 
   vector< const volatile_operation_object* > to_delete;
 
-  while(itr != volatile_idx.end() && itr->block <= block_num)
   {
-    rocksdb_operation_object obj(*itr);
-    importOperation(obj, itr->impacted);
-    to_delete.push_back(&(*itr));
-    ++itr;
+    std::lock_guard<std::mutex> lk(_currently_persisted_irreversible_mtx);
+
+    while(itr != volatile_idx.end() && itr->block <= block_num)
+    {
+      rocksdb_operation_object obj(*itr);
+      importOperation(obj, itr->impacted);
+      to_delete.push_back(&(*itr));
+      ++itr;
+    }
+
+    for(const volatile_operation_object* o : to_delete)
+    {
+      _mainDb.remove(*o);
+    }
+
+    update_lib(block_num);
   }
 
-  for(const volatile_operation_object* o : to_delete)
-  {
-    _mainDb.remove(*o);
-  }
-
-  update_lib(block_num);
-
+  _currently_persisted_irreversible_block.store(0);
+  _currently_persisted_irreversible_cv.notify_all();
 }
 
 void account_history_rocksdb_plugin::impl::on_pre_apply_block(const block_notification& bn)
 {
   if(_reindexing) return;
 
-  _currently_processed_block_mtx.lock();
   _currently_processed_block.store(bn.block_num);
+  _currently_processed_block_mtx.lock();
 }
 
 void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notification& bn)
@@ -1934,6 +1989,8 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
 
   _currently_processed_block.store(0);
   _currently_processed_block_mtx.unlock();
+
+  _currently_processed_block_cv.notify_all();
 }
 
 account_history_rocksdb_plugin::account_history_rocksdb_plugin()
