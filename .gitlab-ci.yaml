@@ -98,7 +98,7 @@ beem_tests:
     # boilerplate for installing latested beem
     - git clone --depth=1 --single-branch --branch dk-hybrid-operations https://gitlab.syncad.com/hive/beem.git
     - cd beem
-    - python3 setup.py install --user
+    - python3 setup.py install
     - cd ..
     # stuff specific to this test
     - mkdir -p build/tests/hive-node-data
@@ -129,7 +129,7 @@ list_proposals_tests:
     # boilerplate for installing latested beem
     - git clone --depth=1 --single-branch --branch dk-hybrid-operations https://gitlab.syncad.com/hive/beem.git
     - cd beem
-    - python3 setup.py install --user
+    - python3 setup.py install
     - cd ..
     # stuff specific to this test
     - mkdir -p build/tests/hive-node-data
