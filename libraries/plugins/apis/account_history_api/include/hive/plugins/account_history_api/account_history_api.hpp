@@ -50,7 +50,7 @@ struct get_ops_in_block_args
   uint32_t block_num = 0;
   bool     only_virtual = false;
   /// if set to true also operations from reversible block will be included if block_num points to such block.
-  bool     include_reversible = false;
+  fc::optional<bool> include_reversible;
 };
 
 struct get_ops_in_block_return
@@ -63,7 +63,7 @@ struct get_transaction_args
 {
   hive::protocol::transaction_id_type id;
   /// if set to true transaction from reversible block will be returned if id matches given one.
-  bool     include_reversible = false;
+  fc::optional<bool> include_reversible;
 };
 
 typedef hive::protocol::annotated_signed_transaction get_transaction_return;
@@ -75,7 +75,7 @@ struct get_account_history_args
   uint64_t                            start = -1;
   uint32_t                            limit = 1000;
   /// if set to true operations from reversible block will be also returned.
-  bool     include_reversible = false;
+  fc::optional<bool> include_reversible;
 };
 
 struct get_account_history_return
@@ -123,7 +123,7 @@ struct enum_virtual_ops_args
   uint32_t block_range_begin = 1;
   uint32_t block_range_end = 2;
   /// if set to true operations from reversible block will be also returned.
-  bool     include_reversible = false;
+  fc::optional<bool> include_reversible;
 
   fc::optional<bool> group_by_block;
   fc::optional< uint64_t > operation_begin;

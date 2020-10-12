@@ -35,7 +35,7 @@ class account_history_api_chainbase_impl : public abstract_account_history_api_i
 
 DEFINE_API_IMPL( account_history_api_chainbase_impl, get_ops_in_block )
 {
-  FC_ASSERT(args.include_reversible == false, "Supported only in AH-Rocksdb plugin");
+  FC_ASSERT(args.include_reversible.valid() == false, "Supported only in AH-Rocksdb plugin");
 
   return _db.with_read_lock( [&]()
   {
@@ -62,7 +62,7 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_transaction )
   FC_ASSERT( false, "This node's operator has disabled operation indexing by transaction_id" );
 #else
 
-  FC_ASSERT(args.include_reversible == false, "Supported only in AH-Rocksdb plugin");
+  FC_ASSERT(args.include_reversible.valid() == false, "Supported only in AH-Rocksdb plugin");
 
   return _db.with_read_lock( [&]()
   {
@@ -94,7 +94,7 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_account_history )
   FC_ASSERT( args.limit <= 10000, "limit of ${l} is greater than maxmimum allowed", ("l",args.limit) );
   FC_ASSERT( args.start >= args.limit, "start must be greater than limit" );
 
-  FC_ASSERT(args.include_reversible == false, "Supported only in AH-Rocksdb plugin");
+  FC_ASSERT(args.include_reversible.valid() == false, "Supported only in AH-Rocksdb plugin");
 
   return _db.with_read_lock( [&]()
   {
@@ -143,7 +143,9 @@ class account_history_api_rocksdb_impl : public abstract_account_history_api_imp
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_ops_in_block )
 {
   get_ops_in_block_return result;
-  _dataSource.find_operations_by_block(args.block_num, args.include_reversible,
+
+  bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
+  _dataSource.find_operations_by_block(args.block_num, include_reversible,
     [&result, &args](const account_history_rocksdb::rocksdb_operation_object& op)
     {
       api_operation_object temp(op);
@@ -161,7 +163,8 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
 
   get_account_history_return result;
 
-  _dataSource.find_account_history_data(args.account, args.start, args.limit, args.include_reversible,
+  bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
+  _dataSource.find_account_history_data(args.account, args.start, args.limit, include_reversible,
     [&result](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op)
     {
       result.history[sequence] = api_operation_object( op );
@@ -178,7 +181,9 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
   uint32_t blockNo = 0;
   uint32_t txInBlock = 0;
 
-  if(_dataSource.find_transaction_info(args.id, args.include_reversible, &blockNo, &txInBlock))
+  bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
+
+  if(_dataSource.find_transaction_info(args.id, include_reversible, &blockNo, &txInBlock))
     {
     get_transaction_return result;
     _db.with_read_lock([this, blockNo, txInBlock, &result]()
@@ -243,8 +248,10 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 
   bool groupOps = args.group_by_block.valid() && *args.group_by_block;
 
+  bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
+
   std::pair< uint32_t, uint64_t > next_values = _dataSource.enum_operations_from_block_range(args.block_range_begin,
-    args.block_range_end, args.include_reversible, args.operation_begin, args.limit,
+    args.block_range_end, include_reversible, args.operation_begin, args.limit,
     [groupOps, &result, &args ](const account_history_rocksdb::rocksdb_operation_object& op, uint64_t operation_id, bool irreversible)
     {
 
