@@ -560,6 +560,12 @@ public:
 
   ~impl()
   {
+
+    chain::util::disconnect_signal(_on_post_apply_operation_con);
+    chain::util::disconnect_signal(_on_irreversible_block_conn);
+    chain::util::disconnect_signal(_on_pre_apply_block_conn);
+    chain::util::disconnect_signal(_on_post_apply_block_conn);
+    chain::util::disconnect_signal(_on_fail_apply_block_conn);
     shutdownDb();
   }
 
@@ -631,8 +637,6 @@ public:
 
   void shutdownDb()
   {
-    chain::util::disconnect_signal(_on_post_apply_operation_con);
-    chain::util::disconnect_signal(_on_irreversible_block_conn);
     if(_storage)
     {
       flushStorage();
