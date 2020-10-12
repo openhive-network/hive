@@ -1355,6 +1355,11 @@ void database::notify_post_apply_block( const block_notification& note )
   HIVE_TRY_NOTIFY( _post_apply_block_signal, note )
 }
 
+void database::notify_fail_apply_block( const block_notification& note )
+{
+  HIVE_TRY_NOTIFY( _fail_apply_block_signal, note )
+}
+
 void database::notify_pre_apply_transaction( const transaction_notification& note )
 {
   HIVE_TRY_NOTIFY( _pre_apply_transaction_signal, note )
@@ -3835,9 +3840,10 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
 }
 
 void database::_apply_block( const signed_block& next_block )
-{ try {
+{
   block_notification note( next_block );
 
+  try {
   notify_pre_apply_block( note );
 
   const uint32_t next_block_num = note.block_num;
@@ -4019,7 +4025,7 @@ void database::_apply_block( const signed_block& next_block )
   migrate_irreversible_state();
   trim_cache();
 
-} FC_CAPTURE_LOG_AND_RETHROW( (next_block.block_num()) ) }
+} FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (next_block.block_num()) ) }
 
 struct process_header_visitor
 {
@@ -4543,6 +4549,12 @@ boost::signals2::connection database::add_post_apply_block_handler( const apply_
   const abstract_plugin& plugin, int32_t group )
 {
   return connect_impl(_post_apply_block_signal, func, plugin, group, "<-block");
+}
+
+boost::signals2::connection database::add_fail_apply_block_handler( const apply_block_handler_t& func,
+  const abstract_plugin& plugin, int32_t group )
+{
+  return connect_impl(_fail_apply_block_signal, func, plugin, group, "<-block");
 }
 
 boost::signals2::connection database::add_irreversible_block_handler( const irreversible_block_handler_t& func,

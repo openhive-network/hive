@@ -348,6 +348,7 @@ namespace chain {
       void notify_post_apply_operation( const operation_notification& note );
       void notify_pre_apply_block( const block_notification& note );
       void notify_post_apply_block( const block_notification& note );
+      void notify_fail_apply_block( const block_notification& note );
       void notify_irreversible_block( uint32_t block_num );
       void notify_pre_apply_transaction( const transaction_notification& note );
       void notify_post_apply_transaction( const transaction_notification& note );
@@ -389,6 +390,7 @@ namespace chain {
       boost::signals2::connection add_post_apply_transaction_handler    ( const apply_transaction_handler_t&         func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_pre_apply_block_handler           ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_apply_block_handler          ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
+      boost::signals2::connection add_fail_apply_block_handler          ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_irreversible_block_handler        ( const irreversible_block_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
@@ -821,6 +823,11 @@ namespace chain {
         *  released.
         */
       fc::signal<void(const block_notification&)>           _post_apply_block_signal;
+
+      /**
+        *  This signal is emitted when any problems occured during block processing
+        */
+      fc::signal<void(const block_notification&)>           _fail_apply_block_signal;
 
       /**
         * This signal is emitted any time a new transaction is about to be applied

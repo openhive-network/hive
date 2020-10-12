@@ -511,6 +511,47 @@ public:
         load_additional_data_from_snapshot(note);
       }, _self, 0);
 
+    _on_post_apply_operation_con = _mainDb.add_post_apply_operation_handler(
+      [&]( const operation_notification& note )
+      {
+        on_post_apply_operation(note);
+      },
+      _self
+    );
+
+    _on_irreversible_block_conn = _mainDb.add_irreversible_block_handler(
+      [&]( uint32_t block_num )
+      {
+        on_irreversible_block( block_num );
+      },
+      _self
+    );
+
+    _on_pre_apply_block_conn = _mainDb.add_pre_apply_block_handler(
+      [&](const block_notification& bn)
+      {
+        on_pre_apply_block(bn);
+      },
+      _self
+    );
+
+    _on_post_apply_block_conn = _mainDb.add_post_apply_block_handler(
+      [&](const block_notification& bn)
+      {
+        on_post_apply_block(bn);
+      },
+      _self
+    );
+
+    _on_fail_apply_block_conn = _mainDb.add_fail_apply_block_handler(
+      [&](const block_notification& bn)
+      {
+        on_post_apply_block(bn);
+      },
+      _self
+    );
+
+    is_processed_block_mtx_locked.store(false);
     _cached_irreversible_block.store(0);
     _currently_processed_block.store(0);
 
@@ -547,8 +588,6 @@ public:
       loadSeqIdentifiers(storageDb);
       _storage.reset(storageDb);
 
-      const auto& rocksdb_plugin = appbase::app().get_plugin< account_history_rocksdb_plugin >();
-
       // I do not like using exceptions for control paths, but column definitions are set multiple times
       // opening the db, so that is not a good place to write the initial lib.
       try
@@ -560,37 +599,6 @@ public:
         update_lib( 0 );
       }
 
-      _on_post_apply_operation_con = _mainDb.add_post_apply_operation_handler(
-        [&]( const operation_notification& note )
-        {
-          on_post_apply_operation(note);
-        },
-        rocksdb_plugin
-      );
-
-      _on_irreversible_block_conn = _mainDb.add_irreversible_block_handler(
-        [&]( uint32_t block_num )
-        {
-          on_irreversible_block( block_num );
-        },
-        rocksdb_plugin
-      );
-
-      _on_pre_apply_block_conn = _mainDb.add_pre_apply_block_handler(
-        [&](const block_notification& bn)
-        {
-          on_pre_apply_block(bn);
-        },
-        rocksdb_plugin
-      );
-
-      _on_post_apply_block_conn = _mainDb.add_post_apply_block_handler(
-        [&](const block_notification& bn)
-        {
-          on_post_apply_block(bn);
-        },
-        rocksdb_plugin
-      );
     }
     else
     {
@@ -860,6 +868,7 @@ private:
   boost::signals2::connection      _on_irreversible_block_conn;
   boost::signals2::connection      _on_pre_apply_block_conn;
   boost::signals2::connection      _on_post_apply_block_conn;
+  boost::signals2::connection      _on_fail_apply_block_conn;
 
   /// Helper member to be able to detect another incomming tx and increment tx-counter.
   transaction_id_type              _lastTx;
@@ -882,6 +891,11 @@ private:
         writes (limit == WRITE_BUFFER_FLUSH_LIMIT).
     */
   unsigned int                     _collectedOpsWriteLimit = 1;
+
+  /// <summary>
+  /// Information if mutex is locked/unlocked.
+  /// </summary>
+  std::atomic_bool   is_processed_block_mtx_locked;
 
   /// <summary>
   /// Block being irreversible atm.
@@ -1980,6 +1994,7 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_block(const block_notifi
   if(_reindexing) return;
 
   _currently_processed_block.store(bn.block_num);
+  is_processed_block_mtx_locked.store(true);
   _currently_processed_block_mtx.lock();
 }
 
@@ -1988,7 +2003,11 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
   if(_reindexing) return;
 
   _currently_processed_block.store(0);
-  _currently_processed_block_mtx.unlock();
+  if( is_processed_block_mtx_locked )
+  {
+    is_processed_block_mtx_locked.store(false);
+    _currently_processed_block_mtx.unlock();
+  }
 
   _currently_processed_block_cv.notify_all();
 }
