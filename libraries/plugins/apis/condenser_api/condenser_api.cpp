@@ -337,6 +337,11 @@ namespace detail
       if ( itr != idx.end() )
       {
         results.emplace_back( extended_account( database_api::api_account_object( *itr, _db, delayed_votes_active ) ) );
+        
+        if(_reputation_api)
+        {
+          results.back().reputation = _reputation_api->get_account_reputations({ itr->name, 1 }).reputations[0].reputation;
+        }
 
         auto vitr = vidx.lower_bound( boost::make_tuple( itr->name, account_name_type() ) );
         while( vitr != vidx.end() && vitr->account == itr->name ) {
