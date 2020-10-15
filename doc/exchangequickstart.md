@@ -1,13 +1,13 @@
 Exchange Quickstart
 -------------------
 
-System Requirements: A dedicated server or virtual machine with a minimum of 64GB of RAM, and at least 350GB of fast **local** SSD storage. Hive is one of the most active blockchains in the world and handles an incredibly large amount of transactions per second, as such, it requires fast storage to run efficiently.
+System Requirements: A dedicated server or virtual machine with a minimum of 20GB of RAM, and at least 350GB of fast **local** SSD storage. Hive is one of the most active blockchains in the world and handles an incredibly large amount of transactions per second, as such, it requires fast storage to run efficiently.
 
-With the right equipment and technical configuration a reindex should take **no longer than 72 hours**.  If recommendations are not followed precisely, the reindex can drag on for days or even weeks with significant slowdowns towards the end.
+With the right equipment and technical configuration a reindex should take **no longer than 36 hours**.  If recommendations are not followed precisely, the reindex can drag on for days or even weeks with significant slowdowns towards the end.
 
-Physically attached SSD will ensure an optimal reindex time.  SSD over a NAS or some kind of network storage backed by SSD will often have much higher latency. As an example, AWS EBS is not performant enough. A good recommended instance in AWS is the i3.2xlarge, it comes with a physically attached nVME drive (it must be formatted and mounted on instance launch).
+Physically attached SSD will ensure an optimal reindex time. SSD over a NAS or some kind of network storage backed by SSD will often have much higher latency. As an example, AWS EBS is not performant enough. A good recommended instance in AWS is the i3.xlarge, it comes with a physically attached nVME drive (it must be formatted and mounted on instance launch).
 
-You can save a lot of time by replaying from a `block_log`. Using the docker method below, we have made it easy to download a `block_log` at launch and replay from it by passing in the `USE_PUBLIC_BLOCKLOG=1` environment variable. To do this, make sure your data directory is empty and does not contain a block_log. If you are not using docker, you can download a `block_log` from [here](https://gtg.steem.house/get/blockchain), put it in your Hive data directory, and use the `--replay-blockchain` command line option. Be sure to remove the option if you have to stop/restart hived after already being synced.
+You can save a lot of time by replaying from a `block_log`. Using the docker method below, we have made it easy to download a `block_log` at launch and replay from it by passing in the `USE_PUBLIC_BLOCKLOG=1` environment variable. To do this, make sure your `blockchain` directory is empty and does not contain a `block_log`. If you are not using docker, you can download a `block_log` from [here](https://gtg.openhive.network/get/blockchain), put it in your Hive data directory, and use the `--replay-blockchain` command line option. Be sure to remove the option if you have to stop/restart hived after already being synced.
 
 We recommend using docker to both build and run Hive for exchanges. Docker is the world's leading containerization platform and using it guarantees that your build and run environment is identical to what our developers use. You can still build from source and you can keep both blockchain data and wallet data outside of the docker container. The instructions below will show you how to do this in just a few easy steps.
 
@@ -37,14 +37,10 @@ cd hive
 Docker isn't just for downloading already built images, it can be used to build from source the same way you would otherwise build. By doing this you ensure that your build environment is identical to what we use to develop the software. Use the below command to start the build:
 
 ```
-docker build -t=hiveio/hive .
+docker build -t=hiveio/hive --target=consensus_node .
 ```
 
 Don't forget the `.` at the end of the line which indicates the build target is in the current directory.
-
-This will build everything including running our full suite of tests during the build process. It will anywhere from thirty minutes to a couple hours depending on how fast your equipment is.
-
-When the build completes you will see a message indicating that it is 'successfully built'.
 
 ### Using our official Docker images without building from source
 
@@ -62,52 +58,45 @@ To extract the binary you need to start a container and then copy the file from 
 
 ```
 docker run -d --name hived-exchange hiveio/hive
-docker cp hived-exchange:/usr/local/hived-default/bin/hived /local/path/to/hived
-docker cp hived-exchange:/usr/local/hived-default/bin/cli_wallet /local/path/to/cli_wallet
+docker cp hived-exchange:/usr/local/hive/consensus/bin/hived /local/path/to/hived
+docker cp hived-exchange:/usr/local/hive/consensus/bin/cli_wallet /local/path/to/cli_wallet
 docker stop hived-exchange
 ```
 
-### Configuration files when not using a Docker image
+### Configuration file
 
-For your convenience, we have provided a provided an [example\_config](example\_config.ini) that we expect should be sufficient to run your exchange node. Be sure to rename it to simply `config.ini`. Be sure to set the account name of your wallet account that you would like to track account history for in the config file. It is defined as `account-history-track-account-range = ["accountname","accountname"]`.
-
-### Custom configuration files when using a Docker image
-
-If you are using our docker image and have a need for using a custom config file, instead use [config-for-docker.ini](https://github.com/openhive-network/hive/blob/master/contrib/config-for-docker.ini). You can place this outside of your container and map to it by adding this argument to your docker run command: `-v /path/to/config.ini:/etc/hived/config.ini`. In most cases, a custom configuration file is not necessary.
-
-### Account history and limitations
-
-If you need to track all account history instead of just a single account, this would add quite a bit of overhead and lead to a much longer reindex. If you absolutely need this, we recommend instead using the `account_history_rocksdb` plugin instead, however, there is one caveat: the rocksdb plugin does not allow the ability to query by transaction ID. For either `account_history` or `account_history_rocksdb` you would also add the `account_history_api` plugin in order to be able to query data. To use these, you would add them to a custom config file.
+For your convenience, we have provided a provided an [example\_config](example\_config.ini) that we expect should be sufficient to run your exchange node. Be sure to rename it to simply `config.ini`. Be sure to set the account name of your wallet account that you would like to track account history for in the config file. It is defined as `account-history-rocksdb-track-account-range = ["accountname","accountname"]`.
+If you want to use custom configuration while using docker, you can place this outside of your container and map to it by adding this argument to your docker run command: `-v /path/to/config.ini:/usr/local/hive/consensus/datadir/config.ini`.
 
 ### Create directories to store blockchain and wallet data outside of Docker
 
 For re-usability, you can create directories to store blockchain and wallet data and easily link them inside your docker container.
 
 ```
-mkdir blockchain
+mkdir datadir
 mkdir hivewallet
 ```
 
 ### Run the container
 
-The below command will start a daemonized instance opening ports for p2p and RPC  while linking the directories we created for blockchain and wallet data inside the container. Fill in `TRACK_ACCOUNT` with the name of your exchange account that you want to follow. The `-v` flags are how you map directories outside of the container to the inside, you list the path to the directories you created earlier before the `:` for each `-v` flag. The restart policy ensures that the container will automatically restart even if your system is restarted.
+The below command will start a daemonized instance opening ports for p2p and RPC while linking the directories we created for blockchain and wallet data inside the container. Fill in `TRACK_ACCOUNT` with the name of your exchange account that you want to follow. The `-v` flags are how you map directories outside of the container to the inside, you list the path to the directories you created earlier before the `:` for each `-v` flag. The restart policy ensures that the container will automatically restart even if your system is restarted.
 
 ```
-docker run -d --name hived-exchange --env TRACK_ACCOUNT=nameofaccount --env USE_PUBLIC_BLOCKLOG=1 -p 2001:2001 -p 8090:8090 -v /path/to/hivewallet:/var/hivewallet -v /path/to/blockchain:/var/lib/hived/blockchain --restart always hiveio/hive
+docker run -d --name hived-exchange --env TRACK_ACCOUNT=nameofaccount --env USE_PUBLIC_BLOCKLOG=1 -p 2001:2001 -p 8090:8090 -v /path/to/hivewallet:/var/hivewallet -v /path/to/datadir:/usr/local/hive/consensus/datadir -v /home/exchange/datadir/config.ini:/usr/local/hive/consensus/datadir/config.ini --restart always hiveio/hive
 ```
 
 You can see that the container is running with the `docker ps` command.
 
 To follow along with the logs, use `docker logs -f`.
 
-Initial syncing will take between 6 and 72 hours depending on your equipment, faster storage devices will take less time and be more efficient. Subsequent restarts will not take as long.
+Initial syncing will take between 12 and 72 hours depending on your equipment, faster storage devices will take less time and be more efficient. Subsequent restarts will not take as long.
 
 ### Running the cli_wallet
 
 The command below will run the cli_wallet from inside the running container while mapping the `wallet.json` to the directory you created for it on the host.
 
 ```
-docker exec -it hived-exchange /usr/local/hived-default/bin/cli_wallet -w /var/hivewallet/wallet.json
+docker exec -it hived-exchange /usr/local/hive/consensus/bin/cli_wallet -w /var/hivewallet/wallet.json
 ```
 
 ### Upgrading for major releases that require a full reindex
@@ -119,9 +108,10 @@ Stop the docker container, remove the existing container, clear out your blockch
 ```
 docker stop hived-exchange
 docker rm hived-exchange
-rm -rf blockchain/*
+rm -rf datadir/blockchain/account-history-rocksdb-storage datadir/blockchain/block_log.index datadir/blockchain/shared_memory.bin
+touch datadir/blockchain/force_replay 
 docker pull hiveio/hive
-docker run -d --name hived-exchange --env TRACK_ACCOUNT=nameofaccount --env USE_PUBLIC_BLOCKLOG=1 -p 2001:2001 -p 8090:8090 -v /path/to/hivewallet:/var/hivewallet -v /path/to/blockchain:/var/lib/hived/blockchain --restart always hiveio/hive
+docker run -d --name hived-exchange --env TRACK_ACCOUNT=nameofaccount --env USE_PUBLIC_BLOCKLOG=1 -p 2001:2001 -p 8090:8090 -v /path/to/hivewallet:/var/hivewallet -v /path/to/datadir:/usr/local/hive/consensus/datadir -v /home/exchange/datadir/config.ini:/usr/local/hive/consensus/datadir/config.ini --restart always hiveio/hive
 ```
 
 ### Upgrading for releases that do not require a reindex
@@ -132,5 +122,5 @@ For upgrades that do not require a full replay, you would use the following inst
 docker stop hived-exchange
 docker rm hived-exchange
 docker pull hiveio/hive
-docker run -d --name hived-exchange --env TRACK_ACCOUNT=nameofaccount --env USE_PUBLIC_BLOCKLOG=1 -p 2001:2001 -p 8090:8090 -v /path/to/hivewallet:/var/hivewallet -v /path/to/blockchain:/var/lib/hived/blockchain --restart always hiveio/hive
+docker run -d --name hived-exchange --env TRACK_ACCOUNT=nameofaccount --env USE_PUBLIC_BLOCKLOG=1 -p 2001:2001 -p 8090:8090 -v /path/to/hivewallet:/var/hivewallet -v /path/to/datadir:/usr/local/hive/consensus/datadir -v /home/exchange/datadir/config.ini:/usr/local/hive/consensus/datadir/config.ini --restart always hiveio/hive
 ```
