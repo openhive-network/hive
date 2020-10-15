@@ -1473,6 +1473,18 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
 {
   FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
 
+  auto get_proposal_id = [&](const fc::optional<api_id_type>& obj) -> api_id_type
+  {
+    if(obj.valid()) return *obj;
+    else return ( args.order_direction == ascending ? 0 : std::numeric_limits<api_id_type>::max());
+  };
+
+  auto get_account_name = [&](const fc::optional<account_name_type>& obj) -> account_name_type
+  {
+    if(obj.valid()) return *obj;
+    else return ( args.order_direction == ascending ? "" : _db.get_index<hive::chain::proposal_vote_index, hive::chain::by_voter_proposal>().rbegin()->voter  );
+  };
+
   list_proposal_votes_return result;
   result.proposal_votes.reserve( args.limit );
 
@@ -1482,9 +1494,9 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
   {
     case by_voter_proposal:
     {
-      auto key = args.start.as< std::pair< account_name_type, api_id_type > >();
+      auto key = args.start.as< std::pair< fc::optional<account_name_type>, fc::optional<api_id_type> > >();
       iterate_results< hive::chain::proposal_vote_index, hive::chain::by_voter_proposal >(
-        boost::make_tuple( key.first, key.second ),
+        boost::make_tuple( get_account_name( key.first ), get_proposal_id( key.second ) ),
         result.proposal_votes,
         args.limit,
         &database_api_impl::on_push_default< api_proposal_vote_object, proposal_vote_object >,
@@ -1499,9 +1511,9 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
     }
     case by_proposal_voter:
     {
-      auto key = args.start.as< std::pair< api_id_type, account_name_type > >();
+      auto key = args.start.as< std::pair< fc::optional<api_id_type>, fc::optional<account_name_type> > >();
       iterate_results< hive::chain::proposal_vote_index, hive::chain::by_proposal_voter >(
-        boost::make_tuple( key.first, key.second ),
+        boost::make_tuple( get_proposal_id( key.first ), get_account_name( key.second) ),
         result.proposal_votes,
         args.limit,
         &database_api_impl::on_push_default< api_proposal_vote_object, proposal_vote_object >,
