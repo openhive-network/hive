@@ -125,7 +125,8 @@ if __name__ == '__main__':
                 "TESTS"
             )
             logger.info("Wait 30 days for full voting power")
-            hive_utils.debug_generate_blocks(node_client.rpc.url, wif, 30 * 24 * 3600 / 3 + 10)
+            hive_utils.debug_quick_block_skip(node_client, wif, (30 * 24 * 3600 / 3))
+            hive_utils.debug_generate_blocks(node_client.rpc.url, wif, 10)
             # transfer assets to accounts
             test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
                 "400.000", "TESTS", wif
