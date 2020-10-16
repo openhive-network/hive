@@ -998,7 +998,7 @@ asset database::get_effective_vesting_shares( const account_object& account, ass
   FC_ASSERT( vested_symbol.space() == asset_symbol_type::smt_nai_space );
   FC_ASSERT( vested_symbol.is_vesting() );
 
-#pragma message( "TODO: Update the code below when delegation is modified to support SMTs." )
+FC_TODO( "Update the code below when delegation is modified to support SMTs." )
   const account_regular_balance_object* bo = find< account_regular_balance_object, by_owner_liquid_symbol >(
     boost::make_tuple( account.get_id(), vested_symbol.get_paired_symbol() ) );
   if( bo == nullptr )
@@ -4927,7 +4927,7 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
 {
   bool has_hf_20__1815 = has_hardfork( HIVE_HARDFORK_0_20__1815 );
 
-#pragma message( "TODO:  Remove if(), do assert unconditionally after HF20 occurs" )
+FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
   if( has_hf_20__1815 )
   {
     HIVE_ASSERT( new_order.sell_price.quote.symbol == old_order.sell_price.base.symbol,
@@ -4970,7 +4970,7 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
   old_order_pays = new_order_receives;
   new_order_pays = old_order_receives;
 
-#pragma message( "TODO:  Remove if(), do assert unconditionally after HF20 occurs" )
+FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
   if( has_hf_20__1815 )
   {
     HIVE_ASSERT( new_order_pays == new_order.amount_for_sale() ||
@@ -5002,7 +5002,7 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
   result |= fill_order( new_order, new_order_pays, new_order_receives );
   result |= fill_order( old_order, old_order_pays, old_order_receives ) << 1;
 
-#pragma message( "TODO:  Remove if(), do assert unconditionally after HF20 occurs" )
+FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
   if( has_hf_20__1815 )
   {
     HIVE_ASSERT( result != 0,
@@ -5074,7 +5074,7 @@ bool database::fill_order( const limit_order_object& order, const asset& pays, c
     }
     else
     {
-#pragma message( "TODO:  Remove if(), do assert unconditionally after HF20 occurs" )
+FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
       if( has_hardfork( HIVE_HARDFORK_0_20__1815 ) )
       {
         HIVE_ASSERT( pays < order.amount_for_sale(),
@@ -6312,7 +6312,7 @@ void database::validate_smt_invariants()const
     }
 
     // - Reward funds
-#pragma message( "TODO: Add reward_fund_object iteration here once they support SMTs." )
+FC_TODO( "Add reward_fund_object iteration here once they support SMTs." )
 
     // - Escrow & savings - no support of SMT is expected.
 
@@ -6330,7 +6330,7 @@ void database::validate_smt_invariants()const
       total_liquid_supply += asset( smt.total_vesting_fund_smt, smt.liquid_symbol )
                     /*+ gpo.get_total_reward_fund_hive() */
                     + asset( smt.pending_rewarded_vesting_smt, smt.liquid_symbol );
-#pragma message( "TODO: Supplement ^ once SMT rewards are implemented" )
+FC_TODO( "Supplement ^ once SMT rewards are implemented" )
       FC_ASSERT( asset(smt.current_supply, smt.liquid_symbol) == total_liquid_supply,
               "", ("smt current_supply",smt.current_supply)("total_liquid_supply",total_liquid_supply) );
       // Check vesting SMT supply.
