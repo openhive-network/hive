@@ -2606,12 +2606,10 @@ share_type database::pay_curators( const comment_object& comment, const comment_
               pre_push_virtual_operation( vop );
             } );
 
-          #ifndef IS_LOW_MEM
             modify( voter, [&]( account_object& a )
             {
               a.curation_rewards += claim;
             });
-          #endif
           post_push_virtual_operation( vop );
         }
       } FC_CAPTURE_AND_RETHROW( (*item) ) }
@@ -2731,7 +2729,6 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         pre_push_virtual_operation( vop );
         post_push_virtual_operation( vop );
 
-        #ifndef IS_LOW_MEM
           modify( comment_cashout, [&]( comment_cashout_object& c )
           {
             c.author_rewards += author_tokens;
@@ -2741,8 +2738,6 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           {
             a.posting_rewards += author_tokens;
           });
-        #endif
-
       }
 
       if( !has_hardfork( HIVE_HARDFORK_0_17__774 ) )

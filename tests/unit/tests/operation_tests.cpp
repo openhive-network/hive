@@ -359,11 +359,7 @@ BOOST_AUTO_TEST_CASE( account_update_apply )
     BOOST_REQUIRE( acct.memo_key == new_private_key.get_public_key() );
 
     /* This is being moved out of consensus
-    #ifndef IS_LOW_MEM
       BOOST_REQUIRE( acct.json_metadata == "{\"bar\":\"foo\"}" );
-    #else
-      BOOST_REQUIRE( acct.json_metadata == "" );
-    #endif
     */
 
     validate_database();

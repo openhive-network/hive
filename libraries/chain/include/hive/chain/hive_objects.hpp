@@ -95,9 +95,7 @@ namespace hive { namespace chain {
         : id( _id ), from( _from ), to( _to ), memo( a ), request_id( _request_id ),
         amount( _amount ), complete( _time_of_completion )
       {
-#ifndef IS_LOW_MEM
         from_string( memo, _memo );
-#endif
       }
 
       //amount of savings to withdraw (HIVE or HBD)
