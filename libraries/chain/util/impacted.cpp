@@ -333,6 +333,16 @@ struct get_impacted_account_visitor
     _impacted.insert( op.fund_account );
   }
 
+  void operator()( const consolidate_treasury_balance_operation& op )
+  {
+    _impacted.insert( NEW_HIVE_TREASURY_ACCOUNT );
+    _impacted.insert( OBSOLETE_TREASURY_ACCOUNT );
+  }
+
+  void operator()( const clear_null_account_balance_operation& op )
+  {
+    _impacted.insert( HIVE_NULL_ACCOUNT );
+  }
   //void operator()( const operation& op ){}
 };
 
