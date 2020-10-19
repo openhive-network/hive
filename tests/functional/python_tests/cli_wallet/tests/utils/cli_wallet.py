@@ -189,7 +189,7 @@ class CliWallet(object):
         while True:
             try:
                 for line in iter(self.cli_proc.stdout.readline, b''):
-                    self.q.put_nowait(line.decode('utf-8') )
+                    self.q.put_nowait(line.decode('utf-8', errors="ignore") )
             except queue.Full:
                 pass
 
@@ -206,6 +206,12 @@ class CliWallet(object):
                     prepared_args += "\"{0}\"".format(arg) + " "
                 else:
                     prepared_args += '\"\"' + " "
+            elif isinstance(arg, list):
+                prepared_args += "["
+                for l in arg:
+                    prepared_args += "\"{0}\",".format(l)
+                prepared_args = prepared_args[:-1]
+                prepared_args += "]" + " "
             else:
                 prepared_args += "{0}".format(arg) + " "
         return prepared_args + "\n"
