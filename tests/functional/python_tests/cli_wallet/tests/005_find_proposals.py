@@ -26,9 +26,12 @@ if __name__ == "__main__":
 
         for ids in id_sets:
             call_args = {"id_set":ids}
-            resp = last_message_as_json(call_and_check(wallet.find_proposals, call_args, "args"))
-            if not "result" in resp:
-                raise ArgsCheckException("No `result` in response")
+            resp = last_message_as_json(wallet.find_proposals(ids))
+            if resp: 
+                if "error" in resp:
+                    raise ArgsCheckException("Some error occures.")
+            else:
+                raise ArgsCheckException("Parse error.")
         
     except Exception as _ex:
         log.exception(str(_ex))

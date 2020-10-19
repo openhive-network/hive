@@ -57,6 +57,7 @@ def call_and_check_transaction(_func, _call_args, _arg_prefix, _broadcast):
 
 
 def last_message_as_json( _message):
+    log.info(_message)
     if "message:" in _message:
         _message = _message[_message.rfind("message:")+len("message:"):]
         _message.strip()
@@ -80,19 +81,22 @@ def find_creator_proposals(_creator, _proposal_list):
     proposals = []
     if "result" in _proposal_list:
         result = _proposal_list["result"]
-        for rs in result:
-            if rs["creator"] == _creator:
-                proposals.append(rs)
+        if result:
+            for rs in result:
+                if rs["creator"] == _creator:
+                    proposals.append(rs)
     return proposals
 
 
 def find_voter_proposals(_voter, _proposal_list):
+    proposals = []
     if "result" in _proposal_list:
         result = _proposal_list["result"]
-        for user, user_propsals in result.items():
-            if user == _voter:
-                return user_propsals
-    return []
+        if result:
+            for rs in result:
+                if rs["voter"] == _voter:
+                    proposals.append(rs)
+    return proposals
 
 
 def ws_to_http(_url):
