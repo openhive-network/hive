@@ -42,3 +42,15 @@ if __name__ == "__main__":
                             raise ArgsCheckException("Some error occures.")
                     else:
                         raise ArgsCheckException("Parse error.")
+
+    except Exception as _ex:
+        log.exception(str(_ex))
+        error = True
+    finally:
+        if error:
+            log.error("TEST `{0}` failed".format(__file__))
+            exit(1)
+        else:
+            log.info("TEST `{0}` passed".format(__file__))
+            exit(0)
+
