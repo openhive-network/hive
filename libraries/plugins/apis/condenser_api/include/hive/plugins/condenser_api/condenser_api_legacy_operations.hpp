@@ -76,7 +76,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef clear_null_account_balance_operation   legacy_clear_null_account_balance_operation;
   typedef consolidate_treasury_balance_operation legacy_consolidate_treasury_balance_operation;
   typedef delayed_voting_operation               legacy_delayed_voting_operation;
-  typedef sps_convert_operation               legacy_sps_convert_operation;
+  typedef sps_convert_operation                  legacy_sps_convert_operation;
 
   struct legacy_price
   {
