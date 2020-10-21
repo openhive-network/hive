@@ -7,40 +7,6 @@ namespace hive { namespace plugins { namespace account_history {
 
 namespace detail {
 
-#define CHECK_OPERATION( r, ENUM_NAME, CLASS_NAME ) \
-  void operator()( const hive::protocol::CLASS_NAME& op ) { _accepted = (_filter & ENUM_NAME::CLASS_NAME) == ENUM_NAME::CLASS_NAME; }
-
-#define CHECK_HIVE_OPERATIONS( CLASS_NAMES ) \
-  BOOST_PP_SEQ_FOR_EACH( CHECK_OPERATION, hive_operations_filter, CLASS_NAMES )
-
-#define CHECK_VIRTUAL_OPERATIONS( CLASS_NAMES ) \
-  BOOST_PP_SEQ_FOR_EACH( CHECK_OPERATION, enum_vops_filter, CLASS_NAMES )
-
-struct hive_op_filtering_visitor
-{
-  typedef void result_type;
-
-  bool check(uint64_t filter, const hive::protocol::operation& op)
-  {
-    _filter = filter;
-    _accepted = false;
-    op.visit(*this);
-
-    return _accepted;
-  }
-
-  template< typename T >
-  void operator()(const T&) { _accepted = false; }
-
-  CHECK_HIVE_OPERATIONS((vote_operation)(comment_operation)(transfer_operation)(transfer_to_vesting_operation)
-    (withdraw_vesting_operation)
-  )
-
-private:
-  uint64_t _filter = 0;
-  bool     _accepted = false;
-};
-
 class abstract_account_history_api_impl
 {
   public:
@@ -199,19 +165,21 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
 
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
   
-  if(args.operation_filter.valid())
+  if(args.operation_filter_low || args.operation_filter_high)
   {
-    uint64_t filter = *args.operation_filter;
+    uint64_t filter_low = args.operation_filter_low ? *args.operation_filter_low : 0;
+    uint64_t filter_high = args.operation_filter_high ? *args.operation_filter_high : 0;
 
     _dataSource.find_account_history_data(args.account, args.start, args.limit, include_reversible,
-      [&result, filter](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op)
+      [&result, filter_low, filter_high](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op)
       {
-        api_operation_object apiOp(op);
-        hive_op_filtering_visitor fv;
-        if(fv.check(filter, apiOp.op))
-        {
-          result.history.emplace(sequence, std::move(apiOp));
-        }
+        // we want to accept any operations where the corresponding bit is set in {filter_high, filter_low}
+        api_operation_object api_op(op);
+        unsigned bit_number = api_op.op.which();
+        bool accepted = bit_number < 64 ? filter_low & (UINT64_C(1) << bit_number)
+                                        : filter_high & (UINT64_C(1) << (bit_number - 64));
+        if (accepted)
+          result.history.emplace(sequence, std::move(api_op));
       });
 
   }
@@ -260,6 +228,11 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
 
 }
 
+#define CHECK_OPERATION( r, data, CLASS_NAME ) \
+  void operator()( const hive::protocol::CLASS_NAME& op ) { _accepted = (_filter & enum_vops_filter::CLASS_NAME) == enum_vops_filter::CLASS_NAME; }
+
+#define CHECK_OPERATIONS( CLASS_NAMES ) \
+  BOOST_PP_SEQ_FOR_EACH( CHECK_OPERATION, _, CLASS_NAMES )
 
 struct filtering_visitor
 {
@@ -277,7 +250,7 @@ struct filtering_visitor
   template< typename T >
   void operator()( const T& ) { _accepted = false; }
 
-  CHECK_VIRTUAL_OPERATIONS( (fill_convert_request_operation)(author_reward_operation)(curation_reward_operation)
+  CHECK_OPERATIONS( (fill_convert_request_operation)(author_reward_operation)(curation_reward_operation)
   (comment_reward_operation)(liquidity_reward_operation)(interest_operation)
   (fill_vesting_withdraw_operation)(fill_order_operation)(shutdown_witness_operation)
   (fill_transfer_from_savings_operation)(hardfork_operation)(comment_payout_update_operation)
