@@ -1038,10 +1038,16 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_account_history )
   {
-    CHECK_ARG_SIZE( 3 )
+    FC_ASSERT( args.size() == 3 || args.size() == 4, "Expected 3 or 4 argument(s), was ${n}", ("n", args.size()) );
     FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
 
-    auto history = _account_history_api->get_account_history( { args[0].as< account_name_type >(), args[1].as< uint64_t >(), args[2].as< uint32_t >() } ).history;
+    fc::optional<bool> include_reversible; /// TODO probably this shall be also included in args above
+    fc::optional<uint64_t> operation_filter;
+    if(args.size() == 4)
+      operation_filter = args[3].as<uint64_t>();
+
+    auto history = _account_history_api->get_account_history({ args[0].as< account_name_type >(), args[1].as< uint64_t >(), args[2].as< uint32_t >(),
+      include_reversible, operation_filter } ).history;
     get_account_history_return result;
 
     legacy_operation l_op;

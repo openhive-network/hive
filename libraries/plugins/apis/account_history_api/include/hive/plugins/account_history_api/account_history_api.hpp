@@ -68,6 +68,65 @@ struct get_transaction_args
 
 typedef hive::protocol::annotated_signed_transaction get_transaction_return;
 
+enum hive_operations_filter : uint64_t
+{
+  vote_operation                        = 0x000001,
+  comment_operation                     = 0x000002,
+  transfer_operation                    = 0x000004,
+  transfer_to_vesting_operation         = 0x000008,
+  withdraw_vesting_operation            = 0x000010,
+/*
+  limit_order_create_operation          = 0x000020,
+  limit_order_cancel_operation          = 0x000040,
+
+  feed_publish_operation                = 0x000080,
+  convert_operation                     = 0x000100,
+
+  account_create_operation              = 0x000200,
+  account_update_operation              = 0x000400,
+
+  witness_update_operation              = 0x000800,
+  account_witness_vote_operation        = 0x001000,
+  account_witness_proxy_operation       = 0x002000,
+
+  pow_operation                         = 0x004000,
+
+  custom_operation                      = 0x008000,
+  report_over_production_operation      = 0x010000,
+  delete_comment_operation              = 0x020000,
+  custom_json_operation                 = 0x040000,
+  comment_options_operation             = 0x080000,
+  set_withdraw_vesting_route_operation  = 0x100000,
+  limit_order_create2_operation         = 0x200000,
+  claim_account_operation               = 0x400000,
+  create_claimed_account_operation      = 0x800000,
+  request_account_recovery_operation,
+  recover_account_operation,
+  change_recovery_account_operation,
+  escrow_transfer_operation,
+  escrow_dispute_operation,
+  escrow_release_operation,
+  pow2_operation,
+  escrow_approve_operation,
+  transfer_to_savings_operation,
+  transfer_from_savings_operation,
+  cancel_transfer_from_savings_operation,
+  custom_binary_operation,
+  decline_voting_rights_operation,
+  reset_account_operation,
+  set_reset_account_operation,
+  claim_reward_balance_operation,
+  delegate_vesting_shares_operation,
+  account_create_with_delegation_operation,
+  witness_set_properties_operation,
+  account_update2_operation,
+  create_proposal_operation,
+  update_proposal_votes_operation,
+  remove_proposal_operation,
+  update_proposal_operation,
+  */
+};
+
 
 struct get_account_history_args
 {
@@ -76,6 +135,10 @@ struct get_account_history_args
   uint32_t                            limit = 1000;
   /// if set to true operations from reversible block will be also returned.
   fc::optional<bool> include_reversible;
+  /** if set, set of returned operations will include only these matching bitwise filter.
+  *  \see hive_operations_filter enum definition.
+  */
+  fc::optional<uint64_t> operation_filter;
 };
 
 struct get_account_history_return
@@ -187,7 +250,7 @@ FC_REFLECT( hive::plugins::account_history::get_transaction_args,
   (id)(include_reversible) )
 
 FC_REFLECT( hive::plugins::account_history::get_account_history_args,
-  (account)(start)(limit)(include_reversible))
+  (account)(start)(limit)(include_reversible)(operation_filter))
 
 FC_REFLECT( hive::plugins::account_history::get_account_history_return,
   (history) )
