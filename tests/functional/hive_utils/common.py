@@ -121,6 +121,19 @@ def debug_set_hardfork(target_node : str, hardfork_id : int) -> dict:
   }
   return send_rpc_query(target_node, payload)
 
+def debug_quick_block_skip_with_step( node, debug_key, blocks, block_step, safe_block_offset : int = 100) -> None:
+  currently_processed = blocks
+  while currently_processed > 0:
+    if currently_processed - block_step <= 0:
+      if safe_block_offset > currently_processed:
+        debug_generate_blocks(node.rpc.url, debug_key, currently_processed)
+      else:
+        debug_quick_block_skip(node, debug_key, currently_processed, safe_block_offset)
+      return
+    else:
+      debug_quick_block_skip(node, debug_key, block_step, safe_block_offset)
+    currently_processed -= block_step
+
 def debug_has_hardfork(target_node : str, hardfork_id : int) -> dict:
   payload = {
     "jsonrpc": "2.0",

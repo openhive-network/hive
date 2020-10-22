@@ -190,3 +190,8 @@ def get_start_and_end_date(now, start_days_from_now, end_days_from_start):
     assert end_date > start_date, "End date must be greater than start date"
 
     return date_to_iso(start_date), date_to_iso(end_date)
+
+
+def calculate_propsal_budget( node, treasury ):
+    v = int(print_balance(node, [{'name' : treasury}])[0])
+    return round(( v * 0.01 ) / 24.0)

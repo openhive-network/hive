@@ -176,7 +176,7 @@ if __name__ == '__main__':
             test_end_date = test_start_date + datetime.timedelta(days = 4, hours = 1)
             test_end_date_iso = test_utils.date_to_iso(test_end_date)
 
-            test_utils.create_proposals(node_client, proposals)
+            test_utils.create_proposals(node_client, proposals, wif)
 
             # list proposals with inactive status, it shoud be list of pairs id:total_votes
             test_utils.list_proposals(node_client, test_start_date_iso, "inactive")

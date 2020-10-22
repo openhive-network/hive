@@ -221,7 +221,7 @@ if __name__ == '__main__':
             choosen_one = account_names[0]
 
             while current_date < test_end_date:
-                pre_current_date = current_date + datetime.timedelta(minutes=59 seconds=56))
+                pre_current_date = current_date + datetime.timedelta(minutes=59, seconds=56)
                 current_date = current_date + datetime.timedelta(hours = 1)
                 pre_current_date_iso = test_utils.date_to_iso(pre_current_date)
                 current_date_iso = test_utils.date_to_iso(current_date)
