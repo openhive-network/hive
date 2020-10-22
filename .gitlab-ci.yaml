@@ -164,7 +164,7 @@ cli_wallet_tests:
     - cd ..
     - mkdir -p build/tests/hive-node-data
     - cd tests/functional/python_tests/cli_wallet
-    - "python3 run.py --path-to-cli build/programs/cli_wallet --creator initminer --wif 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n 2>&1 | tee cli_wallet.log"
+    - "python3 run.py --hive-path $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --hive-working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --path-to-cli $CI_PROJECT_DIR/testnet_node_build/install-root/bin --creator initminer --wif 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n 2>&1 | tee cli_wallet.log"
   artifacts:
     paths:
     - tests/functional/python_tests/cli_wallet/cli_wallet.log
