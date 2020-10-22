@@ -10,9 +10,9 @@ import argparse
 # commented tests can't be speeded up because of incorrect calculations when boosted
 
 Tests = [
-    # "list_voter_proposal_sort.py",
-    # "proposal_payment_test_001.py",
-    # "proposal_payment_test_002.py",
+    "list_voter_proposal_sort.py",
+    "proposal_payment_test_001.py",
+    "proposal_payment_test_002.py",
     "proposal_payment_test_003.py",
     "proposal_payment_test_004.py",
     #  "proposal_payment_test_005.py",
