@@ -6,8 +6,12 @@ import argparse
 import datetime
 import subprocess
 
+import sys
+
+
 from tests.utils.cmd_args import parser
 from tests.utils.logger import log
+from tests.utils.node_util import start_node
 
 test_args = []
 summary_file_name = "summary.txt"
@@ -46,11 +50,14 @@ if __name__ == "__main__":
         summary.writelines("Cli wallet test started at {0}.\n".format(str(datetime.datetime.now())[:-7]))
     args = parser.parse_args()
     for key, val in args.__dict__.items():
+        if key in ["hive_path", "hive_working_dir", "hive_config_path"]:
+            continue
         if val :
             test_args.append("--"+key.replace("_","-")+ " ")
             test_args.append(val)
     test_args = " ".join(test_args)
     try:
+        node=start_node()
         error = True
         if os.path.isdir("./tests"):
             error = check_subdirs("./tests")
@@ -59,6 +66,8 @@ if __name__ == "__main__":
         log.exception("Exception occured `{0}`.".format(str(_ex)))
         error = True
     finally:
+        if node:
+            node.stop_hive_node()
         if error:
             log.error("At least one test has faild. Please check summary.txt file.")
             exit(1)
