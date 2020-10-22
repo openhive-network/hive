@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import subprocess as sub
-from os import mkdir
+from os import mkdir, system
 from shutil import rmtree
 from time import perf_counter as perf
 from os.path import join as joinpath
@@ -13,10 +13,10 @@ Tests = [
     "list_voter_proposal_sort.py",
     "proposal_payment_test_001.py",
     "proposal_payment_test_002.py",
-    # "proposal_payment_test_003.py",
-    # "proposal_payment_test_004.py",
-    # "proposal_payment_test_005.py",
-    # "proposal_payment_test_006.py",
+    "proposal_payment_test_003.py",
+    "proposal_payment_test_004.py",
+    "proposal_payment_test_005.py",
+    "proposal_payment_test_006.py",
     "proposal_payment_test_007.py",
     "proposal_payment_test_008.py",
     "proposal_payment_test_009.py"
@@ -45,33 +45,51 @@ ret = 0
 for test in Tests:
     rmtree(args.hived_working_dir, True)
     start = perf()
-    proc = sub.run(
-        [
-            "/usr/bin/python3",
-            test,
-            args.creator,
-            args.treasury,
-            args.wif,
-            "--run-hived",
-            args.hived_path,
-            "--working-dir",
-            args.hived_working_dir,
-            "--config-path",
-            args.hived_config_path
-        ],
-        stderr=sub.PIPE,
-        stdout=sub.PIPE
-    )
-    stop = perf() - start
-    ret += abs(proc.returncode)
-    if proc.returncode == 0:
-        print(f'[SUCCESS][{stop :.2f}s] {test} passed')
-    else:
-        print(f'[FAIL][{stop :.2f}s] {test} failed')
+    proc = None
+    try:
+        proc = sub.run(
+            [
+                "/usr/bin/python3",
+                test,
+                args.creator,
+                args.treasury,
+                args.wif,
+                "--run-hived",
+                args.hived_path,
+                "--working-dir",
+                args.hived_working_dir,
+                "--config-path",
+                args.hived_config_path
+            ],
+            stderr=sub.PIPE,
+            stdout=sub.PIPE
+        )
+    except:
+        pass
+    finally:
+        stop = perf() - start
+        ret += abs( 1 if proc.returncode is None else proc.returncode )
+        if proc.returncode == 0:
+            print(f'[SUCCESS][{stop :.2f}s] {test} passed')
+        else:
+            print(f'[FAIL][{stop :.2f}s] {test} failed')
 
-    result[test] = {"retcode": proc.returncode, "time_s": stop}
-    with open(joinpath(args.arti, f'{test}.log'), 'w') as f:
-        f.write(proc.stdout.decode('utf-8'))
+        try:
+            v = f"""ps -A -o pid,cmd | grep "{args.hived_working_dir}" | grep -v SCREEN | grep -v grep | grep -v python3 | cut -d '/' -f 1 | xargs kill -9 """
+            print(v)
+            system(v)
+            v = f"""mv {joinpath(args.hived_working_dir, "*.log")} {joinpath(args.arti, test.replace('.py', '_hived.log'))} 2>/dev/null"""
+            print(v)
+            system(v)
+        except:
+            pass
+
+        result[test] = {"retcode": proc.returncode, "time_s": stop}
+        with open(joinpath(args.arti, f'{test}.log'), 'w') as f:
+            f.write("\nstdout:\n")
+            f.write(proc.stdout.decode('utf-8'))
+            f.write("\nstderr:\n")
+            f.write(proc.stderr.decode('utf-8'))
 
 print('RESULTS:')
 import json
