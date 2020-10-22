@@ -285,7 +285,8 @@ endif()
 
 # fc/src/compress/miniz.c breaks strict aliasing. The Linux kernel builds with no strict aliasing
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -Werror -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing -Werror -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
+# -Werror
 
 # external_plugins needs to be compiled first because libraries/app depends on HIVE_EXTERNAL_PLUGINS being fully populated
 add_subdirectory( external_plugins )
@@ -375,6 +376,6 @@ find_program(PYTHON_3_6 "python3.6")
 if(PYTHON_3_6)
   add_custom_target(format COMMAND ${PYTHON_3_6} ${CMAKE_SOURCE_DIR}/format.py ${INDENT_WIDTH} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   MESSAGE( STATUS "\n\n             FORMAT IS AVAIABLE                \n\n" )
-else(PYTHON_3_6) 
+else(PYTHON_3_6)
   MESSAGE( STATUS "\n\n             FORMAT IS NOT AVAIABLE                \n\n" )
 endif( PYTHON_3_6 )

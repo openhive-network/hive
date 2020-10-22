@@ -1043,10 +1043,10 @@ namespace detail
 
     fc::optional<bool> include_reversible; /// TODO probably this shall be also included in args above
     fc::optional<uint64_t> operation_filter_low;
-    if(args.size() == 4)
+    if(args.size() >= 4)
       operation_filter_low = args[3].as<uint64_t>();
     fc::optional<uint64_t> operation_filter_high;
-    if(args.size() == 5)
+    if(args.size() >= 5)
       operation_filter_high = args[4].as<uint64_t>();
 
     auto history = _account_history_api->get_account_history({ args[0].as< account_name_type >(), args[1].as< uint64_t >(), args[2].as< uint32_t >(),
