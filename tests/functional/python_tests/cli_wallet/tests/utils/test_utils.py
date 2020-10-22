@@ -14,6 +14,8 @@ class ArgsCheckException(Exception):
 user_name = list("aaaaaaaaaaaa")
 creator = "initminer"
 
+
+
 def unifie_to_string(_arg):
     if not isinstance(_arg, str):
         prepared = str(_arg)

@@ -17,5 +17,7 @@ parser.add_argument('--deamon'             , dest="deamon"             , help = 
 parser.add_argument('--rpc-allowip'        , dest="rpc_allowip"        , help = "Set allowed rpc ip [=[]]"                  , default =[])
 parser.add_argument('--wallet-file'        , dest="wallet_file"        , help = "Set wallet name [=wallet.json]"            , default ="wallet.json")
 parser.add_argument('--chain-id'           , dest="chain_id"           , help = "Set chain id [=18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e]", default ="18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e")
-
+parser.add_argument("--hive-path"          , dest="hive_path"         , help = "Path to hived executable. Warning: using this option will erase contents of selected hived working directory.", default="")
+parser.add_argument("--hive-working-dir"   , dest="hive_working_dir"  , default="/tmp/hived-data/", help = "Path to hived working directory")
+parser.add_argument("--hive-config-path"   , dest="hive_config_path"  , default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
 args = parser.parse_args()
