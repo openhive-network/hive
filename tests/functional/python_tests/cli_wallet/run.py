@@ -10,6 +10,9 @@ import sys
 
 from junit_xml import TestCase, TestSuite
 
+import sys
+
+
 from tests.utils.cmd_args import parser
 from tests.utils.logger import log
 from tests.utils.node_util import start_node
@@ -75,10 +78,6 @@ if __name__ == "__main__":
     finally:
         if node:
             node.stop_hive_node()
-        if args.junit_output:
-            test_suite = TestSuite('cli_wallet_test', junit_test_cases)
-            with open(args.junit_output, "w") as junit_xml:
-                TestSuite.to_file(junit_xml, [test_suite], prettyprint=False)
         if error:
             log.error("At least one test has faild. Please check summary.txt file.")
             exit(1)
