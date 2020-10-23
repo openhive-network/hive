@@ -920,7 +920,7 @@ private:
   /// Controls MT access to the volatile_operation_index being cleared during `on_irreversible_block` handler execution.
   /// </summary>
   mutable std::mutex               _currently_persisted_irreversible_mtx;
-  std::atomic_uint                 _currently_persisted_irreversible_block;
+  std::atomic_uint                 _currently_persisted_irreversible_block{0};
   mutable std::condition_variable  _currently_persisted_irreversible_cv;
 
   account_name_range_index         _tracked_accounts;
