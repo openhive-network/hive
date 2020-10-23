@@ -68,16 +68,18 @@ for test in Tests:
         pass
     finally:
         stop = perf() - start
-        ret += abs(proc.returncode)
+        ret += abs( 1 if proc.returncode is None else proc.returncode )
         if proc.returncode == 0:
             print(f'[SUCCESS][{stop :.2f}s] {test} passed')
         else:
             print(f'[FAIL][{stop :.2f}s] {test} failed')
 
         try:
-            v = f"""ps -A -o pid,cmd | grep "{args.hived_working_dir}" | grep -v SCREEN | grep -v grep | grep -v python3 | cut -d ' ' -f 2 | xargs kill -9 """
+            v = f"""ps -A -o pid,cmd | grep "{args.hived_working_dir}" | grep -v SCREEN | grep -v grep | grep -v python3 | cut -d '/' -f 1 | xargs kill -9 """
+            print(v)
             system(v)
             v = f"""mv {joinpath(args.hived_working_dir, "*.log")} {joinpath(args.arti, test.replace('.py', '_hived.log'))} 2>/dev/null"""
+            print(v)
             system(v)
         except:
             pass

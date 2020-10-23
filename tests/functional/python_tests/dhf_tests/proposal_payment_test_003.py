@@ -119,16 +119,17 @@ if __name__ == '__main__':
             node_client = Hive(node = [node_url], no_broadcast = False, 
                 keys = keys
             )
-            
+
             # create accounts
             test_utils.create_accounts(node_client, args.creator, accounts)
             # tranfer to vesting
             test_utils.transfer_to_vesting(node_client, args.creator, accounts, "300.000", 
                 "TESTS"
             )
-            
+
             logger.info("Wait 30 days for full voting power")
-            hive_utils.debug_quick_block_skip_with_step(node_client, wif, (30 * 24 * 3600 / 3), (1 * 24 * 3600 / 3))
+            # hive_utils.debug_quick_block_skip_with_step(node_client, wif, (30 * 24 * 3600 / 3), (1 * 24 * 3600 / 3))
+            hive_utils.debug_quick_block_skip(node_client, wif, (30 * 24 * 3600 / 3))
             hive_utils.debug_generate_blocks(node_client.rpc.url, wif, 10)
             # transfer assets to accounts
             test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
@@ -149,17 +150,17 @@ if __name__ == '__main__':
 
             # create post for valid permlinks
             test_utils.create_posts(node_client, accounts, wif)
+
             now = node_client.get_dynamic_global_properties(False).get('time', None)
             if now is None:
                 raise ValueError("Head time is None")
             now = test_utils.date_from_iso(now)
-            # input("WAITING...")
 
             proposal_data = [
-                ['tester001', 1 + 0, 3, '240000.000 TBD'], # starts 1 day from now and lasts 3 days
-                ['tester002', 1 + 0, 3, '24.000 TBD'], # starts 1 day from now and lasts 3 days
-                ['tester003', 1 + 0, 3, '24.000 TBD'], # starts 1 days from now and lasts 3 day
-                ['tester004', 1 + 0, 3, '24.000 TBD']  # starts 1 days from now and lasts 3 day
+                ['tester001', 1 + 0, 3, 240000.000], # starts 1 day from now and lasts 3 days
+                ['tester002', 1 + 0, 3, 24.000], # starts 1 day from now and lasts 3 days
+                ['tester003', 1 + 0, 3, 24.000], # starts 1 days from now and lasts 3 day
+                ['tester004', 1 + 0, 3, 24.000]  # starts 1 days from now and lasts 3 day
             ]
 
             proposals = [
@@ -172,7 +173,7 @@ if __name__ == '__main__':
                 start_date, end_date = test_utils.get_start_and_end_date(now, pd[1], pd[2])
                 if start is None:
                     start =  test_utils.date_from_iso(start_date)
-                proposal = {'creator' : pd[0], 'receiver' : pd[0], 'start_date' : start_date, 'end_date' : end_date, 'daily_pay' : pd[3]}
+                proposal = {'creator' : pd[0], 'receiver' : pd[0], 'start_date' : start_date, 'end_date' : end_date, 'daily_pay' : f'{pd[3] :.3f} TBD'}
                 proposals.append(proposal)
 
             test_utils.create_proposals(node_client, proposals, wif)
@@ -181,7 +182,6 @@ if __name__ == '__main__':
             test_utils.vote_proposals(node_client, accounts, wif)
 
             propos = node_client.get_dynamic_global_properties(False)
-            print(f'dynamic propos: {propos}')
             period = test_utils.date_from_iso(propos["next_maintenance_time"])
 
             while period + datetime.timedelta(hours = 1) < start:
@@ -211,29 +211,24 @@ if __name__ == '__main__':
 
             # move forward in time to see if proposals are paid
             # moving is made in 1h increments at a time, after each 
-            # increment balance is printed
-            logger.info("Moving to date: {}".format(pre_test_start_date_iso))
+            # increment balance is printed and checked
+            logger.info("Moving to date: {}".format(test_start_date_iso))
             hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, pre_test_start_date_iso, False)
             previous_balances = dict(zip( account_names, test_utils.print_balance(node_client, accounts)))
-            logger.info("Moving to date: {}".format(test_start_date_iso))
             hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_start_date_iso, False)
             current_date = test_start_date
             choosen_one = account_names[0]
 
             while current_date < test_end_date:
-                pre_current_date = current_date + datetime.timedelta(minutes=59, seconds=56)
                 current_date = current_date + datetime.timedelta(hours = 1)
-                pre_current_date_iso = test_utils.date_to_iso(pre_current_date)
                 current_date_iso = test_utils.date_to_iso(current_date)
 
                 logger.info("Moving to date: {}".format(current_date_iso))
-                hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, pre_current_date_iso, False)
-                budget = test_utils.calculate_propsal_budget( node_client, args.treasury )
-                hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, current_date_iso, False)
+                budget = test_utils.calculate_propsal_budget( node_client, args.treasury, wif )
+                # hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, current_date_iso, False)
 
                 logger.info("Balances for accounts at time: {}".format(current_date_iso))
                 accnts = dict(zip( account_names, test_utils.print_balance(node_client, accounts)))
-                tres = test_utils.print_balance(node_client, [{'name' : args.treasury}])
 
                 for acc, ret in accnts.items():
                     if acc == choosen_one:

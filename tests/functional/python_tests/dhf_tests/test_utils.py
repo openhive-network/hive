@@ -191,7 +191,31 @@ def get_start_and_end_date(now, start_days_from_now, end_days_from_start):
 
     return date_to_iso(start_date), date_to_iso(end_date)
 
+# if wif is specifed, function will fast forward to next payment
+def calculate_propsal_budget( node, treasury, wif = None) -> int:
+    if wif is not None:
+        from datetime import timedelta
+        period = date_from_iso(node.get_dynamic_global_properties(False)["next_maintenance_time"]) - timedelta(seconds=4)
+        logger.info(f"Fast-forwarding to: {date_to_iso(period)}")
+        hive_utils.debug_generate_blocks_until(node.rpc.url, wif, date_to_iso(period), False)
 
-def calculate_propsal_budget( node, treasury ):
     v = int(print_balance(node, [{'name' : treasury}])[0])
+
+    if wif is not None:
+        hive_utils.debug_generate_blocks(node.rpc.url, wif, 1)
+
     return round(( v * 0.01 ) / 24.0)
+
+def calculate_hourly_pay( budget : int, daily_pay : int ) -> int:
+    theory = int((daily_pay * 416)/10000)
+    return min(theory, budget)
+
+# proposals format: { "acc_name": daily_pay }
+def calculate_expected_hourly_payout( proposals : list, budget : int ) -> dict:
+    ret = dict()
+    for acc, dpay in proposals:
+        dpay = int( dpay * 1000.0 )
+        payout = calculate_hourly_pay( budget, dpay )
+        budget -= payout
+        ret[acc] = payout
+    return ret
