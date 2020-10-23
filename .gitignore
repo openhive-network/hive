@@ -14,6 +14,9 @@ Release/
 # Visual Studio Code files
 .vscode
 
+# Jetbrains IDE files
+.idea
+
 # CMake files
 cmake_install.cmake
 CMakeCache.txt
