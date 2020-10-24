@@ -939,38 +939,6 @@ namespace chainbase {
       index( IndexType& i ):index_impl<IndexType>( i ){}
   };
 
-
-  class read_write_mutex_manager
-  {
-    public:
-      read_write_mutex_manager()
-      {
-        _current_lock = 0;
-      }
-
-      ~read_write_mutex_manager(){}
-
-      void next_lock()
-      {
-        _current_lock++;
-        new( &_locks[ _current_lock % CHAINBASE_NUM_RW_LOCKS ] ) read_write_mutex();
-      }
-
-      read_write_mutex& current_lock()
-      {
-        return _locks[ _current_lock % CHAINBASE_NUM_RW_LOCKS ];
-      }
-
-      uint32_t current_lock_num()
-      {
-        return _current_lock;
-      }
-
-    private:
-      std::array< read_write_mutex, CHAINBASE_NUM_RW_LOCKS >     _locks;
-      std::atomic< uint32_t >                                    _current_lock;
-  };
-
   struct lock_exception : public std::exception
   {
     explicit lock_exception() {}
@@ -1291,9 +1259,9 @@ namespace chainbase {
       auto with_read_lock( Lambda&& callback, uint64_t wait_micro = 1000000 ) -> decltype( (*(Lambda*)nullptr)() )
       {
 #ifndef ENABLE_MIRA
-        read_lock lock( _rw_manager.current_lock(), bip::defer_lock_type() );
+        read_lock lock( _rw_lock, bip::defer_lock_type() );
 #else
-        read_lock lock( _rw_manager.current_lock(), boost::defer_lock_t() );
+        read_lock lock( _rw_lock, boost::defer_lock_t() );
 #endif
 
 #ifdef CHAINBASE_CHECK_LOCKING
@@ -1315,29 +1283,15 @@ namespace chainbase {
       }
 
       template< typename Lambda >
-      auto with_write_lock( Lambda&& callback, uint64_t wait_micro = 1000000 ) -> decltype( (*(Lambda*)nullptr)() )
+      auto with_write_lock( Lambda&& callback ) -> decltype( (*(Lambda*)nullptr)() )
       {
-        write_lock lock( _rw_manager.current_lock(), boost::defer_lock_t() );
+        write_lock lock( _rw_lock, boost::defer_lock_t() );
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
         int_incrementer ii( _write_lock_count );
 #endif
 
-#if !defined ENABLE_MIRA || defined IS_TEST_NET
-        if( wait_micro )
-        {
-          while( !lock.timed_lock( boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds( wait_micro ) ) )
-          {
-            _rw_manager.next_lock();
-            std::cerr << "Lock timeout, moving to lock " << _rw_manager.current_lock_num() << std::endl;
-            lock = write_lock( _rw_manager.current_lock(), boost::defer_lock_t() );
-          }
-        }
-        else
-#endif
-        {
-          lock.lock();
-        }
+        lock.lock();
 
         return callback();
       }
@@ -1396,7 +1350,7 @@ namespace chainbase {
 #endif
       }
 
-      read_write_mutex_manager                                    _rw_manager;
+      read_write_mutex                                            _rw_lock;
 #ifndef ENABLE_MIRA
       unique_ptr<bip::managed_mapped_file>                        _segment;
       unique_ptr<bip::managed_mapped_file>                        _meta;
