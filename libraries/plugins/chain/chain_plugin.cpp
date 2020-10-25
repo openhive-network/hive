@@ -252,7 +252,6 @@ void chain_plugin_impl::start_write_processing()
   {
     bool is_syncing = true;
     write_context* cxt;
-    fc::time_point_sec start = fc::time_point::now();
     write_request_visitor req_visitor;
     req_visitor.db = &db;
     req_visitor.block_generator = block_generator;
@@ -280,13 +279,19 @@ void chain_plugin_impl::start_write_processing()
       */
     while( running )
     {
-      if( !is_syncing )
-        start = fc::time_point::now();
-
       if( write_queue.pop( cxt ) )
       {
+	fc::time_point write_lock_request_time = fc::time_point::now();
         db.with_write_lock( [&]()
         {
+          fc::time_point write_lock_acquired_time = fc::time_point::now();
+          fc::microseconds write_lock_acquisition_time = write_lock_acquired_time - write_lock_request_time;
+          if( write_lock_acquisition_time > fc::milliseconds( 50 ) )
+          {
+            wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}μs exceeds warning threshold of 50ms", 
+                 ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
+          }
+
           STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f )
           while( true )
           {
@@ -295,15 +300,22 @@ void chain_plugin_impl::start_write_processing()
             cxt->success = cxt->req_ptr.visit( req_visitor );
             cxt->prom_ptr.visit( prom_visitor );
 
-            if( is_syncing && start - db.head_block_time() < fc::minutes(1) )
+            if( is_syncing && fc::time_point::now() - db.head_block_time() < fc::minutes(1) )
             {
-              start = fc::time_point::now();
               is_syncing = false;
             }
 
-            if( !is_syncing && write_lock_hold_time >= 0 && fc::time_point::now() - start > fc::milliseconds( write_lock_hold_time ) )
+            if( !is_syncing )
             {
-              break;
+              fc::microseconds write_lock_held_duration = fc::time_point::now() - write_lock_acquired_time;
+              if (write_lock_held_duration > fc::milliseconds( write_lock_hold_time ) )
+              {
+                wlog("Stopped processing write_queue before empty because we exceeded ${write_lock_hold_time}ms, "
+                     "held lock for ${write_lock_held_duration}μs", 
+                     ("write_lock_hold_time", write_lock_hold_time)
+                     ("write_lock_held_duration", write_lock_held_duration.count()));
+                break;
+              }
             }
 
             if( !write_queue.pop( cxt ) )
