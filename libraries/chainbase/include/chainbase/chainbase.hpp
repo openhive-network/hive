@@ -990,13 +990,13 @@ namespace chainbase {
 
       void require_read_lock( const char* method, const char* tname )const
       {
-        if( BOOST_UNLIKELY( _enable_require_locking & (_read_lock_count <= 0) ) )
+        if( BOOST_UNLIKELY( _enable_require_locking && (_read_lock_count <= 0) ) )
           require_lock_fail(method, "read", tname);
       }
 
       void require_write_lock( const char* method, const char* tname )
       {
-        if( BOOST_UNLIKELY( _enable_require_locking & (_write_lock_count <= 0) ) )
+        if( BOOST_UNLIKELY( _enable_require_locking && (_write_lock_count <= 0) ) )
           require_lock_fail(method, "write", tname);
       }
 #endif
