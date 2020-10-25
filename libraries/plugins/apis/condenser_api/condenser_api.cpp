@@ -1512,6 +1512,9 @@ DEFINE_LOCKLESS_APIS( condenser_api,
   (broadcast_transaction_synchronous)
   (broadcast_block)
   (get_market_history_buckets)
+  (get_ops_in_block)
+  (get_account_history)
+  (get_transaction)
 )
 
 DEFINE_READ_APIS( condenser_api,
@@ -1520,7 +1523,6 @@ DEFINE_READ_APIS( condenser_api,
   (get_active_witnesses)
   (get_block_header)
   (get_block)
-  (get_ops_in_block)
   (get_dynamic_global_properties)
   (get_chain_properties)
   (get_current_median_history_price)
@@ -1550,7 +1552,6 @@ DEFINE_READ_APIS( condenser_api,
   (get_witness_count)
   (get_open_orders)
   (get_transaction_hex)
-  (get_transaction)
   (get_required_signatures)
   (get_potential_signatures)
   (verify_authority)
@@ -1575,7 +1576,6 @@ DEFINE_READ_APIS( condenser_api,
   (get_discussions_by_promoted)
   (get_replies_by_last_update)
   (get_discussions_by_author_before_date)
-  (get_account_history)
   (get_followers)
   (get_following)
   (get_follow_count)
