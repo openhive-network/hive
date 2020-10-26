@@ -128,7 +128,7 @@ namespace detail {
         _json_rpc_plugin.add_api_method( _api_name, method_name,
           [&plugin,method]( const fc::variant& args ) -> fc::variant
           {
-            return fc::variant( (plugin.*method)( args.as< Args >(), true ) );
+            return fc::variant( (plugin.*method)( args.as< Args >(), /* lock= */ true ) ); //lock=true means it will lock if not in DEFINE_LOCKLESS_API
           },
           api_method_signature{ fc::variant( Args() ), fc::variant( Ret() ) } );
       }

@@ -3696,15 +3696,15 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
 }
 
 
-void database::validate_transaction( const signed_transaction& trx )
-{
-  database::with_write_lock( [&]()
-  {
-    auto session = start_undo_session();
-    _apply_transaction( trx );
-    session.undo();
-  });
-}
+//void database::validate_transaction( const signed_transaction& trx )
+//{
+//  database::with_write_lock( [&]()
+//  {
+//    auto session = start_undo_session();
+//    _apply_transaction( trx );
+//    session.undo();
+//  });
+//}
 
 void database::notify_changed_objects()
 {

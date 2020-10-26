@@ -565,7 +565,7 @@ namespace chain {
         *  This method validates transactions without adding it to the pending state.
         *  @throw if an error occurs
         */
-      void validate_transaction( const signed_transaction& trx );
+      //void validate_transaction( const signed_transaction& trx );
 
       /** when popping a block, the transactions that were removed get cached here so they
         * can be reapplied at the proper time */
