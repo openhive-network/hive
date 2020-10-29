@@ -172,10 +172,13 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
     uint64_t filter_low = args.operation_filter_low ? *args.operation_filter_low : 0;
     uint64_t filter_high = args.operation_filter_high ? *args.operation_filter_high : 0;
 
+    try
+    {
+
     _dataSource.find_account_history_data(args.account, args.start, args.limit, include_reversible,
       [&result, filter_low, filter_high, &total_processed_items](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
       {
-        FC_ASSERT(total_processed_items <= 1000, "Exceeded limit of processed, but unmatched operations.");
+        FC_ASSERT(total_processed_items < 2000, "Could not find filtered operation in ${total_processed_items} operations, to continue searching, set start=${sequence}.",("total_processed_items",total_processed_items)("sequence",sequence));
 
         // we want to accept any operations where the corresponding bit is set in {filter_high, filter_low}
         api_operation_object api_op(op);
@@ -195,6 +198,13 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
           return false;
         }
       });
+    }
+    catch(const fc::exception& e)
+    { //if we have some results but not all requested, return what we have
+      //but if no results, throw an exception that gives a starting item for further searching via pagination
+      if (result.history.empty())
+	throw;
+    }
   }
   else
   {
