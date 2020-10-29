@@ -1155,6 +1155,9 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
 void account_history_rocksdb_plugin::impl::find_account_history_data(const account_name_type& name, uint64_t start,
   uint32_t limit, bool include_reversible, std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const
 {
+  if(limit == 0)
+    return;
+
   ReadOptions rOptions;
 
   ah_info_by_name_slice_t nameSlice(name.data);
@@ -1207,7 +1210,7 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
     if(processor(keyValue.second, oObj))
     {
       ++count;
-      if(count == limit)
+      if(count >= limit)
         break;
     }
   }

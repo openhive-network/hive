@@ -165,19 +165,26 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
 
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
   
+  unsigned int total_processed_items = 0;
+
   if(args.operation_filter_low || args.operation_filter_high)
   {
     uint64_t filter_low = args.operation_filter_low ? *args.operation_filter_low : 0;
     uint64_t filter_high = args.operation_filter_high ? *args.operation_filter_high : 0;
 
     _dataSource.find_account_history_data(args.account, args.start, args.limit, include_reversible,
-      [&result, filter_low, filter_high](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
+      [&result, filter_low, filter_high, &total_processed_items](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
       {
+        FC_ASSERT(total_processed_items <= 1000, "Exceeded limit of processed, but unmatched operations.");
+
         // we want to accept any operations where the corresponding bit is set in {filter_high, filter_low}
         api_operation_object api_op(op);
         unsigned bit_number = api_op.op.which();
         bool accepted = bit_number < 64 ? filter_low & (UINT64_C(1) << bit_number)
                                         : filter_high & (UINT64_C(1) << (bit_number - 64));
+
+        ++total_processed_items;
+
         if(accepted)
         {
           result.history.emplace(sequence, std::move(api_op));
@@ -194,6 +201,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
     _dataSource.find_account_history_data(args.account, args.start, args.limit, include_reversible,
       [&result](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
       {
+        /// Here internal counter (inside find_account_history_data) does the limiting job.
         result.history[sequence] = api_operation_object(op);
         return true;
       });
