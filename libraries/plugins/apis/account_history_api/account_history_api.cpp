@@ -171,24 +171,31 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
     uint64_t filter_high = args.operation_filter_high ? *args.operation_filter_high : 0;
 
     _dataSource.find_account_history_data(args.account, args.start, args.limit, include_reversible,
-      [&result, filter_low, filter_high](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op)
+      [&result, filter_low, filter_high](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
       {
         // we want to accept any operations where the corresponding bit is set in {filter_high, filter_low}
         api_operation_object api_op(op);
         unsigned bit_number = api_op.op.which();
         bool accepted = bit_number < 64 ? filter_low & (UINT64_C(1) << bit_number)
                                         : filter_high & (UINT64_C(1) << (bit_number - 64));
-        if (accepted)
+        if(accepted)
+        {
           result.history.emplace(sequence, std::move(api_op));
+          return true;
+        }
+        else
+        {
+          return false;
+        }
       });
-
   }
   else
   {
     _dataSource.find_account_history_data(args.account, args.start, args.limit, include_reversible,
-      [&result](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op)
+      [&result](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
       {
         result.history[sequence] = api_operation_object(op);
+        return true;
       });
   }
 

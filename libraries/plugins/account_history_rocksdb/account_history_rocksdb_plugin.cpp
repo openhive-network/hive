@@ -621,7 +621,7 @@ public:
   void importData(unsigned int blockLimit);
 
   void find_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit, bool include_reversible,
-    std::function<void(unsigned int, const rocksdb_operation_object&)> processor) const;
+    std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const;
   bool find_operation_object(size_t opId, rocksdb_operation_object* op) const;
   /// Allows to look for all operations present in given block and call `processor` for them.
   void find_operations_by_block(size_t blockNum, bool include_reversible,
@@ -1153,7 +1153,7 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
 }
 
 void account_history_rocksdb_plugin::impl::find_account_history_data(const account_name_type& name, uint64_t start,
-  uint32_t limit, bool include_reversible, std::function<void(unsigned int, const rocksdb_operation_object&)> processor) const
+  uint32_t limit, bool include_reversible, std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const
 {
   ReadOptions rOptions;
 
@@ -1188,7 +1188,7 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
   auto keySlice = it->key();
   auto keyValue = ah_op_by_id_slice_t::unpackSlice(keySlice);
 
-  auto lowerBound = keyValue.second > limit ? keyValue.second - limit : 0;
+  unsigned int count = 0;
 
   for(; it->Valid(); it->Prev())
   {
@@ -1204,10 +1204,12 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
     bool found = find_operation_object(opId, &oObj);
     FC_ASSERT(found, "Missing operation?");
 
-    processor(keyValue.second, oObj);
-
-    if(keyValue.second <= lowerBound)
-      break;
+    if(processor(keyValue.second, oObj))
+    {
+      ++count;
+      if(count == limit)
+        break;
+    }
   }
 }
 
@@ -2084,7 +2086,7 @@ void account_history_rocksdb_plugin::plugin_shutdown()
 }
 
 void account_history_rocksdb_plugin::find_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit,
-  bool include_reversible, std::function<void(unsigned int, const rocksdb_operation_object&)> processor) const
+  bool include_reversible, std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const
 {
   _my->find_account_history_data(name, start, limit, include_reversible, processor);
 }
