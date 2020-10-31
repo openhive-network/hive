@@ -103,11 +103,15 @@ beem_tests:
     # stuff specific to this test
     - mkdir -p build/tests/hive-node-data
     - cd tests/functional/python_tests/dhf_tests
+    - "python3 run_proposal_tests.py initminer hive.fund 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data"
+    - rm -rf $CI_PROJECT_DIR/build/tests/hive-node-data
+    - mkdir -p $CI_PROJECT_DIR/build/tests/hive-node-data
     - "python3 beem_dhf_tests.py initminer initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --no-erase-proposal --junit-output=beem_dhf_test.xml"
     - cd ../hived
     - "python3 hived_hybrid_operations_test.py initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data"
   artifacts:
     paths:
+    - tests/functional/python_tests/dhf_tests/artifacts/
     - tests/functional/python_tests/dhf_tests/beem_dhf_tests.log
     - tests/functional/python_tests/hived/hived_hybrid_operations_test.log
     reports:

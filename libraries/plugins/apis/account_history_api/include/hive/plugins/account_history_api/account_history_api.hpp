@@ -68,7 +68,6 @@ struct get_transaction_args
 
 typedef hive::protocol::annotated_signed_transaction get_transaction_return;
 
-
 struct get_account_history_args
 {
   hive::protocol::account_name_type   account;
@@ -76,6 +75,15 @@ struct get_account_history_args
   uint32_t                            limit = 1000;
   /// if set to true operations from reversible block will be also returned.
   fc::optional<bool> include_reversible;
+  /** if either are set, the set of returned operations will include only these 
+   * matching bitwise filter.
+   * For the first 64 operations (as defined in protocol/operations.hpp), set the 
+   * corresponding bit in operation_filter_low; for the higher-numbered operations,
+   * set the bit in operation_filter_high (pretending operation_filter is a 
+   * 128-bit bitmask composed of {operation_filter_high, operation_filter_low})
+   */
+  fc::optional<uint64_t> operation_filter_low;
+  fc::optional<uint64_t> operation_filter_high;
 };
 
 struct get_account_history_return
@@ -108,7 +116,8 @@ enum enum_vops_filter : uint32_t
   delayed_voting_operation                = 0x100000,
   consolidate_treasury_balance_operation  = 0x200000,
   effective_comment_vote_operation        = 0x400000,
-  ineffective_delete_comment_operation    = 0x800000
+  ineffective_delete_comment_operation    = 0x800000,
+  sps_convert_operation                   = 0x1000000
 };
 
 /** Allows to specify range of blocks to retrieve virtual operations for.
@@ -187,7 +196,7 @@ FC_REFLECT( hive::plugins::account_history::get_transaction_args,
   (id)(include_reversible) )
 
 FC_REFLECT( hive::plugins::account_history::get_account_history_args,
-  (account)(start)(limit)(include_reversible))
+  (account)(start)(limit)(include_reversible)(operation_filter_low)(operation_filter_high))
 
 FC_REFLECT( hive::plugins::account_history::get_account_history_return,
   (history) )

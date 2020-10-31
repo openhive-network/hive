@@ -37,7 +37,7 @@ public:
   virtual void plugin_shutdown() override;
 
   void find_account_history_data(const protocol::account_name_type& name, uint64_t start, uint32_t limit, bool include_reversible,
-    std::function<void(unsigned int, const rocksdb_operation_object&)> processor) const;
+    std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const;
   bool find_operation_object(size_t opId, rocksdb_operation_object* data) const;
   void find_operations_by_block(size_t blockNum, bool include_reversible,
     std::function<void(const rocksdb_operation_object&)> processor) const;

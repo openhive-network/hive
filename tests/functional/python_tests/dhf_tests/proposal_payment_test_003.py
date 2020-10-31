@@ -9,6 +9,7 @@ from time import sleep
 import logging
 import test_utils
 import os
+import datetime
 
 
 LOG_LEVEL = logging.INFO
@@ -101,6 +102,7 @@ if __name__ == '__main__':
         {"name" : "tester003", "private_key" : "5Jz3fcrrgKMbL8ncpzTdQmdRVHdxMhi8qScoxSR3TnAFUcdyD5N", "public_key" : "TST57wy5bXyJ4Z337Bo6RbinR6NyTRJxzond5dmGsP4gZ51yN6Zom"},
         {"name" : "tester004", "private_key" : "5KcmobLVMSAVzETrZxfEGG73Zvi5SKTgJuZXtNgU3az2VK3Krye", "public_key" : "TST8dPte853xAuLMDV7PTVmiNMRwP6itMyvSmaht7J5tVczkDLa5K"},
     ]
+    account_names = [ v['name'] for v in accounts ]
 
     if not accounts:
         logger.error("Accounts array is empty, please add accounts in a form {\"name\" : name, \"private_key\" : private_key, \"public_key\" : public_key}")
@@ -124,8 +126,10 @@ if __name__ == '__main__':
             test_utils.transfer_to_vesting(node_client, args.creator, accounts, "300.000", 
                 "TESTS"
             )
+
             logger.info("Wait 30 days for full voting power")
-            hive_utils.debug_generate_blocks(node_client.rpc.url, wif, 30 * 24 * 3600 / 3 + 10)
+            hive_utils.debug_quick_block_skip(node_client, wif, (30 * 24 * 3600 / 3))
+            hive_utils.debug_generate_blocks(node_client.rpc.url, wif, 10)
             # transfer assets to accounts
             test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
                 "400.000", "TESTS", wif
@@ -152,10 +156,10 @@ if __name__ == '__main__':
             now = test_utils.date_from_iso(now)
 
             proposal_data = [
-                ['tester001', 1 + 0, 3, '240000.000 TBD'], # starts 1 day from now and lasts 3 days
-                ['tester002', 1 + 0, 3, '24.000 TBD'], # starts 1 day from now and lasts 3 days
-                ['tester003', 1 + 0, 3, '24.000 TBD'], # starts 1 days from now and lasts 3 day
-                ['tester004', 1 + 0, 3, '24.000 TBD']  # starts 1 days from now and lasts 3 day
+                ['tester001', 1 + 0, 3, 240000.000], # starts 1 day from now and lasts 3 days
+                ['tester002', 1 + 0, 3, 24.000], # starts 1 day from now and lasts 3 days
+                ['tester003', 1 + 0, 3, 24.000], # starts 1 days from now and lasts 3 day
+                ['tester004', 1 + 0, 3, 24.000]  # starts 1 days from now and lasts 3 day
             ]
 
             proposals = [
@@ -163,25 +167,33 @@ if __name__ == '__main__':
                 
             ]
 
+            start = None
             for pd in proposal_data:
                 start_date, end_date = test_utils.get_start_and_end_date(now, pd[1], pd[2])
-                proposal = {'creator' : pd[0], 'receiver' : pd[0], 'start_date' : start_date, 'end_date' : end_date, 'daily_pay' : pd[3]}
+                if start is None:
+                    start =  test_utils.date_from_iso(start_date)
+                proposal = {'creator' : pd[0], 'receiver' : pd[0], 'start_date' : start_date, 'end_date' : end_date, 'daily_pay' : f'{pd[3] :.3f} TBD'}
                 proposals.append(proposal)
-
-            import datetime
-            test_start_date = now + datetime.timedelta(days = 1)
-            test_start_date_iso = test_utils.date_to_iso(test_start_date)
-
-            test_end_date = test_start_date + datetime.timedelta(days = 4, hours = 1)
-            test_end_date_iso = test_utils.date_to_iso(test_end_date)
 
             test_utils.create_proposals(node_client, proposals, wif)
 
-            # list proposals with inactive status, it shoud be list of pairs id:total_votes
-            test_utils.list_proposals(node_client, test_start_date_iso, "inactive")
-
             # each account is voting on proposal
             test_utils.vote_proposals(node_client, accounts, wif)
+
+            propos = node_client.get_dynamic_global_properties(False)
+            period = test_utils.date_from_iso(propos["next_maintenance_time"])
+
+            while period + datetime.timedelta(hours = 1) < start:
+                period = period + datetime.timedelta(hours = 1)
+
+            pre_test_start_date = period
+            test_start_date = pre_test_start_date
+            pre_test_start_date = test_start_date - datetime.timedelta( seconds = 2 )
+            test_start_date_iso = test_utils.date_to_iso(test_start_date)
+            pre_test_start_date_iso = test_utils.date_to_iso(pre_test_start_date)
+
+            test_end_date = test_start_date + datetime.timedelta(days = 3)
+            test_end_date_iso = test_utils.date_to_iso(test_end_date)
 
             # list proposals with inactive status, it shoud be list of pairs id:total_votes
             votes = test_utils.list_proposals(node_client, test_start_date_iso, "inactive")
@@ -198,41 +210,42 @@ if __name__ == '__main__':
 
             # move forward in time to see if proposals are paid
             # moving is made in 1h increments at a time, after each 
-            # increment balance is printed
+            # increment balance is printed and checked
             logger.info("Moving to date: {}".format(test_start_date_iso))
+            hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, pre_test_start_date_iso, False)
+            previous_balances = dict(zip( account_names, test_utils.print_balance(node_client, accounts)))
             hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_start_date_iso, False)
             current_date = test_start_date
+            choosen_one = account_names[0]
+
             while current_date < test_end_date:
                 current_date = current_date + datetime.timedelta(hours = 1)
                 current_date_iso = test_utils.date_to_iso(current_date)
 
                 logger.info("Moving to date: {}".format(current_date_iso))
-                hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, current_date_iso, False)
+                budget = test_utils.calculate_propsal_budget( node_client, args.treasury, wif )
 
                 logger.info("Balances for accounts at time: {}".format(current_date_iso))
-                test_utils.print_balance(node_client, accounts)
-                test_utils.print_balance(node_client, [{'name' : args.treasury}])
+                accnts = dict(zip( account_names, test_utils.print_balance(node_client, accounts)))
 
-                votes = test_utils.list_proposals(node_client, test_start_date_iso, "active")
-                votes = test_utils.list_proposals(node_client, test_start_date_iso, "expired")
-                votes = test_utils.list_proposals(node_client, test_start_date_iso, "all")
+                for acc, ret in accnts.items():
+                    if acc == choosen_one:
+                        # because of rounding mechanism
+                        assert abs((int(previous_balances[acc]) + budget)- int(ret)) < 2, f"too big missmatch, prev: {previous_balances[acc]}, budget: {budget}, now: {ret}"
+                    else:
+                        assert ret == '390000', f"missmatch in balances for {acc}: {ret} != 390000"
+
+                previous_balances = accnts
 
             # move additional hour to ensure that all proposals ended
             logger.info("Moving to date: {}".format(test_end_date_iso))
             hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_end_date_iso, False)
             logger.info("Balances for accounts at time: {}".format(test_end_date_iso))
-            balances = test_utils.print_balance(node_client, accounts)
-            # it should 29951.682 be but its 29905.081 due to the roundin implementation
-            test_balances = [
-                '29905081',
-                '390000',
-                '390000',
-                '390000',
-            ]
-            for idx in range(0, len(test_balances)):
-                assert balances[idx] == test_balances[idx], "Balances dont match {} != {}".format(balances[idx], test_balances[idx])
+            balances = dict(zip( account_names, test_utils.print_balance(node_client, accounts)))
+            test_balances = previous_balances
 
-            test_utils.print_balance(node_client, [{'name' : args.treasury}])
+            for k, v in test_balances.items():
+                assert v == balances[k], f'invalid value in {k}: {v} != {balnces[k]}'
 
             if node is not None:
                 node.stop_hive_node()

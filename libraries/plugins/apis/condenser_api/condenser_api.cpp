@@ -1038,10 +1038,19 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_account_history )
   {
-    CHECK_ARG_SIZE( 3 )
+    FC_ASSERT( args.size() == 3 || args.size() == 4 || args.size() == 5, "Expected 3, 4, or 5 argument(s), was ${n}", ("n", args.size()) );
     FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
 
-    auto history = _account_history_api->get_account_history( { args[0].as< account_name_type >(), args[1].as< uint64_t >(), args[2].as< uint32_t >() } ).history;
+    fc::optional<bool> include_reversible; /// TODO probably this shall be also included in args above
+    fc::optional<uint64_t> operation_filter_low;
+    if(args.size() >= 4)
+      operation_filter_low = args[3].as<uint64_t>();
+    fc::optional<uint64_t> operation_filter_high;
+    if(args.size() >= 5)
+      operation_filter_high = args[4].as<uint64_t>();
+
+    auto history = _account_history_api->get_account_history({ args[0].as< account_name_type >(), args[1].as< uint64_t >(), args[2].as< uint32_t >(),
+      include_reversible, operation_filter_low, operation_filter_high } ).history;
     get_account_history_return result;
 
     legacy_operation l_op;
@@ -1503,6 +1512,9 @@ DEFINE_LOCKLESS_APIS( condenser_api,
   (broadcast_transaction_synchronous)
   (broadcast_block)
   (get_market_history_buckets)
+  (get_ops_in_block)
+  (get_account_history)
+  (get_transaction)
 )
 
 DEFINE_READ_APIS( condenser_api,
@@ -1511,7 +1523,6 @@ DEFINE_READ_APIS( condenser_api,
   (get_active_witnesses)
   (get_block_header)
   (get_block)
-  (get_ops_in_block)
   (get_dynamic_global_properties)
   (get_chain_properties)
   (get_current_median_history_price)
@@ -1541,7 +1552,6 @@ DEFINE_READ_APIS( condenser_api,
   (get_witness_count)
   (get_open_orders)
   (get_transaction_hex)
-  (get_transaction)
   (get_required_signatures)
   (get_potential_signatures)
   (verify_authority)
@@ -1566,7 +1576,6 @@ DEFINE_READ_APIS( condenser_api,
   (get_discussions_by_promoted)
   (get_replies_by_last_update)
   (get_discussions_by_author_before_date)
-  (get_account_history)
   (get_followers)
   (get_following)
   (get_follow_count)
