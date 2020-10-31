@@ -7,12 +7,10 @@
 
 #include <hive/chain/account_object.hpp>
 
-
 #include <fc/variant_object.hpp>
 #include <fc/reflect/variant.hpp>
 
 namespace hive { namespace plugins { namespace rc {
-
 
 namespace detail {
 
@@ -36,7 +34,8 @@ class rc_api_impl
     chain::database& _db;
 };
 
-template< typename ResultType > static ResultType on_push_default( const ResultType& r ) { return r; }
+  template< typename ApiResultType, typename ResultType >
+  static ApiResultType on_push_default( const ResultType& r, const database& db ) { return ApiResultType( r, db ); }
 
 template< typename ValueType > static bool filter_default( const ValueType& r ) { return true; }
 
@@ -123,10 +122,12 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
       {
         //    const auto& idx = _db.get_index< chain::operation_index, chain::by_location >();
         //    auto itr = idx.lower_bound( args.block_num );
-        auto idx =  _db.get_index< hive::plugins::rc::rc_account_index , hive::chain::by_name >();
+        //auto idx =  _db.get_index< hive::plugins::rc::rc_account_index, hive::chain::by_name >();
+        auto& idx  = _db.get_index< hive::plugins::rc::rc_account_index >().indices().get< hive::chain::by_name >();
         auto start= args.start.as< account_name_type >();
         auto filter = &filter_default< rc_account_object >;
-        auto on_push = [&]( const rc_account_object& rca ){ return rc_account_api_object( rca, _db ); };
+        //auto on_push = [&]( const rc_account_object& rca ){ return rc_account_api_object( rca, _db ); };
+        auto on_push = &on_push_default< rc_account_api_object, rc_account_object >;
 
         auto itr = idx.lower_bound( start );
         auto end = idx.end();
@@ -134,7 +135,7 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
         while( result.rc_accounts.size() < args.limit && itr != end )
         {
           if( filter( *itr ) )
-            result.rc_accounts.push_back( on_push( *itr ) );
+            result.rc_accounts.push_back( on_push( *itr, _db ) );
 
           ++itr;
         }
@@ -178,9 +179,11 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_delegation_pools )
   {
     case( sort_order_type::by_name ):
     {
-      auto idx =  _db.get_index< rc_delegation_pool_index, by_account_symbol >();
+      //auto idx =  _db.get_index< rc_delegation_pool_index, by_account_symbol >();
+      auto& idx  = _db.get_index< rc_delegation_pool_index >().indices().get< by_account_symbol >();
       auto start = boost::make_tuple( args.start.as< account_name_type >(), VESTS_SYMBOL );
-      auto on_push = &on_push_default< rc_delegation_pool_object >;
+      //auto on_push = &on_push_default< rc_delegation_pool_object >;
+      auto on_push = &on_push_default< rc_delegation_pool_api_object, rc_delegation_pool_object >;
       auto filter = &filter_default< rc_delegation_pool_object >;
 
       auto itr = idx.lower_bound( start );
@@ -189,7 +192,7 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_delegation_pools )
       while( result.rc_delegation_pools.size() < args.limit && itr != end )
       {
         if( filter( *itr ) )
-          result.rc_delegation_pools.push_back( on_push( *itr ) );
+          result.rc_delegation_pools.push_back( on_push( *itr, _db ) );
 
         ++itr;
       }
@@ -233,9 +236,11 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_delegations )
       auto key = args.start.as< vector< fc::variant > >();
       FC_ASSERT( key.size() == 2, "by_edge start requires 2 values. (from_account, pool_name)" );
 
-      auto idx =  _db.get_index< rc_indel_edge_index, by_edge >();
+      //auto idx =  _db.get_index< rc_indel_edge_index, by_edge >();
+      auto& idx  = _db.get_index< rc_indel_edge_index >().indices().get< by_edge >();
       auto start = boost::make_tuple( key[0].as< account_name_type >(), VESTS_SYMBOL, key[1].as< account_name_type >() );
-      auto on_push = &on_push_default< rc_indel_edge_api_object >;
+      //auto on_push = &on_push_default< rc_indel_edge_api_object >;
+      auto on_push = &on_push_default< rc_indel_edge_api_object, rc_indel_edge_object >;
       auto filter = &filter_default< rc_indel_edge_api_object >;
 
       auto itr = idx.lower_bound( start );
@@ -244,7 +249,7 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_delegations )
       while( result.rc_delegations.size() < args.limit && itr != end )
       {
         if( filter( *itr ) )
-          result.rc_delegations.push_back( on_push( *itr ) );
+          result.rc_delegations.push_back( on_push( *itr, _db ) );
 
         ++itr;
       }
@@ -256,9 +261,11 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_delegations )
       auto key = args.start.as< vector< fc::variant > >();
       FC_ASSERT( key.size() == 2, "by_edge start requires 2 values. (from_account, pool_name)" );
 
-      auto idx =  _db.get_index< rc_indel_edge_index, by_pool >();
+      //auto idx =  _db.get_index< rc_indel_edge_index, by_pool >();
+      auto& idx  = _db.get_index< rc_indel_edge_index >().indices().get< by_pool >();
       auto start = boost::make_tuple( key[0].as< account_name_type >(), VESTS_SYMBOL, key[1].as< account_name_type >() );
-      auto on_push = &on_push_default< rc_indel_edge_api_object >;
+      //auto on_push = &on_push_default< rc_indel_edge_api_object >;
+      auto on_push = &on_push_default< rc_indel_edge_api_object, rc_indel_edge_object >;
       auto filter = &filter_default< rc_indel_edge_api_object >;
 
       auto itr = idx.lower_bound( start );
@@ -267,7 +274,7 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_delegations )
       while( result.rc_delegations.size() < args.limit && itr != end )
       {
         if( filter( *itr ) )
-          result.rc_delegations.push_back( on_push( *itr ) );
+          result.rc_delegations.push_back( on_push( *itr, _db ) );
 
         ++itr;
       }
