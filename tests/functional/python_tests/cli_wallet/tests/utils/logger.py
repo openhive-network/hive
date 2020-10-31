@@ -15,18 +15,15 @@ def init_logger(_file_name):
     log.setLevel(logging.INFO)
 
     data = os.path.split(_file_name)
-    if data[0]:
-        path = data[0] + "/logs/"
+    log_dir = os.environ.get("TEST_LOG_DIR", None)
+    if log_dir:
+        path = log_dir 
     else:
-        path = "./logs/"
-    file = data[1]
+        path = data[0] + "/logs/"
+    file_name = "cli_wallet.log"
     if path and not os.path.exists(path):
         os.makedirs(path)
-    now = str(datetime.datetime.now())[:-7]
-    now = now.replace(' ', '-')
-    full_path = path+"/"+now+"_"+file
-    if not full_path.endswith(".log"):
-        full_path += (".log")
+    full_path = path+"/"+file_name
     fileh = logging.FileHandler(full_path)
     fileh.setFormatter(logging.Formatter(formater))
     log.addHandler(fileh)
