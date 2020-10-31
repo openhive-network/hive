@@ -58,29 +58,6 @@ struct get_order_book_return
   vector< order > asks;
 };
 
-/*
- * DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
-{
-  FC_ASSERT( args.accounts.size() <= RC_API_SINGLE_QUERY_LIMIT );
-
-  find_rc_accounts_return result;
-  result.rc_accounts.reserve( args.accounts.size() );
-
-  for( const account_name_type& a : args.accounts )
-  {
-    const rc_account_object* rc_account = _db.find< rc_account_object, by_name >( a );
-
-    if( rc_account != nullptr )
-      {
-         result.rc_accounts.emplace_back( *rc_account, _db );
-      }
-  }
-
-  return result;
-}
- *
- */
-
 struct market_trade
 {
   time_point_sec date;
