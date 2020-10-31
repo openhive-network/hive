@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 
-import time
-
 from utils.test_utils import *
 from utils.cmd_args   import args
 from utils.cli_wallet import CliWallet
 from utils.logger     import log, init_logger
 
 if __name__ == "__main__":
-    with Test(__file__):
+    try:
+        init_logger(__file__)
+        log.info("Starting test: {0}".format(__file__))
+        error = False
         wallet = CliWallet( args.path,
                             args.server_rpc_endpoint,
                             args.cert_auth,
