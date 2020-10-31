@@ -38,7 +38,7 @@ def get_votes( wallet, account_name ):
 if __name__ == "__main__":
     try:
         init_logger(__file__)
-
+        log.info("Starting test: {0}".format(__file__))
         error = False
         wallet = CliWallet( args.path,
                             args.server_rpc_endpoint,
