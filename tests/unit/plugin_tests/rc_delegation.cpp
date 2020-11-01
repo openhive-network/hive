@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE( rc_delegate_to_pool_validate )
       op.amount.symbol = HIVE_SYMBOL;
       BOOST_REQUIRE_THROW( op.validate(), fc::assert_exception );
 
-      op.amount.symbol = SBD_SYMBOL;
+      op.amount.symbol = HBD_SYMBOL;
       BOOST_REQUIRE_THROW( op.validate(), fc::assert_exception );
 
       op.amount.symbol = VESTS_SYMBOL;

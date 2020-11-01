@@ -44,14 +44,11 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
     //singleton
     BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_object ), 48 );
     //singleton
-    BOOST_CHECK_EQUAL( sizeof( rc::rc_account_object ), 64 );
+    BOOST_CHECK_EQUAL( sizeof( rc::rc_account_object ), 152 );
     //permanent, as many as account_object, 1.3M atm
-    BOOST_CHECK_EQUAL( sizeof( rc::rc_delegation_pool_object ), 40 );
-    //unused
-    BOOST_CHECK_EQUAL( sizeof( rc::rc_indel_edge_object ), 48 );
-    //unused
-    BOOST_CHECK_EQUAL( sizeof( rc::rc_outdel_drc_edge_object ), 64 );
-    //unused
+    BOOST_CHECK_EQUAL( sizeof( rc::rc_delegation_pool_object ), 56 );
+    BOOST_CHECK_EQUAL( sizeof( rc::rc_indel_edge_object ), 56 );
+    BOOST_CHECK_EQUAL( sizeof( rc::rc_outdel_drc_edge_object ), 72 );
 
     BOOST_CHECK_EQUAL( sizeof( reputation::reputation_object ), 32 );
     //lasting, as many as account_object, 1.3M atm

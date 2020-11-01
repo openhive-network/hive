@@ -42,6 +42,7 @@ class rc_resource_param_object : public object< rc_resource_param_object_type, r
 
     fc::int_array< rc_resource_params, HIVE_NUM_RESOURCE_TYPES >
                     resource_param_array;
+  CHAINBASE_UNPACK_CONSTRUCTOR(rc_resource_param_object);
 };
 typedef oid_ref< rc_resource_param_object > rc_resource_param_id_type;
 
@@ -53,6 +54,7 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
 
     fc::int_array< int64_t, HIVE_NUM_RESOURCE_TYPES >
                     pool_array;
+  CHAINBASE_UNPACK_CONSTRUCTOR(rc_pool_object);
 };
 typedef oid_ref< rc_pool_object > rc_pool_id_type;
 
@@ -73,6 +75,7 @@ class rc_account_object : public object< rc_account_object_type, rc_account_obje
     // This is used for bug-catching, to match that the vesting shares in a
     // pre-op are equal to what they were at the last post-op.
     int64_t               last_max_rc = 0;
+  CHAINBASE_UNPACK_CONSTRUCTOR(rc_account_object);
 };
 
 typedef oid_ref< rc_account_object > rc_account_id_type;
@@ -91,6 +94,7 @@ class rc_delegation_pool_object : public object< rc_delegation_pool_object_type,
 
     hive::chain::util::manabar   rc_pool_manabar;
     int64_t                       max_rc = 0;
+  CHAINBASE_UNPACK_CONSTRUCTOR(rc_delegation_pool_object);
 };
 
 typedef oid_ref< rc_delegation_pool_object > rc_delegation_pool_id_type;
@@ -110,6 +114,7 @@ class rc_delegation_from_account_object : public object< rc_delegation_from_acco
      asset                         amount;
 
      asset_symbol_type get_asset_symbol()const{ return amount.symbol; }
+  CHAINBASE_UNPACK_CONSTRUCTOR(rc_delegation_from_account_object);
 };
 
 typedef oid_ref< rc_delegation_from_account_object > rc_delegation_from_account_id_type;
@@ -128,6 +133,7 @@ class rc_indel_edge_object : public object< rc_indel_edge_object_type, rc_indel_
     asset                         amount;
 
     asset_symbol_type get_asset_symbol()const { return amount.symbol; }
+  CHAINBASE_UNPACK_CONSTRUCTOR(rc_indel_edge_object);
 };
 
 typedef oid_ref< rc_indel_edge_object > rc_indel_edge_id_type;
@@ -158,6 +164,7 @@ class rc_outdel_drc_edge_object : public object< rc_outdel_drc_edge_object_type,
     asset_symbol_type             asset_symbol;
     hive::chain::util::manabar    drc_manabar;
     int64_t                       drc_max_mana = 0;
+  CHAINBASE_UNPACK_CONSTRUCTOR(rc_outdel_drc_edge_object);
 };
 
 int64_t get_maximum_rc( const hive::chain::account_object& account, const rc_account_object& rc_account );
