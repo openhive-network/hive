@@ -167,8 +167,8 @@ class Test(ContextDecorator):
             self.test_case.add_failure_info(output = self.error)
         self.junit_test_cases.append(self.test_case)
         if args.junit_output:
-            test_suite = TestSuite('list_proposals_test', self.junit_test_cases)
-            with open(args.junit_output, "w") as junit_xml:
+            test_suite = TestSuite('cli_wallet_test', self.junit_test_cases)
+            with open(args.junit_output, "a") as junit_xml:
                 TestSuite.to_file(junit_xml, [test_suite], prettyprint=False)
         if self.error:
             log.error("TEST `{0}` failed".format(self.test_name))
