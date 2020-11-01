@@ -1,4 +1,4 @@
-SET ( cli_wallet_tests_args --hive-path ${hived_path} --hive-working-dir ${CMAKE_BINARY_DIR}/tests/hive-node-data --path-to-cli ${cli_wallet_path} --creator initminer --wif ${initminer_key})
+SET ( cli_wallet_tests_args --hive-path ${hived_path} --hive-working-dir ${CMAKE_BINARY_DIR}/tests/hive-node-data --path-to-cli ${cli_wallet_path} --creator initminer --wif ${initminer_key} --junit-output=cli_wallet_tests.xml)
 IF ( BUILD_HIVE_TESTNET )
     ADD_PYTHON_FUNCTIONAL_TEST( run ${cli_wallet_tests_args} )
 ELSE ( BUILD_HIVE_TESTNET )

@@ -34,7 +34,7 @@ MACRO ( ADD_PYTHON_FUNCTIONAL_TEST test_script_base_name )
     ADD_TEST( NAME ${test_name} COMMAND python3 ${test_parameters} WORKING_DIRECTORY ${working_dir} )
     SET_PROPERTY( TEST "${test_name}" PROPERTY LABELS ${python_funtional_tests_prefix} ${tests_subset} ${test_script_base_name} )
     SET_PROPERTY( TEST "${test_name}" PROPERTY ENVIRONMENT TEST_LOG_DIR=${CMAKE_BINARY_DIR}/tests)
-    SET_PROPERTY( TEST "${test_name}" PROPERTY ENVIRONMENT PYTHONPATH=${CMAKE_SOURCE_DIR}/tests/functional)
+    SET_PROPERTY( TEST "${test_name}" APPEND PROPERTY ENVIRONMENT PYTHONPATH=${CMAKE_SOURCE_DIR}/tests/functional)
 
 ENDMACRO( ADD_PYTHON_FUNCTIONAL_TEST )
 
