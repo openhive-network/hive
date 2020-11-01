@@ -7,10 +7,7 @@ from utils.cmd_args   import args
 from utils.logger     import log, init_logger
 
 if __name__ == "__main__":
-    try:
-        init_logger(__file__)
-        log.info("Starting test: {0}".format(__file__))
-        error = False
+    with Test(__file__):
         output = subprocess.run([args.path+"/cli_wallet", "--help"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output_stdout = output.stdout.decode('utf-8')
         args_founded = [ arg for arg in output_stdout.split() if "--" in arg ]
