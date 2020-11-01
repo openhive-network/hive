@@ -150,20 +150,28 @@ def make_user_for_tests(_cli_wallet, _value_for_vesting = None,  _value_for_tran
 class Test(ContextDecorator):
     def __init__(self, _test_name):
         self.test_name=_test_name
+        self.junit_test_cases=[]
 
     def __enter__(self):
         init_logger(self.test_name)
+        self.start_time = time.time()
         log.info("Starting test: {0}".format(self.test_name))
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.error=None
+        self.end_time=time.time()
+        self.test_case=TestCase(self.test_name, self.test_name, self.end_time - self.start_time, '', '')
         if exc_type:
             log.exception(exc_value)
             self.error = traceback.format_exception(exc_type, exc_value, exc_traceback)
+            self.test_case.add_failure_info(output = self.error)
+        self.junit_test_cases.append(self.test_case)
+        if args.junit_output:
+            test_suite = TestSuite('list_proposals_test', self.junit_test_cases)
+            with open(args.junit_output, "w") as junit_xml:
+                TestSuite.to_file(junit_xml, [test_suite], prettyprint=False)
         if self.error:
             log.error("TEST `{0}` failed".format(self.test_name))
-            raise Exception(str(self.error))
         else:
             log.info("TEST `{0}` passed".format(self.test_name))
-            exit(0)
 
