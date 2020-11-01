@@ -1,7 +1,12 @@
 import json
 import requests
+from contextlib import ContextDecorator
+import traceback
+import time
 
-from utils.logger     import log
+from junit_xml import TestCase, TestSuite
+
+from utils.logger     import log, init_logger
 from utils.cmd_args   import args
 
 class ArgsCheckException(Exception):
@@ -141,3 +146,32 @@ def make_user_for_tests(_cli_wallet, _value_for_vesting = None,  _value_for_tran
     _cli_wallet.transfer(               creator, receiver, value_for_transfer_tbd, "initial transfer", "true")
 
     return creator, receiver
+
+class Test(ContextDecorator):
+    def __init__(self, _test_name):
+        self.test_name=_test_name
+        self.junit_test_cases=[]
+
+    def __enter__(self):
+        init_logger(self.test_name)
+        self.start_time = time.time()
+        log.info("Starting test: {0}".format(self.test_name))
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.error=None
+        self.end_time=time.time()
+        self.test_case=TestCase(self.test_name, self.test_name, self.end_time - self.start_time, '', '')
+        if exc_type:
+            log.exception(exc_value)
+            self.error = traceback.format_exception(exc_type, exc_value, exc_traceback)
+            self.test_case.add_failure_info(output = self.error)
+        self.junit_test_cases.append(self.test_case)
+        if args.junit_output:
+            test_suite = TestSuite('list_proposals_test', self.junit_test_cases)
+            with open(args.junit_output, "w") as junit_xml:
+                TestSuite.to_file(junit_xml, [test_suite], prettyprint=False)
+        if self.error:
+            log.error("TEST `{0}` failed".format(self.test_name))
+        else:
+            log.info("TEST `{0}` passed".format(self.test_name))
+
