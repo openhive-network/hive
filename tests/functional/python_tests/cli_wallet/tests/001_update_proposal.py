@@ -6,10 +6,7 @@ from utils.cli_wallet import CliWallet
 from utils.logger     import log, init_logger
 
 if __name__ == "__main__":
-    try:
-        init_logger(__file__)
-        log.info("Starting test: {0}".format(__file__))
-        error = False
+    with Test(__file__):
         wallet = CliWallet( args.path,
                             args.server_rpc_endpoint,
                             args.cert_auth,
@@ -45,20 +42,5 @@ if __name__ == "__main__":
 
         log.info("proposals_after {0}".format(proposals_after))
 
-        if not proposals_before == proposals_middle:
-            raise ArgsCheckException("proposals_before should be equal to proposals_middle.")
-
-        if not proposals_middle + 1 == proposals_after:
-            raise ArgsCheckException("proposals_middle +1 should be equal to proposals_after.")
-
-    except Exception as _ex:
-        log.exception(str(_ex))
-        error = True
-    finally:
-        if error:
-            log.error("TEST `{0}` failed".format(__file__))
-            exit(1)
-        else:
-            log.info("TEST `{0}` passed".format(__file__))
-            exit(0)
-
+        assert proposals_before == proposals_middle, "proposals_before should be equal to proposals_middle."
+        assert proposals_middle + 1 == proposals_after, "proposals_middle +1 should be equal to proposals_after."
