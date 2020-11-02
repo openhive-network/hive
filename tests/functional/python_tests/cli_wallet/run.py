@@ -41,16 +41,12 @@ def run_script(_test, _multiplier = 1, _interpreter = None ):
       with open(summary_file_name, "a+") as summary:
         interpreter = _interpreter if _interpreter else "python3"
         start_time=time.time()
-        error=None
-        try:
-            _ = subprocess.check_output(interpreter + " " + _test + " " + test_args, shell=True)
-        except subprocess.CalledProcessError as _ex:
-            error=_ex.output
+        out = subprocess.run(interpreter + " " + _test + " " + test_args, shell=True, stderr=subprocess.PIPE)
         end_time=time.time()
         test_case=TestCase(_test, _test, end_time - start_time, '', '')
         junit_test_cases.append(test_case)
-        if error:
-            test_case.add_failure_info(output = error)
+        if out.stderr:
+            test_case.add_failure_info(output = out.stderr)
             summary.writelines("Test `{0}` failed.\n".format(_test))
             return True
         else:
