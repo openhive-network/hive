@@ -6,12 +6,16 @@ import argparse
 import datetime
 import subprocess
 import time
+<<<<<<< HEAD
 import sys
 
 from junit_xml import TestCase, TestSuite
 
+=======
+>>>>>>> [WK] fix xml report generation.
 import sys
 
+from junit_xml import TestCase, TestSuite
 
 from tests.utils.cmd_args import parser
 from tests.utils.logger import log
@@ -37,12 +41,16 @@ def run_script(_test, _multiplier = 1, _interpreter = None ):
       with open(summary_file_name, "a+") as summary:
         interpreter = _interpreter if _interpreter else "python3"
         start_time=time.time()
-        out = subprocess.run(interpreter + " " + _test + " " + test_args, shell=True, stderr=subprocess.PIPE)
+        error=None
+        try:
+            _ = subprocess.check_output(interpreter + " " + _test + " " + test_args, shell=True)
+        except subprocess.CalledProcessError as _ex:
+            error=_ex.output
         end_time=time.time()
         test_case=TestCase(_test, _test, end_time - start_time, '', '')
         junit_test_cases.append(test_case)
-        if out.stderr:
-            test_case.add_failure_info(output = out.stderr)
+        if error:
+            test_case.add_failure_info(output = error)
             summary.writelines("Test `{0}` failed.\n".format(_test))
             return True
         else:
@@ -78,6 +86,10 @@ if __name__ == "__main__":
     finally:
         if node:
             node.stop_hive_node()
+        if args.junit_output:
+            test_suite = TestSuite('cli_wallet_test', junit_test_cases)
+            with open(args.junit_output, "w") as junit_xml:
+                TestSuite.to_file(junit_xml, [test_suite], prettyprint=False)
         if error:
             log.error("At least one test has faild. Please check summary.txt file.")
             exit(1)
