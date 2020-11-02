@@ -167,7 +167,7 @@ cli_wallet_tests:
     - "python3 run.py --hive-path $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --hive-working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --path-to-cli $CI_PROJECT_DIR/testnet_node_build/install-root/bin --creator initminer --wif 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --junit-output=cli_wallet_tests.xml"
   artifacts:
     paths:
-    - tests/functional/python_tests/cli_wallet/logs/cli_wallet.log
+    - tests/functional/python_tests/cli_wallet/tests/logs/cli_wallet.log
     reports:
       junit: tests/functional/python_tests/cli_wallet/cli_wallet_tests.xml
     when: always
