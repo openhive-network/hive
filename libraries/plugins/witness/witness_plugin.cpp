@@ -495,6 +495,8 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
   }
 
   my->_production_enabled = options.at( "enable-stale-production" ).as< bool >();
+  if (my->_production_enabled)
+    wlog("warning: stale production is enabled, make sure you know what you are doing.");
 
   if( my->_witnesses.size() > 0 )
   {
@@ -507,6 +509,8 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
   {
     my->_required_witness_participation = HIVE_1_PERCENT * options.at( "required-participation" ).as< uint32_t >();
   }
+  if ( my->_required_witness_participation < 3300)
+    wlog("warning: required witness participation=${required_witness_participation}, normally this should be set to 33",("required_witness_participation",my->_required_witness_participation / 100));
 
   my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
     [&]( const chain::block_notification& note ){ my->on_post_apply_block( note ); }, *this, 0 );
