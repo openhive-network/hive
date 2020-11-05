@@ -520,8 +520,9 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
   my->_post_apply_operation_conn = my->_db.add_pre_apply_operation_handler(
     [&]( const chain::operation_notification& note ){ my->on_post_apply_operation( note ); }, *this, 0);
 
+  //if a producing witness, allow up to 1/3 of the block interval for writing blocks/transactions (2x a normal node)
   if( my->_witnesses.size() && my->_private_keys.size() )
-    my->_chain_plugin.set_write_lock_hold_time( -1 );
+    my->_chain_plugin.set_write_lock_hold_time( HIVE_BLOCK_INTERVAL * 1000 / 3 ); // units = milliseconds
 
   HIVE_ADD_PLUGIN_INDEX(my->_db, witness_custom_op_index);
 
