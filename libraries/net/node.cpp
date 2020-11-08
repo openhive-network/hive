@@ -4010,7 +4010,7 @@ namespace graphene { namespace net {
       peer->number_of_unfetched_item_ids = 0;
       peer->we_need_sync_items_from_peer = true;
       peer->last_block_delegate_has_seen = item_hash_t();
-      peer->last_block_time_delegate_has_seen = _delegate->get_block_time(item_hash_t());
+      peer->last_block_time_delegate_has_seen = fc::time_point_sec::min();
       peer->inhibit_fetching_sync_blocks = false;
       fetch_next_batch_of_item_ids_from_peer( peer.get() );
     }
