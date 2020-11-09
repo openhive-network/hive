@@ -2149,10 +2149,10 @@ void account_history_rocksdb_plugin::find_operations_by_block(size_t blockNum, b
 }
 
 std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::enum_operations_from_block_range(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
-  fc::optional<uint64_t> operationBegin, fc::optional<uint32_t> limit,
+  bool include_reversible, fc::optional<uint64_t> operationBegin, fc::optional<uint32_t> limit,
   std::function<bool(const rocksdb_operation_object&, uint64_t, bool)> processor, const bool create_new_connection) const
 {
-  return _my->enumVirtualOperationsFromBlockRange(blockRangeBegin, blockRangeEnd, operationBegin, limit, processor, create_new_connection);
+  return _my->enumVirtualOperationsFromBlockRange(blockRangeBegin, blockRangeEnd, include_reversible, operationBegin, limit, processor, create_new_connection);
 }
 
 bool account_history_rocksdb_plugin::find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo,

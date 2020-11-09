@@ -63,8 +63,8 @@ class rocksdb_operation_object
     int64_t                    id = 0;
 
     chain::transaction_id_type trx_id;
-    int32_t                    block = 0;
-    int32_t                    trx_in_block = 0;
+    uint32_t                   block = 0;
+    uint32_t                   trx_in_block = 0;
     uint16_t                   op_in_trx = 0;
     uint16_t                   virtual_op = 0;
     time_point_sec             timestamp;

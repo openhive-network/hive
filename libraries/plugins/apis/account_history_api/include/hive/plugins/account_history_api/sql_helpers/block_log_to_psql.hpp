@@ -101,8 +101,9 @@ namespace PSQL
       _dataSource.enum_operations_from_block_range(
         params.start_block,
         params.end_block,
+        false,
         fc::optional<uint64_t>{}, std::numeric_limits<uint32_t>::max(),
-        [&](const rocksdb_operation_object &op, uint64_t operation_id) -> bool {
+        [&](const rocksdb_operation_object &op, uint64_t operation_id, bool) -> bool {
           qqq.wait_push(post_process_command{op, operation_id});
           return true;
         },
