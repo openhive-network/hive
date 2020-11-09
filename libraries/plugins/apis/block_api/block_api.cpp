@@ -17,6 +17,7 @@ class block_api_impl
     DECLARE_API_IMPL(
       (get_block_header)
       (get_block)
+      (get_block_range)
     )
 
     chain::database& _db;
@@ -50,7 +51,7 @@ block_api_impl::~block_api_impl() {}
 DEFINE_API_IMPL( block_api_impl, get_block_header )
 {
   get_block_header_return result;
-  auto block = _db.fetch_block_by_number( args.block_num );
+  optional<signed_block> block = _db.fetch_block_by_number_unlocked( args.block_num );
 
   if( block )
     result.header = *block;
@@ -61,7 +62,7 @@ DEFINE_API_IMPL( block_api_impl, get_block_header )
 DEFINE_API_IMPL( block_api_impl, get_block )
 {
   get_block_return result;
-  auto block = _db.fetch_block_by_number( args.block_num );
+  optional<signed_block> block = _db.fetch_block_by_number_unlocked( args.block_num );
 
   if( block )
     result.block = *block;
@@ -69,9 +70,19 @@ DEFINE_API_IMPL( block_api_impl, get_block )
   return result;
 }
 
-DEFINE_READ_APIS( block_api,
+DEFINE_API_IMPL( block_api_impl, get_block_range )
+{
+  get_block_range_return result;
+  vector<signed_block> blocks = _db.fetch_block_range_unlocked( args.starting_block_num, args.count );
+  for (const signed_block& block : blocks)
+    result.blocks.push_back(block);
+  return result;
+}
+
+DEFINE_LOCKLESS_APIS( block_api,
   (get_block_header)
   (get_block)
+  (get_block_range)
 )
 
 } } } // hive::plugins::block_api

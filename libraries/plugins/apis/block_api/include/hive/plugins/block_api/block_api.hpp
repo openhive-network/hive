@@ -35,6 +35,15 @@ class block_api
       * @return the referenced block, or null if no matching block was found
       */
       (get_block)
+
+      /**
+      * @brief Retrieve a range of full, signed blocks
+      * @param starting_block_num Height of the first block to be returned
+      * @param count the maximum number of blocks to return
+      * @return the blocks requested.  The list may be shorter than requested if `count` blocks
+      *         would take you past the current head block
+      */
+      (get_block_range)
     )
 
   private:

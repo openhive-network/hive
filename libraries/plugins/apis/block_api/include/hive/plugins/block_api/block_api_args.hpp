@@ -32,6 +32,18 @@ struct get_block_return
   optional< api_signed_block_object > block;
 };
 
+/* get_block_range */
+struct get_block_range_args
+{
+  uint32_t starting_block_num;
+  uint32_t count;
+};
+
+struct get_block_range_return
+{
+  vector<api_signed_block_object> blocks;
+};
+
 } } } // hive::block_api
 
 FC_REFLECT( hive::plugins::block_api::get_block_header_args,
@@ -45,4 +57,11 @@ FC_REFLECT( hive::plugins::block_api::get_block_args,
 
 FC_REFLECT( hive::plugins::block_api::get_block_return,
   (block) )
+
+FC_REFLECT( hive::plugins::block_api::get_block_range_args,
+  (starting_block_num)
+  (count) )
+
+FC_REFLECT( hive::plugins::block_api::get_block_range_return,
+  (blocks) )
 
