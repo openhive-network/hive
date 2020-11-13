@@ -8,7 +8,7 @@
 #include <fc/smart_ref_impl.hpp>
 #include <boost/format.hpp>
 
-// PSQL
+// C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
 #include <pqxx/pqxx>
 
 namespace hive
@@ -26,7 +26,7 @@ namespace hive
       namespace detail
       {
         class sql_serializer_plugin_impl
-        {q
+        {
           using namespace hive::plugins::sql_serializer::PSQL;
 
         public:
