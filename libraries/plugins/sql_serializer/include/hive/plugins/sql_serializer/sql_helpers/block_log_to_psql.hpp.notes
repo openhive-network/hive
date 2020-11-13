@@ -1,0 +1,75 @@
+// #pragma once
+
+// #include "sql_serializer_helper.hpp"
+
+
+
+// namespace PSQL
+// {
+//   using namespace pqxx;
+
+//   std::thread post_process
+//       };
+
+//       std::array<std::shared_ptr<std::thread>, 1> threads;
+//       for (auto &th : threads)
+//         th = std::make_shared<std::thread>(fun);
+//       for (auto &th : threads)
+//       {
+//         th->join();
+//         th.reset();
+//       }
+//     }};
+//   }
+
+//   std::thread rip_vops_to_psql(const psql_serialization_params &params, const account_history_rocksdb_plugin &_dataSource, queue<post_process_command> &qqq)
+//   {
+//     return std::thread{[params, &qqq, &_dataSource]() -> void {
+//       _dataSource.enum_operations_from_block_range(
+//         params.start_block,
+//         params.end_block,
+//         false,
+//         fc::optional<uint64_t>{}, std::numeric_limits<uint32_t>::max(),
+//         [&](const rocksdb_operation_object &op, uint64_t operation_id, bool) -> bool {
+//           qqq.wait_push(post_process_command{op, operation_id});
+//           return true;
+//         },
+//         true);
+//     }};
+//   }
+
+//   template<typename T>
+//   void iterate_and_query(const std::string &db_con_str, const T& collection)
+//   {
+//     connection conn{db_con_str.c_str()};
+//     for (auto sql : collection)
+//       nontransaction{conn}.exec(sql);
+//   }
+
+//   void init_psql_database(const std::string &db_con_str)
+//   {
+//     iterate_and_query(db_con_str, init_database_commands);
+//   }
+
+//   void finish_psql_database(const std::string &db_con_str)
+//   {
+//     iterate_and_query(db_con_str, end_database_commands);
+//   }
+
+  
+
+//   void async_db_pusher(const std::string &db_con_str, queue<command> &src_queue, const size_t async_count = 2)
+//   {
+//     std::vector<std::future<void>> asyncs;
+//     asyncs.reserve(async_count);
+//     for (size_t i = 0; i < async_count; i++)
+//       asyncs.emplace_back(
+//         std::async(
+//           std::launch::async,
+//           PSQL::db_pusher,
+//           db_con_str,
+//           std::reference_wrapper< queue<command> >{src_queue}
+//         )
+//       );
+//   }
+// }; // namespace PSQL
