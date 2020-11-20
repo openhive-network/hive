@@ -33,10 +33,6 @@ namespace hive
       {
         template <typename T>
         using queue = boost::concurrent::sync_queue<T>;
-        // using hive::plugins::account_history::api_operation_object;
-        // using hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin;
-        // using hive::plugins::account_history_rocksdb::rocksdb_operation_object;
-        using hive::app::Inserters::Member;
         using hive::protocol::asset;
         using hive::protocol::operation;
         using hive::protocol::signed_block;
@@ -56,16 +52,8 @@ namespace hive
           OPERATIONS = 4,
           VIRTUAL_OPERATIONS = 5,
 
-          // details
-          DETAILS_ASSET = 6,
-          DETAILS_VIRTUAL_ASSET = 7,
-          //  DETAILS_ID = 8,
-          //  DETAILS_VIRTUAL_ID = 9,
-
           // let's safe some place
-          ASSET_DICT = 10,
           PERMLINK_DICT = 11,
-          MEMBER_DICT = 12,
 
           END = 99
         };
@@ -88,6 +76,7 @@ namespace hive
             return op.is_virtual();
           }
         };
+        
         struct p_str_que_str
         {
           std::string table_name;
@@ -140,7 +129,6 @@ namespace hive
 
           const hive::chain::database &db;
           sql_command_t &result;
-          asset_container_t &asset_symobols;
           int64_t block_number;
           int64_t trx_in_block;
 
@@ -155,7 +143,6 @@ namespace hive
           {
             get_basic_info(op);
             process(op);
-            get_asset_details(op);
             return op_type_name<operation_t>();
           }
 
@@ -174,24 +161,6 @@ namespace hive
                                                << format_participants(op)
                                                << get_formatted_permlinks(op, is_virtual)
                                                << ")"; }));
-          }
-
-          template <typename operation_t>
-          void get_asset_details(const operation_t &op) const
-          {
-            std::map<Member, asset> assets_collection;
-            hive::app::operation_get_assets(op, assets_collection);
-            for (const std::pair<Member, asset> &kv : assets_collection)
-            {
-              result.emplace_back(
-                  (op.is_virtual() ? TABLE::DETAILS_VIRTUAL_ASSET : TABLE::DETAILS_ASSET),
-                  generate([&](strstrm &ss) {
-                    ss << "( " << op_id << ", "
-                       << kv.second.amount.value << ", "
-                       << asset_symobols[kv.second.symbol] << ", "
-                       << static_cast<uint32_t>(kv.first) << " )";
-                  }));
-            }
           }
 
           void create_account(const account_name_type &acc) const
@@ -248,7 +217,6 @@ namespace hive
           const processing_object &input;
           operation_types_t &op_types;
           counter_container_t &counters;
-          asset_container_t &asset_symobols;
           escape_function_t escape;
 
           const hive::chain::database &db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
@@ -274,7 +242,6 @@ namespace hive
             op_types[input.op->which()] = std::make_pair(input.op->visit(sql_serializer_visitor{
                                                               db,
                                                               sql_commands,
-                                                              asset_symobols,
                                                               input.block_number,
                                                               *input.trx_in_block,
                                                               counters[(is_virtual ? TABLE::VIRTUAL_OPERATIONS : TABLE::OPERATIONS)],

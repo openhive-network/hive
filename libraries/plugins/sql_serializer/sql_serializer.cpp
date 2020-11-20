@@ -21,7 +21,6 @@ namespace hive
 			using namespace hive::protocol;
 			using namespace hive::plugins::sql_serializer::PSQL;
 
-			using app::Inserters::Member;
 			using chain::database;
 			using chain::operation_object;
 
@@ -54,7 +53,6 @@ namespace hive
 
 					PSQL::counter_container_t counters;
 					operation_types_t names_to_flush;
-					asset_container_t assets_to_flush;
 					const std::map<TABLE, p_str_que_str> flushes{
 							{table_flush_values_cell_t{TABLE::BLOCKS, p_str_que_str{"hive_blocks"}},
 							 table_flush_values_cell_t{TABLE::TRANSACTIONS, p_str_que_str{"hive_transactions"}},
@@ -65,12 +63,9 @@ namespace hive
 							 table_flush_values_cell_t{TABLE::VIRTUAL_OPERATIONS, p_str_que_str{"hive_virtual_operations"}},
 
 							 table_flush_values_cell_t{TABLE::OPERATION_NAMES, p_str_que_str{"hive_operation_types"}},
-							 table_flush_values_cell_t{TABLE::DETAILS_ASSET, p_str_que_str{"hive_operations_payment_details"}},
-							 table_flush_values_cell_t{TABLE::DETAILS_VIRTUAL_ASSET, p_str_que_str{"hive_virtual_operations_payment_details"}},
 
-							 table_flush_values_cell_t{TABLE::ASSET_DICT, p_str_que_str{"hive_asset_dictionary"}},
-							 table_flush_values_cell_t{TABLE::PERMLINK_DICT, p_str_que_str{"hive_permlink_data"}},
-							 table_flush_values_cell_t{TABLE::MEMBER_DICT, p_str_que_str{"hive_asset_members_dictionary"}}}};
+							 table_flush_values_cell_t{TABLE::PERMLINK_DICT, p_str_que_str{"hive_permlink_data"}}
+							}};
 
 					void create_indexes() const
 					{
@@ -101,29 +96,6 @@ namespace hive
 						pqxx::nontransaction{conn}.exec(const_cast<const char *>(_data.get()));
 					}
 				};
-
-				inline fc::string asset_num_to_string(uint32_t asset_num)
-				{
-					switch (asset_num)
-					{
-#ifdef IS_TEST_NET
-					case HIVE_ASSET_NUM_HIVE:
-						return "TESTS";
-					case HIVE_ASSET_NUM_HBD:
-						return "TBD";
-#else
-					case HIVE_ASSET_NUM_HIVE:
-						return "HIVE";
-					case HIVE_ASSET_NUM_HBD:
-						return "HBD";
-#endif
-					case HIVE_ASSET_NUM_VESTS:
-						return "VESTS";
-					default:
-						return "UNKN";
-					}
-				}
-
 			} // namespace detail
 
 			sql_serializer_plugin::sql_serializer_plugin() {}
@@ -161,11 +133,6 @@ namespace hive
 				my->set_index = options.count("psql-reindex-on-exit") > 0;
 				initialize_varriables();
 
-				// ids
-				my->assets_to_flush[asset_symbol_type::from_asset_num(HIVE_ASSET_NUM_HIVE)] = 0;
-				my->assets_to_flush[asset_symbol_type::from_asset_num(HIVE_ASSET_NUM_HBD)] = 1;
-				my->assets_to_flush[asset_symbol_type::from_asset_num(HIVE_ASSET_NUM_VESTS)] = 2;
-
 				// signals
 				auto &db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
 				my->_on_post_apply_operation_con = db.add_post_apply_operation_handler([&](const operation_notification &note) { on_post_apply_operation(note); }, *this);
@@ -188,10 +155,6 @@ namespace hive
 					my->worker = std::make_shared<std::thread>([&]() {
 						pqxx::connection conn{my->connection_url.c_str()};
 
-						// flush operation asset members
-						for (uint8_t i = 0; i != static_cast<uint8_t>(Member::END); i++)
-							my->flushes.at(TABLE::MEMBER_DICT).to_dump->push(generate([&](strstrm &ss) { ss << "( " << static_cast<uint32_t>(i) << ", '" << static_cast<Member>(i) << "' )"; }));
-
 						// flush all data
 						auto flusher = [&]() {
 							FC_ASSERT(conn.is_open());
@@ -203,10 +166,6 @@ namespace hive
 							// flush op names
 							for (const auto &kv : my->names_to_flush)
 								my->flushes.at(TABLE::OPERATION_NAMES).to_dump->push("( " + std::to_string(kv.first) + " , '" + kv.second.first + "', " + (kv.second.second ? "TRUE" : "FALSE") + " )");
-
-							// flush asset symobols
-							for (const auto &kv : my->assets_to_flush)
-								my->flushes.at(TABLE::ASSET_DICT).to_dump->push(generate([&](strstrm &ss) { ss << "( " << kv.second << ", '" << kv.first.to_nai_string() << "', " << static_cast<uint32_t>(kv.first.decimals()) << ", '" << detail::asset_num_to_string(kv.first.asset_num) << "')"; }));
 
 							pqxx::nontransaction trx{conn};
 							trx.exec("BEGIN;");
@@ -229,7 +188,7 @@ namespace hive
 								}
 
 								// Theese tables contains constant data, that is unique on hived site
-								if (kv.first == TABLE::OPERATION_NAMES || kv.first == TABLE::ASSET_DICT || kv.first == TABLE::MEMBER_DICT)
+								if (kv.first == TABLE::OPERATION_NAMES)
 									ss << " ON CONFLICT DO NOTHING";
 
 								ss << ";";
@@ -245,7 +204,7 @@ namespace hive
 						// work loop
 						while (input.valid())
 						{
-							const sql_command_t vec = PSQL::sql_serializer_processor{input, my->names_to_flush, my->counters, my->assets_to_flush, [&](const char *str_to_esc) { return conn.esc(str_to_esc); }}();
+							const sql_command_t vec = PSQL::sql_serializer_processor{input, my->names_to_flush, my->counters, [&](const char *str_to_esc) { return conn.esc(str_to_esc); }}();
 
 							// flush
 							for (const auto &v : vec)
