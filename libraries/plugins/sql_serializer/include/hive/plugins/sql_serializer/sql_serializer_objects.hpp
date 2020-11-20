@@ -26,9 +26,8 @@ namespace hive
   {
     namespace sql_serializer
     {
-      using operation_types_t = std::map<int64_t, std::pair<fc::string, bool>>;
-      using asset_container_t = std::map<hive::protocol::asset_symbol_type, uint16_t>;
-
+      // [which] = ( op_name, is_virtual )
+      using operation_types_container_t = std::map<int64_t, std::pair<fc::string, bool>>;
       namespace PSQL
       {
         template <typename T>
@@ -38,7 +37,7 @@ namespace hive
         using hive::protocol::signed_block;
         using hive::protocol::signed_transaction;
 
-        using namespace PSQL;
+        using namespace hive::protocol;
 
         enum TABLE
         {
@@ -53,67 +52,110 @@ namespace hive
           VIRTUAL_OPERATIONS = 5,
 
           // let's safe some place
-          PERMLINK_DICT = 11,
+          PERMLINK_DICT = 6,
 
-          END = 99
+          END
         };
 
         // using counter_t = std::atomic<uint32_t>;
         using counter_t = uint32_t;
         using counter_container_t = std::map<TABLE, counter_t>;
         using counter_container_member_t = std::pair<TABLE, PSQL::counter_t>;
-
-        using que_str = queue<std::string>;
-        using mtx_t = std::mutex;
+        using sql_insertion_buffer = queue<fc::string>;
 
         struct is_virtual_visitor
         {
           typedef bool result_type;
 
-          template<typename op_t>
-          bool operator()(const op_t& op) const
+          template <typename op_t>
+          bool operator()(const op_t &op) const
           {
             return op.is_virtual();
           }
         };
-        
-        struct p_str_que_str
+        struct name_gathering_visitor
+        { 
+          using result_type = fc::string; 
+
+          template<typename op_t>
+          result_type operator()(const op_t&) const
+          {
+            return boost::typeindex::type_id<op_t>().pretty_name();
+          }
+        };
+
+        struct table_flush_buffer
         {
           std::string table_name;
-          std::shared_ptr<que_str> to_dump{new que_str{}};
+          std::shared_ptr<sql_insertion_buffer> to_dump{new sql_insertion_buffer{}};
 
-          explicit p_str_que_str(const std::string &s) : table_name{s} {}
+          explicit table_flush_buffer(const fc::string &s) : table_name{s} {}
         };
-        using table_flush_values_cell_t = std::pair<const TABLE, p_str_que_str>;
-        const size_t buff_size = 1000;
+        using table_flush_values_cell_t = std::pair<const TABLE, table_flush_buffer>;
 
-        const std::vector<const char *> init_database_commands{{}};
-        const std::vector<const char *> end_database_commands{{}};
-
-        struct processing_object
+        namespace processing_objects
         {
-          fc::string hash;
-          std::shared_ptr<operation> op;
-          int64_t block_number;
-          fc::optional<int64_t> trx_in_block;
-          fc::optional<int64_t> op_in_trx;
-          int64_t virtual_op;
+          struct process_block_t
+          {
+            fc::string hash;
+            int64_t block_number;
 
-          bool valid() const { return hash != fc::string() || op.get() != nullptr; }
-        };
+            process_block_t() = default;
+            process_block_t(const fc::string& _hash, const int64_t _block_number) :
+              hash{_hash}, block_number{_block_number} {}
+          };
+
+          struct process_transaction_t : public process_block_t
+          {
+            int64_t trx_in_block;
+
+            process_transaction_t() = default;
+            process_transaction_t(const fc::string& _hash, const int64_t _block_number, const int64_t _trx_in_block) :
+              process_block_t{_hash, _block_number}, trx_in_block{_trx_in_block} {}
+          };
+
+          struct process_operation_t
+          {
+            uint64_t id;
+            int64_t block_number;
+            int64_t trx_in_block;
+            int64_t op_in_trx;
+            fc::optional<operation> op;
+
+            process_operation_t() = default;
+            process_operation_t( const uint64_t _id, const int64_t _block_number, const int64_t _trx_in_block, const int64_t _op_in_trx, const operation& _op ) :
+              id{ _id }, block_number{ _block_number}, trx_in_block{ _trx_in_block}, op_in_trx{_op_in_trx}, op{_op} {}
+          };
+
+          struct end_processing_t{};
+          struct is_processable_visitor
+          {
+            using result_type = bool;
+
+            template<typename T>
+            result_type operator()(const T&) const { return true; }
+          };
+
+        }; // namespace processing_objects
+
+        using processing_object_t = fc::static_variant<
+          processing_objects::process_operation_t,
+          processing_objects::process_transaction_t,
+          processing_objects::process_block_t,
+          processing_objects::end_processing_t
+        >;
 
         struct command
         {
-          TABLE first = END;
-          std::string second = "";
+          TABLE destination_table = END;
+          fc::string insertion_tuple = "";
 
           command() = default;
-          command(const TABLE tbl, const std::string &str) : first{tbl}, second{str} {}
+          command(const TABLE tbl, const std::string &str) : destination_table{tbl}, insertion_tuple{str} {}
         };
 
         using sql_command_t = std::list<command>;
         using strstrm = std::stringstream;
-        using namespace hive::protocol;
         using escape_function_t = std::function<fc::string(const char *)>;
 
         inline std::string generate(std::function<void(strstrm &)> fun)
@@ -123,44 +165,56 @@ namespace hive
           return ss.str();
         }
 
-        struct sql_serializer_visitor
+        struct sql_dump_visitor
         {
-          typedef fc::string result_type;
+          typedef void result_type;
 
           const hive::chain::database &db;
           sql_command_t &result;
-          int64_t block_number;
-          int64_t trx_in_block;
+          operation_types_container_t &op_types;
+          escape_function_t escape;
 
-          counter_t op_id;
-          int64_t op_in_trx;
-          bool is_virtual;
+          result_type operator()(const processing_objects::end_processing_t &bop) const {}
 
-          escape_function_t escape = [](const char *val) { return fc::string{val}; };
-
-          template <typename operation_t>
-          result_type operator()(const operation_t &op) const
+          result_type operator()(const processing_objects::process_block_t &bop) const
           {
-            get_basic_info(op);
-            process(op);
-            return op_type_name<operation_t>();
+            result.emplace_back(TABLE::BLOCKS, generate([&](strstrm &ss) {
+                                  ss << "( " << bop.block_number << " , '" << bop.hash << "' )";
+                                }));
           }
 
-          void get_basic_info(const operation &op) const
+          result_type operator()(const processing_objects::process_transaction_t &top) const
           {
+            result.emplace_back(TABLE::TRANSACTIONS, generate([&](strstrm &ss) {
+                                  ss << "( " << top.block_number << " , " << top.trx_in_block << " , '" << top.hash << "' )";
+                                }));
+          }
+
+          result_type operator()(const processing_objects::process_operation_t &pop) const
+          {
+
+            op_types[pop.op->which()] = std::make_pair<fc::string, bool>(
+              pop.op->visit(name_gathering_visitor{}),
+              pop.op->visit(is_virtual_visitor{})
+            );
+            get_operation_basic_info(pop);
+            additional_details(*pop.op);
+          }
+
+          void get_operation_basic_info(const processing_objects::process_operation_t &pop) const
+          {
+            const bool is_virtual = pop.op->visit(is_virtual_visitor{});
             result.emplace_back(
-                // TABLE::OPERATIONS,
                 (is_virtual ? TABLE::VIRTUAL_OPERATIONS : TABLE::OPERATIONS),
-                generate([&](strstrm &ss) { ss << "( "
-                                               << op_id << " , "
-                                               << block_number << " , "
-                                               << ( is_virtual && trx_in_block < 0 ? "NULL" : std::to_string(trx_in_block) ) << ", "
-                                               << ( is_virtual && trx_in_block < 0 ? "NULL" : std::to_string(op_in_trx) ) << " , "
-                                              //  << op_in_trx << " /* op_in_trx */, "
-                                               << op.which() << " , "
-                                               << format_participants(op)
-                                               << get_formatted_permlinks(op, is_virtual)
-                                               << ")"; }));
+                generate([&](strstrm &ss) {  ss << "( "
+                                                << pop.id << " , "
+                                                << pop.block_number << " , "
+                                                << (is_virtual && pop.trx_in_block < 0 ? "NULL" : std::to_string(pop.trx_in_block)) << ", "
+                                                << (is_virtual && pop.trx_in_block < 0 ? "NULL" : std::to_string(pop.op_in_trx)) << " , "
+                                                << pop.op->which() << " , "
+                                                << format_participants(*pop.op)
+                                                << get_formatted_permlinks(*pop.op, is_virtual)
+                                                << ")"; }));
           }
 
           void create_account(const account_name_type &acc) const
@@ -172,11 +226,6 @@ namespace hive
           }
 
         private:
-          template <typename T>
-          fc::string op_type_name() const
-          {
-            return boost::typeindex::type_id<T>().pretty_name();
-          }
 
           fc::string format_participants(const operation &op) const
           {
@@ -209,79 +258,27 @@ namespace hive
           }
 
           template <typename operation_t>
-          void process(const operation_t &op) const {}
+          void additional_details(const operation_t &op) const {}
         };
-
-        struct sql_serializer_processor
-        {
-          const processing_object &input;
-          operation_types_t &op_types;
-          counter_container_t &counters;
-          escape_function_t escape;
-
-          const hive::chain::database &db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
-
-          void process_block(sql_command_t &sql_commands) const
-          {
-            sql_commands.emplace_back(TABLE::BLOCKS, generate([&](strstrm &ss) {
-                                        ss << "( " << input.block_number << " , '" << input.hash << "' )";
-                                      }));
-          }
-
-          void process_transaction(sql_command_t &sql_commands) const
-          {
-              sql_commands.emplace_back(TABLE::TRANSACTIONS, generate([&](strstrm &ss) {
-                                          ss << "( " << input.block_number << " , " << *input.trx_in_block << " , '" << input.hash << "' )";
-                                        }));
-          }
-
-          void process_operation(sql_command_t &sql_commands) const
-          {
-            const bool is_virtual = input.op->visit( is_virtual_visitor{} );
-            counters[(is_virtual ? TABLE::VIRTUAL_OPERATIONS : TABLE::OPERATIONS)]++;
-            op_types[input.op->which()] = std::make_pair(input.op->visit(sql_serializer_visitor{
-                                                              db,
-                                                              sql_commands,
-                                                              input.block_number,
-                                                              *input.trx_in_block,
-                                                              counters[(is_virtual ? TABLE::VIRTUAL_OPERATIONS : TABLE::OPERATIONS)],
-                                                              *input.op_in_trx,
-                                                              is_virtual,
-                                                              escape
-                                                          }),
-                                                          is_virtual);
-          }
-
-          sql_command_t operator()() const
-          {
-            sql_command_t result;
-
-            if (!input.op_in_trx.valid())
-            {
-              if (!input.trx_in_block.valid())
-                process_block(result);
-              else
-                process_transaction(result);
-            }
-            else process_operation(result);
-
-            return result;
-          }
-        };
-
       } // namespace PSQL
     }   // namespace sql_serializer
   }     // namespace plugins
 } // namespace hive
 
 template <>
-inline void hive::plugins::sql_serializer::PSQL::sql_serializer_visitor::process(const hive::protocol::account_create_operation &op) const
+inline void hive::plugins::sql_serializer::PSQL::sql_dump_visitor::additional_details(const hive::protocol::account_create_operation &op) const
 {
   create_account(op.new_account_name);
 }
 
 template <>
-inline void hive::plugins::sql_serializer::PSQL::sql_serializer_visitor::process(const hive::protocol::account_create_with_delegation_operation &op) const
+inline void hive::plugins::sql_serializer::PSQL::sql_dump_visitor::additional_details(const hive::protocol::account_create_with_delegation_operation &op) const
 {
   create_account(op.new_account_name);
+}
+
+template<>
+inline bool hive::plugins::sql_serializer::PSQL::processing_objects::is_processable_visitor::operator()(const hive::plugins::sql_serializer::PSQL::processing_objects::end_processing_t&) const 
+{
+  return false;
 }
