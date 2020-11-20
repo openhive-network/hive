@@ -77,6 +77,17 @@ namespace hive
 
         using que_str = queue<std::string>;
         using mtx_t = std::mutex;
+
+        struct is_virtual_visitor
+        {
+          typedef bool result_type;
+
+          template<typename op_t>
+          bool operator()(const op_t& op) const
+          {
+            return op.is_virtual();
+          }
+        };
         struct p_str_que_str
         {
           std::string table_name;
@@ -154,11 +165,12 @@ namespace hive
                 // TABLE::OPERATIONS,
                 (is_virtual ? TABLE::VIRTUAL_OPERATIONS : TABLE::OPERATIONS),
                 generate([&](strstrm &ss) { ss << "( "
-                                               << op_id << "/* op_id */, "
-                                               << block_number << "/* block_number */, "
-                                               << trx_in_block << "/* trx_in_block */, "
-                                               << op_in_trx << "/* op_in_trx */, "
-                                               << op.which() << "/* which */, "
+                                               << op_id << " , "
+                                               << block_number << " , "
+                                               << ( is_virtual && trx_in_block < 0 ? "NULL" : std::to_string(trx_in_block) ) << ", "
+                                               << ( is_virtual && trx_in_block < 0 ? "NULL" : std::to_string(op_in_trx) ) << " , "
+                                              //  << op_in_trx << " /* op_in_trx */, "
+                                               << op.which() << " , "
                                                << format_participants(op)
                                                << get_formatted_permlinks(op, is_virtual)
                                                << ")"; }));
@@ -206,7 +218,7 @@ namespace hive
               ss << "'{";
               for (auto it = impacted.begin(); it != impacted.end(); it++)
                 ss << (it == impacted.begin() ? " " : ", ") << db.get_account(*it).get_id();
-              ss << " }'::INT[] /* format_participants */";
+              ss << " }'::INT[]";
             });
           }
 
@@ -217,7 +229,7 @@ namespace hive
             std::vector<fc::string> result;
             hive::app::operation_get_permlinks(op, result);
             return generate([&](strstrm &ss) {
-              ss << ", /* get_formatted_permlinks */ ARRAY[]::INT[]";
+              ss << ", ARRAY[]::INT[]";
 
               for (auto it = result.begin(); it != result.end(); it++)
                 ss
@@ -257,7 +269,7 @@ namespace hive
 
           void process_operation(sql_command_t &sql_commands) const
           {
-            const bool is_virtual = input.virtual_op != 0;
+            const bool is_virtual = input.op->visit( is_virtual_visitor{} );
             counters[(is_virtual ? TABLE::VIRTUAL_OPERATIONS : TABLE::OPERATIONS)]++;
             op_types[input.op->which()] = std::make_pair(input.op->visit(sql_serializer_visitor{
                                                               db,
