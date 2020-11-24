@@ -1,3 +1,12 @@
+/*
+
+destruktor - przenieść kończenie
+konstruktor- przenieść tworzenie
+kontener komunikacja - paczka po 1000
+
+
+*/
+
 #include <hive/plugins/sql_serializer/sql_serializer_plugin.hpp>
 
 #include <hive/chain/util/impacted.hpp>
@@ -11,6 +20,8 @@
 
 // C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
 #include <pqxx/pqxx>
+
+#include <thread>
 
 namespace hive
 {
@@ -26,16 +37,139 @@ namespace hive
 
 			namespace detail
 			{
+				using transaction_t = std::unique_ptr<pqxx::work>;
+
+				struct postgress_connection_holder
+				{
+
+					explicit postgress_connection_holder(const fc::string &url)
+							: _connection{std::make_unique<pqxx::connection>(url)} {}
+
+					transaction_t start_transaction() const
+					{
+						pqxx::work* trx = new pqxx::work{ *_connection };
+						trx->exec("SET CONSTRAINTS ALL DEFERRED;");
+						return transaction_t{trx};
+					}
+
+					bool exec_transaction(transaction_t& trx, const fc::string& sql)
+					{
+						if(sql == fc::string()) return true;
+						// else std::cout << "executing: " << sql << std::endl;
+						return sql_safe_execution([&trx, &sql]() { trx->exec(sql); });
+					}
+
+					bool commit_transaction(transaction_t& trx)
+					{
+						// std::cout << "commiting" << std::endl;
+						return sql_safe_execution([&]() { trx->commit(); destroy_transaction(trx); });
+					}
+
+					void abort_transaction(transaction_t& trx)
+					{
+						// std::cout << "aborting" << std::endl;
+						trx->abort();
+						destroy_transaction(trx);
+					}
+
+					bool exec_no_transaction(const fc::string& sql, pqxx::result * result = nullptr)
+					{
+						if(sql == fc::string()) return true;
+						return sql_safe_execution([&]() {
+							pqxx::nontransaction work{ *_connection };
+							if(result) *result = work.exec(sql);
+							else work.exec(sql);
+						});
+					}
+
+				private:
+					std::unique_ptr<pqxx::connection> _connection;
+
+					void destroy_transaction(transaction_t& trx) const { trx.~unique_ptr(); }
+
+					bool sql_safe_execution(const std::function<void()> &f)
+					{
+						try
+						{
+							f();
+							return true;
+						}
+						catch (const pqxx::pqxx_exception &sql_e)
+						{
+							elog("Exception from postgress: ${e}", ("e", sql_e.base().what()));
+						}
+						catch (const std::exception &e)
+						{
+							elog("Exception: ${e}", ("e", e.what()));
+						}
+						catch (...)
+						{
+							elog("Unknown exception occured");
+						}
+						return false;
+					}
+				};
+
 				class sql_serializer_plugin_impl
 				{
 
 				public:
 					sql_serializer_plugin_impl(const std::string &url) : _db(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db()),
-																															 connection_url{url}
+																															connection{url}
 					{
+						worker = std::make_shared<std::thread>([&]() {
+
+							transaction_t trx;
+
+							// worker
+							processing_object_t input;
+							sql_command_queue.wait_pull(input);
+
+							// work loop
+							while (input.visit(PSQL::processing_objects::is_processable_visitor{}))
+							{
+								// flow controll
+								if(input.visit(PSQL::processing_objects::commit_command_visitor{}))
+								{
+									connection.commit_transaction(trx);
+									sql_command_queue.wait_pull(input);
+									continue;
+								}else if( trx.get() == nullptr )
+								{
+									trx = connection.start_transaction();
+								}
+
+								// dump data
+								if(!connection.exec_transaction( trx, input.visit(PSQL::sql_dump_visitor{
+										_db,
+										names_to_flush,
+										[&](const char *str_to_esc) { return trx->esc(str_to_esc); }
+									})
+								))
+								{
+									connection.abort_transaction(trx);
+									FC_ASSERT( false );
+								}
+
+								// gather next element
+								sql_command_queue.wait_pull(input);
+							}
+						});
 					}
 
-					virtual ~sql_serializer_plugin_impl() {}
+					virtual ~sql_serializer_plugin_impl()
+					{
+						ilog("Flushing left data...");
+						sql_command_queue.wait_push(PSQL::processing_objects::commit_data_t{});
+						sql_command_queue.wait_push(PSQL::processing_objects::end_processing_t{});
+						worker->join();
+						if (set_index)
+						{
+							ilog("Creating indexes on user request");
+							create_indexes();
+						}
+						ilog("Done. Connection closed");
+					}
 
 					database &_db;
 					boost::signals2::connection _on_post_apply_operation_con;
@@ -44,38 +178,18 @@ namespace hive
 					boost::signals2::connection _on_starting_reindex;
 					boost::signals2::connection _on_finished_reindex;
 
-					fc::string connection_url;
+					postgress_connection_holder connection;
 					fc::optional<fc::string> path_to_schema;
 					bool set_index = false;
 
 					std::shared_ptr<std::thread> worker;
 					PSQL::queue<processing_object_t> sql_command_queue;
+					uint32_t blocks_per_commit = 1;
 
-					PSQL::counter_container_t counters;
 					operation_types_container_t names_to_flush;
+					std::list<PSQL::processing_objects::process_operation_t> cached_virtual_ops;
 
-					const std::map<TABLE, table_flush_buffer> flushes{
-						{	
-							table_flush_values_cell_t{TABLE::BLOCKS, table_flush_buffer{"hive_blocks"}},
-							table_flush_values_cell_t{TABLE::TRANSACTIONS, table_flush_buffer{"hive_transactions"}},
-
-							table_flush_values_cell_t{TABLE::ACCOUNTS, table_flush_buffer{"hive_accounts"}},
-
-							table_flush_values_cell_t{TABLE::OPERATIONS, table_flush_buffer{"hive_operations"}},
-							table_flush_values_cell_t{TABLE::VIRTUAL_OPERATIONS, table_flush_buffer{"hive_virtual_operations"}},
-
-							table_flush_values_cell_t{TABLE::OPERATION_NAMES, table_flush_buffer{"hive_operation_types"}},
-							table_flush_values_cell_t{TABLE::PERMLINK_DICT, table_flush_buffer{"hive_permlink_data"}}
-						}
-					};
-
-					const fc::string &get_table_name(const TABLE tbl) const
-					{
-						FC_ASSERT(tbl != TABLE::END);
-						return flushes.at(tbl).table_name;
-					}
-
-					void create_indexes() const
+					void create_indexes()
 					{
 						static const std::vector<fc::string> indexes{{R"(CREATE INDEX IF NOT EXISTS hive_operations_operation_types_index ON "hive_operations" ("op_type_id");)",
 																													R"(CREATE INDEX IF NOT EXISTS hive_operations_participants_index ON "hive_operations" USING GIN ("participants");)",
@@ -83,13 +197,11 @@ namespace hive
 																													R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_operation_types_index ON "hive_virtual_operations" ("op_type_id");)",
 																													R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_participants_index ON "hive_virtual_operations" USING GIN ("participants");)"}};
 
-						pqxx::connection conn{connection_url};
-						FC_ASSERT(conn.is_open());
 						for (const auto &idx : indexes)
-							pqxx::nontransaction{conn}.exec(idx);
+							connection.exec_no_transaction(idx);
 					}
 
-					void recreate_db() const
+					void recreate_db()
 					{
 						using bpath = boost::filesystem::path;
 
@@ -99,9 +211,7 @@ namespace hive
 						std::ifstream file{path.string()};
 						file.read(_data.get(), size);
 
-						pqxx::connection conn{connection_url};
-						FC_ASSERT(conn.is_open());
-						pqxx::nontransaction{conn}.exec(const_cast<const char *>(_data.get()));
+						connection.exec_no_transaction(_data.get());
 					}
 				};
 			} // namespace detail
@@ -143,101 +253,14 @@ namespace hive
 				my->_on_post_apply_operation_con = db.add_post_apply_operation_handler([&](const operation_notification &note) { on_post_apply_operation(note); }, *this);
 				my->_on_post_apply_trx_con = db.add_post_apply_transaction_handler([&](const transaction_notification &note) { on_post_apply_trx(note); }, *this);
 				my->_on_post_apply_block_con = db.add_post_apply_block_handler([&](const block_notification &note) { on_post_apply_block(note); }, *this);
-				my->_on_finished_reindex = db.add_post_reindex_handler([&](const reindex_notification &note) {
-					ilog("Flushing left data...");
-					my->sql_command_queue.wait_push(PSQL::processing_objects::end_processing_t{});
-					my->worker->join();
-					if (my->set_index)
-					{
-						ilog("Creating indexes on user request");
-						my->create_indexes();
-					}
-					ilog("Done. Connection closed");
-				},
+				my->_on_finished_reindex = db.add_post_reindex_handler([&](const reindex_notification &) { my->blocks_per_commit = 1; },
 																															 *this);
 
-				my->_on_starting_reindex = db.add_pre_reindex_handler([&](const reindex_notification &note) {
-					my->worker = std::make_shared<std::thread>([&]() {
-						pqxx::connection conn{my->connection_url.c_str()};
-
-						// flush all data
-						auto flusher = [&]() {
-							FC_ASSERT(conn.is_open());
-
-							// If there is no blocks to flush end
-							if (my->flushes.find(TABLE::BLOCKS)->second.to_dump->empty())
-								return;
-
-							// flush op names
-							for (const auto &kv : my->names_to_flush)
-								my->flushes.at(TABLE::OPERATION_NAMES).to_dump->push("( " + std::to_string(kv.first) + " , '" + kv.second.first + "', " + (kv.second.second ? "TRUE" : "FALSE") + " )");
-
-							pqxx::nontransaction trx{conn};
-							trx.exec("BEGIN;");
-
-							// Update table by table
-							for (const auto &kv : my->flushes)
-							{
-								std::stringstream ss;
-								std::string str;
-								auto &buffer = kv.second;
-
-								if (buffer.to_dump->empty())
-									continue;
-
-								buffer.to_dump->pull(str);
-								ss << "INSERT INTO " << buffer.table_name << " VALUES " << str;
-								while (!buffer.to_dump->empty())
-								{
-									buffer.to_dump->pull(str);
-									ss << "," << str;
-								}
-
-								// Theese tables contains constant data, that is unique on hived site
-								if (kv.first == TABLE::OPERATION_NAMES)
-									ss << " ON CONFLICT DO NOTHING";
-
-								ss << ";";
-								trx.exec(ss.str());
-							}
-
-							trx.exec("COMMIT;");
-						};
-
-						// worker
-						processing_object_t input;
-						my->sql_command_queue.wait_pull(input);
-
-						// work loop
-						while (input.visit( PSQL::processing_objects::is_processable_visitor{} ))
-						{
-							sql_command_t vec;
-							input.visit(PSQL::sql_dump_visitor{
-								my->_db,
-								vec,
-								my->names_to_flush,
-								[&](const char *str_to_esc) {
-									return conn.esc(str_to_esc); 
-							}});
-
-								// flush
-								for (const auto &v : vec)
-								{
-									my->flushes.at(v.destination_table).to_dump->push(v.insertion_tuple);
-									if (v.destination_table == TABLE::BLOCKS && my->flushes.at(v.destination_table).to_dump->size() == 1'000)
-										flusher();
-								}
-
-								// gather next element
-								my->sql_command_queue.wait_pull(input);
-						}
-
-						// flush what hasn't been already flushed
-						flusher();
-						});
-					},
-					*this
-				);
+				my->_on_starting_reindex = db.add_pre_reindex_handler([&](const reindex_notification & note) { 
+					if(note.force_replay && my->path_to_schema.valid())
+						my->recreate_db();
+					my->blocks_per_commit = 1000; 
+					},*this);
 			}
 
 			void sql_serializer_plugin::plugin_startup() {}
@@ -246,95 +269,63 @@ namespace hive
 
 			void sql_serializer_plugin::on_post_apply_operation(const operation_notification &note)
 			{
-					static std::list<PSQL::processing_objects::process_operation_t> cached_virtual_ops;
+				if (note.block < 2)
+					return;
 
-					if (note.block < 2)
-						return;
-
-					const bool is_virtual = note.op.visit(PSQL::is_virtual_visitor{});
-					auto &cnter = my->counters.find(( is_virtual ? TABLE::VIRTUAL_OPERATIONS : TABLE::OPERATIONS))->second;
-					PSQL::processing_objects::process_operation_t obj(
-						++cnter,
+				const bool is_virtual = note.op.visit(PSQL::is_virtual_visitor{});
+				PSQL::processing_objects::process_operation_t obj{
 						note.block,
 						note.trx_in_block,
 						note.op_in_trx,
 						note.op
-					);
+				};
 
-					// if virtual push on front, so while iterating it will be in 'proper' order
-					if(is_virtual && note.trx_in_block >= 0) cached_virtual_ops.emplace_back(obj);
-					else
-					{
-						my->sql_command_queue.wait_push(obj);
-						for(const auto& vop : cached_virtual_ops)
-							my->sql_command_queue.wait_push(vop);
-						cached_virtual_ops.clear();
-					}
+				// if virtual push on front, so while iterating it will be in 'proper' order
+				if (is_virtual && note.trx_in_block >= 0)
+					my->cached_virtual_ops.emplace_back(obj);
+				else
+				{
+					my->sql_command_queue.wait_push(obj);
+					for (const auto &vop : my->cached_virtual_ops)
+						my->sql_command_queue.wait_push(vop);
+					my->cached_virtual_ops.clear();
+				}
 			}
 
 			void sql_serializer_plugin::on_post_apply_block(const block_notification &note)
 			{
-					for (int64_t i = 0; i < static_cast<int64_t>(note.block.transactions.size()); i++)
-						handle_transaction(note.block.transactions[i].id().str(), note.block_num, i);
+				for (int64_t i = 0; i < static_cast<int64_t>(note.block.transactions.size()); i++)
+					handle_transaction(note.block.transactions[i].id().str(), note.block_num, i);
 
-					processing_object_t obj = PSQL::processing_objects::process_block_t(
+				processing_object_t obj = PSQL::processing_objects::process_block_t(
 						note.block_id.str(),
-						note.block_num
-					);
-					my->sql_command_queue.wait_push(obj);
+						note.block_num);
+				my->sql_command_queue.wait_push(obj);
+
+				if(note.block_num % my->blocks_per_commit == 0) 
+					my->sql_command_queue.wait_push(PSQL::processing_objects::commit_data_t{});
 			}
 
 			void sql_serializer_plugin::on_post_apply_trx(const transaction_notification &) {}
 
 			void sql_serializer_plugin::handle_transaction(const fc::string &hash, const int64_t block_num, const int64_t trx_in_block)
 			{
-					processing_object_t obj = PSQL::processing_objects::process_transaction_t(
+				processing_object_t obj = PSQL::processing_objects::process_transaction_t(
 						hash,
 						block_num,
-						trx_in_block
-					);
-					my->sql_command_queue.wait_push(obj);
+						trx_in_block);
+				my->sql_command_queue.wait_push(obj);
 			}
 
 			void sql_serializer_plugin::initialize_varriables()
 			{
-					static const std::vector<TABLE> counters_to_initialize{{TABLE::OPERATIONS, TABLE::VIRTUAL_OPERATIONS}};
-
-					pqxx::connection conn{my->connection_url.c_str()};
-					auto get_single_number = [&](const std::string sql) -> uint32_t {
-						pqxx::nontransaction w{conn};
-						return w.exec(sql).at(0).at(0).as<uint32_t>();
-					};
-					try
-					{
-						if (get_single_number("SELECT COUNT(*) FROM " + my->flushes.at(TABLE::BLOCKS).table_name) == 0)
-						{
-							for (const TABLE key : counters_to_initialize)
-								my->counters[key] = 0;
-						}
-						else
-						{
-							for (const TABLE key : counters_to_initialize)
-								my->counters[key] = get_single_number("SELECT COALESCE(MAX( id ), 0) FROM " + my->flushes.at(key).table_name);
-						}
-					}
-					catch (const pqxx::pqxx_exception &)
-					{
-						ilog("cought SQL exception");
-						if (my->path_to_schema.valid())
-						{
-							ilog("recreating database on user request");
-							my->recreate_db();
-							for (const TABLE key : counters_to_initialize)
-								my->counters[key] = 0;
-						}
-						else
-						{
-							throw;
-						}
-					}
+				// load current operation type
+				pqxx::result result;
+				my->connection.exec_no_transaction("SELECT id, name, is_virtual FROM hive_operation_types", &result);
+				for(const auto& row : result)
+					my->names_to_flush[ row.at(0).as<int64_t>() ] = std::make_pair( row.at(1).as<fc::string>(), row.at(2).as<bool>() );
 			}
 
-			} // namespace sql_serializer
-		}		// namespace sql_serializer
-	}			// namespace plugins
+		} // namespace sql_serializer
+	}		// namespace plugins
+} // namespace hive
