@@ -29,8 +29,10 @@ class sql_serializer_plugin : public plugin<sql_serializer_plugin>
         return name; 
       }
 
+      void on_pre_reindex(const reindex_notification &note);
+      void on_post_reindex(const reindex_notification &note);
+
       void on_post_apply_operation(const operation_notification &note);
-      void on_post_apply_trx(const transaction_notification &note);
       void on_post_apply_block(const block_notification &note);
 
       virtual void set_program_options(options_description& cli, options_description& cfg ) override;

@@ -125,10 +125,13 @@ namespace hive
 					strstrm operations{};
 					strstrm virtual_operations{};
 
-					bool coma_blocks = false;
-					bool coma_transactions = false;
-					bool coma_operations = false;
-					bool coma_virtual_operations = false;
+					bool any_blocks = false;
+					bool any_transactions = false;
+					bool any_operations = false;
+					bool any_virtual_operations = false;
+
+					std::set<fc::string> permlink_cache;
+					std::set<fc::string> account_cache;
 
 					void init()
 					{
@@ -140,7 +143,7 @@ namespace hive
 
 					result_type process_operation(const processing_objects::process_operation_t &pop)
 					{
-						operations << (!coma_operations ? "" : ",") << "( " << pop.block_number << " , "
+						operations << (!any_operations ? "" : ",") << "( " << pop.block_number << " , "
 											 << pop.trx_in_block << ", "
 											 << pop.op_in_trx << " , "
 											 << get_operation_type_id(*pop.op, false, pop.fresh) << " , "
@@ -148,35 +151,60 @@ namespace hive
 											 << get_formatted_permlinks(*pop.op) << " , "
 											 << get_body(*pop.op)
 											 << ")";
-						coma_operations = true;
+						any_operations = true;
 					}
 
 					result_type process_virtual_operation(const processing_objects::process_operation_t &pop)
 					{
-						virtual_operations << (!coma_virtual_operations ? "" : ",") << "( " << pop.block_number << " , "
+						virtual_operations << (!any_virtual_operations ? "" : ",") << "( " << pop.block_number << " , "
 															 << pop.trx_in_block << ", "
 															 << pop.op_in_trx << " , "
 															 << get_operation_type_id(*pop.op, true, pop.fresh) << " , "
 															 << format_participants(*pop.op) << " , "
 															 << get_body(*pop.op)
 															 << ")";
-						coma_virtual_operations = true;
+						any_virtual_operations = true;
 					}
 
 					result_type process_block(const processing_objects::process_block_t &bop)
 					{
-						blocks << (!coma_blocks ? "" : ",") << "( " << bop.block_number << " , '" << bop.hash << "' )";
-						coma_blocks = true;
+						blocks << (!any_blocks ? "" : ",") << "( " << bop.block_number << " , '" << bop.hash << "' )";
+						any_blocks = true;
 					}
 
 					result_type process_transaction(const processing_objects::process_transaction_t &top)
 					{
-						transactions << (!coma_transactions ? "" : ",") << " ( " << top.block_number << " , " << top.trx_in_block << " , '" << top.hash << "' )";
-						coma_transactions = true;
+						transactions << (!any_transactions ? "" : ",") << " ( " << top.block_number << " , " << top.trx_in_block << " , '" << top.hash << "' )";
+						any_transactions = true;
+					}
+
+					void get_dumped_cache(fc::string &out_permlinks, fc::string &out_accounts)
+					{
+						strstrm permlinks, accounts;
+
+						if (permlink_cache.size())
+						{
+							permlinks << "INSERT INTO tmp_permlinks VALUES ";
+							for (auto it = permlink_cache.begin(); it != permlink_cache.end(); it++)
+								permlinks << (it == permlink_cache.begin() ? "" : ",") << "( E'" << escape(it->c_str()) << "')";
+							out_permlinks = permlinks.str();
+						}
+						else
+							out_permlinks = fc::string();
+
+						if (account_cache.size())
+						{
+							accounts << "INSERT INTO tmp_accounts VALUES ";
+							for (auto it = account_cache.begin(); it != account_cache.end(); it++)
+								accounts << (it == account_cache.begin() ? "" : ",") << "( E'" << escape(it->c_str()) << "')";
+							out_accounts = accounts.str();
+						}
+						else
+							out_accounts = fc::string();
 					}
 
 				private:
-					fc::string format_participants(const operation &op) const
+					fc::string format_participants(const operation &op)
 					{
 						using hive::protocol::account_name_type;
 						boost::container::flat_set<account_name_type> impacted;
@@ -185,18 +213,24 @@ namespace hive
 						return generate([&](strstrm &ss) {
 							ss << "'{}'::INT[]";
 							for (const auto &it : impacted)
+							{
+								account_cache.insert(fc::string(it));
 								ss << " || get_inserted_account_id( '" << fc::string(it) << "' )";
+							}
 						});
 					}
 
-					fc::string get_formatted_permlinks(const operation &op) const
+					fc::string get_formatted_permlinks(const operation &op)
 					{
 						std::vector<fc::string> result;
 						hive::app::operation_get_permlinks(op, result);
 						return generate([&](strstrm &ss) {
 							ss << "'{}'::INT[]";
 							for (const auto &it : result)
+							{
+								permlink_cache.insert(fc::string(it));
 								ss << " || get_inserted_permlink_id( E'" << escape(fc::string(it).c_str()) << "' )";
+							}
 						});
 					}
 
