@@ -2,7 +2,7 @@
 #define HIVE_HARDFORK_1_25 25
 #define HIVE_SMT_HARDFORK HIVE_HARDFORK_1_25
 
-#define HIVE_HARDFORK_1_25_TIME 1609416000 //  Thursday, 31 December 2020 12:00:00 GMT
+#define HIVE_HARDFORK_1_25_TIME 1640952000 //  Thursday, 31 December 2021 12:00:00 GMT
 
 #define HIVE_HARDFORK_1_25_VERSION hardfork_version( 1, 25 )
 
