@@ -12,7 +12,7 @@
 DROP SCHEMA public CASCADE;
 CREATE SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS intarray;
-CREATE EXTENSION IF NOT EXISTS pg_prewarm;
+-- CREATE EXTENSION IF NOT EXISTS pg_prewarm;
 
 
 -- -- Core Tables
@@ -39,8 +39,9 @@ CREATE TABLE IF NOT EXISTS hive_operation_types (
   "is_virtual" boolean NOT NULL,
   CONSTRAINT hive_operation_types_pkey PRIMARY KEY ("id") NOT DEFERRABLE
 );
--- Cache whole table, as this will be very often accessed and it's quite small
-SELECT pg_prewarm('hive_operation_types');
+-- -- Cache whole table, as this will be very often accessed and it's quite small
+-- -- TODO: fill whole table on start
+-- SELECT pg_prewarm('hive_operation_types');
 
 CREATE TABLE IF NOT EXISTS hive_permlink_data (
   "id" serial,
