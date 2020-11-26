@@ -15,6 +15,8 @@ using chain::transaction_notification;
 using chain::operation_notification;
 using chain::reindex_notification;
 
+constexpr size_t prereservation_size = 16'000u;
+
 class sql_serializer_plugin : public plugin<sql_serializer_plugin>
 {
   public:

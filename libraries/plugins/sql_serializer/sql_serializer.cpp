@@ -9,10 +9,10 @@
 #include <boost/format.hpp>
 #include <boost/filesystem.hpp>
 #include <thread>
+#include <mutex>
 
 // C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
 #include <pqxx/pqxx>
-
 
 namespace hive
 {
@@ -29,7 +29,21 @@ namespace hive
 
 			namespace detail
 			{
-				using transaction_t = std::unique_ptr<work>;
+
+				struct mutex_deleter
+				{
+					std::mutex &mtx;
+					void operator()(work *ptr)
+					{
+						if (ptr)
+						{
+							mtx.unlock();
+							delete ptr;
+						}
+					}
+				};
+				using transaction_t = std::unique_ptr<work, mutex_deleter>;
+				// using transaction_t = std::unique_ptr<work>;
 
 				struct postgress_connection_holder
 				{
@@ -38,9 +52,10 @@ namespace hive
 
 					transaction_t start_transaction()
 					{
+						transaction_mutex.lock();
 						work *trx = new work{*_connection};
 						trx->exec("SET CONSTRAINTS ALL DEFERRED;");
-						return transaction_t{trx};
+						return transaction_t{trx, mutex_deleter{transaction_mutex}};
 					}
 
 					bool exec_transaction(transaction_t &trx, const fc::string &sql)
@@ -66,6 +81,9 @@ namespace hive
 
 					bool exec_no_transaction(const fc::string &sql, pqxx::result *result = nullptr)
 					{
+						const std::lock_guard<std::mutex> lck_1{ non_transaction_mutex };
+						const std::lock_guard<std::mutex> lck_2{ transaction_mutex };
+
 						if (sql == fc::string())
 							return true;
 						return sql_safe_execution([&]() {
@@ -82,9 +100,28 @@ namespace hive
 						return [this](const char *val) -> fc::string { return this->_connection->esc(val); }; //  { return _connection.esc(val); }
 					}
 
+					template<typename T>
+					bool get_single_value(const fc::string& query, T& _return)
+					{
+						pqxx::result res;
+						if(!exec_no_transaction( query, &res ) && res.empty() ) return false;
+						_return = res.at(0).at(0).as<T>();
+						return true;
+					}
+
+					template<typename T>
+					T get_single_value(const fc::string& query)
+					{
+						T _return;
+						FC_ASSERT( get_single_value( query, _return ) );
+						return _return;
+					}
+
 				private:
 					std::unique_ptr<pqxx::connection> _connection;
-					// std::mutex mtx;
+
+					std::mutex transaction_mutex;
+					std::mutex non_transaction_mutex;
 
 					void destroy_transaction(transaction_t &trx) const { trx.~unique_ptr(); }
 
@@ -136,7 +173,10 @@ namespace hive
 					{
 					}
 
-					virtual ~sql_serializer_plugin_impl() {}
+					virtual ~sql_serializer_plugin_impl()
+					{
+						cleanup_sequence();
+					}
 
 					database &_db;
 					boost::signals2::connection _on_post_apply_operation_con;
@@ -157,6 +197,7 @@ namespace hive
 					using cached_containter_t = std::shared_ptr<cached_data_t>;
 					cached_containter_t currently_caching_data;
 					PSQL::queue<cached_containter_t> cached_objects;
+					std::mutex pushing_mutex;
 
 					void create_indexes()
 					{
@@ -238,54 +279,63 @@ namespace hive
 							}));
 					}
 
-					void start_worker_thread()
+					void process_cached_data(const bool in_new_thread)
 					{
-						if (worker.first.get()) return;
-						worker = thread_with_status(nullptr, false);
-						worker.first.reset(
-								new std::thread([this](cached_containter_t input, bool *is_ready) {
-									auto tm = fc::time_point().now();
-									auto measure_time = [&](const char *caption) {
-										// std::cout << caption << (fc::time_point().now() - tm).count() << std::endl;
-										tm = fc::time_point().now();
-									};
+						if (worker.first.get())
+							return;
+						const auto cache_processor_function = [this](cached_containter_t input, bool *is_ready) {
+							auto tm = fc::time_point().now();
+							auto measure_time = [&](const char *caption) {
+								// std::cout << caption << (fc::time_point().now() - tm).count() << std::endl;
+								tm = fc::time_point().now();
+							};
 
-									if (input.get() == nullptr)
-										return;
+							if (input.get() == nullptr)
+								return;
 
-									// processing
-									PSQL::sql_dumper dumper{_db, names_to_flush, this->connection.get_escaping_charachter_methode()}; //[&](const char *str_to_esc) { return connection->esc(str_to_esc); }};
-									dumper.init();
-									this->process_data(dumper, *input);
-									measure_time("processing: ");
-									input.reset();
+							// processing
+							PSQL::sql_dumper dumper{_db, names_to_flush, this->connection.get_escaping_charachter_methode()};
+							dumper.init();
+							this->process_data(dumper, *input);
+							measure_time("processing: ");
+							input.reset();
 
-									// acquiring lock
-									transaction_t trx = this->connection.start_transaction();
-									measure_time("starting transaction: ");
-									this->create_caches(trx, dumper);
-									measure_time("creating caches: ");
-									if (!this->send_data(dumper, trx))
-									{
-										this->connection.abort_transaction(trx);
-										*is_ready = true;
-										FC_ASSERT(false);
-									}
-									else
-									{
-										*is_ready = true;
-										this->connection.commit_transaction(trx);
-									}
-									measure_time("commiting: ");
-								}, currently_caching_data, &worker.second),
-								[](std::thread *ptr) { if(ptr){ptr->join(); delete ptr;} });
+							// acquiring lock
+							transaction_t trx = this->connection.start_transaction();
+							measure_time("starting transaction: ");
+							this->create_caches(trx, dumper);
+							measure_time("creating caches: ");
+							if (!this->send_data(dumper, trx))
+							{
+								this->connection.abort_transaction(trx);
+								if(is_ready) *is_ready = true;
+								FC_ASSERT(false);
+							}
+							else
+							{
+								if(is_ready) *is_ready = true;
+								this->connection.commit_transaction(trx);
+							}
+							measure_time("commiting: ");
+						};
+
+						if(in_new_thread)
+						{
+							worker = thread_with_status(nullptr, false);
+							worker.first.reset(
+									new std::thread(cache_processor_function, currently_caching_data, &worker.second),
+									[](std::thread *ptr) { if(ptr){ptr->join(); delete ptr;} });
+						}else cache_processor_function( currently_caching_data, nullptr );
 					}
 
-					void push_currently_cached_data(const size_t reserve)
+					void push_currently_cached_data(const size_t reserve, const bool in_new_thread = true)
 					{
-						start_worker_thread();
-						if(reserve)
+						const std::lock_guard<std::mutex> guard{ pushing_mutex };
+						process_cached_data(in_new_thread);
+						if (reserve)
 							currently_caching_data = std::make_shared<cached_data_t>(reserve);
+						else
+							currently_caching_data.reset();
 					}
 
 					// return fresh
@@ -300,15 +350,25 @@ namespace hive
 							return true;
 						}
 					}
+
+					void cleanup_sequence()
+					{
+						ilog("Flushing rest of data, wait a moment...");
+						push_currently_cached_data(0, false);
+						ilog("Enabling constraints...");
+						switch_constraints(true);
+						if (set_index)
+						{
+							ilog("Creating indexes on user request");
+							create_indexes();
+						}
+						ilog("Done, cleanup complete");
+					}
 				};
 			} // namespace detail
 
 			sql_serializer_plugin::sql_serializer_plugin() {}
-			sql_serializer_plugin::~sql_serializer_plugin() 
-			{
-				// flush rest of non-committed data
-				my->push_currently_cached_data(0);
-			}
+			sql_serializer_plugin::~sql_serializer_plugin() {}
 
 			void sql_serializer_plugin::set_program_options(options_description &cli, options_description &cfg)
 			{
@@ -338,7 +398,6 @@ namespace hive
 			void sql_serializer_plugin::plugin_startup()
 			{
 				ilog("sql::plugin_startup()");
-				// my->start_worker_thread();
 			}
 
 			void sql_serializer_plugin::plugin_shutdown()
@@ -391,11 +450,8 @@ namespace hive
 						note.block_id.str(),
 						note.block_num);
 
-				if (note.block_num - my->last_commit_block >= my->blocks_per_commit && my->worker.first.get())
-				{
-					my->push_currently_cached_data(note.block_num - my->last_commit_block);
-					my->last_commit_block = note.block_num;
-				}
+				if (note.block_num % my->blocks_per_commit == 0 && my->worker.first.get() == nullptr)
+					my->push_currently_cached_data(prereservation_size);
 				else
 					my->join_ready_threads();
 			}
@@ -420,9 +476,19 @@ namespace hive
 
 			void sql_serializer_plugin::on_pre_reindex(const reindex_notification &note)
 			{
-				my->last_commit_block = note.last_block_number;
 				if (note.force_replay && my->path_to_schema.valid())
 					my->recreate_db();
+
+			/*
+				// `note.last_block_number` is always 0, so will not work properly
+				my->last_commit_block = my->connection.get_single_value<uint32_t>( "SELECT COALESCE( MAX(num), 0 ) FROM hive_blocks" );
+				FC_ASSERT( 
+					my->last_commit_block == note.last_block_number, 
+					"should be: ${note}, but is: ${sql}", 
+					("note", note.last_block_number)("sql", my->last_commit_block)
+				);
+			*/
+
 				my->blocks_per_commit = 10'000;
 				my->switch_constraints(false);
 			}
@@ -430,14 +496,8 @@ namespace hive
 			void sql_serializer_plugin::on_post_reindex(const reindex_notification &)
 			{
 				// flush rest of data
-				my->push_currently_cached_data(0);
+				my->cleanup_sequence();
 				my->blocks_per_commit = 1;
-				my->switch_constraints(true);
-				if (my->set_index)
-				{
-					ilog("Creating indexes on user request");
-					my->create_indexes();
-				}
 			}
 
 		} // namespace sql_serializer

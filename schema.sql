@@ -1,4 +1,5 @@
 -- CREATE DATABASE block_log_3;
+
 -- -- Backups
 -- CREATE DATABASE block_log_back
 -- WITH TEMPLATE block_log_3;
@@ -6,11 +7,15 @@
 -- DROP DATABASE block_log_3;
 -- CREATE DATABASE block_log_3
 -- WITH TEMPLATE block_log_back;
+
+-- -- Reset
 DROP SCHEMA public CASCADE;
 CREATE SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS intarray;
 CREATE EXTENSION IF NOT EXISTS pg_prewarm;
 
+
+-- -- Core Tables
 CREATE TABLE IF NOT EXISTS hive_blocks (
   "num" integer NOT NULL,
   "hash" character (40) NOT NULL,
@@ -82,6 +87,7 @@ CREATE TABLE IF NOT EXISTS hive_virtual_operations (
   CONSTRAINT hive_virtual_operations_fk_2 FOREIGN KEY ("block_num") REFERENCES hive_blocks ("num") DEFERRABLE
 );
 
+-- -- Cache accessors
 DROP FUNCTION IF EXISTS get_inserted_permlink_id;
 CREATE OR REPLACE FUNCTION get_inserted_permlink_id (text) RETURNS integer AS $func$
 BEGIN
@@ -112,6 +118,8 @@ END
 $func$
 LANGUAGE 'plpgsql';
 
+
+-- -- Cache creators
 CREATE OR REPLACE FUNCTION prepare_permlink_cache () RETURNS VOID AS $func$
 
 	CREATE TEMPORARY TABLE IF NOT EXISTS tmp_permlinks( permlink TEXT UNIQUE ) ON COMMIT DELETE ROWS;
@@ -143,7 +151,3 @@ BEGIN
 
 END
 $func$ LANGUAGE 'plpgsql';
-
-
-
-SELECT COUNT(*) FROM hive_blocks;
