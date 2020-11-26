@@ -1,12 +1,3 @@
-/*
-
-destruktor - przenieść kończenie
-konstruktor- przenieść tworzenie
-kontener komunikacja - paczka po 1000
-
-
-*/
-
 #include <hive/plugins/sql_serializer/sql_serializer_plugin.hpp>
 
 #include <hive/chain/util/impacted.hpp>
@@ -17,13 +8,11 @@ kontener komunikacja - paczka po 1000
 #include <fc/smart_ref_impl.hpp>
 #include <boost/format.hpp>
 #include <boost/filesystem.hpp>
+#include <thread>
 
 // C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
 #include <pqxx/pqxx>
 
-#include <thread>
-#include <mutex>
-#include <queue>
 
 namespace hive
 {
@@ -40,19 +29,6 @@ namespace hive
 
 			namespace detail
 			{
-				struct mutex_deleter
-				{
-					std::mutex &mtx;
-					void operator()(work *ptr)
-					{
-						if (ptr)
-						{ /*mtx.try_lock();*/
-							mtx.unlock();
-							delete ptr;
-						}
-					}
-				};
-				// using transaction_t = std::unique_ptr<work, mutex_deleter>;
 				using transaction_t = std::unique_ptr<work>;
 
 				struct postgress_connection_holder
@@ -62,11 +38,9 @@ namespace hive
 
 					transaction_t start_transaction()
 					{
-						// mtx.lock();
 						work *trx = new work{*_connection};
 						trx->exec("SET CONSTRAINTS ALL DEFERRED;");
 						return transaction_t{trx};
-						// return transaction_t{trx, mutex_deleter{mtx}};
 					}
 
 					bool exec_transaction(transaction_t &trx, const fc::string &sql)
@@ -175,7 +149,7 @@ namespace hive
 					bool set_index = false;
 
 					using thread_with_status = std::pair<std::shared_ptr<std::thread>, bool>;
-					std::queue<thread_with_status> workers;
+					thread_with_status worker;
 					uint32_t blocks_per_commit = 1;
 					uint32_t last_commit_block = 0;
 
@@ -251,8 +225,8 @@ namespace hive
 
 					void join_ready_threads(const bool force = false)
 					{
-						while (!workers.empty() && (force || workers.front().second))
-							workers.pop();
+						if (worker.first.get() && (force || worker.second))
+							worker.first.reset();
 					}
 
 					void switch_constraints(const bool active)
@@ -266,10 +240,9 @@ namespace hive
 
 					void start_worker_thread()
 					{
-						if (workers.size())
-							return;
-						workers.emplace(nullptr, false);
-						workers.back().first.reset(
+						if (worker.first.get()) return;
+						worker = thread_with_status(nullptr, false);
+						worker.first.reset(
 								new std::thread([this](cached_containter_t input, bool *is_ready) {
 									auto tm = fc::time_point().now();
 									auto measure_time = [&](const char *caption) {
@@ -304,7 +277,7 @@ namespace hive
 										this->connection.commit_transaction(trx);
 									}
 									measure_time("commiting: ");
-								}, currently_caching_data, &workers.back().second),
+								}, currently_caching_data, &worker.second),
 								[](std::thread *ptr) { if(ptr){ptr->join(); delete ptr;} });
 					}
 
@@ -418,7 +391,7 @@ namespace hive
 						note.block_id.str(),
 						note.block_num);
 
-				if (note.block_num - my->last_commit_block >= my->blocks_per_commit && my->workers.empty())
+				if (note.block_num - my->last_commit_block >= my->blocks_per_commit && my->worker.first.get())
 				{
 					my->push_currently_cached_data(note.block_num - my->last_commit_block);
 					my->last_commit_block = note.block_num;
