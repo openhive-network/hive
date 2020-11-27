@@ -139,29 +139,25 @@ namespace hive
 
 					void reset_operations_stream()
 					{
-						operations.clear();
-						operations << "INSERT INTO hive_operations(block_num, trx_in_block, op_pos, op_type_id, participants, permlink_ids, body) VALUES ";
+						operations = strstrm("INSERT INTO hive_operations(block_num, trx_in_block, op_pos, op_type_id, participants, permlink_ids, body) VALUES ");
 						any_operations = false;
 					}
 
 					void reset_virtual_operation_stream()
 					{
-						virtual_operations.clear();
-						virtual_operations << "INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, op_type_id, participants, body) VALUES ";
+						virtual_operations = strstrm("INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, op_type_id, participants, body) VALUES ");
 						any_virtual_operations = false;
 					}
 
 					void reset_blocks_stream()
 					{
-						blocks.clear();
-						blocks << "INSERT INTO hive_blocks VALUES ";
+						blocks = strstrm("INSERT INTO hive_blocks VALUES ");
 						any_blocks = false;
 					}
 
 					void reset_transaction_stream()
 					{
-						transactions.clear();
-						transactions << "INSERT INTO hive_transactions VALUES ";
+						transactions = strstrm("INSERT INTO hive_transactions VALUES ");
 						any_transactions = false;
 					}
 
