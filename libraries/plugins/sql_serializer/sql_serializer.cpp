@@ -52,6 +52,7 @@ namespace hive
 
 					transaction_t start_transaction()
 					{
+						// std::cout << "started transaction" << std::endl;
 						transaction_mutex.lock();
 						work *trx = new work{*_connection};
 						trx->exec("SET CONSTRAINTS ALL DEFERRED;");
@@ -170,10 +171,8 @@ namespace hive
 					const size_t max_tuples_count = 1'000;
 
 				public:
-					sql_serializer_plugin_impl(const std::string &url) : _db(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db()),
-																															 connection{url}
-					{
-					}
+					sql_serializer_plugin_impl(const std::string &url) : _db(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db()), connection{url}
+					{}
 
 					virtual ~sql_serializer_plugin_impl()
 					{
@@ -222,28 +221,17 @@ namespace hive
 						std::unique_ptr<char[]> _data{new char[size]};
 						std::ifstream file{path.string()};
 						file.read(_data.get(), size);
-						std::cout << "executing script: " << path.string() << std::endl;
+						// std::cout << "executing script: " << path.string() << std::endl;
 						connection.exec_no_transaction(_data.get());
 					}
 
-					void create_caches(transaction_t &trx, PSQL::sql_dumper &dumper)
+					void upload_caches(transaction_t &trx, PSQL::sql_dumper &dumper)
 					{
 						fc::string perms, accs;
 						dumper.get_dumped_cache(perms, accs);
 
-						if (perms != fc::string())
-						{
-							connection.exec_transaction(trx, "SELECT prepare_permlink_cache()");
-							connection.exec_transaction(trx, perms);
-							connection.exec_transaction(trx, "SELECT fill_permlink_cache()");
-						}
-
-						if (accs != fc::string())
-						{
-							connection.exec_transaction(trx, "SELECT prepare_accounts_cache()");
-							connection.exec_transaction(trx, accs);
-							connection.exec_transaction(trx, "SELECT fill_accounts_cache()");
-						}
+						if (perms != fc::string()) connection.exec_transaction(trx, perms);
+						if (accs != fc::string()) connection.exec_transaction(trx, accs);
 					}
 
 					bool process_and_send_data(PSQL::sql_dumper &dumper, const cached_data_t &data, transaction_t& transaction)
@@ -273,8 +261,8 @@ namespace hive
 							dumper.process_operation(data.operations[i]);
 							if( i == max_tuples_count || i == data.operations.size() - 1 )
 							{
-								if(!send_data( dumper.operations, transaction )) return false;
-								dumper.reset_operations_stream();
+								upload_caches(transaction, dumper);
+								if(!send_data( dumper.reset_operations_stream(), transaction )) return false;
 							}
 						}
 
@@ -283,8 +271,8 @@ namespace hive
 							dumper.process_virtual_operation(data.virtual_operations[i]);
 							if( i == max_tuples_count || i == data.virtual_operations.size() - 1 )
 							{
-								if(!send_data( dumper.virtual_operations, transaction )) return false;
-								dumper.reset_virtual_operation_stream();
+								upload_caches(transaction, dumper);
+								if(!send_data( dumper.reset_virtual_operation_stream(), transaction )) return false;
 							}
 						}
 
@@ -294,6 +282,11 @@ namespace hive
 					bool send_data(const PSQL::strstrm &dump, transaction_t &transaction)
 					{
 						return connection.exec_transaction(transaction, dump.str());
+					}
+
+					bool send_data(const fc::string &dump, transaction_t &transaction)
+					{
+						return connection.exec_transaction(transaction, dump);
 					}
 
 					void join_ready_threads(const bool force = false)
@@ -330,8 +323,6 @@ namespace hive
 							// acquiring lock
 							transaction_t trx = this->connection.start_transaction();
 							measure_time("starting transaction: ");
-							this->create_caches(trx, dumper);
-							measure_time("creating caches: ");
 
 							// sending
 							if (!this->process_and_send_data(dumper, *input, trx))
@@ -507,16 +498,6 @@ namespace hive
 			{
 				if (note.force_replay && my->path_to_schema.valid())
 					my->recreate_db();
-
-			/*
-				// `note.last_block_number` is always 0, so will not work properly
-				my->last_commit_block = my->connection.get_single_value<uint32_t>( "SELECT COALESCE( MAX(num), 0 ) FROM hive_blocks" );
-				FC_ASSERT( 
-					my->last_commit_block == note.last_block_number, 
-					"should be: ${note}, but is: ${sql}", 
-					("note", note.last_block_number)("sql", my->last_commit_block)
-				);
-			*/
 
 				my->blocks_per_commit = 10'000;
 				my->switch_constraints(false);
