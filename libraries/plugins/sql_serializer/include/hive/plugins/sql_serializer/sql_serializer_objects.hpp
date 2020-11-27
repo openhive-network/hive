@@ -106,7 +106,7 @@ namespace hive
 					using result_type = fc::string;
 
 					template <typename operation_t>
-					result_type operator()(const operation_t &) const { return fc::string{}; }
+					result_type operator()(const operation_t & op) const { return get_body(op); }
 
 					template <typename op_t>
 					result_type get_body(const op_t &op) const { return fc::json::to_string(op); }
@@ -125,20 +125,44 @@ namespace hive
 					strstrm operations{};
 					strstrm virtual_operations{};
 
-					bool any_blocks = false;
-					bool any_transactions = false;
-					bool any_operations = false;
-					bool any_virtual_operations = false;
-
 					std::set<fc::string> permlink_cache;
 					std::set<fc::string> account_cache;
 
-					void init()
+					sql_dumper( const hive::chain::database &_db, const operation_types_container_t &_op_types, const escape_function_t _escape )
+						:db{_db}, op_types{_op_types}, escape{_escape}
 					{
+						reset_blocks_stream();
+						reset_transaction_stream();
+						reset_operations_stream();
+						reset_virtual_operation_stream();
+					}
+
+					void reset_operations_stream()
+					{
+						operations.clear();
 						operations << "INSERT INTO hive_operations(block_num, trx_in_block, op_pos, op_type_id, participants, permlink_ids, body) VALUES ";
+						any_operations = false;
+					}
+
+					void reset_virtual_operation_stream()
+					{
+						virtual_operations.clear();
 						virtual_operations << "INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, op_type_id, participants, body) VALUES ";
+						any_virtual_operations = false;
+					}
+
+					void reset_blocks_stream()
+					{
+						blocks.clear();
 						blocks << "INSERT INTO hive_blocks VALUES ";
+						any_blocks = false;
+					}
+
+					void reset_transaction_stream()
+					{
+						transactions.clear();
 						transactions << "INSERT INTO hive_transactions VALUES ";
+						any_transactions = false;
 					}
 
 					result_type process_operation(const processing_objects::process_operation_t &pop)
@@ -215,7 +239,7 @@ namespace hive
 							for (const auto &it : impacted)
 							{
 								account_cache.insert(fc::string(it));
-								ss << " || get_inserted_account_id( '" << fc::string(it) << "' )";
+								ss << " || get_inserted_account_id( '" << escape(fc::string(it).c_str()) << "' )";
 							}
 						});
 					}
@@ -251,6 +275,11 @@ namespace hive
 						else
 							return std::to_string(op.which());
 					}
+
+					bool any_blocks = false;
+					bool any_transactions = false;
+					bool any_operations = false;
+					bool any_virtual_operations = false;
 				};
 
 			} // namespace PSQL
