@@ -214,13 +214,13 @@ namespace hive
 					void recreate_db()
 					{
 						using bpath = boost::filesystem::path;
-
+						
 						bpath path = bpath((*path_to_schema).c_str());
 						const size_t size = boost::filesystem::file_size(path);
 						std::unique_ptr<char[]> _data{new char[size]};
 						std::ifstream file{path.string()};
 						file.read(_data.get(), size);
-
+						std::cout << "executing script: " << path.string() << std::endl;
 						connection.exec_no_transaction(_data.get());
 					}
 
