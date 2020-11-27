@@ -88,38 +88,6 @@ CREATE TABLE IF NOT EXISTS hive_virtual_operations (
   CONSTRAINT hive_virtual_operations_fk_2 FOREIGN KEY ("block_num") REFERENCES hive_blocks ("num") DEFERRABLE
 );
 
--- -- Cache accessors
-DROP FUNCTION IF EXISTS get_inserted_permlink_id;
-CREATE OR REPLACE FUNCTION get_inserted_permlink_id (text) RETURNS integer AS $func$
-BEGIN
-	RETURN (SELECT tid FROM tmp_legacy_permlinks WHERE "permlink" = $1);
-END
-$func$
-LANGUAGE 'plpgsql';
-
-DROP FUNCTION IF EXISTS get_inserted_account_id;
-CREATE OR REPLACE FUNCTION get_inserted_account_id (text) RETURNS integer AS $func$
-BEGIN
-	RETURN (SELECT tid FROM tmp_legacy_accounts WHERE "acc" = $1);
-END
-$func$
-LANGUAGE 'plpgsql';
-
-DROP FUNCTION IF EXISTS insert_operation_type_id;
-CREATE OR REPLACE FUNCTION insert_operation_type_id (integer, text, boolean) RETURNS integer AS $func$
-DECLARE
-	tmp INTEGER;
-BEGIN
-	SELECT id INTO tmp FROM hive_operation_types WHERE "name" = $2;
-	IF NOT FOUND THEN
-			INSERT INTO hive_operation_types VALUES ($1, $2, $3) RETURNING id INTO tmp;
-	END IF;
-	RETURN (SELECT tmp);
-END
-$func$
-LANGUAGE 'plpgsql';
-
-
 -- -- Cache creators
 CREATE OR REPLACE FUNCTION prepare_permlink_cache () RETURNS VOID AS $func$
 
@@ -152,3 +120,35 @@ BEGIN
 
 END
 $func$ LANGUAGE 'plpgsql';
+
+
+-- -- Cache accessors
+DROP FUNCTION IF EXISTS get_inserted_permlink_id;
+CREATE OR REPLACE FUNCTION get_inserted_permlink_id (text) RETURNS integer AS $func$
+BEGIN
+	RETURN (SELECT tid FROM tmp_legacy_permlinks WHERE "permlink" = $1);
+END
+$func$
+LANGUAGE 'plpgsql';
+
+DROP FUNCTION IF EXISTS get_inserted_account_id;
+CREATE OR REPLACE FUNCTION get_inserted_account_id (text) RETURNS integer AS $func$
+BEGIN
+	RETURN (SELECT tid FROM tmp_legacy_accounts WHERE "acc" = $1);
+END
+$func$
+LANGUAGE 'plpgsql';
+
+DROP FUNCTION IF EXISTS insert_operation_type_id;
+CREATE OR REPLACE FUNCTION insert_operation_type_id (integer, text, boolean) RETURNS integer AS $func$
+DECLARE
+	tmp INTEGER;
+BEGIN
+	SELECT id INTO tmp FROM hive_operation_types WHERE "name" = $2;
+	IF NOT FOUND THEN
+			INSERT INTO hive_operation_types VALUES ($1, $2, $3) RETURNING id INTO tmp;
+	END IF;
+	RETURN (SELECT tmp);
+END
+$func$
+LANGUAGE 'plpgsql';
