@@ -128,7 +128,8 @@ namespace hive
 
 				struct sql_dumper
 				{
-					typedef void result_type;
+					// returns current width of stream
+					typedef size_t result_type;
 
 					const hive::chain::database &db;
 					const operation_types_container_t &op_types;
@@ -213,6 +214,8 @@ namespace hive
 						get_formatted_permlinks(pre_generate, *pop.op, operations);
 						pre_generate += "'', ";
 						format_participants(pre_generate, *pop.op, operations);
+
+						return operations.tellp();
 					}
 
 					result_type process_virtual_operation(const processing_objects::process_operation_t &pop)
@@ -231,18 +234,24 @@ namespace hive
 						virtual_operations << pre_generate << " '' )";
 						
 						format_participants(pre_generate, *pop.op, virtual_operations);
+
+						return virtual_operations.tellp();
 					}
 
 					result_type process_block(const processing_objects::process_block_t &bop)
 					{
 						blocks << (!any_blocks ? "" : ",") << "( " << bop.block_number << " , '" << bop.hash << "' )";
 						any_blocks = true;
+
+						return blocks.tellp();
 					}
 
 					result_type process_transaction(const processing_objects::process_transaction_t &top)
 					{
 						transactions << (!any_transactions ? "" : ",") << " ( " << top.block_number << " , " << top.trx_in_block << " , '" << top.hash << "' )";
 						any_transactions = true;
+
+						return transactions.tellp();
 					}
 
 					void get_dumped_cache(fc::string &out_permlinks, fc::string &out_accounts)

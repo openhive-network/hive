@@ -236,10 +236,15 @@ namespace hive
 
 					bool process_and_send_data(PSQL::sql_dumper &dumper, const cached_data_t &data, transaction_t& transaction)
 					{
+						constexpr size_t max_data_length = 256*1024*1024; // 256 KB
+
 						for (size_t i = 0; i < data.blocks.size(); i++)
 						{
-							dumper.process_block(data.blocks[i]);
-							if( i == max_tuples_count || i == data.blocks.size() - 1 )
+							if( 
+								dumper.process_block(data.blocks[i]) >= max_data_length ||
+								i == max_tuples_count || 
+								i == data.blocks.size() - 1 
+							)
 							{
 								if(!send_data( dumper.blocks, transaction )) return false;
 								dumper.reset_blocks_stream();
@@ -248,8 +253,11 @@ namespace hive
 
 						for (size_t i = 0; i < data.transactions.size(); i++)
 						{
-							dumper.process_transaction(data.transactions[i]);
-							if( i == max_tuples_count || i == data.transactions.size() - 1 )
+							if(
+								dumper.process_transaction(data.transactions[i]) >= max_data_length ||
+								i == max_tuples_count || 
+								i == data.transactions.size() - 1 
+							)
 							{
 								if(!send_data( dumper.transactions, transaction )) return false;
 								dumper.reset_transaction_stream();
@@ -258,8 +266,11 @@ namespace hive
 
 						for (size_t i = 0; i < data.operations.size(); i++)
 						{
-							dumper.process_operation(data.operations[i]);
-							if( i == max_tuples_count || i == data.operations.size() - 1 )
+							if( 
+								dumper.process_operation(data.operations[i]) >= max_data_length ||
+								i == max_tuples_count || 
+								i == data.operations.size() - 1 
+							)
 							{
 								upload_caches(transaction, dumper);
 								if(!send_data( dumper.reset_operations_stream(), transaction )) return false;
@@ -268,8 +279,11 @@ namespace hive
 
 						for (size_t i = 0; i < data.virtual_operations.size(); i++)
 						{
-							dumper.process_virtual_operation(data.virtual_operations[i]);
-							if( i == max_tuples_count || i == data.virtual_operations.size() - 1 )
+							if( 
+								dumper.process_virtual_operation(data.virtual_operations[i]) ||
+								i == max_tuples_count || 
+								i == data.virtual_operations.size() - 1 
+							)
 							{
 								upload_caches(transaction, dumper);
 								if(!send_data( dumper.reset_virtual_operation_stream(), transaction )) return false;
