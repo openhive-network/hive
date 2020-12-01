@@ -45,12 +45,10 @@ CREATE TABLE IF NOT EXISTS hive_operation_types (
 
 CREATE TABLE IF NOT EXISTS hive_permlink_data (
   "id" serial,
-  "permlink" text,
+  "permlink" varchar(257) NOT NULL,
   CONSTRAINT hive_permlink_data_pkey PRIMARY KEY ("id"),
-  CONSTRAINT hive_permlink_data_uniq UNIQUE ("permlink"),
-  CONSTRAINT hive_permlink_data_not_null CHECK ( permlink IS NOT NULL OR id=0 )
+  CONSTRAINT hive_permlink_data_uniq UNIQUE ("permlink")
 );
-INSERT INTO hive_permlink_data VALUES(0, NULL);	-- This is permlink referenced by empty participants arrays
 
 CREATE TABLE IF NOT EXISTS hive_operations (
   "id" serial,
@@ -104,3 +102,13 @@ BEGIN
 END
 $func$
 LANGUAGE 'plpgsql';
+
+DROP FUNCTION IF EXISTS get_null_permlink;
+CREATE OR REPLACE FUNCTION get_null_permlink () RETURNS varchar AS $func$
+BEGIN
+	RETURN (SELECT repeat('0', 257));
+END
+$func$
+LANGUAGE 'plpgsql';
+
+INSERT INTO hive_permlink_data VALUES(0, get_null_permlink());	-- This is permlink referenced by empty participants arrays

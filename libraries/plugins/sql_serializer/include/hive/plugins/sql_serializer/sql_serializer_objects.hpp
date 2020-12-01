@@ -81,7 +81,7 @@ namespace hive
 
 				struct is_virtual_visitor
 				{
-					typedef bool result_type;
+					using result_type = bool;
 
 					template <typename op_t>
 					bool operator()(const op_t &op) const
@@ -160,9 +160,11 @@ namespace hive
 						
 						const fc::string result = operations.str();
 						operations = strstrm();
-						operations << "SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_remove(array_agg(ha.id), 0), array_remove(array_agg(hpd.id), 0) FROM ( VALUES ";
+						operations << "INSERT INTO hive_operations(block_num, trx_in_block, op_pos, op_type_id, body, participants, permlink_ids)"
+							<< " SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_remove(array_agg(ha.id), 0), array_remove(array_agg(hpd.id), 0) FROM ( VALUES ";
 
 						any_operations = 0;
+						// std::cout << "pushing operations: " << result << std::endl;
 						return result;
 					}
 
@@ -209,12 +211,13 @@ namespace hive
 							<< get_operation_type_id(*pop.op, false, pop.fresh) << " , "
 							<< get_body(*pop.op) << " , ";
 						});
-						operations << pre_generate << " '', '' )";
+						operations << pre_generate << " get_null_permlink(), '' )";
 
 						get_formatted_permlinks(pre_generate, *pop.op, operations);
-						pre_generate += "'', ";
+						pre_generate += "get_null_permlink(), ";
 						format_participants(pre_generate, *pop.op, operations);
 
+						// std::cout << "tellp: " << operations.tellp() << std::endl;
 						return operations.tellp();
 					}
 

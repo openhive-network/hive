@@ -82,8 +82,7 @@ namespace hive
 
 					bool exec_no_transaction(const fc::string &sql, pqxx::result *result = nullptr)
 					{
-						const std::lock_guard<std::mutex> lck_1{ non_transaction_mutex };
-						const std::lock_guard<std::mutex> lck_2{ transaction_mutex };
+						const std::lock_guard<std::mutex> lck{ transaction_mutex };
 
 						if (sql == fc::string())
 							return true;
@@ -122,7 +121,6 @@ namespace hive
 					std::unique_ptr<pqxx::connection> _connection;
 
 					std::mutex transaction_mutex;
-					std::mutex non_transaction_mutex;
 
 					void destroy_transaction(transaction_t &trx) const { trx.~unique_ptr(); }
 
@@ -240,8 +238,9 @@ namespace hive
 
 						for (size_t i = 0; i < data.blocks.size(); i++)
 						{
+							const size_t sz = dumper.process_block(data.blocks[i]);
 							if( 
-								dumper.process_block(data.blocks[i]) >= max_data_length ||
+								sz >= max_data_length ||
 								i == max_tuples_count || 
 								i == data.blocks.size() - 1 
 							)
@@ -253,8 +252,9 @@ namespace hive
 
 						for (size_t i = 0; i < data.transactions.size(); i++)
 						{
+							const size_t sz = dumper.process_transaction(data.transactions[i]);
 							if(
-								dumper.process_transaction(data.transactions[i]) >= max_data_length ||
+								sz >= max_data_length ||
 								i == max_tuples_count || 
 								i == data.transactions.size() - 1 
 							)
@@ -266,8 +266,9 @@ namespace hive
 
 						for (size_t i = 0; i < data.operations.size(); i++)
 						{
+							const size_t sz = dumper.process_operation(data.operations[i]);
 							if( 
-								dumper.process_operation(data.operations[i]) >= max_data_length ||
+								sz >= max_data_length ||
 								i == max_tuples_count || 
 								i == data.operations.size() - 1 
 							)
@@ -279,8 +280,9 @@ namespace hive
 
 						for (size_t i = 0; i < data.virtual_operations.size(); i++)
 						{
+							const size_t sz = dumper.process_virtual_operation(data.virtual_operations[i]);
 							if( 
-								dumper.process_virtual_operation(data.virtual_operations[i]) ||
+								sz >= max_data_length ||
 								i == max_tuples_count || 
 								i == data.virtual_operations.size() - 1 
 							)
@@ -454,7 +456,9 @@ namespace hive
 			void sql_serializer_plugin::on_post_apply_operation(const operation_notification &note)
 			{
 				const bool is_virtual = note.op.visit(PSQL::is_virtual_visitor{});
+				// std::cout << "is_virtual: " << is_virtual << std::endl;
 				auto &cdtf = my->currently_caching_data; // alias
+
 				if (is_virtual)
 				{
 					cdtf->virtual_operations.emplace_back(
