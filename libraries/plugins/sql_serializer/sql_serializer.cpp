@@ -9,7 +9,6 @@
 #include <boost/format.hpp>
 #include <boost/filesystem.hpp>
 #include <thread>
-#include <mutex>
 
 // C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
 #include <pqxx/pqxx>
@@ -26,6 +25,8 @@ namespace hive
 
 			using chain::database;
 			using chain::operation_object;
+
+			constexpr size_t default_reservation_size = 16'000u;
 
 			namespace detail
 			{
@@ -176,10 +177,9 @@ namespace hive
 					uint32_t last_commit_block = 0;
 
 					operation_types_container_t names_to_flush;
-					using cached_containter_t = std::shared_ptr<cached_data_t>;
+					using cached_containter_t = std::unique_ptr<cached_data_t>;
 					cached_containter_t currently_caching_data;
 					PSQL::queue<cached_containter_t> cached_objects;
-					std::mutex pushing_mutex;
 
 					void create_indexes()
 					{
@@ -215,10 +215,9 @@ namespace hive
 						if (accs != fc::string()) connection.exec_transaction(trx, accs);
 					}
 
-					bool process_and_send_data(PSQL::sql_dumper &dumper, const cached_data_t &data)
+					bool process_and_send_data(PSQL::sql_dumper &dumper, const cached_data_t &data, transaction_t& transaction)
 					{
-						constexpr size_t max_data_length = 512*1024*1024; // 512 KB
-						transaction_t transaction = connection.start_transaction();
+						constexpr size_t max_data_length = 512*1024; // 512 KB
 
 						for (size_t i = 0; i < data.blocks.size(); i++)
 						{
@@ -248,8 +247,6 @@ namespace hive
 							}
 						}
 
-						connection.commit_transaction(transaction);
-
 						for (size_t i = 0; i < data.operations.size(); i++)
 						{
 							const size_t sz = dumper.process_operation(data.operations[i]);
@@ -259,13 +256,8 @@ namespace hive
 								i == data.operations.size() - 1 
 							)
 							{
-								transaction = connection.start_transaction();
 								upload_caches(transaction, dumper);
-								if(!send_data( dumper.reset_operations_stream(), transaction )) 
-								{
-									connection.abort_transaction(transaction);
-									return false;
-								}else connection.commit_transaction(transaction);
+								if(!send_data( dumper.reset_operations_stream(), transaction )) return false;
 							}
 						}
 
@@ -278,14 +270,8 @@ namespace hive
 								i == data.virtual_operations.size() - 1 
 							)
 							{
-								transaction = connection.start_transaction();
 								upload_caches(transaction, dumper);
-								if(!send_data( dumper.reset_virtual_operation_stream(), transaction ))
-								{
-									connection.abort_transaction(transaction);
-									return false;
-								}
-								connection.commit_transaction(transaction);
+								if(!send_data( dumper.reset_virtual_operation_stream(), transaction )) return false;
 							}
 						}
 
@@ -310,48 +296,46 @@ namespace hive
 
 					void switch_constraints(const bool active)
 					{
-						const static std::array<const char *, 3> tables_to_disable{{"hive_transactions", "hive_operations", "hive_virtual_operations"}};
-						for (const auto &table : tables_to_disable)
-							connection.exec_no_transaction(generate([&](strstrm &ss) {
-								ss << "ALTER TABLE " << table << (active ? " ENABLE" : " DISABLE") << " TRIGGER ALL";
-							}));
+						connection.exec_no_transaction(generate([&](strstrm &ss) {
+							ss << "SELECT switch_foregins_keys( " << (active ? "TRUE" : "FALSE") << " )";
+						}));
 					}
 
-					void process_cached_data(const bool in_new_thread)
+					void process_cached_data()
 					{
 						if (worker.first.get())
 							return;
 						const auto cache_processor_function = [this](cached_containter_t input, bool* is_ready) {
+							auto finish = [&](const bool is_ok) { if(is_ready) *is_ready = true; FC_ASSERT( is_ok ); };
 							if (input.get() == nullptr)
 								return;
 
 							PSQL::sql_dumper dumper{_db, names_to_flush, this->connection.get_escaping_charachter_methode()};
+							transaction_t trx = this->connection.start_transaction();
 
 							// sending
-							if (!this->process_and_send_data(dumper, *input))
+							if (!this->process_and_send_data(dumper, *input, trx))
 							{
-								if(is_ready) *is_ready = true;
-								FC_ASSERT(false);
-							}else if(is_ready) *is_ready = true;
+								this->connection.abort_transaction(trx);
+								finish(false);
+							}
+							else
+							{
+								finish(this->connection.commit_transaction(trx));
+							}
 						};
 
-						if(in_new_thread)
-						{
-							worker = thread_with_status(nullptr, false);
-							worker.first.reset(
-									new std::thread(cache_processor_function, currently_caching_data, &worker.second),
-									[](std::thread *ptr) { if(ptr){ptr->join(); delete ptr;} });
-						}else cache_processor_function( currently_caching_data, nullptr );
+						worker = thread_with_status(nullptr, false);
+						worker.first.reset(
+								new std::thread(cache_processor_function, std::move(currently_caching_data), &worker.second),
+								[](std::thread *ptr) { if(ptr){ptr->join(); delete ptr;} });
 					}
 
-					void push_currently_cached_data(const size_t reserve, const bool in_new_thread = true)
+					void push_currently_cached_data(const size_t reserve)
 					{
-						const std::lock_guard<std::mutex> guard{ pushing_mutex };
-						process_cached_data(in_new_thread);
+						process_cached_data();
 						if (reserve)
-							currently_caching_data = std::make_shared<cached_data_t>(reserve);
-						else
-							currently_caching_data.reset();
+							currently_caching_data = std::make_unique<cached_data_t>(reserve);
 					}
 
 					// return fresh
@@ -370,14 +354,14 @@ namespace hive
 					void cleanup_sequence()
 					{
 						ilog("Flushing rest of data, wait a moment...");
-						push_currently_cached_data(0, false);
-						ilog("Enabling constraints...");
-						switch_constraints(true);
+						push_currently_cached_data(0);
 						if (set_index)
 						{
 							ilog("Creating indexes on user request");
 							create_indexes();
 						}
+						ilog("Enabling constraints...");
+						switch_constraints(true);
 						ilog("Done, cleanup complete");
 					}
 				};
@@ -485,7 +469,7 @@ namespace hive
 			void sql_serializer_plugin::initialize_varriables()
 			{
 				// load current operation type
-				my->currently_caching_data = std::make_unique<detail::cached_data_t>(16'000);
+				my->currently_caching_data = std::make_unique<detail::cached_data_t>( default_reservation_size );
 				pqxx::result result;
 				my->connection.exec_no_transaction("SELECT id, name, is_virtual FROM hive_operation_types", &result);
 				for (const auto &row : result)

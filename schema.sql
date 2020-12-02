@@ -28,8 +28,7 @@ CREATE TABLE IF NOT EXISTS hive_transactions (
   "trx_in_block" integer NOT NULL,
   "trx_hash" character (40) NOT NULL,
   CONSTRAINT hive_transactions_pkey PRIMARY KEY ("block_num", "trx_in_block"),
-  CONSTRAINT hive_transactions_uniq_1 UNIQUE ("trx_hash"),
-  CONSTRAINT hive_transactions_fk_1 FOREIGN KEY ("block_num") REFERENCES hive_blocks ("num")
+  CONSTRAINT hive_transactions_uniq_1 UNIQUE ("trx_hash")
 );
 
 CREATE TABLE IF NOT EXISTS hive_operation_types (
@@ -62,9 +61,7 @@ CREATE TABLE IF NOT EXISTS hive_operations (
   "participants" int[],
   CONSTRAINT hive_operations_pkey PRIMARY KEY ("id"),
   CONSTRAINT hive_operations_uniq UNIQUE ("block_num", "trx_in_block", "op_pos"),
-  CONSTRAINT hive_operations_unsigned CHECK ("trx_in_block" >= 0 AND "op_pos" >= 0),
-  CONSTRAINT hive_operations_fk_1 FOREIGN KEY ("op_type_id") REFERENCES hive_operation_types ("id"),
-  CONSTRAINT hive_operations_fk_2 FOREIGN KEY ("block_num", "trx_in_block") REFERENCES hive_transactions ("block_num", "trx_in_block")
+  CONSTRAINT hive_operations_unsigned CHECK ("trx_in_block" >= 0 AND "op_pos" >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS hive_accounts (
@@ -73,7 +70,6 @@ CREATE TABLE IF NOT EXISTS hive_accounts (
   CONSTRAINT hive_accounts_pkey PRIMARY KEY ("id"),
   CONSTRAINT hive_accounts_uniq UNIQUE ("name")
 );
-INSERT INTO hive_accounts VALUES(0, '');	-- This is account referenced by empty participants arrays
 
 CREATE TABLE IF NOT EXISTS hive_virtual_operations (
   "id" serial,
@@ -84,9 +80,7 @@ CREATE TABLE IF NOT EXISTS hive_virtual_operations (
   "body" text DEFAULT NULL,
   -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
   "participants" int[],
-  CONSTRAINT hive_virtual_operations_pkey PRIMARY KEY ("id"),
-  CONSTRAINT hive_virtual_operations_fk_1 FOREIGN KEY ("op_type_id") REFERENCES hive_operation_types ("id"),
-  CONSTRAINT hive_virtual_operations_fk_2 FOREIGN KEY ("block_num") REFERENCES hive_blocks ("num")
+  CONSTRAINT hive_virtual_operations_pkey PRIMARY KEY ("id")
 );
 
 DROP FUNCTION IF EXISTS insert_operation_type_id;
@@ -111,4 +105,39 @@ END
 $func$
 LANGUAGE 'plpgsql';
 
+-- SPECIAL VALUES
 INSERT INTO hive_permlink_data VALUES(0, get_null_permlink());	-- This is permlink referenced by empty participants arrays
+INSERT INTO hive_accounts VALUES(0, '');	-- This is account referenced by empty participants arrays
+
+-- CONSTRAINTS
+CREATE TABLE hive_foregins_keys( "foregins_key_name" TEXT NOT NULL, "table_name" TEXT NOT NULL, "command_to_enable" TEXT NOT NULL );
+INSERT INTO hive_foregins_keys VALUES 
+	('hive_transactions_fk_1', 'hive_transactions', 'ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);'),
+	('hive_operations_fk_1', 'hive_operations', 'ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_1 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id);'),
+	('hive_operations_fk_2', 'hive_operations', 'ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_2 FOREIGN KEY (block_num, trx_in_block) REFERENCES hive_transactions (block_num, trx_in_block);'),
+	('hive_virtual_operations_fk_1', 'hive_virtual_operations', 'ALTER TABLE hive_virtual_operations ADD CONSTRAINT hive_virtual_operations_fk_1 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id);'),
+	('hive_virtual_operations_fk_2', 'hive_virtual_operations', 'ALTER TABLE hive_virtual_operations ADD CONSTRAINT hive_virtual_operations_fk_2 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);');
+
+DROP FUNCTION IF EXISTS switch_foregins_keys;
+CREATE OR REPLACE FUNCTION switch_foregins_keys (boolean) RETURNS void AS $func$
+DECLARE 
+	_row hive_foregins_keys%rowtype;
+BEGIN
+	IF $1 THEN
+		FOR _row IN SELECT * FROM hive_foregins_keys 
+		LOOP
+			EXECUTE _row.command_to_enable;
+		END LOOP;
+	ELSE
+		FOR _row IN SELECT * FROM hive_foregins_keys 
+		LOOP
+			EXECUTE CONCAT('ALTER TABLE ', _row.table_name, ' DROP CONSTRAINT IF EXISTS ', _row.foregins_key_name);
+		END LOOP;
+	END IF;
+END
+$func$
+LANGUAGE 'plpgsql' VOLATILE;
+
+
+
+SELECT COUNT(*) FROM hive_virtual_operations
