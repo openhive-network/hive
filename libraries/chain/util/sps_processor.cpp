@@ -48,7 +48,17 @@ void sps_processor::remove_proposals( const time_point_sec& head_time )
 
   while( itr != found )
   {
-    itr = sps_helper::remove_proposal< by_end_date >( itr, proposalIndex, votesIndex, byVoterIdx, obj_perf );
+    /*
+      It was decided that automatic removing of old proposals will be blocked.
+      In result it will be possible to find expired proposals, by API call `list_proposals` with `expired` flag.
+      Maybe in the future removing will be re-enabled.
+
+      Proposals can be removed only by explicit call of `remove_proposal_operation`.
+    */
+    if( itr->removed )
+      itr = sps_helper::remove_proposal< by_end_date >( itr, proposalIndex, votesIndex, byVoterIdx, obj_perf );
+    else
+      ++itr;
     if( obj_perf.done )
       break;
   }

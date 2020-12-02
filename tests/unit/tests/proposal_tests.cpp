@@ -770,20 +770,32 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance)
       BOOST_REQUIRE( exist_proposal( id_proposal_01 ) );
       BOOST_REQUIRE( exist_proposal( id_proposal_02 ) );
 
+      /*
+            Take a look at comment in `sps_processor::remove_proposals`
+      */
       generate_blocks( start_time + fc::minutes( 11 ) );
-      BOOST_REQUIRE( !exist_proposal( id_proposal_00 ) );
+      
+      //BOOST_REQUIRE( !exist_proposal( id_proposal_00 ) ); //earlier
+      BOOST_REQUIRE( exist_proposal( id_proposal_00 ) );    //now
+      
+      
       BOOST_REQUIRE( exist_proposal( id_proposal_01 ) );
       BOOST_REQUIRE( exist_proposal( id_proposal_02 ) );
 
       generate_blocks( start_time + fc::minutes( 21 ) );
-      BOOST_REQUIRE( !exist_proposal( id_proposal_00 ) );
+      //BOOST_REQUIRE( !exist_proposal( id_proposal_00 ) ); //earlier
+      BOOST_REQUIRE( exist_proposal( id_proposal_00 ) );    //now
       BOOST_REQUIRE( exist_proposal( id_proposal_01 ) );
-      BOOST_REQUIRE( !exist_proposal( id_proposal_02 ) );
+      //BOOST_REQUIRE( !exist_proposal( id_proposal_02 ) ); //earlier
+      BOOST_REQUIRE( exist_proposal( id_proposal_02 ) );    //now
 
       generate_blocks( start_time + fc::minutes( 31 ) );
-      BOOST_REQUIRE( !exist_proposal( id_proposal_00 ) );
-      BOOST_REQUIRE( !exist_proposal( id_proposal_01 ) );
-      BOOST_REQUIRE( !exist_proposal( id_proposal_02 ) );
+      // BOOST_REQUIRE( !exist_proposal( id_proposal_00 ) ); //earlier
+      // BOOST_REQUIRE( !exist_proposal( id_proposal_01 ) ); //earlier
+      // BOOST_REQUIRE( !exist_proposal( id_proposal_02 ) ); //earlier
+      BOOST_REQUIRE( exist_proposal( id_proposal_00 ) );    //now
+      BOOST_REQUIRE( exist_proposal( id_proposal_01 ) );    //now
+      BOOST_REQUIRE( exist_proposal( id_proposal_02 ) );    //now
     }
 
     validate_database();
@@ -2209,7 +2221,11 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
       current_active_proposals -= threshold;
       auto found = calc_proposals( proposal_idx, proposals_id );
 
-      BOOST_REQUIRE( current_active_proposals == found );
+      /*
+        Take a look at comment in `sps_processor::remove_proposals`
+      */
+      //BOOST_REQUIRE( current_active_proposals == found ); //earlier
+      BOOST_REQUIRE( nr_proposals == found );               //now
     }
 
     BOOST_REQUIRE( current_active_proposals == 0 );
@@ -2313,7 +2329,11 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
 
-      BOOST_REQUIRE( current_active_anything == found_proposals + found_votes );
+      /*
+        Take a look at comment in `sps_processor::remove_proposals`
+      */
+      //BOOST_REQUIRE( current_active_anything == found_proposals + found_votes );                            //earlier
+      BOOST_REQUIRE( ( current_active_proposals + current_active_votes ) == found_proposals + found_votes );  //now
     }
 
     BOOST_REQUIRE( current_active_anything == 0 );
@@ -3547,8 +3567,13 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
 
     generate_blocks( 1 );
 
-    BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == 0 );
-    BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == 0 );
+    /*
+      Take a look at comment in `sps_processor::remove_proposals`
+    */
+    //BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == 0 );                       //earlier
+    //BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == 0 );                      //earlier
+    BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == current_active_proposals );  //now
+    BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );     //now
 
     int32_t benchmark_time = get_time( *db, sps_processor::get_removing_name() );
     idump( (benchmark_time) );
