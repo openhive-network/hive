@@ -47,7 +47,6 @@ class sql_serializer_plugin : public plugin<sql_serializer_plugin>
       std::unique_ptr<detail::sql_serializer_plugin_impl> my;
 
       void handle_transaction(const fc::string &hash, const int64_t block_num, const int64_t trx_in_block);
-      void initialize_varriables();
 };
 
 } } } //hive::plugins::sql_serializer

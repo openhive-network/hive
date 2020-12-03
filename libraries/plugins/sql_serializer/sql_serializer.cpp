@@ -50,13 +50,13 @@ namespace hive
 						if (sql == fc::string())
 							return true;
 						// else std::cout << "executing: " << sql << std::endl;
-						return sql_safe_execution([&trx, &sql]() { trx->exec(sql); });
+						return sql_safe_execution([&trx, &sql]() { trx->exec(sql); }, sql.c_str());
 					}
 
 					bool commit_transaction(transaction_t &trx)
 					{
 						// std::cout << "commiting" << std::endl;
-						return sql_safe_execution([&]() { trx->commit(); destroy_transaction(trx); });
+						return sql_safe_execution([&]() { trx->commit(); destroy_transaction(trx); }, "commit");
 					}
 
 					void abort_transaction(transaction_t &trx)
@@ -68,16 +68,18 @@ namespace hive
 
 					bool exec_no_transaction(const fc::string &sql, pqxx::result *result = nullptr)
 					{
+						std::cout << "Executing: " << sql << std::endl;
 						if (sql == fc::string())
 							return true;
 						return sql_safe_execution([&]() {
 							pqxx::connection conn{ this->connection_string };
-							pqxx::nontransaction _work{conn};
+							pqxx::work trx{conn};
 							if (result)
-								*result = _work.exec(sql);
+								*result = trx.exec(sql);
 							else
-								_work.exec(sql);
-						});
+								trx.exec(sql);
+							trx.commit();
+						}, sql.c_str());
 					}
 
 					auto get_escaping_charachter_methode()
@@ -108,7 +110,7 @@ namespace hive
 
 					void destroy_transaction(transaction_t &trx) const { trx.~unique_ptr(); }
 
-					bool sql_safe_execution(const std::function<void()> &f)
+					bool sql_safe_execution(const std::function<void()> &f, const char* msg = nullptr)
 					{
 						try
 						{
@@ -127,6 +129,7 @@ namespace hive
 						{
 							elog("Unknown exception occured");
 						}
+						if(msg) std::cerr << "Error message: " << msg << std::endl;
 						return false;
 					}
 				};
@@ -170,24 +173,26 @@ namespace hive
 					postgress_connection_holder connection;
 					fc::optional<fc::string> path_to_schema;
 					bool set_index = false;
+					bool are_constraints_active = true;
 
 					using thread_with_status = std::pair<std::shared_ptr<std::thread>, bool>;
 					thread_with_status worker;
 					uint32_t blocks_per_commit = 1;
 					uint32_t last_commit_block = 0;
 
-					operation_types_container_t names_to_flush;
 					using cached_containter_t = std::unique_ptr<cached_data_t>;
 					cached_containter_t currently_caching_data;
 					PSQL::queue<cached_containter_t> cached_objects;
 
 					void create_indexes()
 					{
-						static const std::vector<fc::string> indexes{{R"(CREATE INDEX IF NOT EXISTS hive_operations_operation_types_index ON "hive_operations" ("op_type_id");)",
-																													R"(CREATE INDEX IF NOT EXISTS hive_operations_participants_index ON "hive_operations" USING GIN ("participants");)",
-																													R"(CREATE INDEX IF NOT EXISTS hive_operations_permlink_ids_index ON "hive_operations" USING GIN ("permlink_ids");)",
-																													R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_operation_types_index ON "hive_virtual_operations" ("op_type_id");)",
-																													R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_participants_index ON "hive_virtual_operations" USING GIN ("participants");)"}};
+						static const std::vector<fc::string> indexes{{
+							R"(CREATE INDEX IF NOT EXISTS hive_operations_operation_types_index ON "hive_operations" ("op_type_id");)",
+							R"(CREATE INDEX IF NOT EXISTS hive_operations_participants_index ON "hive_operations" USING GIN ("participants");)",
+							R"(CREATE INDEX IF NOT EXISTS hive_operations_permlink_ids_index ON "hive_operations" USING GIN ("permlink_ids");)",
+							R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_operation_types_index ON "hive_virtual_operations" ("op_type_id");)",
+							R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_participants_index ON "hive_virtual_operations" USING GIN ("participants");)"
+						}};
 
 						for (const auto &idx : indexes)
 							connection.exec_no_transaction(idx);
@@ -199,11 +204,18 @@ namespace hive
 						
 						bpath path = bpath((*path_to_schema).c_str());
 						const size_t size = boost::filesystem::file_size(path);
-						std::unique_ptr<char[]> _data{new char[size]};
+
+						fc::string schema_str, line;
+						schema_str.reserve(size);
 						std::ifstream file{path.string()};
-						file.read(_data.get(), size);
+						while(std::getline(file, line)) schema_str += line;
+						file.close();
+
 						// std::cout << "executing script: " << path.string() << std::endl;
-						connection.exec_no_transaction(_data.get());
+						auto trx = connection.start_transaction();
+						FC_ASSERT(connection.exec_transaction(trx, schema_str));
+						FC_ASSERT(connection.exec_transaction(trx, PSQL::get_all_type_definitions()));
+						FC_ASSERT(connection.commit_transaction(trx));
 					}
 
 					void upload_caches(transaction_t &trx, PSQL::sql_dumper &dumper)
@@ -296,9 +308,22 @@ namespace hive
 
 					void switch_constraints(const bool active)
 					{
-						connection.exec_no_transaction(generate([&](strstrm &ss) {
-							ss << "SELECT switch_foregins_keys( " << (active ? "TRUE" : "FALSE") << " )";
-						}));
+						if(are_constraints_active == active) return;
+						else are_constraints_active = active;
+						std::cout << "switching to: " << active << std::endl;
+						using up_and_down_constraint = std::pair<const char*, const char*>;
+						static const std::vector<up_and_down_constraint> constrainsts{{	up_and_down_constraint
+							{"ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_1"},
+							{"ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_1 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_1"},
+							{"ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_2 FOREIGN KEY (block_num, trx_in_block) REFERENCES hive_transactions (block_num, trx_in_block)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_2"},
+							{"ALTER TABLE hive_virtual_operations ADD CONSTRAINT hive_virtual_operations_fk_1 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id)","ALTER TABLE hive_virtual_operations DROP CONSTRAINT IF EXISTS hive_virtual_operations_fk_1"},
+							{"ALTER TABLE hive_virtual_operations ADD CONSTRAINT hive_virtual_operations_fk_2 FOREIGN KEY (block_num) REFERENCES hive_blocks (num)","ALTER TABLE hive_virtual_operations DROP CONSTRAINT IF EXISTS hive_virtual_operations_fk_2"}
+						}};
+
+						auto trx = connection.start_transaction();
+						for (const auto &idx : constrainsts)
+							connection.exec_transaction(trx, (active ? idx.first : idx.second ));
+						connection.commit_transaction(trx);
 					}
 
 					void process_cached_data()
@@ -310,7 +335,7 @@ namespace hive
 							if (input.get() == nullptr)
 								return;
 
-							PSQL::sql_dumper dumper{_db, names_to_flush, this->connection.get_escaping_charachter_methode()};
+							PSQL::sql_dumper dumper{_db, this->connection.get_escaping_charachter_methode()};
 							transaction_t trx = this->connection.start_transaction();
 
 							// sending
@@ -336,19 +361,6 @@ namespace hive
 						process_cached_data();
 						if (reserve)
 							currently_caching_data = std::make_unique<cached_data_t>(reserve);
-					}
-
-					// return fresh
-					bool is_new_op_name(const operation &op, const bool is_virtual)
-					{
-						const auto it = names_to_flush.find(op.which());
-						if (it != names_to_flush.end())
-							return false;
-						else
-						{
-							names_to_flush[op.which()] = std::pair<fc::string, bool>(op.visit(name_gathering_visitor{}).c_str(), is_virtual);
-							return true;
-						}
 					}
 
 					void cleanup_sequence()
@@ -385,7 +397,7 @@ namespace hive
 				if (options.count("psql-path-to-schema"))
 					my->path_to_schema = options["psql-path-to-schema"].as<fc::string>();
 				my->set_index = options.count("psql-reindex-on-exit") > 0;
-				initialize_varriables();
+				my->currently_caching_data = std::make_unique<detail::cached_data_t>( default_reservation_size );
 
 				// signals
 				auto &db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
@@ -422,15 +434,14 @@ namespace hive
 				const bool is_virtual = note.op.visit(PSQL::is_virtual_visitor{});
 				// std::cout << "is_virtual: " << is_virtual << std::endl;
 				auto &cdtf = my->currently_caching_data; // alias
-
 				if (is_virtual)
 				{
 					cdtf->virtual_operations.emplace_back(
 							note.block,
 							note.trx_in_block,
 							note.op_in_trx,
-							note.op,
-							my->is_new_op_name(note.op, is_virtual));
+							note.op
+						);
 				}
 				else
 				{
@@ -438,8 +449,8 @@ namespace hive
 							note.block,
 							note.trx_in_block,
 							note.op_in_trx,
-							note.op,
-							my->is_new_op_name(note.op, is_virtual));
+							note.op
+						);
 				}
 			}
 
@@ -466,23 +477,16 @@ namespace hive
 						trx_in_block);
 			}
 
-			void sql_serializer_plugin::initialize_varriables()
-			{
-				// load current operation type
-				my->currently_caching_data = std::make_unique<detail::cached_data_t>( default_reservation_size );
-				pqxx::result result;
-				my->connection.exec_no_transaction("SELECT id, name, is_virtual FROM hive_operation_types", &result);
-				for (const auto &row : result)
-					my->names_to_flush[row.at(0).as<int64_t>()] = std::make_pair(row.at(1).as<fc::string>(), row.at(2).as<bool>());
-			}
-
 			void sql_serializer_plugin::on_pre_reindex(const reindex_notification &note)
 			{
 				if (note.force_replay && my->path_to_schema.valid())
+				{
 					my->recreate_db();
+					my->are_constraints_active = false;
+				}else my->switch_constraints(false);
 
 				my->blocks_per_commit = 10'000;
-				my->switch_constraints(false);
+				// ;
 			}
 
 			void sql_serializer_plugin::on_post_reindex(const reindex_notification &)

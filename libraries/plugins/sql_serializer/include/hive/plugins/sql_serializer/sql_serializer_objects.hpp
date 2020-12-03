@@ -7,14 +7,20 @@
 #include <functional>
 
 // Boost
-#include <boost/thread/sync_queue.hpp>
+#include <boost/mpl/for_each.hpp>
+#include <boost/mpl/copy_if.hpp>
+#include <boost/mpl/not.hpp>
+#include <boost/type.hpp>
 #include <boost/type_index.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/thread/sync_queue.hpp>
 
 // Internal
 #include <hive/chain/database.hpp>
 #include <hive/chain/util/impacted.hpp>
 #include <hive/chain/util/extractors.hpp>
 #include <hive/chain/account_object.hpp>
+#include "type_extractor_processor.hpp"
 // #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 
 namespace hive
@@ -24,9 +30,22 @@ namespace hive
 		namespace sql_serializer
 		{
 			// [which] = ( op_name, is_virtual )
-			using operation_types_container_t = std::map<int64_t, std::pair<fc::string, bool>>;
 			namespace PSQL
 			{
+				
+				using operation_types_container_t = std::map<int64_t, std::pair<fc::string, bool>>;
+
+				struct typename_gatherer
+				{
+					operation_types_container_t &names;
+
+					template <typename T, typename SV>
+					void operator()(boost::type<boost::tuple<T, SV>> t) const
+					{
+						names[names.size()] = std::pair<fc::string, bool>(boost::typeindex::type_id<T>().pretty_name(), T{}.is_virtual());
+					}
+				};
+
 				template <typename T>
 				using queue = boost::concurrent::sync_queue<T>;
 				using escape_function_t = std::function<fc::string(const char *)>;
@@ -59,10 +78,9 @@ namespace hive
 						int64_t op_in_trx;
 						fc::optional<operation> op;
 						// if set to true, this is first time this operation appears in chain
-						bool fresh;
 
 						process_operation_t() = default;
-						process_operation_t(const int64_t _block_number, const int64_t _trx_in_block, const int64_t _op_in_trx, const operation &_op, const bool _fresh) : block_number{_block_number}, trx_in_block{_trx_in_block}, op_in_trx{_op_in_trx}, op{_op}, fresh{_fresh} {}
+						process_operation_t(const int64_t _block_number, const int64_t _trx_in_block, const int64_t _op_in_trx, const operation &_op) : block_number{_block_number}, trx_in_block{_trx_in_block}, op_in_trx{_op_in_trx}, op{_op} {}
 					};
 				}; // namespace processing_objects
 
@@ -106,19 +124,39 @@ namespace hive
 					using result_type = fc::string;
 
 					template <typename operation_t>
-					result_type operator()(const operation_t & op) const { return get_body(op); }
+					result_type operator()(const operation_t &op) const { return get_body(op); }
 
 					template <typename op_t>
 					result_type get_body(const op_t &op) const { return fc::json::to_string(op); }
 				};
+
+				constexpr const char* SQL_bool(const bool val) { return (val ? "TRUE" : "FALSE"); }
+
+				inline fc::string get_all_type_definitions()
+				{
+					namespace te = type_extractor;
+					typedef te::sv_processor<hive::protocol::operation> processor;
+
+					operation_types_container_t result;
+					typename_gatherer p{result};
+					boost::mpl::for_each< processor::transformed_type_list, boost::type<boost::mpl::_> >(p);
+
+					if(result.empty()) return fc::string{};
+					else return generate([&](strstrm& ss){
+						ss << "INSERT INTO hive_operation_types VALUES ";
+						for(auto it = result.begin(); it != result.end(); it++)
+							ss << ( it == result.begin() ? "" : "," ) << "( " << it->first << " , '" << it->second.first << "', " << SQL_bool(it->second.second) <<" )";
+						ss << " ON CONFLICT DO NOTHING";
+					});
+				}
 
 				struct single_cache_t
 				{
 					fc::string data;
 					mutable bool flushed;
 
-					single_cache_t( const fc::string& _data, const bool _flushed )
-						:data{_data}, flushed{_flushed} {}
+					single_cache_t(const fc::string &_data, const bool _flushed)
+							: data{_data}, flushed{_flushed} {}
 				};
 
 				// forward fc::string operators
@@ -132,7 +170,6 @@ namespace hive
 					typedef size_t result_type;
 
 					const hive::chain::database &db;
-					const operation_types_container_t &op_types;
 					const escape_function_t escape;
 
 					strstrm blocks{};
@@ -141,8 +178,8 @@ namespace hive
 					cache_contatiner_t permlink_cache;
 					cache_contatiner_t account_cache;
 
-					sql_dumper( const hive::chain::database &_db, const operation_types_container_t &_op_types, const escape_function_t _escape )
-						:db{_db}, op_types{_op_types}, escape{_escape}
+					sql_dumper(const hive::chain::database &_db, const escape_function_t _escape)
+							: db{_db}, escape{_escape}
 					{
 						reset_blocks_stream();
 						reset_transaction_stream();
@@ -153,15 +190,15 @@ namespace hive
 					fc::string reset_operations_stream()
 					{
 						operations << ") as T( order_id, bn, trx, opn, opt, body, perm, part )"
-							<< " INNER JOIN hive_accounts AS ha ON T.part=ha.name"
-							<< " INNER JOIN hive_permlink_data AS hpd ON T.perm=hpd.permlink"
-							<< " GROUP BY T.order_id, T.bn, T.trx, T.opn, T.opt, T.body"
-							<< " ORDER BY T.order_id";
-						
+											 << " INNER JOIN hive_accounts AS ha ON T.part=ha.name"
+											 << " INNER JOIN hive_permlink_data AS hpd ON T.perm=hpd.permlink"
+											 << " GROUP BY T.order_id, T.bn, T.trx, T.opn, T.opt, T.body"
+											 << " ORDER BY T.order_id";
+
 						const fc::string result = operations.str();
 						operations = strstrm();
 						operations << "INSERT INTO hive_operations(block_num, trx_in_block, op_pos, op_type_id, body, participants, permlink_ids)"
-							<< " SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_remove(array_agg(ha.id), 0), array_remove(array_agg(hpd.id), 0) FROM ( VALUES ";
+											 << " SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_remove(array_agg(ha.id), 0), array_remove(array_agg(hpd.id), 0) FROM ( VALUES ";
 
 						any_operations = 0;
 						// std::cout << "pushing operations: " << result << std::endl;
@@ -171,15 +208,15 @@ namespace hive
 					fc::string reset_virtual_operation_stream()
 					{
 						virtual_operations << ") as T( order_id, bn, trx, opn, opt, body, part )"
-							<< " INNER JOIN hive_accounts AS ha ON T.part=ha.name"
-							<< " GROUP BY T.order_id, T.bn, T.trx, T.opn, T.opt, T.body"
-							<< " ORDER BY T.order_id";
-						
+															 << " INNER JOIN hive_accounts AS ha ON T.part=ha.name"
+															 << " GROUP BY T.order_id, T.bn, T.trx, T.opn, T.opt, T.body"
+															 << " ORDER BY T.order_id";
+
 						const fc::string result = virtual_operations.str();
 						virtual_operations = strstrm();
 						virtual_operations << "INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, op_type_id, body ,participants)"
-							<< " SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_remove(array_agg(ha.id), 0) FROM ( VALUES ";
-						
+															 << " SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_remove(array_agg(ha.id), 0) FROM ( VALUES ";
+
 						any_virtual_operations = 0;
 						return result;
 					}
@@ -203,13 +240,13 @@ namespace hive
 						operations << (any_operations == 0 ? "" : ",");
 						any_operations++;
 
-						fc::string pre_generate = generate( [&](strstrm& ss ){  
+						fc::string pre_generate = generate([&](strstrm &ss) {
 							ss << "( " << any_operations << ", "
-							<< pop.block_number << " , "
-							<< pop.trx_in_block << ", "
-							<< pop.op_in_trx << " , "
-							<< get_operation_type_id(*pop.op, false, pop.fresh) << " , "
-							<< get_body(*pop.op) << " , ";
+								 << pop.block_number << " , "
+								 << pop.trx_in_block << ", "
+								 << pop.op_in_trx << " , "
+								 << get_operation_type_id(*pop.op) << " , "
+								 << get_body(*pop.op) << " , ";
 						});
 						operations << pre_generate << " get_null_permlink(), '' )";
 
@@ -226,16 +263,16 @@ namespace hive
 						virtual_operations << (any_virtual_operations == 0 ? "" : ",");
 						any_virtual_operations++;
 
-						const fc::string pre_generate = generate( [&](strstrm& ss ){  
-							ss <<  "( " << any_virtual_operations << ", "
-							<< pop.block_number << " , "
-							<< pop.trx_in_block << ", "
-							<< pop.op_in_trx << " , "
-							<< get_operation_type_id(*pop.op, true, pop.fresh) << " , "
-							<< get_body(*pop.op) << " , ";
+						const fc::string pre_generate = generate([&](strstrm &ss) {
+							ss << "( " << any_virtual_operations << ", "
+								 << pop.block_number << " , "
+								 << pop.trx_in_block << ", "
+								 << pop.op_in_trx << " , "
+								 << get_operation_type_id(*pop.op) << " , "
+								 << get_body(*pop.op) << " , ";
 						});
 						virtual_operations << pre_generate << " '' )";
-						
+
 						format_participants(pre_generate, *pop.op, virtual_operations);
 
 						return virtual_operations.tellp();
@@ -269,14 +306,14 @@ namespace hive
 							bool any_permlink = false;
 							for (auto it = permlink_cache.begin(); it != permlink_cache.end(); it++)
 							{
-								if(!it->flushed)
+								if (!it->flushed)
 								{
 									permlinks << (any_permlink ? "," : "") << "( E'" << escape(it->data.c_str()) << "')";
 									it->flushed = true;
 									any_permlink = true;
 								}
 							}
-							if(any_permlink)
+							if (any_permlink)
 							{
 								permlinks << " ON CONFLICT DO NOTHING";
 								out_permlinks = permlinks.str();
@@ -289,14 +326,14 @@ namespace hive
 							bool any_accounts = false;
 							for (auto it = account_cache.begin(); it != account_cache.end(); it++)
 							{
-								if(!it->flushed)
+								if (!it->flushed)
 								{
 									accounts << (any_accounts ? "," : "") << "( E'" << escape(it->data.c_str()) << "')";
 									it->flushed = true;
 									any_accounts = true;
 								}
 							}
-							if(any_accounts) 
+							if (any_accounts)
 							{
 								accounts << " ON CONFLICT DO NOTHING";
 								out_accounts = accounts.str();
@@ -305,28 +342,28 @@ namespace hive
 					}
 
 				private:
-					void format_participants(const fc::string& prefix, const operation &op, strstrm& output)
+					void format_participants(const fc::string &prefix, const operation &op, strstrm &output)
 					{
 						using hive::protocol::account_name_type;
 						boost::container::flat_set<account_name_type> impacted;
 						hive::app::operation_get_impacted_accounts(op, impacted);
 						impacted.erase(account_name_type());
-						if(!impacted.empty()) 
-							for( auto it = impacted.begin(); it != impacted.end(); it++)
+						if (!impacted.empty())
+							for (auto it = impacted.begin(); it != impacted.end(); it++)
 							{
-								account_cache.emplace( fc::string(*it), false );
-								output << ","  << prefix << "E'" << escape(fc::string(*it).c_str()) << "' )";
+								account_cache.emplace(fc::string(*it), false);
+								output << "," << prefix << "E'" << escape(fc::string(*it).c_str()) << "' )";
 							}
 					}
 
-					void get_formatted_permlinks(const fc::string& prefix, const operation &op, strstrm& output)
+					void get_formatted_permlinks(const fc::string &prefix, const operation &op, strstrm &output)
 					{
 						std::vector<fc::string> result;
 						hive::app::operation_get_permlinks(op, result);
-						if(!result.empty()) 
-							for( auto it = result.begin(); it != result.end(); it++)
+						if (!result.empty())
+							for (auto it = result.begin(); it != result.end(); it++)
 							{
-								permlink_cache.emplace( *it, false );
+								permlink_cache.emplace(*it, false);
 								output << "," << prefix << "E'" << escape(it->c_str()) << "', '' )";
 							}
 					}
@@ -341,12 +378,9 @@ namespace hive
 						});
 					}
 
-					fc::string get_operation_type_id(const operation &op, const bool is_virtual, const bool fresh) const
+					fc::string get_operation_type_id(const operation &op) const
 					{
-						if (fresh)
-							return generate([&](strstrm &ss) { ss << "insert_operation_type_id( " << op.which() << ", '" << op.visit(name_gathering_visitor{}) << "', " << (is_virtual ? "TRUE" : "FALSE") << ") "; });
-						else
-							return std::to_string(op.which());
+						return std::to_string(op.which());
 					}
 
 					bool any_blocks = false;

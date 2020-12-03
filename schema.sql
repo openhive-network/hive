@@ -9,8 +9,8 @@
 -- WITH TEMPLATE block_log_back;
 
 -- -- Reset
-DROP SCHEMA public CASCADE;
-CREATE SCHEMA public;
+-- DROP SCHEMA public CASCADE;
+-- CREATE SCHEMA public;
 -- CREATE EXTENSION IF NOT EXISTS intarray;
 -- CREATE EXTENSION IF NOT EXISTS pg_prewarm;
 
@@ -109,35 +109,4 @@ LANGUAGE 'plpgsql';
 INSERT INTO hive_permlink_data VALUES(0, get_null_permlink());	-- This is permlink referenced by empty participants arrays
 INSERT INTO hive_accounts VALUES(0, '');	-- This is account referenced by empty participants arrays
 
--- CONSTRAINTS
-CREATE TABLE hive_foregins_keys( "foregins_key_name" TEXT NOT NULL, "table_name" TEXT NOT NULL, "command_to_enable" TEXT NOT NULL );
-INSERT INTO hive_foregins_keys VALUES 
-	('hive_transactions_fk_1', 'hive_transactions', 'ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);'),
-	('hive_operations_fk_1', 'hive_operations', 'ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_1 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id);'),
-	('hive_operations_fk_2', 'hive_operations', 'ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_2 FOREIGN KEY (block_num, trx_in_block) REFERENCES hive_transactions (block_num, trx_in_block);'),
-	('hive_virtual_operations_fk_1', 'hive_virtual_operations', 'ALTER TABLE hive_virtual_operations ADD CONSTRAINT hive_virtual_operations_fk_1 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id);'),
-	('hive_virtual_operations_fk_2', 'hive_virtual_operations', 'ALTER TABLE hive_virtual_operations ADD CONSTRAINT hive_virtual_operations_fk_2 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);');
-
-DROP FUNCTION IF EXISTS switch_foregins_keys;
-CREATE OR REPLACE FUNCTION switch_foregins_keys (boolean) RETURNS void AS $func$
-DECLARE 
-	_row hive_foregins_keys%rowtype;
-BEGIN
-	IF $1 THEN
-		FOR _row IN SELECT * FROM hive_foregins_keys 
-		LOOP
-			EXECUTE _row.command_to_enable;
-		END LOOP;
-	ELSE
-		FOR _row IN SELECT * FROM hive_foregins_keys 
-		LOOP
-			EXECUTE CONCAT('ALTER TABLE ', _row.table_name, ' DROP CONSTRAINT IF EXISTS ', _row.foregins_key_name);
-		END LOOP;
-	END IF;
-END
-$func$
-LANGUAGE 'plpgsql' VOLATILE;
-
-
-
-SELECT COUNT(*) FROM hive_virtual_operations
+-- ################################################################################################
