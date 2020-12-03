@@ -122,7 +122,7 @@ class chain_plugin_impl
     bool                             running = true;
     std::shared_ptr< std::thread >   write_processor_thread;
     boost::lockfree::queue< write_context* > write_queue;
-    int16_t                          write_lock_hold_time = 500;
+    int16_t                          write_lock_hold_time = HIVE_BLOCK_INTERVAL * 1000 / 6; // 1/6 of block time (millseconds)
 
     vector< string >                 loaded_plugins;
     fc::mutable_variant_object       plugin_state_opts;

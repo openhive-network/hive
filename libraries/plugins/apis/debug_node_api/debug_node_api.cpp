@@ -64,19 +64,12 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
       skip_flags = skip_flags | chain::database::skip_validate_invariants;
     for( uint32_t i=0; i<count; i++ )
     {
-      //fc::optional< chain::signed_block > block = log.read_block( log.get_block_pos( first_block + i ) );
-      uint64_t block_pos = log.get_block_pos( first_block + i );
-      if( block_pos == chain::block_log::npos )
-      {
-        wlog( "Block database ${fn} only contained ${i} of ${n} requested blocks", ("i", i)("n", count)("fn", src_filename) );
-        return { i };
-      }
-
-      decltype( log.read_block(0) ) result;
-
+      fc::optional< chain::signed_block > block;
       try
       {
-        result = log.read_block( block_pos );
+        block = log.read_block_by_num( first_block + i );
+        if (!block)
+          FC_THROW("Unable to read block ${block_num}", ("block_num", first_block + i));
       }
       catch( const fc::exception& e )
       {
@@ -86,11 +79,11 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
 
       try
       {
-        _db.push_block( result.first, skip_flags );
+        _db.push_block( *block, skip_flags );
       }
       catch( const fc::exception& e )
       {
-        elog( "Got exception pushing block ${bn} : ${bid} (${i} of ${n})", ("bn", result.first.block_num())("bid", result.first.id())("i", i)("n", count) );
+        elog( "Got exception pushing block ${bn} : ${bid} (${i} of ${n})", ("bn", block->block_num())("bid", block->id())("i", i)("n", count) );
         elog( "Exception backtrace: ${bt}", ("bt", e.to_detail_string()) );
       }
     }

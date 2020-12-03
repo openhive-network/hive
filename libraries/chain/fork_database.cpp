@@ -1,6 +1,7 @@
 #include <hive/chain/fork_database.hpp>
 
 #include <hive/chain/database_exceptions.hpp>
+#include <boost/range/algorithm/reverse.hpp>
 
 namespace hive { namespace chain {
 
@@ -229,6 +230,43 @@ shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number( uint3
   if( blocks.size() == 0 )
     return shared_ptr<fork_item>();
   return walk_main_branch_to_num(block_num);
+}
+
+vector<fork_item> fork_database::fetch_block_range_on_main_branch_by_number( const uint32_t first_block_num, const uint32_t count )const
+{
+  vector<fork_item> results;
+  if (!_head ||
+      _head->num < first_block_num)
+    return results;
+
+  // the caller is asking for blocks from first_block_num ... last_desired_block_num
+  const uint32_t last_desired_block_num = first_block_num + count - 1;
+
+  // but if the head block isn't to last_desired_block_num yet, the latest we can have is the head block
+  const uint32_t last_block_num = std::min(last_desired_block_num, _head->num);
+
+  // look up that last block and see if we have it
+  const auto& block_num_idx = _index.get<block_num>();
+  const auto fork_items_for_last_block_num = boost::make_iterator_range(block_num_idx.equal_range(last_block_num));
+  // if we don't have it (it has already been moved to the block log), return an empty list
+  if (fork_items_for_last_block_num.empty())
+    return results;
+  
+  // otherwise, walk backwards from that block, collecting blocks along the way.  Stop when
+  // we either reach the first block the caller asked for, or we run out of blocks in the fork database
+  shared_ptr<fork_item> item;
+  if (std::next(fork_items_for_last_block_num.begin()) == fork_items_for_last_block_num.end()) // if exactly one block numbered last_block_num
+    item = fork_items_for_last_block_num.front();
+  else
+    item = walk_main_branch_to_num(last_block_num);
+
+  for (; item && item->num >= first_block_num; item = item->prev.lock())
+    results.push_back(*item);
+
+  // we collected the blocks in descending order, reverse that order
+  boost::reverse(results);
+
+  return results;
 }
 
 void fork_database::set_head(shared_ptr<fork_item> h)

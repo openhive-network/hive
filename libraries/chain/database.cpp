@@ -199,11 +199,11 @@ void database::open( const open_args& args )
 
     if( head_block_num() )
     {
-      auto head_block = _block_log.read_block_by_num( head_block_num() );
+      optional<signed_block> head_block = _block_log.read_block_by_num( head_block_num() );
       // This assertion should be caught and a reindex should occur
-      FC_ASSERT( head_block.valid() && head_block->first.id() == head_block_id(), "Chain state does not match block log. Please reindex blockchain." );
+      FC_ASSERT( head_block && head_block->id() == head_block_id(), "Chain state does not match block log. Please reindex blockchain." );
 
-      _fork_db.start_block( head_block->first );
+      _fork_db.start_block( *head_block );
     }
 
     with_read_lock( [&]()
@@ -276,7 +276,7 @@ void reindex_set_index_helper( database& db, mira::index_type type, const boost:
 }
 #endif
 
-uint32_t database::reindex_internal( const open_args& args, std::pair< signed_block, uint64_t >& block_data )
+uint32_t database::reindex_internal( const open_args& args, signed_block& block )
 {
   uint64_t skip_flags =
     skip_witness_signature |
@@ -290,7 +290,7 @@ uint32_t database::reindex_internal( const open_args& args, std::pair< signed_bl
     skip_validate_invariants |
     skip_block_log;
 
-  auto last_block_num = _block_log.head()->block_num();
+  uint32_t last_block_num = _block_log.head()->block_num();
   if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
     last_block_num = args.stop_replay_at;
   if( args.benchmark.first > 0 )
@@ -298,9 +298,9 @@ uint32_t database::reindex_internal( const open_args& args, std::pair< signed_bl
     args.benchmark.second( 0, get_abstract_index_cntr() );
   }
 
-  while( !appbase::app().is_interrupt_request() && block_data.first.block_num() != last_block_num )
+  while( !appbase::app().is_interrupt_request() && block.block_num() != last_block_num )
   {
-    auto cur_block_num = block_data.first.block_num();
+    uint32_t cur_block_num = block.block_num();
     if( cur_block_num % 100000 == 0 )
     {
       std::cerr << "   " << double( cur_block_num ) * 100 / last_block_num << "%   " << cur_block_num << " of " << last_block_num << "   (" <<
@@ -314,7 +314,7 @@ uint32_t database::reindex_internal( const open_args& args, std::pair< signed_bl
       //rocksdb::SetPerfLevel(rocksdb::kEnableCount);
       //rocksdb::get_perf_context()->Reset();
     }
-    apply_block( block_data.first, skip_flags );
+    apply_block( block, skip_flags );
 
     if( cur_block_num % 100000 == 0 )
     {
@@ -330,27 +330,30 @@ uint32_t database::reindex_internal( const open_args& args, std::pair< signed_bl
 
     if( !appbase::app().is_interrupt_request() )
     {
-      block_data = _block_log.read_block( block_data.second );
+      optional<signed_block> next_block = _block_log.read_block_by_num(cur_block_num + 1);
+      FC_ASSERT(next_block, "Unable to read block ${block_num} from the block log during reindexing, but it should be in the log", 
+                ("block_num", cur_block_num + 1));
+      block = std::move(*next_block);
     }
   }
 
   if( appbase::app().is_interrupt_request() )
   {
-    ilog("Replaying is interrupted on user request. Last applied: ( block number: ${n} )( trx: ${trx} )", ( "n", block_data.first.block_num() )( "trx", block_data.first.id() ) );
+    ilog("Replaying is interrupted on user request. Last applied: ( block number: ${n} )( trx: ${trx} )", ( "n", block.block_num() )( "trx", block.id() ) );
   }
   else
   {
-    apply_block( block_data.first, skip_flags );
+    apply_block( block, skip_flags );
   }
 
-  return block_data.first.block_num();
+  return block.block_num();
 }
 
 bool database::is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const
 {
-  auto _head = _block_log.head();
-  auto _head_block_num_origin = _head.valid() ? _head->block_num() : 0;
-  auto _head_block_num_state = head_block_num();
+  boost::shared_ptr<signed_block> _head = _block_log.head();
+  uint32_t _head_block_num_origin = _head ? _head->block_num() : 0;
+  uint32_t _head_block_num_state = head_block_num();
 
   if( head_block_num_origin )
     *head_block_num_origin = _head_block_num_origin;
@@ -375,7 +378,6 @@ uint32_t database::reindex( const open_args& args )
 
   try
   {
-
     ilog( "Reindexing Blockchain" );
 
     if( args.force_replay )
@@ -404,71 +406,69 @@ uint32_t database::reindex( const open_args& args )
 
     _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
 
-    auto start = fc::time_point::now();
+    auto start_time = fc::time_point::now();
     HIVE_ASSERT( _block_log.head(), block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
 
     ilog( "Replaying blocks..." );
 
     with_write_lock( [&]()
     {
-      _block_log.set_locking( false );
-
-      optional< std::pair< signed_block, uint64_t > > start;
+      optional<signed_block> start_block;
 
       bool replay_required = true;
 
       if( _head_block_num > 0 )
       {
         if( args.stop_replay_at == 0 || args.stop_replay_at > _head_block_num )
-          start = _block_log.read_block_by_num( _head_block_num + 1 );
+          start_block = _block_log.read_block_by_num( _head_block_num + 1 );
 
-        if( !start.valid() )
+        if( !start_block )
         {
-          start = _block_log.read_block_by_num( _head_block_num );
-          FC_ASSERT( start.valid(), "Head block number for state: ${h} but for `block_log` this block doesn't exist", ( "h", _head_block_num ) );
+          start_block = _block_log.read_block_by_num( _head_block_num );
+          FC_ASSERT( start_block, "Head block number for state: ${h} but for `block_log` this block doesn't exist", ( "h", _head_block_num ) );
 
           replay_required = false;
         }
       }
       else
       {
-        start = _block_log.read_block( 0 );
+        start_block = _block_log.read_block_by_num( 1 );
       }
 
       if( replay_required )
       {
-        auto _last_block_number = ( *start ).first.block_num();
+        auto _last_block_number = start_block->block_num();
         if( _last_block_number && !args.force_replay )
           ilog("Resume of replaying. Last applied block: ${n}", ( "n", _last_block_number - 1 ) );
 
-        note.last_block_number = reindex_internal( args, *start );
+        note.last_block_number = reindex_internal( args, *start_block );
       }
       else
       {
-        note.last_block_number = ( *start ).first.block_num();
+        note.last_block_number = start_block->block_num();
       }
 
       if( (args.benchmark.first > 0) && (note.last_block_number % args.benchmark.first == 0) )
         args.benchmark.second( note.last_block_number, get_abstract_index_cntr() );
       set_revision( head_block_num() );
-      _block_log.set_locking( true );
 
       //get_index< account_index >().indices().print_stats();
     });
 
-    if( _block_log.head()->block_num() )
+    if ( _block_log.head()->block_num() )
       _fork_db.start_block( *_block_log.head() );
 
 #ifdef ENABLE_MIRA
-    if( args.replay_in_memory )
+    if ( args.replay_in_memory )
     {
       ilog( "Migrating state to disk..." );
       reindex_set_index_helper( *this, mira::index_type::mira, args.shared_mem_dir, args.database_cfg, args.replay_memory_indices );
     }
 #endif
 
-    auto end = fc::time_point::now();
-    ilog( "Done reindexing, elapsed time: ${t} sec", ("t",double((end-start).count())/1000000.0 ) );
+    auto end_time = fc::time_point::now();
+    ilog("Done reindexing, elapsed time: ${elapsed_time} sec", 
+         ("elapsed_time", double((end_time - start_time).count()) / 1000000.0));
 
     note.reindex_success = true;
 
@@ -550,9 +550,9 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
     }
 
     // Next we query the block log.   Irreversible blocks are here.
-    auto b = _block_log.read_block_by_num( block_num );
-    if( b.valid() )
-      return b->first.id();
+    optional<signed_block> b = _block_log.read_block_by_num( block_num );
+    if( b )
+      return b->id();
 
     // Finally we query the fork DB.
     shared_ptr< fork_item > fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
@@ -577,10 +577,10 @@ optional<signed_block> database::fetch_block_by_id( const block_id_type& id )con
   auto b = _fork_db.fetch_block( id );
   if( !b )
   {
-    auto tmp = _block_log.read_block_by_num( protocol::block_header::num_from_id( id ) );
+    optional<signed_block> tmp = _block_log.read_block_by_num( protocol::block_header::num_from_id( id ) );
 
-    if( tmp && tmp->first.id() == id )
-      return tmp->first;
+    if( tmp && tmp->id() == id )
+      return *tmp;
 
     return optional<signed_block>();
   }
@@ -588,20 +588,68 @@ optional<signed_block> database::fetch_block_by_id( const block_id_type& id )con
   return b->data;
 } FC_CAPTURE_AND_RETHROW() }
 
+// this version of fetch_block_by_number() assumes the caller is holding a read lock on the database
 optional<signed_block> database::fetch_block_by_number( uint32_t block_num )const
 { try {
-  optional< signed_block > b;
   shared_ptr< fork_item > fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
 
   if( fitem )
-    b = fitem->data;
+    return fitem->data;
   else
-  {
-    auto block_data =_block_log.read_block_by_num( block_num ); 
-    b = block_data.valid() ? block_data->first : optional<signed_block>();
-  }
+    return _block_log.read_block_by_num( block_num ); 
+} FC_LOG_AND_RETHROW() }
 
-  return b;
+// this version doesn't assume the caller has a read lock.  It will get its own lock for the
+// portion of the function that requires it.
+optional<signed_block> database::fetch_block_by_number_unlocked( uint32_t block_num )
+{ try {
+  shared_ptr< fork_item > fitem;
+  with_read_lock( [&]()
+  {
+    fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
+  });
+
+  if( fitem )
+    return fitem->data;
+  else
+    return _block_log.read_block_by_num( block_num ); 
+} FC_LOG_AND_RETHROW() }
+
+std::vector<signed_block> database::fetch_block_range_unlocked( const uint32_t starting_block_num, const uint32_t count )
+{ try {
+  // for debugging, put the head block back so it should straddle the last irreversible
+  // const uint32_t starting_block_num = head_block_num() - 30;
+  FC_ASSERT(count > 0, "Why ask for zero blocks?");
+  FC_ASSERT(count <= 1000, "You can only ask for 1000 blocks at a time");
+  idump((starting_block_num)(count));
+
+  vector<fork_item> fork_items;
+  with_read_lock( [&]()
+  {
+    fork_items = _fork_db.fetch_block_range_on_main_branch_by_number( starting_block_num, count );
+  });
+  idump((fork_items.size()));
+  if (!fork_items.empty())
+    idump((fork_items.front().num));
+
+  // if the fork database returns some blocks, it means:
+  // - that the last block in the range [starting_block_num, starting_block_num + count - 1]
+  // - any block before the first block it returned should be in the block log
+  uint32_t remaining_count = fork_items.empty() ? count : fork_items.front().num - starting_block_num;
+  idump((remaining_count));
+  vector<signed_block> result;
+
+  if (remaining_count)
+    result = _block_log.read_block_range_by_num(starting_block_num, remaining_count);
+
+  idump((result.size()));
+  if (!result.empty())
+    idump((result.front().block_num())(result.back().block_num()));
+  result.reserve(result.size() + fork_items.size());
+  for (const fork_item& item : fork_items)
+    result.push_back(std::move(item.data));
+
+  return result;
 } FC_LOG_AND_RETHROW() }
 
 const signed_transaction database::get_recent_transaction( const transaction_id_type& trx_id ) const
@@ -649,20 +697,19 @@ void database::foreach_block(std::function<bool(const signed_block_header&, cons
   if(!_block_log.head())
     return;
 
-  auto itr = _block_log.read_block( 0 );
-  auto last_block_num = _block_log.head()->block_num();
-  signed_block_header previousBlockHeader = itr.first;
-  while( itr.first.block_num() != last_block_num )
+  uint32_t last_block_num = _block_log.head()->block_num();
+  signed_block_header previous_block_header;
+  for (uint32_t block_num = 1; block_num <= last_block_num; ++block_num)
   {
-    const signed_block& b = itr.first;
-    if(processor(previousBlockHeader, b) == false)
+    optional<signed_block> this_block = _block_log.read_block_by_num(block_num);
+    if (!this_block) // should never happen since we're only iterating up to last_block_num
       return;
-
-    previousBlockHeader = b;
-    itr = _block_log.read_block( itr.second );
+    if (block_num == 1)
+      previous_block_header = *this_block;
+    if (!processor(previous_block_header, *this_block))
+      return;
+    previous_block_header = *this_block;
   }
-
-  processor(previousBlockHeader, itr.first);
 }
 
 void database::foreach_tx(std::function<bool(const signed_block_header&, const signed_block&,
