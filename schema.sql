@@ -9,8 +9,8 @@
 -- WITH TEMPLATE block_log_back;
 
 -- -- Reset
--- DROP SCHEMA public CASCADE;
--- CREATE SCHEMA public;
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
 -- CREATE EXTENSION IF NOT EXISTS intarray;
 -- CREATE EXTENSION IF NOT EXISTS pg_prewarm;
 
@@ -108,5 +108,3 @@ LANGUAGE 'plpgsql';
 -- SPECIAL VALUES
 INSERT INTO hive_permlink_data VALUES(0, get_null_permlink());	-- This is permlink referenced by empty participants arrays
 INSERT INTO hive_accounts VALUES(0, '');	-- This is account referenced by empty participants arrays
-
--- ################################################################################################

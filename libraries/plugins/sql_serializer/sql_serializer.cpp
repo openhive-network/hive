@@ -26,51 +26,73 @@ namespace hive
 			using chain::database;
 			using chain::operation_object;
 
-			constexpr size_t default_reservation_size = 16'000u;
+			constexpr size_t default_reservation_size{ 16'000u };
+			constexpr size_t max_tuples_count{ 1'000 };
+			constexpr size_t max_data_length{ 16*1024*1024 }; 
+
+			inline void mylog(const char* msg)
+			{
+				if( false ) return;
+				std::cout << "[ " << std::this_thread::get_id() << " ] " << msg << std::endl;
+			}
 
 			namespace detail
 			{
-				using transaction_t = std::unique_ptr<work>;
+				struct transaction_repr_t
+				{
+					std::unique_ptr<pqxx::connection> _connection;
+					std::unique_ptr<work> _transaction;
+
+					transaction_repr_t() = default;
+					transaction_repr_t(pqxx::connection* _conn, work* _trx) : _connection{_conn}, _transaction{_trx} {}
+
+					auto get_escaping_charachter_methode()
+					{
+						return [this](const char *val) -> fc::string { return std::move( this->_connection->esc(val) ); };
+					}
+				};
+				using transaction_t = std::unique_ptr<transaction_repr_t>;
 
 				struct postgress_connection_holder
 				{
 					explicit postgress_connection_holder(const fc::string &url)
-							: _connection{std::make_unique<pqxx::connection>(url)}, connection_string{url} {}
+							: connection_string{url} {}
 
 					transaction_t start_transaction()
 					{
-						// std::cout << "started transaction" << std::endl;
-						work *trx = new work{*_connection};
-						trx->exec("SET CONSTRAINTS ALL DEFERRED;");
-						return transaction_t{trx};
+						mylog("started transaction");
+
+						pqxx::connection* _conn = new pqxx::connection{ this->connection_string };
+						work *_trx = new work{*_conn};
+						_trx->exec("SET CONSTRAINTS ALL DEFERRED;");
+
+						return transaction_t{ new transaction_repr_t{ _conn, _trx } };
 					}
 
 					bool exec_transaction(transaction_t &trx, const fc::string &sql)
 					{
 						if (sql == fc::string())
 							return true;
-						// else std::cout << "executing: " << sql << std::endl;
-						return sql_safe_execution([&trx, &sql]() { trx->exec(sql); }, sql.c_str());
+						return sql_safe_execution([&trx, &sql]() { trx->_transaction->exec(sql); }, sql.c_str());
 					}
 
 					bool commit_transaction(transaction_t &trx)
 					{
-						// std::cout << "commiting" << std::endl;
-						return sql_safe_execution([&]() { trx->commit(); destroy_transaction(trx); }, "commit");
+						mylog("commiting");
+						return sql_safe_execution([&]() { trx->_transaction->commit(); }, "commit");
 					}
 
 					void abort_transaction(transaction_t &trx)
 					{
-						// std::cout << "aborting" << std::endl;
-						trx->abort();
-						destroy_transaction(trx);
+						mylog("aborting");
+						trx->_transaction->abort();
 					}
 
 					bool exec_no_transaction(const fc::string &sql, pqxx::result *result = nullptr)
 					{
-						std::cout << "Executing: " << sql << std::endl;
 						if (sql == fc::string())
 							return true;
+
 						return sql_safe_execution([&]() {
 							pqxx::connection conn{ this->connection_string };
 							pqxx::work trx{conn};
@@ -80,11 +102,6 @@ namespace hive
 								trx.exec(sql);
 							trx.commit();
 						}, sql.c_str());
-					}
-
-					auto get_escaping_charachter_methode()
-					{
-						return [this](const char *val) -> fc::string { return this->_connection->esc(val); }; //  { return _connection.esc(val); }
 					}
 
 					template<typename T>
@@ -105,10 +122,9 @@ namespace hive
 					}
 
 				private:
-					std::unique_ptr<pqxx::connection> _connection;
 					fc::string connection_string;
 
-					void destroy_transaction(transaction_t &trx) const { trx.~unique_ptr(); }
+					// void destroy_transaction(transaction_t &trx) const { trx.~unique_ptr(); }
 
 					bool sql_safe_execution(const std::function<void()> &f, const char* msg = nullptr)
 					{
@@ -141,6 +157,8 @@ namespace hive
 					std::vector<PSQL::processing_objects::process_operation_t> operations;
 					std::vector<PSQL::processing_objects::process_operation_t> virtual_operations;
 
+					size_t total_size{ 0ul };
+
 					cached_data_t(const size_t reservation_size)
 					{
 						blocks.reserve(reservation_size);
@@ -148,13 +166,29 @@ namespace hive
 						operations.reserve(reservation_size);
 						virtual_operations.reserve(reservation_size);
 					}
+
+					~cached_data_t()
+					{
+						log_size("destructor");
+					}
+
+					void log_size(const fc::string& msg = "size")
+					{
+						mylog(generate([&](fc::string& ss){ 
+							ss = msg + ": ";
+							ss += "blocks: " + std::to_string(blocks.size());
+							ss += " trx: " + std::to_string(transactions.size());
+							ss += " operations: " + std::to_string(operations.size());
+							ss += " vops: " + std::to_string(virtual_operations.size());
+							ss += " total size: " + std::to_string(total_size);
+							ss += "\n"; 
+						}).c_str());
+					}
 				};
+				using cached_containter_t = std::unique_ptr<cached_data_t>;
 
 				class sql_serializer_plugin_impl
 				{
-
-					const size_t max_tuples_count = 1'000;
-
 				public:
 					sql_serializer_plugin_impl(const std::string &url) : _db(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db()), connection{url}
 					{}
@@ -176,13 +210,10 @@ namespace hive
 					bool are_constraints_active = true;
 
 					using thread_with_status = std::pair<std::shared_ptr<std::thread>, bool>;
-					thread_with_status worker;
+					std::list<thread_with_status> threads;
 					uint32_t blocks_per_commit = 1;
-					uint32_t last_commit_block = 0;
 
-					using cached_containter_t = std::unique_ptr<cached_data_t>;
 					cached_containter_t currently_caching_data;
-					PSQL::queue<cached_containter_t> cached_objects;
 
 					void create_indexes()
 					{
@@ -201,7 +232,7 @@ namespace hive
 					void recreate_db()
 					{
 						using bpath = boost::filesystem::path;
-						
+
 						bpath path = bpath((*path_to_schema).c_str());
 						const size_t size = boost::filesystem::file_size(path);
 
@@ -211,7 +242,6 @@ namespace hive
 						while(std::getline(file, line)) schema_str += line;
 						file.close();
 
-						// std::cout << "executing script: " << path.string() << std::endl;
 						auto trx = connection.start_transaction();
 						FC_ASSERT(connection.exec_transaction(trx, schema_str));
 						FC_ASSERT(connection.exec_transaction(trx, PSQL::get_all_type_definitions()));
@@ -227,51 +257,59 @@ namespace hive
 						if (accs != fc::string()) connection.exec_transaction(trx, accs);
 					}
 
-					bool process_and_send_data(PSQL::sql_dumper &dumper, const cached_data_t &data, transaction_t& transaction)
+					bool process_and_send_data(PSQL::sql_dumper &dumper, const cached_data_t &data, transaction_t& _transaction)
 					{
-						constexpr size_t max_data_length = 512*1024; // 512 KB
+						auto tm = fc::time_point::now();
+						auto measure_time = [&](const char* _msg){
+							mylog(generate([&](fc::string& ss){
+								ss += fc::string{"Elapsed time for "} + _msg + ": " + std::to_string(( fc::time_point::now() - tm ).count()) + "\n";
+							}).c_str());
+							tm = fc::time_point::now();
+						};
 
 						for (size_t i = 0; i < data.blocks.size(); i++)
 						{
 							const size_t sz = dumper.process_block(data.blocks[i]);
 							if( 
 								sz >= max_data_length ||
-								i == max_tuples_count || 
-								i == data.blocks.size() - 1 
+								i == max_tuples_count ||
+								i == data.blocks.size() - 1
 							)
 							{
-								if(!send_data( dumper.blocks, transaction )) return false;
+								if(!send_data( dumper.blocks, _transaction )) return false;
 								dumper.reset_blocks_stream();
 							}
 						}
+						measure_time("processing and sending blocks");
 
 						for (size_t i = 0; i < data.transactions.size(); i++)
 						{
 							const size_t sz = dumper.process_transaction(data.transactions[i]);
 							if(
 								sz >= max_data_length ||
-								i == max_tuples_count || 
-								i == data.transactions.size() - 1 
+								i == max_tuples_count ||
+								i == data.transactions.size() - 1
 							)
 							{
-								if(!send_data( dumper.transactions, transaction )) return false;
+								if(!send_data( dumper.transactions, _transaction )) return false;
 								dumper.reset_transaction_stream();
 							}
 						}
+						measure_time("processing and sending transactions");
 
 						for (size_t i = 0; i < data.operations.size(); i++)
 						{
 							const size_t sz = dumper.process_operation(data.operations[i]);
 							if( 
 								sz >= max_data_length ||
-								i == max_tuples_count || 
-								i == data.operations.size() - 1 
+								i == max_tuples_count ||
+								i == data.operations.size() - 1
 							)
 							{
-								upload_caches(transaction, dumper);
-								if(!send_data( dumper.reset_operations_stream(), transaction )) return false;
+								if(!send_data( dumper.reset_operations_stream(), _transaction )) return false;
 							}
 						}
+						measure_time("processing and sending operations");
 
 						for (size_t i = 0; i < data.virtual_operations.size(); i++)
 						{
@@ -279,20 +317,19 @@ namespace hive
 							if( 
 								sz >= max_data_length ||
 								i == max_tuples_count || 
-								i == data.virtual_operations.size() - 1 
+								i == data.virtual_operations.size() - 1
 							)
 							{
-								upload_caches(transaction, dumper);
-								if(!send_data( dumper.reset_virtual_operation_stream(), transaction )) return false;
+								if(!send_data( dumper.reset_virtual_operation_stream(), _transaction )) return false;
 							}
 						}
+						measure_time("processing and sending virtual operations");
+
+						upload_caches(_transaction, dumper);
+						measure_time("processing and sending account_names and permlinks");
+
 
 						return true;
-					}
-
-					bool send_data(const PSQL::strstrm &dump, transaction_t &transaction)
-					{
-						return connection.exec_transaction(transaction, dump.str());
 					}
 
 					bool send_data(const fc::string &dump, transaction_t &transaction)
@@ -302,15 +339,15 @@ namespace hive
 
 					void join_ready_threads(const bool force = false)
 					{
-						if (worker.first.get() && (force || worker.second))
-							worker.first.reset();
+						int cnt = 0;
+						threads.remove_if([force, &cnt](const thread_with_status& th){ if(force || th.second){ cnt++; return true; } else return false; });
+						mylog(generate([&](fc::string& ss){ ss += "currently running " + std::to_string(threads.size()) + " threads. Joined: " + std::to_string(cnt); }).c_str());
 					}
 
 					void switch_constraints(const bool active)
 					{
 						if(are_constraints_active == active) return;
 						else are_constraints_active = active;
-						std::cout << "switching to: " << active << std::endl;
 						using up_and_down_constraint = std::pair<const char*, const char*>;
 						static const std::vector<up_and_down_constraint> constrainsts{{	up_and_down_constraint
 							{"ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_1"},
@@ -328,32 +365,39 @@ namespace hive
 
 					void process_cached_data()
 					{
-						if (worker.first.get())
-							return;
+						mylog("created new thread");
 						const auto cache_processor_function = [this](cached_containter_t input, bool* is_ready) {
 							auto finish = [&](const bool is_ok) { if(is_ready) *is_ready = true; FC_ASSERT( is_ok ); };
 							if (input.get() == nullptr)
+							{
+								finish(true);
 								return;
+							}
 
-							PSQL::sql_dumper dumper{_db, this->connection.get_escaping_charachter_methode()};
 							transaction_t trx = this->connection.start_transaction();
+							PSQL::sql_dumper dumper{_db, trx->get_escaping_charachter_methode()};
 
 							// sending
 							if (!this->process_and_send_data(dumper, *input, trx))
 							{
+								mylog("aborting transaction");
 								this->connection.abort_transaction(trx);
 								finish(false);
 							}
 							else
 							{
+								mylog("commiting transaction");
 								finish(this->connection.commit_transaction(trx));
 							}
 						};
 
-						worker = thread_with_status(nullptr, false);
-						worker.first.reset(
-								new std::thread(cache_processor_function, std::move(currently_caching_data), &worker.second),
+						mylog("creating new thread");
+						threads.emplace_back(nullptr, false);
+						currently_caching_data->log_size();
+						threads.back().first.reset(
+								new std::thread(cache_processor_function, std::move(currently_caching_data), &threads.back().second),
 								[](std::thread *ptr) { if(ptr){ptr->join(); delete ptr;} });
+
 					}
 
 					void push_currently_cached_data(const size_t reserve)
@@ -432,15 +476,17 @@ namespace hive
 			void sql_serializer_plugin::on_post_apply_operation(const operation_notification &note)
 			{
 				const bool is_virtual = note.op.visit(PSQL::is_virtual_visitor{});
-				// std::cout << "is_virtual: " << is_virtual << std::endl;
-				auto &cdtf = my->currently_caching_data; // alias
+				fc::string deserialized_op = fc::json::to_string(note.op);
+				detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
+				cdtf->total_size += deserialized_op.size() + sizeof(note);
 				if (is_virtual)
 				{
 					cdtf->virtual_operations.emplace_back(
 							note.block,
 							note.trx_in_block,
 							note.op_in_trx,
-							note.op
+							note.op,
+							std::move(deserialized_op)
 						);
 				}
 				else
@@ -449,7 +495,8 @@ namespace hive
 							note.block,
 							note.trx_in_block,
 							note.op_in_trx,
-							note.op
+							note.op,
+							std::move(deserialized_op)
 						);
 				}
 			}
@@ -457,20 +504,31 @@ namespace hive
 			void sql_serializer_plugin::on_post_apply_block(const block_notification &note)
 			{
 				for (int64_t i = 0; i < static_cast<int64_t>(note.block.transactions.size()); i++)
-					handle_transaction(note.block.transactions[i].id().str(), note.block_num, i);
+					handle_transaction(note.block.transactions[i].id(), note.block_num, i);
 
+				my->currently_caching_data->total_size += note.block_id.data_size() + sizeof(note.block_num);
 				my->currently_caching_data->blocks.emplace_back(
-						note.block_id.str(),
+						note.block_id,
 						note.block_num);
 
-				if (note.block_num % my->blocks_per_commit == 0 && my->worker.first.get() == nullptr)
+				if( my->currently_caching_data->total_size >= max_data_length )
+				{
+					mylog("pushing because of size");
 					my->push_currently_cached_data(prereservation_size);
-				else
-					my->join_ready_threads();
+				}
+				else if( note.block_num % my->blocks_per_commit == 0 )
+				{
+					mylog("pushing because of tuple size");
+					my->push_currently_cached_data(prereservation_size);
+				}
+
+				if(my->threads.size() > 100 ) my->join_ready_threads();
 			}
 
-			void sql_serializer_plugin::handle_transaction(const fc::string &hash, const int64_t block_num, const int64_t trx_in_block)
+			void sql_serializer_plugin::handle_transaction(const hive::protocol::transaction_id_type &hash, const int64_t block_num, const int64_t trx_in_block)
 			{
+				if(block_num >= 14'500'000) mylog("adding trx");
+				my->currently_caching_data->total_size += sizeof(hash) + sizeof(block_num) + sizeof(trx_in_block);
 				my->currently_caching_data->transactions.emplace_back(
 						hash,
 						block_num,
@@ -486,7 +544,6 @@ namespace hive
 				}else my->switch_constraints(false);
 
 				my->blocks_per_commit = 10'000;
-				// ;
 			}
 
 			void sql_serializer_plugin::on_post_reindex(const reindex_notification &)
