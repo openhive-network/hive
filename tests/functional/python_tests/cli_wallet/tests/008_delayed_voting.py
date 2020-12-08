@@ -10,23 +10,7 @@ from utils.cli_wallet import CliWallet
 from utils.logger     import log, init_logger
 
 def get_votes( wallet, account_name ):
-
-    pattern = "get_account" + " \"" + account_name + "\""
-
-    response = wallet.get_account( account_name )
-
-    found = response.find( pattern )
-    if found == -1:
-        return 0
-
-    found += len( pattern )
-    sub_response = response[ found : len( response ) ]
-
-    items = json.loads( sub_response )
-
-    assert( "delayed_votes" in items )
-
-    dv_items = items["delayed_votes"]
+    dv_items = wallet.get_account( account_name )["result"]["delayed_votes"]
 
     val = 0
     for item in dv_items:
@@ -37,38 +21,20 @@ def get_votes( wallet, account_name ):
 
 if __name__ == "__main__":
     with Test(__file__):
-        wallet = CliWallet( args.path,
-                            args.server_rpc_endpoint,
-                            args.cert_auth,
-                            args.rpc_tls_endpoint,
-                            args.rpc_tls_cert,
-                            args.rpc_http_endpoint,
-                            args.deamon, 
-                            args.rpc_allowip,
-                            args.wallet_file,
-                            args.chain_id,
-                            args.wif )
-        wallet.set_and_run_wallet()
+        with CliWallet(args) as wallet:
+            creator, receiver = make_user_for_tests(wallet)
+            log.info( "actors:  creator: {0} receiver: ".format( creator, receiver ) )
 
-        creator, receiver = make_user_for_tests(wallet)
-        log.info( "actors:  creator: {0} receiver: ".format( creator, receiver ) )
+            #=================Adding delayed votes=================
+            before_val = get_votes( wallet, receiver )
 
-        #   "delayed_votes": [{
-        #       "time": "2020-04-02T12:39:33",
-        #       "val": 642832
-        #     }
-        #   ]
+            #=================Vest liquid again=================
+            wallet.transfer_to_vesting( creator, receiver, "1.000 TESTS", "true" )
 
-        #=================Adding delayed votes=================
-        before_val = get_votes( wallet, receiver )
+            #=================Adding delayed votes=================
+            after_val = get_votes( wallet, receiver )
 
-        #=================Vest liquid again=================
-        wallet.transfer_to_vesting( creator, receiver, "1.000 TESTS", "true" )
+            log.info( "before_val: {0} after_val: {1}".format( before_val, after_val ) )
 
-        #=================Adding delayed votes=================
-        after_val = get_votes( wallet, receiver )
-
-        log.info( "before_val: {0} after_val: {1}".format( before_val, after_val ) )
-
-        #=================Checking changes=================
-        assert( after_val > before_val )
+            #=================Checking changes=================
+            assert( after_val > before_val )
