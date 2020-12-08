@@ -64,24 +64,26 @@ def call_and_check_transaction(_func, _call_args, _arg_prefix, _broadcast):
 
 
 def last_message_as_json( _message):
-    log.info(_message)
-    if "message:" in _message:
-        _message = _message[_message.rfind("message:")+len("message:"):]
-        _message.strip()
-        o = 0
-        #lame... but works
-        for index, ch in enumerate(_message):
-            if str(ch) == "{":
-                o +=1
-                continue
-            if str(ch) == "}":
-                o -=1
-                if o == 0:
-                    _message = _message[:index+1]
-                    break
-    else:
-        _message = "{}"
-    return json.loads(_message)
+  if isinstance(_message, dict):
+    return _message
+  log.info(_message)
+  if "message:" in _message:
+      _message = _message[_message.rfind("message:")+len("message:"):]
+      _message.strip()
+      o = 0
+      #lame... but works
+      for index, ch in enumerate(_message):
+          if str(ch) == "{":
+              o +=1
+              continue
+          if str(ch) == "}":
+              o -=1
+              if o == 0:
+                  _message = _message[:index+1]
+                  break
+  else:
+      _message = "{}"
+  return json.loads(_message)
 
 
 def find_creator_proposals(_creator, _proposal_list):
@@ -112,7 +114,7 @@ def ws_to_http(_url):
 
 
 def get_valid_hive_account_name():
-    http_url = ws_to_http(args.server_rpc_endpoint)
+    http_url = args.server_http_endpoint
     while True:
         params = {"jsonrpc":"2.0", "method":"condenser_api.get_accounts", "params":[["".join(user_name)]], "id":1}
         resp = requests.post(http_url, json=params)
