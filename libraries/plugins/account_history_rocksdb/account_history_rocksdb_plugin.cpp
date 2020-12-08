@@ -18,6 +18,7 @@
 #include <hive/utilities/plugin_utilities.hpp>
 
 #include <appbase/application.hpp>
+#include <appbase/shutdown_mgr.hpp>
 
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
@@ -64,6 +65,9 @@ namespace bpo = boost::program_options;
 
 #define STORE_MAJOR_VERSION          1
 #define STORE_MINOR_VERSION          0
+
+#define HIVE_AH_NUMBER_THREAD_SENSITIVE_ACTIONS 1
+#define HIVE_AH_BLOCK_HANDLER 0
 
 namespace hive { namespace plugins { namespace account_history_rocksdb {
 
@@ -484,8 +488,10 @@ class account_history_rocksdb_plugin::impl final
 {
 public:
   impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath) :
+    shutdown_helper( "AH plugin", HIVE_AH_NUMBER_THREAD_SENSITIVE_ACTIONS ),
     _self(self),
     _mainDb(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db()),
+    _blockchainStoragePath(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
     _storagePath(storagePath),
     _writeBuffer(_storage, _columnHandles)
     {
@@ -560,6 +566,8 @@ public:
 
   ~impl()
   {
+    shutdown_helper.prepare_shutdown();
+    shutdown_helper.wait();
 
     chain::util::disconnect_signal(_on_post_apply_operation_con);
     chain::util::disconnect_signal(_on_irreversible_block_conn);
@@ -571,6 +579,9 @@ public:
 
   void openDb()
   {
+    //Very rare case -  when a synchronization starts from the scratch and a node has AH plugin with rocksdb enabled and directories don't exist yet
+    bfs::create_directories( _blockchainStoragePath );
+
     createDbSchema(_storagePath);
 
     auto columnDefs = prepareColumnDefinitions(true);
@@ -858,11 +869,17 @@ private:
     uint32_t* collectedIrreversibleBlock) const;
 
 /// Class attributes:
+public:
+
+  shutdown_mgr shutdown_helper;
+
+/// Class attributes:
 private:
   typedef flat_map< account_name_type, account_name_type > account_name_range_index;
 
   account_history_rocksdb_plugin&  _self;
   chain::database&                 _mainDb;
+  bfs::path                        _blockchainStoragePath;
   bfs::path                        _storagePath;
   std::unique_ptr<DB>              _storage;
   std::vector<ColumnFamilyHandle*> _columnHandles;
@@ -1962,40 +1979,53 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
 {
   if( _reindexing ) return;
 
-  uint32_t fallbackIrreversibleBlock = 0;
-  
-  /// In case of genesis block (and fresh testnet) there can be no LIB at begin.
-
-  if( block_num <= get_lib(&fallbackIrreversibleBlock) ) return;
-
-  _currently_persisted_irreversible_block.store(block_num);
-
-  const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
-  auto itr = volatile_idx.begin();
-
-  vector< const volatile_operation_object* > to_delete;
-
+  if( shutdown_helper.get_running().load() )
   {
-    std::lock_guard<std::mutex> lk(_currently_persisted_irreversible_mtx);
-
-    while(itr != volatile_idx.end() && itr->block <= block_num)
+    try
     {
-      rocksdb_operation_object obj(*itr);
-      importOperation(obj, itr->impacted);
-      to_delete.push_back(&(*itr));
-      ++itr;
-    }
+      action_catcher( shutdown_helper.get_running(), shutdown_helper.get_state( HIVE_AH_BLOCK_HANDLER ) );
 
-    for(const volatile_operation_object* o : to_delete)
-    {
-      _mainDb.remove(*o);
-    }
+      uint32_t fallbackIrreversibleBlock = 0;
+      
+      /// In case of genesis block (and fresh testnet) there can be no LIB at begin.
 
-    update_lib(block_num);
+      if( block_num <= get_lib(&fallbackIrreversibleBlock) ) return;
+
+      _currently_persisted_irreversible_block.store(block_num);
+
+      const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
+      auto itr = volatile_idx.begin();
+
+      vector< const volatile_operation_object* > to_delete;
+
+      {
+        std::lock_guard<std::mutex> lk(_currently_persisted_irreversible_mtx);
+
+        while(itr != volatile_idx.end() && itr->block <= block_num)
+        {
+          rocksdb_operation_object obj(*itr);
+          importOperation(obj, itr->impacted);
+          to_delete.push_back(&(*itr));
+          ++itr;
+        }
+
+        for(const volatile_operation_object* o : to_delete)
+        {
+          _mainDb.remove(*o);
+        }
+
+        update_lib(block_num);
+      }
+
+      _currently_persisted_irreversible_block.store(0);
+      _currently_persisted_irreversible_cv.notify_all();
+
+    } FC_CAPTURE_AND_RETHROW( (block_num) )
   }
-
-  _currently_persisted_irreversible_block.store(0);
-  _currently_persisted_irreversible_cv.notify_all();
+  else
+  {
+    ilog("Block ignored due to start AH plugin shutdown");
+  }
 }
 
 void account_history_rocksdb_plugin::impl::on_pre_apply_block(const block_notification& bn)
@@ -2085,6 +2115,10 @@ void account_history_rocksdb_plugin::plugin_startup()
 void account_history_rocksdb_plugin::plugin_shutdown()
 {
   ilog("Shutting down account_history_rocksdb_plugin...");
+
+  _my->shutdown_helper.prepare_shutdown();
+  _my->shutdown_helper.wait();
+
   _my->shutdownDb();
 }
 
