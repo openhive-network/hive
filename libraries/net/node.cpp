@@ -3238,7 +3238,7 @@ namespace graphene { namespace net {
           }
         }
       }
-      else
+      else //client did not accept block
       {
         // invalid message received
         for (const peer_connection_ptr& peer : _active_connections)

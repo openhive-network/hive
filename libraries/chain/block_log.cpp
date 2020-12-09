@@ -12,6 +12,16 @@
 #include <boost/smart_ptr/atomic_shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 
+#define MMAP_BLOCK_IO
+
+#ifdef MMAP_BLOCK_IO
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#endif
+
 #define LOG_READ  (std::ios::in | std::ios::binary)
 #define LOG_WRITE (std::ios::out | std::ios::binary | std::ios::app)
 
@@ -323,7 +333,6 @@ namespace hive { namespace chain {
       uint64_t offset_in_index = sizeof(uint64_t) * (block_num - 1);
       detail::block_log_impl::pread_with_retry(my->block_index_fd, &offsets, sizeof(offsets),  offset_in_index);
       uint64_t serialized_data_size = offsets[1] - offsets[0] - sizeof(uint64_t);
-
       return my->read_block_from_offset_and_size(offsets[0], serialized_data_size);
     }
     FC_CAPTURE_LOG_AND_RETHROW((block_num))
@@ -359,7 +368,7 @@ namespace hive { namespace chain {
 
         // then read all the blocks in one go
         uint64_t size_of_all_blocks = offsets[number_of_blocks_to_read] - offsets[0];
-	idump((size_of_all_blocks));
+        idump((size_of_all_blocks));
         std::unique_ptr<char[]> block_data(new char[size_of_all_blocks]);
         detail::block_log_impl::pread_with_retry(my->block_log_fd, block_data.get(), size_of_all_blocks,  offsets[0]);
 
@@ -409,6 +418,14 @@ namespace hive { namespace chain {
   {
     try
     {
+      // the caller has already loaded the head block
+      boost::shared_ptr<signed_block> head_block = my->head.load();
+      FC_ASSERT(head_block);
+      const uint32_t block_num = head_block->block_num();
+      idump((block_num));
+
+#define USE_BACKWARDS_INDEX
+#ifdef USE_BACKWARDS_INDEX
       // Note: the old implementation recreated the block index by reading the log
       // forwards, starting at the start of the block log and deserializing each block
       // and then writing the new file position to the index.
@@ -418,77 +435,104 @@ namespace hive { namespace chain {
       // of the index.  
       // It would probably be worthwhile to use the old method if the number of
       // entries to repair is small compared to the total size of the block log
-      ilog( "Reconstructing Block Log Index..." );
+#ifdef MMAP_BLOCK_IO      
+      ilog( "Reconstructing Block Log Index using memory-mapped IO...resume=${resume},index_pos=${index_pos}",("resume",resume)("index_pos",index_pos) );
+#else
+      ilog( "Reconstructing Block Log Index...resume=${resume},index_pos=${index_pos}",("resume",resume)("index_pos",index_pos) );
+#endif
+      //close old index file if open, we'll reopen after we replace it
+      ::close(my->block_index_fd);
 
-      // the caller has already loaded the head block
-      boost::shared_ptr<signed_block> head_block = my->head.load();
-      FC_ASSERT(head_block);
-
+      //create and size the new temporary index file (block_log.index.new)
       fc::path new_index_file(my->index_file.generic_string() + ".new");
+      const size_t block_index_size = block_num * sizeof(uint64_t);
       int new_index_fd = ::open(new_index_file.generic_string().c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);
-      if (my->block_index_fd == -1)
+      if (new_index_fd == -1)
         FC_THROW("Error opening temporary new index file ${filename}: ${error}", ("filename", new_index_file.generic_string())("error", strerror(errno)));
-
-      uint32_t block_num = head_block->block_num();
-      idump((block_num));
-      if (ftruncate(new_index_fd, sizeof(uint64_t) * block_num) == -1)
+      if (ftruncate(new_index_fd, block_index_size) == -1)
         FC_THROW("Error resizing rebuilt block index file: ${error}", ("error", strerror(errno)));
 
-      uint64_t block_log_offset_of_block_pos = my->block_log_size - sizeof(uint64_t);
+#ifdef MMAP_BLOCK_IO
+      //memory map for block log
+      char* block_log_ptr = (char*)mmap(0, my->block_log_size, PROT_READ, MAP_SHARED, my->block_log_fd, 0);
+      if (block_log_ptr == (char*)-1)
+        FC_THROW("Failed to mmap block log file: ${error}",("error",strerror(errno)));
+      if (madvise(block_log_ptr, my->block_log_size, MADV_WILLNEED) == -1)
+        wlog("madvise failed: ${error}",("error",strerror(errno)));
 
+      //memory map for index file
+      char* block_index_ptr = (char*)mmap(0, block_index_size, PROT_WRITE, MAP_SHARED, new_index_fd, 0);
+      if (block_index_ptr == (char*)-1)
+        FC_THROW("Failed to mmap block log index: ${error}",("error",strerror(errno)));
+#endif
       // now walk backwards through the block log reading the starting positions of the blocks
       // and writing them to the index
-      while (!appbase::app().is_interrupt_request() && block_num)
+      uint32_t block_index = block_num;
+      uint64_t block_log_offset_of_block_pos = my->block_log_size - sizeof(uint64_t);
+      while (!appbase::app().is_interrupt_request() && block_index)
       {
         // read the file offset of the start of the block from the block log
         uint64_t block_pos;
-        detail::block_log_impl::pread_with_retry(my->block_log_fd, &block_pos, sizeof(block_pos), 
-                                                 block_log_offset_of_block_pos);
+        uint64_t higher_block_pos;
+        higher_block_pos = block_log_offset_of_block_pos;
+#ifdef MMAP_BLOCK_IO
+        //read next block pos offset from the block log
+        memcpy(&block_pos, block_log_ptr + block_log_offset_of_block_pos, sizeof(block_pos));
+        // write it to the right location in the new index file
+        memcpy(block_index_ptr + sizeof(block_pos) * (block_index - 1), &block_pos, sizeof(block_pos));
+#else
+        //read next block pos offset from the block log
+        detail::block_log_impl::pread_with_retry(my->block_log_fd, &block_pos, sizeof(block_pos), block_log_offset_of_block_pos);
+        // write it to the right location in the new index file
+        detail::block_log_impl::pwrite_with_retry(new_index_fd, &block_pos, sizeof(block_pos), sizeof(block_pos) * (block_index - 1));
+#endif
+        if (higher_block_pos <= block_pos) //this is a sanity check on index values stored in the block log
+          FC_THROW("bad block index at block ${block_index} because ${higher_block_pos} <= ${block_pos}",
+                   ("block_index",block_index)("higher_block_pos",higher_block_pos)("block_pos",block_pos));
 
-        // write it to the right location in the index
-        detail::block_log_impl::pwrite_with_retry(new_index_fd, &block_pos, sizeof(block_pos), sizeof(block_pos) * (block_num - 1));
-
-        --block_num;
+        --block_index;
         block_log_offset_of_block_pos = block_pos - sizeof(uint64_t);
-      }
-      if( appbase::app().is_interrupt_request() )
-        ilog("Creating Block Log Index is interrupted on user request. Last applied: (block number: ${n})",
-             ("n", block_num));
-      else
+      } //while writing block index
+      if (appbase::app().is_interrupt_request())
       {
-        ::close(new_index_fd);
-        ::close(my->block_index_fd);
-        fc::remove_all(my->index_file);
-        fc::rename(new_index_file, my->index_file);
-        my->block_index_fd = ::open(my->index_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT, 0644);
-        if (my->block_index_fd == -1)
-          FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", my->index_file)("error", strerror(errno)));
+        ilog("Creating Block Log Index was interrupted on user request and can't be resumed. Last applied: (block number: ${n})", ("n", block_num));
+        return;
       }
-#if 0
-      ilog( "Reconstructing Block Log Index..." );
-      my->index_stream.close();
+
+#ifdef MMAP_BLOCK_IO
+      if (munmap(block_log_ptr, my->block_log_size) == -1)
+        elog("error unmapping block_log: ${error}",("error",strerror(errno)));
+      if (munmap(block_index_ptr, block_index_size) == -1)
+        elog("error unmapping block_index: ${error}",("error",strerror(errno)));
+#endif  
+      ::close(new_index_fd);
+      fc::remove_all(my->index_file);
+      fc::rename(new_index_file, my->index_file);
+#else //NOT USE_BACKWARDS_INDEX
+      ilog( "Reconstructing Block Log Index in forward direction (old slower way, but allows for interruption)..." );
+      std::fstream block_stream;
+      std::fstream index_stream;
 
       if( !resume )
         fc::remove_all( my->index_file );
 
-      my->index_stream.open( my->index_file.generic_string().c_str(), LOG_WRITE );
-      my->index_write = true;
+      block_stream.open( my->block_file.generic_string().c_str(), LOG_READ );
+      index_stream.open( my->index_file.generic_string().c_str(), LOG_WRITE );
 
       uint64_t pos = resume ? index_pos : 0;
       uint64_t end_pos;
-      my->check_block_read();
 
-      my->block_stream.seekg( -sizeof( uint64_t), std::ios::end );
-      my->block_stream.read( (char*)&end_pos, sizeof( end_pos ) );
+      block_stream.seekg( -sizeof( uint64_t), std::ios::end );      
+      block_stream.read( (char*)&end_pos, sizeof( end_pos ) );      
       signed_block tmp;
 
-      my->block_stream.seekg( pos );
+      block_stream.seekg( pos );
       if( resume )
       {
-        my->index_stream.seekg( 0, std::ios::end );
+        index_stream.seekg( 0, std::ios::end );
 
-        fc::raw::unpack( my->block_stream, tmp );
-        my->block_stream.read( (char*)&pos, sizeof( pos ) );
+        fc::raw::unpack( block_stream, tmp );
+        block_stream.read( (char*)&pos, sizeof( pos ) );
 
         ilog("Resuming Block Log Index. Last applied: ( block number: ${n} )( trx: ${trx} )( bytes position: ${pos} )",
                                                             ( "n", tmp.block_num() )( "trx", tmp.id() )( "pos", pos ) );
@@ -496,9 +540,9 @@ namespace hive { namespace chain {
 
       while( !appbase::app().is_interrupt_request() && pos < end_pos )
       {
-        fc::raw::unpack( my->block_stream, tmp );
-        my->block_stream.read( (char*)&pos, sizeof( pos ) );
-        my->index_stream.write( (char*)&pos, sizeof( pos ) );
+        fc::raw::unpack( block_stream, tmp );
+        block_stream.read( (char*)&pos, sizeof( pos ) );
+        index_stream.write( (char*)&pos, sizeof( pos ) );
       }
 
       if( appbase::app().is_interrupt_request() )
@@ -507,10 +551,20 @@ namespace hive { namespace chain {
 
       /// Flush and reopen to be sure that given index file has been saved.
       /// Otherwise just executed replay, next stopped by ctrl+C can again corrupt this file. 
-      my->index_stream.flush();
-      my->index_stream.close();
-      my->index_stream.open(my->index_file.generic_string().c_str(), LOG_WRITE);
-#endif
+      index_stream.close();
+      ::close(my->block_index_fd);
+#endif //NOT USE_BACKWARD_INDEX
+
+      ilog("opening new block index");
+      my->block_index_fd = ::open(my->index_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT, 0644);
+      if (my->block_index_fd == -1)
+        FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", my->index_file)("error", strerror(errno)));
+      //report size of new index file and verify it is the right size for the blocks in block log
+      struct stat block_index_stat;
+      if (fstat(my->block_index_fd, &block_index_stat) == -1)
+        elog("error: could not get size of block log index");
+      idump((block_index_stat.st_size));
+      FC_ASSERT(block_index_stat.st_size/sizeof(uint64_t) == block_num);
     }
     FC_LOG_AND_RETHROW()
   }
