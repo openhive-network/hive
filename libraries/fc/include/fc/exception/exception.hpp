@@ -418,6 +418,32 @@ namespace fc
       throw e; \
    }
 
+#define FC_CAPTURE_CALL_LOG_AND_RETHROW( func, ... )  \
+   catch( fc::exception& er ) { \
+      func(); \
+      wlog( "${details}", ("details",er.to_detail_string()) ); \
+      wdump( __VA_ARGS__ ); \
+      FC_RETHROW_EXCEPTION( er, warn, "rethrow", FC_FORMAT_ARG_PARAMS(__VA_ARGS__) ); \
+   } catch( const std::exception& e ) {  \
+      func(); \
+      fc::exception fce( \
+                FC_LOG_MESSAGE( warn, "rethrow ${what}: ", FC_FORMAT_ARG_PARAMS( __VA_ARGS__ )("what",e.what())), \
+                fc::std_exception_code,\
+                typeid(e).name(), \
+                e.what() ) ; \
+      wlog( "${details}", ("details",fce.to_detail_string()) ); \
+      wdump( __VA_ARGS__ ); \
+      throw fce;\
+   } catch( ... ) {  \
+      func(); \
+      fc::unhandled_exception e( \
+                FC_LOG_MESSAGE( warn, "rethrow", FC_FORMAT_ARG_PARAMS( __VA_ARGS__) ), \
+                std::current_exception() ); \
+      wlog( "${details}", ("details",e.to_detail_string()) ); \
+      wdump( __VA_ARGS__ ); \
+      throw e; \
+   }
+
 #define FC_CAPTURE_AND_LOG( ... )  \
    catch( fc::exception& er ) { \
       wlog( "${details}", ("details",er.to_detail_string()) ); \

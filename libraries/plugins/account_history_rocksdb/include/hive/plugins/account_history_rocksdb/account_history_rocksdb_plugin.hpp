@@ -36,15 +36,16 @@ public:
   virtual void plugin_startup() override;
   virtual void plugin_shutdown() override;
 
-  void find_account_history_data(const protocol::account_name_type& name, uint64_t start, uint32_t limit,
-    std::function<void(unsigned int, const rocksdb_operation_object&)> processor) const;
+  void find_account_history_data(const protocol::account_name_type& name, uint64_t start, uint32_t limit, bool include_reversible,
+    std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const;
   bool find_operation_object(size_t opId, rocksdb_operation_object* data) const;
-  void find_operations_by_block(size_t blockNum,
+  void find_operations_by_block(size_t blockNum, bool include_reversible,
     std::function<void(const rocksdb_operation_object&)> processor) const;
-  std::pair< uint32_t/*nr last block*/, uint64_t/*operation-id to resume from*/ > enum_operations_from_block_range(uint32_t blockRangeBegin, uint32_t blockRangeEnd,
+  std::pair< uint32_t/*nr last block*/, uint64_t/*operation-id to resume from*/ > enum_operations_from_block_range(
+    uint32_t blockRangeBegin, uint32_t blockRangeEnd, bool include_reversible,
     fc::optional<uint64_t> operationBegin, fc::optional<uint32_t> limit,
-    std::function<bool(const rocksdb_operation_object&, uint64_t)> processor) const;
-  bool find_transaction_info(const protocol::transaction_id_type& trxId, uint32_t* blockNo, uint32_t* txInBlock) const;
+    std::function<bool(const rocksdb_operation_object&, uint64_t, bool)> processor) const;
+  bool find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo, uint32_t* txInBlock) const;
 
 private:
   class impl;

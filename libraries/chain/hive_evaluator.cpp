@@ -176,9 +176,10 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
     fc::raw::unpack_from_vector( itr->second, props.maximum_block_size );
   }
 
-  itr = o.props.find( "hbd_interest_rate" );
-  if( itr == o.props.end() )
-    itr = o.props.find( "sbd_interest_rate" );
+  itr = o.props.find( "sbd_interest_rate" );
+  if(itr == o.props.end() && _db.has_hardfork(HIVE_HARDFORK_1_24))
+    itr = o.props.find( "hbd_interest_rate" );
+
   flags.hbd_interest_changed = itr != o.props.end();
   if( flags.hbd_interest_changed )
   {
@@ -206,9 +207,9 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
     fc::raw::unpack_from_vector( itr->second, signing_key );
   }
 
-  itr = o.props.find( "hbd_exchange_rate" );
-  if( itr == o.props.end() )
-    itr = o.props.find( "sbd_exchange_rate" );
+  itr = o.props.find( "sbd_exchange_rate" );
+  if(itr == o.props.end() && _db.has_hardfork(HIVE_HARDFORK_1_24))
+    itr = o.props.find("hbd_exchange_rate");
 
   flags.hbd_exchange_changed = itr != o.props.end();
   if( flags.hbd_exchange_changed )
@@ -359,7 +360,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, o.creator );
 
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
   {
     meta.account = new_account.get_id();
@@ -457,7 +458,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, o.creator, o.delegation );
 
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
   {
     meta.account = new_account.get_id();
@@ -539,7 +540,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     acc.last_account_update = _db.head_block_time();
   });
 
-  #ifndef IS_LOW_MEM
+  #ifdef COLLECT_ACCOUNT_METADATA
   if( o.json_metadata.size() > 0 )
   {
     _db.modify( _db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
@@ -605,7 +606,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
     acc.last_account_update = _db.head_block_time();
   });
 
-  #ifndef IS_LOW_MEM
+  #ifdef COLLECT_ACCOUNT_METADATA
   if( o.json_metadata.size() > 0 || o.posting_json_metadata.size() > 0 )
   {
     _db.modify( _db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
@@ -650,7 +651,11 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
   if( _db.has_hardfork( HIVE_HARDFORK_0_19__977 ) )
     FC_ASSERT( comment_cashout->net_rshares <= 0, "Cannot delete a comment with net positive votes." );
 
-  if( comment_cashout->net_rshares > 0 ) return;
+  if( comment_cashout->net_rshares > 0 )
+  {
+    _db.push_virtual_operation( ineffective_delete_comment_operation( o.author, o.permlink ) );
+    return;
+  }
 
   const auto& vote_idx = _db.get_index<comment_vote_index>().indices().get<by_comment_voter>();
 
@@ -752,7 +757,7 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
   */
   if( !comment_cashout )
   {
-    FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_24 ), "Updating parameters for comment that is paid out is forbidden." );
+    FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_1_24 ), "Updating parameters for comment that is paid out is forbidden." );
     return;
   }
 
@@ -1171,11 +1176,25 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
 
 void transfer_evaluator::do_apply( const transfer_operation& o )
 {
-  FC_TODO( "Remove is producing after HF 21" );
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
+  if ( _db.has_hardfork(HIVE_HARDFORK_1_24) && o.amount.symbol == HIVE_SYMBOL && _db.is_treasury( o.to ) ) {
+    const auto &fhistory = _db.get_feed_history();
+
+    FC_ASSERT(!fhistory.current_median_history.is_null(), "Cannot send HIVE to ${s} because there is no price feed.", ("s", o.to ));
+
+    auto amount_to_transfer = o.amount * fhistory.current_median_history;
+
+    _db.adjust_balance(o.from, -o.amount);
+    _db.adjust_balance(o.to, amount_to_transfer);
+
+    _db.adjust_supply(-o.amount);
+
+    if (amount_to_transfer.amount > 0)
+      _db.adjust_supply(amount_to_transfer);
+
+    return;
+  } else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
-    FC_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ),
-      "Can only transfer HBD to ${s}", ("s", o.to ) );
+    FC_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ), "Can only transfer HBD or HIVE to ${s}", ("s", o.to ) );
   }
 
   _db.adjust_balance( o.from, -o.amount );
@@ -1202,7 +1221,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
     Therefore an idea is based on voting deferring. Default value is 30 days.
     This range of time is enough long to defeat/block potential malicious intention.
   */
-  if( _db.has_hardfork( HIVE_HARDFORK_0_24 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
     asset new_vesting = _db.adjust_account_vesting_balance( to_account, o.amount, false/*to_reward_balance*/, []( asset vests_created ) {} );
 
@@ -1512,10 +1531,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       });
 #endif
 
-    effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
-    vop.vote_percent = o.weight;
-    _db.push_virtual_operation(vop);
-
     return;
   }
 
@@ -1687,6 +1702,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       *  Since W(R_0) = 0, c.total_vote_weight is also bounded above by B and will always fit in a 64 bit integer.
       *
     **/
+    effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
     _db.create<comment_vote_object>( [&]( comment_vote_object& cv ){
       cv.voter   = voter.get_id();
       cv.comment = comment.get_id();
@@ -1758,6 +1774,9 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       {
         cv.weight = 0;
       }
+
+      vop.weight = cv.weight;
+      vop.rshares = cv.rshares;
     });
 
     if( max_vote_weight ) // Optimization
@@ -1767,8 +1786,13 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
         c.total_vote_weight += max_vote_weight;
       });
     }
+
+    vop.total_vote_weight = comment_cashout->total_vote_weight;
+
     if( !_db.has_hardfork( HIVE_HARDFORK_0_17__774) )
       _db.adjust_rshares2( old_rshares, new_rshares );
+
+    _db.push_virtual_operation(vop);
   }
   else
   {
@@ -1870,6 +1894,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     });
 
     effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
+    vop.total_vote_weight = comment_cashout->total_vote_weight;
 
     _db.modify( *itr, [&]( comment_vote_object& cv )
     {
@@ -1905,7 +1930,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   else
   {
-    FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_24 ), "Votes evaluating for comment that is paid out is forbidden." );
+    FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_1_24 ), "Votes evaluating for comment that is paid out is forbidden." );
   }
 
   if( !comment_cashout || _db.calculate_discussion_payout_time( *comment_cashout ) == fc::time_point_sec::maximum() )
@@ -1929,10 +1954,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         cvo.last_update = _db.head_block_time();
       });
 #endif
-
-    effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
-    vop.vote_percent = o.weight;
-    _db.push_virtual_operation(vop);
 
     return;
   }
@@ -2163,10 +2184,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
     vop.weight = newVote.weight;
     vop.rshares = newVote.rshares;
-    vop.vote_percent = newVote.vote_percent;
-
-    _db.push_virtual_operation(vop);
-
 
     if( max_vote_weight ) // Optimization
     {
@@ -2175,6 +2192,10 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         cc.total_vote_weight += max_vote_weight;
       });
     }
+
+    vop.total_vote_weight = comment_cashout->total_vote_weight;
+
+    _db.push_virtual_operation(vop);
   }
   else
   {
@@ -2269,9 +2290,9 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     });
 
     effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
+    vop.total_vote_weight = comment_cashout->total_vote_weight;
     vop.weight = vote.weight;
     vop.rshares = vote.rshares;
-    vop.vote_percent = vote.vote_percent;
     _db.push_virtual_operation(vop);
   }
 }
@@ -2403,7 +2424,7 @@ void pow_apply( database& db, Operation o )
     const auto& new_account = create_account( db, o.get_worker_account(), o.work.worker, dgp.time, true /*mined*/, account_name_type() );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
       meta.account = new_account.get_id();
@@ -2522,7 +2543,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time, true /*mined*/, account_name_type() );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
       meta.account = new_account.get_id();
@@ -2732,7 +2753,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, o.creator );
 
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
   {
     meta.account = new_account.get_id();

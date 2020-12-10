@@ -359,11 +359,7 @@ BOOST_AUTO_TEST_CASE( account_update_apply )
     BOOST_REQUIRE( acct.memo_key == new_private_key.get_public_key() );
 
     /* This is being moved out of consensus
-    #ifndef IS_LOW_MEM
       BOOST_REQUIRE( acct.json_metadata == "{\"bar\":\"foo\"}" );
-    #else
-      BOOST_REQUIRE( acct.json_metadata == "" );
-    #endif
     */
 
     validate_database();
@@ -1442,22 +1438,25 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     BOOST_REQUIRE( new_bob.get_balance().amount.value == ASSET( "10.000 TESTS" ).amount.value );
     validate_database();
 
-    BOOST_TEST_MESSAGE( "--- Test failure transfering HIVE to treasury" );
+    BOOST_TEST_MESSAGE( "--- Test successfully transfering HIVE to treasury and converting it to HBD" );
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+    auto treasury_hbd_balance = db->get_treasury().get_hbd_balance();
     op.from = "bob";
     op.to = db->get_treasury_name();
     op.amount = ASSET( "1.000 TESTS" );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.signatures.clear();
     tx.operations.clear();
     tx.operations.push_back( op );
     sign( tx, bob_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx ), fc::exception );
-
-    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
-    BOOST_REQUIRE( db->get_treasury().get_balance() == ASSET( "0.000 TESTS" ) );
+    db->push_transaction( tx );
+    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "9.000 TESTS" ) );
+    BOOST_REQUIRE( db->get_treasury().get_hbd_balance() == treasury_hbd_balance + ASSET( "1.000 TBD" ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test transfering HBD to treasury" );
-    auto treasury_hbd_balance = db->get_treasury().get_hbd_balance();
+    treasury_hbd_balance = db->get_treasury().get_hbd_balance();
     op.amount = ASSET( "1.000 TBD" );
     tx.signatures.clear();
     tx.operations.clear();
@@ -8420,7 +8419,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     BOOST_REQUIRE( bob_auth.active == authority( 2, priv_key.get_public_key(), 2 ) );
     BOOST_REQUIRE( bob_auth.posting == authority( 3, priv_key.get_public_key(), 3 ) );
     BOOST_REQUIRE( bob.memo_key == priv_key.get_public_key() );
-#ifndef IS_LOW_MEM // json_metadata is not stored on low memory nodes
+#ifdef COLLECT_ACCOUNT_METADATA // json_metadata is stored conditionally
     const auto& bob_meta = db->get< account_metadata_object, by_account >( bob.get_id() );
     BOOST_REQUIRE( bob_meta.json_metadata == "{\"foo\":\"bar\"}" );
 #endif
@@ -8886,7 +8885,7 @@ BOOST_AUTO_TEST_CASE( account_update2_apply )
     BOOST_REQUIRE( acct_auth.active == authority( 2, new_private_key.get_public_key(), 2 ) );
     BOOST_REQUIRE( acct.memo_key == new_private_key.get_public_key() );
 
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
     const account_metadata_object& acct_metadata = db->get< account_metadata_object, by_account >( acct.get_id() );
     BOOST_REQUIRE( acct_metadata.json_metadata == "{\"bar\":\"foo\"}" );
     BOOST_REQUIRE( acct_metadata.posting_json_metadata == "{\"success\":true}" );

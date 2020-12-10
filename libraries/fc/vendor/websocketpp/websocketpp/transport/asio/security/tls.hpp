@@ -196,10 +196,6 @@ protected:
         m_socket = lib::make_shared<socket_type>(
             _WEBSOCKETPP_REF(*service),lib::ref(*m_context));
 
-        if (m_socket_init_handler) {
-            m_socket_init_handler(m_hdl, get_socket());
-        }
-
         m_io_service = service;
         m_strand = strand;
         m_is_server = is_server;
@@ -248,6 +244,9 @@ protected:
             }
         }
 #endif
+        if (m_socket_init_handler) {
+            m_socket_init_handler(m_hdl, get_socket());
+        }
 
         callback(lib::error_code());
     }

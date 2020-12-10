@@ -31,6 +31,7 @@ using namespace hive;
 
 using fc::flat_map;
 using hive::chain::block_id_type;
+namespace asio = boost::asio;
 
 using hive::plugins::chain::synchronization_type;
 using index_memory_details_cntr_t = hive::utilities::benchmark_dumper::index_memory_details_cntr_t;
@@ -81,11 +82,14 @@ class chain_plugin_impl
     void start_write_processing();
     void stop_write_processing();
 
-    void start_replay_processing( synchronization_type& on_sync );
+    bool start_replay_processing( synchronization_type& on_sync );
 
     void initial_settings();
-    bool open();
+    void open();
     bool replay_blockchain();
+    void process_snapshot();
+    bool check_data_consistency();
+
     void work( synchronization_type& on_sync );
 
     void write_default_database_config( bfs::path& p );
@@ -118,7 +122,7 @@ class chain_plugin_impl
     bool                             running = true;
     std::shared_ptr< std::thread >   write_processor_thread;
     boost::lockfree::queue< write_context* > write_queue;
-    int16_t                          write_lock_hold_time = 500;
+    int16_t                          write_lock_hold_time = HIVE_BLOCK_INTERVAL * 1000 / 6; // 1/6 of block time (millseconds)
 
     vector< string >                 loaded_plugins;
     fc::mutable_variant_object       plugin_state_opts;
@@ -248,7 +252,6 @@ void chain_plugin_impl::start_write_processing()
   {
     bool is_syncing = true;
     write_context* cxt;
-    fc::time_point_sec start = fc::time_point::now();
     write_request_visitor req_visitor;
     req_visitor.db = &db;
     req_visitor.block_generator = block_generator;
@@ -276,13 +279,19 @@ void chain_plugin_impl::start_write_processing()
       */
     while( running )
     {
-      if( !is_syncing )
-        start = fc::time_point::now();
-
       if( write_queue.pop( cxt ) )
       {
+	fc::time_point write_lock_request_time = fc::time_point::now();
         db.with_write_lock( [&]()
         {
+          fc::time_point write_lock_acquired_time = fc::time_point::now();
+          fc::microseconds write_lock_acquisition_time = write_lock_acquired_time - write_lock_request_time;
+          if( write_lock_acquisition_time > fc::milliseconds( 50 ) )
+          {
+            wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}μs exceeds warning threshold of 50ms", 
+                 ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
+          }
+
           STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f )
           while( true )
           {
@@ -291,15 +300,22 @@ void chain_plugin_impl::start_write_processing()
             cxt->success = cxt->req_ptr.visit( req_visitor );
             cxt->prom_ptr.visit( prom_visitor );
 
-            if( is_syncing && start - db.head_block_time() < fc::minutes(1) )
+            if( is_syncing && fc::time_point::now() - db.head_block_time() < fc::minutes(1) )
             {
-              start = fc::time_point::now();
               is_syncing = false;
             }
 
-            if( !is_syncing && write_lock_hold_time >= 0 && fc::time_point::now() - start > fc::milliseconds( write_lock_hold_time ) )
+            if( !is_syncing )
             {
-              break;
+              fc::microseconds write_lock_held_duration = fc::time_point::now() - write_lock_acquired_time;
+              if (write_lock_held_duration > fc::milliseconds( write_lock_hold_time ) )
+              {
+                wlog("Stopped processing write_queue before empty because we exceeded ${write_lock_hold_time}ms, "
+                     "held lock for ${write_lock_held_duration}μs", 
+                     ("write_lock_hold_time", write_lock_hold_time)
+                     ("write_lock_held_duration", write_lock_held_duration.count()));
+                break;
+              }
             }
 
             if( !write_queue.pop( cxt ) )
@@ -326,10 +342,8 @@ void chain_plugin_impl::stop_write_processing()
   write_processor_thread.reset();
 }
 
-void chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
+bool chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
 {
-  FC_ASSERT( replay, "Replaying is not enabled" );
-
   bool replay_is_last_operation = replay_blockchain();
 
   if( replay_is_last_operation )
@@ -346,13 +360,12 @@ void chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
   }
   else
   {
-    //if `stop_replay_at` > 0 stay in API node context( without synchronization )
+    //if `stop_replay_at` > 0 stay in API node context( without p2p connections )
     if( stop_replay_at > 0 )
       is_p2p_enabled = false;
-
-    //Replaying is definitely finished. It's time to synchronization/regular work.
-    work( on_sync );
   }
+
+  return replay_is_last_operation;
 }
 
 void chain_plugin_impl::initial_settings()
@@ -467,7 +480,36 @@ void chain_plugin_impl::initial_settings()
   db_open_args.benchmark = hive::chain::TBenchmark( benchmark_interval, benchmark_lambda );
 }
 
-bool chain_plugin_impl::open()
+bool chain_plugin_impl::check_data_consistency()
+{
+  uint64_t head_block_num_origin = 0;
+  uint64_t head_block_num_state = 0;
+
+  auto _is_reindex_complete = db.is_reindex_complete( &head_block_num_origin, &head_block_num_state );
+
+  if( !_is_reindex_complete )
+  {
+    if( head_block_num_state > head_block_num_origin )
+    {
+      appbase::app().generate_interrupt_request();
+      return false;
+    }
+    if( db.get_snapshot_loaded() )
+    {
+      wlog( "Replaying has to be forced, after snapshot's loading. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+    }
+    else
+    {
+      wlog( "Replaying is not finished. Synchronization is not allowed. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+      appbase::app().generate_interrupt_request();
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void chain_plugin_impl::open()
 {
   try
   {
@@ -477,18 +519,6 @@ bool chain_plugin_impl::open()
 
     if( dump_memory_details )
       dumper.dump( true, get_indexes_memory_details );
-
-    uint64_t head_block_num_origin = 0;
-    uint64_t head_block_num_state = 0;
-
-    auto _is_reindex_complete = db.is_reindex_complete( &head_block_num_origin, &head_block_num_state );
-
-    if( !_is_reindex_complete )
-    {
-      wlog( "Replaying is not finished. Synchronization is not allowed. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
-      appbase::app().generate_interrupt_request();
-      return false;
-    }
   }
   catch( const fc::exception& e )
   {
@@ -498,8 +528,6 @@ bool chain_plugin_impl::open()
     wlog( " Error: ${e}", ("e", e) );
     exit(EXIT_FAILURE);
   }
-
-  return true;
 }
 
 bool chain_plugin_impl::replay_blockchain()
@@ -535,11 +563,14 @@ bool chain_plugin_impl::replay_blockchain()
   return true;
 }
 
+void chain_plugin_impl::process_snapshot()
+{
+  if( snapshot_provider != nullptr )
+    snapshot_provider->process_explicit_snapshot_requests( db_open_args );
+}
+
 void chain_plugin_impl::work( synchronization_type& on_sync )
 {
-  if(snapshot_provider != nullptr)
-    snapshot_provider->process_explicit_snapshot_requests(db_open_args);
-
   ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
 
   on_sync();
@@ -571,7 +602,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 {
   cfg.add_options()
       ("sps-remove-threshold", bpo::value<uint16_t>()->default_value( 200 ), "Maximum numbers of proposals/votes which can be removed in the same cycle")
-      ("shared-file-dir", bpo::value<bfs::path>()->default_value("blockchain"), // NOLINT(clang-analyzer-optin.cplusplus.VirtualCall)
+      ("shared-file-dir", bpo::value<bfs::path>()->default_value("blockchain"),
         "the location of the chain shared memory files (absolute path or relative to application data dir)")
       ("shared-file-size", bpo::value<string>()->default_value("54G"), "Size of the shared memory file. Default: 54G. If running a full node, increase this value to 200G.")
       ("shared-file-full-threshold", bpo::value<uint16_t>()->default_value(0),
@@ -707,17 +738,49 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
 void chain_plugin::plugin_startup()
 {
+  ilog("Chain plugin initialization...");
+
   my->initial_settings();
+
+  ilog("Database opening...");
+  my->open();
+
+  ilog("Snapshot processing...");
+  my->process_snapshot();
 
   if( my->replay )
   {
-    my->start_replay_processing( on_sync );
+    ilog("Replaying...");
+    if( !my->start_replay_processing( on_sync ) )
+    {
+      ilog("P2P enabling after replaying...");
+      my->work( on_sync );
+    }
   }
   else
   {
-    if( my->open() )
-      my->work( on_sync );
+    ilog("Consistency data checking...");
+    if( my->check_data_consistency() )
+    {
+      if( my->db.get_snapshot_loaded() )
+      {
+        ilog("Replaying...");
+        //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
+        if( !my->start_replay_processing( on_sync ) )
+        {
+          ilog("P2P enabling after replaying...");
+          my->work( on_sync );
+        }
+      }
+      else
+      {
+        ilog("P2P enabling...");
+        my->work( on_sync );
+      }
+    }
   }
+
+  ilog("Chain plugin initialization finished...");
 }
 
 void chain_plugin::plugin_shutdown()
@@ -841,7 +904,7 @@ void chain_plugin::register_block_generator( const std::string& plugin_name, std
     wlog( "Overriding a previously registered block generator by: ${registrant}", ("registrant", my->block_generator_registrant) );
 
   my->block_generator_registrant = plugin_name;
-  my->block_generator = std::move( block_producer );
+  my->block_generator = block_producer;
 }
 
 bool chain_plugin::is_p2p_enabled() const

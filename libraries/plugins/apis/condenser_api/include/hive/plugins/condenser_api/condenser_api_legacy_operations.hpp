@@ -76,6 +76,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef clear_null_account_balance_operation   legacy_clear_null_account_balance_operation;
   typedef consolidate_treasury_balance_operation legacy_consolidate_treasury_balance_operation;
   typedef delayed_voting_operation               legacy_delayed_voting_operation;
+  typedef sps_convert_operation                  legacy_sps_convert_operation;
 
   struct legacy_price
   {
@@ -94,7 +95,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   struct api_chain_properties
   {
     api_chain_properties() {}
-    api_chain_properties( const chain::chain_properties& c ) :
+    api_chain_properties( const hive::chain::chain_properties& c ) :
       account_creation_fee( legacy_asset::from_asset( c.account_creation_fee ) ),
       maximum_block_size( c.maximum_block_size ),
       hbd_interest_rate( c.hbd_interest_rate ),
@@ -1237,7 +1238,8 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_hardfork_hive_operation,
         legacy_hardfork_hive_restore_operation,
         legacy_delayed_voting_operation,
-        legacy_consolidate_treasury_balance_operation
+        legacy_consolidate_treasury_balance_operation,
+        legacy_sps_convert_operation
       > legacy_operation;
 
   struct legacy_operation_conversion_visitor
@@ -1281,6 +1283,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const clear_null_account_balance_operation& op )const     { l_op = op; return true; }
     bool operator()( const consolidate_treasury_balance_operation& op )const   { l_op = op; return true; }
     bool operator()( const delayed_voting_operation& op )const                 { l_op = op; return true; }
+    bool operator()( const sps_convert_operation& op )const                    { l_op = op; return true; }
 
     bool operator()( const transfer_operation& op )const
     {

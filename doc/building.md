@@ -1,6 +1,6 @@
 # Building Hive
 
-Building Steeem requires 8GB of RAM.
+Building Hive requires 8GB of RAM.
 
 ## Compile-Time Options (cmake)
 

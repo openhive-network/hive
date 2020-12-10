@@ -226,6 +226,7 @@ struct api_dynamic_global_property_object
     hbd_start_percent( o.hbd_start_percent ),
     next_maintenance_time( o.next_maintenance_time ),
     last_budget_time( o.last_budget_time ),
+    next_daily_maintenance_time( o.next_daily_maintenance_time ),
     content_reward_percent( o.content_reward_percent ),
     vesting_reward_percent( o.vesting_reward_percent ),
     sps_fund_percent( o.sps_fund_percent ),
@@ -271,6 +272,7 @@ struct api_dynamic_global_property_object
   uint16_t                        hbd_start_percent;
   time_point_sec                  next_maintenance_time;
   time_point_sec                  last_budget_time;
+  time_point_sec                  next_daily_maintenance_time;
   uint16_t                        content_reward_percent;
   uint16_t                        vesting_reward_percent;
   uint16_t                        sps_fund_percent;
@@ -512,7 +514,7 @@ struct api_account_object
     active = authority( auth.active );
     posting = authority( auth.posting );
     last_owner_update = auth.last_owner_update;
-#ifndef IS_LOW_MEM
+#ifdef COLLECT_ACCOUNT_METADATA
     const auto* maybe_meta = db.find< account_metadata_object, by_account >( id );
     if( maybe_meta )
     {
@@ -529,8 +531,9 @@ struct api_account_object
 
     if( delayed_votes_active )
       delayed_votes = vector< delayed_votes_data >{ a.delayed_votes.begin(), a.delayed_votes.end() };
-  }
 
+    post_voting_power = db.get_effective_vesting_shares(a, VESTS_SYMBOL);
+  }
 
   api_account_object(){}
 
@@ -588,6 +591,9 @@ struct api_account_object
   asset             delegated_vesting_shares;
   asset             received_vesting_shares;
   asset             vesting_withdraw_rate;
+  
+  asset             post_voting_power;
+
   time_point_sec    next_vesting_withdrawal;
   share_type        withdrawn;
   share_type        to_withdraw;
@@ -1056,7 +1062,7 @@ FC_REFLECT( hive::plugins::database_api::api_dynamic_global_property_object,
           (current_aslot)(recent_slots_filled)(participation_count)(last_irreversible_block_num)
           (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)
           (available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)(next_maintenance_time)
-          (last_budget_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)
+          (last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)
           (sps_interval_ledger)(downvote_pool_percent)
 #ifdef HIVE_ENABLE_SMT
           (smt_creation_fee)
@@ -1094,7 +1100,7 @@ FC_REFLECT( hive::plugins::database_api::api_account_object,
           (hbd_balance)(hbd_seconds)(hbd_seconds_last_update)(hbd_last_interest_payment)
           (savings_hbd_balance)(savings_hbd_seconds)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)(savings_withdraw_requests)
           (reward_hbd_balance)(reward_hive_balance)(reward_vesting_balance)(reward_vesting_hive)
-          (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)(vesting_withdraw_rate)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
+          (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)(vesting_withdraw_rate)(post_voting_power)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
           (pending_transfers)(curation_rewards)
           (posting_rewards)
           (proxied_vsf_votes)(witnesses_voted_for)

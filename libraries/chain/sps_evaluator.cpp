@@ -27,7 +27,7 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
 
     asset fee_hbd( HIVE_TREASURY_FEE, HBD_SYMBOL );
 
-    if(_db.has_hardfork(HIVE_HARDFORK_0_24))
+    if(_db.has_hardfork(HIVE_HARDFORK_1_24))
     {
       uint32_t proposal_run_time = o.end_date.sec_since_epoch() - o.start_date.sec_since_epoch();
 
@@ -83,7 +83,7 @@ void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
 {
   try
   {
-    FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_24 ), "The update proposal functionality not enabled until hardfork ${hf}", ("hf", HIVE_HARDFORK_0_24) );
+    FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_24 ), "The update proposal functionality not enabled until hardfork ${hf}", ("hf", HIVE_HARDFORK_1_24) );
 
     const auto& proposal = _db.get< proposal_object, by_proposal_id >( o.proposal_id );
 

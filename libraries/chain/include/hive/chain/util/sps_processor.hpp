@@ -30,6 +30,7 @@ class sps_processor
     chain::database& db;
 
     bool is_maintenance_period( const time_point_sec& head_time ) const;
+    bool is_daily_maintenance_period( const time_point_sec& head_time ) const;
 
     void remove_proposals( const time_point_sec& head_time );
 
@@ -56,6 +57,7 @@ class sps_processor
     void make_payments( const block_notification& note );
 
     void record_funding( const block_notification& note );
+    void convert_funds( const block_notification& note );
 
   public:
 

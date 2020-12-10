@@ -139,6 +139,7 @@ struct api_account_object
     delegated_vesting_shares( legacy_asset::from_asset( a.delegated_vesting_shares ) ),
     received_vesting_shares( legacy_asset::from_asset( a.received_vesting_shares ) ),
     vesting_withdraw_rate( legacy_asset::from_asset( a.vesting_withdraw_rate ) ),
+    post_voting_power( legacy_asset::from_asset(a.post_voting_power) ),
     next_vesting_withdrawal( a.next_vesting_withdrawal ),
     withdrawn( a.withdrawn ),
     to_withdraw( a.to_withdraw ),
@@ -217,6 +218,8 @@ struct api_account_object
   legacy_asset      delegated_vesting_shares;
   legacy_asset      received_vesting_shares;
   legacy_asset      vesting_withdraw_rate;
+  legacy_asset      post_voting_power;
+
   time_point_sec    next_vesting_withdrawal;
   share_type        withdrawn;
   share_type        to_withdraw;
@@ -391,6 +394,7 @@ struct extended_dynamic_global_properties
     hbd_start_percent( o.hbd_start_percent ),
     next_maintenance_time( o.next_maintenance_time ),
     last_budget_time( o.last_budget_time ),
+    next_daily_maintenance_time( o.next_daily_maintenance_time ),
     content_reward_percent( o.content_reward_percent ),
     vesting_reward_percent( o.vesting_reward_percent ),
     sps_fund_percent( o.sps_fund_percent ),
@@ -441,6 +445,8 @@ struct extended_dynamic_global_properties
 
   time_point_sec    next_maintenance_time;
   time_point_sec    last_budget_time;
+
+  time_point_sec    next_daily_maintenance_time;
 
   uint16_t          content_reward_percent = HIVE_CONTENT_REWARD_PERCENT_HF16;
   uint16_t          vesting_reward_percent = HIVE_VESTING_FUND_PERCENT_HF16;
@@ -1202,7 +1208,7 @@ FC_REFLECT( hive::plugins::condenser_api::api_account_object,
           (hbd_balance)(hbd_seconds)(hbd_seconds_last_update)(hbd_last_interest_payment)
           (savings_hbd_balance)(savings_hbd_seconds)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)(savings_withdraw_requests)
           (reward_hbd_balance)(reward_hive_balance)(reward_vesting_balance)(reward_vesting_hive)
-          (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)(vesting_withdraw_rate)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
+          (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)(vesting_withdraw_rate)(post_voting_power)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
           (pending_transfers)(curation_rewards)
           (posting_rewards)
           (proxied_vsf_votes)(witnesses_voted_for)
@@ -1236,7 +1242,7 @@ FC_REFLECT( hive::plugins::condenser_api::extended_dynamic_global_properties,
         (hbd_interest_rate)(hbd_print_rate)
         (maximum_block_size)(required_actions_partition_percent)(current_aslot)(recent_slots_filled)(participation_count)(last_irreversible_block_num)
         (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)(available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)
-        (next_maintenance_time)(last_budget_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)(sps_interval_ledger)(downvote_pool_percent)
+        (next_maintenance_time)(last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)(sps_interval_ledger)(downvote_pool_percent)
         )
 
 FC_REFLECT( hive::plugins::condenser_api::api_witness_object,

@@ -94,6 +94,20 @@ def debug_generate_blocks_until(target_node : str, debug_key : str, timestamp : 
   }
   return send_rpc_query(target_node, payload)
 
+# safe_block_offset - how many blocks at the end, process with 'slower' option
+def debug_quick_block_skip( node, debug_key, blocks, safe_block_offset : int = 100) -> None:
+  assert blocks > safe_block_offset
+
+  import datetime
+  import dateutil.parser
+
+  now = node.get_dynamic_global_properties(False).get('time', None)
+  now = dateutil.parser.parse(now)
+  now = now + datetime.timedelta(seconds=(blocks * 3) - safe_block_offset)
+
+  debug_generate_blocks_until(node.rpc.url, debug_key, now.replace(microsecond=0).isoformat())
+  debug_generate_blocks(node.rpc.url, debug_key, safe_block_offset)
+
 def debug_set_hardfork(target_node : str, hardfork_id : int) -> dict:
   if hardfork_id < 0:
     raise ValueError( "hardfork_id cannot be negative" )
@@ -106,6 +120,19 @@ def debug_set_hardfork(target_node : str, hardfork_id : int) -> dict:
     }
   }
   return send_rpc_query(target_node, payload)
+
+def debug_quick_block_skip_with_step( node, debug_key, blocks, block_step, safe_block_offset : int = 100) -> None:
+  currently_processed = blocks
+  while currently_processed > 0:
+    if currently_processed - block_step <= 0:
+      if safe_block_offset > currently_processed:
+        debug_generate_blocks(node.rpc.url, debug_key, currently_processed)
+      else:
+        debug_quick_block_skip(node, debug_key, currently_processed, safe_block_offset)
+      return
+    else:
+      debug_quick_block_skip(node, debug_key, block_step, safe_block_offset)
+    currently_processed -= block_step
 
 def debug_has_hardfork(target_node : str, hardfork_id : int) -> dict:
   payload = {

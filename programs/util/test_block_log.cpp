@@ -2,6 +2,15 @@
 #include <hive/protocol/block.hpp>
 #include <fc/io/raw.hpp>
 
+void dump_head(const hive::chain::block_log& log)
+{
+  boost::shared_ptr<hive::chain::signed_block> head = log.head();
+  if (head)
+    ilog("head: ${head}", ("head", *head));
+  else
+    ilog("head: null");
+}
+
 int main( int argc, char** argv, char** envp )
 {
   try
@@ -13,8 +22,8 @@ int main( int argc, char** argv, char** envp )
 
     //db.open( temp_dir );
     log.open( temp_dir.path() / "log" );
-
-    idump( (log.head() ) );
+ 
+    dump_head(log);
 
     hive::protocol::signed_block b1;
     b1.witness = "alice";
@@ -23,7 +32,7 @@ int main( int argc, char** argv, char** envp )
     log.append( b1 );
     log.flush();
     idump( (b1) );
-    idump( ( log.head() ) );
+    dump_head(log);
     idump( (fc::raw::pack_size(b1)) );
 
     hive::protocol::signed_block b2;
@@ -33,21 +42,21 @@ int main( int argc, char** argv, char** envp )
     log.append( b2 );
     log.flush();
     idump( (b2) );
-    idump( (log.head() ) );
+    dump_head(log);
     idump( (fc::raw::pack_size(b2)) );
 
-    auto r1 = log.read_block( 0 );
+    auto r1 = log.read_block_by_num( 1 );
     idump( (r1) );
-    idump( (fc::raw::pack_size(r1.first)) );
+    idump( (fc::raw::pack_size(*r1)) );
 
-    auto r2 = log.read_block( r1.second );
+    auto r2 = log.read_block_by_num( 2 );
     idump( (r2) );
-    idump( (fc::raw::pack_size(r2.first)) );
+    idump( (fc::raw::pack_size(*r2)) );
 
     idump( (log.read_head()) );
     idump( (fc::raw::pack_size(log.read_head())));
 
-    auto r3 = log.read_block( r2.second );
+    auto r3 = log.read_block_by_num( 3 );
     idump( (r3) );
   }
   catch ( const std::exception& e )

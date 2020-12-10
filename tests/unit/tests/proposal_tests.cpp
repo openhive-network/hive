@@ -770,20 +770,32 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance)
       BOOST_REQUIRE( exist_proposal( id_proposal_01 ) );
       BOOST_REQUIRE( exist_proposal( id_proposal_02 ) );
 
+      /*
+            Take a look at comment in `sps_processor::remove_proposals`
+      */
       generate_blocks( start_time + fc::minutes( 11 ) );
-      BOOST_REQUIRE( !exist_proposal( id_proposal_00 ) );
+      
+      //BOOST_REQUIRE( !exist_proposal( id_proposal_00 ) ); //earlier
+      BOOST_REQUIRE( exist_proposal( id_proposal_00 ) );    //now
+      
+      
       BOOST_REQUIRE( exist_proposal( id_proposal_01 ) );
       BOOST_REQUIRE( exist_proposal( id_proposal_02 ) );
 
       generate_blocks( start_time + fc::minutes( 21 ) );
-      BOOST_REQUIRE( !exist_proposal( id_proposal_00 ) );
+      //BOOST_REQUIRE( !exist_proposal( id_proposal_00 ) ); //earlier
+      BOOST_REQUIRE( exist_proposal( id_proposal_00 ) );    //now
       BOOST_REQUIRE( exist_proposal( id_proposal_01 ) );
-      BOOST_REQUIRE( !exist_proposal( id_proposal_02 ) );
+      //BOOST_REQUIRE( !exist_proposal( id_proposal_02 ) ); //earlier
+      BOOST_REQUIRE( exist_proposal( id_proposal_02 ) );    //now
 
       generate_blocks( start_time + fc::minutes( 31 ) );
-      BOOST_REQUIRE( !exist_proposal( id_proposal_00 ) );
-      BOOST_REQUIRE( !exist_proposal( id_proposal_01 ) );
-      BOOST_REQUIRE( !exist_proposal( id_proposal_02 ) );
+      // BOOST_REQUIRE( !exist_proposal( id_proposal_00 ) ); //earlier
+      // BOOST_REQUIRE( !exist_proposal( id_proposal_01 ) ); //earlier
+      // BOOST_REQUIRE( !exist_proposal( id_proposal_02 ) ); //earlier
+      BOOST_REQUIRE( exist_proposal( id_proposal_00 ) );    //now
+      BOOST_REQUIRE( exist_proposal( id_proposal_01 ) );    //now
+      BOOST_REQUIRE( exist_proposal( id_proposal_02 ) );    //now
     }
 
     validate_database();
@@ -810,7 +822,97 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     auto receiver = "bob";
 
     auto start_date = db->head_block_time() + fc::days( 1 );
-    auto end_date = start_date + fc::days( 2 );
+    auto end_date = start_date + fc::days( 20 );
+
+    auto daily_pay = asset( 100, HBD_SYMBOL );
+
+    auto subject = "hello";
+    auto permlink = "somethingpermlink";
+
+    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+
+    FUND( creator, ASSET( "80.000 TBD" ) );
+
+    signed_transaction tx;
+
+    const account_object& before_treasury_account = db->get_treasury();
+    const account_object& before_alice_account = db->get_account( creator );
+    const account_object& before_bob_account = db->get_account( receiver );
+
+    auto before_alice_hbd_balance = before_alice_account.hbd_balance;
+    auto before_bob_hbd_balance = before_bob_account.hbd_balance;
+    auto before_treasury_balance = before_treasury_account.hbd_balance;
+
+    create_proposal_operation op;
+
+    op.creator = creator;
+    op.receiver = receiver;
+
+    op.start_date = start_date;
+    op.end_date = end_date;
+
+    op.daily_pay = daily_pay;
+
+    op.subject = subject;
+    op.permlink = permlink;
+
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+    tx.operations.clear();
+    tx.signatures.clear();
+
+    const auto& after_treasury_account = db->get_treasury();
+    const account_object& after_alice_account = db->get_account( creator );
+    const account_object& after_bob_account = db->get_account( receiver );
+
+    auto after_alice_hbd_balance = after_alice_account.hbd_balance;
+    auto after_bob_hbd_balance = after_bob_account.hbd_balance;
+    auto after_treasury_balance = after_treasury_account.hbd_balance;
+
+    BOOST_REQUIRE( before_alice_hbd_balance == after_alice_hbd_balance + fee );
+    BOOST_REQUIRE( before_bob_hbd_balance == after_bob_hbd_balance );
+    /// Fee shall be paid to treasury account.
+    BOOST_REQUIRE(before_treasury_balance == after_treasury_balance - fee);
+
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
+    auto found = proposal_idx.find( creator );
+    BOOST_REQUIRE( found != proposal_idx.end() );
+
+    BOOST_REQUIRE( found->creator == creator );
+    BOOST_REQUIRE( found->receiver == receiver );
+    BOOST_REQUIRE( found->start_date == start_date );
+    BOOST_REQUIRE( found->end_date == end_date );
+    BOOST_REQUIRE( found->daily_pay == daily_pay );
+    BOOST_REQUIRE( found->subject == subject );
+    BOOST_REQUIRE( found->permlink == permlink );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( proposal_object_apply_free_increase )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: create_proposal_operation with fee increase" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    auto creator = "alice";
+    auto receiver = "bob";
+    auto proposal_duration = 90;
+    auto extra_days = proposal_duration - HIVE_PROPOSAL_FEE_INCREASE_DAYS <= 0 ? 0 : proposal_duration - HIVE_PROPOSAL_FEE_INCREASE_DAYS;
+
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date = start_date + fc::days( proposal_duration );
+    auto fee = asset( HIVE_TREASURY_FEE + extra_days * HIVE_PROPOSAL_FEE_INCREASE_AMOUNT, HBD_SYMBOL );
 
     auto daily_pay = asset( 100, HBD_SYMBOL );
 
@@ -1217,7 +1319,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
 BOOST_AUTO_TEST_CASE( create_proposal_000 )
 {
   try {
-    BOOST_TEST_MESSAGE( "Testing: create proposal: opration arguments validation - all args are ok" );
+    BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - all args are ok" );
     ACTORS( (alice)(bob) )
     generate_block();
 
@@ -1243,7 +1345,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_001 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: create proposal: opration arguments validation - invalid creator" );
+    BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid creator" );
     {
       create_proposal_data cpd(db->head_block_time());
       ACTORS( (alice)(bob) )
@@ -1261,7 +1363,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_002 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: create proposal: opration arguments validation - invalid receiver" );
+    BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid receiver" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
@@ -1276,7 +1378,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_003 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: create proposal: opration arguments validation - invalid start date" );
+    BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid start date" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
@@ -1292,7 +1394,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_004 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: create proposal: opration arguments validation - invalid end date" );
+    BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid end date" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
@@ -1308,7 +1410,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_005 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: create proposal: opration arguments validation - invalid subject(empty)" );
+    BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid subject(empty)" );
     ACTORS( (alice)(bob) )
     generate_block();
     create_proposal_operation cpo;
@@ -1337,7 +1439,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_006 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: create proposal: opration arguments validation - invalid subject(too long)" );
+    BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid subject(too long)" );
     ACTORS( (alice)(bob) )
     generate_block();
     create_proposal_operation cpo;
@@ -1400,7 +1502,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_008 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: create proposal: opration arguments validation - invalid daily payement (negative value)" );
+    BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid daily payement (negative value)" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
@@ -1415,11 +1517,30 @@ BOOST_AUTO_TEST_CASE( create_proposal_008 )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( create_proposal_009 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: create proposal: insufficient funds for operation" );
+    create_proposal_data cpd(db->head_block_time());
+    ACTORS( (alice)(bob) )
+    generate_block();
+    FUND( cpd.creator, ASSET( "15.000 TBD" ) );
+    generate_block();
+    generate_block();
+    cpd.end_date = cpd.start_date + fc::days(80);
+    cpd.daily_pay = asset( 10, HBD_SYMBOL );
+    HIVE_REQUIRE_THROW(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key ), fc::exception);
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( update_proposal_votes_000 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: update proposal votes: opration arguments validation - all ok (approve true)" );
+    BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (approve true)" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
@@ -1439,7 +1560,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_001 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: update proposal votes: opration arguments validation - all ok (approve false)" );
+    BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (approve false)" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
@@ -1459,7 +1580,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_002 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: update proposal votes: opration arguments validation - all ok (empty array)" );
+    BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (empty array)" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
@@ -1479,7 +1600,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_003 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: update proposal votes: opration arguments validation - all ok (array with negative digits)" );
+    BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (array with negative digits)" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
@@ -1497,7 +1618,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_004 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: update proposal votes: opration arguments validation - invalid voter" );
+    BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - invalid voter" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
@@ -1517,7 +1638,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_005 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: update proposal votes: opration arguments validation - invalid id array (array with greater number of digits than allowed)" );
+    BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - invalid id array (array with greater number of digits than allowed)" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
@@ -1927,7 +2048,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_008 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: remove proposal: opration arguments validation - all ok" );
+    BOOST_TEST_MESSAGE( "Testing: remove proposal: operation arguments validation - all ok" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
@@ -1944,7 +2065,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_009 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: remove proposal: opration arguments validation - invalid deleter" );
+    BOOST_TEST_MESSAGE( "Testing: remove proposal: operation arguments validation - invalid deleter" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
@@ -1962,7 +2083,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_010 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: remove proposal: opration arguments validation - invalid array(empty array)" );
+    BOOST_TEST_MESSAGE( "Testing: remove proposal: operation arguments validation - invalid array(empty array)" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
@@ -1979,7 +2100,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_011 )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: remove proposal: opration arguments validation - invalid array(array with greater number of digits than allowed)" );
+    BOOST_TEST_MESSAGE( "Testing: remove proposal: operation arguments validation - invalid array(array with greater number of digits than allowed)" );
     create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
@@ -2022,78 +2143,6 @@ BOOST_AUTO_TEST_CASE( remove_proposal_012 )
     validate_database();
   }
   FC_LOG_AND_RETHROW()
-}
-
-BOOST_AUTO_TEST_CASE( update_proposal_000 )
-{
-  try {
-    BOOST_TEST_MESSAGE( "Testing: update proposal - update subject" );
-
-    ACTORS( (alice)(bob) )
-    generate_block();
-
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-    generate_block();
-
-    auto creator = "alice";
-    auto receiver = "bob";
-
-    auto start_date = db->head_block_time() + fc::days( 1 );
-    auto end_date = start_date + fc::days( 2 );
-
-    auto daily_pay = asset( 100, HBD_SYMBOL );
-
-    auto subject = "hello";
-    auto permlink = "somethingpermlink";
-
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
-
-    FUND( creator, ASSET( "80.000 TBD" ) );
-
-    signed_transaction tx;
-
-    BOOST_TEST_MESSAGE("-- creating");
-    create_proposal_operation op;
-
-    op.creator = creator;
-    op.receiver = receiver;
-
-    op.start_date = start_date;
-    op.end_date = end_date;
-
-    op.daily_pay = daily_pay;
-
-    op.subject = subject;
-    op.permlink = permlink;
-
-    tx.operations.push_back( op );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    
-    db->push_transaction( tx, 0 );
-    tx.operations.clear();
-    tx.signatures.clear();
-
-    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
-    auto found = proposal_idx.find( creator );
-    BOOST_REQUIRE( found != proposal_idx.end() );
-
-    BOOST_REQUIRE( found->creator == creator );
-    BOOST_REQUIRE( found->receiver == receiver );
-    BOOST_REQUIRE( found->start_date == start_date );
-    BOOST_REQUIRE( found->end_date == end_date );
-    BOOST_REQUIRE( found->daily_pay == daily_pay );
-    BOOST_REQUIRE( found->subject == subject );
-    BOOST_REQUIRE( found->permlink == permlink );
-
-    BOOST_TEST_MESSAGE("-- updating");
-    update_proposal(found->proposal_id, creator, daily_pay, "Other subject", permlink, alice_private_key);
-    generate_block();
-    found = proposal_idx.find( creator );
-    BOOST_REQUIRE( found->subject == "Other subject" );
-
-    validate_database();
-  } FC_LOG_AND_RETHROW()
 }
 
 BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
@@ -2172,7 +2221,11 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
       current_active_proposals -= threshold;
       auto found = calc_proposals( proposal_idx, proposals_id );
 
-      BOOST_REQUIRE( current_active_proposals == found );
+      /*
+        Take a look at comment in `sps_processor::remove_proposals`
+      */
+      //BOOST_REQUIRE( current_active_proposals == found ); //earlier
+      BOOST_REQUIRE( nr_proposals == found );               //now
     }
 
     BOOST_REQUIRE( current_active_proposals == 0 );
@@ -2225,7 +2278,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
                           {"a04", a04_private_key },
                           };
 
-    for( auto item : inits ) 
+    for( auto item : inits )
     {
       FUND( item.account, ASSET( "10000.000 TBD" ) );
     }
@@ -2276,7 +2329,11 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
 
-      BOOST_REQUIRE( current_active_anything == found_proposals + found_votes );
+      /*
+        Take a look at comment in `sps_processor::remove_proposals`
+      */
+      //BOOST_REQUIRE( current_active_anything == found_proposals + found_votes );                            //earlier
+      BOOST_REQUIRE( ( current_active_proposals + current_active_votes ) == found_proposals + found_votes );  //now
     }
 
     BOOST_REQUIRE( current_active_anything == 0 );
@@ -2328,7 +2385,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
                           {"a04", a04_private_key },
                           };
 
-    for( auto item : inits ) 
+    for( auto item : inits )
     {
       FUND( item.account, ASSET( "10000.000 TBD" ) );
     }
@@ -2675,7 +2732,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       {"a45", a45_private_key }, {"a46", a46_private_key }, {"a47", a47_private_key }, {"a48", a48_private_key }, {"a49", a49_private_key }
     };
 
-    for( auto item : inits ) 
+    for( auto item : inits )
     {
       FUND( item.account, ASSET( "10000.000 TBD" ) );
     }
@@ -2939,6 +2996,391 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
   FC_LOG_AND_RETHROW()
 }
 
+
+
+BOOST_AUTO_TEST_CASE( update_proposal_000 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: update proposal - update subject" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    auto creator = "alice";
+    auto receiver = "bob";
+
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date = start_date + fc::days( 2 );
+
+    auto daily_pay = asset( 100, HBD_SYMBOL );
+
+    auto subject = "hello";
+    auto permlink = "somethingpermlink";
+
+    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+
+    FUND( creator, ASSET( "80.000 TBD" ) );
+
+    signed_transaction tx;
+
+    BOOST_TEST_MESSAGE("-- creating");
+    create_proposal_operation op;
+
+    op.creator = creator;
+    op.receiver = receiver;
+
+    op.start_date = start_date;
+    op.end_date = end_date;
+
+    op.daily_pay = daily_pay;
+
+    op.subject = subject;
+    op.permlink = permlink;
+
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+
+    db->push_transaction( tx, 0 );
+    tx.operations.clear();
+    tx.signatures.clear();
+
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
+    auto found = proposal_idx.find( creator );
+    BOOST_REQUIRE( found != proposal_idx.end() );
+
+    BOOST_REQUIRE( found->creator == creator );
+    BOOST_REQUIRE( found->receiver == receiver );
+    BOOST_REQUIRE( found->start_date == start_date );
+    BOOST_REQUIRE( found->end_date == end_date );
+    BOOST_REQUIRE( found->daily_pay == daily_pay );
+    BOOST_REQUIRE( found->subject == subject );
+    BOOST_REQUIRE( found->permlink == permlink );
+
+    BOOST_TEST_MESSAGE("-- updating");
+    update_proposal(found->proposal_id, creator, daily_pay, "Other subject", permlink, alice_private_key);
+    generate_block();
+    found = proposal_idx.find( creator );
+    BOOST_REQUIRE( found->subject == "Other subject" );
+
+    validate_database();
+  } FC_LOG_AND_RETHROW()
+}
+
+
+BOOST_AUTO_TEST_CASE( update_proposal_001 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid id" );
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    auto creator    = "alice";
+    auto receiver   = "bob";
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date   = start_date + fc::days( 2 );
+    auto daily_pay  = asset( 100, HBD_SYMBOL );
+    auto subject = "hello";
+    auto permlink = "somethingpermlink";
+
+    FUND( creator, ASSET( "80.000 TBD" ) );
+
+    signed_transaction tx;
+
+    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+
+    create_proposal_operation op;
+    op.creator = creator;
+    op.receiver = receiver;
+    op.start_date = start_date;
+    op.end_date = end_date;
+    op.daily_pay = daily_pay;
+    op.subject = subject;
+    op.permlink = permlink;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+
+    tx.operations.clear();
+    tx.signatures.clear();
+
+    HIVE_REQUIRE_THROW( update_proposal(50, creator, daily_pay, subject, permlink, alice_private_key), fc::exception);
+    HIVE_REQUIRE_THROW( update_proposal(-50, creator, daily_pay, subject, permlink, alice_private_key), fc::exception);
+
+    validate_database();
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( update_proposal_002 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid creator" );
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    auto creator    = "alice";
+    auto receiver   = "bob";
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date   = start_date + fc::days( 2 );
+    auto daily_pay  = asset( 100, HBD_SYMBOL );
+    auto subject = "hello";
+    auto permlink = "somethingpermlink";
+
+    FUND( creator, ASSET( "80.000 TBD" ) );
+
+    signed_transaction tx;
+
+    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+
+    create_proposal_operation op;
+    op.creator = creator;
+    op.receiver = receiver;
+    op.start_date = start_date;
+    op.end_date = end_date;
+    op.daily_pay = daily_pay;
+    op.subject = subject;
+    op.permlink = permlink;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+
+    tx.operations.clear();
+    tx.signatures.clear();
+
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
+    auto proposal = proposal_idx.find( creator );
+
+    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, "bob", daily_pay, subject, permlink, alice_private_key), fc::exception);
+
+    validate_database();
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( update_proposal_003 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid daily pay" );
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    auto creator    = "alice";
+    auto receiver   = "bob";
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date   = start_date + fc::days( 2 );
+    auto daily_pay  = asset( 100, HBD_SYMBOL );
+    auto subject = "hello";
+    auto permlink = "somethingpermlink";
+
+    FUND( creator, ASSET( "80.000 TBD" ) );
+
+    signed_transaction tx;
+
+    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+
+    create_proposal_operation op;
+    op.creator = creator;
+    op.receiver = receiver;
+    op.start_date = start_date;
+    op.end_date = end_date;
+    op.daily_pay = daily_pay;
+    op.subject = subject;
+    op.permlink = permlink;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+
+    tx.operations.clear();
+    tx.signatures.clear();
+
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
+    auto proposal = proposal_idx.find( creator );
+
+    // Superior than current proposal
+    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), subject, permlink, alice_private_key), fc::exception);
+    // Negative value
+    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( -110, HBD_SYMBOL ), subject, permlink, alice_private_key), fc::exception);
+
+    validate_database();
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( update_proposal_004 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid subject" );
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    auto creator    = "alice";
+    auto receiver   = "bob";
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date   = start_date + fc::days( 2 );
+    auto daily_pay  = asset( 100, HBD_SYMBOL );
+    auto subject = "hello";
+    auto permlink = "somethingpermlink";
+
+    FUND( creator, ASSET( "80.000 TBD" ) );
+
+    signed_transaction tx;
+
+    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+
+    create_proposal_operation op;
+    op.creator = creator;
+    op.receiver = receiver;
+    op.start_date = start_date;
+    op.end_date = end_date;
+    op.daily_pay = daily_pay;
+    op.subject = subject;
+    op.permlink = permlink;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+
+    tx.operations.clear();
+    tx.signatures.clear();
+
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
+    auto proposal = proposal_idx.find( creator );
+
+    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), "", permlink, alice_private_key), fc::exception);
+
+    validate_database();
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( update_proposal_005 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid subject" );
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    auto creator    = "alice";
+    auto receiver   = "bob";
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date   = start_date + fc::days( 2 );
+    auto daily_pay  = asset( 100, HBD_SYMBOL );
+    auto subject = "hello";
+    auto permlink = "somethingpermlink";
+
+    FUND( creator, ASSET( "80.000 TBD" ) );
+
+    signed_transaction tx;
+
+    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+
+    create_proposal_operation op;
+    op.creator = creator;
+    op.receiver = receiver;
+    op.start_date = start_date;
+    op.end_date = end_date;
+    op.daily_pay = daily_pay;
+    op.subject = subject;
+    op.permlink = permlink;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+
+    tx.operations.clear();
+    tx.signatures.clear();
+
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
+    auto proposal = proposal_idx.find( creator );
+    // Empty subject
+    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), "", permlink, alice_private_key), fc::exception);
+    // Subject too long
+    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                                        permlink, alice_private_key), fc::exception);
+
+    validate_database();
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( update_proposal_006 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid permlink" );
+    ACTORS( (alice)(bob)(dave) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    auto creator    = "alice";
+    auto receiver   = "bob";
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date   = start_date + fc::days( 2 );
+    auto daily_pay  = asset( 100, HBD_SYMBOL );
+    auto subject = "hello";
+    auto permlink = "somethingpermlink";
+
+    FUND( creator, ASSET( "80.000 TBD" ) );
+
+    signed_transaction tx;
+
+    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment("dave", "davepermlink", "title", "body", "test", dave_private_key);
+
+    create_proposal_operation op;
+    op.creator = creator;
+    op.receiver = receiver;
+    op.start_date = start_date;
+    op.end_date = end_date;
+    op.daily_pay = daily_pay;
+    op.subject = subject;
+    op.permlink = permlink;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+
+    tx.operations.clear();
+    tx.signatures.clear();
+
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
+    auto proposal = proposal_idx.find( creator );
+    // Empty permlink
+    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), subject, "", alice_private_key), fc::exception);
+    // Post doesn't exist
+    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), subject, "doesntexist", alice_private_key), fc::exception);
+    // Post exists but is made by an user that is neither the receiver or the creator
+    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), subject, "davepermlink", alice_private_key), fc::exception);
+
+    validate_database();
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 
@@ -3125,8 +3567,13 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
 
     generate_blocks( 1 );
 
-    BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == 0 );
-    BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == 0 );
+    /*
+      Take a look at comment in `sps_processor::remove_proposals`
+    */
+    //BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == 0 );                       //earlier
+    //BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == 0 );                      //earlier
+    BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == current_active_proposals );  //now
+    BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );     //now
 
     int32_t benchmark_time = get_time( *db, sps_processor::get_removing_name() );
     idump( (benchmark_time) );
@@ -3236,6 +3683,49 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       BOOST_REQUIRE( before_tbd == after_tbd - paid );
     }
 
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: converting hive to hbd in the dhf" );
+    const auto& dgpo = db->get_dynamic_global_properties();
+    const account_object& _treasury = db->get_treasury();
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+
+    auto before_inflation_treasury_hbd_balance =  _treasury.get_hbd_balance();
+    generate_block();
+    auto treasury_per_block_inflation =  _treasury.get_hbd_balance() - before_inflation_treasury_hbd_balance;
+
+    FUND( db->get_treasury_name(), ASSET( "100.000 TESTS" ) );
+    generate_block();
+
+    auto before_treasury_hbd_balance =  _treasury.get_hbd_balance();
+    auto before_treasury_hive_balance =  _treasury.get_balance();
+
+    const auto hive_converted = asset(HIVE_PROPOSAL_CONVERSION_RATE * before_treasury_hive_balance.amount / HIVE_100_PERCENT, HIVE_SYMBOL);
+    // Same because of the 1:1 tests to tbd ratio
+    const auto hbd_converted = asset(hive_converted.amount, HBD_SYMBOL);
+    // Generate until the next daily maintenance
+    auto next_block = get_nr_blocks_until_daily_maintenance_block();
+    auto before_daily_maintenance_time = dgpo.next_daily_maintenance_time;
+    generate_blocks( next_block - 1);
+
+    auto treasury_hbd_inflation =  _treasury.get_hbd_balance() - before_treasury_hbd_balance;
+    generate_block();
+
+    treasury_hbd_inflation += treasury_per_block_inflation;
+    auto after_daily_maintenance_time = dgpo.next_daily_maintenance_time;
+    auto after_treasury_hbd_balance =  _treasury.get_hbd_balance();
+    auto after_treasury_hive_balance =  _treasury.get_balance();
+
+    BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation - hbd_converted );
+    BOOST_REQUIRE( before_treasury_hive_balance == after_treasury_hive_balance + hive_converted );
+    BOOST_REQUIRE( before_daily_maintenance_time == after_daily_maintenance_time - fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD )  );
     validate_database();
   }
   FC_LOG_AND_RETHROW()

@@ -1,5 +1,6 @@
 #include <hive/protocol/authority.hpp>
 
+#include <hive/chain/database.hpp>
 #include <hive/chain/util/impacted.hpp>
 
 #include <fc/utility.hpp>
@@ -252,6 +253,16 @@ struct get_impacted_account_visitor
     _impacted.emplace(op.voter);
   }
 
+  void operator()(const ineffective_delete_comment_operation& op)
+  {
+    _impacted.emplace(op.author);
+  }
+
+  void operator()(const comment_payout_update_operation& op)
+  {
+    _impacted.insert(op.author);
+  }
+
   void operator()( const comment_benefactor_reward_operation& op )
   {
     _impacted.insert( op.benefactor );
@@ -317,6 +328,21 @@ struct get_impacted_account_visitor
     _impacted.insert( op.account );
   }
 
+  void operator()( const sps_convert_operation& op )
+  {
+    _impacted.insert( op.fund_account );
+  }
+
+  void operator()( const consolidate_treasury_balance_operation& op )
+  {
+    _impacted.insert( NEW_HIVE_TREASURY_ACCOUNT );
+    _impacted.insert( OBSOLETE_TREASURY_ACCOUNT );
+  }
+
+  void operator()( const clear_null_account_balance_operation& op )
+  {
+    _impacted.insert( HIVE_NULL_ACCOUNT );
+  }
   //void operator()( const operation& op ){}
 };
 

@@ -10,6 +10,7 @@
 #include <hive/chain/util/delayed_voting.hpp>
 
 #include <hive/plugins/account_history/account_history_plugin.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
 #include <hive/plugins/webserver/webserver_plugin.hpp>
@@ -39,6 +40,9 @@ using hive::plugins::condenser_api::condenser_api_plugin;
 
 namespace hive { namespace chain {
 
+typedef hive::plugins::account_history::account_history_plugin ah_plugin;
+//typedef hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin ah_plugin;
+
 using std::cout;
 using std::cerr;
 
@@ -56,14 +60,14 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb 
       std::cout << "running test " << boost::unit_test::framework::current_test_case().p_name << std::endl;
   }
 
-  appbase::app().register_plugin< hive::plugins::account_history::account_history_plugin >();
+  appbase::app().register_plugin< ah_plugin >();
   db_plugin = &appbase::app().register_plugin< hive::plugins::debug_node::debug_node_plugin >();
   appbase::app().register_plugin< hive::plugins::rc::rc_plugin >();
   appbase::app().register_plugin< hive::plugins::witness::witness_plugin >();
 
   db_plugin->logging = false;
   appbase::app().initialize<
-    hive::plugins::account_history::account_history_plugin,
+    ah_plugin,
     hive::plugins::debug_node::debug_node_plugin,
     hive::plugins::rc::rc_plugin,
     hive::plugins::witness::witness_plugin
@@ -186,10 +190,8 @@ live_database_fixture::live_database_fixture()
     _chain_dir = fc::current_path() / "test_blockchain";
     FC_ASSERT( fc::exists( _chain_dir ), "Requires blockchain to test on in ./test_blockchain" );
 
-    appbase::app().register_plugin< hive::plugins::account_history::account_history_plugin >();
-    appbase::app().initialize<
-      hive::plugins::account_history::account_history_plugin
-      >( argc, argv );
+    appbase::app().register_plugin< ah_plugin >();
+    appbase::app().initialize< ah_plugin >( argc, argv );
 
     db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
     BOOST_REQUIRE( db );
@@ -996,9 +998,7 @@ int64_t sps_proposal_database_fixture::create_proposal( std::string creator, std
   return itr->proposal_id;
 }
 
-void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::string creator, 
-                  asset daily_pay, std::string subject, std::string permlink, 
-                  const fc::ecc::private_key& key )
+void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key)
 {
   signed_transaction tx;
   update_proposal_operation op;
@@ -1066,9 +1066,9 @@ void sps_proposal_database_fixture::remove_proposal(account_name_type _deleter, 
 
 bool sps_proposal_database_fixture::find_vote_for_proposal(const std::string& _user, int64_t _proposal_id)
 {
-    const auto& proposal_vote_idx = db->get_index< proposal_vote_index >().indices(). template get< by_voter_proposal >();
-    auto found_vote = proposal_vote_idx.find( boost::make_tuple(_user, _proposal_id ) );
-    return found_vote != proposal_vote_idx.end();
+  const auto& proposal_vote_idx = db->get_index< proposal_vote_index >().indices(). template get< by_voter_proposal >();
+  auto found_vote = proposal_vote_idx.find( boost::make_tuple(_user, _proposal_id ) );
+  return found_vote != proposal_vote_idx.end();
 }
 
 uint64_t sps_proposal_database_fixture::get_nr_blocks_until_maintenance_block()
@@ -1076,6 +1076,18 @@ uint64_t sps_proposal_database_fixture::get_nr_blocks_until_maintenance_block()
   auto block_time = db->head_block_time();
 
   auto next_maintenance_time = db->get_dynamic_global_properties().next_maintenance_time;
+  auto ret = ( next_maintenance_time - block_time ).to_seconds() / HIVE_BLOCK_INTERVAL;
+
+  FC_ASSERT( next_maintenance_time >= block_time );
+
+  return ret;
+}
+
+uint64_t sps_proposal_database_fixture::get_nr_blocks_until_daily_maintenance_block()
+{
+  auto block_time = db->head_block_time();
+
+  auto next_maintenance_time = db->get_dynamic_global_properties().next_daily_maintenance_time;
   auto ret = ( next_maintenance_time - block_time ).to_seconds() / HIVE_BLOCK_INTERVAL;
 
   FC_ASSERT( next_maintenance_time >= block_time );
@@ -1322,7 +1334,7 @@ json_rpc_database_fixture::json_rpc_database_fixture()
       std::cout << "running test " << boost::unit_test::framework::current_test_case().p_name << std::endl;
   }
 
-  appbase::app().register_plugin< hive::plugins::account_history::account_history_plugin >();
+  appbase::app().register_plugin< ah_plugin >();
   db_plugin = &appbase::app().register_plugin< hive::plugins::debug_node::debug_node_plugin >();
   appbase::app().register_plugin< hive::plugins::witness::witness_plugin >();
   rpc_plugin = &appbase::app().register_plugin< hive::plugins::json_rpc::json_rpc_plugin >();
@@ -1332,7 +1344,7 @@ json_rpc_database_fixture::json_rpc_database_fixture()
 
   db_plugin->logging = false;
   appbase::app().initialize<
-    hive::plugins::account_history::account_history_plugin,
+    ah_plugin,
     hive::plugins::debug_node::debug_node_plugin,
     hive::plugins::json_rpc::json_rpc_plugin,
     hive::plugins::block_api::block_api_plugin,

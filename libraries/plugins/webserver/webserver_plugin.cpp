@@ -17,6 +17,7 @@
 #include <websocketpp/config/asio.hpp>
 #include <websocketpp/server.hpp>
 #include <websocketpp/config/asio_client.hpp>
+#include <websocketpp/extensions/permessage_deflate/enabled.hpp>
 #include <websocketpp/client.hpp>
 #include <websocketpp/logger/stub.hpp>
 #include <websocketpp/logger/syslog.hpp>
@@ -76,6 +77,12 @@ namespace detail {
 
     static const long timeout_open_handshake = 0;
   };
+  struct asio_with_stub_log_and_permessage_deflate : public asio_with_stub_log
+  {
+    struct permessage_deflate_config {};
+
+    typedef websocketpp::extensions::permessage_deflate::enabled<permessage_deflate_config> permessage_deflate_type;
+  };
   struct asio_local_with_stub_log : public websocketpp::config::asio
   {
     typedef asio_local_with_stub_log type;
@@ -108,9 +115,15 @@ namespace detail {
 
     static const long timeout_open_handshake = 0;
   };
+  struct asio_local_with_stub_log_and_permessage_deflate : public asio_local_with_stub_log
+  {
+    struct permessage_deflate_config {};
 
-using websocket_server_type = websocketpp::server< detail::asio_with_stub_log >;
-using websocket_local_server_type = websocketpp::server<detail::asio_local_with_stub_log>;
+    typedef websocketpp::extensions::permessage_deflate::enabled<permessage_deflate_config> permessage_deflate_type;
+  };
+
+using websocket_server_type = websocketpp::server< detail::asio_with_stub_log_and_permessage_deflate >;
+using websocket_local_server_type = websocketpp::server<detail::asio_local_with_stub_log_and_permessage_deflate>;
 
 class webserver_plugin_impl
 {
@@ -432,6 +445,8 @@ void webserver_plugin::set_program_options( options_description&, options_descri
     ("webserver-http-endpoint", bpo::value< string >(), "Local http endpoint for webserver requests.")
     ("webserver-unix-endpoint", bpo::value< string >(), "Local unix http endpoint for webserver requests.")
     ("webserver-ws-endpoint", bpo::value< string >(), "Local websocket endpoint for webserver requests.")
+    // TODO: maybe add a flag to make this optional
+    ("webserver-enable-permessage-deflate", bpo::value< string >(), "Enable the RFC-7692 permessage-deflate extension for the WebSocket server (only used if the client requests it).  This may save bandwidth at the expense of CPU")
     ("rpc-endpoint", bpo::value< string >(), "Local http and websocket endpoint for webserver requests. Deprecated in favor of webserver-http-endpoint and webserver-ws-endpoint" )
     ("webserver-thread-pool-size", bpo::value<thread_pool_size_t>()->default_value(32),
       "Number of threads used to handle queries. Default: 32.")

@@ -156,7 +156,8 @@ protected:
     /// Perform one time initializations
     /**
      * init_asio is called once immediately after construction to initialize
-     * Asio components to the io_service
+     * Asio components to the io_service. At this stage the connection is
+     * speculative, the server may not have actually received a new connection.
      *
      * @param service A pointer to the endpoint's io_service
      * @param strand A shared pointer to the connection's asio strand
@@ -170,10 +171,6 @@ protected:
 
         m_socket = lib::make_shared<lib::asio::ip::tcp::socket>(
             lib::ref(*service));
-
-        if (m_socket_init_handler) {
-            m_socket_init_handler(m_hdl, *m_socket);
-        }
 
         m_state = READY;
 
@@ -195,7 +192,7 @@ protected:
 
     /// Pre-initialize security policy
     /**
-     * Called by the transport after a new connection is created to initialize
+     * Called by the transport after a new connection is accepted to initialize
      * the socket component of the connection. This method is not allowed to
      * write any bytes to the wire. This initialization happens before any
      * proxies or other intermediate wrappers are negotiated.
@@ -206,6 +203,10 @@ protected:
         if (m_state != READY) {
             callback(socket::make_error_code(socket::error::invalid_state));
             return;
+        }
+
+        if (m_socket_init_handler) {
+            m_socket_init_handler(m_hdl, *m_socket);
         }
 
         m_state = READING;

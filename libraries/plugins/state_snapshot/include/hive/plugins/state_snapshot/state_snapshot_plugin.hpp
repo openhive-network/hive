@@ -19,7 +19,7 @@ class state_snapshot_plugin final : public appbase::plugin< state_snapshot_plugi
   public:
     APPBASE_PLUGIN_REQUIRES((hive::plugins::chain::chain_plugin))
 
-    static const std::string& name() { static std::string name = "state_snapshot_plugin"; return name; }
+    static const std::string& name() { static std::string name = "state_snapshot"; return name; }
 
     state_snapshot_plugin();
     virtual ~state_snapshot_plugin();

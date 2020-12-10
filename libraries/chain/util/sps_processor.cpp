@@ -25,6 +25,12 @@ bool sps_processor::is_maintenance_period( const time_point_sec& head_time ) con
   return db.get_dynamic_global_properties().next_maintenance_time <= head_time;
 }
 
+bool sps_processor::is_daily_maintenance_period( const time_point_sec& head_time ) const
+{
+  /// No DHF conversion until HF24 !
+  return db.has_hardfork(HIVE_HARDFORK_1_24) && db.get_dynamic_global_properties().next_daily_maintenance_time <= head_time;
+}
+
 void sps_processor::remove_proposals( const time_point_sec& head_time )
 {
   FC_TODO("implement proposal removal based on automatic actions")
@@ -41,7 +47,17 @@ void sps_processor::remove_proposals( const time_point_sec& head_time )
 
   while( itr != found )
   {
-    itr = sps_helper::remove_proposal< by_end_date >( itr, proposalIndex, votesIndex, byVoterIdx, obj_perf );
+    /*
+      It was decided that automatic removing of old proposals will be blocked.
+      In result it will be possible to find expired proposals, by API call `list_proposals` with `expired` flag.
+      Maybe in the future removing will be re-enabled.
+
+      Proposals can be removed only by explicit call of `remove_proposal_operation`.
+    */
+    if( itr->removed )
+      itr = sps_helper::remove_proposal< by_end_date >( itr, proposalIndex, votesIndex, byVoterIdx, obj_perf );
+    else
+      ++itr;
     if( obj_perf.done )
       break;
   }
@@ -306,6 +322,7 @@ void sps_processor::run( const block_notification& note )
 {
   remove_old_proposals( note );
   record_funding( note );
+  convert_funds( note );
   make_payments( note );
 }
 
@@ -326,6 +343,42 @@ void sps_processor::record_funding( const block_notification& note )
   {
     dgpo.sps_interval_ledger = asset( 0, HBD_SYMBOL );
   });
+}
+
+void sps_processor::convert_funds( const block_notification& note )
+{
+  if( !is_daily_maintenance_period( note.block.timestamp ))
+    return;
+
+  db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& _dgpo )
+  {
+    _dgpo.next_daily_maintenance_time = note.block.timestamp + fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD );
+  } );
+
+  const auto &treasury_account = db.get_treasury();
+  if (treasury_account.balance.amount == 0) {
+    return;
+  }
+
+  const auto to_convert = asset(HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.balance.amount / HIVE_100_PERCENT, HIVE_SYMBOL);
+
+  const feed_history_object& fhistory = db.get_feed_history();
+  if( fhistory.current_median_history.is_null() )
+    return;
+
+  auto converted_hbd = to_convert * fhistory.current_median_history;
+  // Don't convert if the conversion would result in an amount lower than the dust threshold
+  if(converted_hbd < HIVE_MIN_PAYOUT_HBD )
+    return;
+
+  db.adjust_balance( treasury_account, -to_convert );
+  db.adjust_balance(treasury_account, converted_hbd );
+
+  db.adjust_supply( -to_convert );
+  db.adjust_supply( converted_hbd );
+
+  operation vop = sps_convert_operation(treasury_account.name, to_convert, converted_hbd );
+  db.push_virtual_operation( vop );
 }
 
 } } // namespace hive::chain
