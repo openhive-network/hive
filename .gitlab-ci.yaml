@@ -87,13 +87,11 @@ plugin_test:
     - public-runner-docker
 
 .beem_setup : &beem_setup |
-  # boilerplate for installing latested beem
-  - git clone --depth=1 --single-branch --branch dk-hybrid-operations https://gitlab.syncad.com/hive/beem.git
-  - cd beem
-  - python3 setup.py install
-  - cd ..
-  # stuff specific to this test
-  - mkdir -p build/tests/hive-node-data
+  git clone --depth=1 --single-branch --branch dk-hybrid-operations https://gitlab.syncad.com/hive/beem.git
+  cd beem
+  python3 setup.py install
+  cd ..
+  mkdir -p build/tests/hive-node-data
 
 beem_tests:
   stage: test
