@@ -648,6 +648,22 @@ class wallet_api
       string memo,
       bool broadcast = false);
 
+/**
+      * Transfer funds from one account to another. HIVE and HBD can be transferred. Broadcast is always false
+      *
+      * @param from The account the funds are coming from
+      * @param to The account the funds are going to
+      * @param amount The funds being transferred. i.e. "100.000 HIVE"
+      * @param memo A memo for the transactionm, encrypted with the to account's public memo key
+      * @param count amount of transactions to generate
+      */
+    condenser_api::legacy_signed_transactions transfers(
+      string from,
+      string to,
+      condenser_api::legacy_asset amount,
+      string memo,
+      size_t count);
+
     /**
       * Transfer funds from one account to another using escrow. HIVE and HBD can be transferred.
       *
@@ -1219,6 +1235,7 @@ FC_API( hive::wallet::wallet_api,
       (vote_for_witness)
       (follow)
       (transfer)
+      (transfers)
       (escrow_transfer)
       (escrow_approve)
       (escrow_dispute)

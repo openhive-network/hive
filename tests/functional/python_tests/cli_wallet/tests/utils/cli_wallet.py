@@ -109,8 +109,8 @@ class CliWallet(object):
   def set_and_run_wallet(self):
     from shlex import split as argsplitter
     try:
-      log.info("Calling cli_wallet with args `{0}`".format([self.cli_args.path+ " " + self.cli_args.args_to_list()]))
-      self.cli_proc = subprocess.Popen( args=[self.cli_args.path, *argsplitter(self.cli_args.args_to_list())], stdin=subprocess.PIPE, stderr=subprocess.STDOUT, stdout=subprocess.PIPE )
+      print("Calling cli_wallet with args `{0}`".format([self.cli_args.path+ " " + self.cli_args.args_to_list()]))
+      self.cli_proc = subprocess.Popen( args=[self.cli_args.path, *argsplitter(self.cli_args.args_to_list())], stdin=subprocess.DEVNULL, stderr=subprocess.DEVNULL  , stdout=subprocess.DEVNULL )
       if not self.cli_proc:
         raise CliWalletException("Failed to run cli_wallet")
 
@@ -163,7 +163,7 @@ class CliWallet(object):
       "id": 1
     }
     data = json.dumps( data )
-    
+
     self.response = requests.post(
       f'http://{self.cli_args.rpc_http_endpoint}',
       data=data

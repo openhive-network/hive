@@ -92,6 +92,11 @@ struct legacy_signed_transaction
   uint32_t                   transaction_num = 0;
 };
 
+struct legacy_signed_transactions
+{
+  vector<legacy_signed_transaction> transactions;
+};
+
 struct legacy_signed_block
 {
   legacy_signed_block() {}
@@ -160,6 +165,8 @@ void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_bloc
 
 FC_REFLECT( hive::plugins::condenser_api::legacy_signed_transaction,
         (ref_block_num)(ref_block_prefix)(expiration)(operations)(extensions)(signatures)(transaction_id)(block_num)(transaction_num) )
+
+FC_REFLECT( hive::plugins::condenser_api::legacy_signed_transactions, (transactions) )
 
 FC_REFLECT( hive::plugins::condenser_api::legacy_signed_block,
         (previous)(timestamp)(witness)(transaction_merkle_root)(extensions)(witness_signature)(transactions)(block_id)(signing_key)(transaction_ids) )

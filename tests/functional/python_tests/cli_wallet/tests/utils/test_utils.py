@@ -134,18 +134,14 @@ def get_valid_hive_account_name():
         if len(set(user_name)) == 1 and user_name[0] == 'z':
             break
 
-def make_user_for_tests(_cli_wallet, _value_for_vesting = None,  _value_for_transfer_tests = None, _value_for_transfer_tbd = None):
-    value_for_vesting           = _value_for_vesting        if _value_for_vesting else "20.000 TESTS"
-    value_for_transfer_tests    = _value_for_transfer_tests if _value_for_transfer_tests else "20.000 TESTS"
-    value_for_transfer_tbd      = _value_for_transfer_tbd   if _value_for_transfer_tbd else "20.000 TBD"
-
+def make_user_for_tests(_cli_wallet, _value_for_vesting = "20.000 TESTS",  _value_for_transfer_tests = "20.000 TESTS", _value_for_transfer_tbd = "20.000 TBD"):
     receiver = get_valid_hive_account_name()
 
     _cli_wallet.create_account( creator, receiver, "{}", "true")
 
-    _cli_wallet.transfer_to_vesting(    creator, receiver, value_for_vesting, "true")
-    _cli_wallet.transfer(               creator, receiver, value_for_transfer_tests, "initial transfer", "true" )
-    _cli_wallet.transfer(               creator, receiver, value_for_transfer_tbd, "initial transfer", "true")
+    _cli_wallet.transfer_to_vesting(    creator, receiver, _value_for_vesting, "true")
+    _cli_wallet.transfer(               creator, receiver, _value_for_transfer_tests, "initial transfer", "true" )
+    _cli_wallet.transfer(               creator, receiver, _value_for_transfer_tbd, "initial transfer", "true")
 
     return creator, receiver
 

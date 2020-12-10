@@ -1866,6 +1866,22 @@ condenser_api::legacy_signed_transaction wallet_api::transfer(
   return my->sign_transaction( tx, broadcast );
 } FC_CAPTURE_AND_RETHROW( (from)(to)(amount)(memo)(broadcast) ) }
 
+condenser_api::legacy_signed_transactions wallet_api::transfers(
+  string from,
+  string to,
+  condenser_api::legacy_asset amount,
+  string memo,
+  size_t count )
+{ try {
+    condenser_api::legacy_signed_transactions result;
+    result.transactions.reserve(count);
+
+    for(size_t i = 0; i < count; i++)
+      result.transactions.emplace_back( transfer( from, to, amount, memo + std::to_string( i ), false ) );
+
+    return result;
+} FC_CAPTURE_AND_RETHROW( (from)(to)(amount)(memo)(count) ) }
+
 condenser_api::legacy_signed_transaction wallet_api::escrow_transfer(
   string from,
   string to,
