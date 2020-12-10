@@ -6,13 +6,6 @@ import argparse
 import datetime
 import subprocess
 import time
-<<<<<<< HEAD
-import sys
-
-from junit_xml import TestCase, TestSuite
-
-=======
->>>>>>> [WK] fix xml report generation.
 import sys
 
 from junit_xml import TestCase, TestSuite
