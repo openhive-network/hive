@@ -44,7 +44,7 @@ namespace hive { namespace chain {
 
         static void write_with_retry(int filedes, const void* buf, size_t nbyte);
         static void pwrite_with_retry(int filedes, const void* buf, size_t nbyte, off_t offset);
-        static void pread_with_retry(int filedes, void* buf, size_t nbyte, off_t offset);
+        static size_t pread_with_retry(int filedes, void* buf, size_t nbyte, off_t offset);
 
         // only accessed when appending a block, doesn't need locking
         ssize_t block_log_size;
@@ -83,26 +83,35 @@ namespace hive { namespace chain {
       }
     }
 
-    void block_log_impl::pread_with_retry(int fd, void* buf, size_t nbyte, off_t offset)
+    size_t block_log_impl::pread_with_retry(int fd, void* buf, size_t nbyte, off_t offset)
     {
+      size_t total_read = 0;
       for (;;)
       {
         ssize_t bytes_read = pread(fd, buf, nbyte, offset);
         if (bytes_read == -1)
           FC_THROW("Error reading ${nbytes} from file at offset ${offset}: ${error}", 
                    ("nbyte", nbyte)("offset", offset)("error", strerror(errno)));
-        if (bytes_read == (ssize_t)nbyte)
-          return;
+
+        total_read += bytes_read;
+
+        if (bytes_read == 0 || bytes_read == (ssize_t)nbyte)
+          break;
+
         buf = ((char*)buf) + bytes_read;
         offset += bytes_read;
         nbyte -= bytes_read;
       }
+
+      return total_read;
     }
 
     signed_block block_log_impl::read_block_from_offset_and_size(uint64_t offset, uint64_t size)
     {
       std::unique_ptr<char[]> serialized_data(new char[size]);
-      pread_with_retry(block_log_fd, serialized_data.get(), size, offset);
+      auto total_read = pread_with_retry(block_log_fd, serialized_data.get(), size, offset);
+
+      FC_ASSERT(total_read == size);
 
       signed_block block;
       fc::raw::unpack_from_char_array(serialized_data.get(), size, block);
@@ -181,15 +190,19 @@ namespace hive { namespace chain {
         ilog( "Index is nonempty" );
         // read the last 8 bytes of the block log to get the offset of the beginning of the head 
         // block
-        uint64_t block_pos;
-        detail::block_log_impl::pread_with_retry(my->block_log_fd, &block_pos, sizeof(block_pos), 
-                                                 log_size - sizeof(block_pos));
+        uint64_t block_pos = 0;
+        auto bytes_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, &block_pos, sizeof(block_pos), 
+          log_size - sizeof(block_pos));
+
+        FC_ASSERT(bytes_read == sizeof(block_pos));
 
         // read the last 8 bytes of the block index to get the offset of the beginning of the 
         // head block
-        uint64_t index_pos;
-        detail::block_log_impl::pread_with_retry(my->block_index_fd, &index_pos, sizeof(index_pos), 
-                                                 index_size - sizeof(index_pos));
+        uint64_t index_pos = 0;
+        bytes_read = detail::block_log_impl::pread_with_retry(my->block_index_fd, &index_pos, sizeof(index_pos), 
+          index_size - sizeof(index_pos));
+
+        FC_ASSERT(bytes_read == sizeof(index_pos));
 
         if( block_pos < index_pos )
         {
@@ -322,16 +335,18 @@ namespace hive { namespace chain {
       // block number is less than than the current head, it's guaranteed to have been fully
       // written to the log+index
       boost::shared_ptr<signed_block> head_block = my->head.load();
-      if (!head_block || block_num > head_block->block_num())
+      /// \warning ignore block 0 which is invalid, but old API also returned empty result for it (instead of assert).
+      if (block_num == 0 || !head_block || block_num > head_block->block_num())
         return optional<signed_block>();
       if (block_num == head_block->block_num())
         return *head_block;
       // if we're still here, we know that it's in the block log, and the block after it is also
       // in the block log (which means we can determine its size)
 
-      uint64_t offsets[2];
+      uint64_t offsets[2] = {0, 0};
       uint64_t offset_in_index = sizeof(uint64_t) * (block_num - 1);
-      detail::block_log_impl::pread_with_retry(my->block_index_fd, &offsets, sizeof(offsets),  offset_in_index);
+      auto bytes_read = detail::block_log_impl::pread_with_retry(my->block_index_fd, &offsets, sizeof(offsets),  offset_in_index);
+      FC_ASSERT(bytes_read == sizeof(offsets));
       uint64_t serialized_data_size = offsets[1] - offsets[0] - sizeof(uint64_t);
       return my->read_block_from_offset_and_size(offsets[0], serialized_data_size);
     }
@@ -343,6 +358,7 @@ namespace hive { namespace chain {
     try
     {
       vector<signed_block> result;
+
       uint32_t last_block_num = first_block_num + count - 1;
 
       // first, check if the last block we want is the current head block; if so, we can 

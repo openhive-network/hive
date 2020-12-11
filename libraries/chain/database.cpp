@@ -617,6 +617,7 @@ std::vector<signed_block> database::fetch_block_range_unlocked( const uint32_t s
 { try {
   // for debugging, put the head block back so it should straddle the last irreversible
   // const uint32_t starting_block_num = head_block_num() - 30;
+  FC_ASSERT(starting_block_num > 0, "Invalid starting block number");
   FC_ASSERT(count > 0, "Why ask for zero blocks?");
   FC_ASSERT(count <= 1000, "You can only ask for 1000 blocks at a time");
   idump((starting_block_num)(count));
