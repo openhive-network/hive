@@ -502,7 +502,8 @@ struct api_account_object
     last_post_edit( a.last_post_edit ),
     last_vote_time( a.last_vote_time ),
     post_bandwidth( a.post_bandwidth ),
-    pending_claimed_accounts( a.pending_claimed_accounts )
+    pending_claimed_accounts( a.pending_claimed_accounts ),
+    last_government_vote( a.get_last_government_vote())
   {
     size_t n = a.proxied_vsf_votes.size();
     proxied_vsf_votes.reserve( n );
@@ -615,6 +616,7 @@ struct api_account_object
   bool              is_smt = false;
 
   fc::optional< vector< delayed_votes_data > >  delayed_votes;
+  time_point_sec last_government_vote;
 };
 
 struct api_owner_authority_history_object
@@ -1107,7 +1109,8 @@ FC_REFLECT( hive::plugins::database_api::api_account_object,
           (last_post)(last_root_post)(last_post_edit)(last_vote_time)
           (post_bandwidth)(pending_claimed_accounts)
           (is_smt)
-    (delayed_votes)
+          (delayed_votes)
+          (last_government_vote)
         )
 
 FC_REFLECT( hive::plugins::database_api::api_owner_authority_history_object,
