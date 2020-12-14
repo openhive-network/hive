@@ -869,6 +869,8 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       int64_t max_vote_denom = ( db->get_dynamic_global_properties().vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS ) / (60*60*24);
 
       BOOST_REQUIRE( alice.last_vote_time == db->head_block_time() );
+      BOOST_REQUIRE( alice.get_last_government_vote() != db->head_block_time() );
+      BOOST_REQUIRE( alice.get_last_government_vote() == time_point_sec() );
       BOOST_REQUIRE( alice_comment_cashout->net_rshares.value == ( old_mana - alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
       BOOST_REQUIRE( alice_comment_cashout->cashout_time == alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( itr->rshares == ( old_mana - alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
@@ -2134,6 +2136,11 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
     tx.operations.push_back( op );
     sign( tx, bob_private_key );
 
+    const auto& alice_acc = db->get_account( "alice" );
+    BOOST_REQUIRE (alice_acc.get_last_government_vote() == db->head_block_time());
+    generate_blocks( 1 );
+    BOOST_REQUIRE (alice_acc.get_last_government_vote() != db->head_block_time());
+
     HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
     validate_database();
   }
@@ -2255,6 +2262,12 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
     BOOST_REQUIRE(_sam_witness.votes.value == 0);
     BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _bob.name)) == witness_vote_idx.end());
     BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _alice.name)) == witness_vote_idx.end());
+
+    const auto& alice_acc = db->get_account( "alice" );
+    BOOST_REQUIRE (alice_acc.get_last_government_vote() == db->head_block_time());
+    generate_blocks( 1 );
+    BOOST_REQUIRE (alice_acc.get_last_government_vote() != db->head_block_time());
+
 
     BOOST_TEST_MESSAGE("--- Test failure when voting for a non-existent account");
     tx.operations.clear();
