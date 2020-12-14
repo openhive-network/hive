@@ -168,6 +168,21 @@ namespace hive { namespace chain {
       */
       ushare_type       sum_delayed_votes = 0;
 
+    private:
+      time_point_sec last_government_vote;
+
+    public:
+
+      time_point_sec get_last_government_vote() const
+      {
+        return last_government_vote;
+      }
+
+      void update_last_government_vote(const time_point_sec vote_time)
+      {
+        last_government_vote = vote_time;
+      }
+
       time_point_sec get_the_earliest_time() const
       {
         if( !delayed_votes.empty() )
@@ -522,6 +537,7 @@ FC_REFLECT( hive::chain::account_object,
           (pending_claimed_accounts)
           (delayed_votes)
           (sum_delayed_votes)
+          (last_government_vote)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_object, hive::chain::account_index )
