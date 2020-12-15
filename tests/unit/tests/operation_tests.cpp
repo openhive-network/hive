@@ -2293,6 +2293,90 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( account_object_by_last_government_vote_idx )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: account_object_by_last_government_vote_idx" );
+
+    ACTORS( (acc1)(acc2)(acc3)(acc4)(accw) )
+    signed_transaction tx;
+    private_key_type accw_witness_key = generate_private_key( "accw_key" );
+    witness_create( "accw", accw_private_key, "foo.bar", accw_witness_key.get_public_key(), 1000 );
+
+    generate_block();
+    time_point_sec acc1_last_government_vote = db->head_block_time();
+
+    account_witness_vote_operation op1;
+    op1.account = "acc1";
+    op1.witness = "accw";
+    op1.approve = true;
+
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    tx.operations.push_back( op1 );
+    sign( tx, acc1_private_key );
+    db->push_transaction( tx, 0 );
+    tx.clear();
+
+    generate_block();
+    time_point_sec acc2_acc3_last_government_vote = db->head_block_time();
+
+    account_witness_vote_operation op2;
+    op2.account = "acc2";
+    op2.witness = "accw";
+    op2.approve = true;
+
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    tx.operations.push_back( op2 );
+    sign( tx, acc2_private_key );
+    db->push_transaction( tx, 0 );
+    tx.clear();
+
+    update_proposal_votes_operation op3;
+    op3.voter = "acc3";
+    op3.proposal_ids = {456, 321};  //doesn't matter which ids, order in the container matters in this test case.
+    op3.approve = true;
+
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    tx.operations.push_back( op3 );
+    sign( tx, acc3_private_key );
+    db->push_transaction( tx, 0 );
+    tx.clear();
+
+    generate_block();
+    time_point_sec acc4_last_government_vote = db->head_block_time();
+
+    update_proposal_votes_operation op4;
+    op4.voter = "acc4";
+    op4.proposal_ids = {654, 426};  //doesn't matter which ids, order in the container matters in this test case.
+    op4.approve = true;
+
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    tx.operations.push_back( op4 );
+    sign( tx, acc4_private_key );
+    db->push_transaction( tx, 0 );
+    tx.clear();
+    generate_block();
+
+    BOOST_REQUIRE (db->get_account( "acc1" ).get_last_government_vote() == acc1_last_government_vote);
+    BOOST_REQUIRE (db->get_account( "acc2" ).get_last_government_vote() == acc2_acc3_last_government_vote);
+    BOOST_REQUIRE (db->get_account( "acc3" ).get_last_government_vote() == acc2_acc3_last_government_vote);
+    BOOST_REQUIRE (db->get_account( "acc4" ).get_last_government_vote() == acc4_last_government_vote);
+
+    auto& accounts = db->get_index< account_index, by_last_government_vote >();
+    time_point_sec last_government_vote = accounts.begin()->get_last_government_vote();
+
+    for (const auto&ac : accounts)
+    {
+      time_point_sec curr_last_vote = ac.get_last_government_vote();
+      BOOST_REQUIRE (last_government_vote >= curr_last_vote);
+      last_government_vote = curr_last_vote;
+    }
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( account_witness_proxy_validate )
 {
   try
