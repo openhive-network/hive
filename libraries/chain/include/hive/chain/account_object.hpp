@@ -333,6 +333,7 @@ namespace hive { namespace chain {
   struct by_proxy;
   struct by_next_vesting_withdrawal;
   struct by_delayed_voting;
+  struct by_last_government_vote;
   /**
     * @ingroup object_index
     */
@@ -359,6 +360,16 @@ namespace hive { namespace chain {
         composite_key< account_object,
           const_mem_fun< account_object, time_point_sec, &account_object::get_the_earliest_time >,
           const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
+        >
+      >,
+      ordered_unique< tag< by_last_government_vote >,
+        composite_key< account_object,
+          const_mem_fun< account_object, time_point_sec, &account_object::get_last_government_vote >,
+          const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
+        >,
+        composite_key_compare<
+          std::greater<time_point_sec>,
+          std::less<account_object::id_type>
         >
       >
     >,
