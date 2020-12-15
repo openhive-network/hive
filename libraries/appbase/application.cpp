@@ -119,7 +119,14 @@ class application_impl {
 };
 
 application::application()
-:my(new application_impl()), main_io_handler( true/*allow_close_when_signal_is_received*/, [ this ](){ shutdown(); } )
+: pre_shutdown_plugins(
+  []( abstract_plugin* a, abstract_plugin* b )
+  {
+    assert( a && b );
+    return a->get_pre_shutdown_order() > b->get_pre_shutdown_order();
+  }
+),
+  my(new application_impl()), main_io_handler( true/*allow_close_when_signal_is_received*/, [ this ](){ finish(); } )
 {
 }
 
@@ -322,6 +329,18 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
   }
 }
 
+void application::pre_shutdown() {
+
+  std::cout << "Before shutting down...\n";
+
+  for( auto& plugin : pre_shutdown_plugins )
+  {
+    plugin->pre_shutdown();
+  }
+
+  pre_shutdown_plugins.clear();
+}
+
 void application::shutdown() {
 
   std::cout << "Shutting down...\n";
@@ -337,6 +356,12 @@ void application::shutdown() {
   running_plugins.clear();
   initialized_plugins.clear();
   plugins.clear();
+}
+
+void application::finish()
+{
+  pre_shutdown();
+  shutdown();
 }
 
 void application::exec() {

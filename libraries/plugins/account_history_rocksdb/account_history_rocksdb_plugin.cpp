@@ -18,7 +18,6 @@
 #include <hive/utilities/plugin_utilities.hpp>
 
 #include <appbase/application.hpp>
-#include <appbase/shutdown_mgr.hpp>
 
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
@@ -65,9 +64,6 @@ namespace bpo = boost::program_options;
 
 #define STORE_MAJOR_VERSION          1
 #define STORE_MINOR_VERSION          0
-
-#define HIVE_AH_NUMBER_THREAD_SENSITIVE_ACTIONS 1
-#define HIVE_AH_BLOCK_HANDLER 0
 
 namespace hive { namespace plugins { namespace account_history_rocksdb {
 
@@ -488,7 +484,6 @@ class account_history_rocksdb_plugin::impl final
 {
 public:
   impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath) :
-    shutdown_helper( "AH plugin", HIVE_AH_NUMBER_THREAD_SENSITIVE_ACTIONS ),
     _self(self),
     _mainDb(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db()),
     _blockchainStoragePath(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
@@ -566,8 +561,6 @@ public:
 
   ~impl()
   {
-    shutdown_helper.prepare_shutdown();
-    shutdown_helper.wait();
 
     chain::util::disconnect_signal(_on_post_apply_operation_con);
     chain::util::disconnect_signal(_on_irreversible_block_conn);
@@ -867,11 +860,6 @@ private:
 
   std::vector<rocksdb_operation_object> collectReversibleOps(uint32_t* blockRangeBegin, uint32_t* blockRangeEnd,
     uint32_t* collectedIrreversibleBlock) const;
-
-/// Class attributes:
-public:
-
-  shutdown_mgr shutdown_helper;
 
 /// Class attributes:
 private:
@@ -1979,53 +1967,40 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
 {
   if( _reindexing ) return;
 
-  if( shutdown_helper.get_running().load() )
+  uint32_t fallbackIrreversibleBlock = 0;
+  
+  /// In case of genesis block (and fresh testnet) there can be no LIB at begin.
+
+  if( block_num <= get_lib(&fallbackIrreversibleBlock) ) return;
+
+  _currently_persisted_irreversible_block.store(block_num);
+
+  const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
+  auto itr = volatile_idx.begin();
+
+  vector< const volatile_operation_object* > to_delete;
+
   {
-    try
+    std::lock_guard<std::mutex> lk(_currently_persisted_irreversible_mtx);
+
+    while(itr != volatile_idx.end() && itr->block <= block_num)
     {
-      action_catcher( shutdown_helper.get_running(), shutdown_helper.get_state( HIVE_AH_BLOCK_HANDLER ) );
+      rocksdb_operation_object obj(*itr);
+      importOperation(obj, itr->impacted);
+      to_delete.push_back(&(*itr));
+      ++itr;
+    }
 
-      uint32_t fallbackIrreversibleBlock = 0;
-      
-      /// In case of genesis block (and fresh testnet) there can be no LIB at begin.
+    for(const volatile_operation_object* o : to_delete)
+    {
+      _mainDb.remove(*o);
+    }
 
-      if( block_num <= get_lib(&fallbackIrreversibleBlock) ) return;
-
-      _currently_persisted_irreversible_block.store(block_num);
-
-      const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
-      auto itr = volatile_idx.begin();
-
-      vector< const volatile_operation_object* > to_delete;
-
-      {
-        std::lock_guard<std::mutex> lk(_currently_persisted_irreversible_mtx);
-
-        while(itr != volatile_idx.end() && itr->block <= block_num)
-        {
-          rocksdb_operation_object obj(*itr);
-          importOperation(obj, itr->impacted);
-          to_delete.push_back(&(*itr));
-          ++itr;
-        }
-
-        for(const volatile_operation_object* o : to_delete)
-        {
-          _mainDb.remove(*o);
-        }
-
-        update_lib(block_num);
-      }
-
-      _currently_persisted_irreversible_block.store(0);
-      _currently_persisted_irreversible_cv.notify_all();
-
-    } FC_CAPTURE_AND_RETHROW( (block_num) )
+    update_lib(block_num);
   }
-  else
-  {
-    ilog("Block ignored due to start AH plugin shutdown");
-  }
+
+  _currently_persisted_irreversible_block.store(0);
+  _currently_persisted_irreversible_cv.notify_all();
 }
 
 void account_history_rocksdb_plugin::impl::on_pre_apply_block(const block_notification& bn)
@@ -2115,10 +2090,6 @@ void account_history_rocksdb_plugin::plugin_startup()
 void account_history_rocksdb_plugin::plugin_shutdown()
 {
   ilog("Shutting down account_history_rocksdb_plugin...");
-
-  _my->shutdown_helper.prepare_shutdown();
-  _my->shutdown_helper.wait();
-
   _my->shutdownDb();
 }
 

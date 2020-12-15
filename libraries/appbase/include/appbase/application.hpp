@@ -76,7 +76,11 @@ namespace appbase {
       }
 
       void startup();
+
+      void pre_shutdown();
       void shutdown();
+
+      void finish();
 
       /**
         *  Wait until quit(), SIGINT or SIGTERM and then shutdown
@@ -162,13 +166,21 @@ namespace appbase {
         */
       ///@{
       void plugin_initialized( abstract_plugin& plug ) { initialized_plugins.push_back( &plug ); }
-      void plugin_started( abstract_plugin& plug ) { running_plugins.push_back( &plug ); }
+      void plugin_started( abstract_plugin& plug )
+      {
+          running_plugins.push_back( &plug );
+          pre_shutdown_plugins.insert( &plug );
+      }
       ///@}
 
     private:
       application(); ///< private because application is a singlton that should be accessed via instance()
       map< string, std::shared_ptr< abstract_plugin > >  plugins; ///< all registered plugins
       vector< abstract_plugin* >                         initialized_plugins; ///< stored in the order they were started running
+
+      using pre_shutdown_cmp = std::function< bool ( abstract_plugin*, abstract_plugin* ) >;
+      using pre_shutdown_multiset = std::multiset< abstract_plugin*, pre_shutdown_cmp >;
+      pre_shutdown_multiset                              pre_shutdown_plugins; ///< stored in the order what is necessary in order to close every plugin in safe way
       vector< abstract_plugin* >                         running_plugins; ///< stored in the order they were started running
       std::string                                        version_info;
       std::string                                        app_name = "appbase";
@@ -195,6 +207,7 @@ namespace appbase {
     public:
       virtual ~plugin() {}
 
+      virtual pre_shutdown_order get_pre_shutdown_order() const override { return _pre_shutdown_order; }
       virtual state get_state() const override { return _state; }
       virtual const std::string& get_name()const override final { return Impl::name(); }
 
@@ -230,6 +243,23 @@ namespace appbase {
           BOOST_THROW_EXCEPTION( std::runtime_error("Initial state was not initialized, so final state cannot be started.") );
       }
 
+      virtual void plugin_pre_shutdown() override
+      {
+        /*
+          By default most plugins don't need any pre-actions during shutdown.
+          A problem appears when P2P plugin receives and sends data into dependent plugins.
+          In this case is necessary to close P2P plugin as soon as possible.
+        */
+      }
+
+      virtual void pre_shutdown() override final
+      {
+        if( _state == started )
+        {
+          this->plugin_pre_shutdown();
+        }
+      }
+
       virtual void shutdown() override final
       {
         if( _state == started )
@@ -243,7 +273,10 @@ namespace appbase {
     protected:
       plugin() = default;
 
+      virtual void set_pre_shutdown_order( pre_shutdown_order val ) { _pre_shutdown_order = val; }
+
     private:
+      pre_shutdown_order _pre_shutdown_order = abstract_plugin::basic_order;
       state _state = abstract_plugin::registered;
   };
 }

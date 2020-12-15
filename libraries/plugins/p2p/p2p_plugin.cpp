@@ -525,6 +525,7 @@ bool p2p_plugin_impl::is_included_block(const block_id_type& block_id)
 
 p2p_plugin::p2p_plugin()
 {
+  set_pre_shutdown_order( p2p_order );
 }
 
 p2p_plugin::~p2p_plugin() {}
@@ -671,7 +672,7 @@ void p2p_plugin::plugin_startup()
   ilog( "P2P Plugin started" );
 }
 
-void p2p_plugin::plugin_shutdown() {
+void p2p_plugin::plugin_pre_shutdown() {
 
   if( !my->chain.is_p2p_enabled() )
     return;
@@ -689,6 +690,10 @@ void p2p_plugin::plugin_shutdown() {
   quitDone->wait();
   ilog("p2p_thread quit done");
   my->node.reset();
+}
+
+void p2p_plugin::plugin_shutdown() {
+  //Nothing to do. Everything is closed/finished during `pre_shutdown` stage,
 }
 
 void p2p_plugin::broadcast_block( const hive::protocol::signed_block& block )
