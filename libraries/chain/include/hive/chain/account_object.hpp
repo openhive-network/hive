@@ -169,18 +169,18 @@ namespace hive { namespace chain {
       ushare_type       sum_delayed_votes = 0;
 
     private:
-      time_point_sec last_government_vote;
+      time_point_sec last_governance_vote;
 
     public:
 
-      time_point_sec get_last_government_vote() const
+      time_point_sec get_last_governance_vote() const
       {
-        return last_government_vote;
+        return last_governance_vote;
       }
 
-      void update_last_government_vote(const time_point_sec vote_time)
+      void update_last_governance_vote(const time_point_sec vote_time)
       {
-        last_government_vote = vote_time;
+        last_governance_vote = vote_time;
       }
 
       time_point_sec get_the_earliest_time() const
@@ -333,7 +333,7 @@ namespace hive { namespace chain {
   struct by_proxy;
   struct by_next_vesting_withdrawal;
   struct by_delayed_voting;
-  struct by_last_government_vote;
+  struct by_last_governance_vote;
   /**
     * @ingroup object_index
     */
@@ -362,9 +362,9 @@ namespace hive { namespace chain {
           const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
         >
       >,
-      ordered_unique< tag< by_last_government_vote >,
+      ordered_unique< tag< by_last_governance_vote >,
         composite_key< account_object,
-          const_mem_fun< account_object, time_point_sec, &account_object::get_last_government_vote >,
+          const_mem_fun< account_object, time_point_sec, &account_object::get_last_governance_vote >,
           const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
         >,
         composite_key_compare<
@@ -548,7 +548,7 @@ FC_REFLECT( hive::chain::account_object,
           (pending_claimed_accounts)
           (delayed_votes)
           (sum_delayed_votes)
-          (last_government_vote)
+          (last_governance_vote)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_object, hive::chain::account_index )
