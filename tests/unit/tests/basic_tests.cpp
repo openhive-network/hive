@@ -448,7 +448,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( shared_string ), 32 ); //it has dynamic component as well
   BOOST_CHECK_EQUAL( sizeof( price ), 32 );
   BOOST_CHECK_EQUAL( sizeof( t_vector< char > ), 32 ); //it has dynamic component as well, all vectors have the same static size
-
+  BOOST_CHECK_EQUAL( sizeof( public_key_type), 33);
   /*
   The purpose of this test is to make you think about the impact on RAM when you make changes in chain objects.
   Also somewhat helps in catching new problems with alignment (f.e. when you added a flag member and object
@@ -462,7 +462,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( comment_content_object ), 104 ); //as many as comment_object, dynamic size matters the most, in HiveMind
 
   //permanent objects (no operation to remove)
-  BOOST_CHECK_EQUAL( sizeof( account_object ), 496 ); //1.3M+
+  BOOST_CHECK_EQUAL( sizeof( account_object ), 456 ); //1.3M+
   BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 72 ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
   BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 248 ); //as many as account_object
   BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_object ), 48 ); //obsolete - only created/modified up to HF12 (683 objects)

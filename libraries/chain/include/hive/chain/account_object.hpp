@@ -32,8 +32,8 @@ namespace hive { namespace chain {
         const time_point_sec& _creation_time, bool _mined,
         const account_name_type& _recovery_account,
         bool _fill_mana, const asset& incoming_delegation )
-        : id( _id ), name( _name ), memo_key( _memo_key ), created( _creation_time ), mined( _mined ),
-        recovery_account( _recovery_account ), delayed_votes( a )
+        : id( _id ), name( _name ), recovery_account( _recovery_account ), created( _creation_time ),
+        mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
       {
         received_vesting_shares += incoming_delegation;
         voting_manabar.last_update_time = _creation_time.sec_since_epoch();
@@ -75,27 +75,18 @@ namespace hive { namespace chain {
       //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
       asset get_vest_rewards_as_hive() const { return reward_vesting_hive; }
 
+      //members are organized in such a way that the object takes up as little space as possible.
+
       account_name_type name;
-      public_key_type   memo_key;
       account_name_type proxy;
-
-      time_point_sec    last_account_update;
-
-      time_point_sec    created;
-      bool              mined = true;
       account_name_type recovery_account;
       account_name_type reset_account = HIVE_NULL_ACCOUNT;
-      time_point_sec    last_account_recovery;
-      uint32_t          comment_count = 0;
-      uint32_t          lifetime_vote_count = 0;
-      uint32_t          post_count = 0;
 
-      bool              can_vote = true;
+      uint128_t         hbd_seconds; ///< total HBD * how long it has been held
+      uint128_t         savings_hbd_seconds; ///< total HBD * how long it has been held
+
       util::manabar     voting_manabar;
       util::manabar     downvote_manabar;
-
-      HIVE_asset        balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
-      HIVE_asset        savings_balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
 
       /**
         *  HBD Deposits pay interest based upon the interest rate set by witnesses. The purpose of these
@@ -110,51 +101,68 @@ namespace hive { namespace chain {
         *
         *  @defgroup hbd_data HBD Balance Data
         */
-      ///@{
+
       HBD_asset         hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
-      uint128_t         hbd_seconds; ///< total HBD * how long it has been held
-      time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
-      time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
-
-
       HBD_asset         savings_hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
-      uint128_t         savings_hbd_seconds; ///< total HBD * how long it has been held
-      time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
-      time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
-
-      uint8_t           savings_withdraw_requests = 0;
-      ///@}
-
       HBD_asset         reward_hbd_balance = asset( 0, HBD_SYMBOL );
+
       HIVE_asset        reward_hive_balance = asset( 0, HIVE_SYMBOL );
-      VEST_asset        reward_vesting_balance = asset( 0, VESTS_SYMBOL );
       HIVE_asset        reward_vesting_hive = asset( 0, HIVE_SYMBOL );
+      HIVE_asset        balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
+      HIVE_asset        savings_balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
 
-      share_type        curation_rewards = 0;
-      share_type        posting_rewards = 0;
-
+      VEST_asset        reward_vesting_balance = asset( 0, VESTS_SYMBOL );
       VEST_asset        vesting_shares = asset( 0, VESTS_SYMBOL ); ///< total vesting shares held by this account, controls its voting power
       VEST_asset        delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
       VEST_asset        received_vesting_shares = asset( 0, VESTS_SYMBOL );
-
       VEST_asset        vesting_withdraw_rate = asset( 0, VESTS_SYMBOL ); ///< at the time this is updated it can be at most vesting_shares/104
-      time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
+
+      share_type        curation_rewards = 0;
+      share_type        posting_rewards = 0;
       share_type        withdrawn = 0; /// Track how many shares have been withdrawn
       share_type        to_withdraw = 0; /// Might be able to look this up with operation history.
-      uint16_t          withdraw_routes = 0; //max 10, why is it 16bit?
-      uint16_t          pending_transfers = 0; //for now max is 255, but it might change
+      share_type        pending_claimed_accounts = 0;
 
-      fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes;// = std::vector<share_type>( HIVE_MAX_PROXY_RECURSION_DEPTH, 0 ); ///< the total VFS votes proxied to this account
+      /*
+        Total sum of VESTS from `delayed_votes` collection.
+        It's a helper variable needed for better performance.
+      */
+      ushare_type       sum_delayed_votes = 0;
 
-      uint16_t          witnesses_voted_for = 0; //max 30, why is it 16bit?
-
+      time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
+      time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
+      time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
+      time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
+      time_point_sec    last_account_recovery;
+      time_point_sec    created;
+      time_point_sec    last_account_update;
       time_point_sec    last_post;
       time_point_sec    last_root_post = fc::time_point_sec::min();
       time_point_sec    last_post_edit;
       time_point_sec    last_vote_time;
+      time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
+
+    private:
+      time_point_sec    last_governance_vote;
+
+    public:
+
+      uint32_t          comment_count = 0;
+      uint32_t          lifetime_vote_count = 0;
+      uint32_t          post_count = 0;
       uint32_t          post_bandwidth = 0;
 
-      share_type        pending_claimed_accounts = 0;
+      uint16_t          withdraw_routes = 0; //max 10, why is it 16bit?
+      uint16_t          pending_transfers = 0; //for now max is 255, but it might change
+      uint16_t          witnesses_voted_for = 0; //max 30, why is it 16bit?
+
+      uint8_t           savings_withdraw_requests = 0;
+      bool              can_vote = true;
+      bool              mined = true;
+
+      public_key_type   memo_key;   //public_key_type - 33 bytes
+
+      fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes;// = std::vector<share_type>( HIVE_MAX_PROXY_RECURSION_DEPTH, 0 ); ///< the total VFS votes proxied to this account
 
       using t_delayed_votes = t_vector< delayed_votes_data >;
       /*
@@ -162,16 +170,8 @@ namespace hive { namespace chain {
         VESTS from day `X` will be matured after `X` + 30 days ( because `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )
       */
       t_delayed_votes   delayed_votes;
-      /*
-        Total sum of VESTS from `delayed_votes` collection.
-        It's a helper variable needed for better performance.
-      */
-      ushare_type       sum_delayed_votes = 0;
 
-    private:
-      time_point_sec last_governance_vote;
-
-    public:
+      //methods
 
       time_point_sec get_last_governance_vote() const
       {
