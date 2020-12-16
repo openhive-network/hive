@@ -1437,7 +1437,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
     FC_ASSERT( voter.can_vote, "Account has declined its voting rights." );
 
   _db.modify( voter, [&]( account_object& a){
-    a.update_last_government_vote(_db.head_block_time());
+    a.update_last_governance_vote(_db.head_block_time());
   });
 
   const auto& witness = _db.get_witness( o.witness );

@@ -146,9 +146,9 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
 
     vote_proposal( voter_00, { id_proposal_00 }, true/*approve*/, carol_private_key );
     const auto& voter_00_acc = db->get_account( voter_00 );
-    BOOST_REQUIRE (voter_00_acc.get_last_government_vote() == db->head_block_time());
+    BOOST_REQUIRE (voter_00_acc.get_last_governance_vote() == db->head_block_time());
     generate_blocks( 1 );
-    BOOST_REQUIRE (voter_00_acc.get_last_government_vote() != db->head_block_time());
+    BOOST_REQUIRE (voter_00_acc.get_last_governance_vote() != db->head_block_time());
 
     {
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
@@ -159,9 +159,9 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
 
     vote_proposal( voter_01, { id_proposal_01 }, true/*approve*/, dan_private_key );
     const auto& voter_01_acc = db->get_account( voter_01 );
-    BOOST_REQUIRE (voter_01_acc.get_last_government_vote() == db->head_block_time());
+    BOOST_REQUIRE (voter_01_acc.get_last_governance_vote() == db->head_block_time());
     generate_blocks( 1 );
-    BOOST_REQUIRE (voter_01_acc.get_last_government_vote() != db->head_block_time());
+    BOOST_REQUIRE (voter_01_acc.get_last_governance_vote() != db->head_block_time());
 
     {
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
@@ -312,9 +312,9 @@ BOOST_AUTO_TEST_CASE( generating_payments )
 
     vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
     const auto& voter_01_acc = db->get_account( voter_01 );
-    BOOST_REQUIRE (voter_01_acc.get_last_government_vote() == db->head_block_time());
+    BOOST_REQUIRE (voter_01_acc.get_last_governance_vote() == db->head_block_time());
     generate_blocks( 1 );
-    BOOST_REQUIRE (voter_01_acc.get_last_government_vote() != db->head_block_time());
+    BOOST_REQUIRE (voter_01_acc.get_last_governance_vote() != db->head_block_time());
 
 
     //skipping interest generating is necessary
@@ -425,9 +425,9 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
       auto item = inits[ i % inits.size() ];
       vote_proposal( item.account, proposals_id, true/*approve*/, item.key );
       const auto& voter = db->get_account( item.account );
-      BOOST_REQUIRE (voter.get_last_government_vote() == db->head_block_time());
+      BOOST_REQUIRE (voter.get_last_governance_vote() == db->head_block_time());
       generate_block();
-      BOOST_REQUIRE (voter.get_last_government_vote() != db->head_block_time());
+      BOOST_REQUIRE (voter.get_last_governance_vote() != db->head_block_time());
     }
 
     for( auto item : inits )

@@ -119,7 +119,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
 
     const auto& voter = _db.get_account(o.voter);
     _db.modify( voter, [&](account_object& a) {
-      a.update_last_government_vote(_db.head_block_time());
+      a.update_last_governance_vote(_db.head_block_time());
     });
 
     for( const auto pid : o.proposal_ids )

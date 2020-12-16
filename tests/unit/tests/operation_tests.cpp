@@ -869,8 +869,8 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       int64_t max_vote_denom = ( db->get_dynamic_global_properties().vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS ) / (60*60*24);
 
       BOOST_REQUIRE( alice.last_vote_time == db->head_block_time() );
-      BOOST_REQUIRE( alice.get_last_government_vote() != db->head_block_time() );
-      BOOST_REQUIRE( alice.get_last_government_vote() == time_point_sec() );
+      BOOST_REQUIRE( alice.get_last_governance_vote() != db->head_block_time() );
+      BOOST_REQUIRE( alice.get_last_governance_vote() == time_point_sec() );
       BOOST_REQUIRE( alice_comment_cashout->net_rshares.value == ( old_mana - alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
       BOOST_REQUIRE( alice_comment_cashout->cashout_time == alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( itr->rshares == ( old_mana - alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
@@ -2137,9 +2137,9 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
     sign( tx, bob_private_key );
 
     const auto& alice_acc = db->get_account( "alice" );
-    BOOST_REQUIRE (alice_acc.get_last_government_vote() == db->head_block_time());
+    BOOST_REQUIRE (alice_acc.get_last_governance_vote() == db->head_block_time());
     generate_blocks( 1 );
-    BOOST_REQUIRE (alice_acc.get_last_government_vote() != db->head_block_time());
+    BOOST_REQUIRE (alice_acc.get_last_governance_vote() != db->head_block_time());
 
     HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
     validate_database();
@@ -2264,9 +2264,9 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
     BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _alice.name)) == witness_vote_idx.end());
 
     const auto& alice_acc = db->get_account( "alice" );
-    BOOST_REQUIRE (alice_acc.get_last_government_vote() == db->head_block_time());
+    BOOST_REQUIRE (alice_acc.get_last_governance_vote() == db->head_block_time());
     generate_blocks( 1 );
-    BOOST_REQUIRE (alice_acc.get_last_government_vote() != db->head_block_time());
+    BOOST_REQUIRE (alice_acc.get_last_governance_vote() != db->head_block_time());
 
 
     BOOST_TEST_MESSAGE("--- Test failure when voting for a non-existent account");
@@ -2293,11 +2293,11 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
   FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE( account_object_by_last_government_vote_idx )
+BOOST_AUTO_TEST_CASE( account_object_by_last_governance_vote_idx )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: account_object_by_last_government_vote_idx" );
+    BOOST_TEST_MESSAGE( "Testing: account_object_by_last_governance_vote_idx" );
 
     ACTORS( (acc1)(acc2)(acc3)(acc4)(accw) )
     signed_transaction tx;
@@ -2305,7 +2305,7 @@ BOOST_AUTO_TEST_CASE( account_object_by_last_government_vote_idx )
     witness_create( "accw", accw_private_key, "foo.bar", accw_witness_key.get_public_key(), 1000 );
 
     generate_block();
-    time_point_sec acc1_last_government_vote = db->head_block_time();
+    time_point_sec acc1_last_governance_vote = db->head_block_time();
 
     account_witness_vote_operation op1;
     op1.account = "acc1";
@@ -2319,7 +2319,7 @@ BOOST_AUTO_TEST_CASE( account_object_by_last_government_vote_idx )
     tx.clear();
 
     generate_block();
-    time_point_sec acc2_acc3_last_government_vote = db->head_block_time();
+    time_point_sec acc2_acc3_last_governance_vote = db->head_block_time();
 
     account_witness_vote_operation op2;
     op2.account = "acc2";
@@ -2344,7 +2344,7 @@ BOOST_AUTO_TEST_CASE( account_object_by_last_government_vote_idx )
     tx.clear();
 
     generate_block();
-    time_point_sec acc4_last_government_vote = db->head_block_time();
+    time_point_sec acc4_last_governance_vote = db->head_block_time();
 
     update_proposal_votes_operation op4;
     op4.voter = "acc4";
@@ -2358,19 +2358,19 @@ BOOST_AUTO_TEST_CASE( account_object_by_last_government_vote_idx )
     tx.clear();
     generate_block();
 
-    BOOST_REQUIRE (db->get_account( "acc1" ).get_last_government_vote() == acc1_last_government_vote);
-    BOOST_REQUIRE (db->get_account( "acc2" ).get_last_government_vote() == acc2_acc3_last_government_vote);
-    BOOST_REQUIRE (db->get_account( "acc3" ).get_last_government_vote() == acc2_acc3_last_government_vote);
-    BOOST_REQUIRE (db->get_account( "acc4" ).get_last_government_vote() == acc4_last_government_vote);
+    BOOST_REQUIRE (db->get_account( "acc1" ).get_last_governance_vote() == acc1_last_governance_vote);
+    BOOST_REQUIRE (db->get_account( "acc2" ).get_last_governance_vote() == acc2_acc3_last_governance_vote);
+    BOOST_REQUIRE (db->get_account( "acc3" ).get_last_governance_vote() == acc2_acc3_last_governance_vote);
+    BOOST_REQUIRE (db->get_account( "acc4" ).get_last_governance_vote() == acc4_last_governance_vote);
 
-    auto& accounts = db->get_index< account_index, by_last_government_vote >();
-    time_point_sec last_government_vote = accounts.begin()->get_last_government_vote();
+    auto& accounts = db->get_index< account_index, by_last_governance_vote >();
+    time_point_sec last_governance_vote = accounts.begin()->get_last_governance_vote();
 
     for (const auto&ac : accounts)
     {
-      time_point_sec curr_last_vote = ac.get_last_government_vote();
-      BOOST_REQUIRE (last_government_vote >= curr_last_vote);
-      last_government_vote = curr_last_vote;
+      time_point_sec curr_last_vote = ac.get_last_governance_vote();
+      BOOST_REQUIRE (last_governance_vote >= curr_last_vote);
+      last_governance_vote = curr_last_vote;
     }
     validate_database();
   }
