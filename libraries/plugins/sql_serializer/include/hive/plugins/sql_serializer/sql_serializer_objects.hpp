@@ -87,12 +87,15 @@ namespace hive
 						process_operation_t() = default;
 						process_operation_t(const int64_t _block_number, const int64_t _trx_in_block, const int64_t _op_in_trx, const operation &_op, const fc::string _deserialized_op) : block_number{_block_number}, trx_in_block{_trx_in_block}, op_in_trx{_op_in_trx}, op{_op}, deserialized_op{_deserialized_op} {}
 					};
-				}; // namespace processing_objects
 
-				using processing_object_t = fc::static_variant<
-						processing_objects::process_operation_t,
-						processing_objects::process_transaction_t,
-						processing_objects::process_block_t>;
+					struct process_virtual_operation_t : public process_operation_t
+					{
+						int64_t vop_id;
+
+						process_virtual_operation_t() = default;
+						process_virtual_operation_t(const int64_t _block_number, const int64_t _trx_in_block, const int64_t _op_in_trx, const operation &_op, const fc::string _deserialized_op, const int64_t _vop_id) : process_operation_t{_block_number, _trx_in_block, _op_in_trx, _op, _deserialized_op}, vop_id{_vop_id} {}
+					};
+				}; // namespace processing_objects
 
 				inline fc::string generate(std::function<void(fc::string &)> fun)
 				{
@@ -163,14 +166,19 @@ namespace hive
 					const hive::chain::database &db;
 					const escape_function_t escape;
 
+					const fc::string null_permlink;
+					const fc::string null_account;
+
+
 					fc::string blocks{};
 					fc::string transactions{};
 
 					cache_contatiner_t permlink_cache;
 					cache_contatiner_t account_cache;
 
-					sql_dumper(const hive::chain::database &_db, const escape_function_t _escape)
-							: db{_db}, escape{_escape}
+
+					sql_dumper(const hive::chain::database &_db, const escape_function_t _escape, const fc::string& _null_permlink, const fc::string& _null_account)
+							: db{_db}, escape{_escape}, null_permlink{ "'" + _null_permlink + "'" }, null_account{ "'" + _null_permlink + "'"}
 					{
 						reset_blocks_stream();
 						reset_transaction_stream();
@@ -199,14 +207,14 @@ INSERT INTO hive_operations( block_num, trx_in_block, op_pos, op_type_id, body, 
 					fc::string reset_virtual_operation_stream()
 					{
 						virtual_operations.append(R"(
-) as T( order_id, bn, trx, opn, opt, body, part ) INNER JOIN hive_accounts AS ha ON T.part=ha.name
- GROUP BY T.order_id, T.bn, T.trx, T.opn, T.opt, T.body ORDER BY T.order_id )");
+) as T( order_id, bn, trx, opn, opt, body, vopid, part ) INNER JOIN hive_accounts AS ha ON T.part=ha.name
+ GROUP BY T.order_id, T.bn, T.trx, T.opn, T.vopid, T.opt, T.body ORDER BY T.order_id )");
 
 						fc::string result{ std::move(virtual_operations) };
 
 						virtual_operations = fc::string{R"(
-INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, op_type_id, body ,participants)
- SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_remove(array_agg(ha.id), 0) FROM ( VALUES )"};
+INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, vop_id, op_type_id, body ,participants)
+ SELECT T.bn, T.trx, T.opn, T.vopid, T.opt, T.body, array_remove(array_agg(ha.id), 0) FROM ( VALUES )"};
 
 						any_virtual_operations = 0;
 
@@ -231,25 +239,26 @@ INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, op_type_id,
 						any_operations++;
 
 						fc::string pre_generate;
-						get_operation_value_prefix(pre_generate, pop);
+						get_operation_value_prefix(pre_generate, pop, any_operations);
 
 						operations.append( pre_generate );
-						operations.append( " get_null_permlink(), '' )" );
+						operations.append( null_permlink + " , " + null_account + ")" );
 
 						get_formatted_permlinks(pre_generate, *pop.op, operations);
-						pre_generate.append("get_null_permlink(), ");
+						pre_generate.append( null_permlink +  ", ");
 						format_participants(pre_generate, *pop.op, operations);
 
 						return operations.size();
 					}
 
-					result_type process_virtual_operation(const processing_objects::process_operation_t &pop)
+					result_type process_virtual_operation(const processing_objects::process_virtual_operation_t &pop)
 					{
 						virtual_operations.append(any_virtual_operations == 0 ? "" : ",");
 						any_virtual_operations++;
 
 						fc::string pre_generate;
-						get_operation_value_prefix(pre_generate, pop);
+						get_operation_value_prefix(pre_generate, pop, any_virtual_operations);
+						pre_generate.append( std::to_string( pop.vop_id ) + ", " );
 
 						virtual_operations.append(pre_generate);
 						virtual_operations.append(" '' )");
@@ -358,7 +367,7 @@ INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, op_type_id,
 								output.append(prefix);
 								output.append("E'");
 								output.append(escape(it->c_str()));
-								output.append("', '' )");
+								output.append("', " + null_account + " )");
 							}
 					}
 
@@ -377,11 +386,11 @@ INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, op_type_id,
 						return std::move(std::to_string(op.which()));
 					}
 
-					void get_operation_value_prefix(fc::string& ss, const processing_objects::process_operation_t& pop)
+					void get_operation_value_prefix(fc::string& ss, const processing_objects::process_operation_t& pop, uint32_t& order_id)
 					{
 						const char* separator = ", ";
 						ss.append( "( " );
-						ss.append( std::to_string(any_operations) ); 
+						ss.append( std::to_string(order_id++) ); 
 						ss.append( separator );
 						ss.append( std::to_string( pop.block_number ) ); 
 						ss.append( separator );

@@ -11,8 +11,8 @@
 -- -- Reset
 DROP SCHEMA public CASCADE;
 CREATE SCHEMA public;
--- CREATE EXTENSION IF NOT EXISTS intarray;
--- CREATE EXTENSION IF NOT EXISTS pg_prewarm;
+CREATE EXTENSION IF NOT EXISTS intarray;
+CREATE EXTENSION IF NOT EXISTS pg_prewarm;
 
 
 -- -- Core Tables
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS hive_blocks (
 
 CREATE TABLE IF NOT EXISTS hive_transactions (
   "block_num" integer NOT NULL,
-  "trx_in_block" integer NOT NULL,
+  "trx_in_block" smallint NOT NULL,
   "trx_hash" character (40) NOT NULL,
   CONSTRAINT hive_transactions_pkey PRIMARY KEY ("block_num", "trx_in_block"),
   CONSTRAINT hive_transactions_uniq_1 UNIQUE ("trx_hash")
@@ -33,14 +33,13 @@ CREATE TABLE IF NOT EXISTS hive_transactions (
 
 CREATE TABLE IF NOT EXISTS hive_operation_types (
   -- This "id", due to filling logic is not autoincrement, but is set by `fc::static_variant::which()` (a.k.a.. operation )
-  "id" integer NOT NULL,
+  "id" smallint NOT NULL,
   "name" text NOT NULL,
   "is_virtual" boolean NOT NULL,
   CONSTRAINT hive_operation_types_pkey PRIMARY KEY ("id")
 );
 -- -- Cache whole table, as this will be very often accessed and it's quite small
 -- -- TODO: fill whole table on start
--- SELECT pg_prewarm('hive_operation_types');
 
 CREATE TABLE IF NOT EXISTS hive_permlink_data (
   "id" serial,
@@ -50,17 +49,15 @@ CREATE TABLE IF NOT EXISTS hive_permlink_data (
 );
 
 CREATE TABLE IF NOT EXISTS hive_operations (
-  "id" serial,
   "block_num" integer NOT NULL,
-  "trx_in_block" integer NOT NULL,
-  "op_pos" integer NOT NULL,
-  "op_type_id" integer NOT NULL,
+  "trx_in_block" smallint NOT NULL,
+  "op_pos" smallint NOT NULL,
+  "op_type_id" smallint NOT NULL,
   "body" text DEFAULT NULL,
-  -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
   "permlink_ids" int[],
+  -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
   "participants" int[],
-  CONSTRAINT hive_operations_pkey PRIMARY KEY ("id"),
-  CONSTRAINT hive_operations_uniq UNIQUE ("block_num", "trx_in_block", "op_pos"),
+  CONSTRAINT hive_operations_pkey PRIMARY KEY ("block_num", "trx_in_block", "op_pos"),
   CONSTRAINT hive_operations_unsigned CHECK ("trx_in_block" >= 0 AND "op_pos" >= 0)
 );
 
@@ -72,15 +69,18 @@ CREATE TABLE IF NOT EXISTS hive_accounts (
 );
 
 CREATE TABLE IF NOT EXISTS hive_virtual_operations (
-  "id" serial,
   "block_num" integer NOT NULL,
-  "trx_in_block" integer NOT NULL,
-  "op_pos" integer NOT NULL,
-  "op_type_id" integer NOT NULL,
+  "trx_in_block" smallint NOT NULL,
+  -- for `trx_in_block` = 1, `op_pos` stands for order
+  "op_pos" smallint NOT NULL,
+  -- single action can create multiple vops, so this is just to keep them unique
+  "vop_id" smallint NOT NULL,
+  "op_type_id" smallint NOT NULL,
   "body" text DEFAULT NULL,
   -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
   "participants" int[],
-  CONSTRAINT hive_virtual_operations_pkey PRIMARY KEY ("id")
+  CONSTRAINT hive_virtual_operations_pkey PRIMARY KEY ("block_num", "trx_in_block", "op_pos", "vop_id")
+
 );
 
 DROP FUNCTION IF EXISTS insert_operation_type_id;
@@ -97,14 +97,8 @@ END
 $func$
 LANGUAGE 'plpgsql';
 
-DROP FUNCTION IF EXISTS get_null_permlink;
-CREATE OR REPLACE FUNCTION get_null_permlink () RETURNS varchar AS $func$
-BEGIN
-	RETURN (SELECT '');
-END
-$func$
-LANGUAGE 'plpgsql';
-
 -- SPECIAL VALUES
-INSERT INTO hive_permlink_data VALUES(0, get_null_permlink());	-- This is permlink referenced by empty participants arrays
+INSERT INTO hive_permlink_data VALUES(0, '');	-- This is permlink referenced by empty participants arrays
 INSERT INTO hive_accounts VALUES(0, '');	-- This is account referenced by empty participants arrays
+
+

@@ -32,7 +32,7 @@ namespace hive
 
 			inline void mylog(const char* msg)
 			{
-				// std::cout << "[ " << std::this_thread::get_id() << " ] " << msg << std::endl;
+				std::cout << "[ " << std::this_thread::get_id() << " ] " << msg << std::endl;
 			}
 
 			namespace detail
@@ -59,7 +59,7 @@ namespace hive
 
 					transaction_t start_transaction()
 					{
-						mylog("started transaction");
+						// mylog("started transaction");
 
 						pqxx::connection* _conn = new pqxx::connection{ this->connection_string };
 						work *_trx = new work{*_conn};
@@ -77,13 +77,13 @@ namespace hive
 
 					bool commit_transaction(transaction_t &trx)
 					{
-						mylog("commiting");
+						// mylog("commiting");
 						return sql_safe_execution([&]() { trx->_transaction->commit(); }, "commit");
 					}
 
 					void abort_transaction(transaction_t &trx)
 					{
-						mylog("aborting");
+						// mylog("aborting");
 						trx->_transaction->abort();
 					}
 
@@ -154,7 +154,7 @@ namespace hive
 					std::vector<PSQL::processing_objects::process_block_t> blocks;
 					std::vector<PSQL::processing_objects::process_transaction_t> transactions;
 					std::vector<PSQL::processing_objects::process_operation_t> operations;
-					std::vector<PSQL::processing_objects::process_operation_t> virtual_operations;
+					std::vector<PSQL::processing_objects::process_virtual_operation_t> virtual_operations;
 
 					size_t total_size{ 0ul };
 
@@ -173,6 +173,7 @@ namespace hive
 
 					void log_size(const fc::string& msg = "size")
 					{
+						return;
 						mylog(generate([&](fc::string& ss){ 
 							ss = msg + ": ";
 							ss += "blocks: " + std::to_string(blocks.size());
@@ -200,6 +201,7 @@ namespace hive
 
 					database &_db;
 					boost::signals2::connection _on_post_apply_operation_con;
+					boost::signals2::connection _on_post_apply_transaction_con;
 					boost::signals2::connection _on_post_apply_block_con;
 					boost::signals2::connection _on_starting_reindex;
 					boost::signals2::connection _on_finished_reindex;
@@ -212,8 +214,13 @@ namespace hive
 					using thread_with_status = std::pair<std::shared_ptr<std::thread>, bool>;
 					std::list<thread_with_status> threads;
 					uint32_t blocks_per_commit = 1;
+					int64_t block_vops = 0;
+					int64_t vop_in_trx = 0;
 
 					cached_containter_t currently_caching_data;
+
+					fc::string null_permlink;
+					fc::string null_account;
 
 					void create_indexes()
 					{
@@ -242,10 +249,12 @@ namespace hive
 						while(std::getline(file, line)) schema_str += line;
 						file.close();
 
-						auto trx = connection.start_transaction();
-						FC_ASSERT(connection.exec_transaction(trx, schema_str));
-						FC_ASSERT(connection.exec_transaction(trx, PSQL::get_all_type_definitions()));
-						FC_ASSERT(connection.commit_transaction(trx));
+						connection.exec_no_transaction(schema_str);
+						connection.exec_no_transaction(PSQL::get_all_type_definitions());
+						connection.exec_no_transaction("SELECT pg_prewarm('hive_operation_types')");
+
+						null_permlink = connection.get_single_value<fc::string>( "SELECT permlink FROM hive_permlink_data WHERE id=0" );
+						null_account = connection.get_single_value<fc::string>( "SELECT name FROM hive_accounts WHERE id=0" );
 					}
 
 					void upload_caches(transaction_t &trx, PSQL::sql_dumper &dumper)
@@ -261,6 +270,7 @@ namespace hive
 					{
 						auto tm = fc::time_point::now();
 						auto measure_time = [&](const char* _msg){
+							return;
 							mylog(generate([&](fc::string& ss){
 								ss += fc::string{"Elapsed time for "} + _msg + ": " + std::to_string(( fc::time_point::now() - tm ).count()) + "\n";
 							}).c_str());
@@ -341,6 +351,7 @@ namespace hive
 					{
 						int cnt = 0;
 						threads.remove_if([force, &cnt](const thread_with_status& th){ if(force || th.second){ cnt++; return true; } else return false; });
+						return;
 						mylog(generate([&](fc::string& ss){ ss += "currently running " + std::to_string(threads.size()) + " threads. Joined: " + std::to_string(cnt); }).c_str());
 					}
 
@@ -351,7 +362,7 @@ namespace hive
 
 						using up_and_down_constraint = std::pair<const char*, const char*>;
 						static const std::vector<up_and_down_constraint> constrainsts{{	up_and_down_constraint
-							{"ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_1"},
+							{"ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_transactions_fk_1"},
 							{"ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_1 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_1"},
 							{"ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_2 FOREIGN KEY (block_num, trx_in_block) REFERENCES hive_transactions (block_num, trx_in_block)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_2"},
 							{"ALTER TABLE hive_virtual_operations ADD CONSTRAINT hive_virtual_operations_fk_1 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id)","ALTER TABLE hive_virtual_operations DROP CONSTRAINT IF EXISTS hive_virtual_operations_fk_1"},
@@ -373,35 +384,26 @@ namespace hive
 
 					void process_cached_data()
 					{
-						if(currently_caching_data.get()) return;
+						if(currently_caching_data.get() == nullptr) return;
 
-						mylog("created new thread");
 						const auto cache_processor_function = [this](cached_containter_t input, bool* is_ready) {
 							auto finish = [&](const bool is_ok) { if(is_ready) *is_ready = true; FC_ASSERT( is_ok ); };
-							if (input.get() == nullptr)
-							{
-								finish(true);
-								return;
-							}
 
 							transaction_t trx = this->connection.start_transaction();
-							PSQL::sql_dumper dumper{_db, trx->get_escaping_charachter_methode()};
+							PSQL::sql_dumper dumper{_db, trx->get_escaping_charachter_methode(), null_permlink, null_account};
 
 							// sending
 							if (!this->process_and_send_data(dumper, *input, trx))
 							{
-								mylog("aborting transaction");
 								this->connection.abort_transaction(trx);
 								finish(false);
 							}
 							else
 							{
-								mylog("commiting transaction");
 								finish(this->connection.commit_transaction(trx));
 							}
 						};
 
-						mylog("creating new thread");
 						threads.emplace_back(nullptr, false);
 						currently_caching_data->log_size();
 						threads.back().first.reset(
@@ -458,6 +460,7 @@ namespace hive
 				// signals
 				auto &db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
 				my->_on_post_apply_operation_con = db.add_post_apply_operation_handler([&](const operation_notification &note) { on_post_apply_operation(note); }, *this);
+				my->_on_post_apply_transaction_con = db.add_post_apply_transaction_handler([&](const transaction_notification &note) { on_post_apply_transaction(note); }, *this);
 				my->_on_post_apply_block_con = db.add_post_apply_block_handler([&](const block_notification &note) { on_post_apply_block(note); }, *this);
 				my->_on_finished_reindex = db.add_post_reindex_handler([&](const reindex_notification &note) { on_post_reindex(note); }, *this);
 				my->_on_starting_reindex = db.add_pre_reindex_handler([&](const reindex_notification &note) { on_pre_reindex(note); }, *this);
@@ -475,6 +478,8 @@ namespace hive
 
 				if (my->_on_post_apply_block_con.connected())
 					chain::util::disconnect_signal(my->_on_post_apply_block_con);
+				if (my->_on_post_apply_transaction_con.connected())
+					chain::util::disconnect_signal(my->_on_post_apply_transaction_con);
 				if (my->_on_post_apply_operation_con.connected())
 					chain::util::disconnect_signal(my->_on_post_apply_operation_con);
 				if (my->_on_starting_reindex.connected())
@@ -496,9 +501,10 @@ namespace hive
 					cdtf->virtual_operations.emplace_back(
 							note.block,
 							note.trx_in_block,
-							note.op_in_trx,
+							( note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx ),
 							note.op,
-							std::move(deserialized_op)
+							std::move(deserialized_op),
+							my->vop_in_trx++
 						);
 				}
 				else
@@ -513,6 +519,11 @@ namespace hive
 				}
 			}
 
+			void sql_serializer_plugin::on_post_apply_transaction(const transaction_notification &note)
+			{
+				my->vop_in_trx = 0;
+			}
+
 			void sql_serializer_plugin::on_post_apply_block(const block_notification &note)
 			{
 				for (int64_t i = 0; i < static_cast<int64_t>(note.block.transactions.size()); i++)
@@ -522,15 +533,10 @@ namespace hive
 				my->currently_caching_data->blocks.emplace_back(
 						note.block_id,
 						note.block_num);
+				my->block_vops = 0;
 
-				if( my->currently_caching_data->total_size >= max_data_length )
+				if( my->currently_caching_data->total_size >= max_data_length || note.block_num % my->blocks_per_commit == 0 )
 				{
-					mylog("pushing because of size");
-					my->push_currently_cached_data(prereservation_size);
-				}
-				else if( note.block_num % my->blocks_per_commit == 0 )
-				{
-					mylog("pushing because of tuple size");
 					my->push_currently_cached_data(prereservation_size);
 				}
 
@@ -539,7 +545,6 @@ namespace hive
 
 			void sql_serializer_plugin::handle_transaction(const hive::protocol::transaction_id_type &hash, const int64_t block_num, const int64_t trx_in_block)
 			{
-				if(block_num >= 14'500'000) mylog("adding trx");
 				my->currently_caching_data->total_size += sizeof(hash) + sizeof(block_num) + sizeof(trx_in_block);
 				my->currently_caching_data->transactions.emplace_back(
 						hash,
@@ -560,7 +565,7 @@ namespace hive
 
 			void sql_serializer_plugin::on_post_reindex(const reindex_notification &)
 			{
-				std::cout << "finishing from post reindex" << std::endl;
+				mylog("finishing from post reindex");
 				// flush rest of data
 				my->cleanup_sequence();
 				my->blocks_per_commit = 1;
