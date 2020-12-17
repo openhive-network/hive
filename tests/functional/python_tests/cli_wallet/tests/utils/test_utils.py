@@ -16,6 +16,32 @@ class ArgsCheckException(Exception):
     def __str__(self):
         return self.message
 
+class Asset:
+  def __init__( self, am : float, dec : int = None, sym : str = None ):
+    if dec is None and sym is None:
+      am, dec, sym = self.__parse_str(am)
+
+    self.amount = am
+    self.decimals = dec
+    self.symbol = sym
+
+  def to_string(self):
+    return "{1:.{0}f} {2}".format(self.decimals, self.amount, self.symbol)
+
+  # returns amount, decimals and symbol
+  def __parse_str( self, _in : str ):
+    _in = _in.strip()
+    amount, symbol = _in.split(' ')
+    _, decimals = amount.split('.')
+    amount = float(amount)
+    return amount, len(decimals), symbol
+
+  def __str__(self):
+    return self.to_string()
+
+  def satoshi(self):
+    return Asset( 10 ** ( -1 * 3 ), self.decimals, self.symbol )
+
 user_name = list("aaaaaaaaaaaa")
 creator = "initminer"
 
@@ -134,16 +160,45 @@ def get_valid_hive_account_name():
         if len(set(user_name)) == 1 and user_name[0] == 'z':
             break
 
+# if all_diffrent: { "owner": {"pub", "prv"}, "active": {"pub", "prv"}, "posting": {"pub", "prv"}, "memo": {"pub", "prv"} }
+# if not all_diffrent: {"pub", "prv"}
+def get_keys( cli_wallet, import_to_wallet : bool = True, all_diffrent : bool = False) -> dict:
+  def _get_prv_pub_pair() -> dict:
+    keys = cli_wallet.suggest_brain_key()['result']
+    if import_to_wallet:
+      cli_wallet.import_key( keys['wif_priv_key'] )
+    return { "pub": keys['pub_key'], "prv": keys['wif_priv_key'] }
+
+  if all_diffrent:
+    return {
+      "owner": _get_prv_pub_pair(),
+      "active": _get_prv_pub_pair(),
+      "posting": _get_prv_pub_pair(),
+      "memo": _get_prv_pub_pair()
+    }
+  else:
+    return _get_prv_pub_pair()
+
 def make_user_for_tests(_cli_wallet, _value_for_vesting = "20.000 TESTS",  _value_for_transfer_tests = "20.000 TESTS", _value_for_transfer_tbd = "20.000 TBD"):
     receiver = get_valid_hive_account_name()
 
-    _cli_wallet.create_account( creator, receiver, "{}", "true")
+    print(_cli_wallet.create_account( creator, receiver, "{}", "true"))
 
     _cli_wallet.transfer_to_vesting(    creator, receiver, _value_for_vesting, "true")
     _cli_wallet.transfer(               creator, receiver, _value_for_transfer_tests, "initial transfer", "true" )
     _cli_wallet.transfer(               creator, receiver, _value_for_transfer_tbd, "initial transfer", "true")
 
     return creator, receiver
+
+def create_users( _cli_wallet, count ) -> dict:
+  ret = dict()
+  for _ in range(count):
+    name = get_valid_hive_account_name() 
+    keys = get_keys( _cli_wallet )
+    pub = keys['pub']
+    ret[name] = keys
+    _cli_wallet.create_account_with_keys( creator, name, "{}", pub, pub, pub, pub, "true" )
+  return ret
 
 class Test(ContextDecorator):
     def __init__(self, _test_name):

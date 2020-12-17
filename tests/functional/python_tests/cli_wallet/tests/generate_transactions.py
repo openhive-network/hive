@@ -7,6 +7,7 @@ from utils.logger     import log, init_logger
 from time import sleep
 from time import perf_counter as perf
 from json import dump
+from resources.configini import config
 
 if __name__ == "__main__":
 	with CliWallet( args ) as wallet:
@@ -30,34 +31,37 @@ if __name__ == "__main__":
 				print_value( 'post_voting_power' )
 			return usr
 
-		print('a')
-		creator, user_1 = make_user_for_tests(wallet)
-		sleep(1)
-		print('a')
-		creator, user_2 = make_user_for_tests(wallet)
-		sleep(1)
+		users = create_users(wallet, 3)
+		creator = wallet.cli_args.creator
+		# print(json.dumps(users))
 
-		print('a')
-		i_stats_user_1 = print_account( user_1 )
-		print('a')
-		i_stats_user_2 = print_account( user_2 )
-		print('a')
-		i_stats_creator = print_account( creator )
-		print('a')
-		sleep(1)
+		users_stats = dict([ (user, print_account( user )) for user in users.keys() ])
+		users_stats[creator] = print_account( creator )
+		[ wallet.update_witness( name, f'www.{name}.org', keys['pub'], '{}', 'true' ) ]
+
+		begin_http_port = int(wallet.cli_args.rpc_http_endpoint.split(':')[-1])
+		begin_ws_port = int(wallet.cli_args.rpc_tls_endpoint.split(':')[-1])
+		for name, keys in users.items():
+			config( private_key=keys['prv'], witness=f'"{name}"', webserver_http_endpoint=f"127.0.0.1:{begin_http_port}", webserver_ws_endpoint=f"127.0.0.1:{begin_ws_port}" ).generate( f"config_{name}.ini" )
+			begin_http_port+=1
+			begin_ws_port+=1
+
+
+		creators_balance = Asset( users_stats[creator]['balance'] )
+		balance = creators_balance
+		balance.amount *= 0.025
 
 		print(f'transfering all money from {creator} to {user_1}')
-		wallet.transfer( creator, user_1, i_stats_creator['balance'], 'funds to spam', 'true' )
-		sleep(1)
-		print_account(creator)
-		print_account(user_1)
+		for user in users.keys():
+			wallet.transfer( creator, user, str(balance), 'funds to spam', 'true' )
 
 		print(f'changing transaction operation to `3599`')
 		wallet.set_transaction_expiration( "3599" )
 
-		print(f"generating 10'000 transfers")
+		transfers = balance.amount / balance.satoshi().amount
+		print(f"generating {transfers} transfers")
 		start = perf()
-		gen = wallet.transfers( user_1, user_2, "0.001 TESTS", 'spam_1', '10000' )
+		gen = wallet.transfers( user_1, user_2, str(balance.satoshi()), 'spam_1', str(transfers) )
 		print(f"Generated 10'000 transfers in: { perf() - start :.2f}s")
 		with open("operations.json", 'w') as file:
 			dump( gen, file )

@@ -3,7 +3,7 @@
 # Easier way to generate configs
 
 class config:
-	def __init__(self):
+	def __init__(self, check_is_arg_exists : bool = True, **kwargs):
 		self.log_appender = '{"appender":"stderr","stream":"std_error"} {"appender":"p2p","file":"logs/p2p/p2p.log"}'
 		self.log_logger = '{"name":"default","level":"all","appender":"stderr"} {"name":"p2p","level":"all","appender":"p2p"}'
 		self.backtrace = 'yes'
@@ -39,6 +39,10 @@ class config:
 		self.private_key = '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n'
 		self.witness_skip_enforce_bandwidth = '1'
 		self.snapshot_root_dir = '"/tmp/snapshots"'
+
+		for key, value in kwargs.items():
+			assert ( not check_is_arg_exists ) or key in self.__dict__.keys(), f"key `{key}` not found"
+			setattr(self, key, value)
 
 	def generate(self, path_to_file : str):
 		conf = self.__dict__
@@ -82,7 +86,6 @@ class config:
 			except ValueError:
 				pass
 		self.plugin = " ".join(current_plugins)
-
 
 def validate_address(val : str) -> bool:
 	try:
