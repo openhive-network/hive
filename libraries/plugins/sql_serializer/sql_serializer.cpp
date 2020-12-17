@@ -32,8 +32,7 @@ namespace hive
 
 			inline void mylog(const char* msg)
 			{
-				if( false ) return;
-				std::cout << "[ " << std::this_thread::get_id() << " ] " << msg << std::endl;
+				// std::cout << "[ " << std::this_thread::get_id() << " ] " << msg << std::endl;
 			}
 
 			namespace detail
@@ -195,6 +194,7 @@ namespace hive
 
 					virtual ~sql_serializer_plugin_impl()
 					{
+						std::cout << "finishing from plugin impl destructor" << std::endl;
 						cleanup_sequence();
 					}
 
@@ -411,6 +411,7 @@ namespace hive
 					{
 						ilog("Flushing rest of data, wait a moment...");
 						push_currently_cached_data(0);
+						join_ready_threads(true);
 						if (set_index)
 						{
 							ilog("Creating indexes on user request");
@@ -548,6 +549,7 @@ namespace hive
 
 			void sql_serializer_plugin::on_post_reindex(const reindex_notification &)
 			{
+				std::cout << "finishing from post reindex" << std::endl;
 				// flush rest of data
 				my->cleanup_sequence();
 				my->blocks_per_commit = 1;
