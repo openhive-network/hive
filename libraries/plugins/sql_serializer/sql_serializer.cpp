@@ -194,7 +194,7 @@ namespace hive
 
 					virtual ~sql_serializer_plugin_impl()
 					{
-						std::cout << "finishing from plugin impl destructor" << std::endl;
+						mylog("finishing from plugin impl destructor");
 						cleanup_sequence();
 					}
 
@@ -348,6 +348,7 @@ namespace hive
 					{
 						if(are_constraints_active == active) return;
 						else are_constraints_active = active;
+
 						using up_and_down_constraint = std::pair<const char*, const char*>;
 						static const std::vector<up_and_down_constraint> constrainsts{{	up_and_down_constraint
 							{"ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_1"},
@@ -359,12 +360,21 @@ namespace hive
 
 						auto trx = connection.start_transaction();
 						for (const auto &idx : constrainsts)
-							connection.exec_transaction(trx, (active ? idx.first : idx.second ));
+						{
+							FC_ASSERT( connection.exec_transaction(trx, idx.second ), "failed when a dropping constraint" );
+							if(active && !connection.exec_transaction(trx, idx.first ))
+							{
+								connection.abort_transaction(trx);
+								FC_ASSERT( false );
+							}
+						}
 						connection.commit_transaction(trx);
 					}
 
 					void process_cached_data()
 					{
+						if(currently_caching_data.get()) return;
+
 						mylog("created new thread");
 						const auto cache_processor_function = [this](cached_containter_t input, bool* is_ready) {
 							auto finish = [&](const bool is_ok) { if(is_ready) *is_ready = true; FC_ASSERT( is_ok ); };
@@ -412,6 +422,7 @@ namespace hive
 						ilog("Flushing rest of data, wait a moment...");
 						push_currently_cached_data(0);
 						join_ready_threads(true);
+						if(are_constraints_active) return;
 						if (set_index)
 						{
 							ilog("Creating indexes on user request");

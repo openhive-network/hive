@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS hive_operation_types (
 
 CREATE TABLE IF NOT EXISTS hive_permlink_data (
   "id" serial,
-  "permlink" varchar(257) NOT NULL,
+  "permlink" varchar(255) NOT NULL,
   CONSTRAINT hive_permlink_data_pkey PRIMARY KEY ("id"),
   CONSTRAINT hive_permlink_data_uniq UNIQUE ("permlink")
 );
@@ -74,8 +74,8 @@ CREATE TABLE IF NOT EXISTS hive_accounts (
 CREATE TABLE IF NOT EXISTS hive_virtual_operations (
   "id" serial,
   "block_num" integer NOT NULL,
-  "trx_in_block" integer,
-  "op_pos" integer,
+  "trx_in_block" integer NOT NULL,
+  "op_pos" integer NOT NULL,
   "op_type_id" integer NOT NULL,
   "body" text DEFAULT NULL,
   -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
@@ -100,7 +100,7 @@ LANGUAGE 'plpgsql';
 DROP FUNCTION IF EXISTS get_null_permlink;
 CREATE OR REPLACE FUNCTION get_null_permlink () RETURNS varchar AS $func$
 BEGIN
-	RETURN (SELECT repeat('0', 257));
+	RETURN (SELECT '');
 END
 $func$
 LANGUAGE 'plpgsql';
