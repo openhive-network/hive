@@ -33,7 +33,7 @@ namespace hive
 			// [which] = ( op_name, is_virtual )
 			namespace PSQL
 			{
-				
+
 				using operation_types_container_t = std::map<int64_t, std::pair<fc::string, bool>>;
 
 				struct typename_gatherer
@@ -50,6 +50,7 @@ namespace hive
 				template <typename T>
 				using queue = boost::concurrent::sync_queue<T>;
 				using escape_function_t = std::function<fc::string(const char *)>;
+				using escape_raw_function_t = std::function<fc::string(const char *, const size_t)>;
 
 				using hive::protocol::operation;
 
@@ -63,7 +64,7 @@ namespace hive
 						int64_t block_number;
 
 						process_block_t() = default;
-						process_block_t(const hash_t& _hash, const int64_t _block_number) : hash{_hash}, block_number{_block_number} {}
+						process_block_t(const hash_t &_hash, const int64_t _block_number) : hash{_hash}, block_number{_block_number} {}
 					};
 
 					struct process_transaction_t : public process_block_t
@@ -126,7 +127,7 @@ namespace hive
 					}
 				};
 
-				constexpr const char* SQL_bool(const bool val) { return (val ? "TRUE" : "FALSE"); }
+				constexpr const char *SQL_bool(const bool val) { return (val ? "TRUE" : "FALSE"); }
 
 				inline fc::string get_all_type_definitions()
 				{
@@ -135,25 +136,28 @@ namespace hive
 
 					operation_types_container_t result;
 					typename_gatherer p{result};
-					boost::mpl::for_each< processor::transformed_type_list, boost::type<boost::mpl::_> >(p);
+					boost::mpl::for_each<processor::transformed_type_list, boost::type<boost::mpl::_>>(p);
 
-					if(result.empty()) return fc::string{};
-					else{ 
-						return generate([&](fc::string& ss){
-						ss.append("INSERT INTO hive_operation_types VALUES ");
-						for(auto it = result.begin(); it != result.end(); it++)
-						{
-							if(it != result.begin()) ss.append(",");
-							ss.append("( ");
-							ss.append( std::to_string(it->first) );
-							ss.append( " , '" );
-							ss.append( it->second.first );
-							ss.append( "', " );
-							ss.append( SQL_bool(it->second.second) );
-							ss.append( " )" );
-						}
-						ss.append(" ON CONFLICT DO NOTHING");
-					});
+					if (result.empty())
+						return fc::string{};
+					else
+					{
+						return generate([&](fc::string &ss) {
+							ss.append("INSERT INTO hive_operation_types VALUES ");
+							for (auto it = result.begin(); it != result.end(); it++)
+							{
+								if (it != result.begin())
+									ss.append(",");
+								ss.append("( ");
+								ss.append(std::to_string(it->first));
+								ss.append(" , '");
+								ss.append(it->second.first);
+								ss.append("', ");
+								ss.append(SQL_bool(it->second.second));
+								ss.append(" )");
+							}
+							ss.append(" ON CONFLICT DO NOTHING");
+						});
 					}
 				}
 				using cache_contatiner_t = std::set<fc::string>;
@@ -165,72 +169,61 @@ namespace hive
 
 					const hive::chain::database &db;
 					const escape_function_t escape;
+					const escape_raw_function_t escape_raw;
 
 					const fc::string null_permlink;
 					const fc::string null_account;
 
-
 					fc::string blocks{};
 					fc::string transactions{};
+					fc::string operations{};
+					fc::string virtual_operations{};
 
 					cache_contatiner_t permlink_cache;
 					cache_contatiner_t account_cache;
 
+					sql_dumper(const hive::chain::database &_db, const escape_function_t _escape, const escape_raw_function_t _escape_raw, const fc::string &_null_permlink, const fc::string &_null_account)
+							: db{_db}, escape{_escape}, escape_raw{ _escape_raw }, null_permlink{"'" + _null_permlink + "'"}, null_account{"'" + _null_permlink + "'"} {}
 
-					sql_dumper(const hive::chain::database &_db, const escape_function_t _escape, const fc::string& _null_permlink, const fc::string& _null_account)
-							: db{_db}, escape{_escape}, null_permlink{ "'" + _null_permlink + "'" }, null_account{ "'" + _null_permlink + "'"}
+					fc::string get_operations_sql()
 					{
-						reset_blocks_stream();
-						reset_transaction_stream();
-						reset_operations_stream();
-						reset_virtual_operation_stream();
-					}
-
-					fc::string reset_operations_stream()
-					{
+						if(operations.size() == 0) return fc::string{};
 						// do not remove single space at the beginiing in all 4 following sqls !!!
+						operations.insert(0, R"(
+INSERT INTO hive_operations( block_num, trx_in_block, op_pos, op_type_id, body, participants, permlink_ids)
+ SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_remove(array_agg(ha.id), 0), array_remove(array_agg(hpd.id), 0) FROM ( VALUES )");
 						operations.append(R"(
 ) as T( order_id, bn, trx, opn, opt, body, perm, part ) INNER JOIN hive_accounts AS ha ON T.part=ha.name
  INNER JOIN hive_permlink_data AS hpd ON T.perm=hpd.permlink GROUP BY T.order_id, T.bn, T.trx, T.opn, T.opt, T.body ORDER BY T.order_id )");
 
-						fc::string result{ std::move(operations) };
-
-						operations = fc::string{R"(
-INSERT INTO hive_operations( block_num, trx_in_block, op_pos, op_type_id, body, participants, permlink_ids)
- SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_remove(array_agg(ha.id), 0), array_remove(array_agg(hpd.id), 0) FROM ( VALUES )"};
-
-						any_operations = 0;
-
-						return std::move(result);
+						return std::move(operations);
 					}
 
-					fc::string reset_virtual_operation_stream()
+					fc::string get_virtual_operations_sql()
 					{
+						if(virtual_operations.size() == 0) return fc::string{};
+						virtual_operations.insert(0, R"(
+INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, vop_id, op_type_id, body ,participants)
+ SELECT T.bn, T.trx, T.opn, T.vopid, T.opt, T.body, array_remove(array_agg(ha.id), 0) FROM ( VALUES )");
 						virtual_operations.append(R"(
 ) as T( order_id, bn, trx, opn, opt, body, vopid, part ) INNER JOIN hive_accounts AS ha ON T.part=ha.name
  GROUP BY T.order_id, T.bn, T.trx, T.opn, T.vopid, T.opt, T.body ORDER BY T.order_id )");
 
-						fc::string result{ std::move(virtual_operations) };
-
-						virtual_operations = fc::string{R"(
-INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, vop_id, op_type_id, body ,participants)
- SELECT T.bn, T.trx, T.opn, T.vopid, T.opt, T.body, array_remove(array_agg(ha.id), 0) FROM ( VALUES )"};
-
-						any_virtual_operations = 0;
-
-						return std::move(result);
+						return std::move(virtual_operations);
 					}
 
-					void reset_blocks_stream()
+					fc::string get_blocks_sql()
 					{
-						blocks = fc::string{ "INSERT INTO hive_blocks VALUES " };
-						any_blocks = false;
+						if(blocks.size() == 0) return fc::string{};
+						blocks.insert(0, "INSERT INTO hive_blocks VALUES ");
+						return std::move(blocks);
 					}
 
-					void reset_transaction_stream()
+					fc::string get_transaction_sql()
 					{
-						transactions = fc::string{ "INSERT INTO hive_transactions VALUES " };
-						any_transactions = false;
+						if(transactions.size() == 0) return fc::string{};
+						transactions.insert(0, "INSERT INTO hive_transactions VALUES ");
+						return std::move(transactions);
 					}
 
 					result_type process_operation(const processing_objects::process_operation_t &pop)
@@ -241,11 +234,15 @@ INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, vop_id, op_
 						fc::string pre_generate;
 						get_operation_value_prefix(pre_generate, pop, any_operations);
 
-						operations.append( pre_generate );
-						operations.append( null_permlink + " , " + null_account + ")" );
+						operations.append(pre_generate);
+						operations.append(null_permlink + " , " + null_account + ")");
 
 						get_formatted_permlinks(pre_generate, *pop.op, operations);
-						pre_generate.append( null_permlink +  ", ");
+						if (pop.block_number == 2407991)
+						{
+							std::cout << " #### [ " << 2407991 << " ] #### " << operations << std::endl;
+						}
+						pre_generate.append(null_permlink + ", ");
 						format_participants(pre_generate, *pop.op, operations);
 
 						return operations.size();
@@ -258,7 +255,7 @@ INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, vop_id, op_
 
 						fc::string pre_generate;
 						get_operation_value_prefix(pre_generate, pop, any_virtual_operations);
-						pre_generate.append( std::to_string( pop.vop_id ) + ", " );
+						pre_generate.append(std::to_string(pop.vop_id) + " /* vop id */, ");
 
 						virtual_operations.append(pre_generate);
 						virtual_operations.append(" '' )");
@@ -270,32 +267,32 @@ INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, vop_id, op_
 
 					result_type process_block(const processing_objects::process_block_t &bop)
 					{
-						if(any_blocks) blocks.append(",");
+						if (any_blocks)
+							blocks.append(",");
 						any_blocks = true;
 
-						blocks.append("( "); 
-						blocks.append(std::to_string(bop.block_number)); 
-						blocks.append(" , '");
+						blocks.append("( ");
+						blocks.append(std::to_string(bop.block_number));
+						blocks.append(" , decode('");
 						blocks.append(bop.hash.str());
-						blocks.append("' )");
-
+						blocks.append("', 'hex') )");
 
 						return blocks.size();
 					}
 
 					result_type process_transaction(const processing_objects::process_transaction_t &top)
 					{
-						if(any_transactions) transactions.append(",");
+						if (any_transactions)
+							transactions.append(",");
 						any_transactions = true;
 
-						transactions.append("( "); 
+						transactions.append("( ");
 						transactions.append(std::to_string(top.block_number));
 						transactions.append(" , ");
 						transactions.append(std::to_string(top.trx_in_block));
-						transactions.append(" , '");
+						transactions.append(" , decode('");
 						transactions.append(top.hash.str());
-						transactions.append("' )");
-
+						transactions.append("', 'hex' ) )");
 
 						return transactions.size();
 					}
@@ -311,9 +308,10 @@ INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, vop_id, op_
 
 							for (auto it = permlink_cache.begin(); it != permlink_cache.end(); it++)
 							{
-								if(it != permlink_cache.begin()) out_permlinks.append(",");
+								if (it != permlink_cache.begin())
+									out_permlinks.append(",");
 								out_permlinks.append("( E'");
-								out_permlinks.append(escape(it->c_str())); 
+								out_permlinks.append(escape(it->c_str()));
 								out_permlinks.append("')");
 							}
 
@@ -326,7 +324,8 @@ INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, vop_id, op_
 
 							for (auto it = account_cache.begin(); it != account_cache.end(); it++)
 							{
-								if(it != account_cache.begin()) out_accounts.append(",");
+								if (it != account_cache.begin())
+									out_accounts.append(",");
 								out_accounts.append("( E'");
 								out_accounts.append(escape(it->c_str()));
 								out_accounts.append("')");
@@ -351,7 +350,7 @@ INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, vop_id, op_
 								output.append(prefix);
 								output.append("E'");
 								output.append(escape(fc::string(*it).c_str()));
-								output.append("' )");
+								output.append("' /* participant */ )");
 							}
 					}
 
@@ -367,16 +366,17 @@ INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, vop_id, op_
 								output.append(prefix);
 								output.append("E'");
 								output.append(escape(it->c_str()));
-								output.append("', " + null_account + " )");
+								output.append("' /* permlink */, " + null_account + " /* null account */ )");
 							}
 					}
 
-					fc::string get_body(const char* op) const
+					fc::string get_body(const char *op) const
 					{
-						if ( std::strlen(op) == 0 ) return "NULL";
+						if (std::strlen(op) == 0)
+							return "NULL";
 						return generate([&](fc::string &ss) {
 							ss.append("E'");
-							ss.append(escape( op ));
+							ss.append(escape(op));
 							ss.append("'");
 						});
 					}
@@ -386,32 +386,29 @@ INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, vop_id, op_
 						return std::move(std::to_string(op.which()));
 					}
 
-					void get_operation_value_prefix(fc::string& ss, const processing_objects::process_operation_t& pop, uint32_t& order_id)
+					void get_operation_value_prefix(fc::string &ss, const processing_objects::process_operation_t &pop, uint32_t &order_id)
 					{
-						const char* separator = ", ";
-						ss.append( "( " );
-						ss.append( std::to_string(order_id++) ); 
-						ss.append( separator );
-						ss.append( std::to_string( pop.block_number ) ); 
-						ss.append( separator );
-						ss.append( std::to_string( pop.trx_in_block ) );
-						ss.append( separator );
-						ss.append( std::to_string( pop.op_in_trx ) );
-						ss.append( separator );
-						ss.append( get_operation_type_id(*pop.op) );
-						ss.append( separator );
-						ss.append( get_body(pop.deserialized_op.c_str()) );
-						ss.append( separator );
+						const char *separator = ", ";
+						ss.append("( ");
+						ss.append(std::to_string(order_id++) + " /* order_id */");
+						ss.append(separator);
+						ss.append(std::to_string(pop.block_number) + " /* block number */");
+						ss.append(separator);
+						ss.append(std::to_string(pop.trx_in_block) + " /* trx in blck */");
+						ss.append(separator);
+						ss.append(std::to_string(pop.op_in_trx) + " /* op in trx */");
+						ss.append(separator);
+						ss.append(get_operation_type_id(*pop.op) + " /* op type id */");
+						ss.append(separator);
+						ss.append(get_body(pop.deserialized_op.c_str()) + " /* deserialized op */");
+						ss.append(separator);
 					}
 
 					bool any_blocks = false;
 					bool any_transactions = false;
 					uint32_t any_operations = 0;
 					uint32_t any_virtual_operations = 0;
-
-					fc::string operations{};
-					fc::string virtual_operations{};
-				};
+				}; // namespace PSQL
 
 			} // namespace PSQL
 		}		// namespace sql_serializer

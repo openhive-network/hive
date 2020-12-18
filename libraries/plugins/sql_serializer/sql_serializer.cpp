@@ -49,6 +49,11 @@ namespace hive
 					{
 						return [this](const char *val) -> fc::string { return std::move( this->_connection->esc(val) ); };
 					}
+
+					auto get_raw_escaping_charachter_methode()
+					{
+						return [this](const char *val, const size_t s) -> fc::string { return std::move( this->_connection->esc_raw(reinterpret_cast<const unsigned char*>(val), s) ); };
+					}
 				};
 				using transaction_t = std::unique_ptr<transaction_repr_t>;
 
@@ -277,72 +282,32 @@ namespace hive
 							tm = fc::time_point::now();
 						};
 
-						for (size_t i = 0; i < data.blocks.size(); i++)
-						{
-							const size_t sz = dumper.process_block(data.blocks[i]);
-							if( 
-								sz >= max_data_length ||
-								i == max_tuples_count ||
-								i == data.blocks.size() - 1
-							)
-							{
-								if(!send_data( dumper.blocks, _transaction )) return false;
-								dumper.reset_blocks_stream();
-							}
-						}
+						for(const auto& block : data.blocks) dumper.process_block(block);
+						if(!send_data( dumper.get_blocks_sql(), _transaction )) return false;
 						measure_time("processing and sending blocks");
 
-						for (size_t i = 0; i < data.transactions.size(); i++)
-						{
-							const size_t sz = dumper.process_transaction(data.transactions[i]);
-							if(
-								sz >= max_data_length ||
-								i == max_tuples_count ||
-								i == data.transactions.size() - 1
-							)
-							{
-								if(!send_data( dumper.transactions, _transaction )) return false;
-								dumper.reset_transaction_stream();
-							}
-						}
+						for(const auto& trx : data.transactions) dumper.process_transaction(trx);
+						if(!send_data( dumper.get_transaction_sql(), _transaction )) return false;
 						measure_time("processing and sending transactions");
 
-						for (size_t i = 0; i < data.operations.size(); i++)
-						{
-							const size_t sz = dumper.process_operation(data.operations[i]);
-							if( 
-								sz >= max_data_length ||
-								i == max_tuples_count ||
-								i == data.operations.size() - 1
-							)
-							{
-								if(!send_data( dumper.reset_operations_stream(), _transaction )) return false;
-							}
-						}
-						measure_time("processing and sending operations");
+						for(const auto& op : data.operations) dumper.process_operation(op);
+						measure_time("processing operations");
 
-						for (size_t i = 0; i < data.virtual_operations.size(); i++)
-						{
-							const size_t sz = dumper.process_virtual_operation(data.virtual_operations[i]);
-							if( 
-								sz >= max_data_length ||
-								i == max_tuples_count || 
-								i == data.virtual_operations.size() - 1
-							)
-							{
-								if(!send_data( dumper.reset_virtual_operation_stream(), _transaction )) return false;
-							}
-						}
-						measure_time("processing and sending virtual operations");
+						for(const auto& vop : data.virtual_operations) dumper.process_virtual_operation(vop);
+						measure_time("processing virtual operations");
 
 						upload_caches(_transaction, dumper);
-						measure_time("processing and sending account_names and permlinks");
 
+						if(!send_data( dumper.get_operations_sql(), _transaction )) return false;
+						measure_time("sending operations");
+
+						if(!send_data( dumper.get_virtual_operations_sql(), _transaction )) return false;
+						measure_time("sending virtual operations");
 
 						return true;
 					}
 
-					bool send_data(const fc::string &dump, transaction_t &transaction)
+					bool send_data(const fc::string &&dump, transaction_t &transaction)
 					{
 						return connection.exec_transaction(transaction, dump);
 					}
@@ -390,7 +355,7 @@ namespace hive
 							auto finish = [&](const bool is_ok) { if(is_ready) *is_ready = true; FC_ASSERT( is_ok ); };
 
 							transaction_t trx = this->connection.start_transaction();
-							PSQL::sql_dumper dumper{_db, trx->get_escaping_charachter_methode(), null_permlink, null_account};
+							PSQL::sql_dumper dumper{_db, trx->get_escaping_charachter_methode(), trx->get_raw_escaping_charachter_methode(), null_permlink, null_account};
 
 							// sending
 							if (!this->process_and_send_data(dumper, *input, trx))
@@ -498,6 +463,7 @@ namespace hive
 				cdtf->total_size += deserialized_op.size() + sizeof(note);
 				if (is_virtual)
 				{
+					// FC_ASSERT(  );
 					cdtf->virtual_operations.emplace_back(
 							note.block,
 							note.trx_in_block,
@@ -509,6 +475,7 @@ namespace hive
 				}
 				else
 				{
+					my->vop_in_trx = 0;
 					cdtf->operations.emplace_back(
 							note.block,
 							note.trx_in_block,
@@ -519,10 +486,7 @@ namespace hive
 				}
 			}
 
-			void sql_serializer_plugin::on_post_apply_transaction(const transaction_notification &note)
-			{
-				my->vop_in_trx = 0;
-			}
+			void sql_serializer_plugin::on_post_apply_transaction(const transaction_notification &note) {}
 
 			void sql_serializer_plugin::on_post_apply_block(const block_notification &note)
 			{

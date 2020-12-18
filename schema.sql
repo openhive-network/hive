@@ -18,7 +18,7 @@ CREATE EXTENSION IF NOT EXISTS pg_prewarm;
 -- -- Core Tables
 CREATE TABLE IF NOT EXISTS hive_blocks (
   "num" integer NOT NULL,
-  "hash" character (40) NOT NULL,
+  "hash" bytea NOT NULL,
   CONSTRAINT hive_blocks_pkey PRIMARY KEY ("num"),
   CONSTRAINT hive_blocks_uniq UNIQUE ("hash")
 );
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS hive_blocks (
 CREATE TABLE IF NOT EXISTS hive_transactions (
   "block_num" integer NOT NULL,
   "trx_in_block" smallint NOT NULL,
-  "trx_hash" character (40) NOT NULL,
+  "trx_hash" bytea NOT NULL,
   CONSTRAINT hive_transactions_pkey PRIMARY KEY ("block_num", "trx_in_block"),
   CONSTRAINT hive_transactions_uniq_1 UNIQUE ("trx_hash")
 );
