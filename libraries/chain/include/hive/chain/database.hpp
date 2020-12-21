@@ -165,6 +165,7 @@ namespace chain {
     private:
 
       uint32_t reindex_internal( const open_args& args, signed_block& block );
+      void remove_expired_governance_votes(const time_point_sec block_timestamp);
 
     public:
 
@@ -908,5 +909,4 @@ namespace chain {
 
     hive::plugins::chain::snapshot_load_helper& load_helper;
   };
-
 } }
