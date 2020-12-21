@@ -145,10 +145,6 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     }
 
     vote_proposal( voter_00, { id_proposal_00 }, true/*approve*/, carol_private_key );
-    const auto& voter_00_acc = db->get_account( voter_00 );
-    BOOST_REQUIRE (voter_00_acc.get_last_governance_vote() == db->head_block_time());
-    generate_blocks( 1 );
-    BOOST_REQUIRE (voter_00_acc.get_last_governance_vote() != db->head_block_time());
 
     {
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
@@ -158,10 +154,6 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     }
 
     vote_proposal( voter_01, { id_proposal_01 }, true/*approve*/, dan_private_key );
-    const auto& voter_01_acc = db->get_account( voter_01 );
-    BOOST_REQUIRE (voter_01_acc.get_last_governance_vote() == db->head_block_time());
-    generate_blocks( 1 );
-    BOOST_REQUIRE (voter_01_acc.get_last_governance_vote() != db->head_block_time());
 
     {
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
@@ -263,6 +255,170 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
       auto _found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
       BOOST_REQUIRE_EQUAL( found_votes_00, _found_votes_00 );
       BOOST_REQUIRE_EQUAL( found_votes_01, _found_votes_01 );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: db_remove_expired_governance_votes" );
+    ACTORS( (acc1)(acc2)(acc3)(acc4)(acc5)(acc6)(acc7)(acc8)(accw)(accw2)(accp) )
+    generate_block();
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    auto proposal_creator = "accp";
+    FUND( proposal_creator, ASSET( "100.000 TBD" ) );
+
+    auto start_1 = db->head_block_time();
+    auto start_2 = db->head_block_time() + fc::seconds(15);
+    auto start_3 = db->head_block_time() + fc::seconds(30);
+    auto end_1 = start_1 + fc::minutes((30));
+    auto end_2 = start_2 + fc::minutes((50));
+    auto end_3 = start_3 + fc::minutes((40));
+    int64_t proposal_1 = create_proposal( proposal_creator, "acc1",  start_1,  end_1, asset( 100, HBD_SYMBOL ), accp_private_key );
+    int64_t proposal_2 = create_proposal( proposal_creator, "acc2",  start_2,  end_2, asset( 100, HBD_SYMBOL ), accp_private_key );
+    int64_t proposal_3 = create_proposal( proposal_creator, "acc3",  start_3,  end_3, asset( 100, HBD_SYMBOL ), accp_private_key );
+
+    private_key_type accw_witness_key = generate_private_key( "accw_key" );
+    witness_create( "accw", accw_private_key, "foo.bar", accw_witness_key.get_public_key(), 1000 );
+    private_key_type accw_witness2_key = generate_private_key( "accw2_key" );
+    witness_create( "accw2", accw2_private_key, "foo.bar", accw_witness2_key.get_public_key(), 1000 );
+
+    auto witness_vote = [&](std::string voter, std::string witness, const fc::ecc::private_key& key) {
+      signed_transaction tx;
+      account_witness_vote_operation op;
+      op.account = voter;
+      op.witness = witness;
+      op.approve = true;
+
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      sign( tx, key );
+      db->push_transaction( tx, 0 );
+    };
+
+    generate_block();
+    witness_vote("acc1", "accw", acc1_private_key);
+    witness_vote("acc1", "accw2", acc1_private_key);
+    witness_vote("acc2", "accw", acc2_private_key);
+
+    {
+      BOOST_REQUIRE (db->get_account( "acc1" ).get_last_governance_vote() == db->head_block_time());
+      BOOST_REQUIRE (db->get_account( "acc2" ).get_last_governance_vote() == db->head_block_time());
+      BOOST_REQUIRE (db->get_account( "acc3" ).get_last_governance_vote() == fc::time_point_sec::maximum());
+      const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
+      BOOST_REQUIRE (witness_votes.count("acc1") == 2);
+      BOOST_REQUIRE (witness_votes.count("acc2") == 1);
+    }
+
+    generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
+    vote_proposal("acc3", {proposal_1}, true, acc3_private_key);
+    vote_proposal("acc3", {proposal_2}, true, acc3_private_key);
+    vote_proposal("acc4", {proposal_1}, true, acc4_private_key);
+    time_point_sec last_block_time = db->head_block_time();
+    generate_block();
+
+    {
+      BOOST_REQUIRE (db->get_account( "acc1" ).get_last_governance_vote() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc2" ).get_last_governance_vote() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc3" ).get_last_governance_vote() == last_block_time);
+      BOOST_REQUIRE (db->get_account( "acc4" ).get_last_governance_vote() == last_block_time);
+
+      const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
+      BOOST_REQUIRE (witness_votes.count("acc1") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc2") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc3") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc4") == 0);
+
+      const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
+      BOOST_REQUIRE (proposal_votes.count("acc1") == 0);
+      BOOST_REQUIRE (proposal_votes.count("acc2") == 0);
+      BOOST_REQUIRE (proposal_votes.count("acc3") == 2);
+      BOOST_REQUIRE (proposal_votes.count("acc4") == 1);
+    }
+
+    generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
+    witness_vote("acc1", "accw2", acc1_private_key);
+    vote_proposal("acc4", {proposal_1}, true, acc4_private_key);
+    witness_vote("acc5", "accw", acc5_private_key);
+    witness_vote("acc5", "accw2", acc5_private_key);
+    vote_proposal("acc6", {proposal_1}, true, acc6_private_key);
+    vote_proposal("acc6", {proposal_2}, true, acc6_private_key);
+    vote_proposal("acc6", {proposal_3}, true, acc6_private_key);
+    vote_proposal("acc7", {proposal_1}, true, acc7_private_key);
+    witness_vote("acc7", "accw", acc7_private_key);
+    witness_vote("acc8", "accw", acc8_private_key);
+    last_block_time = db->head_block_time();
+    generate_block();
+
+    {
+      BOOST_REQUIRE (db->get_account( "acc1" ).get_last_governance_vote() == last_block_time);
+      BOOST_REQUIRE (db->get_account( "acc2" ).get_last_governance_vote() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc3" ).get_last_governance_vote() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc4" ).get_last_governance_vote() == last_block_time);
+      BOOST_REQUIRE (db->get_account( "acc5" ).get_last_governance_vote() == last_block_time);
+      BOOST_REQUIRE (db->get_account( "acc6" ).get_last_governance_vote() == last_block_time);
+      BOOST_REQUIRE (db->get_account( "acc7" ).get_last_governance_vote() == last_block_time);
+      BOOST_REQUIRE (db->get_account( "acc8" ).get_last_governance_vote() == last_block_time);
+
+      const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
+      BOOST_REQUIRE (witness_votes.count("acc1") == 1);
+      BOOST_REQUIRE (witness_votes.count("acc2") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc3") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc4") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc5") == 2);
+      BOOST_REQUIRE (witness_votes.count("acc6") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc7") == 1);
+      BOOST_REQUIRE (witness_votes.count("acc8") == 1);
+
+      const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
+      BOOST_REQUIRE (proposal_votes.count("acc1") == 0);
+      BOOST_REQUIRE (proposal_votes.count("acc2") == 0);
+      BOOST_REQUIRE (proposal_votes.count("acc3") == 0);
+      BOOST_REQUIRE (proposal_votes.count("acc4") == 1);
+      BOOST_REQUIRE (proposal_votes.count("acc5") == 0);
+      BOOST_REQUIRE (proposal_votes.count("acc6") == 3);
+      BOOST_REQUIRE (proposal_votes.count("acc7") == 1);
+      BOOST_REQUIRE (proposal_votes.count("acc8") == 0);
+    }
+
+    generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
+
+    {
+      BOOST_REQUIRE (db->get_account( "acc1" ).get_last_governance_vote() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc2" ).get_last_governance_vote() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc3" ).get_last_governance_vote() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc4" ).get_last_governance_vote() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc5" ).get_last_governance_vote() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc6" ).get_last_governance_vote() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc7" ).get_last_governance_vote() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc8" ).get_last_governance_vote() == fc::time_point_sec::maximum());
+
+      const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
+      BOOST_REQUIRE (witness_votes.count("acc1") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc2") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc3") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc4") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc5") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc6") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc7") == 0);
+      BOOST_REQUIRE (witness_votes.count("acc8") == 0);
+
+      const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
+      BOOST_REQUIRE (proposal_votes.count("acc1") == 0);
+      BOOST_REQUIRE (proposal_votes.count("acc2") == 0);
+      BOOST_REQUIRE (proposal_votes.count("acc3") == 0);
+      BOOST_REQUIRE (proposal_votes.count("acc4") == 0);
+      BOOST_REQUIRE (proposal_votes.count("acc5") == 0);
+      BOOST_REQUIRE (proposal_votes.count("acc6") == 0);
+      BOOST_REQUIRE (proposal_votes.count("acc7") == 0);
+      BOOST_REQUIRE (proposal_votes.count("acc8") == 0);
     }
 
     validate_database();
@@ -424,10 +580,6 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     {
       auto item = inits[ i % inits.size() ];
       vote_proposal( item.account, proposals_id, true/*approve*/, item.key );
-      const auto& voter = db->get_account( item.account );
-      BOOST_REQUIRE (voter.get_last_governance_vote() == db->head_block_time());
-      generate_block();
-      BOOST_REQUIRE (voter.get_last_governance_vote() != db->head_block_time());
     }
 
     for( auto item : inits )

@@ -870,7 +870,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       BOOST_REQUIRE( alice.last_vote_time == db->head_block_time() );
       BOOST_REQUIRE( alice.get_last_governance_vote() != db->head_block_time() );
-      BOOST_REQUIRE( alice.get_last_governance_vote() == time_point_sec() );
+      BOOST_REQUIRE( alice.get_last_governance_vote() == fc::time_point_sec::maximum() );
       BOOST_REQUIRE( alice_comment_cashout->net_rshares.value == ( old_mana - alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
       BOOST_REQUIRE( alice_comment_cashout->cashout_time == alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( itr->rshares == ( old_mana - alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
@@ -2304,58 +2304,43 @@ BOOST_AUTO_TEST_CASE( account_object_by_last_governance_vote_idx )
     private_key_type accw_witness_key = generate_private_key( "accw_key" );
     witness_create( "accw", accw_private_key, "foo.bar", accw_witness_key.get_public_key(), 1000 );
 
+    //Cannot use vote_proposal() and witness_vote() because of differ DB Fixture
+    auto witness_vote = [&](std::string voter, const fc::ecc::private_key& key) {
+      account_witness_vote_operation op;
+      op.account = voter;
+      op.witness = "accw";
+      op.approve = true;
+
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      sign( tx, key );
+      db->push_transaction( tx, 0 );
+      tx.clear();
+    };
+
+    auto proposal_vote = [&](std::string voter, const std::vector<int64_t>& proposals, const fc::ecc::private_key& key) {
+      update_proposal_votes_operation op;
+      op.voter = voter;
+      op.proposal_ids.insert(proposals.cbegin(), proposals.cend());  //doesn't matter which ids, order in the container matters in this test case.
+      op.approve = true;
+
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      sign( tx, key );
+      db->push_transaction( tx, 0 );
+      tx.clear();
+    };
+
     generate_block();
     time_point_sec acc1_last_governance_vote = db->head_block_time();
-
-    account_witness_vote_operation op1;
-    op1.account = "acc1";
-    op1.witness = "accw";
-    op1.approve = true;
-
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    tx.operations.push_back( op1 );
-    sign( tx, acc1_private_key );
-    db->push_transaction( tx, 0 );
-    tx.clear();
-
+    witness_vote("acc1", acc1_private_key);
     generate_block();
     time_point_sec acc2_acc3_last_governance_vote = db->head_block_time();
-
-    account_witness_vote_operation op2;
-    op2.account = "acc2";
-    op2.witness = "accw";
-    op2.approve = true;
-
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    tx.operations.push_back( op2 );
-    sign( tx, acc2_private_key );
-    db->push_transaction( tx, 0 );
-    tx.clear();
-
-    update_proposal_votes_operation op3;
-    op3.voter = "acc3";
-    op3.proposal_ids = {456, 321};  //doesn't matter which ids, order in the container matters in this test case.
-    op3.approve = true;
-
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    tx.operations.push_back( op3 );
-    sign( tx, acc3_private_key );
-    db->push_transaction( tx, 0 );
-    tx.clear();
-
+    witness_vote("acc2", acc2_private_key);
+    proposal_vote("acc3", {154,357,987}, acc3_private_key);
     generate_block();
     time_point_sec acc4_last_governance_vote = db->head_block_time();
-
-    update_proposal_votes_operation op4;
-    op4.voter = "acc4";
-    op4.proposal_ids = {654, 426};  //doesn't matter which ids, order in the container matters in this test case.
-    op4.approve = true;
-
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    tx.operations.push_back( op4 );
-    sign( tx, acc4_private_key );
-    db->push_transaction( tx, 0 );
-    tx.clear();
+    proposal_vote("acc4", {111,222,333,444,555}, acc4_private_key);
     generate_block();
 
     BOOST_REQUIRE (db->get_account( "acc1" ).get_last_governance_vote() == acc1_last_governance_vote);
@@ -2363,13 +2348,13 @@ BOOST_AUTO_TEST_CASE( account_object_by_last_governance_vote_idx )
     BOOST_REQUIRE (db->get_account( "acc3" ).get_last_governance_vote() == acc2_acc3_last_governance_vote);
     BOOST_REQUIRE (db->get_account( "acc4" ).get_last_governance_vote() == acc4_last_governance_vote);
 
-    auto& accounts = db->get_index< account_index, by_last_governance_vote >();
+    const auto& accounts = db->get_index< account_index, by_last_governance_vote >();
     time_point_sec last_governance_vote = accounts.begin()->get_last_governance_vote();
 
     for (const auto&ac : accounts)
     {
       time_point_sec curr_last_vote = ac.get_last_governance_vote();
-      BOOST_REQUIRE (last_governance_vote >= curr_last_vote);
+      BOOST_REQUIRE (last_governance_vote <= curr_last_vote);
       last_governance_vote = curr_last_vote;
     }
     validate_database();
