@@ -145,6 +145,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     }
 
     vote_proposal( voter_00, { id_proposal_00 }, true/*approve*/, carol_private_key );
+    generate_blocks( 1 );
 
     {
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
@@ -154,6 +155,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     }
 
     vote_proposal( voter_01, { id_proposal_01 }, true/*approve*/, dan_private_key );
+    generate_blocks( 1 );
 
     {
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
@@ -580,6 +582,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     {
       auto item = inits[ i % inits.size() ];
       vote_proposal( item.account, proposals_id, true/*approve*/, item.key );
+      generate_block();
     }
 
     for( auto item : inits )
