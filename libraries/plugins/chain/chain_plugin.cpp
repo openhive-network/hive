@@ -31,7 +31,6 @@ using namespace hive;
 
 using fc::flat_map;
 using hive::chain::block_id_type;
-namespace asio = boost::asio;
 
 using hive::plugins::chain::synchronization_type;
 using index_memory_details_cntr_t = hive::utilities::benchmark_dumper::index_memory_details_cntr_t;
@@ -131,7 +130,7 @@ class chain_plugin_impl
     database  db;
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
-  
+
     hive::utilities::benchmark_dumper   dumper;
     hive::chain::open_args              db_open_args;
     get_indexes_memory_details_type     get_indexes_memory_details;
@@ -288,7 +287,7 @@ void chain_plugin_impl::start_write_processing()
           fc::microseconds write_lock_acquisition_time = write_lock_acquired_time - write_lock_request_time;
           if( write_lock_acquisition_time > fc::milliseconds( 50 ) )
           {
-            wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}μs exceeds warning threshold of 50ms", 
+            wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}μs exceeds warning threshold of 50ms",
                  ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
           }
 
@@ -311,7 +310,7 @@ void chain_plugin_impl::start_write_processing()
               if (write_lock_held_duration > fc::milliseconds( write_lock_hold_time ) )
               {
                 wlog("Stopped processing write_queue before empty because we exceeded ${write_lock_hold_time}ms, "
-                     "held lock for ${write_lock_held_duration}μs", 
+                     "held lock for ${write_lock_held_duration}μs",
                      ("write_lock_hold_time", write_lock_hold_time)
                      ("write_lock_held_duration", write_lock_held_duration.count()));
                 break;
@@ -360,7 +359,7 @@ bool chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
   }
   else
   {
-    //if `stop_replay_at` > 0 stay in API node context( without p2p connections )
+    //if `stop_replay_at` > 0 stay in API node context( without synchronization )
     if( stop_replay_at > 0 )
       is_p2p_enabled = false;
   }
@@ -602,7 +601,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 {
   cfg.add_options()
       ("sps-remove-threshold", bpo::value<uint16_t>()->default_value( 200 ), "Maximum numbers of proposals/votes which can be removed in the same cycle")
-      ("shared-file-dir", bpo::value<bfs::path>()->default_value("blockchain"),
+      ("shared-file-dir", bpo::value<bfs::path>()->default_value("blockchain"), // NOLINT(clang-analyzer-optin.cplusplus.VirtualCall)
         "the location of the chain shared memory files (absolute path or relative to application data dir)")
       ("shared-file-size", bpo::value<string>()->default_value("54G"), "Size of the shared memory file. Default: 54G. If running a full node, increase this value to 200G.")
       ("shared-file-full-threshold", bpo::value<uint16_t>()->default_value(0),
@@ -904,7 +903,7 @@ void chain_plugin::register_block_generator( const std::string& plugin_name, std
     wlog( "Overriding a previously registered block generator by: ${registrant}", ("registrant", my->block_generator_registrant) );
 
   my->block_generator_registrant = plugin_name;
-  my->block_generator = block_producer;
+  my->block_generator = std::move( block_producer );
 }
 
 bool chain_plugin::is_p2p_enabled() const
