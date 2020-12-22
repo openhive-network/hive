@@ -89,13 +89,8 @@ namespace hive
 						process_operation_t(const int64_t _block_number, const int64_t _trx_in_block, const int64_t _op_in_trx, const operation &_op, const fc::string _deserialized_op) : block_number{_block_number}, trx_in_block{_trx_in_block}, op_in_trx{_op_in_trx}, op{_op}, deserialized_op{_deserialized_op} {}
 					};
 
-					struct process_virtual_operation_t : public process_operation_t
-					{
-						int64_t vop_id;
+					using process_virtual_operation_t = process_operation_t;
 
-						process_virtual_operation_t() = default;
-						process_virtual_operation_t(const int64_t _block_number, const int64_t _trx_in_block, const int64_t _op_in_trx, const operation &_op, const fc::string _deserialized_op, const int64_t _vop_id) : process_operation_t{_block_number, _trx_in_block, _op_in_trx, _op, _deserialized_op}, vop_id{_vop_id} {}
-					};
 				}; // namespace processing_objects
 
 				inline fc::string generate(std::function<void(fc::string &)> fun)
@@ -203,11 +198,11 @@ INSERT INTO hive_operations( block_num, trx_in_block, op_pos, op_type_id, body, 
 					{
 						if(virtual_operations.size() == 0) return fc::string{};
 						virtual_operations.insert(0, R"(
-INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, vop_id, op_type_id, body ,participants)
- SELECT T.bn, T.trx, T.opn, T.vopid, T.opt, T.body, array_remove(array_agg(ha.id), 0) FROM ( VALUES )");
+INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, op_type_id, body ,participants)
+ SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_remove(array_agg(ha.id), 0) FROM ( VALUES )");
 						virtual_operations.append(R"(
-) as T( order_id, bn, trx, opn, opt, body, vopid, part ) INNER JOIN hive_accounts AS ha ON T.part=ha.name
- GROUP BY T.order_id, T.bn, T.trx, T.opn, T.vopid, T.opt, T.body ORDER BY T.order_id )");
+) as T( order_id, bn, trx, opn, opt, body, part ) INNER JOIN hive_accounts AS ha ON T.part=ha.name
+ GROUP BY T.order_id, T.bn, T.trx, T.opn, T.opt, T.body ORDER BY T.order_id )");
 
 						return std::move(virtual_operations);
 					}
@@ -255,7 +250,6 @@ INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, vop_id, op_
 
 						fc::string pre_generate;
 						get_operation_value_prefix(pre_generate, pop, any_virtual_operations);
-						pre_generate.append(std::to_string(pop.vop_id) + " /* vop id */, ");
 
 						virtual_operations.append(pre_generate);
 						virtual_operations.append(" '' )");

@@ -45,14 +45,14 @@ namespace hive
 					transaction_repr_t() = default;
 					transaction_repr_t(pqxx::connection* _conn, work* _trx) : _connection{_conn}, _transaction{_trx} {}
 
-					auto get_escaping_charachter_methode()
+					auto get_escaping_charachter_methode() const
 					{
 						return [this](const char *val) -> fc::string { return std::move( this->_connection->esc(val) ); };
 					}
 
-					auto get_raw_escaping_charachter_methode()
+					auto get_raw_escaping_charachter_methode() const
 					{
-						return [this](const char *val, const size_t s) -> fc::string { return std::move( this->_connection->esc_raw(reinterpret_cast<const unsigned char*>(val), s) ); };
+						return [this](const char *val, const size_t s) -> fc::string { pqxx::binarystring __tmp(val, s); return std::move( this->_connection->esc_raw( __tmp.data(), __tmp.size() ) ); };
 					}
 				};
 				using transaction_t = std::unique_ptr<transaction_repr_t>;
@@ -220,7 +220,6 @@ namespace hive
 					std::list<thread_with_status> threads;
 					uint32_t blocks_per_commit = 1;
 					int64_t block_vops = 0;
-					int64_t vop_in_trx = 0;
 
 					cached_containter_t currently_caching_data;
 
@@ -463,19 +462,16 @@ namespace hive
 				cdtf->total_size += deserialized_op.size() + sizeof(note);
 				if (is_virtual)
 				{
-					// FC_ASSERT(  );
 					cdtf->virtual_operations.emplace_back(
 							note.block,
 							note.trx_in_block,
 							( note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx ),
 							note.op,
-							std::move(deserialized_op),
-							my->vop_in_trx++
+							std::move(deserialized_op)
 						);
 				}
 				else
 				{
-					my->vop_in_trx = 0;
 					cdtf->operations.emplace_back(
 							note.block,
 							note.trx_in_block,

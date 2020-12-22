@@ -69,18 +69,17 @@ CREATE TABLE IF NOT EXISTS hive_accounts (
 );
 
 CREATE TABLE IF NOT EXISTS hive_virtual_operations (
+  -- just to keep them unique
+  "id" serial,
   "block_num" integer NOT NULL,
   "trx_in_block" smallint NOT NULL,
   -- for `trx_in_block` = 1, `op_pos` stands for order
   "op_pos" smallint NOT NULL,
-  -- single action can create multiple vops, so this is just to keep them unique
-  "vop_id" smallint NOT NULL,
   "op_type_id" smallint NOT NULL,
   "body" text DEFAULT NULL,
   -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
   "participants" int[],
-  CONSTRAINT hive_virtual_operations_pkey PRIMARY KEY ("block_num", "trx_in_block", "op_pos", "vop_id")
-
+  CONSTRAINT hive_virtual_operations_pkey PRIMARY KEY ("id")
 );
 
 DROP FUNCTION IF EXISTS insert_operation_type_id;
