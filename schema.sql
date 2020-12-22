@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS hive_virtual_operations (
   "block_num" integer NOT NULL,
   "trx_in_block" smallint NOT NULL,
   -- for `trx_in_block` = 1, `op_pos` stands for order
-  "op_pos" smallint NOT NULL,
+  "op_pos" integer NOT NULL,
   "op_type_id" smallint NOT NULL,
   "body" text DEFAULT NULL,
   -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
