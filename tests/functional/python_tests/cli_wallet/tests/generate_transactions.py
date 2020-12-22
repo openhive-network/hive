@@ -31,16 +31,17 @@ if __name__ == "__main__":
 				print_value( 'post_voting_power' )
 			return usr
 
-		users = create_users(wallet, 3)
-		creator = wallet.cli_args.creator
+		users = create_users(wallet, 2)
+		creator = args.creator
+		user_1, user_2 = list(users.keys())[:2]
 		# print(json.dumps(users))
 
 		users_stats = dict([ (user, print_account( user )) for user in users.keys() ])
 		users_stats[creator] = print_account( creator )
-		[ wallet.update_witness( name, f'www.{name}.org', keys['pub'], '{}', 'true' ) ]
+		[ wallet.update_witness( name, f'www.{name}.org', keys['pub'], '{}', 'true' ) for name, keys in users.items() ]
 
 		begin_http_port = int(wallet.cli_args.rpc_http_endpoint.split(':')[-1])
-		begin_ws_port = int(wallet.cli_args.rpc_tls_endpoint.split(':')[-1])
+		begin_ws_port = int(wallet.cli_args.rpc_tls_endpoint.split(':')[-1] ) if wallet.cli_args.rpc_tls_endpoint is not None else 10000
 		for name, keys in users.items():
 			config( private_key=keys['prv'], witness=f'"{name}"', webserver_http_endpoint=f"127.0.0.1:{begin_http_port}", webserver_ws_endpoint=f"127.0.0.1:{begin_ws_port}" ).generate( f"config_{name}.ini" )
 			begin_http_port+=1
@@ -51,17 +52,20 @@ if __name__ == "__main__":
 		balance = creators_balance
 		balance.amount *= 0.025
 
-		print(f'transfering all money from {creator} to {user_1}')
+		# print(f'transfering all money from {creator} to {user_1}')
+
 		for user in users.keys():
 			wallet.transfer( creator, user, str(balance), 'funds to spam', 'true' )
 
 		print(f'changing transaction operation to `3599`')
 		wallet.set_transaction_expiration( "3599" )
 
-		transfers = balance.amount / balance.satoshi().amount
+		transfers = min( int(balance.amount / balance.satoshi().amount), 10000000 )
 		print(f"generating {transfers} transfers")
 		start = perf()
-		gen = wallet.transfers( user_1, user_2, str(balance.satoshi()), 'spam_1', str(transfers) )
-		print(f"Generated 10'000 transfers in: { perf() - start :.2f}s")
+		gen = []
+		for i in range(0, transfers, 10000):
+			gen.extend(wallet.transfers( user_1, user_2, str(balance.satoshi()), f'spam {user_1} -> {user_2}', str(10000) ))
+		print(f"Generated {transfers} transfers in: { perf() - start :.2f}s")
 		with open("operations.json", 'w') as file:
 			dump( gen, file )

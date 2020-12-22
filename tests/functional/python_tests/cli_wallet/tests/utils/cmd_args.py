@@ -4,7 +4,7 @@ args = None
 
 parser = argparse.ArgumentParser(description='Hived cli wallet test args.')
 parser.add_argument('--path-to-cli'        , dest='path'               , help ='Path to cli_wallet executable')
-parser.add_argument('--creator'            , dest='creator'            , help ='Account to create proposals with')
+parser.add_argument('--creator'            , dest='creator'            , help ='Account to create proposals with', default="initminer")
 parser.add_argument('--wif'                , dest='wif'                , help ='Private key for creator account', default ="5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n")
 parser.add_argument('--server-rpc-endpoint', dest="server_rpc_endpoint", help = "Set server endpoint [=ws://127.0.0.1:8090]", default = "ws://127.0.0.1:8090")
 parser.add_argument('--server-http-endpoint', dest="server_http_endpoint", help = "Set server endpoint [=http://127.0.0.1:8091]", default = "http://127.0.0.1:8091")
