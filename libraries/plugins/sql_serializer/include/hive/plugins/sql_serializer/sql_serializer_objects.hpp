@@ -233,10 +233,6 @@ INSERT INTO hive_virtual_operations(block_num, trx_in_block, op_pos, op_type_id,
 						operations.append(null_permlink + " , " + null_account + ")");
 
 						get_formatted_permlinks(pre_generate, *pop.op, operations);
-						if (pop.block_number == 2407991)
-						{
-							std::cout << " #### [ " << 2407991 << " ] #### " << operations << std::endl;
-						}
 						pre_generate.append(null_permlink + ", ");
 						format_participants(pre_generate, *pop.op, operations);
 
