@@ -525,7 +525,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     generate_blocks( 1 );
 
     vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
-
+    generate_blocks( 1 );
     //skipping interest generating is necessary
     transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ));
     generate_block( 5 );
