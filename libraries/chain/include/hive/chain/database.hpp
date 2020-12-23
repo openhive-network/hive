@@ -165,7 +165,7 @@ namespace chain {
     private:
 
       uint32_t reindex_internal( const open_args& args, signed_block& block );
-      void remove_expired_governance_votes(const time_point_sec block_timestamp);
+      void remove_expired_governance_votes();
 
     public:
 
