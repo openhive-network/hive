@@ -315,7 +315,9 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     witness_vote("acc1", "accw2", acc1_private_key);
     generate_blocks(db->head_block_time() + fc::days(50));
     vote_proposal("acc2", {proposal_1}, true, acc2_private_key);
-    generate_blocks(db->head_block_time() + fc::days(50));
+    generate_blocks(db->head_block_time() + fc::days(25));
+    vote_proposal("acc2", {proposal_2}, true, acc2_private_key);
+    generate_blocks(db->head_block_time() + fc::days(25));
     witness_vote("acc3", "accw", acc3_private_key);
     generate_blocks(db->head_block_time() + fc::days(50));
     vote_proposal("acc4", {proposal_2}, true, acc4_private_key);
@@ -341,8 +343,8 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE (witness_votes.count("acc3") == 1);
 
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
-      BOOST_REQUIRE(proposal_votes.size() == 3);
-      BOOST_REQUIRE (proposal_votes.count("acc2") == 1);
+      BOOST_REQUIRE(proposal_votes.size() == 4);
+      BOOST_REQUIRE (proposal_votes.count("acc2") == 2);
       BOOST_REQUIRE (proposal_votes.count("acc4") == 1);
       BOOST_REQUIRE (proposal_votes.count("acc5") == 1);
     }
