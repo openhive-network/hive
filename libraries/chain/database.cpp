@@ -4011,7 +4011,7 @@ void database::_apply_block( const signed_block& next_block )
   _current_op_in_trx = 0;
   _current_virtual_op = 0;
 
-  remove_expired_governance_votes(next_block.timestamp);
+  remove_expired_governance_votes();
 
   update_global_dynamic_data(next_block);
   update_signing_witness(signing_witness, next_block);
@@ -6514,54 +6514,35 @@ optional< chainbase::database::session >& database::pending_transaction_session(
   return _pending_tx_session;
 }
 
-void database::remove_expired_governance_votes(const time_point_sec block_timestamp)
+void database::remove_expired_governance_votes()
 {
-  const auto& accounts =  get_index<account_index, by_last_governance_vote>();
+  const auto& accounts = get_index<account_index, by_governance_vote_expiration_ts>();
+  auto acc_it = accounts.begin();
+  time_point_sec block_timestamp = head_block_time();
+  const auto& witness_votes = get_index<witness_vote_index, by_account_witness>();
+  const auto& proposal_votes = get_index<proposal_vote_index, by_voter_proposal>();
 
-  if (accounts.empty())
-    return;
-
-  const time_point_sec timestamp_boundary = block_timestamp - HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
-  auto last_expired_vote_acc_iter = accounts.upper_bound(timestamp_boundary);
-
-  if (last_expired_vote_acc_iter == accounts.begin())
-    return;
-
-  last_expired_vote_acc_iter = boost::prior(last_expired_vote_acc_iter);
-  const time_point_sec last_expired_vote_time = last_expired_vote_acc_iter->get_last_governance_vote();
-
-  if (last_expired_vote_time > timestamp_boundary || last_expired_vote_time == time_point_sec())
-    return;
-
-  std::list<account_name_type> accounts_with_expired_governance_votes;
-
-  while(true)
+  while (acc_it != accounts.end() && acc_it->get_governance_vote_expiration_ts() < block_timestamp)
   {
-    accounts_with_expired_governance_votes.push_back(last_expired_vote_acc_iter->name);
-
-    if (last_expired_vote_acc_iter == accounts.begin())
-      break;
-
-    --last_expired_vote_acc_iter;
-  }
-
-  for (const auto& acc_name : accounts_with_expired_governance_votes)
-  {
-    auto witness_vote = find<witness_vote_object, by_account_witness>(acc_name);
-    while (witness_vote)
+    auto wvote = witness_votes.lower_bound(acc_it->name);
+    while (wvote != witness_votes.end() && wvote->account == acc_it->name)
     {
-      remove(*witness_vote);
-      witness_vote = find<witness_vote_object, by_account_witness>(acc_name);
+      const witness_vote_object& current = *wvote;
+      ++wvote;
+      remove(current);
     }
 
-    auto proposal_vote = find<proposal_vote_object, by_voter_proposal>(acc_name);
-    while (proposal_vote)
+    auto pvote = proposal_votes.lower_bound(acc_it->name);
+    while (pvote != proposal_votes.end() && pvote->voter == acc_it->name)
     {
-      remove(*proposal_vote);
-      proposal_vote = find<proposal_vote_object, by_voter_proposal>(acc_name);
+      const proposal_vote_object& current = *pvote;
+      ++pvote;
+      remove(current);
     }
 
-    modify(get_account(acc_name), [&](account_object& acc) { acc.update_last_governance_vote(fc::time_point_sec::maximum()); });
+    const account_object& acc = *acc_it;
+    ++acc_it;
+    modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); });
   }
 }
 

@@ -118,9 +118,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
     const auto& pvidx = _db.get_index< proposal_vote_index >().indices().get< by_voter_proposal >();
 
     const auto& voter = _db.get_account(o.voter);
-    _db.modify( voter, [&](account_object& a) {
-      a.update_last_governance_vote(_db.head_block_time());
-    });
+    _db.modify( voter, [&](account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
     for( const auto pid : o.proposal_ids )
     {

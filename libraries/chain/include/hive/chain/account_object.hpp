@@ -143,7 +143,7 @@ namespace hive { namespace chain {
       time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
 
     private:
-      time_point_sec    last_governance_vote = fc::time_point_sec::maximum();
+      time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
 
     public:
 
@@ -173,14 +173,25 @@ namespace hive { namespace chain {
 
       //methods
 
-      time_point_sec get_last_governance_vote() const
+      time_point_sec get_governance_vote_expiration_ts() const
       {
-        return last_governance_vote;
+        return governance_vote_expiration_ts;
       }
 
-      void update_last_governance_vote(const time_point_sec vote_time)
+      void set_governance_vote_expired()
       {
-        last_governance_vote = vote_time;
+        governance_vote_expiration_ts = time_point_sec::maximum();
+      }
+
+      void update_governance_vote_expiration_ts(const time_point_sec vote_time)
+      {
+        governance_vote_expiration_ts = vote_time + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+
+        if (governance_vote_expiration_ts < HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP) 
+        {
+          const int64_t DIVIDER = HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT.to_seconds();
+          governance_vote_expiration_ts = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + fc::seconds(governance_vote_expiration_ts.sec_since_epoch() % DIVIDER);
+        }
       }
 
       time_point_sec get_the_earliest_time() const
@@ -333,7 +344,7 @@ namespace hive { namespace chain {
   struct by_proxy;
   struct by_next_vesting_withdrawal;
   struct by_delayed_voting;
-  struct by_last_governance_vote;
+  struct by_governance_vote_expiration_ts;
   /**
     * @ingroup object_index
     */
@@ -362,9 +373,9 @@ namespace hive { namespace chain {
           const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
         >
       >,
-      ordered_unique< tag< by_last_governance_vote >,
+      ordered_unique< tag< by_governance_vote_expiration_ts >,
         composite_key< account_object,
-          const_mem_fun< account_object, time_point_sec, &account_object::get_last_governance_vote >,
+          const_mem_fun< account_object, time_point_sec, &account_object::get_governance_vote_expiration_ts >,
           member< account_object, account_name_type, &account_object::name >
         >
       >
@@ -544,7 +555,7 @@ FC_REFLECT( hive::chain::account_object,
           (pending_claimed_accounts)
           (delayed_votes)
           (sum_delayed_votes)
-          (last_governance_vote)
+          (governance_vote_expiration_ts)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_object, hive::chain::account_index )
