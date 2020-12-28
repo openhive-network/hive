@@ -409,6 +409,7 @@ struct count_operation_visitor
   void operator()( const sps_convert_operation& ) const {}
   void operator()( const hardfork_hive_operation& ) const {}
   void operator()( const hardfork_hive_restore_operation& ) const {}
+  void operator()( const expired_governance_vote_notification_operation& ) const {}
 
   // Optional Actions
 #ifdef IS_TEST_NET

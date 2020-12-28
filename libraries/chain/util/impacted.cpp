@@ -343,6 +343,11 @@ struct get_impacted_account_visitor
   {
     _impacted.insert( HIVE_NULL_ACCOUNT );
   }
+
+  void operator()( const expired_governance_vote_notification_operation& op )
+  {
+    _impacted.insert( op.account );
+  }
   //void operator()( const operation& op ){}
 };
 

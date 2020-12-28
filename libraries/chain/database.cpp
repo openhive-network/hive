@@ -6518,6 +6518,10 @@ void database::remove_expired_governance_votes()
   const auto& accounts = get_index<account_index, by_governance_vote_expiration_ts>();
   auto acc_it = accounts.begin();
   time_point_sec block_timestamp = head_block_time();
+
+  if (acc_it->get_governance_vote_expiration_ts() >= block_timestamp)
+    return;
+
   const auto& witness_votes = get_index<witness_vote_index, by_account_witness>();
   const auto& proposal_votes = get_index<proposal_vote_index, by_voter_proposal>();
 
@@ -6542,6 +6546,7 @@ void database::remove_expired_governance_votes()
     const account_object& acc = *acc_it;
     ++acc_it;
     modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); });
+    push_virtual_operation( expired_governance_vote_notification_operation( acc.name ) );
   }
 }
 

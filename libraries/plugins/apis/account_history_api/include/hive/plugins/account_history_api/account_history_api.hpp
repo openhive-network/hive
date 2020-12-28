@@ -117,7 +117,8 @@ enum enum_vops_filter : uint32_t
   consolidate_treasury_balance_operation  = 0x200000,
   effective_comment_vote_operation        = 0x400000,
   ineffective_delete_comment_operation    = 0x800000,
-  sps_convert_operation                   = 0x1000000
+  sps_convert_operation                   = 0x1000000,
+  expired_governance_vote_notification_operation = 0x2000000
 };
 
 /** Allows to specify range of blocks to retrieve virtual operations for.
