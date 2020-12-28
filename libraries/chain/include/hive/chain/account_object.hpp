@@ -376,7 +376,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_governance_vote_expiration_ts >,
         composite_key< account_object,
           const_mem_fun< account_object, time_point_sec, &account_object::get_governance_vote_expiration_ts >,
-          member< account_object, account_name_type, &account_object::name >
+          const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
         >
       >
     >,
