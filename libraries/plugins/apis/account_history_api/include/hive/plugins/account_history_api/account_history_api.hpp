@@ -126,7 +126,7 @@ enum enum_vops_filter : uint32_t
   *  \param block_range_end   - last block number (exclusive) to search for virtual operations
   *  \param operation_begin   - starting virtual operation in given block (inclusive)
   *  \param limit             - a limit of retrieved operations
-  *  \param block_range_end   - a filter that decides which an operation matches - used bitwise filtering equals to position in `hive::protocol::operation`
+  *  \param filter            - a filter that decides which an operation matches - used bitwise filtering equals to position in `hive::protocol::operation`
   */
 struct enum_virtual_ops_args
 {
