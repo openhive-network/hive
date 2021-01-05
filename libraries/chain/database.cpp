@@ -6515,6 +6515,9 @@ optional< chainbase::database::session >& database::pending_transaction_session(
 
 void database::remove_expired_governance_votes()
 {
+  if (!has_hardfork(HIVE_HARDFORK_1_25))
+    return;
+
   const auto& accounts = get_index<account_index, by_governance_vote_expiration_ts>();
   auto acc_it = accounts.begin();
   time_point_sec block_timestamp = head_block_time();
@@ -6525,29 +6528,72 @@ void database::remove_expired_governance_votes()
   const auto& witness_votes = get_index<witness_vote_index, by_account_witness>();
   const auto& proposal_votes = get_index<proposal_vote_index, by_voter_proposal>();
 
+  //stats
+  uint64_t expired_accounts = 0;
+  uint64_t removed_witness_votes = 0;
+  uint64_t removed_proposal_votes = 0;
+
+  time_point current_time = time_point::now();
+  const fc::microseconds MAX_EXECUTION_TIME = fc::milliseconds(500);
+  uint16_t deleted_votes = 0;
+  constexpr uint16_t TIME_CHECK_INTERVAL = 200;   //check current time every X deleted votes in order to not cross MAX_EXECUTION_TIME.
+
+  auto stop_loop = [&]() -> bool
+  {
+    if (deleted_votes >= TIME_CHECK_INTERVAL)
+    {
+      if (time_point::now() - current_time >= MAX_EXECUTION_TIME)
+        return true;
+
+      deleted_votes = 0;
+    }
+    else
+      ++deleted_votes;
+
+    return false;
+  };
+
   while (acc_it != accounts.end() && acc_it->get_governance_vote_expiration_ts() < block_timestamp)
   {
     auto wvote = witness_votes.lower_bound(acc_it->name);
-    while (wvote != witness_votes.end() && wvote->account == acc_it->name)
-    {
-      const witness_vote_object& current = *wvote;
-      ++wvote;
-      remove(current);
-    }
-
     auto pvote = proposal_votes.lower_bound(acc_it->name);
-    while (pvote != proposal_votes.end() && pvote->voter == acc_it->name)
+
+    if (wvote == witness_votes.end() && pvote == proposal_votes.end())
     {
-      const proposal_vote_object& current = *pvote;
-      ++pvote;
-      remove(current);
+      wlog("Governance expiration vote is set while there is no proposal or witness vote for account id: ${acc_id}", ("acc_id", acc_it->get_id()));
+      ++acc_it;
+      continue;
     }
 
     const account_object& acc = *acc_it;
     ++acc_it;
     modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); });
     push_virtual_operation( expired_governance_vote_notification_operation( acc.name ) );
+    ++expired_accounts;
+
+    while (wvote != witness_votes.end() && wvote->account == acc.name)
+    {
+      const witness_vote_object& current = *wvote;
+      ++wvote;
+      remove(current);
+      ++removed_witness_votes;
+      if (stop_loop())
+        break;
+    }
+
+    while (pvote != proposal_votes.end() && pvote->voter == acc.name)
+    {
+      const proposal_vote_object& current = *pvote;
+      ++pvote;
+      remove(current);
+      ++removed_proposal_votes;
+      if (stop_loop())
+        break;
+    }
   }
+
+  ilog("Removing: ${removed_pvotes} proposal votes, ${removed_wvotes} witness votes. Processed accounts: ${accounts_count}. Execution time exceeded: ${loop_broken}", 
+  ("removed_pvotes", removed_proposal_votes) ("removed_wvotes", removed_witness_votes) ("accounts_count", expired_accounts) ("loop_broken", stop_loop()));
 }
 
 } } //hive::chain
