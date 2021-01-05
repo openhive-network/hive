@@ -283,7 +283,7 @@ struct filtering_visitor
   (clear_null_account_balance_operation)(proposal_pay_operation)(sps_fund_operation)
   (hardfork_hive_operation)(hardfork_hive_restore_operation)(delayed_voting_operation)
   (consolidate_treasury_balance_operation)(effective_comment_vote_operation)(ineffective_delete_comment_operation)
-  (sps_convert_operation)(expired_governance_vote_notification_operation) )
+  (sps_convert_operation)(expired_account_notification_operation) )
 
 private:
   uint32_t _filter = 0;

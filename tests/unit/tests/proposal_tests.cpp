@@ -479,14 +479,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
       BOOST_REQUIRE(proposal_votes.empty());
 
-      // first one is producer_reward_operation, later we should have expired_governance_vote_notification_operation
+      // first one is producer_reward_operation, later we should have expired_account_notification_operation
       const auto& last_operations = get_last_operations(7);
-      BOOST_REQUIRE(last_operations[1].get<expired_governance_vote_notification_operation>().account == "acc8");
-      BOOST_REQUIRE(last_operations[2].get<expired_governance_vote_notification_operation>().account == "acc7");
-      BOOST_REQUIRE(last_operations[3].get<expired_governance_vote_notification_operation>().account == "acc6");
-      BOOST_REQUIRE(last_operations[4].get<expired_governance_vote_notification_operation>().account == "acc5");
-      BOOST_REQUIRE(last_operations[5].get<expired_governance_vote_notification_operation>().account == "acc4");
-      BOOST_REQUIRE(last_operations[6].get<expired_governance_vote_notification_operation>().account == "acc1");
+      BOOST_REQUIRE(last_operations[1].get<expired_account_notification_operation>().account == "acc8");
+      BOOST_REQUIRE(last_operations[2].get<expired_account_notification_operation>().account == "acc7");
+      BOOST_REQUIRE(last_operations[3].get<expired_account_notification_operation>().account == "acc6");
+      BOOST_REQUIRE(last_operations[4].get<expired_account_notification_operation>().account == "acc5");
+      BOOST_REQUIRE(last_operations[5].get<expired_account_notification_operation>().account == "acc4");
+      BOOST_REQUIRE(last_operations[6].get<expired_account_notification_operation>().account == "acc1");
     }
 
     validate_database();

@@ -110,7 +110,7 @@ namespace hive { namespace protocol {
         effective_comment_vote_operation,
         ineffective_delete_comment_operation,
         sps_convert_operation,
-        expired_governance_vote_notification_operation
+        expired_account_notification_operation
       > operation;
 
   /*void operation_get_required_authorities( const operation& op,

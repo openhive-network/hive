@@ -278,10 +278,10 @@ namespace hive { namespace protocol {
     asset             hive_transferred;
   };
 
-  struct expired_governance_vote_notification_operation : public virtual_operation
+  struct expired_account_notification_operation : public virtual_operation
   {
-    expired_governance_vote_notification_operation() = default;
-    expired_governance_vote_notification_operation(const account_name_type& acc)
+    expired_account_notification_operation() = default;
+    expired_account_notification_operation(const account_name_type& acc)
       : account(acc) {}
 
     account_name_type account;
@@ -313,5 +313,5 @@ FC_REFLECT( hive::protocol::sps_fund_operation, (fund_account)(additional_funds)
 FC_REFLECT( hive::protocol::sps_convert_operation, (fund_account)(hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
-FC_REFLECT( hive::protocol::expired_governance_vote_notification_operation, (account) )
+FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
 

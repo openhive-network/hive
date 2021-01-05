@@ -6568,7 +6568,7 @@ void database::remove_expired_governance_votes()
     const account_object& acc = *acc_it;
     ++acc_it;
     modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); });
-    push_virtual_operation( expired_governance_vote_notification_operation( acc.name ) );
+    push_virtual_operation( expired_account_notification_operation( acc.name ) );
     ++expired_accounts;
 
     while (wvote != witness_votes.end() && wvote->account == acc.name)
@@ -6592,7 +6592,7 @@ void database::remove_expired_governance_votes()
     }
   }
 
-  ilog("Removing: ${removed_pvotes} proposal votes, ${removed_wvotes} witness votes. Processed accounts: ${accounts_count}. Execution time exceeded: ${loop_broken}", 
+  ilog("Removing: ${removed_pvotes} proposal votes, ${removed_wvotes} witness votes. Processed accounts: ${accounts_count}. Max execution time reached: ${loop_broken}", 
   ("removed_pvotes", removed_proposal_votes) ("removed_wvotes", removed_witness_votes) ("accounts_count", expired_accounts) ("loop_broken", stop_loop()));
 }
 

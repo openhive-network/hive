@@ -77,7 +77,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef consolidate_treasury_balance_operation legacy_consolidate_treasury_balance_operation;
   typedef delayed_voting_operation               legacy_delayed_voting_operation;
   typedef sps_convert_operation                  legacy_sps_convert_operation;
-  typedef expired_governance_vote_notification_operation  legacy_expired_governance_vote_notification_operation;
+  typedef expired_account_notification_operation  legacy_expired_account_notification_operation;
 
   struct legacy_price
   {
@@ -1241,7 +1241,7 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_delayed_voting_operation,
         legacy_consolidate_treasury_balance_operation,
         legacy_sps_convert_operation,
-        legacy_expired_governance_vote_notification_operation
+        legacy_expired_account_notification_operation
       > legacy_operation;
 
   struct legacy_operation_conversion_visitor
@@ -1286,7 +1286,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const consolidate_treasury_balance_operation& op )const   { l_op = op; return true; }
     bool operator()( const delayed_voting_operation& op )const                 { l_op = op; return true; }
     bool operator()( const sps_convert_operation& op )const                    { l_op = op; return true; }
-    bool operator()( const expired_governance_vote_notification_operation& op )const { l_op = op; return true; }
+    bool operator()( const expired_account_notification_operation& op )const { l_op = op; return true; }
 
     bool operator()( const transfer_operation& op )const
     {
