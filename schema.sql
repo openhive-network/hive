@@ -101,3 +101,5 @@ INSERT INTO hive_permlink_data VALUES(0, '');	-- This is permlink referenced by 
 INSERT INTO hive_accounts VALUES(0, '');	-- This is account referenced by empty participants arrays
 
 
+-- -- this commands retrive max amount of flushing threads
+-- SELECT setting::int / 2 as value FROM pg_settings WHERE  name = 'max_connections';

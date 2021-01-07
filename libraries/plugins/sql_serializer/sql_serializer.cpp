@@ -8,6 +8,8 @@
 #include <fc/smart_ref_impl.hpp>
 #include <boost/format.hpp>
 #include <boost/filesystem.hpp>
+#include <condition_variable>
+#include <shared_mutex>
 #include <thread>
 
 // C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
@@ -60,11 +62,15 @@ namespace hive
 				struct postgress_connection_holder
 				{
 					explicit postgress_connection_holder(const fc::string &url)
-							: connection_string{url} {}
+							: connection_string{url} 
+					{
+						set_max_transaction_count();
+					}
 
 					transaction_t start_transaction()
 					{
 						// mylog("started transaction");
+						register_connection();
 
 						pqxx::connection* _conn = new pqxx::connection{ this->connection_string };
 						work *_trx = new work{*_conn};
@@ -83,13 +89,16 @@ namespace hive
 					bool commit_transaction(transaction_t &trx)
 					{
 						// mylog("commiting");
-						return sql_safe_execution([&]() { trx->_transaction->commit(); }, "commit");
+						const bool ret = sql_safe_execution([&]() { trx->_transaction->commit(); }, "commit");
+						unregister_connection();
+						return ret;
 					}
 
 					void abort_transaction(transaction_t &trx)
 					{
 						// mylog("aborting");
 						trx->_transaction->abort();
+						unregister_connection();
 					}
 
 					bool exec_no_transaction(const fc::string &sql, pqxx::result *result = nullptr)
@@ -126,9 +135,33 @@ namespace hive
 					}
 
 				private:
-					fc::string connection_string;
 
-					// void destroy_transaction(transaction_t &trx) const { trx.~unique_ptr(); }
+					using mutex_t = std::shared_timed_mutex;
+
+					fc::string connection_string;
+					uint max_connections = 1;
+					std::atomic_uint connections;
+					mutex_t mtx{};
+					std::condition_variable_any cv;
+
+					void set_max_transaction_count()
+					{
+						// get maximum amount of connections defined by postgres and set half of it as max
+						max_connections = get_single_value<uint>("SELECT setting::int / 2 FROM pg_settings WHERE  name = 'max_connections'");
+					}
+
+					void register_connection()
+					{
+						std::shared_lock<mutex_t> lck{ mtx };
+						cv.wait(lck, [&]() -> bool { return connections.load() < max_connections; });
+						connections++;
+					}
+
+					void unregister_connection()
+					{
+						connections--;
+						cv.notify_one();
+					}
 
 					bool sql_safe_execution(const std::function<void()> &f, const char* msg = nullptr)
 					{
