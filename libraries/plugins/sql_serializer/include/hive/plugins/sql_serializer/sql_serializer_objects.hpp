@@ -183,10 +183,13 @@ namespace hive
 					fc::string get_operations_sql()
 					{
 						if(operations.size() == 0) return fc::string{};
+						
 						// do not remove single space at the beginiing in all 4 following sqls !!!
 						operations.insert(0, R"(
 INSERT INTO hive_operations( block_num, trx_in_block, op_pos, op_type_id, body, participants, permlink_ids)
  SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_remove(array_agg(ha.id), 0), array_remove(array_agg(hpd.id), 0) FROM ( VALUES )");
+						
+						// `GROUP BY` is used here (and below) because of `array_agg` aggregate function
 						operations.append(R"(
 ) as T( order_id, bn, trx, opn, opt, body, perm, part ) INNER JOIN hive_accounts AS ha ON T.part=ha.name
  INNER JOIN hive_permlink_data AS hpd ON T.perm=hpd.permlink GROUP BY T.order_id, T.bn, T.trx, T.opn, T.opt, T.body ORDER BY T.order_id )");

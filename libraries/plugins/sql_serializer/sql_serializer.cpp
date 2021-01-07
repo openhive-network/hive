@@ -106,7 +106,9 @@ namespace hive
 						if (sql == fc::string())
 							return true;
 
-						return sql_safe_execution([&]() {
+						register_connection();
+
+						const bool ret = sql_safe_execution([&]() {
 							pqxx::connection conn{ this->connection_string };
 							pqxx::work trx{conn};
 							if (result)
@@ -115,6 +117,9 @@ namespace hive
 								trx.exec(sql);
 							trx.commit();
 						}, sql.c_str());
+
+						unregister_connection();
+						return ret;
 					}
 
 					template<typename T>
@@ -139,15 +144,24 @@ namespace hive
 					using mutex_t = std::shared_timed_mutex;
 
 					fc::string connection_string;
-					uint max_connections = 1;
+					uint max_connections = 1u;
 					std::atomic_uint connections;
 					mutex_t mtx{};
 					std::condition_variable_any cv;
 
 					void set_max_transaction_count()
 					{
-						// get maximum amount of connections defined by postgres and set half of it as max
-						max_connections = get_single_value<uint>("SELECT setting::int / 2 FROM pg_settings WHERE  name = 'max_connections'");
+						// get maximum amount of connections defined by postgres and set half of it as max; minimum is 1
+						max_connections = std::max( 1u, get_single_value<uint>("SELECT setting::int / 2 FROM pg_settings WHERE  name = 'max_connections'") );
+						mylog( 
+							generate(
+									[=](fc::string& ss)
+									{ 
+										ss += "`max_connections` set to: "; 
+										ss += std::to_string(max_connections); 
+									} 
+								).c_str() 
+						);
 					}
 
 					void register_connection()
