@@ -6558,9 +6558,9 @@ void database::remove_expired_governance_votes()
     auto wvote = witness_votes.lower_bound(acc_it->name);
     auto pvote = proposal_votes.lower_bound(acc_it->name);
 
-    if (wvote == witness_votes.end() && pvote == proposal_votes.end())
+    if ((wvote == witness_votes.end() || wvote->account != acc_it->name) &&
+    (pvote == proposal_votes.end() || pvote->voter != acc_it->name))
     {
-      wlog("Governance expiration vote is set while there is no proposal or witness vote for account id: ${acc_id}", ("acc_id", acc_it->get_id()));
       ++acc_it;
       continue;
     }
