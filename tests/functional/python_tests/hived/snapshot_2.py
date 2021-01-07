@@ -123,9 +123,6 @@ node = hive_utils.hive_node.HiveNode(
 print("waiting for replay of {} blocks...".format(int(args.blocks)))
 with node:
 	node.wait_till_end()
-
-# replay
-wait_for_node(node, "waiting for replay of {} blocks...".format(int(args.blocks)))
 require_success(node)
 print("replay completed, creating snapshot")
 
