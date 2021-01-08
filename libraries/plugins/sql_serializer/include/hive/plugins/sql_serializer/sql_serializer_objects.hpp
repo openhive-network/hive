@@ -24,13 +24,15 @@
 #include "type_extractor_processor.hpp"
 // #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 
+// if set to 0, no log is performed, in other case determines amount of values in logged querry
+#define LOG_QUERY 0
+
 namespace hive
 {
 	namespace plugins
 	{
 		namespace sql_serializer
 		{
-			// [which] = ( op_name, is_virtual )
 			namespace PSQL
 			{
 
@@ -180,6 +182,16 @@ namespace hive
 					sql_dumper(const hive::chain::database &_db, const escape_function_t _escape, const escape_raw_function_t _escape_raw, const fc::string &_null_permlink, const fc::string &_null_account)
 							: db{_db}, escape{_escape}, escape_raw{ _escape_raw }, null_permlink{"'" + _null_permlink + "'"}, null_account{"'" + _null_permlink + "'"} {}
 
+					using __fun_t = fc::string(sql_dumper::*)();
+					void log_query( fc::string& target, __fun_t fun )
+					{
+#if(LOG_QUERY != 0)
+						fc::string backup{ target };
+						std::cout << "[ SQL QUERY LOG ]" << ((*this).*(fun))() << std::endl;
+						target = std::move(backup);
+#endif // LOG_QUERIES
+					}
+					
 					fc::string get_operations_sql()
 					{
 						if(operations.size() == 0) return fc::string{};
@@ -188,14 +200,14 @@ namespace hive
 						operations.insert(0, R"(
  INSERT INTO hive_operations (block_num, trx_in_block, op_pos, op_type_id, body, participants, permlink_ids)
  SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_agg(ha.id), array_agg(hpd.id) FROM ( 
- SELECT w.bn, w.trx, w.opn, w.opt, w.body, unnest(w.part) as part_name, unnest(w.perm) as _permlink FROM ( VALUES 
+ SELECT w.order_id, w.bn, w.trx, w.opn, w.opt, w.body, unnest(w.part) as part_name, unnest(w.perm) as _permlink FROM ( VALUES 
 )");
 						
 						operations.append(R"(
- ) AS w (order_id, bn, trx, opn, opt, body, part, perm) ORDER BY w.order_id ) as T
+ ) AS w (order_id, bn, trx, opn, opt, body, part, perm)) as T
  INNER JOIN hive_accounts as ha ON ha.name=T.part_name
  INNER JOIN hive_permlink_data as hpd ON hpd.permlink=T._permlink
- GROUP BY T.bn, T.trx, T.opn, T.opt, T.body;
+ GROUP BY T.order_id, T.bn, T.trx, T.opn, T.opt, T.body;
 )");
 
 						return std::move(operations);
@@ -207,13 +219,13 @@ namespace hive
 						virtual_operations.insert(0, R"(
  INSERT INTO hive_virtual_operations (block_num, trx_in_block, op_pos, op_type_id, body, participants)
  SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_agg(ha.id) FROM (
- SELECT w.bn, w.trx, w.opn, w.opt, w.body, unnest(w.part) as part_name FROM ( VALUES  
+ SELECT w.order_id, w.bn, w.trx, w.opn, w.opt, w.body, unnest(w.part) as part_name FROM ( VALUES  
 )");
 
 						virtual_operations.append(R"( )
- AS w (order_id, bn, trx, opn, opt, body, part) ORDER BY w.order_id
- ) AS T INNER JOIN hive_accounts ha ON ha.name = part_name 
- GROUP BY T.bn, T.trx, T.opn, T.opt, T.body; 
+ AS w (order_id, bn, trx, opn, opt, body, part)) AS T 
+ INNER JOIN hive_accounts ha ON ha.name = part_name 
+ GROUP BY T.order_id, T.bn, T.trx, T.opn, T.opt, T.body; 
 )");
 
 						return std::move(virtual_operations);
@@ -236,7 +248,6 @@ namespace hive
 					result_type process_operation(const processing_objects::process_operation_t &pop)
 					{
 						operations.append(any_operations == 0 ? "" : ",");
-						any_operations++;
 
 						fc::string result;
 						get_operation_value_prefix(result, pop, any_operations);
@@ -246,13 +257,14 @@ namespace hive
 						result.append("/* formatted permlinks: */ )");
 
 						operations.append(result);
+
+						if(any_operations == LOG_QUERY) log_query( operations, &sql_dumper::get_operations_sql );
 						return operations.size();
 					}
 
 					result_type process_virtual_operation(const processing_objects::process_virtual_operation_t &pop)
 					{
 						virtual_operations.append(any_virtual_operations == 0 ? "" : ",");
-						any_virtual_operations++;
 
 						fc::string result;
 						get_operation_value_prefix(result, pop, any_virtual_operations);
@@ -260,14 +272,13 @@ namespace hive
 
 						virtual_operations.append(result);
 
+						if(any_virtual_operations == LOG_QUERY) log_query( virtual_operations, &sql_dumper::get_virtual_operations_sql );
 						return virtual_operations.size();
 					}
 
 					result_type process_block(const processing_objects::process_block_t &bop)
 					{
-						if (any_blocks)
-							blocks.append(",");
-						any_blocks = true;
+						if (any_blocks++) blocks.append(",");
 
 						blocks.append("( ");
 						blocks.append(std::to_string(bop.block_number));
@@ -275,14 +286,13 @@ namespace hive
 						blocks.append(bop.hash.str());
 						blocks.append("', 'hex') )");
 
+						if(any_blocks == LOG_QUERY) log_query( blocks, &sql_dumper::get_blocks_sql );
 						return blocks.size();
 					}
 
 					result_type process_transaction(const processing_objects::process_transaction_t &top)
 					{
-						if (any_transactions)
-							transactions.append(",");
-						any_transactions = true;
+						if (any_transactions++) transactions.append(",");
 
 						transactions.append("( ");
 						transactions.append(std::to_string(top.block_number));
@@ -292,6 +302,7 @@ namespace hive
 						transactions.append(top.hash.str());
 						transactions.append("', 'hex' ) )");
 
+						if(any_transactions == LOG_QUERY) log_query( transactions, &sql_dumper::get_transaction_sql );
 						return transactions.size();
 					}
 
@@ -403,8 +414,8 @@ namespace hive
 						ss.append( get_formated_participants(*pop.op) + " /* participants */" );
 					}
 
-					bool any_blocks = false;
-					bool any_transactions = false;
+					uint32_t any_blocks = 0;
+					uint32_t any_transactions = 0;
 					uint32_t any_operations = 0;
 					uint32_t any_virtual_operations = 0;
 				}; // namespace PSQL
