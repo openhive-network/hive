@@ -429,12 +429,12 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     expected_expiration_time = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
 
     //in this case we should have 0 witness votes but expiration period should be updated.
-    witness_vote("acc5", "accw", acc5_private_key);
-    witness_vote("acc5", "accw2", acc5_private_key);
+    witness_vote("acc2", "accw", acc2_private_key);
+    witness_vote("acc2", "accw2", acc2_private_key);
     witness_vote("acc6", "accw", acc6_private_key);
     generate_block();
-    witness_vote("acc5", "accw", acc5_private_key, false);
-    witness_vote("acc5", "accw2", acc5_private_key, false);
+    witness_vote("acc2", "accw", acc2_private_key, false);
+    witness_vote("acc2", "accw2", acc2_private_key, false);
     witness_vote("acc6", "accw", acc6_private_key, false);
     expected_expiration_time_2 = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
 
@@ -442,10 +442,10 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
 
     {
       BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE (db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc2" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
       BOOST_REQUIRE (db->get_account( "acc3" ).get_governance_vote_expiration_ts() == expected_expiration_time);
       BOOST_REQUIRE (db->get_account( "acc4" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE (db->get_account( "acc5" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE (db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE (db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
       BOOST_REQUIRE (db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE (db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());

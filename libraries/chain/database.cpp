@@ -6563,16 +6563,16 @@ void database::remove_expired_governance_votes()
     auto wvote = witness_votes.lower_bound(acc_it->name);
     auto pvote = proposal_votes.lower_bound(acc_it->name);
 
-    if ((wvote == witness_votes.end() || wvote->account != acc_it->name) &&
-    (pvote == proposal_votes.end() || pvote->voter != acc_it->name) &&
-    !acc_it->proxy.size())
-    {
-      ++acc_it;
-      continue;
-    }
-
     const account_object& acc = *acc_it;
     ++acc_it;
+
+    if ((wvote == witness_votes.end() || wvote->account != acc.name) &&
+    (pvote == proposal_votes.end() || pvote->voter != acc.name) &&
+    !acc.proxy.size())
+    {
+      modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); });
+      continue;
+    }
 
     if (acc.proxy.size())
       adjust_proxied_witness_votes( acc, -acc.vesting_shares.amount );
