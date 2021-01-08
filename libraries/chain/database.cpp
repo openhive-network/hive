@@ -2220,6 +2220,8 @@ void database::clear_account( const account_object& account,
       a.next_vesting_withdrawal = fc::time_point_sec::maximum();
       a.to_withdraw = 0;
       a.withdrawn = 0;
+      a.proxy = "";
+      a.recovery_account = "";
       a.set_governance_vote_expired();
 
       if( has_hardfork( HIVE_HARDFORK_1_24 ) )
