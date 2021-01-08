@@ -270,6 +270,15 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
   {
     BOOST_TEST_MESSAGE( "Testing: db_remove_expired_governance_votes" );
     ACTORS( (acc1)(acc2)(acc3)(acc4)(acc5)(acc6)(acc7)(acc8)(accw)(accw2)(accp) )
+    fund( "acc1", 1000 ); vest( "acc1", 1000 );
+    fund( "acc2", 2000 ); vest( "acc2", 2000 );
+    fund( "acc3", 3000 ); vest( "acc3", 3000 );
+    fund( "acc4", 4000 ); vest( "acc4", 4000 );
+    fund( "acc5", 5000 ); vest( "acc5", 5000 );
+    fund( "acc6", 6000 ); vest( "acc6", 6000 );
+    fund( "acc7", 7000 ); vest( "acc7", 7000 );
+    fund( "acc8", 8000 ); vest( "acc8", 8000 );
+
     generate_block();
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     generate_block();
@@ -295,15 +304,27 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     private_key_type accw_witness2_key = generate_private_key( "accw2_key" );
     witness_create( "accw2", accw2_private_key, "foo.bar", accw_witness2_key.get_public_key(), 1000 );
 
-    auto witness_vote = [&](std::string voter, std::string witness, const fc::ecc::private_key& key) {
+    auto witness_vote = [&](std::string voter, std::string witness, const fc::ecc::private_key& key, bool approve = true) {
       signed_transaction tx;
       account_witness_vote_operation op;
       op.account = voter;
       op.witness = witness;
-      op.approve = true;
+      op.approve = approve;
 
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       tx.operations.push_back( op );
+      sign( tx, key );
+      db->push_transaction( tx, 0 );
+    };
+
+    auto witness_proxy_operation = [&](std::string account, std::string proxy, const fc::ecc::private_key& key) {
+      signed_transaction tx;
+      account_witness_proxy_operation op;
+      op.account = account;
+      op.proxy = proxy;
+
+      tx.operations.push_back( op );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, key );
       db->push_transaction( tx, 0 );
     };
@@ -347,7 +368,6 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE (proposal_votes.count("acc2") == 2);
       BOOST_REQUIRE (proposal_votes.count("acc4") == 1);
       BOOST_REQUIRE (proposal_votes.count("acc5") == 1);
-
     }
 
     //make all votes expired. Now vote expiration time is vote time + VOTE_EXPIRATION_PERIOD
@@ -374,12 +394,23 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     witness_vote("acc1", "accw", acc1_private_key);
     witness_vote("acc1", "accw2", acc1_private_key);
     witness_vote("acc2", "accw", acc2_private_key);
-    time_point_sec last_block_time = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
+    time_point_sec expected_expiration_time = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
+
+    //this proposal vote should be removed
+    vote_proposal("acc3", {proposal_1}, true, acc3_private_key);
+    generate_block();
+    vote_proposal("acc3", {proposal_1}, false, acc3_private_key);
+    time_point_sec expected_expiration_time_2 = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
     generate_blocks(db->head_block_time() + VOTE_EXPIRATION_PERIOD);
 
     {
-      BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() == last_block_time);
-      BOOST_REQUIRE (db->get_account( "acc2" ).get_governance_vote_expiration_ts() == last_block_time);
+      BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE (db->get_account( "acc2" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE (db->get_account( "acc3" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE (db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE (db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
 
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
@@ -395,18 +426,32 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     vote_proposal("acc3", {proposal_1}, true, acc3_private_key);
     vote_proposal("acc3", {proposal_2}, true, acc3_private_key);
     vote_proposal("acc4", {proposal_1}, true, acc4_private_key);
-    last_block_time = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
+    expected_expiration_time = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
+
+    //in this case we should have 0 witness votes but expiration period should be updated.
+    witness_vote("acc5", "accw", acc5_private_key);
+    witness_vote("acc5", "accw2", acc5_private_key);
+    witness_vote("acc6", "accw", acc6_private_key);
+    generate_block();
+    witness_vote("acc5", "accw", acc5_private_key, false);
+    witness_vote("acc5", "accw2", acc5_private_key, false);
+    witness_vote("acc6", "accw", acc6_private_key, false);
+    expected_expiration_time_2 = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
+
     generate_blocks(db->head_block_time() + VOTE_EXPIRATION_PERIOD);
 
     {
       BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE (db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE (db->get_account( "acc3" ).get_governance_vote_expiration_ts() == last_block_time);
-      BOOST_REQUIRE (db->get_account( "acc4" ).get_governance_vote_expiration_ts() == last_block_time);
+      BOOST_REQUIRE (db->get_account( "acc3" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE (db->get_account( "acc4" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE (db->get_account( "acc5" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE (db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE (db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
 
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
       BOOST_REQUIRE (witness_votes.empty());
-
 
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
       BOOST_REQUIRE (proposal_votes.count("acc3") == 2);
@@ -425,18 +470,18 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     vote_proposal("acc7", {proposal_1}, true, acc7_private_key);
     witness_vote("acc7", "accw", acc7_private_key);
     witness_vote("acc8", "accw", acc8_private_key);
-    last_block_time = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
+    expected_expiration_time = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
     generate_blocks(db->head_block_time() + VOTE_EXPIRATION_PERIOD);
 
     {
-      BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() == last_block_time);
+      BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() == expected_expiration_time);
       BOOST_REQUIRE (db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE (db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE (db->get_account( "acc4" ).get_governance_vote_expiration_ts() == last_block_time);
-      BOOST_REQUIRE (db->get_account( "acc5" ).get_governance_vote_expiration_ts() == last_block_time);
-      BOOST_REQUIRE (db->get_account( "acc6" ).get_governance_vote_expiration_ts() == last_block_time);
-      BOOST_REQUIRE (db->get_account( "acc7" ).get_governance_vote_expiration_ts() == last_block_time);
-      BOOST_REQUIRE (db->get_account( "acc8" ).get_governance_vote_expiration_ts() == last_block_time);
+      BOOST_REQUIRE (db->get_account( "acc4" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE (db->get_account( "acc5" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE (db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE (db->get_account( "acc7" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE (db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time);
 
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
       BOOST_REQUIRE (witness_votes.count("acc1") == 1);
@@ -488,6 +533,23 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE(last_operations[5].get<expired_account_notification_operation>().account == "acc4");
       BOOST_REQUIRE(last_operations[6].get<expired_account_notification_operation>().account == "acc1");
     }
+
+    generate_blocks(db->head_block_time() + BLOCK_TIMESTAMP_SHIFT);
+
+    //Check if proxy removing works well. acc1 is proxy, acc2 is grandparent proxy
+    witness_proxy_operation("acc3", "acc1", acc3_private_key);
+    witness_proxy_operation("acc4", "acc1", acc4_private_key);
+    generate_blocks(db->head_block_time() + VOTE_EXPIRATION_PERIOD);
+    witness_proxy_operation("acc5", "acc1", acc5_private_key);
+    witness_proxy_operation("acc1", "acc2", acc1_private_key);
+
+    generate_blocks(db->head_block_time() + BLOCK_TIMESTAMP_SHIFT);
+    BOOST_REQUIRE (db->get_account("acc3").proxy.size() == 0);
+    BOOST_REQUIRE (db->get_account("acc4").proxy.size() == 0);
+    BOOST_REQUIRE (db->get_account("acc5").proxy == "acc1");
+    BOOST_REQUIRE (db->get_account("acc1").proxy == "acc2");
+    BOOST_REQUIRE (db->get_account("acc1").proxied_vsf_votes_total() == db->get_account("acc5").get_real_vesting_shares());
+    BOOST_REQUIRE (db->get_account("acc2").proxied_vsf_votes_total() == (db->get_account("acc1").get_real_vesting_shares() + db->get_account("acc5").get_real_vesting_shares()));
 
     validate_database();
   }

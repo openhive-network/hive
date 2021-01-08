@@ -1384,8 +1384,8 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 {
   const auto& account = _db.get_account( o.account );
   FC_ASSERT( account.proxy != o.proxy, "Proxy must change." );
-
   FC_ASSERT( account.can_vote, "Account has declined the ability to vote and cannot proxy votes." );
+  _db.modify( account, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   /// remove all current votes
   std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH+1> delta;

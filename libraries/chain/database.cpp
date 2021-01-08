@@ -2220,6 +2220,7 @@ void database::clear_account( const account_object& account,
       a.next_vesting_withdrawal = fc::time_point_sec::maximum();
       a.to_withdraw = 0;
       a.withdrawn = 0;
+      a.set_governance_vote_expired();
 
       if( has_hardfork( HIVE_HARDFORK_1_24 ) )
       {
@@ -6529,7 +6530,8 @@ void database::remove_expired_governance_votes()
   const auto& proposal_votes = get_index<proposal_vote_index, by_voter_proposal>();
 
   //stats
-  uint64_t expired_accounts = 0;
+  uint64_t processed_accounts = 0;
+  uint64_t processed_accounts_with_votes = 0;
   uint64_t removed_witness_votes = 0;
   uint64_t removed_proposal_votes = 0;
 
@@ -6555,11 +6557,13 @@ void database::remove_expired_governance_votes()
 
   while (acc_it != accounts.end() && acc_it->get_governance_vote_expiration_ts() < block_timestamp)
   {
+    ++processed_accounts;
     auto wvote = witness_votes.lower_bound(acc_it->name);
     auto pvote = proposal_votes.lower_bound(acc_it->name);
 
     if ((wvote == witness_votes.end() || wvote->account != acc_it->name) &&
-    (pvote == proposal_votes.end() || pvote->voter != acc_it->name))
+    (pvote == proposal_votes.end() || pvote->voter != acc_it->name) &&
+    !acc_it->proxy.size())
     {
       ++acc_it;
       continue;
@@ -6567,9 +6571,13 @@ void database::remove_expired_governance_votes()
 
     const account_object& acc = *acc_it;
     ++acc_it;
-    modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); });
+
+    if (acc.proxy.size())
+      adjust_proxied_witness_votes( acc, -acc.vesting_shares.amount );
+
+    modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); acc.proxy = ""; });
     push_virtual_operation( expired_account_notification_operation( acc.name ) );
-    ++expired_accounts;
+    ++processed_accounts_with_votes;
 
     while (wvote != witness_votes.end() && wvote->account == acc.name)
     {
@@ -6592,8 +6600,8 @@ void database::remove_expired_governance_votes()
     }
   }
 
-  ilog("Removing: ${removed_pvotes} proposal votes, ${removed_wvotes} witness votes. Processed accounts: ${accounts_count}. Max execution time reached: ${loop_broken}", 
-  ("removed_pvotes", removed_proposal_votes) ("removed_wvotes", removed_witness_votes) ("accounts_count", expired_accounts) ("loop_broken", stop_loop()));
+  ilog("Removing: ${removed_pvotes} proposal votes, ${removed_wvotes} witness votes. Processed accounts: ${processed}, accounts with votes: ${with_votes}. Max execution time reached: ${loop_broken}", 
+  ("removed_pvotes", removed_proposal_votes) ("removed_wvotes", removed_witness_votes) ("processed", processed_accounts) ("with_votes", processed_accounts_with_votes) ("loop_broken", stop_loop()));
 }
 
 } } //hive::chain
