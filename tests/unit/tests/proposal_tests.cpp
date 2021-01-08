@@ -717,6 +717,85 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( expired_proposals_forbidden_voting)
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: when proposals are expired, then voting on such proposals are not allowed" );
+
+    ACTORS( (alice)(bob)(carol)(carol1)(carol2) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    //=====================preparing=====================
+    auto creator = "alice";
+    auto receiver = "bob";
+
+    auto start_time = db->head_block_time();
+
+    auto start_date_00 = start_time + fc::seconds( 30 );
+    auto end_date_00 = start_time + fc::minutes( 100 );
+
+    auto start_date_01 = start_time + fc::seconds( 40 );
+    auto end_date_01 = start_time + fc::minutes( 300 );
+
+    auto start_date_02 = start_time + fc::seconds( 50 );
+    auto end_date_02 = start_time + fc::minutes( 200 );
+
+    auto daily_pay = asset( 100, HBD_SYMBOL );
+
+    FUND( creator, ASSET( "100.000 TBD" ) );
+    //=====================preparing=====================
+
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date_00, end_date_00, daily_pay, alice_private_key );
+    generate_block();
+
+    int64_t id_proposal_01 = create_proposal( creator, receiver, start_date_01, end_date_01, daily_pay, alice_private_key );
+    generate_block();
+
+    int64_t id_proposal_02 = create_proposal( creator, receiver, start_date_02, end_date_02, daily_pay, alice_private_key );
+    generate_block();
+
+    {
+      vote_proposal( "carol", { id_proposal_00, id_proposal_01, id_proposal_02 }, true/*approve*/, carol_private_key );
+      generate_blocks( 1 );
+      vote_proposal( "carol", { id_proposal_00, id_proposal_01, id_proposal_02 }, false/*approve*/, carol_private_key );
+      generate_blocks( 1 );
+    }
+    start_time = db->head_block_time();
+    {
+      generate_blocks( start_time + fc::minutes( 110 ) );
+      HIVE_REQUIRE_THROW( vote_proposal( "carol", { id_proposal_00 }, true/*approve*/, carol_private_key ), fc::exception);
+      vote_proposal( "carol", { id_proposal_01 }, true/*approve*/, carol_private_key );
+      vote_proposal( "carol", { id_proposal_02 }, true/*approve*/, carol_private_key );
+      generate_blocks( 1 );
+    }
+    {
+      generate_blocks( start_time + fc::minutes( 210 ) );
+      HIVE_REQUIRE_THROW( vote_proposal( "carol1", { id_proposal_00 }, true/*approve*/, carol1_private_key ), fc::exception);
+      vote_proposal( "carol1", { id_proposal_01 }, true/*approve*/, carol1_private_key );
+      HIVE_REQUIRE_THROW( vote_proposal( "carol1", { id_proposal_02 }, true/*approve*/, carol1_private_key ), fc::exception);
+      generate_blocks( 1 );
+    }
+    {
+      generate_blocks( start_time + fc::minutes( 310 ) );
+      HIVE_REQUIRE_THROW( vote_proposal( "carol2", { id_proposal_00 }, true/*approve*/, carol2_private_key ), fc::exception);
+      HIVE_REQUIRE_THROW( vote_proposal( "carol2", { id_proposal_01 }, true/*approve*/, carol2_private_key ), fc::exception);
+      HIVE_REQUIRE_THROW( vote_proposal( "carol2", { id_proposal_02 }, true/*approve*/, carol2_private_key ), fc::exception);
+      generate_blocks( 1 );
+    }
+
+    BOOST_REQUIRE( exist_proposal( id_proposal_00 ) );
+    BOOST_REQUIRE( exist_proposal( id_proposal_01 ) );
+    BOOST_REQUIRE( exist_proposal( id_proposal_02 ) );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( proposals_maintenance)
 {
   try
