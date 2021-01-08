@@ -97,13 +97,16 @@ $func$
 LANGUAGE 'plpgsql';
 
 -- SPECIAL VALUES
-INSERT INTO hive_permlink_data VALUES(0, '');	-- This is permlink referenced by empty participants arrays
+INSERT INTO hive_permlink_data VALUES(0, '');	-- This is permlink referenced by empty permlink arrays
 INSERT INTO hive_accounts VALUES(0, '');	-- This is account referenced by empty participants arrays
 
 DROP FUNCTION IF EXISTS get_account_ids;
 CREATE OR REPLACE FUNCTION get_account_ids (text[]) RETURNS integer[] AS $func$
 BEGIN
-	RETURN (SELECT array_agg(ha.id) FROM hive_accounts ha JOIN ( SELECT unnest($1) AS name) ret ON ha.name = ret.name WHERE ha.id != 0); 
+	RETURN (
+		SELECT array_agg(ha.id) FROM hive_accounts ha JOIN (
+			SELECT unnest($1) AS name) ret ON ha.name = ret.name WHERE ha.id != 0
+		); 
 	END
 $func$
 LANGUAGE 'plpgsql';
@@ -111,10 +114,10 @@ LANGUAGE 'plpgsql';
 DROP FUNCTION IF EXISTS get_permlink_ids;
 CREATE OR REPLACE FUNCTION get_permlink_ids (text[]) RETURNS integer[] AS $func$
 BEGIN
-	RETURN (SELECT array_agg(hpd.id) FROM hive_permlink_data hpd JOIN ( SELECT unnest($1) AS _content) ret ON hpd.permlink = ret._content WHERE hpd.id != 0); 
+	RETURN (
+		SELECT array_agg(hpd.id) FROM hive_permlink_data hpd JOIN ( 
+			SELECT unnest($1) AS _content) ret ON hpd.permlink = ret._content WHERE hpd.id != 0
+		); 
 	END
 $func$
 LANGUAGE 'plpgsql';
-
-
-SELECT COUNT(*) FROM hive_blocks;

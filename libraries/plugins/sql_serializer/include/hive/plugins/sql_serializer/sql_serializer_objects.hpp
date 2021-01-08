@@ -186,9 +186,17 @@ namespace hive
 						
 						// do not remove single space at the beginiing in all 4 following sqls !!!
 						operations.insert(0, R"(
-INSERT INTO hive_operations (block_num, trx_in_block, op_pos, op_type_id, body, participants, permlink_ids)
- SELECT T.bn, T.trx, T.opn, T.opt, T.body, get_account_ids(T.part), get_permlink_ids(T.perms) FROM ( SELECT w.order_id, w.bn, w.trx, w.opn, w.opt, w.body, w.part, w.perms FROM ( VALUES )");
-						operations.append(R"( ) AS w (order_id, bn, trx, opn, opt, body, part, perms)) as T ORDER BY T.order_id; )");
+ INSERT INTO hive_operations (block_num, trx_in_block, op_pos, op_type_id, body, participants, permlink_ids)
+ SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_agg(ha.id), array_agg(hpd.id) FROM ( 
+ SELECT w.bn, w.trx, w.opn, w.opt, w.body, unnest(w.part) as part_name, unnest(w.perm) as _permlink FROM ( VALUES 
+)");
+						
+						operations.append(R"(
+ ) AS w (order_id, bn, trx, opn, opt, body, part, perm) ORDER BY w.order_id ) as T
+ INNER JOIN hive_accounts as ha ON ha.name=T.part_name
+ INNER JOIN hive_permlink_data as hpd ON hpd.permlink=T._permlink
+ GROUP BY T.bn, T.trx, T.opn, T.opt, T.body;
+)");
 
 						return std::move(operations);
 					}
@@ -197,11 +205,16 @@ INSERT INTO hive_operations (block_num, trx_in_block, op_pos, op_type_id, body, 
 					{
 						if(virtual_operations.size() == 0) return fc::string{};
 						virtual_operations.insert(0, R"(
-INSERT INTO hive_virtual_operations (block_num, trx_in_block, op_pos, op_type_id, body, participants)
- SELECT T.bn, T.trx, T.opn, T.opt, T.body, get_account_ids(T.part) FROM ( SELECT w.order_id, w.bn, w.trx, w.opn, w.opt, w.body, w.part FROM ( VALUES )");
-						virtual_operations.append(R"( ) AS w (order_id, bn, trx, opn, opt, body, part)) as T ORDER BY T.order_id; )");
+ INSERT INTO hive_virtual_operations (block_num, trx_in_block, op_pos, op_type_id, body, participants)
+ SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_agg(ha.id) FROM (
+ SELECT w.bn, w.trx, w.opn, w.opt, w.body, unnest(w.part) as part_name FROM ( VALUES  
+)");
 
-						std::cout << virtual_operations << std::endl;
+						virtual_operations.append(R"( )
+ AS w (order_id, bn, trx, opn, opt, body, part) ORDER BY w.order_id
+ ) AS T INNER JOIN hive_accounts ha ON ha.name = part_name 
+ GROUP BY T.bn, T.trx, T.opn, T.opt, T.body; 
+)");
 
 						return std::move(virtual_operations);
 					}
@@ -325,7 +338,7 @@ INSERT INTO hive_virtual_operations (block_num, trx_in_block, op_pos, op_type_id
 					template<typename iterable_t, typename function_t>
 					fc::string format_text_array( const iterable_t& coll, function_t for_each )
 					{
-						if( coll.size() == 0 ) return "ARRAY[ '' ]";
+						if( coll.size() == 0 ) return "'{}'::TEXT[]";
 						fc::string ret{ "ARRAY[ " };
 						for(auto cit = coll.begin(); cit != coll.end(); cit++)
 						{
