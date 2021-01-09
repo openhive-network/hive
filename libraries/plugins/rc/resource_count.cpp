@@ -414,6 +414,7 @@ struct count_operation_visitor
   void operator()( const hardfork_hive_operation& ) const {}
   void operator()( const hardfork_hive_restore_operation& ) const {}
   void operator()( const expired_account_notification_operation& ) const {}
+  void operator()( const changed_recovery_account_operation& ) const {}
 
   // Optional Actions
 #ifdef IS_TEST_NET

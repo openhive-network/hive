@@ -3370,10 +3370,14 @@ void database::account_recovery_processing()
 
   while( change_req != change_req_idx.end() && change_req->effective_on <= head_block_time() )
   {
+    auto& account = get_account(change_req->account_to_recover);
+    const account_name_type old_recover_account = account.recovery_account;
     modify( get_account( change_req->account_to_recover ), [&]( account_object& a )
     {
       a.recovery_account = change_req->recovery_account;
     });
+
+    push_virtual_operation(changed_recovery_account_operation(account.name, old_recover_account, change_req->recovery_account ));
 
     remove( *change_req );
     change_req = change_req_idx.begin();

@@ -339,6 +339,17 @@ namespace hive { namespace protocol {
     account_name_type account;
   };
 
+  struct changed_recovery_account_operation : public virtual_operation
+  {
+    changed_recovery_account_operation() {}
+    changed_recovery_account_operation( const account_name_type& acc, const account_name_type& oldrec, const account_name_type& newrec )
+      : account( acc ), old_recovery_account( oldrec ), new_recovery_account( newrec ) {}
+
+    account_name_type account;
+    account_name_type old_recovery_account;
+    account_name_type new_recovery_account;
+  };
+
 } } //hive::protocol
 
 FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payout_must_be_claimed) )
@@ -370,4 +381,4 @@ FC_REFLECT( hive::protocol::sps_convert_operation, (fund_account)(hive_amount_in
 FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
-
+FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
