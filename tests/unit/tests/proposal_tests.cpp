@@ -283,21 +283,26 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     generate_block();
 
+    const fc::time_point_sec LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT;
+
     auto proposal_creator = "accp";
-    FUND( proposal_creator, ASSET( "100.000 TBD" ) );
+    FUND( proposal_creator, ASSET( "10000.000 TBD" ) );
 
     auto start_1 = db->head_block_time();
     auto start_2 = db->head_block_time() + fc::seconds(15);
     auto start_3 = db->head_block_time() + fc::seconds(30);
-    auto end_1 = start_1 + fc::minutes((30));
-    auto end_2 = start_2 + fc::minutes((50));
-    auto end_3 = start_3 + fc::minutes((40));
+
+    //in testnet HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD is set for few days, so if we set end time of proposals about month after start date it should be enough.
+    //if it's set for more than 30 days, test case will fail because proposals will be expired
+    BOOST_REQUIRE(HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD < fc::days(10));
+
+    auto end_1 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((51));
+    auto end_2 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((52));
+    auto end_3 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((53));
+
     int64_t proposal_1 = create_proposal( proposal_creator, "acc1",  start_1,  end_1, asset( 100, HBD_SYMBOL ), accp_private_key );
     int64_t proposal_2 = create_proposal( proposal_creator, "acc2",  start_2,  end_2, asset( 100, HBD_SYMBOL ), accp_private_key );
     int64_t proposal_3 = create_proposal( proposal_creator, "acc3",  start_3,  end_3, asset( 100, HBD_SYMBOL ), accp_private_key );
-
-    const fc::microseconds VOTE_EXPIRATION_PERIOD = HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
-    const fc::microseconds BLOCK_TIMESTAMP_SHIFT = fc::seconds(10);
 
     private_key_type accw_witness_key = generate_private_key( "accw_key" );
     witness_create( "accw", accw_private_key, "foo.bar", accw_witness_key.get_public_key(), 1000 );
@@ -332,7 +337,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     //if we vote before hardfork 25
     fc::time_point_sec hardfork_25_time(HIVE_HARDFORK_1_25_TIME);
     generate_blocks(hardfork_25_time - fc::days(201));
-    BOOST_REQUIRE (db->head_block_time() < time_point_sec(HIVE_HARDFORK_1_25_TIME));
+    BOOST_REQUIRE (db->head_block_time() < hardfork_25_time - fc::days(200));
     witness_vote("acc1", "accw2", acc1_private_key);
     generate_blocks(db->head_block_time() + fc::days(50));
     vote_proposal("acc2", {proposal_1}, true, acc2_private_key);
@@ -352,11 +357,11 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       time_point_sec acc_4_vote_expiration_ts = db->get_account( "acc4" ).get_governance_vote_expiration_ts();
       time_point_sec acc_5_vote_expiration_ts = db->get_account( "acc5" ).get_governance_vote_expiration_ts();
 
-      BOOST_REQUIRE(acc_1_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_1_vote_expiration_ts <= (HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT));
-      BOOST_REQUIRE(acc_2_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_2_vote_expiration_ts <= (HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT));
-      BOOST_REQUIRE(acc_3_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_3_vote_expiration_ts <= (HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT));
-      BOOST_REQUIRE(acc_4_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_4_vote_expiration_ts <= (HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT));
-      BOOST_REQUIRE(acc_5_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_5_vote_expiration_ts <= (HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT));
+      BOOST_REQUIRE(acc_1_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_1_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+      BOOST_REQUIRE(acc_2_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_2_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+      BOOST_REQUIRE(acc_3_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_3_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+      BOOST_REQUIRE(acc_4_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_4_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+      BOOST_REQUIRE(acc_5_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_5_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
 
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
       BOOST_REQUIRE(witness_votes.size() == 2);
@@ -370,9 +375,9 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE (proposal_votes.count("acc5") == 1);
     }
 
-    //make all votes expired. Now vote expiration time is vote time + VOTE_EXPIRATION_PERIOD
-    generate_blocks(fc::time_point_sec(HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP) + VOTE_EXPIRATION_PERIOD);
-    generate_blocks(db->head_block_time() + BLOCK_TIMESTAMP_SHIFT);
+    //make all votes expired. Now vote expiration time is vote time + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
+    generate_blocks(LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+    generate_block();
 
     {
       BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
@@ -394,14 +399,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     witness_vote("acc1", "accw", acc1_private_key);
     witness_vote("acc1", "accw2", acc1_private_key);
     witness_vote("acc2", "accw", acc2_private_key);
-    time_point_sec expected_expiration_time = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
+    time_point_sec expected_expiration_time = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
 
     //this proposal vote should be removed
     vote_proposal("acc3", {proposal_1}, true, acc3_private_key);
     generate_block();
     vote_proposal("acc3", {proposal_1}, false, acc3_private_key);
-    time_point_sec expected_expiration_time_2 = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
-    generate_blocks(db->head_block_time() + VOTE_EXPIRATION_PERIOD);
+    time_point_sec expected_expiration_time_2 = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+    generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
 
     {
       BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() == expected_expiration_time);
@@ -422,11 +427,11 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE (proposal_votes.empty());
     }
 
-    generate_blocks(db->head_block_time() + BLOCK_TIMESTAMP_SHIFT);
+    generate_block();
     vote_proposal("acc3", {proposal_1}, true, acc3_private_key);
     vote_proposal("acc3", {proposal_2}, true, acc3_private_key);
     vote_proposal("acc4", {proposal_1}, true, acc4_private_key);
-    expected_expiration_time = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
+    expected_expiration_time = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
 
     //in this case we should have 0 witness votes but expiration period should be updated.
     witness_vote("acc2", "accw", acc2_private_key);
@@ -436,9 +441,9 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     witness_vote("acc2", "accw", acc2_private_key, false);
     witness_vote("acc2", "accw2", acc2_private_key, false);
     witness_vote("acc6", "accw", acc6_private_key, false);
-    expected_expiration_time_2 = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
+    expected_expiration_time_2 = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
 
-    generate_blocks(db->head_block_time() + VOTE_EXPIRATION_PERIOD);
+    generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
 
     {
       BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
@@ -459,7 +464,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE (proposal_votes.size() == 3);
     }
 
-    generate_blocks(db->head_block_time() + BLOCK_TIMESTAMP_SHIFT);
+    generate_block();
     witness_vote("acc1", "accw2", acc1_private_key);
     vote_proposal("acc4", {proposal_1}, true, acc4_private_key);
     witness_vote("acc5", "accw", acc5_private_key);
@@ -470,8 +475,8 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     vote_proposal("acc7", {proposal_1}, true, acc7_private_key);
     witness_vote("acc7", "accw", acc7_private_key);
     witness_vote("acc8", "accw", acc8_private_key);
-    expected_expiration_time = db->head_block_time() + VOTE_EXPIRATION_PERIOD;
-    generate_blocks(db->head_block_time() + VOTE_EXPIRATION_PERIOD);
+    expected_expiration_time = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+    generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
 
     {
       BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() == expected_expiration_time);
@@ -506,7 +511,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE (proposal_votes.size() == 5);
     }
 
-    generate_blocks(db->head_block_time() + BLOCK_TIMESTAMP_SHIFT);
+    generate_blocks(2);
 
     {
       BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
@@ -534,16 +539,16 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE(last_operations[6].get<expired_account_notification_operation>().account == "acc1");
     }
 
-    generate_blocks(db->head_block_time() + BLOCK_TIMESTAMP_SHIFT);
+    generate_block();
 
     //Check if proxy removing works well. acc1 is proxy, acc2 is grandparent proxy
     witness_proxy_operation("acc3", "acc1", acc3_private_key);
     witness_proxy_operation("acc4", "acc1", acc4_private_key);
-    generate_blocks(db->head_block_time() + VOTE_EXPIRATION_PERIOD);
+    generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
     witness_proxy_operation("acc5", "acc1", acc5_private_key);
     witness_proxy_operation("acc1", "acc2", acc1_private_key);
 
-    generate_blocks(db->head_block_time() + BLOCK_TIMESTAMP_SHIFT);
+    generate_blocks(2);
     BOOST_REQUIRE (db->get_account("acc3").proxy.size() == 0);
     BOOST_REQUIRE (db->get_account("acc4").proxy.size() == 0);
     BOOST_REQUIRE (db->get_account("acc5").proxy == "acc1");

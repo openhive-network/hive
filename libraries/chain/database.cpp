@@ -6560,14 +6560,15 @@ void database::remove_expired_governance_votes()
   uint64_t removed_proposal_votes = 0;
 
   time_point current_time = time_point::now();
-  const fc::microseconds MAX_EXECUTION_TIME = fc::milliseconds(500);
   uint16_t deleted_votes = 0;
   constexpr uint16_t TIME_CHECK_INTERVAL = 200;   //check current time every X deleted votes in order to not cross MAX_EXECUTION_TIME.
 
-  auto stop_loop = [&]() -> bool
+  auto stop_loop = [](uint16_t& deleted_votes, const time_point_sec& current_time) -> bool
   {
     if (deleted_votes >= TIME_CHECK_INTERVAL)
     {
+      static const fc::microseconds MAX_EXECUTION_TIME = fc::milliseconds(500);
+
       if (time_point::now() - current_time >= MAX_EXECUTION_TIME)
         return true;
 
@@ -6579,7 +6580,9 @@ void database::remove_expired_governance_votes()
     return false;
   };
 
-  while (acc_it != accounts.end() && acc_it->get_governance_vote_expiration_ts() < block_timestamp)
+  bool max_execution_time_reached = false;
+
+  while (!max_execution_time_reached && acc_it != accounts.end() && acc_it->get_governance_vote_expiration_ts() < block_timestamp)
   {
     ++processed_accounts;
     auto wvote = witness_votes.lower_bound(acc_it->name);
@@ -6609,23 +6612,26 @@ void database::remove_expired_governance_votes()
       ++wvote;
       remove(current);
       ++removed_witness_votes;
-      if (stop_loop())
+      max_execution_time_reached = stop_loop(deleted_votes, current_time);
+      if (max_execution_time_reached)
         break;
     }
 
-    while (pvote != proposal_votes.end() && pvote->voter == acc.name)
+    while (!max_execution_time_reached && pvote != proposal_votes.end() && pvote->voter == acc.name)
     {
       const proposal_vote_object& current = *pvote;
       ++pvote;
       remove(current);
       ++removed_proposal_votes;
-      if (stop_loop())
+      max_execution_time_reached = stop_loop(deleted_votes, current_time);
+
+      if (max_execution_time_reached)
         break;
     }
   }
 
-  ilog("Removing: ${removed_pvotes} proposal votes, ${removed_wvotes} witness votes. Processed accounts: ${processed}, accounts with votes: ${with_votes}. Max execution time reached: ${loop_broken}", 
-  ("removed_pvotes", removed_proposal_votes) ("removed_wvotes", removed_witness_votes) ("processed", processed_accounts) ("with_votes", processed_accounts_with_votes) ("loop_broken", stop_loop()));
+  ilog("Removing: ${removed_pvotes} proposal votes, ${removed_wvotes} witness votes. Processed accounts: ${processed}, accounts with votes: ${with_votes}. Max execution time reached: ${execution_time_limit_reached}",
+  ("removed_pvotes", removed_proposal_votes) ("removed_wvotes", removed_witness_votes) ("processed", processed_accounts) ("with_votes", processed_accounts_with_votes) ("execution_time_limit_reached", max_execution_time_reached));
 }
 
 } } //hive::chain
