@@ -55,6 +55,25 @@
 
 #include <stdlib.h>
 
+long hf25_time()
+{
+  long hf25Time =
+#ifdef IS_TEST_NET
+    1588334400; // Friday, 1 May 2020 12:00:00 GMT
+#else
+    1640952000; //  Thursday, 31 December 2021 12:00:00 GMT
+
+#endif /// IS_TEST_NET
+  const char* value = getenv("HIVE_HF25_TIME");
+  if(value != nullptr)
+  {
+    hf25Time = atol(value);
+    ilog("HIVE_HF25_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hf25Time));
+  }
+
+  return hf25Time;
+}
+
 long hf24_time()
 {
   long hf24Time =
@@ -5624,10 +5643,13 @@ void database::init_hardforks()
   FC_ASSERT( HIVE_HARDFORK_1_24 == 24, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_24 ] = fc::time_point_sec( HIVE_HARDFORK_1_24_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_24 ] = HIVE_HARDFORK_1_24_VERSION;
-#ifdef IS_TEST_NET
   FC_ASSERT( HIVE_HARDFORK_1_25 == 25, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_25 ] = fc::time_point_sec( HIVE_HARDFORK_1_25_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_25 ] = HIVE_HARDFORK_1_25_VERSION;
+#ifdef IS_TEST_NET
+  FC_ASSERT( HIVE_HARDFORK_1_26 == 26, "Invalid hardfork configuration" );
+  _hardfork_versions.times[ HIVE_HARDFORK_1_26 ] = fc::time_point_sec( HIVE_HARDFORK_1_26_TIME );
+  _hardfork_versions.versions[ HIVE_HARDFORK_1_26 ] = HIVE_HARDFORK_1_26_VERSION;
 #endif
 
   const auto& hardforks = get_hardfork_property_object();

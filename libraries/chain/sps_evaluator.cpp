@@ -127,6 +127,16 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
       if( found_id == pidx.end() || found_id->removed )
         continue;
 
+      if( _db.has_hardfork( HIVE_HARDFORK_1_25 ) )
+      {
+        /*
+          In the future is possible a situation, when it will be thousands proposals and some account will vote on each proposal.
+          During the account's deactivation, all votes have to be removed immediately, so it's a risk of potential performance issue.
+          Better it not to allow vote on expired proposal.
+        */
+        FC_ASSERT(_db.head_block_time() <= found_id->end_date, "Voting on expired proposals is not allowed...");
+      }
+
       auto found = pvidx.find( boost::make_tuple( o.voter, pid ) );
 
       if( o.approve )
