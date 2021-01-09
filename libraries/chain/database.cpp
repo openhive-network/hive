@@ -872,12 +872,12 @@ const limit_order_object* database::find_limit_order( const account_name_type& n
   return find< limit_order_object, by_account >( boost::make_tuple( name, orderid ) );
 }
 
-const savings_withdraw_object& database::get_savings_withdraw( const account_name_type& owner, uint32_t request_id )const
+const savings_withdraw_object& database::get_savings_withdraw( const account_id_type& owner, uint32_t request_id )const
 { try {
   return get< savings_withdraw_object, by_from_rid >( boost::make_tuple( owner, request_id ) );
 } FC_CAPTURE_AND_RETHROW( (owner)(request_id) ) }
 
-const savings_withdraw_object* database::find_savings_withdraw( const account_name_type& owner, uint32_t request_id )const
+const savings_withdraw_object* database::find_savings_withdraw( const account_id_type& owner, uint32_t request_id )const
 {
   return find< savings_withdraw_object, by_from_rid >( boost::make_tuple( owner, request_id ) );
 }

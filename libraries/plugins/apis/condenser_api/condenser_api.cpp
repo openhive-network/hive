@@ -498,15 +498,17 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_savings_withdraw_to )
   {
     CHECK_ARG_SIZE( 1 )
-    account_name_type account = args[0].as< account_name_type >();
+    account_name_type from_account = args[0].as< account_name_type >();
+    const auto& from_account_id = _db.get_account( from_account ).get_id();
 
     get_savings_withdraw_to_return result;
 
     const auto& to_complete_idx = _db.get_index< savings_withdraw_index, by_to_complete >();
-    auto itr = to_complete_idx.lower_bound( account );
-    while( itr != to_complete_idx.end() && itr->to == account )
+    auto itr = to_complete_idx.lower_bound( from_account_id );
+    while( itr != to_complete_idx.end() && itr->to == from_account_id )
     {
-      result.emplace_back( database_api::api_savings_withdraw_object( *itr, _db ) );
+      const auto& to_account = _db.get_account( itr->to_id ); // Todo: store results in a map (id <> name) so we don't have to re-query the same result twice
+      result.emplace_back( database_api::api_savings_withdraw_object( *itr, _db ), from_account, to_account );
       ++itr;
     }
 

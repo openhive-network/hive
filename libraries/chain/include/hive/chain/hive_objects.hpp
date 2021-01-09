@@ -90,7 +90,7 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       savings_withdraw_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _from, const account_name_type& _to, const asset& _amount,
+        const account_id_type& _from, const account_id_type& _to, const asset& _amount,
         const string& _memo, const time_point_sec& _time_of_completion, uint32_t _request_id )
         : id( _id ), from( _from ), to( _to ), memo( a ), request_id( _request_id ),
         amount( _amount ), complete( _time_of_completion )
@@ -101,8 +101,8 @@ namespace hive { namespace chain {
       //amount of savings to withdraw (HIVE or HBD)
       const asset& get_withdraw_amount() const { return amount; }
 
-      account_name_type from; //< TODO: can be replaced with account_id_type
-      account_name_type to; //< TODO: can be replaced with account_id_type
+      account_id_type from;
+      account_id_type to;
       shared_string     memo;
       uint32_t          request_id = 0;
       asset             amount; //can be expressed in HIVE or HBD
@@ -424,20 +424,20 @@ namespace hive { namespace chain {
         const_mem_fun< savings_withdraw_object, savings_withdraw_object::id_type, &savings_withdraw_object::get_id > >,
       ordered_unique< tag< by_from_rid >,
         composite_key< savings_withdraw_object,
-          member< savings_withdraw_object, account_name_type, &savings_withdraw_object::from >,
+          member< savings_withdraw_object, account_id_type, &savings_withdraw_object::from >,
           member< savings_withdraw_object, uint32_t, &savings_withdraw_object::request_id >
         >
       >,
       ordered_unique< tag< by_complete_from_rid >,
         composite_key< savings_withdraw_object,
           member< savings_withdraw_object, time_point_sec, &savings_withdraw_object::complete >,
-          member< savings_withdraw_object, account_name_type, &savings_withdraw_object::from >,
+          member< savings_withdraw_object, account_id_type, &savings_withdraw_object::from >,
           member< savings_withdraw_object, uint32_t, &savings_withdraw_object::request_id >
         >
       >,
       ordered_unique< tag< by_to_complete >,
         composite_key< savings_withdraw_object,
-          member< savings_withdraw_object, account_name_type, &savings_withdraw_object::to >,
+          member< savings_withdraw_object, account_id_type, &savings_withdraw_object::to >,
           member< savings_withdraw_object, time_point_sec, &savings_withdraw_object::complete >,
           const_mem_fun< savings_withdraw_object, savings_withdraw_object::id_type, &savings_withdraw_object::get_id >
         >

@@ -854,11 +854,13 @@ DEFINE_API_IMPL( database_api_impl, find_savings_withdrawals )
 {
   find_savings_withdrawals_return result;
   const auto& withdraw_idx = _db.get_index< chain::savings_withdraw_index, chain::by_from_rid >();
-  auto itr = withdraw_idx.lower_bound( args.account );
+  const auto& from_account_id = _db.get_account( args.account ).get_id();
+  auto itr = withdraw_idx.lower_bound( from_account_id );
 
   while( itr != withdraw_idx.end() && itr->from == args.account && result.withdrawals.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
   {
-    result.withdrawals.emplace_back( *itr, _db );
+    const auto& to_account = _db.get_account( itr->to_id ); // Todo: store results in a map (id <> name) so we don't have to re-query the same result twice
+    result.withdrawals.emplace_back( api_savings_withdraw_object(*itr, _db), args.account, to_account );
     ++itr;
   }
 

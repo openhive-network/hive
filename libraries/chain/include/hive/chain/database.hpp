@@ -274,8 +274,8 @@ namespace chain {
       const limit_order_object& get_limit_order(  const account_name_type& owner, uint32_t id )const;
       const limit_order_object* find_limit_order( const account_name_type& owner, uint32_t id )const;
 
-      const savings_withdraw_object& get_savings_withdraw(  const account_name_type& owner, uint32_t request_id )const;
-      const savings_withdraw_object* find_savings_withdraw( const account_name_type& owner, uint32_t request_id )const;
+      const savings_withdraw_object& get_savings_withdraw(  const account_id_type& owner, uint32_t request_id )const;
+      const savings_withdraw_object* find_savings_withdraw( const account_id_type& owner, uint32_t request_id )const;
 
       const dynamic_global_property_object&  get_dynamic_global_properties()const;
       const node_property_object&            get_node_properties()const;

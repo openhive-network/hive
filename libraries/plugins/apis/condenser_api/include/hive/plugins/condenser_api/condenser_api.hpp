@@ -635,10 +635,12 @@ struct api_escrow_object
 struct api_savings_withdraw_object
 {
   api_savings_withdraw_object() {}
-  api_savings_withdraw_object( const database_api::api_savings_withdraw_object& s ) :
+  api_savings_withdraw_object( const database_api::api_savings_withdraw_object& s, const account_name_type from_name, const account_name_type to_name ) :
     id( s.id ),
-    from( s.from ),
-    to( s.to ),
+    from_id( s.from ),
+    from( from_name ),
+    to_id( s.to ),
+    to( to_name ),
     memo( s.memo ),
     request_id( s.request_id ),
     amount( legacy_asset::from_asset( s.amount ) ),
@@ -647,7 +649,9 @@ struct api_savings_withdraw_object
 
   savings_withdraw_id_type id;
 
+  account_id_type   from_id;
   account_name_type from;
+  account_id_type   to_id;
   account_name_type to;
   string            memo;
   uint32_t          request_id = 0;

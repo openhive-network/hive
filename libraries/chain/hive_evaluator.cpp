@@ -2920,19 +2920,18 @@ void transfer_to_savings_evaluator::do_apply( const transfer_to_savings_operatio
 void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_operation& op )
 {
   const auto& from = _db.get_account( op.from );
-  _db.get_account(op.to); // Verify to account exists
+  const auto& to = _db.get_account(op.to);
 
   FC_ASSERT( from.savings_withdraw_requests < HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT, "Account has reached limit for pending withdraw requests." );
 
-  FC_TODO( "Remove is producing after HF 21" );
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
     FC_ASSERT( op.amount.symbol == HBD_SYMBOL || !_db.is_treasury( op.to ), "Can only transfer HBD to ${s}", ("s", op.to ) );
   }
 
   FC_ASSERT( _db.get_savings_balance( from, op.amount.symbol ) >= op.amount );
   _db.adjust_savings_balance( from, -op.amount );
-  _db.create<savings_withdraw_object>( op.from, op.to, op.amount, op.memo, _db.head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME, op.request_id );
+  _db.create<savings_withdraw_object>( from.get_id(), to.get_id(), op.amount, op.memo, _db.head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME, op.request_id );
 
   _db.modify( from, [&]( account_object& a )
   {

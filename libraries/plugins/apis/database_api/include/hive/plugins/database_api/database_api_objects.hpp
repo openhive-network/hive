@@ -659,10 +659,12 @@ struct api_account_history_object
 
 struct api_savings_withdraw_object
 {
-  api_savings_withdraw_object( const savings_withdraw_object& o, const database& db ) :
+  api_savings_withdraw_object( const savings_withdraw_object& o, const database& db, const account_name_type from_name, const account_name_type to_name ) :
     id( o.get_id() ),
-    from( o.from ),
-    to( o.to ),
+    from_id( o.from ),
+    from( from_name ),
+    to_id( o.to ),
+    to( to_name ),
     memo( to_string( o.memo ) ),
     request_id( o.request_id ),
     amount( o.amount ),
@@ -672,8 +674,11 @@ struct api_savings_withdraw_object
   api_savings_withdraw_object() {}
 
   savings_withdraw_id_type   id;
-  account_name_type          from;
-  account_name_type          to;
+  account_id_type   from_id;
+  account_name_type from;
+  account_id_type   to_id;
+  account_name_type to;
+
   string                     memo;
   uint32_t                   request_id = 0;
   asset                      amount;
