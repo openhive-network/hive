@@ -292,13 +292,9 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     auto start_2 = db->head_block_time() + fc::seconds(15);
     auto start_3 = db->head_block_time() + fc::seconds(30);
 
-    //in testnet HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD is set for few days, so if we set end time of proposals two months after LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS it should be enough.
-    //if it's set for more than 30 days, test case will fail because proposals will be expired
-    BOOST_REQUIRE(HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD < fc::days(10));
-
-    auto end_1 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((51));
-    auto end_2 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((52));
-    auto end_3 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((53));
+    auto end_1 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((100));
+    auto end_2 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((101));
+    auto end_3 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((102));
 
     int64_t proposal_1 = create_proposal( proposal_creator, "acc1",  start_1,  end_1, asset( 100, HBD_SYMBOL ), accp_private_key );
     int64_t proposal_2 = create_proposal( proposal_creator, "acc2",  start_2,  end_2, asset( 100, HBD_SYMBOL ), accp_private_key );
