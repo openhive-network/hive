@@ -292,7 +292,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     auto start_2 = db->head_block_time() + fc::seconds(15);
     auto start_3 = db->head_block_time() + fc::seconds(30);
 
-    //in testnet HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD is set for few days, so if we set end time of proposals about month after start date it should be enough.
+    //in testnet HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD is set for few days, so if we set end time of proposals two months after LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS it should be enough.
     //if it's set for more than 30 days, test case will fail because proposals will be expired
     BOOST_REQUIRE(HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD < fc::days(10));
 
