@@ -6569,7 +6569,7 @@ void database::remove_expired_governance_votes()
     {
       const fc::microseconds MAX_EXECUTION_TIME =
       #ifdef IS_TEST_NET
-      fc::milliseconds(5);
+      fc::milliseconds(3);
       #else
       fc::milliseconds(500);
       #endif

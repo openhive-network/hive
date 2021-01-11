@@ -580,7 +580,9 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_max_execution_time_reac
     (a00)(a01)(a02)(a03)(a04)(a05)(a06)(a07)(a08)(a09)
     (a10)(a11)(a12)(a13)(a14)(a15)(a16)(a17)(a18)(a19)
     (a20)(a21)(a22)(a23)(a24)(a25)(a26)(a27)(a28)(a29)
-
+    (a30)(a31)(a32)(a33)(a34)(a35)(a36)(a37)(a38)(a39)
+    (a40)(a41)(a42)(a43)(a44)(a45)(a46)(a47)(a48)(a49)
+    (a50)(a51)(a52)(a53)(a54)(a55)(a56)(a57)(a58)(a59)
     //witnesses
     (w00)(w01)(w02)(w03)(w04)(w05)(w06)(w07)(w08)(w09)
     (w10)(w11)(w12)(w13)(w14)(w15)(w16)(w17)(w18)(w19)
@@ -596,7 +598,10 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_max_execution_time_reac
     std::vector< initial_data > users = {
       {"a00", a00_private_key }, {"a01", a01_private_key }, {"a02", a02_private_key }, {"a03", a03_private_key }, {"a04", a04_private_key }, {"a05", a05_private_key }, {"a06", a06_private_key }, {"a07", a07_private_key }, {"a08", a08_private_key }, {"a09", a09_private_key },
       {"a10", a10_private_key }, {"a11", a11_private_key }, {"a12", a12_private_key }, {"a13", a13_private_key }, {"a14", a14_private_key }, {"a15", a15_private_key }, {"a16", a16_private_key }, {"a17", a17_private_key }, {"a18", a18_private_key }, {"a19", a19_private_key },
-      {"a20", a20_private_key }, {"a21", a21_private_key }, {"a22", a22_private_key }, {"a23", a23_private_key }, {"a24", a24_private_key }, {"a25", a25_private_key }, {"a26", a26_private_key }, {"a27", a27_private_key }, {"a28", a28_private_key }, {"a29", a29_private_key }
+      {"a20", a20_private_key }, {"a21", a21_private_key }, {"a22", a22_private_key }, {"a23", a23_private_key }, {"a24", a24_private_key }, {"a25", a25_private_key }, {"a26", a26_private_key }, {"a27", a27_private_key }, {"a28", a28_private_key }, {"a29", a29_private_key },
+      {"a30", a30_private_key }, {"a31", a31_private_key }, {"a32", a32_private_key }, {"a33", a33_private_key }, {"a34", a34_private_key }, {"a35", a35_private_key }, {"a36", a36_private_key }, {"a37", a37_private_key }, {"a38", a38_private_key }, {"a39", a39_private_key },
+      {"a40", a40_private_key }, {"a41", a41_private_key }, {"a42", a42_private_key }, {"a43", a43_private_key }, {"a44", a44_private_key }, {"a45", a45_private_key }, {"a46", a46_private_key }, {"a47", a47_private_key }, {"a48", a48_private_key }, {"a49", a49_private_key },
+      {"a50", a50_private_key }, {"a51", a51_private_key }, {"a52", a52_private_key }, {"a53", a53_private_key }, {"a54", a54_private_key }, {"a55", a55_private_key }, {"a56", a56_private_key }, {"a57", a57_private_key }, {"a58", a58_private_key }, {"a59", a59_private_key },
     };
 
     //HIVE_MAX_ACCOUNT_WITNESS_VOTES is 30 for now so only 30 witnesses.
@@ -657,7 +662,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_max_execution_time_reac
         break;
     }
 
-    BOOST_REQUIRE (loop_cnt > 1);
+    BOOST_REQUIRE (loop_cnt != 0);
 
     validate_database();
   }
