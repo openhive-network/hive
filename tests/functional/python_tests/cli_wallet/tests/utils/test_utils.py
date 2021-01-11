@@ -1,7 +1,12 @@
 import json
 import requests
+from contextlib import ContextDecorator
+import traceback
+import time
 
-from utils.logger     import log
+from junit_xml import TestCase, TestSuite
+
+from utils.logger     import log, init_logger
 from utils.cmd_args   import args
 
 class ArgsCheckException(Exception):
@@ -13,6 +18,8 @@ class ArgsCheckException(Exception):
 
 user_name = list("aaaaaaaaaaaa")
 creator = "initminer"
+
+
 
 def unifie_to_string(_arg):
     if not isinstance(_arg, str):
@@ -57,6 +64,7 @@ def call_and_check_transaction(_func, _call_args, _arg_prefix, _broadcast):
 
 
 def last_message_as_json( _message):
+    log.info(_message)
     if "message:" in _message:
         _message = _message[_message.rfind("message:")+len("message:"):]
         _message.strip()
@@ -80,19 +88,22 @@ def find_creator_proposals(_creator, _proposal_list):
     proposals = []
     if "result" in _proposal_list:
         result = _proposal_list["result"]
-        for rs in result:
-            if rs["creator"] == _creator:
-                proposals.append(rs)
+        if result:
+            for rs in result:
+                if rs["creator"] == _creator:
+                    proposals.append(rs)
     return proposals
 
 
 def find_voter_proposals(_voter, _proposal_list):
+    proposals = []
     if "result" in _proposal_list:
         result = _proposal_list["result"]
-        for user, user_propsals in result.items():
-            if user == _voter:
-                return user_propsals
-    return []
+        if result:
+            for rs in result:
+                if rs["voter"] == _voter:
+                    proposals.append(rs)
+    return proposals
 
 
 def ws_to_http(_url):
@@ -135,3 +146,24 @@ def make_user_for_tests(_cli_wallet, _value_for_vesting = None,  _value_for_tran
     _cli_wallet.transfer(               creator, receiver, value_for_transfer_tbd, "initial transfer", "true")
 
     return creator, receiver
+
+class Test(ContextDecorator):
+    def __init__(self, _test_name):
+        self.test_name=_test_name
+
+    def __enter__(self):
+        init_logger(self.test_name)
+        log.info("Starting test: {0}".format(self.test_name))
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.error=None
+        if exc_type:
+            log.exception(exc_value)
+            self.error = traceback.format_exception(exc_type, exc_value, exc_traceback)
+        if self.error:
+            log.error("TEST `{0}` failed".format(self.test_name))
+            raise Exception(str(self.error))
+        else:
+            log.info("TEST `{0}` passed".format(self.test_name))
+            exit(0)
+

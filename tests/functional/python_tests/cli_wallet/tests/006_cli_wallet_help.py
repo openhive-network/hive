@@ -7,9 +7,7 @@ from utils.cmd_args   import args
 from utils.logger     import log, init_logger
 
 if __name__ == "__main__":
-    try:
-        init_logger(__file__)
-        error = False
+    with Test(__file__):
         output = subprocess.run([args.path+"/cli_wallet", "--help"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output_stdout = output.stdout.decode('utf-8')
         args_founded = [ arg for arg in output_stdout.split() if "--" in arg ]
@@ -17,17 +15,3 @@ if __name__ == "__main__":
         res = list(set(args_founded)^set(only_args_to_be_founded))
         if res:
             raise ArgsCheckException("There are some additional argument in cli_wallet `{0}`.".format(res))
-
-    except Exception as _ex:
-        log.exception(str(_ex))
-        error = True
-    finally:
-        if error:
-            log.error("TEST `{0}` failed".format(__file__))
-            exit(1)
-        else:
-            log.info("TEST `{0}` passed".format(__file__))
-            exit(0)
-
-
-

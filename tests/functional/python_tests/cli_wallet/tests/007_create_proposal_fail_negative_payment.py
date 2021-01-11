@@ -9,9 +9,7 @@ from utils.cli_wallet import CliWallet
 from utils.logger     import log, init_logger
 
 if __name__ == "__main__":
-    try:
-        init_logger(__file__)
-        error = False
+    with Test(__file__):
         wallet = CliWallet( args.path,
                             args.server_rpc_endpoint,
                             args.cert_auth,
@@ -27,7 +25,7 @@ if __name__ == "__main__":
 
         creator, receiver = make_user_for_tests(wallet)
 
-        proposals_before = len(find_creator_proposals(creator, last_message_as_json( wallet.list_proposals(creator, "creator", "asc", 50, "all"))))
+        proposals_before = len(find_creator_proposals(creator, last_message_as_json( wallet.list_proposals([creator], 50, "by_creator", "ascending", "all"))))
         log.info("proposals_before {0}".format(proposals_before))
 
         wallet.post_comment(creator, "lorem", "", "ipsum", "Lorem Ipsum", "body", "{}", "true")
@@ -35,20 +33,8 @@ if __name__ == "__main__":
         if not create_prop.find("daily_pay.amount >= 0: Daily pay can't be negative value") != -1:
             raise ArgsCheckException("Assertion `{0}` is required.".format("daily_pay.amount >= 0: Daily pay can't be negative value"))
 
-        proposals_after = len(find_creator_proposals(creator, last_message_as_json( wallet.list_proposals(creator, "creator", "asc", 50, "all"))))
+        proposals_after = len(find_creator_proposals(creator, last_message_as_json( wallet.list_proposals([creator], 50, "by_creator", "ascending", "all"))))
         log.info("proposals_after {0}".format(proposals_after))
         
         if not proposals_before == proposals_after:
             raise ArgsCheckException("proposals_before +1 should be equal to proposals_after.")
-
-    except Exception as _ex:
-        log.exception(str(_ex))
-        error = True
-    finally:
-        if error:
-            log.error("TEST `{0}` failed".format(__file__))
-            exit(1)
-        else:
-            log.info("TEST `{0}` passed".format(__file__))
-            exit(0)
-

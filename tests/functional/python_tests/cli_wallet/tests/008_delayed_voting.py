@@ -36,10 +36,7 @@ def get_votes( wallet, account_name ):
     return val
 
 if __name__ == "__main__":
-    try:
-        init_logger(__file__)
-
-        error = False
+    with Test(__file__):
         wallet = CliWallet( args.path,
                             args.server_rpc_endpoint,
                             args.cert_auth,
@@ -75,15 +72,3 @@ if __name__ == "__main__":
 
         #=================Checking changes=================
         assert( after_val > before_val )
-
-    except Exception as _ex:
-        log.exception(str(_ex))
-        error = True
-    finally:
-        if error:
-            log.error("TEST `{0}` failed".format(__file__))
-            exit(1)
-        else:
-            log.info("TEST `{0}` passed".format(__file__))
-            exit(0)
-
