@@ -6559,17 +6559,22 @@ void database::remove_expired_governance_votes()
   uint64_t removed_witness_votes = 0;
   uint64_t removed_proposal_votes = 0;
 
-  time_point current_time = time_point::now();
+  const time_point deleting_start_time = time_point::now();
   uint16_t deleted_votes = 0;
-  constexpr uint16_t TIME_CHECK_INTERVAL = 200;   //check current time every X deleted votes in order to not cross MAX_EXECUTION_TIME.
+  constexpr uint16_t TIME_CHECK_INTERVAL = 50;   //check current time every X deleted votes in order to not cross MAX_EXECUTION_TIME.
 
-  auto stop_loop = [](uint16_t& deleted_votes, const time_point_sec& current_time) -> bool
+  auto stop_loop = [](uint16_t& deleted_votes, const time_point& deleting_start_time) -> bool
   {
     if (deleted_votes >= TIME_CHECK_INTERVAL)
     {
-      static const fc::microseconds MAX_EXECUTION_TIME = fc::milliseconds(500);
+      const fc::microseconds MAX_EXECUTION_TIME =
+      #ifdef IS_TEST_NET
+      fc::milliseconds(5);
+      #else
+      fc::milliseconds(500);
+      #endif
 
-      if (time_point::now() - current_time >= MAX_EXECUTION_TIME)
+      if (time_point::now() - deleting_start_time >= MAX_EXECUTION_TIME)
         return true;
 
       deleted_votes = 0;
@@ -6599,12 +6604,13 @@ void database::remove_expired_governance_votes()
       continue;
     }
 
-    if (acc.proxy.size())
-      adjust_proxied_witness_votes( acc, -acc.vesting_shares.amount );
-
-    modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); acc.proxy = ""; });
-    push_virtual_operation( expired_account_notification_operation( acc.name ) );
     ++processed_accounts_with_votes;
+
+    if (acc.proxy.size())
+    {
+      adjust_proxied_witness_votes( acc, -acc.vesting_shares.amount );
+      modify(acc, [&](account_object& acc) { acc.proxy = ""; });
+    }
 
     while (wvote != witness_votes.end() && wvote->account == acc.name)
     {
@@ -6612,7 +6618,8 @@ void database::remove_expired_governance_votes()
       ++wvote;
       remove(current);
       ++removed_witness_votes;
-      max_execution_time_reached = stop_loop(deleted_votes, current_time);
+      max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
+
       if (max_execution_time_reached)
         break;
     }
@@ -6623,15 +6630,24 @@ void database::remove_expired_governance_votes()
       ++pvote;
       remove(current);
       ++removed_proposal_votes;
-      max_execution_time_reached = stop_loop(deleted_votes, current_time);
+      max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
 
       if (max_execution_time_reached)
         break;
     }
+
+    if (!acc.notified_expired_account())
+    {
+      push_virtual_operation( expired_account_notification_operation( acc.name ) );
+      modify(acc, [&](account_object& acc) { acc.notification_of_expiring_account_sent(); });
+    }
+
+    if (!max_execution_time_reached)
+      modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); });
   }
 
-  ilog("Removing: ${removed_pvotes} proposal votes, ${removed_wvotes} witness votes. Processed accounts: ${processed}, accounts with votes: ${with_votes}. Max execution time reached: ${execution_time_limit_reached}",
-  ("removed_pvotes", removed_proposal_votes) ("removed_wvotes", removed_witness_votes) ("processed", processed_accounts) ("with_votes", processed_accounts_with_votes) ("execution_time_limit_reached", max_execution_time_reached));
+  ilog("Removing: ${removed_pvotes} proposal votes, ${removed_wvotes} witness votes. Processed accounts: ${processed}, accounts with votes: ${with_votes}, exec_time: ${exec_time} us, max execution time reached: ${execution_time_limit_reached}",
+  ("removed_pvotes", removed_proposal_votes) ("removed_wvotes", removed_witness_votes) ("processed", processed_accounts) ("with_votes", processed_accounts_with_votes) ("exec_time", (time_point::now() - deleting_start_time).count() ) ("execution_time_limit_reached", max_execution_time_reached));
 }
 
 } } //hive::chain

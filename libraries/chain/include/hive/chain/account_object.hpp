@@ -160,6 +160,11 @@ namespace hive { namespace chain {
       bool              can_vote = true;
       bool              mined = true;
 
+    private:
+      bool              expired_account_notification_sent = true;
+
+    public:
+
       public_key_type   memo_key;   //public_key_type - 33 bytes
 
       fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes;// = std::vector<share_type>( HIVE_MAX_PROXY_RECURSION_DEPTH, 0 ); ///< the total VFS votes proxied to this account
@@ -172,6 +177,16 @@ namespace hive { namespace chain {
       t_delayed_votes   delayed_votes;
 
       //methods
+
+      bool notified_expired_account() const
+      {
+        return expired_account_notification_sent;
+      }
+
+      void notification_of_expiring_account_sent()
+      {
+        expired_account_notification_sent = true;
+      }
 
       time_point_sec get_governance_vote_expiration_ts() const
       {
@@ -186,6 +201,7 @@ namespace hive { namespace chain {
       void update_governance_vote_expiration_ts(const time_point_sec vote_time)
       {
         governance_vote_expiration_ts = vote_time + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+        expired_account_notification_sent = false;
 
         if (governance_vote_expiration_ts < HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP) 
         {
@@ -555,7 +571,7 @@ FC_REFLECT( hive::chain::account_object,
           (pending_claimed_accounts)
           (delayed_votes)
           (sum_delayed_votes)
-          (governance_vote_expiration_ts)
+          (governance_vote_expiration_ts)(expired_account_notification_sent)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_object, hive::chain::account_index )

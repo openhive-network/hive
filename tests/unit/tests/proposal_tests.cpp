@@ -557,6 +557,114 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_max_execution_time_reached )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: db_remove_expired_governance_votes when method max execution time is reached" );
+
+    auto witness_vote = [&](std::string voter, std::string witness, const fc::ecc::private_key& key) {
+      signed_transaction tx;
+      account_witness_vote_operation op;
+      op.account = voter;
+      op.witness = witness;
+      op.approve = true;
+
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      sign( tx, key );
+      db->push_transaction( tx, 0 );
+    };
+
+    ACTORS(
+    (a00)(a01)(a02)(a03)(a04)(a05)(a06)(a07)(a08)(a09)
+    (a10)(a11)(a12)(a13)(a14)(a15)(a16)(a17)(a18)(a19)
+    (a20)(a21)(a22)(a23)(a24)(a25)(a26)(a27)(a28)(a29)
+
+    //witnesses
+    (w00)(w01)(w02)(w03)(w04)(w05)(w06)(w07)(w08)(w09)
+    (w10)(w11)(w12)(w13)(w14)(w15)(w16)(w17)(w18)(w19)
+    (w20)(w21)(w22)(w23)(w24)(w25)(w26)(w27)(w28)(w29)
+    )
+
+    struct initial_data
+    {
+      std::string account;
+      fc::ecc::private_key key;
+    };
+
+    std::vector< initial_data > users = {
+      {"a00", a00_private_key }, {"a01", a01_private_key }, {"a02", a02_private_key }, {"a03", a03_private_key }, {"a04", a04_private_key }, {"a05", a05_private_key }, {"a06", a06_private_key }, {"a07", a07_private_key }, {"a08", a08_private_key }, {"a09", a09_private_key },
+      {"a10", a10_private_key }, {"a11", a11_private_key }, {"a12", a12_private_key }, {"a13", a13_private_key }, {"a14", a14_private_key }, {"a15", a15_private_key }, {"a16", a16_private_key }, {"a17", a17_private_key }, {"a18", a18_private_key }, {"a19", a19_private_key },
+      {"a20", a20_private_key }, {"a21", a21_private_key }, {"a22", a22_private_key }, {"a23", a23_private_key }, {"a24", a24_private_key }, {"a25", a25_private_key }, {"a26", a26_private_key }, {"a27", a27_private_key }, {"a28", a28_private_key }, {"a29", a29_private_key }
+    };
+
+    //HIVE_MAX_ACCOUNT_WITNESS_VOTES is 30 for now so only 30 witnesses.
+    std::vector< initial_data > witnesses = {
+      {"w00", w00_private_key }, {"w01", w01_private_key }, {"w02", w02_private_key }, {"w03", w03_private_key }, {"w04", w04_private_key }, {"w05", w05_private_key }, {"w06", w06_private_key }, {"w07", w07_private_key }, {"w08", w08_private_key }, {"w09", w09_private_key },
+      {"w10", w10_private_key }, {"w11", w11_private_key }, {"w12", w12_private_key }, {"w13", w13_private_key }, {"w14", w14_private_key }, {"w15", w15_private_key }, {"w16", w16_private_key }, {"w17", w17_private_key }, {"w18", w18_private_key }, {"w19", w19_private_key },
+      {"w20", w20_private_key }, {"w21", w21_private_key }, {"w22", w22_private_key }, {"w23", w23_private_key }, {"w24", w24_private_key }, {"w25", w25_private_key }, {"w26", w26_private_key }, {"w27", w27_private_key }, {"w28", w28_private_key }, {"w29", w29_private_key }
+    };
+
+    for (const auto& witness : witnesses)
+    {
+      private_key_type witness_key = generate_private_key( witness.account + "_key" );
+      witness_create( witness.account, witness.key, "foo.bar", witness_key.get_public_key(), 1000 );
+    }
+
+    std::vector<int64_t> proposals;
+    proposals.reserve(users.size());
+
+    const fc::time_point_sec LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT;
+    generate_blocks(LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+
+    time_point_sec proposals_start_time = db->head_block_time();
+    time_point_sec proposals_end_time = proposals_start_time + fc::days(100);
+    std::string receiver = db->get_treasury_name();
+
+    for(const auto& user : users )
+    {
+      FUND( user.account, ASSET( "100000.000 TBD" ) );
+      proposals.push_back(create_proposal( user.account, receiver,  proposals_start_time,  proposals_end_time, asset( 100, HBD_SYMBOL ), user.key));
+    }
+
+    generate_block();
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    for (const auto& user : users)
+    {
+      for (const auto proposal : proposals)
+        vote_proposal(user.account, {proposal}, true, user.key);
+
+      for (const auto& witness : witnesses)
+        witness_vote(user.account, witness.account, user.key);
+
+      generate_block();
+    }
+
+    generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD + fc::days(1));
+
+    uint8_t loop_cnt = 0;
+
+    while(!db->get_index<witness_vote_index,by_account_witness>().empty() && !db->get_index<proposal_vote_index, by_voter_proposal>().empty())
+    {
+      generate_block();
+      ++loop_cnt;
+
+      //that means we have endless loop. In testnet MAX_EXECUTION_TIME in method is so small that loop should be repeated few times.
+      if (loop_cnt == 0)
+        break;
+    }
+
+    BOOST_REQUIRE (loop_cnt > 1);
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+
 BOOST_AUTO_TEST_CASE( generating_payments )
 {
   try

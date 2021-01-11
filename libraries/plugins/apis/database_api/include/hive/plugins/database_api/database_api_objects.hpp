@@ -503,7 +503,8 @@ struct api_account_object
     last_vote_time( a.last_vote_time ),
     post_bandwidth( a.post_bandwidth ),
     pending_claimed_accounts( a.pending_claimed_accounts ),
-    governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
+    governance_vote_expiration_ts( a.get_governance_vote_expiration_ts()),
+    expired_account_notification_sent( a.notified_expired_account())
   {
     size_t n = a.proxied_vsf_votes.size();
     proxied_vsf_votes.reserve( n );
@@ -617,6 +618,7 @@ struct api_account_object
 
   fc::optional< vector< delayed_votes_data > >  delayed_votes;
   time_point_sec governance_vote_expiration_ts;
+  bool expired_account_notification_sent;
 };
 
 struct api_owner_authority_history_object
@@ -1110,7 +1112,7 @@ FC_REFLECT( hive::plugins::database_api::api_account_object,
           (post_bandwidth)(pending_claimed_accounts)
           (is_smt)
           (delayed_votes)
-          (governance_vote_expiration_ts)
+          (governance_vote_expiration_ts)(expired_account_notification_sent)
         )
 
 FC_REFLECT( hive::plugins::database_api::api_owner_authority_history_object,
