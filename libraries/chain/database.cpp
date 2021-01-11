@@ -6601,6 +6601,7 @@ void database::remove_expired_governance_votes()
     !acc.proxy.size())
     {
       modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); });
+      max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
       continue;
     }
 
