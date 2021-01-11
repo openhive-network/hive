@@ -533,6 +533,18 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE(last_operations[4].get<expired_account_notification_operation>().account == "acc5");
       BOOST_REQUIRE(last_operations[5].get<expired_account_notification_operation>().account == "acc4");
       BOOST_REQUIRE(last_operations[6].get<expired_account_notification_operation>().account == "acc1");
+
+      BOOST_REQUIRE (db->get_account( "acc1" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE (db->get_account( "acc2" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE (db->get_account( "acc3" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE (db->get_account( "acc4" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE (db->get_account( "acc5" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE (db->get_account( "acc6" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE (db->get_account( "acc7" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE (db->get_account( "acc8" ).witnesses_voted_for == 0);
+
+      time_point_sec first_expiring_ts = db->get_index<account_index, by_governance_vote_expiration_ts>().begin()->get_governance_vote_expiration_ts();
+      BOOST_REQUIRE (first_expiring_ts == fc::time_point_sec::maximum());
     }
 
     generate_block();
@@ -556,6 +568,15 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
   }
   FC_LOG_AND_RETHROW()
 }
+
+struct expired_account_notification_operation_visitor
+{
+  typedef account_name_type result_type;
+
+  template<typename T>
+  result_type operator()( const T& op ) const { return account_name_type(); }
+  result_type operator()( const expired_account_notification_operation& op ) const { return op.account; }
+};
 
 BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_max_execution_time_reached )
 {
@@ -652,10 +673,41 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_max_execution_time_reac
 
     uint8_t loop_cnt = 0;
 
+    //first user from users and first user with expired votes from account_index are going to revote
+    bool revoted = false;
+    initial_data first_revoting_account = users[0];
+    initial_data second_revoting_account;
+
     while(!db->get_index<witness_vote_index,by_account_witness>().empty() && !db->get_index<proposal_vote_index, by_voter_proposal>().empty())
     {
       generate_block();
       ++loop_cnt;
+
+      if (!revoted)
+      {
+        account_name_type second_revoing_acc_name = db->get_index<account_index, by_governance_vote_expiration_ts>().begin()->name;
+        for (const auto& user : users)
+        {
+          if (user.account == second_revoing_acc_name)
+          {
+            second_revoting_account = user;
+            break;
+          }
+        }
+        for (const auto& witness : witnesses)
+        {
+          witness_vote(first_revoting_account.account, witness.account, first_revoting_account.key);
+          witness_vote(second_revoting_account.account, witness.account, second_revoting_account.key);
+        }
+
+        for (const auto& proposal : proposals)
+        {
+          vote_proposal(first_revoting_account.account, {proposal}, true, first_revoting_account.key);
+          vote_proposal(second_revoting_account.account, {proposal}, true, second_revoting_account.key);
+        }
+        generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD + fc::days(1));
+        revoted = true;
+      }
 
       //that means we have endless loop. In testnet MAX_EXECUTION_TIME in method is so small that loop should be repeated few times.
       if (loop_cnt == 0)
@@ -663,6 +715,39 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_max_execution_time_reac
     }
 
     BOOST_REQUIRE (loop_cnt != 0);
+
+    //we should have only one expired_account_notification_operation for every expired account except revoting account
+    std::unordered_set<std::string> expired_accounts;
+    //First and second revoting account should have two expiring account notification operation
+    uint8_t first_revoting_account_operation_cnt = 0;
+    uint8_t second_revoting_account_operation_cnt = 0;
+
+    const auto& last_operations = get_last_operations(400);   //400 operation should be enough to get all expired account notification operation for this test
+    for (const auto& op : last_operations)
+    {
+      account_name_type acc_name = op.visit(expired_account_notification_operation_visitor());
+      if (acc_name.size())
+      {
+        if (acc_name == first_revoting_account.account)
+        {
+          expired_accounts.emplace(std::string(acc_name)).second;
+          ++first_revoting_account_operation_cnt;
+        }
+        else if (acc_name == second_revoting_account.account)
+        {
+          expired_accounts.emplace(std::string(acc_name)).second;
+          ++second_revoting_account_operation_cnt;
+        }
+        else
+          BOOST_REQUIRE(expired_accounts.emplace(std::string(acc_name)).second);
+      }
+    }
+
+    BOOST_REQUIRE(first_revoting_account_operation_cnt == 2);
+    BOOST_REQUIRE(second_revoting_account_operation_cnt == 2);
+
+    for (const auto& user : users)
+      BOOST_REQUIRE(db->get_account(user.account).witnesses_voted_for == 0);
 
     validate_database();
   }

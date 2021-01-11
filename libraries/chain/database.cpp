@@ -6618,11 +6618,10 @@ void database::remove_expired_governance_votes()
       ++wvote;
       remove(current);
       ++removed_witness_votes;
-      max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
-
-      if (max_execution_time_reached)
-        break;
+      modify(acc, [&](account_object& acc) { acc.witnesses_voted_for = 0; });
     }
+
+    max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
 
     while (!max_execution_time_reached && pvote != proposal_votes.end() && pvote->voter == acc.name)
     {
