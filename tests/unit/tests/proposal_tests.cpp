@@ -402,6 +402,10 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_block();
     vote_proposal("acc3", {proposal_1}, false, acc3_private_key);
     time_point_sec expected_expiration_time_2 = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+
+    //this witness vote should'n be removed
+    generate_blocks(db->head_block_time() + fc::days(1));
+    witness_vote("acc8", "accw", acc8_private_key);
     generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
 
     {
@@ -412,18 +416,38 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE (db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE (db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE (db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE (db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
 
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
       BOOST_REQUIRE (witness_votes.count("acc1") == 2);
       BOOST_REQUIRE (witness_votes.count("acc2") == 1);
-      BOOST_REQUIRE (witness_votes.size() == 3 );
+      BOOST_REQUIRE (witness_votes.count("acc8") == 1);
+      BOOST_REQUIRE (witness_votes.size() == 4 );
 
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
       BOOST_REQUIRE (proposal_votes.empty());
     }
 
     generate_block();
+    {
+      BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+
+      const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
+      BOOST_REQUIRE (witness_votes.count("acc8") == 1);
+      BOOST_REQUIRE (witness_votes.size() == 1 );
+    }
+
+    generate_blocks(db->head_block_time() + fc::days(1));
+
+    {
+      BOOST_REQUIRE (db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
+      BOOST_REQUIRE (witness_votes.empty());
+    }
+
     vote_proposal("acc3", {proposal_1}, true, acc3_private_key);
     vote_proposal("acc3", {proposal_2}, true, acc3_private_key);
     vote_proposal("acc4", {proposal_1}, true, acc4_private_key);
@@ -439,6 +463,10 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     witness_vote("acc6", "accw", acc6_private_key, false);
     expected_expiration_time_2 = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
 
+    //this proposal vote should not be expired.
+    generate_blocks(db->head_block_time() + fc::days(1));
+    vote_proposal("acc8", {proposal_3}, true, acc8_private_key);
+
     generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
 
     {
@@ -449,7 +477,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE (db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE (db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
       BOOST_REQUIRE (db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE (db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
 
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
       BOOST_REQUIRE (witness_votes.empty());
@@ -457,10 +485,27 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
       BOOST_REQUIRE (proposal_votes.count("acc3") == 2);
       BOOST_REQUIRE (proposal_votes.count("acc4") == 1);
-      BOOST_REQUIRE (proposal_votes.size() == 3);
+      BOOST_REQUIRE (proposal_votes.count("acc8") == 1);
+      BOOST_REQUIRE (proposal_votes.size() == 4);
     }
 
     generate_block();
+    {
+      BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE (db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+
+      const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
+      BOOST_REQUIRE (proposal_votes.count("acc8") == 1);
+      BOOST_REQUIRE (proposal_votes.size() == 1);
+    }
+
+    generate_blocks(db->head_block_time() + fc::days(1));
     witness_vote("acc1", "accw2", acc1_private_key);
     vote_proposal("acc4", {proposal_1}, true, acc4_private_key);
     witness_vote("acc5", "accw", acc5_private_key);
