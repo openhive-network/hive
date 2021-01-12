@@ -403,7 +403,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     vote_proposal("acc3", {proposal_1}, false, acc3_private_key);
     time_point_sec expected_expiration_time_2 = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
 
-    //this witness vote should'n be removed
+    //this witness vote shoud not be removed
     generate_blocks(db->head_block_time() + fc::days(1));
     witness_vote("acc8", "accw", acc8_private_key);
     generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
@@ -463,7 +463,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     witness_vote("acc6", "accw", acc6_private_key, false);
     expected_expiration_time_2 = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
 
-    //this proposal vote should not be expired.
+    //this proposal vote shoud not be removed
     generate_blocks(db->head_block_time() + fc::days(1));
     vote_proposal("acc8", {proposal_3}, true, acc8_private_key);
 
