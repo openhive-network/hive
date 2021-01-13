@@ -7,12 +7,17 @@ import datetime
 import subprocess
 import time
 import sys
+import json
+from shutil import rmtree
 
 from junit_xml import TestCase, TestSuite
 
 from tests.utils.cmd_args import parser
 from tests.utils.logger import log
 from tests.utils.node_util import start_node
+
+sys.path.append("../../")
+from hive_utils.resources.configini import config
 
 test_args = []
 junit_test_cases=[]
@@ -28,6 +33,32 @@ def check_subdirs(_dir):
         error = root_error
   return error
 
+def prepare_config(args):
+  def strip_address( addr : str ):
+    return addr.split('/')[2]
+
+  cfg = config()
+
+  # required plugins
+  cfg.update_plugins(["account_by_key", "account_by_key_api", 
+    "block_api", "condenser_api", "database_api", 
+    "debug_node_api", "json_rpc", 
+    "network_broadcast_api", "p2p", 
+    "rc", "rc_api", "transaction_status", 
+    "transaction_status_api", "webserver", "witness",
+    "market_history", "market_history_api" ])
+
+  # option required by user
+  cfg.webserver_http_endpoint = strip_address(args.server_http_endpoint)
+  cfg.webserver_ws_endpoint = strip_address(args.server_rpc_endpoint)
+
+  datadir = args.hive_working_dir
+  if not os.path.exists(datadir):
+    os.mkdir(datadir)
+  blockchain_dir = os.path.join(datadir, "blockchain")
+  if os.path.exists(blockchain_dir):
+    rmtree(blockchain_dir)
+  cfg.generate(os.path.join(datadir, "config.ini"))
 
 def run_script(_test, _multiplier = 1, _interpreter = None ):
   try:
@@ -51,21 +82,24 @@ def run_script(_test, _multiplier = 1, _interpreter = None ):
 
 
 if __name__ == "__main__":
+    node = None
     if os.path.isfile(summary_file_name):
         os.remove(summary_file_name)
     with open(summary_file_name, "a+") as summary:
         summary.writelines("Cli wallet test started at {0}.\n".format(str(datetime.datetime.now())[:-7]))
     args = parser.parse_args()
     for key, val in args.__dict__.items():
-        if key in ["hive_path", "hive_working_dir", "hive_config_path"]:
+        if key in ["hive_path", "hive_working_dir", "hive_config_path", "rpc_allowip"] or isinstance(val, bool):
             continue
         if val :
             test_args.append("--"+key.replace("_","-")+ " ")
             test_args.append(val)
+    print(test_args)
     test_args = " ".join(test_args)
     try:
-        node=start_node()
-        error = True
+        prepare_config(args)
+        node = start_node(run_using_existing_data=True)
+        error = False
         if os.path.isdir("./tests"):
             error = check_subdirs("./tests")
 

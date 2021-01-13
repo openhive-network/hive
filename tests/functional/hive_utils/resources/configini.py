@@ -60,10 +60,11 @@ class config:
 
 		def proc_line(line : str):
 			values = line.split("=")
-			return values[0].strip(), values[1].strip()
+			return values[0].strip("\n\r "), values[1].strip("\n\r ")
 
 		def match_property(line : str):
-			if line.startswith('#'):
+			line = line.strip(" \n\r")
+			if line.startswith('#') or len(line) == 0:
 				return
 			key, value = proc_line(line)
 			if key in keys:
