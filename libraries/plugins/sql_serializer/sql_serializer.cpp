@@ -65,7 +65,10 @@ namespace hive
 
 					auto get_raw_escaping_charachter_methode() const
 					{
-						return [this](const char *val, const size_t s) -> fc::string { pqxx::binarystring __tmp(val, s); return std::move( this->_connection->esc_raw( __tmp.data(), __tmp.size() ) ); };
+						return [this](const char *val, const size_t s) -> fc::string { 
+							pqxx::binarystring __tmp(val, s); 
+							return std::move( this->_transaction->esc_raw( __tmp.str() ) ); 
+						};
 					}
 				};
 				using transaction_t = std::unique_ptr<transaction_repr_t>;
@@ -548,7 +551,8 @@ namespace hive
 				my->currently_caching_data->total_size += note.block_id.data_size() + sizeof(note.block_num);
 				my->currently_caching_data->blocks.emplace_back(
 						note.block_id,
-						note.block_num);
+						note.block_num,
+						note.block.timestamp);
 				my->block_vops = 0;
 
 				if( my->currently_caching_data->total_size >= max_data_length || note.block_num % my->blocks_per_commit == 0 )

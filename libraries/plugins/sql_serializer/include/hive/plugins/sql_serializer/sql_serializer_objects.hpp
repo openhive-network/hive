@@ -58,25 +58,33 @@ namespace hive
 
 				namespace processing_objects
 				{
-					struct process_block_t
+					struct process_base_t
 					{
 						using hash_t = fc::ripemd160;
 
 						hash_t hash;
 						int64_t block_number;
 
-						process_block_t() = default;
-						process_block_t(const hash_t &_hash, const int64_t _block_number) : hash{_hash}, block_number{_block_number} {}
+						process_base_t() = default;
+						process_base_t(const hash_t &_hash, const int64_t _block_number) : hash{_hash}, block_number{_block_number} {}
 					};
 
-					struct process_transaction_t : public process_block_t
+					struct process_block_t : public process_base_t
 					{
-						using process_block_t::hash_t;
+						fc::time_point_sec created_at;
+
+						process_block_t() = default;
+						process_block_t(const hash_t &_hash, const int64_t _block_number, const fc::time_point_sec _tp) : process_base_t{_hash, _block_number}, created_at{_tp} {}
+					};
+
+					struct process_transaction_t : public process_base_t
+					{
+						using process_base_t::hash_t;
 
 						int64_t trx_in_block;
 
 						process_transaction_t() = default;
-						process_transaction_t(const hash_t &_hash, const int64_t _block_number, const int64_t _trx_in_block) : process_block_t{_hash, _block_number}, trx_in_block{_trx_in_block} {}
+						process_transaction_t(const hash_t &_hash, const int64_t _block_number, const int64_t _trx_in_block) : process_base_t{_hash, _block_number}, trx_in_block{_trx_in_block} {}
 					};
 
 					struct process_operation_t
@@ -281,10 +289,9 @@ namespace hive
 						if (any_blocks++) blocks.append(",");
 
 						blocks.append("( ");
-						blocks.append(std::to_string(bop.block_number));
-						blocks.append(" , decode('");
-						blocks.append(bop.hash.str());
-						blocks.append("', 'hex') )");
+						blocks.append(std::to_string(bop.block_number) + " , '");
+						blocks.append( escape_raw(bop.hash.data(), bop.hash.data_size() ) + "', '" );
+						blocks.append(fc::string(bop.created_at) + "' )");
 
 						if(any_blocks == LOG_QUERY) log_query( blocks, &sql_dumper::get_blocks_sql );
 						return blocks.size();
