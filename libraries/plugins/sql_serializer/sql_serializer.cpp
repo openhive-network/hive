@@ -29,7 +29,7 @@ namespace hive
 
 			inline std::ostream& operator<<(std::ostream& os, const stat_t& obj)
 			{
-				return os << obj.time.count() << " us |" << obj.count << std::endl;
+				return os << obj.time.count() << " us | " << obj.count << std::endl;
 			}
 
 			using namespace hive::protocol;
@@ -333,7 +333,7 @@ namespace hive
 						auto tm = fc::time_point::now();
 						auto measure_time = [&](const char* _msg, const uint64_t count){
 							const stat_t s{ fc::time_point::now() - tm,  count};
-							std::cout << _msg << s;
+							std::cout << _msg << " " << s;
 							tm = fc::time_point::now();
 						};
 
@@ -428,7 +428,7 @@ namespace hive
 						currently_caching_data->log_size();
 						threads.back().first.reset(
 								new std::thread(cache_processor_function, std::move(currently_caching_data), &threads.back().second),
-								[](std::thread *ptr) { if(ptr){ptr->join(); delete ptr;} });
+								[](std::thread *ptr) { if(ptr){ ptr->join(); delete ptr;} });
 
 					}
 
