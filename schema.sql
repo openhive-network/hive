@@ -12,7 +12,6 @@
 DROP SCHEMA public CASCADE;
 CREATE SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS intarray;
-CREATE EXTENSION IF NOT EXISTS pg_prewarm;
 
 
 -- -- Core Tables

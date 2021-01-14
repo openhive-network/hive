@@ -21,6 +21,17 @@ namespace hive
 	{
 		namespace sql_serializer
 		{
+			struct stat_t
+			{
+				const fc::microseconds time;
+				const uint64_t count;
+			};
+
+			inline std::ostream& operator<<(std::ostream& os, const stat_t& obj)
+			{
+				return os << obj.time.count() << " us |" << obj.count << std::endl;
+			}
+
 			using namespace hive::protocol;
 			using work = pqxx::work;
 			using namespace hive::plugins::sql_serializer::PSQL;
@@ -61,6 +72,8 @@ namespace hive
 
 				struct postgress_connection_holder
 				{
+					uint max_connections = 1u;
+
 					explicit postgress_connection_holder(const fc::string &url)
 							: connection_string{url} 
 					{
@@ -144,7 +157,6 @@ namespace hive
 					using mutex_t = std::shared_timed_mutex;
 
 					fc::string connection_string;
-					uint max_connections = 1u;
 					std::atomic_uint connections;
 					mutex_t mtx{};
 					std::condition_variable_any cv;
@@ -302,7 +314,6 @@ namespace hive
 
 						connection.exec_no_transaction(schema_str);
 						connection.exec_no_transaction(PSQL::get_all_type_definitions());
-						connection.exec_no_transaction("SELECT pg_prewarm('hive_operation_types')");
 
 						null_permlink = connection.get_single_value<fc::string>( "SELECT permlink FROM hive_permlink_data WHERE id=0" );
 						null_account = connection.get_single_value<fc::string>( "SELECT name FROM hive_accounts WHERE id=0" );
@@ -320,35 +331,33 @@ namespace hive
 					bool process_and_send_data(PSQL::sql_dumper &dumper, const cached_data_t &data, transaction_t& _transaction)
 					{
 						auto tm = fc::time_point::now();
-						auto measure_time = [&](const char* _msg){
-							return;
-							mylog(generate([&](fc::string& ss){
-								ss += fc::string{"Elapsed time for "} + _msg + ": " + std::to_string(( fc::time_point::now() - tm ).count()) + "\n";
-							}).c_str());
+						auto measure_time = [&](const char* _msg, const uint64_t count){
+							const stat_t s{ fc::time_point::now() - tm,  count};
+							std::cout << _msg << s;
 							tm = fc::time_point::now();
 						};
 
 						for(const auto& block : data.blocks) dumper.process_block(block);
 						if(!send_data( dumper.get_blocks_sql(), _transaction )) return false;
-						measure_time("processing and sending blocks");
+						measure_time("processing and sending blocks", data.blocks.size());
 
 						for(const auto& trx : data.transactions) dumper.process_transaction(trx);
 						if(!send_data( dumper.get_transaction_sql(), _transaction )) return false;
-						measure_time("processing and sending transactions");
+						measure_time("processing and sending transactions", data.transactions.size());
 
 						for(const auto& op : data.operations) dumper.process_operation(op);
-						measure_time("processing operations");
+						measure_time("processing operations", data.operations.size());
 
 						for(const auto& vop : data.virtual_operations) dumper.process_virtual_operation(vop);
-						measure_time("processing virtual operations");
+						measure_time("processing virtual operations", data.virtual_operations.size());
 
 						upload_caches(_transaction, dumper);
 
 						if(!send_data( dumper.get_operations_sql(), _transaction )) return false;
-						measure_time("sending operations");
+						measure_time("sending operations", data.operations.size());
 
 						if(!send_data( dumper.get_virtual_operations_sql(), _transaction )) return false;
-						measure_time("sending virtual operations");
+						measure_time("sending virtual operations", data.virtual_operations.size());
 
 						return true;
 					}
@@ -547,7 +556,7 @@ namespace hive
 					my->push_currently_cached_data(prereservation_size);
 				}
 
-				if(my->threads.size() > 100 ) my->join_ready_threads();
+				if(my->threads.size() > my->connection.max_connections ) my->join_ready_threads();
 			}
 
 			void sql_serializer_plugin::handle_transaction(const hive::protocol::transaction_id_type &hash, const int64_t block_num, const int64_t trx_in_block)
