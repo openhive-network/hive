@@ -160,9 +160,9 @@ namespace hive
 					using mutex_t = std::shared_timed_mutex;
 
 					fc::string connection_string;
-					std::atomic_uint connections;
-					mutex_t mtx{};
-					std::condition_variable_any cv;
+					// std::atomic_uint connections{};
+					// mutex_t mtx{};
+					// std::condition_variable_any cv{};
 
 					void set_max_transaction_count()
 					{
@@ -181,15 +181,15 @@ namespace hive
 
 					void register_connection()
 					{
-						std::shared_lock<mutex_t> lck{ mtx };
-						cv.wait(lck, [&]() -> bool { return connections.load() < max_connections; });
-						connections++;
+						// std::shared_lock<mutex_t> lck{ mtx };
+						// cv.wait(lck, [&]() -> bool { return connections.load() < max_connections; });
+						// connections++;
 					}
 
 					void unregister_connection()
 					{
-						connections--;
-						cv.notify_one();
+						// connections--;
+						// cv.notify_one();
 					}
 
 					bool sql_safe_execution(const std::function<void()> &f, const char* msg = nullptr)
@@ -242,8 +242,8 @@ namespace hive
 					{
 						return;
 						mylog(generate([&](fc::string& ss){ 
-							ss = msg + ": ";
-							ss += "blocks: " + std::to_string(blocks.size());
+							ss = msg + ":";
+							ss += " blocks: " + std::to_string(blocks.size());
 							ss += " trx: " + std::to_string(transactions.size());
 							ss += " operations: " + std::to_string(operations.size());
 							ss += " vops: " + std::to_string(virtual_operations.size());
@@ -375,7 +375,7 @@ namespace hive
 						int cnt = 0;
 						threads.remove_if([force, &cnt](const thread_with_status& th){ if(force || th.second){ cnt++; return true; } else return false; });
 						return;
-						mylog(generate([&](fc::string& ss){ ss += "currently running " + std::to_string(threads.size()) + " threads. Joined: " + std::to_string(cnt); }).c_str());
+						mylog(generate([&](fc::string& ss){ ss += "currently running " + std::to_string(threads.size()) + " threads; joined: " + std::to_string(cnt); }).c_str());
 					}
 
 					void switch_constraints(const bool active)
@@ -395,7 +395,7 @@ namespace hive
 						auto trx = connection.start_transaction();
 						for (const auto &idx : constrainsts)
 						{
-							FC_ASSERT( connection.exec_transaction(trx, idx.second ), "failed when a dropping constraint" );
+							FC_ASSERT( connection.exec_transaction(trx, idx.second ), "failed when dropping constraint" );
 							if(active && !connection.exec_transaction(trx, idx.first ))
 							{
 								connection.abort_transaction(trx);
@@ -415,7 +415,7 @@ namespace hive
 							transaction_t trx = this->connection.start_transaction();
 							PSQL::sql_dumper dumper{_db, trx->get_escaping_charachter_methode(), trx->get_raw_escaping_charachter_methode(), null_permlink, null_account};
 
-							// sending
+							// processing and sending
 							if (!this->process_and_send_data(dumper, *input, trx))
 							{
 								this->connection.abort_transaction(trx);
@@ -427,12 +427,7 @@ namespace hive
 							}
 						};
 
-						threads.emplace_back(nullptr, false);
-						currently_caching_data->log_size();
-						threads.back().first.reset(
-								new std::thread(cache_processor_function, std::move(currently_caching_data), &threads.back().second),
-								[](std::thread *ptr) { if(ptr){ ptr->join(); delete ptr;} });
-
+						cache_processor_function(std::move(currently_caching_data), nullptr);
 					}
 
 					void push_currently_cached_data(const size_t reserve)
