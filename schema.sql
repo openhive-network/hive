@@ -99,3 +99,6 @@ LANGUAGE 'plpgsql';
 -- SPECIAL VALUES
 INSERT INTO hive_permlink_data VALUES(0, '');	-- This is permlink referenced by empty permlink arrays
 INSERT INTO hive_accounts VALUES(0, '');	-- This is account referenced by empty participants arrays
+
+
+SELECT COUNT(*) FROM hive_blocks

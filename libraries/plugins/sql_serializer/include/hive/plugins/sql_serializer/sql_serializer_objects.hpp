@@ -302,12 +302,9 @@ namespace hive
 						if (any_transactions++) transactions.append(",");
 
 						transactions.append("( ");
-						transactions.append(std::to_string(top.block_number));
-						transactions.append(" , ");
-						transactions.append(std::to_string(top.trx_in_block));
-						transactions.append(" , decode('");
-						transactions.append(top.hash.str());
-						transactions.append("', 'hex' ) )");
+						transactions.append(std::to_string(top.block_number) + " , ");
+						transactions.append(std::to_string(top.trx_in_block) + " , '");
+						transactions.append(escape_raw(top.hash.data(), top.hash.data_size() ) + "' )");
 
 						if(any_transactions == LOG_QUERY) log_query( transactions, &sql_dumper::get_transaction_sql );
 						return transactions.size();
