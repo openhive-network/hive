@@ -8,6 +8,9 @@
 #include <fstream>
 #include <thread>
 
+// can be removed with TODO
+#include "../fc/include/fc/macros.hpp"
+
 namespace appbase {
 
 class quoted
@@ -261,7 +264,7 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
 
       data_dir = data_dir / app_dir.str();
 
-      #pragma message( "TODO: Remove this check for Hive release 0.20.1+" )
+      FC_TODO( "Remove this check for Hive release 0.20.1+" )
       bfs::path old_dir = bfs::current_path() / "witness_node_data_dir";
       if( bfs::exists( old_dir ) )
       {
