@@ -172,7 +172,6 @@ namespace hive
 					// returns current width of stream
 					typedef size_t result_type;
 
-					const hive::chain::database &db;
 					const escape_function_t escape;
 					const escape_raw_function_t escape_raw;
 
@@ -187,8 +186,8 @@ namespace hive
 					cache_contatiner_t permlink_cache;
 					cache_contatiner_t account_cache;
 
-					sql_dumper(const hive::chain::database &_db, const escape_function_t _escape, const escape_raw_function_t _escape_raw, const fc::string &_null_permlink, const fc::string &_null_account)
-							: db{_db}, escape{_escape}, escape_raw{ _escape_raw }, null_permlink{"'" + _null_permlink + "'"}, null_account{"'" + _null_permlink + "'"} {}
+					sql_dumper(const escape_function_t _escape, const escape_raw_function_t _escape_raw, const fc::string &_null_permlink, const fc::string &_null_account)
+							: escape{_escape}, escape_raw{ _escape_raw }, null_permlink{"'" + _null_permlink + "'"}, null_account{"'" + _null_permlink + "'"} {}
 
 					using __fun_t = fc::string(sql_dumper::*)();
 					void log_query( fc::string& target, __fun_t fun )
