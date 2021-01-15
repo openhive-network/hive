@@ -227,6 +227,10 @@ class static_variant {
     }
 
 public:
+
+    /// Expose it outside for further processing of specified Types.
+    using type_infos = impl::type_info<Types...>;
+
     template<typename X>
     struct tag
     {

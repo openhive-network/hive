@@ -134,13 +134,13 @@ struct smt_setup_evaluator_visitor
 void smt_setup_evaluator::do_apply( const smt_setup_operation& o )
 {
   FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
-#pragma message ("TODO: Adjust assertion below and add/modify negative tests appropriately.")
+FC_TODO("Adjust assertion below and add/modify negative tests appropriately.")
   const auto* _token = _db.find< smt_token_object, by_symbol >( o.symbol );
   FC_ASSERT( _token, "SMT ${ac} not elevated yet.",("ac", o.control_account) );
 
   _db.modify(  *_token, [&]( smt_token_object& token )
   {
-#pragma message ("TODO: Add/modify test to check the token phase correctly set.")
+FC_TODO("Add/modify test to check the token phase correctly set.")
     token.phase = smt_phase::setup_completed;
     token.control_account = o.control_account;
     token.max_supply = o.max_supply;

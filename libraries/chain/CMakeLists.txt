@@ -27,6 +27,7 @@ add_library( hive_chain
 
              util/rd.cpp
              util/reward.cpp
+             util/extractors.cpp
              util/impacted.cpp
              util/advanced_benchmark_dumper.cpp
              util/smt_token.cpp
