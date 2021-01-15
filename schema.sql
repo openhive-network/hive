@@ -1,18 +1,32 @@
--- CREATE DATABASE block_log_3;
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+-- -- -- -- -- -- -- -- W A R N I N G- -- -- -- -- -- -- -- -- 
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+-- Because of security reasons, queries cannot be executed  -- 
+-- one after another sepraeted with semicolon.              -- 
+-- Use `normalize_schema.py <THIS FILE> <NEW FILE>          -- 
+-- and set `psql-path-to-schema` to <NEW FILE>              -- 
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+
+-- -- Create Database
+-- CREATE DATABASE block_log;
 
 -- -- Backups
--- CREATE DATABASE block_log_back
--- WITH TEMPLATE block_log_3;
--- DROP DATABASE block_log_back;
--- DROP DATABASE block_log_3;
--- CREATE DATABASE block_log_3
--- WITH TEMPLATE block_log_back;
+-- -- Delete backup
+-- DROP DATABASE IF EXISTS block_log_back;
+-- -- Create backup
+-- CREATE DATABASE block_log_back WITH TEMPLATE block_log;
+-- -- Restore backup
+-- DROP DATABASE block_log;
+-- CREATE DATABASE block_log WITH TEMPLATE block_log_back;
 
 -- -- Reset
+-- -- NOTE:
+-- -- This section may require additional rights
+-- -- If user, that is in connection string doesn't have proper acces rights
+-- -- Execute theese commands with proper rights, and comment following 3 lines
 DROP SCHEMA public CASCADE;
 CREATE SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS intarray;
-
 
 -- -- Core Tables
 CREATE TABLE IF NOT EXISTS hive_blocks (
@@ -38,8 +52,6 @@ CREATE TABLE IF NOT EXISTS hive_operation_types (
   "is_virtual" boolean NOT NULL,
   CONSTRAINT hive_operation_types_pkey PRIMARY KEY ("id")
 );
--- -- Cache whole table, as this will be very often accessed and it's quite small
--- -- TODO: fill whole table on start
 
 CREATE TABLE IF NOT EXISTS hive_permlink_data (
   "id" serial,
@@ -73,7 +85,7 @@ CREATE TABLE IF NOT EXISTS hive_virtual_operations (
   "id" serial,
   "block_num" integer NOT NULL,
   "trx_in_block" smallint NOT NULL,
-  -- for `trx_in_block` = 1, `op_pos` stands for order
+  -- for `trx_in_block` = -1, `op_pos` stands for order
   "op_pos" integer NOT NULL,
   "op_type_id" smallint NOT NULL,
   "body" text DEFAULT NULL,
@@ -82,23 +94,8 @@ CREATE TABLE IF NOT EXISTS hive_virtual_operations (
   CONSTRAINT hive_virtual_operations_pkey PRIMARY KEY ("id")
 );
 
-DROP FUNCTION IF EXISTS insert_operation_type_id;
-CREATE OR REPLACE FUNCTION insert_operation_type_id (integer, text, boolean) RETURNS integer AS $func$
-DECLARE
-	tmp INTEGER;
-BEGIN
-	SELECT id INTO tmp FROM hive_operation_types WHERE "name" = $2;
-	IF NOT FOUND THEN
-			INSERT INTO hive_operation_types VALUES ($1, $2, $3) RETURNING id INTO tmp;
-	END IF;
-	RETURN (SELECT tmp);
-END
-$func$
-LANGUAGE 'plpgsql';
-
 -- SPECIAL VALUES
-INSERT INTO hive_permlink_data VALUES(0, '');	-- This is permlink referenced by empty permlink arrays
-INSERT INTO hive_accounts VALUES(0, '');	-- This is account referenced by empty participants arrays
-
-
-SELECT COUNT(*) FROM hive_blocks
+-- This is permlink referenced by empty permlink arrays
+INSERT INTO hive_permlink_data VALUES(0, '');
+-- This is account referenced by empty participants arrays
+INSERT INTO hive_accounts VALUES(0, '');
