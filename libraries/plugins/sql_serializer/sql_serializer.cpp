@@ -12,6 +12,8 @@
 #include <shared_mutex>
 #include <thread>
 
+// #include <vendor/rocksdb/util/threadpool_imp.h>
+
 // C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
 #include <pqxx/pqxx>
 
@@ -21,6 +23,8 @@ namespace hive
 	{
 		namespace sql_serializer
 		{
+			// using ThreadPool = rocksdb::
+
 			struct stat_t
 			{
 				const fc::microseconds time;
@@ -160,9 +164,9 @@ namespace hive
 					using mutex_t = std::shared_timed_mutex;
 
 					fc::string connection_string;
-					std::atomic_uint connections;
+					std::atomic_uint connections{ 0 };
 					mutex_t mtx{};
-					std::condition_variable_any cv;
+					std::condition_variable_any cv{};
 
 					void set_max_transaction_count()
 					{
