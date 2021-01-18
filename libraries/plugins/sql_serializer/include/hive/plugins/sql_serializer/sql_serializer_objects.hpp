@@ -25,6 +25,9 @@
 #include <hive/chain/account_object.hpp>
 #include "type_extractor_processor.hpp"
 
+#include <hive/utilities/postgres_connection_holder.hpp>
+// #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
+
 namespace hive
 {
 	namespace plugins
@@ -162,13 +165,6 @@ namespace hive
 
 				}; // namespace processing_objects
 
-				inline fc::string generate(std::function<void(fc::string &)> fun)
-				{
-					fc::string ss;
-					fun(ss);
-					return std::move(ss);
-				}
-
 				struct is_virtual_visitor
 				{
 					using result_type = bool;
@@ -206,7 +202,7 @@ namespace hive
 						return fc::string{};
 					else
 					{
-						return generate([&](fc::string &ss) {
+						return hive::utilities::generate([&](fc::string &ss) {
 							ss.append("INSERT INTO hive_operation_types VALUES ");
 							for (auto it = result.begin(); it != result.end(); it++)
 							{

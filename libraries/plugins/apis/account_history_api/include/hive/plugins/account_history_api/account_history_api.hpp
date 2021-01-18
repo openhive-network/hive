@@ -19,6 +19,17 @@ struct api_operation_object
   api_operation_object() {}
 
   template< typename T >
+  api_operation_object( const T& op_obj, bool/*not used, but necessary so as to distinguish constructors*/ ) :
+    trx_id( op_obj.trx_id ),
+    block( op_obj.block ),
+    trx_in_block( op_obj.trx_in_block ),
+    virtual_op( op_obj.virtual_op ),
+    timestamp( op_obj.timestamp ),
+    op( op_obj.op )
+  {
+  }
+
+  template< typename T >
   api_operation_object( const T& op_obj ) :
     trx_id( op_obj.trx_id ),
     block( op_obj.block ),
