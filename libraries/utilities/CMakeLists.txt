@@ -17,6 +17,7 @@ set(sources
    words.cpp
    logging_config.cpp
    database_configuration.cpp
+   postgres_connection_holder.cpp
    ${HEADERS})
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/git_revision.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp" @ONLY)
