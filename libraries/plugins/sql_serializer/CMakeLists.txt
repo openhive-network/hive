@@ -9,7 +9,7 @@ add_library( sql_serializer_plugin
              ${HEADERS}
            )
 
-target_link_libraries( sql_serializer_plugin chain_plugin hive_chain hive_protocol ${PQXX_LIB} ${PQ_LIB} )
+target_link_libraries( sql_serializer_plugin chain_plugin hive_chain hive_protocol condenser_api_plugin ${PQXX_LIB} ${PQ_LIB} )
 target_include_directories( sql_serializer_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
