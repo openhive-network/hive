@@ -227,19 +227,19 @@ namespace detail
     FC_ASSERT( args.size() == 1 || args.size() == 2, "Expected 1-2 arguments, was ${n}", ("n", args.size()) );
     FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
 
-    auto ops = _account_history_api->get_ops_in_block( { args[0].as< uint32_t >(), args[1].as< bool >() } ).ops;
-    get_ops_in_block_return result;
-
     legacy_operation l_op;
     legacy_operation_conversion_visitor visitor( l_op );
 
-    for( auto& op_obj : ops )
+    auto filter = [ &l_op, &visitor ]( const hive::protocol::operation& op )
     {
-      if( op_obj.op.visit( visitor) )
-      {
-        result.push_back( api_operation_object( op_obj, visitor.l_op ) );
-      }
-    }
+      return op.visit( visitor );
+    };
+
+    auto ops = _account_history_api->get_ops_in_block_filter( { args[0].as< uint32_t >(), args[1].as< bool >() }, filter ).ops;
+    get_ops_in_block_return result;
+
+    for( auto& op_obj : ops )
+      result.push_back( api_operation_object( op_obj, visitor.l_op ) );
 
     return result;
   }
@@ -1049,20 +1049,20 @@ namespace detail
     if(args.size() >= 5)
       operation_filter_high = args[4].as<uint64_t>();
 
-    auto history = _account_history_api->get_account_history({ args[0].as< account_name_type >(), args[1].as< uint64_t >(), args[2].as< uint32_t >(),
-      include_reversible, operation_filter_low, operation_filter_high } ).history;
-    get_account_history_return result;
-
     legacy_operation l_op;
     legacy_operation_conversion_visitor visitor( l_op );
 
-    for( auto& entry : history )
+    auto filter = [ &l_op, &visitor ]( const hive::protocol::operation& op )
     {
-      if( entry.second.op.visit( visitor ) )
-      {
-        result.emplace( entry.first, api_operation_object( entry.second, visitor.l_op ) );
-      }
-    }
+      return op.visit( visitor );
+    };
+
+    auto history = _account_history_api->get_account_history_filter({ args[0].as< account_name_type >(), args[1].as< uint64_t >(), args[2].as< uint32_t >(),
+      include_reversible, operation_filter_low, operation_filter_high }, filter ).history;
+    get_account_history_return result;
+
+    for( auto& entry : history )
+      result.emplace( entry.first, api_operation_object( entry.second, visitor.l_op ) );
 
     return result;
   }
