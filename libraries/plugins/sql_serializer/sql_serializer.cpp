@@ -1,4 +1,5 @@
 #include <hive/plugins/sql_serializer/sql_serializer_plugin.hpp>
+#include <hive/plugins/condenser_api/condenser_api_legacy_operations.hpp>
 
 #include <hive/chain/util/impacted.hpp>
 #include <hive/protocol/config.hpp>
@@ -18,6 +19,28 @@
 // C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
 #include <pqxx/pqxx>
 
+namespace fc
+{
+	struct from_operation_sql
+	{
+		variant& var;
+		from_operation_sql( variant& dv )
+			: var( dv ) {}
+
+		typedef void result_type;
+		template<typename T> void operator()( const T& v )const
+		{
+			var = variant( v );
+		}
+	};
+
+	void to_variant( std::shared_ptr<hive::plugins::condenser_api::legacy_operation> var,  fc::variant& vo )
+	{
+		FC_ASSERT( var.get() );
+		var->visit( from_operation_sql( vo ) );
+	}
+}
+
 namespace hive
 {
 	namespace plugins
@@ -28,6 +51,8 @@ namespace hive
 			using num_t = std::atomic<uint64_t>;
 			using duration_t = fc::microseconds;
 			using stat_time_t = std::atomic<duration_t>;
+			using hive::plugins::condenser_api::legacy_operation;
+			using hive::plugins::condenser_api::legacy_operation_conversion_visitor;
 
 			inline void operator+=( stat_time_t& atom, const duration_t& dur )
 			{
@@ -620,7 +645,13 @@ namespace hive
 			void sql_serializer_plugin::on_post_apply_operation(const operation_notification &note)
 			{
 				const bool is_virtual = note.op.visit(PSQL::is_virtual_visitor{});
-				fc::string deserialized_op = fc::json::to_string(note.op);
+
+				// deserialization
+				std::shared_ptr<legacy_operation> lop{ new legacy_operation{} };
+				note.op.visit( legacy_operation_conversion_visitor{*lop} );
+				fc::string deserialized_op = fc::json::to_string(lop);
+				lop.reset();
+
 				detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
 				cdtf->total_size += deserialized_op.size() + sizeof(note);
 				if (is_virtual)
