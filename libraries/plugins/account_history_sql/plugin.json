@@ -1,0 +1,5 @@
+{
+   "plugin_name": "account_history_sql",
+   "plugin_namespace": "account_history_sql",
+   "plugin_project": "account_history_sql_plugin"
+}

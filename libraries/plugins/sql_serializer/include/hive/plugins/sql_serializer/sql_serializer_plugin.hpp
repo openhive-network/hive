@@ -37,17 +37,22 @@ class sql_serializer_plugin final : public plugin<sql_serializer_plugin>
       void on_pre_apply_operation(const operation_notification &note);
       void on_pre_apply_block(const block_notification& note);
       void on_post_apply_block(const block_notification &note);
+      void on_irreversible_block(uint32_t block_num);
 
       virtual void set_program_options(options_description& cli, options_description& cfg ) override;
       virtual void plugin_initialize(const variables_map& options) override;
       virtual void plugin_startup() override;
       virtual void plugin_shutdown() override;
 
+      std::mutex& get_currently_persisted_irreversible_mtx();
+      std::atomic_uint& get_currently_persisted_irreversible_block();
+      std::condition_variable& get_currently_persisted_irreversible_cv();
+
   private:
 
       std::unique_ptr<detail::sql_serializer_plugin_impl> my;
 
-      void handle_transactions(const vector<hive::protocol::signed_transaction>& transactions, const int64_t block_num );
+      void handle_transactions(const vector<hive::protocol::signed_transaction>& transactions, const uint32_t block_num );
 };
 
 } } } //hive::plugins::sql_serializer

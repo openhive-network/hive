@@ -11,6 +11,11 @@
 
 namespace hive { namespace plugins { namespace account_history {
 
+namespace types
+{
+    using filter_type = std::function< bool( const hive::protocol::operation& op ) >;
+    using filter_type_opt = fc::optional< filter_type >;
+}
 
 namespace detail { class abstract_account_history_api_impl; }
 
@@ -19,24 +24,54 @@ struct api_operation_object
   api_operation_object() {}
 
   template< typename T >
+  api_operation_object( T& op_obj, fc::variant&& op_content ) :
+    trx_id( std::move( op_obj.trx_id ) ),
+    block( std::move( op_obj.block ) ),
+    trx_in_block( std::move( op_obj.trx_in_block ) ),
+    virtual_op( std::move( op_obj.virtual_op ) ),
+    timestamp( std::move( op_obj.timestamp ) ),
+    op( op_content )
+  {
+  }
+
+  template< typename T >
   api_operation_object( const T& op_obj ) :
     trx_id( op_obj.trx_id ),
     block( op_obj.block ),
     trx_in_block( op_obj.trx_in_block ),
     virtual_op( op_obj.virtual_op ),
-    timestamp( op_obj.timestamp )
+    timestamp( op_obj.timestamp ),
+    op( get_variant( op_obj.serialized_op ) )
   {
-    op = fc::raw::unpack_from_buffer< hive::protocol::operation >( op_obj.serialized_op );
+  }
+
+  template< typename Source >
+  static hive::protocol::operation get_op( const Source& serialized_op )
+  {
+    return fc::raw::unpack_from_buffer< hive::protocol::operation >( serialized_op );
+  }
+
+  template< typename Source >
+  static fc::variant get_variant( const Source& serialized_op )
+  {
+    return get_variant( std::move( get_op( serialized_op ) ) );
+  }
+
+  static fc::variant get_variant( const hive::protocol::operation& _op )
+  {
+    fc::variant res;
+    to_variant( _op, res );
+    return res;
   }
 
   hive::protocol::transaction_id_type trx_id;
-  uint32_t                               block = 0;
-  uint32_t                               trx_in_block = 0;
-  uint32_t                               op_in_trx = 0;
-  uint32_t                               virtual_op = 0;
-  uint64_t                               operation_id = 0;
-  fc::time_point_sec                     timestamp;
-  hive::protocol::operation             op;
+  uint32_t                            block = 0;
+  uint32_t                            trx_in_block = 0;
+  uint32_t                            op_in_trx = 0;
+  uint32_t                            virtual_op = 0;
+  uint64_t                            operation_id = 0;
+  fc::time_point_sec                  timestamp;
+  fc::variant                         op;
 
   bool operator<( const api_operation_object& obj ) const
   {
@@ -180,6 +215,10 @@ class account_history_api
 
   private:
     std::unique_ptr< detail::abstract_account_history_api_impl > my;
+
+  public:
+    get_ops_in_block_return get_ops_in_block_filter( const get_ops_in_block_args&, types::filter_type_opt );
+    get_account_history_return get_account_history_filter( const get_account_history_args&, types::filter_type_opt filter );
 };
 
 } } } // hive::plugins::account_history
@@ -188,7 +227,7 @@ FC_REFLECT( hive::plugins::account_history::api_operation_object,
   (trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(op)(operation_id) )
 
 FC_REFLECT( hive::plugins::account_history::get_ops_in_block_args,
-  (block_num)(only_virtual) )
+  (block_num)(only_virtual)(include_reversible) )
 
 FC_REFLECT( hive::plugins::account_history::get_ops_in_block_return,
   (ops) )

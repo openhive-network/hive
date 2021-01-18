@@ -2,8 +2,11 @@
 #include <hive/plugins/account_history_api/account_history_api.hpp>
 
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
+#include <hive/plugins/account_history_sql/account_history_sql_plugin.hpp>
 
 namespace hive { namespace plugins { namespace account_history {
+
+using filter_type_opt = types::filter_type_opt;
 
 namespace detail {
 
@@ -18,11 +21,19 @@ class abstract_account_history_api_impl
     virtual get_account_history_return get_account_history( const get_account_history_args& ) = 0;
     virtual enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) = 0;
 
+    virtual get_ops_in_block_return get_ops_in_block_filter( const get_ops_in_block_args&, filter_type_opt filter ) = 0;
+    virtual get_account_history_return get_account_history_filter( const get_account_history_args&, filter_type_opt filter ) = 0;
+
     chain::database& _db;
 };
 
 class account_history_api_chainbase_impl : public abstract_account_history_api_impl
 {
+  private:
+
+    get_ops_in_block_return _get_ops_in_block( const get_ops_in_block_args&, filter_type_opt filter = filter_type_opt() );
+    get_account_history_return _get_account_history( const get_account_history_args&, filter_type_opt filter = filter_type_opt() );
+
   public:
     account_history_api_chainbase_impl() : abstract_account_history_api_impl() {}
     ~account_history_api_chainbase_impl() {}
@@ -31,9 +42,12 @@ class account_history_api_chainbase_impl : public abstract_account_history_api_i
     get_transaction_return get_transaction( const get_transaction_args& ) override;
     get_account_history_return get_account_history( const get_account_history_args& ) override;
     enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) override;
+
+    get_ops_in_block_return get_ops_in_block_filter( const get_ops_in_block_args& args, filter_type_opt filter ) override;
+    get_account_history_return get_account_history_filter( const get_account_history_args& args, filter_type_opt filter ) override;
 };
 
-DEFINE_API_IMPL( account_history_api_chainbase_impl, get_ops_in_block )
+get_ops_in_block_return account_history_api_chainbase_impl::_get_ops_in_block( const get_ops_in_block_args& args, filter_type_opt filter )
 {
   FC_ASSERT(args.include_reversible.valid() == false, "Supported only in AH-Rocksdb plugin");
 
@@ -46,14 +60,35 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_ops_in_block )
 
     while( itr != idx.end() && itr->block == args.block_num )
     {
-      api_operation_object temp = *itr;
-      if( !args.only_virtual || is_virtual_operation( temp.op ) )
-        result.ops.emplace( std::move( temp ) );
+      auto _op = api_operation_object::get_op( itr->serialized_op );
+      api_operation_object temp = api_operation_object( *itr, std::move( api_operation_object::get_variant( _op ) ) );
+      if( !args.only_virtual || temp.virtual_op )
+      {
+        if( filter.valid() )
+        {
+          if( (*filter)( _op ) )
+            result.ops.emplace( std::move( temp ) );
+        }
+        else
+        {
+          result.ops.emplace( std::move( temp ) );
+        }
+      }
       ++itr;
     }
 
     return result;
   });
+}
+
+get_ops_in_block_return account_history_api_chainbase_impl::get_ops_in_block_filter( const get_ops_in_block_args& args, filter_type_opt filter )
+{
+  return _get_ops_in_block( args, filter );
+}
+
+DEFINE_API_IMPL( account_history_api_chainbase_impl, get_ops_in_block )
+{
+  return _get_ops_in_block( args );
 }
 
 DEFINE_API_IMPL( account_history_api_chainbase_impl, get_transaction )
@@ -89,7 +124,7 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_transaction )
 #endif
 }
 
-DEFINE_API_IMPL( account_history_api_chainbase_impl, get_account_history )
+get_account_history_return account_history_api_chainbase_impl::_get_account_history( const get_account_history_args& args, filter_type_opt filter )
 {
   FC_ASSERT( args.limit <= 1000, "limit of ${l} is greater than maxmimum allowed", ("l",args.limit) );
   FC_ASSERT( args.start >= args.limit-1, "start must be greater than or equal to limit-1 (start is 0-based index)" );
@@ -111,7 +146,20 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_account_history )
         break;
       if( n >= args.limit )
         break;
-      result.history[ itr->sequence ] = _db.get( itr->op );
+
+      const chain::operation_object& op_obj = _db.get( itr->op );
+      auto _op = api_operation_object::get_op( op_obj.serialized_op );
+      api_operation_object api_obj( op_obj, std::move( api_operation_object::get_variant( _op ) ) );
+
+      if( filter.valid() )
+      {
+        if( (*filter)( _op ) )
+          result.history[ itr->sequence ] = std::move( api_obj );
+      }
+      else
+      {
+        result.history[ itr->sequence ] = std::move( api_obj );
+      }
       ++itr;
       ++n;
     }
@@ -120,13 +168,179 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_account_history )
   });
 }
 
+get_account_history_return account_history_api_chainbase_impl::get_account_history_filter( const get_account_history_args& args, filter_type_opt filter )
+{
+  return _get_account_history( args, filter );
+}
+
+DEFINE_API_IMPL( account_history_api_chainbase_impl, get_account_history )
+{
+  return _get_account_history( args );
+}
+
 DEFINE_API_IMPL( account_history_api_chainbase_impl, enum_virtual_ops )
 {
   FC_ASSERT( false, "This API is not supported for account history backed by Chainbase" );
 }
 
+class account_history_api_sql_impl : public abstract_account_history_api_impl
+{
+  private:
+
+    get_ops_in_block_return _get_ops_in_block( const get_ops_in_block_args&, filter_type_opt filter = filter_type_opt() );
+    get_account_history_return _get_account_history( const get_account_history_args&, filter_type_opt filter = filter_type_opt() );
+
+  public:
+    account_history_api_sql_impl() :
+    abstract_account_history_api_impl(), _dataSource( appbase::app().get_plugin< hive::plugins::account_history_sql::account_history_sql_plugin >() ) {}
+    ~account_history_api_sql_impl() {}
+
+    get_ops_in_block_return get_ops_in_block( const get_ops_in_block_args& ) override;
+    get_transaction_return get_transaction( const get_transaction_args& ) override;
+    get_account_history_return get_account_history( const get_account_history_args& ) override;
+    enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) override;
+
+    get_ops_in_block_return get_ops_in_block_filter( const get_ops_in_block_args& args, filter_type_opt filter ) override;
+    get_account_history_return get_account_history_filter( const get_account_history_args&, filter_type_opt filter ) override;
+
+    const account_history_sql::account_history_sql_plugin& _dataSource;
+};
+
+get_ops_in_block_return account_history_api_sql_impl::_get_ops_in_block( const get_ops_in_block_args& args, filter_type_opt filter )
+{
+  get_ops_in_block_return result;
+
+  _dataSource.get_ops_in_block( [ &result, &filter ] ( account_history_sql::account_history_sql_object& op )
+                                {
+                                  api_operation_object temp( op, std::move( op.op ) );
+                                  temp.operation_id = op.operation_id;
+                                  if( filter.valid() )
+                                  {
+                                    auto _op = op.get_op();
+                                    if( (*filter)( _op ) )
+                                      result.ops.emplace( std::move( temp ) );
+                                  }
+                                  else
+                                  {
+                                    result.ops.emplace( std::move( temp ) );
+                                  }
+                                },
+                                args.block_num, args.only_virtual, args.include_reversible );
+
+  return result;
+}
+
+get_ops_in_block_return account_history_api_sql_impl::get_ops_in_block_filter( const get_ops_in_block_args& args, filter_type_opt filter )
+{
+  return _get_ops_in_block( args, filter );
+}
+
+DEFINE_API_IMPL( account_history_api_sql_impl, get_ops_in_block )
+{
+  return _get_ops_in_block( args );
+}
+
+DEFINE_API_IMPL( account_history_api_sql_impl, get_transaction )
+{
+#ifdef SKIP_BY_TX_ID
+  FC_ASSERT(false, "This node's operator has disabled operation indexing by transaction_id");
+#else
+
+  get_transaction_return result;
+
+  _dataSource.get_transaction( result, args.id, args.include_reversible );
+
+  return result;
+#endif
+}
+
+get_account_history_return account_history_api_sql_impl::_get_account_history( const get_account_history_args& args, filter_type_opt filter )
+{
+  FC_ASSERT( args.limit <= 1000, "limit of ${l} is greater than maxmimum allowed", ("l",args.limit) );
+  FC_ASSERT( args.start >= args.limit-1, "start must be greater than or equal to limit-1 (start is 0-based index)" );
+
+  get_account_history_return result;
+
+  _dataSource.get_account_history( [ &result, &filter ] ( unsigned int sequence, account_history_sql::account_history_sql_object& op )
+                                  {
+                                    api_operation_object temp( op, std::move( op.op ) );
+                                    if( filter.valid() )
+                                    {
+                                      auto _op = op.get_op();
+                                      if( (*filter)( _op ) )
+                                        result.history.emplace( sequence, std::move( temp ) );
+                                    }
+                                    else
+                                    {
+                                      result.history.emplace( sequence, std::move( temp ) );
+                                    }
+                                  },
+                                  args.account, args.start, args.limit,
+                                  args.include_reversible,
+                                  args.operation_filter_low,
+                                  args.operation_filter_high );
+
+  return result;
+}
+
+get_account_history_return account_history_api_sql_impl::get_account_history_filter( const get_account_history_args& args, filter_type_opt filter )
+{
+  return _get_account_history( args, filter );
+}
+
+DEFINE_API_IMPL( account_history_api_sql_impl, get_account_history )
+{
+  return _get_account_history( args );
+}
+
+DEFINE_API_IMPL( account_history_api_sql_impl, enum_virtual_ops)
+{
+  enum_virtual_ops_return result;
+
+  FC_ASSERT(args.block_range_end > args.block_range_begin , "Block range must be upward");
+
+  bool groupOps = args.group_by_block.valid() && *args.group_by_block;
+
+  _dataSource.enum_virtual_ops( [ &result, &groupOps ] ( account_history_sql::account_history_sql_object& op )
+                                {
+                                  api_operation_object temp( op, std::move( op.op ) );
+                                  temp.operation_id = op.operation_id;
+
+                                  if( groupOps )
+                                  {
+                                    auto ii = result.ops_by_block.emplace( ops_array_wrapper( op.block ) );
+                                    ops_array_wrapper& w = const_cast<ops_array_wrapper&>( *ii.first );
+
+                                    if( ii.second )
+                                    {
+                                      w.timestamp = op.timestamp;
+                                      w.irreversible = true;//NSY
+                                    }
+                                    w.ops.emplace_back( std::move( temp ) );
+                                  }
+                                  else
+                                  {
+                                    result.ops.emplace_back( std::move( temp ) );
+                                  }
+                                  
+                                },
+                                args.block_range_begin, args.block_range_end,
+                                args.include_reversible,
+                                args.operation_begin, args.limit,
+                                args.filter,
+                                result.next_block_range_begin,
+                                result.next_operation_begin );
+
+  return result;
+}
+
 class account_history_api_rocksdb_impl : public abstract_account_history_api_impl
 {
+  private:
+
+    get_ops_in_block_return _get_ops_in_block( const get_ops_in_block_args&, filter_type_opt filter = filter_type_opt() );
+    get_account_history_return _get_account_history( const get_account_history_args&, filter_type_opt filter = filter_type_opt() );
+
   public:
     account_history_api_rocksdb_impl() :
       abstract_account_history_api_impl(), _dataSource( appbase::app().get_plugin< hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin >() ) {}
@@ -137,26 +351,50 @@ class account_history_api_rocksdb_impl : public abstract_account_history_api_imp
     get_account_history_return get_account_history( const get_account_history_args& ) override;
     enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) override;
 
+    get_ops_in_block_return get_ops_in_block_filter( const get_ops_in_block_args& args, filter_type_opt filter ) override;
+    get_account_history_return get_account_history_filter( const get_account_history_args&, filter_type_opt filter ) override;
+
     const account_history_rocksdb::account_history_rocksdb_plugin& _dataSource;
 };
 
-DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_ops_in_block )
+get_ops_in_block_return account_history_api_rocksdb_impl::_get_ops_in_block( const get_ops_in_block_args& args, filter_type_opt filter )
 {
   get_ops_in_block_return result;
 
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
   _dataSource.find_operations_by_block(args.block_num, include_reversible,
-    [&result, &args](const account_history_rocksdb::rocksdb_operation_object& op)
+    [&result, &args, &filter](const account_history_rocksdb::rocksdb_operation_object& op)
     {
-      api_operation_object temp(op);
-      if( !args.only_virtual || is_virtual_operation( temp.op ) )
-        result.ops.emplace(std::move(temp));
+      auto _op = api_operation_object::get_op( op.serialized_op );
+      api_operation_object temp( op, std::move( api_operation_object::get_variant( _op ) ) );
+      if( !args.only_virtual || temp.virtual_op )
+      {
+        if( filter.valid() )
+        {
+          if( (*filter)( _op ) )
+            result.ops.emplace( std::move( temp ) );
+        }
+        else
+        {
+          result.ops.emplace( std::move( temp ) );
+        }
+      }
     }
   );
   return result;
 }
 
-DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
+get_ops_in_block_return account_history_api_rocksdb_impl::get_ops_in_block_filter( const get_ops_in_block_args& args, filter_type_opt filter )
+{
+  return _get_ops_in_block( args, filter );
+}
+
+DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_ops_in_block )
+{
+  return _get_ops_in_block( args );
+}
+
+get_account_history_return account_history_api_rocksdb_impl::_get_account_history( const get_account_history_args& args, filter_type_opt filter )
 {
   FC_ASSERT( args.limit <= 1000, "limit of ${l} is greater than maxmimum allowed", ("l",args.limit) );
   FC_ASSERT( args.start >= args.limit-1, "start must be greater than or equal to limit-1 (start is 0-based index)" );
@@ -176,13 +414,14 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
     {
 
     _dataSource.find_account_history_data(args.account, args.start, args.limit, include_reversible,
-      [&result, filter_low, filter_high, &total_processed_items](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
+      [&result, filter_low, filter_high, &total_processed_items, &filter](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
       {
         FC_ASSERT(total_processed_items < 2000, "Could not find filtered operation in ${total_processed_items} operations, to continue searching, set start=${sequence}.",("total_processed_items",total_processed_items)("sequence",sequence));
 
         // we want to accept any operations where the corresponding bit is set in {filter_high, filter_low}
-        api_operation_object api_op(op);
-        unsigned bit_number = api_op.op.which();
+        auto _op = api_operation_object::get_op( op.serialized_op );
+        api_operation_object api_op( op, std::move( api_operation_object::get_variant( _op ) ) );
+        unsigned bit_number = _op.which();
         bool accepted = bit_number < 64 ? filter_low & (UINT64_C(1) << bit_number)
                                         : filter_high & (UINT64_C(1) << (bit_number - 64));
 
@@ -190,7 +429,17 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
 
         if(accepted)
         {
-          result.history.emplace(sequence, std::move(api_op));
+          if( filter.valid() )
+          {
+            if( (*filter)( _op ) )
+            {
+              result.history.emplace(sequence, std::move(api_op));
+            }
+          }
+          else
+          {
+            result.history.emplace(sequence, std::move(api_op));
+          }
           return true;
         }
         else
@@ -209,15 +458,37 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
   else
   {
     _dataSource.find_account_history_data(args.account, args.start, args.limit, include_reversible,
-      [&result](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
+      [&result, &filter](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
       {
+        auto _op = api_operation_object::get_op( op.serialized_op );
+        api_operation_object api_op( op, std::move( api_operation_object::get_variant( _op ) ) );
         /// Here internal counter (inside find_account_history_data) does the limiting job.
-        result.history[sequence] = api_operation_object(op);
+        if( filter.valid() )
+        {
+          if( (*filter)( _op ) )
+          {
+            result.history[sequence] = std::move( api_op );
+          }
+        }
+        else
+        {
+          result.history[sequence] = std::move( api_op );
+        }
         return true;
       });
   }
 
   return result;
+}
+
+get_account_history_return account_history_api_rocksdb_impl::get_account_history_filter( const get_account_history_args& args, filter_type_opt filter )
+{
+  return _get_account_history( args, filter );
+}
+
+DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
+{
+  return _get_account_history( args );
 }
 
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
@@ -305,13 +576,14 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 
       if( args.filter.valid() )
       {
-        api_operation_object _api_obj( op );
+        auto _op = api_operation_object::get_op( op.serialized_op );
+        api_operation_object _api_obj( op, std::move( api_operation_object::get_variant( _op ) ) );
 
         _api_obj.operation_id = operation_id;
 
         filtering_visitor accepting_visitor;
 
-        if(accepting_visitor.check(*args.filter, _api_obj.op))
+        if(accepting_visitor.check(*args.filter, _op))
         {
           if(groupOps)
           {
@@ -376,6 +648,12 @@ account_history_api::account_history_api()
 {
   auto ah_cb = appbase::app().find_plugin< hive::plugins::account_history::account_history_plugin >();
   auto ah_rocks = appbase::app().find_plugin< hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin >();
+  auto ah_sql = appbase::app().find_plugin< hive::plugins::account_history_sql::account_history_sql_plugin >();
+
+  if( ah_rocks != nullptr && ah_sql != nullptr )
+  {
+    FC_ASSERT( false, "Only one plugin can be enabled - account_history_rocksdb or account_history_sql" );
+  }
 
   if( ah_rocks != nullptr )
   {
@@ -384,19 +662,38 @@ account_history_api::account_history_api()
 
     my = std::make_unique< detail::account_history_api_rocksdb_impl >();
   }
+  else if( ah_sql != nullptr )
+  {
+    if( ah_cb != nullptr )
+      wlog( "account_history and account_history_sql plugins are both enabled. account_history_api will query from account_history_sql" );
+
+    my = std::make_unique< detail::account_history_api_sql_impl >();
+  }
   else if( ah_cb != nullptr )
   {
     my = std::make_unique< detail::account_history_api_chainbase_impl >();
   }
   else
   {
-    FC_ASSERT( false, "Account History API only works if account_history or account_history_rocksdb plugins are enabled" );
+    FC_ASSERT( false, "Account History API only works if account_history or account_history_rocksdb/account_history_sql plugins are enabled" );
   }
 
   JSON_RPC_REGISTER_API( HIVE_ACCOUNT_HISTORY_API_PLUGIN_NAME );
 }
 
 account_history_api::~account_history_api() {}
+
+get_ops_in_block_return account_history_api::get_ops_in_block_filter( const get_ops_in_block_args& args, types::filter_type_opt filter )
+{
+  FC_ASSERT( my, "Account History API is not initialized" );
+  return my->get_ops_in_block_filter( args, filter );
+}
+
+get_account_history_return account_history_api::get_account_history_filter( const get_account_history_args& args, types::filter_type_opt filter )
+{
+  FC_ASSERT( my, "Account History API is not initialized" );
+  return my->get_account_history_filter( args, filter );
+}
 
 DEFINE_LOCKLESS_APIS( account_history_api ,
   (get_ops_in_block)
