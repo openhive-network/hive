@@ -132,6 +132,7 @@ namespace detail
         (get_recent_trades)
         (get_market_history)
         (get_market_history_buckets)
+        (is_known_transaction)
         (list_proposals)
         (find_proposals)
         (list_proposal_votes)
@@ -1289,6 +1290,13 @@ namespace detail
     return _market_history_api->get_market_history_buckets( {} ).bucket_sizes;
   }
 
+  DEFINE_API_IMPL( condenser_api_impl, is_known_transaction )
+  {
+    CHECK_ARG_SIZE( 1 )
+
+    return _database_api->is_known_transaction( { args[0].as<transaction_id_type>() } ).is_known;
+  }
+
   DEFINE_API_IMPL( condenser_api_impl, list_proposals )
   {
     FC_ASSERT( args.size() >= 3 && args.size() <= 6, "Expected 3-6 argument, was ${n}", ("n", args.size()) );
@@ -1578,6 +1586,7 @@ DEFINE_READ_APIS( condenser_api,
   (get_trade_history)
   (get_recent_trades)
   (get_market_history)
+  (is_known_transaction)
   (list_proposals)
   (list_proposal_votes)
   (find_proposals)

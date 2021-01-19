@@ -38,6 +38,12 @@ struct get_impacted_account_visitor
     _impacted.insert( op.creator );
   }
 
+  void operator()( const account_created_operation& op )
+  {
+    _impacted.insert( op.creator );
+    _impacted.insert( op.new_account_name );
+  }
+
   void operator()( const comment_operation& op )
   {
     _impacted.insert( op.author );
@@ -218,6 +224,22 @@ struct get_impacted_account_visitor
   {
     _impacted.insert( op.from_account );
     _impacted.insert( op.to_account );
+  }
+
+  void operator()( const transfer_to_vesting_completed_operation& op )
+  {
+    _impacted.insert( op.from_account );
+    _impacted.insert( op.to_account );
+  }
+
+  void operator()( const pow_reward_operation& op )
+  {
+    _impacted.insert( op.worker );
+  }
+
+  void operator()( const vesting_shares_split_operation& op )
+  {
+    _impacted.insert( op.owner );
   }
 
   void operator()( const shutdown_witness_operation& op )

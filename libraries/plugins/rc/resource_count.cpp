@@ -404,6 +404,10 @@ struct count_operation_visitor
   void operator()( const clear_null_account_balance_operation& ) const {}
   void operator()( const consolidate_treasury_balance_operation& ) const {}
   void operator()( const delayed_voting_operation& ) const {}
+  void operator()( const transfer_to_vesting_completed_operation& ) const {}
+  void operator()( const pow_reward_operation& ) const {}
+  void operator()( const vesting_shares_split_operation& ) const {}
+  void operator()( const account_created_operation& ) const {}
   void operator()( const proposal_pay_operation& ) const {}
   void operator()( const sps_fund_operation& ) const {}
   void operator()( const sps_convert_operation& ) const {}
