@@ -41,7 +41,7 @@
 #include <hive/utilities/key_conversion.hpp>
 
 #include <hive/protocol/protocol.hpp>
-#include <hive/wallet/remote_node_api.hpp>
+#include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
 #include <hive/wallet/wallet.hpp>
 
 #include <fc/interprocess/signals.hpp>
@@ -191,9 +191,7 @@ int main( int argc, char** argv )
     }
 
     auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
-
-    auto remote_api = apic->get_remote_api< hive::wallet::remote_node_api >( 0, "condenser_api" );
-
+    auto remote_api = apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
     auto wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api );
     wapiptr->set_wallet_filename( wallet_file.generic_string() );
     wapiptr->load_wallet_file();

@@ -12,10 +12,10 @@ endif()
 if( HIVE_STATIC_BUILD )
    target_link_libraries( cli_wallet PRIVATE
                           "-static-libstdc++ -static-libgcc"
-                          graphene_net hive_chain hive_protocol hive_utilities hive_wallet condenser_api_plugin fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+                          graphene_net hive_chain hive_protocol hive_utilities hive_wallet condenser_api_plugin wallet_bridge_api_plugin fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
 else( HIVE_STATIC_BUILD )
    target_link_libraries( cli_wallet PRIVATE
-                          graphene_net hive_chain hive_protocol hive_utilities hive_wallet condenser_api_plugin fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+                          graphene_net hive_chain hive_protocol hive_utilities hive_wallet condenser_api_plugin wallet_bridge_api_plugin fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
 endif( HIVE_STATIC_BUILD )
 
 if( CLANG_TIDY_EXE )
