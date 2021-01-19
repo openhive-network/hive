@@ -11,10 +11,11 @@
 #include <hive/plugins/account_by_key/account_by_key_plugin.hpp>
 #include <hive/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
-#include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
+//#include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
 #include <hive/plugins/p2p/p2p_plugin.hpp>
 #include <hive/plugins/webserver/webserver_plugin.hpp>
 #include <hive/plugins/witness/witness_plugin.hpp>
+#include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
 
 #include <fc/exception/exception.hpp>
 #include <fc/thread/thread.hpp>
@@ -106,7 +107,8 @@ int main( int argc, char** argv )
       hive::plugins::witness::witness_plugin,
       hive::plugins::account_by_key::account_by_key_plugin,
       hive::plugins::account_by_key::account_by_key_api_plugin,
-      hive::plugins::condenser_api::condenser_api_plugin >();
+      hive::plugins::wallet_bridge_api::wallet_bridge_api_plugin >();
+
 
     // These plugins are loaded regardless of the config
     bool initialized = theApp.initialize<

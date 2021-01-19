@@ -17,6 +17,7 @@ using namespace hive::chain;
 
 struct api_reward_fund_object
 {
+  api_reward_fund_object() {};
   api_reward_fund_object( const reward_fund_object& o, const database& db ):
     id( o.get_id() ),
     name( o.name ),
@@ -141,6 +142,7 @@ struct api_vesting_delegation_expiration_object
 
 struct api_convert_request_object
 {
+  api_convert_request_object() {}
   api_convert_request_object( const convert_request_object& o, const database& db ):
     id( o.get_id() ),
     owner( db.get_account( o.get_owner() ).get_name() ),
@@ -199,6 +201,7 @@ struct api_limit_order_object
     for_sale( o.for_sale ),
     sell_price( o.sell_price )
   {}
+  api_limit_order_object() {}
 
   limit_order_id_type id;
   time_point_sec      created;
