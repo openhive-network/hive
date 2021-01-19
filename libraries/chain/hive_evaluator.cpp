@@ -379,10 +379,16 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
     auth.last_owner_update = fc::time_point_sec::min();
   });
 
+  asset initial_vesting_shares;
   if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) && o.fee.amount > 0 )
   {
-    _db.create_vesting( new_account, o.fee );
+    initial_vesting_shares = _db.create_vesting( new_account, o.fee );
   }
+  else
+  {
+    initial_vesting_shares = asset(0, VESTS_SYMBOL);
+  }
+  _db.push_virtual_operation( account_created_operation(o.new_account_name, o.creator, initial_vesting_shares, asset(0, VESTS_SYMBOL) ) );
 }
 
 void account_create_with_delegation_evaluator::do_apply( const account_create_with_delegation_operation& o )
@@ -488,10 +494,16 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
     });
   }
 
+  asset initial_vesting_shares;
   if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) && o.fee.amount > 0 )
   {
-    _db.create_vesting( new_account, o.fee );
+    initial_vesting_shares = _db.create_vesting( new_account, o.fee );
   }
+  else
+  {
+    initial_vesting_shares = asset(0, VESTS_SYMBOL);
+  }
+  _db.push_virtual_operation( account_created_operation( o.new_account_name, o.creator, initial_vesting_shares, o.delegation) );
 }
 
 
@@ -1230,7 +1242,8 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   }
   else
   {
-    _db.create_vesting( to_account, o.amount );   
+    asset amount_vested = _db.create_vesting( to_account, o.amount );   
+    _db.push_virtual_operation( transfer_to_vesting_completed_operation( from_account.name, to_account.name, o.amount, amount_vested ) );
   }
 }
 
@@ -2490,10 +2503,15 @@ void pow_apply( database& db, Operation o )
 
   /// pay the witness that includes this POW
   const auto& inc_witness = db.get_account( dgp.current_witness );
+  asset actual_reward;
   if( db.head_block_num() < HIVE_START_MINER_VOTING_BLOCK )
+  {
     db.adjust_balance( inc_witness, pow_reward );
+    actual_reward = pow_reward;
+  }
   else
-    db.create_vesting( inc_witness, pow_reward );
+    actual_reward = db.create_vesting( inc_witness, pow_reward );
+  db.push_virtual_operation( pow_reward_operation( dgp.current_witness, actual_reward ) );
 }
 
 void pow_evaluator::do_apply( const pow_operation& o ) {
@@ -2590,7 +2608,8 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     db.adjust_supply( inc_reward, true );
 
     const auto& inc_witness = db.get_account( dgp.current_witness );
-    db.create_vesting( inc_witness, inc_reward );
+    asset actual_reward = db.create_vesting( inc_witness, inc_reward );
+    db.push_virtual_operation( pow_reward_operation( dgp.current_witness, actual_reward ) );
   }
 }
 

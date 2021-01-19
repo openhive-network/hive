@@ -9,8 +9,8 @@ namespace hive { namespace protocol {
 
   struct author_reward_operation : public virtual_operation {
     author_reward_operation(){}
-    author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v, const asset& c )
-      :author(a), permlink(p), hbd_payout(s), hive_payout(st), vesting_payout(v), curators_vesting_payout(c) {}
+    author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v, const asset& c, bool payouts_are_vesting )
+      :author(a), permlink(p), hbd_payout(s), hive_payout(st), vesting_payout(v), curators_vesting_payout(c), payouts_are_vesting(payouts_are_vesting) {}
 
     account_name_type author;
     string            permlink;
@@ -18,19 +18,21 @@ namespace hive { namespace protocol {
     asset             hive_payout;
     asset             vesting_payout;
     asset             curators_vesting_payout;
+    bool              payouts_are_vesting;
   };
 
 
   struct curation_reward_operation : public virtual_operation
   {
     curation_reward_operation(){}
-    curation_reward_operation( const string& c, const asset& r, const string& a, const string& p )
-      :curator(c), reward(r), comment_author(a), comment_permlink(p) {}
+    curation_reward_operation( const string& c, const asset& r, const string& a, const string& p, bool payouts_are_vesting )
+      :curator(c), reward(r), comment_author(a), comment_permlink(p), payouts_are_vesting(payouts_are_vesting) {}
 
     account_name_type curator;
     asset             reward;
     account_name_type comment_author;
     string            comment_permlink;
+    bool              payouts_are_vesting;
   };
 
 
@@ -95,6 +97,52 @@ namespace hive { namespace protocol {
     account_name_type to_account;
     asset             withdrawn;
     asset             deposited;
+  };
+
+
+  struct transfer_to_vesting_completed_operation : public virtual_operation
+  {
+    transfer_to_vesting_completed_operation(){}
+    transfer_to_vesting_completed_operation( const string& f, const string& t, const asset& s, const asset& v )
+      :from_account(f), to_account(t), hive_vested(s), vesting_shares_received(v) {}
+
+    account_name_type from_account;
+    account_name_type to_account;
+    asset             hive_vested;
+    asset             vesting_shares_received;
+  };
+
+  struct pow_reward_operation : public virtual_operation
+  {
+    pow_reward_operation(){}
+    pow_reward_operation( const string& w, const asset& r )
+      :worker(w), reward(r) {}
+
+    account_name_type worker;
+    asset             reward;
+  };
+
+  struct vesting_shares_split_operation : public virtual_operation
+  {
+    vesting_shares_split_operation(){}
+    vesting_shares_split_operation( const string& o, const asset& old_vests, const asset& new_vests )
+      :owner(o), vesting_shares_before_split(old_vests), vesting_shares_after_split(new_vests) {}
+
+    account_name_type owner;
+    asset             vesting_shares_before_split;
+    asset             vesting_shares_after_split;
+  };
+
+  struct account_created_operation : public virtual_operation
+  {
+    account_created_operation(){}
+    account_created_operation( const string& new_account_name, const string& creator, const asset& initial_vesting_shares, const asset& initial_delegation )
+      :new_account_name(new_account_name), creator(creator), initial_vesting_shares(initial_vesting_shares), initial_delegation(initial_delegation) {}
+
+    account_name_type new_account_name;
+    account_name_type creator;
+    asset             initial_vesting_shares;
+    asset             initial_delegation; // if created with account_create_with_delegation
   };
 
 
@@ -289,13 +337,17 @@ namespace hive { namespace protocol {
 
 } } //hive::protocol
 
-FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout) )
-FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink) )
+FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payouts_are_vesting) )
+FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink)(payouts_are_vesting) )
 FC_REFLECT( hive::protocol::comment_reward_operation, (author)(permlink)(payout)(author_rewards)(total_payout_value)(curator_payout_value)(beneficiary_payout_value) )
 FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
+FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::liquidity_reward_operation, (owner)(payout) )
 FC_REFLECT( hive::protocol::interest_operation, (owner)(interest) )
 FC_REFLECT( hive::protocol::fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
+FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
+FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
+FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::shutdown_witness_operation, (owner) )
 FC_REFLECT( hive::protocol::fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
 FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )

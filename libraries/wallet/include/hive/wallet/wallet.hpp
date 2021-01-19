@@ -337,6 +337,28 @@ class wallet_api
     string normalize_brain_key(string s) const;
 
     /**
+     *  This method will claim a subsidized account creation.
+     *
+     *  @param creator The account to receive the account creation credit
+     *  @param fee The fee to pay for claiming the account (either 0 steem for a discounted account, or the full account fee)
+     *  @param broadcast true if you wish to broadcast the transaction
+     */
+    condenser_api::legacy_signed_transaction claim_account_creation( string creator,
+                                                                     condenser_api::legacy_asset fee,
+                                                                     bool broadcast )const; 
+    /**
+     *  This method will claim a subsidized account creation without waiting for the transaction to confirm.
+     *
+     *  @param creator The account to receive the account creation credit
+     *  @param fee The fee to pay for claiming the account (either 0 steem for a discounted account, or the full account fee)
+     *  @param broadcast true if you wish to broadcast the transaction
+     */
+    condenser_api::legacy_signed_transaction claim_account_creation_nonblocking( string creator,
+                                                                                 condenser_api::legacy_asset fee,
+                                                                                 bool broadcast )const;
+       
+
+    /**
       *  This method will genrate new owner, active, and memo keys for the new account which
       *  will be controlable by this wallet. There is a fee associated with account creation
       *  that is paid by the creator. The current account creation fee can be found with the
@@ -374,6 +396,37 @@ class wallet_api
       public_key_type memo,
       bool broadcast )const;
 
+    
+    /**
+     * This method is used by faucets to create new accounts for other users which must
+     * provide their desired keys. The resulting account may not be controllable by this
+     * wallet. There is a fee associated with account creation that is paid by the creator.
+     * The current account creation fee can be found with the 'info' wallet command.
+     * This method is identical to create_account_with_keys() except that it also 
+     * adds a 'transfer' operation to the transaction after the create.
+     *
+     * @param creator The account creating the new account
+     * @param newname The name of the new account
+     * @param initial_amount The amount transferred to the account
+     * @param memo A memo to send with the transfer
+     * @param json_meta JSON Metadata associated with the new account
+     * @param owner public owner key of the new account
+     * @param active public active key of the new account
+     * @param posting public posting key of the new account
+     * @param memo public memo key of the new account
+     * @param broadcast true if you wish to broadcast the transaction
+     */
+    condenser_api::legacy_signed_transaction create_funded_account_with_keys( string creator,
+                                                                              string new_account_name,
+                                                                              condenser_api::legacy_asset initial_amount,
+                                                                              string memo,
+                                                                              string json_meta,
+                                                                              public_key_type owner_key,
+                                                                              public_key_type active_key,
+                                                                              public_key_type posting_key,
+                                                                              public_key_type memo_key,
+                                                                              bool broadcast )const;
+    
     /**
       *  This method will genrate new owner, active, and memo keys for the new account which
       *  will be controlable by this wallet. There is a fee associated with account creation
@@ -537,11 +590,27 @@ class wallet_api
       * @param vesting_shares The amount of VESTS to delegate
       * @param broadcast true if you wish to broadcast the transaction
       */
-      condenser_api::legacy_signed_transaction delegate_vesting_shares(
-        const string& delegator,
-        const string& delegatee,
-        const condenser_api::legacy_asset& vesting_shares,
-        bool broadcast );
+    condenser_api::legacy_signed_transaction delegate_vesting_shares( string delegator,
+                                                                      string delegatee,
+                                                                      condenser_api::legacy_asset vesting_shares,
+                                                                      bool broadcast );
+
+
+    condenser_api::legacy_signed_transaction delegate_vesting_shares_nonblocking( string delegator, string delegatee, condenser_api::legacy_asset vesting_shares, bool broadcast );
+
+    // these versions also send a regular transfer in the same transaction, intended for sending a .001 STEEM memo
+    condenser_api::legacy_signed_transaction delegate_vesting_shares_and_transfer( string delegator, string delegatee, condenser_api::legacy_asset vesting_shares, 
+                                                                                   condenser_api::legacy_asset transfer_amount, 
+                                                                                   optional<string> transfer_memo, bool broadcast );
+    condenser_api::legacy_signed_transaction delegate_vesting_shares_and_transfer_nonblocking( string delegator, string delegatee, condenser_api::legacy_asset 
+                                                                                               vesting_shares, condenser_api::legacy_asset transfer_amount, 
+                                                                                               optional<string> transfer_memo, bool broadcast );
+
+    // helper function
+    condenser_api::legacy_signed_transaction delegate_vesting_shares_and_transfer_and_broadcast( string delegator, string delegatee, 
+                                                                                                 condenser_api::legacy_asset vesting_shares, 
+                                                                                                 optional<condenser_api::legacy_asset> transfer_amount, 
+                                                                                                 optional<string> transfer_memo, bool broadcast, bool blocking );
 
 
     /**
@@ -758,6 +827,37 @@ class wallet_api
       const string& to,
       const condenser_api::legacy_asset& amount,
       bool broadcast = false);
+
+
+    /**
+     * Transfer funds from one account to another, without waiting for a confirmation. STEEM and SBD can be transferred.
+     *
+     * @param from The account the funds are coming from
+     * @param to The account the funds are going to
+     * @param amount The funds being transferred. i.e. "100.000 STEEM"
+     * @param memo A memo for the transactionm, encrypted with the to account's public memo key
+     * @param broadcast true if you wish to broadcast the transaction
+     */
+    condenser_api::legacy_signed_transaction transfer_nonblocking(string from, string to, condenser_api::legacy_asset amount, string memo, bool broadcast = false);
+
+    // helper function
+    condenser_api::legacy_signed_transaction transfer_and_broadcast(string from, string to, condenser_api::legacy_asset amount, string memo, bool broadcast, bool blocking );
+    /*
+     * Transfer STEEM into a vesting fund represented by vesting shares (VESTS) without waiting for a confirmation.
+     * VESTS are required to vesting
+     * for a minimum of one coin year and can be withdrawn once a week over a two year withdraw period.
+     * VESTS are protected against dilution up until 90% of STEEM is vesting.
+     *
+     * @param from The account the STEEM is coming from
+     * @param to The account getting the VESTS
+     * @param amount The amount of STEEM to vest i.e. "100.00 STEEM"
+     * @param broadcast true if you wish to broadcast the transaction
+     */
+    condenser_api::legacy_signed_transaction transfer_to_vesting_nonblocking(string from, string to, condenser_api::legacy_asset amount, bool broadcast = false);
+
+    // helper function
+    condenser_api::legacy_signed_transaction transfer_to_vesting_and_broadcast(string from, string to, condenser_api::legacy_asset amount, bool broadcast, bool blocking );
+
 
     /**
       *  Transfers into savings happen immediately, transfers from savings take 72 hours
@@ -1053,6 +1153,9 @@ class wallet_api
       */
     string get_encrypted_memo( const string& from, const string& to, const string& memo );
 
+    // helper for above
+    string get_encrypted_memo_using_keys( const public_key_type& from_key, const public_key_type& to_key, string memo ) const;
+
     /**
       * Returns the decrypted memo if possible given wallet's known private keys
       */
@@ -1203,8 +1306,11 @@ FC_API( hive::wallet::wallet_api,
       (get_withdraw_routes)
 
       /// transaction api
+      (claim_account_creation)
+      (claim_account_creation_nonblocking)
       (create_account)
       (create_account_with_keys)
+      (create_funded_account_with_keys)
       (create_account_delegated)
       (create_account_with_keys_delegated)
       (update_account)
@@ -1214,16 +1320,21 @@ FC_API( hive::wallet::wallet_api,
       (update_account_meta)
       (update_account_memo_key)
       (delegate_vesting_shares)
+      (delegate_vesting_shares_nonblocking)
+      (delegate_vesting_shares_and_transfer)
+      (delegate_vesting_shares_and_transfer_nonblocking)
       (update_witness)
       (set_voting_proxy)
       (vote_for_witness)
       (follow)
       (transfer)
+      (transfer_nonblocking)
       (escrow_transfer)
       (escrow_approve)
       (escrow_dispute)
       (escrow_release)
       (transfer_to_vesting)
+      (transfer_to_vesting_nonblocking)
       (withdraw_vesting)
       (set_withdraw_vesting_route)
       (convert_hbd)
