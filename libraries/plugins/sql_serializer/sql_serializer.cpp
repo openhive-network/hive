@@ -308,21 +308,26 @@ namespace hive
 				{
 					postgress_connection_holder& conn;
 					ext_stat_t& stat;
+					std::shared_timed_mutex mtx{};
+					std::condition_variable_any cv{};
+					std::atomic_bool is_table_used{false};
 
-					using value_t = std::shared_ptr<fc::string>;
-					std::shared_ptr<queue<value_t>> queries{ new queue<value_t>{} };
-
-					void operator()()
+					void operator()(std::shared_ptr<fc::string> sql)
 					{
-						value_t sql{};
-						queries->wait_pull(sql);
-						while(sql.get())
+						if(sql.get() == nullptr) return;
+
+						std::shared_lock<std::shared_timed_mutex> lck{ mtx };
+						while(is_table_used.load()) cv.wait(lck);
+						is_table_used.store(true);
+
 						{
 							const auto before = fc::time_point::now();
-							conn.exec_single_in_transaction(*sql);
+							conn.exec_single_in_transaction(std::move(*sql));
 							stat.flush_time += fc::time_point::now() - before;
-							queries->wait_pull(sql);
 						}
+
+						is_table_used.store(false);
+						cv.notify_one();
 					}
 				};
 
@@ -339,14 +344,6 @@ namespace hive
 						op_task{conn, stats.operations}, 
 						vop_task{conn, stats.virtual_operations} 
 					{}
-
-					void start(thread_pool_t& _pool)
-					{
-						_pool.SubmitJob(block_task);
-						_pool.SubmitJob(trx_task);
-						_pool.SubmitJob(op_task);
-						_pool.SubmitJob(vop_task);
-					}
 				};
 
 				struct process_task
@@ -385,6 +382,8 @@ namespace hive
 						cached_data_t& data = **input;	// alias
 						auto tm = fc::time_point::now();
 
+						std::vector< std::future<void> > futures;
+
 						auto update_stat = [&](ext_stat_t& s, const uint64_t cnt)
 						{
 							s.processing_time += fc::time_point::now() - tm;
@@ -396,9 +395,9 @@ namespace hive
 							s += fc::time_point::now() - tm;
 							tm = fc::time_point::now();
 						};
-						auto add = [&](fc::string&& sql, flush_task& task)
+						auto add = [&](fc::string&& _sql, flush_task& _task)
 						{
-							task.queries->wait_push( std::make_shared<fc::string>(std::move(sql)) );
+							futures.emplace_back( std::async(std::launch::async, [&](fc::string&& sql, flush_task& task){ task( std::make_shared<fc::string>( std::move(sql) ) ); }, std::move(_sql), std::ref(_task) ) );
 						};
 
 						for(const auto& op : data.operations) dumper.process_operation(op);
@@ -424,6 +423,8 @@ namespace hive
 						update_stat(stats.transactions, data.transactions.size());
 						add( dumper.get_transaction_sql(), tasks.trx_task );
 						data.transactions.clear();
+
+						for(auto& f : futures) f.wait();
 					}
 				};
 
@@ -437,15 +438,13 @@ namespace hive
 						: connection{url}, 
 							tasks{connection, current_stats}
 					{
-						table_pool.SetBackgroundThreads(table_count);
 						worker_pool.SetBackgroundThreads( std::max( 1u, connection.get_max_transaction_count() / connections_per_worker ) );
-						tasks.start(table_pool);
 					}
 
 					virtual ~sql_serializer_plugin_impl()
 					{
 						mylog("finishing from plugin impl destructor");
-						cleanup_sequence(true);
+						cleanup_sequence();
 					}
 
 					boost::signals2::connection _on_post_apply_operation_con;
@@ -453,6 +452,7 @@ namespace hive
 					boost::signals2::connection _on_post_apply_block_con;
 					boost::signals2::connection _on_starting_reindex;
 					boost::signals2::connection _on_finished_reindex;
+					boost::signals2::connection _on_live_sync_start;
 
 					postgress_connection_holder connection;
 					fc::optional<fc::string> path_to_schema;
@@ -465,7 +465,6 @@ namespace hive
 					int64_t block_vops = 0;
 
 					cached_containter_t currently_caching_data;
-					thread_pool_t table_pool{};
 					thread_pool_t worker_pool{};
 					task_collection_t tasks;
 					stats_group current_stats;
@@ -514,20 +513,10 @@ namespace hive
 						null_account = connection.get_single_value<fc::string>( "SELECT name FROM hive_accounts WHERE id=0" );
 					}
 
-					void close_pools(const bool with_table_threads)
+					void close_pools()
 					{
 						// finish all the workers
 						worker_pool.WaitForJobsAndJoinAllThreads();
-
-						// join all table threads
-						if(with_table_threads)
-						{
-							tasks.block_task.queries->wait_push(nullptr);
-							tasks.trx_task.queries->wait_push(nullptr);
-							tasks.op_task.queries->wait_push(nullptr);
-							tasks.vop_task.queries->wait_push(nullptr);
-							table_pool.WaitForJobsAndJoinAllThreads();
-						}
 					}
 
 					void switch_constraints(const bool active)
@@ -571,11 +560,11 @@ namespace hive
 							currently_caching_data = std::make_unique<cached_data_t>(reserve);
 					}
 
-					void cleanup_sequence(const bool kill_table_threads)
+					void cleanup_sequence()
 					{
 						ilog("Flushing rest of data, wait a moment...");
 						push_currently_cached_data(0);
-						close_pools(kill_table_threads);
+						close_pools();
 						if(are_constraints_active) return;
 						if (set_index)
 						{
@@ -616,6 +605,9 @@ namespace hive
 				my->_on_post_apply_block_con = db.add_post_apply_block_handler([&](const block_notification &note) { on_post_apply_block(note); }, *this);
 				my->_on_finished_reindex = db.add_post_reindex_handler([&](const reindex_notification &note) { on_post_reindex(note); }, *this);
 				my->_on_starting_reindex = db.add_pre_reindex_handler([&](const reindex_notification &note) { on_pre_reindex(note); }, *this);
+				my->_on_live_sync_start = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().on_sync.connect(0, [&](){ on_live_sync_start(); });
+
+				
 			}
 
 			void sql_serializer_plugin::plugin_startup()
@@ -626,7 +618,7 @@ namespace hive
 			void sql_serializer_plugin::plugin_shutdown()
 			{
 				ilog("Flushing left data...");
-				my->close_pools(true);
+				my->close_pools();
 
 				if (my->_on_post_apply_block_con.connected())
 					chain::util::disconnect_signal(my->_on_post_apply_block_con);
@@ -638,6 +630,8 @@ namespace hive
 					chain::util::disconnect_signal(my->_on_starting_reindex);
 				if (my->_on_finished_reindex.connected())
 					chain::util::disconnect_signal(my->_on_finished_reindex);
+				if (my->_on_live_sync_start.connected())
+					chain::util::disconnect_signal(my->_on_live_sync_start);
 
 				ilog("Done. Connection closed");
 			}
@@ -721,10 +715,11 @@ namespace hive
 			void sql_serializer_plugin::on_post_reindex(const reindex_notification &)
 			{
 				mylog("finishing from post reindex");
-				// flush rest of data
-				my->cleanup_sequence(false);
+				my->cleanup_sequence();
 				my->blocks_per_commit = 1;
 			}
+			
+			void sql_serializer_plugin::on_live_sync_start() {}
 
 		} // namespace sql_serializer
 	}		// namespace plugins
