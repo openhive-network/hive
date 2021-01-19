@@ -47,14 +47,15 @@ def prepare_config(args):
   cfg = config()
 
   # required plugins
-  cfg.update_plugins(["account_by_key", "account_by_key_api", 
+  cfg.update_plugins(["account_by_key", "account_by_key_api",
+    "account_history", "account_history_api",
     "block_api", "condenser_api", "database_api", 
     "debug_node_api", "json_rpc", 
     "network_broadcast_api", "p2p", 
     "rc", "rc_api", "transaction_status", 
     "transaction_status_api", "webserver", "witness",
     "market_history", "market_history_api",
-    "account_history_rocksdb", "account_history_api" ])
+    "account_history_rocksdb", "account_history_api", "wallet_bridge_api" ])
 
   # option required by user
   cfg.webserver_http_endpoint = strip_address(args.server_http_endpoint)
