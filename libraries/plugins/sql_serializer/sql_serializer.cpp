@@ -504,9 +504,9 @@ namespace hive
 						while(std::getline(file, line)) querries.push_back(line);
 						file.close();
 
-						auto trx = connection.start_transaction();
-						for(const fc::string& q : querries) FC_ASSERT(connection.exec_transaction(trx, q), "errors occured while executing schema");
-						FC_ASSERT(connection.commit_transaction(trx), "errors occured, while commiting schema");
+						for(const fc::string& q : querries) 
+							if(!connection.exec_single_in_transaction(q)) 
+								wlog("Failed to execute query from ${schema_path}:\n${query}", ("schema_path", *path_to_schema)("query", q));
 
 						connection.exec_single_in_transaction(PSQL::get_all_type_definitions());
 						null_permlink = connection.get_single_value<fc::string>( "SELECT permlink FROM hive_permlink_data WHERE id=0" );
