@@ -324,24 +324,28 @@ namespace hive
 				private:
 
 					template<typename iterable_t, typename function_t>
-					fc::string format_text_array( const iterable_t& coll,const fc::string& source_table, const fc::string& column, function_t for_each ) const
+					fc::string format_text_array( const iterable_t& coll,const fc::string& source_fn, function_t for_each ) const
 					{
-						if( coll.size() == 0 ) return "ARRAY[ 0 ]";
-						else if( coll.size() == 1 ) return fc::string{"(SELECT ARRAY( SELECT __x.id FROM "} + source_table + " __x WHERE __x." + column + " = E'" + *coll.begin() + "' ))";
-						else
-						{
-							fc::string ret{ "(SELECT ARRAY(SELECT __x.id FROM (VALUES " };
-							for(auto cit = coll.begin(); cit != coll.end(); cit++)
-							{
-								if(cit != coll.begin()) ret.append(",");
-								ret.append( "(E'" );
-								ret.append( *cit );
-								ret.append("')");
-								for_each(*cit);
-							}
-							ret.append(") as __values (__element) JOIN " + source_table + " __x ON __values.__element = __x." + column + "))");
-							return std::move(ret);
-						}
+						if( coll.empty() )
+              return "NULL::int[]";
+            fc::string query(source_fn);
+            query += "(E'";
+            auto nameI = coll.begin();
+            query += *nameI;
+            query += '\'';
+            for_each(*nameI);
+
+            for(++nameI; nameI != coll.end(); nameI++)
+            {
+              query += ",E'";
+              query += *nameI;
+              query += '\'';
+              for_each(*nameI);
+            }
+
+            query += ')';
+
+						return std::move(query);
 					}
 
 					fc::string get_formated_participants(const operation &op)
@@ -350,14 +354,18 @@ namespace hive
 						boost::container::flat_set<account_name_type> impacted;
 						hive::app::operation_get_impacted_accounts(op, impacted);
 						impacted.erase(account_name_type());
-						return std::move( format_text_array( impacted, "hive_accounts", "name", [&](const account_name_type& acc) { account_cache.insert( fc::string(acc) ); } ) );
+
+            FC_ASSERT(impacted.size() <= 3, "get_account_ids SQL function is specialized only for at most 3 account names");
+
+						return std::move( format_text_array( impacted, "get_account_ids", [&](const account_name_type& acc) { account_cache.insert( fc::string(acc) ); } ) );
 					}
 
 					fc::string get_formatted_permlinks(const operation &op)
 					{
 						std::vector<fc::string> result;
 						hive::app::operation_get_permlinks(op, result);
-						return std::move( format_text_array( result, "hive_permlink_data", "permlink", [&](const fc::string& perm) { permlink_cache.insert( perm ); } ));
+            FC_ASSERT(result.size() <= 2, "get_permlink_ids SQL function is specialized only for at most 2 permlink identifiers");
+						return std::move( format_text_array( result, "get_permlink_ids", [&](const fc::string& perm) { permlink_cache.insert( perm ); } ));
 					}
 
 					fc::string get_body(const char *op) const

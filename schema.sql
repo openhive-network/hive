@@ -25,9 +25,9 @@
 -- -- If user, that is in connection string doesn't have proper acces rights
 -- -- Execute theese commands with proper rights, comment 
 -- -- following 3 lines, and uncomment theese under `Drop tables`
-DROP SCHEMA public CASCADE;
-CREATE SCHEMA public;
-CREATE EXTENSION IF NOT EXISTS intarray;
+--DROP SCHEMA public CASCADE;
+--CREATE SCHEMA public;
+--CREATE EXTENSION IF NOT EXISTS intarray;
 
 -- -- Check current status
 -- SELECT COUNT(*) FROM hive_blocks;
@@ -119,3 +119,64 @@ CREATE TABLE IF NOT EXISTS hive_virtual_operations (
 INSERT INTO hive_permlink_data VALUES(0, '');
 -- This is account referenced by empty participants arrays
 INSERT INTO hive_accounts VALUES(0, '');
+
+CREATE OR REPLACE FUNCTION get_account_ids( in _name VARCHAR )
+RETURNS int []
+LANGUAGE 'plpgsql'
+stable
+as
+$function$
+begin
+  return array(select __x.id FROM hive_accounts __x WHERE __x.name = _name)::int[];
+end
+$function$
+;
+
+CREATE OR REPLACE FUNCTION get_account_ids( in _name1 VARCHAR, in _name2 VARCHAR )
+RETURNS int []
+LANGUAGE 'plpgsql'
+stable
+as
+$function$
+begin
+  return array(select __x.id FROM hive_accounts __x WHERE __x.name IN (_name1, _name2) )::int[];
+end
+$function$
+;
+
+CREATE OR REPLACE FUNCTION get_account_ids( in _name1 VARCHAR, in _name2 VARCHAR, in _name3 VARCHAR )
+RETURNS int []
+LANGUAGE 'plpgsql'
+stable
+as
+$function$
+begin
+  return array(select __x.id FROM hive_accounts __x WHERE __x.name IN (_name1, _name2, _name3) )::int[];
+end
+$function$
+;
+
+CREATE OR REPLACE FUNCTION get_permlink_ids( in _name1 VARCHAR )
+RETURNS int []
+LANGUAGE 'plpgsql'
+stable
+as
+$function$
+begin
+  return array(select __x.id FROM hive_permlink_data __x WHERE __x.permlink = _name1 )::int[];
+end
+$function$
+;
+
+CREATE OR REPLACE FUNCTION get_permlink_ids( in _name1 VARCHAR, in _name2 VARCHAR )
+RETURNS int []
+LANGUAGE 'plpgsql'
+stable
+as
+$function$
+begin
+  return array(select __x.id FROM hive_permlink_data __x WHERE __x.permlink IN (_name1, _name2) )::int[];
+end
+$function$
+;
+

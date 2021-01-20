@@ -722,7 +722,7 @@ namespace hive
 			{
 				my->switch_constraints(false);
 				my->switch_indexes(false);
-				if(note.force_replay && my->path_to_schema.valid()) my->recreate_db();
+				//if(note.force_replay && my->path_to_schema.valid()) my->recreate_db();
 				my->init_database();
 				my->blocks_per_commit = 10'000;
 			}
