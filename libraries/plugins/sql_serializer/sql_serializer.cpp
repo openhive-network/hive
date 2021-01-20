@@ -479,19 +479,29 @@ namespace hive
 						current_stats.reset();
 					}
 
-					void create_indexes() const
+					void switch_indexes(const bool active) const
 					{
-						static const std::vector<fc::string> indexes{{
-							R"(CREATE INDEX IF NOT EXISTS hive_operations_operation_types_index ON "hive_operations" ("op_type_id"))",
-							R"(CREATE INDEX IF NOT EXISTS hive_operations_participants_index ON "hive_operations" USING GIN ("participants"))",
-							R"(CREATE INDEX IF NOT EXISTS hive_operations_permlink_ids_index ON "hive_operations" USING GIN ("permlink_ids"))",
-							R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_operation_types_index ON "hive_virtual_operations" ("op_type_id"))",
-							R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_participants_index ON "hive_virtual_operations" USING GIN ("participants"))",
-							R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_block_num_index ON "hive_virtual_operations"( "block_num" ))"
+						using up_and_down_index = std::pair<const char*, const char*>;
+						static const std::vector<up_and_down_index> indexes{{up_and_down_index
+							{R"(CREATE INDEX IF NOT EXISTS hive_operations_operation_types_index ON "hive_operations" ("op_type_id"))", "DROP INDEX IF EXISTS hive_operations_operation_types_index"},
+							{R"(CREATE INDEX IF NOT EXISTS hive_operations_participants_index ON "hive_operations" USING GIN ("participants"))", "DROP INDEX IF EXISTS hive_operations_participants_index"},
+							{R"(CREATE INDEX IF NOT EXISTS hive_operations_permlink_ids_index ON "hive_operations" USING GIN ("permlink_ids"))", "DROP INDEX IF EXISTS hive_operations_permlink_ids_index"},
+							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_operation_types_index ON "hive_virtual_operations" ("op_type_id"))", "DROP INDEX IF EXISTS hive_virtual_operations_operation_types_index"},
+							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_participants_index ON "hive_virtual_operations" USING GIN ("participants"))", "DROP INDEX IF EXISTS hive_virtual_operations_participants_index"},
+							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_block_num_index ON "hive_virtual_operations"( "block_num" ))", "DROP INDEX IF EXISTS hive_virtual_operations_block_num_index"}
 						}};
 
+						auto trx = connection.start_transaction();
 						for (const auto &idx : indexes)
-							connection.exec_single_in_transaction(idx);
+						{
+							const char * sql =  ( active ? idx.first : idx.second );
+							if(!connection.exec_transaction(trx, sql))
+							{
+								connection.abort_transaction(trx);
+								FC_ASSERT( false );
+							}
+						}
+						connection.commit_transaction(trx);
 					}
 
 					void recreate_db()
@@ -572,7 +582,7 @@ namespace hive
 						if (set_index)
 						{
 							ilog("Creating indexes on user request");
-							create_indexes();
+							switch_indexes(true);
 						}
 						ilog("Enabling constraints...");
 						switch_constraints(true);
@@ -711,6 +721,7 @@ namespace hive
 			void sql_serializer_plugin::on_pre_reindex(const reindex_notification &note)
 			{
 				my->switch_constraints(false);
+				my->switch_indexes(false);
 				if(note.force_replay && my->path_to_schema.valid()) my->recreate_db();
 				my->init_database();
 				my->blocks_per_commit = 10'000;
