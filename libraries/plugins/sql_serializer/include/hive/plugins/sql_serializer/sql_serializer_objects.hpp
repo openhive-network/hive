@@ -282,7 +282,7 @@ namespace hive
 					{
 						if (any_blocks++) blocks.append(",");
 
-						blocks.append("( ");
+						blocks.append("\n( ");
 						blocks.append(std::to_string(bop.block_number) + " , '");
 						blocks.append( escape_raw(bop.hash.data(), bop.hash.data_size() ) + "', '" );
 						blocks.append(fc::string(bop.created_at) + "' )");
@@ -294,7 +294,7 @@ namespace hive
 					{
 						if (any_transactions++) transactions.append(",");
 
-						transactions.append("( ");
+						transactions.append("\n( ");
 						transactions.append(std::to_string(top.block_number) + " , ");
 						transactions.append(std::to_string(top.trx_in_block) + " , '");
 						transactions.append(escape_raw(top.hash.data(), top.hash.data_size() ) + "' )");
@@ -396,7 +396,7 @@ namespace hive
 					void get_operation_value_prefix(fc::string &ss, const processing_objects::process_operation_t &pop, uint32_t &order_id)
 					{
 						const char *separator = ", ";
-						ss.append("( ");
+						ss.append("\n( ");
 						ss.append(std::to_string(order_id++) + " /* order_id */");
 						ss.append(separator);
 						ss.append(std::to_string(pop.block_number) + " /* block number */");
