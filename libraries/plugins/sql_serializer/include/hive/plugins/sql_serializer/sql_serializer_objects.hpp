@@ -24,9 +24,6 @@
 #include "type_extractor_processor.hpp"
 // #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 
-// if set to 0, no log is performed, in other case determines amount of values in logged querry
-#define LOG_QUERY 0
-
 namespace hive
 {
 	namespace plugins
@@ -189,14 +186,10 @@ namespace hive
 					sql_dumper(const escape_function_t _escape, const escape_raw_function_t _escape_raw, const fc::string &_null_permlink, const fc::string &_null_account)
 							: escape{_escape}, escape_raw{ _escape_raw }, null_permlink{"'" + _null_permlink + "'"}, null_account{"'" + _null_permlink + "'"} {}
 
-					using __fun_t = fc::string(sql_dumper::*)();
-					void log_query( fc::string& target, __fun_t fun )
+					void log_query( const fc::string& sql )
 					{
-#if(LOG_QUERY != 0)
-						fc::string backup{ target };
-						std::cout << "[ SQL QUERY LOG ]" << ((*this).*(fun))() << std::endl;
-						target = std::move(backup);
-#endif // LOG_QUERIES
+						static const char* log = getenv("LOG_FINAL_QUERY");
+						if(log != nullptr) std::cout << "[ SQL QUERY LOG ]" << sql << std::endl;
 					}
 					
 					fc::string get_operations_sql()
@@ -217,6 +210,7 @@ namespace hive
  GROUP BY T.order_id, T.bn, T.trx, T.opn, T.opt, T.body;
 )");
 
+						log_query( operations );
 						return std::move(operations);
 					}
 
@@ -235,6 +229,7 @@ namespace hive
  GROUP BY T.order_id, T.bn, T.trx, T.opn, T.opt, T.body; 
 )");
 
+						log_query( virtual_operations );
 						return std::move(virtual_operations);
 					}
 
@@ -242,6 +237,7 @@ namespace hive
 					{
 						if(blocks.size() == 0) return fc::string{};
 						blocks.insert(0, "INSERT INTO hive_blocks VALUES ");
+						log_query( blocks );
 						return std::move(blocks);
 					}
 
@@ -249,6 +245,7 @@ namespace hive
 					{
 						if(transactions.size() == 0) return fc::string{};
 						transactions.insert(0, "INSERT INTO hive_transactions VALUES ");
+						log_query( transactions );
 						return std::move(transactions);
 					}
 
@@ -265,7 +262,6 @@ namespace hive
 
 						operations.append(result);
 
-						if(any_operations == LOG_QUERY) log_query( operations, &sql_dumper::get_operations_sql );
 						return operations.size();
 					}
 
@@ -279,7 +275,6 @@ namespace hive
 
 						virtual_operations.append(result);
 
-						if(any_virtual_operations == LOG_QUERY) log_query( virtual_operations, &sql_dumper::get_virtual_operations_sql );
 						return virtual_operations.size();
 					}
 
@@ -292,7 +287,6 @@ namespace hive
 						blocks.append( escape_raw(bop.hash.data(), bop.hash.data_size() ) + "', '" );
 						blocks.append(fc::string(bop.created_at) + "' )");
 
-						if(any_blocks == LOG_QUERY) log_query( blocks, &sql_dumper::get_blocks_sql );
 						return blocks.size();
 					}
 
@@ -305,7 +299,6 @@ namespace hive
 						transactions.append(std::to_string(top.trx_in_block) + " , '");
 						transactions.append(escape_raw(top.hash.data(), top.hash.data_size() ) + "' )");
 
-						if(any_transactions == LOG_QUERY) log_query( transactions, &sql_dumper::get_transaction_sql );
 						return transactions.size();
 					}
 
@@ -328,6 +321,7 @@ namespace hive
 							}
 
 							out_permlinks.append(" ON CONFLICT DO NOTHING");
+							log_query(out_permlinks);
 						}
 
 						if (account_cache.size())
@@ -344,6 +338,7 @@ namespace hive
 							}
 
 							out_accounts.append(" ON CONFLICT DO NOTHING");
+							log_query(out_accounts);
 						}
 					}
 
