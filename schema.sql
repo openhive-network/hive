@@ -30,14 +30,13 @@ CREATE SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS intarray;
 
 -- -- Check current status
-SELECT COUNT(*) FROM hive_blocks;
-SELECT COUNT(*) FROM hive_transactions;
-SELECT COUNT(*) FROM hive_operations;
-SELECT COUNT(*) FROM hive_virtual_operations;
-SELECT * FROM hive_virtual_operations WHERE op_type_id=70;
-SELECT COUNT(*) FROM hive_accounts;
-SELECT COUNT(*) FROM hive_operation_types;
-SELECT COUNT(*) FROM hive_permlink_data;
+-- SELECT COUNT(*) FROM hive_blocks;
+-- SELECT COUNT(*) FROM hive_transactions;
+-- SELECT COUNT(*) FROM hive_operations;
+-- SELECT COUNT(*) FROM hive_virtual_operations;
+-- SELECT COUNT(*) FROM hive_accounts;
+-- SELECT COUNT(*) FROM hive_operation_types;
+-- SELECT COUNT(*) FROM hive_permlink_data;
 
 -- -- Drop tables
 -- DROP TABLE IF EXISTS hive_blocks CASCADE;
