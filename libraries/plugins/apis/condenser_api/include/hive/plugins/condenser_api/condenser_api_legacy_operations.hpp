@@ -1168,6 +1168,33 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      hive_transferred;
   };
 
+  struct legacy_effective_comment_vote_operation
+  {
+    legacy_effective_comment_vote_operation() {}
+    legacy_effective_comment_vote_operation( const effective_comment_vote_operation& op ) :
+      voter{op.voter},
+      author{op.author},
+      permlink{op.permlink},
+      weight{op.weight},
+      rshares{op.rshares},
+      total_vote_weight{op.total_vote_weight},
+      pending_payout{op.pending_payout} {}
+
+    operator effective_comment_vote_operation()const
+    {
+      legacy_effective_comment_vote_operation op = *this;
+      return op;
+    }
+
+    account_name_type voter;
+    account_name_type author;
+    string            permlink;
+    uint64_t          weight = 0;
+    int64_t           rshares = 0;
+    uint64_t          total_vote_weight = 0;
+    asset             pending_payout{ 0, HBD_SYMBOL };
+  };
+
   typedef fc::static_variant<
         legacy_vote_operation,
         legacy_comment_operation,
@@ -1239,7 +1266,8 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_hardfork_hive_restore_operation,
         legacy_delayed_voting_operation,
         legacy_consolidate_treasury_balance_operation,
-        legacy_sps_convert_operation
+        legacy_sps_convert_operation,
+				legacy_effective_comment_vote_operation
       > legacy_operation;
 
   struct legacy_operation_conversion_visitor
@@ -1507,6 +1535,12 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
+    bool operator()( const effective_comment_vote_operation& op )const
+    {
+      l_op = legacy_effective_comment_vote_operation( op );
+      return true;
+    }
+
     // Should only be SMT ops
     template< typename T >
     bool operator()( const T& )const { return false; }
@@ -1703,6 +1737,11 @@ struct convert_from_legacy_operation_visitor
     return operation( hardfork_hive_restore_operation( op ) );
   }
 
+  operation operator()( const legacy_effective_comment_vote_operation& op )const
+  {
+    return operation( effective_comment_vote_operation( op ) );
+  }
+
   template< typename T >
   operation operator()( const T& t )const
   {
@@ -1889,5 +1928,6 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_create_proposal_operation, (cre
 FC_REFLECT( hive::plugins::condenser_api::legacy_update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout))
 
 FC_REFLECT_TYPENAME( hive::plugins::condenser_api::legacy_operation )
