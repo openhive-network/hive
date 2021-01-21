@@ -1,5 +1,4 @@
 #include <hive/plugins/sql_serializer/sql_serializer_plugin.hpp>
-#include <hive/plugins/condenser_api/condenser_api_legacy_operations.hpp>
 
 #include <hive/chain/util/impacted.hpp>
 #include <hive/protocol/config.hpp>
@@ -19,28 +18,6 @@
 // C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
 #include <pqxx/pqxx>
 
-namespace fc
-{
-	struct from_operation_sql
-	{
-		variant& var;
-		from_operation_sql( variant& dv )
-			: var( dv ) {}
-
-		typedef void result_type;
-		template<typename T> void operator()( const T& v )const
-		{
-			var = variant( v );
-		}
-	};
-
-	void to_variant( std::shared_ptr<hive::plugins::condenser_api::legacy_operation> var,  fc::variant& vo )
-	{
-		FC_ASSERT( var.get() );
-		var->visit( from_operation_sql( vo ) );
-	}
-}
-
 namespace hive
 {
 	namespace plugins
@@ -51,8 +28,6 @@ namespace hive
 			using num_t = std::atomic<uint64_t>;
 			using duration_t = fc::microseconds;
 			using stat_time_t = std::atomic<duration_t>;
-			using hive::plugins::condenser_api::legacy_operation;
-			using hive::plugins::condenser_api::legacy_operation_conversion_visitor;
 
 			inline void operator+=( stat_time_t& atom, const duration_t& dur )
 			{
@@ -441,11 +416,7 @@ namespace hive
 						worker_pool.SetBackgroundThreads( std::max( 1u, connection.get_max_transaction_count() / connections_per_worker ) );
 					}
 
-					virtual ~sql_serializer_plugin_impl()
-					{
-						mylog("finishing from plugin impl destructor");
-						cleanup_sequence();
-					}
+					virtual ~sql_serializer_plugin_impl() {}
 
 					boost::signals2::connection _on_post_apply_operation_con;
 					boost::signals2::connection _on_post_apply_transaction_con;
@@ -579,7 +550,7 @@ namespace hive
 						push_currently_cached_data(0);
 						close_pools();
 						if(are_constraints_active) return;
-						if (set_index)
+						if( !appbase::app().is_interrupt_request() )
 						{
 							ilog("Creating indexes on user request");
 							switch_indexes(true);
@@ -596,7 +567,7 @@ namespace hive
 
 			void sql_serializer_plugin::set_program_options(options_description &cli, options_description &cfg)
 			{
-				cfg.add_options()("psql-url", boost::program_options::value<string>(), "postgres connection string")("psql-path-to-schema", "if set and replay starts from 0 block, executes script")("psql-reindex-on-exit", "creates indexes and PK on exit");
+				cfg.add_options()("psql-url", boost::program_options::value<string>(), "postgres connection string")("psql-path-to-schema", "if set and replay starts from 0 block, executes script");
 			}
 
 			void sql_serializer_plugin::plugin_initialize(const boost::program_options::variables_map &options)
@@ -608,7 +579,6 @@ namespace hive
 				// settings
 				if (options.count("psql-path-to-schema"))
 					my->path_to_schema = options["psql-path-to-schema"].as<fc::string>();
-				my->set_index = options.count("psql-reindex-on-exit") > 0;
 				my->currently_caching_data = std::make_unique<detail::cached_data_t>( default_reservation_size );
 
 				// signals
@@ -619,8 +589,6 @@ namespace hive
 				my->_on_finished_reindex = db.add_post_reindex_handler([&](const reindex_notification &note) { on_post_reindex(note); }, *this);
 				my->_on_starting_reindex = db.add_pre_reindex_handler([&](const reindex_notification &note) { on_pre_reindex(note); }, *this);
 				my->_on_live_sync_start = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().on_sync.connect(0, [&](){ on_live_sync_start(); });
-
-				
 			}
 
 			void sql_serializer_plugin::plugin_startup()
@@ -654,10 +622,7 @@ namespace hive
 				const bool is_virtual = note.op.visit(PSQL::is_virtual_visitor{});
 
 				// deserialization
-				std::shared_ptr<legacy_operation> lop{ new legacy_operation{} };
-				note.op.visit( legacy_operation_conversion_visitor{*lop} );
-				fc::string deserialized_op = fc::json::to_string(lop);
-				lop.reset();
+				fc::string deserialized_op = fc::json::to_string(note.op);
 
 				detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
 				cdtf->total_size += deserialized_op.size() + sizeof(note);
@@ -721,8 +686,9 @@ namespace hive
 			void sql_serializer_plugin::on_pre_reindex(const reindex_notification &note)
 			{
 				my->switch_constraints(false);
-				my->switch_indexes(false);
-				if(note.force_replay && my->path_to_schema.valid()) my->recreate_db();
+        my->switch_indexes(false);
+        my->set_index = true; /// Define indices once reindex done.
+				// if(note.force_replay && my->path_to_schema.valid()) my->recreate_db();
 				my->init_database();
 				my->blocks_per_commit = 10'000;
 			}
