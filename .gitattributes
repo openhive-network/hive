@@ -2,7 +2,6 @@
 # Set default behavior to automatically normalize line endings.
 ###############################################################################
 * text=eol=lf
-text eol=lf
 *.sql text
 *.py text
 *.cpp text
