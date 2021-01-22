@@ -99,8 +99,8 @@ namespace fc {
 
       ///////////////
       std::stringstream line;
-      line << appender::format_time_as_string(m.get_context().get_timestamp(), my->cfg.time_format);
-      line << " " << std::setw(30) << std::left << file_line.str();
+      line << (m.get_context().get_timestamp().time_since_epoch().count() % (1000ll*1000ll*60ll*60))/1000 <<"ms ";
+      line << std::setw(30)<< std::left <<file_line.str();
 
       auto me = m.get_context().get_method();
       // strip all leading scopes...

@@ -15,12 +15,11 @@ namespace appbase {
   namespace bpo = boost::program_options;
   namespace bfs = boost::filesystem;
 
-  class application;
-
   class io_handler
   {
     public:
 
+      using p_io_handler = std::shared_ptr< io_handler >;
       using p_signal_set = std::shared_ptr< boost::asio::signal_set >;
       using final_action_type = std::function< void() >;
 
@@ -37,14 +36,14 @@ namespace appbase {
       p_signal_set            signals;
 
       boost::asio::io_service io_serv;
-      application&            app;
 
       void close_signal();
 
       void handle_signal( uint32_t _last_signal_code );
 
     public:
-      io_handler(application& app, bool _allow_close_when_signal_is_received, final_action_type&& _final_action);
+
+      io_handler( bool _allow_close_when_signal_is_received, final_action_type&& _final_action );
 
       boost::asio::io_service& get_io_service();
 
@@ -53,15 +52,15 @@ namespace appbase {
       void attach_signals();
 
       void run();
+
+      void set_interrupt_request( uint32_t _last_signal_code );
+      bool is_interrupt_request() const;
   };
 
-  class application final
+  class application
   {
     public:
-      application(const application&) = delete;
-      application& operator=(const application&) = delete;
-      application(application&&) = delete;
-      application& operator=(application&&) = delete;
+      ~application();
 
       /**
         * @brief Looks for the --plugin commandline / config option and calls initialize on those plugins
@@ -77,11 +76,7 @@ namespace appbase {
       }
 
       void startup();
-
-      void pre_shutdown();
       void shutdown();
-
-      void finish();
 
       /**
         *  Wait until quit(), SIGINT or SIGTERM and then shutdown
@@ -142,12 +137,13 @@ namespace appbase {
 
       void generate_interrupt_request()
       {
-        _is_interrupt_request = true;
+        if( startup_io_handler )
+          startup_io_handler->set_interrupt_request( SIGINT );
       }
 
       bool is_interrupt_request() const
       {
-        return _is_interrupt_request;
+        return startup_io_handler ? startup_io_handler->is_interrupt_request() : _is_interrupt_request;
       }
 
       std::set< std::string > get_plugins_names() const;
@@ -166,23 +162,13 @@ namespace appbase {
         */
       ///@{
       void plugin_initialized( abstract_plugin& plug ) { initialized_plugins.push_back( &plug ); }
-      void plugin_started( abstract_plugin& plug )
-      {
-        running_plugins.push_back( &plug );
-        pre_shutdown_plugins.insert( &plug );
-      }
+      void plugin_started( abstract_plugin& plug ) { running_plugins.push_back( &plug ); }
       ///@}
 
     private:
-      application(); ///< private because application is a singleton that should be accessed via instance()
-      ~application();
-
+      application(); ///< private because application is a singlton that should be accessed via instance()
       map< string, std::shared_ptr< abstract_plugin > >  plugins; ///< all registered plugins
       vector< abstract_plugin* >                         initialized_plugins; ///< stored in the order they were started running
-
-      using pre_shutdown_cmp = std::function< bool ( abstract_plugin*, abstract_plugin* ) >;
-      using pre_shutdown_multiset = std::multiset< abstract_plugin*, pre_shutdown_cmp >;
-      pre_shutdown_multiset                              pre_shutdown_plugins; ///< stored in the order what is necessary in order to close every plugin in safe way
       vector< abstract_plugin* >                         running_plugins; ///< stored in the order they were started running
       std::string                                        version_info;
       std::string                                        app_name = "appbase";
@@ -194,7 +180,10 @@ namespace appbase {
 
       io_handler                 main_io_handler;
 
-      std::atomic_bool _is_interrupt_request{false};
+      //This handler is designed only for startup purposes
+      io_handler::p_io_handler   startup_io_handler;
+
+      bool _is_interrupt_request = false;
   };
 
   application& app();
@@ -206,7 +195,6 @@ namespace appbase {
     public:
       virtual ~plugin() {}
 
-      virtual pre_shutdown_order get_pre_shutdown_order() const override { return _pre_shutdown_order; }
       virtual state get_state() const override { return _state; }
       virtual const std::string& get_name()const override final { return Impl::name(); }
 
@@ -242,37 +230,6 @@ namespace appbase {
           BOOST_THROW_EXCEPTION( std::runtime_error("Initial state was not initialized, so final state cannot be started.") );
       }
 
-      virtual void finalize_startup() override final
-      {
-        this->plugin_finalize_startup();
-      }
-
-      virtual void plugin_finalize_startup() override
-      {
-        /*
-          By default most plugins don't need any post-actions during startup.
-          Problem is with JSON plugin, that has API plugins attached to itself.
-          Linking plugins into JSON plugin has to be done after startup actions.
-        */
-      }
-
-      virtual void plugin_pre_shutdown() override
-      {
-        /*
-          By default most plugins don't need any pre-actions during shutdown.
-          A problem appears when P2P plugin receives and sends data into dependent plugins.
-          In this case is necessary to close P2P plugin as soon as possible.
-        */
-      }
-
-      virtual void pre_shutdown() override final
-      {
-        if( _state == started )
-        {
-          this->plugin_pre_shutdown();
-        }
-      }
-
       virtual void shutdown() override final
       {
         if( _state == started )
@@ -286,10 +243,7 @@ namespace appbase {
     protected:
       plugin() = default;
 
-      virtual void set_pre_shutdown_order( pre_shutdown_order val ) { _pre_shutdown_order = val; }
-
     private:
-      pre_shutdown_order _pre_shutdown_order = abstract_plugin::basic_order;
       state _state = abstract_plugin::registered;
   };
 }

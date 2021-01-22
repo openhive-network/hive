@@ -26,12 +26,12 @@ void initialize_core_indexes( database& db )
   HIVE_ADD_CORE_INDEX(db, block_summary_index);
   HIVE_ADD_CORE_INDEX(db, witness_schedule_index);
   HIVE_ADD_CORE_INDEX(db, comment_index);
+  HIVE_ADD_CORE_INDEX(db, comment_content_index);
   HIVE_ADD_CORE_INDEX(db, comment_vote_index);
   HIVE_ADD_CORE_INDEX(db, witness_vote_index);
   HIVE_ADD_CORE_INDEX(db, limit_order_index);
   HIVE_ADD_CORE_INDEX(db, feed_history_index);
   HIVE_ADD_CORE_INDEX(db, convert_request_index);
-  HIVE_ADD_CORE_INDEX(db, collateralized_convert_request_index);
   HIVE_ADD_CORE_INDEX(db, liquidity_reward_balance_index);
   HIVE_ADD_CORE_INDEX(db, operation_index);
   HIVE_ADD_CORE_INDEX(db, account_history_index);
@@ -60,7 +60,6 @@ void initialize_core_indexes( database& db )
   HIVE_ADD_CORE_INDEX(db, proposal_index);
   HIVE_ADD_CORE_INDEX(db, proposal_vote_index);
   HIVE_ADD_CORE_INDEX(db, comment_cashout_index);
-  HIVE_ADD_CORE_INDEX(db, recurrent_transfer_index);
 }
 
 index_info::index_info() {}
