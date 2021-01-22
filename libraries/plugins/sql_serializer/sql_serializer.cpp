@@ -484,16 +484,13 @@ namespace hive
 					void recreate_db()
 					{
 						FC_ASSERT(path_to_schema.valid());
-						std::vector<fc::string> querries;
-						fc::string line;
 
 						std::ifstream file{*path_to_schema};
-						while(std::getline(file, line)) querries.push_back(line);
+						fc::string q{ std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>() };
 						file.close();
 
-						for(const fc::string& q : querries) 
-							if(!connection.exec_single_in_transaction(q)) 
-								wlog("Failed to execute query from ${schema_path}:\n${query}", ("schema_path", *path_to_schema)("query", q));
+						if(!connection.exec_single_in_transaction(q)) 
+							wlog("Failed to execute query from ${schema_path}:\n${query}", ("schema_path", *path_to_schema)("query", q));
 					}
 
 					void init_database()
@@ -538,8 +535,8 @@ namespace hive
 					{
 						if(currently_caching_data.get() == nullptr) return;
 						current_stats.all_created_workers++;
-						// worker_pool.SubmitJob( process_task{ std::make_shared<cached_containter_t>( std::move( currently_caching_data ) ), connection, tasks, current_stats, null_account, null_permlink } );
-						process_task{ std::make_shared<cached_containter_t>( std::move( currently_caching_data ) ), connection, tasks, current_stats }();
+						worker_pool.SubmitJob( process_task{ std::make_shared<cached_containter_t>( std::move( currently_caching_data ) ), connection, tasks, current_stats } );
+						// process_task{ std::make_shared<cached_containter_t>( std::move( currently_caching_data ) ), connection, tasks, current_stats }();
 					}
 
 					void push_currently_cached_data(const size_t reserve)
@@ -695,7 +692,7 @@ namespace hive
 				my->switch_constraints(false);
         my->switch_indexes(false);
         my->set_index = true; /// Define indices once reindex done.
-				// if(note.force_replay && my->path_to_schema.valid()) my->recreate_db();
+				if(note.force_replay && my->path_to_schema.valid()) my->recreate_db();
 				my->init_database();
 				my->blocks_per_commit = 10'000;
 			}

@@ -1,12 +1,3 @@
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
--- -- -- -- -- -- -- -- W A R N I N G- -- -- -- -- -- -- -- -- 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
--- Because of security reasons, queries cannot be executed  -- 
--- one after another sepraeted with semicolon.              -- 
--- Use `normalize_schema.py <THIS FILE> <NEW FILE>          -- 
--- and set `psql-path-to-schema` to <NEW FILE>              -- 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-
 -- -- Create Database
 -- CREATE DATABASE block_log;
 

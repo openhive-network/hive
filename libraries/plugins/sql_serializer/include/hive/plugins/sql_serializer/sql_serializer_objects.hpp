@@ -187,9 +187,8 @@ namespace hive
 
 					void log_query( const fc::string& sql )
 					{
-						// static const char* log = getenv("LOG_FINAL_QUERY");
-						// if(log != nullptr) 
-						std::cout << "[ SQL QUERY LOG ]" << sql << std::endl;
+						static const char* log = getenv("LOG_FINAL_QUERY");
+						if(log != nullptr) std::cout << "[ SQL QUERY LOG ]" << sql << std::endl;
 					}
 					
 					fc::string get_operations_sql()
