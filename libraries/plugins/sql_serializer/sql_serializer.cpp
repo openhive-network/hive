@@ -29,6 +29,18 @@ namespace hive
 			using duration_t = fc::microseconds;
 			using stat_time_t = std::atomic<duration_t>;
 
+			struct from_static_variant_sql
+			{
+					fc::variant& var;
+					from_static_variant_sql( variant& dv ):var(dv){}
+
+					typedef void result_type;
+					template<typename T> void operator()( const T& v )const
+					{
+						var = fc::mutable_variant_object( v );
+					}
+			};
+
 			inline void operator+=( stat_time_t& atom, const duration_t& dur )
 			{
 				atom.store( atom.load() + dur );
@@ -329,9 +341,6 @@ namespace hive
 					task_collection_t& tasks;
 					stats_group& stats;
 
-					const fc::string& null_permlink;
-					const fc::string& null_account;
-
 					void upload_caches(PSQL::sql_dumper &dumper)
 					{
 						fc::string perms, accs;
@@ -353,7 +362,7 @@ namespace hive
 						transaction_t tx{ conn.start_transaction() };
 						conn.abort_transaction(tx);
 
-						PSQL::sql_dumper dumper{tx->get_escaping_charachter_methode(), tx->get_raw_escaping_charachter_methode(), null_permlink, null_account};
+						PSQL::sql_dumper dumper{tx->get_escaping_charachter_methode(), tx->get_raw_escaping_charachter_methode() };
 						cached_data_t& data = **input;	// alias
 						auto tm = fc::time_point::now();
 
@@ -440,9 +449,6 @@ namespace hive
 					task_collection_t tasks;
 					stats_group current_stats;
 
-					fc::string null_permlink;
-					fc::string null_account;
-
 					void log_statistics()
 					{
 						current_stats.workers_count = worker_pool.GetQueueLen();
@@ -493,8 +499,6 @@ namespace hive
 					void init_database()
 					{
 						connection.exec_single_in_transaction(PSQL::get_all_type_definitions());
-						null_permlink = connection.get_single_value<fc::string>( "SELECT permlink FROM hive_permlink_data WHERE id=0" );
-						null_account = connection.get_single_value<fc::string>( "SELECT name FROM hive_accounts WHERE id=0" );
 					}
 
 					void close_pools()
@@ -534,7 +538,8 @@ namespace hive
 					{
 						if(currently_caching_data.get() == nullptr) return;
 						current_stats.all_created_workers++;
-						worker_pool.SubmitJob( process_task{ std::make_shared<cached_containter_t>( std::move( currently_caching_data ) ), connection, tasks, current_stats, null_account, null_permlink } );
+						// worker_pool.SubmitJob( process_task{ std::make_shared<cached_containter_t>( std::move( currently_caching_data ) ), connection, tasks, current_stats, null_account, null_permlink } );
+						process_task{ std::make_shared<cached_containter_t>( std::move( currently_caching_data ) ), connection, tasks, current_stats }();
 					}
 
 					void push_currently_cached_data(const size_t reserve)
@@ -622,7 +627,9 @@ namespace hive
 				const bool is_virtual = note.op.visit(PSQL::is_virtual_visitor{});
 
 				// deserialization
-				fc::string deserialized_op = fc::json::to_string(note.op);
+				fc::variant v;
+				note.op.visit(from_static_variant_sql{v});
+				fc::string deserialized_op = fc::json::to_string(v);
 
 				detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
 				cdtf->total_size += deserialized_op.size() + sizeof(note);

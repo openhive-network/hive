@@ -172,9 +172,6 @@ namespace hive
 					const escape_function_t escape;
 					const escape_raw_function_t escape_raw;
 
-					const fc::string null_account; 
-					const fc::string null_permlink;
-
 					fc::string blocks{};
 					fc::string transactions{};
 					fc::string operations{};
@@ -183,17 +180,16 @@ namespace hive
 					cache_contatiner_t permlink_cache;
 					cache_contatiner_t account_cache;
 
-					sql_dumper(const escape_function_t _escape, const escape_raw_function_t _escape_raw, const fc::string &_null_permlink, const fc::string &_null_account) : 
+					sql_dumper(const escape_function_t _escape, const escape_raw_function_t _escape_raw) :
 						escape{_escape}, 
-						escape_raw{ _escape_raw }, 
-						null_account{ "E'" + _null_account + "'" }, 
-						null_permlink{ "E'" + _null_permlink + "'" } 
+						escape_raw{ _escape_raw }
 					{}
 
 					void log_query( const fc::string& sql )
 					{
-						static const char* log = getenv("LOG_FINAL_QUERY");
-						if(log != nullptr) std::cout << "[ SQL QUERY LOG ]" << sql << std::endl;
+						// static const char* log = getenv("LOG_FINAL_QUERY");
+						// if(log != nullptr) 
+						std::cout << "[ SQL QUERY LOG ]" << sql << std::endl;
 					}
 					
 					fc::string get_operations_sql()
@@ -349,9 +345,9 @@ namespace hive
 				private:
 
 					template<typename iterable_t, typename function_t>
-					fc::string format_text_array( const iterable_t& coll, function_t for_each, const fc::string& null_value )
+					fc::string format_text_array( const iterable_t& coll, function_t for_each )
 					{
-						if( coll.size() == 0 ) return "ARRAY[" + null_value + "]";
+						if( coll.size() == 0 ) return "ARRAY[ '' ]";
 						fc::string ret{ "ARRAY[ " };
 						for(auto cit = coll.begin(); cit != coll.end(); cit++)
 						{
@@ -371,14 +367,14 @@ namespace hive
 						boost::container::flat_set<account_name_type> impacted;
 						hive::app::operation_get_impacted_accounts(op, impacted);
 						impacted.erase(account_name_type());
-						return std::move( format_text_array( impacted , [&](const account_name_type& acc) { account_cache.insert( fc::string(acc) ); }, null_account ) );
+						return std::move( format_text_array( impacted , [&](const account_name_type& acc) { account_cache.insert( fc::string(acc) ); } ) );
 					}
 
 					fc::string get_formatted_permlinks(const operation &op)
 					{
 						std::vector<fc::string> result;
 						hive::app::operation_get_permlinks(op, result);
-						return std::move( format_text_array( result, [&](const fc::string& perm) { permlink_cache.insert( perm ); }, null_permlink ));
+						return std::move( format_text_array( result, [&](const fc::string& perm) { permlink_cache.insert( perm ); } ));
 					}
 
 					fc::string get_body(const char *op) const
