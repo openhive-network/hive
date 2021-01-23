@@ -29,18 +29,6 @@ namespace hive
 			using duration_t = fc::microseconds;
 			using stat_time_t = std::atomic<duration_t>;
 
-			struct from_static_variant_sql
-			{
-					fc::variant& var;
-					from_static_variant_sql( variant& dv ):var(dv){}
-
-					typedef void result_type;
-					template<typename T> void operator()( const T& v )const
-					{
-						var = fc::mutable_variant_object( v );
-					}
-			};
-
 			inline void operator+=( stat_time_t& atom, const duration_t& dur )
 			{
 				atom.store( atom.load() + dur );
@@ -137,19 +125,6 @@ namespace hive
 
 					transaction_repr_t() = default;
 					transaction_repr_t(pqxx::connection* _conn, work* _trx) : _connection{_conn}, _transaction{_trx} {}
-
-					auto get_escaping_charachter_methode() const
-					{
-						return [this](const char *val) -> fc::string { return std::move( this->_connection->esc(val) ); };
-					}
-
-					auto get_raw_escaping_charachter_methode() const
-					{
-						return [this](const char *val, const size_t s) -> fc::string { 
-							pqxx::binarystring __tmp(val, s); 
-							return std::move( this->_transaction->esc_raw( __tmp.str() ) ); 
-						};
-					}
 				};
 				using transaction_t = std::unique_ptr<transaction_repr_t>;
 
@@ -358,11 +333,7 @@ namespace hive
 
 					void operator()()
 					{
-						// it's required to obtain escaping functions
-						transaction_t tx{ conn.start_transaction() };
-						conn.abort_transaction(tx);
-
-						PSQL::sql_dumper dumper{tx->get_escaping_charachter_methode(), tx->get_raw_escaping_charachter_methode() };
+						PSQL::sql_dumper dumper{};
 						cached_data_t& data = **input;	// alias
 						auto tm = fc::time_point::now();
 
@@ -624,9 +595,7 @@ namespace hive
 				const bool is_virtual = note.op.visit(PSQL::is_virtual_visitor{});
 
 				// deserialization
-				fc::variant v;
-				note.op.visit(from_static_variant_sql{v});
-				fc::string deserialized_op = fc::json::to_string(v);
+				fc::string deserialized_op{ note.op.visit(sql_serializer::escapings::escape_visitor{}) };
 
 				detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
 				cdtf->total_size += deserialized_op.size() + sizeof(note);

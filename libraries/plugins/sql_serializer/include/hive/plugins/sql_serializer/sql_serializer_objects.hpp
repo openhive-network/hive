@@ -5,6 +5,8 @@
 #include <string>
 #include <atomic>
 #include <functional>
+#include <locale>
+#include <codecvt>
 
 // Boost
 #include <boost/mpl/for_each.hpp>
@@ -22,7 +24,6 @@
 #include <hive/chain/util/extractors.hpp>
 #include <hive/chain/account_object.hpp>
 #include "type_extractor_processor.hpp"
-// #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 
 namespace hive
 {
@@ -30,10 +31,69 @@ namespace hive
 	{
 		namespace sql_serializer
 		{
+			namespace escapings
+			{
+				inline fc::string escape_sql(const std::string &text)
+				{
+					const static std::map<wchar_t, fc::string> special_chars{{std::pair<wchar_t, fc::string>{L'\x00', " "}, {L'\r', "\\015"}, {L'\n', "\\012"}, {L'\v', "\\013"}, {L'\f', "\\014"}, {L'\\', "\\134"}, {L'\'', "\\047"}, {L'%', "\\045"}, {L'_', "\\137"}, {L':', "\\072"}}};
+
+					if(text.empty()) return "E''";
+
+					std::wstring_convert<std::codecvt_utf8<wchar_t>> conv{};
+					std::wstring utf32 = conv.from_bytes(text);
+					std::stringstream ss{};
+					ss << "E'";
+
+					for (auto it = utf32.begin(); it != utf32.end(); it++)
+					{
+						const wchar_t c{*it};
+						const auto result = special_chars.find(c);
+						if (result != special_chars.end()) ss << result->second;
+						else
+						{
+							const char _c = conv.to_bytes(c)[0];
+							if( _c > 0 && std::isprint(_c) ) ss << _c;
+							else
+							{
+								const bool is_utf_32{ int(c) > 0xffff };
+								ss << ( is_utf_32 ? "\\U" : "\\u" ) << std::setfill('0') << std::setw(4 + (4 * is_utf_32)) << std::hex << int(c);
+							}
+						}
+					}
+					ss << '\'';
+					return ss.str();
+				}
+
+				struct escape_visitor
+				{
+					using result_type = fc::string;
+
+					template<typename operation_t>
+					result_type operator()(const operation_t& op) const
+					{
+						return to_string(op);
+					}
+
+				private:
+
+					template<typename operation_t>
+					result_type to_string(const operation_t& op) const 
+					{
+						return escape_sql(
+							fc::json::to_string(
+								fc::mutable_variant_object( op )
+							)
+						);
+					}
+
+				};
+			}
+
 			namespace PSQL
 			{
 
 				using operation_types_container_t = std::map<int64_t, std::pair<fc::string, bool>>;
+				using hive::protocol::operation;
 
 				struct typename_gatherer
 				{
@@ -45,13 +105,6 @@ namespace hive
 						names[names.size()] = std::pair<fc::string, bool>(boost::typeindex::type_id<T>().pretty_name(), T{}.is_virtual());
 					}
 				};
-
-				template <typename T>
-				using queue = boost::concurrent::sync_queue<T>;
-				using escape_function_t = std::function<fc::string(const char *)>;
-				using escape_raw_function_t = std::function<fc::string(const char *, const size_t)>;
-
-				using hive::protocol::operation;
 
 				namespace processing_objects
 				{
@@ -166,11 +219,7 @@ namespace hive
 
 				struct sql_dumper
 				{
-					// returns current width of stream
-					typedef size_t result_type;
-
-					const escape_function_t escape;
-					const escape_raw_function_t escape_raw;
+					using result_type = size_t;
 
 					fc::string blocks{};
 					fc::string transactions{};
@@ -179,11 +228,6 @@ namespace hive
 
 					cache_contatiner_t permlink_cache;
 					cache_contatiner_t account_cache;
-
-					sql_dumper(const escape_function_t _escape, const escape_raw_function_t _escape_raw) :
-						escape{_escape}, 
-						escape_raw{ _escape_raw }
-					{}
 
 					void log_query( const fc::string& sql )
 					{
@@ -282,8 +326,8 @@ namespace hive
 						if (any_blocks++) blocks.append(",");
 
 						blocks.append("\n( ");
-						blocks.append(std::to_string(bop.block_number) + " , '");
-						blocks.append( escape_raw(bop.hash.data(), bop.hash.data_size() ) + "', '" );
+						blocks.append(std::to_string(bop.block_number) + " , '\\x");
+						blocks.append(bop.hash.str() + "', '" );
 						blocks.append(fc::string(bop.created_at) + "' )");
 
 						return blocks.size();
@@ -295,8 +339,9 @@ namespace hive
 
 						transactions.append("\n( ");
 						transactions.append(std::to_string(top.block_number) + " , ");
-						transactions.append(std::to_string(top.trx_in_block) + " , '");
-						transactions.append(escape_raw(top.hash.data(), top.hash.data_size() ) + "' )");
+						transactions.append(std::to_string(top.trx_in_block) + " , '\\x");
+						transactions.append(top.hash.str() + "' )");
+						
 
 						return transactions.size();
 					}
@@ -314,9 +359,9 @@ namespace hive
 							{
 								if (it != permlink_cache.begin())
 									out_permlinks.append(",");
-								out_permlinks.append("( E'");
-								out_permlinks.append(escape(it->c_str()));
-								out_permlinks.append("')");
+								out_permlinks.append("( ");
+								out_permlinks.append(std::move(*it));
+								out_permlinks.append(" )");
 							}
 
 							out_permlinks.append(" ON CONFLICT DO NOTHING");
@@ -331,9 +376,9 @@ namespace hive
 							{
 								if (it != account_cache.begin())
 									out_accounts.append(",");
-								out_accounts.append("( E'");
-								out_accounts.append(escape(it->c_str()));
-								out_accounts.append("')");
+								out_accounts.append("( ");
+								out_accounts.append(std::move(*it));
+								out_accounts.append(" )");
 							}
 
 							out_accounts.append(" ON CONFLICT DO NOTHING");
@@ -351,10 +396,9 @@ namespace hive
 						for(auto cit = coll.begin(); cit != coll.end(); cit++)
 						{
 							if(cit != coll.begin()) ret.append(",");
-							ret.append( "E'" );
-							ret.append( *cit );
-							ret.append("' ");
-							for_each(*cit);
+							fc::string _tmp{ escapings::escape_sql(*cit) };
+							for_each(_tmp);
+							ret.append(std::move(_tmp));
 						}
 						ret.append("]");
 						return std::move(ret);
@@ -366,7 +410,7 @@ namespace hive
 						boost::container::flat_set<account_name_type> impacted;
 						hive::app::operation_get_impacted_accounts(op, impacted);
 						impacted.erase(account_name_type());
-						return std::move( format_text_array( impacted , [&](const account_name_type& acc) { account_cache.insert( fc::string(acc) ); } ) );
+						return std::move( format_text_array( impacted , [&](const fc::string& acc) { account_cache.insert( acc ); } ) );
 					}
 
 					fc::string get_formatted_permlinks(const operation &op)
@@ -380,11 +424,7 @@ namespace hive
 					{
 						if (std::strlen(op) == 0)
 							return "NULL";
-						return generate([&](fc::string &ss) {
-							ss.append("E'");
-							ss.append(escape(op));
-							ss.append("'");
-						});
+						return fc::string(op);
 					}
 
 					fc::string get_operation_type_id(const operation &op) const
