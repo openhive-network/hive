@@ -414,6 +414,7 @@ namespace hive
 					std::list<thread_with_status> threads;
 					uint32_t blocks_per_commit = 1;
 					int64_t block_vops = 0;
+					uint64_t op_counter = 0;
 
 					cached_containter_t currently_caching_data;
 					thread_pool_t worker_pool{};
@@ -436,7 +437,9 @@ namespace hive
 							{R"(CREATE INDEX IF NOT EXISTS hive_operations_permlink_ids_index ON "hive_operations" USING GIN ("permlink_ids"))", "DROP INDEX IF EXISTS hive_operations_permlink_ids_index"},
 							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_operation_types_index ON "hive_virtual_operations" ("op_type_id"))", "DROP INDEX IF EXISTS hive_virtual_operations_operation_types_index"},
 							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_participants_index ON "hive_virtual_operations" USING GIN ("participants"))", "DROP INDEX IF EXISTS hive_virtual_operations_participants_index"},
-							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_block_num_index ON "hive_virtual_operations"( "block_num" ))", "DROP INDEX IF EXISTS hive_virtual_operations_block_num_index"}
+							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_block_num_index ON "hive_virtual_operations"( "block_num" ))", "DROP INDEX IF EXISTS hive_virtual_operations_block_num_index"},
+							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_order_id_index ON "hive_virtual_operations"( "order_id" ))", "DROP INDEX IF EXISTS hive_virtual_operations_order_id_index"},
+							{R"(CREATE INDEX IF NOT EXISTS hive_operations_order_id_index ON "hive_operations"( "order_id" ))", "DROP INDEX IF EXISTS hive_operations_order_id_index"}
 						}};
 
 						auto trx = connection.start_transaction();
@@ -467,6 +470,7 @@ namespace hive
 					void init_database()
 					{
 						connection.exec_single_in_transaction(PSQL::get_all_type_definitions());
+						op_counter = connection.get_single_value<uint64_t>( "SELECT coalesce(GREATEST((SELECT MAX(order_id) FROM hive_operations), (SELECT MAX(order_id) FROM hive_virtual_operations)), 0 )" );
 					}
 
 					void close_pools()
@@ -593,6 +597,7 @@ namespace hive
 			void sql_serializer_plugin::on_post_apply_operation(const operation_notification &note)
 			{
 				const bool is_virtual = note.op.visit(PSQL::is_virtual_visitor{});
+				my->op_counter++;
 
 				// deserialization
 				fc::string deserialized_op{ note.op.visit(sql_serializer::escapings::escape_visitor{}) };
@@ -602,6 +607,7 @@ namespace hive
 				if (is_virtual)
 				{
 					cdtf->virtual_operations.emplace_back(
+							my->op_counter,
 							note.block,
 							note.trx_in_block,
 							( note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx ),
@@ -612,6 +618,7 @@ namespace hive
 				else
 				{
 					cdtf->operations.emplace_back(
+							my->op_counter,
 							note.block,
 							note.trx_in_block,
 							note.op_in_trx,

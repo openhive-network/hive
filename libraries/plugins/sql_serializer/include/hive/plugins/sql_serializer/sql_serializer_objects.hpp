@@ -139,6 +139,7 @@ namespace hive
 
 					struct process_operation_t
 					{
+						uint64_t order_id;
 						int64_t block_number;
 						int64_t trx_in_block;
 						int64_t op_in_trx;
@@ -146,7 +147,7 @@ namespace hive
 						fc::string deserialized_op;
 
 						process_operation_t() = default;
-						process_operation_t(const int64_t _block_number, const int64_t _trx_in_block, const int64_t _op_in_trx, const operation &_op, const fc::string _deserialized_op) : block_number{_block_number}, trx_in_block{_trx_in_block}, op_in_trx{_op_in_trx}, op{_op}, deserialized_op{_deserialized_op} {}
+						process_operation_t(const uint64_t order_id, const int64_t _block_number, const int64_t _trx_in_block, const int64_t _op_in_trx, const operation &_op, const fc::string _deserialized_op) : order_id{order_id}, block_number{_block_number}, trx_in_block{_trx_in_block}, op_in_trx{_op_in_trx}, op{_op}, deserialized_op{_deserialized_op} {}
 					};
 
 					using process_virtual_operation_t = process_operation_t;
@@ -239,10 +240,9 @@ namespace hive
 					{
 						if(operations.size() == 0) return fc::string{};
 						
-						// do not remove single space at the beginiing in all 4 following sqls !!!
 						operations.insert(0, R"(
- INSERT INTO hive_operations (block_num, trx_in_block, op_pos, op_type_id, body, participants, permlink_ids)
- SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_agg(ha.id), array_agg(hpd.id) FROM ( 
+ INSERT INTO hive_operations (order_id, block_num, trx_in_block, op_pos, op_type_id, body, participants, permlink_ids)
+ SELECT T.order_id, T.bn, T.trx, T.opn, T.opt, T.body, array_agg(ha.id), array_agg(hpd.id) FROM ( 
  SELECT w.order_id, w.bn, w.trx, w.opn, w.opt, w.body, unnest(w.part) as part_name, unnest(w.perm) as _permlink FROM ( VALUES 
 )");
 						
@@ -261,8 +261,8 @@ namespace hive
 					{
 						if(virtual_operations.size() == 0) return fc::string{};
 						virtual_operations.insert(0, R"(
- INSERT INTO hive_virtual_operations (block_num, trx_in_block, op_pos, op_type_id, body, participants)
- SELECT T.bn, T.trx, T.opn, T.opt, T.body, array_agg(ha.id) FROM (
+ INSERT INTO hive_virtual_operations (order_id, block_num, trx_in_block, op_pos, op_type_id, body, participants)
+ SELECT T.order_id, T.bn, T.trx, T.opn, T.opt, T.body, array_agg(ha.id) FROM (
  SELECT w.order_id, w.bn, w.trx, w.opn, w.opt, w.body, unnest(w.part) as part_name FROM ( VALUES  
 )");
 
@@ -295,9 +295,10 @@ namespace hive
 					result_type process_operation(const processing_objects::process_operation_t &pop)
 					{
 						operations.append(any_operations == 0 ? "" : ",");
+						any_operations++;
 
 						fc::string result;
-						get_operation_value_prefix(result, pop, any_operations);
+						get_operation_value_prefix(result, pop);
 
 						result.append(",");
 						result.append(get_formatted_permlinks(*pop.op));
@@ -311,9 +312,10 @@ namespace hive
 					result_type process_virtual_operation(const processing_objects::process_virtual_operation_t &pop)
 					{
 						virtual_operations.append(any_virtual_operations == 0 ? "" : ",");
+						any_virtual_operations++;
 
 						fc::string result;
-						get_operation_value_prefix(result, pop, any_virtual_operations);
+						get_operation_value_prefix(result, pop);
 						result.append(")");
 
 						virtual_operations.append(result);
@@ -387,7 +389,6 @@ namespace hive
 					}
 
 				private:
-
 					template<typename iterable_t, typename function_t>
 					fc::string format_text_array( const iterable_t& coll, function_t for_each )
 					{
@@ -432,11 +433,11 @@ namespace hive
 						return std::move(std::to_string(op.which()));
 					}
 
-					void get_operation_value_prefix(fc::string &ss, const processing_objects::process_operation_t &pop, uint32_t &order_id)
+					void get_operation_value_prefix(fc::string &ss, const processing_objects::process_operation_t &pop)
 					{
 						const char *separator = ", ";
 						ss.append("\n( ");
-						ss.append(std::to_string(order_id++) + " /* order_id */");
+						ss.append(std::to_string(pop.order_id) + " /* order_id */");
 						ss.append(separator);
 						ss.append(std::to_string(pop.block_number) + " /* block number */");
 						ss.append(separator);

@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS hive_permlink_data (
 );
 
 CREATE TABLE IF NOT EXISTS hive_operations (
+	"order_id" bigint not null,
   "block_num" integer NOT NULL,
   "trx_in_block" smallint NOT NULL,
   "op_pos" smallint NOT NULL,
@@ -81,7 +82,7 @@ CREATE TABLE IF NOT EXISTS hive_operations (
   -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
   "participants" int[],
   CONSTRAINT hive_operations_pkey PRIMARY KEY ("block_num", "trx_in_block", "op_pos"),
-  CONSTRAINT hive_operations_unsigned CHECK ("trx_in_block" >= 0 AND "op_pos" >= 0)
+  CONSTRAINT hive_operations_unsigned CHECK ("order_id" > 0 AND "trx_in_block" >= 0 AND "op_pos" >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS hive_accounts (
@@ -92,8 +93,7 @@ CREATE TABLE IF NOT EXISTS hive_accounts (
 );
 
 CREATE TABLE IF NOT EXISTS hive_virtual_operations (
-  -- just to keep them unique
-  "id" serial,
+  "order_id" bigint not null,
   "block_num" integer NOT NULL,
   "trx_in_block" smallint NOT NULL,
   -- for `trx_in_block` = -1, `op_pos` stands for order
@@ -102,7 +102,8 @@ CREATE TABLE IF NOT EXISTS hive_virtual_operations (
   "body" text DEFAULT NULL,
   -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
   "participants" int[],
-  CONSTRAINT hive_virtual_operations_pkey PRIMARY KEY ("id")
+  CONSTRAINT hive_virtual_operations_pkey PRIMARY KEY ("order_id"),
+	CONSTRAINT hive_virtual_operations_unsigned CHECK ("order_id" > 0)
 );
 
 -- SPECIAL VALUES
