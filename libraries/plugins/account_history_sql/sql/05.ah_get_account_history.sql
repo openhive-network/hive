@@ -37,7 +37,7 @@ BEGIN
  JOIN hive_virtual_operations hvo ON ht.block_num = hvo.block_num AND ht.trx_in_block = hvo.trx_in_block
  JOIN hive_blocks hb ON ht.block_num = hb.num
  JOIN hive_operation_types hot ON hvo.op_type_id = hot.id
- WHERE __account_id = ANY( hvo.participants ) AND hvo.order_id >= _START AND ( ( __filter_info IS NULL ) OR ( hvo.op_type_id = ANY( _FILTER ) ) )
+ WHERE ( ( __account_id::bigint << 32 ) | _START ) = ANY( hvo.participants ) AND ( ( __filter_info IS NULL ) OR ( hvo.op_type_id = ANY( _FILTER ) ) )
 
  UNION ALL
 
@@ -55,7 +55,7 @@ BEGIN
  JOIN hive_operations ho ON ht.block_num = ho.block_num AND ht.trx_in_block = ho.trx_in_block
  JOIN hive_blocks hb ON ht.block_num = hb.num
  JOIN hive_operation_types hot ON ho.op_type_id = hot.id
- WHERE __account_id = ANY( ho.participants ) AND ho.order_id >= _START AND ( ( __filter_info IS NULL ) OR ( ho.op_type_id = ANY( _FILTER ) ) )
+ WHERE ( ( __account_id::bigint << 32 ) | _START ) = ANY( ho.participants ) AND ( ( __filter_info IS NULL ) OR ( ho.op_type_id = ANY( _FILTER ) ) )
  ORDER BY _block
  LIMIT _LIMIT;
 END
