@@ -24,11 +24,6 @@ psql-path-to-schema = /home/user/hive/hive/schema.sql
 
 	if added, script from `config.ini` (`psql-path-to-schema`) will be executed
 
-- `--psql-reindex-on-exit` 
-
-	create indexes on exit
-
-
 ### Exmample command
 
-	./hived --replay-blockchain --stop-replay-at-block 5000000 --exit-after-replay --psql-reindex-on-exit -d ../../../datadir --force-replay
+	./hived --replay-blockchain --stop-replay-at-block 5000000 --exit-after-replay -d ../../../datadir --force-replay
