@@ -72,7 +72,6 @@ CREATE TABLE IF NOT EXISTS hive_permlink_data (
 );
 
 CREATE TABLE IF NOT EXISTS hive_operations (
-	"order_id" bigint not null,
   "block_num" integer NOT NULL,
   "trx_in_block" smallint NOT NULL,
   "op_pos" integer NOT NULL,
@@ -80,20 +79,21 @@ CREATE TABLE IF NOT EXISTS hive_operations (
   "body" text DEFAULT NULL,
   "permlink_ids" int[],
   -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
-  "participants" int[],
+  "participants" bigint[],
   CONSTRAINT hive_operations_pkey PRIMARY KEY ("block_num", "trx_in_block", "op_pos"),
-  CONSTRAINT hive_operations_unsigned CHECK ("order_id" > 0 AND "trx_in_block" >= 0 AND "op_pos" >= 0)
+  CONSTRAINT hive_operations_unsigned CHECK ( "trx_in_block" >= 0 AND "op_pos" >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS hive_accounts (
   "id" serial,
   "name" character (16) NOT NULL,
+  "current_counter" integer NOT NULL,
   CONSTRAINT hive_accounts_pkey PRIMARY KEY ("id"),
   CONSTRAINT hive_accounts_uniq UNIQUE ("name")
 );
 
 CREATE TABLE IF NOT EXISTS hive_virtual_operations (
-  "order_id" bigint not null,
+  "id" serial,
   "block_num" integer NOT NULL,
   "trx_in_block" smallint NOT NULL,
   -- for `trx_in_block` = -1, `op_pos` stands for order
@@ -101,13 +101,12 @@ CREATE TABLE IF NOT EXISTS hive_virtual_operations (
   "op_type_id" smallint NOT NULL,
   "body" text DEFAULT NULL,
   -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
-  "participants" int[],
-  CONSTRAINT hive_virtual_operations_pkey PRIMARY KEY ("order_id"),
-	CONSTRAINT hive_virtual_operations_unsigned CHECK ("order_id" > 0)
+  "participants" bigint[],
+  CONSTRAINT hive_virtual_operations_pkey PRIMARY KEY ("id")
 );
 
 -- SPECIAL VALUES
 -- This is permlink referenced by empty permlink arrays
 INSERT INTO hive_permlink_data VALUES(0, '');
 -- This is account referenced by empty participants arrays
-INSERT INTO hive_accounts VALUES(0, '');
+-- INSERT INTO hive_accounts VALUES(0, '', 0);

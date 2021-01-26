@@ -101,9 +101,9 @@ namespace hive
 			}
 
 			using namespace hive::protocol;
-			using work = pqxx::work;
 			using namespace hive::plugins::sql_serializer::PSQL;
 
+			using work = pqxx::work;
 			using chain::database;
 			using chain::operation_object;
 
@@ -318,17 +318,9 @@ namespace hive
 
 					void upload_caches(PSQL::sql_dumper &dumper)
 					{
-						fc::string perms, accs;
-						dumper.get_dumped_cache(perms, accs);
-						auto _send = [&](fc::string&& v)
-						{
-							if (v != fc::string()) conn.exec_single_in_transaction(std::move(v));
-						};
-
-						auto p = std::async(std::launch::async, _send, std::move(perms));
-						_send(std::move(accs));
-
-						p.wait();
+						fc::string perms;
+						dumper.get_dumped_cache(perms);
+						if ( perms != fc::string()) conn.exec_single_in_transaction(std::move(perms));
 					}
 
 					void operator()()
@@ -416,10 +408,46 @@ namespace hive
 					int64_t block_vops = 0;
 					uint64_t op_counter = 0;
 
+					accountname_id_counter_map_t accounts{{std::pair<account_name_type, uint64_t>(account_name_type{}, 0)}};
 					cached_containter_t currently_caching_data;
 					thread_pool_t worker_pool{};
 					task_collection_t tasks;
 					stats_group current_stats;
+
+					uint64_t get_id_with_counter(const account_name_type& name)
+					{
+						auto it_b = accounts.insert( typename accountname_id_counter_map_t::value_type{ name, accounts.size() << 32 } );
+
+						if(!it_b.second) it_b.first->second += 1;
+
+						return it_b.first->second;
+					}
+
+					std::vector<uint64_t> get_participants_ids(const hive::protocol::operation& op)
+					{
+						PSQL::account_names_container_t impacted;
+						hive::app::operation_get_impacted_accounts(op, impacted);
+						impacted.erase(account_name_type{});
+						std::vector<uint64_t> ret; 
+						ret.reserve(impacted.size());
+						for(const account_name_type& acc : impacted) ret.emplace_back( get_id_with_counter( acc ) );
+						return std::move( ret );
+					}
+
+					fc::string get_account_insert_query()
+					{
+						fc::string query{ "INSERT INTO hive_accounts(name, id,  current_counter) VALUES " };
+
+						for(auto it = accounts.begin(); it != accounts.end(); it++)
+						{
+							if(it != accounts.begin()) query += ",";
+							const uint32_t acc_id = static_cast<uint32_t>(it->second >> 32);
+							const uint32_t counter = static_cast<uint32_t>(it->second & 0xFFFFFFFF);
+							query += fc::string{"( '"} + fc::string(it->first) + "', " + std::to_string(acc_id) + ", " + std::to_string(counter) + " )";
+						}
+
+						return std::move(query);
+					}
 
 					void log_statistics()
 					{
@@ -433,13 +461,13 @@ namespace hive
 						using up_and_down_index = std::pair<const char*, const char*>;
 						static const std::vector<up_and_down_index> indexes{{up_and_down_index
 							{R"(CREATE INDEX IF NOT EXISTS hive_operations_operation_types_index ON "hive_operations" ("op_type_id"))", "DROP INDEX IF EXISTS hive_operations_operation_types_index"},
-							{R"(CREATE INDEX IF NOT EXISTS hive_operations_participants_index ON "hive_operations" USING GIN ("participants"))", "DROP INDEX IF EXISTS hive_operations_participants_index"},
-							{R"(CREATE INDEX IF NOT EXISTS hive_operations_permlink_ids_index ON "hive_operations" USING GIN ("permlink_ids"))", "DROP INDEX IF EXISTS hive_operations_permlink_ids_index"},
+							{R"(CREATE INDEX IF NOT EXISTS hive_operations_participants_index ON "hive_operations" USING GIN ("participants" gin__int_ops))", "DROP INDEX IF EXISTS hive_operations_participants_index"},
+							{R"(CREATE INDEX IF NOT EXISTS hive_operations_permlink_ids_index ON "hive_operations" USING GIN ("permlink_ids" gin__int_ops))", "DROP INDEX IF EXISTS hive_operations_permlink_ids_index"},
 							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_operation_types_index ON "hive_virtual_operations" ("op_type_id"))", "DROP INDEX IF EXISTS hive_virtual_operations_operation_types_index"},
-							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_participants_index ON "hive_virtual_operations" USING GIN ("participants"))", "DROP INDEX IF EXISTS hive_virtual_operations_participants_index"},
-							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_block_num_index ON "hive_virtual_operations"( "block_num" ))", "DROP INDEX IF EXISTS hive_virtual_operations_block_num_index"},
-							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_order_id_index ON "hive_virtual_operations"( "order_id" ))", "DROP INDEX IF EXISTS hive_virtual_operations_order_id_index"},
-							{R"(CREATE INDEX IF NOT EXISTS hive_operations_order_id_index ON "hive_operations"( "order_id" ))", "DROP INDEX IF EXISTS hive_operations_order_id_index"}
+							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_participants_index ON "hive_virtual_operations" USING GIN ("participants" gin__int_ops))", "DROP INDEX IF EXISTS hive_virtual_operations_participants_index"},
+							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_block_num_index ON "hive_virtual_operations"( "block_num" ))", "DROP INDEX IF EXISTS hive_virtual_operations_block_num_index"}
+							// {R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_order_id_index ON "hive_virtual_operations"( "order_id" ))", "DROP INDEX IF EXISTS hive_virtual_operations_order_id_index"},
+							// {R"(CREATE INDEX IF NOT EXISTS hive_operations_order_id_index ON "hive_operations"( "order_id" ))", "DROP INDEX IF EXISTS hive_operations_order_id_index"}
 						}};
 
 						auto trx = connection.start_transaction();
@@ -470,7 +498,7 @@ namespace hive
 					void init_database()
 					{
 						connection.exec_single_in_transaction(PSQL::get_all_type_definitions());
-						op_counter = connection.get_single_value<uint64_t>( "SELECT coalesce(GREATEST((SELECT MAX(order_id) FROM hive_operations), (SELECT MAX(order_id) FROM hive_virtual_operations)), 0 )" );
+
 					}
 
 					void close_pools()
@@ -525,6 +553,7 @@ namespace hive
 					{
 						ilog("Flushing rest of data, wait a moment...");
 						push_currently_cached_data(0);
+						connection.exec_single_in_transaction(get_account_insert_query());
 						close_pools();
 						if(are_constraints_active) return;
 						if( !appbase::app().is_interrupt_request() )
@@ -540,7 +569,9 @@ namespace hive
 			} // namespace detail
 
 			sql_serializer_plugin::sql_serializer_plugin() {}
-			sql_serializer_plugin::~sql_serializer_plugin() {}
+			sql_serializer_plugin::~sql_serializer_plugin() 
+			{
+			}
 
 			void sql_serializer_plugin::set_program_options(options_description &cli, options_description &cfg)
 			{
@@ -612,7 +643,8 @@ namespace hive
 							note.trx_in_block,
 							( note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx ),
 							note.op,
-							std::move(deserialized_op)
+							std::move(deserialized_op),
+							my->get_participants_ids(note.op)
 						);
 				}
 				else
@@ -623,7 +655,8 @@ namespace hive
 							note.trx_in_block,
 							note.op_in_trx,
 							note.op,
-							std::move(deserialized_op)
+							std::move(deserialized_op),
+							my->get_participants_ids(note.op)
 						);
 				}
 			}
