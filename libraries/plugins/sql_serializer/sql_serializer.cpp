@@ -150,6 +150,13 @@ namespace hive
 						return sql_safe_execution([&trx, &sql]() { trx->_transaction->exec(sql); }, sql.c_str());
 					}
 
+					bool exec_transaction(transaction_t &trx, const fc::string &sql, pqxx::result& result) const
+					{
+						if (sql == fc::string())
+							return true;
+						return sql_safe_execution([&trx, &sql, &result]() { result = trx->_transaction->exec(sql); }, sql.c_str());
+					}
+
 					bool commit_transaction(transaction_t &trx) const
 					{
 						// mylog("commiting");
@@ -386,9 +393,22 @@ namespace hive
 							tasks{connection, current_stats}
 					{
 						worker_pool.SetBackgroundThreads( std::max( 1u, connection.get_max_transaction_count() / connections_per_worker ) );
+
+						pqxx::result ret;
+						auto trx = connection.start_transaction();
+						if(connection.exec_transaction(trx, "SELECT name, id, current_counter FROM hive_accounts", ret))
+						{
+							for(const auto& row : ret)
+									accounts[row.at(0).as<fc::string>()] = id_counter_t(row.at(1).as<uint32_t>(), row.at(2).as<uint32_t>());
+						}else elog("Failed to get accounts");
+						connection.exec_transaction(trx, "DELETE FROM hive_accounts");
+						connection.commit_transaction(trx);
 					}
 
-					virtual ~sql_serializer_plugin_impl() {}
+					virtual ~sql_serializer_plugin_impl() 
+					{
+						connection.exec_single_in_transaction(get_account_insert_query());
+					}
 
 					boost::signals2::connection _on_post_apply_operation_con;
 					boost::signals2::connection _on_post_apply_transaction_con;
@@ -408,27 +428,27 @@ namespace hive
 					int64_t block_vops = 0;
 					uint64_t op_counter = 0;
 
-					accountname_id_counter_map_t accounts{{std::pair<account_name_type, uint64_t>(account_name_type{}, 0)}};
+					accountname_id_counter_map_t accounts{};
 					cached_containter_t currently_caching_data;
 					thread_pool_t worker_pool{};
 					task_collection_t tasks;
 					stats_group current_stats;
 
-					uint64_t get_id_with_counter(const account_name_type& name)
+					id_counter_t get_id_with_counter(const account_name_type& name)
 					{
-						auto it_b = accounts.insert( typename accountname_id_counter_map_t::value_type{ name, accounts.size() << 32 } );
+						auto it_b = accounts.insert( typename accountname_id_counter_map_t::value_type{ name, id_counter_t{ accounts.size(), 0 } } );
 
-						if(!it_b.second) it_b.first->second += 1;
+						if(!it_b.second) it_b.first->second.second += 1;
 
 						return it_b.first->second;
 					}
 
-					std::vector<uint64_t> get_participants_ids(const hive::protocol::operation& op)
+					std::vector<id_counter_t> get_participants_ids(const hive::protocol::operation& op)
 					{
 						PSQL::account_names_container_t impacted;
 						hive::app::operation_get_impacted_accounts(op, impacted);
 						impacted.erase(account_name_type{});
-						std::vector<uint64_t> ret; 
+						std::vector<id_counter_t> ret; 
 						ret.reserve(impacted.size());
 						for(const account_name_type& acc : impacted) ret.emplace_back( get_id_with_counter( acc ) );
 						return std::move( ret );
@@ -441,9 +461,8 @@ namespace hive
 						for(auto it = accounts.begin(); it != accounts.end(); it++)
 						{
 							if(it != accounts.begin()) query += ",";
-							const uint32_t acc_id = static_cast<uint32_t>(it->second >> 32);
-							const uint32_t counter = static_cast<uint32_t>(it->second & 0xFFFFFFFF);
-							query += fc::string{"( '"} + fc::string(it->first) + "', " + std::to_string(acc_id) + ", " + std::to_string(counter) + " )";
+							const auto& pair = it->second;
+							query += fc::string{"( '"} + fc::string(it->first) + "', " + std::to_string(pair.first) + ", " + std::to_string(pair.second) + " )";
 						}
 
 						return std::move(query);
@@ -498,7 +517,6 @@ namespace hive
 					void init_database()
 					{
 						connection.exec_single_in_transaction(PSQL::get_all_type_definitions());
-
 					}
 
 					void close_pools()
@@ -553,7 +571,6 @@ namespace hive
 					{
 						ilog("Flushing rest of data, wait a moment...");
 						push_currently_cached_data(0);
-						connection.exec_single_in_transaction(get_account_insert_query());
 						close_pools();
 						if(are_constraints_active) return;
 						if( !appbase::app().is_interrupt_request() )
@@ -628,7 +645,6 @@ namespace hive
 			void sql_serializer_plugin::on_post_apply_operation(const operation_notification &note)
 			{
 				const bool is_virtual = note.op.visit(PSQL::is_virtual_visitor{});
-				my->op_counter++;
 
 				// deserialization
 				fc::string deserialized_op{ note.op.visit(sql_serializer::escapings::escape_visitor{}) };
@@ -638,7 +654,6 @@ namespace hive
 				if (is_virtual)
 				{
 					cdtf->virtual_operations.emplace_back(
-							my->op_counter,
 							note.block,
 							note.trx_in_block,
 							( note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx ),
@@ -650,7 +665,6 @@ namespace hive
 				else
 				{
 					cdtf->operations.emplace_back(
-							my->op_counter,
 							note.block,
 							note.trx_in_block,
 							note.op_in_trx,

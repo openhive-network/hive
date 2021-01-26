@@ -79,7 +79,8 @@ CREATE TABLE IF NOT EXISTS hive_operations (
   "body" text DEFAULT NULL,
   "permlink_ids" int[],
   -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
-  "participants" bigint[],
+  "participants" integer[],
+  "participants_counters" integer[],
   CONSTRAINT hive_operations_pkey PRIMARY KEY ("block_num", "trx_in_block", "op_pos"),
   CONSTRAINT hive_operations_unsigned CHECK ( "trx_in_block" >= 0 AND "op_pos" >= 0)
 );
@@ -101,12 +102,11 @@ CREATE TABLE IF NOT EXISTS hive_virtual_operations (
   "op_type_id" smallint NOT NULL,
   "body" text DEFAULT NULL,
   -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
-  "participants" bigint[],
+  "participants" integer[],
+  "participants_counters" integer[],
   CONSTRAINT hive_virtual_operations_pkey PRIMARY KEY ("id")
 );
 
 -- SPECIAL VALUES
 -- This is permlink referenced by empty permlink arrays
 INSERT INTO hive_permlink_data VALUES(0, '');
--- This is account referenced by empty participants arrays
--- INSERT INTO hive_accounts VALUES(0, '', 0);
