@@ -571,6 +571,7 @@ namespace hive
 					{
 						ilog("Flushing rest of data, wait a moment...");
 						push_currently_cached_data(0);
+						connection.exec_single_in_transaction(get_account_insert_query());
 						close_pools();
 						if(are_constraints_active) return;
 						if( !appbase::app().is_interrupt_request() )

@@ -33,6 +33,8 @@ namespace hive
 		{
 			namespace escapings
 			{
+				inline fc::string escape_sql(const uint64_t &num) { return std::to_string(num); }
+
 				inline fc::string escape_sql(const std::string &text)
 				{
 					const static std::map<wchar_t, fc::string> special_chars{{std::pair<wchar_t, fc::string>{L'\x00', " "}, {L'\r', "\\015"}, {L'\n', "\\012"}, {L'\v', "\\013"}, {L'\f', "\\014"}, {L'\\', "\\134"}, {L'\'', "\\047"}, {L'%', "\\045"}, {L'_', "\\137"}, {L':', "\\072"}}};
