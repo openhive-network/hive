@@ -462,7 +462,7 @@ namespace hive
 						{
 							if(it != accounts.begin()) query += ",";
 							const auto& pair = it->second;
-							query += fc::string{"( '"} + fc::string(it->first) + "', " + std::to_string(pair.first) + ", " + std::to_string(pair.second) + " )";
+							query += fc::string{"( "} + escapings::escape_sql( it->first ) + ", " + std::to_string(pair.first) + ", " + std::to_string(pair.second) + " )";
 						}
 
 						return std::move(query);
