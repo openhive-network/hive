@@ -25,11 +25,11 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
 
       while(_continue.load())
       {
-        ilog("${d} data processor is waiting for DATA-READY signal...", ("d", _description));
+        dlog("${d} data processor is waiting for DATA-READY signal...", ("d", _description));
         std::unique_lock<std::mutex> lk(_mtx);
         _cv.wait(lk, [this] {return _dataPtr.valid() || _continue.load() == false; });
 
-        ilog("${d} data processor resumed by DATA-READY signal...", ("d", _description));
+        dlog("${d} data processor resumed by DATA-READY signal...", ("d", _description));
 
         if(_continue.load() == false)
           break;
@@ -37,13 +37,13 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
         fc::optional<data_chunk_ptr> dataPtr(std::move(_dataPtr));
 
         lk.unlock();
-        ilog("${d} data processor consumed data - notifying trigger process...", ("d", _description));
+        dlog("${d} data processor consumed data - notifying trigger process...", ("d", _description));
         _cv.notify_one();
 
         if(_cancel.load())
           break;
 
-        ilog("${d} data processor starts a data processing...", ("d", _description));
+        dlog("${d} data processor starts a data processing...", ("d", _description));
 
         {
           pqxx::work tx(dbConnection);
@@ -53,7 +53,7 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
           tx.commit();
         }
 
-        ilog("${d} data processor finished processing a data chunk...", ("d", _description));
+        dlog("${d} data processor finished processing a data chunk...", ("d", _description));
       }
 
       dbConnection.disconnect();
@@ -82,22 +82,22 @@ data_processor::~data_processor()
 void data_processor::trigger(data_chunk_ptr dataPtr)
 {
   {
-  ilog("Trying to trigger data processor: ${d}...", ("d", _description));
+  dlog("Trying to trigger data processor: ${d}...", ("d", _description));
   std::lock_guard<std::mutex> lk(_mtx);
   _dataPtr = std::move(dataPtr);
-  ilog("Data processor: ${d} triggerred...", ("d", _description));
+  dlog("Data processor: ${d} triggerred...", ("d", _description));
   }
   _cv.notify_one();
 
   /// wait for the worker
   {
-    ilog("Waiting until data_processor ${d} will consume a data...", ("d", _description));
+    dlog("Waiting until data_processor ${d} will consume a data...", ("d", _description));
     std::unique_lock<std::mutex> lk(_mtx);
     _cv.wait(lk, [this] {return _dataPtr.valid() == false; });
   }
 
 
-  ilog("Leaving trigger of data data processor: ${d}...", ("d", _description));
+  dlog("Leaving trigger of data data processor: ${d}...", ("d", _description));
 }
 
 void data_processor::cancel()

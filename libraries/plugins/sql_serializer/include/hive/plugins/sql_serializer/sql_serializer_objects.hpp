@@ -90,13 +90,11 @@ namespace hive
             int32_t block_number;
 						int16_t trx_in_block;
 						int16_t op_in_trx;
-						fc::optional<operation> op;
-						fc::string deserialized_op;
+						operation op;
 
-						process_operation_t() = default;
 						process_operation_t(int64_t _operation_id, int32_t _block_number, const int16_t _trx_in_block, const int16_t _op_in_trx,
-              const operation &_op, const fc::string _deserialized_op) : operation_id{_operation_id }, block_number{_block_number}, trx_in_block{_trx_in_block},
-              op_in_trx{_op_in_trx}, op{_op}, deserialized_op{_deserialized_op} {}
+              const operation &_op) : operation_id{_operation_id }, block_number{_block_number}, trx_in_block{_trx_in_block},
+              op_in_trx{_op_in_trx}, op{_op} {}
 					};
 
           /// Holds account information to be put into database
@@ -219,28 +217,6 @@ namespace hive
 						if(log != nullptr) std::cout << "[ SQL QUERY LOG ]" << sql << std::endl;
 					}
 					
-					fc::string get_operations_sql()
-					{
-						if(operations.size() == 0) return fc::string{};
-						
-						// do not remove single space at the beginiing in all 4 following sqls !!!
-						operations.insert(0, "INSERT INTO hive_operations (block_num, trx_in_block, op_pos, op_type_id, body, participants, permlink_ids) SELECT w.bn, w.trx, w.opn, w.opt, w.body, w.part, w.perm FROM ( VALUES");
-						operations.append(") AS w (order_id, bn, trx, opn, opt, body, part, perm)");
-
-						log_query( operations );
-						return std::move(operations);
-					}
-
-					fc::string get_virtual_operations_sql()
-					{
-						if(virtual_operations.size() == 0) return fc::string{};
-
-						virtual_operations.insert(0, "INSERT INTO hive_virtual_operations (block_num, trx_in_block, op_pos, op_type_id, body, participants) SELECT w.bn, w.trx, w.opn, w.opt, w.body, w.part as part_name FROM ( VALUES ");
-						virtual_operations.append(" ) AS w (order_id, bn, trx, opn, opt, body, part)");
-
-						log_query( virtual_operations );
-						return std::move(virtual_operations);
-					}
 
 					fc::string get_blocks_sql()
 					{
@@ -256,22 +232,6 @@ namespace hive
 						transactions.insert(0, "INSERT INTO hive_transactions VALUES ");
 						log_query( transactions );
 						return std::move(transactions);
-					}
-
-					result_type process_operation(const processing_objects::process_operation_t &pop)
-					{
-						operations.append(any_operations == 0 ? "" : ",");
-
-						fc::string result;
-						get_operation_value_prefix(result, pop, any_operations);
-
-						result.append(",");
-						result.append(get_formatted_permlinks(*pop.op));
-						result.append("/* formatted permlinks: */ )");
-
-						operations.append(result);
-
-						return operations.size();
 					}
 
 					result_type process_block(const processing_objects::process_block_t &bop)
@@ -365,26 +325,6 @@ namespace hive
 						return std::move(query);
 					}
 
-					fc::string get_formated_participants(const operation &op)
-					{
-						using hive::protocol::account_name_type;
-						boost::container::flat_set<account_name_type> impacted;
-						hive::app::operation_get_impacted_accounts(op, impacted);
-						impacted.erase(account_name_type());
-
-            FC_ASSERT(impacted.size() <= 3, "get_account_ids SQL function is specialized only for at most 3 account names");
-
-						return std::move( format_text_array( impacted, "get_account_ids", [&](const account_name_type& acc) { account_cache.insert( fc::string(acc) ); } ) );
-					}
-
-					fc::string get_formatted_permlinks(const operation &op)
-					{
-						std::vector<fc::string> result;
-						hive::app::operation_get_permlinks(op, result);
-            FC_ASSERT(result.size() <= 2, "get_permlink_ids SQL function is specialized only for at most 2 permlink identifiers");
-						return std::move( format_text_array( result, "get_permlink_ids", [&](const fc::string& perm) { permlink_cache.insert( perm ); } ));
-					}
-
 					fc::string get_body(const char *op) const
 					{
 						if (std::strlen(op) == 0)
@@ -399,25 +339,6 @@ namespace hive
 					fc::string get_operation_type_id(const operation &op) const
 					{
 						return std::move(std::to_string(op.which()));
-					}
-
-					void get_operation_value_prefix(fc::string &ss, const processing_objects::process_operation_t &pop, uint32_t &order_id)
-					{
-						const char *separator = ", ";
-						ss.append("\n( ");
-						ss.append(std::to_string(order_id++) + " /* order_id */");
-						ss.append(separator);
-						ss.append(std::to_string(pop.block_number) + " /* block number */");
-						ss.append(separator);
-						ss.append(std::to_string(pop.trx_in_block) + " /* trx in blck */");
-						ss.append(separator);
-						ss.append(std::to_string(pop.op_in_trx) + " /* op in trx */");
-						ss.append(separator);
-						ss.append(get_operation_type_id(*pop.op) + " /* op type id */");
-						ss.append(separator);
-						ss.append(get_body(pop.deserialized_op.c_str()) + " /* deserialized op */");
-						ss.append(separator);
-						ss.append( get_formated_participants(*pop.op) + " /* participants */" );
 					}
 
 					uint32_t any_blocks = 0;
