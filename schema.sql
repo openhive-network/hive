@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS hive_operations (
 );
 
 CREATE TABLE IF NOT EXISTS hive_accounts (
-  "id" serial,
+  "id" integer not NULL,
   "name" character (16) NOT NULL,
   "current_counter" integer NOT NULL,
   CONSTRAINT hive_accounts_pkey PRIMARY KEY ("id"),
