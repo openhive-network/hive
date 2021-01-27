@@ -41,7 +41,16 @@ namespace hive
 
     typedef std::map<std::string, account_info> account_cache_t;
 
-      typedef std::map<std::string, int> name2id_cache_t;
+    typedef std::map<std::string, int> name2id_cache_t;
+
+    typedef std::vector<PSQL::processing_objects::account_data_t> account_data_container_t;
+    typedef std::vector<PSQL::processing_objects::permlink_data_t> permlink_data_container_t;
+
+    typedef std::vector<PSQL::processing_objects::process_block_t> block_data_container_t;
+    typedef std::vector<PSQL::processing_objects::process_transaction_t> transaction_data_container_t;
+    typedef std::vector<PSQL::processing_objects::process_operation_t> operation_data_container_t;
+    typedef std::vector<PSQL::processing_objects::account_operation_data_t> account_operation_data_container_t;
+
 
 			using num_t = std::atomic<uint64_t>;
 			using duration_t = fc::microseconds;
@@ -142,8 +151,8 @@ namespace hive
 
         new_ids_collector(account_cache_t* known_accounts, int* next_account_id,
           name2id_cache_t* permlink_cache, int* next_permlink_id,
-          std::vector<PSQL::processing_objects::account_data_t>* newAccounts,
-          std::vector<PSQL::processing_objects::permlink_data_t>* newPermlinks) :
+          account_data_container_t* newAccounts,
+          permlink_data_container_t* newPermlinks) :
           _known_accounts(known_accounts),
           _known_permlinks(permlink_cache),
           _next_account_id(*next_account_id),
@@ -214,8 +223,8 @@ namespace hive
         int& _next_account_id;
         int& _next_permlink_id;
 
-        std::vector<PSQL::processing_objects::account_data_t>* _new_accounts;
-        std::vector<PSQL::processing_objects::permlink_data_t>* _new_permlinks;
+        account_data_container_t* _new_accounts;
+        permlink_data_container_t* _new_permlinks;
       };
 
 
@@ -351,24 +360,21 @@ namespace hive
           name2id_cache_t _permlink_cache;
           int             _next_permlink_id;
 
-          /// Account identifiers to be put into database
-          flat_set<hive::protocol::account_name_type> _new_accounts;
-          /// Permlinks to be put into database.
-          std::set<std::string> _new_permlinks;
+          account_data_container_t accounts;
+          permlink_data_container_t permlinks;
 
-          std::vector<PSQL::processing_objects::account_data_t> accounts;
-          std::vector<PSQL::processing_objects::permlink_data_t> permlinks;
-
-          std::vector<PSQL::processing_objects::process_block_t> blocks;
-					std::vector<PSQL::processing_objects::process_transaction_t> transactions;
-					std::vector<PSQL::processing_objects::process_operation_t> operations;
-          std::vector<PSQL::processing_objects::account_operation_data_t> account_operations;
+          block_data_container_t blocks;
+					transaction_data_container_t transactions;
+					operation_data_container_t operations;
+          account_operation_data_container_t account_operations;
 
 					size_t total_size;
 
 					explicit cached_data_t(const size_t reservation_size) : _next_account_id{0}, _next_permlink_id{0}, total_size{ 0ul }
 					{
-						blocks.reserve(reservation_size);
+						accounts.reserve(reservation_size);
+            permlinks.reserve(reservation_size);
+            blocks.reserve(reservation_size);
 						transactions.reserve(reservation_size);
 						operations.reserve(reservation_size);
 						account_operations.reserve(reservation_size);
