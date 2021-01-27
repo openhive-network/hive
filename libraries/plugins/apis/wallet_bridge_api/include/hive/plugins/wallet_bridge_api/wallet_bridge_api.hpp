@@ -1,7 +1,6 @@
 #pragma once
 
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_args.hpp>
-#include <hive/plugins/json_rpc/utility.hpp>
 #include <fc/api.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
