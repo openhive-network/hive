@@ -60,10 +60,10 @@ namespace hive
 						using hash_t = fc::ripemd160;
 
 						hash_t hash;
-						int64_t block_number;
+						int block_number;
 
 						process_base_t() = default;
-						process_base_t(const hash_t &_hash, const int64_t _block_number) : hash{_hash}, block_number{_block_number} {}
+						process_base_t(const hash_t &_hash, const int _block_number) : hash{_hash}, block_number{_block_number} {}
 					};
 
 					struct process_block_t : public process_base_t
@@ -71,32 +71,62 @@ namespace hive
 						fc::time_point_sec created_at;
 
 						process_block_t() = default;
-						process_block_t(const hash_t &_hash, const int64_t _block_number, const fc::time_point_sec _tp) : process_base_t{_hash, _block_number}, created_at{_tp} {}
+						process_block_t(const hash_t &_hash, const int _block_number, const fc::time_point_sec _tp) : process_base_t{_hash, _block_number}, created_at{_tp} {}
 					};
 
 					struct process_transaction_t : public process_base_t
 					{
 						using process_base_t::hash_t;
 
-						int64_t trx_in_block;
+						int16_t trx_in_block;
 
 						process_transaction_t() = default;
-						process_transaction_t(const hash_t &_hash, const int64_t _block_number, const int64_t _trx_in_block) : process_base_t{_hash, _block_number}, trx_in_block{_trx_in_block} {}
+						process_transaction_t(const hash_t& _hash, const int _block_number, const int16_t _trx_in_block) : process_base_t{_hash, _block_number}, trx_in_block{_trx_in_block} {}
 					};
 
 					struct process_operation_t
 					{
-						int64_t block_number;
-						int64_t trx_in_block;
-						int64_t op_in_trx;
+						int64_t operation_id;
+            int32_t block_number;
+						int16_t trx_in_block;
+						int16_t op_in_trx;
 						fc::optional<operation> op;
 						fc::string deserialized_op;
 
 						process_operation_t() = default;
-						process_operation_t(const int64_t _block_number, const int64_t _trx_in_block, const int64_t _op_in_trx, const operation &_op, const fc::string _deserialized_op) : block_number{_block_number}, trx_in_block{_trx_in_block}, op_in_trx{_op_in_trx}, op{_op}, deserialized_op{_deserialized_op} {}
+						process_operation_t(int64_t _operation_id, int32_t _block_number, const int16_t _trx_in_block, const int16_t _op_in_trx,
+              const operation &_op, const fc::string _deserialized_op) : operation_id{_operation_id }, block_number{_block_number}, trx_in_block{_trx_in_block},
+              op_in_trx{_op_in_trx}, op{_op}, deserialized_op{_deserialized_op} {}
 					};
 
-					using process_virtual_operation_t = process_operation_t;
+          /// Holds account information to be put into database
+          struct account_data_t
+          {
+            account_data_t(int _id, std::string _n) : id{_id}, name {_n} {}
+
+            int32_t id;
+            std::string name;
+          };
+
+          /// Holds permlink information to be put into database
+          struct permlink_data_t
+          {
+            permlink_data_t(int _id, std::string _p) : id{_id}, permlink{_p} {}
+
+            int32_t id;
+            std::string permlink;
+          };
+
+          /// Holds association between account and its operations.
+          struct account_operation_data_t
+          {
+            int64_t operation_id;
+            int32_t account_id;
+            int32_t operation_seq_no;
+
+            account_operation_data_t(int64_t _operation_id, int32_t _account_id, int32_t _operation_seq_no) : operation_id{ _operation_id },
+              account_id{ _account_id }, operation_seq_no{ _operation_seq_no } {}
+          };
 
 				}; // namespace processing_objects
 
@@ -242,19 +272,6 @@ namespace hive
 						operations.append(result);
 
 						return operations.size();
-					}
-
-					result_type process_virtual_operation(const processing_objects::process_virtual_operation_t &pop)
-					{
-						virtual_operations.append(any_virtual_operations == 0 ? "" : ",");
-
-						fc::string result;
-						get_operation_value_prefix(result, pop, any_virtual_operations);
-						result.append(")");
-
-						virtual_operations.append(result);
-
-						return virtual_operations.size();
 					}
 
 					result_type process_block(const processing_objects::process_block_t &bop)
