@@ -481,12 +481,12 @@ namespace hive
 						static const std::vector<up_and_down_index> indexes{{up_and_down_index
 							{R"(CREATE INDEX IF NOT EXISTS hive_operations_operation_types_index ON "hive_operations" ("op_type_id"))", "DROP INDEX IF EXISTS hive_operations_operation_types_index"},
 							{R"(CREATE INDEX IF NOT EXISTS hive_operations_participants_index ON "hive_operations" USING GIN ("participants" gin__int_ops))", "DROP INDEX IF EXISTS hive_operations_participants_index"},
+							{R"(CREATE INDEX IF NOT EXISTS hive_operations_participants_counters_index ON "hive_operations" USING GIN ("participants_counters" gin__int_ops))", "DROP INDEX IF EXISTS hive_operations_participants_counters_index"},
 							{R"(CREATE INDEX IF NOT EXISTS hive_operations_permlink_ids_index ON "hive_operations" USING GIN ("permlink_ids" gin__int_ops))", "DROP INDEX IF EXISTS hive_operations_permlink_ids_index"},
 							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_operation_types_index ON "hive_virtual_operations" ("op_type_id"))", "DROP INDEX IF EXISTS hive_virtual_operations_operation_types_index"},
 							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_participants_index ON "hive_virtual_operations" USING GIN ("participants" gin__int_ops))", "DROP INDEX IF EXISTS hive_virtual_operations_participants_index"},
+							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_participants_counters_index ON "hive_virtual_operations" USING GIN ("participants_counters" gin__int_ops))", "DROP INDEX IF EXISTS hive_virtual_operations_participants_counters_index"},
 							{R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_block_num_index ON "hive_virtual_operations"( "block_num" ))", "DROP INDEX IF EXISTS hive_virtual_operations_block_num_index"}
-							// {R"(CREATE INDEX IF NOT EXISTS hive_virtual_operations_order_id_index ON "hive_virtual_operations"( "order_id" ))", "DROP INDEX IF EXISTS hive_virtual_operations_order_id_index"},
-							// {R"(CREATE INDEX IF NOT EXISTS hive_operations_order_id_index ON "hive_operations"( "order_id" ))", "DROP INDEX IF EXISTS hive_operations_order_id_index"}
 						}};
 
 						auto trx = connection.start_transaction();
