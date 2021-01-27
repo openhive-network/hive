@@ -1,8 +1,11 @@
 #include <hive/plugins/sql_serializer/sql_serializer_plugin.hpp>
-#include <hive/plugins/condenser_api/condenser_api_legacy_operations.hpp>
+#include <hive/plugins/sql_serializer/data_processor.hpp>
 
 #include <hive/chain/util/impacted.hpp>
+
 #include <hive/protocol/config.hpp>
+#include <hive/protocol/operations.hpp>
+
 #include <hive/utilities/plugin_utilities.hpp>
 
 #include <fc/io/json.hpp>
@@ -14,32 +17,11 @@
 #include <thread>
 #include <future>
 
-#include "../../vendor/rocksdb/util/threadpool_imp.h"
+#include <map>
+#include <set>
 
-// C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
 #include <pqxx/pqxx>
 
-namespace fc
-{
-	struct from_operation_sql
-	{
-		variant& var;
-		from_operation_sql( variant& dv )
-			: var( dv ) {}
-
-		typedef void result_type;
-		template<typename T> void operator()( const T& v )const
-		{
-			var = variant( v );
-		}
-	};
-
-	void to_variant( std::shared_ptr<hive::plugins::condenser_api::legacy_operation> var,  fc::variant& vo )
-	{
-		FC_ASSERT( var.get() );
-		var->visit( from_operation_sql( vo ) );
-	}
-}
 
 namespace hive
 {
@@ -47,12 +29,23 @@ namespace hive
 	{
 		namespace sql_serializer
 		{
-			using thread_pool_t = rocksdb::ThreadPoolImpl;
+    
+    struct account_info
+    {
+      account_info(int id, unsigned int operation_count) : _id(id), _operation_count(operation_count) {}
+
+      /// Account id
+      int _id; 
+      unsigned int _operation_count;
+    };
+
+    typedef std::map<std::string, account_info> account_cache_t;
+
+      typedef std::map<std::string, int> name2id_cache_t;
+
 			using num_t = std::atomic<uint64_t>;
 			using duration_t = fc::microseconds;
 			using stat_time_t = std::atomic<duration_t>;
-			using hive::plugins::condenser_api::legacy_operation;
-			using hive::plugins::condenser_api::legacy_operation_conversion_visitor;
 
 			inline void operator+=( stat_time_t& atom, const duration_t& dur )
 			{
@@ -125,12 +118,7 @@ namespace hive
 					;
 			}
 
-			using namespace hive::protocol;
-			using work = pqxx::work;
 			using namespace hive::plugins::sql_serializer::PSQL;
-
-			using chain::database;
-			using chain::operation_object;
 
 			constexpr size_t default_reservation_size{ 16'000u };
 			constexpr size_t max_tuples_count{ 1'000 };
@@ -143,13 +131,102 @@ namespace hive
 
 			namespace detail
 			{
+
+      /**
+       * @brief Collects new identifiers (accounts or permlinks) defined by given operation.
+       * 
+      */
+      struct new_ids_collector
+      {
+        typedef void result_type;
+
+        new_ids_collector(account_cache_t* known_accounts, int* next_account_id,
+          name2id_cache_t* permlink_cache, int* next_permlink_id,
+          std::vector<PSQL::processing_objects::account_data_t>* newAccounts,
+          std::vector<PSQL::processing_objects::permlink_data_t>* newPermlinks) :
+          _known_accounts(known_accounts),
+          _known_permlinks(permlink_cache),
+          _next_account_id(*next_account_id),
+          _next_permlink_id(*next_permlink_id),
+          _new_accounts(newAccounts),
+          _new_permlinks(newPermlinks)
+        {
+        }
+
+        template< typename T >
+        void operator()(const T& v) { }
+
+        void operator()(const hive::protocol::account_create_operation& op)
+        {
+          on_new_account(op.new_account_name);
+        }
+
+        void operator()(const hive::protocol::account_create_with_delegation_operation& op)
+        {
+          on_new_account(op.new_account_name);
+        }
+
+        void operator()(const hive::protocol::pow_operation& op)
+        {
+          on_new_account(op.get_worker_account());
+        }
+        
+        void operator()(const hive::protocol::pow2_operation& op)
+        {
+          flat_set<hive::protocol::account_name_type> newAccounts;
+          hive::protocol::operation packed_op(op);
+          hive::app::operation_get_impacted_accounts(packed_op, newAccounts);
+
+          for(const auto& account_id : newAccounts)
+          {
+            if(_known_accounts->find(account_id) == _known_accounts->end())
+              on_new_account(account_id);
+          }
+        }
+
+        void operator()(const hive::protocol::create_claimed_account_operation& op)
+        {
+          on_new_account(op.new_account_name);
+        }
+
+        void operator()(const hive::protocol::comment_operation& op)
+        {
+          ++_next_permlink_id;
+          auto ii = _known_permlinks->emplace(op.permlink, _next_permlink_id);
+          _new_permlinks->emplace_back(_next_permlink_id, op.permlink);
+          FC_ASSERT(ii.second);
+        }
+
+      private:
+        void on_new_account(const hive::protocol::account_name_type& name)
+        {
+          ++_next_account_id;
+          auto ii = _known_accounts->emplace(std::string(name), account_info(_next_account_id, 0));
+          _new_accounts->emplace_back(_next_account_id, std::string(name));
+
+          FC_ASSERT(ii.second);
+        }
+
+      private:
+        account_cache_t* _known_accounts;
+        name2id_cache_t* _known_permlinks;
+
+        int& _next_account_id;
+        int& _next_permlink_id;
+
+        std::vector<PSQL::processing_objects::account_data_t>* _new_accounts;
+        std::vector<PSQL::processing_objects::permlink_data_t>* _new_permlinks;
+      };
+
+
+
 				struct transaction_repr_t
 				{
 					std::unique_ptr<pqxx::connection> _connection;
-					std::unique_ptr<work> _transaction;
+					std::unique_ptr<pqxx::work> _transaction;
 
 					transaction_repr_t() = default;
-					transaction_repr_t(pqxx::connection* _conn, work* _trx) : _connection{_conn}, _transaction{_trx} {}
+					transaction_repr_t(pqxx::connection* _conn, pqxx::work* _trx) : _connection{_conn}, _transaction{_trx} {}
 
 					auto get_escaping_charachter_methode() const
 					{
@@ -175,7 +252,7 @@ namespace hive
 					{
 						// mylog("started transaction");
 						pqxx::connection* _conn = new pqxx::connection{ this->connection_string };
-						work *_trx = new work{*_conn};
+						pqxx::work *_trx = new pqxx::work{*_conn};
 						_trx->exec("SET CONSTRAINTS ALL DEFERRED;");
 
 						return transaction_t{ new transaction_repr_t{ _conn, _trx } };
@@ -268,19 +345,33 @@ namespace hive
 
 				struct cached_data_t
 				{
-					std::vector<PSQL::processing_objects::process_block_t> blocks;
+          account_cache_t _account_cache;
+          int             _next_account_id;
+
+          name2id_cache_t _permlink_cache;
+          int             _next_permlink_id;
+
+          /// Account identifiers to be put into database
+          flat_set<hive::protocol::account_name_type> _new_accounts;
+          /// Permlinks to be put into database.
+          std::set<std::string> _new_permlinks;
+
+          std::vector<PSQL::processing_objects::account_data_t> accounts;
+          std::vector<PSQL::processing_objects::permlink_data_t> permlinks;
+
+          std::vector<PSQL::processing_objects::process_block_t> blocks;
 					std::vector<PSQL::processing_objects::process_transaction_t> transactions;
 					std::vector<PSQL::processing_objects::process_operation_t> operations;
-					std::vector<PSQL::processing_objects::process_virtual_operation_t> virtual_operations;
+          std::vector<PSQL::processing_objects::account_operation_data_t> account_operations;
 
-					size_t total_size{ 0ul };
+					size_t total_size;
 
-					cached_data_t(const size_t reservation_size)
+					explicit cached_data_t(const size_t reservation_size) : _next_account_id{0}, _next_permlink_id{0}, total_size{ 0ul }
 					{
 						blocks.reserve(reservation_size);
 						transactions.reserve(reservation_size);
 						operations.reserve(reservation_size);
-						virtual_operations.reserve(reservation_size);
+						account_operations.reserve(reservation_size);
 					}
 
 					~cached_data_t()
@@ -293,10 +384,12 @@ namespace hive
 						return;
 						mylog(generate([&](fc::string& ss){ 
 							ss = msg + ": ";
-							ss += "blocks: " + std::to_string(blocks.size());
+              ss += "accounts: " + std::to_string(accounts.size());
+              ss += " permlinks: " + std::to_string(permlinks.size());
+              ss += " blocks: " + std::to_string(blocks.size());
 							ss += " trx: " + std::to_string(transactions.size());
 							ss += " operations: " + std::to_string(operations.size());
-							ss += " vops: " + std::to_string(virtual_operations.size());
+							ss += " account_operation_data: " + std::to_string(account_operations.size());
 							ss += " total size: " + std::to_string(total_size);
 							ss += "\n"; 
 						}).c_str());
@@ -304,141 +397,13 @@ namespace hive
 				};
 				using cached_containter_t = std::unique_ptr<cached_data_t>;
 
-				struct flush_task
-				{
-					postgress_connection_holder& conn;
-					ext_stat_t& stat;
-					std::shared_timed_mutex mtx{};
-					std::condition_variable_any cv{};
-					std::atomic_bool is_table_used{false};
-
-					void operator()(std::shared_ptr<fc::string> sql)
-					{
-						if(sql.get() == nullptr) return;
-
-						std::shared_lock<std::shared_timed_mutex> lck{ mtx };
-						while(is_table_used.load()) cv.wait(lck);
-						is_table_used.store(true);
-
-						{
-							const auto before = fc::time_point::now();
-							conn.exec_single_in_transaction(std::move(*sql));
-							stat.flush_time += fc::time_point::now() - before;
-						}
-
-						is_table_used.store(false);
-						cv.notify_one();
-					}
-				};
-
-				struct task_collection_t
-				{
-					flush_task block_task;
-					flush_task trx_task;
-					flush_task op_task;
-					flush_task vop_task;
-
-					task_collection_t( postgress_connection_holder& conn, stats_group& stats ) : 
-						block_task{conn, stats.blocks}, 
-						trx_task{conn, stats.transactions}, 
-						op_task{conn, stats.operations}, 
-						vop_task{conn, stats.virtual_operations} 
-					{}
-				};
-
-				struct process_task
-				{
-					// just to make it possible to store in ThreadPool
-					std::shared_ptr<cached_containter_t> input;
-					postgress_connection_holder& conn;
-					task_collection_t& tasks;
-					stats_group& stats;
-
-					const fc::string& null_permlink;
-					const fc::string& null_account;
-
-					void upload_caches(PSQL::sql_dumper &dumper)
-					{
-						fc::string perms, accs;
-						dumper.get_dumped_cache(perms, accs);
-						auto _send = [&](fc::string&& v)
-						{
-							if (v != fc::string()) conn.exec_single_in_transaction(std::move(v));
-						};
-
-						auto p = std::async(std::launch::async, _send, std::move(perms));
-						_send(std::move(accs));
-
-						p.wait();
-					}
-
-					void operator()()
-					{
-						// it's required to obtain escaping functions
-						transaction_t tx{ conn.start_transaction() };
-						conn.abort_transaction(tx);
-
-						PSQL::sql_dumper dumper{tx->get_escaping_charachter_methode(), tx->get_raw_escaping_charachter_methode(), null_permlink, null_account};
-						cached_data_t& data = **input;	// alias
-						auto tm = fc::time_point::now();
-
-						std::vector< std::future<void> > futures;
-
-						auto update_stat = [&](ext_stat_t& s, const uint64_t cnt)
-						{
-							s.processing_time += fc::time_point::now() - tm;
-							s.count += cnt;
-							tm = fc::time_point::now();
-						};
-						auto update_flushing_stat = [&](stat_time_t& s)
-						{
-							s += fc::time_point::now() - tm;
-							tm = fc::time_point::now();
-						};
-						auto add = [&](fc::string&& _sql, flush_task& _task)
-						{
-							futures.emplace_back( std::async(std::launch::async, [&](fc::string&& sql, flush_task& task){ task( std::make_shared<fc::string>( std::move(sql) ) ); }, std::move(_sql), std::ref(_task) ) );
-						};
-
-						for(const auto& op : data.operations) dumper.process_operation(op);
-						update_stat(stats.operations, data.operations.size());
-						data.operations.clear();
-
-						for(const auto& vop : data.virtual_operations) dumper.process_virtual_operation(vop);
-						update_stat(stats.virtual_operations, data.virtual_operations.size());
-						data.virtual_operations.clear();
-
-						upload_caches(dumper);
-						update_flushing_stat(stats.sending_cache_time);
-
-						add( dumper.get_operations_sql(), tasks.op_task );
-						add( dumper.get_virtual_operations_sql(), tasks.vop_task );
-
-						for(const auto& block : data.blocks) dumper.process_block(block);
-						update_stat(stats.blocks, data.blocks.size());
-						add( dumper.get_blocks_sql(), tasks.block_task );
-						data.blocks.clear();
-
-						for(const auto& trx : data.transactions) dumper.process_transaction(trx);
-						update_stat(stats.transactions, data.transactions.size());
-						add( dumper.get_transaction_sql(), tasks.trx_task );
-						data.transactions.clear();
-
-						for(auto& f : futures) f.wait();
-					}
-				};
-
-				constexpr int table_count = sizeof(task_collection_t) / sizeof(flush_task);	// blocks, trx, op, vops
-				constexpr uint connections_per_worker{ 2u };	// accounts, permlinks
-
 				class sql_serializer_plugin_impl
 				{
 				public:
 					sql_serializer_plugin_impl(const std::string &url) 
-						: connection{url}, 
-							tasks{connection, current_stats}
+						: connection{url},
+              db_url{url}
 					{
-						worker_pool.SetBackgroundThreads( std::max( 1u, connection.get_max_transaction_count() / connections_per_worker ) );
 					}
 
 					virtual ~sql_serializer_plugin_impl()
@@ -455,26 +420,20 @@ namespace hive
 					boost::signals2::connection _on_live_sync_start;
 
 					postgress_connection_holder connection;
+          std::string db_url;
 					fc::optional<fc::string> path_to_schema;
 					bool set_index = false;
 					bool are_constraints_active = true;
 
-					using thread_with_status = std::pair<std::shared_ptr<std::thread>, bool>;
-					std::list<thread_with_status> threads;
 					uint32_t blocks_per_commit = 1;
 					int64_t block_vops = 0;
+          int64_t op_sequence_id = 0; 
 
 					cached_containter_t currently_caching_data;
-					thread_pool_t worker_pool{};
-					task_collection_t tasks;
 					stats_group current_stats;
-
-					fc::string null_permlink;
-					fc::string null_account;
 
 					void log_statistics()
 					{
-						current_stats.workers_count = worker_pool.GetQueueLen();
 						std::cout << current_stats;
 						current_stats.reset();
 					}
@@ -484,11 +443,7 @@ namespace hive
 						using up_and_down_index = std::pair<const char*, const char*>;
 						static const std::vector<up_and_down_index> indexes{{up_and_down_index
 							{"CREATE INDEX IF NOT EXISTS hive_operations_operation_types_index ON hive_operations (op_type_id);", "DROP INDEX IF EXISTS hive_operations_operation_types_index;"},
-							{"CREATE INDEX IF NOT EXISTS hive_operations_participants_index ON hive_operations USING GIN (participants gin__int_ops);", "DROP INDEX IF EXISTS hive_operations_participants_index;"},
-							{"CREATE INDEX IF NOT EXISTS hive_operations_permlink_ids_index ON hive_operations USING GIN (permlink_ids gin__int_ops);", "DROP INDEX IF EXISTS hive_operations_permlink_ids_index;"},
-							{"CREATE INDEX IF NOT EXISTS hive_virtual_operations_operation_types_index ON hive_virtual_operations (op_type_id);", "DROP INDEX IF EXISTS hive_virtual_operations_operation_types_index;"},
-							{"CREATE INDEX IF NOT EXISTS hive_virtual_operations_participants_index ON hive_virtual_operations USING GIN (participants gin__int_ops);", "DROP INDEX IF EXISTS hive_virtual_operations_participants_index;"},
-							{"CREATE INDEX IF NOT EXISTS hive_virtual_operations_block_num_index ON hive_virtual_operations(block_num);", "DROP INDEX IF EXISTS hive_virtual_operations_block_num_index;"}
+							{"CREATE INDEX IF NOT EXISTS hive_operations_permlink_ids_index ON hive_operations USING GIN (permlink_ids gin__int_ops);", "DROP INDEX IF EXISTS hive_operations_permlink_ids_index;"}
 						}};
 
 						auto trx = connection.start_transaction();
@@ -522,14 +477,87 @@ namespace hive
 					void init_database()
 					{
 						connection.exec_single_in_transaction(PSQL::get_all_type_definitions());
-						null_permlink = connection.get_single_value<fc::string>( "SELECT permlink FROM hive_permlink_data WHERE id=0" );
-						null_account = connection.get_single_value<fc::string>( "SELECT name FROM hive_accounts WHERE id=0" );
+            load_caches();
 					}
+
+          void load_caches()
+          {
+            ilog("Loading account and permlink caches...");
+
+            auto* data = currently_caching_data.get();
+            auto& account_cache = data->_account_cache;
+
+            int next_account_id = 0;
+
+            data_processor account_cache_loader(db_url, "Account cache loader",
+              [&account_cache, &next_account_id](const data_processor::data_chunk_ptr&, pqxx::work& tx) -> data_processor::data_processing_status
+              {
+                data_processor::data_processing_status processingStatus;
+                pqxx::result data = tx.exec("SELECT ai.name, ai.id, ai.operation_count FROM account_operation_count_info_view ai;");
+                for(auto recordI = data.cbegin(); recordI != data.cend(); ++recordI)
+                {
+                  const pqxx::row& record = *recordI;
+
+                  const char* name = record["name"].c_str();
+                  int account_id = record["id"].as<int>();
+                  unsigned int operation_count = record["operation_count"].as<int>();
+
+                  if(account_id > next_account_id)
+                    next_account_id = account_id;
+
+                  account_cache.emplace(std::string(name), account_info(account_id, operation_count));
+
+                  ++processingStatus.first;
+                }
+
+                return processingStatus;
+              }
+            );
+
+            account_cache_loader.trigger(data_processor::data_chunk_ptr());
+
+            auto& permlink_cache = data->_permlink_cache;
+            int next_permlink_id = 0;
+
+            data_processor permlink_cache_loader(db_url, "Permlink cache loader",
+              [&permlink_cache, &next_permlink_id](const data_processor::data_chunk_ptr&, pqxx::work& tx) -> data_processor::data_processing_status
+              {
+                data_processor::data_processing_status processingStatus;
+                pqxx::result data = tx.exec("SELECT pd.permlink, pd.id FROM hive_permlink_data pd;");
+                for(auto recordI = data.cbegin(); recordI != data.cend(); ++recordI)
+                {
+                  const pqxx::row& record = *recordI;
+
+                  const char* permlink = record["permlink"].c_str();
+                  int permlink_id = record["id"].as<int>();
+
+                  if(permlink_id > next_permlink_id)
+                    next_permlink_id = permlink_id;
+
+                  permlink_cache.emplace(std::string(permlink), permlink_id);
+                  ++processingStatus.first;
+                }
+
+                return processingStatus;
+              }
+            );
+
+            permlink_cache_loader.trigger(data_processor::data_chunk_ptr());
+
+            account_cache_loader.join();
+            permlink_cache_loader.join();
+
+            data->_next_account_id = next_account_id + 1;
+            data->_next_permlink_id = next_permlink_id + 1;
+
+            ilog("Loaded ${a} cached accounts and ${p} cached permlink data", ("a", account_cache.size())("p", permlink_cache.size()));
+            ilog("Next account id: ${a},  next permlink id: ${p}.", ("a", data->_next_account_id)("p", data->_next_permlink_id));
+          }
 
 					void close_pools()
 					{
 						// finish all the workers
-						worker_pool.WaitForJobsAndJoinAllThreads();
+
 					}
 
 					void switch_constraints(const bool active)
@@ -541,9 +569,7 @@ namespace hive
 						static const std::vector<up_and_down_constraint> constrainsts{{	up_and_down_constraint
 							{"ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num)","ALTER TABLE hive_transactions DROP CONSTRAINT IF EXISTS hive_transactions_fk_1"},
 							{"ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_1 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_1"},
-							{"ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_2 FOREIGN KEY (block_num, trx_in_block) REFERENCES hive_transactions (block_num, trx_in_block)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_2"},
-							{"ALTER TABLE hive_virtual_operations ADD CONSTRAINT hive_virtual_operations_fk_1 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id)","ALTER TABLE hive_virtual_operations DROP CONSTRAINT IF EXISTS hive_virtual_operations_fk_1"},
-							{"ALTER TABLE hive_virtual_operations ADD CONSTRAINT hive_virtual_operations_fk_2 FOREIGN KEY (block_num) REFERENCES hive_blocks (num)","ALTER TABLE hive_virtual_operations DROP CONSTRAINT IF EXISTS hive_virtual_operations_fk_2"}
+							{"ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_2 FOREIGN KEY (block_num, trx_in_block) REFERENCES hive_transactions (block_num, trx_in_block)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_2"}
 						}};
 
 						auto trx = connection.start_transaction();
@@ -559,12 +585,9 @@ namespace hive
 						connection.commit_transaction(trx);
 					}
 
-					void process_cached_data()
-					{
-						if(currently_caching_data.get() == nullptr) return;
-						current_stats.all_created_workers++;
-						worker_pool.SubmitJob( process_task{ std::make_shared<cached_containter_t>( std::move( currently_caching_data ) ), connection, tasks, current_stats, null_account, null_permlink } );
-					}
+					void process_cached_data();
+          void collect_new_ids(const hive::protocol::operation& op);
+          void collect_impacted_accounts(int64_t operation_id, const hive::protocol::operation& op);
 
 					void push_currently_cached_data(const size_t reserve)
 					{
@@ -589,6 +612,51 @@ namespace hive
 						ilog("Done, cleanup complete");
 					}
 				};
+
+void sql_serializer_plugin_impl::process_cached_data()
+{
+  if(currently_caching_data.get() == nullptr)
+    return;
+
+  current_stats.all_created_workers++;
+
+
+
+}
+
+void sql_serializer_plugin_impl::collect_new_ids(const hive::protocol::operation& op)
+{
+  auto* data = currently_caching_data.get();
+  auto* account_cache = &data->_account_cache;
+  auto* permlink_cache = &data->_permlink_cache;
+
+  new_ids_collector collector(account_cache, &data->_next_account_id, permlink_cache, &data->_next_permlink_id,
+    &data->accounts, &data->permlinks);
+  op.visit(collector);
+}
+
+void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id, const hive::protocol::operation& op)
+{
+  flat_set<hive::protocol::account_name_type> impacted;
+  hive::app::operation_get_impacted_accounts(op, impacted);
+
+  auto* data = currently_caching_data.get();
+  auto* account_cache = &data->_account_cache;
+  auto* account_operations = &data->account_operations;
+
+  for(const auto& name : impacted)
+  {
+    auto accountI = account_cache->find(name);
+    FC_ASSERT(accountI != account_cache->end());
+
+    account_info& aInfo = accountI->second;
+
+    account_operations->emplace_back(operation_id, aInfo._id, aInfo._operation_count);
+
+    ++aInfo._operation_count;
+  }
+}
+
 			} // namespace detail
 
 			sql_serializer_plugin::sql_serializer_plugin() {}
@@ -596,7 +664,9 @@ namespace hive
 
 			void sql_serializer_plugin::set_program_options(options_description &cli, options_description &cfg)
 			{
-				cfg.add_options()("psql-url", boost::program_options::value<string>(), "postgres connection string")("psql-path-to-schema", "if set and replay starts from 0 block, executes script")("psql-reindex-on-exit", "creates indexes and PK on exit");
+				cfg.add_options()("psql-url", boost::program_options::value<string>(), "postgres connection string")
+                         ("psql-path-to-schema", "if set and replay starts from 0 block, executes script")
+                         ("psql-reindex-on-exit", "creates indexes and PK on exit");
 			}
 
 			void sql_serializer_plugin::plugin_initialize(const boost::program_options::variables_map &options)
@@ -651,36 +721,32 @@ namespace hive
 
 			void sql_serializer_plugin::on_post_apply_operation(const operation_notification &note)
 			{
-				const bool is_virtual = note.op.visit(PSQL::is_virtual_visitor{});
+				const bool is_virtual = hive::protocol::is_virtual_operation(note.op);
 
 				// deserialization
-				std::shared_ptr<legacy_operation> lop{ new legacy_operation{} };
-				note.op.visit( legacy_operation_conversion_visitor{*lop} );
-				fc::string deserialized_op = fc::json::to_string(lop);
-				lop.reset();
+        fc::variant opVariant;
+        fc::to_variant(note.op, opVariant);
+        fc::string deserialized_op = fc::json::to_string(opVariant);
 
 				detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
 				cdtf->total_size += deserialized_op.size() + sizeof(note);
-				if (is_virtual)
-				{
-					cdtf->virtual_operations.emplace_back(
-							note.block,
-							note.trx_in_block,
-							( note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx ),
-							note.op,
-							std::move(deserialized_op)
-						);
-				}
-				else
-				{
-					cdtf->operations.emplace_back(
-							note.block,
-							note.trx_in_block,
-							note.op_in_trx,
-							note.op,
-							std::move(deserialized_op)
-						);
-				}
+				
+        ++my->op_sequence_id;
+
+        if(is_virtual == false)
+          my->collect_new_ids(note.op);
+
+				cdtf->operations.emplace_back(
+            my->op_sequence_id,
+            note.block,
+						note.trx_in_block,
+            is_virtual && note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx,
+						note.op,
+						std::move(deserialized_op)
+					);
+
+        my->collect_impacted_accounts(my->op_sequence_id, note.op);
+
 			}
 
 			void sql_serializer_plugin::on_post_apply_transaction(const transaction_notification &note) {}
@@ -704,7 +770,6 @@ namespace hive
 
 				if( note.block_num % 100'000 == 0 )
 				{
-					// my->worker_pool.JoinAllThreads();
 					my->log_statistics();
 				}
 			}
@@ -723,7 +788,7 @@ namespace hive
 				my->switch_constraints(false);
         my->switch_indexes(false);
         my->set_index = true; /// Define indices once reindex done.
-				//if(note.force_replay && my->path_to_schema.valid()) my->recreate_db();
+				if(note.force_replay && my->path_to_schema.valid()) my->recreate_db();
 				my->init_database();
 				my->blocks_per_commit = 10'000;
 			}
