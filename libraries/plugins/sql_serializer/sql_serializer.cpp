@@ -88,14 +88,12 @@ namespace hive
 				ext_stat_t blocks{};
 				ext_stat_t transactions{};
 				ext_stat_t operations{};
-				ext_stat_t virtual_operations{};
 
 				void reset()
 				{
 					blocks.reset();
 					transactions.reset();
 					operations.reset();
-					virtual_operations.reset();
 
 					sending_cache_time.store(duration_t{0});
 					workers_count = 0;
@@ -123,7 +121,6 @@ namespace hive
 					__shortcut(blocks)
 					__shortcut(transactions)
 					__shortcut(operations)
-					__shortcut(virtual_operations)
 					;
 			}
 
@@ -140,6 +137,27 @@ namespace hive
 
 			namespace detail
 			{
+
+      using data_processing_status = data_processor::data_processing_status;
+      using data_chunk_ptr = data_processor::data_chunk_ptr;
+
+      template <class DataContainer>
+      class container_holder : public data_processor::data_chunk
+      {
+      public:
+        container_holder(DataContainer&& data) : _data(std::move(data)) {}
+        virtual ~container_holder() {}
+
+        virtual std::string generate_code(size_t* processedItem) const override { return std::string();}
+
+        const DataContainer& get_data() const
+        {
+          return _data;
+        }
+
+      private:
+        DataContainer _data;
+      };
 
       /**
        * @brief Collects new identifiers (accounts or permlinks) defined by given operation.
@@ -177,7 +195,8 @@ namespace hive
 
         void operator()(const hive::protocol::pow_operation& op)
         {
-          on_new_account(op.get_worker_account());
+          if(_known_accounts->find(op.get_worker_account()) == _known_accounts->end())
+            on_new_account(op.get_worker_account());
         }
         
         void operator()(const hive::protocol::pow2_operation& op)
@@ -200,10 +219,13 @@ namespace hive
 
         void operator()(const hive::protocol::comment_operation& op)
         {
-          ++_next_permlink_id;
-          auto ii = _known_permlinks->emplace(op.permlink, _next_permlink_id);
-          _new_permlinks->emplace_back(_next_permlink_id, op.permlink);
-          FC_ASSERT(ii.second);
+          auto ii = _known_permlinks->emplace(op.permlink, _next_permlink_id + 1);
+          /// warning comment_operation in edit case uses the same permlink.
+          if(ii.second)
+          {
+            ++_next_permlink_id;
+            _new_permlinks->emplace_back(_next_permlink_id, op.permlink);
+          }
         }
 
       private:
@@ -213,7 +235,7 @@ namespace hive
           auto ii = _known_accounts->emplace(std::string(name), account_info(_next_account_id, 0));
           _new_accounts->emplace_back(_next_account_id, std::string(name));
 
-          FC_ASSERT(ii.second);
+          FC_ASSERT(ii.second, "Account `${a}' already exits.", ("a", name));
         }
 
       private:
@@ -410,6 +432,7 @@ namespace hive
 						: connection{url},
               db_url{url}
 					{
+            init_data_processors();
 					}
 
 					virtual ~sql_serializer_plugin_impl()
@@ -424,6 +447,13 @@ namespace hive
 					boost::signals2::connection _on_starting_reindex;
 					boost::signals2::connection _on_finished_reindex;
 					boost::signals2::connection _on_live_sync_start;
+
+          std::unique_ptr<data_processor> _accounts_processor;
+          std::unique_ptr<data_processor> _permlink_processor;
+          std::unique_ptr<data_processor> _block_processor;
+          std::unique_ptr<data_processor> _transaction_processor;
+          std::unique_ptr<data_processor> _operation_processor;
+          std::unique_ptr<data_processor> _account_operation_processor;
 
 					postgress_connection_holder connection;
           std::string db_url;
@@ -480,11 +510,42 @@ namespace hive
 								wlog("Failed to execute query from ${schema_path}:\n${query}", ("schema_path", *path_to_schema)("query", q));
 					}
 
-					void init_database()
+					void init_database(bool freshDb)
 					{
 						connection.exec_single_in_transaction(PSQL::get_all_type_definitions());
+
             load_caches();
+
+            if(freshDb)
+              import_all_builtin_accounts();
 					}
+
+          void import_all_builtin_accounts()
+          {
+            auto& db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
+            const auto& accounts = db.get_index<hive::chain::account_index, hive::chain::by_id>();
+
+            auto* data = currently_caching_data.get(); 
+
+            int& next_account_id = data->_next_account_id;
+            auto& known_accounts = data->_account_cache;
+            auto& new_accounts = data->accounts;
+
+            for(const auto& account : accounts)
+            {
+              auto ii = known_accounts.emplace(std::string(account.name), account_info(next_account_id + 1, 0));
+              if(ii.second)
+              {
+                ++next_account_id;
+                ilog("Importing builtin account: `${a}' with id: ${i}", ("a", account.name)("i", next_account_id));
+                new_accounts.emplace_back(next_account_id, std::string(account.name));
+              }
+              else
+              {
+                ilog("Builtin account: `${a}' already exists.", ("a", account.name));
+              }
+            }
+          }
 
           void load_caches()
           {
@@ -496,9 +557,9 @@ namespace hive
             int next_account_id = 0;
 
             data_processor account_cache_loader(db_url, "Account cache loader",
-              [&account_cache, &next_account_id](const data_processor::data_chunk_ptr&, pqxx::work& tx) -> data_processor::data_processing_status
+              [&account_cache, &next_account_id](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
               {
-                data_processor::data_processing_status processingStatus;
+                data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT ai.name, ai.id, ai.operation_count FROM account_operation_count_info_view ai;");
                 for(auto recordI = data.cbegin(); recordI != data.cend(); ++recordI)
                 {
@@ -526,9 +587,9 @@ namespace hive
             int next_permlink_id = 0;
 
             data_processor permlink_cache_loader(db_url, "Permlink cache loader",
-              [&permlink_cache, &next_permlink_id](const data_processor::data_chunk_ptr&, pqxx::work& tx) -> data_processor::data_processing_status
+              [&permlink_cache, &next_permlink_id](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
               {
-                data_processor::data_processing_status processingStatus;
+                data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT pd.permlink, pd.id FROM hive_permlink_data pd;");
                 for(auto recordI = data.cbegin(); recordI != data.cend(); ++recordI)
                 {
@@ -548,7 +609,7 @@ namespace hive
               }
             );
 
-            permlink_cache_loader.trigger(data_processor::data_chunk_ptr());
+            permlink_cache_loader.trigger(data_chunk_ptr());
 
             account_cache_loader.join();
             permlink_cache_loader.join();
@@ -560,11 +621,30 @@ namespace hive
             ilog("Next account id: ${a},  next permlink id: ${p}.", ("a", data->_next_account_id)("p", data->_next_permlink_id));
           }
 
-					void close_pools()
-					{
-						// finish all the workers
+          data_processing_status flush_account_data(const data_chunk_ptr& dataPtr, pqxx::work& openedTx);
+          data_processing_status flush_permlink_data(const data_chunk_ptr& dataPtr, pqxx::work& openedTx);
+          data_processing_status flush_operation_data(const data_chunk_ptr& dataPtr, pqxx::work& openedTx);
+          data_processing_status flush_block_data(const data_chunk_ptr& dataPtr, pqxx::work& openedTx);
+          data_processing_status flush_transaction_data(const data_chunk_ptr& dataPtr, pqxx::work& openedTx);
+          data_processing_status flush_account_operation_data(const data_chunk_ptr& dataPtr, pqxx::work& openedTx);
 
-					}
+          void trigger_data_flush(account_data_container_t& data);
+          void trigger_data_flush(permlink_data_container_t& data);
+          void trigger_data_flush(block_data_container_t& data);
+          void trigger_data_flush(transaction_data_container_t& data);
+          void trigger_data_flush(operation_data_container_t& data);
+          void trigger_data_flush(account_operation_data_container_t& data);
+
+          void init_data_processors();
+          void join_data_processors()
+          {
+            _accounts_processor->join();
+            _permlink_processor->join();
+            _block_processor->join();
+            _transaction_processor->join();
+            _operation_processor->join();
+            _account_operation_processor->join();
+          }
 
 					void switch_constraints(const bool active)
 					{
@@ -598,15 +678,13 @@ namespace hive
 					void push_currently_cached_data(const size_t reserve)
 					{
 						process_cached_data();
-						if (reserve)
-							currently_caching_data = std::make_unique<cached_data_t>(reserve);
 					}
 
 					void cleanup_sequence()
 					{
 						ilog("Flushing rest of data, wait a moment...");
 						push_currently_cached_data(0);
-						close_pools();
+            join_data_processors();
 						if(are_constraints_active) return;
 						if (set_index)
 						{
@@ -619,15 +697,174 @@ namespace hive
 					}
 				};
 
+void sql_serializer_plugin_impl::init_data_processors()
+{
+  _accounts_processor = std::make_unique<data_processor>(db_url, "Account data writer",
+    [this](const data_chunk_ptr& dataPtr, pqxx::work& openedTx) -> data_processing_status
+    {
+      return flush_account_data(dataPtr, openedTx);
+    }
+  );
+
+  _permlink_processor = std::make_unique<data_processor>(db_url, "Permlink data writer",
+    [this](const data_chunk_ptr& dataPtr, pqxx::work& openedTx) -> data_processing_status
+    {
+      return flush_permlink_data(dataPtr, openedTx);
+    }
+  );
+
+  _block_processor = std::make_unique<data_processor>(db_url, "Block data writer",
+    [this](const data_chunk_ptr& dataPtr, pqxx::work& openedTx) -> data_processing_status
+    {
+      return flush_block_data(dataPtr, openedTx);
+    }
+  );
+
+  _transaction_processor = std::make_unique<data_processor>(db_url, "Transaction data writer",
+    [this](const data_chunk_ptr& dataPtr, pqxx::work& openedTx) -> data_processing_status
+    {
+      return flush_transaction_data(dataPtr, openedTx);
+    }
+  );
+
+  _operation_processor = std::make_unique<data_processor>(db_url, "Operation data writer",
+    [this](const data_chunk_ptr& dataPtr, pqxx::work& openedTx) -> data_processing_status
+    {
+      return flush_operation_data(dataPtr, openedTx);
+    }
+  );
+
+  _account_operation_processor = std::make_unique<data_processor>(db_url, "Account_operation data writer",
+    [this](const data_chunk_ptr& dataPtr, pqxx::work& openedTx) -> data_processing_status
+    {
+      return flush_account_operation_data(dataPtr, openedTx);
+    }
+  );
+}
+
+data_processing_status sql_serializer_plugin_impl::flush_account_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
+{
+  data_processing_status processingStatus;
+
+  const container_holder<account_data_container_t>* holder =
+    static_cast<const container_holder<account_data_container_t>*>(dataPtr.get());
+
+  const account_data_container_t& data = holder->get_data();
+
+  FC_ASSERT(data.empty() == false);
+
+  std::string query = "INSERT INTO hive_accounts (id, name) VALUES\n";
+
+  auto dataI = data.cbegin();
+  query += "(" + std::to_string(dataI->id) + ",E'" + tx.esc(dataI->name) + "')\n";
+  for(++dataI; dataI != data.cend(); ++dataI)
+  {
+    query += ",(" + std::to_string(dataI->id) + ",E'" + tx.esc(dataI->name) + "')\n";
+  }
+
+  query += ';';
+
+  //ilog("Executing query: ${q}", ("q", query));
+  tx.exec(query);
+
+  processingStatus.first += data.size();
+  processingStatus.second = true;
+
+  return processingStatus;
+}
+
+data_processing_status sql_serializer_plugin_impl::flush_permlink_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
+{
+  data_processing_status processingStatus;
+  return processingStatus;
+}
+
+data_processing_status sql_serializer_plugin_impl::flush_operation_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
+{
+  data_processing_status processingStatus;
+
+  // deserialization
+  //fc::variant opVariant;
+  //fc::to_variant(note.op, opVariant);
+  //fc::string deserialized_op = fc::json::to_string(opVariant);
+
+  return processingStatus;
+}
+
+data_processing_status sql_serializer_plugin_impl::flush_block_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
+{
+  data_processing_status processingStatus;
+  return processingStatus;
+}
+
+data_processing_status sql_serializer_plugin_impl::flush_transaction_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
+{
+  data_processing_status processingStatus;
+  return processingStatus;
+}
+
+data_processing_status sql_serializer_plugin_impl::flush_account_operation_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
+{
+  data_processing_status processingStatus;
+  return processingStatus;
+}
+
+void sql_serializer_plugin_impl::trigger_data_flush(account_data_container_t& data)
+{
+  if(data.empty() == false)
+    _accounts_processor->trigger(std::make_unique<container_holder<account_data_container_t>>(std::move(data)));
+
+  FC_ASSERT(data.empty());
+}
+
+void sql_serializer_plugin_impl::trigger_data_flush(permlink_data_container_t& data)
+{
+  if(data.empty() == false)
+    _permlink_processor->trigger(std::make_unique<container_holder<permlink_data_container_t>>(std::move(data)));
+  FC_ASSERT(data.empty());
+}
+
+void sql_serializer_plugin_impl::trigger_data_flush(block_data_container_t& data)
+{
+  if(data.empty() == false)
+    _block_processor->trigger(std::make_unique<container_holder<block_data_container_t>>(std::move(data)));
+  FC_ASSERT(data.empty());
+}
+
+void sql_serializer_plugin_impl::trigger_data_flush(transaction_data_container_t& data)
+{
+  if(data.empty() == false)
+    _transaction_processor->trigger(std::make_unique<container_holder<transaction_data_container_t>>(std::move(data)));
+  FC_ASSERT(data.empty());
+}
+
+void sql_serializer_plugin_impl::trigger_data_flush(operation_data_container_t& data)
+{
+  if(data.empty() == false)
+    _operation_processor->trigger(std::make_unique<container_holder<operation_data_container_t>>(std::move(data)));
+  FC_ASSERT(data.empty());
+}
+
+void sql_serializer_plugin_impl::trigger_data_flush(account_operation_data_container_t& data)
+{
+  if(data.empty() == false)
+    _account_operation_processor->trigger(std::make_unique<container_holder<account_operation_data_container_t>>(std::move(data)));
+  FC_ASSERT(data.empty());
+}
+
 void sql_serializer_plugin_impl::process_cached_data()
 {
   if(currently_caching_data.get() == nullptr)
     return;
+  
+  auto* data = currently_caching_data.get();
 
-  current_stats.all_created_workers++;
-
-
-
+  trigger_data_flush(data->accounts);
+  trigger_data_flush(data->permlinks);
+  trigger_data_flush(data->blocks);
+  trigger_data_flush(data->transactions);
+  trigger_data_flush(data->operations);
+  trigger_data_flush(data->account_operations);
 }
 
 void sql_serializer_plugin_impl::collect_new_ids(const hive::protocol::operation& op)
@@ -646,6 +883,8 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
   flat_set<hive::protocol::account_name_type> impacted;
   hive::app::operation_get_impacted_accounts(op, impacted);
 
+  impacted.erase(hive::protocol::account_name_type());
+
   auto* data = currently_caching_data.get();
   auto* account_cache = &data->_account_cache;
   auto* account_operations = &data->account_operations;
@@ -653,7 +892,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
   for(const auto& name : impacted)
   {
     auto accountI = account_cache->find(name);
-    FC_ASSERT(accountI != account_cache->end());
+    FC_ASSERT(accountI != account_cache->end(), "Missing account: ${a}", ("a", name));
 
     account_info& aInfo = accountI->second;
 
@@ -707,7 +946,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 			void sql_serializer_plugin::plugin_shutdown()
 			{
 				ilog("Flushing left data...");
-				my->close_pools();
+				my->join_data_processors();
 
 				if (my->_on_post_apply_block_con.connected())
 					chain::util::disconnect_signal(my->_on_post_apply_block_con);
@@ -729,13 +968,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 			{
 				const bool is_virtual = hive::protocol::is_virtual_operation(note.op);
 
-				// deserialization
-        fc::variant opVariant;
-        fc::to_variant(note.op, opVariant);
-        fc::string deserialized_op = fc::json::to_string(opVariant);
-
 				detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
-				cdtf->total_size += deserialized_op.size() + sizeof(note);
 				
         ++my->op_sequence_id;
 
@@ -747,8 +980,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
             note.block,
 						note.trx_in_block,
             is_virtual && note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx,
-						note.op,
-						std::move(deserialized_op)
+						note.op
 					);
 
         my->collect_impacted_accounts(my->op_sequence_id, note.op);
@@ -769,7 +1001,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 						note.block.timestamp);
 				my->block_vops = 0;
 
-				if( my->currently_caching_data->total_size >= max_data_length || note.block_num % my->blocks_per_commit == 0 )
+				if( note.block_num % my->blocks_per_commit == 0 )
 				{
 					my->push_currently_cached_data(prereservation_size);
 				}
@@ -794,8 +1026,13 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 				my->switch_constraints(false);
         my->switch_indexes(false);
         my->set_index = true; /// Define indices once reindex done.
-				if(note.force_replay && my->path_to_schema.valid()) my->recreate_db();
-				my->init_database();
+				if(note.force_replay)
+          {
+          if(my->path_to_schema.valid())
+            my->recreate_db();
+          }
+        
+        my->init_database(note.force_replay);
 				my->blocks_per_commit = 10'000;
 			}
 
