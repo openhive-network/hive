@@ -113,7 +113,8 @@ namespace hive
 
 			inline void mylog(const char* msg)
 			{
-				std::cout << "[ " << std::this_thread::get_id() << " ] " << msg << std::endl;
+				const static fc::time_point tp{ fc::time_point::now() };
+				std::cout << "[ " << (fc::time_point::now() - tp).count() / 1000 << "ms ] " << msg << std::endl;
 			}
 
 			namespace detail
@@ -259,7 +260,7 @@ namespace hive
 
 					void log_size(const fc::string& msg = "size")
 					{
-						return;
+						// return;
 						mylog(generate([&](fc::string& ss){ 
 							ss = msg + ": ";
 							ss += "blocks: " + std::to_string(blocks.size());
@@ -271,7 +272,15 @@ namespace hive
 						}).c_str());
 					}
 				};
-				using cached_containter_t = std::unique_ptr<cached_data_t>;
+				struct log_destructor
+				{
+					void operator()(cached_data_t* ptr)
+					{
+						mylog("$$$$$$$$$$$$$ safely deleting `cached_data_t`");
+						std::default_delete<cached_data_t>{}(ptr);
+					}
+				};
+				using cached_containter_t = std::unique_ptr<cached_data_t, log_destructor>;
 
 				struct flush_task
 				{
@@ -281,9 +290,9 @@ namespace hive
 					std::condition_variable_any cv{};
 					std::atomic_bool is_table_used{false};
 
-					void operator()(std::shared_ptr<fc::string> sql)
+					void operator()(const fc::string& sql)
 					{
-						if(sql.get() == nullptr) return;
+						if(sql == fc::string{}) return;
 
 						std::shared_lock<std::shared_timed_mutex> lck{ mtx };
 						while(is_table_used.load()) cv.wait(lck);
@@ -291,10 +300,11 @@ namespace hive
 
 						{
 							const auto before = fc::time_point::now();
-							conn.exec_single_in_transaction(std::move(*sql));
+							conn.exec_single_in_transaction(sql);
 							stat.flush_time += fc::time_point::now() - before;
 						}
 
+						mylog("flush complete");
 						is_table_used.store(false);
 						cv.notify_one();
 					}
@@ -318,25 +328,27 @@ namespace hive
 				struct process_task
 				{
 					// just to make it possible to store in ThreadPool
-					std::shared_ptr<cached_containter_t> input;
+					std::shared_ptr<cached_data_t> input;
 					postgress_connection_holder& conn;
 					task_collection_t& tasks;
 					stats_group& stats;
+					fc::string sql;
+
+					~process_task() { mylog("destroying process_task #############"); }
 
 					void upload_caches(PSQL::sql_dumper &dumper)
 					{
 						fc::string perms;
 						dumper.get_dumped_cache(perms);
-						if ( perms != fc::string()) conn.exec_single_in_transaction(std::move(perms));
+						if ( perms != fc::string()) conn.exec_single_in_transaction(perms);
 					}
 
 					void operator()()
 					{
+						mylog("doing...");
 						PSQL::sql_dumper dumper{};
-						cached_data_t& data = **input;	// alias
+						cached_data_t& data = *input;	// alias
 						auto tm = fc::time_point::now();
-
-						std::vector< std::future<void> > futures;
 
 						auto update_stat = [&](ext_stat_t& s, const uint64_t cnt)
 						{
@@ -348,10 +360,6 @@ namespace hive
 						{
 							s += fc::time_point::now() - tm;
 							tm = fc::time_point::now();
-						};
-						auto add = [&](fc::string&& _sql, flush_task& _task)
-						{
-							futures.emplace_back( std::async(std::launch::async, [&](fc::string&& sql, flush_task& task){ task( std::make_shared<fc::string>( std::move(sql) ) ); }, std::move(_sql), std::ref(_task) ) );
 						};
 
 						for(const auto& op : data.operations) dumper.process_operation(op);
@@ -365,20 +373,23 @@ namespace hive
 						upload_caches(dumper);
 						update_flushing_stat(stats.sending_cache_time);
 
-						add( dumper.get_operations_sql(), tasks.op_task );
-						add( dumper.get_virtual_operations_sql(), tasks.vop_task );
+						dumper.get_operations_sql(sql);
+						tasks.op_task(sql);
+
+						dumper.get_virtual_operations_sql(sql);
+						tasks.vop_task(sql);
 
 						for(const auto& block : data.blocks) dumper.process_block(block);
 						update_stat(stats.blocks, data.blocks.size());
-						add( dumper.get_blocks_sql(), tasks.block_task );
+						dumper.get_blocks_sql(sql);
+						tasks.block_task(sql);
 						data.blocks.clear();
 
 						for(const auto& trx : data.transactions) dumper.process_transaction(trx);
 						update_stat(stats.transactions, data.transactions.size());
-						add( dumper.get_transaction_sql(), tasks.trx_task );
+						dumper.get_transaction_sql(sql);
+						tasks.trx_task(sql);
 						data.transactions.clear();
-
-						for(auto& f : futures) f.wait();
 					}
 				};
 
@@ -415,7 +426,9 @@ namespace hive
 
 					virtual ~sql_serializer_plugin_impl() 
 					{
-						connection.exec_single_in_transaction(get_account_insert_query());
+						fc::string sql;
+						get_account_insert_query(sql);
+						connection.exec_single_in_transaction(sql);
 					}
 
 					boost::signals2::connection _on_post_apply_operation_con;
@@ -451,18 +464,17 @@ namespace hive
 						return it_b.first->second;
 					}
 
-					std::vector<id_counter_t> get_participants_ids(const hive::protocol::operation& op)
+					void get_participants_ids(const hive::protocol::operation& op, std::vector<id_counter_t>& ret)
 					{
 						PSQL::account_names_container_t impacted;
 						hive::app::operation_get_impacted_accounts(op, impacted);
 						impacted.erase(account_name_type{});
-						std::vector<id_counter_t> ret; 
+
 						ret.reserve(impacted.size());
 						for(const account_name_type& acc : impacted) ret.emplace_back( get_id_with_counter( acc ) );
-						return std::move( ret );
 					}
 
-					fc::string get_account_insert_query()
+					void get_account_insert_query(fc::string& ret)
 					{
 						fc::string query{ "INSERT INTO hive_accounts(name, id,  current_counter) VALUES " };
 
@@ -473,7 +485,7 @@ namespace hive
 							query += fc::string{"( "} + escapings::escape_sql( it->first ) + ", " + std::to_string(pair.first) + ", " + std::to_string(pair.second) + " )";
 						}
 
-						return std::move(query);
+						ret = std::move(query);
 					}
 
 					void log_statistics()
@@ -563,16 +575,25 @@ namespace hive
 					void process_cached_data()
 					{
 						if(currently_caching_data.get() == nullptr) return;
+						mylog("moving data to new thread...");
 						current_stats.all_created_workers++;
-						worker_pool.SubmitJob( process_task{ std::make_shared<cached_containter_t>( std::move( currently_caching_data ) ), connection, tasks, current_stats } );
-						// process_task{ std::make_shared<cached_containter_t>( std::move( currently_caching_data ) ), connection, tasks, current_stats }();
+						// worker_pool.SubmitJob( process_task{ std::make_shared<cached_containter_t>( std::move( currently_caching_data ) ), connection, tasks, current_stats } );
+
+						// std::cin.get();
+
+						process_task{ std::shared_ptr<cached_data_t>( currently_caching_data.get() ), connection, tasks, current_stats }();
+						currently_caching_data.release();
+						mylog("finished processing seq");
 					}
 
 					void push_currently_cached_data(const size_t reserve)
 					{
 						process_cached_data();
 						if (reserve)
-							currently_caching_data = std::make_unique<cached_data_t>(reserve);
+						{
+							currently_caching_data.reset(new cached_data_t{reserve});
+							// currently_caching_data = std::make_unique<cached_data_t>(reserve);
+						}
 					}
 
 					void cleanup_sequence()
@@ -612,7 +633,8 @@ namespace hive
 				// settings
 				if (options.count("psql-path-to-schema"))
 					my->path_to_schema = options["psql-path-to-schema"].as<fc::string>();
-				my->currently_caching_data = std::make_unique<detail::cached_data_t>( default_reservation_size );
+				mylog("initiailize SSSSSSSSSSSSSSSSSSSSSSSQL");
+				my->push_currently_cached_data(default_reservation_size);
 
 				// signals
 				auto &db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
@@ -657,6 +679,9 @@ namespace hive
 				// deserialization
 				fc::string deserialized_op{ note.op.visit(sql_serializer::escapings::escape_visitor{}) };
 
+				std::vector<id_counter_t> participants;
+				my->get_participants_ids(note.op, participants);
+
 				detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
 				cdtf->total_size += deserialized_op.size() + sizeof(note);
 				if (is_virtual)
@@ -666,8 +691,8 @@ namespace hive
 							note.trx_in_block,
 							( note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx ),
 							note.op,
-							std::move(deserialized_op),
-							my->get_participants_ids(note.op)
+							deserialized_op,
+							participants
 						);
 				}
 				else
@@ -677,8 +702,8 @@ namespace hive
 							note.trx_in_block,
 							note.op_in_trx,
 							note.op,
-							std::move(deserialized_op),
-							my->get_participants_ids(note.op)
+							deserialized_op,
+							participants
 						);
 				}
 			}

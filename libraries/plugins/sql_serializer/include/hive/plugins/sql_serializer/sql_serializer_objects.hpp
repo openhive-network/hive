@@ -91,7 +91,6 @@ namespace hive
 
 			namespace PSQL
 			{
-
 				using hive::protocol::account_name_type;
 				using account_names_container_t = boost::container::flat_set<account_name_type>;
 				
@@ -122,6 +121,8 @@ namespace hive
 
 						process_base_t() = default;
 						process_base_t(const hash_t &_hash, const int64_t _block_number) : hash{_hash}, block_number{_block_number} {}
+
+						virtual ~process_base_t() {}
 					};
 
 					struct process_block_t : public process_base_t
@@ -164,7 +165,7 @@ namespace hive
 				{
 					fc::string ss;
 					fun(ss);
-					return std::move(ss);
+					return ss;
 				}
 
 				struct is_virtual_visitor
@@ -234,6 +235,18 @@ namespace hive
 					fc::string virtual_operations{};
 
 					cache_contatiner_t permlink_cache;
+					
+					~sql_dumper() 
+					{ 
+						std::cout << "destroying sql_dumper" << std::endl; 
+						std::cout << "blocks: " << blocks.size() << std::endl;
+						std::cout << "transactions: " << transactions.size() << std::endl;
+						std::cout << "operations: " << operations.size() << std::endl;
+						std::cout << "virtual_operations: " << virtual_operations.size() << std::endl;
+						std::cout << "permlink_cache: " << permlink_cache.size() << std::endl;
+
+						permlink_cache.clear();
+					}
 
 					void log_query( const fc::string& sql )
 					{
@@ -241,9 +254,9 @@ namespace hive
 						if(log != nullptr) std::cout << "[ SQL QUERY LOG ]" << sql << std::endl;
 					}
 					
-					fc::string get_operations_sql()
+					void get_operations_sql(std::string& ret)
 					{
-						if(operations.size() == 0) return fc::string{};
+						if(operations.size() == 0) ret = fc::string{};
 						
 						operations.insert(0, R"(
  INSERT INTO hive_operations (block_num, trx_in_block, op_pos, op_type_id, body, participants, participants_counters, permlink_ids)
@@ -258,12 +271,12 @@ namespace hive
 )");
 
 						log_query( operations );
-						return std::move(operations);
+						ret = std::move(operations);
 					}
 
-					fc::string get_virtual_operations_sql()
+					void get_virtual_operations_sql(std::string& ret)
 					{
-						if(virtual_operations.size() == 0) return fc::string{};
+						if(virtual_operations.size() == 0) ret = fc::string{};
 						virtual_operations.insert(0, R"(
  INSERT INTO hive_virtual_operations (block_num, trx_in_block, op_pos, op_type_id, body, participants, participants_counters)
  SELECT T.bn, T.trx, T.opn, T.opt, T.body, T.part, T.part_c FROM ( VALUES  
@@ -272,23 +285,23 @@ namespace hive
 						virtual_operations.append(" ) AS T (order_id, bn, trx, opn, opt, body, part, part_c)");
 
 						log_query( virtual_operations );
-						return std::move(virtual_operations);
+						ret = std::move(virtual_operations);
 					}
 
-					fc::string get_blocks_sql()
+					void get_blocks_sql(std::string& ret)
 					{
-						if(blocks.size() == 0) return fc::string{};
+						if(blocks.size() == 0) ret = fc::string{};
 						blocks.insert(0, "INSERT INTO hive_blocks VALUES ");
 						log_query( blocks );
-						return std::move(blocks);
+						ret = std::move(blocks);
 					}
 
-					fc::string get_transaction_sql()
+					void get_transaction_sql(std::string& ret)
 					{
-						if(transactions.size() == 0) return fc::string{};
+						if(transactions.size() == 0) ret = fc::string{};
 						transactions.insert(0, "INSERT INTO hive_transactions VALUES ");
 						log_query( transactions );
-						return std::move(transactions);
+						ret = std::move(transactions);
 					}
 
 					result_type process_operation(const processing_objects::process_operation_t &pop)
@@ -358,7 +371,7 @@ namespace hive
 								if (it != permlink_cache.begin())
 									out_permlinks.append(",");
 								out_permlinks.append("( ");
-								out_permlinks.append(std::move(*it));
+								out_permlinks.append(*it);
 								out_permlinks.append(" )");
 							}
 
@@ -389,7 +402,7 @@ namespace hive
 						}
 						_part.append(_cnt + "]");
 
-						return std::move( _part );
+						return _part;
 					}
 
 					fc::string get_formatted_permlinks(const operation &op)
@@ -402,12 +415,12 @@ namespace hive
 						for(auto cit = coll.begin(); cit != coll.end(); cit++)
 						{
 							if(cit != coll.begin()) ret.append(",");
-							fc::string _tmp{ escapings::escape_sql(*cit) };
+							const fc::string _tmp{ escapings::escape_sql(*cit) };
 							permlink_cache.insert(_tmp);
-							ret.append(std::move(_tmp));
+							ret.append(_tmp);
 						}
 						ret.append("]");
-						return std::move(ret);
+						return ret;
 					}
 
 					fc::string get_body(const char *op) const
@@ -419,7 +432,7 @@ namespace hive
 
 					fc::string get_operation_type_id(const operation &op) const
 					{
-						return std::move(std::to_string(op.which()));
+						return std::to_string(op.which());
 					}
 
 					void get_operation_value_prefix(fc::string &ss, const processing_objects::process_operation_t &pop, uint32_t& counter )
