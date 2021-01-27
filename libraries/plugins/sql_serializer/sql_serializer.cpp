@@ -401,7 +401,13 @@ namespace hive
 						if(connection.exec_transaction(trx, "SELECT name, id, current_counter FROM hive_accounts", ret))
 						{
 							for(const auto& row : ret)
-									accounts[row.at(0).as<fc::string>()] = id_counter_t(row.at(1).as<uint32_t>(), row.at(2).as<uint32_t>());
+							{
+								const fc::string from_db{ row.at(0).as<fc::string>() };
+								fc::string conv{ from_db.substr( 0, from_db.find(' ') ) };
+								if(conv.size() == 0) continue;
+
+								accounts[conv] = id_counter_t(row.at(1).as<uint32_t>(), row.at(2).as<uint32_t>());
+							}
 						}else elog("Failed to get accounts");
 						connection.exec_transaction(trx, "DELETE FROM hive_accounts");
 						connection.commit_transaction(trx);

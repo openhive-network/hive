@@ -110,6 +110,3 @@ CREATE TABLE IF NOT EXISTS hive_virtual_operations (
 -- SPECIAL VALUES
 -- This is permlink referenced by empty permlink arrays
 INSERT INTO hive_permlink_data VALUES(0, '');
-
-
-SELECT EXISTS ( SELECT FROM information_schema.tables WHERE  table_schema = 'public' AND table_name = 'hive_accounts' );
