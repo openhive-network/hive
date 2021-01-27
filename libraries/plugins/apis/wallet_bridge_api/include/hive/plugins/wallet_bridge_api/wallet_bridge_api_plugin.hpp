@@ -1,14 +1,7 @@
 #pragma once
-#include <hive/chain/hive_fwd.hpp>
-#include <hive/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
-#include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
-#include <hive/plugins/block_api/block_api_plugin.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
-#include <hive/plugins/database_api/database_api_plugin.hpp>
-#include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
-#include <hive/plugins/network_broadcast_api/network_broadcast_api_plugin.hpp>
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
-#include <appbase/application.hpp>
+#include <appbase/plugin.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 

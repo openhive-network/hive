@@ -1,10 +1,9 @@
-#include <hive/chain/hive_fwd.hpp>
-#include <appbase/application.hpp>
 #include <hive/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
 #include <hive/plugins/account_by_key_api/account_by_key_api.hpp>
 #include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
 #include <hive/plugins/account_history_api/account_history_api.hpp>
 #include <hive/plugins/database_api/database_api.hpp>
+#include <hive/plugins/database_api/database_api_plugin.hpp>
 #include <hive/plugins/block_api/block_api.hpp>
 #include <hive/plugins/block_api/block_api_plugin.hpp>
 #include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
@@ -14,12 +13,6 @@
 #include <hive/plugins/p2p/p2p_plugin.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
-#include <hive/protocol/get_config.hpp>
-#include <hive/protocol/exceptions.hpp>
-#include <hive/protocol/transaction_util.hpp>
-#include <hive/chain/util/smt_token.hpp>
-#include <hive/utilities/git_revision.hpp>
-#include <fc/git_revision.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
