@@ -36,8 +36,13 @@ BEGIN
  FROM hive_transactions ht
  JOIN hive_virtual_operations hvo ON ht.block_num = hvo.block_num AND ht.trx_in_block = hvo.trx_in_block
  JOIN hive_blocks hb ON ht.block_num = hb.num
- JOIN hive_operation_types hot ON hvo.op_type_id = hot.id
- WHERE ( ( __account_id::bigint << 32 ) | _START ) = ANY( hvo.participants ) AND ( ( __filter_info IS NULL ) OR ( hvo.op_type_id = ANY( _FILTER ) ) )
+ JOIN hive_operation_types hot ON hvo.op_type_id = hot.id,
+ (
+  SELECT generate_series FROM generate_series( _START - _LIMIT + 1, _START )
+ ) T
+ WHERE ( ARRAY[ __account_id ] && hvo.participants ) AND ( ARRAY[ T.generate_series ] && hvo.participants_counters )
+       AND ( ( __filter_info IS NULL ) OR ( hvo.op_type_id = ANY( _FILTER ) ) )
+       AND ( array_position( hvo.participants, __account_id ) = array_position( hvo.participants_counters, T.generate_series ) )
 
  UNION ALL
 
@@ -54,8 +59,13 @@ BEGIN
  FROM hive_transactions ht
  JOIN hive_operations ho ON ht.block_num = ho.block_num AND ht.trx_in_block = ho.trx_in_block
  JOIN hive_blocks hb ON ht.block_num = hb.num
- JOIN hive_operation_types hot ON ho.op_type_id = hot.id
- WHERE ( ( __account_id::bigint << 32 ) | _START ) = ANY( ho.participants ) AND ( ( __filter_info IS NULL ) OR ( ho.op_type_id = ANY( _FILTER ) ) )
+ JOIN hive_operation_types hot ON ho.op_type_id = hot.id,
+ (
+  SELECT generate_series FROM generate_series( _START - _LIMIT + 1, _START )
+ ) T
+ WHERE ( ARRAY[ __account_id ] && ho.participants )
+ AND ( ARRAY[ T.generate_series ] && ho.participants_counters ) AND ( ( __filter_info IS NULL ) OR ( ho.op_type_id = ANY( _FILTER ) ) )
+ AND ( array_position( ho.participants, __account_id ) = array_position( ho.participants_counters, T.generate_series ) )
  ORDER BY _block
  LIMIT _LIMIT;
 END
