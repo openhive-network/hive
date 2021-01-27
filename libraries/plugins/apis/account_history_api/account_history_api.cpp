@@ -199,7 +199,7 @@ DEFINE_API_IMPL( account_history_api_sql_impl, enum_virtual_ops)
                                   result.ops.emplace_back( std::move( temp ) );
                                 },
                                 args.block_range_begin, args.block_range_end,
-                                args.include_reversible, args.group_by_block,
+                                args.include_reversible,
                                 args.operation_begin, args.limit,
                                 args.filter );
 

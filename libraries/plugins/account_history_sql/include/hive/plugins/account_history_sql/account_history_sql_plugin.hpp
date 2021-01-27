@@ -63,7 +63,7 @@ class account_history_sql_plugin : public appbase::plugin<account_history_sql_pl
 
       void enum_virtual_ops( sql_result_type sql_result,
                             uint32_t block_range_begin, uint32_t block_range_end,
-                            const fc::optional<bool>& include_reversible, const fc::optional<bool>& group_by_block,
+                            const fc::optional<bool>& include_reversible,
                             const fc::optional< uint64_t >& operation_begin, const fc::optional< uint32_t >& limit,
                             const fc::optional< uint32_t >& filter ) const;
 

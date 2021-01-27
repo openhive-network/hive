@@ -39,7 +39,7 @@ namespace hive
 
           void enum_virtual_ops( account_history_sql::account_history_sql_plugin::sql_result_type sql_result,
                                 uint32_t block_range_begin, uint32_t block_range_end,
-                                const fc::optional<bool>& include_reversible, const fc::optional<bool>& group_by_block,
+                                const fc::optional<bool>& include_reversible,
                                 const fc::optional< uint64_t >& operation_begin, const fc::optional< uint32_t >& limit,
                                 const fc::optional< uint32_t >& filter );
 
@@ -51,8 +51,9 @@ namespace hive
 
           operation create_operation( const std::string& type, const std::string& value );
           void fill_object( const pqxx::row& row, account_history_sql_object& obj );
-          void create_array( const std::vector<uint32_t>& v, std::string& array );
+          void create_filter_array( const std::vector<uint32_t>& v, std::string& filter_array );
           void gather_operations_from_filter( const fc::optional<uint64_t>& filter, std::vector<uint32_t>& v, bool high );
+          void gather_virtual_operations_from_filter( const fc::optional<uint32_t>& filter, std::vector<uint32_t>& v );
 
       };//class account_history_sql_plugin_impl
 
@@ -96,17 +97,17 @@ namespace hive
           obj.operation_id = row[ cnt++ ].as< uint64_t >();
       }
 
-      void account_history_sql_plugin_impl::create_array( const std::vector<uint32_t>& v, std::string& array )
+      void account_history_sql_plugin_impl::create_filter_array( const std::vector<uint32_t>& v, std::string& filter_array )
       {
-        array = "ARRAY[ ";
+        filter_array = "ARRAY[ ";
         bool _first = true;
 
         for( auto val : v )
         {
-          array += _first ? std::to_string( val ) : ( ", " + std::to_string( val ) );
+          filter_array += _first ? std::to_string( val ) : ( ", " + std::to_string( val ) );
           _first = false;
         }
-        array += " ]::INT[]";
+        filter_array += " ]::INT[]";
       }
 
       void account_history_sql_plugin_impl::gather_operations_from_filter( const fc::optional<uint64_t>& filter, std::vector<uint32_t>& v, bool high )
@@ -119,6 +120,20 @@ namespace hive
         {
           if( _val & 1 )
             v.push_back( high ? ( it + 64 ) : it );
+          _val >>= 1;
+        }
+      }
+
+      void account_history_sql_plugin_impl::gather_virtual_operations_from_filter( const fc::optional<uint32_t>& filter, std::vector<uint32_t>& v )
+      {
+        if( !filter.valid() )
+          return;
+
+        uint64_t _val = *filter;
+        for( uint64_t it = 0; it < 32; ++it )
+        {
+          if( _val & 1 )
+            v.push_back( it );
           _val >>= 1;
         }
       }
@@ -222,15 +237,15 @@ namespace hive
         gather_operations_from_filter( operation_filter_low, v, false/*high*/ );
         gather_operations_from_filter( operation_filter_high, v, true/*high*/ );
 
-        std::string array;
-        create_array( v, array );
+        std::string filter_array;
+        create_filter_array( v, filter_array );
 
         const int NR_FIELDS = 9;
 
         pqxx::result result;
         std::string sql;
 
-        sql = "select * from ah_get_account_history(" + array + ", '" + account + "', " + std::to_string( start ) + ", " + std::to_string( limit ) +" )";
+        sql = "select * from ah_get_account_history(" + filter_array + ", '" + account + "', " + std::to_string( start ) + ", " + std::to_string( limit ) +" )";
 
         if( !connection.exec_single_in_transaction( sql, &result ) )
         {
@@ -253,11 +268,45 @@ namespace hive
 
       void account_history_sql_plugin_impl::enum_virtual_ops( account_history_sql::account_history_sql_plugin::sql_result_type sql_result,
                                                         uint32_t block_range_begin, uint32_t block_range_end,
-                                                        const fc::optional<bool>& include_reversible, const fc::optional<bool>& group_by_block,
+                                                        const fc::optional<bool>& include_reversible,
                                                         const fc::optional< uint64_t >& operation_begin, const fc::optional< uint32_t >& limit,
                                                         const fc::optional< uint32_t >& filter )
       {
-        
+        const int NR_FIELDS = 9;
+
+        pqxx::result result;
+        std::string sql;
+
+        std::vector<uint32_t> v;
+        gather_virtual_operations_from_filter( filter, v );
+
+        std::string filter_array;
+        create_filter_array( v, filter_array );
+
+        sql = "select * from ah_get_enum_virtual_ops( "
+                + std::to_string( block_range_begin ) + ", "
+                + std::to_string( block_range_end ) + ", "
+                + std::to_string( operation_begin.valid() ? *operation_begin : 0 ) + ", "
+                + std::to_string( limit.valid() ? *limit : 0 ) + ", "
+                + filter_array;
+
+        if( !connection.exec_single_in_transaction( sql, &result ) )
+        {
+          wlog( "Execution of query ${sql} failed", ("sql", sql) );
+          return;
+        }
+
+        for( const auto& row : result )
+        {
+          account_history_sql_object ah_obj;
+
+          FC_ASSERT( row.size() >= NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields",
+                                              ( "db_size", row.size() )( "req_size", NR_FIELDS ) );
+
+          fill_object( row, ah_obj );
+
+          sql_result( ah_obj );
+        }
       }
 
     }//namespace detail
@@ -312,11 +361,11 @@ namespace hive
 
     void account_history_sql_plugin::enum_virtual_ops( sql_result_type sql_result,
                                                       uint32_t block_range_begin, uint32_t block_range_end,
-                                                      const fc::optional<bool>& include_reversible, const fc::optional<bool>& group_by_block,
+                                                      const fc::optional<bool>& include_reversible,
                                                       const fc::optional< uint64_t >& operation_begin, const fc::optional< uint32_t >& limit,
                                                       const fc::optional< uint32_t >& filter ) const
     {
-      my->enum_virtual_ops( sql_result, block_range_begin, block_range_end, include_reversible, group_by_block,
+      my->enum_virtual_ops( sql_result, block_range_begin, block_range_end, include_reversible,
                             operation_begin, limit, filter );
     }
 
