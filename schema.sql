@@ -74,87 +74,57 @@ CREATE TABLE IF NOT EXISTS hive_operation_types (
 );
 
 CREATE TABLE IF NOT EXISTS hive_permlink_data (
-  "id" serial,
-  "permlink" varchar(255) NOT NULL,
+  id INTEGER NOT NULL,
+  permlink varchar(255) NOT NULL,
   CONSTRAINT hive_permlink_data_pkey PRIMARY KEY ("id"),
   CONSTRAINT hive_permlink_data_uniq UNIQUE ("permlink")
 );
 
+--- Stores all operation definitions (regular like also virtual ones).
 CREATE TABLE IF NOT EXISTS hive_operations (
-  "block_num" integer NOT NULL,
-  "trx_in_block" smallint NOT NULL,
-  "op_pos" smallint NOT NULL,
-  "op_type_id" smallint NOT NULL,
-  "body" text DEFAULT NULL,
-  "permlink_ids" int[],
-  -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
-  "participants" int[],
+  id bigint not null,
+  block_num integer NOT NULL,
+  trx_in_block smallint NOT NULL,
+  op_pos smallint NOT NULL,
+  op_type_id smallint NOT NULL,
+  body text DEFAULT NULL,
+  permlink_ids int[],
   CONSTRAINT hive_operations_pkey PRIMARY KEY ("block_num", "trx_in_block", "op_pos"),
   CONSTRAINT hive_operations_unsigned CHECK ("trx_in_block" >= 0 AND "op_pos" >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS hive_accounts (
-  "id" serial,
-  "name" character (16) NOT NULL,
+  id INTEGER NOT NULL,
+  name VARCHAR(16) NOT NULL,
   CONSTRAINT hive_accounts_pkey PRIMARY KEY ("id"),
   CONSTRAINT hive_accounts_uniq UNIQUE ("name")
 );
 
-CREATE TABLE IF NOT EXISTS hive_virtual_operations (
-  -- just to keep them unique
-  "id" serial,
-  "block_num" integer NOT NULL,
-  "trx_in_block" smallint NOT NULL,
-  -- for `trx_in_block` = -1, `op_pos` stands for order
-  "op_pos" integer NOT NULL,
-  "op_type_id" smallint NOT NULL,
-  "body" text DEFAULT NULL,
-  -- Participants is array of hive_accounts.id, which stands for accounts that participates in selected operation
-  "participants" int[],
-  CONSTRAINT hive_virtual_operations_pkey PRIMARY KEY ("id")
+CREATE TABLE IF NOT EXISTS hive_account_operations
+(
+  --- Identifier of account involved in given operation.
+  account_id integer not null,
+  --- Operation sequence number specific to given account. 
+  account_op_seq_no integer not null,
+  --- Id of operation held in hive_opreations table.
+  operation_id bigint not null
 );
+
+DROP VIEW IF EXISTS account_operation_count_info_view CASCADE;
+CREATE OR REPLACE VIEW account_operation_count_info_view
+AS
+SELECT ha.id, ha.name,
+       COALESCE((SELECT COUNT(ao.account_op_seq_no) FROM hive_account_operations ao
+        WHERE ao.account_id = ha.id
+        GROUP BY ao.account_id), 0) as operation_count
+FROM hive_accounts ha
+;
 
 -- SPECIAL VALUES
 -- This is permlink referenced by empty permlink arrays
 INSERT INTO hive_permlink_data VALUES(0, '');
 -- This is account referenced by empty participants arrays
 INSERT INTO hive_accounts VALUES(0, '');
-
-CREATE OR REPLACE FUNCTION get_account_ids( in _name VARCHAR )
-RETURNS int []
-LANGUAGE 'plpgsql'
-stable
-as
-$function$
-begin
-  return array(select __x.id FROM hive_accounts __x WHERE __x.name = _name)::int[];
-end
-$function$
-;
-
-CREATE OR REPLACE FUNCTION get_account_ids( in _name1 VARCHAR, in _name2 VARCHAR )
-RETURNS int []
-LANGUAGE 'plpgsql'
-stable
-as
-$function$
-begin
-  return array(select __x.id FROM hive_accounts __x WHERE __x.name IN (_name1, _name2) )::int[];
-end
-$function$
-;
-
-CREATE OR REPLACE FUNCTION get_account_ids( in _name1 VARCHAR, in _name2 VARCHAR, in _name3 VARCHAR )
-RETURNS int []
-LANGUAGE 'plpgsql'
-stable
-as
-$function$
-begin
-  return array(select __x.id FROM hive_accounts __x WHERE __x.name IN (_name1, _name2, _name3) )::int[];
-end
-$function$
-;
 
 CREATE OR REPLACE FUNCTION get_permlink_ids( in _name1 VARCHAR )
 RETURNS int []
