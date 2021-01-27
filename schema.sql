@@ -16,9 +16,9 @@
 -- -- If user, that is in connection string doesn't have proper acces rights
 -- -- Execute theese commands with proper rights, comment 
 -- -- following 3 lines, and uncomment theese under `Drop tables`
-DROP SCHEMA public CASCADE;
-CREATE SCHEMA public;
-CREATE EXTENSION IF NOT EXISTS intarray;
+-- DROP SCHEMA public CASCADE;
+-- CREATE SCHEMA public;
+-- CREATE EXTENSION IF NOT EXISTS intarray;
 
 -- -- Check current status
 -- SELECT COUNT(*) FROM hive_blocks;
@@ -30,13 +30,13 @@ CREATE EXTENSION IF NOT EXISTS intarray;
 -- SELECT COUNT(*) FROM hive_permlink_data;
 
 -- -- Drop tables
--- DROP TABLE IF EXISTS hive_blocks CASCADE;
--- DROP TABLE IF EXISTS hive_transactions CASCADE;
--- DROP TABLE IF EXISTS hive_operations CASCADE;
--- DROP TABLE IF EXISTS hive_virtual_operations CASCADE;
--- DROP TABLE IF EXISTS hive_accounts CASCADE;
--- DROP TABLE IF EXISTS hive_operation_types CASCADE;
--- DROP TABLE IF EXISTS hive_permlink_data CASCADE;
+DROP TABLE IF EXISTS hive_blocks CASCADE;
+DROP TABLE IF EXISTS hive_transactions CASCADE;
+DROP TABLE IF EXISTS hive_operations CASCADE;
+DROP TABLE IF EXISTS hive_virtual_operations CASCADE;
+DROP TABLE IF EXISTS hive_accounts CASCADE;
+DROP TABLE IF EXISTS hive_operation_types CASCADE;
+DROP TABLE IF EXISTS hive_permlink_data CASCADE;
 
 -- -- Core Tables
 
@@ -110,3 +110,6 @@ CREATE TABLE IF NOT EXISTS hive_virtual_operations (
 -- SPECIAL VALUES
 -- This is permlink referenced by empty permlink arrays
 INSERT INTO hive_permlink_data VALUES(0, '');
+
+
+SELECT EXISTS ( SELECT FROM information_schema.tables WHERE  table_schema = 'public' AND table_name = 'hive_accounts' );

@@ -394,6 +394,8 @@ namespace hive
 					{
 						worker_pool.SetBackgroundThreads( std::max( 1u, connection.get_max_transaction_count() / connections_per_worker ) );
 
+						if(!connection.get_single_value<bool>("SELECT EXISTS ( SELECT FROM information_schema.tables WHERE  table_schema = 'public' AND table_name = 'hive_accounts' )")) return;
+
 						pqxx::result ret;
 						auto trx = connection.start_transaction();
 						if(connection.exec_transaction(trx, "SELECT name, id, current_counter FROM hive_accounts", ret))
