@@ -52,32 +52,32 @@
 CREATE TABLE IF NOT EXISTS hive_blocks (
   "num" integer NOT NULL,
   "hash" bytea NOT NULL,
-  "created_at" timestamp without time zone NOT NULL,
-  CONSTRAINT hive_blocks_pkey PRIMARY KEY ("num"),
-  CONSTRAINT hive_blocks_uniq UNIQUE ("hash")
+  "created_at" timestamp without time zone NOT NULL
+  --,CONSTRAINT hive_blocks_pkey PRIMARY KEY ("num"),
+  --CONSTRAINT hive_blocks_uniq UNIQUE ("hash")
 );
 
 CREATE TABLE IF NOT EXISTS hive_transactions (
   "block_num" integer NOT NULL,
   "trx_in_block" smallint NOT NULL,
-  "trx_hash" bytea NOT NULL,
-  CONSTRAINT hive_transactions_pkey PRIMARY KEY ("block_num", "trx_in_block"),
-  CONSTRAINT hive_transactions_uniq_1 UNIQUE ("trx_hash")
+  "trx_hash" bytea NOT NULL
+  --,CONSTRAINT hive_transactions_pkey PRIMARY KEY ("block_num", "trx_in_block"),
+  --CONSTRAINT hive_transactions_uniq_1 UNIQUE ("trx_hash")
 );
 
 CREATE TABLE IF NOT EXISTS hive_operation_types (
   -- This "id", due to filling logic is not autoincrement, but is set by `fc::static_variant::which()` (a.k.a.. operation )
   "id" smallint NOT NULL,
   "name" text NOT NULL,
-  "is_virtual" boolean NOT NULL,
-  CONSTRAINT hive_operation_types_pkey PRIMARY KEY ("id")
+  "is_virtual" boolean NOT NULL
+  --,CONSTRAINT hive_operation_types_pkey PRIMARY KEY ("id")
 );
 
 CREATE TABLE IF NOT EXISTS hive_permlink_data (
   id INTEGER NOT NULL,
-  permlink varchar(255) NOT NULL,
-  CONSTRAINT hive_permlink_data_pkey PRIMARY KEY ("id"),
-  CONSTRAINT hive_permlink_data_uniq UNIQUE ("permlink")
+  permlink varchar(255) NOT NULL
+  --,CONSTRAINT hive_permlink_data_pkey PRIMARY KEY ("id"),
+  --CONSTRAINT hive_permlink_data_uniq UNIQUE ("permlink")
 );
 
 --- Stores all operation definitions (regular like also virtual ones).
@@ -88,16 +88,15 @@ CREATE TABLE IF NOT EXISTS hive_operations (
   op_pos smallint NOT NULL,
   op_type_id smallint NOT NULL,
   body text DEFAULT NULL,
-  permlink_ids int[],
-  CONSTRAINT hive_operations_pkey PRIMARY KEY ("block_num", "trx_in_block", "op_pos"),
-  CONSTRAINT hive_operations_unsigned CHECK ("trx_in_block" >= 0 AND "op_pos" >= 0)
+  permlink_ids int[]
+  --,CONSTRAINT hive_operations_pkey PRIMARY KEY (id) --("block_num", "trx_in_block", "op_pos")
 );
 
 CREATE TABLE IF NOT EXISTS hive_accounts (
   id INTEGER NOT NULL,
-  name VARCHAR(16) NOT NULL,
-  CONSTRAINT hive_accounts_pkey PRIMARY KEY ("id"),
-  CONSTRAINT hive_accounts_uniq UNIQUE ("name")
+  name VARCHAR(16) NOT NULL
+  --,CONSTRAINT hive_accounts_pkey PRIMARY KEY ("id"),
+  --CONSTRAINT hive_accounts_uniq UNIQUE ("name")
 );
 
 CREATE TABLE IF NOT EXISTS hive_account_operations
@@ -126,27 +125,4 @@ INSERT INTO hive_permlink_data VALUES(0, '');
 -- This is account referenced by empty participants arrays
 INSERT INTO hive_accounts VALUES(0, '');
 
-CREATE OR REPLACE FUNCTION get_permlink_ids( in _name1 VARCHAR )
-RETURNS int []
-LANGUAGE 'plpgsql'
-stable
-as
-$function$
-begin
-  return array(select __x.id FROM hive_permlink_data __x WHERE __x.permlink = _name1 )::int[];
-end
-$function$
-;
-
-CREATE OR REPLACE FUNCTION get_permlink_ids( in _name1 VARCHAR, in _name2 VARCHAR )
-RETURNS int []
-LANGUAGE 'plpgsql'
-stable
-as
-$function$
-begin
-  return array(select __x.id FROM hive_permlink_data __x WHERE __x.permlink IN (_name1, _name2) )::int[];
-end
-$function$
-;
 
