@@ -41,7 +41,7 @@ namespace hive
 
     typedef std::map<std::string, account_info> account_cache_t;
 
-    typedef std::map<std::string, int> name2id_cache_t;
+    typedef std::map<std::string, int> permlink_cache_t;
 
     typedef std::vector<PSQL::processing_objects::account_data_t> account_data_container_t;
     typedef std::vector<PSQL::processing_objects::permlink_data_t> permlink_data_container_t;
@@ -141,23 +141,330 @@ namespace hive
       using data_processing_status = data_processor::data_processing_status;
       using data_chunk_ptr = data_processor::data_chunk_ptr;
 
-      template <class DataContainer>
-      class container_holder : public data_processor::data_chunk
+      struct cached_data_t
+      {
+        account_cache_t _account_cache;
+        int             _next_account_id;
+
+        permlink_cache_t _permlink_cache;
+        int             _next_permlink_id;
+
+        account_data_container_t accounts;
+        permlink_data_container_t permlinks;
+
+        block_data_container_t blocks;
+        transaction_data_container_t transactions;
+        operation_data_container_t operations;
+        account_operation_data_container_t account_operations;
+
+        size_t total_size;
+
+        explicit cached_data_t(const size_t reservation_size) : _next_account_id{ 0 }, _next_permlink_id{ 0 }, total_size{ 0ul }
+        {
+          accounts.reserve(reservation_size);
+          permlinks.reserve(reservation_size);
+          blocks.reserve(reservation_size);
+          transactions.reserve(reservation_size);
+          operations.reserve(reservation_size);
+          account_operations.reserve(reservation_size);
+        }
+
+        ~cached_data_t()
+        {
+          log_size("destructor");
+        }
+
+        void log_size(const fc::string& msg = "size")
+        {
+          return;
+          mylog(generate([&](fc::string& ss) {
+            ss = msg + ": ";
+            ss += "accounts: " + std::to_string(accounts.size());
+            ss += " permlinks: " + std::to_string(permlinks.size());
+            ss += " blocks: " + std::to_string(blocks.size());
+            ss += " trx: " + std::to_string(transactions.size());
+            ss += " operations: " + std::to_string(operations.size());
+            ss += " account_operation_data: " + std::to_string(account_operations.size());
+            ss += " total size: " + std::to_string(total_size);
+            ss += "\n";
+            }).c_str());
+        }
+      };
+      using cached_containter_t = std::unique_ptr<cached_data_t>;
+
+      /**
+       * @brief Common implementation of data writer to be used for all SQL entities.
+       * 
+       * @tparam DataContainer temporary container providing a data chunk.
+       * @tparam TupleConverter a functor to convert volatile representation (held in the DataContainer) into SQL representation
+       *                        TupleConverter must match to function interface:
+       *                        std::string(pqxx::work& tx, typename DataContainer::const_reference)
+       * 
+      */
+      template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST>
+      class container_data_writer
       {
       public:
-        container_holder(DataContainer&& data) : _data(std::move(data)) {}
-        virtual ~container_holder() {}
+        container_data_writer(std::string psqlUrl, const cached_data_t& mainCache, std::string description) : _mainCache(mainCache)
 
-        virtual std::string generate_code(size_t* processedItem) const override { return std::string();}
-
-        const DataContainer& get_data() const
         {
-          return _data;
+          _processor = std::make_unique<data_processor>(psqlUrl, description, flush_data);
+        }
+
+        void trigger(DataContainer&& data)
+        {
+          if(data.empty() == false)
+            _processor->trigger(std::make_unique<chunk>(_mainCache, std::move(data)));
+
+          FC_ASSERT(data.empty());
+        }
+
+        void join()
+        {
+          _processor->join();
         }
 
       private:
-        DataContainer _data;
+        static data_processing_status flush_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
+        {
+          const chunk* holder = static_cast<const chunk*>(dataPtr.get());
+          data_processing_status processingStatus;
+
+          TupleConverter conv(tx, holder->_mainCache);
+
+          const DataContainer& data = holder->_data;
+
+          FC_ASSERT(data.empty() == false);
+
+          std::string query = "INSERT INTO ";
+          query += TABLE_NAME;
+          query += '(';
+          query += COLUMN_LIST;
+          query += ") VALUES\n";
+
+          auto dataI = data.cbegin();
+          query += '(' + conv(*dataI) + ")\n";
+
+          for(++dataI; dataI != data.cend(); ++dataI)
+          {
+            query += ",(" + conv(*dataI) + ")\n";
+          }
+
+          query += ';';
+
+          //ilog("Executing query: ${q}", ("q", query));
+          tx.exec(query);
+
+          processingStatus.first += data.size();
+          processingStatus.second = true;
+
+          return processingStatus;
+
+        }
+
+        private:
+          class chunk : public data_processor::data_chunk
+          {
+          public:
+            chunk(const cached_data_t& mainCache, DataContainer&& data) : _data(std::move(data)), _mainCache(mainCache) {}
+            virtual ~chunk() {}
+
+            virtual std::string generate_code(size_t* processedItem) const override { return std::string(); }
+
+            DataContainer _data;
+            const cached_data_t& _mainCache;
+          };
+
+      private:
+        const cached_data_t& _mainCache;
+        std::unique_ptr<data_processor> _processor;
       };
+
+      template <typename TableDescriptor>
+      using table_data_writer = container_data_writer<typename TableDescriptor::container_t, typename TableDescriptor::data2sql_tuple,
+        TableDescriptor::TABLE, TableDescriptor::COLS>;
+
+      struct data2_sql_tuple_base
+      {
+        data2_sql_tuple_base(pqxx::work& tx, const cached_data_t& mainCache) : _tx(tx), _mainCache(mainCache) {}
+
+      protected:
+        std::string escape(const std::string& source) const
+        {
+          return "E'" + _tx.esc(source) + '\'';
+        }
+
+        std::string escape_raw(const fc::ripemd160& hash) const
+        {
+          return '\'' + _tx.esc_raw(reinterpret_cast<const unsigned char*>(hash.data()), hash.data_size()) + '\'';
+        }
+
+        pqxx::work& _tx;
+        const cached_data_t& _mainCache;
+      };
+
+      struct hive_accounts
+      {
+        typedef account_data_container_t container_t;
+
+        static const char TABLE[];
+        static const char COLS[];
+
+        struct data2sql_tuple : public data2_sql_tuple_base
+        {
+          using data2_sql_tuple_base::data2_sql_tuple_base;
+
+          std::string operator()(typename container_t::const_reference data) const
+          {
+            return std::to_string(data.id) + ',' + escape(data.name);
+          }
+        };
+      };
+
+      const char hive_accounts::TABLE[] = "hive_accounts";
+      const char hive_accounts::COLS[] = "id, name";
+
+      struct hive_permlink_data
+      {
+        typedef permlink_data_container_t container_t;
+
+        static const char TABLE[];
+        static const char COLS[];
+
+        struct data2sql_tuple : public data2_sql_tuple_base
+        {
+          using data2_sql_tuple_base::data2_sql_tuple_base;
+
+          std::string operator()(typename container_t::const_reference data) const
+          {
+            return std::to_string(data.id) + ',' + escape(data.permlink);
+          }
+        };
+      };
+
+      const char hive_permlink_data::TABLE[] = "hive_permlink_data";
+      const char hive_permlink_data::COLS[] = "id, permlink";
+
+      struct hive_blocks
+      {
+        typedef block_data_container_t container_t;
+
+        static const char TABLE[];
+        static const char COLS[];
+
+        struct data2sql_tuple : public data2_sql_tuple_base
+        {
+          using data2_sql_tuple_base::data2_sql_tuple_base;
+
+          std::string operator()(typename container_t::const_reference data) const
+          {
+            return std::to_string(data.block_number) + "," + escape_raw(data.hash) + ", '" +
+              data.created_at.to_iso_string() + '\'';
+          }
+        };
+      };
+
+      const char hive_blocks::TABLE[] = "hive_blocks";
+      const char hive_blocks::COLS[] = "num, hash, created_at";
+
+      struct hive_transactions
+      {
+        typedef transaction_data_container_t container_t;
+
+        static const char TABLE[];
+        static const char COLS[];
+
+        struct data2sql_tuple : public data2_sql_tuple_base
+        {
+          using data2_sql_tuple_base::data2_sql_tuple_base;
+
+          std::string operator()(typename container_t::const_reference data) const
+          {
+            return std::to_string(data.block_number) + "," + escape_raw(data.hash) + "," +
+              std::to_string(data.trx_in_block);
+          }
+        };
+      };
+
+      const char hive_transactions::TABLE[] = "hive_transactions";
+      const char hive_transactions::COLS[] = "block_num, trx_hash, trx_in_block";
+
+      struct hive_operations
+      {
+        typedef operation_data_container_t container_t;
+
+        static const char TABLE[];
+        static const char COLS[];
+
+        struct data2sql_tuple : public data2_sql_tuple_base
+        {
+          using data2_sql_tuple_base::data2_sql_tuple_base;
+
+          std::string operator()(typename container_t::const_reference data) const
+          {
+            // deserialization
+            fc::variant opVariant;
+            fc::to_variant(data.op, opVariant);
+            fc::string deserialized_op = fc::json::to_string(opVariant);
+
+            std::vector<fc::string> permlinks;
+            hive::app::operation_get_permlinks(data.op, permlinks);
+
+            std::string permlink_id_array = "'{";
+            /*bool first = true;
+            for(const auto& p : permlinks)
+            {
+              auto permlinkI = _mainCache._permlink_cache.find(p);
+              FC_ASSERT(permlinkI != _mainCache._permlink_cache.cend());
+              if(first == false)
+                permlink_id_array += ',';
+
+              permlink_id_array += std::to_string(permlinkI->second);
+              first = false;
+            }
+            */
+            permlink_id_array += "}'";
+
+            permlink_id_array = "NULL::int[]";
+
+            return std::to_string(data.operation_id) + ',' + std::to_string(data.block_number) + ',' +
+              std::to_string(data.trx_in_block) + ',' + std::to_string(data.op_in_trx) + ',' +
+              std::to_string(data.op.which()) + ',' + escape(deserialized_op) + ',' + permlink_id_array;
+          }
+        };
+      };
+
+      const char hive_operations::TABLE[] = "hive_operations";
+      const char hive_operations::COLS[] = "id, block_num, trx_in_block, op_pos, op_type_id, body, permlink_ids";
+
+      struct hive_account_operations
+      {
+        typedef account_operation_data_container_t container_t;
+
+        static const char TABLE[];
+        static const char COLS[];
+
+        struct data2sql_tuple : public data2_sql_tuple_base
+        {
+          using data2_sql_tuple_base::data2_sql_tuple_base;
+
+          std::string operator()(typename container_t::const_reference data) const
+          {
+            return std::to_string(data.operation_id) + ',' + std::to_string(data.account_id) + ',' +
+              std::to_string(data.operation_seq_no);
+          }
+        };
+      };
+
+      const char hive_account_operations::TABLE[] = "hive_account_operations";
+      const char hive_account_operations::COLS[] = "operation_id, account_id, account_op_seq_no";
+
+      using account_data_container_t_writer = table_data_writer<hive_accounts>;
+      using permlink_data_container_t_writer = table_data_writer<hive_permlink_data>;
+      using block_data_container_t_writer = table_data_writer<hive_blocks>;
+      using transaction_data_container_t_writer = table_data_writer<hive_transactions>;
+      using operation_data_container_t_writer = table_data_writer<hive_operations>;
+      using account_operation_data_container_t_writer = table_data_writer<hive_account_operations>;
 
       /**
        * @brief Collects new identifiers (accounts or permlinks) defined by given operation.
@@ -168,7 +475,7 @@ namespace hive
         typedef void result_type;
 
         new_ids_collector(account_cache_t* known_accounts, int* next_account_id,
-          name2id_cache_t* permlink_cache, int* next_permlink_id,
+          permlink_cache_t* permlink_cache, int* next_permlink_id,
           account_data_container_t* newAccounts,
           permlink_data_container_t* newPermlinks) :
           _known_accounts(known_accounts),
@@ -240,7 +547,7 @@ namespace hive
 
       private:
         account_cache_t* _known_accounts;
-        name2id_cache_t* _known_permlinks;
+        permlink_cache_t* _known_permlinks;
 
         int& _next_account_id;
         int& _next_permlink_id;
@@ -374,57 +681,6 @@ namespace hive
 					}
 				};
 
-				struct cached_data_t
-				{
-          account_cache_t _account_cache;
-          int             _next_account_id;
-
-          name2id_cache_t _permlink_cache;
-          int             _next_permlink_id;
-
-          account_data_container_t accounts;
-          permlink_data_container_t permlinks;
-
-          block_data_container_t blocks;
-					transaction_data_container_t transactions;
-					operation_data_container_t operations;
-          account_operation_data_container_t account_operations;
-
-					size_t total_size;
-
-					explicit cached_data_t(const size_t reservation_size) : _next_account_id{0}, _next_permlink_id{0}, total_size{ 0ul }
-					{
-						accounts.reserve(reservation_size);
-            permlinks.reserve(reservation_size);
-            blocks.reserve(reservation_size);
-						transactions.reserve(reservation_size);
-						operations.reserve(reservation_size);
-						account_operations.reserve(reservation_size);
-					}
-
-					~cached_data_t()
-					{
-						log_size("destructor");
-					}
-
-					void log_size(const fc::string& msg = "size")
-					{
-						return;
-						mylog(generate([&](fc::string& ss){ 
-							ss = msg + ": ";
-              ss += "accounts: " + std::to_string(accounts.size());
-              ss += " permlinks: " + std::to_string(permlinks.size());
-              ss += " blocks: " + std::to_string(blocks.size());
-							ss += " trx: " + std::to_string(transactions.size());
-							ss += " operations: " + std::to_string(operations.size());
-							ss += " account_operation_data: " + std::to_string(account_operations.size());
-							ss += " total size: " + std::to_string(total_size);
-							ss += "\n"; 
-						}).c_str());
-					}
-				};
-				using cached_containter_t = std::unique_ptr<cached_data_t>;
-
 				class sql_serializer_plugin_impl
 				{
 				public:
@@ -442,18 +698,17 @@ namespace hive
 					}
 
 					boost::signals2::connection _on_post_apply_operation_con;
-					boost::signals2::connection _on_post_apply_transaction_con;
 					boost::signals2::connection _on_post_apply_block_con;
 					boost::signals2::connection _on_starting_reindex;
 					boost::signals2::connection _on_finished_reindex;
 					boost::signals2::connection _on_live_sync_start;
 
-          std::unique_ptr<data_processor> _accounts_processor;
-          std::unique_ptr<data_processor> _permlink_processor;
-          std::unique_ptr<data_processor> _block_processor;
-          std::unique_ptr<data_processor> _transaction_processor;
-          std::unique_ptr<data_processor> _operation_processor;
-          std::unique_ptr<data_processor> _account_operation_processor;
+          std::unique_ptr<account_data_container_t_writer> _account_writer;
+          std::unique_ptr<permlink_data_container_t_writer> _permlink_writer;
+          std::unique_ptr<block_data_container_t_writer> _block_writer;
+          std::unique_ptr<transaction_data_container_t_writer> _transaction_writer;
+          std::unique_ptr<operation_data_container_t_writer> _operation_writer;
+          std::unique_ptr<account_operation_data_container_t_writer> _account_operation_writer;
 
 					postgress_connection_holder connection;
           std::string db_url;
@@ -621,13 +876,6 @@ namespace hive
             ilog("Next account id: ${a},  next permlink id: ${p}.", ("a", data->_next_account_id)("p", data->_next_permlink_id));
           }
 
-          data_processing_status flush_account_data(const data_chunk_ptr& dataPtr, pqxx::work& openedTx);
-          data_processing_status flush_permlink_data(const data_chunk_ptr& dataPtr, pqxx::work& openedTx);
-          data_processing_status flush_operation_data(const data_chunk_ptr& dataPtr, pqxx::work& openedTx);
-          data_processing_status flush_block_data(const data_chunk_ptr& dataPtr, pqxx::work& openedTx);
-          data_processing_status flush_transaction_data(const data_chunk_ptr& dataPtr, pqxx::work& openedTx);
-          data_processing_status flush_account_operation_data(const data_chunk_ptr& dataPtr, pqxx::work& openedTx);
-
           void trigger_data_flush(account_data_container_t& data);
           void trigger_data_flush(permlink_data_container_t& data);
           void trigger_data_flush(block_data_container_t& data);
@@ -638,24 +886,23 @@ namespace hive
           void init_data_processors();
           void join_data_processors()
           {
-            _accounts_processor->join();
-            _permlink_processor->join();
-            _block_processor->join();
-            _transaction_processor->join();
-            _operation_processor->join();
-            _account_operation_processor->join();
+            _account_writer->join();
+            _permlink_writer->join();
+            _block_writer->join();
+            _transaction_writer->join();
+            _operation_writer->join();
+            _account_operation_writer->join();
           }
 
 					void switch_constraints(const bool active)
 					{
-						if(are_constraints_active == active) return;
+            if(are_constraints_active == active) return;
 						else are_constraints_active = active;
 
 						using up_and_down_constraint = std::pair<const char*, const char*>;
 						static const std::vector<up_and_down_constraint> constrainsts{{	up_and_down_constraint
 							{"ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num)","ALTER TABLE hive_transactions DROP CONSTRAINT IF EXISTS hive_transactions_fk_1"},
-							{"ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_1 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_1"},
-							{"ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_2 FOREIGN KEY (block_num, trx_in_block) REFERENCES hive_transactions (block_num, trx_in_block)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_2"}
+							{"ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_1 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_1"}
 						}};
 
 						auto trx = connection.start_transaction();
@@ -699,157 +946,43 @@ namespace hive
 
 void sql_serializer_plugin_impl::init_data_processors()
 {
-  _accounts_processor = std::make_unique<data_processor>(db_url, "Account data writer",
-    [this](const data_chunk_ptr& dataPtr, pqxx::work& openedTx) -> data_processing_status
-    {
-      return flush_account_data(dataPtr, openedTx);
-    }
-  );
-
-  _permlink_processor = std::make_unique<data_processor>(db_url, "Permlink data writer",
-    [this](const data_chunk_ptr& dataPtr, pqxx::work& openedTx) -> data_processing_status
-    {
-      return flush_permlink_data(dataPtr, openedTx);
-    }
-  );
-
-  _block_processor = std::make_unique<data_processor>(db_url, "Block data writer",
-    [this](const data_chunk_ptr& dataPtr, pqxx::work& openedTx) -> data_processing_status
-    {
-      return flush_block_data(dataPtr, openedTx);
-    }
-  );
-
-  _transaction_processor = std::make_unique<data_processor>(db_url, "Transaction data writer",
-    [this](const data_chunk_ptr& dataPtr, pqxx::work& openedTx) -> data_processing_status
-    {
-      return flush_transaction_data(dataPtr, openedTx);
-    }
-  );
-
-  _operation_processor = std::make_unique<data_processor>(db_url, "Operation data writer",
-    [this](const data_chunk_ptr& dataPtr, pqxx::work& openedTx) -> data_processing_status
-    {
-      return flush_operation_data(dataPtr, openedTx);
-    }
-  );
-
-  _account_operation_processor = std::make_unique<data_processor>(db_url, "Account_operation data writer",
-    [this](const data_chunk_ptr& dataPtr, pqxx::work& openedTx) -> data_processing_status
-    {
-      return flush_account_operation_data(dataPtr, openedTx);
-    }
-  );
-}
-
-data_processing_status sql_serializer_plugin_impl::flush_account_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
-{
-  data_processing_status processingStatus;
-
-  const container_holder<account_data_container_t>* holder =
-    static_cast<const container_holder<account_data_container_t>*>(dataPtr.get());
-
-  const account_data_container_t& data = holder->get_data();
-
-  FC_ASSERT(data.empty() == false);
-
-  std::string query = "INSERT INTO hive_accounts (id, name) VALUES\n";
-
-  auto dataI = data.cbegin();
-  query += "(" + std::to_string(dataI->id) + ",E'" + tx.esc(dataI->name) + "')\n";
-  for(++dataI; dataI != data.cend(); ++dataI)
-  {
-    query += ",(" + std::to_string(dataI->id) + ",E'" + tx.esc(dataI->name) + "')\n";
-  }
-
-  query += ';';
-
-  //ilog("Executing query: ${q}", ("q", query));
-  tx.exec(query);
-
-  processingStatus.first += data.size();
-  processingStatus.second = true;
-
-  return processingStatus;
-}
-
-data_processing_status sql_serializer_plugin_impl::flush_permlink_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
-{
-  data_processing_status processingStatus;
-  return processingStatus;
-}
-
-data_processing_status sql_serializer_plugin_impl::flush_operation_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
-{
-  data_processing_status processingStatus;
-
-  // deserialization
-  //fc::variant opVariant;
-  //fc::to_variant(note.op, opVariant);
-  //fc::string deserialized_op = fc::json::to_string(opVariant);
-
-  return processingStatus;
-}
-
-data_processing_status sql_serializer_plugin_impl::flush_block_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
-{
-  data_processing_status processingStatus;
-  return processingStatus;
-}
-
-data_processing_status sql_serializer_plugin_impl::flush_transaction_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
-{
-  data_processing_status processingStatus;
-  return processingStatus;
-}
-
-data_processing_status sql_serializer_plugin_impl::flush_account_operation_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
-{
-  data_processing_status processingStatus;
-  return processingStatus;
+  const auto& mainCache = *currently_caching_data.get();
+  _account_writer = std::make_unique<account_data_container_t_writer>(db_url, mainCache, "Account data writer");
+  _permlink_writer = std::make_unique<permlink_data_container_t_writer>(db_url, mainCache, "Permlink data writer");
+  _block_writer = std::make_unique<block_data_container_t_writer>(db_url, mainCache, "Block data writer");
+  _transaction_writer = std::make_unique<transaction_data_container_t_writer>(db_url, mainCache, "Transaction data writer");
+  _operation_writer = std::make_unique<operation_data_container_t_writer>(db_url, mainCache, "Operation data writer");
+  _account_operation_writer = std::make_unique<account_operation_data_container_t_writer>(db_url, mainCache, "Account operation data writer");
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(account_data_container_t& data)
 {
-  if(data.empty() == false)
-    _accounts_processor->trigger(std::make_unique<container_holder<account_data_container_t>>(std::move(data)));
-
-  FC_ASSERT(data.empty());
+  _account_writer->trigger(std::move(data));
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(permlink_data_container_t& data)
 {
-  if(data.empty() == false)
-    _permlink_processor->trigger(std::make_unique<container_holder<permlink_data_container_t>>(std::move(data)));
-  FC_ASSERT(data.empty());
+  _permlink_writer->trigger(std::move(data));
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(block_data_container_t& data)
 {
-  if(data.empty() == false)
-    _block_processor->trigger(std::make_unique<container_holder<block_data_container_t>>(std::move(data)));
-  FC_ASSERT(data.empty());
+  _block_writer->trigger(std::move(data));
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(transaction_data_container_t& data)
 {
-  if(data.empty() == false)
-    _transaction_processor->trigger(std::make_unique<container_holder<transaction_data_container_t>>(std::move(data)));
-  FC_ASSERT(data.empty());
+  _transaction_writer->trigger(std::move(data));
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(operation_data_container_t& data)
 {
-  if(data.empty() == false)
-    _operation_processor->trigger(std::make_unique<container_holder<operation_data_container_t>>(std::move(data)));
-  FC_ASSERT(data.empty());
+  _operation_writer->trigger(std::move(data));
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(account_operation_data_container_t& data)
 {
-  if(data.empty() == false)
-    _account_operation_processor->trigger(std::make_unique<container_holder<account_operation_data_container_t>>(std::move(data)));
-  FC_ASSERT(data.empty());
+  _account_operation_writer->trigger(std::move(data));
 }
 
 void sql_serializer_plugin_impl::process_cached_data()
@@ -929,7 +1062,6 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 				// signals
 				auto &db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
 				my->_on_post_apply_operation_con = db.add_post_apply_operation_handler([&](const operation_notification &note) { on_post_apply_operation(note); }, *this);
-				my->_on_post_apply_transaction_con = db.add_post_apply_transaction_handler([&](const transaction_notification &note) { on_post_apply_transaction(note); }, *this);
 				my->_on_post_apply_block_con = db.add_post_apply_block_handler([&](const block_notification &note) { on_post_apply_block(note); }, *this);
 				my->_on_finished_reindex = db.add_post_reindex_handler([&](const reindex_notification &note) { on_post_reindex(note); }, *this);
 				my->_on_starting_reindex = db.add_pre_reindex_handler([&](const reindex_notification &note) { on_pre_reindex(note); }, *this);
@@ -950,8 +1082,6 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 
 				if (my->_on_post_apply_block_con.connected())
 					chain::util::disconnect_signal(my->_on_post_apply_block_con);
-				if (my->_on_post_apply_transaction_con.connected())
-					chain::util::disconnect_signal(my->_on_post_apply_transaction_con);
 				if (my->_on_post_apply_operation_con.connected())
 					chain::util::disconnect_signal(my->_on_post_apply_operation_con);
 				if (my->_on_starting_reindex.connected())
@@ -986,8 +1116,6 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
         my->collect_impacted_accounts(my->op_sequence_id, note.op);
 
 			}
-
-			void sql_serializer_plugin::on_post_apply_transaction(const transaction_notification &note) {}
 
 			void sql_serializer_plugin::on_post_apply_block(const block_notification &note)
 			{
@@ -1033,7 +1161,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
           }
         
         my->init_database(note.force_replay);
-				my->blocks_per_commit = 10'000;
+				my->blocks_per_commit = 1'000;
 			}
 
 			void sql_serializer_plugin::on_post_reindex(const reindex_notification &)
