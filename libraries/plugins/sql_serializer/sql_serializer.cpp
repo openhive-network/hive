@@ -9,13 +9,8 @@
 #include <hive/utilities/plugin_utilities.hpp>
 
 #include <fc/io/json.hpp>
-#include <fc/smart_ref_impl.hpp>
-#include <boost/format.hpp>
 #include <boost/filesystem.hpp>
 #include <condition_variable>
-#include <shared_mutex>
-#include <thread>
-#include <future>
 
 #include <map>
 #include <set>

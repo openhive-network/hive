@@ -17,12 +17,9 @@
 #include <boost/spirit/include/karma.hpp>
 
 // Internal
-#include <hive/chain/database.hpp>
-#include <hive/chain/util/impacted.hpp>
 #include <hive/chain/util/extractors.hpp>
 #include <hive/chain/account_object.hpp>
 #include "type_extractor_processor.hpp"
-// #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 
 namespace hive
 {
