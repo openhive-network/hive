@@ -87,8 +87,8 @@ CREATE TABLE IF NOT EXISTS hive_operations (
   trx_in_block smallint NOT NULL,
   op_pos smallint NOT NULL,
   op_type_id smallint NOT NULL,
-  body text DEFAULT NULL,
-  permlink_ids int[]
+  body text DEFAULT NULL
+  --,permlink_ids int[]
   --,CONSTRAINT hive_operations_pkey PRIMARY KEY (id) --("block_num", "trx_in_block", "op_pos")
 );
 
