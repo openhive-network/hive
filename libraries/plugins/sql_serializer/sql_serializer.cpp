@@ -424,13 +424,13 @@ namespace hive
 
             return std::to_string(data.operation_id) + ',' + std::to_string(data.block_number) + ',' +
               std::to_string(data.trx_in_block) + ',' + std::to_string(data.op_in_trx) + ',' +
-              std::to_string(data.op.which()) + ',' + escape(deserialized_op) + ',' + permlink_id_array;
+              std::to_string(data.op.which()) + ',' + escape(deserialized_op); // + ',' + permlink_id_array;
           }
         };
       };
 
       const char hive_operations::TABLE[] = "hive_operations";
-      const char hive_operations::COLS[] = "id, block_num, trx_in_block, op_pos, op_type_id, body, permlink_ids";
+      const char hive_operations::COLS[] = "id, block_num, trx_in_block, op_pos, op_type_id, body"; //, permlink_ids";
 
       struct hive_account_operations
       {
@@ -728,8 +728,8 @@ namespace hive
 					{
 						using up_and_down_index = std::pair<const char*, const char*>;
 						static const std::vector<up_and_down_index> indexes{{up_and_down_index
-							{"CREATE INDEX IF NOT EXISTS hive_operations_operation_types_index ON hive_operations (op_type_id);", "DROP INDEX IF EXISTS hive_operations_operation_types_index;"},
-							{"CREATE INDEX IF NOT EXISTS hive_operations_permlink_ids_index ON hive_operations USING GIN (permlink_ids gin__int_ops);", "DROP INDEX IF EXISTS hive_operations_permlink_ids_index;"}
+							{"CREATE INDEX IF NOT EXISTS hive_operations_operation_types_index ON hive_operations (op_type_id);", "DROP INDEX IF EXISTS hive_operations_operation_types_index;"}
+							//,{"CREATE INDEX IF NOT EXISTS hive_operations_permlink_ids_index ON hive_operations USING GIN (permlink_ids gin__int_ops);", "DROP INDEX IF EXISTS hive_operations_permlink_ids_index;"}
 						}};
 
 						auto trx = connection.start_transaction();

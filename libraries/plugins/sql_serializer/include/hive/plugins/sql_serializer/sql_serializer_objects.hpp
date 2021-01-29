@@ -132,16 +132,6 @@ namespace hive
 					return std::move(ss);
 				}
 
-				struct is_virtual_visitor
-				{
-					using result_type = bool;
-
-					template <typename op_t>
-					bool operator()(const op_t &op) const
-					{
-						return op.is_virtual();
-					}
-				};
 
 				struct name_gathering_visitor
 				{
