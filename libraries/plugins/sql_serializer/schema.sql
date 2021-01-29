@@ -125,4 +125,39 @@ INSERT INTO hive_permlink_data VALUES(0, '');
 -- This is account referenced by empty participants arrays
 INSERT INTO hive_accounts VALUES(0, '');
 
+DROP TYPE IF EXISTS hive_api_operation CASCADE;
+CREATE TYPE hive_api_operation AS (
+    id BIGINT,
+    block_num INT,
+    operation_type_id SMALLINT,
+    is_virtual BOOLEAN,
+    body VARCHAR
+);
+
+CREATE OR REPLACE FUNCTION enum_operations4hivemind(in _first_block INT, in _last_block INT)
+RETURNS SETOF hive_api_operation
+AS
+$function$
+BEGIN
+  RETURN QUERY -- enum_operations4hivemind
+    SELECT ho.id, ho.block_num, ho.op_type_id, ho.op_type_id < 48 AS is_virtual, ho.body::VARCHAR
+    FROM hive_operations ho
+    WHERE ho.block_num between _first_block and _last_block
+          AND (ho.op_type_id < 48 -- (select t.id from hive_operation_types t where t.is_virtual order by t.id limit 1)
+               OR ho.op_type_id in (49, 51, 59, 70, 71)
+              )
+    /*
+select id from hive_operation_types where is_virtual 
+and name in ('hive::protocol::author_reward_operation',
+'hive::protocol::comment_reward_operation',
+'hive::protocol::effective_comment_vote_operation',
+'hive::protocol::comment_payout_update_operation',
+'hive::protocol::ineffective_delete_comment_operation')
+*/
+; 
+
+END
+$function$
+LANGUAGE plpgsql STABLE
+;
 
