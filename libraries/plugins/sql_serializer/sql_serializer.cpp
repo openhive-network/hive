@@ -811,9 +811,9 @@ namespace hive
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT ai.name, ai.id, ai.operation_count FROM account_operation_count_info_view ai;");
-                for(auto recordI = data.cbegin(); recordI != data.cend(); ++recordI)
+                for(auto recordI = data.begin(); recordI != data.end(); ++recordI)
                 {
-                  const pqxx::row& record = *recordI;
+                  const auto& record = *recordI;
 
                   const char* name = record["name"].c_str();
                   int account_id = record["id"].as<int>();
@@ -841,9 +841,9 @@ namespace hive
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT pd.permlink, pd.id FROM hive_permlink_data pd;");
-                for(auto recordI = data.cbegin(); recordI != data.cend(); ++recordI)
+                for(auto recordI = data.begin(); recordI != data.end(); ++recordI)
                 {
-                  const pqxx::row& record = *recordI;
+                  const auto& record = *recordI;
 
                   const char* permlink = record["permlink"].c_str();
                   int permlink_id = record["id"].as<int>();
