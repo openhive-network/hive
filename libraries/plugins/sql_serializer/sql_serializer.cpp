@@ -811,9 +811,9 @@ namespace hive
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT ai.name, ai.id, ai.operation_count FROM account_operation_count_info_view ai;");
-                for(auto recordI = data.begin(); recordI != data.end(); ++recordI)
+                for(auto recordI = data.cbegin(); recordI != data.cend(); ++recordI)
                 {
-                  const auto& record = *recordI;
+                  const pqxx::row& record = *recordI;
 
                   const char* name = record["name"].c_str();
                   int account_id = record["id"].as<int>();
@@ -841,9 +841,9 @@ namespace hive
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT pd.permlink, pd.id FROM hive_permlink_data pd;");
-                for(auto recordI = data.begin(); recordI != data.end(); ++recordI)
+                for(auto recordI = data.cbegin(); recordI != data.cend(); ++recordI)
                 {
-                  const auto& record = *recordI;
+                  const pqxx::row& record = *recordI;
 
                   const char* permlink = record["permlink"].c_str();
                   int permlink_id = record["id"].as<int>();
@@ -931,10 +931,10 @@ namespace hive
 						if (set_index)
 						{
 							ilog("Creating indexes on user request");
-							switch_indexes(true);
+							//switch_indexes(true);
 						}
 						ilog("Enabling constraints...");
-						switch_constraints(true);
+						//switch_constraints(true);
 						ilog("Done, cleanup complete");
 					}
 				};
@@ -1146,13 +1146,13 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 
 			void sql_serializer_plugin::on_pre_reindex(const reindex_notification &note)
 			{
-				my->switch_constraints(false);
-        my->switch_indexes(false);
+				//my->switch_constraints(false);
+        //my->switch_indexes(false);
         my->set_index = true; /// Define indices once reindex done.
 				if(note.force_replay)
           {
-          if(my->path_to_schema.valid())
-            my->recreate_db();
+          //if(my->path_to_schema.valid())
+            //my->recreate_db();
           }
         
         my->init_database(note.force_replay);
