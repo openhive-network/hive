@@ -13,6 +13,27 @@ namespace hive { namespace chain {
 
 using hive::chain::create_proposal_evaluator;
 
+
+struct create_proposal_extension_visitor
+{
+  create_proposal_extension_visitor( const proposal_object& p, database& db ) : _p( p ), _db( db ) {}
+
+  typedef void result_type;
+
+  const proposal_object& _p;
+  database& _db;
+
+  void operator()( const proposal_cutoff_amount& pca ) const
+  {
+    if(_db.has_hardfork(HIVE_HARDFORK_1_25)) {
+      _db.modify( _p, [&]( proposal_object& p )
+      {
+        p.cutoff_amount = pca.cutoff_amount;
+      });
+    }
+  }
+};
+
 void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
 {
   try
@@ -38,7 +59,7 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
       }
     }
 
-    //treasury account must exist, also we need it later to change its balance
+    // treasury account must exist, also we need it later to change its balance
     const auto& treasury_account =_db.get_treasury();
 
     const auto& owner_account = _db.get_account( o.creator );
@@ -70,6 +91,11 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
       proposal.subject = o.subject.c_str();
 
       proposal.permlink = o.permlink.c_str();
+
+      for( auto& e : o.extensions )
+      {
+        e.visit( create_proposal_extension_visitor( proposal, _db ) );
+      }
     });
 
     _db.adjust_balance( owner_account, -fee_hbd );

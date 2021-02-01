@@ -52,4 +52,10 @@ void remove_proposal_operation::validate() const
   FC_ASSERT(proposal_ids.size() <= HIVE_PROPOSAL_MAX_IDS_NUMBER);
 }
 
+void proposal_cutoff_amount::validate()const
+{
+  FC_ASSERT( cutoff_amount.amount >= 0, "cutoff amount can't be negative value" );
+  FC_ASSERT( cutoff_amount.symbol.asset_num == HIVE_ASSET_NUM_HBD, "cutoff amount should be expressed in HBD");
+}
+
 } } //hive::protocol

@@ -43,6 +43,9 @@ class proposal_object : public object< proposal_object_type, proposal_object >
     //This will be calculate every maintenance period
     uint64_t total_votes = 0;
 
+    //cutoff amount (the amount of HBD that will trigger the deletion of the proposal)
+    asset cutoff_amount = asset( 0, HBD_SYMBOL );
+
     bool removed = false;
 
     time_point_sec get_end_date_with_delay() const

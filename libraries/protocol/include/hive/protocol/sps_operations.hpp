@@ -6,6 +6,15 @@
 
 namespace hive { namespace protocol {
 
+struct proposal_cutoff_amount
+{
+  asset cutoff_amount;
+
+  void validate()const;
+};
+typedef static_variant<proposal_cutoff_amount> create_proposal_extension;
+typedef flat_set< create_proposal_extension > create_proposal_extensions_type;
+
 struct create_proposal_operation : public base_operation
 {
   account_name_type creator;
@@ -23,7 +32,7 @@ struct create_proposal_operation : public base_operation
   /// Given link shall be a valid permlink. Must be posted by creator the receiver.
   string permlink;
 
-  extensions_type extensions;
+  create_proposal_extensions_type extensions;
 
   void validate()const;
 
@@ -156,4 +165,6 @@ FC_REFLECT( hive::protocol::update_proposal_operation, (proposal_id)(creator)(da
 FC_REFLECT( hive::protocol::update_proposal_votes_operation, (voter)(proposal_ids)(approve)(extensions) )
 FC_REFLECT( hive::protocol::remove_proposal_operation, (proposal_owner)(proposal_ids)(extensions) )
 FC_REFLECT(hive::protocol::proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx))
+FC_REFLECT( hive::protocol::proposal_cutoff_amount, (cutoff_amount) )
+
 
