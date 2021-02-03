@@ -9,11 +9,17 @@
 #include <hive/utilities/plugin_utilities.hpp>
 
 #include <fc/io/json.hpp>
+#include <fc/crypto/hex.hpp>
 #include <boost/filesystem.hpp>
 #include <condition_variable>
 
 #include <map>
 #include <set>
+
+#include <locale>
+#include <codecvt>
+#include <sstream>
+#include <string>
 
 #include <pqxx/pqxx>
 
@@ -279,24 +285,56 @@ namespace hive
       using table_data_writer = container_data_writer<typename TableDescriptor::container_t, typename TableDescriptor::data2sql_tuple,
         TableDescriptor::TABLE, TableDescriptor::COLS>;
 
-      struct data2_sql_tuple_base
-      {
-        data2_sql_tuple_base(pqxx::work& tx, const cached_data_t& mainCache) : _tx(tx), _mainCache(mainCache) {}
+          struct data2_sql_tuple_base
+          {
+              data2_sql_tuple_base(pqxx::work& tx, const cached_data_t& mainCache) : _tx(tx), _mainCache(mainCache) {}
 
-      protected:
-        std::string escape(const std::string& source) const
-        {
-          return "E'" + _tx.esc(source) + '\'';
-        }
+          protected:
+              std::string escape(const std::string& source) const
+              {
+                return escape_sql(source);
+              }
 
-        std::string escape_raw(const fc::ripemd160& hash) const
-        {
-          return '\'' + _tx.esc_raw(reinterpret_cast<const unsigned char*>(hash.data()), hash.data_size()) + '\'';
-        }
+              std::string escape_raw(const fc::ripemd160& hash) const
+              {
+                return '\'' + fc::to_hex(hash.data(), hash.data_size()) + '\'';
+              }
 
-        pqxx::work& _tx;
-        const cached_data_t& _mainCache;
-      };
+              pqxx::work& _tx;
+              const cached_data_t& _mainCache;
+          private:
+
+              fc::string escape_sql(const std::string &text) const
+              {
+                const static std::map<wchar_t, fc::string> special_chars{{std::pair<wchar_t, fc::string>{L'\x00', " "}, {L'\r', "\\015"}, {L'\n', "\\012"}, {L'\v', "\\013"}, {L'\f', "\\014"}, {L'\\', "\\134"}, {L'\'', "\\047"}, {L'%', "\\045"}, {L'_', "\\137"}, {L':', "\\072"}}};
+
+                if(text.empty()) return "E''";
+
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> conv{};
+                std::wstring utf32 = conv.from_bytes(text);
+                std::stringstream ss{};
+                ss << "E'";
+
+                for (auto it = utf32.begin(); it != utf32.end(); it++)
+                {
+                  const wchar_t c{*it};
+                  const auto result = special_chars.find(c);
+                  if (result != special_chars.end()) ss << result->second;
+                  else
+                  {
+                    const char _c = conv.to_bytes(c)[0];
+                    if( _c > 0 && std::isprint(_c) ) ss << _c;
+                    else
+                    {
+                      const bool is_utf_32{ int(c) > 0xffff };
+                      ss << ( is_utf_32 ? "\\U" : "\\u" ) << std::setfill('0') << std::setw(4 + (4 * is_utf_32)) << std::hex << int(c);
+                    }
+                  }
+                }
+                ss << '\'';
+                return ss.str();
+              }
+          };
 
       struct hive_accounts
       {
@@ -309,7 +347,7 @@ namespace hive
         {
           using data2_sql_tuple_base::data2_sql_tuple_base;
 
-          std::string operator()(typename container_t::const_reference data) const
+          std::string operator()(typename container_t::const_reference data)
           {
             return std::to_string(data.id) + ',' + escape(data.name);
           }
