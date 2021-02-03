@@ -140,12 +140,13 @@ AS
 $function$
 BEGIN
   RETURN QUERY -- enum_operations4hivemind
-    SELECT ho.id, ho.block_num, ho.op_type_id, ho.op_type_id < 48 AS is_virtual, ho.body::VARCHAR
+    SELECT ho.id, ho.block_num, ho.op_type_id, ho.op_type_id >= 48 AS is_virtual, ho.body::VARCHAR
     FROM hive_operations ho
     WHERE ho.block_num between _first_block and _last_block
           AND (ho.op_type_id < 48 -- (select t.id from hive_operation_types t where t.is_virtual order by t.id limit 1)
                OR ho.op_type_id in (49, 51, 59, 70, 71)
               )
+    ORDER BY ho.id
     /*
 select id from hive_operation_types where is_virtual 
 and name in ('hive::protocol::author_reward_operation',
