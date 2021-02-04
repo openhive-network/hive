@@ -66,9 +66,11 @@ namespace hive
 					struct process_block_t : public process_base_t
 					{
 						fc::time_point_sec created_at;
+						hash_t prev_hash;
 
 						process_block_t() = default;
-						process_block_t(const hash_t &_hash, const int _block_number, const fc::time_point_sec _tp) : process_base_t{_hash, _block_number}, created_at{_tp} {}
+						process_block_t(const hash_t &_hash, const int _block_number, const fc::time_point_sec _tp, const hash_t &_prev)
+						  : process_base_t{_hash, _block_number}, created_at{_tp}, prev_hash{_prev} {}
 					};
 
 					struct process_transaction_t : public process_base_t

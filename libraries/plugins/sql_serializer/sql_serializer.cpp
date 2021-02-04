@@ -391,14 +391,14 @@ namespace hive
 
           std::string operator()(typename container_t::const_reference data) const
           {
-            return std::to_string(data.block_number) + "," + escape_raw(data.hash) + ", '" +
-              data.created_at.to_iso_string() + '\'';
+            return std::to_string(data.block_number) + "," + escape_raw(data.hash) + "," +
+              escape_raw(data.prev_hash) + ", '" + data.created_at.to_iso_string() + '\'';
           }
         };
       };
 
       const char hive_blocks::TABLE[] = "hive_blocks";
-      const char hive_blocks::COLS[] = "num, hash, created_at";
+      const char hive_blocks::COLS[] = "num, hash, prev, created_at";
 
       struct hive_transactions
       {
@@ -1159,7 +1159,8 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 				my->currently_caching_data->blocks.emplace_back(
 						note.block_id,
 						note.block_num,
-						note.block.timestamp);
+						note.block.timestamp,
+            note.prev_block_id);
 				my->block_vops = 0;
 
 				if( note.block_num % my->blocks_per_commit == 0 )
