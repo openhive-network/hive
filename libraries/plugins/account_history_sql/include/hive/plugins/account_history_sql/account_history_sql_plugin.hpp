@@ -22,7 +22,6 @@ struct account_history_sql_object
   uint32_t                            virtual_op = 0;
   uint64_t                            operation_id = 0;
   fc::time_point_sec                  timestamp;
-  std::string                         type;
   fc::variant                         op;
 
   hive::protocol::operation get_op() const

@@ -40,8 +40,8 @@ namespace hive
           void enum_virtual_ops( account_history_sql::account_history_sql_plugin::sql_result_type sql_result,
                                 uint32_t block_range_begin, uint32_t block_range_end,
                                 const fc::optional<bool>& include_reversible,
-                                const fc::optional< uint64_t >& operation_begin, const fc::optional< uint32_t >& limit,
-                                const fc::optional< uint32_t >& filter );
+                                const fc::optional<uint64_t>& operation_begin, const fc::optional< uint32_t >& limit,
+                                const fc::optional<uint32_t>& filter );
 
         private:
 
@@ -49,19 +49,19 @@ namespace hive
 
           postgres_connection_holder connection;
 
-          void fill_object( const pqxx::row& row, account_history_sql_object& obj );
+          void fill_object( const pqxx::row& row, account_history_sql_object& obj, fc::optional<uint32_t>block_num );
           void create_filter_array( const std::vector<uint32_t>& v, std::string& filter_array );
           void gather_operations_from_filter( const fc::optional<uint64_t>& filter, std::vector<uint32_t>& v, bool high );
           void gather_virtual_operations_from_filter( const fc::optional<uint32_t>& filter, std::vector<uint32_t>& v );
 
       };//class account_history_sql_plugin_impl
 
-      void account_history_sql_plugin_impl::fill_object( const pqxx::row& row, account_history_sql_object& obj )
+      void account_history_sql_plugin_impl::fill_object( const pqxx::row& row, account_history_sql_object& obj, fc::optional<uint32_t>block_num = fc::optional<uint32_t>() )
       {
           uint32_t cnt = 0;
 
           obj.trx_id        = hive::protocol::transaction_id_type( row[ cnt++ ].as< std::string >() );
-          obj.block         = row[ cnt++ ].as< uint32_t >();
+          obj.block         = block_num.valid() ? ( *block_num ) : row[ cnt++ ].as< uint32_t >();
 
           obj.trx_in_block  = row[ cnt++ ].as< uint32_t >();
 
@@ -69,7 +69,6 @@ namespace hive
           obj.virtual_op    = static_cast< uint32_t >( row[ cnt++ ].as< bool >() );
           obj.timestamp     = fc::time_point_sec::from_iso_string( row[ cnt++ ].as< std::string >() );
 
-          obj.type          = row[ cnt++ ].as< std::string >();
           obj.op            = fc::json::from_string( row[ cnt++ ].as< std::string >() );
 
           //not used???
@@ -120,15 +119,15 @@ namespace hive
       void account_history_sql_plugin_impl::get_ops_in_block( account_history_sql::account_history_sql_plugin::sql_result_type sql_result,
                                                         uint32_t block_num, bool only_virtual, const fc::optional<bool>& include_reversible )
       {
-        const int NR_FIELDS = 9;
+        const int NR_FIELDS = 7;
 
         pqxx::result result;
         std::string sql;
 
         if( only_virtual )
-          sql = "select * from ah_get_ops_in_block( " + std::to_string( block_num ) + ", 2::SMALLINT ) order by _block, _trx_in_block, _virtual_op ASC;";
+          sql = "select * from ah_get_ops_in_block( " + std::to_string( block_num ) + ", 2::SMALLINT ) order by _trx_in_block, _virtual_op;";
         else
-          sql = "select * from ah_get_ops_in_block( " + std::to_string( block_num ) + ", 0::SMALLINT ) order by _block, _trx_in_block, _virtual_op ASC;";
+          sql = "select * from ah_get_ops_in_block( " + std::to_string( block_num ) + ", 0::SMALLINT ) order by _trx_in_block, _virtual_op;";
 
         if( !connection.exec_single_in_transaction( sql, &result ) )
         {
@@ -140,10 +139,10 @@ namespace hive
         {
           account_history_sql_object ah_obj;
 
-          FC_ASSERT( row.size() >= NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields",
+          FC_ASSERT( row.size() == NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields",
                                               ( "db_size", row.size() )( "req_size", NR_FIELDS ) );
 
-          fill_object( row, ah_obj );
+          fill_object( row, ah_obj, block_num );
 
           sql_result( ah_obj );
         }
@@ -199,7 +198,6 @@ namespace hive
           uint32_t cnt = 0;
 
           account_history_sql_object temp;
-          temp.type = row[ cnt++ ].as< std::string >();
           temp.op   = fc::json::from_string( row[ cnt++ ].as< std::string >() );
 
           sql_result.operations.emplace_back( std::move( temp.get_op() ) );
