@@ -52,6 +52,7 @@
 CREATE TABLE IF NOT EXISTS hive_blocks (
   "num" integer NOT NULL,
   "hash" bytea NOT NULL,
+  "prev" bytea NOT NULL,
   "created_at" timestamp without time zone NOT NULL
   --,CONSTRAINT hive_blocks_pkey PRIMARY KEY ("num"),
   --CONSTRAINT hive_blocks_uniq UNIQUE ("hash")
