@@ -24,7 +24,7 @@ struct api_operation_object
   api_operation_object() {}
 
   template< typename T >
-  api_operation_object( const T& op_obj, const std::string& op_content ) :
+  api_operation_object( const T& op_obj, const fc::variant& op_content ) :
     trx_id( op_obj.trx_id ),
     block( op_obj.block ),
     trx_in_block( op_obj.trx_in_block ),
@@ -41,7 +41,7 @@ struct api_operation_object
     trx_in_block( op_obj.trx_in_block ),
     virtual_op( op_obj.virtual_op ),
     timestamp( op_obj.timestamp ),
-    op( get_string( op_obj.serialized_op ) )
+    op( get_variant( op_obj.serialized_op ) )
   {
   }
 
@@ -52,14 +52,16 @@ struct api_operation_object
   }
 
   template< typename Source >
-  static std::string get_string( const Source& serialized_op )
+  static fc::variant get_variant( const Source& serialized_op )
   {
-    return get_string( std::move( get_op( serialized_op ) ) );
+    return get_variant( std::move( get_op( serialized_op ) ) );
   }
 
-  static std::string get_string( const hive::protocol::operation& op )
+  static fc::variant get_variant( const hive::protocol::operation& _op )
   {
-    return fc::json::to_string( op );
+    fc::variant res;
+    to_variant( _op, res );
+    return res;
   }
 
   hive::protocol::transaction_id_type trx_id;
@@ -69,7 +71,7 @@ struct api_operation_object
   uint32_t                            virtual_op = 0;
   uint64_t                            operation_id = 0;
   fc::time_point_sec                  timestamp;
-  std::string                         op;
+  fc::variant                         op;
 
   bool operator<( const api_operation_object& obj ) const
   {

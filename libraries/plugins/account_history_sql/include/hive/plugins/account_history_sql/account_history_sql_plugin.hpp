@@ -23,23 +23,14 @@ struct account_history_sql_object
   uint64_t                            operation_id = 0;
   fc::time_point_sec                  timestamp;
   std::string                         type;
-  std::string                         op;
+  fc::variant                         op;
 
   hive::protocol::operation get_op() const
   {
     hive::protocol::operation res;
 
-    try//temporary try-catch
-    {
-      fc::mutable_variant_object mvo;
+    from_variant( op, res );
 
-      mvo("type", type)("value", fc::json::from_string( op ) );
-
-      from_variant( mvo, res );
-
-      return res;
-    }
-    FC_CAPTURE_AND_LOG(())
     return res;
   }
 };

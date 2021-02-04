@@ -70,7 +70,7 @@ namespace hive
           obj.timestamp     = fc::time_point_sec::from_iso_string( row[ cnt++ ].as< std::string >() );
 
           obj.type          = row[ cnt++ ].as< std::string >();
-          obj.op            = row[ cnt++ ].as< std::string >();
+          obj.op            = fc::json::from_string( row[ cnt++ ].as< std::string >() );
 
           //not used???
           obj.operation_id = row[ cnt++ ].as< uint64_t >();
@@ -158,7 +158,7 @@ namespace hive
         pqxx::result result;
         std::string sql;
 
-        sql = "select * from ah_get_trx( decode('" + id.str() + "', 'hex') )";
+        sql = "select * from ah_get_trx( '"+ id.str() + "' )";
 
         if( !connection.exec_single_in_transaction( sql, &result ) )
         {
@@ -200,7 +200,7 @@ namespace hive
 
           account_history_sql_object temp;
           temp.type = row[ cnt++ ].as< std::string >();
-          temp.op   = row[ cnt++ ].as< std::string >();
+          temp.op   = fc::json::from_string( row[ cnt++ ].as< std::string >() );
 
           sql_result.operations.emplace_back( std::move( temp.get_op() ) );
         }

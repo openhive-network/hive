@@ -17,7 +17,7 @@ $function$
 BEGIN
  RETURN QUERY
  SELECT
-  encode( ht.trx_hash, 'hex') _trx_id,
+  encode( ht.trx_hash, 'escape') _trx_id,
   ht.block_num _block,
   ht.trx_in_block::BIGINT _trx_in_block,
   0 _op_in_trx,
