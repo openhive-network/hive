@@ -23,44 +23,38 @@ BEGIN
 
  RETURN QUERY
   SELECT
-  encode( ht.trx_hash, 'escape') _trx_id,
-  ht.block_num _block,
-  ht.trx_in_block _trx_in_block,
-  ho.op_pos::INT _op_in_trx,
+  (
+    CASE
+    WHEN ht.trx_hash IS NULL THEN '0000000000000000000000000000000000000000'
+    ELSE encode( ht.trx_hash, 'escape')
+    END
+  ) _trx_id,
+  T.block_num _block,
+  (
+    CASE
+    WHEN ht.trx_in_block IS NULL THEN 4294967295
+    ELSE ht.trx_in_block
+    END
+  ) _trx_in_block,
+  T.op_pos::INT _op_in_trx,
   hot.is_virtual _virtual_op,
   trim(both '"' from to_json(hb.created_at)::text) _timestamp,
-  ho.body _value,
+  T.body _value,
   0 _operation_id
- FROM hive_operations ho
- JOIN hive_account_operations hao ON ho.id = hao.operation_id
- JOIN hive_transactions ht ON ht.block_num = ho.block_num AND ht.trx_in_block = ho.trx_in_block
- JOIN hive_blocks hb ON ht.block_num = hb.num
- JOIN hive_operation_types hot ON ho.op_type_id = hot.id
- WHERE hao.account_id = __account_id
-  AND hao.account_op_seq_no > _START - _LIMIT
-  AND hao.account_op_seq_no <= _START
-  AND ( ( __filter_info IS NULL ) OR ( ho.op_type_id = ANY( _FILTER ) ) )
-
- UNION ALL
-
- SELECT
-  '0000000000000000000000000000000000000000' _trx_id,
-  ho.block_num _block,
-  4294967295 _trx_in_block,
-  ho.op_pos::INT _op_in_trx,
-  hot.is_virtual _virtual_op,
-  trim(both '"' from to_json(hb.created_at)::text) _timestamp,
-  ho.body _value,
-  0 _operation_id
- FROM hive_operations ho
- JOIN hive_account_operations hao ON ho.id = hao.operation_id
- JOIN hive_blocks hb ON ho.block_num = hb.num AND ho.trx_in_block = -1
- JOIN hive_operation_types hot ON ho.op_type_id = hot.id
- WHERE hao.account_id = __account_id
-  AND hao.account_op_seq_no > _START - _LIMIT
-  AND hao.account_op_seq_no <= _START
-  AND ( ( __filter_info IS NULL ) OR ( ho.op_type_id = ANY( _FILTER ) ) )
- LIMIT _LIMIT;
+  FROM
+  (
+    SELECT
+      ho.block_num, ho.trx_in_block, ho.op_pos, ho.body, ho.op_type_id
+      FROM hive_operations ho
+      JOIN hive_account_operations hao ON ho.id = hao.operation_id
+      WHERE hao.account_id = __account_id AND hao.account_op_seq_no > _START- _LIMIT AND hao.account_op_seq_no <= _START
+      AND ( ( __filter_info IS NULL ) OR ( ho.op_type_id = ANY( _FILTER ) ) )
+      LIMIT _LIMIT
+  ) T
+  JOIN hive_blocks hb ON hb.num = T.block_num
+  JOIN hive_operation_types hot ON hot.id = T.op_type_id
+  LEFT JOIN hive_transactions ht ON T.block_num = ht.block_num AND T.trx_in_block = ht.trx_in_block
+  ORDER BY _block, _trx_in_block, _op_in_trx, _virtual_op;
 
 END
 $function$
