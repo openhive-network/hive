@@ -3,7 +3,7 @@ CREATE FUNCTION ah_get_ops_in_block( in _BLOCK_NUM INT, in _OP_TYPE SMALLINT )
 RETURNS TABLE(
     _trx_id TEXT,
     _trx_in_block BIGINT,
-    _op_in_trx INT,
+    _op_in_trx BIGINT,
     _virtual_op BOOLEAN,
     _timestamp TEXT,
     _value TEXT,
@@ -27,15 +27,16 @@ BEGIN
     ELSE ht.trx_in_block
     END
   ) _trx_in_block,
-  T.op_pos::INT _op_in_trx,
+  T.op_pos _op_in_trx,
   T.is_virtual _virtual_op,
   trim(both '"' from to_json(hb.created_at)::text) _timestamp,
   T.body _value,
   0 _operation_id
   FROM
   (
+    --`abs` it's temporary, until position of operation is correctly saved
     SELECT
-      ho.block_num, ho.trx_in_block, ho.op_pos, ho.body, ho.op_type_id, hot.is_virtual
+      ho.block_num, ho.trx_in_block, abs(ho.op_pos::BIGINT) op_pos, ho.body, ho.op_type_id, hot.is_virtual
       FROM hive_operations ho
       JOIN hive_account_operations hao ON ho.id = hao.operation_id
       JOIN hive_operation_types hot ON hot.id = ho.op_type_id

@@ -4,7 +4,7 @@ RETURNS TABLE(
     _trx_id TEXT,
     _block INT,
     _trx_in_block BIGINT,
-    _op_in_trx INT,
+    _op_in_trx BIGINT,
     _virtual_op BOOLEAN,
     _timestamp TEXT,
     _value TEXT,
@@ -36,15 +36,16 @@ BEGIN
     ELSE ht.trx_in_block
     END
   ) _trx_in_block,
-  T.op_pos::INT _op_in_trx,
+  T.op_pos _op_in_trx,
   hot.is_virtual _virtual_op,
   trim(both '"' from to_json(hb.created_at)::text) _timestamp,
   T.body _value,
   0 _operation_id
   FROM
   (
+    --`abs` it's temporary, until position of operation is correctly saved
     SELECT
-      ho.block_num, ho.trx_in_block, ho.op_pos, ho.body, ho.op_type_id
+      ho.block_num, ho.trx_in_block, abs(ho.op_pos::BIGINT) op_pos, ho.body, ho.op_type_id
       FROM hive_operations ho
       JOIN hive_account_operations hao ON ho.id = hao.operation_id
       WHERE hao.account_id = __account_id AND hao.account_op_seq_no > _START- _LIMIT AND hao.account_op_seq_no <= _START
@@ -53,8 +54,7 @@ BEGIN
   ) T
   JOIN hive_blocks hb ON hb.num = T.block_num
   JOIN hive_operation_types hot ON hot.id = T.op_type_id
-  LEFT JOIN hive_transactions ht ON T.block_num = ht.block_num AND T.trx_in_block = ht.trx_in_block
-  ORDER BY _block, _trx_in_block, _op_in_trx, _virtual_op;
+  LEFT JOIN hive_transactions ht ON T.block_num = ht.block_num AND T.trx_in_block = ht.trx_in_block;
 
 END
 $function$
