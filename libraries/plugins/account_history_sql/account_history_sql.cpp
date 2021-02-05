@@ -152,7 +152,7 @@ namespace hive
                                                             const hive::protocol::transaction_id_type& id, const fc::optional<bool>& include_reversible )
       {
         const int TRX_NR_FIELDS = 6;
-        const int OP_NR_FIELDS = 2;
+        const int OP_NR_FIELDS = 1;
 
         pqxx::result result;
         std::string sql;
@@ -169,7 +169,7 @@ namespace hive
                                         ( "db_size", result.size() ) );
 
         const auto& row = result[0];
-        FC_ASSERT( row.size() >= TRX_NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields",
+        FC_ASSERT( row.size() == TRX_NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields",
                                                 ( "db_size", row.size() )( "req_size", TRX_NR_FIELDS ) );
 
         uint32_t cnt = 0;
@@ -193,7 +193,7 @@ namespace hive
 
         for( const auto& row : result )
         {
-          FC_ASSERT( row.size() >= OP_NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields", ( "db_size", row.size() )( "req_size", OP_NR_FIELDS ) );
+          FC_ASSERT( row.size() == OP_NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields", ( "db_size", row.size() )( "req_size", OP_NR_FIELDS ) );
 
           uint32_t cnt = 0;
 
@@ -217,12 +217,12 @@ namespace hive
         std::string filter_array;
         create_filter_array( v, filter_array );
 
-        const int NR_FIELDS = 9;
+        const int NR_FIELDS = 8;
 
         pqxx::result result;
         std::string sql;
 
-        sql = "select * from ah_get_account_history(" + filter_array + ", '" + account + "', " + std::to_string( start ) + ", " + std::to_string( limit ) +" )";
+        sql = "select * from ah_get_account_history(" + filter_array + ", '" + account + "', " + std::to_string( start ) + ", " + std::to_string( limit ) +" ) ORDER BY _block, _trx_in_block, _op_in_trx, _virtual_op";
 
         if( !connection.exec_single_in_transaction( sql, &result ) )
         {
@@ -235,7 +235,7 @@ namespace hive
         {
           account_history_sql_object ah_obj;
 
-          FC_ASSERT( row.size() >= NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields", ( "db_size", row.size() )( "req_size", NR_FIELDS ) );
+          FC_ASSERT( row.size() == NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields", ( "db_size", row.size() )( "req_size", NR_FIELDS ) );
 
           fill_object( row, ah_obj );
 
@@ -278,7 +278,7 @@ namespace hive
         {
           account_history_sql_object ah_obj;
 
-          FC_ASSERT( row.size() >= NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields",
+          FC_ASSERT( row.size() == NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields",
                                               ( "db_size", row.size() )( "req_size", NR_FIELDS ) );
 
           fill_object( row, ah_obj );

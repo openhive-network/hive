@@ -3,11 +3,10 @@ CREATE FUNCTION ah_get_account_history( in _FILTER INT[], in _ACCOUNT VARCHAR, _
 RETURNS TABLE(
     _trx_id TEXT,
     _block INT,
-    _trx_in_block SMALLINT,
+    _trx_in_block BIGINT,
     _op_in_trx INT,
     _virtual_op BOOLEAN,
     _timestamp TEXT,
-    _type TEXT,
     _value TEXT,
     _operation_id INT
 )
@@ -30,7 +29,6 @@ BEGIN
   ho.op_pos::INT _op_in_trx,
   hot.is_virtual _virtual_op,
   trim(both '"' from to_json(hb.created_at)::text) _timestamp,
-  split_part( hot.name, '::', 3) _type,
   ho.body _value,
   0 _operation_id
  FROM hive_operations ho
@@ -42,8 +40,28 @@ BEGIN
   AND hao.account_op_seq_no > _START - _LIMIT
   AND hao.account_op_seq_no <= _START
   AND ( ( __filter_info IS NULL ) OR ( ho.op_type_id = ANY( _FILTER ) ) )
- ORDER BY _block, _trx_in_block, _op_in_trx, _virtual_op
+
+ UNION ALL
+
+ SELECT
+  '0000000000000000000000000000000000000000' _trx_id,
+  ho.block_num _block,
+  4294967295 _trx_in_block,
+  ho.op_pos::INT _op_in_trx,
+  hot.is_virtual _virtual_op,
+  trim(both '"' from to_json(hb.created_at)::text) _timestamp,
+  ho.body _value,
+  0 _operation_id
+ FROM hive_operations ho
+ JOIN hive_account_operations hao ON ho.id = hao.operation_id
+ JOIN hive_blocks hb ON ho.block_num = hb.num AND ho.trx_in_block = -1
+ JOIN hive_operation_types hot ON ho.op_type_id = hot.id
+ WHERE hao.account_id = __account_id
+  AND hao.account_op_seq_no > _START - _LIMIT
+  AND hao.account_op_seq_no <= _START
+  AND ( ( __filter_info IS NULL ) OR ( ho.op_type_id = ANY( _FILTER ) ) )
  LIMIT _LIMIT;
+
 END
 $function$
 language plpgsql STABLE;
