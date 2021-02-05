@@ -249,7 +249,7 @@ namespace hive
                                                         const fc::optional< uint64_t >& operation_begin, const fc::optional< uint32_t >& limit,
                                                         const fc::optional< uint32_t >& filter )
       {
-        const int NR_FIELDS = 9;
+        const int NR_FIELDS = 8;
         const int DEFAULT_LIMIT = 1000;
 
         pqxx::result result;
@@ -266,7 +266,7 @@ namespace hive
                 + std::to_string( block_range_begin ) + ", "
                 + std::to_string( block_range_end ) + ", "
                 + std::to_string( operation_begin.valid() ? *operation_begin : 0 ) + ", "
-                + std::to_string( limit.valid() ? *limit : DEFAULT_LIMIT ) + " )";
+                + std::to_string( limit.valid() ? *limit : DEFAULT_LIMIT ) + " ) ORDER BY _block, _trx_in_block, _op_in_trx";
 
         if( !connection.exec_single_in_transaction( sql, &result ) )
         {
