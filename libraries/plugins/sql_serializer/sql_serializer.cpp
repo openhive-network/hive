@@ -9,15 +9,16 @@
 #include <hive/utilities/plugin_utilities.hpp>
 
 #include <fc/io/json.hpp>
+#include <fc/io/sstream.hpp>
 #include <fc/crypto/hex.hpp>
+#include <fc/utf8.hpp>
+
 #include <boost/filesystem.hpp>
 #include <condition_variable>
 
 #include <map>
 #include <set>
 
-#include <locale>
-#include <codecvt>
 #include <sstream>
 #include <string>
 
@@ -306,33 +307,65 @@ namespace hive
 
               fc::string escape_sql(const std::string &text) const
               {
-                const static std::map<wchar_t, fc::string> special_chars{{std::pair<wchar_t, fc::string>{L'\x00', " "}, {L'\r', "\\015"}, {L'\n', "\\012"}, {L'\v', "\\013"}, {L'\f', "\\014"}, {L'\\', "\\134"}, {L'\'', "\\047"}, {L'%', "\\045"}, {L'_', "\\137"}, {L':', "\\072"}}};
-
                 if(text.empty()) return "E''";
 
-                std::wstring_convert<std::codecvt_utf8<wchar_t>> conv{};
-                std::wstring utf32 = conv.from_bytes(text);
-                std::stringstream ss{};
-                ss << "E'";
+                std::wstring utf32;
+                utf32.reserve( text.size() );
+                fc::decodeUtf8( text, &utf32 );
+
+                std::string ret;
+                ret.reserve( 6 * text.size() );
+
+                ret = "E'";
 
                 for (auto it = utf32.begin(); it != utf32.end(); it++)
                 {
-                  const wchar_t c{*it};
-                  const auto result = special_chars.find(c);
-                  if (result != special_chars.end()) ss << result->second;
+                  const wchar_t& c{*it};
+                  if( c == L'\x00') ret +=  " ";
+                  else if( c == L'\r') ret += "\\015";
+                  else if( c == L'\n') ret += "\\012"; 
+                  else if( c == L'\v') ret += "\\013"; 
+                  else if( c == L'\f') ret += "\\014"; 
+                  else if( c == L'\\') ret += "\\134"; 
+                  else if( c == L'\'') ret += "\\047"; 
+                  else if( c == L'%') ret += "\\045"; 
+                  else if( c == L'_') ret += "\\137"; 
+                  else if( c == L':') ret += "\\072"; 
                   else
                   {
-                    const char _c = conv.to_bytes(c)[0];
-                    if( _c > 0 && std::isprint(_c) ) ss << _c;
+                    const int code = static_cast<int>(c);
+
+                    if(code <= 0x80 && std::isprint(code))
+                    {
+                      ret += static_cast<char>(code);
+                    }
                     else
                     {
-                      const bool is_utf_32{ int(c) > 0xffff };
-                      ss << ( is_utf_32 ? "\\U" : "\\u" ) << std::setfill('0') << std::setw(4 + (4 * is_utf_32)) << std::hex << int(c);
+                      fc::string u_code{}; 
+                      u_code.reserve(8);
+
+                      const int i_c = int(c);
+                      const char * c_str = reinterpret_cast<const char*>(&i_c);
+                      for( int _s = ( i_c > 0xff ) + ( i_c > 0xffff ) + ( i_c > 0xffffff ); _s >= 0; _s-- ) 
+                        u_code += fc::to_hex( c_str + _s, 1 );
+
+                      if(i_c > 0xffff)
+                      {
+                        ret += "\\U";
+                        if(u_code.size() < 8) ret.insert( ret.end(), 8 - u_code.size(), '0' );
+                      }
+                      else 
+                      {
+                        ret += "\\u";
+                        if(u_code.size() < 4) ret.insert( ret.end(), 4 - u_code.size(), '0' );
+                      }
+                      ret += u_code;
                     }
                   }
                 }
-                ss << '\'';
-                return ss.str();
+
+                ret += '\'';
+                return ret;
               }
           };
 

@@ -1,12 +1,3 @@
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
--- -- -- -- -- -- -- -- W A R N I N G- -- -- -- -- -- -- -- -- 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
--- Because of security reasons, queries cannot be executed  -- 
--- one after another sepraeted with semicolon.              -- 
--- Use `normalize_schema.py <THIS FILE> <NEW FILE>          -- 
--- and set `psql-path-to-schema` to <NEW FILE>              -- 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-
 -- -- Create Database
 -- CREATE DATABASE block_log;
 
@@ -25,9 +16,9 @@
 -- -- If user, that is in connection string doesn't have proper acces rights
 -- -- Execute theese commands with proper rights, comment 
 -- -- following 3 lines, and uncomment theese under `Drop tables`
---DROP SCHEMA public CASCADE;
---CREATE SCHEMA public;
---CREATE EXTENSION IF NOT EXISTS intarray;
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS intarray;
 
 -- -- Check current status
 -- SELECT COUNT(*) FROM hive_blocks;
