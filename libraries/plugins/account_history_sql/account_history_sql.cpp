@@ -250,7 +250,7 @@ namespace hive
                                                         const fc::optional< uint32_t >& filter )
       {
         const int NR_FIELDS = 8;
-        const int DEFAULT_LIMIT = 1000;
+        const int DEFAULT_LIMIT = 1000000;
 
         pqxx::result result;
         std::string sql;
