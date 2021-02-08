@@ -299,12 +299,16 @@ DEFINE_API_IMPL( account_history_api_sql_impl, enum_virtual_ops)
   _dataSource.enum_virtual_ops( [ &result ] ( const account_history_sql::account_history_sql_object& op )
                                 {
                                   api_operation_object temp( op, op.op );
+                                  temp.operation_id = op.operation_id;
+
                                   result.ops.emplace_back( std::move( temp ) );
                                 },
                                 args.block_range_begin, args.block_range_end,
                                 args.include_reversible,
                                 args.operation_begin, args.limit,
-                                args.filter );
+                                args.filter,
+                                result.next_block_range_begin,
+                                result.next_operation_begin );
 
   return result;
 }

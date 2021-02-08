@@ -1,5 +1,5 @@
 DROP FUNCTION IF EXISTS ah_get_enum_virtual_ops;
-CREATE FUNCTION ah_get_enum_virtual_ops( in _FILTER INT[], in _BLOCK_RANGE_BEGIN INT, in _BLOCK_RANGE_END INT, _OPERATION_BEGIN INT, in _LIMIT INT )
+CREATE FUNCTION ah_get_enum_virtual_ops( in _FILTER INT[], in _BLOCK_RANGE_BEGIN INT, in _BLOCK_RANGE_END INT, _OPERATION_BEGIN BIGINT, in _LIMIT INT )
 RETURNS TABLE(
     _trx_id TEXT,
     _block INT,
@@ -8,7 +8,7 @@ RETURNS TABLE(
     _virtual_op BOOLEAN,
     _timestamp TEXT,
     _value TEXT,
-    _operation_id INT
+    _operation_id BIGINT
 )
 AS
 $function$
@@ -37,18 +37,20 @@ BEGIN
   hot.is_virtual _virtual_op,
   trim(both '"' from to_json(hb.created_at)::text) _timestamp,
   T.body _value,
-  0 _operation_id
+  T.id _operation_id
   FROM
   (
     --`abs` it's temporary, until position of operation is correctly saved
     SELECT
-      ho.block_num, ho.trx_in_block, abs(ho.op_pos::BIGINT) op_pos, ho.body, ho.op_type_id
+      ho.id, ho.block_num, ho.trx_in_block, abs(ho.op_pos::BIGINT) op_pos, ho.body, ho.op_type_id
       FROM hive_operations ho
       JOIN hive_operation_types hot ON hot.id = ho.op_type_id
       WHERE ho.block_num >= _BLOCK_RANGE_BEGIN AND ho.block_num < _BLOCK_RANGE_END
       AND hot.is_virtual = TRUE
       AND ( ( __filter_info IS NULL ) OR ( ho.op_type_id = ANY( _FILTER ) ) )
-      LIMIT _LIMIT
+      AND ( _OPERATION_BEGIN = -1 OR ho.id >= _OPERATION_BEGIN )
+      --+1 because next block/operation is needed in order to do correct paging
+      LIMIT _LIMIT + 1
   ) T
   JOIN hive_blocks hb ON hb.num = T.block_num
   JOIN hive_operation_types hot ON hot.id = T.op_type_id

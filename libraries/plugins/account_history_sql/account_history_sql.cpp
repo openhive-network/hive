@@ -41,7 +41,9 @@ namespace hive
                                 uint32_t block_range_begin, uint32_t block_range_end,
                                 const fc::optional<bool>& include_reversible,
                                 const fc::optional<uint64_t>& operation_begin, const fc::optional< uint32_t >& limit,
-                                const fc::optional<uint32_t>& filter );
+                                const fc::optional<uint32_t>& filter,
+                                uint32_t& next_block_range_begin,
+                                uint64_t& next_operation_begin );
 
         private:
 
@@ -71,7 +73,6 @@ namespace hive
 
           obj.op            = fc::json::from_string( row[ cnt++ ].as< std::string >() );
 
-          //not used???
           obj.operation_id = row[ cnt++ ].as< uint64_t >();
       }
 
@@ -247,10 +248,17 @@ namespace hive
                                                         uint32_t block_range_begin, uint32_t block_range_end,
                                                         const fc::optional<bool>& include_reversible,
                                                         const fc::optional< uint64_t >& operation_begin, const fc::optional< uint32_t >& limit,
-                                                        const fc::optional< uint32_t >& filter )
+                                                        const fc::optional< uint32_t >& filter,
+                                                        uint32_t& next_block_range_begin,
+                                                        uint64_t& next_operation_begin )
       {
-        const int NR_FIELDS = 8;
-        const int DEFAULT_LIMIT = 1000000;
+        const uint32_t NR_FIELDS = 8;
+        const uint32_t DEFAULT_LIMIT = 1000000;
+        const uint32_t _limit = limit.valid() ? *limit : DEFAULT_LIMIT;
+        const int64_t _operation_begin = operation_begin.valid() ? *operation_begin : -1;
+
+        next_block_range_begin = 0;
+        next_operation_begin = 0;
 
         pqxx::result result;
         std::string sql;
@@ -265,8 +273,8 @@ namespace hive
                 + filter_array + ", "
                 + std::to_string( block_range_begin ) + ", "
                 + std::to_string( block_range_end ) + ", "
-                + std::to_string( operation_begin.valid() ? *operation_begin : 0 ) + ", "
-                + std::to_string( limit.valid() ? *limit : DEFAULT_LIMIT ) + " ) ORDER BY _block, _trx_in_block, _op_in_trx";
+                + std::to_string( _operation_begin ) + ", "
+                + std::to_string( _limit ) + " ) ORDER BY _block, _trx_in_block, _op_in_trx";
 
         if( !connection.exec_single_in_transaction( sql, &result ) )
         {
@@ -274,6 +282,9 @@ namespace hive
           return;
         }
 
+        bool is_paging_info = _limit + 1 == result.size();
+        uint32_t cnt = 0;
+       
         for( const auto& row : result )
         {
           account_history_sql_object ah_obj;
@@ -282,6 +293,15 @@ namespace hive
                                               ( "db_size", row.size() )( "req_size", NR_FIELDS ) );
 
           fill_object( row, ah_obj );
+
+          //The last record is received only for filling variables used for paging: `next_block_range_begin`, `next_operation_begin`
+          ++cnt;
+          if( is_paging_info && cnt == result.size() )
+          {
+            next_block_range_begin = ah_obj.block;
+            next_operation_begin = ah_obj.operation_id;
+            break;
+          }
 
           sql_result( ah_obj );
         }
@@ -341,10 +361,12 @@ namespace hive
                                                       uint32_t block_range_begin, uint32_t block_range_end,
                                                       const fc::optional<bool>& include_reversible,
                                                       const fc::optional< uint64_t >& operation_begin, const fc::optional< uint32_t >& limit,
-                                                      const fc::optional< uint32_t >& filter ) const
+                                                      const fc::optional< uint32_t >& filter,
+                                                      uint32_t& next_block_range_begin,
+                                                      uint64_t& next_operation_begin ) const
     {
       my->enum_virtual_ops( sql_result, block_range_begin, block_range_end, include_reversible,
-                            operation_begin, limit, filter );
+                            operation_begin, limit, filter, next_block_range_begin, next_operation_begin );
     }
 
   } // namespace account_history_sql

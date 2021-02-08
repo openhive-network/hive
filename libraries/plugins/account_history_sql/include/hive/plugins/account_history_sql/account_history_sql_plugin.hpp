@@ -74,7 +74,9 @@ class account_history_sql_plugin : public appbase::plugin<account_history_sql_pl
                             uint32_t block_range_begin, uint32_t block_range_end,
                             const fc::optional<bool>& include_reversible,
                             const fc::optional< uint64_t >& operation_begin, const fc::optional< uint32_t >& limit,
-                            const fc::optional< uint32_t >& filter ) const;
+                            const fc::optional< uint32_t >& filter,
+                            uint32_t& next_block_range_begin,
+                            uint64_t& next_operation_begin ) const;
 
   private:
 
