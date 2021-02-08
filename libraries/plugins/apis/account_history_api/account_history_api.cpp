@@ -296,12 +296,30 @@ DEFINE_API_IMPL( account_history_api_sql_impl, enum_virtual_ops)
 {
   enum_virtual_ops_return result;
 
-  _dataSource.enum_virtual_ops( [ &result ] ( const account_history_sql::account_history_sql_object& op )
+  bool groupOps = args.group_by_block.valid() && *args.group_by_block;
+
+  _dataSource.enum_virtual_ops( [ &result, &groupOps ] ( const account_history_sql::account_history_sql_object& op )
                                 {
                                   api_operation_object temp( op, op.op );
                                   temp.operation_id = op.operation_id;
 
-                                  result.ops.emplace_back( std::move( temp ) );
+                                  if( groupOps )
+                                  {
+                                    auto ii = result.ops_by_block.emplace( ops_array_wrapper( op.block ) );
+                                    ops_array_wrapper& w = const_cast<ops_array_wrapper&>( *ii.first );
+
+                                    if( ii.second )
+                                    {
+                                      w.timestamp = op.timestamp;
+                                      w.irreversible = true;//NSY
+                                    }
+                                    w.ops.emplace_back( std::move( temp ) );
+                                  }
+                                  else
+                                  {
+                                    result.ops.emplace_back( std::move( temp ) );
+                                  }
+                                  
                                 },
                                 args.block_range_begin, args.block_range_end,
                                 args.include_reversible,
