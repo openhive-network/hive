@@ -120,7 +120,7 @@ namespace hive
       void account_history_sql_plugin_impl::get_ops_in_block( account_history_sql::account_history_sql_plugin::sql_result_type sql_result,
                                                         uint32_t block_num, bool only_virtual, const fc::optional<bool>& include_reversible )
       {
-        const int NR_FIELDS = 7;
+        const uint32_t NR_FIELDS = 7;
 
         pqxx::result result;
         std::string sql;
@@ -152,8 +152,8 @@ namespace hive
       void account_history_sql_plugin_impl::get_transaction( hive::protocol::annotated_signed_transaction& sql_result,
                                                             const hive::protocol::transaction_id_type& id, const fc::optional<bool>& include_reversible )
       {
-        const int TRX_NR_FIELDS = 6;
-        const int OP_NR_FIELDS = 1;
+        const uint32_t TRX_NR_FIELDS = 5;
+        const uint32_t OP_NR_FIELDS = 1;
 
         pqxx::result result;
         std::string sql;
@@ -180,11 +180,10 @@ namespace hive
         sql_result.expiration       = fc::time_point_sec::from_iso_string( row[ cnt++ ].as< std::string >() );
         sql_result.block_num        = row[ cnt++ ].as< uint32_t >();
         sql_result.transaction_num  = row[ cnt++ ].as< uint32_t >();
-        uint32_t trx_in_block       = row[ cnt++ ].as< uint32_t >();
 
         sql_result.transaction_id   = id;
 
-        sql = "select * from ah_get_ops_in_trx( " + std::to_string( sql_result.block_num ) + ", " + std::to_string( trx_in_block ) + " )";
+        sql = "select * from ah_get_ops_in_trx( " + std::to_string( sql_result.block_num ) + ", " + std::to_string( sql_result.transaction_num ) + " )";
 
         if( !connection.exec_single_in_transaction( sql, &result ) )
         {
@@ -218,12 +217,12 @@ namespace hive
         std::string filter_array;
         create_filter_array( v, filter_array );
 
-        const int NR_FIELDS = 8;
+        const uint32_t NR_FIELDS = 8;
 
         pqxx::result result;
         std::string sql;
 
-        sql = "select * from ah_get_account_history(" + filter_array + ", '" + account + "', " + std::to_string( start ) + ", " + std::to_string( limit ) +" ) ORDER BY _block, _trx_in_block, _op_in_trx, _virtual_op";
+        sql = "select * from ah_get_account_history(" + filter_array + ", '" + account + "', " + std::to_string( start ) + ", " + std::to_string( limit ) +" ) ORDER BY _block, _trx_in_block, _op_in_trx, _virtual_op DESC";
 
         if( !connection.exec_single_in_transaction( sql, &result ) )
         {
