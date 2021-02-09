@@ -320,47 +320,48 @@ namespace hive
 
                 for (auto it = utf32.begin(); it != utf32.end(); it++)
                 {
+
                   const wchar_t& c{*it};
-                  if( c == L'\x00') ret +=  " ";
-                  else if( c == L'\r') ret += "\\015";
-                  else if( c == L'\n') ret += "\\012"; 
-                  else if( c == L'\v') ret += "\\013"; 
-                  else if( c == L'\f') ret += "\\014"; 
-                  else if( c == L'\\') ret += "\\134"; 
-                  else if( c == L'\'') ret += "\\047"; 
-                  else if( c == L'%') ret += "\\045"; 
-                  else if( c == L'_') ret += "\\137"; 
-                  else if( c == L':') ret += "\\072"; 
+                  const int code = static_cast<int>(c);
+
+                  if( code == 0 ) ret += " ";
+                  if(code > 0 && code <= 0x7F && std::isprint(code)) // if printable ASCII
+                  {
+                    switch(c)
+                    {
+                      case L'\r': ret += "\\015"; break;
+                      case L'\n': ret += "\\012"; break;
+                      case L'\v': ret += "\\013"; break;
+                      case L'\f': ret += "\\014"; break;
+                      case L'\\': ret += "\\134"; break;
+                      case L'\'': ret += "\\047"; break;
+                      case L'%':  ret += "\\045"; break;
+                      case L'_':  ret += "\\137"; break;
+                      case L':':  ret += "\\072"; break;
+                      default:    ret += static_cast<char>(code); break;
+                    }
+                  }
                   else
                   {
-                    const int code = static_cast<int>(c);
+                    fc::string u_code{}; 
+                    u_code.reserve(8);
 
-                    if(code <= 0x80 && std::isprint(code))
+                    const int i_c = int(c);
+                    const char * c_str = reinterpret_cast<const char*>(&i_c);
+                    for( int _s = ( i_c > 0xff ) + ( i_c > 0xffff ) + ( i_c > 0xffffff ); _s >= 0; _s-- ) 
+                      u_code += fc::to_hex( c_str + _s, 1 );
+
+                    if(i_c > 0xffff)
                     {
-                      ret += static_cast<char>(code);
+                      ret += "\\U";
+                      if(u_code.size() < 8) ret.insert( ret.end(), 8 - u_code.size(), '0' );
                     }
-                    else
+                    else 
                     {
-                      fc::string u_code{}; 
-                      u_code.reserve(8);
-
-                      const int i_c = int(c);
-                      const char * c_str = reinterpret_cast<const char*>(&i_c);
-                      for( int _s = ( i_c > 0xff ) + ( i_c > 0xffff ) + ( i_c > 0xffffff ); _s >= 0; _s-- ) 
-                        u_code += fc::to_hex( c_str + _s, 1 );
-
-                      if(i_c > 0xffff)
-                      {
-                        ret += "\\U";
-                        if(u_code.size() < 8) ret.insert( ret.end(), 8 - u_code.size(), '0' );
-                      }
-                      else 
-                      {
-                        ret += "\\u";
-                        if(u_code.size() < 4) ret.insert( ret.end(), 4 - u_code.size(), '0' );
-                      }
-                      ret += u_code;
+                      ret += "\\u";
+                      if(u_code.size() < 4) ret.insert( ret.end(), 4 - u_code.size(), '0' );
                     }
+                    ret += u_code;
                   }
                 }
 
