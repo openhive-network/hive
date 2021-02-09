@@ -1,16 +1,14 @@
 file(GLOB HEADERS "include/hive/plugins/account_history_sql/*.hpp")
 
-set(PQXX /usr/local/include/pqxx)
-find_library(PQXX_LIB pqxx)
-find_library(PQ_LIB pq)
+find_package(LibPQXX)
 
 add_library( account_history_sql_plugin
              account_history_sql.cpp
              ${HEADERS}
            )
 
-target_link_libraries( account_history_sql_plugin chain_plugin hive_chain hive_protocol ${PQXX_LIB} ${PQ_LIB} )
-target_include_directories( account_history_sql_plugin
+target_link_libraries( account_history_sql_plugin chain_plugin hive_chain hive_protocol ${LIBPQXX_LIBRARY} )
+target_include_directories( account_history_sql_plugin ${LIBPQXX_INCLUDE_DIR}
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
 if( CLANG_TIDY_EXE )
