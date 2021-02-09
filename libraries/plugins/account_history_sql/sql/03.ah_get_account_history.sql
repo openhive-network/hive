@@ -54,7 +54,8 @@ BEGIN
   ) T
   JOIN hive_blocks hb ON hb.num = T.block_num
   JOIN hive_operation_types hot ON hot.id = T.op_type_id
-  LEFT JOIN hive_transactions ht ON T.block_num = ht.block_num AND T.trx_in_block = ht.trx_in_block;
+  LEFT JOIN hive_transactions ht ON T.block_num = ht.block_num AND T.trx_in_block = ht.trx_in_block
+  LIMIT _LIMIT;
 
 END
 $function$

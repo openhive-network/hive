@@ -2,6 +2,8 @@
 
 #include <hive/utilities/postgres_connection_holder.hpp>
 
+#include <chrono>
+
 namespace hive
 {
  namespace plugins
@@ -12,12 +14,15 @@ namespace hive
     using hive::utilities::postgres_connection_holder;
     using protocol::operation;
 
+    using hive::utilities::postgres_connection_pool;
+
     namespace detail
     {
       class account_history_sql_plugin_impl
       {
         public:
-          account_history_sql_plugin_impl(const std::string &url) : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ), connection{url}
+          account_history_sql_plugin_impl(const std::string &url)
+            : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ), connection{url}, pool( url )
           {}
 
           virtual ~account_history_sql_plugin_impl()
@@ -50,6 +55,7 @@ namespace hive
           database &_db;
 
           postgres_connection_holder connection;
+          postgres_connection_pool pool;
 
           void fill_object( const pqxx::row& row, account_history_sql_object& obj, fc::optional<uint32_t>block_num );
           void create_filter_array( const std::vector<uint32_t>& v, std::string& filter_array );
@@ -130,7 +136,7 @@ namespace hive
         else
           sql = "select * from ah_get_ops_in_block( " + std::to_string( block_num ) + ", 0::SMALLINT ) order by _trx_in_block, _virtual_op;";
 
-        if( !connection.exec_single_in_transaction( sql, &result ) )
+        if( !connection.exec_query( pool.get_connection(), sql, &result ) )
         {
           wlog( "Execution of query ${sql} failed", ("sql", sql) );
           return;
@@ -160,7 +166,7 @@ namespace hive
 
         sql = "select * from ah_get_trx( '"+ id.str() + "' )";
 
-        if( !connection.exec_single_in_transaction( sql, &result ) )
+        if( !connection.exec_query( pool.get_connection(), sql, &result ) )
         {
           wlog( "Execution of query ${sql} failed", ("sql", sql) );
           return;
@@ -185,7 +191,7 @@ namespace hive
 
         sql = "select * from ah_get_ops_in_trx( " + std::to_string( sql_result.block_num ) + ", " + std::to_string( sql_result.transaction_num ) + " )";
 
-        if( !connection.exec_single_in_transaction( sql, &result ) )
+        if( !connection.exec_query( pool.get_connection(), sql, &result ) )
         {
           wlog( "Execution of query ${sql} failed", ("sql", sql) );
           return;
@@ -222,13 +228,17 @@ namespace hive
         pqxx::result result;
         std::string sql;
 
+        auto start_time = std::chrono::high_resolution_clock::now();
+
         sql = "select * from ah_get_account_history(" + filter_array + ", '" + account + "', " + std::to_string( start ) + ", " + std::to_string( limit ) +" ) ORDER BY _block, _trx_in_block, _op_in_trx, _virtual_op DESC";
 
-        if( !connection.exec_single_in_transaction( sql, &result ) )
+        if( !connection.exec_query( pool.get_connection(), sql, &result ) )
         {
           wlog( "Execution of query ${sql} failed", ("sql", sql) );
           return;
         }
+
+        auto finish_time = std::chrono::high_resolution_clock::now();
 
         uint32_t cnt = start - limit + 1;
         for( const auto& row : result )
@@ -241,6 +251,12 @@ namespace hive
 
           sql_sequence_result( cnt++, ah_obj );
         }
+        auto finish2_time = std::chrono::high_resolution_clock::now();
+
+        std::chrono::milliseconds sql_time = std::chrono::duration_cast<std::chrono::milliseconds>( finish_time - start_time );
+        std::chrono::milliseconds cpp_time = std::chrono::duration_cast<std::chrono::milliseconds>( finish2_time - finish_time );
+
+        ilog( "SQL AH statistics: sql time: ${sql}ms cpp time: ${cpp}ms", ("sql", sql_time.count())("cpp", cpp_time.count()) );
       }
 
       void account_history_sql_plugin_impl::enum_virtual_ops( account_history_sql::account_history_sql_plugin::sql_result_type sql_result,
@@ -275,7 +291,7 @@ namespace hive
                 + std::to_string( _operation_begin ) + ", "
                 + std::to_string( _limit ) + " ) ORDER BY _block, _trx_in_block, _op_in_trx";
 
-        if( !connection.exec_single_in_transaction( sql, &result ) )
+        if( !connection.exec_query( pool.get_connection(), sql, &result ) )
         {
           wlog( "Execution of query ${sql} failed", ("sql", sql) );
           return;

@@ -19,6 +19,35 @@ namespace hive { namespace utilities {
     void mylog(const char* msg);
     fc::string generate(std::function<void(fc::string &)> fun);
 
+    using postgres_connection_type = std::shared_ptr<pqxx::connection>;
+
+    class postgres_connection_pool
+    {
+      private:
+
+        fc::string connection_string;
+
+        //std::vector< postgres_connection_type > connections;
+        postgres_connection_type connection;
+
+      public:
+
+        postgres_connection_pool( const fc::string& _connection_string )
+          : connection_string( _connection_string )
+        {
+        }
+
+        pqxx::connection& get_connection()
+        {
+          if( !connection )
+            connection = std::make_shared< pqxx::connection >( connection_string );
+
+          return *connection;
+        }
+
+    };
+
+
     struct transaction_repr_t
     {
      std::unique_ptr<pqxx::connection> _connection;
@@ -91,6 +120,23 @@ namespace hive { namespace utilities {
           trx.exec(sql);
         trx.commit();
         }, sql.c_str());
+      }
+
+      bool exec_query( pqxx::connection& conn, const fc::string &sql, pqxx::result *result = nullptr ) const
+      {
+        if (sql == fc::string())
+          return true;
+
+        return sql_safe_execution( [&]() {
+          pqxx::read_transaction trx{ conn };
+          if( result )
+            *result = trx.exec( sql );
+          else
+            trx.exec( sql );
+          trx.commit();
+          },
+          sql.c_str()
+        );
       }
 
       template<typename T>
