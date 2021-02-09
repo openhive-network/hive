@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS hive_operations (
   id bigint not null,
   block_num integer NOT NULL,
   trx_in_block smallint NOT NULL,
-  op_pos smallint NOT NULL,
+  op_pos integer NOT NULL,
   op_type_id smallint NOT NULL,
   body text DEFAULT NULL
   --,permlink_ids int[]
