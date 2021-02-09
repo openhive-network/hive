@@ -2,6 +2,8 @@
 
 #include <hive/utilities/postgres_connection_holder.hpp>
 
+#include <pqxx/pqxx>
+
 #include <chrono>
 
 namespace hive
