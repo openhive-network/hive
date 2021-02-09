@@ -59,14 +59,14 @@ namespace hive
           postgres_connection_holder connection;
           postgres_connection_pool pool;
 
-          void fill_object( const pqxx::row& row, account_history_sql_object& obj, fc::optional<uint32_t>block_num );
+          void fill_object( const pqxx::tuple& row, account_history_sql_object& obj, fc::optional<uint32_t>block_num );
           void create_filter_array( const std::vector<uint32_t>& v, std::string& filter_array );
           void gather_operations_from_filter( const fc::optional<uint64_t>& filter, std::vector<uint32_t>& v, bool high );
           void gather_virtual_operations_from_filter( const fc::optional<uint32_t>& filter, std::vector<uint32_t>& v );
 
       };//class account_history_sql_plugin_impl
 
-      void account_history_sql_plugin_impl::fill_object( const pqxx::row& row, account_history_sql_object& obj, fc::optional<uint32_t>block_num = fc::optional<uint32_t>() )
+      void account_history_sql_plugin_impl::fill_object( const pqxx::tuple& row, account_history_sql_object& obj, fc::optional<uint32_t>block_num = fc::optional<uint32_t>() )
       {
           uint32_t cnt = 0;
 
