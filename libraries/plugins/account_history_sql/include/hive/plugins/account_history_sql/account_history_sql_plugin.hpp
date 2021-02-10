@@ -38,8 +38,8 @@ class account_history_sql_plugin : public appbase::plugin<account_history_sql_pl
 {
   public:
 
-    using sql_result_type = std::function< void( const account_history_sql::account_history_sql_object& ) >;
-    using sql_sequence_result_type = std::function< void( unsigned int sequence, const account_history_sql::account_history_sql_object& ) >;
+    using sql_result_type = std::function< void( account_history_sql::account_history_sql_object& ) >;
+    using sql_sequence_result_type = std::function< void( unsigned int sequence, account_history_sql::account_history_sql_object& ) >;
 
   public:
       account_history_sql_plugin();

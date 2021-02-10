@@ -24,12 +24,12 @@ struct api_operation_object
   api_operation_object() {}
 
   template< typename T >
-  api_operation_object( const T& op_obj, const fc::variant& op_content ) :
-    trx_id( op_obj.trx_id ),
-    block( op_obj.block ),
-    trx_in_block( op_obj.trx_in_block ),
-    virtual_op( op_obj.virtual_op ),
-    timestamp( op_obj.timestamp ),
+  api_operation_object( T& op_obj, fc::variant&& op_content ) :
+    trx_id( std::move( op_obj.trx_id ) ),
+    block( std::move( op_obj.block ) ),
+    trx_in_block( std::move( op_obj.trx_in_block ) ),
+    virtual_op( std::move( op_obj.virtual_op ) ),
+    timestamp( std::move( op_obj.timestamp ) ),
     op( op_content )
   {
   }

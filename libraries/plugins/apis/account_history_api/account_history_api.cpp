@@ -61,7 +61,7 @@ get_ops_in_block_return account_history_api_chainbase_impl::_get_ops_in_block( c
     while( itr != idx.end() && itr->block == args.block_num )
     {
       auto _op = api_operation_object::get_op( itr->serialized_op );
-      api_operation_object temp = api_operation_object( *itr, api_operation_object::get_variant( _op ) );
+      api_operation_object temp = api_operation_object( *itr, std::move( api_operation_object::get_variant( _op ) ) );
       if( !args.only_virtual || temp.virtual_op )
       {
         if( filter.valid() )
@@ -149,7 +149,7 @@ get_account_history_return account_history_api_chainbase_impl::_get_account_hist
 
       const chain::operation_object& op_obj = _db.get( itr->op );
       auto _op = api_operation_object::get_op( op_obj.serialized_op );
-      api_operation_object api_obj( op_obj, api_operation_object::get_variant( _op ) );
+      api_operation_object api_obj( op_obj, std::move( api_operation_object::get_variant( _op ) ) );
 
       if( filter.valid() )
       {
@@ -210,9 +210,9 @@ get_ops_in_block_return account_history_api_sql_impl::_get_ops_in_block( const g
 {
   get_ops_in_block_return result;
 
-  _dataSource.get_ops_in_block( [ &result, &filter ] ( const account_history_sql::account_history_sql_object& op )
+  _dataSource.get_ops_in_block( [ &result, &filter ] ( account_history_sql::account_history_sql_object& op )
                                 {
-                                  api_operation_object temp( op, op.op );
+                                  api_operation_object temp( op, std::move( op.op ) );
                                   auto _op = op.get_op();
                                   if( filter.valid() )
                                   {
@@ -260,9 +260,9 @@ get_account_history_return account_history_api_sql_impl::_get_account_history( c
 
   get_account_history_return result;
 
-  _dataSource.get_account_history( [ &result, &filter ] ( unsigned int sequence, const account_history_sql::account_history_sql_object& op )
+  _dataSource.get_account_history( [ &result, &filter ] ( unsigned int sequence, account_history_sql::account_history_sql_object& op )
                                   {
-                                    api_operation_object temp( op, op.op );
+                                    api_operation_object temp( op, std::move( op.op ) );
                                     auto _op = op.get_op();
                                     if( filter.valid() )
                                     {
@@ -298,9 +298,9 @@ DEFINE_API_IMPL( account_history_api_sql_impl, enum_virtual_ops)
 
   bool groupOps = args.group_by_block.valid() && *args.group_by_block;
 
-  _dataSource.enum_virtual_ops( [ &result, &groupOps ] ( const account_history_sql::account_history_sql_object& op )
+  _dataSource.enum_virtual_ops( [ &result, &groupOps ] ( account_history_sql::account_history_sql_object& op )
                                 {
-                                  api_operation_object temp( op, op.op );
+                                  api_operation_object temp( op, std::move( op.op ) );
                                   temp.operation_id = op.operation_id;
 
                                   if( groupOps )
@@ -363,7 +363,7 @@ get_ops_in_block_return account_history_api_rocksdb_impl::_get_ops_in_block( con
     [&result, &args, &filter](const account_history_rocksdb::rocksdb_operation_object& op)
     {
       auto _op = api_operation_object::get_op( op.serialized_op );
-      api_operation_object temp( op, api_operation_object::get_variant( _op ) );
+      api_operation_object temp( op, std::move( api_operation_object::get_variant( _op ) ) );
       if( !args.only_virtual || temp.virtual_op )
       {
         if( filter.valid() )
@@ -417,7 +417,7 @@ get_account_history_return account_history_api_rocksdb_impl::_get_account_histor
 
         // we want to accept any operations where the corresponding bit is set in {filter_high, filter_low}
         auto _op = api_operation_object::get_op( op.serialized_op );
-        api_operation_object api_op( op, api_operation_object::get_variant( _op ) );
+        api_operation_object api_op( op, std::move( api_operation_object::get_variant( _op ) ) );
         unsigned bit_number = _op.which();
         bool accepted = bit_number < 64 ? filter_low & (UINT64_C(1) << bit_number)
                                         : filter_high & (UINT64_C(1) << (bit_number - 64));
@@ -458,7 +458,7 @@ get_account_history_return account_history_api_rocksdb_impl::_get_account_histor
       [&result, &filter](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
       {
         auto _op = api_operation_object::get_op( op.serialized_op );
-        api_operation_object api_op( op, api_operation_object::get_variant( _op ) );
+        api_operation_object api_op( op, std::move( api_operation_object::get_variant( _op ) ) );
         /// Here internal counter (inside find_account_history_data) does the limiting job.
         if( filter.valid() )
         {
@@ -574,7 +574,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
       if( args.filter.valid() )
       {
         auto _op = api_operation_object::get_op( op.serialized_op );
-        api_operation_object _api_obj( op, api_operation_object::get_variant( _op ) );
+        api_operation_object _api_obj( op, std::move( api_operation_object::get_variant( _op ) ) );
 
         _api_obj.operation_id = operation_id;
 
