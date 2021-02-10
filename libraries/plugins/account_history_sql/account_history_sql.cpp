@@ -133,10 +133,9 @@ namespace hive
         pqxx::result result;
         std::string sql;
 
-        if( only_virtual )
-          sql = "select * from ah_get_ops_in_block( " + std::to_string( block_num ) + ", 2::SMALLINT ) order by _trx_in_block, _virtual_op;";
-        else
-          sql = "select * from ah_get_ops_in_block( " + std::to_string( block_num ) + ", 0::SMALLINT ) order by _trx_in_block, _virtual_op;";
+        std::string virtual_mode = only_virtual ? "TRUE" : "FALSE";
+
+        sql = "select * from ah_get_ops_in_block( " + std::to_string( block_num ) + ", " + virtual_mode + " ) order by _trx_in_block, _virtual_op;";
 
         if( !connection.exec_query( pool.get_connection(), sql, &result ) )
         {

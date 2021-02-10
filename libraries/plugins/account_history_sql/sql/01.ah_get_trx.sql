@@ -10,15 +10,15 @@ RETURNS TABLE(
 AS
 $function$
 BEGIN
- RETURN QUERY
- SELECT
-  0 _ref_block_num,
-  0 _ref_block_prefix,
-  '2016-06-20T19:34:09' _expiration,
-  ht.block_num _block_num,
-  ht.trx_in_block _trx_in_block
- FROM hive_transactions ht
- WHERE ht.trx_hash = _TRX_HASH;
+  RETURN QUERY
+    SELECT
+      0 _ref_block_num,--lack of data
+      0 _ref_block_prefix,--lack of data
+      '2016-06-20T19:34:09' _expiration,--lack of data
+      ht.block_num _block_num,
+      ht.trx_in_block _trx_in_block
+    FROM hive_transactions ht
+    WHERE ht.trx_hash = _TRX_HASH;
 END
 $function$
 language plpgsql STABLE;
