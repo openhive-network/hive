@@ -20,6 +20,39 @@ namespace hive
 
     namespace detail
     {
+      class time_logger
+      {
+        bool val = true;
+
+        std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
+        std::chrono::time_point<std::chrono::high_resolution_clock> finish_time;
+        std::chrono::time_point<std::chrono::high_resolution_clock> finish2_time;
+
+        public:
+
+          time_logger()
+          {
+            start_time = std::chrono::high_resolution_clock::now();
+          }
+
+          void snapshot_time()
+          {
+            if( val )
+              finish_time = std::chrono::high_resolution_clock::now();
+            else
+              finish2_time = std::chrono::high_resolution_clock::now();
+            val = false;
+          }
+
+          void info()
+          {
+            std::chrono::milliseconds sql_time = std::chrono::duration_cast<std::chrono::milliseconds>( finish_time - start_time );
+            std::chrono::milliseconds cpp_time = std::chrono::duration_cast<std::chrono::milliseconds>( finish2_time - finish_time );
+
+            ilog( "SQL AH statistics: sql time: ${sql}ms cpp time: ${cpp}ms", ("sql", sql_time.count())("cpp", cpp_time.count()) );
+          }
+      };
+
       class account_history_sql_plugin_impl
       {
         public:
@@ -135,6 +168,8 @@ namespace hive
 
         std::string virtual_mode = only_virtual ? "TRUE" : "FALSE";
 
+        time_logger _time_logger;
+
         sql = "select * from ah_get_ops_in_block( " + std::to_string( block_num ) + ", " + virtual_mode + " ) order by _trx_in_block, _virtual_op;";
 
         if( !connection.exec_query( pool.get_connection(), sql, &result ) )
@@ -142,6 +177,8 @@ namespace hive
           wlog( "Execution of query ${sql} failed", ("sql", sql) );
           return;
         }
+
+        _time_logger.snapshot_time();
 
         for( const auto& row : result )
         {
@@ -154,6 +191,9 @@ namespace hive
 
           sql_result( ah_obj );
         }
+
+        _time_logger.snapshot_time();
+        _time_logger.info();
       }
 
       void account_history_sql_plugin_impl::get_transaction( hive::protocol::annotated_signed_transaction& sql_result,
@@ -164,6 +204,8 @@ namespace hive
 
         pqxx::result result;
         std::string sql;
+
+        time_logger _time_logger;
 
         sql = "select * from ah_get_trx( '"+ id.str() + "' )";
 
@@ -198,6 +240,8 @@ namespace hive
           return;
         }
 
+        _time_logger.snapshot_time();
+
         for( const auto& row : result )
         {
           FC_ASSERT( row.size() == OP_NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields", ( "db_size", row.size() )( "req_size", OP_NR_FIELDS ) );
@@ -209,6 +253,9 @@ namespace hive
 
           sql_result.operations.emplace_back( std::move( temp.get_op() ) );
         }
+
+        _time_logger.snapshot_time();
+        _time_logger.info();
       }
 
       void account_history_sql_plugin_impl::get_account_history( account_history_sql::account_history_sql_plugin::sql_sequence_result_type sql_sequence_result,
@@ -229,7 +276,7 @@ namespace hive
         pqxx::result result;
         std::string sql;
 
-        auto start_time = std::chrono::high_resolution_clock::now();
+        time_logger _time_logger;
 
         sql = "select * from ah_get_account_history(" + filter_array + ", '" + account + "', " + std::to_string( start ) + ", " + std::to_string( limit ) +" ) ORDER BY _block, _trx_in_block, _op_in_trx, _virtual_op DESC";
 
@@ -239,7 +286,7 @@ namespace hive
           return;
         }
 
-        auto finish_time = std::chrono::high_resolution_clock::now();
+        _time_logger.snapshot_time();
 
         uint32_t cnt = start - limit + 1;
         for( const auto& row : result )
@@ -252,12 +299,9 @@ namespace hive
 
           sql_sequence_result( cnt++, ah_obj );
         }
-        auto finish2_time = std::chrono::high_resolution_clock::now();
 
-        std::chrono::milliseconds sql_time = std::chrono::duration_cast<std::chrono::milliseconds>( finish_time - start_time );
-        std::chrono::milliseconds cpp_time = std::chrono::duration_cast<std::chrono::milliseconds>( finish2_time - finish_time );
-
-        ilog( "SQL AH statistics: sql time: ${sql}ms cpp time: ${cpp}ms", ("sql", sql_time.count())("cpp", cpp_time.count()) );
+        _time_logger.snapshot_time();
+        _time_logger.info();
       }
 
       void account_history_sql_plugin_impl::enum_virtual_ops( account_history_sql::account_history_sql_plugin::sql_result_type sql_result,
@@ -285,6 +329,8 @@ namespace hive
         std::string filter_array;
         create_filter_array( v, filter_array );
 
+        time_logger _time_logger;
+
         sql = "select * from ah_get_enum_virtual_ops( "
                 + filter_array + ", "
                 + std::to_string( block_range_begin ) + ", "
@@ -297,6 +343,8 @@ namespace hive
           wlog( "Execution of query ${sql} failed", ("sql", sql) );
           return;
         }
+
+        _time_logger.snapshot_time();
 
         bool is_paging_info = _limit + 1 == result.size();
         uint32_t cnt = 0;
@@ -321,6 +369,9 @@ namespace hive
 
           sql_result( ah_obj );
         }
+        
+        _time_logger.snapshot_time();
+        _time_logger.info();
       }
 
     }//namespace detail
