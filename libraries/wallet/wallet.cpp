@@ -2032,7 +2032,7 @@ string wallet_api::get_encrypted_memo_using_keys( const public_key_type& from_ke
   return m;
 }
 
-string wallet_api::get_encrypted_memo( string from, string to, string memo ) {
+string wallet_api::get_encrypted_memo( const string& from, const string& to, const string& memo ) {
 
   if( memo.size() > 0 && memo[0] == '#' ) {
     auto from_account = get_account( from );
@@ -2044,7 +2044,7 @@ string wallet_api::get_encrypted_memo( string from, string to, string memo ) {
   }
 }
 
-condenser_api::legacy_signed_transaction wallet_api::transfer(string from, string to, condenser_api::legacy_asset amount, string memo, bool broadcast )
+condenser_api::legacy_signed_transaction wallet_api::transfer(const string& from, const string& to, const condenser_api::legacy_asset& amount, const string& memo, bool broadcast )
 {
   return transfer_and_broadcast(from, to, amount, memo, broadcast, true);
 }
@@ -2259,9 +2259,9 @@ condenser_api::legacy_signed_transaction wallet_api::cancel_transfer_from_saving
   return my->sign_transaction( tx, broadcast );
 }
 
-condenser_api::legacy_signed_transaction wallet_api::transfer_to_vesting( string from,
-                                                                          string to,
-                                                                          condenser_api::legacy_asset amount,
+condenser_api::legacy_signed_transaction wallet_api::transfer_to_vesting( const string& from,
+                                                                          const string& to,
+                                                                          const condenser_api::legacy_asset& amount,
                                                                           bool broadcast )
 {
   return transfer_to_vesting_and_broadcast(from, to, amount, broadcast, true);

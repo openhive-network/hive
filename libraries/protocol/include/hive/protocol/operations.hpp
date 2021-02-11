@@ -110,7 +110,7 @@ namespace hive { namespace protocol {
         effective_comment_vote_operation,
         ineffective_delete_comment_operation,
         sps_convert_operation,
-        expired_account_notification_operation
+        expired_account_notification_operation,
         transfer_to_vesting_completed_operation,
         pow_reward_operation,
         vesting_shares_split_operation,

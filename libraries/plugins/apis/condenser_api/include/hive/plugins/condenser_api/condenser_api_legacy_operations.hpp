@@ -1343,7 +1343,7 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_delayed_voting_operation,
         legacy_consolidate_treasury_balance_operation,
         legacy_sps_convert_operation,
-        legacy_expired_account_notification_operation
+        legacy_expired_account_notification_operation,
         legacy_transfer_to_vesting_completed_operation,
         legacy_account_created_operation,
         legacy_vesting_shares_split_operation,
