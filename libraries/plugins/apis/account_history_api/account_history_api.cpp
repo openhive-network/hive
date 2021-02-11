@@ -213,9 +213,9 @@ get_ops_in_block_return account_history_api_sql_impl::_get_ops_in_block( const g
   _dataSource.get_ops_in_block( [ &result, &filter ] ( account_history_sql::account_history_sql_object& op )
                                 {
                                   api_operation_object temp( op, std::move( op.op ) );
-                                  auto _op = op.get_op();
                                   if( filter.valid() )
                                   {
+                                    auto _op = op.get_op();
                                     if( (*filter)( _op ) )
                                       result.ops.emplace( std::move( temp ) );
                                   }
@@ -263,9 +263,9 @@ get_account_history_return account_history_api_sql_impl::_get_account_history( c
   _dataSource.get_account_history( [ &result, &filter ] ( unsigned int sequence, account_history_sql::account_history_sql_object& op )
                                   {
                                     api_operation_object temp( op, std::move( op.op ) );
-                                    auto _op = op.get_op();
                                     if( filter.valid() )
                                     {
+                                      auto _op = op.get_op();
                                       if( (*filter)( _op ) )
                                         result.history.emplace( sequence, std::move( temp ) );
                                     }
