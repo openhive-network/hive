@@ -319,7 +319,6 @@ namespace hive
 
         _time_logger.snapshot_time();
 
-        uint32_t cnt = start - limit + 1;
         for( const auto& row : result )
         {
           account_history_sql_object ah_obj;
@@ -328,7 +327,7 @@ namespace hive
 
           fill_object( row, ah_obj );
 
-          sql_sequence_result( cnt++, ah_obj );
+          sql_sequence_result( ah_obj.operation_id , ah_obj );
         }
 
         _time_logger.snapshot_time();
