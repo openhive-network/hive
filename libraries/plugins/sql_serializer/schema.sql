@@ -154,3 +154,36 @@ $function$
 LANGUAGE plpgsql STABLE
 ;
 
+DROP TYPE IF EXISTS hive_api_hivemind_blocks CASCADE;
+CREATE TYPE hive_api_hivemind_blocks AS (
+    num INTEGER,
+    hash BYTEA,
+    prev BYTEA,
+    date TEXT,
+    tx_number BIGINT,
+    op_number BIGINT
+    );
+
+
+CREATE OR REPLACE FUNCTION enum_blocks4hivemind(in _first_block INT, in _last_block INT)
+RETURNS SETOF hive_api_hivemind_blocks
+AS
+$function$
+BEGIN
+RETURN QUERY
+SELECT
+    hb.num
+     , hb.hash
+     , hb.prev as prev
+     , to_char( created_at,  'YYYY-MM-DDThh24:MI:SS' ) as date
+        , ( SELECT COUNT(*) tx_number  FROM hive_transactions ht WHERE ht.block_num = hb.num ) as tx_number
+        , ( SELECT COUNT(*) op_number  FROM hive_operations ho WHERE ho.block_num = hb.num AND ( ho.op_type_id < 48 OR ho.op_type_id in (49, 51, 59, 70, 71) ) ) as op_number
+FROM hive_blocks hb
+WHERE hb.num >= _first_block AND hb.num < _last_block
+ORDER by hb.num
+;
+END
+$function$
+LANGUAGE plpgsql STABLE
+;
+
