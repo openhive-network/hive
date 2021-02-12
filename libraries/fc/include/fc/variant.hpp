@@ -47,6 +47,10 @@ namespace fc
    void to_variant( const blob& var,  variant& vo );
    void from_variant( const variant& var,  blob& vo );
 
+   struct strjson { fc::string data; };
+
+   void to_variant( const strjson& var,  variant& vo );
+   void from_variant( const variant& var,  strjson& vo );
 
    template<typename T, typename... Args> void to_variant( const boost::multi_index_container<T,Args...>& s, variant& v );
    template<typename T, typename... Args> void from_variant( const variant& v, boost::multi_index_container<T,Args...>& s );
@@ -198,7 +202,8 @@ namespace fc
            string_type = 5,
            array_type  = 6,
            object_type = 7,
-           blob_type   = 8
+           blob_type   = 8,
+           strjson_type= 9
         };
 
         /// Constructs a null_type variant
@@ -223,6 +228,7 @@ namespace fc
         variant( double val );
         variant( bool val );
         variant( blob val );
+        variant( strjson val );
         variant( fc::string val );
         variant( variant_object );
         variant( mutable_variant_object );
@@ -262,6 +268,7 @@ namespace fc
         bool                        is_object()const;
         bool                        is_array()const;
         bool                        is_blob()const;
+        bool                        is_strjson()const;
         /**
          *   int64, uint64, double,bool
          */
@@ -279,6 +286,10 @@ namespace fc
         blob&                       get_blob();
         const blob&                 get_blob()const;
         blob                        as_blob()const;
+
+        strjson&                    get_strjson();
+        const strjson&              get_strjson()const;
+        strjson                     as_strjson()const;
 
         /** Convert's double, ints, bools, etc to a string
          * @throw if get_type() == array_type | get_type() == object_type
@@ -656,5 +667,6 @@ namespace fc
 
 #include <fc/reflect/reflect.hpp>
 FC_REFLECT_TYPENAME( fc::variant )
-FC_REFLECT_ENUM( fc::variant::type_id, (null_type)(int64_type)(uint64_type)(double_type)(bool_type)(string_type)(array_type)(object_type)(blob_type) )
+FC_REFLECT_ENUM( fc::variant::type_id, (null_type)(int64_type)(uint64_type)(double_type)(bool_type)(string_type)(array_type)(object_type)(blob_type)(strjson_type) )
 FC_REFLECT( fc::blob, (data) );
+FC_REFLECT( fc::strjson, (data) );

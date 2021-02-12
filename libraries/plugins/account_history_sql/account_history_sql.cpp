@@ -112,7 +112,7 @@ namespace hive
           obj.virtual_op    = static_cast< uint32_t >( row[ cnt++ ].as< bool >() );
           obj.timestamp     = fc::time_point_sec::from_iso_string( row[ cnt++ ].as< std::string >() );
 
-          obj.op            = fc::json::from_string( row[ cnt++ ].as< std::string >() );
+          obj.op            = fc::strjson( { row[ cnt++ ].as< std::string >() } );
 
           obj.operation_id = row[ cnt++ ].as< uint64_t >();
       }

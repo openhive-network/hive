@@ -676,6 +676,9 @@ namespace fc
          case variant::blob_type:
               escape_string( v.as_string(), os );
               return;
+         case variant::strjson_type:
+              os << v.as_string();
+              return;
          case variant::array_type:
            {
               const variants&  a = v.get_array();

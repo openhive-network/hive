@@ -143,6 +143,12 @@ variant::variant( blob val )
    set_variant_type( this, blob_type );
 }
 
+variant::variant( strjson val )
+{
+   *reinterpret_cast<strjson**>(this)  = new strjson( fc::move(val) );
+   set_variant_type( this, strjson_type );
+}
+
 variant::variant( variant_object obj)
 {
    *reinterpret_cast<variant_object**>(this)  = new variant_object(fc::move(obj));
@@ -164,6 +170,7 @@ variant::variant( variants arr )
 typedef const variant_object* const_variant_object_ptr;
 typedef const variants* const_variants_ptr;
 typedef const blob*   const_blob_ptr;
+typedef const strjson* const_strjson_ptr;
 typedef const string* const_string_ptr;
 
 void variant::clear()
@@ -362,6 +369,11 @@ bool variant::is_blob()const
    return get_type() == blob_type;
 }
 
+bool variant::is_strjson()const
+{
+   return get_type() == strjson_type;
+}
+
 int64_t variant::as_int64()const
 {
    switch( get_type() )
@@ -472,6 +484,8 @@ string    variant::as_string()const
           if( get_blob().data.size() )
              return base64_encode( get_blob().data.data(), get_blob().data.size() ) + "=";
           return string();
+      case strjson_type:
+          return get_strjson().data;
       case null_type:
           return string();
       default:
@@ -528,6 +542,41 @@ blob variant::as_blob()const
    }
 }
 
+strjson&         variant::get_strjson()
+{
+  if( get_type() == strjson_type )
+     return **reinterpret_cast<strjson**>(this);
+
+  FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to StrJson", ("type",get_type()) );
+}
+
+const strjson&         variant::get_strjson()const
+{
+  if( get_type() == strjson_type )
+     return **reinterpret_cast<const const_strjson_ptr*>(this);
+
+  FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to StrJson", ("type",get_type()) );
+}
+
+strjson variant::as_strjson()const
+{
+   switch( get_type() )
+   {
+      case null_type: return strjson();
+      case strjson_type: return get_strjson();
+      case string_type:
+      {
+         const string& str = get_string();
+         if( str.size() == 0 ) return strjson();
+         return strjson( { str } );
+      }
+      case object_type:
+      case array_type:
+         FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to StrJson", ("type",get_type()) );
+      default:
+         return strjson( { string( (char*)&_data, (char*)&_data + sizeof(_data) ) } );
+   }
+}
 
 /// @throw if get_type() != array_type
 const variants&       variant::get_array()const
