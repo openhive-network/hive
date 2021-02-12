@@ -11,6 +11,10 @@
 #include <thread>
 #include <iostream>
 
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+
 // C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
 #include <pqxx/pqxx>
 
@@ -19,34 +23,73 @@ namespace hive { namespace utilities {
     void mylog(const char* msg);
     fc::string generate(std::function<void(fc::string &)> fun);
 
-    using postgres_connection_type = std::shared_ptr<pqxx::connection>;
+    using postgres_connection_type = std::shared_ptr<pqxx::lazyconnection>;
+
+    struct connection_data
+    {
+      postgres_connection_type conn;
+      uint32_t idx;
+    };
 
     class postgres_connection_pool
     {
       private:
 
-        fc::string connection_string;
+        std::queue<connection_data> connections;
 
-        //std::vector< postgres_connection_type > connections;
-        postgres_connection_type connection;
+        std::mutex mtx;
+        std::condition_variable cv;
+
+        void init( const fc::string& connection_string, uint32_t thread_pool_size )
+        {
+          ilog( "SQL Connection Pool: creating `${thread_pool_size}` connections", ("thread_pool_size", thread_pool_size) );
+          std::lock_guard<std::mutex> lock( mtx );
+
+          for( uint32_t i = 0; i < thread_pool_size; ++i )
+          {
+            connections.emplace( connection_data{ std::make_shared< pqxx::lazyconnection >( connection_string ), i } );
+          }
+          ilog( "SQL Connection Pool: connections have been created" );
+        }
 
       public:
 
-        postgres_connection_pool( const fc::string& _connection_string )
-          : connection_string( _connection_string )
+        postgres_connection_pool( const fc::string& connection_string, uint32_t thread_pool_size )
         {
+          init( connection_string, thread_pool_size );
         }
 
-        pqxx::connection& get_connection()
+        connection_data get_connection()
         {
-          if( !connection )
-            connection = std::make_shared< pqxx::connection >( connection_string );
+          std::unique_lock<std::mutex> lock( mtx );
 
-          return *connection;
+          //Formally a situation where all threads would be used, it's impossible
+          //because size of pool is dependent on `webserver-thread-pool-size`,
+          //so http layer doesn't allow to execute more threads than `webserver-thread-pool-size` value 
+          while( connections.empty() )
+          {
+              cv.wait( lock );
+          }
+
+          auto conn = connections.front();
+          connections.pop();
+
+          ilog( "SQL Connection Pool: connection `${idx}` has been chosen", ("idx", conn.idx) );
+          return conn;
         }
 
+        void restore_connection( connection_data conn )
+        {
+          std::unique_lock<std::mutex> lock( mtx );
+
+          connections.emplace( std::move( conn ) );
+
+          lock.unlock();
+
+          cv.notify_one();
+          ilog( "SQL Connection Pool: connection `${idx}` has been restored", ("idx", conn.idx) );
+        }
     };
-
 
     struct transaction_repr_t
     {
@@ -122,7 +165,7 @@ namespace hive { namespace utilities {
         }, sql.c_str());
       }
 
-      bool exec_query( pqxx::connection& conn, const fc::string &sql, pqxx::result *result = nullptr ) const
+      bool exec_query( pqxx::lazyconnection& conn, const fc::string &sql, pqxx::result *result = nullptr ) const
       {
         if (sql == fc::string())
           return true;

@@ -56,8 +56,8 @@ namespace hive
       class account_history_sql_plugin_impl
       {
         public:
-          account_history_sql_plugin_impl(const std::string &url)
-            : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ), connection{url}, pool( url )
+          account_history_sql_plugin_impl( const std::string &url, uint32_t thread_pool_size )
+            : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ), connection{url}, pool( url, thread_pool_size )
           {}
 
           virtual ~account_history_sql_plugin_impl()
@@ -92,12 +92,55 @@ namespace hive
           postgres_connection_holder connection;
           postgres_connection_pool pool;
 
+          bool execute_query( const std::string& query, pqxx::result& result );
           void fill_object( const pqxx::tuple& row, account_history_sql_object& obj, fc::optional<uint32_t>block_num );
           void create_filter_array( const std::vector<uint32_t>& v, std::string& filter_array );
           void gather_operations_from_filter( const fc::optional<uint64_t>& filter, std::vector<uint32_t>& v, bool high );
           void gather_virtual_operations_from_filter( const fc::optional<uint32_t>& filter, std::vector<uint32_t>& v );
 
       };//class account_history_sql_plugin_impl
+
+      bool account_history_sql_plugin_impl::execute_query( const std::string& query, pqxx::result& result )
+      {
+        auto conn = pool.get_connection();
+
+        FC_ASSERT( conn.conn, "A connection must exist" );
+
+        try
+        {
+          if( !connection.exec_query( *( conn.conn ), query, &result ) )
+          {
+            wlog( "Execution of query ${query} failed", ("query", query) );
+            return false;
+          }
+
+          pool.restore_connection( conn );
+
+          return true;
+        }
+        catch( const fc::exception& e )
+        {
+          elog( "Caught exception in AH SQL plugin: ${e}", ("e", e.to_detail_string() ) );
+          pool.restore_connection( conn );
+        }
+        catch( const boost::exception& e )
+        {
+          elog( "Caught exception in AH SQL plugin: ${e}", ("e", boost::diagnostic_information(e)) );
+          pool.restore_connection( conn );
+        }
+        catch( const std::exception& e )
+        {
+          elog( "Caught exception in AH SQL plugin: ${e}", ("e", e.what()));
+          pool.restore_connection( conn );
+        }
+        catch( ... )
+        {
+          wlog( "Caught exception in AH SQL plugin" );
+          pool.restore_connection( conn );
+        }
+
+        return false;
+      }
 
       void account_history_sql_plugin_impl::fill_object( const pqxx::tuple& row, account_history_sql_object& obj, fc::optional<uint32_t>block_num = fc::optional<uint32_t>() )
       {
@@ -172,11 +215,8 @@ namespace hive
 
         sql = "select * from ah_get_ops_in_block( " + std::to_string( block_num ) + ", " + virtual_mode + " ) order by _trx_in_block, _virtual_op;";
 
-        if( !connection.exec_query( pool.get_connection(), sql, &result ) )
-        {
-          wlog( "Execution of query ${sql} failed", ("sql", sql) );
+        if( !execute_query( sql, result ) )
           return;
-        }
 
         _time_logger.snapshot_time();
 
@@ -209,11 +249,8 @@ namespace hive
 
         sql = "select * from ah_get_trx( '"+ id.str() + "' )";
 
-        if( !connection.exec_query( pool.get_connection(), sql, &result ) )
-        {
-          wlog( "Execution of query ${sql} failed", ("sql", sql) );
+        if( !execute_query( sql, result ) )
           return;
-        }
 
         FC_ASSERT( result.size() == 1 , "The database returned ${db_size} records, but there is required only 1 record",
                                         ( "db_size", result.size() ) );
@@ -234,11 +271,8 @@ namespace hive
 
         sql = "select * from ah_get_ops_in_trx( " + std::to_string( sql_result.block_num ) + ", " + std::to_string( sql_result.transaction_num ) + " )";
 
-        if( !connection.exec_query( pool.get_connection(), sql, &result ) )
-        {
-          wlog( "Execution of query ${sql} failed", ("sql", sql) );
+        if( !execute_query( sql, result ) )
           return;
-        }
 
         _time_logger.snapshot_time();
 
@@ -280,11 +314,8 @@ namespace hive
 
         sql = "select * from ah_get_account_history(" + filter_array + ", '" + account + "', " + std::to_string( start ) + ", " + std::to_string( limit ) +" ) ORDER BY _block, _trx_in_block, _op_in_trx, _virtual_op DESC";
 
-        if( !connection.exec_query( pool.get_connection(), sql, &result ) )
-        {
-          wlog( "Execution of query ${sql} failed", ("sql", sql) );
+        if( !execute_query( sql, result ) )
           return;
-        }
 
         _time_logger.snapshot_time();
 
@@ -338,11 +369,8 @@ namespace hive
                 + std::to_string( _operation_begin ) + ", "
                 + std::to_string( _limit ) + " ) ORDER BY _block, _trx_in_block, _op_in_trx";
 
-        if( !connection.exec_query( pool.get_connection(), sql, &result ) )
-        {
-          wlog( "Execution of query ${sql} failed", ("sql", sql) );
+        if( !execute_query( sql, result ) )
           return;
-        }
 
         _time_logger.snapshot_time();
 
@@ -389,8 +417,11 @@ namespace hive
     void account_history_sql_plugin::plugin_initialize(const boost::program_options::variables_map &options)
     {
       ilog("Initializing SQL account history plugin");
-      FC_ASSERT(options.count("ahsql-url"), "`ahsql-url` is required");
-      my = std::make_unique<detail::account_history_sql_plugin_impl>(options["ahsql-url"].as<fc::string>());
+      FC_ASSERT( options.count("ahsql-url"), "`ahsql-url` is required" );
+
+      auto thread_pool_size = options.at("webserver-thread-pool-size").as<uint32_t>();
+
+      my = std::make_unique<detail::account_history_sql_plugin_impl>( options["ahsql-url"].as<fc::string>(), thread_pool_size );
     }
 
     void account_history_sql_plugin::plugin_startup()
