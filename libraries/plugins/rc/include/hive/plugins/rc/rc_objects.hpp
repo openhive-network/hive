@@ -85,7 +85,7 @@ typedef oid_ref< rc_account_object > rc_account_id_type;
   */
 class rc_delegation_pool_object : public object< rc_delegation_pool_object_type, rc_delegation_pool_object >
 {
-  CHAINBASE_OBJECT( rc_delegation_pool_object );
+  CHAINBASE_OBJECT( rc_delegation_pool_object, true );
   public:
     CHAINBASE_DEFAULT_CONSTRUCTOR( rc_delegation_pool_object )
 
@@ -124,7 +124,7 @@ typedef oid_ref< rc_delegation_from_account_object > rc_delegation_from_account_
   */
 class rc_indel_edge_object : public object< rc_indel_edge_object_type, rc_indel_edge_object >
 {
-  CHAINBASE_OBJECT( rc_indel_edge_object );
+  CHAINBASE_OBJECT( rc_indel_edge_object, true );
   public:
     CHAINBASE_DEFAULT_CONSTRUCTOR( rc_indel_edge_object )
 
