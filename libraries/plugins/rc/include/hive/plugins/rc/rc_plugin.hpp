@@ -51,12 +51,12 @@ class rc_plugin : public appbase::plugin< rc_plugin >
 namespace detail {
 
 void use_account_rcs(
- chain::database& db,
- const chain::dynamic_global_property_object& gpo,
- const chain::account_name_type& account_name,
- int64_t rc,
- rc_plugin_skip_flags skip,
- set< chain::account_name_type > whitelist
+  chain::database& db,
+  const chain::dynamic_global_property_object& gpo,
+  const chain::account_name_type& account_name,
+  int64_t rc,
+  rc_plugin_skip_flags skip,
+  set< chain::account_name_type > whitelist
 );
 
 }

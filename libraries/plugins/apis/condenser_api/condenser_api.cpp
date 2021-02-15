@@ -51,102 +51,102 @@ namespace detail
           0 );
       }
 
-         DECLARE_API_IMPL(
-            (get_version)
-            (get_trending_tags)
-            (get_state)
-            (get_active_witnesses)
-            (get_block_header)
-            (get_block)
-            (get_ops_in_block)
-            (get_config)
-            (get_dynamic_global_properties)
-            (get_chain_properties)
-            (get_current_median_history_price)
-            (get_feed_history)
-            (get_witness_schedule)
-            (get_hardfork_version)
-            (get_next_scheduled_hardfork)
-            (get_reward_fund)
-            (get_key_references)
-            (get_accounts)
-            (get_account_references)
-            (lookup_account_names)
-            (lookup_accounts)
-            (get_account_count)
-            (get_owner_history)
-            (get_recovery_request)
-            (get_escrow)
-            (get_withdraw_routes)
-            (get_savings_withdraw_from)
-            (get_savings_withdraw_to)
-            (get_vesting_delegations)
-            (get_expiring_vesting_delegations)
-            (get_witnesses)
-            (get_conversion_requests)
-            (get_witness_by_account)
-            (get_witnesses_by_vote)
-            (lookup_witness_accounts)
-            (get_witness_count)
-            (get_open_orders)
-            (get_transaction_hex)
-            (get_transaction)
-            (get_required_signatures)
-            (get_potential_signatures)
-            (verify_authority)
-            (verify_account_authority)
-            (get_active_votes)
-            (get_account_votes)
-            (get_content)
-            (get_content_replies)
-            (get_tags_used_by_author)
-            (get_post_discussions_by_payout)
-            (get_comment_discussions_by_payout)
-            (get_discussions_by_trending)
-            (get_discussions_by_created)
-            (get_discussions_by_active)
-            (get_discussions_by_cashout)
-            (get_discussions_by_votes)
-            (get_discussions_by_children)
-            (get_discussions_by_hot)
-            (get_discussions_by_feed)
-            (get_discussions_by_blog)
-            (get_discussions_by_comments)
-            (get_discussions_by_promoted)
-            (get_replies_by_last_update)
-            (get_discussions_by_author_before_date)
-            (get_account_history)
-            (broadcast_transaction)
-            (broadcast_transaction_synchronous)
-            (broadcast_block)
-            (get_followers)
-            (get_following)
-            (get_follow_count)
-            (get_feed_entries)
-            (get_feed)
-            (get_blog_entries)
-            (get_blog)
-            (get_account_reputations)
-            (get_reblogged_by)
-            (get_blog_authors)
-            (get_ticker)
-            (get_volume)
-            (get_order_book)
-            (get_trade_history)
-            (get_recent_trades)
-            (get_market_history)
-            (get_market_history_buckets)
-            (is_known_transaction)
+      DECLARE_API_IMPL(
+        (get_version)
+        (get_trending_tags)
+        (get_state)
+        (get_active_witnesses)
+        (get_block_header)
+        (get_block)
+        (get_ops_in_block)
+        (get_config)
+        (get_dynamic_global_properties)
+        (get_chain_properties)
+        (get_current_median_history_price)
+        (get_feed_history)
+        (get_witness_schedule)
+        (get_hardfork_version)
+        (get_next_scheduled_hardfork)
+        (get_reward_fund)
+        (get_key_references)
+        (get_accounts)
+        (get_account_references)
+        (lookup_account_names)
+        (lookup_accounts)
+        (get_account_count)
+        (get_owner_history)
+        (get_recovery_request)
+        (get_escrow)
+        (get_withdraw_routes)
+        (get_savings_withdraw_from)
+        (get_savings_withdraw_to)
+        (get_vesting_delegations)
+        (get_expiring_vesting_delegations)
+        (get_witnesses)
+        (get_conversion_requests)
+        (get_witness_by_account)
+        (get_witnesses_by_vote)
+        (lookup_witness_accounts)
+        (get_witness_count)
+        (get_open_orders)
+        (get_transaction_hex)
+        (get_transaction)
+        (get_required_signatures)
+        (get_potential_signatures)
+        (verify_authority)
+        (verify_account_authority)
+        (get_active_votes)
+        (get_account_votes)
+        (get_content)
+        (get_content_replies)
+        (get_tags_used_by_author)
+        (get_post_discussions_by_payout)
+        (get_comment_discussions_by_payout)
+        (get_discussions_by_trending)
+        (get_discussions_by_created)
+        (get_discussions_by_active)
+        (get_discussions_by_cashout)
+        (get_discussions_by_votes)
+        (get_discussions_by_children)
+        (get_discussions_by_hot)
+        (get_discussions_by_feed)
+        (get_discussions_by_blog)
+        (get_discussions_by_comments)
+        (get_discussions_by_promoted)
+        (get_replies_by_last_update)
+        (get_discussions_by_author_before_date)
+        (get_account_history)
+        (broadcast_transaction)
+        (broadcast_transaction_synchronous)
+        (broadcast_block)
+        (get_followers)
+        (get_following)
+        (get_follow_count)
+        (get_feed_entries)
+        (get_feed)
+        (get_blog_entries)
+        (get_blog)
+        (get_account_reputations)
+        (get_reblogged_by)
+        (get_blog_authors)
+        (get_ticker)
+        (get_volume)
+        (get_order_book)
+        (get_trade_history)
+        (get_recent_trades)
+        (get_market_history)
+        (get_market_history_buckets)
+        (is_known_transaction)
         (list_proposals)
-            (find_proposals)
-            (list_proposal_votes)
-            (find_rc_accounts)
-            (list_rc_accounts)
-            (find_rc_delegation_pools)
-            (list_rc_delegation_pools)
-            (find_rc_delegations)
-            (list_rc_delegations)
-         )
+        (find_proposals)
+        (list_proposal_votes)
+        (find_rc_accounts)
+        (list_rc_accounts)
+        (find_rc_delegation_pools)
+        (list_rc_delegation_pools)
+        (find_rc_delegations)
+        (list_rc_delegations)
+      )
 
       void on_post_apply_block( const signed_block& b );
 
@@ -165,9 +165,9 @@ namespace detail
       std::shared_ptr< reputation::reputation_api >                     _reputation_api;
       std::shared_ptr< market_history::market_history_api >             _market_history_api;
       std::shared_ptr< rc::rc_api >                                     _rc_api;
-         map< transaction_id_type, confirmation_callback >                 _callbacks;
-         map< time_point_sec, vector< transaction_id_type > >              _callback_expirations;
-         boost::signals2::connection                                       _on_post_apply_block_conn;
+         map< transaction_id_type, confirmation_callback >              _callbacks;
+         map< time_point_sec, vector< transaction_id_type > >           _callback_expirations;
+         boost::signals2::connection                                    _on_post_apply_block_conn;
 
       boost::mutex                                                      _mtx;
   };
@@ -337,7 +337,6 @@ namespace detail
     bool delayed_votes_active = true;
     if( args.size() == 2 )
       delayed_votes_active = args[1].as< bool >();
-
     const auto& idx  = _db.get_index< account_index >().indices().get< by_name >();
     const auto& vidx = _db.get_index< witness_vote_index >().indices().get< by_account_witness >();
     vector< extended_account > results;
@@ -1233,61 +1232,61 @@ namespace detail
     }
   } FC_LOG_AND_RETHROW() }
 
-   DEFINE_API_IMPL( condenser_api_impl, find_rc_accounts )
-   {
-      CHECK_ARG_SIZE( 1 )
-      FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
-      return _rc_api->find_rc_accounts( { args[0].as< vector< account_name_type > >() } ).rc_accounts;
-   }
+  DEFINE_API_IMPL( condenser_api_impl, find_rc_accounts )
+  {
+    CHECK_ARG_SIZE( 1 )
+    FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+    return _rc_api->find_rc_accounts( { args[0].as< vector< account_name_type > >() } ).rc_accounts;
+  }
 
-   DEFINE_API_IMPL( condenser_api_impl, list_rc_accounts )
-   {
-      FC_ASSERT( args.size() == 3, "Expected 3 arguments, was ${n}", ("n", args.size()) );
-      FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
-      rc::list_rc_accounts_args a;
-      a.start = args[0].as< account_name_type >();
-      a.limit = args[1].as< uint32_t >();
-      a.order = args[2].as< rc::sort_order_type >();
-      return _rc_api->list_rc_accounts( a ).rc_accounts;
-   }
+  DEFINE_API_IMPL( condenser_api_impl, list_rc_accounts )
+  {
+    FC_ASSERT( args.size() == 3, "Expected 3 arguments, was ${n}", ("n", args.size()) );
+    FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+    rc::list_rc_accounts_args a;
+    a.start = args[0].as< account_name_type >();
+    a.limit = args[1].as< uint32_t >();
+    a.order = args[2].as< rc::sort_order_type >();
+    return _rc_api->list_rc_accounts( a ).rc_accounts;
+  }
 
-   DEFINE_API_IMPL( condenser_api_impl, find_rc_delegation_pools )
-   {
-      CHECK_ARG_SIZE( 1 )
-      FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
-      return _rc_api->find_rc_delegation_pools( { args[0].as< vector< account_name_type > >() } ).rc_delegation_pools;
-   }
+  DEFINE_API_IMPL( condenser_api_impl, find_rc_delegation_pools )
+  {
+    CHECK_ARG_SIZE( 1 )
+    FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+    return _rc_api->find_rc_delegation_pools( { args[0].as< vector< account_name_type > >() } ).rc_delegation_pools;
+  }
 
-   DEFINE_API_IMPL( condenser_api_impl, list_rc_delegation_pools )
-   {
-      FC_ASSERT( args.size() == 3, "Expected 3 arguments, was ${n}", ("n", args.size()) );
-      FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
-      rc::list_rc_delegation_pools_args a;
-      a.start = args[0].as< account_name_type >();
-      a.limit = args[1].as< uint32_t >();
-      a.order = args[2].as< rc::sort_order_type >();
-      return _rc_api->list_rc_delegation_pools( a ).rc_delegation_pools;
-   }
+  DEFINE_API_IMPL( condenser_api_impl, list_rc_delegation_pools )
+  {
+    FC_ASSERT( args.size() == 3, "Expected 3 arguments, was ${n}", ("n", args.size()) );
+    FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+    rc::list_rc_delegation_pools_args a;
+    a.start = args[0].as< account_name_type >();
+    a.limit = args[1].as< uint32_t >();
+    a.order = args[2].as< rc::sort_order_type >();
+    return _rc_api->list_rc_delegation_pools( a ).rc_delegation_pools;
+  }
 
-   DEFINE_API_IMPL( condenser_api_impl, find_rc_delegations )
-   {
-      CHECK_ARG_SIZE( 1 )
-      FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
-      rc::find_rc_delegations_args a;
-      a.account = args[0].as< account_name_type >();
-      return _rc_api->find_rc_delegations( a ).rc_delegations;
-   }
+  DEFINE_API_IMPL( condenser_api_impl, find_rc_delegations )
+  {
+     CHECK_ARG_SIZE( 1 )
+     FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+     rc::find_rc_delegations_args a;
+     a.account = args[0].as< account_name_type >();
+     return _rc_api->find_rc_delegations( a ).rc_delegations;
+  }
 
-   DEFINE_API_IMPL( condenser_api_impl, list_rc_delegations )
-   {
-      FC_ASSERT( args.size() == 3, "Expected 3 arguments, was ${n}", ("n", args.size()) );
-      FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
-      rc::list_rc_delegations_args a;
-      a.start = args[0].as< vector< fc::variant > >();
-      a.limit = args[1].as< uint32_t >();
-      a.order = args[2].as< rc::sort_order_type >();
-      return _rc_api->list_rc_delegations( a ).rc_delegations;
-   }
+  DEFINE_API_IMPL( condenser_api_impl, list_rc_delegations )
+  {
+    FC_ASSERT( args.size() == 3, "Expected 3 arguments, was ${n}", ("n", args.size()) );
+    FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+    rc::list_rc_delegations_args a;
+    a.start = args[0].as< vector< fc::variant > >();
+    a.limit = args[1].as< uint32_t >();
+    a.order = args[2].as< rc::sort_order_type >();
+    return _rc_api->list_rc_delegations( a ).rc_delegations;
+  }
 
 } // detail
 
@@ -1396,11 +1395,11 @@ void condenser_api::api_startup()
     my->_market_history_api = market_history->api;
   }
 
-   auto rc = appbase::app().find_plugin< rc::rc_api_plugin >();
-   if( rc != nullptr )
-   {
-      my->_rc_api = rc->api;
-   }
+  auto rc = appbase::app().find_plugin< rc::rc_api_plugin >();
+  if( rc != nullptr )
+  {
+    my->_rc_api = rc->api;
+  }
 }
 
 DEFINE_LOCKLESS_APIS( condenser_api,
@@ -1495,12 +1494,12 @@ DEFINE_READ_APIS( condenser_api,
   (list_proposals)
   (list_proposal_votes)
   (find_proposals)
-   (find_rc_accounts)
-   (list_rc_accounts)
-   (find_rc_delegation_pools)
-   (list_rc_delegation_pools)
-   (find_rc_delegations)
-   (list_rc_delegations)
+  (find_rc_accounts)
+  (list_rc_accounts)
+  (find_rc_delegation_pools)
+  (list_rc_delegation_pools)
+  (find_rc_delegations)
+  (list_rc_delegations)
 )
 
 } } } // hive::plugins::condenser_api

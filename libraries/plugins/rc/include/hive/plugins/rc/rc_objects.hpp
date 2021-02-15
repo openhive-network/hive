@@ -174,100 +174,100 @@ struct by_account_symbol;
 struct by_pool;
 
 typedef multi_index_container<
-   rc_resource_param_object,
-   indexed_by<
-      ordered_unique< tag< by_id >, const_mem_fun< rc_resource_param_object, rc_resource_param_object::id_type, &rc_resource_param_object::get_id > >
-   >,
-   allocator< rc_resource_param_object >
+  rc_resource_param_object,
+  indexed_by<
+    ordered_unique< tag< by_id >, const_mem_fun< rc_resource_param_object, rc_resource_param_object::id_type, &rc_resource_param_object::get_id > >
+  >,
+  allocator< rc_resource_param_object >
 > rc_resource_param_index;
 
 typedef multi_index_container<
-   rc_pool_object,
-   indexed_by<
-      ordered_unique< tag< by_id >, const_mem_fun< rc_pool_object, rc_pool_object::id_type, &rc_pool_object::get_id > >
-   >,
-   allocator< rc_pool_object >
+  rc_pool_object,
+  indexed_by<
+    ordered_unique< tag< by_id >, const_mem_fun< rc_pool_object, rc_pool_object::id_type, &rc_pool_object::get_id > >
+  >,
+  allocator< rc_pool_object >
 > rc_pool_index;
 
 typedef multi_index_container<
-   rc_account_object,
-   indexed_by<
-      ordered_unique< tag< by_id >, const_mem_fun< rc_account_object, rc_account_object::id_type, &rc_account_object::get_id > >,
-      ordered_unique< tag< by_name >, member< rc_account_object, account_name_type, &rc_account_object::account > >
-   >,
-   allocator< rc_account_object >
+  rc_account_object,
+  indexed_by<
+    ordered_unique< tag< by_id >, const_mem_fun< rc_account_object, rc_account_object::id_type, &rc_account_object::get_id > >,
+    ordered_unique< tag< by_name >, member< rc_account_object, account_name_type, &rc_account_object::account > >
+  >,
+  allocator< rc_account_object >
 > rc_account_index;
 
 typedef multi_index_container<
-   rc_delegation_pool_object,
-   indexed_by<
-      ordered_unique< tag< by_id >, const_mem_fun< rc_delegation_pool_object, rc_delegation_pool_object::id_type, &rc_delegation_pool_object::get_id > >,
-      ordered_unique< tag< by_account_symbol >,
+  rc_delegation_pool_object,
+  indexed_by<
+    ordered_unique< tag< by_id >, const_mem_fun< rc_delegation_pool_object, rc_delegation_pool_object::id_type, &rc_delegation_pool_object::get_id > >,
+    ordered_unique< tag< by_account_symbol >,
       composite_key< rc_delegation_pool_object,
-            member< rc_delegation_pool_object, account_name_type, &rc_delegation_pool_object::account >,
-            member< rc_delegation_pool_object, asset_symbol_type, &rc_delegation_pool_object::asset_symbol >
-         >
+         member< rc_delegation_pool_object, account_name_type, &rc_delegation_pool_object::account >,
+         member< rc_delegation_pool_object, asset_symbol_type, &rc_delegation_pool_object::asset_symbol >
       >
-   >,
-   allocator< rc_delegation_pool_object >
+    >
+  >,
+  allocator< rc_delegation_pool_object >
 > rc_delegation_pool_index;
 
 typedef multi_index_container<
-   rc_delegation_from_account_object,
-   indexed_by<
-      ordered_unique< tag< by_id >, const_mem_fun< rc_delegation_from_account_object, rc_delegation_from_account_object::id_type, &rc_delegation_from_account_object::get_id > >,
-      ordered_unique< tag< by_account_symbol >,
-         composite_key< rc_delegation_from_account_object,
-            member< rc_delegation_from_account_object, account_name_type, &rc_delegation_from_account_object::account >,
-            const_mem_fun< rc_delegation_from_account_object, asset_symbol_type, &rc_delegation_from_account_object::get_asset_symbol >
-         >
+  rc_delegation_from_account_object,
+  indexed_by<
+    ordered_unique< tag< by_id >, const_mem_fun< rc_delegation_from_account_object, rc_delegation_from_account_object::id_type, &rc_delegation_from_account_object::get_id > >,
+    ordered_unique< tag< by_account_symbol >,
+      composite_key< rc_delegation_from_account_object,
+        member< rc_delegation_from_account_object, account_name_type, &rc_delegation_from_account_object::account >,
+        const_mem_fun< rc_delegation_from_account_object, asset_symbol_type, &rc_delegation_from_account_object::get_asset_symbol >
       >
-   >,
-   allocator< rc_delegation_from_account_object >
+    >
+  >,
+  allocator< rc_delegation_from_account_object >
 > rc_delegation_from_account_index;
 
 typedef multi_index_container<
-   rc_indel_edge_object,
-   indexed_by<
-      ordered_unique< tag< by_id >, const_mem_fun< rc_indel_edge_object, rc_indel_edge_object::id_type, &rc_indel_edge_object::get_id > >,
-      ordered_unique< tag< by_edge >,
-         composite_key< rc_indel_edge_object,
-            member< rc_indel_edge_object, account_name_type, &rc_indel_edge_object::from_account >,
-            const_mem_fun< rc_indel_edge_object, asset_symbol_type, &rc_indel_edge_object::get_asset_symbol >,
-            member< rc_indel_edge_object, account_name_type, &rc_indel_edge_object::to_pool >
-         >
-      >,
-      ordered_unique< tag< by_pool >,
-         composite_key< rc_indel_edge_object,
-            member< rc_indel_edge_object, account_name_type, &rc_indel_edge_object::to_pool >,
-            const_mem_fun< rc_indel_edge_object, asset_symbol_type, &rc_indel_edge_object::get_asset_symbol >,
-            member< rc_indel_edge_object, account_name_type, &rc_indel_edge_object::from_account >
-         >
+  rc_indel_edge_object,
+  indexed_by<
+    ordered_unique< tag< by_id >, const_mem_fun< rc_indel_edge_object, rc_indel_edge_object::id_type, &rc_indel_edge_object::get_id > >,
+    ordered_unique< tag< by_edge >,
+      composite_key< rc_indel_edge_object,
+        member< rc_indel_edge_object, account_name_type, &rc_indel_edge_object::from_account >,
+        const_mem_fun< rc_indel_edge_object, asset_symbol_type, &rc_indel_edge_object::get_asset_symbol >,
+        member< rc_indel_edge_object, account_name_type, &rc_indel_edge_object::to_pool >
       >
-   >,
-   allocator< rc_indel_edge_object >
+    >,
+    ordered_unique< tag< by_pool >,
+      composite_key< rc_indel_edge_object,
+        member< rc_indel_edge_object, account_name_type, &rc_indel_edge_object::to_pool >,
+        const_mem_fun< rc_indel_edge_object, asset_symbol_type, &rc_indel_edge_object::get_asset_symbol >,
+        member< rc_indel_edge_object, account_name_type, &rc_indel_edge_object::from_account >
+      >
+    >
+  >,
+  allocator< rc_indel_edge_object >
 > rc_indel_edge_index;
 
 typedef multi_index_container<
-   rc_outdel_drc_edge_object,
-   indexed_by<
-      ordered_unique< tag< by_id >, const_mem_fun< rc_outdel_drc_edge_object, rc_outdel_drc_edge_object::id_type, &rc_outdel_drc_edge_object::get_id > >,
-      ordered_unique< tag< by_edge >,
-         composite_key< rc_outdel_drc_edge_object,
-            member< rc_outdel_drc_edge_object, account_name_type, &rc_outdel_drc_edge_object::from_pool >,
-            member< rc_outdel_drc_edge_object, account_name_type, &rc_outdel_drc_edge_object::to_account >,
-            member< rc_outdel_drc_edge_object, asset_symbol_type, &rc_outdel_drc_edge_object::asset_symbol >
-         >
-      >,
-      ordered_unique< tag< by_pool >,
-         composite_key< rc_outdel_drc_edge_object,
-            member< rc_outdel_drc_edge_object, account_name_type, &rc_outdel_drc_edge_object::from_pool >,
-            member< rc_outdel_drc_edge_object, asset_symbol_type, &rc_outdel_drc_edge_object::asset_symbol >,
-            const_mem_fun< rc_outdel_drc_edge_object, rc_outdel_drc_edge_object::id_type, &rc_outdel_drc_edge_object::get_id >
-         >
+  rc_outdel_drc_edge_object,
+  indexed_by<
+    ordered_unique< tag< by_id >, const_mem_fun< rc_outdel_drc_edge_object, rc_outdel_drc_edge_object::id_type, &rc_outdel_drc_edge_object::get_id > >,
+    ordered_unique< tag< by_edge >,
+      composite_key< rc_outdel_drc_edge_object,
+        member< rc_outdel_drc_edge_object, account_name_type, &rc_outdel_drc_edge_object::from_pool >,
+        member< rc_outdel_drc_edge_object, account_name_type, &rc_outdel_drc_edge_object::to_account >,
+        member< rc_outdel_drc_edge_object, asset_symbol_type, &rc_outdel_drc_edge_object::asset_symbol >
       >
-   >,
-   allocator< rc_outdel_drc_edge_object >
+    >,
+    ordered_unique< tag< by_pool >,
+      composite_key< rc_outdel_drc_edge_object,
+        member< rc_outdel_drc_edge_object, account_name_type, &rc_outdel_drc_edge_object::from_pool >,
+        member< rc_outdel_drc_edge_object, asset_symbol_type, &rc_outdel_drc_edge_object::asset_symbol >,
+        const_mem_fun< rc_outdel_drc_edge_object, rc_outdel_drc_edge_object::id_type, &rc_outdel_drc_edge_object::get_id >
+      >
+    >
+  >,
+  allocator< rc_outdel_drc_edge_object >
 > rc_outdel_drc_edge_index;
 
 } } } // hive::plugins::rc
@@ -288,7 +288,7 @@ FC_REFLECT( hive::plugins::rc::rc_account_object,
   (out_delegations)
   (indel_slots)
   (last_max_rc)
-)
+  )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_account_object, hive::plugins::rc::rc_account_index )
 
 FC_REFLECT( hive::plugins::rc::rc_delegation_pool_object,
@@ -306,7 +306,6 @@ FC_REFLECT( hive::plugins::rc::rc_delegation_from_account_object,
             (amount)
           )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_delegation_from_account_object, hive::plugins::rc::rc_delegation_from_account_index )
-
 
 FC_REFLECT( hive::plugins::rc::rc_indel_edge_object,
   (id)

@@ -1438,12 +1438,12 @@ void database::notify_load_snapshot_data_supplement(const load_snapshot_suppleme
 
 void database::notify_pre_apply_custom_operation( const custom_operation_notification& note )
 {
-   HIVE_TRY_NOTIFY( _pre_apply_custom_operation_signal, note )
+  HIVE_TRY_NOTIFY( _pre_apply_custom_operation_signal, note )
 }
 
 void database::notify_post_apply_custom_operation( const custom_operation_notification& note )
 {
-   HIVE_TRY_NOTIFY( _post_apply_custom_operation_signal, note )
+  HIVE_TRY_NOTIFY( _post_apply_custom_operation_signal, note )
 }
 
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
@@ -4609,19 +4609,19 @@ boost::signals2::connection database::add_post_apply_transaction_handler( const 
 
 
 boost::signals2::connection database::add_pre_apply_custom_operation_handler ( const apply_custom_operation_handler_t& func,
-   const abstract_plugin& plugin, int32_t group )
+                                                                               const abstract_plugin& plugin, int32_t group )
 {
-   return connect_impl(_pre_apply_custom_operation_signal, func, plugin, group, "->custom");
+  return connect_impl(_pre_apply_custom_operation_signal, func, plugin, group, "->custom");
 }
 
 boost::signals2::connection database::add_post_apply_custom_operation_handler( const apply_custom_operation_handler_t& func,
-   const abstract_plugin& plugin, int32_t group )
+                                                                               const abstract_plugin& plugin, int32_t group )
 {
-   return connect_impl(_post_apply_custom_operation_signal, func, plugin, group, "<-custom");
+  return connect_impl(_post_apply_custom_operation_signal, func, plugin, group, "<-custom");
 }
 
 boost::signals2::connection database::add_pre_apply_block_handler( const apply_block_handler_t& func,
-  const abstract_plugin& plugin, int32_t group )
+                                                                   const abstract_plugin& plugin, int32_t group )
 {
   return connect_impl(_pre_apply_block_signal, func, plugin, group, "->block");
 }

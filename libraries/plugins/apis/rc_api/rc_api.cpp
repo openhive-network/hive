@@ -99,7 +99,7 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
 
     if( rc_account != nullptr )
       {
-         result.rc_accounts.emplace_back( *rc_account, _db );
+        result.rc_accounts.emplace_back( *rc_account, _db );
       }
   }
 
@@ -108,40 +108,40 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
 
 DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
 {
-   FC_ASSERT( args.limit <= RC_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( args.limit <= RC_API_SINGLE_QUERY_LIMIT );
 
-   list_rc_accounts_return result;
-   result.rc_accounts.reserve( args.limit );
+  list_rc_accounts_return result;
+  result.rc_accounts.reserve( args.limit );
 
-   switch( args.order )
-   {
-      case( sort_order_type::by_name ):
+  switch( args.order )
+  {
+    case( sort_order_type::by_name ):
+    {
+      auto& idx = _db.get_index< hive::plugins::rc::rc_account_index, hive::chain::by_name >();
+      auto itr = idx.lower_bound(  args.start.as< account_name_type >() );
+      auto filter = &filter_default< rc_account_object >;
+
+      auto end = idx.end();
+
+      while( result.rc_accounts.size() < args.limit && itr != end )
       {
-        auto& idx = _db.get_index< hive::plugins::rc::rc_account_index, hive::chain::by_name >();
-        auto itr = idx.lower_bound(  args.start.as< account_name_type >() );
-        auto filter = &filter_default< rc_account_object >;
+        if( filter( *itr ) )
+          result.rc_accounts.emplace_back( *itr, _db );
 
-        auto end = idx.end();
-
-        while( result.rc_accounts.size() < args.limit && itr != end )
-        {
-          if( filter( *itr ) )
-            result.rc_accounts.emplace_back( *itr, _db );
-
-          ++itr;
-        }
-        break;
+        ++itr;
       }
-      default:
-         FC_ASSERT( false, "Unknown or unsupported sort order" );
-   }
+      break;
+    }
+    default:
+      FC_ASSERT( false, "Unknown or unsupported sort order" );
+  }
 
-   return result;
+  return result;
 }
 
 
-  DEFINE_API_IMPL( rc_api_impl, find_rc_delegation_pools )
-  {
+DEFINE_API_IMPL( rc_api_impl, find_rc_delegation_pools )
+{
     FC_ASSERT( args.accounts.size() <= RC_API_SINGLE_QUERY_LIMIT );
 
     find_rc_delegation_pools_return result;
@@ -158,111 +158,109 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
     }
 
     return result;
-  }
+}
 
-  DEFINE_API_IMPL( rc_api_impl, list_rc_delegation_pools )
+DEFINE_API_IMPL( rc_api_impl, list_rc_delegation_pools )
+{
+  FC_ASSERT( args.limit <= RC_API_SINGLE_QUERY_LIMIT );
+
+  list_rc_delegation_pools_return result;
+  result.rc_delegation_pools.reserve( args.limit );
+
+  switch( args.order )
   {
-    FC_ASSERT( args.limit <= RC_API_SINGLE_QUERY_LIMIT );
-
-    list_rc_delegation_pools_return result;
-    result.rc_delegation_pools.reserve( args.limit );
-
-    switch( args.order )
+    case( sort_order_type::by_name ):
     {
-      case( sort_order_type::by_name ):
+      auto& idx  = _db.get_index< rc_delegation_pool_index, by_account_symbol >();
+      auto itr = idx.lower_bound( boost::make_tuple( args.start.as< account_name_type >(), VESTS_SYMBOL ));
+      auto filter = &filter_default< rc_delegation_pool_object >;
+      auto end = idx.end();
+
+      while( result.rc_delegation_pools.size() < args.limit && itr != end )
       {
-        auto& idx  = _db.get_index< rc_delegation_pool_index, by_account_symbol >();
-        auto itr = idx.lower_bound( boost::make_tuple( args.start.as< account_name_type >(), VESTS_SYMBOL ));
-        auto filter = &filter_default< rc_delegation_pool_object >;
-        auto end = idx.end();
-
-        while( result.rc_delegation_pools.size() < args.limit && itr != end )
-        {
-          if( filter( *itr ) )
-            result.rc_delegation_pools.push_back( itr->copy_chain_object() );
-          ++itr;
-        }
-        break;
+        if( filter( *itr ) )
+          result.rc_delegation_pools.push_back( itr->copy_chain_object() );
+        ++itr;
       }
-      default:
-        FC_ASSERT( false, "Unknown or unsupported sort order" );
+      break;
     }
-
-    return result;
+    default:
+      FC_ASSERT( false, "Unknown or unsupported sort order" );
   }
 
-  DEFINE_API_IMPL( rc_api_impl, find_rc_delegations )
+  return result;
+}
+
+DEFINE_API_IMPL( rc_api_impl, find_rc_delegations )
+{
+  static_assert( HIVE_RC_MAX_INDEL <= RC_API_SINGLE_QUERY_LIMIT, "HIVE_RC_MAX_INDEL exceeds RC_API_SINGLE_QUERY_LIMIT" );
+
+  find_rc_delegations_return result;
+  result.rc_delegations.reserve( HIVE_RC_MAX_INDEL );
+
+  const auto& del_idx = _db.get_index< rc_indel_edge_index, by_edge >();
+
+  for( auto itr = del_idx.lower_bound( args.account ); itr != del_idx.end() && itr->from_account == args.account; ++itr )
   {
-    static_assert( HIVE_RC_MAX_INDEL <= RC_API_SINGLE_QUERY_LIMIT, "HIVE_RC_MAX_INDEL exceeds RC_API_SINGLE_QUERY_LIMIT" );
-
-    find_rc_delegations_return result;
-    result.rc_delegations.reserve( HIVE_RC_MAX_INDEL );
-
-    const auto& del_idx = _db.get_index< rc_indel_edge_index, by_edge >();
-
-    for( auto itr = del_idx.lower_bound( args.account ); itr != del_idx.end() && itr->from_account == args.account; ++itr )
-    {
-        result.rc_delegations.push_back(itr->copy_chain_object());
-    }
-
-    return result;
+      result.rc_delegations.push_back(itr->copy_chain_object());
   }
 
-  DEFINE_API_IMPL( rc_api_impl, list_rc_delegations )
+  return result;
+}
+
+DEFINE_API_IMPL( rc_api_impl, list_rc_delegations )
+{
+  FC_ASSERT( args.limit <= RC_API_SINGLE_QUERY_LIMIT );
+
+  list_rc_delegations_return result;
+  result.rc_delegations.reserve( args.limit );
+
+  switch( args.order )
   {
-    FC_ASSERT( args.limit <= RC_API_SINGLE_QUERY_LIMIT );
-
-    list_rc_delegations_return result;
-    result.rc_delegations.reserve( args.limit );
-
-    switch( args.order )
+    case( sort_order_type::by_edge ):
     {
-      case( sort_order_type::by_edge ):
+      auto key = args.start.as< vector< fc::variant > >();
+      FC_ASSERT( key.size() == 2, "by_edge start requires 2 values. (from_account, pool_name)" );
+
+      auto& idx  = _db.get_index< rc_indel_edge_index, by_edge >();
+      auto itr = idx.lower_bound( boost::make_tuple( key[0].as< account_name_type >(), VESTS_SYMBOL, key[1].as< account_name_type >()));
+      auto filter = &filter_default< rc_indel_edge_api_object >;
+      auto end = idx.end();
+
+      while( result.rc_delegations.size() < args.limit && itr != end )
       {
-        auto key = args.start.as< vector< fc::variant > >();
-        FC_ASSERT( key.size() == 2, "by_edge start requires 2 values. (from_account, pool_name)" );
-
-        auto& idx  = _db.get_index< rc_indel_edge_index, by_edge >();
-        auto itr = idx.lower_bound( boost::make_tuple( key[0].as< account_name_type >(), VESTS_SYMBOL, key[1].as< account_name_type >()));
-        auto filter = &filter_default< rc_indel_edge_api_object >;
-        auto end = idx.end();
-
-        while( result.rc_delegations.size() < args.limit && itr != end )
-        {
-          if( filter( *itr ) )
-            result.rc_delegations.push_back(itr->copy_chain_object());
-          ++itr;
-        }
-
-        break;
+        if( filter( *itr ) )
+          result.rc_delegations.push_back(itr->copy_chain_object());
+        ++itr;
       }
-      case( sort_order_type::by_pool ):
-      {
-        auto key = args.start.as< vector< fc::variant > >();
-        FC_ASSERT( key.size() == 2, "by_edge start requires 2 values. (from_account, pool_name)" );
 
-        auto& idx  = _db.get_index< rc_indel_edge_index, by_pool >();
-        auto itr = idx.lower_bound(boost::make_tuple( key[0].as< account_name_type >(), VESTS_SYMBOL, key[1].as< account_name_type >() ));
-        auto filter = &filter_default< rc_indel_edge_api_object >;
-        auto end = idx.end();
-
-        while( result.rc_delegations.size() < args.limit && itr != end )
-        {
-          if( filter( *itr ) )
-            result.rc_delegations.push_back(itr->copy_chain_object());
-          ++itr;
-        }
-
-        break;
-      }
-      default:
-        FC_ASSERT( false, "Unknown or unsupported sort order" );
+      break;
     }
+    case( sort_order_type::by_pool ):
+    {
+      auto key = args.start.as< vector< fc::variant > >();
+      FC_ASSERT( key.size() == 2, "by_edge start requires 2 values. (from_account, pool_name)" );
 
-    return result;
+      auto& idx  = _db.get_index< rc_indel_edge_index, by_pool >();
+      auto itr = idx.lower_bound(boost::make_tuple( key[0].as< account_name_type >(), VESTS_SYMBOL, key[1].as< account_name_type >() ));
+      auto filter = &filter_default< rc_indel_edge_api_object >;
+      auto end = idx.end();
+
+      while( result.rc_delegations.size() < args.limit && itr != end )
+      {
+        if( filter( *itr ) )
+          result.rc_delegations.push_back(itr->copy_chain_object());
+        ++itr;
+      }
+
+      break;
+    }
+    default:
+      FC_ASSERT( false, "Unknown or unsupported sort order" );
   }
 
-
+  return result;
+}
 } // detail
 
 rc_api::rc_api(): my( new detail::rc_api_impl() )

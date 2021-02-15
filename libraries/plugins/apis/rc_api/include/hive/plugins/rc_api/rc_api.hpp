@@ -243,17 +243,17 @@ FC_REFLECT( hive::plugins::rc::find_rc_accounts_return,
   )
 
 FC_REFLECT( hive::plugins::rc::find_rc_delegation_pools_args,
-            (accounts)
-          )
+  (accounts)
+  )
 
 FC_REFLECT( hive::plugins::rc::find_rc_delegation_pools_return,
-            (rc_delegation_pools)
-          )
+  (rc_delegation_pools)
+  )
 
 FC_REFLECT( hive::plugins::rc::find_rc_delegations_args,
-            (account)
-          )
+  (account)
+  )
 
 FC_REFLECT( hive::plugins::rc::find_rc_delegations_return,
-            (rc_delegations)
-          )
+  (rc_delegations)
+  )

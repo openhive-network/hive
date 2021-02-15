@@ -1110,7 +1110,6 @@ DEFINE_API_IMPL(database_api_impl, get_comment_pending_payouts)
       comment_pending_payout_info& info = retval.cashout_infos.back();
       info.author = key.first;
       info.permlink = key.second;
-
       const comment_cashout_object* cc = _db.find_comment_cashout(*comment);
       if(cc != nullptr)
         info.cashout_info = api_commment_cashout_info(*cc, _db);
