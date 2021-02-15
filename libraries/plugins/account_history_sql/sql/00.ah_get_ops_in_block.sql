@@ -7,7 +7,7 @@ RETURNS TABLE(
     _virtual_op BOOLEAN,
     _timestamp TEXT,
     _value TEXT,
-    _operation_id BIGINT
+    _operation_id INT
 )
 AS
 $function$
@@ -31,7 +31,7 @@ BEGIN
       T.is_virtual _virtual_op,
       trim(both '"' from to_json(hb.created_at)::text) _timestamp,
       T.body _value,
-      T.id _operation_id
+      T.id::INT _operation_id
     FROM
       (
         --`abs` it's temporary, until position of operation is correctly saved
