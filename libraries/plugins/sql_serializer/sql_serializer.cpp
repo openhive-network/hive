@@ -883,7 +883,7 @@ namespace hive
               [this](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
               {
                 data_processing_status processingStatus;
-                pqxx::result data = tx.exec("SELECT max(id) _max FROM hive_operations;");
+                pqxx::result data = tx.exec("SELECT ho.id AS _max FROM hive_operations ho ORDER BY ho.id DESC LIMIT 1;");
                 if( !data.empty() )
                 {
                   FC_ASSERT( data.size() == 1 );
