@@ -832,15 +832,15 @@ namespace hive
 								wlog("Failed to execute query from ${schema_path}:\n${query}", ("schema_path", *path_to_schema)("query", q));
 					}
 
-					void init_database(bool freshDb)
-					{
-						connection.exec_single_in_transaction(PSQL::get_all_type_definitions());
+          void init_database(bool freshDb)
+          {
+            connection.exec_single_in_transaction(PSQL::get_all_type_definitions());
 
-            load_caches();
+            load_initial_db_data();
 
             if(freshDb)
               import_all_builtin_accounts();
-					}
+          }
 
           void import_all_builtin_accounts()
           {
@@ -869,14 +869,32 @@ namespace hive
             }
           }
 
-          void load_caches()
+          void load_initial_db_data()
           {
-            ilog("Loading account and permlink caches...");
+            ilog("Loading operation's last id and account/permlink caches...");
 
             auto* data = currently_caching_data.get();
             auto& account_cache = data->_account_cache;
 
             int next_account_id = 0;
+            op_sequence_id = 0;
+
+            data_processor sequence_loader(db_url, "Sequence loader",
+              [this](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
+              {
+                data_processing_status processingStatus;
+                pqxx::result data = tx.exec("SELECT max(id) _max FROM hive_operations;");
+                if( !data.empty() )
+                {
+                  FC_ASSERT( data.size() == 1 );
+                  const auto& record = data[0];
+                  op_sequence_id = record["_max"].as<int>();
+                }
+                return data_processing_status();
+              }
+            );
+
+            sequence_loader.trigger(data_processor::data_chunk_ptr());
 
             data_processor account_cache_loader(db_url, "Account cache loader",
               [&account_cache, &next_account_id](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
@@ -935,12 +953,13 @@ namespace hive
 
             account_cache_loader.join();
             permlink_cache_loader.join();
+            sequence_loader.join();
 
             data->_next_account_id = next_account_id + 1;
             data->_next_permlink_id = next_permlink_id + 1;
 
             ilog("Loaded ${a} cached accounts and ${p} cached permlink data", ("a", account_cache.size())("p", permlink_cache.size()));
-            ilog("Next account id: ${a},  next permlink id: ${p}.", ("a", data->_next_account_id)("p", data->_next_permlink_id));
+            ilog("Next account id: ${a},  next permlink id: ${p}, next operation id: ${s}.", ("a", data->_next_account_id)("p", data->_next_permlink_id)("s", op_sequence_id));
           }
 
           void trigger_data_flush(account_data_container_t& data);
