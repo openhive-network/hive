@@ -104,11 +104,14 @@ CREATE TABLE IF NOT EXISTS hive_account_operations
 DROP VIEW IF EXISTS account_operation_count_info_view CASCADE;
 CREATE OR REPLACE VIEW account_operation_count_info_view
 AS
-SELECT ha.id, ha.name,
-       COALESCE((SELECT COUNT(ao.account_op_seq_no) FROM hive_account_operations ao
-        WHERE ao.account_id = ha.id
-        GROUP BY ao.account_id), 0) as operation_count
+SELECT ha.id, ha.name, COALESCE( T.operation_count, 0 ) operation_count
 FROM hive_accounts ha
+LEFT JOIN
+(
+SELECT ao.account_id account_id, COUNT(ao.account_op_seq_no) operation_count
+FROM hive_account_operations ao
+GROUP BY ao.account_id
+)T ON ha.id = T.account_id
 ;
 
 -- SPECIAL VALUES
