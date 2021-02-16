@@ -213,6 +213,7 @@ get_ops_in_block_return account_history_api_sql_impl::_get_ops_in_block( const g
   _dataSource.get_ops_in_block( [ &result, &filter ] ( account_history_sql::account_history_sql_object& op )
                                 {
                                   api_operation_object temp( op, std::move( op.op ) );
+                                  temp.operation_id = op.operation_id;
                                   if( filter.valid() )
                                   {
                                     auto _op = op.get_op();
