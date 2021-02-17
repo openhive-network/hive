@@ -345,6 +345,17 @@ uint32_t database::reindex( const open_args& args )
 
     uint32_t _head_block_num = head_block_num();
 
+    auto _head = _block_log.head();
+    if( _head )
+    {
+      if( args.stop_replay_at == 0 )
+        note.max_block_number = _head->block_num();
+      else
+        note.max_block_number = std::min( args.stop_replay_at, _head->block_num() );
+    }
+    else
+      note.max_block_number = 0;//anyway later an assert is triggered
+
     note.force_replay = args.force_replay || _head_block_num == 0;
 
     HIVE_TRY_NOTIFY(_pre_reindex_signal, note);
@@ -352,7 +363,7 @@ uint32_t database::reindex( const open_args& args )
     _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
 
     auto start_time = fc::time_point::now();
-    HIVE_ASSERT( _block_log.head(), block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
+    HIVE_ASSERT( _head, block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
 
     ilog( "Replaying blocks..." );
 
