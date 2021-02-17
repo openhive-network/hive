@@ -27,10 +27,10 @@
 
 namespace hive
 {
-	namespace plugins
-	{
-		namespace sql_serializer
-		{
+  namespace plugins
+  {
+    namespace sql_serializer
+    {
     
     struct account_info
     {
@@ -50,95 +50,96 @@ namespace hive
 
     typedef std::vector<PSQL::processing_objects::process_block_t> block_data_container_t;
     typedef std::vector<PSQL::processing_objects::process_transaction_t> transaction_data_container_t;
+    typedef std::vector<PSQL::processing_objects::process_transaction_multisig_t> transaction_multisig_data_container_t;
     typedef std::vector<PSQL::processing_objects::process_operation_t> operation_data_container_t;
     typedef std::vector<PSQL::processing_objects::account_operation_data_t> account_operation_data_container_t;
 
 
-			using num_t = std::atomic<uint64_t>;
-			using duration_t = fc::microseconds;
-			using stat_time_t = std::atomic<duration_t>;
+      using num_t = std::atomic<uint64_t>;
+      using duration_t = fc::microseconds;
+      using stat_time_t = std::atomic<duration_t>;
 
-			inline void operator+=( stat_time_t& atom, const duration_t& dur )
-			{
-				atom.store( atom.load() + dur );
-			}
+      inline void operator+=( stat_time_t& atom, const duration_t& dur )
+      {
+        atom.store( atom.load() + dur );
+      }
 
-			struct stat_t
-			{
-				stat_time_t processing_time{ duration_t{0} };
-				num_t count{0};
-			};
+      struct stat_t
+      {
+        stat_time_t processing_time{ duration_t{0} };
+        num_t count{0};
+      };
 
-			struct ext_stat_t : public stat_t
-			{
-				stat_time_t flush_time{ duration_t{0} };
+      struct ext_stat_t : public stat_t
+      {
+        stat_time_t flush_time{ duration_t{0} };
 
-				void reset()
-				{
-					processing_time.store( duration_t{0} );
-					flush_time.store( duration_t{0} );
-					count.store(0);
-				}
-			};
+        void reset()
+        {
+          processing_time.store( duration_t{0} );
+          flush_time.store( duration_t{0} );
+          count.store(0);
+        }
+      };
 
-			struct stats_group
-			{
-				stat_time_t sending_cache_time{ duration_t{0} };
-				uint64_t workers_count{0};
-				uint64_t all_created_workers{0};
+      struct stats_group
+      {
+        stat_time_t sending_cache_time{ duration_t{0} };
+        uint64_t workers_count{0};
+        uint64_t all_created_workers{0};
 
-				ext_stat_t blocks{};
-				ext_stat_t transactions{};
-				ext_stat_t operations{};
+        ext_stat_t blocks{};
+        ext_stat_t transactions{};
+        ext_stat_t operations{};
 
-				void reset()
-				{
-					blocks.reset();
-					transactions.reset();
-					operations.reset();
+        void reset()
+        {
+          blocks.reset();
+          transactions.reset();
+          operations.reset();
 
-					sending_cache_time.store(duration_t{0});
-					workers_count = 0;
-					all_created_workers = 0;
-				}
-			};
+          sending_cache_time.store(duration_t{0});
+          workers_count = 0;
+          all_created_workers = 0;
+        }
+      };
 
-			inline std::ostream& operator<<(std::ostream& os, const stat_t& obj)
-			{
-				return os << obj.processing_time.load().count() << " us | count: " << obj.count.load();
-			}
+      inline std::ostream& operator<<(std::ostream& os, const stat_t& obj)
+      {
+        return os << obj.processing_time.load().count() << " us | count: " << obj.count.load();
+      }
 
-			inline std::ostream& operator<<(std::ostream& os, const ext_stat_t& obj)
-			{
-				return os << "flush time: " << obj.flush_time.load().count() << " us | processing time: " << obj.processing_time.load().count() << " us | count: " << obj.count.load();
-			}
+      inline std::ostream& operator<<(std::ostream& os, const ext_stat_t& obj)
+      {
+        return os << "flush time: " << obj.flush_time.load().count() << " us | processing time: " << obj.processing_time.load().count() << " us | count: " << obj.count.load();
+      }
 
-			inline std::ostream& operator<<(std::ostream& os, const stats_group& obj)
-			{
-				#define __shortcut( name ) << #name ": " << obj.name << std::endl
-				return os
-					<< "threads created since last info: " << obj.all_created_workers << std::endl
-					<< "currently working threads: " << obj.workers_count << std::endl
-					<< "sending accounts and permlinks took: " << obj.sending_cache_time.load().count() << " us"<< std::endl
-					__shortcut(blocks)
-					__shortcut(transactions)
-					__shortcut(operations)
-					;
-			}
+      inline std::ostream& operator<<(std::ostream& os, const stats_group& obj)
+      {
+        #define __shortcut( name ) << #name ": " << obj.name << std::endl
+        return os
+          << "threads created since last info: " << obj.all_created_workers << std::endl
+          << "currently working threads: " << obj.workers_count << std::endl
+          << "sending accounts and permlinks took: " << obj.sending_cache_time.load().count() << " us"<< std::endl
+          __shortcut(blocks)
+          __shortcut(transactions)
+          __shortcut(operations)
+          ;
+      }
 
-			using namespace hive::plugins::sql_serializer::PSQL;
+      using namespace hive::plugins::sql_serializer::PSQL;
 
-			constexpr size_t default_reservation_size{ 16'000u };
-			constexpr size_t max_tuples_count{ 1'000 };
-			constexpr size_t max_data_length{ 16*1024*1024 }; 
+      constexpr size_t default_reservation_size{ 16'000u };
+      constexpr size_t max_tuples_count{ 1'000 };
+      constexpr size_t max_data_length{ 16*1024*1024 }; 
 
-			inline void mylog(const char* msg)
-			{
-				std::cout << "[ " << std::this_thread::get_id() << " ] " << msg << std::endl;
-			}
+      inline void mylog(const char* msg)
+      {
+        std::cout << "[ " << std::this_thread::get_id() << " ] " << msg << std::endl;
+      }
 
-			namespace detail
-			{
+      namespace detail
+      {
 
       using data_processing_status = data_processor::data_processing_status;
       using data_chunk_ptr = data_processor::data_chunk_ptr;
@@ -156,6 +157,7 @@ namespace hive
 
         block_data_container_t blocks;
         transaction_data_container_t transactions;
+        transaction_multisig_data_container_t transactions_multisig;
         operation_data_container_t operations;
         account_operation_data_container_t account_operations;
 
@@ -167,6 +169,7 @@ namespace hive
           permlinks.reserve(reservation_size);
           blocks.reserve(reservation_size);
           transactions.reserve(reservation_size);
+          transactions_multisig.reserve(reservation_size);
           operations.reserve(reservation_size);
           account_operations.reserve(reservation_size);
         }
@@ -299,6 +302,14 @@ namespace hive
               std::string escape_raw(const fc::ripemd160& hash) const
               {
                 return '\'' + fc::to_hex(hash.data(), hash.data_size()) + '\'';
+              }
+
+              std::string escape_raw(const fc::optional<signature_type>& sign) const
+              {
+                if( sign.valid() )
+                  return '\'' + fc::to_hex(reinterpret_cast<const char*>( sign->begin() ), sign->size()) + '\'';
+                else
+                  return "NULL";
               }
 
               pqxx::work& _tx;
@@ -447,14 +458,35 @@ namespace hive
 
           std::string operator()(typename container_t::const_reference data) const
           {
-            return std::to_string(data.block_number) + "," + escape_raw(data.hash) + "," +
-              std::to_string(data.trx_in_block);
+            return std::to_string(data.block_number) + "," + escape_raw(data.hash) + "," + std::to_string(data.trx_in_block) + "," +
+                   std::to_string(data.ref_block_num) + "," + std::to_string(data.ref_block_prefix) + "," + escape_raw(data.signature);
           }
         };
       };
 
       const char hive_transactions::TABLE[] = "hive_transactions";
-      const char hive_transactions::COLS[] = "block_num, trx_hash, trx_in_block";
+      const char hive_transactions::COLS[] = "block_num, trx_hash, trx_in_block, ref_block_num, ref_block_prefix, signature";
+
+      struct hive_transactions_multisig
+      {
+        typedef transaction_multisig_data_container_t container_t;
+
+        static const char TABLE[];
+        static const char COLS[];
+
+        struct data2sql_tuple : public data2_sql_tuple_base
+        {
+          using data2_sql_tuple_base::data2_sql_tuple_base;
+
+          std::string operator()(typename container_t::const_reference data) const
+          {
+            return escape_raw(data.hash) + "," + escape_raw(data.signature);
+          }
+        };
+      };
+
+      const char hive_transactions_multisig::TABLE[] = "hive_transactions_multisig";
+      const char hive_transactions_multisig::COLS[] = "trx_hash, signature";
 
       struct hive_operations
       {
@@ -530,6 +562,7 @@ namespace hive
       using permlink_data_container_t_writer = table_data_writer<hive_permlink_data>;
       using block_data_container_t_writer = table_data_writer<hive_blocks>;
       using transaction_data_container_t_writer = table_data_writer<hive_transactions>;
+      using transaction_multisig_data_container_t_writer = table_data_writer<hive_transactions_multisig>;
       using operation_data_container_t_writer = table_data_writer<hive_operations>;
       using account_operation_data_container_t_writer = table_data_writer<hive_account_operations>;
 
@@ -625,221 +658,250 @@ namespace hive
 
 
 
-				struct transaction_repr_t
-				{
-					std::unique_ptr<pqxx::connection> _connection;
-					std::unique_ptr<pqxx::work> _transaction;
+        struct transaction_repr_t
+        {
+          std::unique_ptr<pqxx::connection> _connection;
+          std::unique_ptr<pqxx::work> _transaction;
 
-					transaction_repr_t() = default;
-					transaction_repr_t(pqxx::connection* _conn, pqxx::work* _trx) : _connection{_conn}, _transaction{_trx} {}
+          transaction_repr_t() = default;
+          transaction_repr_t(pqxx::connection* _conn, pqxx::work* _trx) : _connection{_conn}, _transaction{_trx} {}
 
-					auto get_escaping_charachter_methode() const
-					{
-						return [this](const char *val) -> fc::string { return std::move( this->_connection->esc(val) ); };
-					}
+          auto get_escaping_charachter_methode() const
+          {
+            return [this](const char *val) -> fc::string { return std::move( this->_connection->esc(val) ); };
+          }
 
-					auto get_raw_escaping_charachter_methode() const
-					{
-						return [this](const char *val, const size_t s) -> fc::string { 
-							pqxx::binarystring __tmp(val, s); 
-							return std::move( this->_transaction->esc_raw( __tmp.str() ) ); 
-						};
-					}
-				};
-				using transaction_t = std::unique_ptr<transaction_repr_t>;
+          auto get_raw_escaping_charachter_methode() const
+          {
+            return [this](const char *val, const size_t s) -> fc::string { 
+              pqxx::binarystring __tmp(val, s); 
+              return std::move( this->_transaction->esc_raw( __tmp.str() ) ); 
+            };
+          }
+        };
+        using transaction_t = std::unique_ptr<transaction_repr_t>;
 
-				struct postgress_connection_holder
-				{
-					explicit postgress_connection_holder(const fc::string &url)
-							: connection_string{url} {}
+        struct postgress_connection_holder
+        {
+          explicit postgress_connection_holder(const fc::string &url)
+              : connection_string{url} {}
 
-					transaction_t start_transaction() const
-					{
-						// mylog("started transaction");
-						pqxx::connection* _conn = new pqxx::connection{ this->connection_string };
-						pqxx::work *_trx = new pqxx::work{*_conn};
-						_trx->exec("SET CONSTRAINTS ALL DEFERRED;");
+          transaction_t start_transaction() const
+          {
+            // mylog("started transaction");
+            pqxx::connection* _conn = new pqxx::connection{ this->connection_string };
+            pqxx::work *_trx = new pqxx::work{*_conn};
+            _trx->exec("SET CONSTRAINTS ALL DEFERRED;");
 
-						return transaction_t{ new transaction_repr_t{ _conn, _trx } };
-					}
+            return transaction_t{ new transaction_repr_t{ _conn, _trx } };
+          }
 
-					bool exec_transaction(transaction_t &trx, const fc::string &sql) const
-					{
-						if (sql == fc::string())
-							return true;
-						return sql_safe_execution([&trx, &sql]() { trx->_transaction->exec(sql); }, sql.c_str());
-					}
+          bool exec_transaction(transaction_t &trx, const fc::string &sql) const
+          {
+            if (sql == fc::string())
+              return true;
+            return sql_safe_execution([&trx, &sql]() { trx->_transaction->exec(sql); }, sql.c_str());
+          }
 
-					bool commit_transaction(transaction_t &trx) const
-					{
-						// mylog("commiting");
-						return sql_safe_execution([&]() { trx->_transaction->commit(); }, "commit");
-					}
+          bool commit_transaction(transaction_t &trx) const
+          {
+            // mylog("commiting");
+            return sql_safe_execution([&]() { trx->_transaction->commit(); }, "commit");
+          }
 
-					void abort_transaction(transaction_t &trx) const
-					{
-						// mylog("aborting");
-						trx->_transaction->abort();
-					}
+          void abort_transaction(transaction_t &trx) const
+          {
+            // mylog("aborting");
+            trx->_transaction->abort();
+          }
 
-					bool exec_single_in_transaction(const fc::string &sql, pqxx::result *result = nullptr) const
-					{
-						if (sql == fc::string())
-							return true;
+          bool exec_single_in_transaction(const fc::string &sql, pqxx::result *result = nullptr) const
+          {
+            if (sql == fc::string())
+              return true;
 
-						return sql_safe_execution([&]() {
-							pqxx::connection conn{ this->connection_string };
-							pqxx::work trx{conn};
-							if (result)
-								*result = trx.exec(sql);
-							else
-								trx.exec(sql);
-							trx.commit();
-						}, sql.c_str());
-					}
+            return sql_safe_execution([&]() {
+              pqxx::connection conn{ this->connection_string };
+              pqxx::work trx{conn};
+              if (result)
+                *result = trx.exec(sql);
+              else
+                trx.exec(sql);
+              trx.commit();
+            }, sql.c_str());
+          }
 
-					template<typename T>
-					bool get_single_value(const fc::string& query, T& _return) const
-					{
-						pqxx::result res;
-						if(!exec_single_in_transaction( query, &res ) && res.empty() ) return false;
-						_return = res.at(0).at(0).as<T>();
-						return true;
-					}
+          template<typename T>
+          bool get_single_value(const fc::string& query, T& _return) const
+          {
+            pqxx::result res;
+            if(!exec_single_in_transaction( query, &res ) && res.empty() ) return false;
+            _return = res.at(0).at(0).as<T>();
+            return true;
+          }
 
-					template<typename T>
-					T get_single_value(const fc::string& query) const
-					{
-						T _return;
-						FC_ASSERT( get_single_value( query, _return ) );
-						return _return;
-					}
+          template<typename T>
+          T get_single_value(const fc::string& query) const
+          {
+            T _return;
+            FC_ASSERT( get_single_value( query, _return ) );
+            return _return;
+          }
 
-					uint get_max_transaction_count() const
-					{
-						// get maximum amount of connections defined by postgres and set half of it as max; minimum is 1
-						return std::max( 1u, get_single_value<uint>("SELECT setting::int / 2 FROM pg_settings WHERE  name = 'max_connections'") );
-					}
+          uint get_max_transaction_count() const
+          {
+            // get maximum amount of connections defined by postgres and set half of it as max; minimum is 1
+            return std::max( 1u, get_single_value<uint>("SELECT setting::int / 2 FROM pg_settings WHERE  name = 'max_connections'") );
+          }
 
-				private:
-					fc::string connection_string;
+        private:
+          fc::string connection_string;
 
-					bool sql_safe_execution(const std::function<void()> &f, const char* msg = nullptr) const
-					{
-						try
-						{
-							f();
-							return true;
-						}
-						catch (const pqxx::pqxx_exception &sql_e)
-						{
-							elog("Exception from postgress: ${e}", ("e", sql_e.base().what()));
-						}
-						catch (const std::exception &e)
-						{
-							elog("Exception: ${e}", ("e", e.what()));
-						}
-						catch (...)
-						{
-							elog("Unknown exception occured");
-						}
-						if(msg) std::cerr << "Error message: " << msg << std::endl;
-						return false;
-					}
-				};
+          bool sql_safe_execution(const std::function<void()> &f, const char* msg = nullptr) const
+          {
+            try
+            {
+              f();
+              return true;
+            }
+            catch (const pqxx::pqxx_exception &sql_e)
+            {
+              elog("Exception from postgress: ${e}", ("e", sql_e.base().what()));
+            }
+            catch (const std::exception &e)
+            {
+              elog("Exception: ${e}", ("e", e.what()));
+            }
+            catch (...)
+            {
+              elog("Unknown exception occured");
+            }
+            if(msg) std::cerr << "Error message: " << msg << std::endl;
+            return false;
+          }
+        };
 
-				class sql_serializer_plugin_impl
-				{
-				public:
-					sql_serializer_plugin_impl(const std::string &url) 
-						: connection{url},
+        class sql_serializer_plugin_impl
+        {
+        public:
+          sql_serializer_plugin_impl(const std::string &url) 
+            : connection{url},
               db_url{url}
-					{
+          {
             init_data_processors();
-					}
+          }
 
-					virtual ~sql_serializer_plugin_impl()
-					{
-						mylog("finishing from plugin impl destructor");
-						cleanup_sequence();
-					}
+          virtual ~sql_serializer_plugin_impl()
+          {
+            mylog("Serializer plugin is closing");
 
-					boost::signals2::connection _on_post_apply_operation_con;
-					boost::signals2::connection _on_post_apply_block_con;
-					boost::signals2::connection _on_starting_reindex;
-					boost::signals2::connection _on_finished_reindex;
-					boost::signals2::connection _on_live_sync_start;
+            cleanup_sequence();
+            switch_db_items( true/*mode*/ );
+
+            mylog("Serializer plugin has been closed");
+          }
+
+          boost::signals2::connection _on_post_apply_operation_con;
+          boost::signals2::connection _on_post_apply_block_con;
+          boost::signals2::connection _on_starting_reindex;
+          boost::signals2::connection _on_finished_reindex;
+          boost::signals2::connection _on_live_sync_start;
 
           std::unique_ptr<account_data_container_t_writer> _account_writer;
           std::unique_ptr<permlink_data_container_t_writer> _permlink_writer;
           std::unique_ptr<block_data_container_t_writer> _block_writer;
           std::unique_ptr<transaction_data_container_t_writer> _transaction_writer;
+          std::unique_ptr<transaction_multisig_data_container_t_writer> _transaction_multisig_writer;
           std::unique_ptr<operation_data_container_t_writer> _operation_writer;
           std::unique_ptr<account_operation_data_container_t_writer> _account_operation_writer;
 
-					postgress_connection_holder connection;
+          postgress_connection_holder connection;
           std::string db_url;
-					fc::optional<fc::string> path_to_schema;
-					bool set_index = false;
-					bool are_constraints_active = true;
+          fc::optional<fc::string> path_to_schema;
 
-					uint32_t blocks_per_commit = 1;
-					int64_t block_vops = 0;
+          uint32_t psql_block_number = 0;
+          uint32_t psql_index_threshold = 0;
+          uint32_t head_block_number = 0;
+
+          uint32_t blocks_per_commit = 1;
+          int64_t block_vops = 0;
           int64_t op_sequence_id = 0; 
 
-					cached_containter_t currently_caching_data;
-					stats_group current_stats;
+          cached_containter_t currently_caching_data;
+          stats_group current_stats;
 
-					void log_statistics()
-					{
-						std::cout << current_stats;
-						current_stats.reset();
-					}
-
-					void switch_indexes(const bool active) const
-					{
-						using up_and_down_index = std::pair<const char*, const char*>;
-						static const std::vector<up_and_down_index> indexes{{up_and_down_index
-							{"CREATE INDEX IF NOT EXISTS hive_operations_operation_types_index ON hive_operations (op_type_id);", "DROP INDEX IF EXISTS hive_operations_operation_types_index;"}
-							//,{"CREATE INDEX IF NOT EXISTS hive_operations_permlink_ids_index ON hive_operations USING GIN (permlink_ids gin__int_ops);", "DROP INDEX IF EXISTS hive_operations_permlink_ids_index;"}
-						}};
-
-						auto trx = connection.start_transaction();
-						for (const auto &idx : indexes)
-						{
-							const char * sql =  ( active ? idx.first : idx.second );
-							if(!connection.exec_transaction(trx, sql))
-							{
-								connection.abort_transaction(trx);
-								FC_ASSERT( false );
-							}
-						}
-						connection.commit_transaction(trx);
-					}
-
-					void recreate_db()
-					{
-						FC_ASSERT(path_to_schema.valid());
-						std::vector<fc::string> querries;
-						fc::string line;
-
-						std::ifstream file{*path_to_schema};
-						while(std::getline(file, line)) querries.push_back(line);
-						file.close();
-
-						for(const fc::string& q : querries) 
-							if(!connection.exec_single_in_transaction(q)) 
-								wlog("Failed to execute query from ${schema_path}:\n${query}", ("schema_path", *path_to_schema)("query", q));
-					}
-
-          void init_database(bool freshDb)
+          void log_statistics()
           {
+            std::cout << current_stats;
+            current_stats.reset();
+          }
+
+          void switch_db_items( bool mode, const std::string& function_name, const std::string& objects_name ) const
+          {
+            ilog("${mode} ${objects_name}...", ("objects_name", objects_name )("mode", ( mode ? "Creating" : "Dropping" ) ) );
+
+            data_processor db_proccessor(db_url, "DB processor",
+              [this, &mode, &function_name](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
+              {
+                std::string query = std::string( "SELECT " ) + function_name + "( " + ( mode ? "TRUE" : "FALSE" ) + " );";
+                ilog("The query: `${query}` has been executed...", ("query", query ) );
+                tx.exec( query );
+                return data_processing_status();
+              }
+            );
+
+            db_proccessor.trigger(data_processor::data_chunk_ptr());
+
+            db_proccessor.join();
+
+            ilog("The ${objects_name} have been ${mode}...", ("objects_name", objects_name )("mode", ( mode ? "created" : "dropped" ) ) );
+          }
+
+          void switch_db_items( bool mode ) const
+          {
+            switch_db_items( mode, "constraint_foreign_keys_updater", "foreign constraints" );
+
+            if( psql_block_number == 0 || ( psql_block_number + psql_index_threshold <= head_block_number ) )
+            {
+              ilog("Switching indexes and primary/unique constraints allowed: psql block number: `${pbn}` psql index threshold: `${pit}` head block number: `${hbn}` ...",
+              ("pbn", psql_block_number)("pit", psql_index_threshold)("hbn", head_block_number));
+
+              switch_db_items( mode, "index_updater", "indexes" );
+              switch_db_items( mode, "constraint_primary_unique_updater", "constraints" );
+            }
+            else
+            {
+              ilog("Switching indexes and primary/unique constraints rejected: psql block number: `${pbn}` psql index threshold: `${pit}` head block number: `${hbn}` ...",
+              ("pbn", psql_block_number)("pit", psql_index_threshold)("hbn", head_block_number));
+            }
+          }
+
+          void recreate_db()
+          {
+            FC_ASSERT(path_to_schema.valid());
+            std::vector<fc::string> querries;
+            fc::string line;
+
+            std::ifstream file{*path_to_schema};
+            while(std::getline(file, line)) querries.push_back(line);
+            file.close();
+
+            for(const fc::string& q : querries) 
+              if(!connection.exec_single_in_transaction(q)) 
+                wlog("Failed to execute query from ${schema_path}:\n${query}", ("schema_path", *path_to_schema)("query", q));
+          }
+
+          void init_database(bool freshDb, uint32_t max_block_number )
+          {
+            head_block_number = max_block_number;
             connection.exec_single_in_transaction(PSQL::get_all_type_definitions());
 
             load_initial_db_data();
 
             if(freshDb)
               import_all_builtin_accounts();
+
+            switch_db_items( false/*mode*/ );
           }
 
           void import_all_builtin_accounts()
@@ -878,6 +940,24 @@ namespace hive
 
             int next_account_id = 0;
             op_sequence_id = 0;
+            psql_block_number = 0;
+
+            data_processor block_loader(db_url, "Block loader",
+              [this](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
+              {
+                data_processing_status processingStatus;
+                pqxx::result data = tx.exec("SELECT hb.num AS _max_block FROM hive_blocks hb ORDER BY hb.num DESC LIMIT 1;");
+                if( !data.empty() )
+                {
+                  FC_ASSERT( data.size() == 1 );
+                  const auto& record = data[0];
+                  psql_block_number = record["_max_block"].as<uint64_t>();
+                }
+                return data_processing_status();
+              }
+            );
+
+            block_loader.trigger(data_processor::data_chunk_ptr());
 
             data_processor sequence_loader(db_url, "Sequence loader",
               [this](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
@@ -954,18 +1034,21 @@ namespace hive
             account_cache_loader.join();
             permlink_cache_loader.join();
             sequence_loader.join();
+            block_loader.join();
 
             data->_next_account_id = next_account_id + 1;
             data->_next_permlink_id = next_permlink_id + 1;
 
             ilog("Loaded ${a} cached accounts and ${p} cached permlink data", ("a", account_cache.size())("p", permlink_cache.size()));
-            ilog("Next account id: ${a},  next permlink id: ${p}, next operation id: ${s}.", ("a", data->_next_account_id)("p", data->_next_permlink_id)("s", op_sequence_id));
+            ilog("Next account id: ${a},  next permlink id: ${p}, next operation id: ${s} psql block number: ${pbn}.",
+              ("a", data->_next_account_id)("p", data->_next_permlink_id)("s", op_sequence_id + 1)("pbn", psql_block_number));
           }
 
           void trigger_data_flush(account_data_container_t& data);
           void trigger_data_flush(permlink_data_container_t& data);
           void trigger_data_flush(block_data_container_t& data);
           void trigger_data_flush(transaction_data_container_t& data);
+          void trigger_data_flush(transaction_multisig_data_container_t& data);
           void trigger_data_flush(operation_data_container_t& data);
           void trigger_data_flush(account_operation_data_container_t& data);
 
@@ -976,59 +1059,30 @@ namespace hive
             _permlink_writer->join();
             _block_writer->join();
             _transaction_writer->join();
+            _transaction_multisig_writer->join();
             _operation_writer->join();
             _account_operation_writer->join();
           }
 
-					void switch_constraints(const bool active)
-					{
-            if(are_constraints_active == active) return;
-						else are_constraints_active = active;
-
-						using up_and_down_constraint = std::pair<const char*, const char*>;
-						static const std::vector<up_and_down_constraint> constrainsts{{	up_and_down_constraint
-							{"ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num)","ALTER TABLE hive_transactions DROP CONSTRAINT IF EXISTS hive_transactions_fk_1"},
-							{"ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_1 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id)","ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_1"}
-						}};
-
-						auto trx = connection.start_transaction();
-						for (const auto &idx : constrainsts)
-						{
-							const char * sql =  ( active ? idx.first : idx.second );
-							if(!connection.exec_transaction(trx, sql))
-							{
-								connection.abort_transaction(trx);
-								FC_ASSERT( false );
-							}
-						}
-						connection.commit_transaction(trx);
-					}
-
-					void process_cached_data();
+          void process_cached_data();
           void collect_new_ids(const hive::protocol::operation& op);
           void collect_impacted_accounts(int64_t operation_id, const hive::protocol::operation& op);
 
-					void push_currently_cached_data(const size_t reserve)
-					{
-						process_cached_data();
-					}
+          void push_currently_cached_data(const size_t reserve)
+          {
+            process_cached_data();
+          }
 
-					void cleanup_sequence()
-					{
-						ilog("Flushing rest of data, wait a moment...");
-						push_currently_cached_data(0);
+          void cleanup_sequence()
+          {
+            ilog("Flushing rest of data, wait a moment...");
+
+            push_currently_cached_data(0);
             join_data_processors();
-						if(are_constraints_active) return;
-						if (set_index)
-						{
-							ilog("Creating indexes on user request");
-							//switch_indexes(true);
-						}
-						ilog("Enabling constraints...");
-						//switch_constraints(true);
-						ilog("Done, cleanup complete");
-					}
-				};
+
+            ilog("Done, cleanup complete");
+          }
+        };
 
 void sql_serializer_plugin_impl::init_data_processors()
 {
@@ -1037,6 +1091,7 @@ void sql_serializer_plugin_impl::init_data_processors()
   _permlink_writer = std::make_unique<permlink_data_container_t_writer>(db_url, mainCache, "Permlink data writer");
   _block_writer = std::make_unique<block_data_container_t_writer>(db_url, mainCache, "Block data writer");
   _transaction_writer = std::make_unique<transaction_data_container_t_writer>(db_url, mainCache, "Transaction data writer");
+  _transaction_multisig_writer = std::make_unique<transaction_multisig_data_container_t_writer>(db_url, mainCache, "Transaction multisig data writer");
   _operation_writer = std::make_unique<operation_data_container_t_writer>(db_url, mainCache, "Operation data writer");
   _account_operation_writer = std::make_unique<account_operation_data_container_t_writer>(db_url, mainCache, "Account operation data writer");
 }
@@ -1061,6 +1116,11 @@ void sql_serializer_plugin_impl::trigger_data_flush(transaction_data_container_t
   _transaction_writer->trigger(std::move(data));
 }
 
+void sql_serializer_plugin_impl::trigger_data_flush(transaction_multisig_data_container_t& data)
+{
+  _transaction_multisig_writer->trigger(std::move(data));
+}
+
 void sql_serializer_plugin_impl::trigger_data_flush(operation_data_container_t& data)
 {
   _operation_writer->trigger(std::move(data));
@@ -1082,6 +1142,7 @@ void sql_serializer_plugin_impl::process_cached_data()
   trigger_data_flush(data->permlinks);
   trigger_data_flush(data->blocks);
   trigger_data_flush(data->transactions);
+  trigger_data_flush(data->transactions_multisig);
   trigger_data_flush(data->operations);
   trigger_data_flush(data->account_operations);
 }
@@ -1121,145 +1182,166 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
   }
 }
 
-			} // namespace detail
+      } // namespace detail
 
-			sql_serializer_plugin::sql_serializer_plugin() {}
-			sql_serializer_plugin::~sql_serializer_plugin() {}
+      sql_serializer_plugin::sql_serializer_plugin() {}
+      sql_serializer_plugin::~sql_serializer_plugin() {}
 
-			void sql_serializer_plugin::set_program_options(options_description &cli, options_description &cfg)
-			{
-				cfg.add_options()("psql-url", boost::program_options::value<string>(), "postgres connection string")
+      void sql_serializer_plugin::set_program_options(options_description &cli, options_description &cfg)
+      {
+        cfg.add_options()("psql-url", boost::program_options::value<string>(), "postgres connection string")
                          ("psql-path-to-schema", "if set and replay starts from 0 block, executes script")
-                         ("psql-reindex-on-exit", "creates indexes and PK on exit");
-			}
+                         ("psql-index-threshold", bpo::value<uint32_t>()->default_value( 1'000'000 ), "indexes/constraints will be recreated if `psql_block_number + psql_index_threshold >= head_block_number`");
+      }
 
-			void sql_serializer_plugin::plugin_initialize(const boost::program_options::variables_map &options)
-			{
-				ilog("Initializing sql serializer plugin");
-				FC_ASSERT(options.count("psql-url"), "`psql-url` is required argument");
-				my = std::make_unique<detail::sql_serializer_plugin_impl>(options["psql-url"].as<fc::string>());
+      void sql_serializer_plugin::plugin_initialize(const boost::program_options::variables_map &options)
+      {
+        ilog("Initializing sql serializer plugin");
+        FC_ASSERT(options.count("psql-url"), "`psql-url` is required argument");
+        my = std::make_unique<detail::sql_serializer_plugin_impl>(options["psql-url"].as<fc::string>());
 
-				// settings
-				if (options.count("psql-path-to-schema"))
-					my->path_to_schema = options["psql-path-to-schema"].as<fc::string>();
-				my->set_index = options.count("psql-reindex-on-exit") > 0;
-				my->currently_caching_data = std::make_unique<detail::cached_data_t>( default_reservation_size );
+        // settings
+        if (options.count("psql-path-to-schema"))
+          my->path_to_schema = options["psql-path-to-schema"].as<fc::string>();
 
-				// signals
-				auto &db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
-				my->_on_post_apply_operation_con = db.add_post_apply_operation_handler([&](const operation_notification &note) { on_post_apply_operation(note); }, *this);
-				my->_on_post_apply_block_con = db.add_post_apply_block_handler([&](const block_notification &note) { on_post_apply_block(note); }, *this);
-				my->_on_finished_reindex = db.add_post_reindex_handler([&](const reindex_notification &note) { on_post_reindex(note); }, *this);
-				my->_on_starting_reindex = db.add_pre_reindex_handler([&](const reindex_notification &note) { on_pre_reindex(note); }, *this);
-				my->_on_live_sync_start = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().on_sync.connect(0, [&](){ on_live_sync_start(); });
+        my->psql_index_threshold = options["psql-index-threshold"].as<uint32_t>();
 
-				
-			}
+        my->currently_caching_data = std::make_unique<detail::cached_data_t>( default_reservation_size );
 
-			void sql_serializer_plugin::plugin_startup()
-			{
-				ilog("sql::plugin_startup()");
-			}
+        // signals
+        auto &db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
+        my->_on_post_apply_operation_con = db.add_post_apply_operation_handler([&](const operation_notification &note) { on_post_apply_operation(note); }, *this);
+        my->_on_post_apply_block_con = db.add_post_apply_block_handler([&](const block_notification &note) { on_post_apply_block(note); }, *this);
+        my->_on_finished_reindex = db.add_post_reindex_handler([&](const reindex_notification &note) { on_post_reindex(note); }, *this);
+        my->_on_starting_reindex = db.add_pre_reindex_handler([&](const reindex_notification &note) { on_pre_reindex(note); }, *this);
+        my->_on_live_sync_start = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().on_sync.connect(0, [&](){ on_live_sync_start(); });
 
-			void sql_serializer_plugin::plugin_shutdown()
-			{
-				ilog("Flushing left data...");
-				my->join_data_processors();
+        
+      }
 
-				if (my->_on_post_apply_block_con.connected())
-					chain::util::disconnect_signal(my->_on_post_apply_block_con);
-				if (my->_on_post_apply_operation_con.connected())
-					chain::util::disconnect_signal(my->_on_post_apply_operation_con);
-				if (my->_on_starting_reindex.connected())
-					chain::util::disconnect_signal(my->_on_starting_reindex);
-				if (my->_on_finished_reindex.connected())
-					chain::util::disconnect_signal(my->_on_finished_reindex);
-				if (my->_on_live_sync_start.connected())
-					chain::util::disconnect_signal(my->_on_live_sync_start);
+      void sql_serializer_plugin::plugin_startup()
+      {
+        ilog("sql::plugin_startup()");
+      }
 
-				ilog("Done. Connection closed");
-			}
+      void sql_serializer_plugin::plugin_shutdown()
+      {
+        ilog("Flushing left data...");
+        my->join_data_processors();
 
-			void sql_serializer_plugin::on_post_apply_operation(const operation_notification &note)
-			{
-				const bool is_virtual = hive::protocol::is_virtual_operation(note.op);
+        if (my->_on_post_apply_block_con.connected())
+          chain::util::disconnect_signal(my->_on_post_apply_block_con);
+        if (my->_on_post_apply_operation_con.connected())
+          chain::util::disconnect_signal(my->_on_post_apply_operation_con);
+        if (my->_on_starting_reindex.connected())
+          chain::util::disconnect_signal(my->_on_starting_reindex);
+        if (my->_on_finished_reindex.connected())
+          chain::util::disconnect_signal(my->_on_finished_reindex);
+        if (my->_on_live_sync_start.connected())
+          chain::util::disconnect_signal(my->_on_live_sync_start);
 
-				detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
-				
+        ilog("Done. Connection closed");
+      }
+
+      void sql_serializer_plugin::on_post_apply_operation(const operation_notification &note)
+      {
+        const bool is_virtual = hive::protocol::is_virtual_operation(note.op);
+
+        detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
+        
         ++my->op_sequence_id;
 
         if(is_virtual == false)
           my->collect_new_ids(note.op);
 
-				cdtf->operations.emplace_back(
+        cdtf->operations.emplace_back(
             my->op_sequence_id,
             note.block,
-						note.trx_in_block,
+            note.trx_in_block,
             is_virtual && note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx,
-						note.op
-					);
+            note.op
+          );
 
         my->collect_impacted_accounts(my->op_sequence_id, note.op);
 
-			}
+      }
 
-			void sql_serializer_plugin::on_post_apply_block(const block_notification &note)
-			{
-				for (int64_t i = 0; i < static_cast<int64_t>(note.block.transactions.size()); i++)
-					handle_transaction(note.block.transactions[i].id(), note.block_num, i);
+      void sql_serializer_plugin::on_post_apply_block(const block_notification &note)
+      {
+        handle_transactions( note.block.transactions, note.block_num );
 
-				my->currently_caching_data->total_size += note.block_id.data_size() + sizeof(note.block_num);
-				my->currently_caching_data->blocks.emplace_back(
-						note.block_id,
-						note.block_num,
-						note.block.timestamp,
+        my->currently_caching_data->total_size += note.block_id.data_size() + sizeof(note.block_num);
+        my->currently_caching_data->blocks.emplace_back(
+            note.block_id,
+            note.block_num,
+            note.block.timestamp,
             note.prev_block_id);
-				my->block_vops = 0;
+        my->block_vops = 0;
 
-				if( note.block_num % my->blocks_per_commit == 0 )
-				{
-					my->push_currently_cached_data(prereservation_size);
-				}
+        if( note.block_num % my->blocks_per_commit == 0 )
+        {
+          my->push_currently_cached_data(prereservation_size);
+        }
 
-				if( note.block_num % 100'000 == 0 )
-				{
-					my->log_statistics();
-				}
-			}
+        if( note.block_num % 100'000 == 0 )
+        {
+          my->log_statistics();
+        }
+      }
 
-			void sql_serializer_plugin::handle_transaction(const hive::protocol::transaction_id_type &hash, const int64_t block_num, const int64_t trx_in_block)
-			{
-				my->currently_caching_data->total_size += sizeof(hash) + sizeof(block_num) + sizeof(trx_in_block);
-				my->currently_caching_data->transactions.emplace_back(
-						hash,
-						block_num,
-						trx_in_block);
-			}
+      void sql_serializer_plugin::handle_transactions(const vector<hive::protocol::signed_transaction>& transactions, const int64_t block_num )
+      {
+        uint trx_in_block = 0;
 
-			void sql_serializer_plugin::on_pre_reindex(const reindex_notification &note)
-			{
-				//my->switch_constraints(false);
-        //my->switch_indexes(false);
-        my->set_index = true; /// Define indices once reindex done.
-				if(note.force_replay)
+        for( auto& trx : transactions )
+        {
+          auto hash = trx.id();
+          size_t sig_size = trx.signatures.size();
+
+          my->currently_caching_data->total_size += sizeof(hash) + sizeof(block_num) + sizeof(trx_in_block) +
+                                                    sizeof(trx.ref_block_num) + sizeof(trx.ref_block_prefix) + sizeof(trx.signatures[0]);
+
+          my->currently_caching_data->transactions.emplace_back(
+            hash,
+            block_num,
+            trx_in_block,
+            trx.ref_block_num,
+            trx.ref_block_prefix,
+            ( sig_size == 0 ) ? fc::optional<signature_type>() : fc::optional<signature_type>( trx.signatures[0] )
+          );
+
+          if( sig_size > 1 )
           {
-          //if(my->path_to_schema.valid())
-            //my->recreate_db();
+            auto itr = trx.signatures.begin() + 1;
+            while( itr != trx.signatures.end() )
+            {
+              my->currently_caching_data->transactions_multisig.emplace_back(
+                hash,
+                *itr
+              );
+              ++itr;
+            }
           }
-        
-        my->init_database(note.force_replay);
-				my->blocks_per_commit = 1'000;
-			}
 
-			void sql_serializer_plugin::on_post_reindex(const reindex_notification &)
-			{
-				mylog("finishing from post reindex");
-				my->cleanup_sequence();
-				my->blocks_per_commit = 1;
-			}
-			
-			void sql_serializer_plugin::on_live_sync_start() {}
+          trx_in_block++;
+        }
+      }
 
-		} // namespace sql_serializer
-	}		// namespace plugins
+      void sql_serializer_plugin::on_pre_reindex(const reindex_notification &note)
+      {
+        my->init_database(note.force_replay, note.max_block_number );
+        my->blocks_per_commit = 1'000;
+      }
+
+      void sql_serializer_plugin::on_post_reindex(const reindex_notification &)
+      {
+        mylog("finishing from post reindex");
+        my->cleanup_sequence();
+        my->blocks_per_commit = 1;
+      }
+      
+      void sql_serializer_plugin::on_live_sync_start() {}
+
+    } // namespace sql_serializer
+  }    // namespace plugins
 } // namespace hive

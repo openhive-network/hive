@@ -1,78 +1,39 @@
--- -- Create Database
--- CREATE DATABASE block_log;
-
--- -- Backups
--- -- Delete backup
--- DROP DATABASE IF EXISTS block_log_back;
--- -- Create backup
--- CREATE DATABASE block_log_back WITH TEMPLATE block_log;
--- -- Restore backup
--- DROP DATABASE block_log;
--- CREATE DATABASE block_log WITH TEMPLATE block_log_back;
-
--- -- Reset
--- -- NOTE:
--- -- This section may require additional rights
--- -- If user, that is in connection string doesn't have proper acces rights
--- -- Execute theese commands with proper rights, comment 
--- -- following 3 lines, and uncomment theese under `Drop tables`
 DROP SCHEMA public CASCADE;
 CREATE SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS intarray;
-
--- -- Check current status
--- SELECT COUNT(*) FROM hive_blocks;
--- SELECT COUNT(*) FROM hive_transactions;
--- SELECT COUNT(*) FROM hive_operations;
--- SELECT COUNT(*) FROM hive_virtual_operations;
--- SELECT COUNT(*) FROM hive_accounts;
--- SELECT COUNT(*) FROM hive_operation_types;
--- SELECT COUNT(*) FROM hive_permlink_data;
-
--- -- Drop tables
--- DROP TABLE IF EXISTS hive_blocks CASCADE;
--- DROP TABLE IF EXISTS hive_transactions CASCADE;
--- DROP TABLE IF EXISTS hive_operations CASCADE;
--- DROP TABLE IF EXISTS hive_virtual_operations CASCADE;
--- DROP TABLE IF EXISTS hive_accounts CASCADE;
--- DROP TABLE IF EXISTS hive_operation_types CASCADE;
--- DROP TABLE IF EXISTS hive_permlink_data CASCADE;
-
--- -- Core Tables
 
 CREATE TABLE IF NOT EXISTS hive_blocks (
   "num" integer NOT NULL,
   "hash" bytea NOT NULL,
   "prev" bytea NOT NULL,
   "created_at" timestamp without time zone NOT NULL
-  --,CONSTRAINT hive_blocks_pkey PRIMARY KEY ("num"),
-  --CONSTRAINT hive_blocks_uniq UNIQUE ("hash")
 );
 
 CREATE TABLE IF NOT EXISTS hive_transactions (
   "block_num" integer NOT NULL,
   "trx_in_block" smallint NOT NULL,
-  "trx_hash" bytea NOT NULL
-  --,CONSTRAINT hive_transactions_pkey PRIMARY KEY ("block_num", "trx_in_block"),
-  --CONSTRAINT hive_transactions_uniq_1 UNIQUE ("trx_hash")
+  "trx_hash" bytea NOT NULL,
+  ref_block_num integer NOT NULL,
+  ref_block_prefix bigint NOT NULL,
+  signature bytea DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS hive_transactions_multisig (
+  "trx_hash" bytea NOT NULL,
+  signature bytea NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS hive_operation_types (
-  -- This "id", due to filling logic is not autoincrement, but is set by `fc::static_variant::which()` (a.k.a.. operation )
   "id" smallint NOT NULL,
   "name" text NOT NULL,
   "is_virtual" boolean NOT NULL
-  --,CONSTRAINT hive_operation_types_pkey PRIMARY KEY ("id")
 );
 
 CREATE TABLE IF NOT EXISTS hive_permlink_data (
   id INTEGER NOT NULL,
   permlink varchar(255) NOT NULL
-  --,CONSTRAINT hive_permlink_data_pkey PRIMARY KEY ("id"),
-  --CONSTRAINT hive_permlink_data_uniq UNIQUE ("permlink")
 );
 
---- Stores all operation definitions (regular like also virtual ones).
 CREATE TABLE IF NOT EXISTS hive_operations (
   id bigint not null,
   block_num integer NOT NULL,
@@ -80,15 +41,11 @@ CREATE TABLE IF NOT EXISTS hive_operations (
   op_pos integer NOT NULL,
   op_type_id smallint NOT NULL,
   body text DEFAULT NULL
-  --,permlink_ids int[]
-  --,CONSTRAINT hive_operations_pkey PRIMARY KEY (id) --("block_num", "trx_in_block", "op_pos")
 );
 
 CREATE TABLE IF NOT EXISTS hive_accounts (
   id INTEGER NOT NULL,
   name VARCHAR(16) NOT NULL
-  --,CONSTRAINT hive_accounts_pkey PRIMARY KEY ("id"),
-  --CONSTRAINT hive_accounts_uniq UNIQUE ("name")
 );
 
 CREATE TABLE IF NOT EXISTS hive_account_operations
@@ -114,10 +71,7 @@ GROUP BY ao.account_id
 )T ON ha.id = T.account_id
 ;
 
--- SPECIAL VALUES
--- This is permlink referenced by empty permlink arrays
 INSERT INTO hive_permlink_data VALUES(0, '');
--- This is account referenced by empty participants arrays
 INSERT INTO hive_accounts VALUES(0, '');
 
 DROP TYPE IF EXISTS hive_api_operation CASCADE;
@@ -142,14 +96,6 @@ BEGIN
                OR ho.op_type_id in (49, 51, 59, 70, 71)
               )
     ORDER BY ho.id
-    /*
-select id from hive_operation_types where is_virtual 
-and name in ('hive::protocol::author_reward_operation',
-'hive::protocol::comment_reward_operation',
-'hive::protocol::effective_comment_vote_operation',
-'hive::protocol::comment_payout_update_operation',
-'hive::protocol::ineffective_delete_comment_operation')
-*/
 ; 
 
 END
@@ -190,3 +136,109 @@ $function$
 LANGUAGE plpgsql STABLE
 ;
 
+DROP FUNCTION IF EXISTS index_updater;
+CREATE OR REPLACE FUNCTION index_updater(in _mode BOOLEAN)
+RETURNS VOID
+AS
+$function$
+BEGIN
+
+----------------dropping all indexes----------------
+  DROP INDEX IF EXISTS hive_account_operations_account_op_seq_no_id_idx;
+  DROP INDEX IF EXISTS hive_accounts_name_idx;
+  DROP INDEX IF EXISTS hive_operations_block_num_type_trx_in_block_idx;
+  DROP INDEX IF EXISTS hive_transactions_block_num_trx_in_block_idx;
+
+  IF _mode = True THEN
+----------------creating all indexes----------------
+    CREATE INDEX IF NOT EXISTS hive_account_operations_account_op_seq_no_id_idx ON hive_account_operations(account_id, account_op_seq_no, operation_id);
+    CREATE INDEX IF NOT EXISTS hive_accounts_name_idx ON hive_accounts(name);
+    CREATE INDEX IF NOT EXISTS hive_operations_block_num_type_trx_in_block_idx ON hive_operations (block_num, op_type_id, trx_in_block);
+    CREATE INDEX IF NOT EXISTS hive_transactions_block_num_trx_in_block_idx ON hive_transactions (block_num, trx_in_block);
+
+  END IF;
+
+END
+$function$
+LANGUAGE plpgsql VOLATILE
+;
+
+DROP FUNCTION IF EXISTS constraint_primary_unique_updater;
+CREATE OR REPLACE FUNCTION constraint_primary_unique_updater(in _mode BOOLEAN)
+RETURNS VOID
+AS
+$function$
+BEGIN
+
+----------------dropping all primary keys----------------
+ALTER TABLE hive_accounts DROP CONSTRAINT IF EXISTS hive_accounts_pkey;
+ALTER TABLE hive_blocks DROP CONSTRAINT IF EXISTS hive_blocks_pkey;
+ALTER TABLE hive_operation_types DROP CONSTRAINT IF EXISTS hive_operation_types_pkey;
+ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_pkey;
+ALTER TABLE hive_permlink_data DROP CONSTRAINT IF EXISTS hive_permlink_data_pkey;
+ALTER TABLE hive_transactions DROP CONSTRAINT IF EXISTS hive_transactions_pkey;
+
+----------------dropping others constraints----------------
+ALTER TABLE hive_accounts DROP CONSTRAINT IF EXISTS hive_accounts_uniq;
+ALTER TABLE hive_blocks DROP CONSTRAINT IF EXISTS hive_blocks_uniq;
+ALTER TABLE hive_operation_types DROP CONSTRAINT IF EXISTS hive_operation_types_uniq;
+ALTER TABLE hive_permlink_data DROP CONSTRAINT IF EXISTS hive_permlink_data_uniq;
+
+
+IF _mode = True THEN
+----------------creating all primary keys----------------
+ALTER TABLE hive_accounts ADD CONSTRAINT hive_accounts_pkey PRIMARY KEY ( id );
+ALTER TABLE hive_blocks ADD CONSTRAINT hive_blocks_pkey PRIMARY KEY ( num );
+ALTER TABLE hive_operation_types ADD CONSTRAINT hive_operation_types_pkey PRIMARY KEY ( id );
+ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_pkey PRIMARY KEY ( id );
+ALTER TABLE hive_permlink_data ADD CONSTRAINT hive_permlink_data_pkey PRIMARY KEY ( id );
+ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_pkey PRIMARY KEY ( trx_hash );
+
+----------------creating others constraints----------------
+ALTER TABLE hive_accounts ADD CONSTRAINT hive_accounts_uniq UNIQUE ( name );
+ALTER TABLE hive_blocks ADD CONSTRAINT hive_blocks_uniq UNIQUE ( hash );
+ALTER TABLE hive_operation_types ADD CONSTRAINT hive_operation_types_uniq UNIQUE ( name );
+ALTER TABLE hive_permlink_data ADD CONSTRAINT hive_permlink_data_uniq UNIQUE ( permlink );
+
+END IF;
+
+END
+$function$
+LANGUAGE plpgsql VOLATILE
+;
+
+DROP FUNCTION IF EXISTS constraint_foreign_keys_updater;
+CREATE OR REPLACE FUNCTION constraint_foreign_keys_updater(in _mode BOOLEAN)
+RETURNS VOID
+AS
+$function$
+BEGIN
+
+----------------dropping all foreign keys----------------
+ALTER TABLE hive_account_operations DROP CONSTRAINT IF EXISTS hive_account_operations_fk_1;
+ALTER TABLE hive_account_operations DROP CONSTRAINT IF EXISTS hive_account_operations_fk_2;
+
+ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_1;
+ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_2;
+
+ALTER TABLE hive_transactions DROP CONSTRAINT IF EXISTS hive_transactions_fk_1;
+ALTER TABLE hive_transactions_multisig DROP CONSTRAINT IF EXISTS hive_transactions_multisig_fk_1;
+
+IF _mode = True THEN
+----------------creating all foreign keys----------------
+ALTER TABLE hive_account_operations ADD CONSTRAINT hive_account_operations_fk_1 FOREIGN KEY (account_id) REFERENCES hive_accounts (id);
+ALTER TABLE hive_account_operations ADD CONSTRAINT hive_account_operations_fk_2 FOREIGN KEY (operation_id) REFERENCES hive_operations (id);
+
+ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);
+ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_2 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id);
+
+ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);
+
+ALTER TABLE hive_transactions_multisig ADD CONSTRAINT hive_transactions_multisig_fk_1 FOREIGN KEY (trx_hash) REFERENCES hive_transactions (trx_hash);
+
+END IF;
+
+END
+$function$
+LANGUAGE plpgsql VOLATILE
+;
