@@ -40,11 +40,12 @@ class proposal_object : public object< proposal_object_type, proposal_object >
     //permlink (a link to a page describing the work proposal in depth, generally this will probably be to a Hive post).
     shared_string permlink;
 
-    //This will be calculate every maintenance period
+    //this will be calculate every maintenance period
     uint64_t total_votes = 0;
 
     //cutoff amount (the amount of HBD that will trigger the deletion of the proposal)
     asset cutoff_amount = asset( 0, HBD_SYMBOL );
+    asset total_paid = asset( 0, HBD_SYMBOL );
 
     bool removed = false;
 
