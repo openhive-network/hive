@@ -3372,7 +3372,7 @@ void database::account_recovery_processing()
   {
     auto& account = get_account(change_req->account_to_recover);
     const account_name_type old_recover_account = account.recovery_account;
-    modify( get_account( change_req->account_to_recover ), [&]( account_object& a )
+    modify( account, [&]( account_object& a )
     {
       a.recovery_account = change_req->recovery_account;
     });
