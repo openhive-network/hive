@@ -133,11 +133,6 @@ namespace hive
       constexpr size_t max_tuples_count{ 1'000 };
       constexpr size_t max_data_length{ 16*1024*1024 }; 
 
-      inline void mylog(const char* msg)
-      {
-        std::cout << "[ " << std::this_thread::get_id() << " ] " << msg << std::endl;
-      }
-
       namespace detail
       {
 
@@ -176,24 +171,18 @@ namespace hive
 
         ~cached_data_t()
         {
-          log_size("destructor");
+          ilog(
+          "accounts: ${a} permlinks: ${p} blocks: ${b} trx: ${t} operations: ${o} account_operation_data: ${aod} total size: ${ts}...",
+          ("a", accounts.size() )
+          ("p", permlinks.size() )
+          ("b", blocks.size() )
+          ("t", transactions.size() )
+          ("o", operations.size() )
+          ("aod", account_operations.size() )
+          ("ts", total_size )
+          );
         }
 
-        void log_size(const fc::string& msg = "size")
-        {
-          return;
-          mylog(generate([&](fc::string& ss) {
-            ss = msg + ": ";
-            ss += "accounts: " + std::to_string(accounts.size());
-            ss += " permlinks: " + std::to_string(permlinks.size());
-            ss += " blocks: " + std::to_string(blocks.size());
-            ss += " trx: " + std::to_string(transactions.size());
-            ss += " operations: " + std::to_string(operations.size());
-            ss += " account_operation_data: " + std::to_string(account_operations.size());
-            ss += " total size: " + std::to_string(total_size);
-            ss += "\n";
-            }).c_str());
-        }
       };
       using cached_containter_t = std::unique_ptr<cached_data_t>;
 
@@ -257,7 +246,6 @@ namespace hive
 
           query += ';';
 
-          //ilog("Executing query: ${q}", ("q", query));
           tx.exec(query);
 
           processingStatus.first += data.size();
@@ -688,7 +676,6 @@ namespace hive
 
           transaction_t start_transaction() const
           {
-            // mylog("started transaction");
             pqxx::connection* _conn = new pqxx::connection{ this->connection_string };
             pqxx::work *_trx = new pqxx::work{*_conn};
             _trx->exec("SET CONSTRAINTS ALL DEFERRED;");
@@ -705,13 +692,11 @@ namespace hive
 
           bool commit_transaction(transaction_t &trx) const
           {
-            // mylog("commiting");
             return sql_safe_execution([&]() { trx->_transaction->commit(); }, "commit");
           }
 
           void abort_transaction(transaction_t &trx) const
           {
-            // mylog("aborting");
             trx->_transaction->abort();
           }
 
@@ -793,12 +778,12 @@ namespace hive
 
           virtual ~sql_serializer_plugin_impl()
           {
-            mylog("Serializer plugin is closing");
+            ilog("Serializer plugin is closing");
 
             cleanup_sequence();
             switch_db_items( true/*mode*/ );
 
-            mylog("Serializer plugin has been closed");
+            ilog("Serializer plugin has been closed");
           }
 
           boost::signals2::connection _on_post_apply_operation_con;
@@ -836,42 +821,52 @@ namespace hive
             current_stats.reset();
           }
 
-          void switch_db_items( bool mode, const std::string& function_name, const std::string& objects_name ) const
+          void switch_db_items( bool mode, const std::string& function_name, const std::string& objects_name, const std::vector<uint32_t>& values ) const
           {
             ilog("${mode} ${objects_name}...", ("objects_name", objects_name )("mode", ( mode ? "Creating" : "Dropping" ) ) );
 
-            data_processor db_proccessor(db_url, "DB processor",
-              [this, &mode, &function_name](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
-              {
-                std::string query = std::string( "SELECT " ) + function_name + "( " + ( mode ? "TRUE" : "FALSE" ) + " );";
-                ilog("The query: `${query}` has been executed...", ("query", query ) );
-                tx.exec( query );
-                return data_processing_status();
-              }
-            );
+            std::list< data_processor > processors;
 
-            db_proccessor.trigger(data_processor::data_chunk_ptr());
+            for( auto value : values )
+            {
+              processors.emplace_back( db_url, "DB processor", [ = ](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
+                            {
+                              std::string query = std::string( "SELECT " ) + function_name + "( " + ( mode ? "TRUE" : "FALSE" ) + ", " + std::to_string( value ) + " );";
+                              ilog("The query: `${query}` has been executed...", ("query", query ) );
+                              tx.exec( query );
+                              return data_processing_status();
+                            } );
 
-            db_proccessor.join();
+              processors.back().trigger(data_processor::data_chunk_ptr());
+            }
+
+            for( auto& item : processors )
+            {
+              item.join();
+            }
 
             ilog("The ${objects_name} have been ${mode}...", ("objects_name", objects_name )("mode", ( mode ? "created" : "dropped" ) ) );
           }
 
           void switch_db_items( bool mode ) const
           {
-            switch_db_items( mode, "constraint_foreign_keys_updater", "foreign constraints" );
-
             if( psql_block_number == 0 || ( psql_block_number + psql_index_threshold <= head_block_number ) )
             {
-              ilog("Switching indexes and primary/unique constraints allowed: psql block number: `${pbn}` psql index threshold: `${pit}` head block number: `${hbn}` ...",
+              ilog("Switching indexes and constraints is allowed: psql block number: `${pbn}` psql index threshold: `${pit}` head block number: `${hbn}` ...",
               ("pbn", psql_block_number)("pit", psql_index_threshold)("hbn", head_block_number));
 
-              switch_db_items( mode, "index_updater", "indexes" );
-              switch_db_items( mode, "constraint_primary_unique_updater", "constraints" );
+              if( !mode )
+                switch_db_items( mode, "constraint_foreign_keys_updater", "foreign constraints", {1, 2, 4, 8} );
+
+              switch_db_items( mode, "index_updater", "indexes", {1, 2, 4, 8} );
+              switch_db_items( mode, "constraint_primary_unique_updater", "constraints", {1, 2, 4, 8, 16, 32} );
+
+              if( mode )
+                switch_db_items( mode, "constraint_foreign_keys_updater", "foreign constraints", {1, 2, 4, 8} );
             }
             else
             {
-              ilog("Switching indexes and primary/unique constraints rejected: psql block number: `${pbn}` psql index threshold: `${pit}` head block number: `${hbn}` ...",
+              ilog("Switching indexes and constraints isn't allowed: psql block number: `${pbn}` psql index threshold: `${pit}` head block number: `${hbn}` ...",
               ("pbn", psql_block_number)("pit", psql_index_threshold)("hbn", head_block_number));
             }
           }
@@ -1335,7 +1330,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 
       void sql_serializer_plugin::on_post_reindex(const reindex_notification &)
       {
-        mylog("finishing from post reindex");
+        ilog("finishing from post reindex");
         my->cleanup_sequence();
         my->blocks_per_commit = 1;
       }
