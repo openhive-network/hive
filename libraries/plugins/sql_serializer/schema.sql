@@ -137,24 +137,46 @@ LANGUAGE plpgsql STABLE
 ;
 
 DROP FUNCTION IF EXISTS index_updater;
-CREATE OR REPLACE FUNCTION index_updater(in _mode BOOLEAN)
+CREATE OR REPLACE FUNCTION index_updater(in _mode BOOLEAN, in _value INT)
 RETURNS VOID
 AS
 $function$
 BEGIN
 
 ----------------dropping all indexes----------------
-  DROP INDEX IF EXISTS hive_account_operations_account_op_seq_no_id_idx;
-  DROP INDEX IF EXISTS hive_accounts_name_idx;
-  DROP INDEX IF EXISTS hive_operations_block_num_type_trx_in_block_idx;
-  DROP INDEX IF EXISTS hive_transactions_block_num_trx_in_block_idx;
+  IF ( _value & 1 ) != 0 THEN
+    DROP INDEX IF EXISTS hive_account_operations_account_op_seq_no_id_idx;
+  END IF;
+
+  IF ( _value & 2 ) != 0 THEN
+    DROP INDEX IF EXISTS hive_accounts_name_idx;
+  END IF;
+
+  IF ( _value & 4 ) != 0 THEN
+    DROP INDEX IF EXISTS hive_operations_block_num_type_trx_in_block_idx;
+  END IF;
+
+  IF ( _value & 8 ) != 0 THEN
+    DROP INDEX IF EXISTS hive_transactions_block_num_trx_in_block_idx;
+  END IF;
 
   IF _mode = True THEN
 ----------------creating all indexes----------------
-    CREATE INDEX IF NOT EXISTS hive_account_operations_account_op_seq_no_id_idx ON hive_account_operations(account_id, account_op_seq_no, operation_id);
-    CREATE INDEX IF NOT EXISTS hive_accounts_name_idx ON hive_accounts(name);
-    CREATE INDEX IF NOT EXISTS hive_operations_block_num_type_trx_in_block_idx ON hive_operations (block_num, op_type_id, trx_in_block);
-    CREATE INDEX IF NOT EXISTS hive_transactions_block_num_trx_in_block_idx ON hive_transactions (block_num, trx_in_block);
+    IF ( _value & 1 ) != 0 THEN
+      CREATE INDEX IF NOT EXISTS hive_account_operations_account_op_seq_no_id_idx ON hive_account_operations(account_id, account_op_seq_no, operation_id);
+    END IF;
+
+    IF ( _value & 2 ) != 0 THEN
+      CREATE INDEX IF NOT EXISTS hive_accounts_name_idx ON hive_accounts(name);
+    END IF;
+
+    IF ( _value & 4 ) != 0 THEN
+      CREATE INDEX IF NOT EXISTS hive_operations_block_num_type_trx_in_block_idx ON hive_operations (block_num, op_type_id, trx_in_block);
+    END IF;
+
+    IF ( _value & 8 ) != 0 THEN
+      CREATE INDEX IF NOT EXISTS hive_transactions_block_num_trx_in_block_idx ON hive_transactions (block_num, trx_in_block);
+    END IF;
 
   END IF;
 
@@ -164,41 +186,96 @@ LANGUAGE plpgsql VOLATILE
 ;
 
 DROP FUNCTION IF EXISTS constraint_primary_unique_updater;
-CREATE OR REPLACE FUNCTION constraint_primary_unique_updater(in _mode BOOLEAN)
+CREATE OR REPLACE FUNCTION constraint_primary_unique_updater(in _mode BOOLEAN, in _value INT)
 RETURNS VOID
 AS
 $function$
 BEGIN
 
 ----------------dropping all primary keys----------------
-ALTER TABLE hive_accounts DROP CONSTRAINT IF EXISTS hive_accounts_pkey;
-ALTER TABLE hive_blocks DROP CONSTRAINT IF EXISTS hive_blocks_pkey;
-ALTER TABLE hive_operation_types DROP CONSTRAINT IF EXISTS hive_operation_types_pkey;
-ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_pkey;
-ALTER TABLE hive_permlink_data DROP CONSTRAINT IF EXISTS hive_permlink_data_pkey;
-ALTER TABLE hive_transactions DROP CONSTRAINT IF EXISTS hive_transactions_pkey;
+  IF ( _value & 1 ) != 0 THEN
+    ALTER TABLE hive_accounts DROP CONSTRAINT IF EXISTS hive_accounts_pkey;
+  END IF;
+
+  IF ( _value & 2 ) != 0 THEN
+    ALTER TABLE hive_blocks DROP CONSTRAINT IF EXISTS hive_blocks_pkey;
+  END IF;
+
+  IF ( _value & 4 ) != 0 THEN
+    ALTER TABLE hive_operation_types DROP CONSTRAINT IF EXISTS hive_operation_types_pkey;
+  END IF;
+
+  IF ( _value & 8 ) != 0 THEN
+    ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_pkey;
+  END IF;
+
+  IF ( _value & 16 ) != 0 THEN
+    ALTER TABLE hive_permlink_data DROP CONSTRAINT IF EXISTS hive_permlink_data_pkey;
+  END IF;
+
+  IF ( _value & 32 ) != 0 THEN
+    ALTER TABLE hive_transactions DROP CONSTRAINT IF EXISTS hive_transactions_pkey;
+  END IF;
 
 ----------------dropping others constraints----------------
-ALTER TABLE hive_accounts DROP CONSTRAINT IF EXISTS hive_accounts_uniq;
-ALTER TABLE hive_blocks DROP CONSTRAINT IF EXISTS hive_blocks_uniq;
-ALTER TABLE hive_operation_types DROP CONSTRAINT IF EXISTS hive_operation_types_uniq;
-ALTER TABLE hive_permlink_data DROP CONSTRAINT IF EXISTS hive_permlink_data_uniq;
+  IF ( _value & 1 ) != 0 THEN
+    ALTER TABLE hive_accounts DROP CONSTRAINT IF EXISTS hive_accounts_uniq;
+  END IF;
 
+  IF ( _value & 2 ) != 0 THEN
+    ALTER TABLE hive_blocks DROP CONSTRAINT IF EXISTS hive_blocks_uniq;
+  END IF;
+
+  IF ( _value & 4 ) != 0 THEN
+    ALTER TABLE hive_operation_types DROP CONSTRAINT IF EXISTS hive_operation_types_uniq;
+  END IF;
+
+  IF ( _value & 16 ) != 0 THEN
+    ALTER TABLE hive_permlink_data DROP CONSTRAINT IF EXISTS hive_permlink_data_uniq;
+  END IF;
 
 IF _mode = True THEN
 ----------------creating all primary keys----------------
-ALTER TABLE hive_accounts ADD CONSTRAINT hive_accounts_pkey PRIMARY KEY ( id );
-ALTER TABLE hive_blocks ADD CONSTRAINT hive_blocks_pkey PRIMARY KEY ( num );
-ALTER TABLE hive_operation_types ADD CONSTRAINT hive_operation_types_pkey PRIMARY KEY ( id );
-ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_pkey PRIMARY KEY ( id );
-ALTER TABLE hive_permlink_data ADD CONSTRAINT hive_permlink_data_pkey PRIMARY KEY ( id );
-ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_pkey PRIMARY KEY ( trx_hash );
+  IF ( _value & 1 ) != 0 THEN
+    ALTER TABLE hive_accounts ADD CONSTRAINT hive_accounts_pkey PRIMARY KEY ( id );
+  END IF;
+
+  IF ( _value & 2 ) != 0 THEN
+    ALTER TABLE hive_blocks ADD CONSTRAINT hive_blocks_pkey PRIMARY KEY ( num );
+  END IF;
+
+  IF ( _value & 4 ) != 0 THEN
+    ALTER TABLE hive_operation_types ADD CONSTRAINT hive_operation_types_pkey PRIMARY KEY ( id );
+  END IF;
+
+  IF ( _value & 8 ) != 0 THEN
+    ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_pkey PRIMARY KEY ( id );
+  END IF;
+
+  IF ( _value & 16 ) != 0 THEN
+    ALTER TABLE hive_permlink_data ADD CONSTRAINT hive_permlink_data_pkey PRIMARY KEY ( id );
+  END IF;
+
+  IF ( _value & 32 ) != 0 THEN
+    ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_pkey PRIMARY KEY ( trx_hash );
+  END IF;
 
 ----------------creating others constraints----------------
-ALTER TABLE hive_accounts ADD CONSTRAINT hive_accounts_uniq UNIQUE ( name );
-ALTER TABLE hive_blocks ADD CONSTRAINT hive_blocks_uniq UNIQUE ( hash );
-ALTER TABLE hive_operation_types ADD CONSTRAINT hive_operation_types_uniq UNIQUE ( name );
-ALTER TABLE hive_permlink_data ADD CONSTRAINT hive_permlink_data_uniq UNIQUE ( permlink );
+  IF ( _value & 1 ) != 0 THEN
+    ALTER TABLE hive_accounts ADD CONSTRAINT hive_accounts_uniq UNIQUE ( name );
+  END IF;
+
+  IF ( _value & 2 ) != 0 THEN
+    ALTER TABLE hive_blocks ADD CONSTRAINT hive_blocks_uniq UNIQUE ( hash );
+  END IF;
+
+  IF ( _value & 4 ) != 0 THEN
+    ALTER TABLE hive_operation_types ADD CONSTRAINT hive_operation_types_uniq UNIQUE ( name );
+  END IF;
+
+  IF ( _value & 16 ) != 0 THEN
+    ALTER TABLE hive_permlink_data ADD CONSTRAINT hive_permlink_data_uniq UNIQUE ( permlink );
+  END IF;
 
 END IF;
 
@@ -208,33 +285,50 @@ LANGUAGE plpgsql VOLATILE
 ;
 
 DROP FUNCTION IF EXISTS constraint_foreign_keys_updater;
-CREATE OR REPLACE FUNCTION constraint_foreign_keys_updater(in _mode BOOLEAN)
+CREATE OR REPLACE FUNCTION constraint_foreign_keys_updater(in _mode BOOLEAN, in _value INT)
 RETURNS VOID
 AS
 $function$
 BEGIN
 
 ----------------dropping all foreign keys----------------
-ALTER TABLE hive_account_operations DROP CONSTRAINT IF EXISTS hive_account_operations_fk_1;
-ALTER TABLE hive_account_operations DROP CONSTRAINT IF EXISTS hive_account_operations_fk_2;
+  IF ( _value & 1 ) != 0 THEN
+    ALTER TABLE hive_account_operations DROP CONSTRAINT IF EXISTS hive_account_operations_fk_1;
+    ALTER TABLE hive_account_operations DROP CONSTRAINT IF EXISTS hive_account_operations_fk_2;
+  END IF;
 
-ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_1;
-ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_2;
+  IF ( _value & 2 ) != 0 THEN
+    ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_1;
+    ALTER TABLE hive_operations DROP CONSTRAINT IF EXISTS hive_operations_fk_2;
+  END IF;
 
-ALTER TABLE hive_transactions DROP CONSTRAINT IF EXISTS hive_transactions_fk_1;
-ALTER TABLE hive_transactions_multisig DROP CONSTRAINT IF EXISTS hive_transactions_multisig_fk_1;
+  IF ( _value & 4 ) != 0 THEN
+    ALTER TABLE hive_transactions DROP CONSTRAINT IF EXISTS hive_transactions_fk_1;
+  END IF;
+
+  IF ( _value & 8 ) != 0 THEN
+    ALTER TABLE hive_transactions_multisig DROP CONSTRAINT IF EXISTS hive_transactions_multisig_fk_1;
+  END IF;
 
 IF _mode = True THEN
 ----------------creating all foreign keys----------------
-ALTER TABLE hive_account_operations ADD CONSTRAINT hive_account_operations_fk_1 FOREIGN KEY (account_id) REFERENCES hive_accounts (id);
-ALTER TABLE hive_account_operations ADD CONSTRAINT hive_account_operations_fk_2 FOREIGN KEY (operation_id) REFERENCES hive_operations (id);
+  IF ( _value & 1 ) != 0 THEN
+    ALTER TABLE hive_account_operations ADD CONSTRAINT hive_account_operations_fk_1 FOREIGN KEY (account_id) REFERENCES hive_accounts (id);
+    ALTER TABLE hive_account_operations ADD CONSTRAINT hive_account_operations_fk_2 FOREIGN KEY (operation_id) REFERENCES hive_operations (id);
+  END IF;
 
-ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);
-ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_2 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id);
+  IF ( _value & 2 ) != 0 THEN
+    ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);
+    ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_2 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id);
+  END IF;
 
-ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);
+  IF ( _value & 4 ) != 0 THEN
+    ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);
+  END IF;
 
-ALTER TABLE hive_transactions_multisig ADD CONSTRAINT hive_transactions_multisig_fk_1 FOREIGN KEY (trx_hash) REFERENCES hive_transactions (trx_hash);
+  IF ( _value & 8 ) != 0 THEN
+    ALTER TABLE hive_transactions_multisig ADD CONSTRAINT hive_transactions_multisig_fk_1 FOREIGN KEY (trx_hash) REFERENCES hive_transactions (trx_hash);
+  END IF;
 
 END IF;
 
