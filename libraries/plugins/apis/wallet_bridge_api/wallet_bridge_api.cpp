@@ -84,48 +84,55 @@ wallet_bridge_api::~wallet_bridge_api() {}
 
 void wallet_bridge_api::api_startup()
 {
+  std::string not_enabled_plugins;
+
+  //=====
   auto db_api = appbase::app().find_plugin< database_api::database_api_plugin >();
   if (db_api)
     my->_database_api = db_api->api;
+  else
+    not_enabled_plugins += "database_api ";
 
+  //=====
   auto block_api = appbase::app().find_plugin< block_api::block_api_plugin >();
   if (block_api)
     my->_block_api = block_api->api;
+  else
+    not_enabled_plugins += "block_api ";
 
+  //=====
   auto account_history_api = appbase::app().find_plugin< account_history::account_history_api_plugin >();
   if (account_history_api)
     my->_account_history_api = account_history_api->api;
+  else
+    not_enabled_plugins += "account_history_api ";
 
+  //=====
   auto account_by_key_api = appbase::app().find_plugin< account_by_key::account_by_key_api_plugin >();
   if (account_by_key_api)
     my->_account_by_key_api = account_by_key_api->api;
+  else
+    not_enabled_plugins += "account_by_key_api ";
 
+  //=====
   auto market_history_api = appbase::app().find_plugin< market_history::market_history_api_plugin >();
   if (market_history_api)
     my->_market_history_api = market_history_api->api;
+  else
+    not_enabled_plugins += "market_history_api ";
 
+  //=====
   auto network_broadcast_api = appbase::app().find_plugin< network_broadcast_api::network_broadcast_api_plugin >();
   if (network_broadcast_api)
     my->_network_broadcast_api = network_broadcast_api->api;
+  else
+    not_enabled_plugins += "network_broadcast_api ";
 
+  //=====
   auto p2p = appbase::app().find_plugin< p2p::p2p_plugin >();
   if (p2p)
     my->_p2p = p2p;
-
-  std::string not_enabled_plugins;
-  if (!db_api)
-    not_enabled_plugins += "database_api ";
-  if (!block_api)
-    not_enabled_plugins += "block_api ";
-  if (!account_history_api)
-    not_enabled_plugins += "account_history_api ";
-  if (!account_by_key_api)
-    not_enabled_plugins += "account_by_key_api ";
-  if (!market_history_api)
-    not_enabled_plugins += "market_history_api ";
-  if (!network_broadcast_api)
-    not_enabled_plugins += "network_broadcast_api ";
-  if (!p2p)
+  else
     not_enabled_plugins += "p2p_plugin";
 
   if (not_enabled_plugins.empty())
