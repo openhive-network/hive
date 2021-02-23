@@ -239,7 +239,7 @@ namespace hive
       void account_history_sql_plugin_impl::get_transaction( hive::protocol::annotated_signed_transaction& sql_result,
                                                             const hive::protocol::transaction_id_type& id, const fc::optional<bool>& include_reversible )
       {
-        const uint32_t TRX_NR_FIELDS = 5;
+        const uint32_t TRX_NR_FIELDS = 7;
         const uint32_t OP_NR_FIELDS = 1;
 
         pqxx::result result;
@@ -266,6 +266,8 @@ namespace hive
         sql_result.expiration       = fc::time_point_sec::from_iso_string( row[ cnt++ ].as< std::string >() );
         sql_result.block_num        = row[ cnt++ ].as< uint32_t >();
         sql_result.transaction_num  = row[ cnt++ ].as< uint32_t >();
+        std::string signature       = row[ cnt++ ].as< std::string >();
+        uint32_t multi_sig_num      = row[ cnt++ ].as< uint32_t >();
 
         sql_result.transaction_id   = id;
 
