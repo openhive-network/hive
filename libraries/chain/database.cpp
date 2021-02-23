@@ -6775,10 +6775,8 @@ void database::remove_expired_governance_votes()
       ++wvote;
       remove(current);
       ++removed_witness_votes;
-    }
-
-    if (removed_witness_votes)
       modify(acc, [&](account_object& acc) { acc.witnesses_voted_for = 0; });
+    }
 
     max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
 
