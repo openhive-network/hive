@@ -447,13 +447,13 @@ namespace hive
           std::string operator()(typename container_t::const_reference data) const
           {
             return std::to_string(data.block_number) + "," + escape_raw(data.hash) + "," + std::to_string(data.trx_in_block) + "," +
-                   std::to_string(data.ref_block_num) + "," + std::to_string(data.ref_block_prefix) + "," + escape_raw(data.signature);
+                   std::to_string(data.ref_block_num) + "," + std::to_string(data.ref_block_prefix) + ",'" + data.expiration.to_iso_string() + "'," + escape_raw(data.signature);
           }
         };
       };
 
       const char hive_transactions::TABLE[] = "hive_transactions";
-      const char hive_transactions::COLS[] = "block_num, trx_hash, trx_in_block, ref_block_num, ref_block_prefix, signature";
+      const char hive_transactions::COLS[] = "block_num, trx_hash, trx_in_block, ref_block_num, ref_block_prefix, expiration, signature";
 
       struct hive_transactions_multisig
       {
@@ -1294,7 +1294,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
           size_t sig_size = trx.signatures.size();
 
           my->currently_caching_data->total_size += sizeof(hash) + sizeof(block_num) + sizeof(trx_in_block) +
-                                                    sizeof(trx.ref_block_num) + sizeof(trx.ref_block_prefix) + sizeof(trx.signatures[0]);
+                                                    sizeof(trx.ref_block_num) + sizeof(trx.ref_block_prefix) + sizeof(trx.expiration) + sizeof(trx.signatures[0]);
 
           my->currently_caching_data->transactions.emplace_back(
             hash,
@@ -1302,6 +1302,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
             trx_in_block,
             trx.ref_block_num,
             trx.ref_block_prefix,
+            trx.expiration,
             ( sig_size == 0 ) ? fc::optional<signature_type>() : fc::optional<signature_type>( trx.signatures[0] )
           );
 

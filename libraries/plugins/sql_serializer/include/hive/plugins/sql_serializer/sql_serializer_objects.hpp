@@ -88,13 +88,14 @@ namespace hive
             int16_t trx_in_block;
             uint16_t ref_block_num;
             uint32_t ref_block_prefix;
+            fc::time_point_sec expiration;
             fc::optional<signature_type> signature;
 
             process_transaction_t() = default;
             process_transaction_t(const hash_t& _hash, const int _block_number, const int16_t _trx_in_block,
-                                  const uint16_t _ref_block_num, const uint32_t _ref_block_prefix, const fc::optional<signature_type>& _signature)
+                                  const uint16_t _ref_block_num, const uint32_t _ref_block_prefix, const fc::time_point_sec& _expiration, const fc::optional<signature_type>& _signature)
             : process_base_ex_t{_hash, _block_number}, trx_in_block{_trx_in_block},
-              ref_block_num{_ref_block_num}, ref_block_prefix{_ref_block_prefix}, signature{_signature}
+              ref_block_num{_ref_block_num}, ref_block_prefix{_ref_block_prefix}, expiration{_expiration}, signature{_signature}
             {}
           };
 

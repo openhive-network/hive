@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS hive_transactions (
   "trx_hash" bytea NOT NULL,
   ref_block_num integer NOT NULL,
   ref_block_prefix bigint NOT NULL,
+  expiration timestamp without time zone NOT NULL,
   signature bytea DEFAULT NULL
 );
 
