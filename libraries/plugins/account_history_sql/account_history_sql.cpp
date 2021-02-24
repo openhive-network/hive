@@ -241,6 +241,8 @@ namespace hive
       {
         const uint32_t TRX_NR_FIELDS = 7;
         const uint32_t OP_NR_FIELDS = 1;
+        const uint32_t MULTISIG_NR_FIELDS = 1;
+        const uint32_t NR_CHARS_IN_SIGNATURE = 130;
 
         pqxx::result result;
         std::string sql;
@@ -259,6 +261,7 @@ namespace hive
         FC_ASSERT( row.size() == TRX_NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields",
                                                 ( "db_size", row.size() )( "req_size", TRX_NR_FIELDS ) );
 
+        std::vector<hive::protocol::signature_type> signatures;
         uint32_t cnt = 0;
 
         sql_result.ref_block_num    = row[ cnt++ ].as< uint32_t >();
@@ -267,9 +270,42 @@ namespace hive
         sql_result.block_num        = row[ cnt++ ].as< uint32_t >();
         sql_result.transaction_num  = row[ cnt++ ].as< uint32_t >();
         std::string signature       = row[ cnt++ ].as< std::string >();
-        uint32_t multi_sig_num      = row[ cnt++ ].as< uint32_t >();
+        uint32_t multisig_num      = row[ cnt++ ].as< uint32_t >();
 
         sql_result.transaction_id   = id;
+
+        auto create_signature = [ &signatures ]( const std::string& signature )
+        {
+          if( !signature.empty() && signature.size() == NR_CHARS_IN_SIGNATURE )
+          {
+            hive::protocol::signature_type sig;
+            size_t cnt = 0;
+            for( size_t i = 0; i < signature.size(); i += 2 )
+            {
+              std::string s = { signature[i], signature[i+1] };
+              sig.begin()[ cnt ] = static_cast< unsigned char >( std::stoul( s, nullptr, 16 ) );
+              ++cnt;
+            }
+            signatures.emplace_back( sig );
+          }
+        };
+
+        create_signature( signature );
+
+        if( multisig_num > 0 )
+        {
+          sql = "select * from ah_get_multi_sig_in_trx( '"+ id.str() + "' )";
+
+          if( !execute_query( sql, result ) )
+            return;
+
+          for( const auto& row : result )
+          {
+            FC_ASSERT( row.size() == MULTISIG_NR_FIELDS, "The database returned ${db_size} fields, but there is required ${req_size} fields", ( "db_size", row.size() )( "req_size", OP_NR_FIELDS ) );
+            signature = row[ 0 ].as< std::string >();
+            create_signature( signature );
+          }
+        }
 
         sql = "select * from ah_get_ops_in_trx( " + std::to_string( sql_result.block_num ) + ", " + std::to_string( sql_result.transaction_num ) + " )";
 
@@ -289,6 +325,8 @@ namespace hive
 
           sql_result.operations.emplace_back( std::move( temp.get_op() ) );
         }
+
+        sql_result.signatures = std::move( signatures );
 
         _time_logger.snapshot_time();
         _time_logger.info();

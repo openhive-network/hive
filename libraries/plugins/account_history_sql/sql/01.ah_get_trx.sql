@@ -6,7 +6,7 @@ RETURNS TABLE(
     _expiration TEXT,
     _block_num INT,
     _trx_in_block SMALLINT,
-    _signature BYTEA,
+    _signature TEXT,
     _multisig_number SMALLINT
 )
 AS
@@ -24,11 +24,10 @@ BEGIN
       '2016-06-20T19:34:09' _expiration,--lack of data
       ht.block_num _block_num,
       ht.trx_in_block _trx_in_block,
-      ht.signature _signature,
+      encode(ht.signature, 'escape') _signature,
       __multisig_number
     FROM hive_transactions ht
     WHERE ht.trx_hash = _TRX_HASH;
 END
 $function$
 language plpgsql STABLE;
-
