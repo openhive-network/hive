@@ -4,6 +4,8 @@ The following license applies to code contained within this repository that
 is created by Steemit, Inc. Other copy right holders have licensed dependencies such
 as Graphene, FC, and Boost under their own individual licenses.
 
+In 2020, the original Steem code base was forked to create the open-source software for the Hive peer-to-peer network. All contributions since that time have been made by Hive community contributors and all such contributions continue to be licensed under the MIT license below.
+
 The MIT License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
