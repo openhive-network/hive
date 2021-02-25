@@ -6769,14 +6769,19 @@ void database::remove_expired_governance_votes()
       modify(acc, [&](account_object& acc) { acc.proxy = ""; });
     }
 
+    bool were_votes_removed = false;
     while (wvote != witness_votes.end() && wvote->account == acc.name)
     {
       const witness_vote_object& current = *wvote;
       ++wvote;
       remove(current);
       ++removed_witness_votes;
-      modify(acc, [&](account_object& acc) { acc.witnesses_voted_for = 0; });
+      if( !were_votes_removed )
+        were_votes_removed = true;
     }
+
+    if (were_votes_removed)
+      modify(acc, [&](account_object& acc) { acc.witnesses_voted_for = 0; });
 
     max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
 
