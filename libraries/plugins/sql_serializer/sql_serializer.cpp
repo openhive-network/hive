@@ -2,6 +2,7 @@
 #include <hive/plugins/sql_serializer/data_processor.hpp>
 
 #include <hive/chain/util/impacted.hpp>
+#include <hive/chain/index.hpp>
 
 #include <hive/protocol/config.hpp>
 #include <hive/protocol/operations.hpp>
@@ -53,7 +54,6 @@ namespace hive
     typedef std::vector<PSQL::processing_objects::process_transaction_multisig_t> transaction_multisig_data_container_t;
     typedef std::vector<PSQL::processing_objects::process_operation_t> operation_data_container_t;
     typedef std::vector<PSQL::processing_objects::account_operation_data_t> account_operation_data_container_t;
-
 
       using num_t = std::atomic<uint64_t>;
       using duration_t = fc::microseconds;
@@ -562,16 +562,20 @@ namespace hive
       {
         typedef void result_type;
 
-        new_ids_collector(account_cache_t* known_accounts, int* next_account_id,
+        new_ids_collector(uint32_t block_number, bool reindexing, account_cache_t* known_accounts, int* next_account_id,
           permlink_cache_t* permlink_cache, int* next_permlink_id,
           account_data_container_t* newAccounts,
-          permlink_data_container_t* newPermlinks) :
+          permlink_data_container_t* newPermlinks,
+          chain::database& mainDb) :
+          _block_number(block_number),
+          _reindexing(reindexing),
           _known_accounts(known_accounts),
           _known_permlinks(permlink_cache),
           _next_account_id(*next_account_id),
           _next_permlink_id(*next_permlink_id),
           _new_accounts(newAccounts),
-          _new_permlinks(newPermlinks)
+          _new_permlinks(newPermlinks),
+          _mainDb(mainDb)
         {
         }
 
@@ -619,7 +623,19 @@ namespace hive
           if(ii.second)
           {
             ++_next_permlink_id;
-            _new_permlinks->emplace_back(_next_permlink_id, op.permlink);
+            if( _reindexing )
+            {
+              _new_permlinks->emplace_back(_next_permlink_id, op.permlink);
+            }
+            else
+            {
+              _mainDb.create< PSQL::volatile_permlink_data_object >( [&]( PSQL::volatile_permlink_data_object& obj )
+              {
+                obj.permlink_data.id = _next_permlink_id;
+                obj.permlink_data.permlink = op.permlink.c_str();
+                obj.permlink_data.block_number = _block_number;
+              });
+            }
           }
         }
 
@@ -628,12 +644,31 @@ namespace hive
         {
           ++_next_account_id;
           auto ii = _known_accounts->emplace(std::string(name), account_info(_next_account_id, 0));
-          _new_accounts->emplace_back(_next_account_id, std::string(name));
+
+          if( _reindexing )
+          {
+            _new_accounts->emplace_back(_next_account_id, std::string(name));
+          }
+          else
+          {
+            // _irreversible_new_accounts->emplace(
+            //     _block_number,
+            //   PSQL::processing_objects::account_data_block_t{
+            //     _next_account_id,
+            //     std::string(name),
+            //     _block_number }
+            // );
+          }
+          
 
           FC_ASSERT(ii.second, "Account `${a}' already exits.", ("a", name));
         }
 
       private:
+
+        uint32_t _block_number;
+        bool _reindexing;
+
         account_cache_t* _known_accounts;
         permlink_cache_t* _known_permlinks;
 
@@ -642,6 +677,8 @@ namespace hive
 
         account_data_container_t* _new_accounts;
         permlink_data_container_t* _new_permlinks;
+
+        chain::database& _mainDb;
       };
 
 
@@ -771,7 +808,8 @@ namespace hive
         public:
           sql_serializer_plugin_impl(const std::string &url) 
             : connection{url},
-              db_url{url}
+              db_url{url},
+              _mainDb( appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db() )
           {
             init_data_processors();
           }
@@ -791,6 +829,7 @@ namespace hive
           boost::signals2::connection _on_starting_reindex;
           boost::signals2::connection _on_finished_reindex;
           boost::signals2::connection _on_live_sync_start;
+          boost::signals2::connection _on_irreversible_block;
 
           std::unique_ptr<account_data_container_t_writer> _account_writer;
           std::unique_ptr<permlink_data_container_t_writer> _permlink_writer;
@@ -812,8 +851,12 @@ namespace hive
           int64_t block_vops = 0;
           int64_t op_sequence_id = 0; 
 
+          bool _reindexing = false;
+
           cached_containter_t currently_caching_data;
           stats_group current_stats;
+
+          chain::database& _mainDb;
 
           void log_statistics()
           {
@@ -1059,11 +1102,13 @@ namespace hive
             _account_operation_writer->join();
           }
 
+          template<typename irreversible_collection, typename collection>
+          void prepare_cached_data(uint32_t last_irreversible_block_num, irreversible_collection& src, collection& dst);
           void process_cached_data();
-          void collect_new_ids(const hive::protocol::operation& op);
-          void collect_impacted_accounts(int64_t operation_id, const hive::protocol::operation& op);
+          void collect_new_ids(uint32_t block_number, const hive::protocol::operation& op);
+          void collect_impacted_accounts(uint32_t nr_block, int64_t operation_id, const hive::protocol::operation& op);
 
-          void push_currently_cached_data(const size_t reserve)
+          void push_currently_cached_data()
           {
             process_cached_data();
           }
@@ -1072,7 +1117,7 @@ namespace hive
           {
             ilog("Flushing rest of data, wait a moment...");
 
-            push_currently_cached_data(0);
+            push_currently_cached_data();
             join_data_processors();
 
             ilog("Done, cleanup complete");
@@ -1126,12 +1171,47 @@ void sql_serializer_plugin_impl::trigger_data_flush(account_operation_data_conta
   _account_operation_writer->trigger(std::move(data));
 }
 
+template<typename irreversible_collection, typename collection>
+void sql_serializer_plugin_impl::prepare_cached_data(uint32_t last_irreversible_block_num, irreversible_collection& src, collection& dst)
+{
+  dst.clear();
+
+  auto itr = src.begin();
+  auto upper = src.upper_bound( last_irreversible_block_num );
+  auto distance = std::distance( src.begin(), upper );
+
+  if( distance > 0 )
+  {
+    dst.reserve( distance );
+    while( itr != upper )
+    {
+      dst.emplace_back( itr->second );
+      ++itr;
+    }
+    src.erase( src.begin(), upper );
+  }
+}
+
 void sql_serializer_plugin_impl::process_cached_data()
 {
   if(currently_caching_data.get() == nullptr)
     return;
   
   auto* data = currently_caching_data.get();
+
+  if( !_reindexing )
+  {
+    //auto& db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
+    //uint32_t last_irreversible_block_num = db.last_non_undoable_block_num();
+
+    // prepare_cached_data(last_irreversible_block_num, data->irreversible_accounts, data->accounts);
+    // prepare_cached_data(last_irreversible_block_num, data->irreversible_permlinks, data->permlinks);
+    // prepare_cached_data(last_irreversible_block_num, data->irreversible_blocks, data->blocks);
+    // prepare_cached_data(last_irreversible_block_num, data->irreversible_transactions, data->transactions);
+    // prepare_cached_data(last_irreversible_block_num, data->irreversible_transactions_multisig, data->transactions_multisig);
+    // prepare_cached_data(last_irreversible_block_num, data->irreversible_operations, data->operations);
+    // prepare_cached_data(last_irreversible_block_num, data->irreversible_account_operations, data->account_operations);
+  }
 
   trigger_data_flush(data->accounts);
   trigger_data_flush(data->permlinks);
@@ -1142,18 +1222,18 @@ void sql_serializer_plugin_impl::process_cached_data()
   trigger_data_flush(data->account_operations);
 }
 
-void sql_serializer_plugin_impl::collect_new_ids(const hive::protocol::operation& op)
+void sql_serializer_plugin_impl::collect_new_ids(uint32_t block_number, const hive::protocol::operation& op)
 {
   auto* data = currently_caching_data.get();
   auto* account_cache = &data->_account_cache;
   auto* permlink_cache = &data->_permlink_cache;
 
-  new_ids_collector collector(account_cache, &data->_next_account_id, permlink_cache, &data->_next_permlink_id,
-    &data->accounts, &data->permlinks);
+  new_ids_collector collector(block_number, _reindexing, account_cache, &data->_next_account_id, permlink_cache, &data->_next_permlink_id,
+    &data->accounts, &data->permlinks, _mainDb);
   op.visit(collector);
 }
 
-void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id, const hive::protocol::operation& op)
+void sql_serializer_plugin_impl::collect_impacted_accounts(uint32_t nr_block, int64_t operation_id, const hive::protocol::operation& op)
 {
   flat_set<hive::protocol::account_name_type> impacted;
   hive::app::operation_get_impacted_accounts(op, impacted);
@@ -1171,7 +1251,19 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 
     account_info& aInfo = accountI->second;
 
-    account_operations->emplace_back(operation_id, aInfo._id, aInfo._operation_count);
+    if( _reindexing )
+    {
+      account_operations->emplace_back(operation_id, aInfo._id, aInfo._operation_count);
+    }
+    else
+    {
+      // irreversible_account_operations->emplace( nr_block,
+      //                                           PSQL::processing_objects::account_operation_data_t{
+      //                                             operation_id,
+      //                                             aInfo._id,
+      //                                             static_cast<int32_t>( aInfo._operation_count ) }
+      //                                         );
+    }
 
     ++aInfo._operation_count;
   }
@@ -1204,14 +1296,20 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
         my->currently_caching_data = std::make_unique<detail::cached_data_t>( default_reservation_size );
 
         // signals
-        auto &db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
-        my->_on_post_apply_operation_con = db.add_post_apply_operation_handler([&](const operation_notification &note) { on_post_apply_operation(note); }, *this);
-        my->_on_post_apply_block_con = db.add_post_apply_block_handler([&](const block_notification &note) { on_post_apply_block(note); }, *this);
-        my->_on_finished_reindex = db.add_post_reindex_handler([&](const reindex_notification &note) { on_post_reindex(note); }, *this);
-        my->_on_starting_reindex = db.add_pre_reindex_handler([&](const reindex_notification &note) { on_pre_reindex(note); }, *this);
+        my->_on_post_apply_operation_con = my->_mainDb.add_post_apply_operation_handler([&](const operation_notification &note) { on_post_apply_operation(note); }, *this);
+        my->_on_post_apply_block_con = my->_mainDb.add_post_apply_block_handler([&](const block_notification &note) { on_post_apply_block(note); }, *this);
+        my->_on_finished_reindex = my->_mainDb.add_post_reindex_handler([&](const reindex_notification &note) { on_post_reindex(note); }, *this);
+        my->_on_starting_reindex = my->_mainDb.add_pre_reindex_handler([&](const reindex_notification &note) { on_pre_reindex(note); }, *this);
         my->_on_live_sync_start = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().on_sync.connect(0, [&](){ on_live_sync_start(); });
+        my->_on_irreversible_block = my->_mainDb.add_irreversible_block_handler([&](uint32_t block_num) {on_irreversible_block(block_num);},*this);
 
-        
+        HIVE_ADD_PLUGIN_INDEX(my->_mainDb, PSQL::volatile_account_data_index);
+        HIVE_ADD_PLUGIN_INDEX(my->_mainDb, PSQL::volatile_permlink_data_index);
+        HIVE_ADD_PLUGIN_INDEX(my->_mainDb, PSQL::volatile_block_index);
+        HIVE_ADD_PLUGIN_INDEX(my->_mainDb, PSQL::volatile_transaction_index);
+        HIVE_ADD_PLUGIN_INDEX(my->_mainDb, PSQL::volatile_transaction_multisig_index);
+        HIVE_ADD_PLUGIN_INDEX(my->_mainDb, PSQL::volatile_operation_index);
+        HIVE_ADD_PLUGIN_INDEX(my->_mainDb, PSQL::volatile_account_operation_index);
       }
 
       void sql_serializer_plugin::plugin_startup()
@@ -1234,6 +1332,8 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
           chain::util::disconnect_signal(my->_on_finished_reindex);
         if (my->_on_live_sync_start.connected())
           chain::util::disconnect_signal(my->_on_live_sync_start);
+        if (my->_on_irreversible_block.connected())
+          chain::util::disconnect_signal(my->_on_irreversible_block);
 
         ilog("Done. Connection closed");
       }
@@ -1242,22 +1342,38 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
       {
         const bool is_virtual = hive::protocol::is_virtual_operation(note.op);
 
-        detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
-        
         ++my->op_sequence_id;
 
         if(is_virtual == false)
-          my->collect_new_ids(note.op);
+          my->collect_new_ids(static_cast<uint32_t>( note.block ), note.op);
 
-        cdtf->operations.emplace_back(
-            my->op_sequence_id,
-            note.block,
-            note.trx_in_block,
-            is_virtual && note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx,
-            note.op
-          );
+        my->currently_caching_data->total_size += sizeof( my->op_sequence_id ) + sizeof( note.block ) +
+                                                  sizeof( note.trx_in_block ) + sizeof( note.op_in_trx ) + sizeof( note.op );
 
-        my->collect_impacted_accounts(my->op_sequence_id, note.op);
+        if( my->_reindexing )
+        {
+          my->currently_caching_data->operations.emplace_back(
+              my->op_sequence_id,
+              note.block,
+              note.trx_in_block,
+              is_virtual && note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx,
+              note.op
+            );
+        }
+        else
+        {
+          // my->currently_caching_data->irreversible_operations.emplace(
+          //     static_cast<uint32_t>( note.block ),
+          //     PSQL::processing_objects::process_operation_t{
+          //       my->op_sequence_id,
+          //       static_cast<uint32_t>( note.block ),
+          //       static_cast<int16_t>( note.trx_in_block ),
+          //       static_cast<int16_t>( is_virtual && note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx ),
+          //       note.op }
+          //   );
+        }
+
+        my->collect_impacted_accounts(static_cast<uint32_t>( note.block ), my->op_sequence_id, note.op);
 
       }
 
@@ -1266,16 +1382,32 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
         handle_transactions( note.block.transactions, note.block_num );
 
         my->currently_caching_data->total_size += note.block_id.data_size() + sizeof(note.block_num);
-        my->currently_caching_data->blocks.emplace_back(
-            note.block_id,
-            note.block_num,
-            note.block.timestamp,
-            note.prev_block_id);
+        if( my->_reindexing )
+        {
+          my->currently_caching_data->blocks.emplace_back(
+              note.block_id,
+              note.block_num,
+              note.block.timestamp,
+              note.prev_block_id);
+        }
+        else
+        {
+          // my->currently_caching_data->irreversible_blocks.emplace(
+          //     note.block_num,
+          //     PSQL::processing_objects::process_block_t{
+          //       note.block_id,
+          //       note.block_num,
+          //       note.block.timestamp,
+          //       note.prev_block_id }
+          // );
+        }
+        
+
         my->block_vops = 0;
 
         if( note.block_num % my->blocks_per_commit == 0 )
         {
-          my->push_currently_cached_data(prereservation_size);
+          my->push_currently_cached_data();
         }
 
         if( note.block_num % 100'000 == 0 )
@@ -1284,9 +1416,9 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
         }
       }
 
-      void sql_serializer_plugin::handle_transactions(const vector<hive::protocol::signed_transaction>& transactions, const int64_t block_num )
+      void sql_serializer_plugin::handle_transactions(const vector<hive::protocol::signed_transaction>& transactions, const uint32_t block_num )
       {
-        uint trx_in_block = 0;
+        uint16_t trx_in_block = 0;
 
         for( auto& trx : transactions )
         {
@@ -1296,25 +1428,56 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
           my->currently_caching_data->total_size += sizeof(hash) + sizeof(block_num) + sizeof(trx_in_block) +
                                                     sizeof(trx.ref_block_num) + sizeof(trx.ref_block_prefix) + sizeof(trx.expiration) + sizeof(trx.signatures[0]);
 
-          my->currently_caching_data->transactions.emplace_back(
-            hash,
-            block_num,
-            trx_in_block,
-            trx.ref_block_num,
-            trx.ref_block_prefix,
-            trx.expiration,
-            ( sig_size == 0 ) ? fc::optional<signature_type>() : fc::optional<signature_type>( trx.signatures[0] )
-          );
+          if( my->_reindexing )
+          {
+            my->currently_caching_data->transactions.emplace_back(
+              hash,
+              block_num,
+              trx_in_block,
+              trx.ref_block_num,
+              trx.ref_block_prefix,
+              trx.expiration,
+              ( sig_size == 0 ) ? fc::optional<signature_type>() : fc::optional<signature_type>( trx.signatures[0] )
+            );
+          }
+          else
+          {
+            // my->currently_caching_data->irreversible_transactions.emplace(
+            //   block_num,
+            //   PSQL::processing_objects::process_transaction_t{
+            //     hash,
+            //     block_num,
+            //     trx_in_block,
+            //     trx.ref_block_num,
+            //     trx.ref_block_prefix,
+            //     trx.expiration,
+            //     ( sig_size == 0 ) ? fc::optional<signature_type>() : fc::optional<signature_type>( trx.signatures[0] ) }
+            // );
+          }
+          
 
           if( sig_size > 1 )
           {
             auto itr = trx.signatures.begin() + 1;
             while( itr != trx.signatures.end() )
             {
-              my->currently_caching_data->transactions_multisig.emplace_back(
-                hash,
-                *itr
-              );
+              if( my->_reindexing )
+              {
+                my->currently_caching_data->transactions_multisig.emplace_back(
+                  hash,
+                  *itr
+                );
+              }
+              else
+              {
+                // my->currently_caching_data->irreversible_transactions_multisig.emplace(
+                //   block_num,
+                //   PSQL::processing_objects::process_transaction_multisig_t{
+                //   hash,
+                //   *itr }
+                // );
+              }
+              
               ++itr;
             }
           }
@@ -1327,6 +1490,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
       {
         my->init_database(note.force_replay, note.max_block_number );
         my->blocks_per_commit = 1'000;
+        my->_reindexing = true;
       }
 
       void sql_serializer_plugin::on_post_reindex(const reindex_notification &)
@@ -1334,9 +1498,15 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
         ilog("finishing from post reindex");
         my->cleanup_sequence();
         my->blocks_per_commit = 1;
+        my->_reindexing = false;
       }
       
       void sql_serializer_plugin::on_live_sync_start() {}
+
+      void sql_serializer_plugin::on_irreversible_block(uint32_t block_num)
+      {
+
+      }
 
     } // namespace sql_serializer
   }    // namespace plugins

@@ -34,6 +34,7 @@ class sql_serializer_plugin : public plugin<sql_serializer_plugin>
       void on_pre_reindex(const reindex_notification &note);
       void on_post_reindex(const reindex_notification &note);
       void on_live_sync_start();
+      void on_irreversible_block(uint32_t block_num);
 
       void on_post_apply_operation(const operation_notification &note);
       void on_post_apply_transaction(const transaction_notification &note);
@@ -48,7 +49,7 @@ class sql_serializer_plugin : public plugin<sql_serializer_plugin>
 
       std::unique_ptr<detail::sql_serializer_plugin_impl> my;
 
-      void handle_transactions(const vector<hive::protocol::signed_transaction>& transactions, const int64_t block_num );
+      void handle_transactions(const vector<hive::protocol::signed_transaction>& transactions, const uint32_t block_num );
 };
 
 } } } //hive::plugins::sql_serializer
