@@ -1432,10 +1432,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 {
   const auto& voter = _db.get_account( o.account );
   FC_ASSERT( voter.proxy.size() == 0, "A proxy is currently set, please clear the proxy before voting for a witness." );
-
-  if( o.approve )
-    FC_ASSERT( voter.can_vote, "Account has declined its voting rights." );
-
+  FC_ASSERT( voter.can_vote, "Account has declined its voting rights." );
   _db.modify( voter, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   const auto& witness = _db.get_witness( o.witness );

@@ -664,8 +664,8 @@ std::vector<signed_block> database::fetch_block_range_unlocked( const uint32_t s
   if (!result.empty())
     idump((result.front().block_num())(result.back().block_num()));
   result.reserve(result.size() + fork_items.size());
-  for (const fork_item& item : fork_items)
-    result.push_back(std::move(item.data));
+  for (fork_item& item : fork_items)
+    result.emplace_back(std::move(item.data));
 
   return result;
 } FC_LOG_AND_RETHROW() }
@@ -1595,6 +1595,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
       else
         adjust_balance( to_account, new_vesting );
       // Update global vesting pool numbers.
+      const auto& smt = get< smt_token_object, by_symbol >( liquid.symbol );
       modify( smt, [&]( smt_token_object& smt_object )
       {
         if( to_reward_balance )
@@ -5204,7 +5205,7 @@ void database::adjust_smt_balance( const account_object& owner, const asset& del
     bo = &new_balance_object;
   }
 
-  modify( *bo, std::move( modifier ) );
+  modify( *bo, std::forward<modifier_type>( modifier ) );
   if( bo->is_empty() )
   {
     // Zero balance is the same as non object balance at all.

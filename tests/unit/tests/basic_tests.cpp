@@ -448,7 +448,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( shared_string ), 32 ); //it has dynamic component as well
   BOOST_CHECK_EQUAL( sizeof( price ), 32 );
   BOOST_CHECK_EQUAL( sizeof( t_vector< char > ), 32 ); //it has dynamic component as well, all vectors have the same static size
-  BOOST_CHECK_EQUAL( sizeof( public_key_type), 33);
+  BOOST_CHECK_EQUAL( sizeof( public_key_type ), 33 );
   /*
   The purpose of this test is to make you think about the impact on RAM when you make changes in chain objects.
   Also somewhat helps in catching new problems with alignment (f.e. when you added a flag member and object

@@ -854,7 +854,7 @@ struct api_smt_token_object
   api_smt_token_object( const smt_token_object& token, const database& db )
     : token( token.copy_chain_object() ) //FIXME: exposes internal chain object as API result
   {
-    const smt_ico_object* ico = db.find< chain::smt_ico_object, chain::by_symbol >( token.liquid_symbol );
+    const smt_ico_object* ico = db.find< smt_ico_object, by_symbol >( token.liquid_symbol );
     if ( ico != nullptr )
       this->ico = ico->copy_chain_object(); //FIXME: exposes internal chain object as API result
   }

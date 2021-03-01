@@ -687,11 +687,8 @@ struct state
     */
   map< string, discussion_index >                    discussion_idx;
 
-  map< string, api_tag_object >                tags;
+  map< string, api_tag_object >                      tags;
 
-  /**
-    *  map from account/slug to full nested tags::discussion_
-    */
   map< string, extended_account >                    accounts;
 
   map< string, api_witness_object >                  witnesses;

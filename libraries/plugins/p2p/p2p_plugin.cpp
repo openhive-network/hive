@@ -379,7 +379,7 @@ graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& 
           ("id", id.item_hash)("id2", chain.db().get_block_id_for_num(block_header::num_from_id(id.item_hash))));
       FC_ASSERT( opt_block.valid() );
       // ilog("Serving up block #${num}", ("num", opt_block->block_num()));
-    return block_message(*opt_block);
+      return block_message(*opt_block);
     });
   }
   return chain.db().with_read_lock( [&]()
