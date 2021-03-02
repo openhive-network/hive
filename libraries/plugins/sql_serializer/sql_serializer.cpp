@@ -821,17 +821,20 @@ namespace hive
             current_stats.reset();
           }
 
-          void switch_db_items( bool mode, const std::string& function_name, const std::string& objects_name, const std::vector<uint32_t>& values ) const
+          void switch_db_items( bool mode, const std::string& function_name, const std::string& objects_name ) const
           {
+            std::vector<std::string> table_names = { "hive_blocks", "hive_transactions", "hive_transactions_multisig", "hive_operation_types",
+                                                         "hive_permlink_data", "hive_operations", "hive_accounts", "hive_account_operations" };
+
             ilog("${mode} ${objects_name}...", ("objects_name", objects_name )("mode", ( mode ? "Creating" : "Dropping" ) ) );
 
             std::list< data_processor > processors;
 
-            for( auto value : values )
+            for( auto& table_name : table_names )
             {
               processors.emplace_back( db_url, "DB processor", [ = ](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
                             {
-                              std::string query = std::string( "SELECT " ) + function_name + "( " + ( mode ? "TRUE" : "FALSE" ) + ", " + std::to_string( value ) + " );";
+                              std::string query = std::string( "SELECT " ) + function_name + "( '" + table_name + "' );";
                               ilog("The query: `${query}` has been executed...", ("query", query ) );
                               tx.exec( query );
                               return data_processing_status();
@@ -856,13 +859,16 @@ namespace hive
               ("pbn", psql_block_number)("pit", psql_index_threshold)("hbn", head_block_number));
 
               if( !mode )
-                switch_db_items( mode, "constraint_foreign_keys_updater", "foreign constraints", {1, 2, 4, 8} );
-
-              switch_db_items( mode, "index_updater", "indexes", {1, 2, 4, 8} );
-              switch_db_items( mode, "constraint_primary_unique_updater", "constraints", {1, 2, 4, 8, 16, 32} );
+              {
+                switch_db_items( mode, "save_and_drop_indexes_foreign_keys", "foreign keys" );
+                switch_db_items( mode, "save_and_drop_indexes_constraints", "indexes/constraints" );
+              }
 
               if( mode )
-                switch_db_items( mode, "constraint_foreign_keys_updater", "foreign constraints", {1, 2, 4, 8} );
+              {
+                switch_db_items( mode, "restore_indexes_constraints", "indexes/constraints" );
+                switch_db_items( mode, "restore_foreign_keys", "foreign keys" );
+              }
             }
             else
             {
