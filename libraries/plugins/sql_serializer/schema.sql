@@ -1,78 +1,49 @@
--- -- Create Database
--- CREATE DATABASE block_log;
-
--- -- Backups
--- -- Delete backup
--- DROP DATABASE IF EXISTS block_log_back;
--- -- Create backup
--- CREATE DATABASE block_log_back WITH TEMPLATE block_log;
--- -- Restore backup
--- DROP DATABASE block_log;
--- CREATE DATABASE block_log WITH TEMPLATE block_log_back;
-
--- -- Reset
--- -- NOTE:
--- -- This section may require additional rights
--- -- If user, that is in connection string doesn't have proper acces rights
--- -- Execute theese commands with proper rights, comment 
--- -- following 3 lines, and uncomment theese under `Drop tables`
 DROP SCHEMA public CASCADE;
 CREATE SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS intarray;
-
--- -- Check current status
--- SELECT COUNT(*) FROM hive_blocks;
--- SELECT COUNT(*) FROM hive_transactions;
--- SELECT COUNT(*) FROM hive_operations;
--- SELECT COUNT(*) FROM hive_virtual_operations;
--- SELECT COUNT(*) FROM hive_accounts;
--- SELECT COUNT(*) FROM hive_operation_types;
--- SELECT COUNT(*) FROM hive_permlink_data;
-
--- -- Drop tables
--- DROP TABLE IF EXISTS hive_blocks CASCADE;
--- DROP TABLE IF EXISTS hive_transactions CASCADE;
--- DROP TABLE IF EXISTS hive_operations CASCADE;
--- DROP TABLE IF EXISTS hive_virtual_operations CASCADE;
--- DROP TABLE IF EXISTS hive_accounts CASCADE;
--- DROP TABLE IF EXISTS hive_operation_types CASCADE;
--- DROP TABLE IF EXISTS hive_permlink_data CASCADE;
-
--- -- Core Tables
 
 CREATE TABLE IF NOT EXISTS hive_blocks (
   "num" integer NOT NULL,
   "hash" bytea NOT NULL,
   "prev" bytea NOT NULL,
   "created_at" timestamp without time zone NOT NULL
-  --,CONSTRAINT hive_blocks_pkey PRIMARY KEY ("num"),
-  --CONSTRAINT hive_blocks_uniq UNIQUE ("hash")
 );
+ALTER TABLE hive_blocks ADD CONSTRAINT hive_blocks_pkey PRIMARY KEY ( num );
+ALTER TABLE hive_blocks ADD CONSTRAINT hive_blocks_uniq UNIQUE ( hash );
 
 CREATE TABLE IF NOT EXISTS hive_transactions (
   "block_num" integer NOT NULL,
   "trx_in_block" smallint NOT NULL,
-  "trx_hash" bytea NOT NULL
-  --,CONSTRAINT hive_transactions_pkey PRIMARY KEY ("block_num", "trx_in_block"),
-  --CONSTRAINT hive_transactions_uniq_1 UNIQUE ("trx_hash")
+  "trx_hash" bytea NOT NULL,
+  ref_block_num integer NOT NULL,
+  ref_block_prefix bigint NOT NULL,
+  expiration timestamp without time zone NOT NULL,
+  signature bytea DEFAULT NULL
 );
+ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_pkey PRIMARY KEY ( trx_hash );
+CREATE INDEX IF NOT EXISTS hive_transactions_block_num_trx_in_block_idx ON hive_transactions ( block_num, trx_in_block );
+
+CREATE TABLE IF NOT EXISTS hive_transactions_multisig (
+  "trx_hash" bytea NOT NULL,
+  signature bytea NOT NULL
+);
+ALTER TABLE hive_transactions_multisig ADD CONSTRAINT hive_transactions_multisig_pkey PRIMARY KEY ( trx_hash );
 
 CREATE TABLE IF NOT EXISTS hive_operation_types (
-  -- This "id", due to filling logic is not autoincrement, but is set by `fc::static_variant::which()` (a.k.a.. operation )
   "id" smallint NOT NULL,
   "name" text NOT NULL,
   "is_virtual" boolean NOT NULL
-  --,CONSTRAINT hive_operation_types_pkey PRIMARY KEY ("id")
 );
+ALTER TABLE hive_operation_types ADD CONSTRAINT hive_operation_types_pkey PRIMARY KEY ( id );
+ALTER TABLE hive_operation_types ADD CONSTRAINT hive_operation_types_uniq UNIQUE ( name );
 
 CREATE TABLE IF NOT EXISTS hive_permlink_data (
   id INTEGER NOT NULL,
   permlink varchar(255) NOT NULL
-  --,CONSTRAINT hive_permlink_data_pkey PRIMARY KEY ("id"),
-  --CONSTRAINT hive_permlink_data_uniq UNIQUE ("permlink")
 );
+ALTER TABLE hive_permlink_data ADD CONSTRAINT hive_permlink_data_pkey PRIMARY KEY ( id );
+ALTER TABLE hive_permlink_data ADD CONSTRAINT hive_permlink_data_uniq UNIQUE ( permlink );
 
---- Stores all operation definitions (regular like also virtual ones).
 CREATE TABLE IF NOT EXISTS hive_operations (
   id bigint not null,
   block_num integer NOT NULL,
@@ -80,16 +51,16 @@ CREATE TABLE IF NOT EXISTS hive_operations (
   op_pos integer NOT NULL,
   op_type_id smallint NOT NULL,
   body text DEFAULT NULL
-  --,permlink_ids int[]
-  --,CONSTRAINT hive_operations_pkey PRIMARY KEY (id) --("block_num", "trx_in_block", "op_pos")
 );
+ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_pkey PRIMARY KEY ( id );
+CREATE INDEX IF NOT EXISTS hive_operations_block_num_type_trx_in_block_idx ON hive_operations ( block_num, op_type_id, trx_in_block );
 
 CREATE TABLE IF NOT EXISTS hive_accounts (
   id INTEGER NOT NULL,
   name VARCHAR(16) NOT NULL
-  --,CONSTRAINT hive_accounts_pkey PRIMARY KEY ("id"),
-  --CONSTRAINT hive_accounts_uniq UNIQUE ("name")
 );
+ALTER TABLE hive_accounts ADD CONSTRAINT hive_accounts_pkey PRIMARY KEY ( id );
+ALTER TABLE hive_accounts ADD CONSTRAINT hive_accounts_uniq UNIQUE ( name );
 
 CREATE TABLE IF NOT EXISTS hive_account_operations
 (
@@ -100,6 +71,14 @@ CREATE TABLE IF NOT EXISTS hive_account_operations
   --- Id of operation held in hive_opreations table.
   operation_id bigint not null
 );
+CREATE INDEX IF NOT EXISTS hive_account_operations_account_op_seq_no_id_idx ON hive_account_operations(account_id, account_op_seq_no, operation_id);
+
+ALTER TABLE hive_account_operations ADD CONSTRAINT hive_account_operations_fk_1 FOREIGN KEY (account_id) REFERENCES hive_accounts (id);
+ALTER TABLE hive_account_operations ADD CONSTRAINT hive_account_operations_fk_2 FOREIGN KEY (operation_id) REFERENCES hive_operations (id);
+ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);
+ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_2 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id);
+ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);
+ALTER TABLE hive_transactions_multisig ADD CONSTRAINT hive_transactions_multisig_fk_1 FOREIGN KEY (trx_hash) REFERENCES hive_transactions (trx_hash);
 
 DROP VIEW IF EXISTS account_operation_count_info_view CASCADE;
 CREATE OR REPLACE VIEW account_operation_count_info_view
@@ -114,10 +93,7 @@ GROUP BY ao.account_id
 )T ON ha.id = T.account_id
 ;
 
--- SPECIAL VALUES
--- This is permlink referenced by empty permlink arrays
 INSERT INTO hive_permlink_data VALUES(0, '');
--- This is account referenced by empty participants arrays
 INSERT INTO hive_accounts VALUES(0, '');
 
 DROP TYPE IF EXISTS hive_api_operation CASCADE;
@@ -142,14 +118,6 @@ BEGIN
                OR ho.op_type_id in (49, 51, 59, 70, 71)
               )
     ORDER BY ho.id
-    /*
-select id from hive_operation_types where is_virtual 
-and name in ('hive::protocol::author_reward_operation',
-'hive::protocol::comment_reward_operation',
-'hive::protocol::effective_comment_vote_operation',
-'hive::protocol::comment_payout_update_operation',
-'hive::protocol::ineffective_delete_comment_operation')
-*/
 ; 
 
 END
@@ -190,3 +158,180 @@ $function$
 LANGUAGE plpgsql STABLE
 ;
 
+DROP TABLE IF EXISTS hive_indexes_constraints;
+CREATE TABLE IF NOT EXISTS hive_indexes_constraints (
+  "table_name" text NOT NULL,
+  "index_constraint_name" text NOT NULL,
+  "command" text NOT NULL,
+  "is_constraint" boolean NOT NULL,
+  "is_index" boolean NOT NULL,
+  "is_foreign_key" boolean NOT NULL
+);
+ALTER TABLE hive_indexes_constraints ADD CONSTRAINT hive_indexes_constraints_table_name_idx UNIQUE ( table_name, index_constraint_name );
+
+DROP FUNCTION IF EXISTS save_and_drop_indexes_constraints;
+CREATE OR REPLACE FUNCTION save_and_drop_indexes_constraints( in _table_name TEXT )
+RETURNS VOID
+AS
+$function$
+DECLARE
+  __command TEXT;
+  __cursor REFCURSOR;
+BEGIN
+
+  INSERT INTO hive_indexes_constraints( table_name, index_constraint_name, command, is_constraint, is_index, is_foreign_key )
+  SELECT
+    T.table_name,
+    T.constraint_name,
+    (
+      CASE
+        WHEN T.is_primary = TRUE THEN 'ALTER TABLE ' || T.table_name || ' ADD CONSTRAINT ' || T.constraint_name || ' PRIMARY KEY ( ' || array_to_string(array_agg( T.column_name::TEXT ), ', ') || ' ) '
+        WHEN (T.is_unique = TRUE AND T.is_primary = FALSE ) THEN 'ALTER TABLE ' || T.table_name || ' ADD CONSTRAINT ' || T.constraint_name || ' UNIQUE ( ' || array_to_string(array_agg( T.column_name::TEXT ), ', ') || ' ) '
+        WHEN (T.is_unique = FALSE AND T.is_primary = FALSE ) THEN 'CREATE INDEX IF NOT EXISTS ' || T.constraint_name || ' ON ' || T.table_name || ' ( ' || array_to_string(array_agg( T.column_name::TEXT ), ', ') || ' ) '
+      END
+    ),
+    (T.is_unique = TRUE OR T.is_primary = TRUE ) is_constraint,
+    (T.is_unique = FALSE AND T.is_primary = FALSE ) is_index,
+    FALSE is_foreign_key
+  FROM
+  (
+    SELECT
+        t.relname table_name,
+        i.relname constraint_name,
+        a.attname column_name,
+        ix.indisunique is_unique,
+        ix.indisprimary is_primary,
+        a.attnum
+    FROM
+        pg_class t,
+        pg_class i,
+        pg_index ix,
+        pg_attribute a
+    WHERE
+        t.oid = ix.indrelid
+        AND i.oid = ix.indexrelid
+        AND a.attrelid = t.oid
+        AND a.attnum = ANY(ix.indkey)
+        AND t.relkind = 'r'
+        AND t.relname = _table_name
+    ORDER BY t.relname, i.relname, a.attnum
+  )T
+  GROUP BY T.table_name, T.constraint_name, T.is_unique, T.is_primary
+  ON CONFLICT DO NOTHING;
+
+  --dropping indexes
+  OPEN __cursor FOR ( SELECT ('DROP INDEX IF EXISTS '::TEXT || index_constraint_name || ';') FROM hive_indexes_constraints WHERE table_name = _table_name AND is_index = TRUE );
+  LOOP
+    FETCH __cursor INTO __command;
+    EXIT WHEN NOT FOUND;
+    EXECUTE __command;
+  END LOOP;
+  CLOSE __cursor;
+
+  --dropping primary keys/unique contraints
+  OPEN __cursor FOR ( SELECT ('ALTER TABLE '::TEXT || _table_name || ' DROP CONSTRAINT IF EXISTS ' || index_constraint_name || ';') FROM hive_indexes_constraints WHERE table_name = _table_name AND is_constraint = TRUE );
+  LOOP
+    FETCH __cursor INTO __command;
+    EXIT WHEN NOT FOUND;
+    EXECUTE __command;
+  END LOOP;
+  CLOSE __cursor;
+
+END
+$function$
+LANGUAGE plpgsql VOLATILE
+;
+
+DROP FUNCTION IF EXISTS save_and_drop_indexes_foreign_keys;
+CREATE OR REPLACE FUNCTION save_and_drop_indexes_foreign_keys( in _table_name TEXT )
+RETURNS VOID
+AS
+$function$
+DECLARE
+  __command TEXT;
+  __cursor REFCURSOR;
+BEGIN
+
+  INSERT INTO hive_indexes_constraints( table_name, index_constraint_name, command, is_constraint, is_index, is_foreign_key )
+  SELECT
+    tc.table_name,
+    tc.constraint_name,
+    'ALTER TABLE ' || tc.table_name || ' ADD CONSTRAINT ' || tc.constraint_name || ' FOREIGN KEY ( ' || kcu.column_name || ' ) REFERENCES ' || ccu.table_name || ' ( ' || ccu.column_name || ' ) ',
+    FALSE is_constraint,
+    FALSE is_index,
+    TRUE is_foreign_key
+  FROM 
+      information_schema.table_constraints AS tc 
+      JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+      JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema
+  WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name = _table_name
+  ON CONFLICT DO NOTHING;
+
+  OPEN __cursor FOR ( SELECT ('ALTER TABLE '::TEXT || _table_name || ' DROP CONSTRAINT IF EXISTS ' || index_constraint_name || ';') FROM hive_indexes_constraints WHERE table_name = _table_name AND is_foreign_key = TRUE );
+
+  LOOP
+    FETCH __cursor INTO __command;
+    EXIT WHEN NOT FOUND;
+    EXECUTE __command;
+  END LOOP;
+
+  CLOSE __cursor;
+
+END
+$function$
+LANGUAGE plpgsql VOLATILE
+;
+
+DROP FUNCTION IF EXISTS restore_indexes_constraints;
+CREATE OR REPLACE FUNCTION restore_indexes_constraints( in _table_name TEXT )
+RETURNS VOID
+AS
+$function$
+DECLARE
+  __command TEXT;
+  __cursor REFCURSOR;
+BEGIN
+
+  --restoring indexes, primary keys, unique contraints
+  OPEN __cursor FOR ( SELECT command FROM hive_indexes_constraints WHERE table_name = _table_name AND is_foreign_key = FALSE );
+  LOOP
+    FETCH __cursor INTO __command;
+    EXIT WHEN NOT FOUND;
+    EXECUTE __command;
+  END LOOP;
+  CLOSE __cursor;
+
+  DELETE FROM hive_indexes_constraints
+  WHERE table_name = _table_name AND is_foreign_key = FALSE;
+
+END
+$function$
+LANGUAGE plpgsql VOLATILE
+;
+
+DROP FUNCTION IF EXISTS restore_foreign_keys;
+CREATE OR REPLACE FUNCTION restore_foreign_keys( in _table_name TEXT )
+RETURNS VOID
+AS
+$function$
+DECLARE
+  __command TEXT;
+  __cursor REFCURSOR;
+BEGIN
+
+  --restoring indexes, primary keys, unique contraints
+  OPEN __cursor FOR ( SELECT command FROM hive_indexes_constraints WHERE table_name = _table_name AND is_foreign_key = TRUE );
+  LOOP
+    FETCH __cursor INTO __command;
+    EXIT WHEN NOT FOUND;
+    EXECUTE __command;
+  END LOOP;
+  CLOSE __cursor;
+
+  DELETE FROM hive_indexes_constraints
+  WHERE table_name = _table_name AND is_foreign_key = TRUE;
+
+END
+$function$
+LANGUAGE plpgsql VOLATILE
+;
