@@ -1339,7 +1339,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
         ilog("finishing from post reindex");
         my->cleanup_sequence();
 
-        if( note.reindex_success )
+        if( note.last_block_number >= note.max_block_number )
           my->switch_db_items( true/*mode*/ );
 
         my->blocks_per_commit = 1;
