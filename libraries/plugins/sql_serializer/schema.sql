@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS hive_account_operations
   operation_id bigint not null
 );
 CREATE INDEX IF NOT EXISTS hive_account_operations_account_op_seq_no_id_idx ON hive_account_operations(account_id, account_op_seq_no, operation_id);
+CREATE INDEX IF NOT EXISTS hive_account_operations_operation_id_idx ON hive_account_operations (operation_id);
 
 ALTER TABLE hive_account_operations ADD CONSTRAINT hive_account_operations_fk_1 FOREIGN KEY (account_id) REFERENCES hive_accounts (id);
 ALTER TABLE hive_account_operations ADD CONSTRAINT hive_account_operations_fk_2 FOREIGN KEY (operation_id) REFERENCES hive_operations (id);

@@ -894,12 +894,14 @@ namespace hive
           void init_database(bool freshDb, uint32_t max_block_number )
           {
             head_block_number = max_block_number;
-            connection.exec_single_in_transaction(PSQL::get_all_type_definitions());
 
             load_initial_db_data();
 
             if(freshDb)
+            {
+              connection.exec_single_in_transaction(PSQL::get_all_type_definitions());
               import_all_builtin_accounts();
+            }
 
             switch_db_items( false/*mode*/ );
           }
