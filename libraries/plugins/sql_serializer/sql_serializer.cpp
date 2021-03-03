@@ -781,7 +781,6 @@ namespace hive
             ilog("Serializer plugin is closing");
 
             cleanup_sequence();
-            switch_db_items( true/*mode*/ );
 
             ilog("Serializer plugin has been closed");
           }
@@ -1335,10 +1334,14 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
         my->blocks_per_commit = 1'000;
       }
 
-      void sql_serializer_plugin::on_post_reindex(const reindex_notification &)
+      void sql_serializer_plugin::on_post_reindex(const reindex_notification& note)
       {
         ilog("finishing from post reindex");
         my->cleanup_sequence();
+
+        if( note.reindex_success )
+          my->switch_db_items( true/*mode*/ );
+
         my->blocks_per_commit = 1;
       }
       
