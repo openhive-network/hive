@@ -29,8 +29,10 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
-#define VOTING_MANABAR( account ) db->get_account( account ).voting_manabar
-#define DOWNVOTE_MANABAR( account ) db->get_account( account ).downvote_manabar
+#define VOTING_MANABAR( account_name ) db->get_account( account_name ).voting_manabar
+#define DOWNVOTE_MANABAR( account_name ) db->get_account( account_name ).downvote_manabar
+#define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( account.get_proxy() == proxy.name )
+#define CHECK_NO_PROXY( account ) BOOST_REQUIRE( account.has_proxy() == false )
 
 inline uint16_t get_voting_power( const account_object& a )
 {
@@ -134,7 +136,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE( acct_auth.owner == authority( 1, priv_key.get_public_key(), 1 ) );
     BOOST_REQUIRE( acct_auth.active == authority( 2, priv_key.get_public_key(), 2 ) );
     BOOST_REQUIRE( acct.memo_key == priv_key.get_public_key() );
-    BOOST_REQUIRE( acct.proxy == "" );
+    CHECK_NO_PROXY( acct );
     BOOST_REQUIRE( acct.created == db->head_block_time() );
     BOOST_REQUIRE( acct.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
     BOOST_REQUIRE( acct.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
@@ -153,7 +155,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE( acct_auth.owner == authority( 1, priv_key.get_public_key(), 1 ) );
     BOOST_REQUIRE( acct_auth.active == authority( 2, priv_key.get_public_key(), 2 ) );
     BOOST_REQUIRE( acct.memo_key == priv_key.get_public_key() );
-    BOOST_REQUIRE( acct.proxy == "" );
+    CHECK_NO_PROXY( acct );
     BOOST_REQUIRE( acct.created == db->head_block_time() );
     BOOST_REQUIRE( acct.get_balance().amount.value == ASSET( "0.000 TESTS " ).amount.value );
     BOOST_REQUIRE( acct.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
@@ -2437,9 +2439,9 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
 
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( bob.proxy == "alice" );
+    CHECK_PROXY( bob, alice );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( alice.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( alice );
     BOOST_REQUIRE( alice.proxied_vsf_votes_total() == bob.get_real_vesting_shares() );
     validate_database();
 
@@ -2454,10 +2456,10 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
 
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( bob.proxy == "sam" );
+    CHECK_PROXY( bob, sam );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
     BOOST_REQUIRE( alice.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( sam.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( sam );
     BOOST_REQUIRE( sam.proxied_vsf_votes_total().value == bob.get_real_vesting_shares() );
     validate_database();
 
@@ -2465,9 +2467,9 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
 
     HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), fc::exception );
 
-    BOOST_REQUIRE( bob.proxy == "sam" );
+    CHECK_PROXY( bob, sam );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( sam.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( sam );
     BOOST_REQUIRE( sam.proxied_vsf_votes_total() == bob.get_real_vesting_shares() );
     validate_database();
 
@@ -2483,11 +2485,11 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
 
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( bob.proxy == "sam" );
+    CHECK_PROXY( bob, sam );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( sam.proxy == "dave" );
+    CHECK_PROXY( sam, dave );
     BOOST_REQUIRE( sam.proxied_vsf_votes_total() == bob.get_real_vesting_shares() );
-    BOOST_REQUIRE( dave.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( dave );
     BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_real_vesting_shares() + bob.get_real_vesting_shares() ) );
     validate_database();
 
@@ -2505,13 +2507,13 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
 
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( alice.proxy == "sam" );
+    CHECK_PROXY( alice, sam );
     BOOST_REQUIRE( alice.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( bob.proxy == "sam" );
+    CHECK_PROXY( bob, sam );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( sam.proxy == "dave" );
+    CHECK_PROXY( sam, dave );
     BOOST_REQUIRE( sam.proxied_vsf_votes_total() == ( bob.get_real_vesting_shares() + alice.get_real_vesting_shares() ) );
-    BOOST_REQUIRE( dave.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( dave );
     BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_real_vesting_shares() + bob.get_real_vesting_shares() + alice.get_real_vesting_shares() ) );
     validate_database();
 
@@ -2527,13 +2529,13 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
 
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( alice.proxy == "sam" );
+    CHECK_PROXY( alice, sam );
     BOOST_REQUIRE( alice.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( bob.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( bob );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( sam.proxy == "dave" );
+    CHECK_PROXY( sam, dave );
     BOOST_REQUIRE( sam.proxied_vsf_votes_total() == alice.get_real_vesting_shares() );
-    BOOST_REQUIRE( dave.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( dave );
     BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_real_vesting_shares() + alice.get_real_vesting_shares() ) );
     validate_database();
 
@@ -2617,9 +2619,9 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply_delay )
 
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( _bob.proxy == "alice" );
+    CHECK_PROXY( _bob, _alice );
     BOOST_REQUIRE( _bob.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( _alice.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( _alice );
     BOOST_REQUIRE( _alice.proxied_vsf_votes_total().value == 0 );
     validate_database();
     generate_blocks(db->head_block_time() + fc::seconds(HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS));
@@ -2637,10 +2639,10 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply_delay )
 
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( _bob.proxy == "sam" );
+    CHECK_PROXY( _bob, _sam );
     BOOST_REQUIRE( _bob.proxied_vsf_votes_total().value == 0 );
     BOOST_REQUIRE( _alice.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( _sam.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( _sam );
     //all vests are now mature so changes in voting power are immediate
     BOOST_REQUIRE( _sam.proxied_vsf_votes_total().value == _bob.get_vesting().amount );
     validate_database();
@@ -2649,9 +2651,9 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply_delay )
 
     HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), fc::exception );
 
-    BOOST_REQUIRE( _bob.proxy == "sam" );
+    CHECK_PROXY( _bob, _sam );
     BOOST_REQUIRE( _bob.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( _sam.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( _sam );
     BOOST_REQUIRE( _sam.proxied_vsf_votes_total() == _bob.get_vesting().amount );
     validate_database();
 
@@ -2667,11 +2669,11 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply_delay )
 
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( _bob.proxy == "sam" );
+    CHECK_PROXY( _bob, _sam );
     BOOST_REQUIRE( _bob.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( _sam.proxy == "dave" );
+    CHECK_PROXY( _sam, _dave );
     BOOST_REQUIRE( _sam.proxied_vsf_votes_total() == _bob.get_vesting().amount );
-    BOOST_REQUIRE( _dave.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( _dave );
     BOOST_REQUIRE( _dave.proxied_vsf_votes_total() == ( _sam.get_vesting() + _bob.get_vesting() ).amount );
     validate_database();
 
@@ -2689,13 +2691,13 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply_delay )
 
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( _alice.proxy == "sam" );
+    CHECK_PROXY( _alice, _sam );
     BOOST_REQUIRE( _alice.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( _bob.proxy == "sam" );
+    CHECK_PROXY( _bob, _sam );
     BOOST_REQUIRE( _bob.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( _sam.proxy == "dave" );
+    CHECK_PROXY( _sam, _dave );
     BOOST_REQUIRE( _sam.proxied_vsf_votes_total() == ( _bob.get_vesting() + _alice.get_vesting() ).amount );
-    BOOST_REQUIRE( _dave.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( _dave );
     BOOST_REQUIRE( _dave.proxied_vsf_votes_total() == ( _sam.get_vesting() + _bob.get_vesting() + _alice.get_vesting() ).amount );
     validate_database();
 
@@ -2711,13 +2713,13 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply_delay )
 
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( _alice.proxy == "sam" );
+    CHECK_PROXY( _alice, _sam );
     BOOST_REQUIRE( _alice.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( _bob.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( _bob );
     BOOST_REQUIRE( _bob.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( _sam.proxy == "dave" );
+    CHECK_PROXY( _sam, _dave );
     BOOST_REQUIRE( _sam.proxied_vsf_votes_total() == _alice.get_vesting().amount );
-    BOOST_REQUIRE( _dave.proxy == HIVE_PROXY_TO_SELF_ACCOUNT );
+    CHECK_NO_PROXY( _dave );
     BOOST_REQUIRE( _dave.proxied_vsf_votes_total() == ( _sam.get_vesting() + _alice.get_vesting() ).amount );
     validate_database();
 
@@ -8489,7 +8491,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     const auto& bob_meta = db->get< account_metadata_object, by_account >( bob.get_id() );
     BOOST_REQUIRE( bob_meta.json_metadata == "{\"foo\":\"bar\"}" );
 #endif
-    BOOST_REQUIRE( bob.proxy == "" );
+    CHECK_NO_PROXY( bob );
     BOOST_REQUIRE( bob.recovery_account == "alice" );
     BOOST_REQUIRE( bob.created == db->head_block_time() );
     BOOST_REQUIRE( bob.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );

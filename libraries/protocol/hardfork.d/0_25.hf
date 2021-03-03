@@ -1,9 +1,9 @@
 #ifndef HIVE_HARDFORK_1_25
 #define HIVE_HARDFORK_1_25 25
 
-long hf25_time();
+long next_hf_time();
 
-#define HIVE_HARDFORK_1_25_TIME        hf25_time()
+#define HIVE_HARDFORK_1_25_TIME next_hf_time()
 
 #define HIVE_HARDFORK_1_25_VERSION hardfork_version( 1, 25 )
 

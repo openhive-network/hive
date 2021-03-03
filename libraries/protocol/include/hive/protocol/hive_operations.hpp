@@ -561,10 +561,12 @@ namespace hive { namespace protocol {
   struct account_witness_proxy_operation : public base_operation
   {
     account_name_type account;
-    account_name_type proxy;
+    account_name_type proxy = HIVE_PROXY_TO_SELF_ACCOUNT;
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(account); }
+
+    bool is_clearing_proxy() const { return proxy == HIVE_PROXY_TO_SELF_ACCOUNT; }
   };
 
 

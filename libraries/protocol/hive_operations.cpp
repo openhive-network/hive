@@ -341,7 +341,7 @@ namespace hive { namespace protocol {
   void account_witness_proxy_operation::validate() const
   {
     validate_account_name( account );
-    if( proxy.size() )
+    if( !is_clearing_proxy() )
       validate_account_name( proxy );
     FC_ASSERT( proxy != account, "Cannot proxy to self" );
   }

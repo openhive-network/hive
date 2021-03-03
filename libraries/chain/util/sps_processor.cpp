@@ -91,7 +91,7 @@ uint64_t sps_processor::calculate_votes( uint32_t pid )
     const auto& _voter = db.get_account( found->voter );
 
     //If _voter has set proxy, then his votes aren't taken into consideration
-    if( _voter.proxy == HIVE_PROXY_TO_SELF_ACCOUNT )
+    if( !_voter.has_proxy() )
     {
       auto sum = _voter.witness_vote_weight();
       ret += sum.value;

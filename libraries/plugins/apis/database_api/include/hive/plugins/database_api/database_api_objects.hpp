@@ -457,7 +457,7 @@ struct api_account_object
     id( a.get_id() ),
     name( a.name ),
     memo_key( a.memo_key ),
-    proxy( a.proxy ),
+    proxy( a.get_proxy() ),
     last_account_update( a.last_account_update ),
     created( a.created ),
     mined( a.mined ),

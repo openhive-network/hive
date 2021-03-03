@@ -55,55 +55,24 @@
 
 #include <stdlib.h>
 
-long hf25_time()
+long next_hf_time()
 {
-  long hf25Time =
+  // current "next hardfork" is HF25
+  long hfTime =
 #ifdef IS_TEST_NET
     1588334400; // Friday, 1 May 2020 12:00:00 GMT
 #else
     1640952000; //  Thursday, 31 December 2021 12:00:00 GMT
-
 #endif /// IS_TEST_NET
+
   const char* value = getenv("HIVE_HF25_TIME");
   if(value != nullptr)
   {
-    hf25Time = atol(value);
-    ilog("HIVE_HF25_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hf25Time));
+    hfTime = atol(value);
+    ilog("HIVE_HF25_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hfTime));
   }
 
-  return hf25Time;
-}
-
-long hf24_time()
-{
-  long hf24Time =
-#ifdef IS_TEST_NET
-    1588334400; // Friday, 1 May 2020 12:00:00 GMT
-#else
-    1601992800; // Tuesday, 06-Oct-2020 14:00:00 UTC
-
-#endif /// IS_TEST_NET
-  const char* value = getenv("HIVE_HF24_TIME");
-  if(value != nullptr)
-  {
-    hf24Time = atol(value);
-    ilog("HIVE_HF24_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hf24Time));
-  }
-
-  return hf24Time;
-}
-
-long hf23_time()
-{
-  long hf23Time = 1584712800; // Friday, 20 March 2020 14:00:00 GMT
-  const char* value = getenv("HIVE_HF23_TIME");
-  if(value != nullptr)
-  {
-    hf23Time = atol(value);
-    ilog("HIVE_HF23_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hf23Time));
-  }
-
-  return hf23Time;
+  return hfTime;
 }
 
 namespace hive { namespace chain {
@@ -1718,13 +1687,13 @@ void database::adjust_proxied_witness_votes( const account_object& a,
                         const std::array< share_type, HIVE_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
                         int depth )
 {
-  if( a.proxy != HIVE_PROXY_TO_SELF_ACCOUNT )
+  if( a.has_proxy() )
   {
     /// nested proxies are not supported, vote will not propagate
     if( depth >= HIVE_MAX_PROXY_RECURSION_DEPTH )
       return;
 
-    const auto& proxy = get_account( a.proxy );
+    const auto& proxy = get_account( a.get_proxy() );
 
     modify( proxy, [&]( account_object& a )
     {
@@ -1747,13 +1716,13 @@ void database::adjust_proxied_witness_votes( const account_object& a,
 
 void database::adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth )
 {
-  if( a.proxy != HIVE_PROXY_TO_SELF_ACCOUNT )
+  if( a.has_proxy() )
   {
     /// nested proxies are not supported, vote will not propagate
     if( depth >= HIVE_MAX_PROXY_RECURSION_DEPTH )
       return;
 
-    const auto& proxy = get_account( a.proxy );
+    const auto& proxy = get_account( a.get_proxy() );
 
     modify( proxy, [&]( account_object& a )
     {
@@ -2240,9 +2209,6 @@ void database::clear_account( const account_object& account,
       a.next_vesting_withdrawal = fc::time_point_sec::maximum();
       a.to_withdraw = 0;
       a.withdrawn = 0;
-      a.proxy = "";
-      a.recovery_account = "";
-      a.set_governance_vote_expired();
 
       if( has_hardfork( HIVE_HARDFORK_1_24 ) )
       {
@@ -3436,7 +3402,7 @@ void database::process_decline_voting_rights()
     modify( account, [&]( account_object& a )
     {
       a.can_vote = false;
-      a.proxy = HIVE_PROXY_TO_SELF_ACCOUNT;
+      a.clear_proxy();
     });
 
     remove( *itr );
@@ -6136,7 +6102,7 @@ void database::validate_invariants()const
       total_vesting += itr->get_vesting();
       total_vesting += itr->get_vest_rewards();
       pending_vesting_hive += itr->get_vest_rewards_as_hive();
-      total_vsf_votes += ( itr->proxy == HIVE_PROXY_TO_SELF_ACCOUNT ?
+      total_vsf_votes += ( !itr->has_proxy() ?
                       itr->witness_vote_weight() :
                       ( HIVE_MAX_PROXY_RECURSION_DEPTH > 0 ?
                           itr->proxied_vsf_votes[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
@@ -6491,7 +6457,7 @@ void database::retally_witness_votes()
   // Apply all existing votes by account
   for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
   {
-    if( itr->proxy != HIVE_PROXY_TO_SELF_ACCOUNT ) continue;
+    if( itr->has_proxy() ) continue;
 
     const auto& a = *itr;
 
@@ -6514,7 +6480,7 @@ void database::retally_witness_vote_counts( bool force )
   {
     const auto& a = *itr;
     uint16_t witnesses_voted_for = 0;
-    if( force || (a.proxy != HIVE_PROXY_TO_SELF_ACCOUNT  ) )
+    if( force || a.has_proxy() )
     {
       const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
       auto wit_itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
@@ -6598,8 +6564,8 @@ void database::remove_expired_governance_votes()
     ++acc_it;
 
     if ((wvote == witness_votes.end() || wvote->account != acc.name) &&
-    (pvote == proposal_votes.end() || pvote->voter != acc.name) &&
-    !acc.proxy.size())
+        (pvote == proposal_votes.end() || pvote->voter != acc.name) &&
+        !acc.has_proxy())
     {
       modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); });
       max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
@@ -6608,10 +6574,10 @@ void database::remove_expired_governance_votes()
 
     ++processed_accounts_with_votes;
 
-    if (acc.proxy.size())
+    if (acc.has_proxy())
     {
       adjust_proxied_witness_votes( acc, -acc.vesting_shares.amount );
-      modify(acc, [&](account_object& acc) { acc.proxy = ""; });
+      modify(acc, [&](account_object& acc) { acc.clear_proxy(); });
     }
 
     while (wvote != witness_votes.end() && wvote->account == acc.name)

@@ -602,7 +602,7 @@ class wallet_api
       *
       * Setting a vote proxy does not remove your previous votes from the blockchain,
       * they remain there but are ignored.  If you later null out your vote proxy,
-      * your previous votes will take effect again.
+      * your previous votes will take effect again (ABW: definitely not true with regard to witness votes).
       *
       * This setting can be changed at any time.
       *
@@ -620,6 +620,7 @@ class wallet_api
       * positively or negatively for a witness. The account can either vote for with positively
       * votes or against with negative votes. The vote will remain until updated with another
       * vote. Vote strength is determined by the accounts vesting shares.
+      * ABW: not true; there are no negative witness votes, you can only remove previously cast vote
       *
       * @param account_to_vote_with The account voting for a witness
       * @param witness_to_vote_for The witness that is being voted for

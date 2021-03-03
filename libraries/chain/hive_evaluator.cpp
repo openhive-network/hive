@@ -1383,7 +1383,7 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_operation& o )
 {
   const auto& account = _db.get_account( o.account );
-  FC_ASSERT( account.proxy != o.proxy, "Proxy must change." );
+  FC_ASSERT( account.get_proxy() != o.proxy, "Proxy must change." );
   FC_ASSERT( account.can_vote, "Account has declined the ability to vote and cannot proxy votes." );
   _db.modify( account, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
@@ -1394,16 +1394,16 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     delta[i+1] = -account.proxied_vsf_votes[i];
   _db.adjust_proxied_witness_votes( account, delta );
 
-  if( o.proxy.size() ) {
+  if( !o.is_clearing_proxy() ) {
     const auto& new_proxy = _db.get_account( o.proxy );
     flat_set<account_id_type> proxy_chain( { account.get_id(), new_proxy.get_id() } );
     proxy_chain.reserve( HIVE_MAX_PROXY_RECURSION_DEPTH + 1 );
 
     /// check for proxy loops and fail to update the proxy if it would create a loop
     auto cprox = &new_proxy;
-    while( cprox->proxy.size() != 0 )
+    while( cprox->has_proxy() )
     {
-      const auto& next_proxy = _db.get_account( cprox->proxy );
+      const auto& next_proxy = _db.get_account( cprox->get_proxy() );
       FC_ASSERT( proxy_chain.insert( next_proxy.get_id() ).second, "This proxy would create a proxy loop." );
       cprox = &next_proxy;
       FC_ASSERT( proxy_chain.size() <= HIVE_MAX_PROXY_RECURSION_DEPTH, "Proxy chain is too long." );
@@ -1413,7 +1413,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     _db.clear_witness_votes( account );
 
     _db.modify( account, [&]( account_object& a ) {
-      a.proxy = o.proxy;
+      a.set_proxy( new_proxy );
     });
 
     /// add all new votes
@@ -1422,7 +1422,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     _db.adjust_proxied_witness_votes( account, delta );
   } else { /// we are clearing the proxy which means we simply update the account
     _db.modify( account, [&]( account_object& a ) {
-        a.proxy = o.proxy;
+      a.clear_proxy();
     });
   }
 }
@@ -1431,7 +1431,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 void account_witness_vote_evaluator::do_apply( const account_witness_vote_operation& o )
 {
   const auto& voter = _db.get_account( o.account );
-  FC_ASSERT( voter.proxy.size() == 0, "A proxy is currently set, please clear the proxy before voting for a witness." );
+  FC_ASSERT( !voter.has_proxy(), "A proxy is currently set, please clear the proxy before voting for a witness." );
   FC_ASSERT( voter.can_vote, "Account has declined its voting rights." );
   _db.modify( voter, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 

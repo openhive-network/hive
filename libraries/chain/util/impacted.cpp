@@ -110,7 +110,8 @@ struct get_impacted_account_visitor
   void operator()( const account_witness_proxy_operation& op )
   {
     _impacted.insert( op.account );
-    _impacted.insert( op.proxy );
+    if ( !op.is_clearing_proxy() )
+      _impacted.insert( op.proxy );
   }
 
   void operator()( const feed_publish_operation& op )

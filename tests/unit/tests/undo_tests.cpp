@@ -37,6 +37,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
 
     undo_db udb( *db );
     undo_scenario< account_object > ao( *db );
+    const account_object& pxy = ao.create( "proxy00" );
 
     BOOST_TEST_MESSAGE( "--- No object added" );
     ao.remember_old_values< account_index >();
@@ -81,7 +82,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     udb.undo_begin();
 
     const account_object& obj4 = ao.create( "name00" );
-    ao.modify( obj4, [&]( account_object& obj ){ obj.proxy = "proxy00"; } );
+    ao.modify( obj4, [&]( account_object& obj ){ obj.set_proxy(pxy); } );
     ao.remove( obj4 );
 
     udb.undo_end();
@@ -103,7 +104,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     udb.undo_begin();
 
     const account_object& obj6 = ao.create( "name00" );
-    ao.modify( obj6, [&]( account_object& obj ){ obj.proxy = "proxy00"; } );
+    ao.modify( obj6, [&]( account_object& obj ){ obj.set_proxy(pxy); } );
     ao.remove( obj6 );
     ao.create( "name00" );
 
@@ -141,12 +142,15 @@ BOOST_AUTO_TEST_CASE( undo_object_disappear )
     undo_db udb( *db );
     undo_scenario< account_object > ao( *db );
 
+    const account_object& pxy0 = ao.create( "proxy00" );
+    const account_object& pxy1 = ao.create( "proxy01" );
+
     uint32_t old_size = ao.size< account_index >();
 
-    const account_object& obj0 = ao.create( "name00" ); ao.modify( obj0, [&]( account_object& obj ){ obj.proxy = "proxy00"; } );
+    const account_object& obj0 = ao.create( "name00" ); ao.modify( obj0, [&]( account_object& obj ){ obj.set_proxy(pxy0); } );
     BOOST_REQUIRE( old_size + 1 == ao.size< account_index >() );
 
-    const account_object& obj1 = ao.create( "name01" ); ao.modify( obj1, [&]( account_object& obj ){ obj.proxy = "proxy01"; } );
+    const account_object& obj1 = ao.create( "name01" ); ao.modify( obj1, [&]( account_object& obj ){ obj.set_proxy(pxy1); } );
     BOOST_REQUIRE( old_size + 2 == ao.size< account_index >() );
 
     ao.remember_old_values< account_index >();
@@ -157,12 +161,10 @@ BOOST_AUTO_TEST_CASE( undo_object_disappear )
         Method 'generic_index::modify' works incorrectly - after 'contraint violation', element is removed.
       Solution:
         It's necessary to write fix, according to issue #2154.
+      Status:
+        Done
     */
-    //Temporary. After fix, this line should be enabled.
-    HIVE_REQUIRE_THROW( ao.modify( obj1, [&]( account_object& obj ){ obj.name = "name00"; obj.proxy = "proxy00"; } ), boost::exception );
-
-    //Temporary. After fix, this line should be removed.
-    //ao.modify( obj1, [&]( account_object& obj ){ obj.name = "nameXYZ"; obj.proxy = "proxyXYZ"; } );
+    HIVE_REQUIRE_THROW( ao.modify( obj1, [&]( account_object& obj ){ obj.name = "name00"; obj.set_proxy(pxy0); } ), boost::exception );
 
     udb.undo_end();
     BOOST_REQUIRE( old_size + 2 == ao.size< account_index >() );
@@ -318,11 +320,11 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     old_size_co_cashout = co.size< comment_cashout_index >();
     udb.undo_begin();
 
-    ao.create( "name00" );
+    const account_object& pxy = ao.create( "name00" );
     const account_object& obja1 = ao.create( "name01" );
     const account_object& obja2 = ao.create( "name02" );
     BOOST_REQUIRE( old_size_ao + 3 == ao.size< account_index >() );
-    ao.modify( obja1, [&]( account_object& obj ){ obj.proxy = "proxy01"; } );
+    ao.modify( obja1, [&]( account_object& obj ){ obj.set_proxy(pxy); } );
     ao.remove( obja2 );
     BOOST_REQUIRE( old_size_ao + 2 == ao.size< account_index >() );
 

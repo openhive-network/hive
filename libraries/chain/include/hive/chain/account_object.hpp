@@ -75,10 +75,25 @@ namespace hive { namespace chain {
       //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
       asset get_vest_rewards_as_hive() const { return reward_vesting_hive; }
 
+      //tells if account has some other account casting governance votes in its name
+      bool has_proxy() const { return proxy != HIVE_PROXY_TO_SELF_ACCOUNT; }
+      //account's proxy (if any)
+      account_name_type get_proxy() const { return proxy; }
+      //sets proxy to neutral (account will vote for itself)
+      void clear_proxy() { proxy = HIVE_PROXY_TO_SELF_ACCOUNT; }
+      //sets proxy to given account
+      void set_proxy(const account_object& new_proxy)
+      {
+        FC_ASSERT( &new_proxy != this );
+        proxy = new_proxy.name;
+      }
+
       //members are organized in such a way that the object takes up as little space as possible.
 
       account_name_type name;
+    private:
       account_name_type proxy;
+    public:
       account_name_type recovery_account;
       account_name_type reset_account = HIVE_NULL_ACCOUNT;
 
@@ -373,7 +388,7 @@ namespace hive { namespace chain {
         member< account_object, account_name_type, &account_object::name > >,
       ordered_unique< tag< by_proxy >,
         composite_key< account_object,
-          member< account_object, account_name_type, &account_object::proxy >,
+          const_mem_fun< account_object, account_name_type, &account_object::get_proxy >,
           member< account_object, account_name_type, &account_object::name >
         > /// composite key by proxy
       >,
