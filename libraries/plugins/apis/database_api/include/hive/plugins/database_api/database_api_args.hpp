@@ -647,6 +647,16 @@ typedef list_smt_token_emissions_return find_smt_token_emissions_return;
 
 #endif
 
+struct is_known_transaction_args
+{
+  transaction_id_type transaction_id;
+};
+
+struct is_known_transaction_return
+{
+  bool is_known;
+};
+
 } } } // hive::database_api
 
 FC_REFLECT( hive::plugins::database_api::get_version_return,
@@ -896,3 +906,9 @@ FC_REFLECT( hive::plugins::database_api::find_smt_token_emissions_args,
   (asset_symbol) )
 
 #endif
+
+FC_REFLECT( hive::plugins::database_api::is_known_transaction_args,
+   (transaction_id) )
+
+FC_REFLECT( hive::plugins::database_api::is_known_transaction_return,
+   (is_known) )

@@ -107,6 +107,7 @@ class database_api_impl
       (list_smt_token_emissions)
       (find_smt_token_emissions)
 #endif
+      (is_known_transaction)
     )
 
     template< typename ApiResultType, typename ResultType >
@@ -1894,6 +1895,13 @@ DEFINE_API_IMPL( database_api_impl, find_smt_token_emissions )
 
 #endif
 
+DEFINE_API_IMPL( database_api_impl, is_known_transaction )
+{
+  is_known_transaction_return result;
+  result.is_known = _db.is_known_transaction(args.transaction_id);
+  return result;
+}
+
 DEFINE_LOCKLESS_APIS( database_api, (get_config)(get_version) )
 
 DEFINE_READ_APIS( database_api,
@@ -1954,6 +1962,7 @@ DEFINE_READ_APIS( database_api,
   (list_smt_token_emissions)
   (find_smt_token_emissions)
 #endif
+  (is_known_transaction)
 )
 
 } } } // hive::plugins::database_api

@@ -160,6 +160,7 @@ class database_api
       (list_smt_token_emissions)
       (find_smt_token_emissions)
 #endif
+      (is_known_transaction)
     )
 
   private:

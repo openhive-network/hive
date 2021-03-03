@@ -2634,7 +2634,7 @@ share_type database::pay_curators( const comment_object& comment, const comment_
         {
           unclaimed_rewards -= claim;
           const auto& voter = get( item->voter );
-          operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.permlink ) );
+          operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.permlink ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
           create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
             [&]( const asset& reward )
             {
@@ -2747,7 +2747,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         auto curators_vesting_payout = calculate_vesting( *this, asset( curation_tokens, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
         operation vop = author_reward_operation( comment_author, to_string( comment_cashout.permlink ), hbd_payout.first, hbd_payout.second, asset( 0, VESTS_SYMBOL ),
-                                                curators_vesting_payout );
+                                                curators_vesting_payout, has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
         create_vesting2( *this, author, asset( vesting_hive, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
           [&]( const asset& vesting_payout )
@@ -3178,6 +3178,7 @@ asset database::get_producer_reward()
     {
       a.balance += pay;
     } );
+    push_virtual_operation( producer_reward_operation( witness_account.name, pay ) );
   }
 
   return pay;
@@ -6351,9 +6352,12 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     // Need to update all VESTS in accounts and the total VESTS in the dgpo
     for( const auto& account : get_index< account_index, by_id >() )
     {
+      asset old_vesting_shares = account.vesting_shares;
+      asset new_vesting_shares = account.vesting_shares;
       modify( account, [&]( account_object& a )
       {
         a.vesting_shares.amount *= magnitude;
+        new_vesting_shares = a.vesting_shares;
         a.withdrawn             *= magnitude;
         a.to_withdraw           *= magnitude;
         a.vesting_withdraw_rate  = asset( a.to_withdraw / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
@@ -6363,6 +6367,8 @@ void database::perform_vesting_share_split( uint32_t magnitude )
         for( uint32_t i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
           a.proxied_vsf_votes[i] *= magnitude;
       } );
+      if (old_vesting_shares != new_vesting_shares)
+        push_virtual_operation( vesting_shares_split_operation(account.name, old_vesting_shares, new_vesting_shares) );
     }
 
     const auto& comments = get_index< comment_cashout_index >().indices();
