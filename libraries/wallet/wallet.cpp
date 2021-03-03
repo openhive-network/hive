@@ -544,6 +544,10 @@ public:
     return _remote_api->get_witness_by_account( owner_account );
   }
 
+    /// Common body for claim_account_creation and claim_account_creation_nonblocking
+  condenser_api::legacy_signed_transaction build_claim_account_creation(string creator, condenser_api::legacy_asset fee,
+    std::function<condenser_api::legacy_signed_transaction(signed_transaction)> tx_signer);
+
   void set_transaction_expiration( uint32_t tx_expiration_seconds )
   {
     FC_ASSERT( tx_expiration_seconds < HIVE_MAX_TIME_UNTIL_EXPIRATION );
@@ -969,6 +973,26 @@ public:
   const string _wallet_filename_extension = ".wallet";
 };
 
+condenser_api::legacy_signed_transaction wallet_api_impl::build_claim_account_creation(string creator, condenser_api::legacy_asset fee,
+  std::function<condenser_api::legacy_signed_transaction(signed_transaction)> tx_signer)
+{
+  try
+  {
+    FC_ASSERT(!is_locked());
+
+    auto creator_account = get_account(creator);
+    claim_account_operation op;
+    op.creator = creator;
+    op.fee = fee;
+
+    signed_transaction tx;
+    tx.operations.push_back(op);
+    tx.validate();
+
+    return tx_signer(tx);
+  } FC_CAPTURE_AND_RETHROW((creator))
+}
+
 } } } // hive::wallet::detail
 
 
@@ -1262,39 +1286,26 @@ condenser_api::api_feed_history_object wallet_api::get_feed_history()const { ret
 condenser_api::legacy_signed_transaction wallet_api::claim_account_creation(string creator,
                                                                             condenser_api::legacy_asset fee,
                                                                             bool broadcast )const
-{ try {
-  FC_ASSERT( !is_locked() );
-
-  auto creator_account = get_account(creator);
-  claim_account_operation op;
-  op.creator = creator;
-  op.fee = fee;
-
-  signed_transaction tx;
-  tx.operations.push_back(op);
-  tx.validate();
-
-  return my->sign_transaction( tx, broadcast );
-} FC_CAPTURE_AND_RETHROW( (creator) ) }
+{ 
+  return my->build_claim_account_creation(creator, fee,
+    [this, broadcast](signed_transaction tx) -> condenser_api::legacy_signed_transaction
+    {
+      return my->sign_transaction(tx, broadcast);
+    }
+    );
+}
 
 condenser_api::legacy_signed_transaction wallet_api::claim_account_creation_nonblocking(string creator,
                                                                                         condenser_api::legacy_asset fee,
                                                                                         bool broadcast )const
-{ try {
-  FC_ASSERT( !is_locked() );
-
-  auto creator_account = get_account(creator);
-  claim_account_operation op;
-  op.creator = creator;
-  op.fee = fee;
-
-  signed_transaction tx;
-  tx.operations.push_back(op);
-  tx.validate();
-
-  return my->sign_and_broadcast_transaction( tx, broadcast, false );
-} FC_CAPTURE_AND_RETHROW( (creator) ) }
-
+{
+  return my->build_claim_account_creation(creator, fee,
+    [this, broadcast](signed_transaction tx) ->condenser_api::legacy_signed_transaction
+    {
+    return my->sign_and_broadcast_transaction(tx, broadcast, false);
+    }
+  );
+}
 
 /**
   * This method is used by faucets to create new accounts for other users which must
@@ -1310,41 +1321,11 @@ condenser_api::legacy_signed_transaction wallet_api::create_account_with_keys(
   public_key_type posting,
   public_key_type memo,
   bool broadcast )const
-{ try {
-  FC_ASSERT( !is_locked() );
-  auto creator_account = get_account(creator);
-  signed_transaction tx;
-  if (creator_account.pending_claimed_accounts > 0)
-  {
-    create_claimed_account_operation op;
-    op.creator = creator;
-    op.new_account_name = new_account_name;
-    op.owner = authority( 1, owner, 1 );
-    op.active = authority( 1, active, 1 );
-    op.posting = authority( 1, posting, 1 );
-    op.memo_key = memo;
-    op.json_metadata = json_meta;
-
-    tx.operations.push_back(op);
-  }
-  else
-  {
-    account_create_operation op;
-    op.creator = creator;
-    op.new_account_name = new_account_name;
-    op.owner = authority( 1, owner, 1 );
-    op.active = authority( 1, active, 1 );
-    op.posting = authority( 1, posting, 1 );
-    op.memo_key = memo;
-    op.json_metadata = json_meta;
-    op.fee = my->_remote_api->get_chain_properties().account_creation_fee;
-
-    tx.operations.push_back(op);
-  }
-  tx.validate();
-
-  return my->sign_transaction( tx, broadcast );
-} FC_CAPTURE_AND_RETHROW( (creator)(new_account_name)(json_meta)(owner)(active)(memo)(broadcast) ) }
+{
+  legacy_asset no_funds;
+  return create_funded_account_with_keys(creator, new_account_name, no_funds, "", json_meta, owner,
+    active, posting, memo, broadcast);
+}
 
 /**
  * This method is used by faucets to create new accounts for other users which must
