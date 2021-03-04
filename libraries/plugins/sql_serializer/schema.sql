@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS hive_transactions_multisig (
   "trx_hash" bytea NOT NULL,
   signature bytea NOT NULL
 );
-ALTER TABLE hive_transactions_multisig ADD CONSTRAINT hive_transactions_multisig_pkey PRIMARY KEY ( trx_hash );
+ALTER TABLE hive_transactions_multisig ADD CONSTRAINT hive_transactions_multisig_pkey PRIMARY KEY ( trx_hash, signature );
 
 CREATE TABLE IF NOT EXISTS hive_operation_types (
   "id" smallint NOT NULL,
