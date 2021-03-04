@@ -2371,7 +2371,10 @@ condenser_api::legacy_signed_transaction wallet_api::follow( const string& follo
   auto follwer_account = get_account( follower );
   FC_ASSERT( following.size() );
 
+  if( following[0] != '@' || following[0] != '#' )
+  {
     following = '@' + following;
+  }
 
   if( following[0] == '@' )
   {
