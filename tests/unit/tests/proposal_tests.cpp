@@ -2930,7 +2930,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
 
     generate_blocks( start_time + ( start_time_shift + end_time_shift - block_interval ) );
 
-    auto threshold = db->get_sps_remove_threshold();
+    auto threshold = db->get_remove_threshold();
     auto nr_stages = current_active_proposals / threshold;
 
     for( auto i = 0; i < nr_stages; ++i )
@@ -3036,7 +3036,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
 
     generate_blocks( start_time + ( start_time_shift + end_time_shift - block_interval ) );
 
-    auto threshold = db->get_sps_remove_threshold();
+    auto threshold = db->get_remove_threshold();
     auto current_active_anything = current_active_proposals + current_active_votes;
     auto nr_stages = current_active_anything / threshold;
 
@@ -3132,7 +3132,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
     auto current_active_votes = current_active_proposals * static_cast< int16_t > ( inits.size() );
     BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );
 
-    auto threshold = db->get_sps_remove_threshold();
+    auto threshold = db->get_remove_threshold();
     BOOST_REQUIRE( threshold == 20 );
 
     flat_set< int64_t > _proposals_id( proposals_id.begin(), proposals_id.end() );
@@ -3237,7 +3237,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
     auto current_active_votes = current_active_proposals * static_cast< int16_t > ( inits.size() );
     BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );
 
-    auto threshold = db->get_sps_remove_threshold();
+    auto threshold = db->get_remove_threshold();
     BOOST_REQUIRE( threshold == 20 );
 
     /*
@@ -3479,7 +3479,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
     auto current_active_votes = current_active_proposals * static_cast< int16_t > ( inits.size() );
     BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );
 
-    auto threshold = db->get_sps_remove_threshold();
+    auto threshold = db->get_remove_threshold();
     BOOST_REQUIRE( threshold == 20 );
 
     /*
@@ -4276,7 +4276,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
     auto current_active_votes = current_active_proposals * static_cast< int16_t > ( inits.size() );
     BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );
 
-    auto threshold = db->get_sps_remove_threshold();
+    auto threshold = db->get_remove_threshold();
     BOOST_REQUIRE( threshold == -1 );
 
     generate_blocks( start_time + fc::seconds( HIVE_PROPOSAL_MAINTENANCE_CLEANUP ) );

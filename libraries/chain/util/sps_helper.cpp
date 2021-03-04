@@ -15,7 +15,7 @@ void sps_helper::remove_proposals( database& db, const flat_set<int64_t>& propos
   auto& votesIndex = db.get_mutable_index< proposal_vote_index >();
   auto& byVoterIdx = votesIndex.indices().get< by_proposal_voter >();
 
-  sps_removing_reducer obj_perf( db.get_sps_remove_threshold() );
+  sps_removing_reducer obj_perf( db.get_remove_threshold() );
 
   for(auto pid : proposal_ids)
   {

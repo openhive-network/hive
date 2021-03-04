@@ -2366,22 +2366,15 @@ condenser_api::legacy_signed_transaction wallet_api::get_transaction( transactio
   return my->_remote_api->get_transaction( id );
 }
 
-condenser_api::legacy_signed_transaction wallet_api::follow( const string& follower, string following, set<string> what, bool broadcast )
+condenser_api::legacy_signed_transaction wallet_api::follow( const string& follower, const string& following, set<string> what, bool broadcast )
 {
-  auto follwer_account = get_account( follower );
-  FC_ASSERT( following.size() );
-
-    following = '@' + following;
-
-  if( following[0] == '@' )
-  {
-    get_account( following.substr(1) );
-  }
-  FC_ASSERT( following.size() > 1 );
+  get_account( follower );
+  FC_ASSERT( !following.empty() );
+  get_account( following );
 
   follow::follow_operation fop;
   fop.follower = follower;
-  fop.following = following;
+  fop.following = '@' + following;
   fop.what = std::move( what );
   follow::follow_plugin_operation op = fop;
 

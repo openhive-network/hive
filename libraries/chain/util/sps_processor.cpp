@@ -43,7 +43,7 @@ void sps_processor::remove_proposals( const time_point_sec& head_time )
   auto found = byEndDateIdx.upper_bound( head_time );
   auto itr = byEndDateIdx.begin();
 
-  sps_removing_reducer obj_perf( db.get_sps_remove_threshold() );
+  sps_removing_reducer obj_perf( db.get_remove_threshold() );
 
   while( itr != found )
   {
