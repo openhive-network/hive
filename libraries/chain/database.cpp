@@ -197,6 +197,9 @@ void database::open( const open_args& args )
       init_hardforks(); // Writes to local state, but reads from db
     });
 
+#ifdef IS_TEST_NET
+  /// Leave the chain-id passed to cmdline option.
+#else
     with_read_lock( [&]()
     {
       const auto& hardforks = get_hardfork_property_object();
@@ -206,7 +209,8 @@ void database::open( const open_args& args )
         set_chain_id(HIVE_CHAIN_ID);
       }
     });
-      
+#endif /// IS_TEST_NET
+
     if (args.benchmark.first)
     {
       args.benchmark.second(0, get_abstract_index_cntr());
@@ -670,6 +674,24 @@ std::vector< block_id_type > database::get_block_ids_on_fork( block_id_type head
 chain_id_type database::get_chain_id() const
 {
   return hive_chain_id;
+}
+
+chain_id_type database::get_old_chain_id() const
+{
+#ifdef IS_TEST_NET
+  return hive_chain_id; /// In testnet always use the chain-id passed as hived option
+#else
+  return STEEM_CHAIN_ID;
+#endif /// IS_TEST_NET
+}
+
+chain_id_type database::get_new_chain_id() const
+{
+#ifdef IS_TEST_NET
+  return hive_chain_id; /// In testnet always use the chain-id passed as hived option
+#else
+  return HIVE_CHAIN_ID;
+#endif /// IS_TEST_NET
 }
 
 void database::set_chain_id( const chain_id_type& chain_id )
@@ -6007,7 +6029,11 @@ void database::apply_hardfork( uint32_t hardfork )
     case HIVE_HARDFORK_1_24:
     {
       restore_accounts( hardforkprotect::get_restored_accounts() );
+#ifdef IS_TEST_NET
+      /// Don't change chain_id in testnet build.
+#else
       set_chain_id(HIVE_CHAIN_ID);
+#endif /// IS_TEST_NET
       break;
     }
     case HIVE_SMT_HARDFORK:

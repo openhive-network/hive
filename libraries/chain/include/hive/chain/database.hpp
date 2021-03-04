@@ -221,7 +221,13 @@ namespace chain {
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = STEEM_CHAIN_ID;
+      /// Returns current chain-id being in use depending on applied HF
       chain_id_type get_chain_id() const;
+      /// Returns pre-HF24 chain id (if mainnet is used).
+      chain_id_type get_old_chain_id() const;
+      /// Returns post-HF24 chain id (if mainnet is used).
+      chain_id_type get_new_chain_id() const;
+
       void set_chain_id( const chain_id_type& chain_id );
 
       /** Allows to visit all stored blocks until processor returns true. Caller is responsible for block disasembling

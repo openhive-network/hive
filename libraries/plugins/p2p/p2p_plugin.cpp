@@ -390,12 +390,12 @@ graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& 
 
 hive::protocol::chain_id_type p2p_plugin_impl::get_old_chain_id() const
 {
-  return STEEM_CHAIN_ID;
+  return chain.db().get_old_chain_id();
 }
 
 hive::protocol::chain_id_type p2p_plugin_impl::get_new_chain_id() const
 {
-  return HIVE_CHAIN_ID;
+  return chain.db().get_new_chain_id();
 }
 
 hive::protocol::chain_id_type p2p_plugin_impl::get_chain_id() const
