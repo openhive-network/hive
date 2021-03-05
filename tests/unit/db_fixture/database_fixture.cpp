@@ -268,7 +268,6 @@ void database_fixture::open_database( uint16_t shared_file_size_in_mb )
     args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
     args.shared_file_size = 1024 * 1024 * shared_file_size_in_mb; // 8MB(default) or more:  file for testing
     args.database_cfg = hive::utilities::default_database_configuration();
-    args.sps_remove_threshold = 20;
     db->open(args);
   }
   else

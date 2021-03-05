@@ -96,7 +96,6 @@ class chain_plugin_impl
     uint64_t                         shared_memory_size = 0;
     uint16_t                         shared_file_full_threshold = 0;
     uint16_t                         shared_file_scale_rate = 0;
-    int16_t                          sps_remove_threshold = -1;
     uint32_t                         chainbase_flags = 0;
     bfs::path                        shared_memory_dir;
     bool                             replay = false;
@@ -432,7 +431,6 @@ void chain_plugin_impl::initial_settings()
   db_open_args.shared_file_size = shared_memory_size;
   db_open_args.shared_file_full_threshold = shared_file_full_threshold;
   db_open_args.shared_file_scale_rate = shared_file_scale_rate;
-  db_open_args.sps_remove_threshold = sps_remove_threshold;
   db_open_args.chainbase_flags = chainbase_flags;
   db_open_args.do_validate_invariants = validate_invariants;
   db_open_args.stop_replay_at = stop_replay_at;
@@ -600,7 +598,6 @@ bfs::path chain_plugin::state_storage_dir() const
 void chain_plugin::set_program_options(options_description& cli, options_description& cfg)
 {
   cfg.add_options()
-      ("sps-remove-threshold", bpo::value<uint16_t>()->default_value( 200 ), "Maximum numbers of proposals/votes which can be removed in the same cycle")
       ("shared-file-dir", bpo::value<bfs::path>()->default_value("blockchain"), // NOLINT(clang-analyzer-optin.cplusplus.VirtualCall)
         "the location of the chain shared memory files (absolute path or relative to application data dir)")
       ("shared-file-size", bpo::value<string>()->default_value("54G"), "Size of the shared memory file. Default: 54G. If running a full node, increase this value to 200G.")
@@ -616,7 +613,6 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 #endif
       ;
   cli.add_options()
-      ("sps-remove-threshold", bpo::value<uint16_t>()->default_value( 200 ), "Maximum numbers of proposals/votes which can be removed in the same cycle")
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
       ("force-open", bpo::bool_switch()->default_value(false), "force open the database, skipping the environment check" )
       ("resync-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and block log" )
@@ -657,8 +653,6 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
   if( options.count( "shared-file-scale-rate" ) )
     my->shared_file_scale_rate = options.at( "shared-file-scale-rate" ).as< uint16_t >();
-
-  my->sps_remove_threshold = options.at( "sps-remove-threshold" ).as< uint16_t >();
 
   my->chainbase_flags |= options.at( "force-open" ).as< bool >() ? chainbase::skip_env_check : chainbase::skip_nothing;
 

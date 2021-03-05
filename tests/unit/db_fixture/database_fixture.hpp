@@ -405,7 +405,10 @@ struct sps_proposal_database_fixture_performance : public sps_proposal_database_
                   : sps_proposal_database_fixture( shared_file_size_in_mb )
   {
     db->get_benchmark_dumper().set_enabled( true );
-    db->set_sps_remove_threshold( -1 );
+    db_plugin->debug_update( []( database& db )
+    {
+      db.set_remove_threshold( -1 );
+    });
   }
 };
 

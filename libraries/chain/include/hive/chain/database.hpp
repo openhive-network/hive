@@ -95,7 +95,6 @@ namespace chain {
     uint64_t shared_file_size = 0;
     uint16_t shared_file_full_threshold = 0;
     uint16_t shared_file_scale_rate = 0;
-    int16_t  sps_remove_threshold = -1;
     uint32_t chainbase_flags = 0;
     bool do_validate_invariants = false;
     bool benchmark_is_enabled = false;
@@ -728,14 +727,17 @@ namespace chain {
         return _current_op_in_trx;
       }
 
-      int16_t get_sps_remove_threshold() const
+      int16_t get_remove_threshold() const
       {
-        return _sps_remove_threshold;
+        return get_dynamic_global_properties().current_remove_threshold;
       }
 
-      void set_sps_remove_threshold( int16_t val )
+      void set_remove_threshold( int16_t val )
       {
-        _sps_remove_threshold = val;
+        modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+        {
+          gpo.current_remove_threshold = val;
+        } );
       }
 
       bool get_snapshot_loaded() const
@@ -790,7 +792,6 @@ namespace chain {
 
       uint16_t                      _shared_file_full_threshold = 0;
       uint16_t                      _shared_file_scale_rate = 0;
-      int16_t                       _sps_remove_threshold = -1;
 
       bool                          snapshot_loaded = false;
 

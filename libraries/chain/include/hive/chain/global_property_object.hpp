@@ -169,6 +169,10 @@ namespace hive { namespace chain {
 
       uint16_t downvote_pool_percent = 0;
 
+      // limits number of objects removed in one automatic operation (only applies to situations where many
+      // objects can accumulate over time but need to be removed in single operation f.e. proposal votes)
+      uint16_t current_remove_threshold = HIVE_GLOBAL_REMOVE_THRESHOLD;
+
 #ifdef HIVE_ENABLE_SMT
       asset smt_creation_fee = asset( 1000, HBD_SYMBOL ); //< TODO: replace with HBD_asset
 #endif
@@ -234,6 +238,7 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (sps_fund_percent)
           (sps_interval_ledger)
           (downvote_pool_percent)
+          (current_remove_threshold)
 #ifdef HIVE_ENABLE_SMT
           (smt_creation_fee)
 #endif

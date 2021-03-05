@@ -174,9 +174,7 @@ class HiveNodeInScreen(object):
       self.hive_executable,
       "-d",
       self.working_dir,
-      "--advanced-benchmark",
-      "--sps-remove-threshold",
-      "-1"
+      "--advanced-benchmark"
     ]
 
     parameters = parameters + additional_params

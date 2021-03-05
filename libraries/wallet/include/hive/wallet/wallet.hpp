@@ -1035,7 +1035,7 @@ class wallet_api
       *  @param what - a set of things to follow: posts, comments, votes, ignore
       *  @param broadcast true if you wish to broadcast the transaction
       */
-    condenser_api::legacy_signed_transaction follow( const string& follower, string following, set<string> what, bool broadcast );
+    condenser_api::legacy_signed_transaction follow( const string& follower, const string& following, set<string> what, bool broadcast );
 
 
     std::map<string,std::function<string(fc::variant,const fc::variants&)>> get_result_formatters() const;
