@@ -1,0 +1,5 @@
+__pycache__/
+logs/
+nodes-??/*/logs
+nodes-??/*/blockchain/
+nodes-??/*/hived.log
