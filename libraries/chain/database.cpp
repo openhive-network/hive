@@ -3168,7 +3168,10 @@ asset database::get_liquidity_reward()const
 asset database::get_content_reward()const
 {
   const auto& props = get_dynamic_global_properties();
-  static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+  #ifndef IS_TEST_NET
+    #pragma message "TODO: this code assumes a 3-second time interval"
+    static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+  #endif
   asset percent( protocol::calc_percent_reward_per_block< HIVE_CONTENT_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL );
   return std::max( percent, HIVE_MIN_CONTENT_REWARD );
 }
@@ -3176,7 +3179,10 @@ asset database::get_content_reward()const
 asset database::get_curation_reward()const
 {
   const auto& props = get_dynamic_global_properties();
-  static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+  #ifndef IS_TEST_NET
+    #pragma message "TODO: this code assumes a 3-second time interval"
+    static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+  #endif
   asset percent( protocol::calc_percent_reward_per_block< HIVE_CURATE_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL);
   return std::max( percent, HIVE_MIN_CURATE_REWARD );
 }
@@ -3184,7 +3190,10 @@ asset database::get_curation_reward()const
 asset database::get_producer_reward()
 {
   const auto& props = get_dynamic_global_properties();
-  static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+  #ifndef IS_TEST_NET
+    #pragma message "TODO: this code assumes a 3-second time interval"
+    static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+  #endif
   asset percent( protocol::calc_percent_reward_per_block< HIVE_PRODUCER_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL);
   auto pay = std::max( percent, HIVE_MIN_PRODUCER_REWARD );
   const auto& witness_account = get_account( props.current_witness );
@@ -3223,7 +3232,10 @@ asset database::get_pow_reward()const
     return asset( 0, HIVE_SYMBOL );
 #endif
 
-  static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+  #ifndef IS_TEST_NET
+    #pragma message "TODO: this code assumes a 3-second time interval"
+    static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+  #endif
   static_assert( HIVE_MAX_WITNESSES == 21, "this code assumes 21 per round" );
   asset percent( calc_percent_reward_per_round< HIVE_POW_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL);
   return std::max( percent, HIVE_MIN_POW_REWARD );

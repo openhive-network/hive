@@ -94,7 +94,7 @@
 #define HIVE_1_PERCENT                        (HIVE_100_PERCENT/100)
 #define HIVE_1_BASIS_POINT                    (HIVE_100_PERCENT/10000) // 0.01%
 
-#define HIVE_BLOCK_INTERVAL                   3
+#define HIVE_BLOCK_INTERVAL                   2
 #define HIVE_BLOCKS_PER_YEAR                  (365*24*60*60/HIVE_BLOCK_INTERVAL)
 #define HIVE_BLOCKS_PER_DAY                   (24*60*60/HIVE_BLOCK_INTERVAL)
 #define HIVE_START_VESTING_BLOCK              (HIVE_BLOCKS_PER_DAY * 7)
@@ -130,7 +130,7 @@
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6 (60*30) /// 30 minutes
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20 (60*15) /// 15 minutes
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21 (60*5) /// 5 minutes
-#define HIVE_MIN_VOTE_INTERVAL_SEC            3
+#define HIVE_MIN_VOTE_INTERVAL_SEC            HIVE_BLOCK_INTERVAL
 #define HIVE_VOTE_DUST_THRESHOLD              (50000000)
 #define HIVE_DOWNVOTE_POOL_PERCENT_HF21       (25*HIVE_1_PERCENT)
 
