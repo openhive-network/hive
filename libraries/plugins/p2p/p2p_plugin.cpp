@@ -716,4 +716,25 @@ void p2p_plugin::set_block_production( bool producing_blocks )
   my->block_producer = producing_blocks;
 }
 
+fc::variant_object p2p_plugin::get_info()
+{
+   fc::mutable_variant_object result = my->node->network_get_info();
+   result["connection_count"] = my->node->get_connection_count();
+   return result;
+}
+
+void p2p_plugin::add_node(const fc::ip::endpoint& endpoint)
+{
+   my->node->add_node(endpoint);
+}
+
+std::vector< api_peer_status > p2p_plugin::get_connected_peers()
+{
+   std::vector<graphene::net::peer_status> connected_peers = my->node->get_connected_peers();
+   std::vector<api_peer_status> api_connected_peers;
+   for (const graphene::net::peer_status& peer : connected_peers)
+      api_connected_peers.emplace_back(api_peer_status(peer.version, peer.host, peer.info));
+   return api_connected_peers;
+}
+
 } } } // namespace hive::plugins::p2p
