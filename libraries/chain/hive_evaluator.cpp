@@ -1227,6 +1227,8 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
 
   _db.adjust_balance( from_account, -o.amount );
 
+  asset amount_vested;
+
   /*
     Voting immediately when `transfer_to_vesting` is executed is dangerous,
     because malicious accounts would take over whole HIVE network.
@@ -1235,16 +1237,18 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   */
   if( _db.has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
-    asset new_vesting = _db.adjust_account_vesting_balance( to_account, o.amount, false/*to_reward_balance*/, []( asset vests_created ) {} );
+    amount_vested = _db.adjust_account_vesting_balance( to_account, o.amount, false/*to_reward_balance*/, []( asset vests_created ) {} );
 
     delayed_voting dv( _db );
-    dv.add_delayed_value( to_account, _db.head_block_time(), new_vesting.amount.value );
+    dv.add_delayed_value( to_account, _db.head_block_time(), amount_vested.amount.value );
   }
   else
   {
-    asset amount_vested = _db.create_vesting( to_account, o.amount );   
-    _db.push_virtual_operation( transfer_to_vesting_completed_operation( from_account.name, to_account.name, o.amount, amount_vested ) );
+    amount_vested = _db.create_vesting( to_account, o.amount );   
   }
+
+  /// Emit this vop unconditionally, since VESTS balance changed immediately, indepdenent to subsequent updates of account voting power done inside `delayed_voting` mechanism.
+  _db.push_virtual_operation(transfer_to_vesting_completed_operation(from_account.name, to_account.name, o.amount, amount_vested));
 }
 
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
