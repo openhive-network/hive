@@ -370,7 +370,7 @@ if __name__ == "__main__":
         url = "http://localhost:8093"
         api_node_url = "http://localhost:58091"
 #        api_node_url = "http://localhost:8091"
-        mainNetUrl = "https://api.steemit.com"
+        mainNetUrl = "https://api.hive.blog"
 
         #initminer key
         set_password(url)
