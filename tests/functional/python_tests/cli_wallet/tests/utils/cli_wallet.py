@@ -65,7 +65,6 @@ class CliWallet(object):
 
 
   def __init__(self, args):
-
     self.cli_args = CliWallet.CliWalletArgs(args)
     self.cli_proc = None
     self.response = ""
@@ -87,7 +86,7 @@ class CliWallet(object):
       self.response = self.send_and_read(endpoint, params)
       return self.response
     except Exception as _ex:
-      log.exception("Exception `{0}` occuress while calling `{1}` with `{2}` args.".format(str(_ex), self.method_name, list(_args)))
+      log.exception("Exception `{0}` occurs while calling `{1}` with `{2}` args.".format(str(_ex), self.method_name, list(_args)))
 
   def __enter__(self):
     self.set_and_run_wallet()

@@ -28,6 +28,8 @@
 #define CHECK_ARG_SIZE( s ) \
   FC_ASSERT( args.size() == s, "Expected #s argument(s), was ${n}", ("n", args.size()) );
 
+#define ASSET_TO_REAL( asset ) (double)( asset.amount.value )
+
 namespace hive { namespace plugins { namespace condenser_api {
 
 namespace detail
@@ -682,11 +684,10 @@ namespace detail
     {
       result.push_back( *itr );
 
-      // if( itr->sell_price.base.symbol == HIVE_SYMBOL )
-      //    result.back().real_price = (~result.back().sell_price).to_real();
-      // else
-      //    result.back().real_price = (result.back().sell_price).to_real();
-      result.back().real_price = 0.0;
+      if( itr->sell_price.base.symbol == HIVE_SYMBOL )
+        result.back().real_price = ASSET_TO_REAL( itr->sell_price.quote ) / ASSET_TO_REAL( itr->sell_price.base );
+      else
+        result.back().real_price =  ASSET_TO_REAL( itr->sell_price.base ) / ASSET_TO_REAL( itr->sell_price.quote );
       ++itr;
     }
 

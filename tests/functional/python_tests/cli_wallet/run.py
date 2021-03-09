@@ -91,7 +91,7 @@ if __name__ == "__main__":
     for key, val in args.__dict__.items():
         if key in ["hive_path", "hive_working_dir", "hive_config_path", "rpc_allowip"] or isinstance(val, bool):
             continue
-        if val :
+        if val:
             test_args.append("--"+key.replace("_","-")+ " ")
             test_args.append(val)
     print(test_args)

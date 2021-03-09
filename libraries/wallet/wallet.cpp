@@ -846,7 +846,6 @@ public:
     };
     m["get_open_orders"] = []( variant result, const fc::variants& a ) {
         auto orders = result.as<vector<condenser_api::api_limit_order_object>>();
-
         std::stringstream ss;
 
         ss << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
@@ -858,7 +857,7 @@ public:
         for( const auto& o : orders ) {
           ss << ' ' << setw( 10 ) << o.orderid;
           ss << ' ' << setw( 10 ) << o.real_price;
-          ss << ' ' << setw( 10 ) << fc::variant( asset( o.for_sale, o.sell_price.base.symbol ) ).as_string();
+          ss << ' ' << setw( 10 ) << legacy_asset::from_asset( asset( o.for_sale, o.sell_price.base.symbol ) ).to_string();
           ss << ' ' << setw( 10 ) << (o.sell_price.base.symbol == HIVE_SYMBOL ? "SELL" : "BUY");
           ss << "\n";
         }
