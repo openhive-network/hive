@@ -5,7 +5,8 @@ import time
 import sys
 import json
 
-from jsonsocket import steemd_call
+sys.path.append("../../../tests_api")
+from jsonsocket import hived_call
 from hive.steem.client import SteemClient
 
 # TODO: Remove dependency from cli_wallet/tests directory.
@@ -31,7 +32,7 @@ def set_password(_url):
       "params": ["testpassword"]
       } ), "utf-8" ) + b"\r\n"
 
-    status, response = steemd_call(_url, data=request)
+    status, response = hived_call(_url, data=request)
     return status, response
 
 def unlock(_url):
@@ -43,7 +44,7 @@ def unlock(_url):
       "params": ["testpassword"]
       } ), "utf-8" ) + b"\r\n"
 
-    status, response = steemd_call(_url, data=request)
+    status, response = hived_call(_url, data=request)
     return status, response
 
 def import_key(_url, k):
@@ -55,11 +56,11 @@ def import_key(_url, k):
       "params": [k]
       } ), "utf-8" ) + b"\r\n"
 
-    status, response = steemd_call(_url, data=request)
+    status, response = hived_call(_url, data=request)
     return status, response
 
-def checked_steemd_call(_url, data):
-  status, response = steemd_call(_url, data)
+def checked_hived_call(_url, data):
+  status, response = hived_call(_url, data)
   if status == False or response is None or "result" not in response:
     log.error("Request failed: {0} with response {1}".format(str(data), str(response)))
     raise Exception("Broken response for request {0}: {1}".format(str(data), str(response)))
@@ -68,7 +69,7 @@ def checked_steemd_call(_url, data):
 
 def wallet_call(_url, data):
   unlock(_url)
-  status, response = checked_steemd_call(_url, data)
+  status, response = checked_hived_call(_url, data)
 
   return status, response
 
@@ -263,7 +264,7 @@ def list_top_witnesses(_url):
       }
     } ), "utf-8" ) + b"\r\n"
 
-    status, response = checked_steemd_call(_url, data=request)
+    status, response = checked_hived_call(_url, data=request)
     return response["result"]["witnesses"]
 
 def print_top_witnesses(sockpuppets, witnesses, api_node_url):
