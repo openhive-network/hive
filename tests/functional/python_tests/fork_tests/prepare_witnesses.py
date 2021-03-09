@@ -378,10 +378,8 @@ if __name__ == "__main__":
 
         import_key(url, "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n")
 
-###
         print_top_witnesses(sockpuppets, witnesses, api_node_url)
-        exit(0)
-###
+
         error = False
         list_accounts(url)
 
