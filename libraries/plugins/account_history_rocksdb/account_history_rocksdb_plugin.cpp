@@ -1154,7 +1154,7 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
     *blockRangeEnd = retVal.back().block + 1;
   }
 
-  return std::move(retVal);
+  return retVal;
 }
 
 void account_history_rocksdb_plugin::impl::find_account_history_data(const account_name_type& name, uint64_t start,

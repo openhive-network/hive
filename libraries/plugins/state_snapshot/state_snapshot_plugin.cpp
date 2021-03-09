@@ -147,7 +147,7 @@ rocksdb_cleanup_helper rocksdb_cleanup_helper::open(const ::rocksdb::Options& op
     throw std::exception();
     }
 
-  return std::move(retVal);
+  return retVal;
   }
 
 void rocksdb_cleanup_helper::close()
@@ -650,7 +650,7 @@ index_dump_writer::prepare(const std::string& indexDescription, size_t firstId, 
       right += ITEMS_PER_WORKER;
     }
   
-  return std::move(retVal);
+  return retVal;
   }
 
 void index_dump_writer::start(const workers& workers)
@@ -855,7 +855,7 @@ index_dump_reader::prepare(const std::string& indexDescription, snapshot_convert
   workers retVal;
   retVal.emplace_back(_builtWorkers.front().get());
 
-  return std::move(retVal);
+  return retVal;
   }
 
 void index_dump_reader::start(const workers& workers)
