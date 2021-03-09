@@ -37,10 +37,13 @@ struct get_required_auth_visitor
   template< typename T >
   void operator()( const T& v )const
   {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
     v.get_required_active_authorities( active );
     v.get_required_owner_authorities( owner );
     v.get_required_posting_authorities( posting );
     v.get_required_authorities( other );
+#pragma GCC diagnostic pop
   }
 };
 

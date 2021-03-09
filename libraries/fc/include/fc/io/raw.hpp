@@ -764,7 +764,10 @@ namespace fc {
       typedef void result_type;
       template<typename T> void operator()( T& v )const
       {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
          fc::raw::unpack( stream, v );
+#pragma GCC diagnostic pop
       }
    };
 
