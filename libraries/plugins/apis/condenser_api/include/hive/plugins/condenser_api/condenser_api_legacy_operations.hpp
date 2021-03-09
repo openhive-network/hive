@@ -158,6 +158,33 @@ namespace hive { namespace plugins { namespace condenser_api {
     string            json_metadata;
   };
 
+  struct legacy_account_created_operation
+  {
+    legacy_account_created_operation() {}
+    legacy_account_created_operation( const account_created_operation& op ) :
+      new_account_name( op.new_account_name ),
+      creator( op.creator ),
+      initial_vesting_shares(legacy_asset::from_asset( op.initial_vesting_shares )),
+      initial_delegation(legacy_asset::from_asset( op.initial_delegation ))
+    {}
+
+    operator account_created_operation()const
+    {
+      account_created_operation op;
+      op.new_account_name = new_account_name;
+      op.creator = creator;
+      op.initial_vesting_shares = initial_vesting_shares;
+      op.initial_delegation = initial_delegation;
+      return op;
+    }
+
+    account_name_type new_account_name;
+    account_name_type creator;
+    legacy_asset initial_vesting_shares;
+    legacy_asset initial_delegation;
+  };
+
+
   struct legacy_account_create_with_delegation_operation
   {
     legacy_account_create_with_delegation_operation() {}
@@ -407,6 +434,32 @@ namespace hive { namespace plugins { namespace condenser_api {
     account_name_type from;
     account_name_type to;
     legacy_asset      amount;
+  };
+
+  struct legacy_transfer_to_vesting_completed_operation
+  {
+    legacy_transfer_to_vesting_completed_operation() {}
+    legacy_transfer_to_vesting_completed_operation( const transfer_to_vesting_completed_operation& op ) :
+      from_account(op.from_account),
+      to_account(op.to_account),
+      hive_vested(legacy_asset::from_asset( op.hive_vested )),
+      vesting_shares_received(legacy_asset::from_asset( op.vesting_shares_received ))
+    {}
+
+    operator transfer_to_vesting_completed_operation()const
+    {
+      transfer_to_vesting_completed_operation op;
+      op.from_account = from_account;
+      op.to_account = to_account;
+      op.hive_vested = hive_vested;
+      op.vesting_shares_received = vesting_shares_received;
+      return op;
+    }
+
+    account_name_type from_account;
+    account_name_type to_account;
+    legacy_asset      hive_vested;
+    legacy_asset      vesting_shares_received;
   };
 
   struct legacy_create_proposal_operation
@@ -740,13 +793,14 @@ namespace hive { namespace plugins { namespace condenser_api {
 
   struct legacy_author_reward_operation
   {
-    legacy_author_reward_operation() {}
-    legacy_author_reward_operation( const author_reward_operation& op ) :
+    legacy_author_reward_operation() = default;
+    explicit legacy_author_reward_operation( const author_reward_operation& op ) :
       author( op.author ),
       permlink( op.permlink ),
       hbd_payout( legacy_asset::from_asset( op.hbd_payout ) ),
       hive_payout( legacy_asset::from_asset( op.hive_payout ) ),
-      vesting_payout( legacy_asset::from_asset( op.vesting_payout ) )
+      vesting_payout( legacy_asset::from_asset( op.vesting_payout ) ),
+      payout_must_be_claimed( op.payout_must_be_claimed)
     {}
 
     operator author_reward_operation()const
@@ -757,6 +811,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       op.hbd_payout = hbd_payout;
       op.hive_payout = hive_payout;
       op.vesting_payout = vesting_payout;
+      op.payout_must_be_claimed = payout_must_be_claimed;
       return op;
     }
 
@@ -765,16 +820,18 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      hbd_payout;
     legacy_asset      hive_payout;
     legacy_asset      vesting_payout;
+    bool              payout_must_be_claimed = false;
   };
 
   struct legacy_curation_reward_operation
   {
-    legacy_curation_reward_operation() {}
-    legacy_curation_reward_operation( const curation_reward_operation& op ) :
+    legacy_curation_reward_operation() = default;
+    explicit legacy_curation_reward_operation( const curation_reward_operation& op ) :
       curator( op.curator ),
       reward( legacy_asset::from_asset( op.reward ) ),
       comment_author( op.comment_author ),
-      comment_permlink( op.comment_permlink )
+      comment_permlink( op.comment_permlink ),
+      payout_must_be_claimed( op.payout_must_be_claimed)
     {}
 
     operator curation_reward_operation()const
@@ -784,6 +841,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       op.reward = reward;
       op.comment_author = comment_author;
       op.comment_permlink = comment_permlink;
+      op.payout_must_be_claimed = payout_must_be_claimed;
       return op;
     }
 
@@ -791,6 +849,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      reward;
     account_name_type comment_author;
     string            comment_permlink;
+    bool              payout_must_be_claimed = false;
   };
 
   struct legacy_comment_reward_operation
@@ -1064,6 +1123,49 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      fee;
     extensions_type   extensions;
   };
+  
+  struct legacy_vesting_shares_split_operation
+  {
+    legacy_vesting_shares_split_operation() {}
+    legacy_vesting_shares_split_operation( const vesting_shares_split_operation& op ) :
+      owner( op.owner ),
+      vesting_shares_before_split( legacy_asset::from_asset( op.vesting_shares_before_split ) ),
+      vesting_shares_after_split( legacy_asset::from_asset( op.vesting_shares_after_split ) )
+    {}
+
+    operator vesting_shares_split_operation()const
+    {
+      vesting_shares_split_operation op;
+      op.owner = owner;
+      op.vesting_shares_before_split = vesting_shares_before_split;
+      op.vesting_shares_after_split = vesting_shares_after_split;
+      return op;
+    }
+
+    account_name_type owner;
+    legacy_asset      vesting_shares_before_split;
+    legacy_asset      vesting_shares_after_split;
+  };
+
+  struct legacy_pow_reward_operation
+  {
+    legacy_pow_reward_operation() {}
+    legacy_pow_reward_operation( const pow_reward_operation& op ) :
+      worker( op.worker ),
+      reward( legacy_asset::from_asset( op.reward ) )
+    {}
+
+    operator pow_reward_operation()const
+    {
+      pow_reward_operation op;
+      op.worker = worker;
+      op.reward = reward;
+      return op;
+    }
+
+    account_name_type worker;
+    legacy_asset      reward;
+  };
 
   struct legacy_proposal_pay_operation
   {
@@ -1241,7 +1343,11 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_delayed_voting_operation,
         legacy_consolidate_treasury_balance_operation,
         legacy_sps_convert_operation,
-        legacy_expired_account_notification_operation
+        legacy_expired_account_notification_operation,
+        legacy_transfer_to_vesting_completed_operation,
+        legacy_account_created_operation,
+        legacy_vesting_shares_split_operation,
+        legacy_pow_reward_operation
       > legacy_operation;
 
   struct legacy_operation_conversion_visitor
@@ -1300,6 +1406,12 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
+    bool operator()( const transfer_to_vesting_completed_operation& op )const
+    {
+      l_op = legacy_transfer_to_vesting_completed_operation( op );
+      return true;
+    }
+
     bool operator()( const withdraw_vesting_operation& op )const
     {
       l_op = legacy_withdraw_vesting_operation( op );
@@ -1327,6 +1439,12 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const account_create_operation& op )const
     {
       l_op = legacy_account_create_operation( op );
+      return true;
+    }
+
+    bool operator()( const account_created_operation& op )const
+    {
+      l_op = legacy_account_created_operation( op );
       return true;
     }
 
@@ -1474,6 +1592,18 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
+    bool operator()( const vesting_shares_split_operation& op )const
+    {
+      l_op = legacy_vesting_shares_split_operation( op );
+      return true;
+    }
+
+    bool operator()( const pow_reward_operation& op )const
+    {
+      l_op = legacy_pow_reward_operation( op );
+      return true;
+    }
+
     bool operator()( const create_proposal_operation& op )const
     {
       l_op = legacy_create_proposal_operation( op );
@@ -1531,6 +1661,12 @@ struct convert_from_legacy_operation_visitor
     return operation( transfer_to_vesting_operation( op ) );
   }
 
+  
+  operation operator()( const legacy_transfer_to_vesting_completed_operation& op )const
+  {
+    return operation( transfer_to_vesting_completed_operation( op ) );
+  }
+
   operation operator()( const legacy_withdraw_vesting_operation& op )const
   {
     return operation( withdraw_vesting_operation( op ) );
@@ -1554,6 +1690,12 @@ struct convert_from_legacy_operation_visitor
   operation operator()( const legacy_account_create_operation& op )const
   {
     return operation( account_create_operation( op ) );
+  }
+
+  
+  operation operator()( const legacy_account_created_operation& op )const
+  {
+    return operation( account_created_operation( op ) );
   }
 
   operation operator()( const legacy_witness_update_operation& op )const
@@ -1674,6 +1816,16 @@ struct convert_from_legacy_operation_visitor
   operation operator()( const legacy_claim_account_operation& op )const
   {
     return operation( claim_account_operation( op ) );
+  }
+
+  operation operator()( const legacy_vesting_shares_split_operation& op )const
+  {
+    return operation( vesting_shares_split_operation( op ) );
+  }
+
+  operation operator()( const legacy_pow_reward_operation& op )const
+  {
+    return operation( pow_reward_operation( op ) );
   }
 
   operation operator()( const legacy_create_proposal_operation& op )const
@@ -1836,6 +1988,13 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_account_create_operation,
         (memo_key)
         (json_metadata) )
 
+   
+FC_REFLECT( hive::plugins::condenser_api::legacy_account_created_operation,
+            (new_account_name)
+            (creator)
+            (initial_vesting_shares)
+            (initial_delegation))
+
 FC_REFLECT( hive::plugins::condenser_api::legacy_account_create_with_delegation_operation,
         (fee)
         (delegation)
@@ -1850,6 +2009,7 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_account_create_with_delegation_
 
 FC_REFLECT( hive::plugins::condenser_api::legacy_transfer_operation, (from)(to)(amount)(memo) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_transfer_to_vesting_operation, (from)(to)(amount) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_withdraw_vesting_operation, (account)(vesting_shares) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_witness_update_operation, (owner)(url)(block_signing_key)(props)(fee) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_limit_order_create_operation, (owner)(orderid)(amount_to_sell)(min_to_receive)(fill_or_kill)(expiration) )
@@ -1873,8 +2033,8 @@ FC_REFLECT_ALIASED_NAMES( hive::plugins::condenser_api::legacy_claim_reward_bala
   ( ("reward_hive", "reward_steem") ) ( ("reward_hbd", "reward_sbd") )
 )
 FC_REFLECT( hive::plugins::condenser_api::legacy_delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(payout_must_be_claimed) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink)(payout_must_be_claimed) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_comment_reward_operation, (author)(permlink)(payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_liquidity_reward_operation, (owner)(payout) )
@@ -1886,6 +2046,8 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_return_vesting_delegation_opera
 FC_REFLECT( hive::plugins::condenser_api::legacy_comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_claim_account_operation, (creator)(fee)(extensions) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_sps_fund_operation, (fund_account)(additional_funds) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink) )

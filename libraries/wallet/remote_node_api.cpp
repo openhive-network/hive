@@ -402,7 +402,11 @@ flat_set< uint32_t > remote_node_api::get_market_history_buckets()
   FC_ASSERT( false );
 }
 
-// NOLINTNEXTLINE
+bool remote_node_api::is_known_transaction( const transaction_id_type& id )const
+{
+  FC_ASSERT( false );
+}
+
 vector< condenser_api::api_proposal_object > remote_node_api::list_proposals( fc::variant, uint32_t, database_api::sort_order_type, database_api::order_direction_type, database_api::proposal_status )
 {
   FC_ASSERT( false );

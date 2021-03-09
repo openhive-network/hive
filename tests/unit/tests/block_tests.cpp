@@ -796,29 +796,58 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
     BOOST_REQUIRE( db->has_hardfork( 0 ) );
     BOOST_REQUIRE( !db->has_hardfork( HIVE_HARDFORK_0_1 ) );
 
+    auto itr = db->get_index< account_history_index >().indices().get< by_id >().end();
+    itr--;
+
+    const auto last_ah_id = itr->get_id();
+
     BOOST_TEST_MESSAGE( "Generate a block and check hardfork is applied" );
     generate_block();
 
     string op_msg = "Testnet: Hardfork applied";
-    auto itr = db->get_index< account_history_index >().indices().get< by_id >().end();
-    itr--;
+
+    itr = db->get_index< account_history_index >().indices().get< by_id >().upper_bound(last_ah_id);
+    /// Skip another producer_reward_op generated at last produced block
+    ++itr;
+
+    ilog("Looked up AH-id: ${a}, found: ${i}", ("a", last_ah_id)("i", itr->get_id()));
+
+    /// Original AH record points (by_id) actual operation data. We need to query for it again
+    const buffer_type& _serialized_op = db->get(itr->op).serialized_op;
+    auto last_op = fc::raw::unpack_from_vector< hive::chain::operation >(_serialized_op);
 
     BOOST_REQUIRE( db->has_hardfork( 0 ) );
     BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_0_1 ) );
     operation hardfork_vop = hardfork_operation( HIVE_HARDFORK_0_1 );
 
-    BOOST_REQUIRE( get_last_operations( 1 )[0] == hardfork_vop );
-    BOOST_REQUIRE( db->get(itr->op).timestamp == db->head_block_time() );
+    BOOST_REQUIRE(last_op == hardfork_vop);
+    BOOST_REQUIRE(db->get(itr->op).timestamp == db->head_block_time());
 
     BOOST_TEST_MESSAGE( "Testing hardfork is only applied once" );
     generate_block();
 
-    itr = db->get_index< account_history_index >().indices().get< by_id >().end();
-    itr--;
+    auto processed_op = last_op;
+
+    /// Continue (starting from last HF op position), but skip last HF op
+    for(++itr; itr != db->get_index< account_history_index >().indices().get< by_id >().end(); ++itr)
+    {
+      const auto& ahRecord = *itr;
+      const buffer_type& _serialized_op = db->get(ahRecord.op).serialized_op;
+      processed_op = fc::raw::unpack_from_vector< hive::chain::operation >(_serialized_op);
+    }
+
+      /// There shall be no more hardfork ops after last one.
+    BOOST_REQUIRE(processed_op.which() != hardfork_vop.which());
 
     BOOST_REQUIRE( db->has_hardfork( 0 ) );
     BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_0_1 ) );
-    BOOST_REQUIRE( get_last_operations( 1 )[0] == hardfork_vop );
+
+    /// Search again for pre-HF operation
+    itr = db->get_index< account_history_index >().indices().get< by_id >().upper_bound(last_ah_id);
+    /// Skip another producer_reward_op generated at last produced block
+    ++itr;
+
+    /// Here last HF vop shall be pointed, with its original time.
     BOOST_REQUIRE( db->get(itr->op).timestamp == db->head_block_time() - HIVE_BLOCK_INTERVAL );
 
   }
