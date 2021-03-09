@@ -279,7 +279,7 @@ struct api_dynamic_global_property_object
   uint16_t                        sps_fund_percent;
   asset                           sps_interval_ledger;
   uint16_t                        downvote_pool_percent;
-  uint16_t                        current_remove_threshold;
+  int16_t                         current_remove_threshold;
 #ifdef HIVE_ENABLE_SMT
   asset                           smt_creation_fee;
 #endif

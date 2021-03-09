@@ -1168,6 +1168,14 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
       BOOST_REQUIRE( found_votes == 10 );
     }
 
+    {
+      generate_block();
+      auto found_proposals = calc_proposals( proposal_idx, { 0 } );
+      auto found_votes = calc_proposal_votes( proposal_vote_idx, 0 );
+      BOOST_REQUIRE( found_proposals == 0 );
+      BOOST_REQUIRE( found_votes == 0 );
+    }
+
     for( auto item : inits )
     {
       const account_object& account = db->get_account( item.account );
