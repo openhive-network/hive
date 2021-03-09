@@ -2,6 +2,7 @@
 
 import time
 
+import os
 import sys
 import json
 
@@ -299,7 +300,7 @@ def print_top_witnesses(sockpuppets, witnesses, api_node_url):
 
 if __name__ == "__main__":
     try:
-        init_logger(__file__)
+        init_logger(os.path.abspath(__file__))
 
         sockpuppets = [
           {"private_key":"5HsBnrPbtqGki6E4mmgT5QevVotAFN2f1TafB7yjfQu8eBTtkQ5","public_key":"TST6NtyPP4Ar1rZvGyS4bmdwjCMpQvCoF3TQ3TBjgfBCH7q982UDr","account_name":"sockpuppet0"},
