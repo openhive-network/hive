@@ -3,3 +3,4 @@ logs/
 nodes_??/*/logs
 nodes_??/*/blockchain/
 nodes_??/*/hived.log
+wallet.json
