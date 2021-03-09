@@ -8,6 +8,9 @@ import json
 from jsonsocket import steemd_call
 from hive.steem.client import SteemClient
 
+# TODO: Remove dependency from cli_wallet/tests directory.
+#       This modules [utils.logger] should be somewhere higher.
+sys.path.append("../cli_wallet/tests")
 from utils.logger     import log, init_logger
 
 class Client(SteemClient):
