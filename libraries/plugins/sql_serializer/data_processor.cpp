@@ -10,6 +10,7 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
   _description(std::move(description)),
   _cancel(false),
   _continue(true),
+  _finished(false),
   _total_processed_records(0)
 {
   auto body = [this, psqlUrl, dataProcessor]() -> void
@@ -68,6 +69,7 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
     }
 
     ilog("Leaving data processor thread: ${d}", ("d", _description));
+    _finished = true;
   };
 
   _worker = std::thread(body);
@@ -81,6 +83,9 @@ data_processor::~data_processor()
 
 void data_processor::trigger(data_chunk_ptr dataPtr)
 {
+  if(_finished)
+    return;
+
   {
   dlog("Trying to trigger data processor: ${d}...", ("d", _description));
   std::lock_guard<std::mutex> lk(_mtx);
@@ -121,7 +126,7 @@ void data_processor::join()
 
   ilog("Waiting for data processor: ${d} worker thread finish...", ("d", _description));
 
-  if(_worker.joinable())
+  if(_finished == false && _worker.joinable())
     _worker.join();
 
   ilog("Data processor: ${d} finished execution...", ("d", _description));

@@ -1436,7 +1436,7 @@ void state_snapshot_plugin::plugin_startup()
 
 void state_snapshot_plugin::plugin_shutdown()
   {
-  ilog("Shutting down account_history_rocksdb_plugin...");
+  ilog("Shutting down state_snapshot_plugin...");
   /// TO DO ADD CHECK DEFERRING SHUTDOWN WHEN SNAPSHOT IS GENERATED/LOADED.
   }
 

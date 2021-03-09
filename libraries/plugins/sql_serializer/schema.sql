@@ -32,10 +32,10 @@ ALTER TABLE hive_transactions_multisig ADD CONSTRAINT hive_transactions_multisig
 CREATE TABLE IF NOT EXISTS hive_operation_types (
   "id" smallint NOT NULL,
   "name" text NOT NULL,
-  "is_virtual" boolean NOT NULL
+  "is_virtual" boolean NOT NULL,
+  CONSTRAINT hive_operation_types_pkey PRIMARY KEY (id),
+  CONSTRAINT hive_operation_types_uniq UNIQUE (name)
 );
-ALTER TABLE hive_operation_types ADD CONSTRAINT hive_operation_types_pkey PRIMARY KEY ( id );
-ALTER TABLE hive_operation_types ADD CONSTRAINT hive_operation_types_uniq UNIQUE ( name );
 
 CREATE TABLE IF NOT EXISTS hive_permlink_data (
   id INTEGER NOT NULL,
