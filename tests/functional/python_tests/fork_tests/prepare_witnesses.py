@@ -399,8 +399,6 @@ if __name__ == "__main__":
         prepare_witnesses(sockpuppets, url)
         prepare_witnesses(witnesses, url)
 
-        synchronize_balances(steemit_accounts, url, mainNetUrl)
-
         for account in steemit_accounts:
             set_voting_proxy(account["account_name"], "steemit-proxy", url)
 
