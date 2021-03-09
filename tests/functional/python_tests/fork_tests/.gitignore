@@ -5,3 +5,4 @@ nodes_??/*/p2p
 nodes_??/*/blockchain/
 nodes_??/*/hived.log
 wallet.json
+*sw[a-p]
