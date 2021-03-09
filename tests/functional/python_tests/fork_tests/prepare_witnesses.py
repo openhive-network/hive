@@ -399,9 +399,6 @@ if __name__ == "__main__":
         prepare_witnesses(sockpuppets, url)
         prepare_witnesses(witnesses, url)
 
-        for account in steemit_accounts:
-            set_voting_proxy(account["account_name"], "steemit-proxy", url)
-
         self_vote(witnesses, url)
 
         print("Witness state before voting of steemit-proxy proxy")
