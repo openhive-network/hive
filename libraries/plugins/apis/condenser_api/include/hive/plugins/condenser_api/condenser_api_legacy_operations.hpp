@@ -793,14 +793,14 @@ namespace hive { namespace plugins { namespace condenser_api {
 
   struct legacy_author_reward_operation
   {
-    legacy_author_reward_operation() {}
-    legacy_author_reward_operation( const author_reward_operation& op ) :
+    legacy_author_reward_operation() = default;
+    explicit legacy_author_reward_operation( const author_reward_operation& op ) :
       author( op.author ),
       permlink( op.permlink ),
       hbd_payout( legacy_asset::from_asset( op.hbd_payout ) ),
       hive_payout( legacy_asset::from_asset( op.hive_payout ) ),
       vesting_payout( legacy_asset::from_asset( op.vesting_payout ) ),
-      payouts_are_vesting( op.payouts_are_vesting )
+      payout_must_be_claimed( op.payout_must_be_claimed)
     {}
 
     operator author_reward_operation()const
@@ -811,7 +811,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       op.hbd_payout = hbd_payout;
       op.hive_payout = hive_payout;
       op.vesting_payout = vesting_payout;
-      op.payouts_are_vesting = payouts_are_vesting;
+      op.payout_must_be_claimed = payout_must_be_claimed;
       return op;
     }
 
@@ -820,18 +820,18 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      hbd_payout;
     legacy_asset      hive_payout;
     legacy_asset      vesting_payout;
-    bool              payouts_are_vesting;
+    bool              payout_must_be_claimed = false;
   };
 
   struct legacy_curation_reward_operation
   {
-    legacy_curation_reward_operation() {}
-    legacy_curation_reward_operation( const curation_reward_operation& op ) :
+    legacy_curation_reward_operation() = default;
+    explicit legacy_curation_reward_operation( const curation_reward_operation& op ) :
       curator( op.curator ),
       reward( legacy_asset::from_asset( op.reward ) ),
       comment_author( op.comment_author ),
       comment_permlink( op.comment_permlink ),
-      payouts_are_vesting( op.payouts_are_vesting )
+      payout_must_be_claimed( op.payout_must_be_claimed)
     {}
 
     operator curation_reward_operation()const
@@ -841,7 +841,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       op.reward = reward;
       op.comment_author = comment_author;
       op.comment_permlink = comment_permlink;
-      op.payouts_are_vesting = payouts_are_vesting;
+      op.payout_must_be_claimed = payout_must_be_claimed;
       return op;
     }
 
@@ -849,7 +849,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      reward;
     account_name_type comment_author;
     string            comment_permlink;
-    bool              payouts_are_vesting;
+    bool              payout_must_be_claimed = false;
   };
 
   struct legacy_comment_reward_operation
@@ -2033,8 +2033,8 @@ FC_REFLECT_ALIASED_NAMES( hive::plugins::condenser_api::legacy_claim_reward_bala
   ( ("reward_hive", "reward_steem") ) ( ("reward_hbd", "reward_sbd") )
 )
 FC_REFLECT( hive::plugins::condenser_api::legacy_delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(payouts_are_vesting) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink)(payouts_are_vesting) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(payout_must_be_claimed) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink)(payout_must_be_claimed) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_comment_reward_operation, (author)(permlink)(payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_liquidity_reward_operation, (owner)(payout) )

@@ -8,9 +8,9 @@
 namespace hive { namespace protocol {
 
   struct author_reward_operation : public virtual_operation {
-    author_reward_operation(){}
-    author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v, const asset& c, bool payouts_are_vesting )
-      :author(a), permlink(p), hbd_payout(s), hive_payout(st), vesting_payout(v), curators_vesting_payout(c), payouts_are_vesting(payouts_are_vesting) {}
+    author_reward_operation() = default;
+    author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v, const asset& c, bool must_be_claimed)
+      :author(a), permlink(p), hbd_payout(s), hive_payout(st), vesting_payout(v), curators_vesting_payout(c), payout_must_be_claimed(must_be_claimed) {}
 
     account_name_type author;
     string            permlink;
@@ -18,21 +18,25 @@ namespace hive { namespace protocol {
     asset             hive_payout;
     asset             vesting_payout;
     asset             curators_vesting_payout;
-    bool              payouts_are_vesting;
+    /// If set to true, payout has been stored in the separate reward balance, and must be claimed
+    /// to be transferred to regular balance.
+    bool              payout_must_be_claimed = false;
   };
 
 
   struct curation_reward_operation : public virtual_operation
   {
-    curation_reward_operation(){}
-    curation_reward_operation( const string& c, const asset& r, const string& a, const string& p, bool payouts_are_vesting )
-      :curator(c), reward(r), comment_author(a), comment_permlink(p), payouts_are_vesting(payouts_are_vesting) {}
+    curation_reward_operation() = default;
+    curation_reward_operation( const string& c, const asset& r, const string& a, const string& p, bool must_be_claimed)
+      :curator(c), reward(r), comment_author(a), comment_permlink(p), payout_must_be_claimed(must_be_claimed) {}
 
     account_name_type curator;
     asset             reward;
     account_name_type comment_author;
     string            comment_permlink;
-    bool              payouts_are_vesting;
+    /// If set to true, payout has been stored in the separate reward balance, and must be claimed
+    /// to be transferred to regular balance.
+    bool              payout_must_be_claimed = false;
   };
 
 
@@ -337,8 +341,8 @@ namespace hive { namespace protocol {
 
 } } //hive::protocol
 
-FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payouts_are_vesting) )
-FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink)(payouts_are_vesting) )
+FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payout_must_be_claimed) )
+FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::comment_reward_operation, (author)(permlink)(payout)(author_rewards)(total_payout_value)(curator_payout_value)(beneficiary_payout_value) )
 FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
