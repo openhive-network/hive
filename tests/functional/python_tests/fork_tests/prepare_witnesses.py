@@ -372,8 +372,8 @@ if __name__ == "__main__":
           {"private_key":"5Jsc8KczJrK537MEgPDbA28MMD9fFFR5DQq77sM9qM8kuTJz9sP","public_key":"TST6SLYja77Lpz4tUrrSjEGWLbeuNtX5Rzymx8oBcpfgXyqWJs1yB","account_name":"steemit-proxy"},
         ]
 
-        url = "http://localhost:8093"
-        api_node_url = "http://localhost:58091"
+        url = "http://localhost:3903"
+        api_node_url = "http://localhost:3903"
         mainNetUrl = "https://api.hive.blog"
 
         #initminer key
