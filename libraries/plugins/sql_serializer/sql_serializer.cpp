@@ -766,7 +766,7 @@ namespace hive
           }
         };
 
-        class sql_serializer_plugin_impl
+        class sql_serializer_plugin_impl final
         {
         public:
           sql_serializer_plugin_impl(const std::string &url) 
@@ -776,7 +776,7 @@ namespace hive
             init_data_processors();
           }
 
-          virtual ~sql_serializer_plugin_impl()
+          ~sql_serializer_plugin_impl()
           {
             ilog("Serializer plugin is closing");
 
@@ -786,10 +786,10 @@ namespace hive
           }
 
           boost::signals2::connection _on_post_apply_operation_con;
+          boost::signals2::connection _on_pre_apply_block_con;
           boost::signals2::connection _on_post_apply_block_con;
           boost::signals2::connection _on_starting_reindex;
           boost::signals2::connection _on_finished_reindex;
-          boost::signals2::connection _on_live_sync_start;
 
           std::unique_ptr<account_data_container_t_writer> _account_writer;
           std::unique_ptr<permlink_data_container_t_writer> _permlink_writer;
@@ -822,8 +822,10 @@ namespace hive
 
           void switch_db_items( bool mode, const std::string& function_name, const std::string& objects_name ) const
           {
-            std::vector<std::string> table_names = { "hive_blocks", "hive_transactions", "hive_transactions_multisig", "hive_operation_types",
-                                                         "hive_permlink_data", "hive_operations", "hive_accounts", "hive_account_operations" };
+            /// Since hive_operation_types table is actually immutable after initial fill (writing very limited amount of data), don't mess with its indexes
+            /// to let working ON CONFLICT DO NOTHING clause during subsequent init tries.
+            std::vector<std::string> table_names = { "hive_blocks", "hive_transactions", "hive_transactions_multisig",
+                                                     "hive_permlink_data", "hive_operations", "hive_accounts", "hive_account_operations" };
 
             ilog("${mode} ${objects_name}...", ("objects_name", objects_name )("mode", ( mode ? "Creating" : "Dropping" ) ) );
 
@@ -850,23 +852,22 @@ namespace hive
             ilog("The ${objects_name} have been ${mode}...", ("objects_name", objects_name )("mode", ( mode ? "created" : "dropped" ) ) );
           }
 
-          void switch_db_items( bool mode ) const
+          void switch_db_items( bool create ) const
           {
             if( psql_block_number == 0 || ( psql_block_number + psql_index_threshold <= head_block_number ) )
             {
               ilog("Switching indexes and constraints is allowed: psql block number: `${pbn}` psql index threshold: `${pit}` head block number: `${hbn}` ...",
               ("pbn", psql_block_number)("pit", psql_index_threshold)("hbn", head_block_number));
 
-              if( !mode )
+              if(create)
               {
-                switch_db_items( mode, "save_and_drop_indexes_foreign_keys", "foreign keys" );
-                switch_db_items( mode, "save_and_drop_indexes_constraints", "indexes/constraints" );
+                switch_db_items(create, "restore_indexes_constraints", "indexes/constraints");
+                switch_db_items(create, "restore_foreign_keys", "foreign keys");
               }
-
-              if( mode )
+              else
               {
-                switch_db_items( mode, "restore_indexes_constraints", "indexes/constraints" );
-                switch_db_items( mode, "restore_foreign_keys", "foreign keys" );
+                switch_db_items(create, "save_and_drop_indexes_foreign_keys", "foreign keys");
+                switch_db_items(create, "save_and_drop_indexes_constraints", "indexes/constraints");
               }
             }
             else
@@ -1070,16 +1071,11 @@ namespace hive
           void collect_new_ids(const hive::protocol::operation& op);
           void collect_impacted_accounts(int64_t operation_id, const hive::protocol::operation& op);
 
-          void push_currently_cached_data(const size_t reserve)
-          {
-            process_cached_data();
-          }
-
           void cleanup_sequence()
           {
             ilog("Flushing rest of data, wait a moment...");
 
-            push_currently_cached_data(0);
+            process_cached_data();
             join_data_processors();
 
             ilog("Done, cleanup complete");
@@ -1213,12 +1209,10 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
         // signals
         auto &db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
         my->_on_post_apply_operation_con = db.add_post_apply_operation_handler([&](const operation_notification &note) { on_post_apply_operation(note); }, *this);
+        my->_on_pre_apply_block_con = db.add_pre_apply_block_handler([&](const block_notification& note) { on_pre_apply_block(note); }, *this);
         my->_on_post_apply_block_con = db.add_post_apply_block_handler([&](const block_notification &note) { on_post_apply_block(note); }, *this);
         my->_on_finished_reindex = db.add_post_reindex_handler([&](const reindex_notification &note) { on_post_reindex(note); }, *this);
         my->_on_starting_reindex = db.add_pre_reindex_handler([&](const reindex_notification &note) { on_pre_reindex(note); }, *this);
-        my->_on_live_sync_start = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().on_sync.connect(0, [&](){ on_live_sync_start(); });
-
-        
       }
 
       void sql_serializer_plugin::plugin_startup()
@@ -1231,6 +1225,9 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
         ilog("Flushing left data...");
         my->join_data_processors();
 
+        if(my->_on_pre_apply_block_con.connected())
+          chain::util::disconnect_signal(my->_on_pre_apply_block_con);
+
         if (my->_on_post_apply_block_con.connected())
           chain::util::disconnect_signal(my->_on_post_apply_block_con);
         if (my->_on_post_apply_operation_con.connected())
@@ -1239,10 +1236,20 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
           chain::util::disconnect_signal(my->_on_starting_reindex);
         if (my->_on_finished_reindex.connected())
           chain::util::disconnect_signal(my->_on_finished_reindex);
-        if (my->_on_live_sync_start.connected())
-          chain::util::disconnect_signal(my->_on_live_sync_start);
 
         ilog("Done. Connection closed");
+      }
+
+      void sql_serializer_plugin::on_pre_apply_block(const block_notification& note)
+      {
+        ilog("Entering a resync data init...");
+        /// Let's init our database before applying first block (resync case)...
+        my->init_database(note.block_num == 1, note.block_num);
+
+        /// And disconnect to avoid subsequent inits
+        if(my->_on_pre_apply_block_con.connected())
+          chain::util::disconnect_signal(my->_on_pre_apply_block_con);
+        ilog("Leaving a resync data init...");
       }
 
       void sql_serializer_plugin::on_post_apply_operation(const operation_notification &note)
@@ -1282,7 +1289,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 
         if( note.block_num % my->blocks_per_commit == 0 )
         {
-          my->push_currently_cached_data(prereservation_size);
+          my->process_cached_data();
         }
 
         if( note.block_num % 100'000 == 0 )
@@ -1332,8 +1339,16 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 
       void sql_serializer_plugin::on_pre_reindex(const reindex_notification &note)
       {
-        my->init_database(note.force_replay, note.max_block_number );
+        ilog("Entering a reindex init...");
+        /// Let's init our database before applying first block...
+        my->init_database(note.force_replay, note.max_block_number);
+
+        /// Disconnect pre-apply-block handler to avoid another initialization (for resync case).
+        if(my->_on_pre_apply_block_con.connected())
+          chain::util::disconnect_signal(my->_on_pre_apply_block_con);
+
         my->blocks_per_commit = 1'000;
+        ilog("Leaving a reindex init...");
       }
 
       void sql_serializer_plugin::on_post_reindex(const reindex_notification& note)
@@ -1347,8 +1362,6 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
         my->blocks_per_commit = 1;
       }
       
-      void sql_serializer_plugin::on_live_sync_start() {}
-
     } // namespace sql_serializer
   }    // namespace plugins
 } // namespace hive

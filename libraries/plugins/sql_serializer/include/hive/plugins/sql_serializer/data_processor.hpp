@@ -46,6 +46,7 @@ public:
     std::string _description;
     std::atomic_bool _cancel;
     std::atomic_bool _continue;
+    std::atomic_bool _finished;
 
     std::thread _worker;
     std::mutex _mtx;
