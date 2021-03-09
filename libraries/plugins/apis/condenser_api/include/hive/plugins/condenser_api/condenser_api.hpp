@@ -369,7 +369,7 @@ struct extended_dynamic_global_properties
 
   uint16_t          downvote_pool_percent = 0;
 
-  uint16_t          current_remove_threshold = HIVE_GLOBAL_REMOVE_THRESHOLD;
+  int16_t           current_remove_threshold = HIVE_GLOBAL_REMOVE_THRESHOLD;
 };
 
 struct api_witness_object

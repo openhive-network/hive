@@ -135,7 +135,7 @@ typedef multi_index_container<
         member< proposal_vote_object, uint32_t, &proposal_vote_object::proposal_id >,
         member< proposal_vote_object, account_name_type, &proposal_vote_object::voter >
       >
-      >
+    >
   >,
   allocator< proposal_vote_object >
 > proposal_vote_index;

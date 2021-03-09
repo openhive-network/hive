@@ -171,7 +171,7 @@ namespace hive { namespace chain {
 
       // limits number of objects removed in one automatic operation (only applies to situations where many
       // objects can accumulate over time but need to be removed in single operation f.e. proposal votes)
-      uint16_t current_remove_threshold = HIVE_GLOBAL_REMOVE_THRESHOLD;
+      int16_t current_remove_threshold = HIVE_GLOBAL_REMOVE_THRESHOLD; //negative means no limit
 
 #ifdef HIVE_ENABLE_SMT
       asset smt_creation_fee = asset( 1000, HBD_SYMBOL ); //< TODO: replace with HBD_asset
