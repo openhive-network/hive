@@ -31,6 +31,13 @@ namespace hive
   {
     namespace sql_serializer
     {
+
+    inline std::string get_operation_name(const hive::protocol::operation& op)
+    {
+      PSQL::name_gathering_visitor v;
+      return op.visit(v);
+    }
+
     
     struct account_info
     {
@@ -571,9 +578,23 @@ namespace hive
           _next_account_id(*next_account_id),
           _next_permlink_id(*next_permlink_id),
           _new_accounts(newAccounts),
-          _new_permlinks(newPermlinks)
+          _new_permlinks(newPermlinks),
+          _processed_operation(nullptr)
         {
         }
+
+        void collect(const hive::protocol::operation& op)
+        {
+          _processed_operation = &op;
+
+          _processed_operation->visit(*this);
+
+          _processed_operation = nullptr;
+        }
+
+      private:
+        template<int64_t N, typename T, typename... Ts>
+        friend struct fc::impl::storage_ops;
 
         template< typename T >
         void operator()(const T& v) { }
@@ -630,7 +651,7 @@ namespace hive
           auto ii = _known_accounts->emplace(std::string(name), account_info(_next_account_id, 0));
           _new_accounts->emplace_back(_next_account_id, std::string(name));
 
-          FC_ASSERT(ii.second, "Account `${a}' already exits.", ("a", name));
+          FC_ASSERT(ii.second, "Already found account `${a}' at processing operation: `{o}.", ("a", name)("o", get_operation_name(*_processed_operation)));
         }
 
       private:
@@ -642,6 +663,8 @@ namespace hive
 
         account_data_container_t* _new_accounts;
         permlink_data_container_t* _new_permlinks;
+
+        const hive::protocol::operation* _processed_operation;
       };
 
 
@@ -1130,10 +1153,7 @@ void sql_serializer_plugin_impl::trigger_data_flush(account_operation_data_conta
 }
 
 void sql_serializer_plugin_impl::process_cached_data()
-{
-  if(currently_caching_data.get() == nullptr)
-    return;
-  
+{  
   auto* data = currently_caching_data.get();
 
   trigger_data_flush(data->accounts);
@@ -1170,7 +1190,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
   for(const auto& name : impacted)
   {
     auto accountI = account_cache->find(name);
-    FC_ASSERT(accountI != account_cache->end(), "Missing account: ${a}", ("a", name));
+    FC_ASSERT(accountI != account_cache->end(), "Missing account: `${a}' at processing operation: `${o}'", ("a", name)("o", get_operation_name(op)));
 
     account_info& aInfo = accountI->second;
 
@@ -1242,7 +1262,8 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 
       void sql_serializer_plugin::on_pre_apply_block(const block_notification& note)
       {
-        ilog("Entering a resync data init...");
+        ilog("Entering a resync data init for block: ${b}...", ("b", note.block_num));
+
         /// Let's init our database before applying first block (resync case)...
         my->init_database(note.block_num == 1, note.block_num);
 
