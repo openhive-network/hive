@@ -343,8 +343,8 @@ class wallet_api
      *  @param fee The fee to pay for claiming the account (either 0 steem for a discounted account, or the full account fee)
      *  @param broadcast true if you wish to broadcast the transaction
      */
-    condenser_api::legacy_signed_transaction claim_account_creation( string creator,
-                                                                     condenser_api::legacy_asset fee,
+    condenser_api::legacy_signed_transaction claim_account_creation( const string& creator,
+                                                                     const condenser_api::legacy_asset& fee,
                                                                      bool broadcast )const; 
     /**
      *  This method will claim a subsidized account creation without waiting for the transaction to confirm.
@@ -353,8 +353,8 @@ class wallet_api
      *  @param fee The fee to pay for claiming the account (either 0 steem for a discounted account, or the full account fee)
      *  @param broadcast true if you wish to broadcast the transaction
      */
-    condenser_api::legacy_signed_transaction claim_account_creation_nonblocking( string creator,
-                                                                                 condenser_api::legacy_asset fee,
+    condenser_api::legacy_signed_transaction claim_account_creation_nonblocking( const string& creator,
+                                                                                 const condenser_api::legacy_asset& fee,
                                                                                  bool broadcast )const;
        
 
@@ -416,11 +416,11 @@ class wallet_api
      * @param memo public memo key of the new account
      * @param broadcast true if you wish to broadcast the transaction
      */
-    condenser_api::legacy_signed_transaction create_funded_account_with_keys( string creator,
-                                                                              string new_account_name,
-                                                                              condenser_api::legacy_asset initial_amount,
-                                                                              string memo,
-                                                                              string json_meta,
+    condenser_api::legacy_signed_transaction create_funded_account_with_keys( const string& creator,
+                                                                              const string& new_account_name,
+                                                                              const condenser_api::legacy_asset& initial_amount,
+                                                                              const string& memo,
+                                                                              const string& json_meta,
                                                                               public_key_type owner_key,
                                                                               public_key_type active_key,
                                                                               public_key_type posting_key,
@@ -590,27 +590,40 @@ class wallet_api
       * @param vesting_shares The amount of VESTS to delegate
       * @param broadcast true if you wish to broadcast the transaction
       */
-    condenser_api::legacy_signed_transaction delegate_vesting_shares( string delegator,
-                                                                      string delegatee,
-                                                                      condenser_api::legacy_asset vesting_shares,
-                                                                      bool broadcast );
+    condenser_api::legacy_signed_transaction delegate_vesting_shares(
+      const string& delegator,
+      const string& delegatee,
+      const condenser_api::legacy_asset& vesting_shares,
+      bool broadcast );
 
 
-    condenser_api::legacy_signed_transaction delegate_vesting_shares_nonblocking( string delegator, string delegatee, condenser_api::legacy_asset vesting_shares, bool broadcast );
+    condenser_api::legacy_signed_transaction delegate_vesting_shares_nonblocking(
+      const string& delegator,
+      const string& delegatee,
+      const condenser_api::legacy_asset& vesting_shares,
+      bool broadcast );
 
     // these versions also send a regular transfer in the same transaction, intended for sending a .001 STEEM memo
-    condenser_api::legacy_signed_transaction delegate_vesting_shares_and_transfer( string delegator, string delegatee, condenser_api::legacy_asset vesting_shares, 
-                                                                                   condenser_api::legacy_asset transfer_amount, 
-                                                                                   optional<string> transfer_memo, bool broadcast );
-    condenser_api::legacy_signed_transaction delegate_vesting_shares_and_transfer_nonblocking( string delegator, string delegatee, condenser_api::legacy_asset 
-                                                                                               vesting_shares, condenser_api::legacy_asset transfer_amount, 
-                                                                                               optional<string> transfer_memo, bool broadcast );
+    condenser_api::legacy_signed_transaction delegate_vesting_shares_and_transfer(
+      const string& delegator,
+      const string& delegatee,
+      const condenser_api::legacy_asset& vesting_shares,
+      const condenser_api::legacy_asset& transfer_amount,
+      optional<string> transfer_memo,
+      bool broadcast );
+    condenser_api::legacy_signed_transaction delegate_vesting_shares_and_transfer_nonblocking(
+      const string& delegator,
+      const string& delegatee,
+      const condenser_api::legacy_asset& vesting_shares,
+      const condenser_api::legacy_asset& transfer_amount,
+      optional<string> transfer_memo,
+      bool broadcast );
 
     // helper function
-    condenser_api::legacy_signed_transaction delegate_vesting_shares_and_transfer_and_broadcast( string delegator, string delegatee, 
-                                                                                                 condenser_api::legacy_asset vesting_shares, 
-                                                                                                 optional<condenser_api::legacy_asset> transfer_amount, 
-                                                                                                 optional<string> transfer_memo, bool broadcast, bool blocking );
+    condenser_api::legacy_signed_transaction delegate_vesting_shares_and_transfer_and_broadcast(
+      const string& delegator, const string& delegatee, const condenser_api::legacy_asset& vesting_shares, 
+      optional<condenser_api::legacy_asset> transfer_amount, optional<string> transfer_memo,
+      bool broadcast, bool blocking );
 
 
     /**
@@ -839,10 +852,12 @@ class wallet_api
      * @param memo A memo for the transactionm, encrypted with the to account's public memo key
      * @param broadcast true if you wish to broadcast the transaction
      */
-    condenser_api::legacy_signed_transaction transfer_nonblocking(string from, string to, condenser_api::legacy_asset amount, string memo, bool broadcast = false);
+    condenser_api::legacy_signed_transaction transfer_nonblocking(const string& from, const string& to,
+      const condenser_api::legacy_asset& amount, const string& memo, bool broadcast = false);
 
     // helper function
-    condenser_api::legacy_signed_transaction transfer_and_broadcast(string from, string to, condenser_api::legacy_asset amount, string memo, bool broadcast, bool blocking );
+    condenser_api::legacy_signed_transaction transfer_and_broadcast(const string& from, const string& to,
+      const condenser_api::legacy_asset& amount, const string& memo, bool broadcast, bool blocking );
     /*
      * Transfer STEEM into a vesting fund represented by vesting shares (VESTS) without waiting for a confirmation.
      * VESTS are required to vesting
@@ -854,10 +869,12 @@ class wallet_api
      * @param amount The amount of STEEM to vest i.e. "100.00 STEEM"
      * @param broadcast true if you wish to broadcast the transaction
      */
-    condenser_api::legacy_signed_transaction transfer_to_vesting_nonblocking(string from, string to, condenser_api::legacy_asset amount, bool broadcast = false);
+    condenser_api::legacy_signed_transaction transfer_to_vesting_nonblocking(const string& from, const string& to,
+      const condenser_api::legacy_asset& amount, bool broadcast = false);
 
     // helper function
-    condenser_api::legacy_signed_transaction transfer_to_vesting_and_broadcast(string from, string to, condenser_api::legacy_asset amount, bool broadcast, bool blocking );
+    condenser_api::legacy_signed_transaction transfer_to_vesting_and_broadcast(const string& from, const string& to,
+      const condenser_api::legacy_asset& amount, bool broadcast, bool blocking );
 
 
     /**
