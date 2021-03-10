@@ -290,6 +290,7 @@ def print_top_witnesses(sockpuppets, witnesses, api_node_url):
     log.info("Witness # {0:2d}, group: {1}, name: `{2}', votes: {3}".format(position, group, w["owner"], w["votes"]))
     position = position + 1
 
+
 # First start wallet as follows:
 # ./cli_wallet --chain-id=04e8b5fc4bb4ab3c0ee3584199a2e584bfb2f141222b3a0d1c74e8a75ec8ff39 -s ws://0.0.0.0:8090 -d -H 0.0.0.0:8093  --rpc-http-allowip 192.168.10.10 --rpc-http-allowip=127.0.0.1
 
@@ -372,8 +373,8 @@ if __name__ == "__main__":
           {"private_key":"5Jsc8KczJrK537MEgPDbA28MMD9fFFR5DQq77sM9qM8kuTJz9sP","public_key":"TST6SLYja77Lpz4tUrrSjEGWLbeuNtX5Rzymx8oBcpfgXyqWJs1yB","account_name":"steemit-proxy"},
         ]
 
-        url = "http://localhost:3903"
-        api_node_url = "http://localhost:3903"
+        url = "http://localhost:3904"
+        api_node_url = "http://localhost:3902"
         mainNetUrl = "https://api.hive.blog"
 
         #initminer key
