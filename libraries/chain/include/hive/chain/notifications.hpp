@@ -14,7 +14,7 @@ struct block_notification
   }
 
   hive::protocol::block_id_type          block_id;
-  hive::protocol::block_id_type     prev_block_id;
+  hive::protocol::block_id_type          prev_block_id;
   uint32_t                               block_num = 0;
   const hive::protocol::signed_block&    block;
 };
