@@ -792,10 +792,12 @@ namespace hive
         class sql_serializer_plugin_impl final
         {
         public:
-          sql_serializer_plugin_impl(const std::string &url) 
+          sql_serializer_plugin_impl(const std::string &url, hive::chain::database& _chain_db) 
             : connection{url},
-              db_url{url}
+              db_url{url},
+              chain_db{_chain_db}
           {
+
             init_data_processors();
           }
 
@@ -808,7 +810,7 @@ namespace hive
             ilog("Serializer plugin has been closed");
           }
 
-          boost::signals2::connection _on_post_apply_operation_con;
+          boost::signals2::connection _on_pre_apply_operation_con;
           boost::signals2::connection _on_pre_apply_block_con;
           boost::signals2::connection _on_post_apply_block_con;
           boost::signals2::connection _on_starting_reindex;
@@ -824,6 +826,7 @@ namespace hive
 
           postgress_connection_holder connection;
           std::string db_url;
+          hive::chain::database& chain_db;
           fc::optional<fc::string> path_to_schema;
 
           uint32_t psql_block_number = 0;
@@ -932,8 +935,7 @@ namespace hive
 
           void import_all_builtin_accounts()
           {
-            auto& db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
-            const auto& accounts = db.get_index<hive::chain::account_index, hive::chain::by_id>();
+            const auto& accounts = chain_db.get_index<hive::chain::account_index, hive::chain::by_id>();
 
             auto* data = currently_caching_data.get(); 
 
@@ -1216,7 +1218,10 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
       {
         ilog("Initializing sql serializer plugin");
         FC_ASSERT(options.count("psql-url"), "`psql-url` is required argument");
-        my = std::make_unique<detail::sql_serializer_plugin_impl>(options["psql-url"].as<fc::string>());
+
+        auto& db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
+
+        my = std::make_unique<detail::sql_serializer_plugin_impl>(options["psql-url"].as<fc::string>(), db);
 
         // settings
         if (options.count("psql-path-to-schema"))
@@ -1227,8 +1232,7 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
         my->currently_caching_data = std::make_unique<detail::cached_data_t>( default_reservation_size );
 
         // signals
-        auto &db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
-        my->_on_post_apply_operation_con = db.add_post_apply_operation_handler([&](const operation_notification &note) { on_post_apply_operation(note); }, *this);
+        my->_on_pre_apply_operation_con = db.add_pre_apply_operation_handler([&](const operation_notification &note) { on_pre_apply_operation(note); }, *this);
         my->_on_pre_apply_block_con = db.add_pre_apply_block_handler([&](const block_notification& note) { on_pre_apply_block(note); }, *this);
         my->_on_post_apply_block_con = db.add_post_apply_block_handler([&](const block_notification &note) { on_post_apply_block(note); }, *this);
         my->_on_finished_reindex = db.add_post_reindex_handler([&](const reindex_notification &note) { on_post_reindex(note); }, *this);
@@ -1250,8 +1254,8 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 
         if (my->_on_post_apply_block_con.connected())
           chain::util::disconnect_signal(my->_on_post_apply_block_con);
-        if (my->_on_post_apply_operation_con.connected())
-          chain::util::disconnect_signal(my->_on_post_apply_operation_con);
+        if (my->_on_pre_apply_operation_con.connected())
+          chain::util::disconnect_signal(my->_on_pre_apply_operation_con);
         if (my->_on_starting_reindex.connected())
           chain::util::disconnect_signal(my->_on_starting_reindex);
         if (my->_on_finished_reindex.connected())
@@ -1273,8 +1277,14 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
         ilog("Leaving a resync data init...");
       }
 
-      void sql_serializer_plugin::on_post_apply_operation(const operation_notification &note)
+      void sql_serializer_plugin::on_pre_apply_operation(const operation_notification &note)
       {
+        if(my->chain_db.is_producing())
+        {
+          ilog("Skipping operation processing coming from incoming transaction - waiting for already produced incoming block...");
+          return;
+        }
+
         const bool is_virtual = hive::protocol::is_virtual_operation(note.op);
 
         detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
@@ -1298,6 +1308,8 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 
       void sql_serializer_plugin::on_post_apply_block(const block_notification &note)
       {
+        FC_ASSERT(my->chain_db.is_producing() == false);
+
         handle_transactions( note.block.transactions, note.block_num );
 
         my->currently_caching_data->total_size += note.block_id.data_size() + sizeof(note.block_num);
