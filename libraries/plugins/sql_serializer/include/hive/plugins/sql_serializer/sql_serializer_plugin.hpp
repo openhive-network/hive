@@ -17,7 +17,7 @@ using chain::reindex_notification;
 
 constexpr size_t prereservation_size = 16'000u;
 
-class sql_serializer_plugin : public plugin<sql_serializer_plugin>
+class sql_serializer_plugin final : public plugin<sql_serializer_plugin>
 {
   public:
       sql_serializer_plugin();
@@ -34,7 +34,7 @@ class sql_serializer_plugin : public plugin<sql_serializer_plugin>
       void on_pre_reindex(const reindex_notification &note);
       void on_post_reindex(const reindex_notification &note);
 
-      void on_post_apply_operation(const operation_notification &note);
+      void on_pre_apply_operation(const operation_notification &note);
       void on_pre_apply_block(const block_notification& note);
       void on_post_apply_block(const block_notification &note);
 
