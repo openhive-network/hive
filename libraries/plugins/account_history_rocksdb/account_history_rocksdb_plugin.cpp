@@ -486,6 +486,7 @@ public:
   impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath) :
     _self(self),
     _mainDb(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db()),
+    _blockchainStoragePath(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
     _storagePath(storagePath),
     _writeBuffer(_storage, _columnHandles)
     {
@@ -571,6 +572,9 @@ public:
 
   void openDb()
   {
+    //Very rare case -  when a synchronization starts from the scratch and a node has AH plugin with rocksdb enabled and directories don't exist yet
+    bfs::create_directories( _blockchainStoragePath );
+
     createDbSchema(_storagePath);
 
     auto columnDefs = prepareColumnDefinitions(true);
@@ -863,6 +867,7 @@ private:
 
   account_history_rocksdb_plugin&  _self;
   chain::database&                 _mainDb;
+  bfs::path                        _blockchainStoragePath;
   bfs::path                        _storagePath;
   std::unique_ptr<DB>              _storage;
   std::vector<ColumnFamilyHandle*> _columnHandles;
