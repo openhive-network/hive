@@ -65,6 +65,9 @@ class Node:
     def get_p2p_endpoints(self):
         return self.config['p2p-endpoint']
 
+    def get_webserver_ws_endpoints(self):
+        return self.config['webserver-ws-endpoint']
+
     def run(self):
         if not self.executable_file_path:
             raise Exception('Missing executable')
