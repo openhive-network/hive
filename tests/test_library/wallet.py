@@ -1,5 +1,6 @@
 from pathlib import Path
 import subprocess
+import signal
 
 
 class Wallet:
@@ -43,7 +44,7 @@ class Wallet:
         print(f'Wallet run with pid {self.process.pid}')
 
     def close(self):
-        self.process.kill()
+        self.process.send_signal(signal.SIGINT)
 
     def wait_for_close(self):
         return_code = self.process.wait()
