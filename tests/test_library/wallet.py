@@ -11,6 +11,12 @@ class Wallet:
         self.stderr_file = None
         self.process = None
 
+    def is_running(self):
+        if not self.process:
+            return False
+
+        return self.process.poll() is None
+
     def run(self):
         if not self.executable_file_path:
             raise Exception('Missing executable')
