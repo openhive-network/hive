@@ -62,6 +62,12 @@ class Node:
             'Percent of witnesses (0-99) that must be participating in order to produce blocks'
         )
 
+    def is_running(self):
+        if not self.process:
+            return False
+
+        return self.process.poll() is None
+
     def get_p2p_endpoints(self):
         return self.config['p2p-endpoint']
 
