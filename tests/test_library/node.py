@@ -65,6 +65,13 @@ class Node:
     def __str__(self):
         return self.name
 
+    def __del__(self):
+        if not self.is_running():
+            return
+
+        self.close()
+        self.wait_for_close()
+
     def is_running(self):
         if not self.process:
             return False
