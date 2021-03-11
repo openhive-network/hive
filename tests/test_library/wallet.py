@@ -15,6 +15,13 @@ class Wallet:
         self.stderr_file = None
         self.process = None
 
+    def __del__(self):
+        if not self.is_running():
+            return
+
+        self.close()
+        self.wait_for_close()
+
     def is_running(self):
         if not self.process:
             return False
