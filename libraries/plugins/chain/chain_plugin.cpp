@@ -81,7 +81,7 @@ class chain_plugin_impl
     void start_write_processing();
     void stop_write_processing();
 
-    bool start_replay_processing( synchronization_type& on_sync );
+    bool start_replay_processing();
 
     void initial_settings();
     void open();
@@ -340,7 +340,7 @@ void chain_plugin_impl::stop_write_processing()
   write_processor_thread.reset();
 }
 
-bool chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
+bool chain_plugin_impl::start_replay_processing()
 {
   bool replay_is_last_operation = replay_blockchain();
 
@@ -348,6 +348,8 @@ bool chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
   {
     if( !appbase::app().is_interrupt_request() )
     {
+      ilog("Generating artificial interrupt request...");
+
       /*
         Triggering artifical signal.
         Whole application should be closed in identical way, as if it was closed by user.
@@ -744,7 +746,7 @@ void chain_plugin::plugin_startup()
   if( my->replay )
   {
     ilog("Replaying...");
-    if( !my->start_replay_processing( on_sync ) )
+    if( !my->start_replay_processing() )
     {
       ilog("P2P enabling after replaying...");
       my->work( on_sync );
@@ -759,7 +761,7 @@ void chain_plugin::plugin_startup()
       {
         ilog("Replaying...");
         //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
-        if( !my->start_replay_processing( on_sync ) )
+        if( !my->start_replay_processing() )
         {
           ilog("P2P enabling after replaying...");
           my->work( on_sync );

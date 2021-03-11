@@ -141,12 +141,16 @@ namespace appbase {
 
       void generate_interrupt_request()
       {
+        _is_interrupt_request = true;
         if( startup_io_handler )
           startup_io_handler->set_interrupt_request( SIGINT );
       }
 
       bool is_interrupt_request() const
       {
+        if(_is_interrupt_request)
+          return true;
+
         return startup_io_handler ? startup_io_handler->is_interrupt_request() : _is_interrupt_request;
       }
 

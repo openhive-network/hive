@@ -134,10 +134,12 @@ application::~application() { }
 
 void application::startup() {
 
+  std::cout << "Setting up a startup_io_handler..." << std::endl;
+
   startup_io_handler = io_handler::p_io_handler( new io_handler  ( false/*allow_close_when_signal_is_received*/,
                                               [ this ]()
                                               {
-                                                _is_interrupt_request = startup_io_handler->is_interrupt_request();
+                                                _is_interrupt_request = _is_interrupt_request || startup_io_handler->is_interrupt_request();
                                               }
                                             ) );
   startup_io_handler->attach_signals();
@@ -364,7 +366,9 @@ void application::finish()
   shutdown();
 }
 
-void application::exec() {
+void application::exec()
+{
+  std::cout << ("Entering application main loop...") << std::endl;
 
   if( !is_interrupt_request() )
   {
@@ -373,7 +377,12 @@ void application::exec() {
     main_io_handler.run();
   }
   else
+  {
+    std::cout << ("performing shutdown on interrupt request...") << std::endl;
     shutdown();
+  }
+
+  std::cout << ("Leaving application main loop...") << std::endl;
 }
 
 void application::write_default_config(const bfs::path& cfg_file) {
