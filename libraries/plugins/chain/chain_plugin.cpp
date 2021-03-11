@@ -618,7 +618,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("resync-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and block log" )
       ("stop-replay-at-block", bpo::value<uint32_t>(), "Stop after reaching given block number")
       ("exit-after-replay", bpo::bool_switch()->default_value(false), "Exit after reaching given block number")
-      ("force-replay", bpo::bool_switch()->default_value(false), "Before replaying clean all old files")
+      ("force-replay", bpo::bool_switch()->default_value(false), "Before replaying clean all old files. If specifed `--replay-blockchain` flag is implied")
       ("advanced-benchmark", "Make profiling for every plugin.")
       ("set-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks")
       ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
@@ -656,11 +656,11 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
   my->chainbase_flags |= options.at( "force-open" ).as< bool >() ? chainbase::skip_env_check : chainbase::skip_nothing;
 
-  my->replay              = options.at( "replay-blockchain").as<bool>();
+  my->force_replay        = options.count( "force-replay" ) ? options.at( "force-replay" ).as<bool>() : false;
+  my->replay              = options.at( "replay-blockchain").as<bool>() || my->force_replay;
   my->resync              = options.at( "resync-blockchain").as<bool>();
   my->stop_replay_at      = options.count( "stop-replay-at-block" ) ? options.at( "stop-replay-at-block" ).as<uint32_t>() : 0;
   my->exit_after_replay   = options.count( "exit-after-replay" ) ? options.at( "exit-after-replay" ).as<bool>() : false;
-  my->force_replay        = options.count( "force-replay" ) ? options.at( "force-replay" ).as<bool>() : false;
   my->benchmark_interval  =
     options.count( "set-benchmark-interval" ) ? options.at( "set-benchmark-interval" ).as<uint32_t>() : 0;
   my->check_locks         = options.at( "check-locks" ).as< bool >();
