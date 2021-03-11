@@ -401,10 +401,11 @@ if __name__ == "__main__":
         configure_initial_vesting(sockpuppets, "10.000 TESTS", url)
         configure_initial_vesting(witnesses, "1000000.000 TESTS", url)
 
-        prepare_witnesses(sockpuppets, url)
         prepare_witnesses(witnesses, url)
+        prepare_witnesses(sockpuppets, url)
 
         self_vote(witnesses, url)
+        self_vote(sockpuppets, url)
 
         print("Witness state before voting of steemit-proxy proxy")
         print_top_witnesses(sockpuppets, witnesses, api_node_url)
