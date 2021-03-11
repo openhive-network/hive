@@ -62,6 +62,9 @@ class Node:
             'Percent of witnesses (0-99) that must be participating in order to produce blocks'
         )
 
+    def __str__(self):
+        return self.name
+
     def is_running(self):
         if not self.process:
             return False
