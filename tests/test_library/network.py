@@ -35,6 +35,8 @@ class Network:
     def assign_ports_for_nodes(self):
         for node in self.nodes:
             node.add_p2p_endpoint(f'0.0.0.0:{self.allocate_port()}')
+            node.add_webserver_http_endpoint(f'0.0.0.0:{self.allocate_port()}')
+            node.add_webserver_ws_endpoint(f'0.0.0.0:{self.allocate_port()}')
 
     def connect_nodes(self):
         if len(self.nodes) < 2:
