@@ -9,8 +9,14 @@ class Network:
         self.name = name
         self.directory = Path('.').absolute()
         self.nodes = []
+        self.next_free_port = 49152
 
         self.hived_executable_file_path = None
+
+    def allocate_port(self):
+        port = self.next_free_port
+        self.next_free_port += 1
+        return port
 
     def set_directory(self, directory):
         self.directory = Path(directory).absolute()
@@ -26,6 +32,10 @@ class Network:
         self.nodes.append(node)
         return node
 
+    def assign_ports_for_nodes(self):
+        for node in self.nodes:
+            node.add_p2p_endpoint(f'0.0.0.0:{self.allocate_port()}')
+
     def run(self):
         print('Script is run in', Path('.').absolute())
 
@@ -38,6 +48,8 @@ class Network:
             rmtree(directory)
 
         directory.mkdir(parents=True)
+
+        self.assign_ports_for_nodes()
 
         for node in self.nodes:
             node.set_directory(self.get_directory() / node.get_name())
