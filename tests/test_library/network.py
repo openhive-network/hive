@@ -82,7 +82,7 @@ class Network:
         if len(self.nodes) == 0:
             raise Exception('Cannot connect wallet to network without nodes')
 
-        wallet = Wallet()
+        wallet = Wallet(self.get_directory() / 'Wallet')
         wallet.set_http_server_port(self.allocate_port())
         wallet.connect_to(node)
 
