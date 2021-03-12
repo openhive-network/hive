@@ -7,15 +7,19 @@ from node import Node
 class Network:
     def __init__(self, name):
         self.name = name
+        self.directory = Path('.').absolute()
         self.nodes = []
 
         self.hived_executable_file_path = None
+
+    def set_directory(self, directory):
+        self.directory = Path(directory).absolute()
 
     def set_hived_executable_file_path(self, path):
         self.hived_executable_file_path = Path(path).absolute()
 
     def get_directory(self):
-        return Path(self.name).absolute()
+        return self.directory / self.name
 
     def add_node(self, node_name):
         node = Node(name=node_name, directory=self.get_directory() / node_name)
