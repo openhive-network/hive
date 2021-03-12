@@ -5,7 +5,8 @@ from node_config import NodeConfig
 
 
 class Node:
-    def __init__(self, name='unnamed', directory=Path()):
+    def __init__(self, name='unnamed', network=None, directory=Path()):
+        self.network = network
         self.name = name
         self.directory = directory
         self.print_to_terminal = False
