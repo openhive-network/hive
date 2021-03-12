@@ -136,6 +136,15 @@ class Node:
     def redirect_output_to_terminal(self):
         self.print_to_terminal = True
 
+    def is_ws_listening(self):
+        # TODO: This can be implemented in smarter way...
+        with open(self.directory/'stderr.txt') as output:
+            for line in output:
+                if 'start listening for ws requests' in line:
+                    return True
+
+        return False
+
     def run(self):
         if not self.executable_file_path:
             raise Exception('Missing executable')
