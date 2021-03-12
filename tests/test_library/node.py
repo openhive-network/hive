@@ -65,7 +65,7 @@ class Node:
         )
 
     def __str__(self):
-        return self.name
+        return f'{self.network.name}::{self.name}'
 
     def __del__(self):
         if not self.is_running():
