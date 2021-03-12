@@ -21,6 +21,7 @@ def create_wallet():
 if __name__ == "__main__":
     net = Network('TestNetwork')
     net.set_hived_executable_file_path('../../../../build/programs/hived/hived')
+    net.set_wallet_executable_file_path('../../../../build/programs/cli_wallet/cli_wallet')
 
     init_node = net.add_node('InitNode')
     net.add_node('TestNode0')
