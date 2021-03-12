@@ -107,6 +107,9 @@ class Node:
     def get_p2p_endpoints(self):
         return self.config['p2p-endpoint']
 
+    def add_p2p_endpoint(self, endpoint):
+        self.config.add_entry('p2p-endpoint', endpoint)
+
     def get_webserver_ws_endpoints(self):
         return self.config['webserver-ws-endpoint']
 
