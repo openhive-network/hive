@@ -65,7 +65,7 @@ class Wallet:
             stderr=self.stderr_file
         )
 
-        print(f'Wallet run with pid {self.process.pid}')
+        print(f'[Wallet] Started with pid {self.process.pid}, listening on port {self.http_server_port}')
 
     def connect_to(self, node: Node):
         self.connected_node = node
