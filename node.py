@@ -8,6 +8,7 @@ class Node:
     def __init__(self, name='unnamed', directory=Path()):
         self.name = name
         self.directory = directory
+        self.print_to_terminal = False
         self.executable_file_path = None
         self.process = None
         self.stdout_file = None
@@ -90,6 +91,9 @@ class Node:
     def get_webserver_ws_endpoints(self):
         return self.config['webserver-ws-endpoint']
 
+    def redirect_output_to_terminal(self):
+        self.print_to_terminal = True
+
     def run(self):
         if not self.executable_file_path:
             raise Exception('Missing executable')
@@ -99,8 +103,9 @@ class Node:
         config_file_path = self.directory.joinpath('config.ini')
         self.config.write_to_file(config_file_path)
 
-        self.stdout_file = open(self.directory/'stdout.txt', 'w')
-        self.stderr_file = open(self.directory/'stderr.txt', 'w')
+        if not self.print_to_terminal:
+            self.stdout_file = open(self.directory/'stdout.txt', 'w')
+            self.stderr_file = open(self.directory/'stderr.txt', 'w')
 
         self.process = subprocess.Popen(
             [
@@ -109,8 +114,8 @@ class Node:
                 '-d', '.'
             ],
             cwd=self.directory,
-            stdout=self.stdout_file,
-            stderr=self.stderr_file
+            stdout=None if self.print_to_terminal else self.stdout_file,
+            stderr=None if self.print_to_terminal else self.stderr_file,
         )
 
         print(f'Node {self.name} run with pid {self.process.pid}')
