@@ -394,6 +394,9 @@ if __name__ == "__main__":
         prepare_accounts(sockpuppets, url)
         prepare_accounts(witnesses, url)
 
+        print("Witness state bfore transfer")
+        print_top_witnesses(sockpuppets, witnesses, api_node_url)
+
         configure_initial_vesting(steemit_accounts, "1000000.000 TESTS", url)
         configure_initial_vesting(["witness" + str(i) for i in range(9)], "12000000.000 TESTS", url)
 
@@ -403,6 +406,9 @@ if __name__ == "__main__":
 
         prepare_witnesses(witnesses, url)
         prepare_witnesses(sockpuppets, url)
+
+        print("Witness state bfore self vote")
+        print_top_witnesses(sockpuppets, witnesses, api_node_url)
 
         self_vote(witnesses, url)
         self_vote(sockpuppets, url)
