@@ -173,7 +173,7 @@ class Node:
             stderr=None if self.print_to_terminal else self.stderr_file,
         )
 
-        print(f'Node {self} run with pid {self.process.pid}')
+        print(f'[{self}] Run with pid {self.process.pid}')
 
     def close(self):
         self.process.kill()
