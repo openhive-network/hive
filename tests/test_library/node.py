@@ -113,6 +113,20 @@ class Node:
     def get_webserver_ws_endpoints(self):
         return self.config['webserver-ws-endpoint']
 
+    def add_seed_node(self, seed_node):
+        endpoints = seed_node.get_p2p_endpoints()
+
+        if len(endpoints) == 0:
+            raise Exception(f'Cannot connect {self} to {seed_node}; has no endpoints')
+
+        endpoint = endpoints[0]
+        port = endpoint.split(':')[1]
+
+        self.config.add_entry(
+            'p2p-seed-node',
+            f'127.0.0.1:{port}',
+        )
+
     def redirect_output_to_terminal(self):
         self.print_to_terminal = True
 
