@@ -42,9 +42,6 @@ class Wallet:
 
         self.directory.mkdir(parents=True, exist_ok=True)
 
-        print('[Wallet] self.executable_file_path =', self.executable_file_path)
-        print('[Wallet] self.directory =', self.directory.absolute())
-
         self.stdout_file = open(self.directory / 'stdout.txt', 'w')
         self.stderr_file = open(self.directory / 'stderr.txt', 'w')
 
