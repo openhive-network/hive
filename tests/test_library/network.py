@@ -2,6 +2,7 @@ from pathlib import Path
 from shutil import rmtree
 
 from node import Node
+from wallet import Wallet
 
 
 class Network:
@@ -12,6 +13,7 @@ class Network:
         self.next_free_port = 49152
 
         self.hived_executable_file_path = None
+        self.wallet_executable_file_path = None
 
     def allocate_port(self):
         port = self.next_free_port
@@ -23,6 +25,9 @@ class Network:
 
     def set_hived_executable_file_path(self, path):
         self.hived_executable_file_path = Path(path).absolute()
+
+    def set_wallet_executable_file_path(self, path):
+        self.wallet_executable_file_path = Path(path).absolute()
 
     def get_directory(self):
         return self.directory / self.name
@@ -66,3 +71,22 @@ class Network:
             node.set_directory(self.get_directory() / node.get_name())
             node.set_executable_file_path(self.hived_executable_file_path)
             node.run()
+
+    def attach_wallet(self):
+        if len(self.nodes) == 0:
+            raise Exception('Cannot connect wallet to network without nodes')
+
+        return self.attach_wallet_to(self.nodes[0])
+
+    def attach_wallet_to(self, node):
+        if len(self.nodes) == 0:
+            raise Exception('Cannot connect wallet to network without nodes')
+
+        wallet = Wallet()
+        wallet.set_http_server_port(self.allocate_port())
+        wallet.connect_to(node)
+
+        wallet.set_executable_file_path(self.wallet_executable_file_path)
+        wallet.run()
+
+        return wallet
