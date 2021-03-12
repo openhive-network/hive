@@ -33,7 +33,7 @@ class Network:
         return self.directory / self.name
 
     def add_node(self, node_name):
-        node = Node(name=node_name)
+        node = Node(name=node_name, network=self)
         self.nodes.append(node)
         return node
 
