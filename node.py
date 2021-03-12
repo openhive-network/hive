@@ -78,6 +78,9 @@ class Node:
 
         return self.process.poll() is None
 
+    def get_name(self):
+        return self.name
+
     def get_p2p_endpoints(self):
         return self.config['p2p-endpoint']
 
