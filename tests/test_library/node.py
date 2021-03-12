@@ -38,7 +38,6 @@ class Node:
         self.add_plugin('condenser_api')
         self.add_plugin('network_broadcast_api')
         self.add_plugin('network_node_api')
-        self.add_plugin('witness')
 
         self.config.add_entry(
             'shared-file-dir',
@@ -150,6 +149,9 @@ class Node:
         self.executable_file_path = executable_file_path
 
     def set_witness(self, witness, key):
+        if 'witness' not in self.config['plugin']:
+            self.add_plugin('witness')
+
         self.config.add_entry(
             'witness',
             f'"{witness}"',
