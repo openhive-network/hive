@@ -30,7 +30,7 @@ class int_array
 
        size_t       size()const   { return N; }
 
-       T data[N] = { T() };
+       T data[N] = { };
 };
 
 template<typename T,size_t N> struct get_typename< fc::int_array<T,N> >
