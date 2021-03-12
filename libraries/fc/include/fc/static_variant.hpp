@@ -201,6 +201,10 @@ class static_variant {
     template<typename StaticVariant>
     friend struct impl::move_construct;
 public:
+
+    /// Expose it outside for further processing of specified Types.
+    using type_infos = impl::type_info<Types...>;
+
     template<typename X>
     struct tag
     {

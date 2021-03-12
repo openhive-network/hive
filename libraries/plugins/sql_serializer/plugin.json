@@ -1,0 +1,5 @@
+{
+   "plugin_name": "sql_serializer",
+   "plugin_namespace": "sql_serializer",
+   "plugin_project": "sql_serializer_plugin"
+}
