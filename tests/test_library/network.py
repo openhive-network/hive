@@ -6,18 +6,22 @@ from wallet import Wallet
 
 
 class Network:
-    def __init__(self, name):
+    def __init__(self, name, port_range=range(49152, 65536)):
         self.name = name
         self.directory = Path('.').absolute()
         self.nodes = []
-        self.next_free_port = 49152
+        self.port_range = port_range
+        self.next_free_port = port_range.start
 
         self.hived_executable_file_path = None
         self.wallet_executable_file_path = None
 
     def allocate_port(self):
+        if self.next_free_port not in self.port_range:
+            raise Exception('There is no free ports to use')
+
         port = self.next_free_port
-        self.next_free_port += 1
+        self.next_free_port += self.port_range.step
         return port
 
     def set_directory(self, directory):
