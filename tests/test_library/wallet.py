@@ -39,7 +39,7 @@ class Wallet:
         if not self.http_server_port:
             raise Exception('Http server port is not set, use Wallet.set_http_server_port method')
 
-        self.directory.mkdir(parents=True)
+        self.directory.mkdir(parents=True, exist_ok=True)
 
         print('[Wallet] self.executable_file_path =', self.executable_file_path)
         print('[Wallet] self.directory =', self.directory.absolute())
