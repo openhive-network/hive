@@ -36,6 +36,14 @@ class Network:
         for node in self.nodes:
             node.add_p2p_endpoint(f'0.0.0.0:{self.allocate_port()}')
 
+    def connect_nodes(self):
+        if len(self.nodes) < 2:
+            return
+
+        seed_node = self.nodes[0]
+        for node in self.nodes[1:]:
+            node.add_seed_node(seed_node)
+
     def run(self):
         print('Script is run in', Path('.').absolute())
 
@@ -50,6 +58,7 @@ class Network:
         directory.mkdir(parents=True)
 
         self.assign_ports_for_nodes()
+        self.connect_nodes()
 
         for node in self.nodes:
             node.set_directory(self.get_directory() / node.get_name())
