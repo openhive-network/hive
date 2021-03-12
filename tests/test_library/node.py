@@ -33,11 +33,12 @@ class Node:
             'Whether to print backtrace on SIGSEGV'
         )
 
-        self.config.add_entry(
-            'plugin',
-            'witness account_by_key account_by_key_api condenser_api network_broadcast_api network_node_api',
-            'Plugin(s) to enable, may be specified multiple times'
-        )
+        self.add_plugin('account_by_key')
+        self.add_plugin('account_by_key_api')
+        self.add_plugin('condenser_api')
+        self.add_plugin('network_broadcast_api')
+        self.add_plugin('network_node_api')
+        self.add_plugin('witness')
 
         self.config.add_entry(
             'shared-file-dir',
@@ -72,6 +73,25 @@ class Node:
 
         self.close()
         self.wait_for_close()
+
+    def add_plugin(self, plugin):
+        supported_plugins = {
+            'account_by_key',
+            'account_by_key_api',
+            'condenser_api',
+            'network_broadcast_api',
+            'network_node_api',
+            'witness',
+        }
+
+        if plugin not in supported_plugins:
+            raise Exception(f'Plugin {plugin} is not supported')
+
+        self.config.add_entry(
+            'plugin',
+            plugin,
+            'Plugin(s) to enable, may be specified multiple times',
+        )
 
     def set_directory(self, directory):
         self.directory = Path(directory).absolute()
