@@ -15,11 +15,12 @@ namespace appbase {
   namespace bpo = boost::program_options;
   namespace bfs = boost::filesystem;
 
+  class application;
+
   class io_handler
   {
     public:
 
-      using p_io_handler = std::shared_ptr< io_handler >;
       using p_signal_set = std::shared_ptr< boost::asio::signal_set >;
       using final_action_type = std::function< void() >;
 
@@ -36,14 +37,14 @@ namespace appbase {
       p_signal_set            signals;
 
       boost::asio::io_service io_serv;
+      application&            app;
 
       void close_signal();
 
       void handle_signal( uint32_t _last_signal_code );
 
     public:
-
-      io_handler( bool _allow_close_when_signal_is_received, final_action_type&& _final_action );
+      io_handler(application& app, bool _allow_close_when_signal_is_received, final_action_type&& _final_action);
 
       boost::asio::io_service& get_io_service();
 
@@ -52,15 +53,15 @@ namespace appbase {
       void attach_signals();
 
       void run();
-
-      void set_interrupt_request( uint32_t _last_signal_code );
-      bool is_interrupt_request() const;
   };
 
-  class application
+  class application final
   {
     public:
-      ~application();
+      application(const application&) = delete;
+      application& operator=(const application&) = delete;
+      application(application&&) = delete;
+      application& operator=(application&&) = delete;
 
       /**
         * @brief Looks for the --plugin commandline / config option and calls initialize on those plugins
@@ -142,16 +143,11 @@ namespace appbase {
       void generate_interrupt_request()
       {
         _is_interrupt_request = true;
-        if( startup_io_handler )
-          startup_io_handler->set_interrupt_request( SIGINT );
       }
 
       bool is_interrupt_request() const
       {
-        if(_is_interrupt_request)
-          return true;
-
-        return startup_io_handler ? startup_io_handler->is_interrupt_request() : _is_interrupt_request;
+        return _is_interrupt_request;
       }
 
       std::set< std::string > get_plugins_names() const;
@@ -178,7 +174,9 @@ namespace appbase {
       ///@}
 
     private:
-      application(); ///< private because application is a singlton that should be accessed via instance()
+      application(); ///< private because application is a singleton that should be accessed via instance()
+      ~application();
+
       map< string, std::shared_ptr< abstract_plugin > >  plugins; ///< all registered plugins
       vector< abstract_plugin* >                         initialized_plugins; ///< stored in the order they were started running
 
@@ -196,10 +194,7 @@ namespace appbase {
 
       io_handler                 main_io_handler;
 
-      //This handler is designed only for startup purposes
-      io_handler::p_io_handler   startup_io_handler;
-
-      bool _is_interrupt_request = false;
+      std::atomic_bool _is_interrupt_request{false};
   };
 
   application& app();

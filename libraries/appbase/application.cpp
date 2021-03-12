@@ -30,8 +30,8 @@ using bpo::options_description;
 using bpo::variables_map;
 using std::cout;
 
-io_handler::io_handler( bool _allow_close_when_signal_is_received, final_action_type&& _final_action )
-      : allow_close_when_signal_is_received( _allow_close_when_signal_is_received ), final_action( _final_action )
+io_handler::io_handler(application& _app, bool _allow_close_when_signal_is_received, final_action_type&& _final_action )
+      : allow_close_when_signal_is_received( _allow_close_when_signal_is_received ), final_action( _final_action ), app(_app)
 {
 }
 
@@ -42,7 +42,11 @@ boost::asio::io_service& io_handler::get_io_service()
 
 void io_handler::close()
 {
-  while( lock.test_and_set( std::memory_order_acquire ) );
+  /** Since signals can be processed asynchronously, it would be possible to call this twice
+  *    concurrently while op service is stopping.
+  */
+  while( lock.test_and_set( std::memory_order_acquire ) )
+    ;
 
   if( !closed )
   {
@@ -72,7 +76,10 @@ void io_handler::close_signal()
 
 void io_handler::handle_signal( uint32_t _last_signal_code )
 {
-  set_interrupt_request( _last_signal_code );
+  last_signal_code = _last_signal_code;
+
+  if(_last_signal_code == SIGINT || _last_signal_code == SIGTERM)
+    app.generate_interrupt_request();
 
   if( allow_close_when_signal_is_received )
     close();
@@ -87,6 +94,8 @@ void io_handler::attach_signals()
 
   signals = p_signal_set( new boost::asio::signal_set( io_serv, SIGINT, SIGTERM ) );
   signals->async_wait([ this ](const boost::system::error_code& err, int signal_number ) {
+  /// Handle signal only if it was really present (it is possible to get error_code for 'Operation cancelled' together with signal_number == 0)
+  if(signal_number != 0)
     handle_signal( signal_number );
   });
 }
@@ -94,16 +103,6 @@ void io_handler::attach_signals()
 void io_handler::run()
 {
   io_serv.run();
-}
-
-void io_handler::set_interrupt_request( uint32_t _last_signal_code )
-{
-  last_signal_code = _last_signal_code;
-}
-
-bool io_handler::is_interrupt_request() const
-{
-  return last_signal_code != 0;
 }
 
 class application_impl {
@@ -126,7 +125,7 @@ application::application()
     return a->get_pre_shutdown_order() > b->get_pre_shutdown_order();
   }
 ),
-  my(new application_impl()), main_io_handler( true/*allow_close_when_signal_is_received*/, [ this ](){ finish(); } )
+  my(new application_impl()), main_io_handler(*this, true/*allow_close_when_signal_is_received*/, [ this ](){ finish(); } )
 {
 }
 
@@ -136,17 +135,12 @@ void application::startup() {
 
   std::cout << "Setting up a startup_io_handler..." << std::endl;
 
-  startup_io_handler = io_handler::p_io_handler( new io_handler  ( false/*allow_close_when_signal_is_received*/,
-                                              [ this ]()
-                                              {
-                                                _is_interrupt_request = _is_interrupt_request || startup_io_handler->is_interrupt_request();
-                                              }
-                                            ) );
-  startup_io_handler->attach_signals();
+  io_handler startup_io_handler(*this, false/*allow_close_when_signal_is_received*/, []() {});
+  startup_io_handler.attach_signals();
 
-  std::thread startup_thread = std::thread( [&]()
+  std::thread startup_thread = std::thread( [&startup_io_handler]()
   {
-    startup_io_handler->run();
+    startup_io_handler.run();
   });
 
   for (const auto& plugin : initialized_plugins)
@@ -157,7 +151,8 @@ void application::startup() {
       break;
   }
 
-  startup_io_handler->close();
+  startup_io_handler.close();
+
   startup_thread.join();
 }
 
