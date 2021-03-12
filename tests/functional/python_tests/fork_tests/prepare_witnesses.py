@@ -6,6 +6,8 @@ import os
 import sys
 import json
 
+from concurrent.futures import ThreadPoolExecutor
+
 sys.path.append("../../../tests_api")
 from jsonsocket import hived_call
 from hive.steem.client import SteemClient
@@ -268,10 +270,7 @@ def list_top_witnesses(_url):
     status, response = checked_hived_call(_url, data=request)
     return response["result"]["witnesses"]
 
-def print_top_witnesses(sockpuppets, witnesses, api_node_url):
-  sockpuppets_set = set()
-  for w in sockpuppets:
-    sockpuppets_set.add(w["account_name"])
+def print_top_witnesses(witnesses, api_node_url):
 
   witnesses_set = set()
   for w in witnesses:
@@ -282,9 +281,7 @@ def print_top_witnesses(sockpuppets, witnesses, api_node_url):
   for w in top_witnesses:
     owner = w["owner"]
     group = "U"
-    if(owner in sockpuppets_set):
-      group = "C"
-    elif (owner in witnesses_set):
+    if (owner in witnesses_set):
       group = "W"
 
     log.info("Witness # {0:2d}, group: {1}, name: `{2}', votes: {3}".format(position, group, w["owner"], w["votes"]))
@@ -303,75 +300,53 @@ if __name__ == "__main__":
     try:
         init_logger(os.path.abspath(__file__))
 
-        sockpuppets = [
-          {"private_key":"5HsBnrPbtqGki6E4mmgT5QevVotAFN2f1TafB7yjfQu8eBTtkQ5","public_key":"TST6NtyPP4Ar1rZvGyS4bmdwjCMpQvCoF3TQ3TBjgfBCH7q982UDr","account_name":"sockpuppet0"},
-          {"private_key":"5KUSsSXQiVRw9z5ySk6hHfmHVcH2Q24qo9iDhYRLmnsab5vpbQq","public_key":"TST6XS6Bhr2PuVRa9fDpAS2fona6n3Uw78qqKqhbVsW2y78Fisuuu","account_name":"sockpuppet1"},
-          {"private_key":"5J71Rjrme5pHZG6V6pbNTgiiV58e3nHygjUUDmEsWEaNWnrXRK9","public_key":"TST8m9GRyzA8YyCVSJBhg96LUFo395WrJYW3imkgyR9bLtjLNKJa8","account_name":"sockpuppet2"},
-          {"private_key":"5KSvusFLKw9sZXudLmJGzAnobQHtbAKVdSiPTpCT13m14W6vyZL","public_key":"TST5ERgKCet1kRioxhKHpCES5uakFU53Sz2QsihqS8T7zGarc9Us8","account_name":"sockpuppet3"},
-          {"private_key":"5JY9njeGFXVpqwoWG6MKEYPrn2iRiG3ac4iCqavPzTGjxgxinHt","public_key":"TST7hqbYGsHz4CgDhXRrt4RZ2GVqVrZyEwzSjRNQQFSycdn3YR8hB","account_name":"sockpuppet4"},
-          {"private_key":"5JZynGSSWmCy3NbMknV5xDMLwKiMFqXZb5NpAbY2crikqJboYiB","public_key":"TST5SJvzgw7EugmhLW1meCRzj9astkCngjd2TBZjfbfywQDfvM1aR","account_name":"sockpuppet5"},
-          {"private_key":"5KbGSDfz1bMBmBVQEdCfHCBQ9PtM8mrzFhJpwuWvRcVv5rFNLTZ","public_key":"TST57S4UhWbPEZE4xRD8szWDYYquo1u6GCcRo9vR3STCukMcBQn8t","account_name":"sockpuppet6"},
-          {"private_key":"5HrEfVKqBfmx2bhywXnfrLG9hapGgkLkD7H4AtDn9UoCQzX9rkW","public_key":"TST8d89ybxZw3pWcG1YSoQSG8yRJj8xxykeVTpYc4X5PKf4XDsoNv","account_name":"sockpuppet7"},
-          {"private_key":"5K7VanJNgUPhqS6keGh7nJPMy8aispTahZt2A7kwyQt9c1XVVCk","public_key":"TST8hqEhPGNXnSMLcEkNh8VpKUAN8jHWx6QsYVhDiBt9FNCmCKuVw","account_name":"sockpuppet8"},
-          {"private_key":"5Huk5GiW9kjNG1UhnT2vQSPAMPtSfrESz8EgBE3WvooMFCDcqDU","public_key":"TST58VFgi43hU92DESuQvbXxCh1R3XhNupU5RXnM1bPZ1yyBzhWC1","account_name":"sockpuppet9"},
-          {"private_key":"5JEazsggtz2y9AZErw7rT2Bzi6FJxDyEtWZZTiHVFGd2C8zcJiD","public_key":"TST6amW3bHfyDNFgREmcwUqB3REcN9X7mdB1PLPPmcUAc1Ew8DJdX","account_name":"sockpuppet10"},
-          {"private_key":"5K4ijr5aqtTMGBgoQyRpCMLn7kS2XNqsNAU2V1reNfPe7iEe6BZ","public_key":"TST7VyjUAZvNVNKXkYSJyNR5H12LSiRvRVXL6wQSw9uGgMhJf7fyS","account_name":"sockpuppet11"},
-          {"private_key":"5JJCo62Ahf98eiJgCCxposX7C77nqwfUnEPMsCU8Ub8jkUBY39W","public_key":"TST87jZaB6bVgdch2UbYanGJ7vBEajLdfvtVvAqHxV1SwjQbhYEXC","account_name":"sockpuppet12"},
-          {"private_key":"5KQb7Pm5BuAMnpYi11G9QHYn6pmcyHxm3183h7ZVntP2Y1qAiRF","public_key":"TST51boQ21dCdAY4PwkdKLYiLpQLtKg6QRqLjJdfU4Maz35XkBwHP","account_name":"sockpuppet13"},
-          {"private_key":"5JMFfpZGUuwFWU9PEMQ4wGuvzXddrsGFGwcWP9QX92DrU9RnozH","public_key":"TST6yGkrQbL5hMoPqzdY3B3BH3h8uXqkQxwmz3bor5q6bW3B5LBWS","account_name":"sockpuppet14"},
-          {"private_key":"5JHpzjSHmU81GFtVqzAJwtH7iqbRQGVN9ZafFPJdhyfWZVZmYFB","public_key":"TST7U2Kik7ByT3zNCLFuFEDKorGMau2tsRAgBnMdgrntm2FnBGBc2","account_name":"sockpuppet15"},
-          {"private_key":"5KVV5ieddNmLVtCYh7eR8TTRdjeA6ppAi4smfApuaMJdZ9St4XR","public_key":"TST66Xo9kV6WYJSoMp9yWJV3hde8PJrbKHmvhArEuHnB5V3xwXcs8","account_name":"sockpuppet16"},
-          {"private_key":"5J6x6jh59jJetpAA8rh4XiDzLTSch1nSuA7Euj4hnvjn4JpwFcq","public_key":"TST7K9td5ssg1SqqYKyZKPmBj4tekjq35iehkskV5ixaAc8EZy2n2","account_name":"sockpuppet17"},
-          {"private_key":"5JRAHYir79jhiYtTX8F4T1tzvcwvth9fmGsPJdS4rXrpVpCL9L6","public_key":"TST6nn9EVgyhfaGy1Ve59MjjaWD6kPntKC26hsMzo1WgdQ7R2eqm4","account_name":"sockpuppet18"},
-          {"private_key":"5K2gJh9ctyjwMhcUBJcWCxFHeKQ2GBwPHYg6SKTSBYi1qhhn8JJ","public_key":"TST7hN2UWcarAnzangXGrRD7jjzagUBR1gzmD3eBNAbdKSHp3ASJu","account_name":"sockpuppet19"},
-        ]
 
         witnesses = [
-          {"private_key":"5J3eWK6nveqtjd8z6Gk9zLfcJCfGf6jgteouGZL8q9oRD89Fs6e","public_key":"TST6xEvC8yYLLpeC9wE5iNKWTweXgTJufLegXYvDyPhE3GfSPGDor","account_name":"witness0"},
-          {"private_key":"5Kji6CXkau7xm1cegSVHrL9dfH6gXC3FfN5NxRqA2KevQGziKn8","public_key":"TST7j81uJfnUDHr7BxSc8Guri36B2SUgEhasJDV96U14LQ9BKXAMF","account_name":"witness1"},
-          {"private_key":"5KfGxXsrmsJh2YUjYc1AzpeaunCFMn4UJLMuaZwEowcBcCKdPgz","public_key":"TST6x2KFKq7GjMX9XoJ44AtSn7oPjUqrt89f7AuAGs4kjpZNn5UJN","account_name":"witness2"},
-          {"private_key":"5Jp3Nch1Sq318eWuYeKg5jyTh2mc7LPjuRCR7Ktd7xUdHuu8N15","public_key":"TST8gzMCG3gQFePJcBTcry3j7iXk3ayXuKUajwiaugWr6hQPopEwM","account_name":"witness3"},
-          {"private_key":"5JLk8YmfegVXMESrqqfF2AbrUyQqDjh7BVTR5frB5wJtTFqmZn3","public_key":"TST8GwL3EDz7Q1CwJ79wi8ZeEBweLcHWvYexst6ZsftGGUDFSPBJJ","account_name":"witness4"},
-          {"private_key":"5JztghB976dHJUYqxVpyCwCTQG7wYE4JeZSVWNF34XpgQHCRtSf","public_key":"TST6kM9GZF9m42S4K6LL8nS3QtFi1D22gvHGVJJW1koxFsMhKp1xP","account_name":"witness5"},
-          {"private_key":"5Ju59s9AQcWohm6RJYW3EwyWYGowhniJNYQqNiHcy8eh5MC171z","public_key":"TST6vsEAFvaEv6oKN3nLnwSwJnssTxq9evrMkj1YoXrPwHabxpxJ1","account_name":"witness6"},
-          {"private_key":"5KHBiEGvAuZ5oasb66t4aW5uP2NUyrFJa4QJQE1wxTbHJQmVNBN","public_key":"TST8LGfK8X8m49ApyG2cnQ2M9k96PCVaXDnkJDt3sXYc9qCTpCiVr","account_name":"witness7"},
-          {"private_key":"5KEaGL3pxrNWQChnsGKJQTVVpGBpUw5q3ECft71MChhVL1PheTu","public_key":"TST8Ga8wQ3DgFB42EF9Z4zSJHBRcCgnA52myW1nMurJbJufGoLm7h","account_name":"witness8"},
+          {"private_key":"5Jk6EPaz94pT8PPCwTULbHr2gnpRJMkrSMTJXx7M5LEsUGcNrpu","public_key":"TST8CDA1QNm1Fmgc4pDGHwBfWC17tHhvjg7qe46Wj9F5xGXv1dFWm","account_name":"witness0-eu"},
+          {"private_key":"5JAASEGVck59nbV9qr9zXDxnxXCLp2YDMSVDJCfU7YBdZZh2RJ6","public_key":"TST5AufSRV6qLVu3KbN7nqUwgiAzBF9yumDXQH8dgT218qGn17w9x","account_name":"witness1-eu"},
+          {"private_key":"5JzDgYfuW5uZkRF7xnJ8LbTjwcPzY7exGB7uo4m3Ns1eoFnF3Gj","public_key":"TST55MWVG9rhjr5bPUygTqiaH9UQfskdwW7BTZbsW7drxmeGBuDRU","account_name":"witness2-eu"},
+          {"private_key":"5JzWBRwm4N7kE2uofcKoyNLCLtarAhjipRaoKLSWoPmykzTSVCi","public_key":"TST8St56XguN3WTWxumG3b8Zyi5shkgbqtpUPfYBiwciAqntRqWov","account_name":"witness3-eu"},
+          {"private_key":"5JdDuyLyf6B8g8iC83DbgpCmpNe2QKnvGX8W95S3T36q6nXgg1E","public_key":"TST5gtJwYnc2CgNPsjYcHSTg5RNFURHpMiSnBnirq9XDxX2SSawX4","account_name":"witness4-eu"},
+          {"private_key":"5KEEoUPDGRNZwfEpa6gMTGBWefqyR5t43mZoomo2q8vBJfZaWKp","public_key":"TST73Dc4RLLWv6gXVnkPSptJoriLzRACivnYZQ3BYV1edctGVS9hz","account_name":"witness5-eu"},
+          {"private_key":"5JwCs2SSWUxuQbizjX8tzG6fSZ7CFxwfX3cD6FnpAnwnMrUXWkj","public_key":"TST7Z5gZakWdDhhNsHTsnX2HxRRkV5MjC7upz8DitNcp8tkJZUiAW","account_name":"witness6-eu"},
+          {"private_key":"5KNWrP1tvQgqEhraLsNFBx8vq4Rti2iLSrFuRt1eqM4wRc4uBw5","public_key":"TST7LMqcEat7FzKQtJCCJQR34G96Pr6UL5G8YamSjVDecjwafrrZx","account_name":"witness7-eu"},
+          {"private_key":"5Jb3cfsDv2LzUJEF9QJQWPDLuETVfbGwYcGpm8pLWTnPPBBUgtH","public_key":"TST7u2pnVKAiLZrFFrE5bfZ9Cid6xyfT7k3HYBqzNUFi4YioaA6ix","account_name":"witness8-eu"},
+          {"private_key":"5K888UcxL6LJLmR2Gt8VT2VwKAVF8UAnPjgkBSYuup4tjr2PL5N","public_key":"TST6PAmErYvZ9PomEsmNa8Txy2tSqqQrwNWRDq2vbf6XqYou6JmU2","account_name":"witness9-eu"},
+          {"private_key":"5KZDEVSDmtHFouchQyPjUonPuVRp4WXEwMGEe22ACkwaZAc4cUZ","public_key":"TST79aFGVMcQUWSeKyUh5V8m9H8sKzQzCwSzQNrwkNxhYgoFssKUw","account_name":"witness10-eu"},
+          {"private_key":"5KY5MxvEMwhuBYSFQzfExHw2VtGzEuMbs3f4ZsZA8LKpXsDFQ6r","public_key":"TST8ea6N96QoEBG64bAMdat5UAR7FLbkY7Auyt7GZ5ZoBAo1mFoti","account_name":"witness11-eu"},
+          {"private_key":"5KK687QaMfG8UujsE8CdzUEEmtEJcTJQqWsyt1M5ZXAGUDXY8EE","public_key":"TST8JydfSEY891K1VGed4e83oBbVpNtU4DBZULyRcCkkqjpCeFehi","account_name":"witness12-eu"},
+          {"private_key":"5JfSNwXDSXFWbCvjDAHQkfGUZe8UXbJtqkqASGKN3EvpT76dnrc","public_key":"TST7adQHXRLAMyEVs1VR9nGpGhmiUdJ5EMqxU55maVNzor4Ady181","account_name":"witness13-eu"},
+          {"private_key":"5Jatmmf5WnoM7TQqaVvdFU2uEcsYXjYd11pxfbhNrVuYJgyN8R2","public_key":"TST7M3gMQJ4HTGvPqUZEsykXKYnhEQ8ViGd9sUEBEDxV1GtgqdRZA","account_name":"witness14-eu"},
+          {"private_key":"5KkwicAeJioGf48ayCySa5SKQnpXAVdp7PxGotQC5TFc6Vyq6nA","public_key":"TST7pUd2bHDVpS7VX1v7Q21tSu5c81Sy5mGFYALSdqX7qJECjWuUR","account_name":"witness15-eu"},
+          {"private_key":"5JeqEP9F13McUQRGWVF9fGaCDjTGa26aVtW2sqBhGkd2yh6985N","public_key":"TST8RjLdeswyoUs5c2gCfVd4Mir5QsHYx2xpJtwLqYfgWtFgmWaUf","account_name":"witness16-eu"},
+          {"private_key":"5KA1zZjti7u3s3vwmtYFsguNGYcAozu9XdEiEp3wdbzQtompZ9D","public_key":"TST55XTSb4WJcELGS2xpCLHccHdiuYJrtK3dSRc7hKXruyQvofsW5","account_name":"witness17-eu"},
+          {"private_key":"5JENh2i3wddrfmQLGDPBgRcs6ExppCHVxj9ZJcKTQ12Aknnxc72","public_key":"TST8TTvCXuoDnpw1Tv6989JZtMCSh3TrAoKosniqwE65eMzL7e1q1","account_name":"witness18-eu"},
+          {"private_key":"5JFBU3N8u1vMVCXzCQRixqC7cp3xT9iJvVm4v3iHYjAdJg53hVn","public_key":"TST7GYPzCkWGVqUF2i9PvpyqFQRPAAKMHVQtyLMZwDbLrE6gwjUGX","account_name":"witness19-eu"},
+          {"private_key":"5KZ7K7jsYw3zYdVZJrdczgeLY8S494esHMGY3HuqWZdnswMP4AB","public_key":"TST5M1BqdwHX8tD4huJAjzyC5y81iPFy5ZDGnoEi7vZxGBuXVHBnE","account_name":"witness20-eu"},
 
-          {"private_key":"5J9C3EFpRP9FbV8sQ6NUMgniHfsuQ6m4sb7oBP8a2JvjmjPPGg4","public_key":"TST6SnTJH55Vk8JqneW3hf8noL1s4sKPwuv6TUEuwm32pGccquo7c","account_name":"good-wtns-0"},
-          {"private_key":"5JiWo1BEsB5ojmXfspCxzrxMqatNf8F3Y5ZMGWGkHHkCx6t6eZj","public_key":"TST5ehaXY5DfEgsLoR5pa9oLAgh69FPrhTgiohQbPhfHhXgtyBvab","account_name":"good-wtns-1"},
-          {"private_key":"5J9rbEcvS4pLNE5RtvAV9QQ7XRq5kbjaVyMYKn8srtfWdKdVHN9","public_key":"TST6WQtvF1JvYaEVCjLpLX3sHcoNgVj2hsrohyqKh1QM4yLg2c8t2","account_name":"good-wtns-2"},
-          {"private_key":"5K9DFbLYfdCdFMhUuytzC6xR9TCRZHJPCopC1HNJAzCoPSs8QXR","public_key":"TST5CrhzfmZ4FuXyu6UUTDWJgcqSx7SSCzyouafqTxXbDFtuM1uCD","account_name":"good-wtns-3"},
-          {"private_key":"5KX2vnJfNGTNVpCvdwWyPtavyLw57mycwvWpT2zD4W9pMVqybGu","public_key":"TST5oyQZgDQGeqiTzoLhxLWg7eVSe47DZhxCDY7GxBDH1DjK89rAn","account_name":"good-wtns-4"},
-          {"private_key":"5KYoUD7jKbJs5hYYfnEfeEp66rYoesDwLLq5rkYpQjQvLWjuAE2","public_key":"TST59agdvEHTp7Pjj3Uy9GBsjKYRqLSsdLZtk2wHwRs7EtePCxs35","account_name":"good-wtns-5"},
-          {"private_key":"5JjiZR9xoe8jAauotYY48g6tQKaVqUJbAZKSv8Wj2mYQLQfZ9SP","public_key":"TST5BpLtfnuF87HhJWXkpWTVsyN2fDMbvtiGzvctM1oADvzf6EKBe","account_name":"good-wtns-6"},
-          {"private_key":"5JSXDCKzo2yjgy3qkRUHekPYRXTfidDGDpMaYDVaesYgMHPs3Tp","public_key":"TST8bLzBR5xxTxBrpUtZbSm69SX8HY8xLfnVPZFiYLQA1JW9a2Nh9","account_name":"good-wtns-7"},
-          {"private_key":"5HrCpetwxVtKPrdmRmDsBh4QT45bdF3LoLCVsrPg1v3tS4nXmps","public_key":"TST6gpjNQfja64G5ESGPZrecwisw2TpVzkRNfQFNAsECzTqszw4HE","account_name":"good-wtns-8"},
-          {"private_key":"5JPi9C6yKKiZWzaz5Py7a2zNp1mbFkZNQ51y1D7R7EJ7AtffdEZ","public_key":"TST5VEgRupNeeudQxxThPriS97infAPaDNhP6uB3R1fZnUutLyRKm","account_name":"good-wtns-9"},
-          {"private_key":"5KSL5CAA4XWzuLpA6LXb9oDdFCjsMGLpvgW1Uawk4vP2UmBu4GL","public_key":"TST8YxodyhdChw1Xhhmg15dUpvSvNsDnzYZh5Sdi6kpqri7GzN4fJ","account_name":"good-wtns-10"},
-          {"private_key":"5J7bVoA2GJL21zfJbqgHFmkZ1ppnKmGR9Deg5vizhcfozmnrCDQ","public_key":"TST6WZN5kdd6DwHwJfHbz88qEJRVmwrx8RfH1uFAcqieEjbBX1SBu","account_name":"good-wtns-11"},
-          {"private_key":"5J3AE5kNeq7kk1KUZrCwDuB1VfZuNasPjmuxqkoTSwvW3qKR17V","public_key":"TST8KoMLz8WjVznJVhEpzMEjmWWZ94BDYiMDJRj35VC9hwWqpcqBR","account_name":"good-wtns-12"},
-          {"private_key":"5KQRiTFkUmHYLsM56VRFiDZiGX6sMWd55WcSYnRbehhG5yjcYFW","public_key":"TST5wHR6mWVwT68FL8m5KUDS91HbmkrzNXCAeYVY4CdTZXB8sZgr2","account_name":"good-wtns-13"},
+          {"private_key":"5JEKR6uuRjjsfVQuNkH3fs139bXvmNj4YF5MKV56SWQ2398HVCb","public_key":"TST6nqBT2NbZpTwkKo6K6PxhRgUb1B7m8aQ7zjmzEEKXso2uaLdGC","account_name":"witness0-us"},
+          {"private_key":"5KDA55TEiAJPndbSHKdtL3pHGcBCj7cDKCeZ6xmpEssSakU8m1o","public_key":"TST8PKQpAD4RAfmooBAQyNESUVi1fbh4uQKVViuYnZgk1RtdF1UfR","account_name":"witness1-us"},
+          {"private_key":"5HsEPFYxsn27e7CnotcAWBBuKtjUJXd5roVVJr5StcRNJu9NCTA","public_key":"TST8azx5PjS28inVPoiUNG3H5zsAgSRhW8adiVBgeJ3cTTQ1nRArY","account_name":"witness2-us"},
+          {"private_key":"5KPvwubAF36SiipAW66JwCwoNzjzNKQbC7KaVerEwZNtTozv7ZV","public_key":"TST6cmFPzbSRcyAFFS9uPqPV3kFJQiQyWxrgSqNek8qBvq6XrzkxN","account_name":"witness3-us"},
+          {"private_key":"5KjnVeMk19xZCecmZXU9XsNXj3uikchLkzYZiAQuFsu1rVJqccu","public_key":"TST7iNkPe8RYVD1CRaW5p5MSmHNuWC6q9BimYLXwmckYWqE4uojPL","account_name":"witness4-us"},
+          {"private_key":"5Kc3h6pTUg64gc7uB5J1jjSSHt2ACxHsQZFCjbBoE9qcVVfeCbC","public_key":"TST6iquFxmiY3qRsyL9fBtrRCGVR7nXg2F6ifATyvWxaKrJQN3NmZ","account_name":"witness5-us"},
+          {"private_key":"5KYUdUHXv3CFw1HXQ3fiKYrBu6pCfkrQpBDcmTfmndzSMpR3rPe","public_key":"TST7jxNiXAX2HcjEBjgcaSrAgF2Dqr8iNtYAXJEzn11oM7cP2p2Yn","account_name":"witness6-us"},
+          {"private_key":"5JVpVh4FTZtgpR5e4weDbCkFAYH3EuorLcDkTue2miPuQ8vqntn","public_key":"TST7rwRUAuX512t3DychHMeCBb9SP6zmBqdK8Hwv24ZL2UwxWUGHg","account_name":"witness7-us"},
+          {"private_key":"5JyTbRuTFuZYx4omUu81fdbbfgf7C1eLh8jXH1iKdhhM8Zn9StQ","public_key":"TST67STHCvLHSyCCqPtZtzPdoQtvKxoqj9X78FY4LcbifEW34DRYy","account_name":"witness8-us"},
+          {"private_key":"5KKwwni1VaQQodMaLPpUFWsQT8saSTrYY3zhR7mEhEoiCWBNDUL","public_key":"TST8gzGghQ9jwnuHPL8bfXW2vJSDWNhZiwjjHCui8mMj98jhfqasF","account_name":"witness9-us"},
+          {"private_key":"5K4tP9TayigHA7msLanbDYQgG6DkxqJUxmeEgGGY9MEekJdy3rD","public_key":"TST5vokzkDbGbmb4SjjuSDVLgTj3SXLU2BzGxkQKksGKpEi311roq","account_name":"witness10-us"},
+          {"private_key":"5JVb1eHta27P5JDF52Gkzf7GogxPRYeHuRRD3rqvL199LkbYhR5","public_key":"TST8iB8epvvTWvZyFz2iyni2LV1XLMaLMsUCS6HJyCXXmPoqSEBwJ","account_name":"witness11-us"},
+          {"private_key":"5JkiX9ckcBzLya22BP46D539sKZsVGBBoZZomZicS9bmimpwE4V","public_key":"TST8Brk1zquQ55aXtuQq4rDyjtE7Nq4osMFdkTEKukzQqZKgAi3tt","account_name":"witness12-us"},
+          {"private_key":"5KC1bv25NPWDi2pRwZ4CHmWzt3bDpYseSZ4nrn7Wh1AqUbNGWvb","public_key":"TST5qzPbQgRviP59HKrrwbBhnKj7i3DKuGWCxJDG82AHPgYrVsbni","account_name":"witness13-us"},
+          {"private_key":"5KfT2jUE4XxH1pFekgQBXFrQ9EvBLpiWv3GcWj4nRw7eZcxY4XC","public_key":"TST6KHsdmVKNQJtNSHexwbbQwvD5ghULJ2s5vTetbShSxHNHHU2gN","account_name":"witness14-us"},
+          {"private_key":"5JYMWGqk2FE2oQmRMRYZ2ff1DBrvm3cFnNneGduL5yASJ26bkUu","public_key":"TST8g84XvhLuRvTpyY7ThnBUxDc1m5SB4HssJEaBTtmyirNEruPw5","account_name":"witness15-us"},
+          {"private_key":"5KbZnJuizkg1F6ZQRUPkXgJik9RQn11z4Cvr6kgLb9DnPj7VB9f","public_key":"TST7wxuxvb7BJPcdabWZwFEoLhf2pXcJnAkT19urv7yHH2sPc2bGG","account_name":"witness16-us"},
+          {"private_key":"5JDzrp814zfGrjaWcSzTvwJDWSDTySLVUyM2Q5cYU6VYsdYEYV9","public_key":"TST6kQLyikDkdakroHVtHFQdxoddVt5nWE5SwgYj6KPJ4ai5JutiR","account_name":"witness17-us"},
+          {"private_key":"5Hse3LAQNocDJ543yfWEpzBgNDUz55jF7FNbupR7euesNqBwxS9","public_key":"TST5GJFPrTvXhuL2nBHUc9GsqfzLyvDYGBUw5WPvFdrg6JgDTRFr9","account_name":"witness18-us"},
+          {"private_key":"5KfAjejWgrVTex6HweRprpB1F3Fj7Ljn79Y8Ng5sMAe51a1TfyY","public_key":"TST6VJZ5AV7fgZgyWGQsKWiw8pALhPMHUGHgR3pGxzsviphsqd2qQ","account_name":"witness19-us"},
+          {"private_key":"5HuKhXPbEkZidHMfi9gKXe34rfo914xu3xAPJk3N9MMUu2qzjwu","public_key":"TST73c5GWVMsCdtsbMdexe8xXf5JYtpCGwFb1PMGjaT5BpsxNqxAd","account_name":"witness20-us"},
         ]
 
-        steemit_accounts = [
-          {"private_key":"5JkToXsx5jvf9MBuG9iNusBypU3jYGYAi7PaUDFTGqqV2wvVtBe","public_key":"TST4vSpS2spVbwimhCYr3Xbexus8QaNHWQjzgcZ2qfzpSfNZ64FAr","account_name":"steemit-acc-0"},
-          {"private_key":"5JpjCir3qszJTsU6gpHGaH8CkPrqrvEqdup6nHXaeWies8nQg5L","public_key":"TST5yL7XLyF9iNGsrsSiGda7VtfEn77riGZFFuEJEu9uPKtF5syqB","account_name":"steemit-acc-1"},
-          {"private_key":"5JckFAaVUNVpoMFmD3EkKEJkCrm1LMPFY2iTAkyYzQWmfU2FSp6","public_key":"TST83Pkj4VKuu85VpPp7FXkijmf6N5wqRVTz8CBWHM2yg54kWnLJH","account_name":"steemit-acc-2"},
-          {"private_key":"5KJZhfSEtnW5Kb8hdBAvpAkTD4Qk1LC1iAUkoXFdQfown4Yp4Lo","public_key":"TST5cCeaDb2uNczHAjxJPegrZoQR96BuMTMPiMW4mg9ukTiGwE2Ev","account_name":"steemit-acc-3"},
-          {"private_key":"5JPKa55o515smdNfKexNB1tYEGdhYN41c6tJaSSnNYAcKEeSedj","public_key":"TST4uqws5V8LS2nPcCFYJez6iZUSU1xYQhWPjt8XTkwJw9cXKfoyV","account_name":"steemit-acc-4"},
-          {"private_key":"5JMQcBenSXRaAAtjfUzmj7Q1V9CjnkjVETjcFhSQWLPGSDYkPL3","public_key":"TST8BKkjji8PoAhLZhgS5K8Tt4CYiuNtzC9EKMg5t84e31kvnsBoD","account_name":"steemit-acc-5"},
-          {"private_key":"5JATcexwiWooZu2XdXRhyxkzK4uAjsxwcQC2hYBUCtEiQXtzHQZ","public_key":"TST61PgkDSm1XXRX2DAaPw7G7pgE9RRbeJbw2NxvfFL9MgUPvqN3X","account_name":"steemit-acc-6"},
-          {"private_key":"5Kh4ityJkGFBLbNWf7meQ92tA53TctcELLL1AweoAJvL5GxVjiB","public_key":"TST5iVNNnogXJuwGWwB1KdxWpeuXXcvqvoUTbipamhMnUjCCvdjX6","account_name":"steemit-acc-7"},
-          {"private_key":"5KUNiSvMPfHgwRCmpKfbW7o7NRgwabNrZ7Nw73nUnyqzhDD9U48","public_key":"TST7sDn7YwyiRvc8v6zirXoUSBE4EfWZYzq36dS52BkBsRdhBzGp7","account_name":"steemit-acc-8"},
-          {"private_key":"5JtEUibG7b8qsDrVBa3Ff7My4KCPFxzhThWMadecbR8yjYKG5iM","public_key":"TST7G1qgxZXWK71fAUG4LTq36AvokJ62Mc3RXcbJ8QCDxf7G3FJoL","account_name":"steemit-acc-9"},
-          {"private_key":"5KNX66DM5cT5FSGH6hgoLCYUTzAHU4uTi4oFDzEAMCRKRSyUQAL","public_key":"TST5oTJLwwKFzhkvTem2zUSaCBdqgM1eFNWFNKXevr626bb5q7adR","account_name":"steemit-acc-10"},
-          {"private_key":"5JR7AFQHBSrK7inrEh8tz9pATjSK1n3363NzUXTUu9bLgh6bZfH","public_key":"TST7DgtzKyPr7nWXqfm7S3v1L6uMqF6unnX87uM9okp1koCHVg4ve","account_name":"steemit-acc-11"},
-          {"private_key":"5JhaM84YJi7DaiGjNf7KadsTcwTTaNzAE8aW9Mb4wG4xjpFy3S4","public_key":"TST8crb47h8PvcjEdsdMvpUcJijozmLARKYetfVc66xDTfnRpkkQx","account_name":"steemit-acc-12"},
-          ]
-
-        steemit_proxies = [
-          {"private_key":"5Jsc8KczJrK537MEgPDbA28MMD9fFFR5DQq77sM9qM8kuTJz9sP","public_key":"TST6SLYja77Lpz4tUrrSjEGWLbeuNtX5Rzymx8oBcpfgXyqWJs1yB","account_name":"steemit-proxy"},
-        ]
 
         url = "http://localhost:3904"
         api_node_url = "http://localhost:3902"
@@ -383,43 +358,27 @@ if __name__ == "__main__":
 
         import_key(url, "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n")
 
-        print_top_witnesses(sockpuppets, witnesses, api_node_url)
+        print_top_witnesses(witnesses, api_node_url)
 
         error = False
         list_accounts(url)
 
-        prepare_accounts(steemit_accounts, url)
-        prepare_accounts(steemit_proxies, url)
-
-        prepare_accounts(sockpuppets, url)
         prepare_accounts(witnesses, url)
 
-        print("Witness state bfore transfer")
-        print_top_witnesses(sockpuppets, witnesses, api_node_url)
+        print("Witness state before transfer")
+        print_top_witnesses( witnesses, api_node_url)
 
-        configure_initial_vesting(steemit_accounts, "1000000.000 TESTS", url)
-        configure_initial_vesting(["witness" + str(i) for i in range(9)], "12000000.000 TESTS", url)
-
-        configure_initial_vesting(steemit_proxies, "10.000 TESTS", url)
-        configure_initial_vesting(sockpuppets, "10.000 TESTS", url)
         configure_initial_vesting(witnesses, "1000000.000 TESTS", url)
 
         prepare_witnesses(witnesses, url)
-        prepare_witnesses(sockpuppets, url)
 
-        print("Witness state bfore self vote")
-        print_top_witnesses(sockpuppets, witnesses, api_node_url)
+        print("Witness state before self vote")
+        print_top_witnesses(witnesses, api_node_url)
 
         self_vote(witnesses, url)
-        self_vote(sockpuppets, url)
 
-        print("Witness state before voting of steemit-proxy proxy")
-        print_top_witnesses(sockpuppets, witnesses, api_node_url)
-
-        vote_for_witnesses("steemit-proxy", sockpuppets, 1, url)
-
-        print("Witness state after voting of steemit-proxy proxy")
-        print_top_witnesses(sockpuppets, witnesses, api_node_url)
+        print("Witness state after voting")
+        print_top_witnesses(witnesses, api_node_url)
 
         list_accounts(url)
 
