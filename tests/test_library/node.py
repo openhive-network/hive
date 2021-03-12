@@ -2,6 +2,7 @@ from pathlib import Path
 import subprocess
 
 from node_config import NodeConfig
+from witness import Witness
 
 
 class Node:
@@ -184,13 +185,17 @@ class Node:
     def set_executable_file_path(self, executable_file_path):
         self.executable_file_path = executable_file_path
 
-    def set_witness(self, witness, key):
+    def set_witness(self, witness_name, key=None):
         if 'witness' not in self.config['plugin']:
             self.add_plugin('witness')
 
+        if key is None:
+            witness = Witness(witness_name)
+            key = witness.private_key
+
         self.config.add_entry(
             'witness',
-            f'"{witness}"',
+            f'"{witness_name}"',
             'Name of witness controlled by this node'
         )
 
