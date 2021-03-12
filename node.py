@@ -91,7 +91,7 @@ class Node:
         if not self.executable_file_path:
             raise Exception('Missing executable')
 
-        self.directory.mkdir()
+        self.directory.mkdir(parents=True)
 
         config_file_path = self.directory.joinpath('config.ini')
         self.config.write_to_file(config_file_path)

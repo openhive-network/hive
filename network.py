@@ -37,7 +37,7 @@ class Network:
             print('Clear whole directory', directory)
             rmtree(directory)
 
-        directory.mkdir()
+        directory.mkdir(parents=True)
 
         for node in self.nodes:
             node.set_executable_file_path(self.hived_executable_file_path)
