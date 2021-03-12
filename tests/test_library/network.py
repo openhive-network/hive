@@ -56,14 +56,11 @@ class Network:
             node.add_seed_node(seed_node)
 
     def run(self):
-        print('Script is run in', Path('.').absolute())
-
         if not self.hived_executable_file_path:
             raise Exception('Missing hived executable, use Network.set_hived_executable_file_path')
 
         directory = self.get_directory()
         if directory.exists():
-            print('Clear whole directory', directory)
             rmtree(directory)
 
         directory.mkdir(parents=True)
