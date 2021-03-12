@@ -72,6 +72,9 @@ class Node:
         self.close()
         self.wait_for_close()
 
+    def set_directory(self, directory):
+        self.directory = Path(directory).absolute()
+
     def is_running(self):
         if not self.process:
             return False
