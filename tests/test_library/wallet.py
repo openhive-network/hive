@@ -8,7 +8,7 @@ from node import Node
 class Wallet:
     def __init__(self, directory=Path()):
         self.http_server_port = None
-        self.server_websocket_rpc_endpoint = None
+        self.connected_node = None
 
         self.directory = directory
         self.executable_file_path = None
@@ -33,7 +33,7 @@ class Wallet:
         if not self.executable_file_path:
             raise Exception('Missing executable')
 
-        if not self.server_websocket_rpc_endpoint:
+        if not self.connected_node:
             raise Exception('Server websocket RPC endpoint not set, use Wallet.connect_to method')
 
         if not self.http_server_port:
@@ -54,7 +54,7 @@ class Wallet:
             [
                 self.executable_file_path,
                 '--chain-id=04e8b5fc4bb4ab3c0ee3584199a2e584bfb2f141222b3a0d1c74e8a75ec8ff39',
-                '-s', f'ws://{self.server_websocket_rpc_endpoint}',
+                '-s', f'ws://{self.connected_node.get_webserver_ws_endpoints()[0]}',
                 '-d',
                 '-H', f'0.0.0.0:{self.http_server_port}',
                 '--rpc-http-allowip', '192.168.10.10',
@@ -68,7 +68,7 @@ class Wallet:
         print(f'Wallet run with pid {self.process.pid}')
 
     def connect_to(self, node: Node):
-        self.server_websocket_rpc_endpoint = node.get_webserver_ws_endpoints()[0]
+        self.connected_node = node
 
     def close(self):
         self.process.send_signal(signal.SIGINT)
