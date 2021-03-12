@@ -7,6 +7,7 @@ from node import Node
 
 class Wallet:
     def __init__(self, directory=Path()):
+        self.http_server_port = None
         self.server_websocket_rpc_endpoint = None
 
         self.directory = directory
@@ -35,6 +36,9 @@ class Wallet:
         if not self.server_websocket_rpc_endpoint:
             raise Exception('Server websocket RPC endpoint not set, use Wallet.connect_to method')
 
+        if not self.http_server_port:
+            raise Exception('Http server port is not set, use Wallet.set_http_server_port method')
+
         self.directory.mkdir(parents=True)
 
         print('[Wallet] self.executable_file_path =', self.executable_file_path)
@@ -52,7 +56,7 @@ class Wallet:
                 '--chain-id=04e8b5fc4bb4ab3c0ee3584199a2e584bfb2f141222b3a0d1c74e8a75ec8ff39',
                 '-s', f'ws://{self.server_websocket_rpc_endpoint}',
                 '-d',
-                '-H', '0.0.0.0:3904',
+                '-H', f'0.0.0.0:{self.http_server_port}',
                 '--rpc-http-allowip', '192.168.10.10',
                 '--rpc-http-allowip=127.0.0.1'
             ],
@@ -75,3 +79,6 @@ class Wallet:
 
     def set_executable_file_path(self, executable_file_path):
         self.executable_file_path = executable_file_path
+
+    def set_http_server_port(self, port):
+        self.http_server_port = port
