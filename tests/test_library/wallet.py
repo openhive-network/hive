@@ -35,7 +35,7 @@ class Wallet:
         if not self.server_websocket_rpc_endpoint:
             raise Exception('Server websocket RPC endpoint not set, use Wallet.connect_to method')
 
-        self.directory.mkdir()
+        self.directory.mkdir(parents=True)
 
         print('[Wallet] self.executable_file_path =', self.executable_file_path)
         print('[Wallet] self.directory =', self.directory.absolute())
