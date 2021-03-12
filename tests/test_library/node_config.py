@@ -44,9 +44,14 @@ class NodeConfig:
         with open(file_path, 'w') as file:
             for key, entry in self.entries.items():
                 file_entry = f'# {entry.description}\n' if entry.description else ''
-                file_entry += f'{key} = '
-                file_entry += ' '.join(entry.values)
-                file_entry += '\n'
+
+                if key in ['private-key', 'witness']:
+                    for value in entry.values:
+                        file_entry += f'{key} = {value}\n'
+                else:
+                    file_entry += f'{key} = '
+                    file_entry += ' '.join(entry.values)
+                    file_entry += '\n'
 
                 file_entries.append(file_entry)
 
