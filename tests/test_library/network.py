@@ -22,7 +22,7 @@ class Network:
         return self.directory / self.name
 
     def add_node(self, node_name):
-        node = Node(name=node_name, directory=self.get_directory() / node_name)
+        node = Node(name=node_name)
         self.nodes.append(node)
         return node
 
@@ -40,5 +40,6 @@ class Network:
         directory.mkdir(parents=True)
 
         for node in self.nodes:
+            node.set_directory(self.get_directory() / node.get_name())
             node.set_executable_file_path(self.hived_executable_file_path)
             node.run()
