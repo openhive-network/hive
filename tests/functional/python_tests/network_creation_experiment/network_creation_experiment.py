@@ -1,7 +1,11 @@
 from network import Network
+from key_generator import KeyGenerator
+from witness import Witness
 
 
 if __name__ == "__main__":
+    Witness.key_generator = KeyGenerator('../../../../build/programs/util/get_dev_key')
+
     # Create first network
     alpha_net = Network('Alpha', port_range=range(51000, 52000))
     alpha_net.set_directory('experimental_network')
@@ -9,7 +13,7 @@ if __name__ == "__main__":
     alpha_net.set_wallet_executable_file_path('../../../../build/programs/cli_wallet/cli_wallet')
 
     init_node = alpha_net.add_node('InitNode')
-    init_node.set_witness('initminer', '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n')
+    init_node.set_witness('initminer')
 
     alpha_net.add_node('Node0')
     alpha_net.add_node('Node1')
