@@ -14,10 +14,20 @@ if __name__ == "__main__":
 
     init_node = alpha_net.add_node('InitNode')
     init_node.set_witness('initminer')
+    for i in range(20):
+        init_node.set_witness(f'sockpuppet{i}')
 
-    alpha_net.add_node('Node0')
-    alpha_net.add_node('Node1')
-    alpha_net.add_node('Node2')
+    node0 = alpha_net.add_node('Node0')
+    for i in range(9):
+        node0.set_witness(f'witness{i}')
+
+    node1 = alpha_net.add_node('Node1')
+    for i in range(14):
+        node1.set_witness(f'good-wtns-{i}')
+
+    node2 = alpha_net.add_node('Node2')
+    for i in range(13):
+        node2.set_witness(f'steemit-acc-{i}')
 
     # Create second network
     beta_net = Network('Beta', port_range=range(52000, 53000))
