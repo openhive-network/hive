@@ -91,3 +91,9 @@ class Network:
         wallet.run()
 
         return wallet
+
+    def connect_with(self, network):
+        if len(self.nodes) == 0 or len(network.nodes) == 0:
+            raise Exception('Unable to connect empty network')
+
+        self.nodes[0].add_seed_node(network.nodes[0])
