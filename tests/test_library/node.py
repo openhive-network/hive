@@ -106,6 +106,9 @@ class Node:
         return self.name
 
     def get_p2p_endpoints(self):
+        if 'p2p-endpoint' not in self.config:
+            self.add_p2p_endpoint(f'0.0.0.0:{self.network.allocate_port()}')
+
         return self.config['p2p-endpoint']
 
     def add_p2p_endpoint(self, endpoint):
