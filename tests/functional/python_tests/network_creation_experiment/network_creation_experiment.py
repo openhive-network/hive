@@ -30,6 +30,8 @@ if __name__ == "__main__":
 
     net.run()
 
+    wallet = net.attach_wallet()
+
     while True:
         pass
 
