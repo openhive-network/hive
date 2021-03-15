@@ -1404,12 +1404,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
   FC_ASSERT( account.can_vote, "Account has declined the ability to vote and cannot proxy votes." );
   _db.modify( account, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
-  /// remove all current votes
-  std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH+1> delta;
-  delta[0] = -account.get_real_vesting_shares();
-  for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-    delta[i+1] = -account.proxied_vsf_votes[i];
-  _db.adjust_proxied_witness_votes( account, delta );
+  _db.nullify_proxied_witness_votes( account );
 
   if( !o.is_clearing_proxy() ) {
     const auto& new_proxy = _db.get_account( o.proxy );
@@ -1434,8 +1429,10 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     });
 
     /// add all new votes
-    for( int i = 0; i <= HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-      delta[i] = -delta[i];
+    std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
+    delta[0] = account.get_real_vesting_shares();
+    for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
+      delta[i+1] = account.proxied_vsf_votes[i];
     _db.adjust_proxied_witness_votes( account, delta );
   } else { /// we are clearing the proxy which means we simply update the account
     _db.modify( account, [&]( account_object& a ) {

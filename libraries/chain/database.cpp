@@ -1758,6 +1758,15 @@ void database::adjust_proxied_witness_votes( const account_object& a, share_type
   }
 }
 
+void database::nullify_proxied_witness_votes( const account_object& a )
+{
+  std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
+  delta[ 0 ] = -a.get_real_vesting_shares();
+  for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
+    delta[ i + 1 ] = -a.proxied_vsf_votes[ i ];
+  adjust_proxied_witness_votes( a, delta );
+}
+
 void database::adjust_witness_votes( const account_object& a, const share_type& delta )
 {
   const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
@@ -3412,13 +3421,7 @@ void database::process_decline_voting_rights()
   {
     const auto& account = get< account_object, by_name >( itr->account );
 
-    /// remove all current votes
-    std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH+1> delta;
-    delta[0] = -account.get_real_vesting_shares();
-    for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-      delta[i+1] = -account.proxied_vsf_votes[i];
-    adjust_proxied_witness_votes( account, delta );
-
+    nullify_proxied_witness_votes( account );
     clear_witness_votes( account );
 
     modify( account, [&]( account_object& a )
@@ -6543,109 +6546,38 @@ void database::remove_expired_governance_votes()
 
   const auto& accounts = get_index<account_index, by_governance_vote_expiration_ts>();
   auto acc_it = accounts.begin();
-  time_point_sec block_timestamp = head_block_time();
+  time_point_sec first_expiring = acc_it->get_governance_vote_expiration_ts();
+  time_point_sec now = head_block_time();
 
-  if (acc_it->get_governance_vote_expiration_ts() >= block_timestamp)
+  if( first_expiring > now )
     return;
 
-  const auto& witness_votes = get_index<witness_vote_index, by_account_witness>();
-  const auto& proposal_votes = get_index<proposal_vote_index, by_voter_proposal>();
+  const auto& proposal_votes = get_index< proposal_vote_index, by_voter_proposal >();
+  remove_guard obj_perf( get_remove_threshold() );
 
-  //stats
-  uint64_t processed_accounts = 0;
-  uint64_t processed_accounts_with_votes = 0;
-  uint64_t removed_witness_votes = 0;
-  uint64_t removed_proposal_votes = 0;
-
-  const time_point deleting_start_time = time_point::now();
-  uint16_t deleted_votes = 0;
-  constexpr uint16_t TIME_CHECK_INTERVAL = 50;   //check current time every X deleted votes in order to not cross MAX_EXECUTION_TIME.
-
-  auto stop_loop = [](uint16_t& deleted_votes, const time_point& deleting_start_time) -> bool
+  while( acc_it != accounts.end() && acc_it->get_governance_vote_expiration_ts() <= now )
   {
-    if (deleted_votes >= TIME_CHECK_INTERVAL)
-    {
-      const fc::microseconds MAX_EXECUTION_TIME =
-      #ifdef IS_TEST_NET
-      fc::milliseconds(3);
-      #else
-      fc::milliseconds(500);
-      #endif
-
-      if (time_point::now() - deleting_start_time >= MAX_EXECUTION_TIME)
-        return true;
-
-      deleted_votes = 0;
-    }
-    else
-      ++deleted_votes;
-
-    return false;
-  };
-
-  bool max_execution_time_reached = false;
-
-  while (!max_execution_time_reached && acc_it != accounts.end() && acc_it->get_governance_vote_expiration_ts() < block_timestamp)
-  {
-    ++processed_accounts;
-    auto wvote = witness_votes.lower_bound(acc_it->name);
-    auto pvote = proposal_votes.lower_bound(acc_it->name);
-
-    const account_object& acc = *acc_it;
+    const auto& account = *acc_it;
     ++acc_it;
 
-    if ((wvote == witness_votes.end() || wvote->account != acc.name) &&
-        (pvote == proposal_votes.end() || pvote->voter != acc.name) &&
-        !acc.has_proxy())
+    if( sps_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
     {
-      modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); });
-      max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
-      continue;
+      nullify_proxied_witness_votes( account );
+      clear_witness_votes( account );
+      modify( account, [&]( account_object& a )
+      {
+        a.clear_proxy();
+        a.set_governance_vote_expired();
+      } );
+      push_virtual_operation( expired_account_notification_operation( account.name ) );
     }
-
-    ++processed_accounts_with_votes;
-
-    if (acc.has_proxy())
+    else
     {
-      adjust_proxied_witness_votes( acc, -acc.vesting_shares.amount );
-      modify(acc, [&](account_object& acc) { acc.clear_proxy(); });
+      ilog("Threshold exceeded while processing account ${account} with expired governance vote.",
+        ("account", account.name)); // to be continued in next block
+      break;
     }
-
-    while (wvote != witness_votes.end() && wvote->account == acc.name)
-    {
-      const witness_vote_object& current = *wvote;
-      ++wvote;
-      remove(current);
-      ++removed_witness_votes;
-      modify(acc, [&](account_object& acc) { acc.witnesses_voted_for = 0; });
-    }
-
-    max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
-
-    while (!max_execution_time_reached && pvote != proposal_votes.end() && pvote->voter == acc.name)
-    {
-      const proposal_vote_object& current = *pvote;
-      ++pvote;
-      remove(current);
-      ++removed_proposal_votes;
-      max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
-
-      if (max_execution_time_reached)
-        break;
-    }
-
-    if (!acc.notified_expired_account())
-    {
-      push_virtual_operation( expired_account_notification_operation( acc.name ) );
-      modify(acc, [&](account_object& acc) { acc.notification_of_expiring_account_sent(); });
-    }
-
-    if (!max_execution_time_reached)
-      modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); });
   }
-
-  ilog("Removing: ${removed_pvotes} proposal votes, ${removed_wvotes} witness votes. Processed accounts: ${processed}, accounts with votes: ${with_votes}, exec_time: ${exec_time} us, max execution time reached: ${execution_time_limit_reached}",
-  ("removed_pvotes", removed_proposal_votes) ("removed_wvotes", removed_witness_votes) ("processed", processed_accounts) ("with_votes", processed_accounts_with_votes) ("exec_time", (time_point::now() - deleting_start_time).count() ) ("execution_time_limit_reached", max_execution_time_reached));
 }
 
 } } //hive::chain

@@ -305,31 +305,6 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     private_key_type accw_witness2_key = generate_private_key( "accw2_key" );
     witness_create( "accw2", accw2_private_key, "foo.bar", accw_witness2_key.get_public_key(), 1000 );
 
-    auto witness_vote = [&](std::string voter, std::string witness, const fc::ecc::private_key& key, bool approve = true) {
-      signed_transaction tx;
-      account_witness_vote_operation op;
-      op.account = voter;
-      op.witness = witness;
-      op.approve = approve;
-
-      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      tx.operations.push_back( op );
-      sign( tx, key );
-      db->push_transaction( tx, 0 );
-    };
-
-    auto witness_proxy_operation = [&](std::string account, std::string proxy, const fc::ecc::private_key& key) {
-      signed_transaction tx;
-      account_witness_proxy_operation op;
-      op.account = account;
-      op.proxy = proxy;
-
-      tx.operations.push_back( op );
-      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      sign( tx, key );
-      db->push_transaction( tx, 0 );
-    };
-
     //if we vote before hardfork 25
     generate_block();
     fc::time_point_sec hardfork_25_time(HIVE_HARDFORK_1_25_TIME);
@@ -356,7 +331,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_days_blocks(25);
     vote_proposal("acc5", {proposal_3}, true, acc5_private_key); //76 days before HF25
     generate_days_blocks(25);
-    witness_proxy_operation("acc6", "pxy", acc6_private_key); //51 days before HF25
+    proxy("acc6", "pxy", acc6_private_key); //51 days before HF25
     {
       time_point_sec acc_6_vote_expiration_ts_before_proxy_action = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
       //being set as someone's proxy does not affect expiration
@@ -366,7 +341,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       time_point_sec acc_6_vote_expiration_ts_after_proxy_action = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
       //governance action on a proxy does not affect expiration on account that uses that proxy...
       BOOST_REQUIRE( acc_6_vote_expiration_ts_before_proxy_action == acc_6_vote_expiration_ts_after_proxy_action );
-      witness_proxy_operation("acc6", "", acc6_private_key); //26 days before HF25
+      proxy("acc6", "", acc6_private_key); //26 days before HF25
       time_point_sec acc_6_vote_expiration_ts_after_proxy_removal = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
       //...but clearing proxy does
       BOOST_REQUIRE( acc_6_vote_expiration_ts_after_proxy_removal == db->get_account( "pxy" ).get_governance_vote_expiration_ts() );
@@ -442,7 +417,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     //this witness vote should not be removed
     generate_days_blocks(1);
     witness_vote("acc8", "accw", acc8_private_key);
-    generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
+    generate_blocks( expected_expiration_time );
 
     {
       BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == expected_expiration_time);
@@ -458,7 +433,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE(witness_votes.count("acc1") == 2);
       BOOST_REQUIRE(witness_votes.count("acc2") == 1);
       BOOST_REQUIRE(witness_votes.count("acc8") == 1);
-      BOOST_REQUIRE(witness_votes.size() == 4 );
+      BOOST_REQUIRE(witness_votes.size() == 4);
 
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
       BOOST_REQUIRE(proposal_votes.empty());
@@ -467,6 +442,11 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     {
       BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+    }
+    generate_block();
+    {
       BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
 
@@ -474,9 +454,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE(witness_votes.count("acc8") == 1);
       BOOST_REQUIRE(witness_votes.size() == 1 );
     }
-
-    generate_days_blocks(1);
-
+    generate_days_blocks(1, false);
     {
       BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
@@ -502,7 +480,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_days_blocks(1);
     vote_proposal("acc8", {proposal_3}, true, acc8_private_key);
 
-    generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
+    generate_blocks( expected_expiration_time );
 
     {
       BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
@@ -523,24 +501,31 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE(proposal_votes.count("acc8") == 1);
       BOOST_REQUIRE(proposal_votes.size() == 4);
     }
-
     generate_block();
     {
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
       BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+    }
+    generate_block();
+    {
+      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
 
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
       BOOST_REQUIRE(proposal_votes.count("acc8") == 1);
       BOOST_REQUIRE(proposal_votes.size() == 1);
     }
+    generate_days_blocks(1, false);
+    {
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
+      BOOST_REQUIRE(proposal_votes.empty());
+    }
 
-    generate_days_blocks(1);
     witness_vote("acc1", "accw2", acc1_private_key);
     vote_proposal("acc4", {proposal_1}, true, acc4_private_key);
     witness_vote("acc5", "accw", acc5_private_key);
@@ -552,7 +537,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     witness_vote("acc7", "accw", acc7_private_key);
     witness_vote("acc8", "accw", acc8_private_key);
     expected_expiration_time = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
-    generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
+    generate_blocks( expected_expiration_time );
 
     {
       BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == expected_expiration_time);
@@ -586,9 +571,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE(proposal_votes.count("acc8") == 0);
       BOOST_REQUIRE(proposal_votes.size() == 5);
     }
-
-    generate_blocks(2);
-
+    generate_block();
     {
       BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
@@ -630,11 +613,11 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_block();
 
     //Check if proxy removing works well. acc1 is proxy, acc2 is grandparent proxy
-    witness_proxy_operation("acc3", "acc1", acc3_private_key);
-    witness_proxy_operation("acc4", "acc1", acc4_private_key);
+    proxy("acc3", "acc1", acc3_private_key);
+    proxy("acc4", "acc1", acc4_private_key);
     generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
-    witness_proxy_operation("acc5", "acc1", acc5_private_key);
-    witness_proxy_operation("acc1", "acc2", acc1_private_key);
+    proxy("acc5", "acc1", acc5_private_key);
+    proxy("acc1", "acc2", acc1_private_key);
 
     generate_blocks(2);
     BOOST_REQUIRE(!db->get_account("acc3").has_proxy());
@@ -723,30 +706,19 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
 struct expired_account_notification_operation_visitor
 {
   typedef account_name_type result_type;
+  mutable std::string debug_type_name; //mangled visited type name - to make it easier to debug
 
   template<typename T>
-  result_type operator()( const T& op ) const { return account_name_type(); }
-  result_type operator()( const expired_account_notification_operation& op ) const { return op.account; }
+  result_type operator()( const T& op ) const { debug_type_name = typeid(T).name(); return account_name_type(); }
+  result_type operator()( const expired_account_notification_operation& op ) const
+  { debug_type_name = typeid(expired_account_notification_operation).name(); return op.account; }
 };
 
-BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_max_execution_time_reached )
+BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: db_remove_expired_governance_votes when method max execution time is reached" );
-
-    auto witness_vote = [&](std::string voter, std::string witness, const fc::ecc::private_key& key) {
-      signed_transaction tx;
-      account_witness_vote_operation op;
-      op.account = voter;
-      op.witness = witness;
-      op.approve = true;
-
-      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      tx.operations.push_back( op );
-      sign( tx, key );
-      db->push_transaction( tx, 0 );
-    };
+    BOOST_TEST_MESSAGE( "Testing: db_remove_expired_governance_votes when threshold stops processing" );
 
     ACTORS(
     (a00)(a01)(a02)(a03)(a04)(a05)(a06)(a07)(a08)(a09)
@@ -788,15 +760,28 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_max_execution_time_reac
       private_key_type witness_key = generate_private_key( witness.account + "_key" );
       witness_create( witness.account, witness.key, "foo.bar", witness_key.get_public_key(), 1000 );
     }
+    generate_block();
 
-    std::vector<int64_t> proposals;
-    proposals.reserve(users.size());
+    const auto& proposal_vote_idx = db->get_index< proposal_vote_index, by_id >();
+    const auto& witness_vote_idx = db->get_index< witness_vote_index, by_id >();
+    const auto& account_idx = db->get_index<account_index, by_governance_vote_expiration_ts>();
 
     const fc::time_point_sec LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT;
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
+      {
+        //fake timestamp of current block so we don't need to wait for creation of 40mln blocks in next line
+        //even though it is skipping it still takes a lot of time, especially under debugger
+        gpo.time = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS - fc::days( 1 );
+      } );
+    } );
     generate_blocks(LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
 
+    std::vector<int64_t> proposals;
+    proposals.reserve( users.size() );
     time_point_sec proposals_start_time = db->head_block_time();
-    time_point_sec proposals_end_time = proposals_start_time + fc::days(100);
+    time_point_sec proposals_end_time = proposals_start_time + fc::days(450);
     std::string receiver = db->get_treasury_name();
 
     for(const auto& user : users )
@@ -809,6 +794,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_max_execution_time_reac
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     generate_block();
 
+    fc::time_point_sec expiration_time = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
     for (const auto& user : users)
     {
       for (const auto proposal : proposals)
@@ -820,85 +806,147 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_max_execution_time_reac
       generate_block();
     }
 
-    generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD + fc::days(1));
-
-    uint8_t loop_cnt = 0;
-
-    //first user from users and first user with expired votes from account_index are going to revote
-    bool revoted = false;
-    initial_data first_revoting_account = users[0];
-    initial_data second_revoting_account;
-
-    while(!db->get_index<witness_vote_index,by_account_witness>().empty() && !db->get_index<proposal_vote_index, by_voter_proposal>().empty())
+    int64_t expected_votes, expected_witness_votes, expected_expirations;
+    int i;
+    auto check_vote_count = [&]()
     {
-      generate_block();
-      ++loop_cnt;
+      auto found_votes = proposal_vote_idx.size();
+      auto found_witness_votes = witness_vote_idx.size();
+      auto found_expirations = std::distance( account_idx.begin(), account_idx.upper_bound( expiration_time ) );
+      BOOST_REQUIRE_EQUAL( found_votes, expected_votes );
+      BOOST_REQUIRE_EQUAL( found_witness_votes, expected_witness_votes );
+      BOOST_REQUIRE_EQUAL( found_expirations, expected_expirations );
+    };
 
-      if (!revoted)
-      {
-        account_name_type second_revoing_acc_name = db->get_index<account_index, by_governance_vote_expiration_ts>().begin()->name;
-        for (const auto& user : users)
-        {
-          if (user.account == second_revoing_acc_name)
-          {
-            second_revoting_account = user;
-            break;
-          }
-        }
-        for (const auto& witness : witnesses)
-        {
-          witness_vote(first_revoting_account.account, witness.account, first_revoting_account.key);
-          witness_vote(second_revoting_account.account, witness.account, second_revoting_account.key);
-        }
-
-        for (const auto& proposal : proposals)
-        {
-          vote_proposal(first_revoting_account.account, {proposal}, true, first_revoting_account.key);
-          vote_proposal(second_revoting_account.account, {proposal}, true, second_revoting_account.key);
-        }
-        generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD + fc::days(1));
-        revoted = true;
-      }
-
-      //that means we have endless loop. In testnet MAX_EXECUTION_TIME in method is so small that loop should be repeated few times.
-      if (loop_cnt == 0)
-        break;
-    }
-
-    BOOST_REQUIRE (loop_cnt != 0);
-
-    //we should have only one expired_account_notification_operation for every expired account except revoting account
-    std::unordered_set<std::string> expired_accounts;
-    //First and second revoting account should have two expiring account notification operation
-    uint8_t first_revoting_account_operation_cnt = 0;
-    uint8_t second_revoting_account_operation_cnt = 0;
-
-    const auto& last_operations = get_last_operations(400);   //400 operation should be enough to get all expired account notification operation for this test
-    for (const auto& op : last_operations)
+    //check that even though accounts expire and fail to clear before another account expires, it still clears in the end, just can take longer
     {
-      account_name_type acc_name = op.visit(expired_account_notification_operation_visitor());
-      if (acc_name.size())
+      auto threshold = db->get_remove_threshold();
+      BOOST_REQUIRE_EQUAL( threshold, 20 );
+
+      generate_blocks( expiration_time ); //note that during skipping automated actions don't work
+
+      expected_votes = 60 * 60;
+      expected_witness_votes = 60 * 30;
+      expected_expirations = 0;
+      expiration_time = db->head_block_time() - fc::seconds(1);
+      check_vote_count();
+
+      auto userI = users.begin();
+      i = users.size();
+      while( expected_votes > 0 )
       {
-        if (acc_name == first_revoting_account.account)
+        expiration_time = db->head_block_time();
+        generate_block();
+        if( i > 0 )
         {
-          expired_accounts.emplace(std::string(acc_name)).second;
-          ++first_revoting_account_operation_cnt;
+          ++expected_expirations;
+          --i;
         }
-        else if (acc_name == second_revoting_account.account)
+        expected_votes -= threshold; //not all proposal votes of "expired user" are removed due to limitation (user's proposal votes will be removed completely every 60/20 blocks)
+        if( (expected_votes%60) == 0 )
         {
-          expired_accounts.emplace(std::string(acc_name)).second;
-          ++second_revoting_account_operation_cnt;
+          --expected_expirations;
+          expected_witness_votes -= 30; //witness votes are always removed completely because there is fixed max number, but we need to actually reach that point - it also moves to next user
+          const auto& last_operations = get_last_operations( 2 );
+          expired_account_notification_operation_visitor v;
+          account_name_type acc_name = last_operations.back().visit( v );
+          BOOST_REQUIRE( acc_name == userI->account );
+          ++userI;
         }
-        else
-          BOOST_REQUIRE(expired_accounts.emplace(std::string(acc_name)).second);
+        
+        check_vote_count();
       }
     }
 
-    BOOST_REQUIRE(first_revoting_account_operation_cnt == 2);
-    BOOST_REQUIRE(second_revoting_account_operation_cnt == 2);
+    generate_block();
 
-    for (const auto& user : users)
-      BOOST_REQUIRE(db->get_account(user.account).witnesses_voted_for == 0);
+    //revote, but in slightly different configuration
+    //we will be filling 5 times 10 users expiring in the same time, each has 3 proposal votes, with exception of 30..39 range
+    //however in the same time, with shift of 10, we will be also applying [multi-level] proxy; in the end we expect the following:
+    //(note that establishing proxy clears witness votes but not proposal votes)
+    //users[0] .. user[9] - vote for themselves (and become proxy for others)
+    //users[10] .. user[19] - proxy to above (and have inactive proposal votes)
+    //users[20] .. user[29] - proxy to above (and have inactive proposal votes)
+    //users[30] .. user[39] - proxy to above
+    //users[40] .. user[49] - vote for themselves
+    //users[50] .. user[59] - don't vote at all
+    expiration_time = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+    {
+      auto userI = users.begin();
+      i = 0;
+      while( i<50 )
+      {
+        if( i < 30 || ( i >= 40 && i < 50 ) )
+          vote_proposal( userI->account, { proposals.front(), proposals[1], proposals.back() }, true, userI->key );
+
+        for( const auto& witness : witnesses )
+          witness_vote( userI->account, witness.account, userI->key );
+
+        if( i >= 10 && i < 40 )
+          proxy( userI->account, users[ i-10 ].account, userI->key );
+
+        if( (++i % 10) == 0 )
+          generate_block();
+        ++userI;
+      }
+    }
+
+    generate_blocks( expiration_time - fc::seconds(HIVE_BLOCK_INTERVAL) );
+    //couple of accounts do governance action almost at the last moment (removing of proposal vote, for some that was even inactive, for some there was no such vote anymore - still counts)
+    for ( i = 0; i < 6; ++i )
+      vote_proposal( users[10*i].account, { proposals.front() }, false, users[10*i].key );
+    generate_block();
+
+    //check multiple accounts expiring in the same time
+    {
+      expected_votes = 3 * 40 - 4;
+      expected_witness_votes = 20 * 30;
+      expected_expirations = 0;
+      expiration_time = db->head_block_time() - fc::seconds( 1 );
+      check_vote_count();
+
+      expiration_time = db->head_block_time();
+      generate_block(); //users 1..9 expire, but only 1..6 fully clear (2 votes from 7)
+      expected_expirations += 9 - 6;
+      expected_votes -= 20;
+      expected_witness_votes -= 6 * 30;
+      check_vote_count();
+
+      expiration_time = db->head_block_time();
+      generate_block(); //users 11..19 expire, but 7..9,11..14 clear (1 vote from 15)
+      expected_expirations += 9 - 7;
+      expected_votes -= 20;
+      expected_witness_votes -= 3 * 30; //11..14 had proxy so no witness votes
+      check_vote_count();
+
+      expiration_time = db->head_block_time();
+      generate_block(); //users 21..29 expire, but 15..19,21..22 clear (0 votes from 23)
+      expected_expirations += 9 - 7;
+      expected_votes -= 20;
+      expected_witness_votes -= 0 * 30; //all cleared had proxy, no witness votes
+      check_vote_count();
+
+      expiration_time = db->head_block_time();
+      generate_block(); //users 31..39 expire, but 23..28 clear (2 votes from 29)
+      expected_expirations += 9 - 6;
+      expected_votes -= 20;
+      expected_witness_votes -= 0 * 30; //all cleared had proxy, no witness votes
+      check_vote_count();
+
+      expiration_time = db->head_block_time();
+      generate_block(); //users 41..49 expire, but 29,31..39,41..46 clear (1 vote from 47)
+      expected_expirations += 9 - 16;
+      expected_votes -= 20;
+      expected_witness_votes -= 6 * 30; //only 41..46 had witness votes
+      check_vote_count();
+
+      expiration_time = db->head_block_time();
+      generate_block(); //no new users expire, 47..49 clear (unused limit is 12)
+      expected_expirations = 0; //6 users are active (long expiration time), rest is fully expired
+      expected_votes = 8; //0,10,20,40 have 2 votes active each
+      expected_witness_votes = 2 * 30; //0,30 have 30 witness votes active each
+      check_vote_count();
+    }
 
     validate_database();
   }
@@ -1303,15 +1351,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
 
     {
       BOOST_TEST_MESSAGE( "Setting proxy. The account `tester01` don't want to vote. Every decision is made by account `tester00`" );
-      account_witness_proxy_operation op;
-      op.account = tester01_account;
-      op.proxy = tester00_account;
-
-      signed_transaction tx;
-      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      tx.operations.push_back( op );
-      sign( tx, inits[ tester01_account ] );
-      db->push_transaction( tx, 0 );
+      proxy( tester01_account, tester00_account, inits[ tester01_account ] );
     }
 
     generate_blocks( start_date + end_time_shift[ interval++ ] + fc::seconds( 10 ), false );
@@ -1339,15 +1379,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
 
     {
       BOOST_TEST_MESSAGE( "Proxy doesn't exist. Now proposal with id = 3 has the most votes. This proposal grabs all payouts." );
-      account_witness_proxy_operation op;
-      op.account = tester01_account;
-      op.proxy = "";
-
-      signed_transaction tx;
-      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      tx.operations.push_back( op );
-      sign( tx, inits[ tester01_account ] );
-      db->push_transaction( tx, 0 );
+      proxy( tester01_account, "", inits[ tester01_account ] );
     }
 
     generate_blocks( start_date + end_time_shift[ interval++ ] + fc::seconds( 10 ), false );

@@ -13,7 +13,23 @@ using boost::container::flat_set;
 class sps_helper
 {
   public:
-    static void remove_proposal_votes( const proposal_object& proposal, const proposal_vote_index::index<by_proposal_voter>::type& proposal_votes,
+    // removes votes cast for proposals by given account (as long as we are within limit), returns if the process was successful
+    static bool remove_proposal_votes( const account_object& voter, const proposal_vote_index::index<by_voter_proposal>::type& proposal_votes,
+      database& db, remove_guard& obj_perf )
+    {
+      auto pVoteI = proposal_votes.lower_bound( boost::make_tuple( voter.name, 0 ) );
+      while( pVoteI != proposal_votes.end() && pVoteI->voter == voter.name )
+      {
+        const auto& vote = *pVoteI;
+        ++pVoteI;
+        if( !obj_perf.remove( db, vote ) )
+          return false;
+      }
+      return true;
+    }
+
+    // removes votes cast for given proposal (as long as we are within limit), returns if the process was successful
+    static bool remove_proposal_votes( const proposal_object& proposal, const proposal_vote_index::index<by_proposal_voter>::type& proposal_votes,
       database& db, remove_guard& obj_perf )
     {
       auto pVoteI = proposal_votes.lower_bound( boost::make_tuple( proposal.proposal_id, account_name_type() ) );
@@ -22,15 +38,17 @@ class sps_helper
         const auto& vote = *pVoteI;
         ++pVoteI;
         if( !obj_perf.remove( db, vote ) )
-          break;
+          return false;
       }
+      return true;
     }
 
-    static void remove_proposal( const proposal_object& proposal, const proposal_vote_index::index<by_proposal_voter>::type& proposal_votes,
+    // removes given proposal with all related votes (as long as we are within limit), returns if the process was successful
+    static bool remove_proposal( const proposal_object& proposal, const proposal_vote_index::index<by_proposal_voter>::type& proposal_votes,
       database& db, remove_guard& obj_perf )
     {
       remove_proposal_votes( proposal, proposal_votes, db, obj_perf );
-      obj_perf.remove( db, proposal );
+      return obj_perf.remove( db, proposal );
     }
 
     static void remove_proposals( database& db, const flat_set<int64_t>& proposal_ids, const account_name_type& proposal_owner );
