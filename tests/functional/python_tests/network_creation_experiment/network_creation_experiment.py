@@ -298,21 +298,9 @@ if __name__ == "__main__":
         alpha_net.set_wallet_executable_file_path('../../../../build/programs/cli_wallet/cli_wallet')
 
         init_node = alpha_net.add_node('InitNode')
-        init_node.set_witness('initminer')
-        for name in sockpuppet_names:
-            init_node.set_witness(name)
-
         node0 = alpha_net.add_node('Node0')
-        for name in witness_names:
-            node0.set_witness(name)
-
         node1 = alpha_net.add_node('Node1')
-        for name in good_wtns_names:
-            node1.set_witness(name)
-
         node2 = alpha_net.add_node('Node2')
-        for name in steemit_acc_names:
-            node2.set_witness(name)
 
         # Create second network
         beta_net = Network('Beta', port_range=range(52000, 53000))
@@ -323,6 +311,20 @@ if __name__ == "__main__":
         beta_net.add_node('Node0')
         beta_net.add_node('Node1')
         api_node = beta_net.add_node('Node2')
+
+        # Create witnesses
+        init_node.set_witness('initminer')
+        for name in sockpuppet_names:
+            init_node.set_witness(name)
+
+        for name in witness_names:
+            node0.set_witness(name)
+
+        for name in good_wtns_names:
+            node1.set_witness(name)
+
+        for name in steemit_acc_names:
+            node2.set_witness(name)
 
         # Run
         alpha_net.connect_with(beta_net)
