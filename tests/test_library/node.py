@@ -118,6 +118,9 @@ class Node:
     def add_webserver_http_endpoint(self, endpoint):
         self.config.add_entry('webserver-http-endpoint', endpoint)
 
+    def get_webserver_http_endpoints(self):
+        return self.config['webserver-http-endpoint']
+
     def add_webserver_ws_endpoint(self, endpoint):
         self.config.add_entry('webserver-ws-endpoint', endpoint)
 
