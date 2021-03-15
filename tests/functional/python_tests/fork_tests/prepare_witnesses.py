@@ -6,7 +6,7 @@ import os
 import sys
 import json
 
-from concurrent.futures import ThreadPoolExecutor
+import random
 
 sys.path.append("../../../tests_api")
 from jsonsocket import hived_call
@@ -347,6 +347,8 @@ if __name__ == "__main__":
           {"private_key":"5HuKhXPbEkZidHMfi9gKXe34rfo914xu3xAPJk3N9MMUu2qzjwu","public_key":"TST73c5GWVMsCdtsbMdexe8xXf5JYtpCGwFb1PMGjaT5BpsxNqxAd","account_name":"witness20-us"},
         ]
 
+        random.shuffle(witnesses)
+
 
         url = "http://localhost:3904"
         api_node_url = "http://localhost:3902"
@@ -359,6 +361,7 @@ if __name__ == "__main__":
         import_key(url, "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n")
 
         print_top_witnesses(witnesses, api_node_url)
+
 
         error = False
         list_accounts(url)
