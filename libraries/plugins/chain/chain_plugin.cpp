@@ -800,10 +800,11 @@ void chain_plugin::report_state_options( const string& plugin_name, const fc::va
 bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip )
 {
   if (currently_syncing && block.block_num() % 10000 == 0) {
-    ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p}",
+    ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p} skip: ${s}",
         ("t", block.timestamp)
         ("n", block.block_num())
-        ("p", block.witness) );
+        ("p", block.witness)
+        ("s", skip) );
   }
 
   check_time_in_block( block );
