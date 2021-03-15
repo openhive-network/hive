@@ -50,6 +50,11 @@ if __name__ == "__main__":
 
         Witness.key_generator = KeyGenerator('../../../../build/programs/util/get_dev_key')
 
+        sockpuppet_names = [f'sockpuppet{i}' for i in range(20)]
+        witness_names = [f'witness{i}' for i in range(9)]
+        good_wtns_names = [f'good-wtns-{i}' for i in range(14)]
+        steemit_acc_names = [f'steemit-acc-{i}' for i in range(13)]
+
         # Create first network
         alpha_net = Network('Alpha', port_range=range(51000, 52000))
         alpha_net.set_directory('experimental_network')
@@ -58,20 +63,20 @@ if __name__ == "__main__":
 
         init_node = alpha_net.add_node('InitNode')
         init_node.set_witness('initminer')
-        for i in range(20):
-            init_node.set_witness(f'sockpuppet{i}')
+        for name in sockpuppet_names:
+            init_node.set_witness(name)
 
         node0 = alpha_net.add_node('Node0')
-        for i in range(9):
-            node0.set_witness(f'witness{i}')
+        for name in witness_names:
+            node0.set_witness(name)
 
         node1 = alpha_net.add_node('Node1')
-        for i in range(14):
-            node1.set_witness(f'good-wtns-{i}')
+        for name in good_wtns_names:
+            node1.set_witness(name)
 
         node2 = alpha_net.add_node('Node2')
-        for i in range(13):
-            node2.set_witness(f'steemit-acc-{i}')
+        for name in steemit_acc_names:
+            node2.set_witness(name)
 
         # Create second network
         beta_net = Network('Beta', port_range=range(52000, 53000))
