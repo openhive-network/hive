@@ -5,6 +5,8 @@
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/json_rpc/utility.hpp>
 
+#include <graphene/net/core_messages.hpp>
+
 #include <fc/optional.hpp>
 #include <fc/variant.hpp>
 #include <fc/vector.hpp>
@@ -34,6 +36,15 @@ struct add_node_args
 
 typedef void_type          add_node_return;
 
+/* set_allowed_peers */
+
+struct set_allowed_peers_args
+{
+   std::vector< graphene::net::node_id_t > allowed_peers;
+};
+
+typedef void_type          set_allowed_peers_return;
+
 /* get_connected_peers */
 typedef void_type     get_connected_peers_args;
 struct get_connected_peers_return
@@ -52,6 +63,7 @@ class network_node_api
       DECLARE_API(
          (get_info)
          (add_node)
+         (set_allowed_peers)
          (get_connected_peers)
       )
 
@@ -63,5 +75,7 @@ class network_node_api
 
 FC_REFLECT( hive::plugins::network_node_api::add_node_args,
    (endpoint) )
+FC_REFLECT( hive::plugins::network_node_api::set_allowed_peers_args,
+   (allowed_peers) )
 FC_REFLECT( hive::plugins::network_node_api::get_connected_peers_return,
    (connected_peers) )
