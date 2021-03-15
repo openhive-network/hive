@@ -2,6 +2,8 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
 
+#include <graphene/net/core_messages.hpp>
+
 #include <appbase/application.hpp>
 #include <fc/network/ip.hpp>
 
@@ -49,6 +51,7 @@ public:
   void set_block_production( bool producing_blocks );
   fc::variant_object get_info();
   void add_node(const fc::ip::endpoint& endpoint);
+  void set_allowed_peers(const std::vector<graphene::net::node_id_t>& allowed_peers);
   std::vector< api_peer_status > get_connected_peers();
 
 

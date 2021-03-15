@@ -728,6 +728,13 @@ void p2p_plugin::add_node(const fc::ip::endpoint& endpoint)
    my->node->add_node(endpoint);
 }
 
+void p2p_plugin::set_allowed_peers(const std::vector<graphene::net::node_id_t>& allowed_peers)
+{
+#ifdef IS_TEST_NET
+   my->node->set_allowed_peers(allowed_peers);
+#endif // IS_TEST_NET
+}
+
 std::vector< api_peer_status > p2p_plugin::get_connected_peers()
 {
    std::vector<graphene::net::peer_status> connected_peers = my->node->get_connected_peers();
