@@ -268,8 +268,9 @@ void reindex_set_index_helper( database& db, mira::index_type type, const boost:
 uint32_t database::reindex_internal( const open_args& args, signed_block& block )
 {
   uint64_t skip_flags =
+#if 0
     skip_witness_signature |
-    skip_transaction_signatures |
+    skip_block_log |
     skip_transaction_dupe_check |
     skip_tapos_check |
     skip_merkle_check |
@@ -277,7 +278,8 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
     skip_authority_check |
     skip_validate | /// no need to validate operations
     skip_validate_invariants |
-    skip_block_log;
+#endif
+    skip_transaction_signatures;
 
   uint32_t last_block_num = _block_log.head()->block_num();
   if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
