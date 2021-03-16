@@ -545,8 +545,8 @@ public:
   }
 
     /// Common body for claim_account_creation and claim_account_creation_nonblocking
-  condenser_api::legacy_signed_transaction build_claim_account_creation(string creator, condenser_api::legacy_asset fee,
-    std::function<condenser_api::legacy_signed_transaction(signed_transaction)> tx_signer);
+  condenser_api::legacy_signed_transaction build_claim_account_creation(const string& creator, const condenser_api::legacy_asset& fee,
+    const std::function<condenser_api::legacy_signed_transaction(signed_transaction)>& tx_signer);
 
   void set_transaction_expiration( uint32_t tx_expiration_seconds )
   {
@@ -590,7 +590,7 @@ public:
     signed_transaction tx,
     bool broadcast = false )
   {
-    return sign_and_broadcast_transaction(tx, broadcast, true);
+    return sign_and_broadcast_transaction(std::move(tx), broadcast, true);
   }
 
   condenser_api::legacy_signed_transaction sign_and_broadcast_transaction(signed_transaction tx, bool broadcast, bool blocking)
@@ -972,8 +972,8 @@ public:
   const string _wallet_filename_extension = ".wallet";
 };
 
-condenser_api::legacy_signed_transaction wallet_api_impl::build_claim_account_creation(string creator, condenser_api::legacy_asset fee,
-  std::function<condenser_api::legacy_signed_transaction(signed_transaction)> tx_signer)
+condenser_api::legacy_signed_transaction wallet_api_impl::build_claim_account_creation(const string& creator, const condenser_api::legacy_asset& fee,
+  const std::function<condenser_api::legacy_signed_transaction(signed_transaction)>& tx_signer)
 {
   try
   {
@@ -1282,8 +1282,8 @@ pair<public_key_type,string> wallet_api::get_private_key_from_password( const st
 
 condenser_api::api_feed_history_object wallet_api::get_feed_history()const { return my->_remote_api->get_feed_history(); }
 
-condenser_api::legacy_signed_transaction wallet_api::claim_account_creation(string creator,
-                                                                            condenser_api::legacy_asset fee,
+condenser_api::legacy_signed_transaction wallet_api::claim_account_creation(const string& creator,
+                                                                            const condenser_api::legacy_asset& fee,
                                                                             bool broadcast )const
 { 
   return my->build_claim_account_creation(creator, fee,
@@ -1294,8 +1294,8 @@ condenser_api::legacy_signed_transaction wallet_api::claim_account_creation(stri
     );
 }
 
-condenser_api::legacy_signed_transaction wallet_api::claim_account_creation_nonblocking(string creator,
-                                                                                        condenser_api::legacy_asset fee,
+condenser_api::legacy_signed_transaction wallet_api::claim_account_creation_nonblocking(const string& creator,
+                                                                                        const condenser_api::legacy_asset& fee,
                                                                                         bool broadcast )const
 {
   return my->build_claim_account_creation(creator, fee,
@@ -1331,11 +1331,11 @@ condenser_api::legacy_signed_transaction wallet_api::create_account_with_keys(
  * provide their desired keys. The resulting account may not be controllable by this
  * wallet.
  */
-condenser_api::legacy_signed_transaction wallet_api::create_funded_account_with_keys( string creator,
-                                                                                      string new_account_name,
-                                                                                      condenser_api::legacy_asset initial_amount,
-                                                                                      string memo,
-                                                                                      string json_meta,
+condenser_api::legacy_signed_transaction wallet_api::create_funded_account_with_keys( const string& creator,
+                                                                                      const string& new_account_name,
+                                                                                      const condenser_api::legacy_asset& initial_amount,
+                                                                                      const string& memo,
+                                                                                      const string& json_meta,
                                                                                       public_key_type owner_key,
                                                                                       public_key_type active_key,
                                                                                       public_key_type posting_key,
@@ -1769,9 +1769,9 @@ condenser_api::legacy_signed_transaction wallet_api::update_account_memo_key(
 }
 
 condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares_and_transfer_and_broadcast(
-  string delegator,
-  string delegatee,
-  condenser_api::legacy_asset vesting_shares,
+  const string& delegator,
+  const string& delegatee,
+  const condenser_api::legacy_asset& vesting_shares,
   optional<condenser_api::legacy_asset> transfer_amount, 
   optional<string> transfer_memo, 
   bool broadcast, 
@@ -1808,27 +1808,48 @@ condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares_and
   return my->sign_and_broadcast_transaction( tx, broadcast, blocking );
 }
 
-condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares( string delegator,
-                                                                              string delegatee,
-                                                                              condenser_api::legacy_asset vesting_shares,
-                                                                              bool broadcast )
+condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares(
+  const string& delegator,
+  const string& delegatee,
+  const condenser_api::legacy_asset& vesting_shares,
+  bool broadcast )
 {
-  return delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares, optional<condenser_api::legacy_asset>(), optional<string>(), broadcast, true);
+  return delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares,
+    optional<condenser_api::legacy_asset>(), optional<string>(), broadcast, true);
 }
 
-condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares_nonblocking( string delegator, string delegatee, condenser_api::legacy_asset vesting_shares, bool broadcast )
+condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares_nonblocking(
+  const string& delegator,
+  const string& delegatee,
+  const condenser_api::legacy_asset& vesting_shares,
+  bool broadcast )
 {
-  return delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares, optional<condenser_api::legacy_asset>(), optional<string>(), broadcast, false);
+  return delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares,
+    optional<condenser_api::legacy_asset>(), optional<string>(), broadcast, false);
 }
 
-condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares_and_transfer( string delegator, string delegatee, condenser_api::legacy_asset vesting_shares, condenser_api::legacy_asset transfer_amount, optional<string> transfer_memo, bool broadcast )
+condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares_and_transfer(
+  const string& delegator,
+  const string& delegatee,
+  const condenser_api::legacy_asset& vesting_shares,
+  const condenser_api::legacy_asset& transfer_amount,
+  optional<string> transfer_memo,
+  bool broadcast )
 {
-  return delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares, transfer_amount, transfer_memo, broadcast, true);
+  return delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares,
+    transfer_amount, transfer_memo, broadcast, true);
 }
 
-condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares_and_transfer_nonblocking( string delegator, string delegatee, condenser_api::legacy_asset vesting_shares, condenser_api::legacy_asset transfer_amount, optional<string> transfer_memo, bool broadcast )
+condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares_and_transfer_nonblocking(
+  const string& delegator,
+  const string& delegatee,
+  const condenser_api::legacy_asset& vesting_shares,
+  const condenser_api::legacy_asset& transfer_amount,
+  optional<string> transfer_memo,
+  bool broadcast )
 {
-  return delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares, transfer_amount, transfer_memo, broadcast, false);
+  return delegate_vesting_shares_and_transfer_and_broadcast( delegator, delegatee, vesting_shares,
+    transfer_amount, transfer_memo, broadcast, false);
 }
  
 
@@ -2024,21 +2045,23 @@ string wallet_api::get_encrypted_memo( const string& from, const string& to, con
   }
 }
 
-condenser_api::legacy_signed_transaction wallet_api::transfer(const string& from, const string& to, const condenser_api::legacy_asset& amount, const string& memo, bool broadcast )
+condenser_api::legacy_signed_transaction wallet_api::transfer(const string& from, const string& to,
+  const condenser_api::legacy_asset& amount, const string& memo, bool broadcast )
 {
   return transfer_and_broadcast(from, to, amount, memo, broadcast, true);
 }
 
-condenser_api::legacy_signed_transaction wallet_api::transfer_nonblocking(string from, string to, condenser_api::legacy_asset amount, string memo, bool broadcast )
+condenser_api::legacy_signed_transaction wallet_api::transfer_nonblocking(const string& from, const string& to,
+  const condenser_api::legacy_asset& amount, const string& memo, bool broadcast )
 {
   return transfer_and_broadcast(from, to, amount, memo, broadcast, false);
 }
 
 condenser_api::legacy_signed_transaction wallet_api::transfer_and_broadcast(
-  string from,
-  string to,
-  condenser_api::legacy_asset amount,
-  string memo,
+  const string& from,
+  const string& to,
+  const condenser_api::legacy_asset& amount,
+  const string& memo,
   bool broadcast,
   bool blocking )
 { try {
@@ -2239,20 +2262,20 @@ condenser_api::legacy_signed_transaction wallet_api::cancel_transfer_from_saving
   return my->sign_transaction( tx, broadcast );
 }
 
-condenser_api::legacy_signed_transaction wallet_api::transfer_to_vesting( const string& from,
-                                                                          const string& to,
-                                                                          const condenser_api::legacy_asset& amount,
-                                                                          bool broadcast )
+condenser_api::legacy_signed_transaction wallet_api::transfer_to_vesting(
+  const string& from, const string& to, const condenser_api::legacy_asset& amount, bool broadcast )
 {
   return transfer_to_vesting_and_broadcast(from, to, amount, broadcast, true);
 }
 
-condenser_api::legacy_signed_transaction wallet_api::transfer_to_vesting_nonblocking( string from, string to, condenser_api::legacy_asset amount, bool broadcast )
+condenser_api::legacy_signed_transaction wallet_api::transfer_to_vesting_nonblocking(
+  const string& from, const string& to, const condenser_api::legacy_asset& amount, bool broadcast )
 {
   return transfer_to_vesting_and_broadcast(from, to, amount, broadcast, false);
 }
 
-condenser_api::legacy_signed_transaction wallet_api::transfer_to_vesting_and_broadcast( string from, string to, condenser_api::legacy_asset amount, bool broadcast, bool blocking )
+condenser_api::legacy_signed_transaction wallet_api::transfer_to_vesting_and_broadcast(
+  const string& from, const string& to, const condenser_api::legacy_asset& amount, bool broadcast, bool blocking )
 {
   FC_ASSERT( !is_locked() );
   transfer_to_vesting_operation op;

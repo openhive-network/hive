@@ -1114,6 +1114,33 @@ void sps_proposal_database_fixture::post_comment( std::string _authro, std::stri
   trx.operations.clear();
 }
 
+void sps_proposal_database_fixture::witness_vote( account_name_type _voter, account_name_type _witness, const fc::ecc::private_key& _key, bool _approve )
+{
+  signed_transaction tx;
+  account_witness_vote_operation op;
+  op.account = _voter;
+  op.witness = _witness;
+  op.approve = _approve;
+
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.operations.push_back( op );
+  sign( tx, _key );
+  db->push_transaction( tx, 0 );
+}
+
+void sps_proposal_database_fixture::proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key )
+{
+  signed_transaction tx;
+  account_witness_proxy_operation op;
+  op.account = _account;
+  op.proxy = _proxy;
+
+  tx.operations.push_back( op );
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  sign( tx, _key );
+  db->push_transaction( tx, 0 );
+}
+
 void hf23_database_fixture::push_transaction( const operation& op, const fc::ecc::private_key& key )
 {
   signed_transaction tx;

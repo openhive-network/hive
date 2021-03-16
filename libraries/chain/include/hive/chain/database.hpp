@@ -504,6 +504,8 @@ namespace chain {
 
       /** this updates the votes for all witnesses as a result of account VESTS changing */
       void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 );
+      /** like above with delta that negates all vote power for given user - both for individual witnesses and/or proxy */
+      void nullify_proxied_witness_votes( const account_object& a );
 
       /** this is called by `adjust_proxied_witness_votes` when account proxy to self */
       void adjust_witness_votes( const account_object& a, const share_type& delta );
@@ -513,7 +515,7 @@ namespace chain {
 
       /** clears all vote records for a particular account but does not update the
         * witness vote totals.  Vote totals should be updated first via a call to
-        * adjust_proxied_witness_votes( a, -a.witness_vote_weight() )
+        * nullify_proxied_witness_votes( a )
         */
       void clear_witness_votes( const account_object& a );
       void process_vesting_withdrawals();

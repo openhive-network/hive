@@ -164,31 +164,32 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
   {
     FC_ASSERT( _db.has_hardfork( HIVE_PROPOSALS_HARDFORK ), "Proposals functionality not enabled until hardfork ${hf}", ("hf", HIVE_PROPOSALS_HARDFORK) );
 
+    // Remove proposals and related votes...
     sps_helper::remove_proposals( _db, op.proposal_ids, op.proposal_owner );
 
     /*
-      Because of performance removing proposals are restricted due to the `sps_remove_threshold` threshold.
-      Therefore all proposals are marked with flag `removed` and `end_date` is moved beyond 'head_time + HIVE_PROPOSAL_MAINTENANCE_CLEANUP`
+      ...For performance reasons and the fact that proposal votes can accumulate over time but need to be removed along with proposals,
+      process of proposal removal is subject to `common_remove_threshold`. Proposals and votes are physically removed above, however if
+      some remain due to threshold being reached, the rest is marked with `removed` flag, to be actually removed during regular per-block cycles.
+      The `end_date` is moved to `head_time - HIVE_PROPOSAL_MAINTENANCE_CLEANUP` so the proposals are ready to be removed immediately
+      (see proposal_object::get_end_date_with_delay() - there was a short window when proposal was expired but still "alive" to avoid corner cases)
       flag `removed` - it's information for 'sps_api' plugin
       moving `end_date` - triggers the algorithm in `sps_processor::remove_proposals`
 
       When automatic actions will be introduced, this code will disappear.
     */
+    auto new_end_date = _db.head_block_time() - fc::seconds( HIVE_PROPOSAL_MAINTENANCE_CLEANUP );
     for( const auto pid : op.proposal_ids )
     {
-      const auto& pidx = _db.get_index< proposal_index >().indices().get< by_proposal_id >();
+      const auto& pidx = _db.get_index< proposal_index, by_proposal_id >();
 
       auto found_id = pidx.find( pid );
       if( found_id == pidx.end() || found_id->removed )
         continue;
-
-      _db.modify( *found_id, [&]( proposal_object& proposal )
+      
+      _db.modify( *found_id, [new_end_date]( proposal_object& proposal )
       {
         proposal.removed = true;
-
-        auto head_date = _db.head_block_time();
-        auto new_end_date = head_date - fc::seconds( HIVE_PROPOSAL_MAINTENANCE_CLEANUP );
-
         proposal.end_date = new_end_date;
       } );
     }

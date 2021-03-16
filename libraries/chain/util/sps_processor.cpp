@@ -34,31 +34,29 @@ bool sps_processor::is_daily_maintenance_period( const time_point_sec& head_time
 void sps_processor::remove_proposals( const time_point_sec& head_time )
 {
   FC_TODO("implement proposal removal based on automatic actions")
-  auto& proposalIndex = db.get_mutable_index< proposal_index >();
-  auto& byEndDateIdx = proposalIndex.indices().get< by_end_date >();
 
-  auto& votesIndex = db.get_mutable_index< proposal_vote_index >();
-  auto& byVoterIdx = votesIndex.indices().get< by_proposal_voter >();
+  auto& byEndDateIdx = db.get_index< proposal_index, by_end_date >();
+  auto& byVoterIdx = db.get_index< proposal_vote_index, by_proposal_voter >();
 
-  auto found = byEndDateIdx.upper_bound( head_time );
+  auto end = byEndDateIdx.upper_bound( head_time );
   auto itr = byEndDateIdx.begin();
 
-  sps_removing_reducer obj_perf( db.get_remove_threshold() );
+  remove_guard obj_perf( db.get_remove_threshold() );
 
-  while( itr != found )
+  while( itr != end )
   {
+    const auto& proposal = *itr;
+    ++itr;
     /*
-      It was decided that automatic removing of old proposals will be blocked.
-      In result it will be possible to find expired proposals, by API call `list_proposals` with `expired` flag.
-      Maybe in the future removing will be re-enabled.
-
-      Proposals can be removed only by explicit call of `remove_proposal_operation`.
+      It was decided that automatic removing of old proposals is to be blocked in order to allow looking for
+      expired proposals (by API call `list_proposals` with `expired` flag). Maybe in the future removing will be re-enabled.
+      For now proposals can be removed only by explicit call of `remove_proposal_operation` - that operation removes some
+      data and if threshold is reached, remaining proposals are marked as `removed` and are removed in regular per-block
+      cycles here.
     */
-    if( itr->removed )
-      itr = sps_helper::remove_proposal< by_end_date >( itr, proposalIndex, votesIndex, byVoterIdx, obj_perf );
-    else
-      ++itr;
-    if( obj_perf.done )
+    if( proposal.removed )
+      sps_helper::remove_proposal( proposal, byVoterIdx, db, obj_perf );
+    if( obj_perf.done() )
       break;
   }
 }
