@@ -149,7 +149,7 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
 { try {
   if( shutdown_helper.get_running().load() )
   {
-    action_catcher( shutdown_helper.get_running(), shutdown_helper.get_state( HIVE_P2P_BLOCK_HANDLER ) );
+    action_catcher ac( shutdown_helper.get_running(), shutdown_helper.get_state( HIVE_P2P_BLOCK_HANDLER ) );
 
     uint32_t head_block_num;
     chain.db().with_read_lock( [&]()
@@ -224,7 +224,7 @@ void p2p_plugin_impl::handle_transaction( const graphene::net::trx_message& trx_
   {
     try
     {
-      action_catcher( shutdown_helper.get_running(), shutdown_helper.get_state( HIVE_P2P_TRANSACTION_HANDLER ) );
+      action_catcher ac( shutdown_helper.get_running(), shutdown_helper.get_state( HIVE_P2P_TRANSACTION_HANDLER ) );
 
       chain.accept_transaction( trx_msg.trx );
 
@@ -692,7 +692,8 @@ void p2p_plugin::plugin_pre_shutdown() {
   my->node.reset();
 }
 
-void p2p_plugin::plugin_shutdown() {
+void p2p_plugin::plugin_shutdown()
+{
   //Nothing to do. Everything is closed/finished during `pre_shutdown` stage,
 }
 

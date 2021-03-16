@@ -326,8 +326,8 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
   }
 }
 
-void application::pre_shutdown() {
-
+void application::pre_shutdown()
+{
   std::cout << "Before shutting down...\n";
 
   for( auto& plugin : pre_shutdown_plugins )
@@ -380,7 +380,8 @@ void application::exec()
   std::cout << ("Leaving application main loop...") << std::endl;
 }
 
-void application::write_default_config(const bfs::path& cfg_file) {
+void application::write_default_config(const bfs::path& cfg_file)
+{
   if(!bfs::exists(cfg_file.parent_path()))
     bfs::create_directories(cfg_file.parent_path());
 
@@ -430,7 +431,8 @@ abstract_plugin* application::find_plugin( const string& name )const
   return itr->second.get();
 }
 
-abstract_plugin& application::get_plugin(const string& name)const {
+abstract_plugin& application::get_plugin(const string& name)const
+{
   auto ptr = find_plugin(name);
   if(!ptr)
     BOOST_THROW_EXCEPTION(std::runtime_error("unable to find plugin: " + name));

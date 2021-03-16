@@ -168,8 +168,8 @@ namespace appbase {
       void plugin_initialized( abstract_plugin& plug ) { initialized_plugins.push_back( &plug ); }
       void plugin_started( abstract_plugin& plug )
       {
-          running_plugins.push_back( &plug );
-          pre_shutdown_plugins.insert( &plug );
+        running_plugins.push_back( &plug );
+        pre_shutdown_plugins.insert( &plug );
       }
       ///@}
 

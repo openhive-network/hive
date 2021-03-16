@@ -111,7 +111,7 @@ namespace hive { namespace protocol {
         ineffective_delete_comment_operation,
         sps_convert_operation,
         expired_account_notification_operation,
-          changed_recovery_account_operation,
+        changed_recovery_account_operation,
         transfer_to_vesting_completed_operation,
         pow_reward_operation,
         vesting_shares_split_operation,

@@ -1345,7 +1345,7 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_consolidate_treasury_balance_operation,
         legacy_sps_convert_operation,
         legacy_expired_account_notification_operation,
-          legacy_changed_recovery_account_operation,
+        legacy_changed_recovery_account_operation,
         legacy_transfer_to_vesting_completed_operation,
         legacy_account_created_operation,
         legacy_vesting_shares_split_operation,
@@ -1395,7 +1395,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const delayed_voting_operation& op )const                 { l_op = op; return true; }
     bool operator()( const sps_convert_operation& op )const                    { l_op = op; return true; }
     bool operator()( const expired_account_notification_operation& op )const   { l_op = op; return true; }
-    bool operator()( const changed_recovery_account_operation& op )const                    { l_op = op; return true; }
+    bool operator()( const changed_recovery_account_operation& op )const       { l_op = op; return true; }
 
     bool operator()( const transfer_operation& op )const
     {
@@ -1664,7 +1664,6 @@ struct convert_from_legacy_operation_visitor
     return operation( transfer_to_vesting_operation( op ) );
   }
 
-
   operation operator()( const legacy_transfer_to_vesting_completed_operation& op )const
   {
     return operation( transfer_to_vesting_completed_operation( op ) );
@@ -1694,7 +1693,6 @@ struct convert_from_legacy_operation_visitor
   {
     return operation( account_create_operation( op ) );
   }
-
 
   operation operator()( const legacy_account_created_operation& op )const
   {
@@ -1990,7 +1988,6 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_account_create_operation,
         (posting)
         (memo_key)
         (json_metadata) )
-
 
 FC_REFLECT( hive::plugins::condenser_api::legacy_account_created_operation,
             (new_account_name)
