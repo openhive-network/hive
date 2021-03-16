@@ -1968,6 +1968,7 @@ void test_ecdsa_edge_cases(void) {
     unsigned char pubkeyb[33];
     int pubkeyblen = 33;
     int recid;
+    int expected;
 
     CHECK(!secp256k1_ecdsa_recover_compact(ctx, msg32, sig64, pubkey, &pubkeylen, 0, 0));
     CHECK(secp256k1_ecdsa_recover_compact(ctx, msg32, sig64, pubkey, &pubkeylen, 0, 1));
@@ -2054,8 +2055,9 @@ void test_ecdsa_edge_cases(void) {
                     continue;
                 }
                 sigbder[i] = c;
-                CHECK(secp256k1_ecdsa_verify(ctx, msg32, sigbder, sizeof(sigbder), pubkeyb, pubkeyblen) ==
-                  (i==4 || i==7) ? 0 : -2 );
+
+                expected = (i==4 || i==7) ? 0 : -2;
+                CHECK(secp256k1_ecdsa_verify(ctx, msg32, sigbder, sizeof(sigbder), pubkeyb, pubkeyblen) == expected);
             }
             sigbder[i] = orig;
         }
