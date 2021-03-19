@@ -469,8 +469,15 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
     case( by_proxy ):
     {
       auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+      account_id_type proxy_id;
+      if( key.first != HIVE_PROXY_TO_SELF_ACCOUNT )
+      {
+        const auto* proxy = _db.find_account( key.first );
+        FC_ASSERT( proxy != nullptr, "Given proxy account does not exist." );
+        proxy_id = proxy->get_id();
+      }
       iterate_results< chain::account_index, chain::by_proxy >(
-        boost::make_tuple( key.first, key.second ),
+        boost::make_tuple( proxy_id, key.second ),
         result.accounts,
         args.limit,
         [&]( const account_object& a, const database& db ){ return api_account_object( a, db, args.delayed_votes_active ); },

@@ -2082,7 +2082,7 @@ void database::lock_account( const account_object& account )
 
   modify( account, []( account_object& a )
   {
-    a.recovery_account = a.name;
+    a.set_recovery_account( a );
   } );
 
   auto rec_req = find< account_recovery_request_object, by_account >( account.name );
@@ -3354,10 +3354,10 @@ asset database::to_hive( const asset& hbd )const
 void database::account_recovery_processing()
 {
   // Clear expired recovery requests
-  const auto& rec_req_idx = get_index< account_recovery_request_index >().indices().get< by_expiration >();
+  const auto& rec_req_idx = get_index< account_recovery_request_index, by_expiration >();
   auto rec_req = rec_req_idx.begin();
 
-  while( rec_req != rec_req_idx.end() && rec_req->expires <= head_block_time() )
+  while( rec_req != rec_req_idx.end() && rec_req->get_expiration_time() <= head_block_time() )
   {
     remove( *rec_req );
     rec_req = rec_req_idx.begin();
@@ -3374,19 +3374,20 @@ void database::account_recovery_processing()
   }
 
   // Apply effective recovery_account changes
-  const auto& change_req_idx = get_index< change_recovery_account_request_index >().indices().get< by_effective_date >();
+  const auto& change_req_idx = get_index< change_recovery_account_request_index, by_effective_date >();
   auto change_req = change_req_idx.begin();
 
-  while( change_req != change_req_idx.end() && change_req->effective_on <= head_block_time() )
+  while( change_req != change_req_idx.end() && change_req->get_execution_time() <= head_block_time() )
   {
-    auto& account = get_account(change_req->account_to_recover);
-    const account_name_type old_recover_account = account.recovery_account;
+    const auto& account = get_account( change_req->get_account_to_recover() );
+    const auto& old_recovery_account = get_account( account.get_recovery_account() );
+    const auto& new_recovery_account = get_account( change_req->get_recovery_account() );
     modify( account, [&]( account_object& a )
     {
-      a.recovery_account = change_req->recovery_account;
+      a.set_recovery_account( new_recovery_account );
     });
 
-    push_virtual_operation(changed_recovery_account_operation(account.name, old_recover_account, change_req->recovery_account ));
+    push_virtual_operation(changed_recovery_account_operation( account.name, old_recovery_account.name, new_recovery_account.name ));
 
     remove( *change_req );
     change_req = change_req_idx.begin();
