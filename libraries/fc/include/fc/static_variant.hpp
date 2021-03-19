@@ -174,6 +174,22 @@ struct type_info<> {
     static const size_t size = 0;
 };
 
+struct type_name_printer
+{
+  typedef void result_type;
+
+  explicit type_name_printer(std::string& buffer) : _buffer(buffer) {}
+  
+  template<typename T>
+  void operator()(const T& item)
+  {
+    _buffer = fc::get_typename<T>::name();
+  }
+
+  private:
+    std::string& _buffer;
+};
+
 } // namespace impl
 
 template<typename... Types>
@@ -200,6 +216,16 @@ class static_variant {
     friend struct impl::copy_construct;
     template<typename StaticVariant>
     friend struct impl::move_construct;
+
+    std::string get_stored_type_name() const
+    {
+      std::string type_name("Uninitialized static_variant");
+      impl::type_name_printer printer(type_name);
+      visit(printer);
+
+      return type_name;
+    }
+
 public:
     template<typename X>
     struct tag
@@ -287,9 +313,8 @@ public:
             void* tmp(storage);
             return *reinterpret_cast<X*>(tmp);
         } else {
-            FC_THROW_EXCEPTION( fc::assert_exception, "static_variant does not contain a value of type ${t}", ("t",fc::get_typename<X>::name()) );
-           //     std::string("static_variant does not contain value of type ") + typeid(X).name()
-           // );
+            FC_THROW_EXCEPTION( fc::assert_exception, "static_variant does not contain a value of type ${t}. Stored value has type: ${s}.",
+              ("s", get_stored_type_name())("t",fc::get_typename<X>::name()) );
         }
     }
     template<typename X>
@@ -302,7 +327,8 @@ public:
             const void* tmp(storage);
             return *reinterpret_cast<const X*>(tmp);
         } else {
-            FC_THROW_EXCEPTION( fc::assert_exception, "static_variant does not contain a value of type ${t}", ("t",fc::get_typename<X>::name()) );
+          FC_THROW_EXCEPTION(fc::assert_exception, "static_variant does not contain a value of type ${t}. Stored value has type: ${s}.",
+            ("s", get_stored_type_name())("t", fc::get_typename<X>::name()));
         }
     }
     template<typename visitor>
