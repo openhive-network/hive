@@ -40,7 +40,7 @@ namespace detail
 
    DEFINE_API_IMPL( network_node_api_impl, set_allowed_peers )
    {
-#ifndef IS_TEST_NET
+#ifdef IS_TEST_NET
       _p2p.set_allowed_peers(args.allowed_peers);
 #endif ///IS_TEST_NET
       set_allowed_peers_return result;

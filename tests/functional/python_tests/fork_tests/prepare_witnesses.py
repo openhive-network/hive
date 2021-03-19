@@ -76,6 +76,36 @@ def wallet_call(_url, data):
 
   return status, response
 
+def get_node_id(_url):
+    log.info("Fetching node_id from {0}".format(str(_url)))
+    request = bytes( json.dumps( {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "network_node_api.get_info"
+    } ), "utf-8" ) + b"\r\n"
+
+    status, response = checked_hived_call(_url, data=request)
+    return response["result"]["node_id"]
+
+def set_allowed_peers(_url, peers=[]):
+    log.info("Calling set_allowed_peers for {0}".format(str(_url)))
+    request = bytes( json.dumps( {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "network_node_api.set_allowed_peers",
+      "params": {
+        "allowed_peers": peers
+      }
+    } ), "utf-8" ) + b"\r\n"
+
+
+    log.info(str(request))
+
+    status, response = checked_hived_call(_url, data=request)
+    return status
+
+  
+
 def create_account(_url, _creator, account):
     _name = account["account_name"]
     _pubkey = account["public_key"]
@@ -350,40 +380,72 @@ if __name__ == "__main__":
         random.shuffle(witnesses)
 
 
-        url = "http://localhost:3904"
-        api_node_url = "http://localhost:3902"
+        wallet_eu_url = "http://localhost:3904"
+        api_node_eu_url = "http://localhost:3902"
+        wallet_us_url = "http://localhost:4904"
+        api_node_us_url = "http://localhost:4902"
         mainNetUrl = "https://api.hive.blog"
 
         #initminer key
-        set_password(url)
-        unlock(url)
+        set_password(wallet_eu_url)
+        unlock(wallet_eu_url)
 
-        import_key(url, "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n")
-
-        print_top_witnesses(witnesses, api_node_url)
-
-
+        import_key(wallet_eu_url, "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n")
         error = False
-        list_accounts(url)
 
-        prepare_accounts(witnesses, url)
+        print_top_witnesses(witnesses, api_node_eu_url)
+        if True:
+            list_accounts(wallet_eu_url)
 
-        print("Witness state before transfer")
-        print_top_witnesses( witnesses, api_node_url)
+            prepare_accounts(witnesses, wallet_eu_url)
 
-        configure_initial_vesting(witnesses, "1000000.000 TESTS", url)
+            print("Witness state before transfer")
+            print_top_witnesses( witnesses, api_node_eu_url)
 
-        prepare_witnesses(witnesses, url)
+            configure_initial_vesting(witnesses, "1000000.000 TESTS", wallet_eu_url)
 
-        print("Witness state before self vote")
-        print_top_witnesses(witnesses, api_node_url)
+            prepare_witnesses(witnesses, wallet_eu_url)
 
-        self_vote(witnesses, url)
+            print("Witness state before self vote")
+            print_top_witnesses(witnesses, api_node_eu_url)
 
-        print("Witness state after voting")
-        print_top_witnesses(witnesses, api_node_url)
+            self_vote(witnesses, wallet_eu_url)
 
-        list_accounts(url)
+            print("Witness state after voting")
+            print_top_witnesses(witnesses, api_node_eu_url)
+
+        list_accounts(wallet_eu_url)
+
+
+        node0_eu = {"url" : "127.0.0.1:3002"}
+        node1_eu = {"url" : "127.0.0.1:3102"}
+        node2_eu = {"url" : "127.0.0.1:3202"}
+        node3_eu = {"url" : "127.0.0.1:3302"}
+        node_api_eu = {"url" : "127.0.0.1:3902"}
+        node0_us = {"url" : "127.0.0.1:4002"}
+        node1_us = {"url" : "127.0.0.1:4102"}
+        node2_us = {"url" : "127.0.0.1:4202"}
+        node_api_us = {"url" : "127.0.0.1:4902"}
+        nodes_eu = [node0_eu, node1_eu, node2_eu, node3_eu, node_api_eu]
+        nodes_us = [node0_us, node1_us, node2_us, node_api_us]
+        nodes = nodes_eu + nodes_us
+
+        for node in nodes:
+            node_id = get_node_id(node["url"])
+            node["node_id"] = node_id
+            log.info(str(node))
+        
+        node_id_eu = [node["node_id"] for node in nodes_eu]
+        node_id_us = [node["node_id"] for node in nodes_us]
+
+        for node in nodes_eu:
+            set_allowed_peers(node["url"], node_id_eu)
+
+        for node in nodes_us:
+            set_allowed_peers(node["url"], node_id_us)
+
+
+
 
     except Exception as _ex:
         log.exception(str(_ex))

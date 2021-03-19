@@ -843,7 +843,7 @@ void p2p_plugin::add_node(const fc::ip::endpoint& endpoint)
 
 void p2p_plugin::set_allowed_peers(const std::vector<graphene::net::node_id_t>& allowed_peers)
 {
-#ifndef IS_TEST_NET
+#ifdef IS_TEST_NET
    my->node->set_allowed_peers(allowed_peers);
 #endif ///IS_TEST_NET
 }

@@ -5157,6 +5157,7 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
 #ifdef ENABLE_P2P_DEBUGGING_API
+   ilog( "node_impl::set_allowed_peers");
       _allowed_peers.clear();
       _allowed_peers.insert(allowed_peers.begin(), allowed_peers.end());
       std::list<peer_connection_ptr> peers_to_disconnect;
