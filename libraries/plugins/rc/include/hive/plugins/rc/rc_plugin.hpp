@@ -56,7 +56,7 @@ void use_account_rcs(
   const chain::account_name_type& account_name,
   int64_t rc,
   rc_plugin_skip_flags skip,
-  set< chain::account_name_type > whitelist
+  const set< chain::account_name_type >& whitelist
 );
 
 }
