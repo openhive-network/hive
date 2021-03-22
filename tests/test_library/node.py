@@ -144,8 +144,17 @@ class Node:
     def redirect_output_to_terminal(self):
         self.print_to_terminal = True
 
+    def is_http_listening(self):
+        with open(self.directory / 'stderr.txt') as output:
+            for line in output:
+                if 'start listening for http requests' in line:
+                    return True
+
+        return False
+
     def is_ws_listening(self):
         # TODO: This can be implemented in smarter way...
+        #       Fix also Node.is_http_listening
         with open(self.directory/'stderr.txt') as output:
             for line in output:
                 if 'start listening for ws requests' in line:
