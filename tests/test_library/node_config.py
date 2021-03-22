@@ -29,7 +29,7 @@ class NodeConfig:
         return key in self.entries
 
     def __getitem__(self, key):
-        return list(self.entries[key].values)
+        return list(self.entries[key].values) if key in self.entries else []
 
     def add_entry(self, key, value, description=None):
         if key not in self.entries:
