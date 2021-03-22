@@ -102,3 +102,15 @@ class Network:
             raise Exception('Unable to connect empty network')
 
         self.nodes[0].add_seed_node(network.nodes[0])
+
+    def disconnect_from(self, network):
+        if len(self.nodes) == 0 or len(network.nodes) == 0:
+            raise Exception('Unable to disconnect empty network')
+
+        self.allow_for_connections_only_between_nodes_in_network()
+        network.allow_for_connections_only_between_nodes_in_network()
+
+    def allow_for_connections_only_between_nodes_in_network(self):
+        for node_number in range(len(self.nodes)):
+            node = self.nodes[node_number]
+            node.set_allowed_nodes(self.nodes[:node_number] + self.nodes[node_number+1:])
