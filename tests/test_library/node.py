@@ -177,7 +177,7 @@ class Node:
             stderr=None if self.print_to_terminal else self.stderr_file,
         )
 
-        print(f'[{self}] Run with pid {self.process.pid}')
+        print(f'[{self}] Run with pid {self.process.pid}, with http server {self.get_webserver_http_endpoints()[0]}')
 
     def close(self):
         self.process.kill()
