@@ -186,6 +186,29 @@ class Node:
 
         return response['result']['node_id']
 
+    def set_allowed_nodes(self, nodes):
+        if not nodes:
+            return
+
+        request = bytes(json.dumps({
+            "jsonrpc": "2.0",
+            "method": "network_node_api.set_allowed_peers",
+            "params": {
+                "allowed_peers": [node.get_id() for node in nodes]
+            },
+            "id": 1,
+        }), "utf-8") + b"\r\n"
+
+        while not self.is_http_listening():
+            time.sleep(1)
+
+        success, response = hived_call(self.get_webserver_http_endpoints()[0], data=request)
+
+        if not success:
+            raise Exception('Missing answer from node')
+
+        return response
+
     def run(self):
         if not self.executable_file_path:
             raise Exception('Missing executable')
