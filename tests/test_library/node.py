@@ -1,5 +1,12 @@
 from pathlib import Path
+import json
 import subprocess
+import sys
+import time
+
+
+sys.path.append("../../../tests_api")
+from jsonsocket import hived_call
 
 from node_config import NodeConfig
 from witness import Witness
@@ -161,6 +168,23 @@ class Node:
                     return True
 
         return False
+
+    def get_id(self):
+        request = bytes(json.dumps({
+            "jsonrpc": "2.0",
+            "method": "network_node_api.get_info",
+            "id": 1,
+        }), "utf-8") + b"\r\n"
+
+        while not self.is_http_listening():
+            time.sleep(1)
+
+        success, response = hived_call(self.get_webserver_http_endpoints()[0], data=request)
+
+        if not success:
+            raise Exception('Missing answer from node')
+
+        return response['result']['node_id']
 
     def run(self):
         if not self.executable_file_path:
