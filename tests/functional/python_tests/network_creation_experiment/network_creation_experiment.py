@@ -286,7 +286,15 @@ def list_top_witnesses(_url):
     status, response = checked_hived_call(_url, data=request)
     return response["result"]["witnesses"]
 
-def print_top_witnesses(sockpuppets, witnesses, api_node_url):
+def print_top_witnesses(sockpuppets, witnesses, node):
+  while not node.is_http_listening():
+    time.sleep(1)
+
+  if not node.get_webserver_http_endpoints():
+    raise Exception("Node hasn't set any http endpoint")
+
+  api_node_url = node.get_webserver_http_endpoints()[0]
+
   sockpuppets_set = set(sockpuppets)
   witnesses_set = set(witnesses)
 
@@ -363,13 +371,12 @@ if __name__ == "__main__":
 
         # Run original test script
         wallet_url = f'http://127.0.0.1:{wallet.http_server_port}'
-        api_node_url = f'http://{api_node.get_webserver_http_endpoints()[0]}'
 
         set_password(wallet_url)
         unlock(wallet_url)
         import_key(wallet_url, Witness('initminer').private_key)
 
-        print_top_witnesses(sockpuppet_names, witness_names, api_node_url)
+        print_top_witnesses(sockpuppet_names, witness_names, api_node)
 
         list_accounts(wallet_url)
 
@@ -392,12 +399,12 @@ if __name__ == "__main__":
         self_vote(witness_names, wallet_url)
 
         print("Witness state before voting of steemit-proxy proxy")
-        print_top_witnesses(sockpuppet_names, witness_names, api_node_url)
+        print_top_witnesses(sockpuppet_names, witness_names, api_node)
 
         vote_for_witnesses("steemit-proxy", sockpuppet_names, 1, wallet_url)
 
         print("Witness state after voting of steemit-proxy proxy")
-        print_top_witnesses(sockpuppet_names, witness_names, api_node_url)
+        print_top_witnesses(sockpuppet_names, witness_names, api_node)
 
         list_accounts(wallet_url)
 
