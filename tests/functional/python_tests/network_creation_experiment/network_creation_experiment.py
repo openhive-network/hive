@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import time
+import concurrent
 
 sys.path.append("../../../tests_api")
 from jsonsocket import hived_call
@@ -16,6 +17,8 @@ from hive.steem.client import SteemClient
 #       This modules [utils.logger] should be somewhere higher.
 sys.path.append("../cli_wallet/tests")
 from utils.logger import log, init_logger
+
+CONCURRENCY = 5
 
 
 def set_password(_url):
@@ -136,11 +139,16 @@ def vote_for_witness(_account, _witness, _approve, _url):
   status, response = wallet_call(_url, data=request)
 
 def vote_for_witnesses(_account, _witnesses, _approve, _url):
+  executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
+  fs = []
   for w in _witnesses:
     if(isinstance(w, str)):
-      vote_for_witness(_account, w, 1, _url)
+      account_name = w
     else:
-      vote_for_witness(_account, w["account_name"], 1, _url)
+      account_name = w["account_name"]
+    future = executor.submit(vote_for_witness, _account, account_name, 1, _url)
+    fs.append(future)
+  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
 def register_witness(_url, _account_name, _witness_url, _block_signing_public_key):
     request = bytes( json.dumps( {
@@ -179,28 +187,45 @@ def get_amount(_asset):
   return float(amount)
 
 def self_vote(_witnesses, _url):
+  executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
+  fs = []
   for w in _witnesses:
     if(isinstance(w, str)):
-      vote_for_witness(w, w, 1, _url)
+      account_name = w
     else:
-      vote_for_witness(w["account_name"], w["account_name"], 1, _url)
+      account_name = w["account_name"]
+    future = executor.submit(vote_for_witness, account_name, account_name, 1, _url)
+    fs.append(future)
+  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
 def prepare_accounts(_accounts, _url):
-    log.info("Attempting to create {0} accounts".format(len(_accounts)))
-    for account in _accounts:
-        create_account(_url, "initminer", account)
+  executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
+  fs = []
+  log.info("Attempting to create {0} accounts".format(len(_accounts)))
+  for account in _accounts:
+    future = executor.submit(create_account, _url, "initminer", account)
+    fs.append(future)
+  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
 def configure_initial_vesting(_accounts, _tests, _url):
-    log.info("Attempting to prepare {0} of witnesses".format(str(len(_accounts))))
-    for account_name in _accounts:
-        transfer_to_vesting(_url, "initminer", account_name, _tests)
+  executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
+  fs = []
+  log.info("Attempting to prepare {0} of witnesses".format(str(len(_accounts))))
+  for account_name in _accounts:
+    future = executor.submit(transfer_to_vesting, _url, "initminer", account_name, _tests)
+    fs.append(future)
+  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
 def prepare_witnesses(_witnesses, _url):
-    log.info("Attempting to prepare {0} of witnesses".format(str(len(_witnesses))))
-    for account_name in _witnesses:
-        witness = Witness(account_name)
-        pub_key = witness.public_key
-        register_witness(_url, account_name, "https://" + account_name + ".net", pub_key)
+  executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
+  fs = []
+  log.info("Attempting to prepare {0} of witnesses".format(str(len(_witnesses))))
+  for account_name in _witnesses:
+    witness = Witness(account_name)
+    pub_key = witness.public_key
+    future = executor.submit(register_witness, _url, account_name, "https://" + account_name + ".net", pub_key)
+    fs.append(future)
+  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
 def synchronize_balances(_accounts, _url, _mainNetUrl):
   log.info("Attempting to synchronize balances of {0} accounts".format(str(len(_accounts))))
