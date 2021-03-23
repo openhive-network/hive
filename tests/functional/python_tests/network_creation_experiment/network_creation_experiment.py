@@ -414,8 +414,12 @@ if __name__ == "__main__":
 
         input('Press enter to disconnect networks')
         alpha_net.disconnect_from(beta_net)
-
         print('Disconnected')
+
+        input('Press enter to reconnect networks')
+        alpha_net.connect_with(beta_net)
+        print('Reconnected')
+
         while True:
             pass
 
