@@ -13,6 +13,7 @@ class Network:
         self.port_range = port_range
         self.next_free_port = port_range.start
         self.is_running = False
+        self.disconnected_networks = []
 
         self.hived_executable_file_path = None
         self.wallet_executable_file_path = None
@@ -104,11 +105,26 @@ class Network:
         if len(self.nodes) == 0 or len(network.nodes) == 0:
             raise Exception('Unable to connect empty network')
 
-        self.nodes[0].add_seed_node(network.nodes[0])
+        if not self.is_running:
+            self.nodes[0].add_seed_node(network.nodes[0])
+            return
+
+        if network not in self.disconnected_networks:
+            raise Exception('Unsupported (yet): cannot connect networks when were already run')
+
+        # Temporary implementation working only with one network
+        self.allow_for_connections_with_anyone()
+        self.disconnected_networks.remove(network)
+
+        network.allow_for_connections_with_anyone()
+        network.disconnected_networks.remove(self)
 
     def disconnect_from(self, network):
         if len(self.nodes) == 0 or len(network.nodes) == 0:
             raise Exception('Unable to disconnect empty network')
+
+        self.disconnected_networks.append(network)
+        network.disconnected_networks.append(self)
 
         self.allow_for_connections_only_between_nodes_in_network()
         network.allow_for_connections_only_between_nodes_in_network()
@@ -117,3 +133,7 @@ class Network:
         for node_number in range(len(self.nodes)):
             node = self.nodes[node_number]
             node.set_allowed_nodes(self.nodes[:node_number] + self.nodes[node_number+1:])
+
+    def allow_for_connections_with_anyone(self):
+        for node in self.nodes:
+            node.set_allowed_nodes([])
