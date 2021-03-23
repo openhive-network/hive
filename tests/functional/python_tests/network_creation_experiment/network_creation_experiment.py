@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import concurrent.futures
+import random
 
 sys.path.append("../../../tests_api")
 from jsonsocket import hived_call
@@ -22,7 +23,7 @@ CONCURRENCY = None
 
 
 def set_password(_url):
-    log.info("Call to set_password")
+    log.debug("Call to set_password")
     request = bytes( json.dumps( {
       "jsonrpc": "2.0",
       "id": 0,
@@ -34,7 +35,7 @@ def set_password(_url):
     return status, response
 
 def unlock(_url):
-    log.info("Call to unlock")
+    log.debug("Call to unlock")
     request = bytes( json.dumps( {
       "jsonrpc": "2.0",
       "id": 0,
@@ -47,7 +48,7 @@ def unlock(_url):
 
 
 def import_key(_url, k):
-    log.info("Call to import_key")
+    log.debug("Call to import_key")
     request = bytes( json.dumps( {
       "jsonrpc": "2.0",
       "id": 0,
@@ -207,12 +208,14 @@ def prepare_accounts(_accounts, _url):
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
-def configure_initial_vesting(_accounts, _tests, _url):
+def configure_initial_vesting(_accounts, a, b, _tests, _url):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
   log.info("Attempting to prepare {0} of witnesses".format(str(len(_accounts))))
   for account_name in _accounts:
-    future = executor.submit(transfer_to_vesting, _url, "initminer", account_name, _tests)
+    value = random.randint(a, b)
+    amount = str(value) + ".000 " + _tests
+    future = executor.submit(transfer_to_vesting, _url, "initminer", account_name, amount)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
@@ -286,7 +289,7 @@ def list_top_witnesses(_url):
     status, response = checked_hived_call(_url, data=request)
     return response["result"]["witnesses"]
 
-def print_top_witnesses(sockpuppets, witnesses, node):
+def print_top_witnesses(witnesses, node):
   while not node.is_http_listening():
     time.sleep(1)
 
@@ -295,7 +298,6 @@ def print_top_witnesses(sockpuppets, witnesses, node):
 
   api_node_url = node.get_webserver_http_endpoints()[0]
 
-  sockpuppets_set = set(sockpuppets)
   witnesses_set = set(witnesses)
 
   top_witnesses = list_top_witnesses(api_node_url)
@@ -303,9 +305,7 @@ def print_top_witnesses(sockpuppets, witnesses, node):
   for w in top_witnesses:
     owner = w["owner"]
     group = "U"
-    if owner in sockpuppets_set:
-      group = "C"
-    elif owner in witnesses_set:
+    if owner in witnesses_set:
       group = "W"
 
     log.info("Witness # {0:2d}, group: {1}, name: `{2}', votes: {3}".format(position, group, w["owner"], w["votes"]))
@@ -319,10 +319,8 @@ if __name__ == "__main__":
 
         Witness.key_generator = KeyGenerator('../../../../build/programs/util/get_dev_key')
 
-        sockpuppet_names = [f'sockpuppet{i}' for i in range(20)]
-        witness_names = [f'witness{i}' for i in range(9)]
-        good_wtns_names = [f'good-wtns-{i}' for i in range(14)]
-        steemit_acc_names = [f'steemit-acc-{i}' for i in range(13)]
+        alpha_witness_names = [f'witness{i}-alpha' for i in range(20)]
+        beta_witness_names = [f'witness{i}-beta' for i in range(20)]
 
         # Create first network
         alpha_net = Network('Alpha', port_range=range(51000, 52000))
@@ -331,9 +329,9 @@ if __name__ == "__main__":
         alpha_net.set_wallet_executable_file_path('../../../../build/programs/cli_wallet/cli_wallet')
 
         init_node = alpha_net.add_node('InitNode')
-        node0 = alpha_net.add_node('Node0')
-        node1 = alpha_net.add_node('Node1')
-        node2 = alpha_net.add_node('Node2')
+        alpha_node0 = alpha_net.add_node('Node0')
+        alpha_node1 = alpha_net.add_node('Node1')
+        alpha_node2 = alpha_net.add_node('Node2')
 
         # Create second network
         beta_net = Network('Beta', port_range=range(52000, 53000))
@@ -341,23 +339,21 @@ if __name__ == "__main__":
         beta_net.set_hived_executable_file_path('../../../../build/programs/hived/hived')
         beta_net.set_wallet_executable_file_path('../../../../build/programs/cli_wallet/cli_wallet')
 
-        beta_net.add_node('Node0')
-        beta_net.add_node('Node1')
+        beta_node0 = beta_net.add_node('Node0')
+        beta_node1 = beta_net.add_node('Node1')
         api_node = beta_net.add_node('Node2')
 
         # Create witnesses
         init_node.set_witness('initminer')
-        for name in sockpuppet_names:
-            init_node.set_witness(name)
+        alpha_witness_nodes = [alpha_node0, alpha_node1, alpha_node2]
+        for name in alpha_witness_names:
+            node =  random.choice(alpha_witness_nodes)
+            node.set_witness(name)
 
-        for name in witness_names:
-            node0.set_witness(name)
-
-        for name in good_wtns_names:
-            node1.set_witness(name)
-
-        for name in steemit_acc_names:
-            node2.set_witness(name)
+        beta_witness_nodes = [beta_node0, beta_node1]
+        for name in beta_witness_names:
+            node =  random.choice(beta_witness_nodes)
+            node.set_witness(name)
 
         # Run
         alpha_net.connect_with(beta_net)
@@ -376,36 +372,20 @@ if __name__ == "__main__":
         unlock(wallet_url)
         import_key(wallet_url, Witness('initminer').private_key)
 
-        print_top_witnesses(sockpuppet_names, witness_names, api_node)
+        all_witnesses = alpha_witness_names + beta_witness_names
+        random.shuffle(all_witnesses)
 
+        print("Witness state before voting")
+        print_top_witnesses(all_witnesses, api_node)
         list_accounts(wallet_url)
 
-        prepare_accounts(steemit_acc_names, wallet_url)
-        prepare_accounts(['steemit-proxy'], wallet_url)
+        prepare_accounts(all_witnesses, wallet_url)
+        configure_initial_vesting(all_witnesses, 500, 1000, "TESTS", wallet_url)
+        prepare_witnesses(all_witnesses, wallet_url)
+        self_vote(all_witnesses, wallet_url)
 
-        prepare_accounts(sockpuppet_names, wallet_url)
-        prepare_accounts(witness_names, wallet_url)
-
-        configure_initial_vesting(steemit_acc_names, "1000000.000 TESTS", wallet_url)
-        configure_initial_vesting(witness_names, "12000000.000 TESTS", wallet_url)
-
-        configure_initial_vesting(['steemit-proxy'], "10.000 TESTS", wallet_url)
-        configure_initial_vesting(sockpuppet_names, "10.000 TESTS", wallet_url)
-        configure_initial_vesting(witness_names, "1000000.000 TESTS", wallet_url)
-
-        prepare_witnesses(sockpuppet_names, wallet_url)
-        prepare_witnesses(witness_names, wallet_url)
-
-        self_vote(witness_names, wallet_url)
-
-        print("Witness state before voting of steemit-proxy proxy")
-        print_top_witnesses(sockpuppet_names, witness_names, api_node)
-
-        vote_for_witnesses("steemit-proxy", sockpuppet_names, 1, wallet_url)
-
-        print("Witness state after voting of steemit-proxy proxy")
-        print_top_witnesses(sockpuppet_names, witness_names, api_node)
-
+        print("Witness state after voting")
+        print_top_witnesses(all_witnesses, api_node)
         list_accounts(wallet_url)
 
         print(60 * '=')
