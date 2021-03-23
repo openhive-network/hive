@@ -764,10 +764,9 @@ namespace fc {
       typedef void result_type;
       template<typename T> void operator()( T& v )const
       {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+         /// Here GCC 10.1 generates fake warning related to uninitialized variables.
+         /// GCC 10.2 has fixed this problem
          fc::raw::unpack( stream, v );
-#pragma GCC diagnostic pop
       }
    };
 
