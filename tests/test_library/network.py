@@ -137,3 +137,7 @@ class Network:
     def allow_for_connections_with_anyone(self):
         for node in self.nodes:
             node.set_allowed_nodes([])
+
+    def wait_for_synchronization_of_all_nodes(self):
+        for node in self.nodes:
+            node.wait_for_synchronization()
