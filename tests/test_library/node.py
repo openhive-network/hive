@@ -187,9 +187,6 @@ class Node:
         return response['result']['node_id']
 
     def set_allowed_nodes(self, nodes):
-        if not nodes:
-            return
-
         request = bytes(json.dumps({
             "jsonrpc": "2.0",
             "method": "network_node_api.set_allowed_peers",
