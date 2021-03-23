@@ -12,6 +12,7 @@ class Network:
         self.nodes = []
         self.port_range = port_range
         self.next_free_port = port_range.start
+        self.is_running = False
 
         self.hived_executable_file_path = None
         self.wallet_executable_file_path = None
@@ -77,6 +78,8 @@ class Network:
             node.set_directory(self.get_directory() / node.get_name())
             node.set_executable_file_path(self.hived_executable_file_path)
             node.run()
+
+        self.is_running = True
 
     def attach_wallet(self):
         if len(self.nodes) == 0:
