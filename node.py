@@ -162,9 +162,22 @@ class Node:
     def is_ws_listening(self):
         # TODO: This can be implemented in smarter way...
         #       Fix also Node.is_http_listening
+        #       and also Node.is_synced
         with open(self.directory/'stderr.txt') as output:
             for line in output:
                 if 'start listening for ws requests' in line:
+                    return True
+
+        return False
+
+    def wait_for_synchronization(self):
+        while not self.is_synchronized():
+            time.sleep(1)
+
+    def is_synchronized(self):
+        with open(self.directory/'stderr.txt') as output:
+            for line in output:
+                if 'transactions on block' in line or 'Generated block #' in line:
                     return True
 
         return False
