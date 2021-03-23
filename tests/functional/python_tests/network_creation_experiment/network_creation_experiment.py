@@ -18,7 +18,7 @@ from hive.steem.client import SteemClient
 sys.path.append("../cli_wallet/tests")
 from utils.logger import log, init_logger
 
-CONCURRENCY = 5
+CONCURRENCY = None
 
 
 def set_password(_url):
