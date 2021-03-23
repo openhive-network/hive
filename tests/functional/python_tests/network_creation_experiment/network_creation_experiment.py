@@ -412,6 +412,9 @@ if __name__ == "__main__":
         print(' Network successfully prepared')
         print(60 * '=')
 
+        alpha_net.wait_for_synchronization_of_all_nodes()
+        beta_net.wait_for_synchronization_of_all_nodes()
+
         input('Press enter to disconnect networks')
         alpha_net.disconnect_from(beta_net)
         print('Disconnected')
