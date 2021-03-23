@@ -128,7 +128,7 @@ namespace hive { namespace protocol {
 
     FC_ASSERT( beneficiaries.size(), "Must specify at least one beneficiary" );
     FC_ASSERT( beneficiaries.size() < HIVE_BENEFICIARY_LIMIT,
-      "Cannot specify more than ${max} beneficiaries.", ("max", HIVE_BENEFICIARY_LIMIT - 1) ); // Require size serializtion fits in one byte.
+      "Cannot specify more than ${max} beneficiaries.", ("max", HIVE_BENEFICIARY_LIMIT - 1) ); // Require size serialization fits in one byte.
 
     validate_account_name( beneficiaries[0].account );
     FC_ASSERT( beneficiaries[0].weight <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to one account" );
@@ -141,7 +141,7 @@ namespace hive { namespace protocol {
       FC_ASSERT( beneficiaries[i].weight <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to one account" );
       sum += beneficiaries[i].weight;
       FC_ASSERT( sum <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to a comment" ); // Have to check incrementally to avoid overflow
-      FC_ASSERT( beneficiaries[i - 1] < beneficiaries[i], "Benficiaries must be specified in sorted order (account ascending)" );
+      FC_ASSERT( beneficiaries[i - 1] < beneficiaries[i], "Beneficiaries must be specified in sorted order (account ascending)" );
     }
   }
 

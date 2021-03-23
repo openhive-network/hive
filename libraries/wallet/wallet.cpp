@@ -562,11 +562,11 @@ public:
     tx.set_expiration( dyn_props.time + fc::seconds(_tx_expiration_seconds) );
   }
 
-  // if the user rapidly sends two identical transactions (within the same block), 
+  // if the user rapidly sends two identical transactions (within the same block),
   // the second one will fail because it will have the same transaction id.  Waiting
-  // a few seconds before sending the second transaction will allow it to succeed, 
+  // a few seconds before sending the second transaction will allow it to succeed,
   // because the second transaction will be assigned a later expiration time.
-  // This isn't a good solution for scripts, so we provide this method which 
+  // This isn't a good solution for scripts, so we provide this method which
   // adds a do-nothing custom operation to the transaction which contains a
   // random 64-bit number, which will change the transaction's hash to prevent
   // collisions.
@@ -575,7 +575,7 @@ public:
     initialize_transaction_header(tx);
     if (_remote_api->is_known_transaction(tx.id()))
     {
-      // create a custom operation with a random 64-bit integer which will give this 
+      // create a custom operation with a random 64-bit integer which will give this
       // transaction a new id
       custom_operation custom_op;
       custom_op.data.resize(8);
@@ -1285,7 +1285,7 @@ condenser_api::api_feed_history_object wallet_api::get_feed_history()const { ret
 condenser_api::legacy_signed_transaction wallet_api::claim_account_creation(const string& creator,
                                                                             const condenser_api::legacy_asset& fee,
                                                                             bool broadcast )const
-{ 
+{
   return my->build_claim_account_creation(creator, fee,
     [this, broadcast](signed_transaction tx) -> condenser_api::legacy_signed_transaction
     {
@@ -1393,7 +1393,7 @@ condenser_api::legacy_signed_transaction wallet_api::create_funded_account_with_
    }
 
     tx.validate();
- 
+
     return my->sign_transaction( tx, broadcast );
 } FC_CAPTURE_AND_RETHROW( (creator)(new_account_name)(json_meta)(owner)(active)(memo)(broadcast) ) }
 
@@ -1772,9 +1772,9 @@ condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares_and
   const string& delegator,
   const string& delegatee,
   const condenser_api::legacy_asset& vesting_shares,
-  optional<condenser_api::legacy_asset> transfer_amount, 
-  optional<string> transfer_memo, 
-  bool broadcast, 
+  optional<condenser_api::legacy_asset> transfer_amount,
+  optional<string> transfer_memo,
+  bool broadcast,
   bool blocking )
 {
   FC_ASSERT( !is_locked() );
@@ -1851,7 +1851,7 @@ condenser_api::legacy_signed_transaction wallet_api::delegate_vesting_shares_and
   return delegate_vesting_shares_and_transfer_and_broadcast( delegator, delegatee, vesting_shares,
     transfer_amount, transfer_memo, broadcast, false);
 }
- 
+
 
 /**
   *  This method will genrate new owner, active, and memo keys for the new account which
@@ -2657,6 +2657,7 @@ condenser_api::legacy_signed_transaction wallet_api::follow( const string& follo
     const condenser_api::legacy_asset& daily_pay,
     string subject,
     string permlink,
+    const optional<time_point_sec> end_date,
     bool broadcast )
   {
     FC_ASSERT( !is_locked() );
@@ -2668,6 +2669,11 @@ condenser_api::legacy_signed_transaction wallet_api::follow( const string& follo
     up.daily_pay = daily_pay;
     up.subject = std::move(subject);
     up.permlink = std::move(permlink);
+    if (end_date) {
+      update_proposal_end_date ped;
+      ped.end_date = *end_date;
+      up.extensions.insert(ped);
+    }
 
     signed_transaction trx;
     trx.operations.push_back( up );

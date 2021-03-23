@@ -36,6 +36,9 @@ namespace hive { namespace plugins { namespace condenser_api {
 
   typedef vector< legacy_comment_options_extensions > legacy_comment_options_extensions_type;
 
+  typedef static_variant<void_t, protocol::update_proposal_end_date> legacy_update_proposal_extensions;
+  typedef vector< legacy_update_proposal_extensions > legacy_update_proposal_extensions_type;
+
   typedef static_variant<
         protocol::pow2,
         protocol::equihash_pow
@@ -507,7 +510,14 @@ namespace hive { namespace plugins { namespace condenser_api {
       daily_pay( legacy_asset::from_asset( op.daily_pay ) ),
       subject( op.subject ),
       permlink( op.permlink)
-    {}
+    {
+      for( const auto& e : op.extensions )
+      {
+        legacy_update_proposal_extensions ext;
+        e.visit( convert_to_legacy_static_variant< legacy_update_proposal_extensions >( ext ) );
+        extensions.push_back( e );
+      }
+    }
 
     operator update_proposal_operation()const
     {
@@ -517,6 +527,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       op.daily_pay = daily_pay;
       op.subject = subject;
       op.permlink = permlink;
+      op.extensions.insert( extensions.begin(), extensions.end() );
       return op;
     }
 
@@ -525,6 +536,8 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset daily_pay;
     string subject;
     string permlink;
+    time_point_sec end_date;
+    legacy_update_proposal_extensions_type extensions;
   };
 
   struct legacy_withdraw_vesting_operation
@@ -1879,6 +1892,9 @@ void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_comm
 void to_variant( const hive::plugins::condenser_api::legacy_pow2_work&, fc::variant& );
 void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_pow2_work& );
 
+void to_variant( const hive::plugins::condenser_api::legacy_update_proposal_extensions&, fc::variant& );
+void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_update_proposal_extensions& );
+
 struct from_old_static_variant
 {
   variant& var;
@@ -2051,7 +2067,7 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_pow_reward_operation, (worker)(
 FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_sps_fund_operation, (fund_account)(additional_funds) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink)(extensions) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 

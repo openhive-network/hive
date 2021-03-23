@@ -1196,7 +1196,7 @@ class wallet_api
       * @param end_date   - end date of proposal,
       * @param daily_pay  - the amount of HBD that is being requested to be paid out daily,
       * @param subject    - briefly description of proposal of its title,
-      * @param url        - link to page with description of proposal.
+      * @param permlink   - permlink of the post for the proposal.
       */
     condenser_api::legacy_signed_transaction create_proposal( const account_name_type& creator,
                   const account_name_type& receiver,
@@ -1204,21 +1204,24 @@ class wallet_api
                   time_point_sec end_date,
                   const condenser_api::legacy_asset& daily_pay,
                   string subject,
-                  string url,
+                  string permlink,
                   bool broadcast );
     /**
       * Update worker proposal
-      * @param creator    - the account that creates the proposal,
-      * @param daily_pay  - the amount of HBD that is being requested to be paid out daily,
-      * @param subject    - briefly description of proposal of its title,
-      * @param permlink        - link to page with description of proposal.
+      * @param proposal_id - the id of the proposal to update,
+      * @param creator     - the account that created the proposal,
+      * @param daily_pay   - new amount of HBD to be requested to be paid out daily,
+      * @param subject     - new description of the proposal,
+      * @param permlink    - new permlink of the post for the proposal.
+      * @param end_date    - new end_date of the proposal.
       */
     condenser_api::legacy_signed_transaction update_proposal(
                   int64_t proposal_id,
                   const account_name_type& creator,
                   const condenser_api::legacy_asset& daily_pay,
                   string subject,
-                  string url,
+                  string permlink,
+                  optional<time_point_sec> end_date,
                   bool broadcast );
     /**
       * Update existing worker proposal(s)

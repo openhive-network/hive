@@ -147,7 +147,7 @@ struct operation_exec_info
 #endif
 
   int64_t create_proposal_operation_exec_time                  =   31700;
-  int64_t update_proposal_operation_exec_time            =   9600;
+  int64_t update_proposal_operation_exec_time                  =   9600;
   int64_t update_proposal_votes_operation_exec_time            =   12000;
   int64_t remove_proposal_operation_exec_time                  =   12000;
 };

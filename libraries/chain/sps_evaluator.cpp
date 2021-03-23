@@ -98,11 +98,28 @@ void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
 
     FC_ASSERT(o.daily_pay <= proposal.daily_pay, "You cannot increase the daily pay");
 
+    const update_proposal_end_date* ed = nullptr;
+    if (_db.has_hardfork(HIVE_HARDFORK_1_25)) {
+      FC_ASSERT( o.extensions.size() < 2, "Cannot have more than 1 extension");
+      // NOTE: This assumes there is only one extension and it's of type proposal_end_date, if you add more, update this code
+      if (o.extensions.size() == 1) {
+        ed = &(o.extensions.begin()->get<update_proposal_end_date>());
+        FC_ASSERT(ed->end_date <= proposal.end_date, "You cannot increase the end date of the proposal");
+        FC_ASSERT(ed->end_date > proposal.start_date, "The new end date must be after the start date");
+      }
+    } else {
+      FC_ASSERT( o.extensions.empty() , "Cannot set extensions");
+    }
+
     _db.modify( proposal, [&]( proposal_object& p )
     {
       p.daily_pay = o.daily_pay;
       p.subject = o.subject.c_str();
       p.permlink = o.permlink.c_str();
+
+      if (_db.has_hardfork(HIVE_HARDFORK_1_25) && ed != nullptr) {
+          p.end_date = ed->end_date;
+      }
     });
   }
   FC_CAPTURE_AND_RETHROW( (o) )

@@ -3,6 +3,7 @@
 import logging
 from junit_xml import TestCase
 import time
+import sys
 import traceback
 
 DEFAULT_LOG_FORMAT = '%(asctime)-15s - %(name)s - %(levelname)s - %(message)s'

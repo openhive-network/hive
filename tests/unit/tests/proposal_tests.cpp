@@ -3779,8 +3779,10 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
 
     auto subject = "hello";
     auto permlink = "somethingpermlink";
+    auto new_permlink = "somethingpermlink2";
 
     post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment(creator, new_permlink, "title", "body", "test", alice_private_key);
 
     FUND( creator, ASSET( "80.000 TBD" ) );
 
@@ -3821,10 +3823,32 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
     BOOST_REQUIRE( found->permlink == permlink );
 
     BOOST_TEST_MESSAGE("-- updating");
-    update_proposal(found->proposal_id, creator, daily_pay, "Other subject", permlink, alice_private_key);
+
+    time_point_sec new_end_date = end_date - fc::days( 1 );
+    auto new_subject = "Other subject";
+    auto new_daily_pay = asset( 100, HBD_SYMBOL );
+
+    update_proposal(found->proposal_id, creator, new_daily_pay, new_subject, new_permlink, alice_private_key);
     generate_block();
     found = proposal_idx.find( creator );
-    BOOST_REQUIRE( found->subject == "Other subject" );
+    BOOST_REQUIRE( found->creator == creator );
+    BOOST_REQUIRE( found->receiver == receiver );
+    BOOST_REQUIRE( found->start_date == start_date );
+    BOOST_REQUIRE( found->end_date == end_date );
+    BOOST_REQUIRE( found->daily_pay == new_daily_pay );
+    BOOST_REQUIRE( found->subject == new_subject );
+    BOOST_REQUIRE( found->permlink == new_permlink );
+
+    update_proposal(found->proposal_id, creator, new_daily_pay, new_subject, new_permlink, alice_private_key, &new_end_date);
+    generate_block();
+    found = proposal_idx.find( creator );
+    BOOST_REQUIRE( found->creator == creator );
+    BOOST_REQUIRE( found->receiver == receiver );
+    BOOST_REQUIRE( found->start_date == start_date );
+    BOOST_REQUIRE( found->end_date == new_end_date );
+    BOOST_REQUIRE( found->daily_pay == new_daily_pay );
+    BOOST_REQUIRE( found->subject == new_subject );
+    BOOST_REQUIRE( found->permlink == new_permlink );
 
     validate_database();
   } FC_LOG_AND_RETHROW()
@@ -3844,7 +3868,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_001 )
 
     auto creator    = "alice";
     auto receiver   = "bob";
-    auto start_date = db->head_block_time() + fc::days( 1 );
+    time_point_sec start_date = db->head_block_time() + fc::days( 1 );
     auto end_date   = start_date + fc::days( 2 );
     auto daily_pay  = asset( 100, HBD_SYMBOL );
     auto subject = "hello";
@@ -4025,56 +4049,6 @@ BOOST_AUTO_TEST_CASE( update_proposal_004 )
 
     const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto proposal = proposal_idx.find( creator );
-
-    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), "", permlink, alice_private_key), fc::exception);
-
-    validate_database();
-  } FC_LOG_AND_RETHROW()
-}
-
-BOOST_AUTO_TEST_CASE( update_proposal_005 )
-{
-  try
-  {
-    BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid subject" );
-    ACTORS( (alice)(bob) )
-    generate_block();
-
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-    generate_block();
-
-    auto creator    = "alice";
-    auto receiver   = "bob";
-    auto start_date = db->head_block_time() + fc::days( 1 );
-    auto end_date   = start_date + fc::days( 2 );
-    auto daily_pay  = asset( 100, HBD_SYMBOL );
-    auto subject = "hello";
-    auto permlink = "somethingpermlink";
-
-    FUND( creator, ASSET( "80.000 TBD" ) );
-
-    signed_transaction tx;
-
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
-
-    create_proposal_operation op;
-    op.creator = creator;
-    op.receiver = receiver;
-    op.start_date = start_date;
-    op.end_date = end_date;
-    op.daily_pay = daily_pay;
-    op.subject = subject;
-    op.permlink = permlink;
-    tx.operations.push_back( op );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
-
-    tx.operations.clear();
-    tx.signatures.clear();
-
-    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
-    auto proposal = proposal_idx.find( creator );
     // Empty subject
     HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), "", permlink, alice_private_key), fc::exception);
     // Subject too long
@@ -4085,7 +4059,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_005 )
   } FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE( update_proposal_006 )
+BOOST_AUTO_TEST_CASE( update_proposal_005 )
 {
   try
   {
@@ -4098,7 +4072,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
 
     auto creator    = "alice";
     auto receiver   = "bob";
-    auto start_date = db->head_block_time() + fc::days( 1 );
+    fc::time_point_sec start_date = db->head_block_time() + fc::days( 1 );
     auto end_date   = start_date + fc::days( 2 );
     auto daily_pay  = asset( 100, HBD_SYMBOL );
     auto subject = "hello";
@@ -4135,6 +4109,58 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
     HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), subject, "doesntexist", alice_private_key), fc::exception);
     // Post exists but is made by an user that is neither the receiver or the creator
     HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), subject, "davepermlink", alice_private_key), fc::exception);
+
+    validate_database();
+  } FC_LOG_AND_RETHROW()
+}
+
+
+BOOST_AUTO_TEST_CASE( update_proposal_006 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid end_date" );
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    auto creator    = "alice";
+    auto receiver   = "bob";
+    fc::time_point_sec start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date   = start_date + fc::days( 2 );
+    fc::time_point_sec end_date_invalid = start_date + fc::days( 3 );
+    auto daily_pay  = asset( 100, HBD_SYMBOL );
+    auto subject = "hello";
+    auto permlink = "somethingpermlink";
+
+    FUND( creator, ASSET( "80.000 TBD" ) );
+
+    signed_transaction tx;
+
+    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+
+    create_proposal_operation op;
+    op.creator = creator;
+    op.receiver = receiver;
+    op.start_date = start_date;
+    op.end_date = end_date;
+    op.daily_pay = daily_pay;
+    op.subject = subject;
+    op.permlink = permlink;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+
+    tx.operations.clear();
+    tx.signatures.clear();
+
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
+    auto proposal = proposal_idx.find( creator );
+    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), subject, permlink, alice_private_key, &start_date), fc::exception);
+    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), subject, permlink, alice_private_key, &end_date_invalid), fc::exception);
 
     validate_database();
   } FC_LOG_AND_RETHROW()

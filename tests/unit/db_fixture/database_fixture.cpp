@@ -997,7 +997,7 @@ int64_t sps_proposal_database_fixture::create_proposal( std::string creator, std
   return itr->proposal_id;
 }
 
-void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key)
+void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key, time_point_sec* end_date)
 {
   signed_transaction tx;
   update_proposal_operation op;
@@ -1007,6 +1007,12 @@ void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::s
   op.daily_pay = daily_pay;
   op.subject = subject;
   op.permlink = permlink;
+
+  if (end_date != nullptr) {
+    update_proposal_end_date ped;
+    ped.end_date = *end_date;
+    op.extensions.insert(ped);
+  }
 
   tx.operations.push_back( op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
