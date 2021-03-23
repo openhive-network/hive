@@ -7,7 +7,7 @@ import json
 import os
 import sys
 import time
-import concurrent
+import concurrent.futures
 
 sys.path.append("../../../tests_api")
 from jsonsocket import hived_call
