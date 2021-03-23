@@ -56,7 +56,7 @@ class Wallet:
 
         self.process = subprocess.Popen(
             [
-                self.executable_file_path,
+                str(self.executable_file_path),
                 '--chain-id=04e8b5fc4bb4ab3c0ee3584199a2e584bfb2f141222b3a0d1c74e8a75ec8ff39',
                 '-s', f'ws://{self.connected_node.get_webserver_ws_endpoints()[0]}',
                 '-d',

@@ -18,5 +18,5 @@ class KeyGenerator:
                 'account_name': account_name,
             }
 
-        output = subprocess.check_output([self.executable_path, secret, account_name]).decode('utf-8')
+        output = subprocess.check_output([str(self.executable_path), secret, account_name]).decode('utf-8')
         return ast.literal_eval(output)[0]
