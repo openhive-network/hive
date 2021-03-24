@@ -4,12 +4,13 @@ import subprocess
 
 
 class KeyGenerator:
-    def __init__(self, executable_path):
-        self.executable_path = Path(executable_path).absolute()
+    def __init__(self, executable_path=None):
+        self.executable_path = executable_path
 
     def generate_keys(self, account_name, secret='secret'):
         if self.executable_path is None:
-            raise Exception('Missing executable, use KeyGenerator.set_executable_path')
+            from .paths_to_executables import get_key_generator_path
+            self.executable_path = get_key_generator_path()
 
         if account_name == 'initminer':
             return {
