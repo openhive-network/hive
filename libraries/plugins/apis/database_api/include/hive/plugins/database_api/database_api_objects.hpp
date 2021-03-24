@@ -459,7 +459,7 @@ struct api_account_object
     id( a.get_id() ),
     name( a.get_name() ),
     memo_key( a.memo_key ),
-    proxy( db.get_account( a.get_proxy() ).get_name() ),
+    proxy( HIVE_PROXY_TO_SELF_ACCOUNT ),
     last_account_update( a.last_account_update ),
     created( a.created ),
     mined( a.mined ),
@@ -507,6 +507,9 @@ struct api_account_object
     pending_claimed_accounts( a.pending_claimed_accounts ),
     governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
   {
+    if( a.has_proxy() )
+      proxy = db.get_account( a.get_proxy() ).get_name();
+
     size_t n = a.proxied_vsf_votes.size();
     proxied_vsf_votes.reserve( n );
     for( size_t i=0; i<n; i++ )
