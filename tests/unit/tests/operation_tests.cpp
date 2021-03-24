@@ -31,7 +31,7 @@ using fc::string;
 
 #define VOTING_MANABAR( account_name ) db->get_account( account_name ).voting_manabar
 #define DOWNVOTE_MANABAR( account_name ) db->get_account( account_name ).downvote_manabar
-#define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( account.get_proxy() == proxy.name )
+#define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( account.get_proxy() == proxy.get_id() )
 #define CHECK_NO_PROXY( account ) BOOST_REQUIRE( account.has_proxy() == false )
 
 inline uint16_t get_voting_power( const account_object& a )
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     tx.operations.push_back( op );
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( db->get_account( "bob" ).recovery_account == account_name_type() );
+    BOOST_REQUIRE( !db->get_account( "bob" ).has_recovery_account() );
     validate_database();
 
   }
@@ -4335,10 +4335,10 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     const auto& request_idx = db->get_index< account_recovery_request_index >().indices();
     auto req_itr = request_idx.begin();
 
-    BOOST_REQUIRE( req_itr->account_to_recover == "bob" );
-    BOOST_REQUIRE( req_itr->new_owner_authority == authority( 1, generate_private_key( "expire" ).get_public_key(), 1 ) );
-    BOOST_REQUIRE( req_itr->expires == db->head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
-    auto expires = req_itr->expires;
+    BOOST_REQUIRE( req_itr->get_account_to_recover() == "bob" );
+    BOOST_REQUIRE( req_itr->get_new_owner_authority() == authority( 1, generate_private_key( "expire" ).get_public_key(), 1 ) );
+    auto expires = req_itr->get_expiration_time();
+    BOOST_REQUIRE( expires == db->head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
     ++req_itr;
     BOOST_REQUIRE( req_itr == request_idx.end() );
 
@@ -8492,7 +8492,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     BOOST_REQUIRE( bob_meta.json_metadata == "{\"foo\":\"bar\"}" );
 #endif
     CHECK_NO_PROXY( bob );
-    BOOST_REQUIRE( bob.recovery_account == "alice" );
+    BOOST_REQUIRE( bob.get_recovery_account() == "alice" );
     BOOST_REQUIRE( bob.created == db->head_block_time() );
     BOOST_REQUIRE( bob.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
     BOOST_REQUIRE( bob.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
@@ -8527,7 +8527,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     tx.operations.push_back( op );
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( db->get_account( "charlie" ).recovery_account == account_name_type() );
+    BOOST_REQUIRE( !db->get_account( "charlie" ).has_recovery_account() );
     validate_database();
   }
   FC_LOG_AND_RETHROW()

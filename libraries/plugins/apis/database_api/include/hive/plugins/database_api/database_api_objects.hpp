@@ -289,9 +289,9 @@ struct api_change_recovery_account_request_object
 {
   api_change_recovery_account_request_object( const change_recovery_account_request_object& o, const database& db ):
     id( o.get_id() ),
-    account_to_recover( o.account_to_recover ),
-    recovery_account( o.recovery_account ),
-    effective_on( o.effective_on )
+    account_to_recover( o.get_account_to_recover() ),
+    recovery_account( o.get_recovery_account() ),
+    effective_on( o.get_execution_time() )
   {}
 
   change_recovery_account_request_id_type id;
@@ -457,14 +457,14 @@ struct api_account_object
 {
   api_account_object( const account_object& a, const database& db, bool delayed_votes_active ) :
     id( a.get_id() ),
-    name( a.name ),
+    name( a.get_name() ),
     memo_key( a.memo_key ),
-    proxy( a.get_proxy() ),
+    proxy( db.get_account( a.get_proxy() ).get_name() ),
     last_account_update( a.last_account_update ),
     created( a.created ),
     mined( a.mined ),
-    recovery_account( a.recovery_account ),
-    reset_account( a.reset_account ),
+    recovery_account( a.get_recovery_account() ),
+    reset_account( HIVE_NULL_ACCOUNT ),
     last_account_recovery( a.last_account_recovery ),
     comment_count( a.comment_count ),
     lifetime_vote_count( a.lifetime_vote_count ),
@@ -643,9 +643,9 @@ struct api_account_recovery_request_object
 {
   api_account_recovery_request_object( const account_recovery_request_object& o, const database& db ) :
     id( o.get_id() ),
-    account_to_recover( o.account_to_recover ),
-    new_owner_authority( authority( o.new_owner_authority ) ),
-    expires( o.expires )
+    account_to_recover( o.get_account_to_recover() ),
+    new_owner_authority( authority( o.get_new_owner_authority() ) ),
+    expires( o.get_expiration_time() )
   {}
 
   api_account_recovery_request_object() {}

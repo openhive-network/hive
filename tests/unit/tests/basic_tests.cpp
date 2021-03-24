@@ -462,7 +462,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( comment_content_object ), 104 ); //as many as comment_object, dynamic size matters the most, in HiveMind
 
   //permanent objects (no operation to remove)
-  BOOST_CHECK_EQUAL( sizeof( account_object ), 456 ); //1.3M+
+  BOOST_CHECK_EQUAL( sizeof( account_object ), 424 ); //1.3M+
   BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 72 ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
   BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 248 ); //as many as account_object
   BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_object ), 48 ); //obsolete - only created/modified up to HF12 (683 objects)
@@ -477,8 +477,8 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( transaction_object ), 64 ); //at most <1h> of transactions
   BOOST_CHECK_EQUAL( sizeof( vesting_delegation_expiration_object ), 48 ); //at most <5d> of undelegates
   BOOST_CHECK_EQUAL( sizeof( owner_authority_history_object ), 104 ); //at most <30d> of ownership updates
-  BOOST_CHECK_EQUAL( sizeof( account_recovery_request_object ), 104 ); //at most <1d> of account recoveries
-  BOOST_CHECK_EQUAL( sizeof( change_recovery_account_request_object ), 48 ); //at most <30d> of recovery account changes
+  BOOST_CHECK_EQUAL( sizeof( account_recovery_request_object ), 96 ); //at most <1d> of account recoveries
+  BOOST_CHECK_EQUAL( sizeof( change_recovery_account_request_object ), 40 ); //at most <30d> of recovery account changes
   BOOST_CHECK_EQUAL( sizeof( comment_cashout_object ), 200 //at most <7d> of unpaid comments (all comments prior to HF19)
 #ifdef HIVE_ENABLE_SMT
     + 32

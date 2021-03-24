@@ -635,8 +635,8 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_blocks(2);
     BOOST_REQUIRE(!db->get_account("acc3").has_proxy());
     BOOST_REQUIRE(!db->get_account("acc4").has_proxy());
-    BOOST_REQUIRE(db->get_account("acc5").get_proxy() == "acc1");
-    BOOST_REQUIRE(db->get_account("acc1").get_proxy() == "acc2");
+    BOOST_REQUIRE(db->get_account("acc5").get_proxy() == db->get_account("acc1").get_id());
+    BOOST_REQUIRE(db->get_account("acc1").get_proxy() == db->get_account("acc2").get_id());
     BOOST_REQUIRE(db->get_account("acc1").proxied_vsf_votes_total() == db->get_account("acc5").get_real_vesting_shares());
     BOOST_REQUIRE(db->get_account("acc2").proxied_vsf_votes_total() == (db->get_account("acc1").get_real_vesting_shares() + db->get_account("acc5").get_real_vesting_shares()));
 

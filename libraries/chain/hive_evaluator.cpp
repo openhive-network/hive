@@ -1400,7 +1400,6 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_operation& o )
 {
   const auto& account = _db.get_account( o.account );
-  FC_ASSERT( account.get_proxy() != o.proxy, "Proxy must change." );
   FC_ASSERT( account.can_vote, "Account has declined the ability to vote and cannot proxy votes." );
   _db.modify( account, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
@@ -1408,6 +1407,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
   if( !o.is_clearing_proxy() ) {
     const auto& new_proxy = _db.get_account( o.proxy );
+    FC_ASSERT( account.get_proxy() != new_proxy.get_id(), "Proxy must change." );
     flat_set<account_id_type> proxy_chain( { account.get_id(), new_proxy.get_id() } );
     proxy_chain.reserve( HIVE_MAX_PROXY_RECURSION_DEPTH + 1 );
 
@@ -1435,6 +1435,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
       delta[i+1] = account.proxied_vsf_votes[i];
     _db.adjust_proxied_witness_votes( account, delta );
   } else { /// we are clearing the proxy which means we simply update the account
+    FC_ASSERT( account.has_proxy(), "Proxy must change." );
     _db.modify( account, [&]( account_object& a ) {
       a.clear_proxy();
     });
@@ -2797,16 +2798,16 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
 {
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
 
-  if ( account_to_recover.recovery_account.length() )   // Make sure recovery matches expected recovery account
+  if ( account_to_recover.has_recovery_account() )   // Make sure recovery matches expected recovery account
   {
-    FC_ASSERT( account_to_recover.recovery_account == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
+    FC_ASSERT( account_to_recover.get_recovery_account() == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
     if( o.recovery_account == HIVE_TEMP_ACCOUNT )
       wlog( "Recovery by temp account" );
   }
   else                                                  // Empty string recovery account defaults to top witness
-    FC_ASSERT( _db.get_index< witness_index >().indices().get< by_vote_name >().begin()->owner == o.recovery_account, "Top witness must recover an account with no recovery partner." );
+    FC_ASSERT( (_db.get_index< witness_index, by_vote_name >().begin()->owner == o.recovery_account), "Top witness must recover an account with no recovery partner." );
 
-  const auto& recovery_request_idx = _db.get_index< account_recovery_request_index >().indices().get< by_account >();
+  const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
 
   if( request == recovery_request_idx.end() ) // New Request
@@ -2814,7 +2815,7 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
     FC_ASSERT( !o.new_owner_authority.is_impossible(), "Cannot recover using an impossible authority." );
     FC_ASSERT( o.new_owner_authority.weight_threshold, "Cannot recover using an open authority." );
 
-    if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+    if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     {
       validate_auth_size( o.new_owner_authority );
     }
@@ -2828,7 +2829,7 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
       }
     }
 
-    _db.create< account_recovery_request_object >( o.account_to_recover, o.new_owner_authority,
+    _db.create< account_recovery_request_object >( account_to_recover, o.new_owner_authority,
       _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
   }
   else if( o.new_owner_authority.weight_threshold == 0 ) // Cancel Request if authority is open
@@ -2850,8 +2851,7 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
 
     _db.modify( *request, [&]( account_recovery_request_object& req )
     {
-      req.new_owner_authority = o.new_owner_authority;
-      req.expires = _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD;
+      req.set_new_owner_authority( o.new_owner_authority, _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
     });
   }
 }
@@ -2863,13 +2863,13 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   if( _db.has_hardfork( HIVE_HARDFORK_0_12 ) )
     FC_ASSERT( _db.head_block_time() - account.last_account_recovery > HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
 
-  const auto& recovery_request_idx = _db.get_index< account_recovery_request_index >().indices().get< by_account >();
+  const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
 
   FC_ASSERT( request != recovery_request_idx.end(), "There are no active recovery requests for this account." );
-  FC_ASSERT( request->new_owner_authority == o.new_owner_authority, "New owner authority does not match recovery request." );
+  FC_ASSERT( request->get_new_owner_authority() == o.new_owner_authority, "New owner authority does not match recovery request." );
 
-  const auto& recent_auth_idx = _db.get_index< owner_authority_history_index >().indices().get< by_account >();
+  const auto& recent_auth_idx = _db.get_index< owner_authority_history_index, by_account >();
   auto hist = recent_auth_idx.lower_bound( o.account_to_recover );
   bool found = false;
 
@@ -2892,27 +2892,21 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
 
 void change_recovery_account_evaluator::do_apply( const change_recovery_account_operation& o )
 {
-  _db.get_account( o.new_recovery_account ); // Simply validate account exists
+  const auto& new_recovery_account = _db.get_account( o.new_recovery_account ); // validate account exists
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
 
-  const auto& change_recovery_idx = _db.get_index< change_recovery_account_request_index >().indices().get< by_account >();
+  const auto& change_recovery_idx = _db.get_index< change_recovery_account_request_index, by_account >();
   auto request = change_recovery_idx.find( o.account_to_recover );
 
   if( request == change_recovery_idx.end() ) // New request
   {
-    _db.create< change_recovery_account_request_object >( [&]( change_recovery_account_request_object& req )
-    {
-      req.account_to_recover = o.account_to_recover;
-      req.recovery_account = o.new_recovery_account;
-      req.effective_on = _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD;
-    });
+    _db.create< change_recovery_account_request_object >( account_to_recover, new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
   }
-  else if( account_to_recover.recovery_account != o.new_recovery_account ) // Change existing request
+  else if( account_to_recover.get_recovery_account() != o.new_recovery_account ) // Change existing request
   {
     _db.modify( *request, [&]( change_recovery_account_request_object& req )
     {
-      req.recovery_account = o.new_recovery_account;
-      req.effective_on = _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD;
+      req.set_recovery_account( new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
     });
   }
   else // Request exists and changing back to current recovery account
@@ -3000,6 +2994,9 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
 void reset_account_evaluator::do_apply( const reset_account_operation& op )
 {
   FC_ASSERT( false, "Reset Account Operation is currently disabled." );
+  //ABW: see discussion in https://github.com/steemit/steem/issues/240
+  //apparently the idea was never put in active use and it does not seem it ever will
+  //related member of account_object was removed as it was taking space with no purpose
 /*
   const auto& acnt = _db.get_account( op.account_to_reset );
   auto band = _db.find< account_bandwidth_object, by_account_bandwidth_type >( boost::make_tuple( op.account_to_reset, bandwidth_type::old_forum ) );
@@ -3014,6 +3011,7 @@ void reset_account_evaluator::do_apply( const reset_account_operation& op )
 void set_reset_account_evaluator::do_apply( const set_reset_account_operation& op )
 {
   FC_ASSERT( false, "Set Reset Account Operation is currently disabled." );
+  //related to reset_account_operation
 /*
   const auto& acnt = _db.get_account( op.account );
   _db.get_account( op.reset_account );

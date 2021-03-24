@@ -75,28 +75,42 @@ namespace hive { namespace chain {
       //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
       asset get_vest_rewards_as_hive() const { return reward_vesting_hive; }
 
+      //gives name of the account
+      const account_name_type& get_name() const { return name; }
+
       //tells if account has some other account casting governance votes in its name
-      bool has_proxy() const { return proxy != HIVE_PROXY_TO_SELF_ACCOUNT; }
+      bool has_proxy() const { return proxy != account_id_type(); }
       //account's proxy (if any)
-      account_name_type get_proxy() const { return proxy; }
+      account_id_type get_proxy() const { return proxy; }
       //sets proxy to neutral (account will vote for itself)
-      void clear_proxy() { proxy = HIVE_PROXY_TO_SELF_ACCOUNT; }
+      void clear_proxy() { proxy = account_id_type(); }
       //sets proxy to given account
       void set_proxy(const account_object& new_proxy)
       {
         FC_ASSERT( &new_proxy != this );
-        proxy = new_proxy.name;
+        proxy = new_proxy.get_id();
       }
 
-      //members are organized in such a way that the object takes up as little space as possible.
+      //tells if account has some designated account that can initiate recovery (if not, top witness can)
+      bool has_recovery_account() const { return recovery_account.length(); }
+      //account's recovery account (if any), that is, an account that can authorize request_account_recovery_operation
+      const account_name_type& get_recovery_account() const { return recovery_account; }
+      //sets new recovery account
+      void set_recovery_account(const account_object& new_recovery_account)
+      {
+        recovery_account = new_recovery_account.name;
+      }
 
+      //members are organized in such a way that the object takes up as little space as possible (note that object starts with 4byte id).
+
+    private:
+      account_id_type   proxy;
+    public:
       account_name_type name;
     private:
-      account_name_type proxy;
-    public:
-      account_name_type recovery_account;
-      account_name_type reset_account = HIVE_NULL_ACCOUNT;
+      account_name_type recovery_account; //cannot be changed to id because there are plenty of accounts with "steem" recovery created before it was created in b.1097
 
+    public:
       uint128_t         hbd_seconds; ///< total HBD * how long it has been held
       uint128_t         savings_hbd_seconds; ///< total HBD * how long it has been held
 
@@ -332,16 +346,33 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       account_recovery_request_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _account_to_recover, const authority& _new_owner_authority, const time_point_sec& _expiration_time )
-        : id( _id ), account_to_recover( _account_to_recover ), new_owner_authority( allocator< shared_authority >( a ) ),
-        expires( _expiration_time )
+        const account_object& _account_to_recover, const authority& _new_owner_authority, const time_point_sec& _expiration_time )
+        : id( _id ), expires( _expiration_time ), account_to_recover( _account_to_recover.get_name() ),
+        new_owner_authority( allocator< shared_authority >( a ) )
       {
         new_owner_authority = _new_owner_authority;
       }
 
+      //account whos owner authority is being modified
+      const account_name_type& get_account_to_recover() const { return account_to_recover; }
+
+      //new owner authority requested to be set during recovery operation
+      const shared_authority& get_new_owner_authority() const { return new_owner_authority; }
+      //sets different new owner authority (also moves time when request will expire)
+      void set_new_owner_authority( const authority& _new_owner_authority, const time_point_sec& _new_expiration_time )
+      {
+        new_owner_authority = _new_owner_authority;
+        expires = _new_expiration_time;
+      }
+
+      //time when the request will be automatically removed if not used
+      time_point_sec get_expiration_time() const { return expires; }
+
+    private:
+      time_point_sec    expires;
       account_name_type account_to_recover;
       shared_authority  new_owner_authority;
-      time_point_sec    expires;
+      
     CHAINBASE_UNPACK_CONSTRUCTOR(account_recovery_request_object, (new_owner_authority));
   };
 
@@ -349,11 +380,32 @@ namespace hive { namespace chain {
   {
     CHAINBASE_OBJECT( change_recovery_account_request_object );
     public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( change_recovery_account_request_object )
+      template< typename Allocator >
+      change_recovery_account_request_object( allocator< Allocator > a, uint64_t _id,
+        const account_object& _account_to_recover, const account_object& _recovery_account, const time_point_sec& _effect_time )
+        : id( _id ), effective_on( _effect_time ), account_to_recover( _account_to_recover.name ), recovery_account( _recovery_account.name )
+      {}
 
-      account_name_type account_to_recover;
-      account_name_type recovery_account;
+      //account whos recovery account is being modified
+      const account_name_type& get_account_to_recover() const { return account_to_recover; }
+
+      //new recovery account being set
+      const account_name_type& get_recovery_account() const { return recovery_account; }
+      //sets different new recovery account (also moves time when actual change will take place)
+      void set_recovery_account( const account_object& new_recovery_account, const time_point_sec& _new_effect_time )
+      {
+        recovery_account = new_recovery_account.name;
+        effective_on = _new_effect_time;
+      }
+
+      //time when actual change of recovery account is to be executed
+      time_point_sec get_execution_time() const { return effective_on; }
+
+    private:
       time_point_sec    effective_on;
+      account_name_type account_to_recover; //changing it to id would influence response from database_api.list_change_recovery_account_requests
+      account_name_type recovery_account; //could be changed to id
+      
     CHAINBASE_UNPACK_CONSTRUCTOR(change_recovery_account_request_object);
   };
 
@@ -373,7 +425,7 @@ namespace hive { namespace chain {
         member< account_object, account_name_type, &account_object::name > >,
       ordered_unique< tag< by_proxy >,
         composite_key< account_object,
-          const_mem_fun< account_object, account_name_type, &account_object::get_proxy >,
+          const_mem_fun< account_object, account_id_type, &account_object::get_proxy >,
           member< account_object, account_name_type, &account_object::name >
         > /// composite key by proxy
       >,
@@ -507,14 +559,14 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< account_recovery_request_object, account_recovery_request_object::id_type, &account_recovery_request_object::get_id > >,
       ordered_unique< tag< by_account >,
-        member< account_recovery_request_object, account_name_type, &account_recovery_request_object::account_to_recover >
+        const_mem_fun< account_recovery_request_object, const account_name_type&, &account_recovery_request_object::get_account_to_recover >
       >,
       ordered_unique< tag< by_expiration >,
         composite_key< account_recovery_request_object,
-          member< account_recovery_request_object, time_point_sec, &account_recovery_request_object::expires >,
-          member< account_recovery_request_object, account_name_type, &account_recovery_request_object::account_to_recover >
+          const_mem_fun< account_recovery_request_object, time_point_sec, &account_recovery_request_object::get_expiration_time >,
+          const_mem_fun< account_recovery_request_object, const account_name_type&, &account_recovery_request_object::get_account_to_recover >
         >,
-        composite_key_compare< std::less< time_point_sec >, std::less< account_name_type > >
+        composite_key_compare< std::less< time_point_sec >, std::less< const account_name_type& > >
       >
     >,
     allocator< account_recovery_request_object >
@@ -528,14 +580,14 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< change_recovery_account_request_object, change_recovery_account_request_object::id_type, &change_recovery_account_request_object::get_id > >,
       ordered_unique< tag< by_account >,
-        member< change_recovery_account_request_object, account_name_type, &change_recovery_account_request_object::account_to_recover >
+        const_mem_fun< change_recovery_account_request_object, const account_name_type&, &change_recovery_account_request_object::get_account_to_recover >
       >,
       ordered_unique< tag< by_effective_date >,
         composite_key< change_recovery_account_request_object,
-          member< change_recovery_account_request_object, time_point_sec, &change_recovery_account_request_object::effective_on >,
-          member< change_recovery_account_request_object, account_name_type, &change_recovery_account_request_object::account_to_recover >
+          const_mem_fun< change_recovery_account_request_object, time_point_sec, &change_recovery_account_request_object::get_execution_time >,
+          const_mem_fun< change_recovery_account_request_object, const account_name_type&, &change_recovery_account_request_object::get_account_to_recover >
         >,
-        composite_key_compare< std::less< time_point_sec >, std::less< account_name_type > >
+        composite_key_compare< std::less< time_point_sec >, std::less< const account_name_type& > >
       >
     >,
     allocator< change_recovery_account_request_object >
@@ -555,7 +607,7 @@ template<> struct is_static_length< hive::chain::change_recovery_account_request
 FC_REFLECT( hive::chain::account_object,
           (id)(name)(memo_key)(proxy)(last_account_update)
           (created)(mined)
-          (recovery_account)(last_account_recovery)(reset_account)
+          (recovery_account)(last_account_recovery)
           (comment_count)(lifetime_vote_count)(post_count)(can_vote)(voting_manabar)(downvote_manabar)
           (balance)
           (savings_balance)
