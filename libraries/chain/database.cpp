@@ -6756,45 +6756,14 @@ void database::remove_expired_governance_votes()
 
     if( sps_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
     {
-      modify(acc, [&](account_object& acc) { acc.set_governance_vote_expired(); });
-      max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
-      continue;
-    }
-
-    ++processed_accounts_with_votes;
-
-    if (acc.proxy.size())
-    {
-      adjust_proxied_witness_votes( acc, -acc.vesting_shares.amount );
-      modify(acc, [&](account_object& acc) { acc.proxy = ""; });
-    }
-
-    bool were_votes_removed = false;
-    while (wvote != witness_votes.end() && wvote->account == acc.name)
-    {
-      const witness_vote_object& current = *wvote;
-      ++wvote;
-      remove(current);
-      ++removed_witness_votes;
-      if( !were_votes_removed )
-        were_votes_removed = true;
-    }
-
-    if (were_votes_removed)
-      modify(acc, [&](account_object& acc) { acc.witnesses_voted_for = 0; });
-
-    max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
-
-    while (!max_execution_time_reached && pvote != proposal_votes.end() && pvote->voter == acc.name)
-    {
-      const proposal_vote_object& current = *pvote;
-      ++pvote;
-      remove(current);
-      ++removed_proposal_votes;
-      max_execution_time_reached = stop_loop(deleted_votes, deleting_start_time);
-
-      if (max_execution_time_reached)
-        break;
+      nullify_proxied_witness_votes( account );
+      clear_witness_votes( account );
+      modify( account, [&]( account_object& a )
+      {
+        a.clear_proxy();
+        a.set_governance_vote_expired();
+      } );
+      push_virtual_operation( expired_account_notification_operation( account.name ) );
     }
     else
     {
