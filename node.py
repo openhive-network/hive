@@ -221,7 +221,8 @@ class Node:
 
     def run(self):
         if not self.executable_file_path:
-            raise Exception('Missing executable')
+            from .paths_to_executables import get_hived_path
+            self.executable_file_path = get_hived_path()
 
         self.directory.mkdir(parents=True)
 
