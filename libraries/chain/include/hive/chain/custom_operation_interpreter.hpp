@@ -16,17 +16,17 @@ namespace hive { namespace protocol {
 namespace hive { namespace chain {
   using hive::protocol::custom_id_type;
 
-  class custom_operation_interpreter
-  {
+class custom_operation_interpreter
+{
   public:
     virtual void apply( const protocol::custom_json_operation& op ) = 0;
     virtual void apply( const protocol::custom_binary_operation & op ) = 0;
     virtual custom_id_type get_custom_id() = 0;
     virtual std::shared_ptr< hive::schema::abstract_schema > get_operation_schema() = 0;
-  };
+};
 
-  class custom_operation_notification
-  {
+class custom_operation_notification
+{
   public:
     custom_operation_notification( const custom_id_type& cid ) : custom_id(cid) {}
     virtual ~custom_operation_notification() {}
@@ -43,6 +43,6 @@ namespace hive { namespace chain {
 
     custom_id_type        custom_id;
     uint32_t              op_in_custom = 0;
-  };
+};
 
 } } // hive::chain

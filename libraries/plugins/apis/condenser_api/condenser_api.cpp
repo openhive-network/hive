@@ -165,9 +165,9 @@ namespace detail
       std::shared_ptr< reputation::reputation_api >                     _reputation_api;
       std::shared_ptr< market_history::market_history_api >             _market_history_api;
       std::shared_ptr< rc::rc_api >                                     _rc_api;
-         map< transaction_id_type, confirmation_callback >              _callbacks;
-         map< time_point_sec, vector< transaction_id_type > >           _callback_expirations;
-         boost::signals2::connection                                    _on_post_apply_block_conn;
+      map< transaction_id_type, confirmation_callback >                 _callbacks;
+      map< time_point_sec, vector< transaction_id_type > >              _callback_expirations;
+      boost::signals2::connection                                       _on_post_apply_block_conn;
 
       boost::mutex                                                      _mtx;
   };
@@ -337,6 +337,7 @@ namespace detail
     bool delayed_votes_active = true;
     if( args.size() == 2 )
       delayed_votes_active = args[1].as< bool >();
+    
     const auto& idx  = _db.get_index< account_index >().indices().get< by_name >();
     const auto& vidx = _db.get_index< witness_vote_index >().indices().get< by_account_witness >();
     vector< extended_account > results;
