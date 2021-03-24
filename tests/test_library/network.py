@@ -63,9 +63,6 @@ class Network:
             node.add_seed_node(seed_node)
 
     def run(self):
-        if not self.hived_executable_file_path:
-            raise Exception('Missing hived executable, use Network.set_hived_executable_file_path')
-
         directory = self.get_directory()
         if directory.exists():
             rmtree(directory)

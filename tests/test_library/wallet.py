@@ -32,7 +32,8 @@ class Wallet:
 
     def run(self):
         if not self.executable_file_path:
-            raise Exception('Missing executable')
+            from .paths_to_executables import get_cli_wallet_path
+            self.executable_file_path = get_cli_wallet_path()
 
         if not self.connected_node:
             raise Exception('Server websocket RPC endpoint not set, use Wallet.connect_to method')
