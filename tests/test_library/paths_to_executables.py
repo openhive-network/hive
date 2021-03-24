@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 
 HIVED_PATH_ENVIRONMENT_VARIABLE_NAME = 'HIVED_EXECUTABLE'
@@ -30,10 +31,22 @@ def __show_message_about_missing_variables():
     print()
 
 def get_hived_path():
+    path = shutil.which('hived')
+    if path is not None:
+        return Path(path).absolute()
+
     return __get_environment_variable(HIVED_PATH_ENVIRONMENT_VARIABLE_NAME)
 
 def get_cli_wallet_path():
+    path = shutil.which('cli_wallet')
+    if path is not None:
+        return Path(path).absolute()
+
     return __get_environment_variable(CLI_WALLET_PATH_ENVIRONMENT_VARIABLE_NAME)
 
 def get_key_generator_path():
+    path = shutil.which('get_dev_key')
+    if path is not None:
+        return Path(path).absolute()
+
     return __get_environment_variable(KEY_GENERATOR_PATH_ENVIRONMENT_VARIABLE_NAME)
