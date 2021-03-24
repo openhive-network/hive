@@ -62,8 +62,7 @@ if __name__ == "__main__":
             assert( check_proposal )
 
             proposal = wallet.find_proposals([proposal_id])['result'][0]
-
-            assert(proposal['daily_pay'] == "9.000 TBD")
+            assert(proposal['daily_pay']['amount'] == '9000')
             assert(proposal['subject'] == "this is an updated subject")
             assert(proposal['permlink'] == "lorem")
             assert(proposal['end_date'] == "2029-07-25T00:00:00")
@@ -72,7 +71,7 @@ if __name__ == "__main__":
             test = wallet.update_proposal(proposal_id, creator, "8.000 TBD", "this is an updated subject again", "lorem", None, "true")
             proposal = wallet.find_proposals([proposal_id])['result'][0]
 
-            assert(proposal['daily_pay'] == "8.000 TBD")
+            assert(proposal['daily_pay']['amount'] == '8000')
             assert(proposal['subject'] == "this is an updated subject again")
             assert(proposal['permlink'] == "lorem")
             assert(proposal['end_date'] == "2029-07-25T00:00:00")

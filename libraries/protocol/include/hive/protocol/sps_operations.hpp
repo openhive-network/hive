@@ -160,6 +160,8 @@ namespace fc {
   
 }
 
+FC_REFLECT_TYPENAME( hive::protocol::update_proposal_extension )
+
 FC_REFLECT( hive::protocol::create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink)(extensions) )
 FC_REFLECT( hive::protocol::update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink)(extensions))
 FC_REFLECT( hive::protocol::update_proposal_votes_operation, (voter)(proposal_ids)(approve)(extensions) )

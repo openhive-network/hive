@@ -357,7 +357,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_accounts )
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_transaction )
 {
   FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
-  FC_ASSERT( args.get_array()[0].is_numeric(), "Transaction id is required as second argument" );
+  FC_ASSERT( args.get_array()[0].is_string(), "Transaction id is required as second argument" );
   const protocol::transaction_id_type id = args.get_array()[0].as<protocol::transaction_id_type>();
   return _account_history_api->get_transaction( {id} );
 }
@@ -477,7 +477,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_proposals )
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, is_known_transaction )
 {
-  FC_ASSERT( args.get_array()[0].is_numeric(), "Transaction id is required" );
+  FC_ASSERT( args.get_array()[0].is_string(), "Transaction id is required" );
   const protocol::transaction_id_type id = args.get_array()[0].as<protocol::transaction_id_type>();
   return _database_api->is_known_transaction({id}).is_known;
 }
