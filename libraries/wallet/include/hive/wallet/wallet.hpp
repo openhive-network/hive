@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/plugins/condenser_api/condenser_api_legacy_asset.hpp>
+#include <hive/plugins/condenser_api/condenser_api.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
@@ -338,7 +339,7 @@ class wallet_api
      *  @param fee The fee to pay for claiming the account (either 0 steem for a discounted account, or the full account fee)
      *  @param broadcast true if you wish to broadcast the transaction
      */
-    condenser_api::legacy_signed_transaction claim_account_creation( const string& creator,
+    annotated_signed_transaction claim_account_creation( const string& creator,
                                                                      const condenser_api::legacy_asset& fee,
                                                                      bool broadcast )const; 
     /**
@@ -348,7 +349,7 @@ class wallet_api
      *  @param fee The fee to pay for claiming the account (either 0 steem for a discounted account, or the full account fee)
      *  @param broadcast true if you wish to broadcast the transaction
      */
-    condenser_api::legacy_signed_transaction claim_account_creation_nonblocking( const string& creator,
+    annotated_signed_transaction claim_account_creation_nonblocking( const string& creator,
                                                                                  const condenser_api::legacy_asset& fee,
                                                                                  bool broadcast )const;
        
@@ -411,7 +412,7 @@ class wallet_api
      * @param memo public memo key of the new account
      * @param broadcast true if you wish to broadcast the transaction
      */
-    condenser_api::legacy_signed_transaction create_funded_account_with_keys( const string& creator,
+    annotated_signed_transaction create_funded_account_with_keys( const string& creator,
                                                                               const string& new_account_name,
                                                                               const condenser_api::legacy_asset& initial_amount,
                                                                               const string& memo,
@@ -585,11 +586,40 @@ class wallet_api
       * @param vesting_shares The amount of VESTS to delegate
       * @param broadcast true if you wish to broadcast the transaction
       */
-      annotated_signed_transaction delegate_vesting_shares(
-        const string& delegator,
-        const string& delegatee,
-        const condenser_api::legacy_asset& vesting_shares,
-        bool broadcast );
+    annotated_signed_transaction delegate_vesting_shares(
+      const string& delegator,
+      const string& delegatee,
+      const condenser_api::legacy_asset& vesting_shares,
+      bool broadcast );
+
+
+    annotated_signed_transaction delegate_vesting_shares_nonblocking(
+      const string& delegator,
+      const string& delegatee,
+      const condenser_api::legacy_asset& vesting_shares,
+      bool broadcast );
+
+    // these versions also send a regular transfer in the same transaction, intended for sending a .001 STEEM memo
+    annotated_signed_transaction delegate_vesting_shares_and_transfer(
+      const string& delegator,
+      const string& delegatee,
+      const condenser_api::legacy_asset& vesting_shares,
+      const condenser_api::legacy_asset& transfer_amount,
+      optional<string> transfer_memo,
+      bool broadcast );
+    annotated_signed_transaction delegate_vesting_shares_and_transfer_nonblocking(
+      const string& delegator,
+      const string& delegatee,
+      const condenser_api::legacy_asset& vesting_shares,
+      const condenser_api::legacy_asset& transfer_amount,
+      optional<string> transfer_memo,
+      bool broadcast );
+
+    // helper function
+    annotated_signed_transaction delegate_vesting_shares_and_transfer_and_broadcast(
+      const string& delegator, const string& delegatee, const condenser_api::legacy_asset& vesting_shares, 
+      optional<condenser_api::legacy_asset> transfer_amount, optional<string> transfer_memo,
+      bool broadcast, bool blocking );
 
 
     /**
@@ -825,11 +855,11 @@ class wallet_api
      * @param memo A memo for the transactionm, encrypted with the to account's public memo key
      * @param broadcast true if you wish to broadcast the transaction
      */
-    condenser_api::legacy_signed_transaction transfer_nonblocking(const string& from, const string& to,
+    annotated_signed_transaction transfer_nonblocking(const string& from, const string& to,
       const condenser_api::legacy_asset& amount, const string& memo, bool broadcast = false);
 
     // helper function
-    condenser_api::legacy_signed_transaction transfer_and_broadcast(const string& from, const string& to,
+    annotated_signed_transaction transfer_and_broadcast(const string& from, const string& to,
       const condenser_api::legacy_asset& amount, const string& memo, bool broadcast, bool blocking );
     /*
      * Transfer STEEM into a vesting fund represented by vesting shares (VESTS) without waiting for a confirmation.
@@ -842,11 +872,11 @@ class wallet_api
      * @param amount The amount of STEEM to vest i.e. "100.00 STEEM"
      * @param broadcast true if you wish to broadcast the transaction
      */
-    condenser_api::legacy_signed_transaction transfer_to_vesting_nonblocking(const string& from, const string& to,
+    annotated_signed_transaction transfer_to_vesting_nonblocking(const string& from, const string& to,
       const condenser_api::legacy_asset& amount, bool broadcast = false);
 
     // helper function
-    condenser_api::legacy_signed_transaction transfer_to_vesting_and_broadcast(const string& from, const string& to,
+    annotated_signed_transaction transfer_to_vesting_and_broadcast(const string& from, const string& to,
       const condenser_api::legacy_asset& amount, bool broadcast, bool blocking );
 
 
@@ -1148,7 +1178,14 @@ class wallet_api
       *  @param what - a set of things to follow: posts, comments, votes, ignore
       *  @param broadcast true if you wish to broadcast the transaction
       */
-    annotated_signed_transaction follow( const string& follower, string following, set<string> what, bool broadcast );
+    annotated_signed_transaction follow( const string& follower, const string& following, set<string> what, bool broadcast );
+
+
+    std::map<string,std::function<string(fc::variant,const fc::variants&)>> get_result_formatters() const;
+
+    fc::signal<void(bool)> lock_changed;
+    std::shared_ptr<detail::wallet_api_impl> my;
+    void encrypt_keys();
 
     /**
       * Checks memos against private keys on account and imported in wallet

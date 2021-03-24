@@ -39,9 +39,11 @@ class wallet_bridge_api
         (get_account_history)
         (list_proposals)
         (find_proposals)
+        (is_known_transaction)
         (list_proposal_votes)
         (get_reward_fund)
         (broadcast_transaction_synchronous)
+        (broadcast_transaction)
     )
 
     void api_startup();
@@ -80,7 +82,9 @@ FC_API(
   (get_account_history)
   (list_proposals)
   (find_proposals)
+  (is_known_transaction)
   (list_proposal_votes)
   (get_reward_fund)
   (broadcast_transaction_synchronous)
+  (broadcast_transaction)
 )
