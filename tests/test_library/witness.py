@@ -3,7 +3,8 @@ class Witness:
 
     def __init__(self, name, secret='secret'):
         if Witness.key_generator is None:
-            raise Exception('Missing key generator, set it in Witness.key_generator')
+            from .key_generator import KeyGenerator
+            Witness.key_generator = KeyGenerator()
 
         output = Witness.key_generator.generate_keys(name, secret)
 
