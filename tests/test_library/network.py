@@ -1,8 +1,8 @@
 from pathlib import Path
 from shutil import rmtree
 
-from node import Node
-from wallet import Wallet
+from .node import Node
+from .wallet import Wallet
 
 
 class Network:
