@@ -351,7 +351,7 @@ bool chain_plugin_impl::start_replay_processing()
       ilog("Generating artificial interrupt request...");
 
       /*
-        Triggering artifical signal.
+        Triggering artificial signal.
         Whole application should be closed in identical way, as if it was closed by user.
         This case occurs only when `exit-after-replay` switch is used.
       */

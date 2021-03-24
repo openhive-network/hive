@@ -260,13 +260,11 @@ if __name__ == '__main__':
             hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_end_date_iso, False)
             logger.info("Balances for accounts at time: {}".format(test_end_date_iso))
             balances = test_utils.print_balance(node_client, accounts)
-            # is should be '463.000 TBD', '486.000 TBD', '486.000 TBD', '486.000 TBD',
-            # but because of "rounding" implementation it is 462.854 TBD,485.808 TBD,485.808 TBD,485.808 TBD
             test_balances = [
-                '462854',
-                '485808',
-                '485808',
-                '485808',
+                '463000',
+                '486000',
+                '486000',
+                '486000',
             ]
             for idx in range(0, len(test_balances)):
                 assert balances[idx] == test_balances[idx], "Balances dont match {} != {}".format(balances[idx], test_balances[idx])

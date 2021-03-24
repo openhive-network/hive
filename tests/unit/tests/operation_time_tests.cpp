@@ -1219,7 +1219,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     asset withdraw_rate = new_alice.vesting_withdraw_rate;
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
-    generate_blocks( next_withdrawal - ( HIVE_BLOCK_INTERVAL / 2 ), true);
+    generate_blocks( next_withdrawal - HIVE_BLOCK_INTERVAL );
 
     BOOST_REQUIRE( get_vesting( "alice" ).amount.value == vesting_shares.amount.value );
 

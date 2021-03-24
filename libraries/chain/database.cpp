@@ -5228,7 +5228,6 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
         {
           acnt.hbd_seconds += fc::uint128_t(a.get_hbd_balance().amount.value) * (head_block_time() - a.hbd_seconds_last_update).to_seconds();
           acnt.hbd_seconds_last_update = head_block_time();
-
           if( acnt.hbd_seconds > 0 &&
               (acnt.hbd_seconds_last_update - acnt.hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
           {

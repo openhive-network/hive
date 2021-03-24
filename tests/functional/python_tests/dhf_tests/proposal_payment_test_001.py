@@ -141,7 +141,7 @@ if __name__ == '__main__':
         node.run_hive_node(["--enable-stale-production"])
     try:
         if node is None or node.is_running():
-            node_client = Hive(node = [node_url], no_broadcast = False, 
+            node_client = Hive(node = [node_url], no_broadcast = False,
                 keys = keys
             )
 
@@ -151,21 +151,19 @@ if __name__ == '__main__':
             # create accounts
             test_utils.create_accounts(node_client, args.creator, accounts)
             # tranfer to vesting
-            test_utils.transfer_to_vesting(node_client, args.creator, accounts, "300.000", 
-                "TESTS"
-            )
+            test_utils.transfer_to_vesting(node_client, args.creator, accounts, "300.000", "TESTS")
 
             logger.info("Wait 30 days for full voting power")
             hive_utils.debug_quick_block_skip(node_client, wif, (30 * 24 * 3600 / 3))
             hive_utils.debug_generate_blocks(node_client.rpc.url, wif, 10)
             
             # transfer assets to accounts
-            test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
+            test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts,
                 "400.000", "TESTS",
                 wif
             )
 
-            test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts, 
+            test_utils.transfer_assets_to_accounts(node_client, args.creator, accounts,
                 "400.000", "TBD",
                 wif
             )
@@ -173,7 +171,7 @@ if __name__ == '__main__':
             logger.info("Balances for accounts after initial transfer")
             test_utils.print_balance(node_client, accounts)
             # transfer assets to treasury
-            test_utils.transfer_assets_to_treasury(node_client, args.creator, args.treasury, 
+            test_utils.transfer_assets_to_treasury(node_client, args.creator, args.treasury,
                 "1000000.000", "TBD", wif
             )
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
@@ -245,9 +243,8 @@ if __name__ == '__main__':
             hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, end_date_blocks_str, False)
             logger.info("Balances for accounts at time: {}".format(end_date_blocks_str))
             balances = test_utils.print_balance(node_client, accounts)
-            #should be 438.000, 437.904 becouse of rounding
             for balance in balances:
-                assert balance == '437904', "All balances should be equal 437904"
+                assert balance == '438000', "All balances should be equal 438000"
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
             votes = test_utils.list_proposals(node_client, start_date_str, "expired")
             for vote in votes:
@@ -260,6 +257,6 @@ if __name__ == '__main__':
         sys.exit(1)
     except Exception as ex:
         logger.error("Exception: {}".format(ex))
-        if node is not None: 
+        if node is not None:
             node.stop_hive_node()
         sys.exit(1)

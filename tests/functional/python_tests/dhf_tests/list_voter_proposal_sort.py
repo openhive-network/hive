@@ -268,9 +268,8 @@ if __name__ == '__main__':
             hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, end_date_blocks_str, False)
             logger.info("Balances for accounts at time: {}".format(end_date_blocks_str))
             balances = test_utils.print_balance(node_client, accounts)
-            #should be 438.000, 437.904 becouse of rounding
             for balance in balances:
-                assert balance == '437904', "All balances should be equal 437904"
+                assert balance == '438000', "All balances should be equal 438000"
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
             votes = test_utils.list_proposals(node_client, start_date_str, "expired")
             for vote in votes:
