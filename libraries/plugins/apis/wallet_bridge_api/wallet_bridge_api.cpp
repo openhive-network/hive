@@ -52,9 +52,11 @@ class wallet_bridge_api_impl
         (get_account_history)
         (list_proposals)
         (find_proposals)
+        (is_known_transaction)
         (list_proposal_votes)
         (get_reward_fund)
         (broadcast_transaction_synchronous)
+        (broadcast_transaction)
     )
 
     chain::chain_plugin&                                            _chain;
@@ -473,6 +475,13 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_proposals )
   return _database_api->find_proposals({ids});
 }
 
+DEFINE_API_IMPL( wallet_bridge_api_impl, is_known_transaction )
+{
+  FC_ASSERT( args.get_array()[0].is_numeric(), "Transaction id is required" );
+  const protocol::transaction_id_type id = args.get_array()[0].as<protocol::transaction_id_type>();
+  return _database_api->is_known_transaction({id}).is_known;
+}
+
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_proposal_votes )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
@@ -560,6 +569,13 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
   return p.get_future().get();
 }
 
+DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction )
+{
+  FC_ASSERT( args.get_array()[0].is_object(), "Signed transaction is required as first argument" );
+  const protocol::signed_transaction tx = args.get_array()[0].as<protocol::signed_transaction>();
+  FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
+  return _network_broadcast_api->broadcast_transaction( { tx } );
+}
 
 DEFINE_LOCKLESS_APIS(
   wallet_bridge_api, 
@@ -568,6 +584,7 @@ DEFINE_LOCKLESS_APIS(
   (get_transaction)
   (get_account_history)
   (broadcast_transaction_synchronous)
+  (broadcast_transaction)
 )
 
 DEFINE_READ_APIS(
@@ -593,6 +610,7 @@ DEFINE_READ_APIS(
   (get_owner_history)
   (list_proposals)
   (find_proposals)
+  (is_known_transaction)
   (list_proposal_votes)
   (get_reward_fund)
 )

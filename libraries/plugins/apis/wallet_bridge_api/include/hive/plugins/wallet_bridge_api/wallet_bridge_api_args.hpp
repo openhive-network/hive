@@ -112,6 +112,10 @@ typedef database_api::list_proposals_return   list_proposals_return;
 typedef variant                             find_proposals_args;
 typedef list_proposals_return               find_proposals_return;
 
+/* is_known_transaction */
+typedef variant                             is_known_transaction_args;
+typedef bool                                is_known_transaction_return;
+
 /* list_proposal_votes */
 typedef variant                                   list_proposal_votes_args;
 typedef database_api::list_proposal_votes_return  list_proposal_votes_return;
@@ -129,6 +133,10 @@ struct broadcast_transaction_synchronous_return
   int32_t                         trx_num = 0;
   bool                            expired = false;
 };
+
+/* broadcast_transaction */
+typedef variant broadcast_transaction_args;
+typedef hive::plugins::json_rpc::void_type broadcast_transaction_return;
 
 } } } // hive::plugins::wallet_bridge_api
 
