@@ -855,7 +855,6 @@ public:
     };
     m["get_open_orders"] = []( variant result, const fc::variants& a ) {
         auto orders = result.as<vector<database_api::api_limit_order_object>>();
-
         std::stringstream ss;
 
         ss << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
@@ -867,7 +866,6 @@ public:
         for( const auto& o : orders )
         {
           ss << ' ' << setw( 10 ) << o.orderid;
-          ss << ' ' << setw( 10 ) << o.real_price;
           ss << ' ' << setw( 10 ) << condenser_api::legacy_asset::from_asset( asset( o.for_sale, o.sell_price.base.symbol ) ).to_string();
           ss << ' ' << setw( 10 ) << (o.sell_price.base.symbol == HIVE_SYMBOL ? "SELL" : "BUY");
           ss << "\n";
@@ -903,8 +901,7 @@ public:
           ss
             << ' ' << setw( spacing ) << condenser_api::legacy_asset::from_asset(bid_sum).to_string()
             << ' ' << setw( spacing ) << condenser_api::legacy_asset::from_asset(asset( orders.bids[i].hbd, HBD_SYMBOL)).to_string()
-            << ' ' << setw( spacing ) << condenser_api::legacy_asset::from_asset(asset( orders.bids[i].hive, HIVE_SYMBOL)).to_string()
-            << ' ' << setw( spacing ) << orders.bids[i].real_price;
+            << ' ' << setw( spacing ) << condenser_api::legacy_asset::from_asset(asset( orders.bids[i].hive, HIVE_SYMBOL)).to_string();
         }
         else
         {
@@ -916,7 +913,7 @@ public:
         if( i < orders.asks.size() )
         {
           ask_sum += asset(orders.asks[i].hbd, HBD_SYMBOL);
-          ss << ' ' << setw( spacing ) << orders.asks[i].real_price
+          ss
             << ' ' << setw( spacing ) << condenser_api::legacy_asset::from_asset(asset( orders.asks[i].hive, HIVE_SYMBOL )).to_string()
             << ' ' << setw( spacing ) << condenser_api::legacy_asset::from_asset(asset( orders.asks[i].hbd, HBD_SYMBOL )).to_string()
             << ' ' << setw( spacing ) << condenser_api::legacy_asset::from_asset(ask_sum).to_string();
@@ -1418,67 +1415,17 @@ annotated_signed_transaction wallet_api::create_funded_account_with_keys( const 
       transfer_op.to = new_account_name;
       transfer_op.amount = initial_amount;
 
-      if( memo.size() > 0 && memo[0] == '#' ) {
+      if( memo.size() > 0 && memo[0] == '#' )
+      {
          auto from_account = get_account( creator );
          transfer_op.memo = get_encrypted_memo_using_keys( from_account.memo_key, memo_key, memo );
-      } else
-         transfer_op.memo = memo;
+      }
+      else
+        transfer_op.memo = memo;
 
       tx.operations.push_back(transfer_op);
       idump((tx.operations[1]));
    }
-
-  auto creator_account = get_account(creator);
-  signed_transaction tx;
-  if( creator_account.pending_claimed_accounts > 0 )
-  {
-    create_claimed_account_operation op;
-    op.creator = creator;
-    op.new_account_name = new_account_name;
-    op.owner = authority( 1, owner_key, 1 );
-    op.active = authority( 1, active_key, 1 );
-    op.posting = authority( 1, posting_key, 1 );
-    op.memo_key = memo_key;
-    op.json_metadata = json_meta;
-
-    tx.operations.push_back(op);
-  }
-  else
-  {
-    account_create_operation op;
-    op.creator = creator;
-    op.new_account_name = new_account_name;
-    op.owner = authority( 1, owner_key, 1 );
-    op.active = authority( 1, active_key, 1 );
-    op.posting = authority( 1, posting_key, 1 );
-    op.memo_key = memo_key;
-    op.json_metadata = json_meta;
-    op.fee = my->_remote_api->get_chain_properties().account_creation_fee;
-
-    tx.operations.push_back(op);
-  }
-  idump((tx.operations[0]));
-
-  if( initial_amount.amount.value > 0 )
-  {
-    transfer_operation transfer_op;
-    transfer_op.from = creator;
-    transfer_op.to = new_account_name;
-    transfer_op.amount = initial_amount;
-
-    if( memo.size() > 0 && memo[0] == '#' )
-    {
-      auto from_account = get_account( creator );
-      transfer_op.memo = get_encrypted_memo_using_keys( from_account.memo_key, memo_key, memo );
-    }
-    else
-    {
-      transfer_op.memo = memo;
-    }
-
-    tx.operations.push_back(transfer_op);
-    idump((tx.operations[1]));
-  }
 
   tx.validate();
 
@@ -2779,17 +2726,7 @@ annotated_signed_transaction wallet_api::follow( const string& follower, const s
     return my->sign_transaction( trx, broadcast );
   }
 
-  annotated_signed_transaction  wallet_api::update_proposal(
-    int64_t proposal_id,
-    const account_name_type& creator,
-    const condenser_api::legacy_asset& daily_pay,
-    string subject,
-    string permlink,
-    bool broadcast )
-  {
-    FC_ASSERT( !is_locked() );
-
-condenser_api::legacy_signed_transaction  wallet_api::update_proposal(
+ annotated_signed_transaction wallet_api::update_proposal(
   int64_t proposal_id,
   const account_name_type& creator,
   const condenser_api::legacy_asset& daily_pay,
@@ -2800,11 +2737,7 @@ condenser_api::legacy_signed_transaction  wallet_api::update_proposal(
 {
   FC_ASSERT( !is_locked() );
 
-    up.proposal_id = proposal_id;
-    up.creator = creator;
-    up.daily_pay = daily_pay.to_asset();
-    up.subject = std::move(subject);
-    up.permlink = std::move(permlink);
+  update_proposal_operation up;
 
   up.proposal_id = proposal_id;
   up.creator = creator;
@@ -2818,15 +2751,13 @@ condenser_api::legacy_signed_transaction  wallet_api::update_proposal(
     up.extensions.insert(ped);
   }
 
-  annotated_signed_transaction  wallet_api::update_proposal_votes(
-    const account_name_type& voter,
-    const flat_set< int64_t >& proposals,
-    bool approve,
-    bool broadcast )
-  {
-    FC_ASSERT( !is_locked() );
+  signed_transaction trx;
+  trx.operations.push_back( up );
+  trx.validate();
+  return my->sign_transaction( trx, broadcast );
+}
 
-condenser_api::legacy_signed_transaction  wallet_api::update_proposal_votes(
+annotated_signed_transaction wallet_api::update_proposal_votes(
   const account_name_type& voter,
   const flat_set< int64_t >& proposals,
   bool approve,
@@ -2840,40 +2771,40 @@ condenser_api::legacy_signed_transaction  wallet_api::update_proposal_votes(
   upv.proposal_ids = proposals;
   upv.approve = approve;
 
-  vector< database_api::api_proposal_object > wallet_api::list_proposals(
-    fc::variant start,
-    uint32_t limit,
-    database_api::sort_order_type order_by,
-    database_api::order_direction_type order_type,
-    database_api::proposal_status status )
-  {
-    vector<variant> args{std::move(start), limit, order_by, order_type, status};
-    return my->_remote_wallet_bridge_api->list_proposals( {args}, LOCK ).proposals;
-  }
+  signed_transaction trx;
+  trx.operations.push_back( upv );
+  trx.validate();
+  return my->sign_transaction( trx, broadcast );
+}
 
-  vector< database_api::api_proposal_object > wallet_api::find_proposals( vector< database_api::api_id_type > proposal_ids )
-  {
-    return my->_remote_wallet_bridge_api->find_proposals( {variant(std::move( proposal_ids ))}, LOCK ).proposals;
-  }
+vector< database_api::api_proposal_object > wallet_api::list_proposals( fc::variant start,
+                                  uint32_t limit,
+                                  database_api::sort_order_type order_by,
+                                  database_api::order_direction_type order_type,
+                                  database_api::proposal_status status )
+{
+  vector<variant> args{std::move(start), limit, order_by, order_type, status};
+  return my->_remote_wallet_bridge_api->list_proposals( {args}, LOCK ).proposals;
+}
 
-  vector< database_api::api_proposal_vote_object > wallet_api::list_proposal_votes(
-    fc::variant start,
-    uint32_t limit,
-    database_api::sort_order_type order_by,
-    database_api::order_direction_type order_type,
-    database_api::proposal_status status )
-  {
-    vector<variant> args{std::move( start ), limit, order_by, order_type, status};
-    return my->_remote_wallet_bridge_api->list_proposal_votes( {args}, LOCK ).proposal_votes;
-  }
+vector< database_api::api_proposal_object > wallet_api::find_proposals( vector< database_api::api_id_type > proposal_ids )
+{
+  return my->_remote_wallet_bridge_api->find_proposals( {variant(std::move( proposal_ids ))}, LOCK ).proposals;
+}
 
-   annotated_signed_transaction wallet_api::remove_proposal(const account_name_type& deleter,
-                                                const flat_set< int64_t >& ids, bool broadcast )
-  {
-    FC_ASSERT( !is_locked() );
+vector< database_api::api_proposal_vote_object > wallet_api::list_proposal_votes(
+  fc::variant start,
+  uint32_t limit,
+  database_api::sort_order_type order_by,
+  database_api::order_direction_type order_type,
+  database_api::proposal_status status )
+{
+  vector<variant> args{std::move( start ), limit, order_by, order_type, status};
+  return my->_remote_wallet_bridge_api->list_proposal_votes( {args}, LOCK ).proposal_votes;
+}
 
-condenser_api::legacy_signed_transaction wallet_api::remove_proposal(const account_name_type& deleter,
-                                              const flat_set< int64_t >& ids, bool broadcast )
+annotated_signed_transaction wallet_api::remove_proposal(const account_name_type& deleter,
+                                            const flat_set< int64_t >& ids, bool broadcast )
 {
   FC_ASSERT( !is_locked() );
 

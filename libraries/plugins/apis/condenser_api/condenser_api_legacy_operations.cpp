@@ -121,17 +121,4 @@ void from_variant( const fc::variant& v, hive::plugins::condenser_api::legacy_po
   old_sv_from_variant( v, sv );
 }
 
-void to_variant( const hive::plugins::condenser_api::legacy_update_proposal_extensions& sv, fc::variant& v )
-{
-  old_sv_to_variant( sv, v );
-}
-
-void from_variant( const fc::variant& v, hive::plugins::condenser_api::legacy_update_proposal_extensions& sv )
-{
-  if( v.is_array() )
-    old_sv_from_variant( v, sv );
-  else
-    new_sv_from_variant( v, sv );
-}
-
 } // fc
