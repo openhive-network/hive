@@ -34,13 +34,5 @@ namespace hive { namespace chain {
 
 } } // hive::chain
 
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template<> struct is_static_length< hive::chain::block_summary_object > : public boost::true_type {};
-
-} // mira
-#endif
-
 FC_REFLECT( hive::chain::block_summary_object, (id)(block_id) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::block_summary_object, hive::chain::block_summary_index )

@@ -192,14 +192,6 @@ namespace hive { namespace chain {
 
 } } // hive::chain
 
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template<> struct is_static_length< hive::chain::dynamic_global_property_object > : public boost::true_type {};
-
-} // mira
-#endif
-
 FC_REFLECT( hive::chain::dynamic_global_property_object,
           (id)
           (head_block_number)

@@ -195,20 +195,6 @@ enum bandwidth_type
 
 } } //hive::chain
 
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template< typename T > struct is_static_length< chainbase::oid< T > > : public boost::true_type {};
-template< typename T > struct is_static_length< chainbase::oid_ref< T > > : public boost::true_type {};
-template< typename T > struct is_static_length< fc::fixed_string< T > > : public boost::true_type {};
-template<> struct is_static_length< hive::protocol::account_name_type > : public boost::true_type {};
-template<> struct is_static_length< hive::protocol::asset_symbol_type > : public boost::true_type {};
-template<> struct is_static_length< hive::protocol::asset > : public boost::true_type {};
-template<> struct is_static_length< hive::protocol::price > : public boost::true_type {};
-
-} // mira
-#endif
-
 namespace fc
 {
 class variant;

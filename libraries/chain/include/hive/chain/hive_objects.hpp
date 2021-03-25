@@ -480,20 +480,6 @@ namespace hive { namespace chain {
 
 } } // hive::chain
 
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template<> struct is_static_length< hive::chain::convert_request_object > : public boost::true_type {};
-template<> struct is_static_length< hive::chain::escrow_object > : public boost::true_type {};
-template<> struct is_static_length< hive::chain::liquidity_reward_balance_object > : public boost::true_type {};
-template<> struct is_static_length< hive::chain::limit_order_object > : public boost::true_type {};
-template<> struct is_static_length< hive::chain::withdraw_vesting_route_object > : public boost::true_type {};
-template<> struct is_static_length< hive::chain::decline_voting_rights_request_object > : public boost::true_type {};
-template<> struct is_static_length< hive::chain::reward_fund_object > : public boost::true_type {};
-
-} // mira
-#endif
-
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/account_object.hpp>
 
