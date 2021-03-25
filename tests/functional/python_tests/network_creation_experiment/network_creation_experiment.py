@@ -395,16 +395,14 @@ if __name__ == "__main__":
         alpha_net.wait_for_synchronization_of_all_nodes()
         beta_net.wait_for_synchronization_of_all_nodes()
 
-        input('Press enter to disconnect networks')
-        alpha_net.disconnect_from(beta_net)
-        print('Disconnected')
-
-        input('Press enter to reconnect networks')
-        alpha_net.connect_with(beta_net)
-        print('Reconnected')
-
         while True:
-            pass
+          input('Press enter to disconnect networks')
+          alpha_net.disconnect_from(beta_net)
+          print('Disconnected')
+
+          input('Press enter to reconnect networks')
+          alpha_net.connect_with(beta_net)
+          print('Reconnected')
 
     except Exception as _ex:
         log.exception(str(_ex))
