@@ -54,16 +54,8 @@ namespace chain {
     protocol::hardfork_version versions[ HIVE_NUM_HARDFORKS + 1 ];
   };
 
-  class database;
-
-#ifdef ENABLE_MIRA
-  using set_index_type_func = std::function< void(database&, mira::index_type, const boost::filesystem::path&, const boost::any&) >;
-#endif
-
   struct index_delegate {
-#ifdef ENABLE_MIRA
-    set_index_type_func set_index_type;
-#endif
+    // XXX: index_delegate is no longer needed
   };
 
   using index_delegate_map = std::map< std::string, index_delegate >;
