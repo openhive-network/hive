@@ -47,6 +47,7 @@ namespace chain {
   struct prepare_snapshot_supplement_notification;
   struct load_snapshot_supplement_notification;
 
+  class database;
   
   struct hardfork_versions
   {
