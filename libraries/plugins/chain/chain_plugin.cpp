@@ -409,23 +409,6 @@ void chain_plugin_impl::initial_settings()
 
   fc::variant database_config;
 
-#ifdef ENABLE_MIRA
-  try
-  {
-    database_config = fc::json::from_file( database_cfg, fc::json::strict_parser );
-  }
-  catch ( const std::exception& e )
-  {
-    elog( "Error while parsing database configuration: ${e}", ("e", e.what()) );
-    exit( EXIT_FAILURE );
-  }
-  catch ( const fc::exception& e )
-  {
-    elog( "Error while parsing database configuration: ${e}", ("e", e.what()) );
-    exit( EXIT_FAILURE );
-  }
-#endif
-
   db_open_args.data_dir = app().data_dir() / "blockchain";
   db_open_args.shared_mem_dir = shared_memory_dir;
   db_open_args.initial_supply = HIVE_INIT_SUPPLY;
@@ -610,9 +593,6 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("checkpoint,c", bpo::value<vector<string>>()->composing(), "Pairs of [BLOCK_NUM,BLOCK_ID] that should be enforced as checkpoints.")
       ("flush-state-interval", bpo::value<uint32_t>(),
         "flush shared memory changes to disk every N blocks")
-#ifdef ENABLE_MIRA
-      ("memory-replay-indices", bpo::value<vector<string>>()->multitoken()->composing(), "Specify which indices should be in memory during replay")
-#endif
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -626,10 +606,6 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
-#ifdef ENABLE_MIRA
-      ("database-cfg", bpo::value<bfs::path>()->default_value("database.cfg"), "The database configuration file location")
-      ("memory-replay,m", bpo::bool_switch()->default_value(false), "Replay with state in memory instead of on disk")
-#endif
 #ifdef IS_TEST_NET
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
 #endif
@@ -690,29 +666,6 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   {
     my->statsd_on_replay = options.at( "statsd-record-on-replay" ).as< bool >();
   }
-#ifdef ENABLE_MIRA
-  my->database_cfg = options.at( "database-cfg" ).as< bfs::path >();
-
-  if( my->database_cfg.is_relative() )
-    my->database_cfg = app().data_dir() / my->database_cfg;
-
-  if( !bfs::exists( my->database_cfg ) )
-  {
-    my->write_default_database_config( my->database_cfg );
-  }
-
-  my->replay_in_memory = options.at( "memory-replay" ).as< bool >();
-  if ( options.count( "memory-replay-indices" ) )
-  {
-    std::vector<std::string> indices = options.at( "memory-replay-indices" ).as< vector< string > >();
-    for ( auto& element : indices )
-    {
-      std::vector< std::string > tmp;
-      boost::split( tmp, element, boost::is_any_of("\t ") );
-      my->replay_memory_indices.insert( my->replay_memory_indices.end(), tmp.begin(), tmp.end() );
-    }
-  }
-#endif
 
 #ifdef IS_TEST_NET
   if( options.count( "chain-id" ) )
