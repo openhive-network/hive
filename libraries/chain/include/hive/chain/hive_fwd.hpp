@@ -7,20 +7,14 @@
 #include <chainbase/util/object_id.hpp>
 #include <chainbase/util/object_id_serialization.hpp>
 
-#ifdef ENABLE_MIRA
-#include <mira/multi_index_container_fwd.hpp>
-#endif
-
 namespace fc {
 
 namespace raw {
 
-#ifndef ENABLE_MIRA
 template<typename Stream>
 inline void pack( Stream& s, const chainbase::shared_string& ss );
 template<typename Stream>
 inline void unpack( Stream& s, chainbase::shared_string& ss, uint32_t depth = 0  );
-#endif
 
 template<typename Stream, typename E, typename A>
 void pack( Stream& s, const boost::interprocess::deque< E, A >& value );
