@@ -434,7 +434,7 @@ BOOST_AUTO_TEST_CASE( curation_weight_test )
 
 }
 
-#if !defined ENABLE_MIRA && !defined ENABLE_STD_ALLOCATOR
+#ifndef ENABLE_STD_ALLOCATOR
 BOOST_AUTO_TEST_CASE( chain_object_size )
 {
   //typical elements of various objects

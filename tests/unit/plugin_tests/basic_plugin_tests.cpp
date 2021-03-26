@@ -1,4 +1,4 @@
-#if defined IS_TEST_NET && !defined ENABLE_MIRA && !defined ENABLE_STD_ALLOCATOR
+#if defined IS_TEST_NET && !defined ENABLE_STD_ALLOCATOR
 #include <boost/test/unit_test.hpp>
 
 #include <hive/plugins/account_by_key/account_by_key_objects.hpp>
