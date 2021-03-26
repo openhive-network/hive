@@ -44,8 +44,6 @@
 
 #include <boost/scope_exit.hpp>
 
-#include <rocksdb/perf_context.h>
-
 #include <iostream>
 
 #include <cstdint>
@@ -166,9 +164,7 @@ void database::open( const open_args& args )
     // Rewind all undo state. This should return us to the state at the last irreversible block.
     with_write_lock( [&]()
     {
-#ifndef ENABLE_MIRA
       undo_all();
-#endif
 
       if( args.chainbase_flags & chainbase::skip_env_check )
       {
@@ -263,13 +259,8 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
     uint32_t cur_block_num = block.block_num();
     if( cur_block_num % 100000 == 0 )
     {
-      std::cerr << "   " << double( cur_block_num ) * 100 / last_block_num << "%   " << cur_block_num << " of " << last_block_num << "   (" <<
-#ifdef ENABLE_MIRA
-      get_cache_size()  << " objects cached using " << (get_cache_usage() >> 20) << "M"
-#else
-      (get_free_memory() >> 20) << "M free"
-#endif
-      << ")\n";
+      std::cerr << "   " << double( cur_block_num ) * 100 / last_block_num << "%   " << cur_block_num << " of " << last_block_num
+      << "   (" << (get_free_memory() >> 20) << "M free)\n";
 
       //rocksdb::SetPerfLevel(rocksdb::kEnableCount);
       //rocksdb::get_perf_context()->Reset();
@@ -443,10 +434,6 @@ void database::close(bool rewind)
     // we have to clear_pending() after we're done popping to get a clean
     // DB state (issue #336).
     clear_pending();
-
-#ifdef ENABLE_MIRA
-    undo_all();
-#endif
 
     chainbase::database::flush();
     chainbase::database::close();
@@ -784,7 +771,6 @@ const comment_object* database::find_comment( const account_name_type& author, c
   return find_comment( acc->get_id(), permlink );
 }
 
-#ifndef ENABLE_MIRA
 const comment_object& database::get_comment( const account_id_type& author, const string& permlink )const
 { try {
   return get< comment_object, by_permlink >( comment_object::compute_author_and_permlink_hash( author, permlink ) );
@@ -806,7 +792,6 @@ const comment_object* database::find_comment( const account_name_type& author, c
   if(acc == nullptr) return nullptr;
   return find_comment( acc->get_id(), permlink );
 }
-#endif
 
 const escrow_object& database::get_escrow( const account_name_type& name, uint32_t escrow_id )const
 { try {
@@ -3816,7 +3801,6 @@ void database::apply_block( const signed_block& next_block, uint32_t skip )
 
 void database::check_free_memory( bool force_print, uint32_t current_block_num )
 {
-#ifndef ENABLE_MIRA
   uint64_t free_mem = get_free_memory();
   uint64_t max_mem = get_max_memory();
 
@@ -3852,7 +3836,6 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
         elog( "Free memory is now ${n}M. Increase shared file size immediately!" , ("n", free_mb) );
     }
   }
-#endif
 }
 
 void database::_apply_block( const signed_block& next_block )
