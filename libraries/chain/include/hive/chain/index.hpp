@@ -1,7 +1,5 @@
 #pragma once
 
-#include <mira/index_converter.hpp>
-
 #include <hive/schema/schema.hpp>
 #include <hive/protocol/schema_types.hpp>
 #include <hive/chain/schema_types.hpp>
