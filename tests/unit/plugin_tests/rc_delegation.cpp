@@ -307,7 +307,7 @@ BOOST_AUTO_TEST_CASE( rc_set_slot_delegator )
     sign( tx, dave_private_key );
     db->push_transaction( tx, 0 );
 
-    generate_blocks( db->get_index< change_recovery_account_request_index, by_effective_date >().begin()->effective_on );
+    generate_blocks( db->get_index< change_recovery_account_request_index, by_effective_date >().begin()->get_execution_time() );
 
     custom_json_operation custom_op;
     custom_op.required_auths.insert( "alice" );
