@@ -160,8 +160,8 @@ void create_rc_account( database& db, uint32_t now, const account_object& accoun
     rca.indel_slots[ HIVE_RC_CREATOR_SLOT_NUM ] = creator;
 
     // Make sure that we don't have the same accoun twice (null is okay)
-    if (creator != account.recovery_account)
-      rca.indel_slots[ HIVE_RC_RECOVERY_SLOT_NUM ] = account.recovery_account;
+    if (creator != account.get_recovery_account())
+      rca.indel_slots[ HIVE_RC_RECOVERY_SLOT_NUM ] = account.get_recovery_account();
     else
       rca.indel_slots[ HIVE_RC_RECOVERY_SLOT_NUM ] = HIVE_NULL_ACCOUNT;
 

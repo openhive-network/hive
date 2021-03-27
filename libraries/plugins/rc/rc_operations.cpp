@@ -334,12 +334,12 @@ void set_slot_delegator_evaluator::do_apply( const set_slot_delegator_operation&
     }
     case HIVE_RC_RECOVERY_SLOT_NUM:
     {
-      if( to_account.recovery_account != account_name_type() ) {
-        FC_ASSERT((to_account.recovery_account == op.signer || op.signer == op.to_account ),
+      if( to_account.get_recovery_account() != account_name_type() ) {
+        FC_ASSERT((to_account.get_recovery_account() == op.signer || op.signer == op.to_account ),
                   "Only recovery partner ${r} or the account owner ${a} can change RC recovery slot ${n}.",
-                  ("r", to_account.recovery_account)("a", op.to_account)("n", HIVE_RC_RECOVERY_SLOT_NUM));
+                  ("r", to_account.get_recovery_account())("a", op.to_account)("n", HIVE_RC_RECOVERY_SLOT_NUM));
       } else {
-        FC_ASSERT((to_account.recovery_account == op.signer),
+        FC_ASSERT((to_account.get_recovery_account() == op.signer),
                   "No recovery partner set, only the account owner ${a} can change RC recovery slot ${n}.",
                   ("a", op.to_account)("n", HIVE_RC_RECOVERY_SLOT_NUM));
       }
