@@ -1,5 +1,7 @@
 # Basic MIRA configuration
 
+**NOTE: MIRA has been removed**
+
 MIRA has many options that allow the user to improve performance. For most use cases, the default options will be sufficient. However, one consideration when configuring MIRA is resource limiting.
 
 MIRA uses a multi-tiered architecture for retrieving and storing data from its databases. Each blockchain index is considered its own distinct database. At a very high level, the tiers can be thought of as follows:
