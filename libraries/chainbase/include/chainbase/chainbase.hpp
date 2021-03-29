@@ -156,15 +156,12 @@ namespace chainbase {
   #define CHAINBASE_SET_INDEX_TYPE( OBJECT_TYPE, INDEX_TYPE )  \
   namespace chainbase { template<> struct get_index_type<OBJECT_TYPE> { typedef INDEX_TYPE type; }; }
 
-  #define CHAINBASE_COPY_ACCESS private
-
   #define CHAINBASE_OBJECT_1( object_class ) CHAINBASE_OBJECT_false( object_class )
   #define CHAINBASE_OBJECT_2( object_class, allow_default ) CHAINBASE_OBJECT_##allow_default( object_class )
   #define CHAINBASE_OBJECT_true( object_class ) CHAINBASE_OBJECT_COMMON( object_class ); public: object_class() : id(0) {} private:
   #define CHAINBASE_OBJECT_COMMON( object_class )                      \
   private:                                                             \
     id_type id;                                                       \
-  CHAINBASE_COPY_ACCESS:                                               \
     object_class( const object_class& source ) = default;             \
     /* problem with this being private? you most likely did           \
       auto chain_object = db.get(...);                               \

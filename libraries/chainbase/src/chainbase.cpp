@@ -213,14 +213,14 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   }
 
   size_t database::get_cache_usage() const
-  { return 0; }
+  { return 0; } // UNDONE: Was used by MIRA. Currently does nothing
 
   size_t database::get_cache_size() const
-  { return 0; }
+  { return 0; } // UNDONE: Was used by MIRA. Currently does nothing
 
-  void database::dump_lb_call_counts() { }
+  void database::dump_lb_call_counts() { } // UNDONE: Was used by MIRA. Currently does nothing
 
-  void database::trim_cache() { }
+  void database::trim_cache() { } // UNDONE: Was used by MIRA. Currently does nothing
 
   void database::close()
   {

@@ -56,7 +56,7 @@ namespace chain {
   };
 
   struct index_delegate {
-    // XXX: index_delegate is no longer needed
+    // UNDONE: Was used by MIRA - set_index_type_func
   };
 
   using index_delegate_map = std::map< std::string, index_delegate >;
