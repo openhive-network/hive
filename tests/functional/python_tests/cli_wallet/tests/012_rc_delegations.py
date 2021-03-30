@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
             assert "Please wait to transact" in transfer_result['error']['message']
             
-            res = wallet.delegate_to_pool(creator, pool_account, {"symbol":"VESTS","amount": "100", "decimals": 6, "nai": "@@000000037"}, "true")
+            res = wallet.delegate_to_pool(creator, pool_account, {"symbol":"VESTS","amount": "100", "precision": 6, "nai": "@@000000037"}, "true")
             assert "error" not in res, "failed to delegate to the pool"
             pool = wallet.list_rc_delegation_pools(pool_account, 100, "by_name")['result'][0]
             pool_current_mana = pool['rc_pool_manabar']['current_mana']
@@ -67,7 +67,7 @@ if __name__ == "__main__":
             transfer_result = wallet.transfer(receiver, creator, "0.001 TESTS", "", "true")
             assert "error" in transfer_result, "Should not be able to transfer with no RC"
 
-            res = wallet.delegate_drc_from_pool(pool_account, receiver, {"decimals": 6, "nai": "@@000000037"}, 100, "true")
+            res = wallet.delegate_drc_from_pool(pool_account, receiver, {"precision": 6, "nai": "@@000000037"}, 100, "true")
             assert "error" not in res, "failed to delegate to the pool"
             rc = wallet.find_rc_accounts([receiver])['result'][0]
             current_mana = rc['delegation_slots'][1]["rc_manabar"]["current_mana"]

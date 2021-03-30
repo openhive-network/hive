@@ -78,7 +78,6 @@ struct rc_account_api_object
           out_delegation_total( rca.out_delegations )
   {
     max_rc = get_maximum_rc( db.get_account( account ), rca );
-    //
     delegation_slots.reserve( HIVE_RC_MAX_SLOTS );
     for ( const account_name_type& pool : rca.indel_slots )
     {
@@ -101,7 +100,6 @@ struct rc_account_api_object
   asset                 max_rc_creation_adjustment = asset( 0, VESTS_SYMBOL );
   int64_t               max_rc = 0;
   asset                         vests_delegated_to_pools = asset( 0 , VESTS_SYMBOL );
-  //fc::array< account_name_type, HIVE_RC_MAX_SLOTS > delegation_slots;
   std::vector< pool_delegation > delegation_slots;
 
   uint32_t                      out_delegation_total = 0;
