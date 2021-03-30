@@ -4,16 +4,16 @@ import requests, sys, json, argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--hived-address", dest="hived", help = "IP address to replayed node", required=True, type=str)
-parser.add_argument("--path-to-config", dest="_", help = "Path to node config file", required=True, type=str, default=None)
+parser.add_argument("--path-to-config", dest="_", help = "Path to node config file", required=False, type=str, default=None)
 args = parser.parse_args()
 
 url = args.hived
 
 def check( item, positive ):
     if positive:
-        assert( "delayed_votes" in item )
+        assert "delayed_votes" in item, f'"delayed_votes" not in: {item}'
     else:
-        assert( "delayed_votes" not in item )
+        assert "delayed_votes" not in item, f'"delayed_votes" in while shouldn\'t: {item}'
 
 def check_in_array( content, positive ):
     for item in content:
@@ -23,6 +23,7 @@ def check_in_array( content, positive ):
 def query( payload, positive ):
     result = requests.post( url, data=payload )
     content = result.json()["result"]
+    print(f"checking: {payload}")
 
     if type( content ) == list:
         check_in_array( content, positive )
@@ -61,7 +62,5 @@ if __name__ == '__main__':
 
     except Exception as ex:
 
-        print( "TEST FAILED" )
-        print( ex.content )
-
+        print( f"TEST FAILED, reason: {ex}" )
         sys.exit( 1 )
