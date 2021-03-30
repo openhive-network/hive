@@ -1,9 +1,13 @@
 #!/usr/bin/python3
 
-import requests, sys, json
+import requests, sys, json, argparse
 
-#HIVE node must work
-url = 'http://127.0.0.1:8090'
+parser = argparse.ArgumentParser()
+parser.add_argument("--hived-address", dest="hived", help = "IP address to replayed node", required=True, type=str)
+parser.add_argument("--path-to-config", dest="_", help = "Path to node config file", required=True, type=str, default=None)
+args = parser.parse_args()
+
+url = args.hived
 
 def check( item, positive ):
     if positive:
@@ -24,7 +28,7 @@ def query( payload, positive ):
         check_in_array( content, positive )
     else:
         assert( "accounts" in content )
-        content = content["accounts"]
+        content = content["accounts"] 
         check_in_array( content, positive )
 
 if __name__ == '__main__':

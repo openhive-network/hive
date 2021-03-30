@@ -116,7 +116,7 @@ try:
 				path_to_save = os.path.join(args.artifacts, log_filename)
 				output = open(path_to_save, 'w', 1)
 
-			T = sub.Popen(["/usr/bin/python3", test, "--run-hived", config.webserver_http_endpoint, "--path-to-config", path_to_config], stdout=output, stderr=sub.STDOUT)
+			T = sub.Popen(["/usr/bin/python3", test, "--hived-address", config.webserver_http_endpoint, "--path-to-config", path_to_config], stdout=output, stderr=sub.STDOUT)
 			retcode = T.wait(MAX_TIME_FOR_EACH_TEST_IN_SECONDS)
 			if retcode != 0:
 				RETCODE -= 1

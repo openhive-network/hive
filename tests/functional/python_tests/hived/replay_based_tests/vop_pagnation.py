@@ -17,7 +17,7 @@ from hive_utils.resources.configini import validate_address
 MAX_AT_ONCE = 10000
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--run-hived", dest="hived", help = "IP address to replayed node", required=True, type=str)
+parser.add_argument("--hived-address", dest="hived", help = "IP address to replayed node", required=True, type=str)
 parser.add_argument("--path-to-config", dest="config_path", help = "Path to node config file", required=True, type=str, default=None)
 parser.add_argument("--blocks", dest="blocks", help = "Blocks to replay", required=False, type=int, default=1000000)
 
