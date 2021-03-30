@@ -327,44 +327,48 @@ void use_account_rcs(
   }
   //ilog( "rc : ${rc} rc_available ${ra} rcs_left_to_pay: ${rcs_left_to_pay}, delta ${d})",("rc", rc) ("ra", rc_available) ("rcs_left_to_pay", rcs_left_to_pay) ("d", delta));
 
-  // If the account doesn't have enough RC, pull from delegated RC to the account
-  for (int i = 0; i < HIVE_RC_MAX_SLOTS; i++) {
-    // If the slot is empty, skip it
-    if (rc_account.indel_slots[i] == "") continue;
+  if( db.has_hardfork( HIVE_HARDFORK_1_25 ) ) {
+    // If the account doesn't have enough RC, pull from delegated RC to the account
+    for (int i = 0; i < HIVE_RC_MAX_SLOTS; i++) {
+      // If the slot is empty, skip it
+      if (rc_account.indel_slots[i] == "") continue;
 
-    const auto *drc_edge = db.find<rc_outdel_drc_edge_object, by_edge>(boost::make_tuple(rc_account.indel_slots[i], account_name, VESTS_SYMBOL));
+      const auto *drc_edge = db.find<rc_outdel_drc_edge_object, by_edge>(
+              boost::make_tuple(rc_account.indel_slots[i], account_name, VESTS_SYMBOL));
 
-    if (drc_edge == nullptr) continue;
+      if (drc_edge == nullptr) continue;
 
-    //ilog( "id : ${id} slot : ${slot} from_pool: ${pool} to_account: ${acc} ", ("id",  drc_edge->id) ("slot", rc_account.indel_slots[i]) ("pool", drc_edge->from_pool) ("acc", drc_edge->to_account));
+      //ilog( "id : ${id} slot : ${slot} from_pool: ${pool} to_account: ${acc} ", ("id",  drc_edge->id) ("slot", rc_account.indel_slots[i]) ("pool", drc_edge->from_pool) ("acc", drc_edge->to_account));
 
-    mbparams.max_mana = drc_edge->drc_max_mana;
-    drc_manabars[i] = drc_edge->drc_manabar;
-    drc_manabars[i].regenerate_mana<true>(mbparams, now);
+      mbparams.max_mana = drc_edge->drc_max_mana;
+      drc_manabars[i] = drc_edge->drc_manabar;
+      drc_manabars[i].regenerate_mana<true>(mbparams, now);
 
-    const auto &pool = db.get<rc_delegation_pool_object, by_account_symbol>(boost::make_tuple(rc_account.indel_slots[i], VESTS_SYMBOL));
-    mbparams.max_mana = pool.max_rc;
-    pool_manabars[i] = pool.rc_pool_manabar;
-    pool_manabars[i].regenerate_mana<true>(mbparams, now);
+      const auto &pool = db.get<rc_delegation_pool_object, by_account_symbol>(
+              boost::make_tuple(rc_account.indel_slots[i], VESTS_SYMBOL));
+      mbparams.max_mana = pool.max_rc;
+      pool_manabars[i] = pool.rc_pool_manabar;
+      pool_manabars[i].regenerate_mana<true>(mbparams, now);
 
-    // Don't use rc if we already paid the full rc cost
-    if (rcs_left_to_pay <= 0) continue;
+      // Don't use rc if we already paid the full rc cost
+      if (rcs_left_to_pay <= 0) continue;
 
-    // Get the smallest amount between the rc delegated and the pool's content
-    int64_t delegated_rc_available = std::min(drc_manabars[i].current_mana, pool_manabars[i].current_mana);
-    total_rc_available += delegated_rc_available;
-    delta = delegated_rc_available - rcs_left_to_pay;
-    //ilog( "i : ${i}, acc: ${acc} delegated_rc_avail ${dra} rcs_left_to_pay: ${rcs_left_to_pay}, delta ${d})", ("i", i) ("acc", pool.account) ("dra", delegated_rc_available) ("rcs_left_to_pay", rcs_left_to_pay) ("d", delta));
+      // Get the smallest amount between the rc delegated and the pool's content
+      int64_t delegated_rc_available = std::min(drc_manabars[i].current_mana, pool_manabars[i].current_mana);
+      total_rc_available += delegated_rc_available;
+      delta = delegated_rc_available - rcs_left_to_pay;
+      //ilog( "i : ${i}, acc: ${acc} delegated_rc_avail ${dra} rcs_left_to_pay: ${rcs_left_to_pay}, delta ${d})", ("i", i) ("acc", pool.account) ("dra", delegated_rc_available) ("rcs_left_to_pay", rcs_left_to_pay) ("d", delta));
 
-    // If we don't have enough or exactly enough, use all the RC
-    if (delta <= 0) {
-      drc_manabars[i].use_mana(delegated_rc_available);
-      pool_manabars[i].use_mana(delegated_rc_available);
-      rcs_left_to_pay -= delegated_rc_available;
-    } else {
-      drc_manabars[i].use_mana(rcs_left_to_pay);
-      pool_manabars[i].use_mana(rcs_left_to_pay);
-      rcs_left_to_pay = 0;
+      // If we don't have enough or exactly enough, use all the RC
+      if (delta <= 0) {
+        drc_manabars[i].use_mana(delegated_rc_available);
+        pool_manabars[i].use_mana(delegated_rc_available);
+        rcs_left_to_pay -= delegated_rc_available;
+      } else {
+        drc_manabars[i].use_mana(rcs_left_to_pay);
+        pool_manabars[i].use_mana(rcs_left_to_pay);
+        rcs_left_to_pay = 0;
+      }
     }
   }
 
@@ -410,26 +414,26 @@ void use_account_rcs(
     rca.rc_manabar = rca_manabar;
   } );
 
-  for( int i = 0; i < HIVE_RC_MAX_SLOTS; i++ )
+  if( db.has_hardfork( HIVE_HARDFORK_1_25 ) )
   {
-    if (rc_account.indel_slots[i] == "") continue;
-    // TODO: we already fetched this no need to refetch it
-    const auto* drc_edge = db.find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( rc_account.indel_slots[i], account_name, VESTS_SYMBOL ) );
+    for (int i = 0; i < HIVE_RC_MAX_SLOTS; i++) {
+      if (rc_account.indel_slots[i] == "") continue;
+      // TODO: we already fetched this no need to refetch it
+      const auto *drc_edge = db.find<rc_outdel_drc_edge_object, by_edge>(boost::make_tuple(rc_account.indel_slots[i], account_name, VESTS_SYMBOL));
 
-    if( drc_edge == nullptr ) continue;
+      if (drc_edge == nullptr) continue;
 
-    db.modify( *drc_edge, [&]( rc_outdel_drc_edge_object& edge )
-    {
-      edge.drc_manabar = drc_manabars[i];
-    });
+      db.modify(*drc_edge, [&](rc_outdel_drc_edge_object &edge) {
+        edge.drc_manabar = drc_manabars[i];
+      });
 
-    // TODO: we already fetched this no need to refetch it
-    const auto& dpool = db.get< rc_delegation_pool_object, by_account_symbol >( boost::make_tuple( rc_account.indel_slots[i], VESTS_SYMBOL ) );
+      // TODO: we already fetched this no need to refetch it
+      const auto &dpool = db.get<rc_delegation_pool_object, by_account_symbol>(boost::make_tuple(rc_account.indel_slots[i], VESTS_SYMBOL));
 
-    db.modify( dpool, [&]( rc_delegation_pool_object& pool )
-    {
-      pool.rc_pool_manabar = pool_manabars[i];
-    });
+      db.modify(dpool, [&](rc_delegation_pool_object &pool) {
+        pool.rc_pool_manabar = pool_manabars[i];
+      });
+    }
   }
 }
 
