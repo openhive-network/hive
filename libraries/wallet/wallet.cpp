@@ -2809,6 +2809,7 @@ condenser_api::legacy_signed_transaction wallet_api::remove_proposal(const accou
     cop.from_pool    = from_pool;
     cop.to_account   = to_account;
     cop.drc_max_mana = drc_max_mana;
+    cop.asset_symbol = asset_symbol;
 
     custom_json_operation op;
     op.json = fc::json::to_string( rc_plugin_operation( cop ) );

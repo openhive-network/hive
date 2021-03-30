@@ -123,7 +123,6 @@ inline int64_t get_next_vesting_withdrawal( const account_object& account )
 template< bool account_may_exist = false >
 void create_rc_account( database& db, uint32_t now, const account_object& account, asset max_rc_creation_adjustment, const account_name_type& creator )
 {
-  // ilog( "create_rc_account( ${a} )", ("a", account.name) );
   if( account_may_exist )
   {
     const rc_account_object* rc_account = db.find< rc_account_object, by_name >( account.name );
@@ -159,15 +158,13 @@ void create_rc_account( database& db, uint32_t now, const account_object& accoun
 
     rca.indel_slots[ HIVE_RC_CREATOR_SLOT_NUM ] = creator;
 
-    // Make sure that we don't have the same accoun twice (null is okay)
+    // Make sure that we don't have the same account twice (empty is okay)
     if (creator != account.get_recovery_account())
       rca.indel_slots[ HIVE_RC_RECOVERY_SLOT_NUM ] = account.get_recovery_account();
-    else
-      rca.indel_slots[ HIVE_RC_RECOVERY_SLOT_NUM ] = HIVE_NULL_ACCOUNT;
 
     for( int i = HIVE_RC_USER_SLOT_NUM; i < HIVE_RC_MAX_SLOTS; i++ )
     {
-      rca.indel_slots[ i ] = HIVE_NULL_ACCOUNT;
+      rca.indel_slots[ i ] = "";
     }
   } );
 }
@@ -332,8 +329,10 @@ void use_account_rcs(
 
   // If the account doesn't have enough RC, pull from delegated RC to the account
   for (int i = 0; i < HIVE_RC_MAX_SLOTS; i++) {
-    const auto *drc_edge = db.find<rc_outdel_drc_edge_object, by_edge>(
-            boost::make_tuple(rc_account.indel_slots[i], account_name, VESTS_SYMBOL));
+    // If the slot is empty, skip it
+    if (rc_account.indel_slots[i] == "") continue;
+
+    const auto *drc_edge = db.find<rc_outdel_drc_edge_object, by_edge>(boost::make_tuple(rc_account.indel_slots[i], account_name, VESTS_SYMBOL));
 
     if (drc_edge == nullptr) continue;
 
@@ -343,11 +342,13 @@ void use_account_rcs(
     drc_manabars[i] = drc_edge->drc_manabar;
     drc_manabars[i].regenerate_mana<true>(mbparams, now);
 
-    const auto &pool = db.get<rc_delegation_pool_object, by_account_symbol>(
-            boost::make_tuple(rc_account.indel_slots[i], VESTS_SYMBOL));
+    const auto &pool = db.get<rc_delegation_pool_object, by_account_symbol>(boost::make_tuple(rc_account.indel_slots[i], VESTS_SYMBOL));
     mbparams.max_mana = pool.max_rc;
     pool_manabars[i] = pool.rc_pool_manabar;
     pool_manabars[i].regenerate_mana<true>(mbparams, now);
+
+    // Don't use rc if we already paid the full rc cost
+    if (rcs_left_to_pay <= 0) continue;
 
     // Get the smallest amount between the rc delegated and the pool's content
     int64_t delegated_rc_available = std::min(drc_manabars[i].current_mana, pool_manabars[i].current_mana);
@@ -355,10 +356,7 @@ void use_account_rcs(
     delta = delegated_rc_available - rcs_left_to_pay;
     //ilog( "i : ${i}, acc: ${acc} delegated_rc_avail ${dra} rcs_left_to_pay: ${rcs_left_to_pay}, delta ${d})", ("i", i) ("acc", pool.account) ("dra", delegated_rc_available) ("rcs_left_to_pay", rcs_left_to_pay) ("d", delta));
 
-    // Don't use rc if we already paid the full rc cost
-    if (rcs_left_to_pay <= 0) continue;
-
-    // If we don't have enough or exactly enough, use all RC
+    // If we don't have enough or exactly enough, use all the RC
     if (delta <= 0) {
       drc_manabars[i].use_mana(delegated_rc_available);
       pool_manabars[i].use_mana(delegated_rc_available);
@@ -414,6 +412,8 @@ void use_account_rcs(
 
   for( int i = 0; i < HIVE_RC_MAX_SLOTS; i++ )
   {
+    if (rc_account.indel_slots[i] == "") continue;
+    // TODO: we already fetched this no need to refetch it
     const auto* drc_edge = db.find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( rc_account.indel_slots[i], account_name, VESTS_SYMBOL ) );
 
     if( drc_edge == nullptr ) continue;
@@ -423,6 +423,7 @@ void use_account_rcs(
       edge.drc_manabar = drc_manabars[i];
     });
 
+    // TODO: we already fetched this no need to refetch it
     const auto& dpool = db.get< rc_delegation_pool_object, by_account_symbol >( boost::make_tuple( rc_account.indel_slots[i], VESTS_SYMBOL ) );
 
     db.modify( dpool, [&]( rc_delegation_pool_object& pool )
@@ -1172,6 +1173,8 @@ struct post_apply_operation_visitor
         p.pool_array[ resource_new_accounts ] = 0;
       });
     }
+
+    // TODO: Fill all rc accounts ?
   }
 
   void operator()( const return_vesting_delegation_operation& op )const
@@ -1221,6 +1224,7 @@ struct post_apply_operation_visitor
   {
     _mod_accounts.emplace_back( op.from_account );
   }
+
 #ifdef HIVE_ENABLE_SMT
   void operator()( const smt_token_launch_action& op )const
   {
