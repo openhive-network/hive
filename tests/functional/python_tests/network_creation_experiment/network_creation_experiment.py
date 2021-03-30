@@ -1,7 +1,4 @@
-from network import Network
-from key_generator import KeyGenerator
-from witness import Witness
-
+from test_library import Network, KeyGenerator, Witness
 
 import json
 import os
@@ -142,12 +139,16 @@ def vote_for_witness(_account, _witness, _approve, _url):
 def vote_for_witnesses(_account, _witnesses, _approve, _url):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
-  for w in _witnesses:
+  for i, w in enumerate(_witnesses):
     if(isinstance(w, str)):
-      account_name = w
+      witness_name = w
     else:
-      account_name = w["account_name"]
-    future = executor.submit(vote_for_witness, _account, account_name, 1, _url)
+      witness_name = w["account_name"]
+    if(isinstance(_account, list)):
+      account_name = _account[i]
+    else:
+      account_name = _account
+    future = executor.submit(vote_for_witness, account_name, witness_name, _approve, _url)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
@@ -319,8 +320,10 @@ if __name__ == "__main__":
 
         Witness.key_generator = KeyGenerator('../../../../build/programs/util/get_dev_key')
 
-        alpha_witness_names = [f'witness{i}-alpha' for i in range(20)]
-        beta_witness_names = [f'witness{i}-beta' for i in range(20)]
+        alpha_witness_names = [f'witness{i}-alpha' for i in range(21)]
+        beta_witness_names = [f'witness{i}-beta' for i in range(21)]
+        alpha_voter_names = [f'voter{i}-alpha' for i in range(21)]
+        beta_voter_names = [f'voter{i}-beta' for i in range(21)]
 
         # Create first network
         alpha_net = Network('Alpha', port_range=range(51000, 52000))
@@ -373,16 +376,25 @@ if __name__ == "__main__":
         import_key(wallet_url, Witness('initminer').private_key)
 
         all_witnesses = alpha_witness_names + beta_witness_names
-        random.shuffle(all_witnesses)
+        all_voters = alpha_voter_names + beta_voter_names
+
+        c = list(zip(all_witnesses, all_voters))
+        random.shuffle(c)
+        all_witnesses, all_voters = zip(*c)
+        all_witnesses = list(all_witnesses)
+        all_voters = list(all_voters)
 
         print("Witness state before voting")
         print_top_witnesses(all_witnesses, api_node)
         list_accounts(wallet_url)
 
         prepare_accounts(all_witnesses, wallet_url)
-        configure_initial_vesting(all_witnesses, 500, 1000, "TESTS", wallet_url)
+        prepare_accounts(all_voters, wallet_url)
+        configure_initial_vesting(all_voters, 1000, 1000, "TESTS", wallet_url)
         prepare_witnesses(all_witnesses, wallet_url)
-        self_vote(all_witnesses, wallet_url)
+        print("before voting")
+        input()
+        vote_for_witnesses(all_voters, all_witnesses, 1, wallet_url)
 
         print("Witness state after voting")
         print_top_witnesses(all_witnesses, api_node)
