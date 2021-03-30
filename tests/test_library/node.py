@@ -182,6 +182,22 @@ class Node:
 
         return False
 
+    def send(self, message):
+        if not self.get_webserver_http_endpoints():
+            raise Exception('Webserver http endpoint is unknown')
+
+        from urllib.parse import urlparse
+        endpoint = f'http://{urlparse(self.get_webserver_http_endpoints()[0], "http").path}'
+
+        if '0.0.0.0' in endpoint:
+            endpoint = endpoint.replace('0.0.0.0', '127.0.0.1')
+
+        while not self.is_http_listening():
+            time.sleep(1)
+
+        from . import communication
+        return communication.request(endpoint, message)
+
     def get_id(self):
         request = bytes(json.dumps({
             "jsonrpc": "2.0",
