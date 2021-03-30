@@ -7,7 +7,7 @@ parser.add_argument("--hived-address", dest="hived", help = "IP address to repla
 parser.add_argument("--path-to-config", dest="_", help = "Path to node config file", required=False, type=str, default=None)
 args = parser.parse_args()
 
-url = args.hived
+url = args.hived if args.hived.startswith("http") else f"http://{args.hived}"
 
 def check( item, positive ):
     if positive:
