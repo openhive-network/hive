@@ -857,13 +857,18 @@ namespace hive
 
             std::list< data_processor > processors;
 
-            for( auto& table_name : table_names )
+            for( const auto& table_name : table_names )
             {
               processors.emplace_back( db_url, "DB processor", [ = ](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
                             {
                               std::string query = std::string( "SELECT " ) + function_name + "( '" + table_name + "' );";
                               ilog("The query: `${query}` has been executed...", ("query", query ) );
+                              const auto start_time = fc::time_point::now();
                               tx.exec( query );
+                              ilog(
+                                "${mode} of ${mod_type} for `${table}` done in ${time} ms", 
+                                ("mode", (mode ? "Creating" : "Saving and dropping")) ("mod_type", objects_name) ("table", table_name) ("time", (fc::time_point::now() - start_time).count() / 1000.0 ) 
+                              );
                               return data_processing_status();
                             } );
 
