@@ -48,7 +48,7 @@ if __name__ == "__main__":
             assert(rc['delegation_slots'][2]["rc_manabar"]["current_mana"] == 0)
             assert(rc['delegation_slots'][2]['max_mana'] == 0)
 
-            ## use up all of the available rc
+            # Use up all of the available rc
             wallet.post_comment(receiver, "lorem", "", "ipsum", "Lorem Ipsum", "body", "{}", "true")
             rc = wallet.find_rc_accounts([receiver])['result'][0]
             transfer_result = wallet.transfer(receiver, receiver, "0.001 TESTS", "", "true")
@@ -67,8 +67,8 @@ if __name__ == "__main__":
             transfer_result = wallet.transfer(receiver, creator, "0.001 TESTS", "", "true")
             assert "error" in transfer_result, "Should not be able to transfer with no RC"
 
-            res = wallet.delegate_drc_from_pool(pool_account, receiver, {"precision": 6, "nai": "@@000000037"}, 100, "true")
-            assert "error" not in res, "failed to delegate to the pool"
+            res = wallet.delegate_drc_from_pool(pool_account, receiver, {"decimals": 6, "nai": "@@000000037"}, 100, "true")
+            assert "error" not in res, "failed to delegate from the pool to the user"
             rc = wallet.find_rc_accounts([receiver])['result'][0]
             current_mana = rc['delegation_slots'][1]["rc_manabar"]["current_mana"]
 

@@ -6,6 +6,7 @@
 #include <boost/multiprecision/cpp_int.hpp>
 
 #define ASSET_AMOUNT_KEY     "amount"
+// TODO: rename to decimals to match ASSET_SYMBOL_DECIMALS_KEY or rename ASSET_SYMBOL_DECIMALS_KEY to decimals
 #define ASSET_PRECISION_KEY  "precision"
 #define ASSET_NAI_KEY        "nai"
 
