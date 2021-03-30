@@ -60,7 +60,8 @@ struct get_resource_pool_return
 struct pool_delegation
 {
   hive::chain::util::manabar rc_manabar;
-  int64_t                     max_mana = 0;
+  int64_t                    max_mana = 0;
+  account_name_type          delegator;
 };
 
 
@@ -74,15 +75,14 @@ struct rc_account_api_object
           rc_manabar( rca.rc_manabar ),
           max_rc_creation_adjustment( rca.max_rc_creation_adjustment ),
           vests_delegated_to_pools( rca.vests_delegated_to_pools ),
-          delegation_slots( rca.indel_slots ),
           out_delegation_total( rca.out_delegations )
   {
     max_rc = get_maximum_rc( db.get_account( account ), rca );
-
-    for ( const account_name_type& pool : delegation_slots )
+    //
+    delegation_slots.reserve( HIVE_RC_MAX_SLOTS );
+    for ( const account_name_type& pool : rca.indel_slots )
     {
       pool_delegation del;
-
       auto indel_edge = db.find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( pool, account, VESTS_SYMBOL ) );
       if( indel_edge != nullptr )
       {
@@ -90,7 +90,8 @@ struct rc_account_api_object
         del.max_mana = indel_edge->drc_max_mana;
       }
 
-      incoming_delegations[ pool ] = del;
+      del.delegator = pool;
+      delegation_slots.push_back(del);
     }
   }
 
@@ -100,11 +101,8 @@ struct rc_account_api_object
   asset                 max_rc_creation_adjustment = asset( 0, VESTS_SYMBOL );
   int64_t               max_rc = 0;
   asset                         vests_delegated_to_pools = asset( 0 , VESTS_SYMBOL );
-  fc::array< account_name_type, HIVE_RC_MAX_SLOTS >
-          delegation_slots;
-
-  flat_map< account_name_type, pool_delegation >
-          incoming_delegations;
+  //fc::array< account_name_type, HIVE_RC_MAX_SLOTS > delegation_slots;
+  std::vector< pool_delegation > delegation_slots;
 
   uint32_t                      out_delegation_total = 0;
 
@@ -219,7 +217,8 @@ FC_REFLECT( hive::plugins::rc::get_resource_pool_return,
 
 FC_REFLECT( hive::plugins::rc::pool_delegation,
             (rc_manabar)
-            (max_mana) )
+            (max_mana)
+            (delegator))
 
 
 FC_REFLECT( hive::plugins::rc::rc_account_api_object,
@@ -230,7 +229,6 @@ FC_REFLECT( hive::plugins::rc::rc_account_api_object,
   (max_rc)
   (vests_delegated_to_pools)
   (delegation_slots)
-  (incoming_delegations)
   (out_delegation_total)
   )
 

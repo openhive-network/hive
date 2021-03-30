@@ -19,24 +19,46 @@ if __name__ == "__main__":
 
             rc = wallet.find_rc_accounts([receiver])['result'][0]
 
-            assert len(rc['incoming_delegations']) == 2
-            assert(rc['incoming_delegations'][0][0] == creator)
-            assert(rc['incoming_delegations'][0][1]["rc_manabar"]["current_mana"] == 0)
-            assert(rc['incoming_delegations'][0][1]['max_mana'] == 0)
-            assert rc['incoming_delegations'][1][0] == "null"
-            assert(rc['incoming_delegations'][1][1]["rc_manabar"]["current_mana"] == 0)
-            assert(rc['incoming_delegations'][1][1]['max_mana'] == 0)
+            assert len(rc['delegation_slots']) == 3
+            assert(rc['delegation_slots'][0]['delegator'] == creator)
+            assert(rc['delegation_slots'][0]["rc_manabar"]["current_mana"] == 0)
+            assert(rc['delegation_slots'][0]['max_mana'] == 0)
 
-            result = wallet.set_slot_delegator(pool_account, receiver, 2, receiver, "true")
+            assert(rc['delegation_slots'][1]['delegator'] == "")
+            assert(rc['delegation_slots'][1]["rc_manabar"]["current_mana"] == 0)
+            assert(rc['delegation_slots'][1]['max_mana'] == 0)
+
+            assert(rc['delegation_slots'][2]['delegator'] == "")
+            assert(rc['delegation_slots'][2]["rc_manabar"]["current_mana"] == 0)
+            assert(rc['delegation_slots'][2]['max_mana'] == 0)
+
+            wallet.set_slot_delegator(pool_account, receiver, 1, receiver, "true")
             rc = wallet.find_rc_accounts([receiver])['result'][0]
-            assert len(rc['incoming_delegations']) == 3
+
+            assert len(rc['delegation_slots']) == 3
+            assert(rc['delegation_slots'][0]['delegator'] == creator)
+            assert(rc['delegation_slots'][0]["rc_manabar"]["current_mana"] == 0)
+            assert(rc['delegation_slots'][0]['max_mana'] == 0)
+
+            assert(rc['delegation_slots'][1]['delegator'] == pool_account)
+            assert(rc['delegation_slots'][1]["rc_manabar"]["current_mana"] == 0)
+            assert(rc['delegation_slots'][1]['max_mana'] == 0)
+
+            assert(rc['delegation_slots'][2]['delegator'] == "")
+            assert(rc['delegation_slots'][2]["rc_manabar"]["current_mana"] == 0)
+            assert(rc['delegation_slots'][2]['max_mana'] == 0)
 
             ## use up all of the available rc
+            wallet.post_comment(receiver, "lorem", "", "ipsum", "Lorem Ipsum", "body", "{}", "true")
+            rc = wallet.find_rc_accounts([receiver])['result'][0]
             transfer_result = wallet.transfer(receiver, receiver, "0.001 TESTS", "", "true")
             while "error" not in transfer_result:
                 transfer_result = wallet.transfer(receiver, receiver, "0.001 TESTS", "", "true")
 
-            wallet.delegate_to_pool(creator, pool_account, {"symbol":"VESTS","amount": "100", "decimals": 6, "nai": "@@000000037"}, "true")
+            assert "Please wait to transact" in transfer_result['error']['message']
+            
+            res = wallet.delegate_to_pool(creator, pool_account, {"symbol":"VESTS","amount": "100", "decimals": 6, "nai": "@@000000037"}, "true")
+            assert "error" not in res, "failed to delegate to the pool"
             pool = wallet.list_rc_delegation_pools(pool_account, 100, "by_name")['result'][0]
             pool_current_mana = pool['rc_pool_manabar']['current_mana']
             assert(pool['max_rc'] == 100)
@@ -46,17 +68,37 @@ if __name__ == "__main__":
             assert "error" in transfer_result, "Should not be able to transfer with no RC"
 
             res = wallet.delegate_drc_from_pool(pool_account, receiver, {"decimals": 6, "nai": "@@000000037"}, 100, "true")
+            assert "error" not in res, "failed to delegate to the pool"
             rc = wallet.find_rc_accounts([receiver])['result'][0]
-            current_mana = rc['incoming_delegations'][0][1]["rc_manabar"]["current_mana"]
-            assert(rc['incoming_delegations'][0][0] == receiver)
-            assert(current_mana == 100)
-            assert(rc['incoming_delegations'][0][1]['max_mana'] == 100)
+            current_mana = rc['delegation_slots'][1]["rc_manabar"]["current_mana"]
 
-            transfer_result = wallet.transfer(receiver, creator, "1.000 TESTS", "true")
+            assert len(rc['delegation_slots']) == 3
+            assert(rc['delegation_slots'][0]['delegator'] == creator)
+            assert(rc['delegation_slots'][0]["rc_manabar"]["current_mana"] == 0)
+            assert(rc['delegation_slots'][0]['max_mana'] == 0)
+
+            assert(rc['delegation_slots'][1]['delegator'] == pool_account)
+            assert(rc['delegation_slots'][1]["rc_manabar"]["current_mana"] == 100)
+            assert(rc['delegation_slots'][1]['max_mana'] == 100)
+
+            assert(rc['delegation_slots'][2]['delegator'] == "")
+            assert(rc['delegation_slots'][2]["rc_manabar"]["current_mana"] == 0)
+            assert(rc['delegation_slots'][2]['max_mana'] == 0)
+
+            transfer_result = wallet.transfer(receiver, creator, "1.000 TESTS", "", "true")
             assert "error" not in transfer_result, "Should be able to transfer"
 
             rc = wallet.find_rc_accounts([receiver])['result'][0]
-            assert(rc['incoming_delegations'][0][0] == "initminer")
-            assert(rc['incoming_delegations'][0][1]["rc_manabar"]["current_mana"] < current_mana)
-            assert(rc['incoming_delegations'][0][1]['max_mana'] == 100)
+            assert len(rc['delegation_slots']) == 3
+            assert(rc['delegation_slots'][0]['delegator'] == creator)
+            assert(rc['delegation_slots'][0]["rc_manabar"]["current_mana"] == 0)
+            assert(rc['delegation_slots'][0]['max_mana'] == 0)
+
+            assert(rc['delegation_slots'][1]['delegator'] == pool_account)
+            assert rc['delegation_slots'][1]["rc_manabar"]["current_mana"] < current_mana, "RC was not deducted from the pool"
+            assert(rc['delegation_slots'][1]['max_mana'] == 100)
+
+            assert(rc['delegation_slots'][2]['delegator'] == "")
+            assert(rc['delegation_slots'][2]["rc_manabar"]["current_mana"] == 0)
+            assert(rc['delegation_slots'][2]['max_mana'] == 0)
 
