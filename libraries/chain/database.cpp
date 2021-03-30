@@ -257,14 +257,7 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
   while( !appbase::app().is_interrupt_request() && block.block_num() != last_block_num )
   {
     uint32_t cur_block_num = block.block_num();
-    if( cur_block_num % 100000 == 0 )
-    {
-      std::cerr << "   " << double( cur_block_num ) * 100 / last_block_num << "%   " << cur_block_num << " of " << last_block_num
-      << "   (" << (get_free_memory() >> 20) << "M free)\n";
 
-      //rocksdb::SetPerfLevel(rocksdb::kEnableCount);
-      //rocksdb::get_perf_context()->Reset();
-    }
     apply_block( block, skip_flags );
 
     if( cur_block_num % 100000 == 0 )
