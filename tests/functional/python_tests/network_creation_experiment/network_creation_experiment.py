@@ -70,7 +70,7 @@ def wallet_call(_url, data):
 
   return status, response
 
-def create_account(_url, _creator, account_name):
+def create_account(_url, _creator, account_name, wallets_urls=None):
     account = Witness(account_name)
 
     _name = account_name
@@ -86,7 +86,11 @@ def create_account(_url, _creator, account_name):
       } ), "utf-8" ) + b"\r\n"
 
     status, response = wallet_call(_url, data=request)
-    status, response = import_key(_url, _privkey)
+    if wallets_urls == None:
+      status, response = import_key(_url, _privkey)
+    else:
+      for wallet_url in wallets_urls:
+        status, response = import_key(wallet_url, _privkey)
 
 def transfer(_url, _sender, _receiver, _amount, _memo):
     log.info("Attempting to transfer from {0} to {1}, amount: {2}".format(str(_sender), str(_receiver), str(_amount)))
@@ -200,12 +204,12 @@ def self_vote(_witnesses, _url):
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
-def prepare_accounts(_accounts, _url):
+def prepare_accounts(_accounts, _url, wallets_urls=None):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
   log.info("Attempting to create {0} accounts".format(len(_accounts)))
   for account in _accounts:
-    future = executor.submit(create_account, _url, "initminer", account)
+    future = executor.submit(create_account, _url, "initminer", account, wallets_urls)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
@@ -322,8 +326,6 @@ if __name__ == "__main__":
 
         alpha_witness_names = [f'witness{i}-alpha' for i in range(21)]
         beta_witness_names = [f'witness{i}-beta' for i in range(21)]
-        alpha_voter_names = [f'voter{i}-alpha' for i in range(21)]
-        beta_voter_names = [f'voter{i}-beta' for i in range(21)]
 
         # Create first network
         alpha_net = Network('Alpha', port_range=range(51000, 52000))
@@ -364,57 +366,71 @@ if __name__ == "__main__":
         alpha_net.run()
         beta_net.run()
 
-        wallet = alpha_net.attach_wallet()
+        alpha_wallet = alpha_net.attach_wallet()
+        beta_wallet = beta_net.attach_wallet()
 
         time.sleep(3)  # Wait for wallet to start
 
         # Run original test script
-        wallet_url = f'http://127.0.0.1:{wallet.http_server_port}'
+        alpha_wallet_url = f'http://127.0.0.1:{alpha_wallet.http_server_port}'
+        beta_wallet_url = f'http://127.0.0.1:{beta_wallet.http_server_port}'
 
-        set_password(wallet_url)
-        unlock(wallet_url)
-        import_key(wallet_url, Witness('initminer').private_key)
+        for wallet_url in [alpha_wallet_url, beta_wallet_url]:
+          set_password(wallet_url)
+          unlock(wallet_url)
+          import_key(wallet_url, Witness('initminer').private_key)
 
         all_witnesses = alpha_witness_names + beta_witness_names
-        all_voters = alpha_voter_names + beta_voter_names
-
-        c = list(zip(all_witnesses, all_voters))
-        random.shuffle(c)
-        all_witnesses, all_voters = zip(*c)
-        all_witnesses = list(all_witnesses)
-        all_voters = list(all_voters)
 
         print("Witness state before voting")
         print_top_witnesses(all_witnesses, api_node)
-        list_accounts(wallet_url)
+        list_accounts(alpha_wallet_url)
 
-        prepare_accounts(all_witnesses, wallet_url)
-        prepare_accounts(all_voters, wallet_url)
-        configure_initial_vesting(all_voters, 1000, 1000, "TESTS", wallet_url)
-        prepare_witnesses(all_witnesses, wallet_url)
-        print("before voting")
-        input()
-        vote_for_witnesses(all_voters, all_witnesses, 1, wallet_url)
+        prepare_accounts(all_witnesses, alpha_wallet_url, [alpha_wallet_url, beta_wallet_url])
+        configure_initial_vesting(all_witnesses, 1000, 1000, "TESTS", alpha_wallet_url)
+
+        # configure witnesses
+        prepare_witnesses(alpha_witness_names[:14], alpha_wallet_url)
+        prepare_witnesses(beta_witness_names[:7], alpha_wallet_url)
+        self_vote(alpha_witness_names[:14], alpha_wallet_url)
+        self_vote(beta_witness_names[:7], alpha_wallet_url)
 
         print("Witness state after voting")
         print_top_witnesses(all_witnesses, api_node)
-        list_accounts(wallet_url)
+
+        # wait until configured witnesses are selected as  active witnesses
+        print("Waiting 63 seconds for witness to be elected")
+        time.sleep(63)
+        alpha_net.wait_for_synchronization_of_all_nodes()
+        beta_net.wait_for_synchronization_of_all_nodes()
+        # after a  while configure additional witnesses
+        prepare_witnesses(alpha_witness_names[14:], alpha_wallet_url)
+        prepare_witnesses(beta_witness_names[7:], alpha_wallet_url)
+
+        print("Witness state before split")
+        print_top_witnesses(all_witnesses, api_node)
 
         print(60 * '=')
         print(' Network successfully prepared')
         print(60 * '=')
 
-        alpha_net.wait_for_synchronization_of_all_nodes()
-        beta_net.wait_for_synchronization_of_all_nodes()
+        input('Press enter to disconnect networks')
+        alpha_net.disconnect_from(beta_net)
+        print('Disconnected')
+
+        # change witnesses in each subnet
+        vote_for_witnesses(beta_witness_names[:7], beta_witness_names[:7], 0, alpha_wallet_url)
+        vote_for_witnesses(beta_witness_names[:7], alpha_witness_names[14:], 1, alpha_wallet_url)
+
+        vote_for_witnesses(alpha_witness_names[:14], alpha_witness_names[:14], 0, beta_wallet_url)
+        vote_for_witnesses(alpha_witness_names[:14], beta_witness_names[7:], 1, beta_wallet_url)
+
+        input('Press enter to reconnect networks')
+        alpha_net.connect_with(beta_net)
+        print('Reconnected')
 
         while True:
-          input('Press enter to disconnect networks')
-          alpha_net.disconnect_from(beta_net)
-          print('Disconnected')
-
-          input('Press enter to reconnect networks')
-          alpha_net.connect_with(beta_net)
-          print('Reconnected')
+          pass
 
     except Exception as _ex:
         log.exception(str(_ex))
