@@ -386,12 +386,13 @@ if __name__ == "__main__":
         print_top_witnesses(all_witnesses, api_node)
         list_accounts(wallet_url)
 
+        print("Waiting for network synchronization...")
+        alpha_net.wait_for_synchronization_of_all_nodes()
+        beta_net.wait_for_synchronization_of_all_nodes()
+
         print(60 * '=')
         print(' Network successfully prepared')
         print(60 * '=')
-
-        alpha_net.wait_for_synchronization_of_all_nodes()
-        beta_net.wait_for_synchronization_of_all_nodes()
 
         while True:
           input('Press enter to disconnect networks')
