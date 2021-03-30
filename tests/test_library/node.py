@@ -199,18 +199,13 @@ class Node:
         return communication.request(endpoint, message)
 
     def get_id(self):
-        request = bytes(json.dumps({
+        response = self.send({
             "jsonrpc": "2.0",
             "method": "network_node_api.get_info",
             "id": 1,
-        }), "utf-8") + b"\r\n"
+        })
 
-        while not self.is_http_listening():
-            time.sleep(1)
-
-        success, response = hived_call(self.get_webserver_http_endpoints()[0], data=request)
-
-        if not success:
+        if response is None:
             raise Exception('Missing answer from node')
 
         return response['result']['node_id']
