@@ -6,7 +6,7 @@
 #include <boost/multiprecision/cpp_int.hpp>
 
 #define ASSET_AMOUNT_KEY     "amount"
-#define ASSET_DECIMALS_KEY  "decimals"
+#define ASSET_PRECISION_KEY  "precision"
 #define ASSET_NAI_KEY        "nai"
 
 /*
@@ -328,7 +328,7 @@ namespace fc {
     try
     {
       variant v = mutable_variant_object( ASSET_AMOUNT_KEY, boost::lexical_cast< std::string >( var.amount.value ) )
-                              (ASSET_DECIMALS_KEY, uint64_t(var.symbol.decimals() ) )
+                              ( ASSET_PRECISION_KEY, uint64_t( var.symbol.decimals() ) )
                               ( ASSET_NAI_KEY, var.symbol.to_nai_string() );
       vo = v;
     } FC_CAPTURE_AND_RETHROW()
@@ -347,13 +347,13 @@ namespace fc {
       vo.amount = boost::lexical_cast< int64_t >( v_object[ ASSET_AMOUNT_KEY ].as< std::string >() );
       FC_ASSERT( vo.amount >= 0, "Asset amount cannot be negative" );
 
-      FC_ASSERT(v_object.contains(ASSET_DECIMALS_KEY ), "Decimals field doesn't exist." );
-      FC_ASSERT(v_object[ ASSET_DECIMALS_KEY ].is_uint64(), "Expected an unsigned integer type for value '${key}'.", ("key", ASSET_DECIMALS_KEY) );
+      FC_ASSERT( v_object.contains( ASSET_PRECISION_KEY ), "Precision field doesn't exist." );
+      FC_ASSERT( v_object[ ASSET_PRECISION_KEY ].is_uint64(), "Expected an unsigned integer type for value '${key}'.", ("key", ASSET_PRECISION_KEY) );
 
       FC_ASSERT( v_object.contains( ASSET_NAI_KEY ), "NAI field doesn't exist." );
       FC_ASSERT( v_object[ ASSET_NAI_KEY ].is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_NAI_KEY) );
 
-      vo.symbol = hive::protocol::asset_symbol_type::from_nai_string( v_object[ ASSET_NAI_KEY ].as< std::string >().c_str(), v_object[ ASSET_DECIMALS_KEY ].as< uint8_t >() );
+      vo.symbol = hive::protocol::asset_symbol_type::from_nai_string( v_object[ ASSET_NAI_KEY ].as< std::string >().c_str(), v_object[ ASSET_PRECISION_KEY ].as< uint8_t >() );
     } FC_CAPTURE_AND_RETHROW()
   }
 }
