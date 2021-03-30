@@ -1,6 +1,4 @@
-from network import Network
-from key_generator import KeyGenerator
-from witness import Witness
+from test_library import Network, KeyGenerator, Witness
 
 
 import json
