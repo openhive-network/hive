@@ -5239,26 +5239,6 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
   });
 }
 
-void database::set_index_delegate( const std::string& n, index_delegate&& d )
-{
-  _index_delegate_map[ n ] = d;
-}
-
-const index_delegate& database::get_index_delegate( const std::string& n )
-{
-  return _index_delegate_map.at( n );
-}
-
-bool database::has_index_delegate( const std::string& n )
-{
-  return _index_delegate_map.find( n ) != _index_delegate_map.end();
-}
-
-const index_delegate_map& database::index_delegates()
-{
-  return _index_delegate_map;
-}
-
 void database::adjust_balance( const account_object& a, const asset& delta )
 {
   if ( delta.amount < 0 )

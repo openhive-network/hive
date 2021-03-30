@@ -55,12 +55,6 @@ namespace chain {
     protocol::hardfork_version versions[ HIVE_NUM_HARDFORKS + 1 ];
   };
 
-  struct index_delegate {
-    // UNDONE: Was used by MIRA - set_index_type_func
-  };
-
-  using index_delegate_map = std::map< std::string, index_delegate >;
-
   class database_impl;
   class custom_operation_interpreter;
 
@@ -609,11 +603,6 @@ namespace chain {
 
       optional< chainbase::database::session >& pending_transaction_session();
 
-      void set_index_delegate( const std::string& n, index_delegate&& d );
-      const index_delegate& get_index_delegate( const std::string& n );
-      bool has_index_delegate( const std::string& n );
-      const index_delegate_map& index_delegates();
-
 #ifdef IS_TEST_NET
       bool liquidity_rewards_enabled = true;
       bool skip_price_feed_limit_check = true;
@@ -792,7 +781,6 @@ namespace chain {
       std::string                   _json_schema;
 
       util::advanced_benchmark_dumper  _benchmark_dumper;
-      index_delegate_map            _index_delegate_map;
 
       fc::signal<void(const required_action_notification&)> _pre_apply_required_action_signal;
       fc::signal<void(const required_action_notification&)> _post_apply_required_action_signal;

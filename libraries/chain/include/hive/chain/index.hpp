@@ -57,16 +57,8 @@ void add_plugin_index( database& db )
 
 } }
 
-#define HIVE_ADD_CORE_INDEX(db, index_name)                                                                  \
-  do {                                                                                                      \
-    hive::chain::add_core_index< index_name >( db );                                                       \
-    hive::chain::index_delegate delegate;                                                                  \
-    db.set_index_delegate( #index_name, std::move( delegate ) );                                           \
-  } while( false )
+#define HIVE_ADD_CORE_INDEX(db, index_name) \
+  hive::chain::add_core_index< index_name >( db )
 
-#define HIVE_ADD_PLUGIN_INDEX(db, index_name)                                                                \
-  do {                                                                                                      \
-    hive::chain::add_plugin_index< index_name >( db );                                                     \
-    hive::chain::index_delegate delegate;                                                                  \
-    db.set_index_delegate( #index_name, std::move( delegate ) );                                           \
-  } while( false )
+#define HIVE_ADD_PLUGIN_INDEX(db, index_name) \
+  hive::chain::add_plugin_index< index_name >( db )
