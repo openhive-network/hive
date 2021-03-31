@@ -93,3 +93,12 @@ class Wallet:
 
         from . import communication
         return communication.request(endpoint, message)
+
+    # --- Wallet api calls ----------------------------------------------------
+    def set_password(self, password='default-password'):
+        return self.send({
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "set_password",
+            "params": [password]
+        })
