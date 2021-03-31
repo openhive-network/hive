@@ -5,9 +5,6 @@ import sys
 import time
 
 
-sys.path.append("../../../tests_api")
-from jsonsocket import hived_call
-
 from .node_config import NodeConfig
 from .witness import Witness
 
