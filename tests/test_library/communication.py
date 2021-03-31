@@ -1,4 +1,3 @@
-import ast
 import requests
 import json
 
@@ -9,6 +8,6 @@ def request(url: str, message: dict):
     result = requests.post(url, data=message)
 
     success = result.status_code == 200
-    response = ast.literal_eval(result.text)
+    response = json.loads(result.text)
 
     return response if success else None
