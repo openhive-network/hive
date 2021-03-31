@@ -123,8 +123,8 @@ class CliWallet(object):
       log.exception("Exception `{0}` occuress while while running cli_wallet.".format(str(_ex)))
 
 
-  #we dont have stansaction status api, so we need to combine...
-  def wait_for_transaction_approwal(self):
+  # We don't have transaction status api, so we have to check it manually...
+  def wait_for_transaction_approval(self):
     json_resp = last_message_as_json(self.response)
     block_num = json_resp["result"]["block_num"]
     trans_id  = json_resp["result"]["id"]
