@@ -87,3 +87,9 @@ class Wallet:
 
     def set_http_server_port(self, port):
         self.http_server_port = port
+
+    def send(self, message):
+        endpoint = f'http://127.0.0.1:{self.http_server_port}'
+
+        from . import communication
+        return communication.request(endpoint, message)
