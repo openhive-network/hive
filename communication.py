@@ -9,5 +9,4 @@ def request(url: str, message: dict):
 
     success = result.status_code == 200
     response = json.loads(result.text)
-
-    return response if success else None
+    return success, response
