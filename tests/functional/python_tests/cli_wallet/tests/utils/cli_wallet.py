@@ -150,11 +150,6 @@ class CliWallet(object):
         return True
     return False
 
-  def send(self, _data):
-    self.cli_proc.stdin.write(_data.encode("utf-8"))
-    self.cli_proc.stdin.flush()
-
-
   def send_and_read(self, _endpoint, _data):
     data = {
       "jsonrpc": "2.0", 
