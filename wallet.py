@@ -120,3 +120,11 @@ class Wallet:
             "method": "import_key",
             "params": [key]
         })
+
+    def transfer_to_vesting(self, sender, receiver, amount, broadcast=True):
+        return self.send({
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "transfer_to_vesting",
+            "params": [sender, receiver, amount, broadcast]
+        })
