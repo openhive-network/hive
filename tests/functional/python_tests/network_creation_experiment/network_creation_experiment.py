@@ -93,21 +93,6 @@ def set_voting_proxy(_account, _proxy, _url):
 
     status, response = wallet_call(_url, data=request)
 
-def vote_for_witness(_account, _witness, _approve, _url):
-  if(_approve):
-    log.info("Account `{0} votes for wittness {1}".format(str(_account), str(_witness)))
-  else:
-    log.info("Account `{0} revoke its votes for wittness {1}".format(str(_account), str(_witness)))
-
-  request = bytes( json.dumps( {
-    "jsonrpc": "2.0",
-    "id": 0,
-    "method": "vote_for_witness",
-    "params": [_account, _witness, _approve, 1]
-    } ), "utf-8" ) + b"\r\n"
-
-  status, response = wallet_call(_url, data=request)
-
 def register_witness(wallet, _account_name, _witness_url, _block_signing_public_key):
     wallet.update_witness(
         _account_name,
@@ -120,7 +105,7 @@ def get_amount(_asset):
   amount, symbol = _asset.split(" ")
   return float(amount)
 
-def self_vote(_witnesses, _url):
+def self_vote(_witnesses, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
   for w in _witnesses:
@@ -128,7 +113,7 @@ def self_vote(_witnesses, _url):
       account_name = w
     else:
       account_name = w["account_name"]
-    future = executor.submit(vote_for_witness, account_name, account_name, 1, _url)
+    future = executor.submit(wallet.vote_for_witness, account_name, account_name, 1)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
@@ -310,7 +295,7 @@ if __name__ == "__main__":
         prepare_accounts(all_witnesses, wallet)
         configure_initial_vesting(all_witnesses, 500, 1000, "TESTS", wallet)
         prepare_witnesses(all_witnesses, wallet)
-        self_vote(all_witnesses, wallet_url)
+        self_vote(all_witnesses, wallet)
 
         print("Witness state after voting")
         print_top_witnesses(all_witnesses, api_node)
