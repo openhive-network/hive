@@ -130,16 +130,6 @@ def register_witness(_url, _account_name, _witness_url, _block_signing_public_ke
 
     status, response = wallet_call(_url, data=request)
 
-def unregister_witness(_url, _account_name):
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "update_witness",
-      "params": [_account_name, "https://heaven.net", "STM1111111111111111111111111111111114T1Anm", {"account_creation_fee": "3.000 TESTS","maximum_block_size": 65536,"sbd_interest_rate": 0}, 1]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
-
 def info(_url):
     request = bytes( json.dumps( {
       "jsonrpc": "2.0",
