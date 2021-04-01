@@ -128,3 +128,11 @@ class Wallet:
             "method": "transfer_to_vesting",
             "params": [sender, receiver, amount, broadcast]
         })
+
+    def list_accounts(self, lowerbound='', limit=100):
+        return self.send({
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "list_accounts",
+            "params": [lowerbound, limit]
+        })
