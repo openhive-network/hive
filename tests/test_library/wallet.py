@@ -10,20 +10,20 @@ from .witness import Witness
 class Wallet:
     class Api:
         def __init__(self, wallet):
-            self.wallet = wallet
+            self.__wallet = wallet
 
         def __send(self, method, *params, jsonrpc='2.0', id=0):
-            return self.wallet.send(method, *params, jsonrpc=jsonrpc, id=id)
+            return self.__wallet.send(method, *params, jsonrpc=jsonrpc, id=id)
 
         def info(self):
             return self.__send('info')
 
         def set_password(self, password='default-password'):
-            self.wallet.password = password
-            return self.__send('set_password', self.wallet.password)
+            self.__wallet.password = password
+            return self.__send('set_password', self.__wallet.password)
 
         def unlock(self, password=None):
-            return self.__send('unlock', self.wallet.password if password is None else password)
+            return self.__send('unlock', self.__wallet.password if password is None else password)
 
         def import_key(self, key):
             return self.__send('import_key', key)
