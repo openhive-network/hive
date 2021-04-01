@@ -46,7 +46,6 @@ namespace fc
   T endian_reverse( const T& x )
   {  return boost::endian::endian_reverse(x);  }
 
-  template<>
   inline uint128 endian_reverse( const uint128& u )
   {  return uint128( boost::endian::endian_reverse( u.hi ), boost::endian::endian_reverse( u.lo ) );  }
 
