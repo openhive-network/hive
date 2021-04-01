@@ -128,18 +128,6 @@ def register_witness(wallet, _account_name, _witness_url, _block_signing_public_
         {"account_creation_fee": "3.000 TESTS", "maximum_block_size": 65536, "sbd_interest_rate": 0}
     )
 
-def info(_url):
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "info",
-      "params": []
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
-
-    return response["result"]
-
 def get_amount(_asset):
   amount, symbol = _asset.split(" ")
   return float(amount)
