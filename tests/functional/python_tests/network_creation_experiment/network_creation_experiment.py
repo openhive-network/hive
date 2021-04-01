@@ -120,15 +120,13 @@ def vote_for_witnesses(_account, _witnesses, _approve, _url):
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
-def register_witness(_url, _account_name, _witness_url, _block_signing_public_key):
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "update_witness",
-      "params": [_account_name, _witness_url, _block_signing_public_key, {"account_creation_fee": "3.000 TESTS","maximum_block_size": 65536,"sbd_interest_rate": 0}, 1]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
+def register_witness(wallet, _account_name, _witness_url, _block_signing_public_key):
+    wallet.update_witness(
+        _account_name,
+        _witness_url,
+        _block_signing_public_key,
+        {"account_creation_fee": "3.000 TESTS", "maximum_block_size": 65536, "sbd_interest_rate": 0}
+    )
 
 def info(_url):
     request = bytes( json.dumps( {
@@ -184,14 +182,14 @@ def configure_initial_vesting(_accounts, a, b, _tests, wallet):
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
-def prepare_witnesses(_witnesses, _url):
+def prepare_witnesses(_witnesses, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
   log.info("Attempting to prepare {0} of witnesses".format(str(len(_witnesses))))
   for account_name in _witnesses:
     witness = Witness(account_name)
     pub_key = witness.public_key
-    future = executor.submit(register_witness, _url, account_name, "https://" + account_name + ".net", pub_key)
+    future = executor.submit(register_witness, wallet, account_name, "https://" + account_name + ".net", pub_key)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
@@ -335,7 +333,7 @@ if __name__ == "__main__":
 
         prepare_accounts(all_witnesses, wallet)
         configure_initial_vesting(all_witnesses, 500, 1000, "TESTS", wallet)
-        prepare_witnesses(all_witnesses, wallet_url)
+        prepare_witnesses(all_witnesses, wallet)
         self_vote(all_witnesses, wallet_url)
 
         print("Witness state after voting")
