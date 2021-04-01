@@ -178,8 +178,6 @@ if __name__ == "__main__":
         time.sleep(3)  # Wait for wallet to start
 
         # Run original test script
-        wallet_url = f'http://127.0.0.1:{wallet.http_server_port}'
-
         wallet.set_password()
         wallet.unlock()
         wallet.import_key(Witness('initminer').private_key)
