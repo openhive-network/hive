@@ -153,8 +153,8 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     {
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
       found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
-      BOOST_REQUIRE_EQUAL( found_votes_00, 0 );
-      BOOST_REQUIRE_EQUAL( found_votes_01, 0 );
+      BOOST_REQUIRE_EQUAL( found_votes_00, 0u );
+      BOOST_REQUIRE_EQUAL( found_votes_01, 0u );
     }
 
     vote_proposal( voter_00, { id_proposal_00 }, true/*approve*/, carol_private_key );
@@ -163,8 +163,8 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     {
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
       found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
-      BOOST_REQUIRE_EQUAL( found_votes_00, 0 ); //votes are only counted during maintenance periods (so we don't have to remove them when proxy is set)
-      BOOST_REQUIRE_EQUAL( found_votes_01, 0 );
+      BOOST_REQUIRE_EQUAL( found_votes_00, 0u ); //votes are only counted during maintenance periods (so we don't have to remove them when proxy is set)
+      BOOST_REQUIRE_EQUAL( found_votes_01, 0u );
     }
 
     vote_proposal( voter_01, { id_proposal_01 }, true/*approve*/, dan_private_key );
@@ -173,8 +173,8 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     {
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
       found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
-      BOOST_REQUIRE_EQUAL( found_votes_00, 0 );
-      BOOST_REQUIRE_EQUAL( found_votes_01, 0 ); //like above
+      BOOST_REQUIRE_EQUAL( found_votes_00, 0u );
+      BOOST_REQUIRE_EQUAL( found_votes_01, 0u ); //like above
     }
 
     //skipping interest generating is necessary
@@ -228,8 +228,8 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
       //Passed ~1h - one reward for `proposal_00` was paid out
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
       found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
-      BOOST_REQUIRE_GT( found_votes_00, 0 );
-      BOOST_REQUIRE_GT( found_votes_01, 0 );
+      BOOST_REQUIRE_GT( found_votes_00, 0u );
+      BOOST_REQUIRE_GT( found_votes_01, 0u );
     }
     {
       auto time_movement = start_date + fc::hours( 24 );
@@ -808,13 +808,13 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
       generate_block();
     }
 
-    int64_t expected_votes, expected_witness_votes, expected_expirations;
+    size_t expected_votes=0, expected_witness_votes=0, expected_expirations=0;
     int i;
     auto check_vote_count = [&]()
     {
       auto found_votes = proposal_vote_idx.size();
       auto found_witness_votes = witness_vote_idx.size();
-      auto found_expirations = std::distance( account_idx.begin(), account_idx.upper_bound( expiration_time ) );
+      size_t found_expirations = std::distance( account_idx.begin(), account_idx.upper_bound( expiration_time ) );
       BOOST_REQUIRE_EQUAL( found_votes, expected_votes );
       BOOST_REQUIRE_EQUAL( found_witness_votes, expected_witness_votes );
       BOOST_REQUIRE_EQUAL( found_expirations, expected_expirations );
