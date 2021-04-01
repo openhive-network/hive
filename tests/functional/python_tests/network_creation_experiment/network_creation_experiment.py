@@ -209,7 +209,7 @@ def prepare_accounts(_accounts, _url):
 def configure_initial_vesting(_accounts, a, b, _tests, _url):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
-  log.info("Attempting to prepare {0} of witnesses".format(str(len(_accounts))))
+  log.info("Configuring initial vesting for {0} of witnesses".format(str(len(_accounts))))
   for account_name in _accounts:
     value = random.randint(a, b)
     amount = str(value) + ".000 " + _tests
