@@ -112,3 +112,11 @@ class Wallet:
             "method": "unlock",
             "params": [self.password if password is None else password]
         })
+
+    def import_key(self, key):
+        return self.send({
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "import_key",
+            "params": [key]
+        })
