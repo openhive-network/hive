@@ -3,6 +3,7 @@
  */
 #pragma once
 #include <hive/protocol/hardfork.hpp>
+#include <hive/protocol/initial_values.hpp>
 
 // WARNING!
 // Every symbol defined here needs to be handled appropriately in get_config.cpp
@@ -19,7 +20,7 @@
 
 #define HIVE_GENESIS_TIME                     (fc::time_point_sec(1451606400))
 #define HIVE_MINING_TIME                      (fc::time_point_sec(1451606400))
-#define HIVE_CASHOUT_WINDOW_SECONDS           (60*60) /// 1 hr
+#define HIVE_CASHOUT_WINDOW_SECONDS           hive::protocol::initial_values::get_hive_cashout_windows_seconds()
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12  (HIVE_CASHOUT_WINDOW_SECONDS)
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17  (HIVE_CASHOUT_WINDOW_SECONDS)
 #define HIVE_SECOND_CASHOUT_WINDOW            (60*60*24*3) /// 3 days
@@ -136,6 +137,8 @@
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6 (60*30) /// 30 minutes
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20 (60*15) /// 15 minutes
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21 (60*5) /// 5 minutes
+#define HIVE_CURATION_REWARDS_PHASE_0_WINDOW_SECONDS_HF25 (24*60*60) /// 24 hours
+#define HIVE_CURATION_REWARDS_PHASE_1_WINDOW_SECONDS_HF25 (48*60*60) /// 48 hours
 #define HIVE_MIN_VOTE_INTERVAL_SEC            3
 #define HIVE_VOTE_DUST_THRESHOLD              (50000000)
 #define HIVE_DOWNVOTE_POOL_PERCENT_HF21       (25*HIVE_1_PERCENT)

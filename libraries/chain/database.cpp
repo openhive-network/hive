@@ -6043,6 +6043,19 @@ void database::apply_hardfork( uint32_t hardfork )
 #endif /// IS_TEST_NET
       break;
     }
+    case HIVE_HARDFORK_1_25:
+    {
+      modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
+      {
+        rfo.curation_reward_curve = linear;
+      });
+      modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      {
+        gpo.curation_rewards_phase_0_seconds = HIVE_CURATION_REWARDS_PHASE_0_WINDOW_SECONDS_HF25;
+        gpo.curation_rewards_phase_1_seconds = HIVE_CURATION_REWARDS_PHASE_1_WINDOW_SECONDS_HF25;
+      });
+      break;
+    }
     case HIVE_SMT_HARDFORK:
     {
 #ifdef HIVE_ENABLE_SMT

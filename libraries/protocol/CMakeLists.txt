@@ -36,6 +36,7 @@ add_library( hive_protocol
              asset.cpp
              version.cpp
              get_config.cpp
+             initial_values.cpp
 
              ${HEADERS}
              ${hardfork_hpp_file}

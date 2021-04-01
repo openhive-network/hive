@@ -1761,7 +1761,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     auto subject = "hello";
     auto permlink = "somethingpermlink";
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
 
     FUND( creator, ASSET( "80.000 TBD" ) );
 
@@ -1851,7 +1851,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_free_increase )
     auto subject = "hello";
     auto permlink = "somethingpermlink";
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
 
     FUND( creator, ASSET( "80.000 TBD" ) );
 
@@ -3954,8 +3954,8 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
     auto permlink = "somethingpermlink";
     auto new_permlink = "somethingpermlink2";
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
-    post_comment(creator, new_permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, new_permlink, "title", "body", "test", alice_private_key);
 
     FUND( creator, ASSET( "80.000 TBD" ) );
 
@@ -4051,7 +4051,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_001 )
 
     signed_transaction tx;
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -4099,7 +4099,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_002 )
 
     signed_transaction tx;
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -4149,7 +4149,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_003 )
 
     signed_transaction tx;
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -4202,7 +4202,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_004 )
 
     signed_transaction tx;
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -4255,8 +4255,8 @@ BOOST_AUTO_TEST_CASE( update_proposal_005 )
 
     signed_transaction tx;
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
-    post_comment("dave", "davepermlink", "title", "body", "test", dave_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation("dave", "davepermlink", "title", "body", "test", dave_private_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -4312,7 +4312,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
 
     signed_transaction tx;
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
 
     create_proposal_operation op;
     op.creator = creator;
