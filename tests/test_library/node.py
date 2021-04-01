@@ -191,7 +191,12 @@ class Node:
             time.sleep(1)
 
         from . import communication
-        return communication.request(endpoint, message)
+        success, response = communication.request(endpoint, message)
+
+        if not success:
+            raise Exception(f'Unknown communication error occurred, response: {response}')
+
+        return response
 
     def get_id(self):
         response = self.send({
@@ -199,9 +204,6 @@ class Node:
             "method": "network_node_api.get_info",
             "id": 1,
         })
-
-        if response is None:
-            raise Exception('Missing answer from node')
 
         return response['result']['node_id']
 
@@ -214,9 +216,6 @@ class Node:
             },
             "id": 1,
         })
-
-        if response is None:
-            raise Exception('Missing answer from node')
 
         return response
 
