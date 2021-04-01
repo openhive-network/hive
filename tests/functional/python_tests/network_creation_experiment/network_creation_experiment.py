@@ -249,17 +249,6 @@ def synchronize_balances(_accounts, _url, _mainNetUrl):
       tbd = sbd.replace("SBD", "TBD")
       transfer(_url, "initminer", name, tbd, "initial balance sync")
 
-def list_accounts(url):
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "list_accounts",
-      "params": ["", 100]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(url, data=request)
-    print(response)
-
 def list_top_witnesses(_url):
     start_object = [200277786075957257, ""]
     request = bytes( json.dumps( {
@@ -364,7 +353,7 @@ if __name__ == "__main__":
 
         print("Witness state before voting")
         print_top_witnesses(all_witnesses, api_node)
-        list_accounts(wallet_url)
+        print(wallet.list_accounts()[1])
 
         prepare_accounts(all_witnesses, wallet_url)
         configure_initial_vesting(all_witnesses, 500, 1000, "TESTS", wallet)
@@ -373,7 +362,7 @@ if __name__ == "__main__":
 
         print("Witness state after voting")
         print_top_witnesses(all_witnesses, api_node)
-        list_accounts(wallet_url)
+        print(wallet.list_accounts()[1])
 
         print("Waiting for network synchronization...")
         alpha_net.wait_for_synchronization_of_all_nodes()
