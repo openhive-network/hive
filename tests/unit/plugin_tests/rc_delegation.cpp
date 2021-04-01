@@ -475,7 +475,7 @@ BOOST_AUTO_TEST_CASE( rc_delegate_drc_from_pool )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: rc_set_slot_delegator" );
+    BOOST_TEST_MESSAGE( "Testing: rc_delegate_drc_from_pool" );
     ACTORS( (alice)(bob) )
     generate_block();
 
