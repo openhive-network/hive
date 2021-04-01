@@ -20,43 +20,6 @@ from utils.logger import log, init_logger
 CONCURRENCY = None
 
 
-def set_password(_url):
-    log.debug("Call to set_password")
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "set_password",
-      "params": ["testpassword"]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = hived_call(_url, data=request)
-    return status, response
-
-def unlock(_url):
-    log.debug("Call to unlock")
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "unlock",
-      "params": ["testpassword"]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = hived_call(_url, data=request)
-    return status, response
-
-
-def import_key(_url, k):
-    log.debug("Call to import_key")
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "import_key",
-      "params": [k]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = hived_call(_url, data=request)
-    return status, response
-
 def checked_hived_call(_url, data):
   status, response = hived_call(_url, data)
   if status == False or response is None or "result" not in response:
