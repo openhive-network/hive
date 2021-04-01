@@ -3,13 +3,16 @@
  */
 #pragma once
 #include <hive/protocol/hardfork.hpp>
-#include <hive/protocol/initial_values.hpp>
+#include <hive/protocol/testnet_blockchain_configuration.hpp>
 
 // WARNING!
 // Every symbol defined here needs to be handled appropriately in get_config.cpp
 // This is checked by get_config_check.sh called from Dockerfile
 
 #ifdef IS_TEST_NET
+
+using namespace hive::protocol::testnet_blockchain_configuration;
+
 #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 26, 0) )
 
 #define HIVE_INIT_PRIVATE_KEY                 (fc::ecc::private_key::regenerate(fc::sha256::hash(std::string("init_key"))))
@@ -20,7 +23,7 @@
 
 #define HIVE_GENESIS_TIME                     (fc::time_point_sec(1451606400))
 #define HIVE_MINING_TIME                      (fc::time_point_sec(1451606400))
-#define HIVE_CASHOUT_WINDOW_SECONDS           hive::protocol::initial_values::get_hive_cashout_windows_seconds()
+#define HIVE_CASHOUT_WINDOW_SECONDS           configuration_data.get_hive_cashout_windows_seconds()
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12  (HIVE_CASHOUT_WINDOW_SECONDS)
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17  (HIVE_CASHOUT_WINDOW_SECONDS)
 #define HIVE_SECOND_CASHOUT_WINDOW            (60*60*24*3) /// 3 days

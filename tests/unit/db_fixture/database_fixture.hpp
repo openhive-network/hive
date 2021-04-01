@@ -288,7 +288,7 @@ struct database_fixture {
 
 private:
 
-  void post_comment_internal( bool blocks_generation, const std::string& _author, const std::string& _permlink, const std::string& _title, const std::string& _body, const std::string& _parent_permlink, const fc::ecc::private_key& _key );
+  void post_comment_internal( const std::string& _author, const std::string& _permlink, const std::string& _title, const std::string& _body, const std::string& _parent_permlink, const fc::ecc::private_key& _key );
 
 public:
 

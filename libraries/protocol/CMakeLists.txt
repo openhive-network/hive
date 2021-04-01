@@ -21,6 +21,7 @@ endif( MSVC )
 ## SORT .cpp by most likely to change / break compile
 add_library( hive_protocol
 
+             testnet_blockchain_configuration.cpp
              smt_operations.cpp
              hive_operations.cpp
              sps_operations.cpp
@@ -36,7 +37,6 @@ add_library( hive_protocol
              asset.cpp
              version.cpp
              get_config.cpp
-             initial_values.cpp
 
              ${HEADERS}
              ${hardfork_hpp_file}

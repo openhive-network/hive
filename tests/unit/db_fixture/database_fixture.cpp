@@ -710,11 +710,8 @@ asset database_fixture::get_vest_rewards_as_hive( const string& account_name )co
   return db->get_account( account_name ).get_vest_rewards_as_hive();
 }
 
-void database_fixture::post_comment_internal( bool blocks_generation, const std::string& _author, const std::string& _permlink, const std::string& _title, const std::string& _body, const std::string& _parent_permlink, const fc::ecc::private_key& _key )
+void database_fixture::post_comment_internal( const std::string& _author, const std::string& _permlink, const std::string& _title, const std::string& _body, const std::string& _parent_permlink, const fc::ecc::private_key& _key )
 {
-  if( blocks_generation )
-    generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
-
   comment_operation comment;
 
   comment.author = _author;
@@ -734,12 +731,14 @@ void database_fixture::post_comment_internal( bool blocks_generation, const std:
 
 void database_fixture::post_comment_with_block_generation( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key)
 {
-  post_comment_internal( true/*blocks_generation*/, _author, _permlink, _title, _body, _parent_permlink, _key );
+  generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
+
+  post_comment_internal( _author, _permlink, _title, _body, _parent_permlink, _key );
 }
 
 void database_fixture::post_comment( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key)
 {
-  post_comment_internal( false/*blocks_generation*/, _author, _permlink, _title, _body, _parent_permlink, _key );
+  post_comment_internal( _author, _permlink, _title, _body, _parent_permlink, _key );
 }
 
 void database_fixture::vote( std::string _author, std::string _permlink, std::string _voter, int16_t _weight, const fc::ecc::private_key& _key )

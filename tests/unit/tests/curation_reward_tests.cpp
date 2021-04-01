@@ -121,8 +121,10 @@ BOOST_AUTO_TEST_CASE( basic_test )
   {
     BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days)" );
 
-    auto old_hive_cashout_windows_seconds = initial_values::get_hive_cashout_windows_seconds();
-    initial_values::set_hive_cashout_windows_seconds( 60*60*24*7/*7 days like in mainnet*/ );
+    using namespace hive::protocol::testnet_blockchain_configuration;
+
+    auto configuration_data_copy = configuration_data;
+    configuration_data.set_hive_cashout_windows_seconds( 60*60*24*7/*7 days like in mainnet*/ );
 
     ACTORS( (alice)
 
@@ -305,7 +307,7 @@ BOOST_AUTO_TEST_CASE( basic_test )
       print( std::cout, cp );
     }
 
-    initial_values::set_hive_cashout_windows_seconds( old_hive_cashout_windows_seconds );
+    configuration_data = configuration_data_copy;
 
     validate_database();
   }
