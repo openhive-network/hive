@@ -366,9 +366,9 @@ if __name__ == "__main__":
         # Run original test script
         wallet_url = f'http://127.0.0.1:{wallet.http_server_port}'
 
-        set_password(wallet_url)
-        unlock(wallet_url)
-        import_key(wallet_url, Witness('initminer').private_key)
+        wallet.set_password()
+        wallet.unlock()
+        wallet.import_key(Witness('initminer').private_key)
 
         all_witnesses = alpha_witness_names + beta_witness_names
         random.shuffle(all_witnesses)
