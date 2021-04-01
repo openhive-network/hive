@@ -103,6 +103,9 @@ class Wallet:
         return communication.request(endpoint, message)
 
     # --- Wallet api calls ----------------------------------------------------
+    def info(self):
+        return self.send('info')
+
     def set_password(self, password='default-password'):
         self.password = password
         return self.send('set_password', self.password)
