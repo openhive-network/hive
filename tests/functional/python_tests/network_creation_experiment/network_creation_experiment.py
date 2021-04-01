@@ -65,34 +65,6 @@ def checked_hived_call(_url, data):
 
   return status, response
 
-def wallet_call(_url, data):
-  unlock(_url)
-  status, response = checked_hived_call(_url, data)
-
-  return status, response
-
-def transfer(_url, _sender, _receiver, _amount, _memo):
-    log.info("Attempting to transfer from {0} to {1}, amount: {2}".format(str(_sender), str(_receiver), str(_amount)))
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "transfer",
-      "params": [_sender, _receiver, _amount, _memo, 1]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
-
-def set_voting_proxy(_account, _proxy, _url):
-    log.info("Attempting to set account `{0} as proxy to {1}".format(str(_proxy), str(_account)))
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "set_voting_proxy",
-      "params": [_account, _proxy, 1]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
-
 def register_witness(wallet, _account_name, _witness_url, _block_signing_public_key):
     wallet.update_witness(
         _account_name,
@@ -100,10 +72,6 @@ def register_witness(wallet, _account_name, _witness_url, _block_signing_public_
         _block_signing_public_key,
         {"account_creation_fee": "3.000 TESTS", "maximum_block_size": 65536, "sbd_interest_rate": 0}
     )
-
-def get_amount(_asset):
-  amount, symbol = _asset.split(" ")
-  return float(amount)
 
 def self_vote(_witnesses, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
