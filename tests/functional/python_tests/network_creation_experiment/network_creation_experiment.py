@@ -29,7 +29,7 @@ def checked_hived_call(_url, data):
   return status, response
 
 def register_witness(wallet, _account_name, _witness_url, _block_signing_public_key):
-    wallet.update_witness(
+    wallet.api.update_witness(
         _account_name,
         _witness_url,
         _block_signing_public_key,
@@ -44,7 +44,7 @@ def self_vote(_witnesses, wallet):
       account_name = w
     else:
       account_name = w["account_name"]
-    future = executor.submit(wallet.vote_for_witness, account_name, account_name, 1)
+    future = executor.submit(wallet.api.vote_for_witness, account_name, account_name, 1)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
@@ -53,13 +53,13 @@ def prepare_accounts(_accounts, wallet):
   fs = []
   log.info("Attempting to create {0} accounts".format(len(_accounts)))
   for account in _accounts:
-    future = executor.submit(wallet.create_account_with_keys, 'initminer', account)
+    future = executor.submit(wallet.api.create_account_with_keys, 'initminer', account)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
   fs = []
   for account in _accounts:
-    future = executor.submit(wallet.import_key, Witness(account).private_key)
+    future = executor.submit(wallet.api.import_key, Witness(account).private_key)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
@@ -70,7 +70,7 @@ def configure_initial_vesting(_accounts, a, b, _tests, wallet):
   for account_name in _accounts:
     value = random.randint(a, b)
     amount = str(value) + ".000 " + _tests
-    future = executor.submit(wallet.transfer_to_vesting, "initminer", account_name, amount)
+    future = executor.submit(wallet.api.transfer_to_vesting, "initminer", account_name, amount)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
@@ -178,16 +178,16 @@ if __name__ == "__main__":
         time.sleep(3)  # Wait for wallet to start
 
         # Run original test script
-        wallet.set_password()
-        wallet.unlock()
-        wallet.import_key(Witness('initminer').private_key)
+        wallet.api.set_password()
+        wallet.api.unlock()
+        wallet.api.import_key(Witness('initminer').private_key)
 
         all_witnesses = alpha_witness_names + beta_witness_names
         random.shuffle(all_witnesses)
 
         print("Witness state before voting")
         print_top_witnesses(all_witnesses, api_node)
-        print(wallet.list_accounts()[1])
+        print(wallet.api.list_accounts()[1])
 
         prepare_accounts(all_witnesses, wallet)
         configure_initial_vesting(all_witnesses, 500, 1000, "TESTS", wallet)
@@ -196,7 +196,7 @@ if __name__ == "__main__":
 
         print("Witness state after voting")
         print_top_witnesses(all_witnesses, api_node)
-        print(wallet.list_accounts()[1])
+        print(wallet.api.list_accounts()[1])
 
         print("Waiting for network synchronization...")
         alpha_net.wait_for_synchronization_of_all_nodes()
