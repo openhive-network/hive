@@ -132,3 +132,6 @@ class Wallet:
 
     def list_accounts(self, lowerbound='', limit=100):
         return self.send('list_accounts', lowerbound, limit)
+
+    def update_witness(self, witness_name, url, block_signing_key, props, broadcast=True):
+        return self.send('update_witness', witness_name, url, block_signing_key, props, broadcast)
