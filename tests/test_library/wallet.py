@@ -10,6 +10,7 @@ class Wallet:
     def __init__(self, directory=Path()):
         self.http_server_port = None
         self.connected_node = None
+        self.password = None
 
         self.directory = directory
         self.executable_file_path = None
@@ -96,9 +97,18 @@ class Wallet:
 
     # --- Wallet api calls ----------------------------------------------------
     def set_password(self, password='default-password'):
+        self.password = password
         return self.send({
             "jsonrpc": "2.0",
             "id": 0,
             "method": "set_password",
-            "params": [password]
+            "params": [self.password]
+        })
+
+    def unlock(self, password=None):
+        return self.send({
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "unlock",
+            "params": [self.password if password is None else password]
         })
