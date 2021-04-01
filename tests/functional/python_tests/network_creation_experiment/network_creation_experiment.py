@@ -100,17 +100,6 @@ def transfer(_url, _sender, _receiver, _amount, _memo):
 
     status, response = wallet_call(_url, data=request)
 
-def transfer_to_vesting(_url, _sender, _receiver, _amount):
-    log.info("Attempting to transfer_to_vesting from {0} to {1}, amount: {2}".format(str(_sender), str(_receiver), str(_amount)))
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "transfer_to_vesting",
-      "params": [_sender, _receiver, _amount, 1]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
-
 def set_voting_proxy(_account, _proxy, _url):
     log.info("Attempting to set account `{0} as proxy to {1}".format(str(_proxy), str(_account)))
     request = bytes( json.dumps( {
@@ -206,14 +195,14 @@ def prepare_accounts(_accounts, _url):
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
-def configure_initial_vesting(_accounts, a, b, _tests, _url):
+def configure_initial_vesting(_accounts, a, b, _tests, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
   log.info("Configuring initial vesting for {0} of witnesses".format(str(len(_accounts))))
   for account_name in _accounts:
     value = random.randint(a, b)
     amount = str(value) + ".000 " + _tests
-    future = executor.submit(transfer_to_vesting, _url, "initminer", account_name, amount)
+    future = executor.submit(wallet.transfer_to_vesting, "initminer", account_name, amount)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
@@ -378,7 +367,7 @@ if __name__ == "__main__":
         list_accounts(wallet_url)
 
         prepare_accounts(all_witnesses, wallet_url)
-        configure_initial_vesting(all_witnesses, 500, 1000, "TESTS", wallet_url)
+        configure_initial_vesting(all_witnesses, 500, 1000, "TESTS", wallet)
         prepare_witnesses(all_witnesses, wallet_url)
         self_vote(all_witnesses, wallet_url)
 
