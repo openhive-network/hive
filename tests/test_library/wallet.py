@@ -4,6 +4,7 @@ import signal
 import time
 
 from .node import Node
+from .witness import Witness
 
 
 class Wallet:
@@ -119,6 +120,25 @@ class Wallet:
             "id": 0,
             "method": "import_key",
             "params": [key]
+        })
+
+    def create_account_with_keys(self, creator, new_account_name, json_meta='', owner=None, active=None, posting=None, memo=None, broadcast=True):
+        account = Witness(new_account_name)
+
+        return self.send({
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "create_account_with_keys",
+            "params": [
+                creator,
+                new_account_name,
+                json_meta,
+                owner if owner is not None else account.public_key,
+                active if active is not None else account.public_key,
+                posting if posting is not None else account.public_key,
+                memo if memo is not None else account.public_key,
+                broadcast
+            ]
         })
 
     def transfer_to_vesting(self, sender, receiver, amount, broadcast=True):
