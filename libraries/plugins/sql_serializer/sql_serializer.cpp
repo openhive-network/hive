@@ -1001,7 +1001,7 @@ namespace hive
                 {
                   FC_ASSERT( data.size() == 1 );
                   const auto& record = data[0];
-                  op_sequence_id = record["_max"].as<int>();
+                  op_sequence_id = record["_max"].as<int64_t>();
                 }
                 return data_processing_status();
               }
