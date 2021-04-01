@@ -90,8 +90,14 @@ class Wallet:
     def set_http_server_port(self, port):
         self.http_server_port = port
 
-    def send(self, message):
+    def send(self, method, *params, jsonrpc='2.0', id=0):
         endpoint = f'http://127.0.0.1:{self.http_server_port}'
+        message = {
+            'jsonrpc': jsonrpc,
+            'id': id,
+            'method': method,
+            'params': list(params)
+        }
 
         from . import communication
         return communication.request(endpoint, message)
@@ -99,60 +105,30 @@ class Wallet:
     # --- Wallet api calls ----------------------------------------------------
     def set_password(self, password='default-password'):
         self.password = password
-        return self.send({
-            "jsonrpc": "2.0",
-            "id": 0,
-            "method": "set_password",
-            "params": [self.password]
-        })
+        return self.send('set_password', self.password)
 
     def unlock(self, password=None):
-        return self.send({
-            "jsonrpc": "2.0",
-            "id": 0,
-            "method": "unlock",
-            "params": [self.password if password is None else password]
-        })
+        return self.send('unlock', self.password if password is None else password)
 
     def import_key(self, key):
-        return self.send({
-            "jsonrpc": "2.0",
-            "id": 0,
-            "method": "import_key",
-            "params": [key]
-        })
+        return self.send('import_key', key)
 
     def create_account_with_keys(self, creator, new_account_name, json_meta='', owner=None, active=None, posting=None, memo=None, broadcast=True):
         account = Witness(new_account_name)
-
-        return self.send({
-            "jsonrpc": "2.0",
-            "id": 0,
-            "method": "create_account_with_keys",
-            "params": [
-                creator,
-                new_account_name,
-                json_meta,
-                owner if owner is not None else account.public_key,
-                active if active is not None else account.public_key,
-                posting if posting is not None else account.public_key,
-                memo if memo is not None else account.public_key,
-                broadcast
-            ]
-        })
+        return self.send(
+            'create_account_with_keys',
+            creator,
+            new_account_name,
+            json_meta,
+            owner if owner is not None else account.public_key,
+            active if active is not None else account.public_key,
+            posting if posting is not None else account.public_key,
+            memo if memo is not None else account.public_key,
+            broadcast
+        )
 
     def transfer_to_vesting(self, sender, receiver, amount, broadcast=True):
-        return self.send({
-            "jsonrpc": "2.0",
-            "id": 0,
-            "method": "transfer_to_vesting",
-            "params": [sender, receiver, amount, broadcast]
-        })
+        return self.send('transfer_to_vesting', sender, receiver, amount, broadcast)
 
     def list_accounts(self, lowerbound='', limit=100):
-        return self.send({
-            "jsonrpc": "2.0",
-            "id": 0,
-            "method": "list_accounts",
-            "params": [lowerbound, limit]
-        })
+        return self.send('list_accounts', lowerbound, limit)
