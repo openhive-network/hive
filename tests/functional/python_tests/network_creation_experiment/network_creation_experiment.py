@@ -108,18 +108,6 @@ def vote_for_witness(_account, _witness, _approve, _url):
 
   status, response = wallet_call(_url, data=request)
 
-def vote_for_witnesses(_account, _witnesses, _approve, _url):
-  executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
-  fs = []
-  for w in _witnesses:
-    if(isinstance(w, str)):
-      account_name = w
-    else:
-      account_name = w["account_name"]
-    future = executor.submit(vote_for_witness, _account, account_name, 1, _url)
-    fs.append(future)
-  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
-
 def register_witness(wallet, _account_name, _witness_url, _block_signing_public_key):
     wallet.update_witness(
         _account_name,
