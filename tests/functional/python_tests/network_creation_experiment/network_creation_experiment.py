@@ -154,38 +154,6 @@ def prepare_witnesses(_witnesses, wallet):
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
-def synchronize_balances(_accounts, _url, _mainNetUrl):
-  log.info("Attempting to synchronize balances of {0} accounts".format(str(len(_accounts))))
-
-  accountList = []
-
-  for a in _accounts:
-    accountList.append(a["account_name"])
-
-  client = Client(_mainNetUrl)
-  accounts = client.get_accounts(accountList)
-
-  log.info("Successfully retrieved info for {0} accounts".format(str(len(accounts))))
-
-  for a in accounts:
-    name = a["name"]
-    vests = a["vesting_shares"]
-    steem = a["balance"]
-    sbd = a["sbd_balance"]
-
-    log.info("Account {0} balances: `{1}', `{2}', `{3}'".format(str(name), str(steem), str(sbd), str(vests)))
-
-    steem_amount, steem_symbol = steem.split(" ")
-
-    if(float(steem_amount) > 0):
-      tests = steem.replace("STEEM", "TESTS")
-      transfer(_url, "initminer", name, tests, "initial balance sync")
-
-    sbd_amount, sbd_symbol = sbd.split(" ")
-    if(float(sbd_amount) > 0):
-      tbd = sbd.replace("SBD", "TBD")
-      transfer(_url, "initminer", name, tbd, "initial balance sync")
-
 def list_top_witnesses(_url):
     start_object = [200277786075957257, ""]
     request = bytes( json.dumps( {
