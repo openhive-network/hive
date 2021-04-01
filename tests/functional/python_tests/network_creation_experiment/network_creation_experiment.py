@@ -71,24 +71,6 @@ def wallet_call(_url, data):
 
   return status, response
 
-def create_account(_url, _creator, account_name):
-    account = Witness(account_name)
-
-    _name = account_name
-    _pubkey = account.public_key
-    _privkey = account.private_key
-
-    log.info("Call to create account {0} {1}".format(str(_creator), str(_name)))
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "create_account_with_keys",
-      "params": [_creator, _name, "", _pubkey, _pubkey, _pubkey, _pubkey, 1]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
-    status, response = import_key(_url, _privkey)
-
 def transfer(_url, _sender, _receiver, _amount, _memo):
     log.info("Attempting to transfer from {0} to {1}, amount: {2}".format(str(_sender), str(_receiver), str(_amount)))
     request = bytes( json.dumps( {
@@ -186,12 +168,18 @@ def self_vote(_witnesses, _url):
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
-def prepare_accounts(_accounts, _url):
+def prepare_accounts(_accounts, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
   log.info("Attempting to create {0} accounts".format(len(_accounts)))
   for account in _accounts:
-    future = executor.submit(create_account, _url, "initminer", account)
+    future = executor.submit(wallet.create_account_with_keys, 'initminer', account)
+    fs.append(future)
+  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+
+  fs = []
+  for account in _accounts:
+    future = executor.submit(wallet.import_key, Witness(account).private_key)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
@@ -355,7 +343,7 @@ if __name__ == "__main__":
         print_top_witnesses(all_witnesses, api_node)
         print(wallet.list_accounts()[1])
 
-        prepare_accounts(all_witnesses, wallet_url)
+        prepare_accounts(all_witnesses, wallet)
         configure_initial_vesting(all_witnesses, 500, 1000, "TESTS", wallet)
         prepare_witnesses(all_witnesses, wallet_url)
         self_vote(all_witnesses, wallet_url)
