@@ -138,3 +138,6 @@ class Wallet:
 
     def update_witness(self, witness_name, url, block_signing_key, props, broadcast=True):
         return self.send('update_witness', witness_name, url, block_signing_key, props, broadcast)
+
+    def vote_for_witness(self, account_to_vote_with, witness_to_vote_for, approve, broadcast=True):
+        return self.send('vote_for_witness', account_to_vote_with, witness_to_vote_for, approve, broadcast)
