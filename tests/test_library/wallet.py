@@ -8,7 +8,55 @@ from .witness import Witness
 
 
 class Wallet:
+    class Api:
+        def __init__(self, wallet):
+            self.wallet = wallet
+
+        def __send(self, method, *params, jsonrpc='2.0', id=0):
+            return self.wallet.send(method, *params, jsonrpc=jsonrpc, id=id)
+
+        def info(self):
+            return self.__send('info')
+
+        def set_password(self, password='default-password'):
+            self.wallet.password = password
+            return self.__send('set_password', self.wallet.password)
+
+        def unlock(self, password=None):
+            return self.__send('unlock', self.wallet.password if password is None else password)
+
+        def import_key(self, key):
+            return self.__send('import_key', key)
+
+        def create_account_with_keys(self, creator, new_account_name, json_meta='', owner=None, active=None,
+                                     posting=None, memo=None, broadcast=True):
+            account = Witness(new_account_name)
+            return self.__send(
+                'create_account_with_keys',
+                creator,
+                new_account_name,
+                json_meta,
+                owner if owner is not None else account.public_key,
+                active if active is not None else account.public_key,
+                posting if posting is not None else account.public_key,
+                memo if memo is not None else account.public_key,
+                broadcast
+            )
+
+        def transfer_to_vesting(self, sender, receiver, amount, broadcast=True):
+            return self.__send('transfer_to_vesting', sender, receiver, amount, broadcast)
+
+        def list_accounts(self, lowerbound='', limit=100):
+            return self.__send('list_accounts', lowerbound, limit)
+
+        def update_witness(self, witness_name, url, block_signing_key, props, broadcast=True):
+            return self.__send('update_witness', witness_name, url, block_signing_key, props, broadcast)
+
+        def vote_for_witness(self, account_to_vote_with, witness_to_vote_for, approve, broadcast=True):
+            return self.__send('vote_for_witness', account_to_vote_with, witness_to_vote_for, approve, broadcast)
+
     def __init__(self, directory=Path()):
+        self.api = Wallet.Api(self)
         self.http_server_port = None
         self.connected_node = None
         self.password = None
@@ -101,43 +149,3 @@ class Wallet:
 
         from . import communication
         return communication.request(endpoint, message)
-
-    # --- Wallet api calls ----------------------------------------------------
-    def info(self):
-        return self.send('info')
-
-    def set_password(self, password='default-password'):
-        self.password = password
-        return self.send('set_password', self.password)
-
-    def unlock(self, password=None):
-        return self.send('unlock', self.password if password is None else password)
-
-    def import_key(self, key):
-        return self.send('import_key', key)
-
-    def create_account_with_keys(self, creator, new_account_name, json_meta='', owner=None, active=None, posting=None, memo=None, broadcast=True):
-        account = Witness(new_account_name)
-        return self.send(
-            'create_account_with_keys',
-            creator,
-            new_account_name,
-            json_meta,
-            owner if owner is not None else account.public_key,
-            active if active is not None else account.public_key,
-            posting if posting is not None else account.public_key,
-            memo if memo is not None else account.public_key,
-            broadcast
-        )
-
-    def transfer_to_vesting(self, sender, receiver, amount, broadcast=True):
-        return self.send('transfer_to_vesting', sender, receiver, amount, broadcast)
-
-    def list_accounts(self, lowerbound='', limit=100):
-        return self.send('list_accounts', lowerbound, limit)
-
-    def update_witness(self, witness_name, url, block_signing_key, props, broadcast=True):
-        return self.send('update_witness', witness_name, url, block_signing_key, props, broadcast)
-
-    def vote_for_witness(self, account_to_vote_with, witness_to_vote_for, approve, broadcast=True):
-        return self.send('vote_for_witness', account_to_vote_with, witness_to_vote_for, approve, broadcast)
