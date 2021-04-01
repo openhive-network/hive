@@ -2167,18 +2167,8 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         // cv.weight = W(R_1) - W(R_0)
         const auto& reward_fund = _db.get_reward_fund();
         auto curve = reward_fund.curation_reward_curve;
-        uint64_t old_weight = 0;
-        uint64_t new_weight = 0;
-
-        if( _db.has_hardfork( HIVE_HARDFORK_1_25 ) )
-        {
-          new_weight = util::evaluate_reward_curve( rshares, curve, reward_fund.content_constant ).to_uint64();
-        }
-        else
-        {
-          old_weight = util::evaluate_reward_curve( old_vote_rshares.value, curve, reward_fund.content_constant ).to_uint64();
-          new_weight = util::evaluate_reward_curve( comment_cashout->vote_rshares.value, curve, reward_fund.content_constant ).to_uint64();
-        }
+        uint64_t old_weight = util::evaluate_reward_curve( old_vote_rshares.value, curve, reward_fund.content_constant ).to_uint64();
+        uint64_t new_weight = util::evaluate_reward_curve( comment_cashout->vote_rshares.value, curve, reward_fund.content_constant ).to_uint64();
 
         if( old_weight >= new_weight ) // old_weight > new_weight should never happen
         {
@@ -2188,29 +2178,11 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         {
           uint64_t _seconds = (cv.last_update - comment_cashout->get_creation_time()).to_seconds();
 
-          if( _db.has_hardfork( HIVE_HARDFORK_1_25 ) )
+          cv.weight = new_weight - old_weight;
+
+          //In HF25 `dgpo.reverse_auction_seconds` is set to zero. It's replaced by `dgpo.early_voting_seconds` and `dgpo.mid_voting_seconds`.
+          if( _seconds < dgpo.reverse_auction_seconds )
           {
-            const uint32_t phase_1_factor = 2;
-            const uint32_t phase_2_factor = 8;
-
-            uint64_t _weight = new_weight;
-            if( _seconds >= dgpo.curation_rewards_phase_0_seconds )
-            {
-              if( _seconds < dgpo.curation_rewards_phase_1_seconds )
-                _weight /= phase_1_factor;
-              else
-                _weight /= phase_2_factor;
-            }
-            cv.weight = _weight;
-
-            max_vote_weight = cv.weight;
-          }
-          else
-          {
-            cv.weight = new_weight - old_weight;
-
-            max_vote_weight = cv.weight;
-
             /// discount weight by time
             uint128_t w(max_vote_weight);
             uint64_t delta_t = std::min( _seconds, uint64_t( dgpo.reverse_auction_seconds ) );
@@ -2219,6 +2191,19 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
             w /= dgpo.reverse_auction_seconds;
             cv.weight = w.to_uint64();
           }
+          else if( _seconds >= dgpo.early_voting_seconds && dgpo.early_voting_seconds )
+          {
+            //Following values are chosen empirically
+            const uint32_t phase_1_factor = 2;
+            const uint32_t phase_2_factor = 8;
+
+            if( _seconds < dgpo.mid_voting_seconds )
+              cv.weight /= phase_1_factor;
+            else
+              cv.weight /= phase_2_factor;
+          }
+
+          max_vote_weight = cv.weight;
         }
       }
       else

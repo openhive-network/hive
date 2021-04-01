@@ -6051,8 +6051,9 @@ void database::apply_hardfork( uint32_t hardfork )
       });
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.curation_rewards_phase_0_seconds = HIVE_CURATION_REWARDS_PHASE_0_WINDOW_SECONDS_HF25;
-        gpo.curation_rewards_phase_1_seconds = HIVE_CURATION_REWARDS_PHASE_1_WINDOW_SECONDS_HF25;
+        gpo.reverse_auction_seconds = 0;
+        gpo.early_voting_seconds    = HIVE_EARLY_VOTING_SECONDS_HF25;
+        gpo.mid_voting_seconds      = HIVE_MID_VOTING_SECONDS_HF25;
       });
       break;
     }

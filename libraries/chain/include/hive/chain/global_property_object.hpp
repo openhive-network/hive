@@ -149,6 +149,8 @@ namespace hive { namespace chain {
       uint32_t delegation_return_period = HIVE_DELEGATION_RETURN_PERIOD_HF0;
 
       uint64_t reverse_auction_seconds = HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6;
+      uint64_t early_voting_seconds = 0;
+      uint64_t mid_voting_seconds = 0;
 
       int64_t available_account_subsidies = 0;
 
@@ -172,9 +174,6 @@ namespace hive { namespace chain {
       // limits number of objects removed in one automatic operation (only applies to situations where many
       // objects can accumulate over time but need to be removed in single operation f.e. proposal votes)
       int16_t current_remove_threshold = HIVE_GLOBAL_REMOVE_THRESHOLD; //negative means no limit
-
-      uint64_t curation_rewards_phase_0_seconds = 0;
-      uint64_t curation_rewards_phase_1_seconds = 0;
 
 #ifdef HIVE_ENABLE_SMT
       asset smt_creation_fee = asset( 1000, HBD_SYMBOL ); //< TODO: replace with HBD_asset
@@ -230,6 +229,8 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (vote_power_reserve_rate)
           (delegation_return_period)
           (reverse_auction_seconds)
+          (early_voting_seconds)
+          (mid_voting_seconds)
           (available_account_subsidies)
           (hbd_stop_percent)
           (hbd_start_percent)
@@ -242,8 +243,6 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (sps_interval_ledger)
           (downvote_pool_percent)
           (current_remove_threshold)
-          (curation_rewards_phase_0_seconds)
-          (curation_rewards_phase_1_seconds)
 #ifdef HIVE_ENABLE_SMT
           (smt_creation_fee)
 #endif

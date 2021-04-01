@@ -58,7 +58,7 @@ struct curation_reward_stat
         BOOST_TEST_MESSAGE( "Comparison phases: 0 and 1" );
         auto cmp = []( const curation_reward_stat& item_a, const curation_reward_stat& item_b )
         {
-          return item_a.value && ( item_a.value / 2 == item_b.value );
+          return item_a.value == 705 && ( item_a.value / 2 == item_b.value );
         };
         curation_reward_stat::cmp( stats_phase_0, stats_phase_1, cmp );
       }
@@ -286,9 +286,9 @@ BOOST_AUTO_TEST_CASE( basic_test )
 
         uint64_t _seconds = static_cast<uint64_t>( ( cp.start_time - item.time ).to_seconds() );
 
-        if( _seconds >= dgpo.curation_rewards_phase_0_seconds )
+        if( _seconds >= dgpo.early_voting_seconds )
         {
-          if( _seconds < dgpo.curation_rewards_phase_1_seconds )
+          if( _seconds < dgpo.mid_voting_seconds )
             stats_phase_1.emplace_back( curation_reward_stat{ item.reward } );
           else
             stats_phase_2.emplace_back( curation_reward_stat{ item.reward } );
