@@ -8,8 +8,6 @@ import time
 import concurrent.futures
 import random
 
-sys.path.append("../../../tests_api")
-from jsonsocket import hived_call
 from hive.steem.client import SteemClient
 
 # TODO: Remove dependency from cli_wallet/tests directory.
@@ -19,14 +17,6 @@ from utils.logger import log, init_logger
 
 CONCURRENCY = None
 
-
-def checked_hived_call(_url, data):
-  status, response = hived_call(_url, data)
-  if status == False or response is None or "result" not in response:
-    log.error("Request failed: {0} with response {1}".format(str(data), str(response)))
-    raise Exception("Broken response for request {0}: {1}".format(str(data), str(response)))
-
-  return status, response
 
 def register_witness(wallet, _account_name, _witness_url, _block_signing_public_key):
     wallet.api.update_witness(
