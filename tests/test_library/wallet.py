@@ -8,7 +8,7 @@ from .witness import Witness
 
 
 class Wallet:
-    class Api:
+    class __Api:
         def __init__(self, wallet):
             self.__wallet = wallet
 
@@ -56,7 +56,7 @@ class Wallet:
             return self.__send('vote_for_witness', account_to_vote_with, witness_to_vote_for, approve, broadcast)
 
     def __init__(self, directory=Path()):
-        self.api = Wallet.Api(self)
+        self.api = Wallet.__Api(self)
         self.http_server_port = None
         self.connected_node = None
         self.password = None
