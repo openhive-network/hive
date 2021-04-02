@@ -1,14 +1,11 @@
 from test_library import Network, KeyGenerator, Witness
 
 
-import json
 import os
 import sys
 import time
 import concurrent.futures
 import random
-
-from hive.steem.client import SteemClient
 
 # TODO: Remove dependency from cli_wallet/tests directory.
 #       This modules [utils.logger] should be somewhere higher.
