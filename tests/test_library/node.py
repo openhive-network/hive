@@ -23,6 +23,16 @@ class Node:
         def __init__(self, node):
             super().__init__(node, 'database_api')
 
+        def list_witnesses(self, limit, order, start):
+            return self.send(
+                'list_witnesses',
+                {
+                    'limit': limit,
+                    'order': order,
+                    'start': start,
+                }
+            )
+
     def __init__(self, name='unnamed', network=None, directory=Path()):
         self.api = Node.__Apis()
         self.api.database = Node.__DatabaseApi(self)
