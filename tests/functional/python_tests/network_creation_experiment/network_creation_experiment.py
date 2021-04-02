@@ -85,34 +85,15 @@ def prepare_witnesses(_witnesses, wallet):
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
 
-def list_top_witnesses(_url):
-    start_object = [200277786075957257, ""]
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "database_api.list_witnesses",
-      "params": {
-        "limit": 100,
-        "order": "by_vote_name",
-        "start": start_object
-      }
-    } ), "utf-8" ) + b"\r\n"
-
-    status, response = checked_hived_call(_url, data=request)
+def list_top_witnesses(node):
+    start_object = [200277786075957257, '']
+    response = node.api.database.list_witnesses(100, 'by_vote_name', start_object)
     return response["result"]["witnesses"]
 
 def print_top_witnesses(witnesses, node):
-  while not node.is_http_listening():
-    time.sleep(1)
-
-  if not node.get_webserver_http_endpoints():
-    raise Exception("Node hasn't set any http endpoint")
-
-  api_node_url = node.get_webserver_http_endpoints()[0]
-
   witnesses_set = set(witnesses)
 
-  top_witnesses = list_top_witnesses(api_node_url)
+  top_witnesses = list_top_witnesses(node)
   position = 1
   for w in top_witnesses:
     owner = w["owner"]
