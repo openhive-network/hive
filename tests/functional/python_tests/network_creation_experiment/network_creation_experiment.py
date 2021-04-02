@@ -114,6 +114,25 @@ if __name__ == "__main__":
         beta_witness_names = [f'witness{i}-beta' for i in range(21)]
         voter_names = [f'voter{i}' for i in range(VOTERS)]
         votes = {}
+        import requests
+        import json
+        start_object = [200277786075957257, ""]
+        payload = bytes( json.dumps( {
+          "jsonrpc": "2.0",
+          "id": 0,
+          "method": "database_api.list_witnesses",
+          "params": {
+            "limit": 100,
+            "order": "by_vote_name",
+            "start": start_object
+          }
+        } ), "utf-8" ) + b"\r\n"
+        r = requests.post('https://api.hive.blog:443', data=payload)
+        d = json.loads(r.text)
+        mainnet_witnesses = d["result"]["witnesses"]
+
+        print(mainnet_witnesses)
+
 
         # Create first network
         alpha_net = Network('Alpha', port_range=range(51000, 52000))
