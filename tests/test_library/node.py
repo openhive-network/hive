@@ -8,7 +8,25 @@ from .witness import Witness
 
 
 class Node:
+    class __Apis:
+        pass
+
+    class __ApiBase:
+        def __init__(self, node, name):
+            self.__name = name
+            self.__node = node
+
+        def send(self, method, params=None, jsonrpc='2.0', id=1):
+            return self.__node.send(f'{self.__name}.{method}', params, jsonrpc=jsonrpc, id=id)
+
+    class __DatabaseApi(__ApiBase):
+        def __init__(self, node):
+            super().__init__(node, 'database_api')
+
     def __init__(self, name='unnamed', network=None, directory=Path()):
+        self.api = Node.__Apis()
+        self.api.database = Node.__DatabaseApi(self)
+
         self.network = network
         self.name = name
         self.directory = directory
