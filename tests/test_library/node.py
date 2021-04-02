@@ -40,6 +40,14 @@ class Node:
         def get_info(self):
             return self.send('get_info')
 
+        def set_allowed_peers(self, allowed_peers):
+            return self.send(
+                'set_allowed_peers',
+                {
+                    'allowed_peers': allowed_peers,
+                }
+            )
+
     def __init__(self, name='unnamed', network=None, directory=Path()):
         self.api = Node.__Apis()
         self.api.database = Node.__DatabaseApi(self)
@@ -248,12 +256,7 @@ class Node:
         return response['result']['node_id']
 
     def set_allowed_nodes(self, nodes):
-        return self.send(
-            'network_node_api.set_allowed_peers',
-            {
-                'allowed_peers': [node.get_id() for node in nodes],
-            }
-        )
+        return self.api.network_node.set_allowed_peers([node.get_id() for node in nodes])
 
     def run(self):
         if not self.executable_file_path:
