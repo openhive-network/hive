@@ -34,6 +34,8 @@ def self_vote(_witnesses, wallet):
     future = executor.submit(wallet.api.vote_for_witness, account_name, account_name, 1)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+  for future in fs:
+    future.result()
 
 def prepare_accounts(_accounts, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
@@ -43,12 +45,16 @@ def prepare_accounts(_accounts, wallet):
     future = executor.submit(wallet.api.create_account_with_keys, 'initminer', account)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+  for future in fs:
+    future.result()
 
   fs = []
   for account in _accounts:
     future = executor.submit(wallet.api.import_key, Witness(account).private_key)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+  for future in fs:
+    future.result()
 
 def configure_initial_vesting(_accounts, a, b, _tests, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
@@ -60,6 +66,8 @@ def configure_initial_vesting(_accounts, a, b, _tests, wallet):
     future = executor.submit(wallet.api.transfer_to_vesting, "initminer", account_name, amount)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+  for future in fs:
+    future.result()
 
 def prepare_witnesses(_witnesses, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
@@ -71,6 +79,8 @@ def prepare_witnesses(_witnesses, wallet):
     future = executor.submit(register_witness, wallet, account_name, "https://" + account_name + ".net", pub_key)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+  for future in fs:
+    future.result()
 
 def list_top_witnesses(node):
     start_object = [200277786075957257, '']
