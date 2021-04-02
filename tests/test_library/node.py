@@ -177,7 +177,16 @@ class Node:
 
         return False
 
-    def send(self, message):
+    def send(self, method, params=None, jsonrpc='2.0', id=1):
+        message = {
+            'jsonrpc': jsonrpc,
+            'id': id,
+            'method': method,
+        }
+
+        if params is not None:
+            message['params'] = params
+
         if not self.get_webserver_http_endpoints():
             raise Exception('Webserver http endpoint is unknown')
 
@@ -199,25 +208,16 @@ class Node:
         return response
 
     def get_id(self):
-        response = self.send({
-            "jsonrpc": "2.0",
-            "method": "network_node_api.get_info",
-            "id": 1,
-        })
-
+        response = self.send('network_node_api.get_info')
         return response['result']['node_id']
 
     def set_allowed_nodes(self, nodes):
-        response = self.send({
-            "jsonrpc": "2.0",
-            "method": "network_node_api.set_allowed_peers",
-            "params": {
-                "allowed_peers": [node.get_id() for node in nodes]
-            },
-            "id": 1,
-        })
-
-        return response
+        return self.send(
+            'network_node_api.set_allowed_peers',
+            {
+                'allowed_peers': [node.get_id() for node in nodes],
+            }
+        )
 
     def run(self):
         if not self.executable_file_path:
