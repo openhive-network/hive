@@ -33,9 +33,17 @@ class Node:
                 }
             )
 
+    class __NetworkNodeApi(__ApiBase):
+        def __init__(self, node):
+            super().__init__(node, 'network_node_api')
+
+        def get_info(self):
+            return self.send('get_info')
+
     def __init__(self, name='unnamed', network=None, directory=Path()):
         self.api = Node.__Apis()
         self.api.database = Node.__DatabaseApi(self)
+        self.api.network_node = Node.__NetworkNodeApi(self)
 
         self.network = network
         self.name = name
@@ -236,7 +244,7 @@ class Node:
         return response
 
     def get_id(self):
-        response = self.send('network_node_api.get_info')
+        response = self.api.network_node.get_info()
         return response['result']['node_id']
 
     def set_allowed_nodes(self, nodes):
