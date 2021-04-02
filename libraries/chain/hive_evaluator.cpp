@@ -2179,6 +2179,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
           uint64_t _seconds = (cv.last_update - comment_cashout->get_creation_time()).to_seconds();
 
           cv.weight = new_weight - old_weight;
+          max_vote_weight = cv.weight;
 
           //In HF25 `dgpo.reverse_auction_seconds` is set to zero. It's replaced by `dgpo.early_voting_seconds` and `dgpo.mid_voting_seconds`.
           if( _seconds < dgpo.reverse_auction_seconds )
@@ -2202,8 +2203,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
             else
               cv.weight /= phase_2_factor;
           }
-
-          max_vote_weight = cv.weight;
         }
       }
       else
