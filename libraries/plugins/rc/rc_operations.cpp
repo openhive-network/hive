@@ -126,6 +126,7 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
   const rc_indel_edge_object* edge = _db.find< rc_indel_edge_object, by_edge >( boost::make_tuple( op.from_account, op.amount.symbol, op.to_pool ) );
   if( !edge )
   {
+    FC_ASSERT( op.amount.amount.value != 0, "Cannot delegate 0 if the pool doesn't exist");
     FC_ASSERT( from_rc_account.out_delegations <= HIVE_RC_MAX_INDEL, "Account already has ${n} delegations.", ("n", from_rc_account.out_delegations) );
   }
 
@@ -351,17 +352,13 @@ void set_slot_delegator_evaluator::do_apply( const set_slot_delegator_operation&
     }
   }
 
-  FC_ASSERT( to_rca.indel_slots[ op.to_slot ] != op.from_pool, "Slot ${slot} is already tied to ${acc}", ("slot", op.to_slot)("acc", op.from_pool));
+  FC_ASSERT( to_rca.indel_slots[ op.to_slot ] != op.from_pool, "This slot (${slot}) is already tied to ${acc}", ("slot", op.to_slot)("acc", op.from_pool));
+  for (int i = 0; i < HIVE_RC_MAX_SLOTS; i++) {
+    if (i == op.to_slot)
+      continue;
 
-  // No need to check if the slot is already set if we want to set the slot to HIVE_NULL_ACCOUNT
-  if ( op.from_pool != HIVE_NULL_ACCOUNT ) {
-    for (int i = 0; i < HIVE_RC_MAX_SLOTS; i++) {
-      if (i == op.to_slot)
-        continue;
-
-      FC_ASSERT(to_rca.indel_slots[i] != op.from_pool, "Already have slot ${slot} tied to account ${acc}",
-                ("slot", i)("acc", op.from_pool));
-    }
+    FC_ASSERT(to_rca.indel_slots[i] != op.from_pool, "Already have slot ${slot} tied to account ${acc}, cannot set slot ${to_slot} to it",
+              ("slot", i)("acc", op.from_pool)("to_slot", op.to_slot));
   }
 
   const auto* edge = _db.find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( op.from_pool, op.to_account, VESTS_SYMBOL ) );
