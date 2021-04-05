@@ -44,7 +44,7 @@ except Exception as ex:
     sys.exit(1)
 
 
-def test_delegate_to_pool(node_client):
+def test_delegate_to_pool():
     rc = RC(node_client)
     logger.info("Testing delegating rc to pool")
     pool = node_client.rpc.find_rc_delegation_pools(["pool"])
@@ -64,7 +64,7 @@ def test_delegate_to_pool(node_client):
 
 
 
-def test_set_delegator_slot(node_client):
+def test_set_delegator_slot():
     rc = RC(node_client)
     logger.info("Testing setting a delegator slot")
 
@@ -97,7 +97,7 @@ def test_set_delegator_slot(node_client):
     assert(result['delegation_slots'][2]["rc_manabar"]["current_mana"] == 0)
     assert(result['delegation_slots'][2]['max_mana'] == 0)
 
-def test_delegate_rc(node_client):
+def test_delegate_rc():
     rc = RC(node_client)
     logger.info("Testing delegating rc")
     rc.delegate_from_pool("pool", "rctest1", 50)
@@ -114,7 +114,7 @@ def test_delegate_rc(node_client):
     assert(result['delegation_slots'][2]["rc_manabar"]["current_mana"] == 0)
     assert(result['delegation_slots'][2]['max_mana'] == 0)
 
-def test_set_slot_remove_rc(node_client):
+def test_set_slot_remove_rc():
     rc = RC(node_client)
     logger.info("Testing trying to change the slot with delegated rc, thus removing the delegation, leaving the user with no RC")
     try:
@@ -134,7 +134,7 @@ def test_set_slot_remove_rc(node_client):
     assert(result['delegation_slots'][2]['max_mana'] == 0)
 
 
-def test_set_slot(node_client):
+def test_set_slot():
     rc = RC(node_client)
     logger.info("set_slot_delegator full tests")
     try:
@@ -201,7 +201,7 @@ def test_set_slot(node_client):
     assert(result['delegation_slots'][2]['max_mana'] == 0)
 
 
-def test_delegate_to_pool_full(node_client):
+def test_delegate_to_pool_full():
     rc = RC(node_client)
     logger.info("delegate rc to pool full tests")
     try:
@@ -249,9 +249,7 @@ def test_delegate_to_pool_full(node_client):
 
     logger.info("Testing emptying an rc pool with a delegation to an account")
     rc.set_slot_delegator("alice", "rctest2", 0, args.creator)
-    logger.info("555")
     rc.delegate_from_pool("alice", "rctest2", 50)
-    logger.info("6666")
     pool = node_client.rpc.find_rc_delegation_pools(["alice"])[0]
     assert pool['account'] == 'alice'
     assert pool['max_rc'] == 100
@@ -272,12 +270,10 @@ def test_delegate_to_pool_full(node_client):
     rc_account_before = node_client.rpc.find_rc_accounts(["alice"])[0]
 
     # tx used to use some RC
-    logger.info("111111111111")
     rc.set_slot_delegator("null", "rctest2", 2, "rctest2")
+    hive_utils.common.wait_n_blocks(args.node_url, 2)
     # refresh rc
-    logger.info("2222")
     rc.delegate_to_pool("alice", 'alice', '0')
-    logger.info("8888")
     rc_account_after = node_client.rpc.find_rc_accounts(["alice"])[0]
     assert rc_account_after['rc_manabar']['current_mana'] - rc_account_before['rc_manabar']['current_mana'] > 75, "Current rc was not affected by the removal of the delegation to the pool"
     assert rc_account_after['max_rc'] - rc_account_before['max_rc'] == 100, "max rc was not affected by the removal of the delegation to the pool"
@@ -287,21 +283,19 @@ def test_delegate_to_pool_full(node_client):
     assert(result['delegation_slots'][0]['delegator'] == "alice")
     assert(result['delegation_slots'][0]["rc_manabar"]["current_mana"] < before_current_mana)
     assert(result['delegation_slots'][0]['max_mana'] == 50)
-    assert(result['delegation_slots'][1]['delegator'] == "null")
+    assert(result['delegation_slots'][1]['delegator'] == "")
     assert(result['delegation_slots'][1]["rc_manabar"]["current_mana"] == 0)
     assert(result['delegation_slots'][1]['max_mana'] == 0)
-    assert(result['delegation_slots'][2]['delegator'] == "")
+    assert(result['delegation_slots'][2]['delegator'] == "null")
     assert(result['delegation_slots'][2]["rc_manabar"]["current_mana"] == 0)
     assert(result['delegation_slots'][2]['max_mana'] == 0)
 
-    logger.info("azzzzzz")
     try:
         rc.set_slot_delegator("rctest3", "rctest2", 1, "rctest2")
     except Exception:
         pass
     else:
         assert False, "Shouldn't be able to use rc with an empty pool"
-
 
 
 if __name__ == '__main__':
@@ -369,12 +363,12 @@ if __name__ == '__main__':
             test_utils.create_accounts(node_client, args.creator, accounts)
             test_utils.transfer_to_vesting(node_client, args.creator, 'pool', "300.000","TESTS")
             test_utils.transfer_to_vesting(node_client, args.creator, 'alice', "300.000","TESTS")
-            test_delegate_to_pool(node_client)
-            test_set_delegator_slot(node_client)
-            test_delegate_rc(node_client)
-            test_set_slot_remove_rc(node_client)
-            test_set_slot(node_client)
-            #test_delegate_to_pool_full(node_client)
+            test_delegate_to_pool()
+            test_set_delegator_slot()
+            test_delegate_rc()
+            test_set_slot_remove_rc()
+            test_set_slot()
+            test_delegate_to_pool_full()
 
         else:
             raise Exception("no node detected")
@@ -383,7 +377,6 @@ if __name__ == '__main__':
         return_code = 1
     finally:
         if node is not None:
-            # input()
             node.stop_hive_node()
         if args.junit_output is not None:
             test_suite = TestSuite('dhf_tests', hive_utils.common.junit_test_cases)
