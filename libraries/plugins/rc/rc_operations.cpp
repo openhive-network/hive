@@ -124,7 +124,6 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
   rc_pool_manabar.regenerate_mana( rc_pool_manabar_params, now );
 
   const rc_indel_edge_object* edge = _db.find< rc_indel_edge_object, by_edge >( boost::make_tuple( op.from_account, op.amount.symbol, op.to_pool ) );
-
   if( !edge )
   {
     FC_ASSERT( from_rc_account.out_delegations <= HIVE_RC_MAX_INDEL, "Account already has ${n} delegations.", ("n", from_rc_account.out_delegations) );
@@ -146,7 +145,7 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
   {
     const account_object& from_account = _db.get< account_object, by_name >( op.from_account );
     int64_t account_max_rc = get_maximum_rc( from_account, from_rc_account );
-    FC_ASSERT( account_max_rc >= delta_max_rc, "Account ${a} has insufficient VESTS (have ${h}, need ${n})",
+    FC_ASSERT( account_max_rc >= delta_max_rc, "Account ${a} has insufficient RC (have ${h}, need ${n})",
       ("a", op.from_account)("h", account_max_rc)("n", delta_max_rc) );
   }
   else
@@ -352,7 +351,7 @@ void set_slot_delegator_evaluator::do_apply( const set_slot_delegator_operation&
     }
   }
 
-  FC_ASSERT( to_rca.indel_slots[ op.to_slot ] != op.from_pool, "The slot must change." );
+  FC_ASSERT( to_rca.indel_slots[ op.to_slot ] != op.from_pool, "Slot ${slot} is already tied to ${acc}", ("slot", op.to_slot)("acc", op.from_pool));
 
   // No need to check if the slot is already set if we want to set the slot to HIVE_NULL_ACCOUNT
   if ( op.from_pool != HIVE_NULL_ACCOUNT ) {

@@ -81,6 +81,7 @@ struct rc_account_api_object
     delegation_slots.reserve( HIVE_RC_MAX_SLOTS );
     for ( const account_name_type& pool : rca.indel_slots )
     {
+      idump((pool));
       pool_delegation del;
       auto indel_edge = db.find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( pool, account, VESTS_SYMBOL ) );
       if( indel_edge != nullptr )

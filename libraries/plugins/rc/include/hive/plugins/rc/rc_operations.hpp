@@ -57,7 +57,7 @@ struct delegate_drc_from_pool_operation : protocol::base_operation
   account_name_type      from_pool;
   account_name_type      to_account;
   asset_symbol_type      asset_symbol;
-  int64_t                drc_max_mana = 0;
+  int64_t                drc_max_mana = 0; // TODO: rename ?
 
   extensions_type        extensions;
 

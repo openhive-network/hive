@@ -350,7 +350,7 @@ void use_account_rcs(
       pool_manabars[i] = pool.rc_pool_manabar;
       pool_manabars[i].regenerate_mana<true>(mbparams, now);
 
-      // Don't use rc if we already paid the full rc cost
+      // Don't use rc if we already paid the full rc cost, we don't break out of the loop because we want too regenerate all the manabars
       if (rcs_left_to_pay <= 0) continue;
 
       // Get the smallest amount between the rc delegated and the pool's content
@@ -1178,7 +1178,7 @@ struct post_apply_operation_visitor
       });
     }
 
-    // TODO: Fill all rc accounts ?
+    // TODO: Fill all rc accounts with their respective slots ?
   }
 
   void operator()( const return_vesting_delegation_operation& op )const
@@ -1270,7 +1270,6 @@ void rc_plugin_impl::on_pre_apply_required_action( const required_action_notific
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   pre_apply_operation_visitor vtor( _db );
 
-  // TODO: Add issue number to HF constant
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     vtor._vesting_share_price = gpo.get_vesting_share_price();
 
@@ -1289,7 +1288,6 @@ void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   pre_apply_operation_visitor vtor( _db );
 
-  // TODO: Add issue number to HF constant
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     vtor._vesting_share_price = gpo.get_vesting_share_price();
 
@@ -1311,7 +1309,6 @@ void rc_plugin_impl::pre_apply_custom_op_type( const custom_operation_notificati
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   pre_apply_operation_visitor vtor( _db );
 
-  // TODO: Add issue number to HF constant
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     vtor._vesting_share_price = gpo.get_vesting_share_price();
 
