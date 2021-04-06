@@ -3,55 +3,14 @@ import subprocess
 import time
 
 
+from .node_api.node_apis import Apis
 from .node_config import NodeConfig
 from .witness import Witness
 
 
 class Node:
-    class __Apis:
-        pass
-
-    class __ApiBase:
-        def __init__(self, node, name):
-            self.__name = name
-            self.__node = node
-
-        def send(self, method, params=None, jsonrpc='2.0', id=1):
-            return self.__node.send(f'{self.__name}.{method}', params, jsonrpc=jsonrpc, id=id)
-
-    class __DatabaseApi(__ApiBase):
-        def __init__(self, node):
-            super().__init__(node, 'database_api')
-
-        def list_witnesses(self, limit, order, start):
-            return self.send(
-                'list_witnesses',
-                {
-                    'limit': limit,
-                    'order': order,
-                    'start': start,
-                }
-            )
-
-    class __NetworkNodeApi(__ApiBase):
-        def __init__(self, node):
-            super().__init__(node, 'network_node_api')
-
-        def get_info(self):
-            return self.send('get_info')
-
-        def set_allowed_peers(self, allowed_peers):
-            return self.send(
-                'set_allowed_peers',
-                {
-                    'allowed_peers': allowed_peers,
-                }
-            )
-
     def __init__(self, name='unnamed', network=None, directory=Path()):
-        self.api = Node.__Apis()
-        self.api.database = Node.__DatabaseApi(self)
-        self.api.network_node = Node.__NetworkNodeApi(self)
+        self.api = Apis(self)
 
         self.network = network
         self.name = name
