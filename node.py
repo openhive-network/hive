@@ -20,6 +20,7 @@ class Node:
         self.process = None
         self.stdout_file = None
         self.stderr_file = None
+        self.finalizer = None
 
         self.config = NodeConfig()
         self.config.add_entry(
@@ -73,12 +74,13 @@ class Node:
     def __str__(self):
         return f'{self.network.name}::{self.name}'
 
-    def __del__(self):
-        if not self.is_running():
+    @staticmethod
+    def __close_process(process):
+        if not process:
             return
 
-        self.close()
-        self.wait_for_close()
+        process.kill()
+        process.wait()
 
     def add_plugin(self, plugin):
         supported_plugins = {
@@ -242,10 +244,13 @@ class Node:
             stderr=None if self.print_to_terminal else self.stderr_file,
         )
 
+        import weakref
+        self.finalizer = weakref.finalize(self, Node.__close_process, self.process)
+
         print(f'[{self}] Run with pid {self.process.pid}, with http server {self.get_webserver_http_endpoints()[0]}')
 
     def close(self):
-        self.process.kill()
+        self.finalizer()
 
     def wait_for_close(self):
         self.process.wait()
