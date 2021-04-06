@@ -126,15 +126,23 @@ extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
   const auto& name = account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
   account_id_type name ## _id = name.get_id(); (void)name ## _id;
 
-#define GET_ACTOR(name) \
-  fc::ecc::private_key name ## _private_key = generate_private_key(BOOST_PP_STRINGIZE(name)); \
-  const account_object& name = get_account(BOOST_PP_STRINGIZE(name)); \
-  account_id_type name ## _id = name.get_id(); \
-  (void)name ##_id
-
 #define ACTORS_IMPL(r, data, elem) ACTOR(elem)
 #define ACTORS(names) BOOST_PP_SEQ_FOR_EACH(ACTORS_IMPL, ~, names) \
   validate_database();
+
+#define PREP_ACTOR_EXT(object, name) \
+  fc::ecc::private_key name ## _private_key = object.generate_private_key(BOOST_PP_STRINGIZE(name));   \
+  fc::ecc::private_key name ## _post_key = object.generate_private_key(std::string( BOOST_PP_STRINGIZE(name) ) + "_post" ); \
+  public_key_type name ## _public_key = name ## _private_key.get_public_key();
+
+#define ACTOR_EXT(object, name) \
+  PREP_ACTOR_EXT(object, name) \
+  const auto& name = object.account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
+  account_id_type name ## _id = name.get_id(); (void)name ## _id;
+
+#define ACTORS_EXT_IMPL(r, data, elem) ACTOR_EXT(data, elem)
+#define ACTORS_EXT(object, names) BOOST_PP_SEQ_FOR_EACH(ACTORS_EXT_IMPL, object, names) \
+  object.validate_database();
 
 #define SMT_SYMBOL( name, decimal_places, db ) \
   asset_symbol_type name ## _symbol = get_new_smt_symbol( decimal_places, db );
