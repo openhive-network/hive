@@ -74,6 +74,12 @@ class Wallet:
         self.close()
         self.wait_for_close()
 
+    def get_stdout_file_path(self):
+        return self.directory / 'stdout.txt'
+
+    def get_stderr_file_path(self):
+        return self.directory / 'stderr.txt'
+
     def is_running(self):
         if not self.process:
             return False
@@ -81,7 +87,7 @@ class Wallet:
         return self.process.poll() is None
 
     def __is_ready(self):
-        with open(self.directory / 'stderr.txt') as file:
+        with open(self.get_stderr_file_path()) as file:
             for line in file:
                 if 'Entering Daemon Mode, ^C to exit' in line:
                     return True
@@ -101,8 +107,8 @@ class Wallet:
 
         self.directory.mkdir(parents=True, exist_ok=True)
 
-        self.stdout_file = open(self.directory / 'stdout.txt', 'w')
-        self.stderr_file = open(self.directory / 'stderr.txt', 'w')
+        self.stdout_file = open(self.get_stdout_file_path(), 'w')
+        self.stderr_file = open(self.get_stderr_file_path(), 'w')
 
         if not self.connected_node.is_ws_listening():
             print(f'[Wallet] Waiting for node {self.connected_node} to listen...')
