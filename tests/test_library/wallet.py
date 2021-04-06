@@ -148,6 +148,10 @@ class Wallet:
         if not success:
             raise Exception(f'Problem with starting wallet occurred. See {self.get_stderr_file_path()} for more details.')
 
+        self.api.set_password()
+        self.api.unlock()
+        self.api.import_key(Witness('initminer').private_key)
+
         print(f'[Wallet] Started with pid {self.process.pid}, listening on port {self.http_server_port}')
 
     def connect_to(self, node: Node):
