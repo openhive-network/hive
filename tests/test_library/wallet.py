@@ -134,6 +134,20 @@ class Wallet:
         while not self.__is_ready():
             time.sleep(0.1)
 
+        from .communication import CommunicationError
+        success = False
+        for _ in range(5):
+            try:
+                self.api.info()
+
+                success = True
+                break
+            except CommunicationError:
+                time.sleep(0.5)
+
+        if not success:
+            raise Exception(f'Problem with starting wallet occurred. See {self.get_stderr_file_path()} for more details.')
+
         print(f'[Wallet] Started with pid {self.process.pid}, listening on port {self.http_server_port}')
 
     def connect_to(self, node: Node):
