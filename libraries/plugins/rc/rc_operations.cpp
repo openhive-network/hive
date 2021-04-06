@@ -167,6 +167,7 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
       pool.max_rc = delta_max_rc;
     } );
 
+    #ifdef HIVE_ENABLE_SMT
     if( is_destination_nai( op.to_pool ) )
     {
       _db.create< rc_outdel_drc_edge_object >( [&]( rc_outdel_drc_edge_object& outdel )
@@ -179,6 +180,7 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
         outdel.drc_max_mana = std::numeric_limits< int64_t >::max();
       });
     }
+    #endif
   }
   else
   {

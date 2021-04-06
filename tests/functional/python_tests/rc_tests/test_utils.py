@@ -23,7 +23,7 @@ def create_accounts(node, creator, accounts):
             creator=creator,
             asset='TESTS'
         )
-    hive_utils.common.wait_n_blocks(node.rpc.url, 5)
+    hive_utils.common.wait_n_blocks(node.rpc.url, 2)
 
 
 def transfer_to_vesting(node, from_account, account, amount, asset):
@@ -31,7 +31,7 @@ def transfer_to_vesting(node, from_account, account, amount, asset):
     logger.info("Transfer to vesting from {} to {} amount {} {}".format(from_account, account, amount, asset))
     acc = Account(from_account, hive_instance=node)
     acc.transfer_to_vesting(amount, to=account, asset=asset)
-    hive_utils.common.wait_n_blocks(node.rpc.url, 5)
+    hive_utils.common.wait_n_blocks(node.rpc.url, 2)
 
 
 # transfer initminer pychol "399.000 TESTS" "initial transfer" true
@@ -49,3 +49,8 @@ def transfer_assets_to_accounts(node, from_account, accounts, amount, asset, wif
     else:
         hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
+
+def create_post(node, account, permlink):
+    logger.info("Creating post for {}".format(account))
+    node.post("title", "body", account, permlink=permlink, tags="test")
+    hive_utils.common.wait_n_blocks(node.rpc.url, 2)
