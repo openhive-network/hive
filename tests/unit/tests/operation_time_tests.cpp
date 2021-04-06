@@ -2597,7 +2597,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, sam_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+    /// Starting from HF25 voting for already paid posts is allowed again.
+    db->push_transaction( tx, 0 );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2614,7 +2615,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, bob_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+    /// Starting from HF25 voting for already paid posts is allowed again.
+    db->push_transaction( tx, 0 );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2631,8 +2633,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, dave_private_key );
-
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+    /// Starting from HF25 voting for already paid posts is allowed again.
+    db->push_transaction( tx, 0 );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
