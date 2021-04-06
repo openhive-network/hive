@@ -1,6 +1,7 @@
 #pragma once
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/operations.hpp>
+#include <boost/core/demangle.hpp>
 
 namespace hive { namespace chain {
 
