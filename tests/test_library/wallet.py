@@ -80,6 +80,14 @@ class Wallet:
 
         return self.process.poll() is None
 
+    def __is_ready(self):
+        with open(self.directory / 'stderr.txt') as file:
+            for line in file:
+                if 'Entering Daemon Mode, ^C to exit' in line:
+                    return True
+
+        return False
+
     def run(self):
         if not self.executable_file_path:
             from .paths_to_executables import get_cli_wallet_path
@@ -119,6 +127,9 @@ class Wallet:
             stdout=self.stdout_file,
             stderr=self.stderr_file
         )
+
+        while not self.__is_ready():
+            time.sleep(0.1)
 
         print(f'[Wallet] Started with pid {self.process.pid}, listening on port {self.http_server_port}')
 
