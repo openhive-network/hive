@@ -2,6 +2,10 @@ import requests
 import json
 
 
+class CommunicationError(Exception):
+    pass
+
+
 def request(url: str, message: dict, max_attempts=3, seconds_between_attempts=0.2):
     assert max_attempts > 0
 
@@ -24,4 +28,4 @@ def request(url: str, message: dict, max_attempts=3, seconds_between_attempts=0.
 
         return success, response
 
-    raise Exception(f'Problem occurred during communication with {url}.\nSent: {message}.\nReceived: {response}')
+    raise CommunicationError(f'Problem occurred during communication with {url}.\nSent: {message}.\nReceived: {response}')
