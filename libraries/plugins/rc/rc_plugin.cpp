@@ -393,6 +393,7 @@ void use_account_rcs(
       {
         if( !has_rc )
         {
+          // TODO: include RC slots for this error message
           const dynamic_global_property_object& gpo = db.get_dynamic_global_properties();
           ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
               ("account", account_name)
@@ -416,6 +417,9 @@ void use_account_rcs(
 
   if( db.has_hardfork( HIVE_HARDFORK_1_25 ) )
   {
+    if( skip.skip_deduct_rc )
+      return;
+
     for (int i = 0; i < HIVE_RC_MAX_SLOTS; i++) {
       if (rc_account.indel_slots[i] == "") continue;
       // TODO: we already fetched this no need to refetch it

@@ -276,7 +276,7 @@ add_boost_test( plugin_test
     market_history/mh_test
     transaction_status/transaction_status_test
     rc_delegation/rc_delegate_to_pool_apply
-    rc_delegation/rc_delegate_to_pool_apply
+    rc_delegation/rc_delegate_to_pool_apply_2
     rc_delegation/rc_set_slot_delegator
     rc_delegation/rc_delegate_drc_from_pool
     rc_delegation/rc_drc_pool_consumption

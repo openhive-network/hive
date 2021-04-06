@@ -130,24 +130,33 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
     FC_ASSERT( from_rc_account.out_delegations <= HIVE_RC_MAX_INDEL, "Account already has ${n} delegations.", ("n", from_rc_account.out_delegations) );
   }
 
-  int64_t old_max_rc = edge ? edge->amount.amount.value : 0;
-  int64_t new_max_rc = op.amount.amount.value;
-  int64_t delta_max_rc = new_max_rc - old_max_rc;
-  int64_t old_rc = rc_pool_manabar.current_mana;
-  int64_t from_account_rc = from_rc_account.rc_manabar.current_mana;
-  int64_t new_rc = std::min( new_max_rc, old_rc + std::max( std::min( delta_max_rc, from_account_rc ), int64_t( 0 ) ) );
-  int64_t delta_rc = new_rc - old_rc;
+  int64_t edge_value = edge ? edge->amount.amount.value : 0;
+  int64_t edge_delta = op.amount.amount.value - edge_value;
+  int64_t pool_new_max_rc = rc_pool_manabar_params.max_mana + edge_delta;
+  int64_t pool_new_rc = std::min(pool_new_max_rc, std::max(rc_pool_manabar.current_mana + std::min(edge_delta, from_rc_account.rc_manabar.current_mana), int64_t(0)));
+
+  idump((edge_value));
+  idump((edge_delta));
+  idump((pool_new_max_rc));
+  idump((pool_new_rc));
+  idump((rc_pool_manabar.current_mana));
+  idump((from_rc_account.rc_manabar.current_mana));
 
   hive::chain::util::manabar rc_account_manabar = from_rc_account.rc_manabar;
-  rc_account_manabar.current_mana -= delta_rc;
-  rc_pool_manabar.current_mana += delta_rc;
+  idump(("before")(rc_account_manabar.current_mana));
+  rc_account_manabar.current_mana = std::max(rc_account_manabar.current_mana - edge_delta, int64_t(0));
+
+  rc_pool_manabar.current_mana = pool_new_rc;
+
+  idump(("after")(rc_account_manabar.current_mana));
+  idump((std::min(edge_delta, rc_account_manabar.current_mana)));
 
   if( op.amount.symbol == VESTS_SYMBOL )
   {
     const account_object& from_account = _db.get< account_object, by_name >( op.from_account );
     int64_t account_max_rc = get_maximum_rc( from_account, from_rc_account );
-    FC_ASSERT( account_max_rc >= delta_max_rc, "Account ${a} has insufficient RC (have ${h}, need ${n})",
-      ("a", op.from_account)("h", account_max_rc)("n", delta_max_rc) );
+    FC_ASSERT( account_max_rc >= edge_delta, "Account ${a} has insufficient RC (have ${h}, need ${n})",
+      ("a", op.from_account)("h", account_max_rc)("n", edge_delta) );
   }
   else
   {
@@ -164,7 +173,7 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
       pool.account = op.to_pool;
       pool.asset_symbol = op.amount.symbol;
       pool.rc_pool_manabar = rc_pool_manabar;
-      pool.max_rc = delta_max_rc;
+      pool.max_rc = pool_new_max_rc;
     } );
 
     #ifdef HIVE_ENABLE_SMT
@@ -187,7 +196,7 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
     _db.modify< rc_delegation_pool_object >( *to_pool, [&]( rc_delegation_pool_object& pool )
     {
       pool.rc_pool_manabar = rc_pool_manabar;
-      pool.max_rc += delta_max_rc;
+      pool.max_rc = pool_new_max_rc;
     } );
   }
 
@@ -218,7 +227,7 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
   {
     rca.rc_manabar = rc_account_manabar;
     if( op.amount.symbol == VESTS_SYMBOL )
-      rca.vests_delegated_to_pools += asset( delta_max_rc, VESTS_SYMBOL );
+      rca.vests_delegated_to_pools += asset( edge_delta, VESTS_SYMBOL );
 
     if( !edge )
     {

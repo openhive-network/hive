@@ -60,7 +60,7 @@ def test_delegate_to_pool():
     pool = node_client.rpc.find_rc_delegation_pools(["pool"])[0]
     assert pool['account'] == 'pool'
     assert pool['max_rc'] == 250
-    assert pool['rc_pool_manabar']['current_mana'] == 150 # Expected
+    assert pool['rc_pool_manabar']['current_mana'] == 250
 
 
 
@@ -218,6 +218,7 @@ def test_delegate_to_pool_full():
         assert False, "Shouldn't be able to delegate 0 to a non initialized pool"
 
     # refresh RC
+    rc_account_before = node_client.rpc.find_rc_accounts(["alice"])[0]
     rc.delegate_to_pool("alice", 'alice', '1')
     rc.delegate_to_pool("alice", 'alice', '0')
     rc_account_before = node_client.rpc.find_rc_accounts(["alice"])[0]
@@ -329,19 +330,31 @@ def test_delegate_to_pool_full():
     logger.info("Test changing the max_rc of a pool when you don't have enough current_rc to match your max_rc delegation")
     rc_account = node_client.rpc.find_rc_accounts(["alice"])[0]
     rc.delegate_to_pool("alice", 'initminer', str(rc_account['max_rc'] - 200))
-    rc_account1 = node_client.rpc.find_rc_accounts(["alice"])[0]
     # use RC
     test_utils.create_post(node_client, "alice", "permlink123")
-    # delegate 190 when the account's current_mana is less than that
-    pool1 = node_client.rpc.find_rc_delegation_pools(["alice"])[0]
-    rc.delegate_to_pool("alice", 'alice', "190")
-    rc_account2 = node_client.rpc.find_rc_accounts(["alice"])[0]
-    pool2 = node_client.rpc.find_rc_delegation_pools(["alice"])[0]
+    # delegate 200 when the account's current_mana is less than that
+    try:
+        rc.delegate_to_pool("alice", 'alice', "200")
+    except Exception:
+        pass
+    else:
+        assert False, "Shouldn't be able to delegate to a pool if you don't have enough rc"
+    rc_account_before = node_client.rpc.find_rc_accounts(["alice"])[0]
+    rc.delegate_to_pool("alice", 'alice', "191")
+    pool = node_client.rpc.find_rc_delegation_pools(["alice"])[0]
     assert pool['account'] == 'alice'
-    assert pool['max_rc'] == 290
-    assert pool['rc_pool_manabar']['current_mana'] < pool['max_rc'], "current pool mana should be less than the max rc from the pool"
+    assert pool['max_rc'] == 291
+    assert pool['rc_pool_manabar']['current_mana'] == 291
+    rc_account_after = node_client.rpc.find_rc_accounts(["alice"])[0]
+    assert rc_account_before['rc_manabar']['current_mana'] > rc_account_after['rc_manabar']['current_mana']
+    assert rc_account_before['max_rc'] > rc_account_after['max_rc']
 
-
+    logger.info("Test removing a pool delegation with no RC")
+    rc_account_before = node_client.rpc.find_rc_accounts(["alice"])[0]
+    rc.delegate_to_pool("alice", 'initminer', "0")
+    rc_account_after = node_client.rpc.find_rc_accounts(["alice"])[0]
+    assert rc_account_before['rc_manabar']['current_mana'] < rc_account_after['rc_manabar']['current_mana']
+    assert rc_account_before['max_rc'] < rc_account_after['max_rc']
 
 if __name__ == '__main__':
     logger.info("Performing RC tests")
@@ -407,34 +420,12 @@ if __name__ == '__main__':
     test_utils.create_accounts(node_client, args.creator, accounts)
     test_utils.transfer_to_vesting(node_client, args.creator, 'pool', "300.000", "TESTS")
     test_utils.transfer_to_vesting(node_client, args.creator, 'alice', "300.000", "TESTS")
-    #test_delegate_to_pool()
-    #test_set_delegator_slot()
-    #test_delegate_rc()
-    #test_set_slot_remove_rc()
-    #test_set_slot()
-    #test_delegate_to_pool_full()
-    logger.info("Test changing the max_rc of a pool")
-    rc = RC(node_client)
-    rc.delegate_to_pool("alice", 'alice', '800')
-    hive_utils.common.wait_n_blocks(args.node_url, 2)
-    pool = node_client.rpc.find_rc_delegation_pools(["alice"])[0]
-    assert pool['account'] == 'alice'
-    assert pool['max_rc'] == 800
-    assert pool['rc_pool_manabar']['current_mana'] == 800
-
-    rc.delegate_to_pool("alice", 'alice', '400')
-    hive_utils.common.wait_n_blocks(args.node_url, 2)
-    pool = node_client.rpc.find_rc_delegation_pools(["alice"])[0]
-    assert pool['account'] == 'alice'
-    assert pool['max_rc'] == 400
-    assert pool['rc_pool_manabar']['current_mana'] == 400
-
-    rc.delegate_to_pool(args.creator, 'alice', '100')
-    hive_utils.common.wait_n_blocks(args.node_url, 2)
-    pool = node_client.rpc.find_rc_delegation_pools(["alice"])[0]
-    assert pool['account'] == 'alice'
-    assert pool['max_rc'] == 500
-    assert pool['rc_pool_manabar']['current_mana'] == 500
+    test_delegate_to_pool()
+    test_set_delegator_slot()
+    test_delegate_rc()
+    test_set_slot_remove_rc()
+    test_set_slot()
+    test_delegate_to_pool_full()
 
     '''
     try:
