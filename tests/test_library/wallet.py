@@ -66,13 +66,16 @@ class Wallet:
         self.stdout_file = None
         self.stderr_file = None
         self.process = None
+        self.finalizer = None
 
-    def __del__(self):
-        if not self.is_running():
+    @staticmethod
+    def __close_process(process):
+        if not process:
             return
 
-        self.close()
-        self.wait_for_close()
+        process.send_signal(signal.SIGINT)
+        return_code = process.wait()
+        print(f'[Wallet] Closed with {return_code} return code')
 
     def get_stdout_file_path(self):
         return self.directory / 'stdout.txt'
@@ -131,6 +134,9 @@ class Wallet:
             stderr=self.stderr_file
         )
 
+        import weakref
+        self.finalizer = weakref.finalize(self, Wallet.__close_process, self.process)
+
         while not self.__is_ready():
             time.sleep(0.1)
 
@@ -158,7 +164,7 @@ class Wallet:
         self.connected_node = node
 
     def close(self):
-        self.process.send_signal(signal.SIGINT)
+        self.finalizer()
 
     def wait_for_close(self):
         return_code = self.process.wait()
