@@ -5,7 +5,7 @@ import time
 
 from .node_api.node_apis import Apis
 from .node_config import NodeConfig
-from .witness import Witness
+from .account import Account
 
 
 class Node:
@@ -258,7 +258,7 @@ class Node:
             self.add_plugin('witness')
 
         if key is None:
-            witness = Witness(witness_name)
+            witness = Account(witness_name)
             key = witness.private_key
 
         self.config.add_entry(
