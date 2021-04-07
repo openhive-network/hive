@@ -74,7 +74,12 @@ class Wallet:
             return
 
         process.send_signal(signal.SIGINT)
-        return_code = process.wait()
+
+        try:
+            return_code = process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            process.send_signal(signal.SIGKILL)
+
         print(f'[Wallet] Closed with {return_code} return code')
 
     def get_stdout_file_path(self):
