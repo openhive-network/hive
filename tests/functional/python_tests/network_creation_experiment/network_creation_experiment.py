@@ -42,15 +42,7 @@ def prepare_accounts(_accounts, wallet):
   fs = []
   log.info("Attempting to create {0} accounts".format(len(_accounts)))
   for account in _accounts:
-    future = executor.submit(wallet.api.create_account_with_keys, 'initminer', account)
-    fs.append(future)
-  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
-  for future in fs:
-    future.result()
-
-  fs = []
-  for account in _accounts:
-    future = executor.submit(wallet.api.import_key, Witness(account).private_key)
+    future = executor.submit(wallet.create_account, account)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
   for future in fs:
