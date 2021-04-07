@@ -192,3 +192,11 @@ class Wallet:
 
         from . import communication
         return communication.request(endpoint, message)
+
+    def create_account(self, name, creator='initminer'):
+        account = Witness(name)
+
+        self.api.create_account_with_keys(creator, account.name)
+        self.api.import_key(account.private_key)
+
+        return account
