@@ -135,21 +135,11 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
   int64_t pool_new_max_rc = rc_pool_manabar_params.max_mana + edge_delta;
   int64_t pool_new_rc = std::min(pool_new_max_rc, std::max(rc_pool_manabar.current_mana + std::min(edge_delta, from_rc_account.rc_manabar.current_mana), int64_t(0)));
 
-  idump((edge_value));
-  idump((edge_delta));
-  idump((pool_new_max_rc));
-  idump((pool_new_rc));
-  idump((rc_pool_manabar.current_mana));
-  idump((from_rc_account.rc_manabar.current_mana));
-
   hive::chain::util::manabar rc_account_manabar = from_rc_account.rc_manabar;
-  idump(("before")(rc_account_manabar.current_mana));
+  // TODO: change this code to not give current_mana back in case of an un-delegation
   rc_account_manabar.current_mana = std::max(rc_account_manabar.current_mana - edge_delta, int64_t(0));
 
   rc_pool_manabar.current_mana = pool_new_rc;
-
-  idump(("after")(rc_account_manabar.current_mana));
-  idump((std::min(edge_delta, rc_account_manabar.current_mana)));
 
   if( op.amount.symbol == VESTS_SYMBOL )
   {
