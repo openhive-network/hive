@@ -29,7 +29,7 @@ def request(url: str, message: dict, max_attempts=3, seconds_between_attempts=0.
             attempts_left -= 1
             continue
 
-        return success, response
+        return response
 
     raise CommunicationError(
         f'Problem occurred during communication with {url}.\nSent: {message}.\nReceived: {response}',
