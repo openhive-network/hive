@@ -4,7 +4,7 @@ import signal
 import time
 
 from .node import Node
-from .witness import Witness
+from .account import Account
 
 
 class Wallet:
@@ -30,7 +30,7 @@ class Wallet:
 
         def create_account_with_keys(self, creator, new_account_name, json_meta='', owner=None, active=None,
                                      posting=None, memo=None, broadcast=True):
-            account = Witness(new_account_name)
+            account = Account(new_account_name)
             return self.__send(
                 'create_account_with_keys',
                 creator,
@@ -161,7 +161,7 @@ class Wallet:
 
         self.api.set_password()
         self.api.unlock()
-        self.api.import_key(Witness('initminer').private_key)
+        self.api.import_key(Account('initminer').private_key)
 
         print(f'[Wallet] Started with pid {self.process.pid}, listening on port {self.http_server_port}')
 
@@ -194,7 +194,7 @@ class Wallet:
         return communication.request(endpoint, message)
 
     def create_account(self, name, creator='initminer'):
-        account = Witness(name)
+        account = Account(name)
 
         self.api.create_account_with_keys(creator, account.name)
         self.api.import_key(account.private_key)
