@@ -452,7 +452,6 @@ BOOST_AUTO_TEST_CASE( rc_set_slot_delegator )
     db->push_transaction( tx, 0 );
 
     slot_delegator = db->get< rc_account_object, by_name >( "bob" ).indel_slots[ op.to_slot ];
-    idump( (slot_delegator) );
     BOOST_REQUIRE( slot_delegator == op.from_pool );
 
     // you can't have two slots pointing to the same pool
@@ -478,6 +477,8 @@ BOOST_AUTO_TEST_CASE( rc_delegate_drc_from_pool )
     BOOST_TEST_MESSAGE( "Testing: rc_delegate_drc_from_pool" );
     ACTORS( (alice)(bob) )
     generate_block();
+    vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "10.000 TESTS" ) );
+    generate_block();
 
     delegate_drc_from_pool_operation op;
     op.from_pool = "bob";
@@ -485,16 +486,19 @@ BOOST_AUTO_TEST_CASE( rc_delegate_drc_from_pool )
     op.asset_symbol = VESTS_SYMBOL;
     op.drc_max_mana = 100;
 
+    // Try to delegate from bob to alice without alice setting her slot
     custom_json_operation custom_op;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-    custom_op.required_auths.insert( "alice" );
+    custom_op.required_auths.insert( "bob" );
     custom_op.id = HIVE_RC_PLUGIN_NAME;
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( custom_op );
     sign( tx, bob_private_key );
+
     BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
 
+    // Set slot 2 to bob on alice
     set_slot_delegator_operation set_slot;
     set_slot.from_pool = "bob";
     set_slot.to_account = "alice";
@@ -508,6 +512,36 @@ BOOST_AUTO_TEST_CASE( rc_delegate_drc_from_pool )
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
 
+    generate_block();
+
+    // try delegate more max_rc than there is in the pool
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    custom_op.required_auths.clear();
+    custom_op.required_auths.insert( "bob" );
+    tx.clear();
+    tx.operations.push_back( custom_op );
+    sign( tx, bob_private_key );
+    BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
+
+    // Delegate to pool
+    delegate_to_pool_operation dtpop;
+    dtpop.from_account = "bob";
+    dtpop.to_pool = "bob";
+    dtpop.amount = asset( 100, VESTS_SYMBOL );
+    custom_op.required_auths.clear();
+    custom_op.required_auths.insert( "bob" );
+    custom_op.id = HIVE_RC_PLUGIN_NAME;
+    custom_op.json = fc::json::to_string( rc_plugin_operation( dtpop ) );
+    tx.clear();
+    tx.operations.push_back( custom_op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, bob_private_key );
+    tx.validate();
+    db->push_transaction( tx, 0 );
+
+    generate_block();
+
+    // delegate again
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
     custom_op.required_auths.clear();
     custom_op.required_auths.insert( "bob" );
@@ -515,7 +549,7 @@ BOOST_AUTO_TEST_CASE( rc_delegate_drc_from_pool )
     tx.operations.push_back( custom_op );
     sign( tx, bob_private_key );
     db->push_transaction( tx, 0 );
-
+    tx.clear();
     {
       const auto& edge = db->get< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( op.from_pool, op.to_account, op.asset_symbol ) );
       BOOST_REQUIRE( edge.from_pool == op.from_pool );
@@ -534,7 +568,6 @@ BOOST_AUTO_TEST_CASE( rc_delegate_drc_from_pool )
     tx.operations.push_back( custom_op );
     sign( tx, bob_private_key );
     db->push_transaction( tx, 0 );
-
     {
       const auto& edge = db->get< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( op.from_pool, op.to_account, op.asset_symbol ) );
       BOOST_REQUIRE( edge.from_pool == op.from_pool );
@@ -559,13 +592,7 @@ BOOST_AUTO_TEST_CASE( rc_delegate_drc_from_pool )
     const auto* edge_ptr = db->find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( op.from_pool, op.to_account, op.asset_symbol ) );
     BOOST_REQUIRE( edge_ptr == nullptr );
     const auto* pool_ptr = db->find< rc_delegation_pool_object, by_account_symbol >( boost::make_tuple( op.from_pool, op.asset_symbol ) );
-    BOOST_REQUIRE( pool_ptr == nullptr );
-
-    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-    tx.clear();
-    tx.operations.push_back( custom_op );
-    sign( tx, bob_private_key );
-    BOOST_CHECK_THROW( db->push_transaction( tx, 0 ), fc::exception );
+    BOOST_REQUIRE( pool_ptr != nullptr );
   }
   FC_LOG_AND_RETHROW()
 }
