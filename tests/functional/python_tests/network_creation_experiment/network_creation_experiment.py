@@ -153,8 +153,6 @@ if __name__ == "__main__":
 
         wallet = alpha_net.attach_wallet()
 
-        time.sleep(3)  # Wait for wallet to start
-
         # Run original test script
         wallet.api.set_password()
         wallet.api.unlock()
