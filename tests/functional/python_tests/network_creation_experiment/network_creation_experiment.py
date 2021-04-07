@@ -154,10 +154,6 @@ if __name__ == "__main__":
         wallet = alpha_net.attach_wallet()
 
         # Run original test script
-        wallet.api.set_password()
-        wallet.api.unlock()
-        wallet.api.import_key(Witness('initminer').private_key)
-
         all_witnesses = alpha_witness_names + beta_witness_names
         random.shuffle(all_witnesses)
 
