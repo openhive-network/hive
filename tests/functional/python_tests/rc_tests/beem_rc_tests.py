@@ -43,6 +43,7 @@ except Exception as ex:
     logger.error("beem library is not installed.")
     sys.exit(1)
 
+from beem.account import Account
 
 def test_delegate_to_pool():
     rc = RC(node_client)
@@ -202,6 +203,7 @@ def test_set_slot():
 
 
 def test_delegate_to_pool_full():
+    # TODO: also test the creatin of an indel_edge via node_client.rpc.find_rc_delegations("alice")
     rc = RC(node_client)
     logger.info("delegate rc to pool full tests")
     try:
@@ -218,7 +220,6 @@ def test_delegate_to_pool_full():
         assert False, "Shouldn't be able to delegate 0 to a non initialized pool"
 
     # refresh RC
-    rc_account_before = node_client.rpc.find_rc_accounts(["alice"])[0]
     rc.delegate_to_pool("alice", 'alice', '1')
     rc.delegate_to_pool("alice", 'alice', '0')
     rc_account_before = node_client.rpc.find_rc_accounts(["alice"])[0]
@@ -356,6 +357,204 @@ def test_delegate_to_pool_full():
     assert rc_account_before['rc_manabar']['current_mana'] < rc_account_after['rc_manabar']['current_mana']
     assert rc_account_before['max_rc'] < rc_account_after['max_rc']
 
+
+def test_delegate_from_pool_full():
+    rc = RC(node_client)
+    logger.info("delegate rc from pool full tests")
+    rc.delegate_to_pool("initminer", "secondpool", '100')
+
+    try:
+        rc.delegate_from_pool("secondpool", "bob", 50)
+    except Exception:
+        pass
+    else:
+        assert False, "Shouldn't be able to delegate from a pool to an account if the account doesn't have a slot set to the pool"
+
+    rc.set_slot_delegator("secondpool", "bob", 0, args.creator)
+    rc.set_slot_delegator("secondpool", "alice", 0, args.creator)
+    rc.set_slot_delegator("secondpool", "rctest1", 0, args.creator)
+    rc.set_slot_delegator("secondpool", "rctest2", 0, args.creator)
+
+    try:
+        rc.delegate_from_pool("secondpool", "bob", 101)
+    except Exception:
+        pass
+    else:
+        assert False, "Shouldn't be able to delegate more rc than the max rc in the pool"
+
+    try:
+        test_utils.create_post(node_client, "bob", "permlink123")
+    except Exception:
+        pass
+    else:
+        assert False, "Bob shouldn't be able to create a post with 0 rc"
+
+    logger.info("delegate all the rc in the pool")
+    rc.delegate_from_pool("secondpool", "bob", 100)
+    pool_before = node_client.rpc.find_rc_delegation_pools(["secondpool"])[0]
+    rc_account_before = node_client.rpc.find_rc_accounts(["bob"])[0]
+    assert pool_before['account'] == 'secondpool'
+    assert pool_before['max_rc'] == 100
+    assert pool_before['rc_pool_manabar']['current_mana'] == 100, "pool current mana was affected by the delegation"
+
+    assert len(rc_account_before['delegation_slots']) == 3
+    assert(rc_account_before['delegation_slots'][0]['delegator'] == "secondpool")
+    assert(rc_account_before['delegation_slots'][0]["rc_manabar"]["current_mana"] == 100)
+    assert(rc_account_before['delegation_slots'][0]['max_mana'] == 100)
+
+    # use some RC
+    Account("bob", hive_instance=node_client).transfer("bob", 1.000, "TESTS")
+
+    pool_after = node_client.rpc.find_rc_delegation_pools(["secondpool"])[0]
+    rc_account_after = node_client.rpc.find_rc_accounts(["bob"])[0]
+    assert pool_after['account'] == 'secondpool'
+    assert pool_after['max_rc'] == 100
+    assert pool_before['rc_pool_manabar']['current_mana'] > pool_after['rc_pool_manabar']['current_mana'], "Pool was not affected by rc consumption"
+
+    assert len(rc_account_before['delegation_slots']) == 3
+    assert rc_account_after['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account_after['delegation_slots'][0]['max_mana'] == 100
+    assert rc_account_after['delegation_slots'][0]["rc_manabar"]["current_mana"] < rc_account_before['delegation_slots'][0]["rc_manabar"]["current_mana"], "rc account was not affected by rc consumption" == 100
+
+    logger.info("Test overdelegating to multiple accounts")
+    rc.delegate_from_pool("secondpool", "alice", 100)
+    rc.delegate_from_pool("secondpool", "rctest1", 100)
+    rc.delegate_from_pool("secondpool", "rctest2", 100)
+
+    pool = node_client.rpc.find_rc_delegation_pools(["secondpool"])[0]
+    assert pool['account'] == 'secondpool'
+    assert pool['max_rc'] == 100
+    assert pool['rc_pool_manabar']['current_mana'] == pool_after['rc_pool_manabar']['current_mana'], "pool current mana was affected by the delegation"
+    pool_before = pool
+
+    rc_account_alice = node_client.rpc.find_rc_accounts(["alice"])[0]
+    assert rc_account_alice['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account_alice['delegation_slots'][0]["rc_manabar"]["current_mana"] == 100
+    assert rc_account_alice['delegation_slots'][0]['max_mana'] == 100
+
+    rc_account_bob = node_client.rpc.find_rc_accounts(["bob"])[0]
+    assert rc_account_bob['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account_bob['delegation_slots'][0]["rc_manabar"]["current_mana"] == rc_account_after['delegation_slots'][0]["rc_manabar"]["current_mana"], "delegating more rc affected bob's current rc"
+    assert rc_account_bob['delegation_slots'][0]['max_mana'] == 100
+
+    rc_account_test1 = node_client.rpc.find_rc_accounts(["rctest1"])[0]
+    assert rc_account_test1['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account_test1['delegation_slots'][0]["rc_manabar"]["current_mana"] == 100
+    assert rc_account_test1['delegation_slots'][0]['max_mana'] == 100
+
+    logger.info("Test consuming from multiple accounts who benefit or not from the pool")
+    # consume some RC:
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+    Account("bob", hive_instance=node_client).transfer("bob", 1.000, "TESTS")
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+    Account("alice", hive_instance=node_client).transfer("alice", 1.000, "TESTS")
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+
+    pool_after = node_client.rpc.find_rc_delegation_pools(["secondpool"])[0]
+    assert pool_after['account'] == 'secondpool'
+    assert pool_after['max_rc'] == 100
+    assert pool_after['rc_pool_manabar']['current_mana'] < pool_before['rc_pool_manabar']['current_mana'], "pool current mana was not affected by the consumption"
+
+    rc_account = node_client.rpc.find_rc_accounts(["alice"])[0]
+    assert rc_account['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] == rc_account_alice['delegation_slots'][0]["rc_manabar"]["current_mana"], "Rc was pulled from the delegation when alice had 'regular' rc"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] != pool_after['rc_pool_manabar']['current_mana']
+    assert rc_account['delegation_slots'][0]['max_mana'] == 100
+    rc_account_alice = rc_account
+
+    rc_account = node_client.rpc.find_rc_accounts(["rctest1"])[0]
+    assert rc_account['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] == 100
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] != pool_after['rc_pool_manabar']['current_mana']
+    assert rc_account['delegation_slots'][0]['max_mana'] == 100
+    rc_account_test1 = rc_account
+
+    rc_account = node_client.rpc.find_rc_accounts(["bob"])[0]
+    assert rc_account['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] == pool_after['rc_pool_manabar']['current_mana']
+    assert rc_account['delegation_slots'][0]['max_mana'] == 100
+    rc_account_bob = rc_account
+
+    pool_before = pool_after
+
+    logger.info("Test consuming from two accounts who benefit from the pool")
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+    Account("rctest1", hive_instance=node_client).transfer("rctest1", 1.000, "TESTS")
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+    Account("bob", hive_instance=node_client).transfer("bob", 1.000, "TESTS")
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+
+    pool_after = node_client.rpc.find_rc_delegation_pools(["secondpool"])[0]
+    assert pool_after['account'] == 'secondpool'
+    assert pool_after['max_rc'] == 100
+    assert pool_after['rc_pool_manabar']['current_mana'] < pool_before['rc_pool_manabar']['current_mana'], "pool current mana was not affected by the consumption"
+
+    rc_account = node_client.rpc.find_rc_accounts(["alice"])[0]
+    assert rc_account['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] == rc_account_alice['delegation_slots'][0]["rc_manabar"]["current_mana"], "Rc was pulled from the delegation when alice had 'regular' rc"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] != pool_after['rc_pool_manabar']['current_mana']
+    assert rc_account['delegation_slots'][0]['max_mana'] == 100
+
+    rc_account = node_client.rpc.find_rc_accounts(["rctest1"])[0]
+    assert rc_account['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] < rc_account_test1['delegation_slots'][0]["rc_manabar"]["current_mana"]
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] != pool_after['rc_pool_manabar']['current_mana']
+    assert rc_account['delegation_slots'][0]['max_mana'] == 100
+    rc_account_test1 = rc_account
+
+    rc_account = node_client.rpc.find_rc_accounts(["bob"])[0]
+    assert rc_account['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] < rc_account_bob['delegation_slots'][0]["rc_manabar"]["current_mana"]
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] < rc_account_test1['delegation_slots'][0]["rc_manabar"]["current_mana"], "bob's manabar should be lower than rctest1"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] != pool_after['rc_pool_manabar']['current_mana']
+    assert rc_account['delegation_slots'][0]['max_mana'] == 100
+
+    logger.info("Test reducing the delegation to an account")
+    rc.delegate_from_pool("secondpool", "bob", 10)
+    rc_account = node_client.rpc.find_rc_accounts(["bob"])[0]
+    assert rc_account['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] == 10
+    assert rc_account['delegation_slots'][0]['max_mana'] == 10
+
+    logger.info("Test increasing the delegation to an account")
+    rc.delegate_from_pool("secondpool", "bob", 20)
+    rc_account = node_client.rpc.find_rc_accounts(["bob"])[0]
+    assert rc_account['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] == 20
+    assert rc_account['delegation_slots'][0]['max_mana'] == 20
+
+    logger.info("Test increasing the delegation to an account with a deficit")
+
+    # Use RC
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+    Account("bob", hive_instance=node_client).transfer("bob", 1.000, "TESTS")
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+
+    rc.delegate_from_pool("secondpool", "bob", 30)
+    rc_account = node_client.rpc.find_rc_accounts(["bob"])[0]
+    assert rc_account['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] < 30
+    assert rc_account['delegation_slots'][0]['max_mana'] == 30
+
+    logger.info("Test removing a delegation")
+
+    rc.delegate_from_pool("secondpool", "bob", 0)
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+    try:
+        Account("bob", hive_instance=node_client).transfer("bob", 1.000, "TESTS")
+    except Exception:
+        pass
+    else:
+        assert False, "Shouldn't be able to use rc with no delegation"
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+
+    rc_account = node_client.rpc.find_rc_accounts(["bob"])[0]
+    assert rc_account['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] == 0
+    assert rc_account['delegation_slots'][0]['max_mana'] == 0
+
+
+
 if __name__ == '__main__':
     logger.info("Performing RC tests")
     from beem.rc import RC
@@ -397,11 +596,12 @@ if __name__ == '__main__':
     accounts = [
         # place accounts here in the format: {'name' : name, 'private_key' : private-key, 'public_key' : public-key}
         {"name" : "pool", "private_key" : "5KgfcV9bgEen3v9mxkoGw6Rhuf2giDRZTHZjzwisjkrpF4FUh3N", "public_key" : "TST5gQPYm5bs9dRPHpqBy6dU32M8FcoKYFdF4YWEChUarc9FdYHzn"},
+        {"name" : "secondpool", "private_key" : "5JQtsuY4E6nqVtPfemEq47nCpZ8HD3jWpevnVPNQfHGBr3jwxdy", "public_key" : "TST4tvU3jn3d2Qnvk3hJ9sE2Mufo6TFa8bwJGmLAE25WxUPfN6oxc"},
         {"name" : "alice", "private_key" : "5KgxYhw6yK9QrLKQGAxRqauGuGycMVF1QNbE43Sr3E28Lo54cYq", "public_key" : "TST73QDXtjvmc97qGDeCmA8Why7JHnWjzkpEuW6Htr56R2DJ6d58q"},
+        {"name" : "bob", "private_key" : "5JfLZHtGWBP8NjNkP5xkxf6GvvMaY4ZGanSzm7qSmDCrQFq22uy", "public_key" : "TST6NrizgPtefvuQV1g43Q2mKJKy1YAQMyhQJhRm4g4PtEtGvhn4N"},
         {"name" : "rctest1", "private_key" : "5KQeu7SdzxT1DiUzv7jaqwkwv1V8Fi7N8NBZtHugWYXqVFH1AFa", "public_key" : "TST8VfiahQsfS1TLcnBfp4NNfdw67uWweYbbUXymbNiDXVDrzUs7J"},
         {"name" : "rctest2", "private_key" : "5JcQCDVnu7v7PWpsKUD8TcQqhB1v2WvSbfhK8JzDywdKEWBddNX", "public_key" : "TST6rb6ZbcvqufSHbpt6gAWT4YniDHLnMvU7QoEZbRvNG31USzYnX"},
         {"name" : "rctest3", "private_key" : "5J1QbAFcF9Xp9gVtvNMXbmzA16Cy15nKjCCZiVQa2ZxMmhZQnBd", "public_key" : "TST7vFHFVKpH9R37e6M6n7CkV6CAQZFR41Gc2f4nxNu7EW9347shb"},
-        {"name" : "rctest4", "private_key" : "5JfLZHtGWBP8NjNkP5xkxf6GvvMaY4ZGanSzm7qSmDCrQFq22uy", "public_key" : "TST6NrizgPtefvuQV1g43Q2mKJKy1YAQMyhQJhRm4g4PtEtGvhn4N"},
     ]
     account_names = [ v['name'] for v in accounts ]
 
@@ -416,31 +616,24 @@ if __name__ == '__main__':
     if node is not None:
         node.run_hive_node(["--enable-stale-production"])
 
-    node_client = Hive(node=[node_url], no_broadcast=False, keys=keys)
-    test_utils.create_accounts(node_client, args.creator, accounts)
-    test_utils.transfer_to_vesting(node_client, args.creator, 'pool', "300.000", "TESTS")
-    test_utils.transfer_to_vesting(node_client, args.creator, 'alice', "300.000", "TESTS")
-    test_delegate_to_pool()
-    test_set_delegator_slot()
-    test_delegate_rc()
-    test_set_slot_remove_rc()
-    test_set_slot()
-    test_delegate_to_pool_full()
-
-    '''
     try:
         if node is None or node.is_running():
             node_client = Hive(node=[node_url], no_broadcast=False, keys=keys)
             test_utils.create_accounts(node_client, args.creator, accounts)
-            test_utils.transfer_to_vesting(node_client, args.creator, 'pool', "300.000","TESTS")
-            test_utils.transfer_to_vesting(node_client, args.creator, 'alice', "300.000","TESTS")
+            test_utils.transfer_to_vesting(node_client, args.creator, 'pool', "300.000", "TESTS")
+            test_utils.transfer_to_vesting(node_client, args.creator, 'secondpool', "300.000", "TESTS")
+            test_utils.transfer_to_vesting(node_client, args.creator, 'alice', "300.000", "TESTS")
+            Account(args.creator, hive_instance=node_client).transfer("rctest1", 100.000, "TESTS")
+            Account(args.creator, hive_instance=node_client).transfer("bob", 100.000, "TESTS")
+            Account(args.creator, hive_instance=node_client).transfer("alice", 100.000, "TESTS")
+            Account(args.creator, hive_instance=node_client).transfer("rctest2", 100.000, "TESTS")
             test_delegate_to_pool()
             test_set_delegator_slot()
             test_delegate_rc()
             test_set_slot_remove_rc()
             test_set_slot()
             test_delegate_to_pool_full()
-
+            test_delegate_from_pool_full()
         else:
             raise Exception("no node detected")
     except Exception as ex:
@@ -454,4 +647,3 @@ if __name__ == '__main__':
             with open(args.junit_output, "w") as junit_xml:
                 TestSuite.to_file(junit_xml, [test_suite], prettyprint=False)
         sys.exit( return_code )
-'''

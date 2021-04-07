@@ -82,11 +82,11 @@ struct rc_account_api_object
     for ( const account_name_type& pool : rca.indel_slots )
     {
       pool_delegation del;
-      auto indel_edge = db.find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( pool, account, VESTS_SYMBOL ) );
-      if( indel_edge != nullptr )
+      auto in_delegation = db.find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( pool, account, VESTS_SYMBOL ) );
+      if( in_delegation != nullptr )
       {
-        del.rc_manabar = indel_edge->drc_manabar;
-        del.max_mana = indel_edge->drc_max_mana;
+        del.rc_manabar = in_delegation->drc_manabar;
+        del.max_mana = in_delegation->drc_max_mana;
       }
 
       del.delegator = pool;

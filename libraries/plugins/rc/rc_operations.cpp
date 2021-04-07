@@ -243,6 +243,9 @@ void delegate_drc_from_pool_evaluator::do_apply( const delegate_drc_from_pool_op
   }
   FC_ASSERT(found, "No slot is set to receive from pool ${pool}", ("pool", op.from_pool) );
 
+  const auto* from_pool = _db.find< rc_delegation_pool_object, by_account_symbol >( boost::make_tuple( op.from_pool, op.asset_symbol ) );
+  FC_ASSERT(op.drc_max_mana <= from_pool->max_rc, "Cannot delegate more rc than the maximum rc preset in the pool right now, pool, ${pool} has ${rc} max rc want to delegate ${amt} rc", ("pool", op.from_pool)("rc", from_pool->max_rc)("amt", op.drc_max_mana));
+
   const auto* edge = _db.find< rc_outdel_drc_edge_object, by_edge >( boost::make_tuple( op.from_pool, op.to_account, op.asset_symbol ) );
   hive::chain::util::manabar edge_manabar;
 
@@ -288,8 +291,6 @@ void delegate_drc_from_pool_evaluator::do_apply( const delegate_drc_from_pool_op
       _db.remove( *edge );
     }
   }
-
-  const auto* from_pool = _db.find< rc_delegation_pool_object, by_account_symbol >( boost::make_tuple( op.from_pool, op.asset_symbol ) );
 
   if( !from_pool && op.drc_max_mana > 0 )
   {
