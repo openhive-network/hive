@@ -242,13 +242,14 @@ class Node:
         import weakref
         self.finalizer = weakref.finalize(self, Node.__close_process, self.process)
 
-        print(f'[{self}] Run with pid {self.process.pid}, with http server {self.get_webserver_http_endpoints()[0]}')
+        print(f'[{self}] Run with pid {self.process.pid}, ', end='')
+        if self.get_webserver_http_endpoints():
+            print(f'with http server {self.get_webserver_http_endpoints()[0]}')
+        else:
+            print('without http server')
 
     def close(self):
         self.finalizer()
-
-    def wait_for_close(self):
-        self.process.wait()
 
     def set_executable_file_path(self, executable_file_path):
         self.executable_file_path = executable_file_path
