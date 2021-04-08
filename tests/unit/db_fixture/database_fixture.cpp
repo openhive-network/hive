@@ -181,6 +181,15 @@ void clean_database_fixture::inject_hardfork( uint32_t hardfork )
   generate_block();
 }
 
+hardfork_24_database_fixture::hardfork_24_database_fixture( uint16_t shared_file_size_in_mb )
+                            : clean_database_fixture( shared_file_size_in_mb, 24/*hardfork*/ )
+{
+}
+
+hardfork_24_database_fixture::~hardfork_24_database_fixture()
+{
+}
+
 live_database_fixture::live_database_fixture()
 {
   try

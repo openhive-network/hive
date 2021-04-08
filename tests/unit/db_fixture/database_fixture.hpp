@@ -321,6 +321,12 @@ struct clean_database_fixture : public database_fixture
   void inject_hardfork( uint32_t hardfork );
 };
 
+struct hardfork_24_database_fixture : public clean_database_fixture
+{
+  hardfork_24_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
+  virtual ~hardfork_24_database_fixture();
+};
+
 struct live_database_fixture : public database_fixture
 {
   live_database_fixture();
