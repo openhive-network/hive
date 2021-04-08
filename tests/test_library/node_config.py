@@ -1,4 +1,9 @@
 class NodeConfig:
+    __slots__ = [
+        'entries',  # Temporary workaround
+        'plugin',
+    ]
+
     class Entry:
         def __init__(self, value, description='description'):
             self.values = {value}
@@ -21,6 +26,8 @@ class NodeConfig:
 
     def __init__(self):
         self.entries = {}
+
+        self.plugin = None
 
     def __str__(self):
         return '\n'.join([f'{key}={str(entry)}' for key, entry in self.entries.items()])
