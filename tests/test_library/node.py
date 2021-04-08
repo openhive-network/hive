@@ -9,12 +9,12 @@ from .account import Account
 
 
 class Node:
-    def __init__(self, name='unnamed', network=None, directory=Path()):
+    def __init__(self, name='unnamed', network=None, directory=None):
         self.api = Apis(self)
 
         self.network = network
         self.name = name
-        self.directory = directory
+        self.directory = Path(directory) if directory is not None else Path(f'./{self.name}')
         self.print_to_terminal = False
         self.executable_file_path = None
         self.process = None
