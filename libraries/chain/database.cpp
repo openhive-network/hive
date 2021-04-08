@@ -2288,15 +2288,23 @@ void database::clear_account( const account_object& account,
 
   // Remove pending convert requests (return balance to account)
   const auto& request_idx = get_index< chain::convert_request_index, chain::by_owner >();
-  auto request_itr = request_idx.lower_bound( account_name );
-  while( request_itr != request_idx.end() && request_itr->owner == account_name )
+  auto request_itr = request_idx.lower_bound( account.get_id() );
+  while( request_itr != request_idx.end() && request_itr->get_owner() == account.get_id() )
   {
     auto& request = *request_itr;
     ++request_itr;
 
-    adjust_balance( account, request.amount );
+    adjust_balance( account, request.get_convert_amount() );
     remove( request );
   }
+
+  // Make sure there are no pending collateralized convert requests
+  // (if we decided to handle them anyway, in case we wanted to reuse this routine outsede HF23 code,
+  // we should most likely destroy collateral balance instead of putting it into treasury)
+  const auto& collateralized_request_idx = get_index< chain::collateralized_convert_request_index, chain::by_owner >();
+  auto collateralized_request_itr = collateralized_request_idx.lower_bound( account.get_id() );
+  FC_ASSERT( collateralized_request_itr == collateralized_request_idx.end() || collateralized_request_itr->get_owner() != account.get_id(),
+    "Collateralized convert requests not handled by clear_account" );
 
   // Remove ongoing saving withdrawals (return/pass balance to account)
   const auto& withdraw_from_idx = get_index< savings_withdraw_index, by_from_rid >();
@@ -3053,7 +3061,10 @@ void database::process_funds()
     else if( cwit.schedule == witness_object::elected )
       witness_reward *= wso.elected_weight;
     else
-      wlog( "Encountered unknown witness type for witness: ${w}", ("w", cwit.owner) );
+    {
+      push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+        "Encountered unknown witness type for witness: ${w}", ( "w", cwit.owner ) ).get_message() ) );
+    }
 
     witness_reward /= wso.witness_pay_normalization_factor;
 
@@ -3299,16 +3310,14 @@ share_type database::pay_reward_funds( const share_type& reward )
 }
 
 /**
-  *  Iterates over all conversion requests with a conversion date before
+  *  Iterates over all [collateralized] conversion requests with a conversion date before
   *  the head block time and then converts them to/from HIVE/HBD at the
-  *  current median price feed history price times the premium
+  *  current median price feed history price times the premium/fee
+  *  Collateralized requests might also return excess collateral.
   */
 void database::process_conversions()
 {
   auto now = head_block_time();
-  const auto& request_by_date = get_index< convert_request_index >().indices().get< by_conversion_date >();
-  auto itr = request_by_date.begin();
-
   const auto& fhistory = get_feed_history();
   if( fhistory.current_median_history.is_null() )
     return;
@@ -3316,28 +3325,76 @@ void database::process_conversions()
   asset net_hbd( 0, HBD_SYMBOL );
   asset net_hive( 0, HIVE_SYMBOL );
 
-  while( itr != request_by_date.end() && itr->conversion_date <= now )
+  //regular requests
   {
-    auto amount_to_issue = itr->amount * fhistory.current_median_history;
+    const auto& request_by_date = get_index< convert_request_index, by_conversion_date >();
+    auto itr = request_by_date.begin();
 
-    adjust_balance( itr->owner, amount_to_issue );
+    while( itr != request_by_date.end() && itr->get_conversion_date() <= now )
+    {
+      auto amount_to_issue = itr->get_convert_amount() * fhistory.current_median_history;
+      const auto& owner = get_account( itr->get_owner() );
 
-    net_hbd  += itr->amount;
-    net_hive += amount_to_issue;
+      adjust_balance( owner, amount_to_issue );
 
-    push_virtual_operation( fill_convert_request_operation ( itr->owner, itr->requestid, itr->amount, amount_to_issue ) );
+      net_hbd  -= itr->get_convert_amount();
+      net_hive += amount_to_issue;
 
-    remove( *itr );
-    itr = request_by_date.begin();
+      push_virtual_operation( fill_convert_request_operation( owner.get_name(), itr->get_request_id(),
+        itr->get_convert_amount(), amount_to_issue ) );
+
+      remove( *itr );
+      itr = request_by_date.begin();
+    }
   }
 
+  //collateralized requests
+  {
+    const auto& request_by_date = get_index< collateralized_convert_request_index, by_conversion_date >();
+    auto itr = request_by_date.begin();
+
+    //note that we are using median price instead of minimal as it was during immediate part of this conversion
+    price corrected_price = fhistory.current_median_history.get_scaled( HIVE_100_PERCENT + HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
+
+    while( itr != request_by_date.end() && itr->get_conversion_date() <= now )
+    {
+      const auto& owner = get_account( itr->get_owner() );
+
+      //calculate how much HIVE we'd need for already created HBD at current corrected price
+      auto required_hive = itr->get_converted_amount() * corrected_price;
+      auto excess_collateral = itr->get_collateral_amount() - required_hive;
+      if( excess_collateral.amount < 0 )
+      {
+        push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+          "Insufficient collateral on conversion ${id} by ${o} - shortfall of ${ec}",
+          ( "id", itr->get_request_id() )( "o", owner.get_name() )( "ec", -excess_collateral ) ).get_message() ) );
+
+        required_hive = itr->get_collateral_amount();
+        excess_collateral.amount = 0;
+      }
+      else
+      {
+        adjust_balance( owner, excess_collateral );
+      }
+
+      net_hive -= required_hive;
+      //note that HBD was created immediately, so we don't need to correct its supply here
+      push_virtual_operation( fill_collateralized_convert_request_operation( owner.get_name(), itr->get_request_id(),
+        required_hive, itr->get_converted_amount(), excess_collateral ) );
+
+      remove( *itr );
+      itr = request_by_date.begin();
+    }
+  }
+
+  //correct global supply
   const auto& props = get_dynamic_global_properties();
   modify( props, [&]( dynamic_global_property_object& p )
   {
-      p.current_supply += net_hive;
-      p.current_hbd_supply -= net_hbd;
-      p.virtual_supply += net_hive;
-      p.virtual_supply -= net_hbd * get_feed_history().current_median_history;
+    p.current_supply += net_hive;
+    p.current_hbd_supply += net_hbd;
+    p.virtual_supply += net_hive;
+    p.virtual_supply += net_hbd * get_feed_history().current_median_history;
   } );
 }
 
@@ -3489,6 +3546,7 @@ void database::initialize_evaluators()
   _my->_evaluator_registry.register_evaluator< report_over_production_evaluator         >();
   _my->_evaluator_registry.register_evaluator< feed_publish_evaluator                   >();
   _my->_evaluator_registry.register_evaluator< convert_evaluator                        >();
+  _my->_evaluator_registry.register_evaluator< collateralized_convert_evaluator         >();
   _my->_evaluator_registry.register_evaluator< limit_order_create_evaluator             >();
   _my->_evaluator_registry.register_evaluator< limit_order_create2_evaluator            >();
   _my->_evaluator_registry.register_evaluator< limit_order_cancel_evaluator             >();
@@ -3714,6 +3772,8 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
     create< feed_history_object >( [&]( feed_history_object& o )
     {
       o.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
+      o.current_min_history = o.current_median_history;
+      o.current_max_history = o.current_median_history;
     });
 #else
     // Nothing to do
@@ -4044,7 +4104,7 @@ void database::_apply_block( const signed_block& next_block )
   update_witness_schedule(*this);
 
   update_median_feed();
-  update_virtual_supply();
+  update_virtual_supply(); //accommodate potentially new price
 
   clear_null_account_balance();
   consolidate_treasury_balance();
@@ -4055,12 +4115,12 @@ void database::_apply_block( const signed_block& next_block )
   process_savings_withdraws();
   process_subsidized_accounts();
   pay_liquidity_reward();
-  update_virtual_supply();
+  update_virtual_supply(); //cover changes in HBD supply from above processes
 
   account_recovery_processing();
   expire_escrow_ratification();
   process_decline_voting_rights();
-  process_proposals( note );
+  process_proposals( note ); //new HBD converted here does not count towards limit
   process_delayed_voting( note );
 
   generate_required_actions();
@@ -4156,7 +4216,8 @@ void database::process_header_extensions( const signed_block& next_block, requir
     e.visit( _v );
 }
 
-void database::update_median_feed() {
+void database::update_median_feed()
+{
 try {
   if( (head_block_num() % HIVE_FEED_INTERVAL_BLOCKS) != 0 )
     return;
@@ -4199,15 +4260,11 @@ try {
 
       if( fho.price_history.size() )
       {
-        /// BW-TODO Why deque is used here ? Also why don't make copy of whole container ?
-        std::deque< price > copy;
-        for( const auto& i : fho.price_history )
-        {
-          copy.push_back( i );
-        }
-
-        std::sort( copy.begin(), copy.end() ); /// TODO: use nth_item
+        std::vector< price > copy( fho.price_history.begin(), fho.price_history.end() );
+        std::sort( copy.begin(), copy.end() );
         fho.current_median_history = copy[copy.size()/2];
+        fho.current_min_history = copy.front();
+        fho.current_max_history = copy.back();
 
 #ifdef IS_TEST_NET
         if( skip_price_feed_limit_check )
@@ -4230,7 +4287,16 @@ try {
             price min_price( asset( 9 * gpo.get_current_hbd_supply().amount, HBD_SYMBOL ), gpo.current_supply );
 
             if( min_price > fho.current_median_history )
+            {
+              push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+                "HIVE price corrected upward due to 10% HBD cutoff rule, from ${actual} to ${corrected}",
+                ( "actual", fho.current_median_history )( "corrected", min_price ) ).get_message() ) );
+
               fho.current_median_history = min_price;
+            }
+            //should we also correct current_min_history?
+            if( min_price > fho.current_max_history )
+              fho.current_max_history = min_price;
           }
         }
       }
@@ -4750,37 +4816,47 @@ FC_TODO( "#ifndef not needed after HF 20 is live" );
   }
 } FC_CAPTURE_AND_RETHROW() }
 
+uint16_t database::calculate_HBD_percent()
+{
+  auto median_price = get_feed_history().current_median_history;
+  if( median_price.is_null() )
+    return 0;
+
+  const auto& dgpo = get_dynamic_global_properties();
+  auto hbd_supply = dgpo.get_current_hbd_supply();
+  auto virtual_supply = dgpo.virtual_supply;
+  if( has_hardfork( HIVE_HARDFORK_1_24 ) )
+  {
+    // Removing the hbd in the treasury from the debt ratio calculations
+    hbd_supply -= get_treasury().get_hbd_balance();
+    if( hbd_supply.amount < 0 )
+      hbd_supply = asset( 0, HBD_SYMBOL );
+    virtual_supply = hbd_supply * median_price + dgpo.get_current_supply();
+  }
+
+  if( has_hardfork( HIVE_HARDFORK_0_21 ) )
+  {
+    return uint16_t( ( ( fc::uint128_t( ( hbd_supply * median_price ).amount.value ) * HIVE_100_PERCENT + virtual_supply.amount.value / 2 )
+      / virtual_supply.amount.value ).to_uint64() );
+  }
+  else
+  {
+    return uint16_t( ( ( fc::uint128_t( ( hbd_supply * median_price ).amount.value ) * HIVE_100_PERCENT )
+      / virtual_supply.amount.value ).to_uint64() );
+  }
+}
+
 void database::update_virtual_supply()
 { try {
   modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgp )
   {
-    dgp.virtual_supply = dgp.current_supply
-      + ( get_feed_history().current_median_history.is_null() ? asset( 0, HIVE_SYMBOL ) : dgp.get_current_hbd_supply() * get_feed_history().current_median_history );
-
     auto median_price = get_feed_history().current_median_history;
+    dgp.virtual_supply = dgp.current_supply
+      + ( median_price.is_null() ? asset( 0, HIVE_SYMBOL ) : dgp.get_current_hbd_supply() * median_price );
 
     if( !median_price.is_null() && has_hardfork( HIVE_HARDFORK_0_14__230 ) )
     {
-      uint16_t percent_hbd = 0;
-
-      if( has_hardfork( HIVE_HARDFORK_1_24 ) )
-      {
-        // Removing the hbd in the treasury from the debt ratio calculations
-        const auto &treasury_account = get_treasury();
-        const auto hdb_supply_without_treasury = (dgp.get_current_hbd_supply() - treasury_account.hbd_balance).amount < 0 ? asset(0, HBD_SYMBOL) : (dgp.get_current_hbd_supply() - treasury_account.hbd_balance) ;
-        const auto virtual_supply_without_treasury = hdb_supply_without_treasury * get_feed_history().current_median_history + dgp.current_supply;
-        percent_hbd = uint16_t( ( ( fc::uint128_t( ( hdb_supply_without_treasury * get_feed_history().current_median_history ).amount.value ) * HIVE_100_PERCENT + virtual_supply_without_treasury.amount.value/2 )
-                                  / virtual_supply_without_treasury.amount.value ).to_uint64() );
-      } else if( has_hardfork( HIVE_HARDFORK_0_21 ) )
-      {
-        percent_hbd = uint16_t( ( ( fc::uint128_t( ( dgp.get_current_hbd_supply() * get_feed_history().current_median_history ).amount.value ) * HIVE_100_PERCENT + dgp.virtual_supply.amount.value/2 )
-          / dgp.virtual_supply.amount.value ).to_uint64() );
-      }
-      else
-      {
-        percent_hbd = uint16_t( ( ( fc::uint128_t( ( dgp.get_current_hbd_supply() * get_feed_history().current_median_history ).amount.value ) * HIVE_100_PERCENT )
-        / dgp.virtual_supply.amount.value ).to_uint64() );
-      }
+      uint16_t percent_hbd = calculate_HBD_percent();
 
       if( percent_hbd <= dgp.hbd_start_percent )
         dgp.hbd_print_rate = HIVE_100_PERCENT;
@@ -6108,6 +6184,7 @@ void database::validate_invariants()const
     uint64_t witness_no = 0;
     uint64_t account_no = 0;
     uint64_t convert_no = 0;
+    uint64_t collateralized_convert_no = 0;
     uint64_t order_no = 0;
     uint64_t escrow_no = 0;
     uint64_t withdrawal_no = 0;
@@ -6150,16 +6227,18 @@ void database::validate_invariants()const
     }
 
     const auto& convert_request_idx = get_index< convert_request_index >().indices();
-
     for( auto itr = convert_request_idx.begin(); itr != convert_request_idx.end(); ++itr )
     {
-      if( itr->amount.symbol == HIVE_SYMBOL )
-        total_supply += itr->amount;
-      else if( itr->amount.symbol == HBD_SYMBOL )
-        total_hbd += itr->amount;
-      else
-        FC_ASSERT( false, "Encountered illegal symbol in convert_request_object" );
+      total_hbd += itr->get_convert_amount();
       ++convert_no;
+    }
+
+    const auto& collateralized_convert_request_idx = get_index< collateralized_convert_request_index >().indices();
+    for( auto itr = collateralized_convert_request_idx.begin(); itr != collateralized_convert_request_idx.end(); ++itr )
+    {
+      total_supply += itr->get_collateral_amount();
+      // don't collect get_converted_amount() - it is not balance object; that tokens are already on owner's balance
+      ++collateralized_convert_no;
     }
 
     const auto& limit_order_idx = get_index< limit_order_index >().indices();
@@ -6240,8 +6319,8 @@ void database::validate_invariants()const
     }
 
     ilog( "validate_invariants @${b}:", ( "b", head_block_num() ) );
-    ilog( "successful scan of ${p} witnesses, ${a} accounts, ${c} convert requests, ${o} limit orders, ${e} escrow transfers, ${w} saving withdrawals, ${r} reward funds and ${s} SMT contributions.",
-      ( "p", witness_no )( "a", account_no )( "c", convert_no )( "o", order_no )( "e", escrow_no )( "w", withdrawal_no )( "r", reward_fund_no )( "s", contribution_no ) );
+    ilog( "successful scan of ${p} witnesses, ${a} accounts, ${c} convert requests, ${cc} collateralized convert requests, ${o} limit orders, ${e} escrow transfers, ${w} saving withdrawals, ${r} reward funds and ${s} SMT contributions.",
+      ( "p", witness_no )( "a", account_no )( "c", convert_no )( "cc", collateralized_convert_no )( "o", order_no )( "e", escrow_no )( "w", withdrawal_no )( "r", reward_fund_no )( "s", contribution_no ) );
     ilog( "HIVE supply: ${h}", ( "h", gpo.current_supply.amount.value ) );
     ilog( "HBD supply: ${s} ( + ${i} initial )", ( "s", gpo.get_current_hbd_supply().amount.value )( "i", gpo.get_init_hbd_supply().amount.value ) );
     ilog( "virtual supply (HIVE): ${w}", ( "w", gpo.virtual_supply.amount.value ) );

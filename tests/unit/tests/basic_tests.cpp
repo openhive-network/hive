@@ -485,7 +485,8 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
 #endif
   ); 
   BOOST_CHECK_EQUAL( sizeof( comment_vote_object ), 48 ); //at most <7d> of votes on unpaid comments
-  BOOST_CHECK_EQUAL( sizeof( convert_request_object ), 56 ); //at most <3.5d> of conversion requests
+  BOOST_CHECK_EQUAL( sizeof( convert_request_object ), 24 ); //at most <3.5d> of conversion requests
+  BOOST_CHECK_EQUAL( sizeof( collateralized_convert_request_object ), 32 ); //at most <3.5d> of conversion requests
   BOOST_CHECK_EQUAL( sizeof( escrow_object ), 120 ); //small but potentially lasting forever, limited to 255*account_object
   BOOST_CHECK_EQUAL( sizeof( savings_withdraw_object ), 104 ); //at most <3d> of saving withdrawals
   BOOST_CHECK_EQUAL( sizeof( limit_order_object ), 80 ); //at most <28d> of limit orders

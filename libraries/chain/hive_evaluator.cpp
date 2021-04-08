@@ -92,7 +92,8 @@ void witness_update_evaluator::do_apply( const witness_update_operation& o )
   else if( !o.props.account_creation_fee.symbol.is_canon() )
   {
     // after HF, above check can be moved to validate() if reindex doesn't show this warning
-    wlog( "Wrong fee symbol in block ${b}", ("b", _db.head_block_num()+1) );
+    _db.push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+      "Wrong fee symbol in block ${b}", ( "b", _db.head_block_num() + 1 ) ).get_message() ) );
   }
 
   FC_TODO( "Check and move this to validate after HF 20" );
@@ -2628,7 +2629,8 @@ void feed_publish_evaluator::do_apply( const feed_publish_operation& o )
 
 void convert_evaluator::do_apply( const convert_operation& o )
 {
-  _db.adjust_balance( o.owner, -o.amount );
+  const auto& owner = _db.get_account( o.owner );
+  _db.adjust_balance( owner, -o.amount );
 
   const auto& fhistory = _db.get_feed_history();
   FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot convert HBD because there is no price feed." );
@@ -2637,7 +2639,44 @@ void convert_evaluator::do_apply( const convert_operation& o )
   if( _db.has_hardfork( HIVE_HARDFORK_0_16__551) )
     hive_conversion_delay = HIVE_CONVERSION_DELAY;
 
-  _db.create<convert_request_object>( o.owner, o.amount, _db.head_block_time() + hive_conversion_delay, o.requestid );
+  _db.create<convert_request_object>( owner, o.amount, _db.head_block_time() + hive_conversion_delay, o.requestid );
+}
+
+void collateralized_convert_evaluator::do_apply( const collateralized_convert_operation& o )
+{
+  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_25 ), "Operation not available until HF25" );
+
+  const auto& owner = _db.get_account( o.owner );
+  _db.adjust_balance( owner, -o.amount );
+
+  const auto& fhistory = _db.get_feed_history();
+  FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot convert HIVE because there is no price feed." );
+
+  //apply fee to current rolling minimum price
+  price immediate_price_with_fee = fhistory.current_min_history.get_scaled( HIVE_100_PERCENT + HIVE_COLLATERALIZED_CONVERSION_FEE, o.amount.symbol );
+  
+  //cut amount by collateral ratio
+  uint128_t _amount = ( uint128_t( o.amount.amount.value ) * HIVE_100_PERCENT ) / HIVE_CONVERSION_COLLATERAL_RATIO;
+  FC_ASSERT( _amount.hi == 0 );
+  asset for_immediate_conversion = asset( _amount.to_uint64(), o.amount.symbol );
+
+  //immediately create HBD
+  auto converted_amount = for_immediate_conversion * immediate_price_with_fee;
+  _db.adjust_balance( owner, converted_amount );
+
+  const auto& dgpo = _db.get_dynamic_global_properties();
+  _db.modify( dgpo, [&]( dynamic_global_property_object& p )
+  {
+    //HIVE supply (and virtual supply in part related to HIVE) will be corrected after actual conversion
+    p.current_hbd_supply += converted_amount;
+    p.virtual_supply += converted_amount * fhistory.current_median_history;
+  } );
+
+  uint16_t percent_hbd = _db.calculate_HBD_percent();
+  FC_ASSERT( percent_hbd <= dgpo.hbd_stop_percent, "Creation of new ${hbd} violates global limit.", ( "hbd", converted_amount ) );
+
+  _db.create<collateralized_convert_request_object>( owner, o.amount, converted_amount,
+    _db.head_block_time() + HIVE_COLLATERALIZED_CONVERSION_DELAY, o.requestid );
 }
 
 void limit_order_create_evaluator::do_apply( const limit_order_create_operation& o )

@@ -554,6 +554,14 @@ namespace hive { namespace protocol {
     FC_ASSERT( amount.amount > 0, "Must convert some HBD" );
   }
 
+  void collateralized_convert_operation::validate()const
+  {
+    validate_account_name( owner );
+    /// only allow conversion from HIVE to HBD (at least for now)
+    FC_ASSERT( is_asset_type( amount, HIVE_SYMBOL ), "Can only convert HIVE to HBD" );
+    FC_ASSERT( amount.amount > 0, "Must convert some HIVE" );
+  }
+
   void report_over_production_operation::validate()const
   {
     validate_account_name( reporter );

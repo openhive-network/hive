@@ -359,6 +359,24 @@ struct find_hbd_conversion_requests_args
 typedef list_hbd_conversion_requests_return find_hbd_conversion_requests_return;
 
 
+/* Collateralized Converstions */
+
+typedef list_object_args_type list_collateralized_conversion_requests_args;
+
+struct list_collateralized_conversion_requests_return
+{
+  vector< api_collateralized_convert_request_object > requests;
+};
+
+
+struct find_collateralized_conversion_requests_args
+{
+  account_name_type account;
+};
+
+typedef list_collateralized_conversion_requests_return find_collateralized_conversion_requests_return;
+
+
 /* Decline Voting Rights Requests */
 
 typedef list_object_args_type list_decline_voting_rights_requests_args;
@@ -790,6 +808,12 @@ FC_REFLECT( hive::plugins::database_api::list_hbd_conversion_requests_return,
   (requests) )
 
 FC_REFLECT( hive::plugins::database_api::find_hbd_conversion_requests_args,
+  (account) )
+
+FC_REFLECT( hive::plugins::database_api::list_collateralized_conversion_requests_return,
+  (requests) )
+
+FC_REFLECT( hive::plugins::database_api::find_collateralized_conversion_requests_args,
   (account) )
 
 FC_REFLECT( hive::plugins::database_api::list_decline_voting_rights_requests_return,
