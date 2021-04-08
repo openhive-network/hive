@@ -4,8 +4,6 @@
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/version.hpp>
 
-
-
 namespace hive { namespace protocol {
 
 fc::variant_object get_config( const std::string& treasury_name, const fc::sha256& chain_id )
