@@ -764,6 +764,8 @@ const comment_object* database::find_comment( const account_name_type& author, c
   return find_comment( acc->get_id(), permlink );
 }
 
+#ifndef ENABLE_STD_ALLOCATOR
+
 const comment_object& database::get_comment( const account_id_type& author, const string& permlink )const
 { try {
   return get< comment_object, by_permlink >( comment_object::compute_author_and_permlink_hash( author, permlink ) );
@@ -785,6 +787,8 @@ const comment_object* database::find_comment( const account_name_type& author, c
   if(acc == nullptr) return nullptr;
   return find_comment( acc->get_id(), permlink );
 }
+
+#endif
 
 const escrow_object& database::get_escrow( const account_name_type& name, uint32_t escrow_id )const
 { try {

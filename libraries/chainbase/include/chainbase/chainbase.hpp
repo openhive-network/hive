@@ -118,6 +118,7 @@ namespace chainbase {
       return less( a.c_str(), b.c_str() );
     }
 
+#ifndef ENABLE_STD_ALLOCATOR
     bool operator()( const shared_string& a, const std::string& b )const
     {
       return less( a.c_str(), b.c_str() );
@@ -127,6 +128,7 @@ namespace chainbase {
     {
       return less( a.c_str(), b.c_str() );
     }
+#endif
 
     private:
       inline bool less( const char* a, const char* b )const
@@ -1092,7 +1094,11 @@ namespace chainbase {
       template< typename Lambda >
       auto with_read_lock( Lambda&& callback, uint64_t wait_micro = 1000000 ) -> decltype( (*(Lambda*)nullptr)() )
       {
+#ifndef ENABLE_STD_ALLOCATOR
         read_lock lock( _rw_lock, bip::defer_lock_type() );
+#else
+        read_lock lock( _rw_lock, boost::defer_lock_t() );
+#endif
 
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
@@ -1158,8 +1164,13 @@ namespace chainbase {
         if( !( _index_map.size() <= type_id || _index_map[ type_id ] == nullptr ) ) {
           BOOST_THROW_EXCEPTION( std::logic_error( type_name + "::type_id is already in use" ) );
         }
+        index_type* idx_ptr =  nullptr;
+#ifdef ENABLE_STD_ALLOCATOR
+        idx_ptr = new index_type( index_alloc() );
+#else
+        idx_ptr = _segment->find_or_construct< index_type >( type_name.c_str() )( index_alloc( _segment->get_segment_manager() ) );
+#endif
 
-        index_type* idx_ptr = _segment->find_or_construct< index_type >( type_name.c_str() )( index_alloc( _segment->get_segment_manager() ) );
 
         idx_ptr->validate();
 

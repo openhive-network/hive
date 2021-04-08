@@ -14,9 +14,13 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
     public:
 
+#ifdef ENABLE_STD_ALLOCATOR
+      environment_check()
+#else
       template< typename Allocator >
       environment_check( allocator< Allocator > a )
                   : version_info( a ), plugins( a )
+#endif
       {
         memset( &compiler_version, 0, sizeof( compiler_version ) );
         memcpy( &compiler_version, __VERSION__, std::min<size_t>( strlen(__VERSION__), 256 ) );
@@ -39,7 +43,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
       environment_check& operator = ( const environment_check& other )
       {
+#ifndef ENABLE_STD_ALLOCATOR
         plugins = plugins;
+#endif
         compiler_version = other.compiler_version;
         debug = other.debug;
         apple = other.apple;
@@ -56,14 +62,15 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         retVal += ", \"apple\":" + std::to_string(apple);
         retVal += ", \"windows\":" + std::to_string(windows);
 
+#ifndef ENABLE_STD_ALLOCATOR
         retVal += ", " + std::string( version_info.c_str() );
         retVal += ", " + dump( plugins );
-
+#endif
         retVal += "}";
 
         return retVal;
       }
-
+#ifndef ENABLE_STD_ALLOCATOR
       template< typename Set >
       std::string dump( const Set& source ) const
       {
@@ -124,7 +131,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
       shared_string                 version_info;
       t_flat_set< shared_string >   plugins;
-
+#endif
       boost::array<char,256>  compiler_version;
       bool                    debug = false;
       bool                    apple = false;
@@ -141,7 +148,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
     _data_dir = dir;
     _database_cfg = database_cfg;
-
+#ifndef ENABLE_STD_ALLOCATOR
     auto abs_path = bfs::absolute( dir / "shared_memory.bin" );
 
     if( bfs::exists( abs_path ) )
@@ -201,6 +208,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     _flock = bip::file_lock( abs_path.generic_string().c_str() );
     if( !_flock.try_lock() )
       BOOST_THROW_EXCEPTION( std::runtime_error( "could not gain write access to the shared memory file" ) );
+#endif
 
     _is_open = true;
   }

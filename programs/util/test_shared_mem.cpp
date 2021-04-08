@@ -122,8 +122,14 @@ int main(int argc, char** argv, char** envp)
   b.deq.push_back( shared_string( "hello world", basic_string_allocator( seg.get_segment_manager() )  ) );
   idump((b));
   */
+#ifndef ENABLE_STD_ALLOCATOR
   book_container* pbc = seg.find_or_construct<book_container>("book container")( book_container::ctor_args_list(),
                                                         book_container::allocator_type(seg.get_segment_manager()));
+#else
+  book_container* pbc = new book_container( book_container::ctor_args_list(),
+                              book_container::allocator_type() );
+#endif
+
 
   for( const auto& item : *pbc ) {
     idump((item));
@@ -131,12 +137,24 @@ int main(int argc, char** argv, char** envp)
 
   //b.pages = pbc->size();
   //b.auth = hive::chain::authority( 1, "dan", pbc->size() );
+#ifndef ENABLE_STD_ALLOCATOR
   pbc->emplace( [&]( book& b ) {
             b.name = "emplace name";
             b.pages = pbc->size();
             }, allocator<book>( seg.get_segment_manager() ) );
+#else
+  pbc->emplace( [&]( book& b ) {
+            b.name = "emplace name";
+            b.pages = pbc->size();
+            }, allocator<book>() );
+#endif
 
+
+#ifndef ENABLE_STD_ALLOCATOR
   t_deque< book > * deq = seg.find_or_construct<chainbase::t_deque<book>>("book deque")(allocator<book>(seg.get_segment_manager()));
+#else
+  t_deque< book > * deq = new chainbase::t_deque<book>( allocator<book>() );
+#endif
 
   idump((deq->size()));
 

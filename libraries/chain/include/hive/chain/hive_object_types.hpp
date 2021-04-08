@@ -199,6 +199,7 @@ namespace fc
 {
 class variant;
 
+#ifndef ENABLE_STD_ALLOCATOR
 inline void to_variant( const hive::chain::shared_string& s, variant& var )
 {
   var = fc::string( hive::chain::to_string( s ) );
@@ -209,11 +210,12 @@ inline void from_variant( const variant& var, hive::chain::shared_string& s )
   auto str = var.as_string();
   s.assign( str.begin(), str.end() );
 }
-
+#endif
 
 namespace raw
 {
 
+#ifndef ENABLE_STD_ALLOCATOR
 template< typename Stream >
 void pack( Stream& s, const chainbase::shared_string& ss )
 {
@@ -229,6 +231,7 @@ void unpack( Stream& s, chainbase::shared_string& ss, uint32_t depth )
   fc::raw::unpack( s, str, depth );
   hive::chain::from_string( ss, str );
 }
+#endif
 
 template< typename Stream, typename E, typename A >
 void pack( Stream& s, const boost::interprocess::deque<E, A>& dq )
@@ -281,6 +284,7 @@ void unpack( Stream& s, boost::interprocess::flat_map< K, V, C, A >& value, uint
   }
 }
 
+#ifndef ENABLE_STD_ALLOCATOR
 template< typename T >
 T unpack_from_vector( const hive::chain::buffer_type& s )
 {
@@ -295,6 +299,7 @@ T unpack_from_vector( const hive::chain::buffer_type& s )
     return tmp;
   } FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) )
 }
+#endif
 } } // namespace fc::raw
 
 FC_REFLECT_ENUM( hive::chain::object_type,
@@ -345,6 +350,8 @@ FC_REFLECT_ENUM( hive::chain::object_type,
 #endif
           )
 
+#ifndef ENABLE_STD_ALLOCATOR
 FC_REFLECT_TYPENAME( hive::chain::shared_string )
+#endif
 
 FC_REFLECT_ENUM( hive::chain::bandwidth_type, (post)(forum)(market) )
