@@ -74,7 +74,7 @@ OPTION( ENABLE_MIRA "Build source with MIRA (ON OR OFF)" OFF )
 MESSAGE( STATUS "ENABLE_MIRA: ${ENABLE_MIRA}" )
 if( ENABLE_MIRA )
   MESSAGE( STATUS "     " )
-  MESSAGE( STATUS "             NOTE: MIRA HAS BEEN REMOVED             " )
+  MESSAGE( FATAL_ERROR "             NOTE: MIRA HAS BEEN REMOVED             " )
   MESSAGE( STATUS "     " )
 endif()
 
