@@ -825,10 +825,6 @@ namespace chainbase {
       void open( const bfs::path& dir, uint32_t flags = 0, size_t shared_file_size = 0, const boost::any& database_cfg = nullptr, const helpers::environment_extension_resources* environment_extension = nullptr );
       void close();
       void flush();
-      size_t get_cache_usage() const;
-      size_t get_cache_size() const;
-      void dump_lb_call_counts();
-      void trim_cache();
       void wipe( const bfs::path& dir );
       void resize( size_t new_shared_file_size );
       void set_require_locking( bool enable_require_locking );

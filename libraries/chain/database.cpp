@@ -260,15 +260,6 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
 
     apply_block( block, skip_flags );
 
-    if( cur_block_num % 100000 == 0 )
-    {
-      //std::cout << rocksdb::get_perf_context()->ToString() << std::endl;
-      if( cur_block_num % 1000000 == 0 )
-      {
-        dump_lb_call_counts();
-      }
-    }
-
     if( (args.benchmark.first > 0) && (cur_block_num % args.benchmark.first == 0) )
       args.benchmark.second( cur_block_num, get_abstract_index_cntr() );
 
@@ -4016,7 +4007,6 @@ void database::_apply_block( const signed_block& next_block )
   // last call of applying a block because it is the only thing that is not
   // reversible.
   migrate_irreversible_state();
-  trim_cache();
 
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (next_block.block_num()) ) }
 
