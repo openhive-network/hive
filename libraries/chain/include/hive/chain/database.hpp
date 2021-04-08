@@ -610,6 +610,8 @@ namespace chain {
       bool skip_price_feed_limit_check = true;
       bool skip_transaction_delta_check = true;
       bool disable_low_mem_warning = true;
+      bool allow_last_reward = false;
+      std::vector<share_type> last_reward;
 #endif
 
 #ifdef HIVE_ENABLE_SMT

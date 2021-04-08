@@ -2633,6 +2633,11 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       }
 
       const share_type reward = util::get_rshare_reward( ctx );
+#ifdef IS_TEST_NET
+      if( allow_last_reward )
+        last_reward.push_back( reward );
+#endif
+
       uint128_t reward_tokens = uint128_t( reward.value );
 
       if( reward_tokens > 0 )

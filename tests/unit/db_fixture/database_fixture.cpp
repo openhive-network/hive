@@ -181,13 +181,34 @@ void clean_database_fixture::inject_hardfork( uint32_t hardfork )
   generate_block();
 }
 
-hardfork_24_database_fixture::hardfork_24_database_fixture( uint16_t shared_file_size_in_mb )
-                            : clean_database_fixture( shared_file_size_in_mb, 24/*hardfork*/ )
+hardfork_database_fixture::hardfork_database_fixture( uint16_t shared_file_size_in_mb, uint32_t hardfork )
+                            : clean_database_fixture( shared_file_size_in_mb, hardfork )
 {
 }
 
-hardfork_24_database_fixture::~hardfork_24_database_fixture()
+hardfork_database_fixture::~hardfork_database_fixture()
 {
+}
+
+cluster_database_fixture::cluster_database_fixture( uint16_t _shared_file_size_in_mb )
+                            : shared_file_size_in_mb( _shared_file_size_in_mb )
+{
+}
+
+cluster_database_fixture::~cluster_database_fixture()
+{
+}
+
+void cluster_database_fixture::execute_24( content_method content )
+{
+  ptr_hardfork_database_fixture executor( new hardfork_database_fixture( shared_file_size_in_mb, 24/*hardfork*/ ) );
+  content( executor );
+}
+
+void cluster_database_fixture::execute_25( content_method content )
+{
+  ptr_hardfork_database_fixture executor( new hardfork_database_fixture( shared_file_size_in_mb, 25/*hardfork*/ ) );
+  content( executor );
 }
 
 live_database_fixture::live_database_fixture()

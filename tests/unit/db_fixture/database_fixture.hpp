@@ -321,10 +321,28 @@ struct clean_database_fixture : public database_fixture
   void inject_hardfork( uint32_t hardfork );
 };
 
-struct hardfork_24_database_fixture : public clean_database_fixture
+struct hardfork_database_fixture : public clean_database_fixture
 {
-  hardfork_24_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
-  virtual ~hardfork_24_database_fixture();
+  hardfork_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512, uint32_t hardfork = HIVE_BLOCKCHAIN_VERSION.minor_v() );
+  virtual ~hardfork_database_fixture();
+};
+
+struct cluster_database_fixture
+{
+  uint16_t shared_file_size_in_mb;
+
+  using ptr_hardfork_database_fixture = std::unique_ptr<hardfork_database_fixture>;
+
+  using content_method = std::function<void( ptr_hardfork_database_fixture& )>;
+
+  ptr_hardfork_database_fixture _24;
+  ptr_hardfork_database_fixture _25;
+
+  cluster_database_fixture( uint16_t _shared_file_size_in_mb = database_fixture::shared_file_size_in_mb_512 );
+  virtual ~cluster_database_fixture();
+
+  void execute_24( content_method content );
+  void execute_25( content_method content );
 };
 
 struct live_database_fixture : public database_fixture
