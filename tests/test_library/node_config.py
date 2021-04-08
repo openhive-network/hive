@@ -1,7 +1,14 @@
 class NodeConfig:
     __slots__ = [
         'entries',  # Temporary workaround
-        'plugin',
+        'log_appender', 'log_logger', 'backtrace', 'plugin', 'history_disable_pruning', 'account_history_rocksdb_path',
+        'block_data_export_file', 'block_log_info_print_interval_seconds', 'block_log_info_print_irreversible',
+        'block_log_info_print_file', 'shared_file_dir', 'shared_file_size', 'shared_file_full_threshold',
+        'shared_file_scale_rate', 'follow_max_feed_size', 'follow_start_feeds', 'market_history_bucket_size',
+        'market_history_buckets_per_size', 'rc_skip_reject_not_enough_rc', 'rc_compute_historical_rc',
+        'rc_start_at_block', 'snapshot_root_dir', 'statsd_batchsize', 'tags_start_promoted', 'tags_skip_startup_update',
+        'transaction_status_block_depth', 'transaction_status_track_after_block', 'webserver_thread_pool_size',
+        'enable_stale_production', 'required_participation', 'witness_skip_enforce_bandwidth',
     ]
 
     class Entry:
@@ -25,9 +32,10 @@ class NodeConfig:
             return result
 
     def __init__(self):
-        self.entries = {}
+        for member in self.__slots__:
+            setattr(self, member, None)
 
-        self.plugin = None
+        self.entries = {}
 
     def __str__(self):
         return '\n'.join([f'{key}={str(entry)}' for key, entry in self.entries.items()])
