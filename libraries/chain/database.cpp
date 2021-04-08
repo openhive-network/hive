@@ -143,7 +143,7 @@ void database::open( const open_args& args )
                                                 appbase::app().get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension );
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
 
     initialize_indexes();
     initialize_evaluators();
@@ -315,12 +315,6 @@ uint32_t database::reindex( const open_args& args )
   {
     ilog( "Reindexing Blockchain" );
 
-    if( args.force_replay )
-      wipe( args.data_dir, args.shared_mem_dir, false );
-    else
-      close();
-
-    open( args );
 
     if( appbase::app().is_interrupt_request() )
       return 0;

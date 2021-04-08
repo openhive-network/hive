@@ -140,17 +140,18 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       bool                    created_storage = true;
   };
 
-  void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension )
+  void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file )
   {
     assert( dir.is_absolute() );
     bfs::create_directories( dir );
     if( _data_dir != dir ) close();
+    if( wipe_shared_file ) wipe( dir );
 
     _data_dir = dir;
     _database_cfg = database_cfg;
 #ifndef ENABLE_STD_ALLOCATOR
     auto abs_path = bfs::absolute( dir / "shared_memory.bin" );
-
+    
     if( bfs::exists( abs_path ) )
     {
       _file_size = bfs::file_size( abs_path );
