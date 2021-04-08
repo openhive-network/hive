@@ -981,6 +981,7 @@ struct post_apply_operation_visitor
 
   void update_outdel_overflow( const account_name_type& account, const asset& amount ) const
   {
+    // TODO: Build unit tests for this
     if( amount.symbol != VESTS_SYMBOL ) return;
 
     const auto& rc_acc = _db.get< rc_account_object, by_name >( account );

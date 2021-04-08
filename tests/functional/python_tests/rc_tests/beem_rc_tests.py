@@ -554,6 +554,59 @@ def test_delegate_from_pool_full():
     assert rc_account['delegation_slots'][0]['max_mana'] == 0
 
 
+def delegation_rc_exploit_test():
+    rc = RC(node_client)
+    logger.info("Test exploiting delegations to gain RC")
+    rc_account = node_client.rpc.find_rc_accounts(["eve"])[0]
+    rc.set_slot_delegator("eve", "eve", 2, "eve")
+    # remove all the rc minus 30
+    rc.delegate_to_pool("eve", "initminer", str(rc_account['rc_manabar']['current_mana'] - 30))
+
+
+    rc_account = node_client.rpc.find_rc_accounts(["eve"])[0]
+    try:
+        rc.delegate_to_pool("eve", "eve", str(rc_account['rc_manabar']['current_mana'] + 1))
+    except Exception:
+        pass
+    else:
+        assert False, "Shouldn't be able to delegate more than their current mana"
+
+    # delegate most of the rc out
+    rc_account = node_client.rpc.find_rc_accounts(["eve"])[0]
+    rc.delegate_to_pool("eve", "eve", "20")
+    rc.delegate_from_pool("eve", "eve", 20)
+    rc_account = node_client.rpc.find_rc_accounts(["eve"])[0]
+
+    # use the mana
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+    Account("eve", hive_instance=node_client).transfer("eve", 1.000, "TESTS")
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+    Account("eve", hive_instance=node_client).transfer("eve", 2.000, "TESTS")
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+
+    try:
+        rc.delegate_from_pool("eve", "eve", 0)
+    except Exception:
+        pass
+    else:
+        assert False, "Shouldn't be able to undelegate removing its only source of rc"
+
+    rc_account_before = node_client.rpc.find_rc_accounts(["eve"])[0]
+    pool_before = node_client.rpc.find_rc_delegation_pools(["eve"])[0]
+    rc.delegate_to_pool("eve", "eve", "0")
+    rc_account_after = node_client.rpc.find_rc_accounts(["eve"])[0]
+    pool_after = node_client.rpc.find_rc_delegation_pools(["eve"])[0]
+    # we know the price of an rc op is 3 so the new current mana should be rc_account_before.current + pool_before.current_mana - 3
+    assert rc_account_after['rc_manabar']['current_mana'] == rc_account_before['rc_manabar']['current_mana'] + pool_before['rc_pool_manabar']['current_mana'] - 3
+    assert rc_account_before['max_rc'] == 10
+    assert rc_account_after['max_rc'] == 30
+    assert pool_after['account'] == 'eve'
+    assert pool_after['max_rc'] == 0
+    assert pool_after['rc_pool_manabar']['current_mana'] == 0
+
+    assert rc_account_after['delegation_slots'][2]['delegator'] == "eve"
+    assert rc_account_after['delegation_slots'][2]['max_mana'] == 20
+    assert rc_account_before['delegation_slots'][2]["rc_manabar"]["current_mana"] == rc_account_after['delegation_slots'][2]["rc_manabar"]["current_mana"]
 
 if __name__ == '__main__':
     logger.info("Performing RC tests")
@@ -602,6 +655,8 @@ if __name__ == '__main__':
         {"name" : "rctest1", "private_key" : "5KQeu7SdzxT1DiUzv7jaqwkwv1V8Fi7N8NBZtHugWYXqVFH1AFa", "public_key" : "TST8VfiahQsfS1TLcnBfp4NNfdw67uWweYbbUXymbNiDXVDrzUs7J"},
         {"name" : "rctest2", "private_key" : "5JcQCDVnu7v7PWpsKUD8TcQqhB1v2WvSbfhK8JzDywdKEWBddNX", "public_key" : "TST6rb6ZbcvqufSHbpt6gAWT4YniDHLnMvU7QoEZbRvNG31USzYnX"},
         {"name" : "rctest3", "private_key" : "5J1QbAFcF9Xp9gVtvNMXbmzA16Cy15nKjCCZiVQa2ZxMmhZQnBd", "public_key" : "TST7vFHFVKpH9R37e6M6n7CkV6CAQZFR41Gc2f4nxNu7EW9347shb"},
+        {"name" : "eve", "private_key" : "5Jb6QtKKwoxf2aQBHTxP8zSPcAiduwZutRYezfNFGJhoG11skUx", "public_key" : "TST5zjb6WQuLtbngGNFyGspLFScA5j41X2gGSJaKE8hmry5an9q6N"},
+        {"name" : "badpool", "private_key" : "5HubGcDgerXgebpqyREHxNJqotUrycYPcbSWznnaJ8UgXqoZ35U", "public_key" : "TST5zE21bgn1B7gzXtXnfY3LFcp67SD1rd8eNttGZhgQXEeBsCQUV"},
     ]
     account_names = [ v['name'] for v in accounts ]
 
@@ -623,10 +678,13 @@ if __name__ == '__main__':
             test_utils.transfer_to_vesting(node_client, args.creator, 'pool', "300.000", "TESTS")
             test_utils.transfer_to_vesting(node_client, args.creator, 'secondpool', "300.000", "TESTS")
             test_utils.transfer_to_vesting(node_client, args.creator, 'alice', "300.000", "TESTS")
+            test_utils.transfer_to_vesting(node_client, args.creator, 'eve', ".100", "TESTS")
             Account(args.creator, hive_instance=node_client).transfer("rctest1", 100.000, "TESTS")
             Account(args.creator, hive_instance=node_client).transfer("bob", 100.000, "TESTS")
             Account(args.creator, hive_instance=node_client).transfer("alice", 100.000, "TESTS")
             Account(args.creator, hive_instance=node_client).transfer("rctest2", 100.000, "TESTS")
+            Account(args.creator, hive_instance=node_client).transfer("eve", 100.000, "TESTS")
+
             test_delegate_to_pool()
             test_set_delegator_slot()
             test_delegate_rc()
@@ -634,6 +692,7 @@ if __name__ == '__main__':
             test_set_slot()
             test_delegate_to_pool_full()
             test_delegate_from_pool_full()
+            delegation_rc_exploit_test()
         else:
             raise Exception("no node detected")
     except Exception as ex:

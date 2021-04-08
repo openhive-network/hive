@@ -79,6 +79,13 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
 {
   if( !_db.has_hardfork( HIVE_HARDFORK_1_25 ) ) return;
 
+  if( op.amount.symbol != VESTS_SYMBOL ) {
+    FC_ASSERT( false, "SMT delegation is not supported" );
+    // TODO:  When fixing this FC_ASSERT() for SMT support, also be sure to implement
+    // rc_delegation_from_account_object to enforce total SMT delegations from account <= vesting of SMT in account,
+    // and also enforce this condition (by forcible de-delegation to the pool) on SMT powerdown.
+  }
+
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   uint32_t now = gpo.time.sec_since_epoch();
   const rc_account_object& from_rc_account = _db.get< rc_account_object, by_name >( op.from_account );
@@ -136,25 +143,27 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
   int64_t pool_new_rc = std::min(pool_new_max_rc, std::max(rc_pool_manabar.current_mana + std::min(edge_delta, from_rc_account.rc_manabar.current_mana), int64_t(0)));
 
   hive::chain::util::manabar rc_account_manabar = from_rc_account.rc_manabar;
-  // TODO: change this code to not give current_mana back in case of an un-delegation
-  rc_account_manabar.current_mana = std::max(rc_account_manabar.current_mana - edge_delta, int64_t(0));
+
+  const account_object& from_account = _db.get< account_object, by_name >( op.from_account );
+  int64_t account_max_rc = get_maximum_rc( from_account, from_rc_account );
+  FC_ASSERT( account_max_rc >= edge_delta, "Account ${a} has insufficient max RC (have ${h}, need ${n})",
+             ("a", op.from_account)("h", account_max_rc)("n", edge_delta) );
+  FC_ASSERT( rc_account_manabar.current_mana >= edge_delta, "Account ${a} has insufficient current RC (have ${h}, need ${n})",
+             ("a", op.from_account)("h", rc_account_manabar.current_mana)("n", edge_delta) );
+
+
+  if (edge_delta < 0) {
+    // When reducing/removing a delegation, we need to make sure we don't give back more RC than there is in the current_mana in the pool
+    // if account has 0 rc, and edge_delta is -30 while pool has 10 rc, result should be  10
+    rc_account_manabar.current_mana = std::max(rc_account_manabar.current_mana - std::max(edge_delta, - rc_pool_manabar.current_mana), int64_t(0));
+  } else {
+    // if account has 40 rc, and edge_delta is 30 while pool has 10 rc, result should be  10 (40 - 30)
+    rc_account_manabar.current_mana = std::max(rc_account_manabar.current_mana - edge_delta, int64_t(0));
+  }
+  rc_account_manabar.last_update_time = now;
+
 
   rc_pool_manabar.current_mana = pool_new_rc;
-
-  if( op.amount.symbol == VESTS_SYMBOL )
-  {
-    const account_object& from_account = _db.get< account_object, by_name >( op.from_account );
-    int64_t account_max_rc = get_maximum_rc( from_account, from_rc_account );
-    FC_ASSERT( account_max_rc >= edge_delta, "Account ${a} has insufficient RC (have ${h}, need ${n})",
-      ("a", op.from_account)("h", account_max_rc)("n", edge_delta) );
-  }
-  else
-  {
-    FC_ASSERT( false, "SMT delegation is not supported" );
-    // TODO:  When fixing this FC_ASSERT() for SMT support, also be sure to implement
-    // rc_delegation_from_account_object to enforce total SMT delegations from account <= vesting of SMT in account,
-    // and also enforce this condition (by forcible de-delegation to the pool) on SMT powerdown.
-  }
 
   if( !to_pool )
   {
@@ -216,6 +225,7 @@ void delegate_to_pool_evaluator::do_apply( const delegate_to_pool_operation& op 
   _db.modify< rc_account_object >( from_rc_account, [&]( rc_account_object& rca )
   {
     rca.rc_manabar = rc_account_manabar;
+    rca.last_max_rc = get_maximum_rc( from_account, rca ) - edge_delta;
     if( op.amount.symbol == VESTS_SYMBOL )
       rca.vests_delegated_to_pools += asset( edge_delta, VESTS_SYMBOL );
 
