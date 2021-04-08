@@ -1,3 +1,12 @@
+# These tests checks if access to nonexistent keys in config are reported as errors.
+#
+# For example user should write:
+#   config.witness = 'my-new-witness'
+# but, might by accident write (note double 'n' in 'witness'):
+#   config.witnness = 'my-new-witness'
+#
+# Then exception will be raised and error will be immediately noticed.
+
 import pytest
 
 from test_library.node_config import NodeConfig
