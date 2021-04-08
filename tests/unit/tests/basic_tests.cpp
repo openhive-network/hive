@@ -503,7 +503,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   );
   BOOST_CHECK_EQUAL( sizeof( block_summary_object ), 24 ); //always 64k objects
   BOOST_CHECK_EQUAL( sizeof( hardfork_property_object ), 120 );
-  BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 136 ); //dynamic size worth 7*24 of sizeof(price)
+  BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 200 ); //dynamic size worth 7*24 of sizeof(price)
   BOOST_CHECK_EQUAL( sizeof( witness_schedule_object ), 536 );
 
   //TODO: categorize and evaluate size potential of SMT related objects:

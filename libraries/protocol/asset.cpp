@@ -284,27 +284,25 @@ DEFINE_PRICE_COMPARISON_OPERATOR( >= )
 
 asset operator * ( const asset& a, const price& b )
 {
+  bool is_negative = a.amount.value < 0;
   if( a.symbol == b.base.symbol )
   {
-    FC_ASSERT( b.base.amount.value > 0 );
-    uint128_t result = (uint128_t(a.amount.value) * b.quote.amount.value)/b.base.amount.value;
-    FC_ASSERT( result.hi == 0 );
-    return asset( result.to_uint64(), b.quote.symbol );
+    uint128_t result( is_negative ? -a.amount.value : a.amount.value );
+    result = ( result * b.quote.amount.value ) / b.base.amount.value;
+    return asset( is_negative ? -result.to_uint64() : result.to_uint64(), b.quote.symbol );
   }
   else if( a.symbol == b.quote.symbol )
   {
-    FC_ASSERT( b.quote.amount.value > 0 );
-    uint128_t result = (uint128_t(a.amount.value) * b.base.amount.value)/b.quote.amount.value;
-    FC_ASSERT( result.hi == 0 );
-    return asset( result.to_uint64(), b.base.symbol );
+    uint128_t result( is_negative ? -a.amount.value : a.amount.value );
+    result = ( result * b.base.amount.value ) / b.quote.amount.value;
+    return asset( is_negative ? -result.to_uint64() : result.to_uint64(), b.base.symbol );
   }
   FC_THROW_EXCEPTION( fc::assert_exception, "invalid ${asset} * ${price}", ("asset",a)("price",b) );
 }
 
 price operator / ( const asset& base, const asset& quote )
 { try {
-  FC_ASSERT( base.symbol != quote.symbol );
-  return price{ base, quote };
+  return price( base, quote );
 } FC_CAPTURE_AND_RETHROW( (base)(quote) ) }
 
 price price::max( asset_symbol_type base, asset_symbol_type quote ) { return asset( share_type(HIVE_MAX_SATOSHIS), base ) / asset( share_type(1), quote); }
@@ -324,13 +322,11 @@ price price::get_scaled( uint16_t scale, asset_symbol_type apply_to ) const
   if( apply_to == base.symbol )
   {
     uint128_t _base = ( uint128_t( base.amount.value ) * scale ) / HIVE_100_PERCENT;
-    FC_ASSERT( _base.hi == 0 );
     return price( asset( _base.to_uint64(), base.symbol ), quote );
   }
   else if( apply_to == quote.symbol )
   {
     uint128_t _quote = ( uint128_t( quote.amount.value ) * scale ) / HIVE_100_PERCENT;
-    FC_ASSERT( _quote.hi == 0 );
     return price( base, asset( _quote.to_uint64(), quote.symbol ) );
   }
   FC_THROW_EXCEPTION( fc::assert_exception, "Invalid modifier symbol ${at} for price ${p}", ( "at", apply_to )( "p", *this ) );

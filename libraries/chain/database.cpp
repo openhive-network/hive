@@ -3387,15 +3387,17 @@ void database::process_conversions()
     }
   }
 
-  //correct global supply
-  const auto& props = get_dynamic_global_properties();
-  modify( props, [&]( dynamic_global_property_object& p )
+  //correct global supply (if needed)
+  if( net_hive.amount.value | net_hbd.amount.value )
   {
-    p.current_supply += net_hive;
-    p.current_hbd_supply += net_hbd;
-    p.virtual_supply += net_hive;
-    p.virtual_supply += net_hbd * get_feed_history().current_median_history;
-  } );
+    modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& p )
+    {
+      p.current_supply += net_hive;
+      p.current_hbd_supply += net_hbd;
+      p.virtual_supply += net_hive;
+      p.virtual_supply += net_hbd * fhistory.current_median_history;
+    } );
+  }
 }
 
 asset database::to_hbd( const asset& hive )const
