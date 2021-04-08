@@ -46,7 +46,7 @@ typedef hive::plugins::account_history::account_history_plugin ah_plugin;
 using std::cout;
 using std::cerr;
 
-clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb )
+clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb, fc::optional<uint32_t> hardfork )
 {
   try {
   int argc = boost::unit_test::framework::master_test_suite().argc;
@@ -87,9 +87,7 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb 
 
   open_database( shared_file_size_in_mb );
 
-  generate_block();
-  db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-  generate_block();
+  inject_hardfork( hardfork.valid() ? ( *hardfork ) : HIVE_BLOCKCHAIN_VERSION.minor_v() );
 
   vest( "initminer", 10000 );
 
@@ -133,7 +131,7 @@ void clean_database_fixture::validate_database()
   appbase::app().get_plugin< hive::plugins::rc::rc_plugin >().validate_database();
 }
 
-void clean_database_fixture::resize_shared_mem( uint64_t size )
+void clean_database_fixture::resize_shared_mem( uint64_t size, fc::optional<uint32_t> hardfork )
 {
   db->wipe( data_dir->path(), data_dir->path(), true );
   int argc = boost::unit_test::framework::master_test_suite().argc;
@@ -161,10 +159,7 @@ void clean_database_fixture::resize_shared_mem( uint64_t size )
 
   boost::program_options::variables_map options;
 
-
-  generate_block();
-  db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-  generate_block();
+  inject_hardfork( hardfork.valid() ? ( *hardfork ) : HIVE_BLOCKCHAIN_VERSION.minor_v() );
 
   vest( "initminer", 10000 );
 
@@ -177,6 +172,13 @@ void clean_database_fixture::resize_shared_mem( uint64_t size )
   }
 
   validate_database();
+}
+
+void clean_database_fixture::inject_hardfork( uint32_t hardfork )
+{
+  generate_block();
+  db->set_hardfork( hardfork );
+  generate_block();
 }
 
 live_database_fixture::live_database_fixture()

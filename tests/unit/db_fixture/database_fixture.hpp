@@ -313,11 +313,12 @@ public:
 
 struct clean_database_fixture : public database_fixture
 {
-  clean_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
+  clean_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512, fc::optional<uint32_t> hardfork = fc::optional<uint32_t>() );
   virtual ~clean_database_fixture();
 
-  void resize_shared_mem( uint64_t size );
+  void resize_shared_mem( uint64_t size, fc::optional<uint32_t> hardfork = fc::optional<uint32_t>() );
   void validate_database();
+  void inject_hardfork( uint32_t hardfork );
 };
 
 struct live_database_fixture : public database_fixture
