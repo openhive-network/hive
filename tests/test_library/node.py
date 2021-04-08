@@ -86,6 +86,10 @@ class Node:
         self.add_plugin('condenser_api')
         self.add_plugin('network_broadcast_api')
         self.add_plugin('network_node_api')
+        self.add_plugin('account_history_rocksdb')
+        self.add_plugin('account_history')
+        self.add_plugin('account_history_api')
+
 
         self.config.add_entry(
             'shared-file-dir',
@@ -129,6 +133,10 @@ class Node:
             'network_broadcast_api',
             'network_node_api',
             'witness',
+            'account_history_rocksdb',
+            'account_history',
+            'account_history_api',
+
         }
 
         if plugin not in supported_plugins:
@@ -264,6 +272,8 @@ class Node:
             self.executable_file_path = get_hived_path()
 
         self.directory.mkdir(parents=True)
+        rocksdb_storage_directory = self.directory / 'blockchain' / 'account-history-rocksdb-storage'
+        rocksdb_storage_directory.mkdir(parents=True)
 
         config_file_path = self.directory.joinpath('config.ini')
         self.config.write_to_file(config_file_path)
