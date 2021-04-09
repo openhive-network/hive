@@ -89,3 +89,36 @@ class NodeConfig:
                 file_entries.append(file_entry)
 
             file.write('\n'.join(file_entries))
+
+    def load_from_lines(self, lines):
+        import re
+
+        def parse_entry_line(line):
+            result = re.match(r'^\s*([\w\-]+)\s*=\s*(.*)\s*$', line)
+            return (result[1], result[2]) if result is not None else None
+
+        def is_entry_line(line):
+            return parse_entry_line(line) is not None
+
+        def parse_commented_line(line):
+            result = re.match(r'^\s*#\s*(.*)$', line)
+            return result[1] if result is not None else None
+
+        def is_commented_line(line):
+            return parse_commented_line(line) is not None
+
+        for line in lines:
+            if is_commented_line(line):
+                comment = parse_commented_line(line)
+                if is_entry_line(comment):
+                    key, value = parse_entry_line(comment)
+                    setattr(self, key.replace('-', '_'), None)
+                    continue
+
+            if is_entry_line(line):
+                key, value = parse_entry_line(line)
+                setattr(self, key.replace('-', '_'), value)
+
+    def load_from_file(self, file_path):
+        with open(file_path) as file:
+            self.load_from_lines(file.readlines())
