@@ -72,7 +72,7 @@ class Node:
         )
 
     def __str__(self):
-        return f'{self.network.name}::{self.name}'
+        return f'{self.network.name}::{self.name}' if self.network is not None else self.name
 
     @staticmethod
     def __close_process(process):
