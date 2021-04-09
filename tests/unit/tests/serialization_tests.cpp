@@ -354,7 +354,7 @@ BOOST_AUTO_TEST_CASE( asset_raw_test )
     {
       uint64_t s = (uint64_t(1) << i);
       uint64_t x = (h._hash[0] & (s-1)) | s;
-      if( x >= HIVE_MAX_SHARE_SUPPLY )
+      if( x >= static_cast<uint64_t>(HIVE_MAX_SHARE_SUPPLY) )
         break;
       amounts.push_back( share_type( x ) );
     }

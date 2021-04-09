@@ -2576,7 +2576,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_005 )
     generate_block();
 
     std::vector< int64_t > proposals;
-    for(int i = 0; i <= HIVE_PROPOSAL_MAX_IDS_NUMBER; i++) {
+    for(uint32_t i = 0; i <= HIVE_PROPOSAL_MAX_IDS_NUMBER; i++) {
       proposals.push_back(i);
     }
     HIVE_REQUIRE_THROW(vote_proposal("carol", proposals, true, carol_private_key), fc::exception);
@@ -3037,7 +3037,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_011 )
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
     generate_block();
     flat_set<int64_t> proposals;
-    for(int i = 0; i <= HIVE_PROPOSAL_MAX_IDS_NUMBER; i++) {
+    for(uint32_t i = 0; i <= HIVE_PROPOSAL_MAX_IDS_NUMBER; i++) {
       proposals.insert(create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key ));
     }
     HIVE_REQUIRE_THROW(remove_proposal(cpd.creator, proposals, bob_private_key), fc::exception);

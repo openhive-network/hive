@@ -139,8 +139,6 @@ void print(std::ostream& stream, const curve_printer& cp)
 
 #define key(account) account ## _private_key
 
-using namespace hive::protocol::testnet_blockchain_configuration;
-
 struct curation_rewards_handler
 {
   const uint32_t seven_days                 = 60*60*24*7;
@@ -156,8 +154,6 @@ struct curation_rewards_handler
   const int32_t mid_window                  = 259200;
 
   static const uint32_t default_amount      = 1'000'000;
-
-  configuration                             configuration_data_copy;
 
   std::vector<curve_printer>                curve_printers;
 
@@ -181,12 +177,12 @@ struct curation_rewards_handler
 
     if( enter )
     {
-      configuration_data_copy = configuration_data;
-      configuration_data.set_hive_cashout_window_seconds( seven_days );/*7 days like in mainnet*/
+      using bct = hive::protocol::blockchain_configuration::blockchain_configuration_t;
+      set_blockchain_configuration( get_blockchain_configuration()( &bct::hive_cashout_window_seconds, seven_days ) );
     }
     else
     {
-      configuration_data = configuration_data_copy;
+      restore_blockchain_configuration();
     }
   }
 

@@ -30,7 +30,7 @@ generate_get_config(
 ## SORT .cpp by most likely to change / break compile
 add_library( hive_protocol
 
-             testnet_blockchain_configuration.cpp
+             blockchain_configuration.cpp
              smt_operations.cpp
              hive_operations.cpp
              sps_operations.cpp

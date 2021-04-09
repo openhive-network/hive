@@ -696,7 +696,7 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
     BOOST_TEST_MESSAGE( "--- Test success deleting a comment with negative rshares" );
 
     generate_block();
-    vote.weight = -1 * HIVE_100_PERCENT;
+    vote.weight = -1 * static_cast<int16_t>(HIVE_100_PERCENT);
     tx.clear();
     tx.operations.push_back( vote );
     tx.operations.push_back( op );
@@ -946,7 +946,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       params.max_mana = util::get_effective_vesting_shares( db->get_account( "sam" ) );
       old_manabar.regenerate_mana( params, db->head_block_time() );
 
-      op.weight = -1 * HIVE_100_PERCENT / 2;
+      op.weight = -1 * static_cast<int16_t>(HIVE_100_PERCENT) / 2;
       op.voter = "sam";
       op.author = "bob";
       op.permlink = "foo";
@@ -1062,7 +1062,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       downvote_params.max_mana = util::get_effective_vesting_shares( db->get_account( "alice" ) ) / 4;
       old_downvote_manabar.regenerate_mana( downvote_params, db->head_block_time() );
 
-      op.weight = HIVE_1_PERCENT * -75;
+      op.weight = static_cast<int16_t>(HIVE_1_PERCENT) * -75;
       tx.operations.clear();
       tx.signatures.clear();
       tx.operations.push_back( op );
@@ -1137,7 +1137,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
         old_abs_rshares = bob_comment_cashout->abs_rshares.value;
       }
 
-      op.weight = -1 * HIVE_100_PERCENT;
+      op.weight = -1 * static_cast<int16_t>(HIVE_100_PERCENT);
       tx.operations.clear();
       tx.signatures.clear();
       tx.operations.push_back( op );
@@ -1244,7 +1244,7 @@ BOOST_AUTO_TEST_CASE( transfer_validate )
 
     BOOST_TEST_MESSAGE( " --- Memo too long" );
     std::string memo;
-    for ( int i = 0; i < HIVE_MAX_MEMO_SIZE + 1; i++ )
+    for ( uint32_t i = 0; i < HIVE_MAX_MEMO_SIZE + 1; i++ )
       memo += "x";
     op.memo = memo;
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
@@ -7853,7 +7853,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     auto end = db->get_index< vesting_delegation_expiration_index, by_id >().end();
     auto& gpo = db->get_dynamic_global_properties();
 
-    BOOST_REQUIRE( gpo.delegation_return_period == HIVE_DELEGATION_RETURN_PERIOD_HF20 );
+    BOOST_REQUIRE( gpo.delegation_return_period == static_cast<uint32_t>(HIVE_DELEGATION_RETURN_PERIOD_HF20) );
 
     BOOST_REQUIRE( exp_obj != end );
     BOOST_REQUIRE( exp_obj->delegator == "sam" );
@@ -8475,7 +8475,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
     tx.operations.push_back( prop_op );
     sign( tx, signing_key );
     db->push_transaction( tx, 0 );
-    BOOST_REQUIRE( alice_witness.props.account_subsidy_budget == HIVE_ACCOUNT_SUBSIDY_PRECISION );
+    BOOST_REQUIRE( static_cast<uint32_t>(alice_witness.props.account_subsidy_budget ) == HIVE_ACCOUNT_SUBSIDY_PRECISION );
 
     BOOST_TEST_MESSAGE( "--- Testing setting account subsidy pool cap" );
     uint64_t day_decay = ( uint64_t(1) << HIVE_RD_DECAY_DENOM_SHIFT ) / HIVE_BLOCKS_PER_DAY;
@@ -9432,7 +9432,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_validate )
 
     BOOST_TEST_MESSAGE( " --- Memo too long" );
     std::string memo;
-    for ( int i = 0; i < HIVE_MAX_MEMO_SIZE + 1; i++ )
+    for ( uint32_t i = 0; i < HIVE_MAX_MEMO_SIZE + 1; i++ )
       memo += "x";
     op.memo = memo;
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
@@ -9647,8 +9647,14 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_open_transfers )
 
     generate_block();
 
-    #define CREATE_ACTORS(z, n, text) ACTORS( (actor ## n) );
-    BOOST_PP_REPEAT(HIVE_MAX_OPEN_RECURRENT_TRANSFERS, CREATE_ACTORS, )
+    for(int i = 0; i < HIVE_MAX_OPEN_RECURRENT_TRANSFERS; ++ i)
+    {
+      const fc::string name{ "actor" + std::to_string(i) };
+      fc::ecc::private_key post_key = generate_private_key( name + "_post" );
+      public_key_type pub_key = generate_private_key(name).get_public_key();
+      account_create(name, pub_key, post_key.get_public_key());
+    }
+
     generate_block();
 
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
