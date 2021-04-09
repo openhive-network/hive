@@ -1,6 +1,5 @@
 class NodeConfig:
     __slots__ = [
-        'entries',  # Temporary workaround
         'log_appender', 'log_console_appender', 'log_file_appender', 'log_logger', 'backtrace', 'plugin',
         'account_history_track_account_range', 'track_account_range', 'account_history_whitelist_ops',
         'history_whitelist_ops', 'account_history_blacklist_ops', 'history_blacklist_ops', 'history_disable_pruning',
@@ -20,40 +19,12 @@ class NodeConfig:
         'enable_stale_production', 'required_participation', 'witness', 'private_key', 'witness_skip_enforce_bandwidth',
     ]
 
-    class Entry:
-        def __init__(self, value, description='description'):
-            self.values = {value}
-            self.description = description
-
-        def __str__(self):
-            result = ' '.join(self.values)
-
-            if self.description:
-                max_length = 32
-
-                if len(self.description) > max_length:
-                    description = self.description[:max_length] + '(...)'
-                else:
-                    description = self.description
-
-                result += f' # {description}'
-
-            return result
-
     def __init__(self):
         for member in self.__slots__:
             setattr(self, member, None)
 
-        self.entries = {}
-
     def __str__(self):
         return '\n'.join([f'{member}={str(getattr(self, member))}' for member in self.__slots__])
-
-    def __contains__(self, key):
-        return key in self.entries
-
-    def __getitem__(self, key):
-        return list(self.entries[key].values) if key in self.entries else []
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
@@ -77,14 +48,6 @@ class NodeConfig:
                 differences[member] = (mine, his)
 
         return differences
-
-    def add_entry(self, key, value, description=None):
-        if key not in self.entries:
-            self.entries[key] = self.Entry(value, description)
-            return
-
-        entry = self.entries[key]
-        entry.values.add(value)
 
     def write_to_file(self, file_path):
         file_entries = []
