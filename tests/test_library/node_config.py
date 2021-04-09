@@ -47,7 +47,7 @@ class NodeConfig:
         self.entries = {}
 
     def __str__(self):
-        return '\n'.join([f'{key}={str(entry)}' for key, entry in self.entries.items()])
+        return '\n'.join([f'{member}={str(getattr(self, member))}' for member in self.__slots__])
 
     def __contains__(self, key):
         return key in self.entries
