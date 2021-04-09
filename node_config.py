@@ -55,6 +55,15 @@ class NodeConfig:
     def __getitem__(self, key):
         return list(self.entries[key].values) if key in self.entries else []
 
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            raise Exception('Comparison with unsupported type')
+
+        return all([getattr(self, member) == getattr(other, member) for member in self.__slots__])
+
+    def __ne__(self, other):
+        return not self == other
+
     def add_entry(self, key, value, description=None):
         if key not in self.entries:
             self.entries[key] = self.Entry(value, description)
