@@ -219,6 +219,9 @@ class Node:
             from .paths_to_executables import get_hived_path
             self.executable_file_path = get_hived_path()
 
+        if self.directory.exists():
+            from shutil import rmtree
+            rmtree(self.directory)
         self.directory.mkdir(parents=True)
 
         config_file_path = self.directory.joinpath('config.ini')
