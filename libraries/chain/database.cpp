@@ -5926,7 +5926,7 @@ void database::apply_hardfork( uint32_t hardfork )
       {
         modify( get_feed_history(), [&]( feed_history_object& fho )
         {
-          while( fho.price_history.size() > HIVE_FEED_HISTORY_WINDOW )
+          while( static_cast<uint32_t>(fho.price_history.size()) > HIVE_FEED_HISTORY_WINDOW )
             fho.price_history.pop_front();
         });
       }

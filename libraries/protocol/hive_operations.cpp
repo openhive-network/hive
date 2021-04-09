@@ -196,7 +196,7 @@ namespace hive { namespace protocol {
   {
     validate_account_name( voter );
     validate_account_name( author );\
-    FC_ASSERT( abs(weight) <= HIVE_100_PERCENT, "Weight is not a HIVE percentage" );
+    FC_ASSERT( static_cast<uint32_t>(abs(weight)) <= HIVE_100_PERCENT, "Weight is not a HIVE percentage" );
     validate_permlink( permlink );
   }
 

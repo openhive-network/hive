@@ -45,9 +45,10 @@ void authority::validate()const
 
 bool is_valid_account_name( const string& name )
 {
-#if HIVE_MIN_ACCOUNT_NAME_LENGTH < 3
-#error This is_valid_account_name implementation implicitly enforces minimum name length of 3.
-#endif
+  static_assert( 
+    HIVE_MIN_ACCOUNT_NAME_LENGTH >= 3, 
+    "This is_valid_account_name implementation implicitly enforces minimum name length of 3." 
+  );
 
   const size_t len = name.size();
   if( len < HIVE_MIN_ACCOUNT_NAME_LENGTH )

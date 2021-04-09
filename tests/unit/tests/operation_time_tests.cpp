@@ -2464,7 +2464,7 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     db->liquidity_rewards_enabled = true;
     generate_blocks( HIVE_LIQUIDITY_REWARD_BLOCKS - ( db->head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS ) - 1 );
 
-    BOOST_REQUIRE( db->head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS == HIVE_LIQUIDITY_REWARD_BLOCKS - 1 );
+    BOOST_REQUIRE( db->head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS == HIVE_LIQUIDITY_REWARD_BLOCKS - 1u );
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == alice_balance.amount.value );
     BOOST_REQUIRE( get_balance( "bob" ).amount.value == bob_balance.amount.value );
     BOOST_REQUIRE( get_balance( "sam" ).amount.value == sam_balance.amount.value );
@@ -2721,7 +2721,7 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     }
 
     vote.voter = "bob";
-    vote.weight = HIVE_100_PERCENT * -1;
+    vote.weight = static_cast<int16_t>(HIVE_100_PERCENT) * -1;
 
     tx.operations.clear();
     tx.signatures.clear();

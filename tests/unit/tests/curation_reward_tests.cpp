@@ -157,8 +157,6 @@ struct curation_rewards_handler
 
   static const uint32_t default_amount      = 1'000'000;
 
-  configuration                             configuration_data_copy;
-
   std::vector<curve_printer>                curve_printers;
 
   std::map<uint32_t, std::string>           authors;
@@ -181,12 +179,12 @@ struct curation_rewards_handler
 
     if( enter )
     {
-      configuration_data_copy = configuration_data;
-      configuration_data.set_hive_cashout_window_seconds( seven_days );/*7 days like in mainnet*/
+      using bct = hive::protocol::blockchain_configuration::blockchain_configuration_t;
+      set_blockchain_configuration( get_blockchain_configuration()( &bct::hive_cashout_window_seconds, seven_days ) );
     }
     else
     {
-      configuration_data = configuration_data_copy;
+      restore_blockchain_configuration();
     }
   }
 
@@ -939,7 +937,6 @@ BOOST_AUTO_TEST_CASE( one_vote_for_comment )
     print_all( std::cout, crh.get_printer() );
     print( std::cout, crh.get_printer() );
 
-    validate_database();
   }
   FC_LOG_AND_RETHROW()
 }

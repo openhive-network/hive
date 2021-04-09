@@ -11,7 +11,7 @@ DIFF_2="/tmp/diff.$RANDOM.$RANDOM.$RANDOM"
 cat $GET_CONFIG_CPP_PATH | grep "result\[" | cut -d '=' -f 2 | tr -d ' ;' | grep -E '^[A-Z]' | sort -u > $DIFF_1;
 
 # get #define from config.hpp
-cat $CONFIG_HPP_PATH | grep -E "^#define" | cut -d ' ' -f 2 | tr -d ' ;' | sort -u > $DIFF_2;
+cat $CONFIG_HPP_PATH | grep -E "#define" | cut -d ' ' -f 2 | cut -f 1 | tr -d ' ' | sort -u | grep -v '#' > $DIFF_2;
 
 # if number o lines are equal 0, there is no diffrences
 ret_count=$(diff $DIFF_1 $DIFF_2 | wc -l)
