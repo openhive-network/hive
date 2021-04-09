@@ -28,6 +28,7 @@ if __name__ == "__main__":
     end = args.end
 
     blocks_with_duplicates = []
+    blocks_with_no_operations = []
 
     for i in range(start, end):
         
@@ -55,6 +56,8 @@ if __name__ == "__main__":
 
         if(size>1):
             blocks_with_duplicates.append(i)
+        if(size==0):
+            blocks_with_no_operations.append(i)
 
 
     if len(blocks_with_duplicates) == 0:
@@ -63,3 +66,9 @@ if __name__ == "__main__":
         print('duplicates:')
         print(blocks_with_duplicates)
 
+
+    if len(blocks_with_no_operations) == 0:
+        print('THERE ARE NO EMPTY BLOCKS')
+    else:
+        print('empty blocks:')
+        print(blocks_with_no_operations)
