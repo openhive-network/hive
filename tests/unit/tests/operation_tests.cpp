@@ -493,16 +493,6 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_REQUIRE( alice_comment_cashout->abs_rshares.value == 0 );
     BOOST_REQUIRE( alice_comment_cashout->cashout_time == fc::time_point_sec( db->head_block_time() + fc::seconds( HIVE_CASHOUT_WINDOW_SECONDS ) ) );
 
-    #if !defined(IS_LOW_MEM) && defined(STORE_COMMENT_CONTENT)
-      const auto& alice_comment_content = db->get< comment_content_object, by_comment >( alice_comment.get_id() );
-      BOOST_REQUIRE( to_string( alice_comment_content.title ) == op.title );
-      BOOST_REQUIRE( to_string( alice_comment_content.body ) == op.body );
-      BOOST_REQUIRE( to_string( alice_comment_content.json_metadata ) == op.json_metadata );
-    #else
-      const auto* alice_comment_content = db->find< comment_content_object, by_comment >( alice_comment.get_id() );
-      BOOST_REQUIRE( alice_comment_content == nullptr );
-    #endif
-
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test Bob posting a comment on a non-existent comment" );

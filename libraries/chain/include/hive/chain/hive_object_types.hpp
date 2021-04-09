@@ -54,7 +54,6 @@ enum object_type
   block_summary_object_type,
   witness_schedule_object_type,
   comment_object_type,
-  comment_content_object_type,
   comment_vote_object_type,
   witness_vote_object_type,
   limit_order_object_type,
@@ -101,7 +100,6 @@ class transaction_object;
 class block_summary_object;
 class witness_schedule_object;
 class comment_object;
-class comment_content_object;
 class comment_vote_object;
 class witness_vote_object;
 class limit_order_object;
@@ -148,7 +146,6 @@ typedef oid_ref< transaction_object                     > transaction_object_id_
 typedef oid_ref< block_summary_object                   > block_summary_id_type;
 typedef oid_ref< witness_schedule_object                > witness_schedule_id_type;
 typedef oid_ref< comment_object                         > comment_id_type;
-typedef oid_ref< comment_content_object                 > comment_content_id_type;
 typedef oid_ref< comment_vote_object                    > comment_vote_id_type;
 typedef oid_ref< witness_vote_object                    > witness_vote_id_type;
 typedef oid_ref< limit_order_object                     > limit_order_id_type;
@@ -312,7 +309,6 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (block_summary_object_type)
             (witness_schedule_object_type)
             (comment_object_type)
-            (comment_content_object_type)
             (comment_vote_object_type)
             (witness_vote_object_type)
             (limit_order_object_type)

@@ -459,7 +459,6 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
 
   //top RAM gluttons
   BOOST_CHECK_EQUAL( sizeof( comment_object ), 36u ); //85M+ growing fast
-  BOOST_CHECK_EQUAL( sizeof( comment_content_object ), 104u ); //as many as comment_object, dynamic size matters the most, in HiveMind
 
   //permanent objects (no operation to remove)
   BOOST_CHECK_EQUAL( sizeof( account_object ), 424u ); //1.3M+

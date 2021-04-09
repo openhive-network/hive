@@ -26,7 +26,6 @@ void initialize_core_indexes( database& db )
   HIVE_ADD_CORE_INDEX(db, block_summary_index);
   HIVE_ADD_CORE_INDEX(db, witness_schedule_index);
   HIVE_ADD_CORE_INDEX(db, comment_index);
-  HIVE_ADD_CORE_INDEX(db, comment_content_index);
   HIVE_ADD_CORE_INDEX(db, comment_vote_index);
   HIVE_ADD_CORE_INDEX(db, witness_vote_index);
   HIVE_ADD_CORE_INDEX(db, limit_order_index);

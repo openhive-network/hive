@@ -13,33 +13,6 @@
 
 #include <fc/macros.hpp>
 
-#ifndef IS_LOW_MEM
-FC_TODO( "After we vendor fc, also vendor diff_match_patch and fix these warnings" )
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsign-compare"
-#pragma GCC diagnostic push
-#if !defined( __clang__ )
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-#include <diff_match_patch.h>
-#pragma GCC diagnostic pop
-#pragma GCC diagnostic pop
-#include <boost/locale/encoding_utf.hpp>
-
-using boost::locale::conv::utf_to_utf;
-
-std::wstring utf8_to_wstring(const std::string& str)
-{
-  return utf_to_utf<wchar_t>(str.c_str(), str.c_str() + str.size());
-}
-
-std::string wstring_to_utf8(const std::wstring& str)
-{
-  return utf_to_utf<char>(str.c_str(), str.c_str() + str.size());
-}
-
-#endif
-
 #include <fc/uint128.hpp>
 #include <fc/utf8.hpp>
 
@@ -896,21 +869,6 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
     _db.create< comment_cashout_object >( new_comment, auth, o.permlink, _now, cashout_time, reward_weight );
 
-  #if !defined(IS_LOW_MEM) && defined(STORE_COMMENT_CONTENT)
-    _db.create< comment_content_object >( [&]( comment_content_object& con )
-    {
-      con.comment = new_comment.get_id();
-
-      from_string( con.title, o.title );
-      if( o.body.size() < 1024*1024*128 )
-      {
-        from_string( con.body, o.body );
-      }
-      from_string( con.json_metadata, o.json_metadata );
-    });
-  #endif
-
-
 /// this loop can be skiped for validate-only nodes as it is merely gathering stats for indicies
     while( parent )
     {
@@ -976,37 +934,6 @@ void comment_evaluator::do_apply( const comment_operation& o )
     {
       a.last_post_edit = _now;
     });
-  #if !defined(IS_LOW_MEM) && defined(STORE_COMMENT_CONTENT)
-    _db.modify( _db.get< comment_content_object, by_comment >( comment.get_id() ), [&]( comment_content_object& con )
-    {
-      if( o.title.size() )
-        from_string( con.title, o.title );
-      if( o.json_metadata.size() )
-        from_string( con.json_metadata, o.json_metadata );
-
-      if( o.body.size() ) {
-        try {
-        diff_match_patch<std::wstring> dmp;
-        auto patch = dmp.patch_fromText( utf8_to_wstring(o.body) );
-        if( patch.size() ) {
-          auto result = dmp.patch_apply( patch, utf8_to_wstring( to_string( con.body ) ) );
-          auto patched_body = wstring_to_utf8(result.first);
-          if( !fc::is_utf8( patched_body ) ) {
-            idump(("invalid utf8")(patched_body));
-            from_string( con.body, fc::prune_invalid_utf8(patched_body) );
-          } else { from_string( con.body, patched_body ); }
-        }
-        else { // replace
-          from_string( con.body, o.body );
-        }
-        } catch ( ... ) {
-          from_string( con.body, o.body );
-        }
-      }
-    });
-  #endif
-
-
 
   } // end EDIT case
 

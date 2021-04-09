@@ -367,12 +367,6 @@ struct api_comment_object
 
     }
 
-#if !defined(IS_LOW_MEM) && defined(STORE_COMMENT_CONTENT)
-    const auto& con = db.get< chain::comment_content_object, chain::by_comment >( o.get_id() );
-    title = to_string( con.title );
-    body = to_string( con.body );
-    json_metadata = to_string( con.json_metadata );
-#endif
   }
 
   api_comment_object(){}
