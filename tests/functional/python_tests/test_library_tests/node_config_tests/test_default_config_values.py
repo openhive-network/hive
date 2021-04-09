@@ -20,4 +20,14 @@ def generate_default_config():
 
 def test_default_config_values():
     generated = generate_default_config()
-    assert DEFAULT_CONFIG == generated
+    if DEFAULT_CONFIG != generated:
+        print('Found differences:')
+        differences = DEFAULT_CONFIG.get_differences_between(generated)
+
+        for key, (default_value, generated_value) in differences.items():
+            print()
+            print(key)
+            print('In DEFAULT_CONFIG:', default_value)
+            print('Generated:        ', generated_value)
+
+        assert False, 'Modify DEFAULT_CONFIG to match default generated config'
