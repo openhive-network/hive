@@ -246,6 +246,14 @@ class Node:
         import weakref
         self.finalizer = weakref.finalize(self, Node.__close_process, self.process)
 
+        if self.config is None:
+            # Wait for config generation
+            from time import sleep
+            sleep(0.1)
+
+            self.config = NodeConfig()
+            self.config.load_from_file(self.directory / 'config.ini')
+
         print(f'[{self}] Run with pid {self.process.pid}, ', end='')
         if self.get_webserver_http_endpoints():
             print(f'with http server {self.get_webserver_http_endpoints()[0]}')
