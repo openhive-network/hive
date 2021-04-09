@@ -2657,7 +2657,6 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   
   //cut amount by collateral ratio
   uint128_t _amount = ( uint128_t( o.amount.amount.value ) * HIVE_100_PERCENT ) / HIVE_CONVERSION_COLLATERAL_RATIO;
-  FC_ASSERT( _amount.hi == 0 );
   asset for_immediate_conversion = asset( _amount.to_uint64(), o.amount.symbol );
 
   //immediately create HBD

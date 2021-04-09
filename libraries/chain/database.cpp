@@ -287,6 +287,11 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
     args.benchmark.second( 0, get_abstract_index_cntr() );
   }
 
+  bool rat = fc::enable_record_assert_trip;
+  bool as = fc::enable_assert_stacktrace;
+  fc::enable_record_assert_trip = true; //enable detailed backtrace from FC_ASSERT (that should not ever be triggered during replay)
+  fc::enable_assert_stacktrace = true;
+
   while( !appbase::app().is_interrupt_request() && block.block_num() != last_block_num )
   {
     uint32_t cur_block_num = block.block_num();
@@ -325,6 +330,9 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
       block = std::move(*next_block);
     }
   }
+
+  fc::enable_record_assert_trip = rat; //restore flag
+  fc::enable_assert_stacktrace = as;
 
   if( appbase::app().is_interrupt_request() )
   {

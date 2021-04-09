@@ -2400,7 +2400,6 @@ condenser_api::legacy_asset wallet_api::estimate_hive_collateral(
 
   auto needed_hive = hbd_amount_to_get * immediate_price_with_fee;
   uint128_t _amount = ( uint128_t( needed_hive.amount.value ) * HIVE_CONVERSION_COLLATERAL_RATIO ) / HIVE_100_PERCENT;
-  FC_ASSERT( _amount.hi == 0 );
   asset required_collateral = asset( _amount.to_uint64(), HIVE_SYMBOL );
 
   return condenser_api::legacy_asset::from_asset( required_collateral );
