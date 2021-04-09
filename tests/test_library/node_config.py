@@ -64,6 +64,20 @@ class NodeConfig:
     def __ne__(self, other):
         return not self == other
 
+    def get_differences_between(self, other):
+        if self == other:
+            return None
+
+        differences = {}
+        for member in self.__slots__:
+            mine = getattr(self, member)
+            his = getattr(other, member)
+
+            if mine != his:
+                differences[member] = (mine, his)
+
+        return differences
+
     def add_entry(self, key, value, description=None):
         if key not in self.entries:
             self.entries[key] = self.Entry(value, description)
