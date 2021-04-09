@@ -225,7 +225,8 @@ class Node:
         self.directory.mkdir(parents=True)
 
         config_file_path = self.directory.joinpath('config.ini')
-        self.config.write_to_file(config_file_path)
+        if self.config is not None:
+            self.config.write_to_file(config_file_path)
 
         if not self.print_to_terminal:
             self.stdout_file = open(self.directory/'stdout.txt', 'w')
