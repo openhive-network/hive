@@ -82,6 +82,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef sps_convert_operation                  legacy_sps_convert_operation;
   typedef expired_account_notification_operation legacy_expired_account_notification_operation;
   typedef changed_recovery_account_operation     legacy_changed_recovery_account_operation;
+  typedef system_warning_operation               legacy_system_warning_operation;
 
   struct legacy_price
   {
@@ -637,6 +638,29 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      amount;
   };
 
+  struct legacy_collateralized_convert_operation
+  {
+    legacy_collateralized_convert_operation() {}
+    legacy_collateralized_convert_operation( const collateralized_convert_operation& op ) :
+      owner( op.owner ),
+      requestid( op.requestid ),
+      amount( legacy_asset::from_asset( op.amount ) )
+    {}
+
+    operator collateralized_convert_operation()const
+    {
+      collateralized_convert_operation op;
+      op.owner = owner;
+      op.requestid = requestid;
+      op.amount = amount;
+      return op;
+    }
+
+    account_name_type owner;
+    uint32_t          requestid = 0;
+    legacy_asset      amount;
+  };
+
   struct legacy_limit_order_create_operation
   {
     legacy_limit_order_create_operation() {}
@@ -953,6 +977,35 @@ namespace hive { namespace plugins { namespace condenser_api {
     uint32_t          requestid;
     legacy_asset      amount_in;
     legacy_asset      amount_out;
+  };
+
+  struct legacy_fill_collateralized_convert_request_operation
+  {
+    legacy_fill_collateralized_convert_request_operation() {}
+    legacy_fill_collateralized_convert_request_operation( const fill_collateralized_convert_request_operation& op ) :
+      owner( op.owner ),
+      requestid( op.requestid ),
+      amount_in( legacy_asset::from_asset( op.amount_in ) ),
+      amount_out( legacy_asset::from_asset( op.amount_out ) ),
+      excess_collateral( legacy_asset::from_asset( op.excess_collateral ) )
+    {}
+
+    operator fill_collateralized_convert_request_operation()const
+    {
+      fill_collateralized_convert_request_operation op;
+      op.owner = owner;
+      op.requestid = requestid;
+      op.amount_in = amount_in;
+      op.amount_out = amount_out;
+      op.excess_collateral = excess_collateral;
+      return op;
+    }
+
+    account_name_type owner;
+    uint32_t          requestid;
+    legacy_asset      amount_in;
+    legacy_asset      amount_out;
+    legacy_asset      excess_collateral;
   };
 
   struct legacy_fill_vesting_withdraw_operation
@@ -1334,6 +1387,7 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_update_proposal_votes_operation,
         legacy_remove_proposal_operation,
         legacy_update_proposal_operation,
+        legacy_collateralized_convert_operation,
         legacy_fill_convert_request_operation,
         legacy_author_reward_operation,
         legacy_curation_reward_operation,
@@ -1360,9 +1414,11 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_expired_account_notification_operation,
         legacy_changed_recovery_account_operation,
         legacy_transfer_to_vesting_completed_operation,
-        legacy_account_created_operation,
-        legacy_vesting_shares_split_operation,
-        legacy_pow_reward_operation
+        legacy_account_created_operation, //for unknown reason this and two below are in different order than in hive::protocol::operation
+        legacy_vesting_shares_split_operation, //since the order is affecting external libraries
+        legacy_pow_reward_operation, //I'm not sure it can be changed to proper one
+        legacy_fill_collateralized_convert_request_operation,
+        legacy_system_warning_operation
       > legacy_operation;
 
   struct legacy_operation_conversion_visitor
@@ -1452,6 +1508,12 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
+    bool operator()( const collateralized_convert_operation& op )const
+    {
+      l_op = legacy_collateralized_convert_operation( op );
+      return true;
+    }
+
     bool operator()( const account_create_operation& op )const
     {
       l_op = legacy_account_create_operation( op );
@@ -1533,6 +1595,12 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const fill_convert_request_operation& op )const
     {
       l_op = legacy_fill_convert_request_operation( op );
+      return true;
+    }
+
+    bool operator()( const fill_collateralized_convert_request_operation& op )const
+    {
+      l_op = legacy_fill_collateralized_convert_request_operation( op );
       return true;
     }
 
@@ -1702,6 +1770,11 @@ struct convert_from_legacy_operation_visitor
     return operation( convert_operation( op ) );
   }
 
+  operation operator()( const legacy_collateralized_convert_operation& op )const
+  {
+    return operation( collateralized_convert_operation( op ) );
+  }
+
   operation operator()( const legacy_account_create_operation& op )const
   {
     return operation( account_create_operation( op ) );
@@ -1770,6 +1843,11 @@ struct convert_from_legacy_operation_visitor
   operation operator()( const legacy_fill_convert_request_operation& op )const
   {
     return operation( fill_convert_request_operation( op ) );
+  }
+
+  operation operator()( const legacy_fill_collateralized_convert_request_operation& op )const
+  {
+    return operation( fill_collateralized_convert_request_operation( op ) );
   }
 
   operation operator()( const legacy_author_reward_operation& op )const
@@ -1993,6 +2071,7 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_price, (base)(quote) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_transfer_to_savings_operation, (from)(to)(amount)(memo) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_transfer_from_savings_operation, (from)(request_id)(to)(amount)(memo) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_convert_operation, (owner)(requestid)(amount) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_collateralized_convert_operation, (owner)(requestid)(amount) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_feed_publish_operation, (publisher)(exchange_rate) )
 
 FC_REFLECT( hive::plugins::condenser_api::legacy_account_create_operation,
@@ -2053,6 +2132,7 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_author_reward_operation, (autho
 FC_REFLECT( hive::plugins::condenser_api::legacy_curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink)(payout_must_be_claimed) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_comment_reward_operation, (author)(permlink)(payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_liquidity_reward_operation, (owner)(payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_interest_operation, (owner)(interest) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )

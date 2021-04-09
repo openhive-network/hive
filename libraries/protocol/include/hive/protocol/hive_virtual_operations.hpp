@@ -7,7 +7,8 @@
 
 namespace hive { namespace protocol {
 
-  struct author_reward_operation : public virtual_operation {
+  struct author_reward_operation : public virtual_operation
+  {
     author_reward_operation() = default;
     author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v, const asset& c, bool must_be_claimed)
       :author(a), permlink(p), hbd_payout(s), hive_payout(st), vesting_payout(v), curators_vesting_payout(c), payout_must_be_claimed(must_be_claimed) {}
@@ -80,14 +81,29 @@ namespace hive { namespace protocol {
 
   struct fill_convert_request_operation : public virtual_operation
   {
-    fill_convert_request_operation(){}
-    fill_convert_request_operation( const string& o, const uint32_t id, const asset& in, const asset& out )
+    fill_convert_request_operation() = default;
+    fill_convert_request_operation( const account_name_type& o, const uint32_t id, const HBD_asset& in, const HIVE_asset& out )
       :owner(o), requestid(id), amount_in(in), amount_out(out) {}
 
     account_name_type owner;
     uint32_t          requestid = 0;
-    asset             amount_in;
-    asset             amount_out;
+    asset             amount_in; //in HBD
+    asset             amount_out; //in HIVE
+  };
+
+  struct fill_collateralized_convert_request_operation : public virtual_operation
+  {
+    fill_collateralized_convert_request_operation() = default;
+    fill_collateralized_convert_request_operation( const account_name_type& o, const uint32_t id,
+      const HIVE_asset& in, const HBD_asset& out, const HIVE_asset& _excess_collateral )
+      :owner( o ), requestid( id ), amount_in( in ), amount_out( out ), excess_collateral( _excess_collateral )
+    {}
+
+    account_name_type owner;
+    uint32_t          requestid = 0;
+    asset             amount_in; //in HIVE
+    asset             amount_out; //in HBD
+    asset             excess_collateral; //in HIVE
   };
 
 
@@ -341,7 +357,7 @@ namespace hive { namespace protocol {
 
   struct changed_recovery_account_operation : public virtual_operation
   {
-    changed_recovery_account_operation() {}
+    changed_recovery_account_operation() = default;
     changed_recovery_account_operation( const account_name_type& acc, const account_name_type& oldrec, const account_name_type& newrec )
       : account( acc ), old_recovery_account( oldrec ), new_recovery_account( newrec ) {}
 
@@ -350,12 +366,22 @@ namespace hive { namespace protocol {
     account_name_type new_recovery_account;
   };
 
+  struct system_warning_operation : public virtual_operation
+  {
+    system_warning_operation() = default;
+    system_warning_operation( const string& _message )
+      : message( _message ) {}
+
+    string message;
+  };
+
 } } //hive::protocol
 
 FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::comment_reward_operation, (author)(permlink)(payout)(author_rewards)(total_payout_value)(curator_payout_value)(beneficiary_payout_value) )
 FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
+FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::liquidity_reward_operation, (owner)(payout) )
 FC_REFLECT( hive::protocol::interest_operation, (owner)(interest) )
@@ -382,3 +408,4 @@ FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(hbd_tra
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
 FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
+FC_REFLECT( hive::protocol::system_warning_operation, (message) )

@@ -636,17 +636,33 @@ namespace hive { namespace protocol {
 
 
   /**
-    *  This operation instructs the blockchain to start a conversion between HIVE and HBD,
+    *  This operation instructs the blockchain to start a conversion of HBD to HIVE.
     *  The funds are deposited after HIVE_CONVERSION_DELAY
     */
   struct convert_operation : public base_operation
   {
     account_name_type owner;
     uint32_t          requestid = 0;
-    asset             amount;
+    asset             amount; //in HBD
 
     void  validate()const;
     void  get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(owner); }
+  };
+
+  /**
+    *  Similar to convert_operation, this operation instructs the blockchain to convert HIVE to HBD.
+    *  The operation is performed after HIVE_COLLATERALIZED_CONVERSION_DELAY, but owner gets HBD
+    *  immediately. The price risk is cussioned by extra HIVE (see HIVE_COLLATERAL_RATIO). After actual
+    *  conversion takes place the excess HIVE is returned to the owner.
+    */
+  struct collateralized_convert_operation : public base_operation
+  {
+    account_name_type owner;
+    uint32_t          requestid = 0;
+    asset             amount; //in HIVE
+
+    void  validate()const;
+    void  get_required_active_authorities( flat_set<account_name_type>& a )const { a.insert( owner ); }
   };
 
 
@@ -1089,6 +1105,7 @@ FC_REFLECT( hive::protocol::set_reset_account_operation, (account)(current_reset
 
 FC_REFLECT( hive::protocol::report_over_production_operation, (reporter)(first_block)(second_block) )
 FC_REFLECT( hive::protocol::convert_operation, (owner)(requestid)(amount) )
+FC_REFLECT( hive::protocol::collateralized_convert_operation, (owner)(requestid)(amount) )
 FC_REFLECT( hive::protocol::feed_publish_operation, (publisher)(exchange_rate) )
 FC_REFLECT( hive::protocol::pow, (worker)(input)(signature)(work) )
 FC_REFLECT( hive::protocol::pow2, (input)(pow_summary) )

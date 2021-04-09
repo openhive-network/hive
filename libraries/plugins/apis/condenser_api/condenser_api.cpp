@@ -82,6 +82,7 @@ namespace detail
         (get_expiring_vesting_delegations)
         (get_witnesses)
         (get_conversion_requests)
+        (get_collateralized_conversion_requests)
         (get_witness_by_account)
         (get_witnesses_by_vote)
         (lookup_witness_accounts)
@@ -593,6 +594,24 @@ namespace detail
     for( auto& r : requests )
     {
       result.push_back( api_convert_request_object( r ) );
+    }
+
+    return result;
+  }
+
+  DEFINE_API_IMPL( condenser_api_impl, get_collateralized_conversion_requests )
+  {
+    CHECK_ARG_SIZE( 1 )
+    auto requests = _database_api->find_collateralized_conversion_requests(
+      {
+        args[0].as< account_name_type >()
+      }).requests;
+
+    get_collateralized_conversion_requests_return result;
+
+    for( auto& r : requests )
+    {
+      result.push_back( api_collateralized_convert_request_object( r ) );
     }
 
     return result;
@@ -1374,6 +1393,7 @@ DEFINE_READ_APIS( condenser_api,
   (get_expiring_vesting_delegations)
   (get_witnesses)
   (get_conversion_requests)
+  (get_collateralized_conversion_requests)
   (get_witness_by_account)
   (get_witnesses_by_vote)
   (lookup_witness_accounts)

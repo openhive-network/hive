@@ -2370,6 +2370,41 @@ condenser_api::legacy_signed_transaction wallet_api::convert_hbd(
   return my->sign_transaction( tx, broadcast );
 }
 
+condenser_api::legacy_signed_transaction wallet_api::convert_hive_with_collateral(
+  const string& from,
+  const condenser_api::legacy_asset& collateral_amount,
+  bool broadcast )
+{
+  FC_ASSERT( !is_locked() );
+  collateralized_convert_operation op;
+  op.owner = from;
+  op.requestid = fc::time_point::now().sec_since_epoch();
+  op.amount = collateral_amount.to_asset();
+
+  signed_transaction tx;
+  tx.operations.push_back( op );
+  tx.validate();
+
+  return my->sign_transaction( tx, broadcast );
+}
+
+condenser_api::legacy_asset wallet_api::estimate_hive_collateral(
+  const condenser_api::legacy_asset& hbd_amount_to_get )
+{
+  //must reflect calculations from collateralized_convert_evaluator::do_apply
+
+  auto fhistory = get_feed_history();
+  price immediate_price_with_fee = fhistory.current_min_history;
+  FC_ASSERT( !immediate_price_with_fee.is_null(), "Cannot estimate conversion collateral because there is no price feed." );
+  immediate_price_with_fee = immediate_price_with_fee.get_scaled( HIVE_100_PERCENT + HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
+
+  auto needed_hive = hbd_amount_to_get * immediate_price_with_fee;
+  uint128_t _amount = ( uint128_t( needed_hive.amount.value ) * HIVE_CONVERSION_COLLATERAL_RATIO ) / HIVE_100_PERCENT;
+  asset required_collateral = asset( _amount.to_uint64(), HIVE_SYMBOL );
+
+  return condenser_api::legacy_asset::from_asset( required_collateral );
+}
+
 condenser_api::legacy_signed_transaction wallet_api::publish_feed(
   const string& witness,
   const condenser_api::legacy_price& exchange_rate,
@@ -2390,6 +2425,11 @@ condenser_api::legacy_signed_transaction wallet_api::publish_feed(
 vector< condenser_api::api_convert_request_object > wallet_api::get_conversion_requests( const string& owner_account )
 {
   return my->_remote_api->get_conversion_requests( owner_account );
+}
+
+vector< condenser_api::api_collateralized_convert_request_object > wallet_api::get_collateralized_conversion_requests( const string& owner_account )
+{
+  return my->_remote_api->get_collateralized_conversion_requests( owner_account );
 }
 
 string wallet_api::decrypt_memo( string encrypted_memo )

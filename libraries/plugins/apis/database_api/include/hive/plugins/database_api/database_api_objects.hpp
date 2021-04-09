@@ -143,10 +143,10 @@ struct api_convert_request_object
 {
   api_convert_request_object( const convert_request_object& o, const database& db ):
     id( o.get_id() ),
-    owner( o.owner ),
-    requestid( o.requestid ),
-    amount( o.amount ),
-    conversion_date( o.conversion_date )
+    owner( db.get_account( o.get_owner() ).get_name() ),
+    requestid( o.get_request_id() ),
+    amount( o.get_convert_amount() ),
+    conversion_date( o.get_conversion_date() )
   {}
 
   convert_request_id_type id;
@@ -154,6 +154,25 @@ struct api_convert_request_object
   uint32_t                requestid;
   asset                   amount;
   time_point_sec          conversion_date;
+};
+
+struct api_collateralized_convert_request_object
+{
+  api_collateralized_convert_request_object( const collateralized_convert_request_object& o, const database& db ) :
+    id( o.get_id() ),
+    owner( db.get_account( o.get_owner() ).get_name() ),
+    requestid( o.get_request_id() ),
+    collateral_amount( o.get_collateral_amount() ),
+    converted_amount( o.get_converted_amount() ),
+    conversion_date( o.get_conversion_date() )
+  {}
+
+  collateralized_convert_request_id_type id;
+  account_name_type                      owner;
+  uint32_t                               requestid;
+  asset                                  collateral_amount;
+  asset                                  converted_amount;
+  time_point_sec                         conversion_date;
 };
 
 struct api_decline_voting_rights_request_object
@@ -692,6 +711,8 @@ struct api_feed_history_object
   api_feed_history_object( const feed_history_object& f ) :
     id( f.get_id() ),
     current_median_history( f.current_median_history ),
+    current_min_history( f.current_min_history ),
+    current_max_history( f.current_max_history ),
     price_history( f.price_history.begin(), f.price_history.end() )
   {}
 
@@ -699,6 +720,8 @@ struct api_feed_history_object
 
   feed_history_id_type id;
   price                current_median_history;
+  price                current_min_history;
+  price                current_max_history;
   deque< price >       price_history;
 };
 
@@ -1052,6 +1075,10 @@ FC_REFLECT( hive::plugins::database_api::api_convert_request_object,
           (id)(owner)(requestid)(amount)(conversion_date)
         )
 
+FC_REFLECT( hive::plugins::database_api::api_collateralized_convert_request_object,
+          (id)(owner)(requestid)(collateral_amount)(converted_amount)(conversion_date)
+        )
+
 FC_REFLECT( hive::plugins::database_api::api_decline_voting_rights_request_object,
           (id)(account)(effective_date)
         )
@@ -1145,6 +1172,8 @@ FC_REFLECT( hive::plugins::database_api::api_savings_withdraw_object,
 FC_REFLECT( hive::plugins::database_api::api_feed_history_object,
           (id)
           (current_median_history)
+          (current_min_history)
+          (current_max_history)
           (price_history)
         )
 

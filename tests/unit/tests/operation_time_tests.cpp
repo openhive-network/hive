@@ -1464,8 +1464,11 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
     BOOST_TEST_MESSAGE( "Get feed history object" );
     auto& feed_history = db->get_feed_history();
     BOOST_TEST_MESSAGE( "Check state" );
-    BOOST_REQUIRE( feed_history.current_median_history == price( asset( 1000, HBD_SYMBOL ), asset( 99000, HIVE_SYMBOL) ) );
-    BOOST_REQUIRE( feed_history.price_history[ 0 ] == price( asset( 1000, HBD_SYMBOL ), asset( 99000, HIVE_SYMBOL) ) );
+    {
+      auto expected_price = price( asset( 1000, HBD_SYMBOL ), asset( 99000, HIVE_SYMBOL ) );
+      BOOST_REQUIRE( feed_history.current_median_history == expected_price );
+      BOOST_REQUIRE( feed_history.price_history[ 0 ] == expected_price );
+    }
     validate_database();
 
     for ( int i = 0; i < 23; i++ )
@@ -1530,8 +1533,8 @@ BOOST_AUTO_TEST_CASE( convert_delay )
 
     BOOST_TEST_MESSAGE( "Verify conversion is not applied" );
     const auto& alice_2 = db->get_account( "alice" );
-    const auto& convert_request_idx = db->get_index< convert_request_index >().indices().get< by_owner >();
-    auto convert_request = convert_request_idx.find( boost::make_tuple( "alice", 2 ) );
+    const auto& convert_request_idx = db->get_index< convert_request_index, by_owner >();
+    auto convert_request = convert_request_idx.find( boost::make_tuple( alice_2.get_id(), 2 ) );
 
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
     BOOST_REQUIRE( alice_2.get_balance().amount.value == 0 );
@@ -1545,7 +1548,7 @@ BOOST_AUTO_TEST_CASE( convert_delay )
     const auto& alice_3 = db->get_account( "alice" );
     auto vop = get_last_operations( 1 )[0].get< fill_convert_request_operation >();
 
-    convert_request = convert_request_idx.find( boost::make_tuple( "alice", 2 ) );
+    convert_request = convert_request_idx.find( boost::make_tuple( alice_3.get_id(), 2 ) );
     BOOST_REQUIRE( convert_request == convert_request_idx.end() );
     BOOST_REQUIRE( alice_3.get_balance().amount.value == 2500 );
     BOOST_REQUIRE( alice_3.get_hbd_balance().amount.value == ( start_balance - op.amount ).amount.value );

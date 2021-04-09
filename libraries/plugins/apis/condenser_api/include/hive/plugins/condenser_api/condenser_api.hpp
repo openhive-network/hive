@@ -470,7 +470,9 @@ struct api_feed_history_object
 {
   api_feed_history_object() {}
   api_feed_history_object( const database_api::api_feed_history_object& f ) :
-    current_median_history( f.current_median_history )
+    current_median_history( f.current_median_history ),
+    current_min_history( f.current_min_history ),
+    current_max_history( f.current_max_history )
   {
     for( auto& p : f.price_history )
     {
@@ -480,6 +482,8 @@ struct api_feed_history_object
 
   feed_history_id_type   id;
   legacy_price           current_median_history;
+  legacy_price           current_min_history;
+  legacy_price           current_max_history;
   deque< legacy_price >  price_history;
 };
 
@@ -619,6 +623,27 @@ struct api_convert_request_object
   account_name_type owner;
   uint32_t          requestid = 0;
   legacy_asset      amount;
+  time_point_sec    conversion_date;
+};
+
+struct api_collateralized_convert_request_object
+{
+  api_collateralized_convert_request_object() {}
+  api_collateralized_convert_request_object( const database_api::api_collateralized_convert_request_object& c ) :
+    id( c.id ),
+    owner( c.owner ),
+    requestid( c.requestid ),
+    collateral_amount( legacy_asset::from_asset( c.collateral_amount ) ),
+    converted_amount( legacy_asset::from_asset( c.converted_amount) ),
+    conversion_date( c.conversion_date )
+  {}
+
+  collateralized_convert_request_id_type id;
+
+  account_name_type owner;
+  uint32_t          requestid = 0;
+  legacy_asset      collateral_amount;
+  legacy_asset      converted_amount;
   time_point_sec    conversion_date;
 };
 
@@ -859,6 +884,7 @@ DEFINE_API_ARGS( get_vesting_delegations,                vector< variant >,   ve
 DEFINE_API_ARGS( get_expiring_vesting_delegations,       vector< variant >,   vector< api_vesting_delegation_expiration_object > )
 DEFINE_API_ARGS( get_witnesses,                          vector< variant >,   vector< optional< api_witness_object > > )
 DEFINE_API_ARGS( get_conversion_requests,                vector< variant >,   vector< api_convert_request_object > )
+DEFINE_API_ARGS( get_collateralized_conversion_requests, vector< variant >,   vector< api_collateralized_convert_request_object > )
 DEFINE_API_ARGS( get_witness_by_account,                 vector< variant >,   optional< api_witness_object > )
 DEFINE_API_ARGS( get_witnesses_by_vote,                  vector< variant >,   vector< api_witness_object > )
 DEFINE_API_ARGS( lookup_witness_accounts,                vector< variant >,   vector< account_name_type > )
@@ -956,6 +982,7 @@ public:
     (get_expiring_vesting_delegations)
     (get_witnesses)
     (get_conversion_requests)
+    (get_collateralized_conversion_requests)
     (get_witness_by_account)
     (get_witnesses_by_vote)
     (lookup_witness_accounts)
@@ -1113,6 +1140,8 @@ FC_REFLECT( hive::plugins::condenser_api::api_witness_schedule_object,
 FC_REFLECT( hive::plugins::condenser_api::api_feed_history_object,
           (id)
           (current_median_history)
+          (current_min_history)
+          (current_max_history)
           (price_history)
         )
 
@@ -1153,6 +1182,9 @@ FC_REFLECT( hive::plugins::condenser_api::api_vesting_delegation_expiration_obje
 
 FC_REFLECT( hive::plugins::condenser_api::api_convert_request_object,
           (id)(owner)(requestid)(amount)(conversion_date) )
+
+FC_REFLECT( hive::plugins::condenser_api::api_collateralized_convert_request_object,
+          (id)(owner)(requestid)(collateral_amount)(converted_amount)(conversion_date) )
 
 FC_REFLECT( hive::plugins::condenser_api::api_proposal_object,
           (id)(proposal_id)(creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink)(total_votes) )

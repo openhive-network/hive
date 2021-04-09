@@ -12,7 +12,6 @@
 #include <hive/chain/util/manabar.hpp>
 
 #include <hive/chain/util/delayed_voting_processor.hpp>
-#include <hive/chain/util/tiny_asset.hpp>
 
 #include <numeric>
 

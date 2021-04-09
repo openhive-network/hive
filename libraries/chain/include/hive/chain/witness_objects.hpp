@@ -15,6 +15,9 @@ namespace hive { namespace chain {
   using hive::protocol::version;
   using hive::protocol::hardfork_version;
   using hive::protocol::price;
+  using hive::protocol::HBD_asset;
+  using hive::protocol::HIVE_asset;
+  using hive::protocol::VEST_asset;
   using hive::protocol::asset;
   using hive::protocol::asset_symbol_type;
   using hive::chain::util::rd_dynamics_params;

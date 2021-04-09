@@ -462,6 +462,8 @@ void database_fixture::fund(
           db.modify( median_feed, [&]( feed_history_object& f )
           {
             f.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
+            f.current_min_history = f.current_median_history;
+            f.current_max_history = f.current_median_history;
           });
       }
 

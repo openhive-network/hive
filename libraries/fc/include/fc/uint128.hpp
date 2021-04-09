@@ -20,9 +20,7 @@ namespace fc
    */
   class uint128
   {
-
-
-     public:
+    public:
       uint128():hi(0),lo(0){}
       uint128( uint32_t l ):hi(0),lo(l){}
       uint128( int32_t l ):hi( -(l<0) ),lo(l){}
@@ -39,7 +37,7 @@ namespace fc
       bool     operator == ( const uint128& o )const{ return hi == o.hi && lo == o.lo;             }
       bool     operator != ( const uint128& o )const{ return hi != o.hi || lo != o.lo;             }
       bool     operator < ( const uint128& o )const { return (hi == o.hi) ? lo < o.lo : hi < o.hi; }
-      bool     operator < ( const int64_t& o )const { return *this < uint128(o); }
+      bool     operator < ( const int64_t& o )const { return *this < uint128(o);                   }
       bool     operator !()const                    { return !(hi !=0 || lo != 0);                 }
       uint128  operator -()const                    { return ++uint128( ~hi, ~lo );                }
       uint128  operator ~()const                    { return uint128( ~hi, ~lo );                  }
@@ -73,8 +71,8 @@ namespace fc
       friend uint128 operator << ( const uint128& l, const uint128& r )  { return uint128(l)<<=r;  }
       friend uint128 operator >> ( const uint128& l, const uint128& r )  { return uint128(l)>>=r;  }
       friend bool    operator >  ( const uint128& l, const uint128& r )  { return r < l;           }
-      friend bool    operator >  ( const uint128& l, const int64_t& r )  { return uint128(r) < l;           }
-      friend bool    operator >  ( const int64_t& l, const uint128& r )  { return r < uint128(l);           }
+      friend bool    operator >  ( const uint128& l, const int64_t& r )  { return uint128(r) < l;  }
+      friend bool    operator >  ( const int64_t& l, const uint128& r )  { return r < uint128(l);  }
 
       friend bool    operator >=  ( const uint128& l, const uint128& r ) { return l == r || l > r; }
       friend bool    operator >=  ( const uint128& l, const int64_t& r ) { return l >= uint128(r); }
@@ -87,29 +85,30 @@ namespace fc
 
       uint32_t to_integer()const
       {
-          FC_ASSERT( hi == 0 );
-          uint32_t lo32 = (uint32_t) lo;
-          FC_ASSERT( lo == lo32 );
-          return lo32;
+        FC_ASSERT( hi == 0 );
+        uint32_t lo32 = (uint32_t) lo;
+        FC_ASSERT( lo == lo32 );
+        return lo32;
       }
       uint64_t to_uint64()const
       {
-          FC_ASSERT( hi == 0 );
-          return lo;
+        FC_ASSERT( hi == 0 );
+        return lo;
       }
       uint32_t low_32_bits()const { return (uint32_t) lo; }
       uint64_t low_bits()const  { return lo; }
       uint64_t high_bits()const { return hi; }
       int64_t to_int64()const
       {
-          FC_ASSERT( hi == 0 );
-          FC_ASSERT( lo <= uint64_t( std::numeric_limits<int64_t>::max() ) );
-          return int64_t(lo);
+        FC_ASSERT( hi == 0 );
+        FC_ASSERT( lo <= uint64_t( std::numeric_limits<int64_t>::max() ) );
+        return int64_t(lo);
       }
 
-      static uint128 max_value() {
-          const uint64_t max64 = std::numeric_limits<uint64_t>::max();
-          return uint128( max64, max64 );
+      static uint128 max_value()
+      {
+        const uint64_t max64 = std::numeric_limits<uint64_t>::max();
+        return uint128( max64, max64 );
       }
 
       static void full_product( const uint128& a, const uint128& b, uint128& result_hi, uint128& result_lo );
@@ -142,14 +141,14 @@ namespace fc
 
 namespace std
 {
-    template<>
-    struct hash<fc::uint128>
+  template<>
+  struct hash<fc::uint128>
+  {
+    size_t operator()( const fc::uint128& s )const
     {
-       size_t operator()( const fc::uint128& s )const
-       {
-           return fc::city_hash_size_t((char*)&s, sizeof(s));
-       }
-    };
+      return fc::city_hash_size_t((char*)&s, sizeof(s));
+    }
+  };
 }
 
 FC_REFLECT( fc::uint128_t, (hi)(lo) )

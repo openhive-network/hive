@@ -3116,7 +3116,7 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
-    const auto& convert_request_idx = db->get_index< convert_request_index >().indices().get< by_owner >();
+    const auto& convert_request_idx = db->get_index< convert_request_index, by_owner >();
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
 
@@ -3171,13 +3171,13 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     BOOST_REQUIRE( new_bob.get_balance().amount.value == ASSET( "3.000 TESTS" ).amount.value );
     BOOST_REQUIRE( new_bob.get_hbd_balance().amount.value == ASSET( "4.000 TBD" ).amount.value );
 
-    auto convert_request = convert_request_idx.find( boost::make_tuple( op.owner, op.requestid ) );
+    auto convert_request = convert_request_idx.find( boost::make_tuple( get_account_id( op.owner ), op.requestid ) );
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
-    BOOST_REQUIRE( convert_request->owner == op.owner );
-    BOOST_REQUIRE( convert_request->requestid == op.requestid );
-    BOOST_REQUIRE( convert_request->amount.amount.value == op.amount.amount.value );
+    BOOST_REQUIRE( convert_request->get_owner() == get_account_id( op.owner ) );
+    BOOST_REQUIRE( convert_request->get_request_id() == op.requestid );
+    BOOST_REQUIRE( convert_request->get_convert_amount().amount.value == op.amount.amount.value );
     //BOOST_REQUIRE( convert_request->premium == 100000 );
-    BOOST_REQUIRE( convert_request->conversion_date == db->head_block_time() + HIVE_CONVERSION_DELAY );
+    BOOST_REQUIRE( convert_request->get_conversion_date() == db->head_block_time() + HIVE_CONVERSION_DELAY );
 
     BOOST_TEST_MESSAGE( "--- Test failure from repeated id" );
     op.amount = ASSET( "2.000 TESTS" );
@@ -3190,13 +3190,13 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     BOOST_REQUIRE( new_bob.get_balance().amount.value == ASSET( "3.000 TESTS" ).amount.value );
     BOOST_REQUIRE( new_bob.get_hbd_balance().amount.value == ASSET( "4.000 TBD" ).amount.value );
 
-    convert_request = convert_request_idx.find( boost::make_tuple( op.owner, op.requestid ) );
+    convert_request = convert_request_idx.find( boost::make_tuple( get_account_id( op.owner ), op.requestid ) );
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
-    BOOST_REQUIRE( convert_request->owner == op.owner );
-    BOOST_REQUIRE( convert_request->requestid == op.requestid );
-    BOOST_REQUIRE( convert_request->amount.amount.value == ASSET( "3.000 TBD" ).amount.value );
+    BOOST_REQUIRE( convert_request->get_owner() == get_account_id( op.owner ) );
+    BOOST_REQUIRE( convert_request->get_request_id() == op.requestid );
+    BOOST_REQUIRE( convert_request->get_convert_amount().amount.value == ASSET( "3.000 TBD" ).amount.value );
     //BOOST_REQUIRE( convert_request->premium == 100000 );
-    BOOST_REQUIRE( convert_request->conversion_date == db->head_block_time() + HIVE_CONVERSION_DELAY );
+    BOOST_REQUIRE( convert_request->get_conversion_date() == db->head_block_time() + HIVE_CONVERSION_DELAY );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
