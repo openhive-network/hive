@@ -15,17 +15,17 @@ def get_reward_operations(ops):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('address', metavar='add', nargs=1, type=str, help="ip::port of node")
-    parser.add_argument('start', metavar='start', nargs=1, type=int, help="start block")
-    parser.add_argument('end', metavar='end', nargs=1, type=int, help="end block")
+    parser.add_argument('--start', type=int, help="start block", default=1)
+    parser.add_argument('--end', type=int, help="end block", default=1000)
     
     args = parser.parse_args()
 
     print('address: ', args.address)
     url = f'http://' + args.address[0]
     print('start: ', args.start)
-    start = args.start[0]
+    start = args.start
     print('end: ', args.end)
-    end = args.end[0]
+    end = args.end
 
     blocks_with_duplicates = []
 
@@ -49,10 +49,9 @@ if __name__ == "__main__":
         response = json.loads(result.text)
         ops = response["result"]["ops"]
         length = len(ops)
-        print(f'int block {i}  there is {length} ops', end='')
         reward_operations = get_reward_operations(ops)
         size = len(reward_operations)
-        print(f'including {size} producer reward operations')
+        print(f'int block {i} there is {length} ops including {size} producer reward operations')
 
         if(size>1):
             blocks_with_duplicates.append(i)
@@ -62,5 +61,5 @@ if __name__ == "__main__":
         print('THERE ARE NO DUPLICATES')
     else:
         print('duplicates:')
-        prit(blocks_with_duplicates)
+        print(blocks_with_duplicates)
 
