@@ -71,7 +71,8 @@ class rc_account_object : public object< rc_account_object_type, rc_account_obje
     asset                 vests_delegated_to_pools = asset( 0, VESTS_SYMBOL );
     fc::array< account_name_type, HIVE_RC_MAX_SLOTS > indel_slots;
 
-    uint32_t              out_delegations = 0;
+    uint8_t               out_delegations = 0;
+
     // This is used for bug-catching, to match that the vesting shares in a
     // pre-op are equal to what they were at the last post-op.
     int64_t               last_max_rc = 0;
@@ -92,7 +93,7 @@ class rc_delegation_pool_object : public object< rc_delegation_pool_object_type,
     account_name_type             account;
     asset_symbol_type             asset_symbol;
 
-    hive::chain::util::manabar   rc_pool_manabar;
+    hive::chain::util::manabar    rc_pool_manabar;
     int64_t                       max_rc = 0;
   CHAINBASE_UNPACK_CONSTRUCTOR(rc_delegation_pool_object);
 };
