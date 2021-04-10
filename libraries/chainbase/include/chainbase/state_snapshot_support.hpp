@@ -13,12 +13,6 @@
 #include <string>
 #include <vector>
 
-namespace mira
-{
-template< typename Arg1, typename Arg2, typename Arg3 >
-struct multi_index_adapter;
-} /// namespace mira
-
 namespace chainbase
 {
 
@@ -286,19 +280,8 @@ private:
     }
 
   private:
-    template <class ContainerType>
-    struct IteratorProvider
-      {
-      typedef typename ContainerType::iterator iterator;
-      };
 
-    template< typename Arg1, typename Arg2, typename Arg3 >
-    struct IteratorProvider<mira::multi_index_adapter< Arg1, Arg2, Arg3 > >
-      {
-      typedef typename mira::multi_index_adapter< Arg1, Arg2, Arg3 >::iter_type iterator;
-      };
-
-    typedef typename IteratorProvider<MultiIndexType>::iterator iterator;
+    typedef typename MultiIndexType::iterator iterator;
     const MultiIndexType& _data_source;
     iterator _start;
     iterator _end;

@@ -35,6 +35,8 @@ namespace hive { namespace chain {
 
   class block_log {
     public:
+      typedef uint8_t block_flags_t;
+
       block_log();
       ~block_log();
 
@@ -47,21 +49,16 @@ namespace hive { namespace chain {
 
       uint64_t append( const signed_block& b );
       void flush();
-      std::pair< signed_block, uint64_t > read_block( uint64_t file_pos )const;
-      optional< std::pair< signed_block, uint64_t > > read_block_by_num( uint32_t block_num )const;
+      //TODOoptional<std::pair<std::vector<char>, block_flags_t>> read_raw_block_data_by_num(uint32_t block_num) const;
+      optional< signed_block > read_block_by_num( uint32_t block_num )const;
+      vector<signed_block> read_block_range_by_num( uint32_t first_block_num, uint32_t count )const;
 
       /**
         * Return offset of block in file, or block_log::npos if it does not exist.
         */
       uint64_t get_block_pos( uint32_t block_num ) const;
       signed_block read_head()const;
-      const optional< signed_block >& head()const;
-
-      /*
-        * Used by the database to skip locking when reindexing
-        * APIs don't work at this point, so there is no danger.
-        */
-      void set_locking( bool );
+      const boost::shared_ptr<signed_block> head() const;
 
       static const uint64_t npos = std::numeric_limits<uint64_t>::max();
 

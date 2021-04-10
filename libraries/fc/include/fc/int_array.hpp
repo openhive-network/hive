@@ -15,7 +15,6 @@ template<typename T, size_t N>
 class int_array
 {
     public:
-       int_array(){ memset( data, 0, sizeof(data) ); }
 
        T&       at( size_t pos )      { FC_ASSERT( pos < N); return data[pos]; }
        const T& at( size_t pos )const { FC_ASSERT( pos < N); return data[pos]; }
@@ -31,7 +30,7 @@ class int_array
 
        size_t       size()const   { return N; }
 
-       T data[N];
+       T data[N] = { };
 };
 
 template<typename T,size_t N> struct get_typename< fc::int_array<T,N> >

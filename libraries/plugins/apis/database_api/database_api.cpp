@@ -107,6 +107,7 @@ class database_api_impl
       (list_smt_token_emissions)
       (find_smt_token_emissions)
 #endif
+      (is_known_transaction)
     )
 
     template< typename ApiResultType, typename ResultType >
@@ -148,7 +149,7 @@ class database_api_impl
         auto itr = idx.iterator_to(*(_db.get_index<IndexType, hive::chain::by_id>().find( id )));
         auto end = idx.end();
 
-        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
       else if( direction == descending )
       {
@@ -156,7 +157,7 @@ class database_api_impl
         auto iter  = boost::make_reverse_iterator( index_it );
         auto iter_end = boost::make_reverse_iterator( idx.begin() );
 
-        iteration_loop< ResultType, OnPushType, FilterType >( iter, iter_end, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( iter, iter_end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
     }
 
@@ -172,7 +173,7 @@ class database_api_impl
     )
     {
       if ( last_index.valid() ) {
-        iterate_results_from_index< IndexType, OrderType >( *last_index, result, limit, std::move(on_push), std::move(filter), direction );
+        iterate_results_from_index< IndexType, OrderType >( *last_index, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter), direction );
         return;
       }
 
@@ -182,14 +183,14 @@ class database_api_impl
         auto itr = idx.lower_bound( start );
         auto end = idx.end();
 
-        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
       else if( direction == descending )
       {
         auto iter = boost::make_reverse_iterator( idx.upper_bound(start) );
         auto end_iter = boost::make_reverse_iterator( idx.begin() );
 
-        iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
     }
 
@@ -205,7 +206,7 @@ class database_api_impl
     {
       if( last_index.valid() )
       {
-        iterate_results_from_index< IndexType, OrderType >( *last_index, result, limit, std::move( on_push ), std::move( filter ), direction );
+        iterate_results_from_index< IndexType, OrderType >( *last_index, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter), direction );
         return;
       }
 
@@ -215,14 +216,14 @@ class database_api_impl
         auto itr = idx.begin();
         auto end = idx.end();
 
-        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
       else if( direction == descending )
       {
         auto iter = boost::make_reverse_iterator( idx.end() );
         auto end_iter = boost::make_reverse_iterator( idx.begin() );
 
-        iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
     }
 
@@ -468,8 +469,15 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
     case( by_proxy ):
     {
       auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+      account_id_type proxy_id;
+      if( key.first != HIVE_PROXY_TO_SELF_ACCOUNT )
+      {
+        const auto* proxy = _db.find_account( key.first );
+        FC_ASSERT( proxy != nullptr, "Given proxy account does not exist." );
+        proxy_id = proxy->get_id();
+      }
       iterate_results< chain::account_index, chain::by_proxy >(
-        boost::make_tuple( key.first, key.second ),
+        boost::make_tuple( proxy_id, key.second ),
         result.accounts,
         args.limit,
         [&]( const account_object& a, const database& db ){ return api_account_object( a, db, args.delayed_votes_active ); },
@@ -1109,7 +1117,7 @@ DEFINE_API_IMPL(database_api_impl, get_comment_pending_payouts)
     }
   }
 
-  return std::move(retval);
+  return retval;
 }
 
 /* Comments */
@@ -1894,6 +1902,13 @@ DEFINE_API_IMPL( database_api_impl, find_smt_token_emissions )
 
 #endif
 
+DEFINE_API_IMPL( database_api_impl, is_known_transaction )
+{
+  is_known_transaction_return result;
+  result.is_known = _db.is_known_transaction(args.transaction_id);
+  return result;
+}
+
 DEFINE_LOCKLESS_APIS( database_api, (get_config)(get_version) )
 
 DEFINE_READ_APIS( database_api,
@@ -1954,6 +1969,7 @@ DEFINE_READ_APIS( database_api,
   (list_smt_token_emissions)
   (find_smt_token_emissions)
 #endif
+  (is_known_transaction)
 )
 
 } } } // hive::plugins::database_api

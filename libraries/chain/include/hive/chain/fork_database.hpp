@@ -77,6 +77,7 @@ namespace hive { namespace chain {
                                           block_id_type second)const;
       shared_ptr<fork_item>            walk_main_branch_to_num( uint32_t block_num )const;
       shared_ptr<fork_item>            fetch_block_on_main_branch_by_number( uint32_t block_num )const;
+      vector<fork_item>                fetch_block_range_on_main_branch_by_number( const uint32_t first_block_num, const uint32_t count )const;
 
       struct block_id;
       struct block_num;

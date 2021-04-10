@@ -28,6 +28,8 @@
 #define CHECK_ARG_SIZE( s ) \
   FC_ASSERT( args.size() == s, "Expected #s argument(s), was ${n}", ("n", args.size()) );
 
+#define ASSET_TO_REAL( asset ) (double)( asset.amount.value )
+
 namespace hive { namespace plugins { namespace condenser_api {
 
 namespace detail
@@ -132,6 +134,7 @@ namespace detail
         (get_recent_trades)
         (get_market_history)
         (get_market_history_buckets)
+        (is_known_transaction)
         (list_proposals)
         (find_proposals)
         (list_proposal_votes)
@@ -173,7 +176,7 @@ namespace detail
 
     auto tags = _tags_api->get_trending_tags( { args[0].as< string >(), args[1].as< uint32_t >() } ).tags;
     vector< api_tag_object > result;
-
+    result.reserve( tags.size() );
     for( const auto& t : tags )
     {
       result.push_back( api_tag_object( t ) );
@@ -681,11 +684,10 @@ namespace detail
     {
       result.push_back( *itr );
 
-      // if( itr->sell_price.base.symbol == HIVE_SYMBOL )
-      //    result.back().real_price = (~result.back().sell_price).to_real();
-      // else
-      //    result.back().real_price = (result.back().sell_price).to_real();
-      result.back().real_price = 0.0;
+      if( itr->sell_price.base.symbol == HIVE_SYMBOL )
+        result.back().real_price = ASSET_TO_REAL( itr->sell_price.quote ) / ASSET_TO_REAL( itr->sell_price.base );
+      else
+        result.back().real_price =  ASSET_TO_REAL( itr->sell_price.base ) / ASSET_TO_REAL( itr->sell_price.quote );
       ++itr;
     }
 
@@ -796,244 +798,77 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_post_discussions_by_payout )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_post_discussions_by_payout(
-      args[0].as< tags::get_post_discussions_by_payout_args >() ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_comment_discussions_by_payout )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_comment_discussions_by_payout(
-      args[0].as< tags::get_comment_discussions_by_payout_args >() ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_trending )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_discussions_by_trending(
-      args[0].as< tags::get_discussions_by_trending_args >() ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_created )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_discussions_by_created(
-      args[0].as< tags::get_discussions_by_created_args >() ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_active )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_discussions_by_active(
-      args[0].as< tags::get_discussions_by_active_args >() ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_cashout )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_discussions_by_cashout(
-      args[0].as< tags::get_discussions_by_cashout_args >() ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_votes )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_discussions_by_votes(
-      args[0].as< tags::get_discussions_by_votes_args >() ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_children )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_discussions_by_children(
-      args[0].as< tags::get_discussions_by_children_args >() ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_hot )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_discussions_by_hot(
-      args[0].as< tags::get_discussions_by_hot_args >() ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_feed )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_discussions_by_feed(
-      args[0].as< tags::get_discussions_by_feed_args >() ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_blog )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_discussions_by_blog(
-      args[0].as< tags::get_discussions_by_blog_args >() ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_comments )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_discussions_by_comments(
-      args[0].as< tags::get_discussions_by_comments_args >() ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_promoted )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_discussions_by_promoted(
-      args[0].as< tags::get_discussions_by_promoted_args >() ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_replies_by_last_update )
   {
-      FC_ASSERT( false, "Supported by hivemind" );
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_author_before_date )
   {
-    CHECK_ARG_SIZE( 4 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto discussions = _tags_api->get_discussions_by_author_before_date( { args[0].as< account_name_type >(), args[1].as< string >(), args[2].as< time_point_sec >(), args[3].as< uint32_t >() } ).discussions;
-    vector< discussion > result;
-
-    for( auto& d : discussions )
-    {
-      result.push_back( discussion( d ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_account_history )
@@ -1176,14 +1011,7 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_feed )
   {
-    FC_ASSERT( args.size() == 2 || args.size() == 3, "Expected 2-3 arguments, was ${n}", ("n", args.size()) );
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    auto feed = _follow_api->get_feed( { args[0].as< account_name_type >(), args[1].as< uint32_t >(), args.size() == 3 ? args[2].as< uint32_t >() : 500 } ).feed;
-    get_feed_return result;
-    result.resize( feed.size() );
-    result.insert( result.end(), feed.begin(), feed.end() );
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_blog_entries )
@@ -1196,14 +1024,7 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_blog )
   {
-    FC_ASSERT( args.size() == 2 || args.size() == 3, "Expected 2-3 arguments, was ${n}", ("n", args.size()) );
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    auto blog = _follow_api->get_blog( { args[0].as< account_name_type >(), args[1].as< uint32_t >(), args.size() == 3 ? args[2].as< uint32_t >() : 500 } ).blog;
-    get_blog_return result;
-    result.resize( blog.size() );
-    result.insert( result.end(), blog.begin(), blog.end() );
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_account_reputations )
@@ -1301,6 +1122,13 @@ namespace detail
     FC_ASSERT( _market_history_api, "market_history_api_plugin not enabled." );
 
     return _market_history_api->get_market_history_buckets( {} ).bucket_sizes;
+  }
+
+  DEFINE_API_IMPL( condenser_api_impl, is_known_transaction )
+  {
+    CHECK_ARG_SIZE( 1 )
+
+    return _database_api->is_known_transaction( { args[0].as<transaction_id_type>() } ).is_known;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, list_proposals )
@@ -1592,6 +1420,7 @@ DEFINE_READ_APIS( condenser_api,
   (get_trade_history)
   (get_recent_trades)
   (get_market_history)
+  (is_known_transaction)
   (list_proposals)
   (list_proposal_votes)
   (find_proposals)

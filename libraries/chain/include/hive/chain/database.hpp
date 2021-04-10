@@ -47,26 +47,13 @@ namespace chain {
   struct prepare_snapshot_supplement_notification;
   struct load_snapshot_supplement_notification;
 
+  class database;
   
   struct hardfork_versions
   {
     fc::time_point_sec         times[ HIVE_NUM_HARDFORKS + 1 ];
     protocol::hardfork_version versions[ HIVE_NUM_HARDFORKS + 1 ];
   };
-
-  class database;
-
-#ifdef ENABLE_MIRA
-  using set_index_type_func = std::function< void(database&, mira::index_type, const boost::filesystem::path&, const boost::any&) >;
-#endif
-
-  struct index_delegate {
-#ifdef ENABLE_MIRA
-    set_index_type_func set_index_type;
-#endif
-  };
-
-  using index_delegate_map = std::map< std::string, index_delegate >;
 
   class database_impl;
   class custom_operation_interpreter;
@@ -95,7 +82,6 @@ namespace chain {
     uint64_t shared_file_size = 0;
     uint16_t shared_file_full_threshold = 0;
     uint16_t shared_file_scale_rate = 0;
-    int16_t  sps_remove_threshold = -1;
     uint32_t chainbase_flags = 0;
     bool do_validate_invariants = false;
     bool benchmark_is_enabled = false;
@@ -164,7 +150,8 @@ namespace chain {
 
     private:
 
-      uint32_t reindex_internal( const open_args& args, std::pair< signed_block, uint64_t >& block_data );
+      uint32_t reindex_internal( const open_args& args, signed_block& block );
+      void remove_expired_governance_votes();
 
     public:
 
@@ -213,19 +200,27 @@ namespace chain {
       block_id_type              get_block_id_for_num( uint32_t block_num )const;
       optional<signed_block>     fetch_block_by_id( const block_id_type& id )const;
       optional<signed_block>     fetch_block_by_number( uint32_t num )const;
+      optional<signed_block>     fetch_block_by_number_unlocked( uint32_t block_num );
+      std::vector<signed_block>  fetch_block_range_unlocked( const uint32_t starting_block_num, const uint32_t count );
       const signed_transaction   get_recent_transaction( const transaction_id_type& trx_id )const;
       std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = STEEM_CHAIN_ID;
+      /// Returns current chain-id being in use depending on applied HF
       chain_id_type get_chain_id() const;
+      /// Returns pre-HF24 chain id (if mainnet is used).
+      chain_id_type get_old_chain_id() const;
+      /// Returns post-HF24 chain id (if mainnet is used).
+      chain_id_type get_new_chain_id() const;
+
       void set_chain_id( const chain_id_type& chain_id );
 
       /** Allows to visit all stored blocks until processor returns true. Caller is responsible for block disasembling
         * const signed_block_header& - header of previous block
         * const signed_block& - block to be processed currently
       */
-      void foreach_block(std::function<bool(const signed_block_header&, const signed_block&)> processor) const;
+      void foreach_block(const std::function<bool(const signed_block_header&, const signed_block&)>& processor) const;
 
       /// Allows to process all blocks visit all transactions held there until processor returns true.
       void foreach_tx(std::function<bool(const signed_block_header&, const signed_block&,
@@ -258,7 +253,7 @@ namespace chain {
       const comment_object&  get_comment(  const account_name_type& author, const shared_string& permlink )const;
       const comment_object*  find_comment( const account_name_type& author, const shared_string& permlink )const;
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
       const comment_object&  get_comment(  const account_id_type& author, const string& permlink )const;
       const comment_object*  find_comment( const account_id_type& author, const string& permlink )const;
 
@@ -458,7 +453,7 @@ namespace chain {
       using Before = std::function< void( const asset& ) >;
       asset adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
 
-      asset create_vesting( const account_object& to_account, asset hive, bool to_reward_balance=false );
+      asset create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance=false );
 
       void adjust_total_payout( const comment_cashout_object& a, const asset& hbd, const asset& curator_hbd_value, const asset& beneficiary_value );
 
@@ -496,16 +491,18 @@ namespace chain {
 
       /** this updates the votes for all witnesses as a result of account VESTS changing */
       void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 );
+      /** like above with delta that negates all vote power for given user - both for individual witnesses and/or proxy */
+      void nullify_proxied_witness_votes( const account_object& a );
 
       /** this is called by `adjust_proxied_witness_votes` when account proxy to self */
-      void adjust_witness_votes( const account_object& a, share_type delta );
+      void adjust_witness_votes( const account_object& a, const share_type& delta );
 
       /** this updates the vote of a single witness as a result of a vote being added or removed*/
       void adjust_witness_vote( const witness_object& obj, share_type delta );
 
       /** clears all vote records for a particular account but does not update the
         * witness vote totals.  Vote totals should be updated first via a call to
-        * adjust_proxied_witness_votes( a, -a.witness_vote_weight() )
+        * nullify_proxied_witness_votes( a )
         */
       void clear_witness_votes( const account_object& a );
       void process_vesting_withdrawals();
@@ -529,7 +526,7 @@ namespace chain {
 
       uint16_t get_curation_rewards_percent() const;
 
-      share_type pay_reward_funds( share_type reward );
+      share_type pay_reward_funds( const share_type& reward );
 
       void  pay_liquidity_reward();
 
@@ -607,11 +604,6 @@ namespace chain {
       void apply_optional_action( const optional_automated_action& a );
 
       optional< chainbase::database::session >& pending_transaction_session();
-
-      void set_index_delegate( const std::string& n, index_delegate&& d );
-      const index_delegate& get_index_delegate( const std::string& n );
-      bool has_index_delegate( const std::string& n );
-      const index_delegate_map& index_delegates();
 
 #ifdef IS_TEST_NET
       bool liquidity_rewards_enabled = true;
@@ -719,14 +711,17 @@ namespace chain {
         return _current_op_in_trx;
       }
 
-      int16_t get_sps_remove_threshold() const
+      int16_t get_remove_threshold() const
       {
-        return _sps_remove_threshold;
+        return get_dynamic_global_properties().current_remove_threshold;
       }
 
-      void set_sps_remove_threshold( int16_t val )
+      void set_remove_threshold( int16_t val )
       {
-        _sps_remove_threshold = val;
+        modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+        {
+          gpo.current_remove_threshold = val;
+        } );
       }
 
       bool get_snapshot_loaded() const
@@ -781,7 +776,6 @@ namespace chain {
 
       uint16_t                      _shared_file_full_threshold = 0;
       uint16_t                      _shared_file_scale_rate = 0;
-      int16_t                       _sps_remove_threshold = -1;
 
       bool                          snapshot_loaded = false;
 
@@ -789,7 +783,6 @@ namespace chain {
       std::string                   _json_schema;
 
       util::advanced_benchmark_dumper  _benchmark_dumper;
-      index_delegate_map            _index_delegate_map;
 
       fc::signal<void(const required_action_notification&)> _pre_apply_required_action_signal;
       fc::signal<void(const required_action_notification&)> _post_apply_required_action_signal;
@@ -906,5 +899,4 @@ namespace chain {
 
     hive::plugins::chain::snapshot_load_helper& load_helper;
   };
-
 } }

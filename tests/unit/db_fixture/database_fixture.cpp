@@ -268,7 +268,6 @@ void database_fixture::open_database( uint16_t shared_file_size_in_mb )
     args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
     args.shared_file_size = 1024 * 1024 * shared_file_size_in_mb; // 8MB(default) or more:  file for testing
     args.database_cfg = hive::utilities::default_database_configuration();
-    args.sps_remove_threshold = 20;
     db->open(args);
   }
   else
@@ -521,6 +520,15 @@ void database_fixture::transfer(
   } FC_CAPTURE_AND_RETHROW( (from)(to)(amount) )
 }
 
+void database_fixture::push_transaction( const operation& op, const fc::ecc::private_key& key )
+{
+  signed_transaction tx;
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.operations.push_back( op );
+  sign( tx, key );
+  db->push_transaction( tx, 0 );
+}
+
 void database_fixture::vest( const string& from, const string& to, const asset& amount )
 {
   try
@@ -569,6 +577,18 @@ void database_fixture::vest( const string& from, const share_type& amount )
     db->push_transaction( trx, ~0 );
     trx.clear();
   } FC_CAPTURE_AND_RETHROW( (from)(amount) )
+}
+
+void database_fixture::vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )
+{
+  FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest TESTS" );
+
+  transfer_to_vesting_operation op;
+  op.from = from;
+  op.to = to;
+  op.amount = amount;
+
+  push_transaction( op, key );
 }
 
 void database_fixture::proxy( const string& account, const string& proxy )
@@ -688,6 +708,55 @@ asset database_fixture::get_vest_rewards( const string& account_name )const
 asset database_fixture::get_vest_rewards_as_hive( const string& account_name )const
 {
   return db->get_account( account_name ).get_vest_rewards_as_hive();
+}
+
+void database_fixture::post_comment_internal( const std::string& _author, const std::string& _permlink, const std::string& _title, const std::string& _body, const std::string& _parent_permlink, const fc::ecc::private_key& _key )
+{
+  comment_operation comment;
+
+  comment.author = _author;
+  comment.permlink = _permlink;
+  comment.title = _title;
+  comment.body = _body;
+  comment.parent_permlink = _parent_permlink;
+
+  signed_transaction trx;
+  trx.operations.push_back( comment );
+  trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  sign( trx, _key );
+  db->push_transaction( trx, 0 );
+  trx.signatures.clear();
+  trx.operations.clear();
+}
+
+void database_fixture::post_comment_with_block_generation( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key)
+{
+  generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
+
+  post_comment_internal( _author, _permlink, _title, _body, _parent_permlink, _key );
+}
+
+void database_fixture::post_comment( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key)
+{
+  post_comment_internal( _author, _permlink, _title, _body, _parent_permlink, _key );
+}
+
+void database_fixture::vote( std::string _author, std::string _permlink, std::string _voter, int16_t _weight, const fc::ecc::private_key& _key )
+{
+  vote_operation vote;
+
+  vote.author = _author;
+  vote.permlink = _permlink;
+  vote.voter = _voter;
+  vote.weight = _weight;
+ 
+  signed_transaction trx;
+  trx.operations.push_back( vote );
+  trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  sign( trx, _key );
+  db->push_transaction( trx, 0 );
+  trx.signatures.clear();
+  trx.operations.clear();
 }
 
 void database_fixture::sign(signed_transaction& trx, const fc::ecc::private_key& key)
@@ -975,7 +1044,7 @@ int64_t sps_proposal_database_fixture::create_proposal( std::string creator, std
   op.subject = std::to_string( cnt );
 
   const std::string permlink = "permlink" + std::to_string( cnt );
-  post_comment(creator, permlink, "title", "body", "test", key);
+  post_comment_with_block_generation(creator, permlink, "title", "body", "test", key);
 
   op.permlink = permlink;
 
@@ -998,7 +1067,7 @@ int64_t sps_proposal_database_fixture::create_proposal( std::string creator, std
   return itr->proposal_id;
 }
 
-void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key)
+void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key, time_point_sec* end_date)
 {
   signed_transaction tx;
   update_proposal_operation op;
@@ -1008,6 +1077,12 @@ void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::s
   op.daily_pay = daily_pay;
   op.subject = subject;
   op.permlink = permlink;
+
+  if (end_date != nullptr) {
+    update_proposal_end_date ped;
+    ped.end_date = *end_date;
+    op.extensions.insert(ped);
+  }
 
   tx.operations.push_back( op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
@@ -1095,45 +1170,31 @@ uint64_t sps_proposal_database_fixture::get_nr_blocks_until_daily_maintenance_bl
   return ret;
 }
 
-void sps_proposal_database_fixture::post_comment( std::string _authro, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key)
-{
-  generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
-  comment_operation comment;
-
-  comment.author = _authro;
-  comment.permlink = _permlink;
-  comment.title = _title;
-  comment.body = _body;
-  comment.parent_permlink = _parent_permlink;
-
-  signed_transaction trx;
-  trx.operations.push_back( comment );
-  trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  sign( trx, _key );
-  db->push_transaction( trx, 0 );
-  trx.signatures.clear();
-  trx.operations.clear();
-}
-
-void hf23_database_fixture::push_transaction( const operation& op, const fc::ecc::private_key& key )
+void sps_proposal_database_fixture::witness_vote( account_name_type _voter, account_name_type _witness, const fc::ecc::private_key& _key, bool _approve )
 {
   signed_transaction tx;
+  account_witness_vote_operation op;
+  op.account = _voter;
+  op.witness = _witness;
+  op.approve = _approve;
+
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.operations.push_back( op );
-  sign( tx, key );
+  sign( tx, _key );
   db->push_transaction( tx, 0 );
 }
 
-void hf23_database_fixture::vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )
+void sps_proposal_database_fixture::proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key )
 {
-  FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest TESTS" );
+  signed_transaction tx;
+  account_witness_proxy_operation op;
+  op.account = _account;
+  op.proxy = _proxy;
 
-  transfer_to_vesting_operation op;
-  op.from = from;
-  op.to = to;
-  op.amount = amount;
-
-  push_transaction( op, key );
+  tx.operations.push_back( op );
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  sign( tx, _key );
+  db->push_transaction( tx, 0 );
 }
 
 void hf23_database_fixture::delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key )
@@ -1146,15 +1207,6 @@ void hf23_database_fixture::delegate_vest( const string& delegator, const string
   push_transaction( op, key );
 }
 
-void delayed_vote_database_fixture::push_transaction( const operation& op, const fc::ecc::private_key& key )
-{
-  signed_transaction tx;
-  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  tx.operations.push_back( op );
-  sign( tx, key );
-  db->push_transaction( tx, 0 );
-}
-
 void delayed_vote_database_fixture::witness_vote( const std::string& account, const std::string& witness, const bool approve, const fc::ecc::private_key& key )
 {
   account_witness_vote_operation op;
@@ -1162,18 +1214,6 @@ void delayed_vote_database_fixture::witness_vote( const std::string& account, co
   op.account = account;
   op.witness = witness;
   op.approve = approve;
-
-  push_transaction( op, key );
-}
-
-void delayed_vote_database_fixture::vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )
-{
-  FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest TESTS" );
-
-  transfer_to_vesting_operation op;
-  op.from = from;
-  op.to = to;
-  op.amount = amount;
 
   push_transaction( op, key );
 }
@@ -1315,7 +1355,7 @@ using bip_dvd_vector = chainbase::t_vector< delayed_votes_data >;
 
 template fc::optional< size_t > delayed_vote_database_fixture::get_position_in_delayed_voting_array< bip_dvd_vector >( const bip_dvd_vector& collection, size_t day, size_t minutes );
 template bool delayed_vote_database_fixture::check_collection< dvd_vector >( const dvd_vector& collection, ushare_type idx, const fc::time_point_sec& time, const ushare_type val );
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
 template bool delayed_vote_database_fixture::check_collection< bip_dvd_vector >( const bip_dvd_vector& collection, ushare_type idx, const fc::time_point_sec& time, const ushare_type val );
 #endif
 template bool delayed_vote_database_fixture::check_collection< delayed_voting::opt_votes_update_data_items >( const delayed_voting::opt_votes_update_data_items& collection, const bool withdraw_executor, const share_type val, const account_object& obj );

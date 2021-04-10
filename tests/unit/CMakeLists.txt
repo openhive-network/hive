@@ -192,6 +192,8 @@ add_boost_test( chain_test
    proposal_tests/generating_payments_01
    proposal_tests/generating_payments_02
    proposal_tests/generating_payments_03
+   proposal_tests/generating_payments_04
+   proposal_tests/generating_payments_05
    proposal_tests/proposals_maintenance
    proposal_tests/proposal_object_apply
    proposal_tests/proposal_vote_object_apply

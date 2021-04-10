@@ -24,6 +24,7 @@
 #define DISTANCE_CALC_PRECISION (10000)
 #define BLOCK_PRODUCING_LAG_TIME (750)
 #define BLOCK_PRODUCTION_LOOP_SLEEP_TIME (200000)
+#define DEFAULT_WITNESS_PARTICIPATION (33)
 
 
 namespace hive { namespace plugins { namespace witness {
@@ -70,7 +71,7 @@ namespace detail {
     block_production_condition::block_production_condition_enum maybe_produce_block(fc::mutable_variant_object& capture);
 
     bool     _production_enabled              = false;
-    uint32_t _required_witness_participation  = 33 * HIVE_1_PERCENT;
+    uint32_t _required_witness_participation  = DEFAULT_WITNESS_PARTICIPATION * HIVE_1_PERCENT;
     uint32_t _production_skip_flags           = chain::database::skip_nothing;
 
     std::map< hive::protocol::public_key_type, fc::ecc::private_key > _private_keys;
@@ -462,7 +463,7 @@ void witness_plugin::set_program_options(
   string witness_id_example = "initwitness";
   cfg.add_options()
       ("enable-stale-production", bpo::value<bool>()->default_value( false ), "Enable block production, even if the chain is stale.")
-      ("required-participation", bpo::value< uint32_t >()->default_value( 33 ), "Percent of witnesses (0-99) that must be participating in order to produce blocks")
+      ("required-participation", bpo::value< uint32_t >()->default_value( DEFAULT_WITNESS_PARTICIPATION ), "Percent of witnesses (0-99) that must be participating in order to produce blocks")
       ("witness,w", bpo::value<vector<string>>()->composing()->multitoken(),
         ("name of witness controlled by this node (e.g. " + witness_id_example + " )" ).c_str() )
       ("private-key", bpo::value<vector<string>>()->composing()->multitoken(), "WIF PRIVATE KEY to be used by one or more witnesses or miners" )
@@ -495,6 +496,8 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
   }
 
   my->_production_enabled = options.at( "enable-stale-production" ).as< bool >();
+  if (my->_production_enabled)
+    wlog("warning: stale production is enabled, make sure you know what you are doing.");
 
   if( my->_witnesses.size() > 0 )
   {
@@ -507,6 +510,8 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
   {
     my->_required_witness_participation = HIVE_1_PERCENT * options.at( "required-participation" ).as< uint32_t >();
   }
+  if ( my->_required_witness_participation < DEFAULT_WITNESS_PARTICIPATION * HIVE_1_PERCENT)
+    wlog("warning: required witness participation=${required_witness_participation}, normally this should be set to ${default_witness_participation}",("required_witness_participation",my->_required_witness_participation / HIVE_1_PERCENT)("default_witness_participation",DEFAULT_WITNESS_PARTICIPATION));
 
   my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
     [&]( const chain::block_notification& note ){ my->on_post_apply_block( note ); }, *this, 0 );
@@ -515,8 +520,9 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
   my->_post_apply_operation_conn = my->_db.add_pre_apply_operation_handler(
     [&]( const chain::operation_notification& note ){ my->on_post_apply_operation( note ); }, *this, 0);
 
+  //if a producing witness, allow up to 1/3 of the block interval for writing blocks/transactions (2x a normal node)
   if( my->_witnesses.size() && my->_private_keys.size() )
-    my->_chain_plugin.set_write_lock_hold_time( -1 );
+    my->_chain_plugin.set_write_lock_hold_time( HIVE_BLOCK_INTERVAL * 1000 / 3 ); // units = milliseconds
 
   HIVE_ADD_PLUGIN_INDEX(my->_db, witness_custom_op_index);
 

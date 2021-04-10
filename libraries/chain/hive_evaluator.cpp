@@ -379,10 +379,16 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
     auth.last_owner_update = fc::time_point_sec::min();
   });
 
+  asset initial_vesting_shares;
   if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) && o.fee.amount > 0 )
   {
-    _db.create_vesting( new_account, o.fee );
+    initial_vesting_shares = _db.create_vesting( new_account, o.fee );
   }
+  else
+  {
+    initial_vesting_shares = asset(0, VESTS_SYMBOL);
+  }
+  _db.push_virtual_operation( account_created_operation(o.new_account_name, o.creator, initial_vesting_shares, asset(0, VESTS_SYMBOL) ) );
 }
 
 void account_create_with_delegation_evaluator::do_apply( const account_create_with_delegation_operation& o )
@@ -488,10 +494,16 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
     });
   }
 
+  asset initial_vesting_shares;
   if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) && o.fee.amount > 0 )
   {
-    _db.create_vesting( new_account, o.fee );
+    initial_vesting_shares = _db.create_vesting( new_account, o.fee );
   }
+  else
+  {
+    initial_vesting_shares = asset(0, VESTS_SYMBOL);
+  }
+  _db.push_virtual_operation( account_created_operation( o.new_account_name, o.creator, initial_vesting_shares, o.delegation) );
 }
 
 
@@ -1215,6 +1227,8 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
 
   _db.adjust_balance( from_account, -o.amount );
 
+  asset amount_vested;
+
   /*
     Voting immediately when `transfer_to_vesting` is executed is dangerous,
     because malicious accounts would take over whole HIVE network.
@@ -1223,15 +1237,18 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   */
   if( _db.has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
-    asset new_vesting = _db.adjust_account_vesting_balance( to_account, o.amount, false/*to_reward_balance*/, []( asset vests_created ) {} );
+    amount_vested = _db.adjust_account_vesting_balance( to_account, o.amount, false/*to_reward_balance*/, []( asset vests_created ) {} );
 
     delayed_voting dv( _db );
-    dv.add_delayed_value( to_account, _db.head_block_time(), new_vesting.amount.value );
+    dv.add_delayed_value( to_account, _db.head_block_time(), amount_vested.amount.value );
   }
   else
   {
-    _db.create_vesting( to_account, o.amount );   
+    amount_vested = _db.create_vesting( to_account, o.amount );   
   }
+
+  /// Emit this vop unconditionally, since VESTS balance changed immediately, indepdenent to subsequent updates of account voting power done inside `delayed_voting` mechanism.
+  _db.push_virtual_operation(transfer_to_vesting_completed_operation(from_account.name, to_account.name, o.amount, amount_vested));
 }
 
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
@@ -1383,27 +1400,22 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_operation& o )
 {
   const auto& account = _db.get_account( o.account );
-  FC_ASSERT( account.proxy != o.proxy, "Proxy must change." );
-
   FC_ASSERT( account.can_vote, "Account has declined the ability to vote and cannot proxy votes." );
+  _db.modify( account, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
-  /// remove all current votes
-  std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH+1> delta;
-  delta[0] = -account.get_real_vesting_shares();
-  for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-    delta[i+1] = -account.proxied_vsf_votes[i];
-  _db.adjust_proxied_witness_votes( account, delta );
+  _db.nullify_proxied_witness_votes( account );
 
-  if( o.proxy.size() ) {
+  if( !o.is_clearing_proxy() ) {
     const auto& new_proxy = _db.get_account( o.proxy );
+    FC_ASSERT( account.get_proxy() != new_proxy.get_id(), "Proxy must change." );
     flat_set<account_id_type> proxy_chain( { account.get_id(), new_proxy.get_id() } );
     proxy_chain.reserve( HIVE_MAX_PROXY_RECURSION_DEPTH + 1 );
 
     /// check for proxy loops and fail to update the proxy if it would create a loop
     auto cprox = &new_proxy;
-    while( cprox->proxy.size() != 0 )
+    while( cprox->has_proxy() )
     {
-      const auto& next_proxy = _db.get_account( cprox->proxy );
+      const auto& next_proxy = _db.get_account( cprox->get_proxy() );
       FC_ASSERT( proxy_chain.insert( next_proxy.get_id() ).second, "This proxy would create a proxy loop." );
       cprox = &next_proxy;
       FC_ASSERT( proxy_chain.size() <= HIVE_MAX_PROXY_RECURSION_DEPTH, "Proxy chain is too long." );
@@ -1413,16 +1425,19 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     _db.clear_witness_votes( account );
 
     _db.modify( account, [&]( account_object& a ) {
-      a.proxy = o.proxy;
+      a.set_proxy( new_proxy );
     });
 
     /// add all new votes
-    for( int i = 0; i <= HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-      delta[i] = -delta[i];
+    std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
+    delta[0] = account.get_real_vesting_shares();
+    for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
+      delta[i+1] = account.proxied_vsf_votes[i];
     _db.adjust_proxied_witness_votes( account, delta );
   } else { /// we are clearing the proxy which means we simply update the account
+    FC_ASSERT( account.has_proxy(), "Proxy must change." );
     _db.modify( account, [&]( account_object& a ) {
-        a.proxy = o.proxy;
+      a.clear_proxy();
     });
   }
 }
@@ -1431,10 +1446,9 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 void account_witness_vote_evaluator::do_apply( const account_witness_vote_operation& o )
 {
   const auto& voter = _db.get_account( o.account );
-  FC_ASSERT( voter.proxy.size() == 0, "A proxy is currently set, please clear the proxy before voting for a witness." );
-
-  if( o.approve )
-    FC_ASSERT( voter.can_vote, "Account has declined its voting rights." );
+  FC_ASSERT( !voter.has_proxy(), "A proxy is currently set, please clear the proxy before voting for a witness." );
+  FC_ASSERT( voter.can_vote, "Account has declined its voting rights." );
+  _db.modify( voter, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   const auto& witness = _db.get_witness( o.witness );
 
@@ -1930,7 +1944,8 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   else
   {
-    FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_1_24 ), "Votes evaluating for comment that is paid out is forbidden." );
+    /// Remove this assertion after HF25
+    FC_ASSERT((!_db.has_hardfork( HIVE_HARDFORK_1_24 ) || _db.has_hardfork( HIVE_HARDFORK_1_25 )), "Votes evaluating for comment that is paid out is forbidden." );
   }
 
   if( !comment_cashout || _db.calculate_discussion_payout_time( *comment_cashout ) == fc::time_point_sec::maximum() )
@@ -2162,17 +2177,33 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         }
         else
         {
-          cv.weight = new_weight - old_weight;
+          uint64_t _seconds = (cv.last_update - comment_cashout->get_creation_time()).to_seconds();
 
+          cv.weight = new_weight - old_weight;
           max_vote_weight = cv.weight;
 
-          /// discount weight by time
-          uint128_t w(max_vote_weight);
-          uint64_t delta_t = std::min( uint64_t((cv.last_update - comment_cashout->get_creation_time()).to_seconds()), uint64_t( dgpo.reverse_auction_seconds ) );
+          //In HF25 `dgpo.reverse_auction_seconds` is set to zero. It's replaced by `dgpo.early_voting_seconds` and `dgpo.mid_voting_seconds`.
+          if( _seconds < dgpo.reverse_auction_seconds )
+          {
+            /// discount weight by time
+            uint128_t w(max_vote_weight);
+            uint64_t delta_t = std::min( _seconds, uint64_t( dgpo.reverse_auction_seconds ) );
 
-          w *= delta_t;
-          w /= dgpo.reverse_auction_seconds;
-          cv.weight = w.to_uint64();
+            w *= delta_t;
+            w /= dgpo.reverse_auction_seconds;
+            cv.weight = w.to_uint64();
+          }
+          else if( _seconds >= dgpo.early_voting_seconds && dgpo.early_voting_seconds )
+          {
+            //Following values are chosen empirically
+            const uint32_t phase_1_factor = 2;
+            const uint32_t phase_2_factor = 8;
+
+            if( _seconds < dgpo.mid_voting_seconds )
+              cv.weight /= phase_1_factor;
+            else
+              cv.weight /= phase_2_factor;
+          }
         }
       }
       else
@@ -2488,10 +2519,15 @@ void pow_apply( database& db, Operation o )
 
   /// pay the witness that includes this POW
   const auto& inc_witness = db.get_account( dgp.current_witness );
+  asset actual_reward;
   if( db.head_block_num() < HIVE_START_MINER_VOTING_BLOCK )
+  {
     db.adjust_balance( inc_witness, pow_reward );
+    actual_reward = pow_reward;
+  }
   else
-    db.create_vesting( inc_witness, pow_reward );
+    actual_reward = db.create_vesting( inc_witness, pow_reward );
+  db.push_virtual_operation( pow_reward_operation( dgp.current_witness, actual_reward ) );
 }
 
 void pow_evaluator::do_apply( const pow_operation& o ) {
@@ -2588,7 +2624,8 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     db.adjust_supply( inc_reward, true );
 
     const auto& inc_witness = db.get_account( dgp.current_witness );
-    db.create_vesting( inc_witness, inc_reward );
+    asset actual_reward = db.create_vesting( inc_witness, inc_reward );
+    db.push_virtual_operation( pow_reward_operation( dgp.current_witness, actual_reward ) );
   }
 }
 
@@ -2778,16 +2815,16 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
 {
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
 
-  if ( account_to_recover.recovery_account.length() )   // Make sure recovery matches expected recovery account
+  if ( account_to_recover.has_recovery_account() )   // Make sure recovery matches expected recovery account
   {
-    FC_ASSERT( account_to_recover.recovery_account == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
+    FC_ASSERT( account_to_recover.get_recovery_account() == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
     if( o.recovery_account == HIVE_TEMP_ACCOUNT )
       wlog( "Recovery by temp account" );
   }
   else                                                  // Empty string recovery account defaults to top witness
-    FC_ASSERT( _db.get_index< witness_index >().indices().get< by_vote_name >().begin()->owner == o.recovery_account, "Top witness must recover an account with no recovery partner." );
+    FC_ASSERT( (_db.get_index< witness_index, by_vote_name >().begin()->owner == o.recovery_account), "Top witness must recover an account with no recovery partner." );
 
-  const auto& recovery_request_idx = _db.get_index< account_recovery_request_index >().indices().get< by_account >();
+  const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
 
   if( request == recovery_request_idx.end() ) // New Request
@@ -2795,7 +2832,7 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
     FC_ASSERT( !o.new_owner_authority.is_impossible(), "Cannot recover using an impossible authority." );
     FC_ASSERT( o.new_owner_authority.weight_threshold, "Cannot recover using an open authority." );
 
-    if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+    if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     {
       validate_auth_size( o.new_owner_authority );
     }
@@ -2809,7 +2846,7 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
       }
     }
 
-    _db.create< account_recovery_request_object >( o.account_to_recover, o.new_owner_authority,
+    _db.create< account_recovery_request_object >( account_to_recover, o.new_owner_authority,
       _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
   }
   else if( o.new_owner_authority.weight_threshold == 0 ) // Cancel Request if authority is open
@@ -2831,8 +2868,7 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
 
     _db.modify( *request, [&]( account_recovery_request_object& req )
     {
-      req.new_owner_authority = o.new_owner_authority;
-      req.expires = _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD;
+      req.set_new_owner_authority( o.new_owner_authority, _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
     });
   }
 }
@@ -2844,13 +2880,13 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   if( _db.has_hardfork( HIVE_HARDFORK_0_12 ) )
     FC_ASSERT( _db.head_block_time() - account.last_account_recovery > HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
 
-  const auto& recovery_request_idx = _db.get_index< account_recovery_request_index >().indices().get< by_account >();
+  const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
 
   FC_ASSERT( request != recovery_request_idx.end(), "There are no active recovery requests for this account." );
-  FC_ASSERT( request->new_owner_authority == o.new_owner_authority, "New owner authority does not match recovery request." );
+  FC_ASSERT( request->get_new_owner_authority() == o.new_owner_authority, "New owner authority does not match recovery request." );
 
-  const auto& recent_auth_idx = _db.get_index< owner_authority_history_index >().indices().get< by_account >();
+  const auto& recent_auth_idx = _db.get_index< owner_authority_history_index, by_account >();
   auto hist = recent_auth_idx.lower_bound( o.account_to_recover );
   bool found = false;
 
@@ -2873,27 +2909,21 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
 
 void change_recovery_account_evaluator::do_apply( const change_recovery_account_operation& o )
 {
-  _db.get_account( o.new_recovery_account ); // Simply validate account exists
+  const auto& new_recovery_account = _db.get_account( o.new_recovery_account ); // validate account exists
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
 
-  const auto& change_recovery_idx = _db.get_index< change_recovery_account_request_index >().indices().get< by_account >();
+  const auto& change_recovery_idx = _db.get_index< change_recovery_account_request_index, by_account >();
   auto request = change_recovery_idx.find( o.account_to_recover );
 
   if( request == change_recovery_idx.end() ) // New request
   {
-    _db.create< change_recovery_account_request_object >( [&]( change_recovery_account_request_object& req )
-    {
-      req.account_to_recover = o.account_to_recover;
-      req.recovery_account = o.new_recovery_account;
-      req.effective_on = _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD;
-    });
+    _db.create< change_recovery_account_request_object >( account_to_recover, new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
   }
-  else if( account_to_recover.recovery_account != o.new_recovery_account ) // Change existing request
+  else if( account_to_recover.get_recovery_account() != o.new_recovery_account ) // Change existing request
   {
     _db.modify( *request, [&]( change_recovery_account_request_object& req )
     {
-      req.recovery_account = o.new_recovery_account;
-      req.effective_on = _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD;
+      req.set_recovery_account( new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
     });
   }
   else // Request exists and changing back to current recovery account
@@ -2981,6 +3011,9 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
 void reset_account_evaluator::do_apply( const reset_account_operation& op )
 {
   FC_ASSERT( false, "Reset Account Operation is currently disabled." );
+  //ABW: see discussion in https://github.com/steemit/steem/issues/240
+  //apparently the idea was never put in active use and it does not seem it ever will
+  //related member of account_object was removed as it was taking space with no purpose
 /*
   const auto& acnt = _db.get_account( op.account_to_reset );
   auto band = _db.find< account_bandwidth_object, by_account_bandwidth_type >( boost::make_tuple( op.account_to_reset, bandwidth_type::old_forum ) );
@@ -2995,6 +3028,7 @@ void reset_account_evaluator::do_apply( const reset_account_operation& op )
 void set_reset_account_evaluator::do_apply( const set_reset_account_operation& op )
 {
   FC_ASSERT( false, "Set Reset Account Operation is currently disabled." );
+  //related to reset_account_operation
 /*
   const auto& acnt = _db.get_account( op.account );
   _db.get_account( op.reset_account );

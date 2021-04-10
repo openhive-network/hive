@@ -92,7 +92,7 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_transaction )
 DEFINE_API_IMPL( account_history_api_chainbase_impl, get_account_history )
 {
   FC_ASSERT( args.limit <= 1000, "limit of ${l} is greater than maxmimum allowed", ("l",args.limit) );
-  FC_ASSERT( args.start >= args.limit, "start must be greater than limit" );
+  FC_ASSERT( args.start >= args.limit-1, "start must be greater than or equal to limit-1 (start is 0-based index)" );
 
   FC_ASSERT(args.include_reversible.valid() == false, "Supported only in AH-Rocksdb plugin");
 
@@ -159,7 +159,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_ops_in_block )
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
 {
   FC_ASSERT( args.limit <= 1000, "limit of ${l} is greater than maxmimum allowed", ("l",args.limit) );
-  FC_ASSERT( args.start >= args.limit, "start must be greater than limit" );
+  FC_ASSERT( args.start >= args.limit-1, "start must be greater than or equal to limit-1 (start is 0-based index)" );
 
   get_account_history_return result;
 
@@ -283,7 +283,7 @@ struct filtering_visitor
   (clear_null_account_balance_operation)(proposal_pay_operation)(sps_fund_operation)
   (hardfork_hive_operation)(hardfork_hive_restore_operation)(delayed_voting_operation)
   (consolidate_treasury_balance_operation)(effective_comment_vote_operation)(ineffective_delete_comment_operation)
-  (sps_convert_operation) )
+  (sps_convert_operation)(expired_account_notification_operation)(changed_recovery_account_operation) )
 
 private:
   uint32_t _filter = 0;

@@ -37,6 +37,8 @@ struct get_required_auth_visitor
   template< typename T >
   void operator()( const T& v )const
   {
+    /// Here GCC 10.1 generates fake warning related to uninitialized variables.
+    /// GCC 10.2 has fixed this problem
     v.get_required_active_authorities( active );
     v.get_required_owner_authorities( owner );
     v.get_required_posting_authorities( posting );

@@ -93,31 +93,33 @@ struct get_account_history_return
 
 enum enum_vops_filter : uint32_t
 {
-  fill_convert_request_operation          = 0x000001,
-  author_reward_operation                 = 0x000002,
-  curation_reward_operation               = 0x000004,
-  comment_reward_operation                = 0x000008,
-  liquidity_reward_operation              = 0x000010,
-  interest_operation                      = 0x000020,
-  fill_vesting_withdraw_operation         = 0x000040,
-  fill_order_operation                    = 0x000080,
-  shutdown_witness_operation              = 0x000100,
-  fill_transfer_from_savings_operation    = 0x000200,
-  hardfork_operation                      = 0x000400,
-  comment_payout_update_operation         = 0x000800,
-  return_vesting_delegation_operation     = 0x001000,
-  comment_benefactor_reward_operation     = 0x002000,
-  producer_reward_operation               = 0x004000,
-  clear_null_account_balance_operation    = 0x008000,
-  proposal_pay_operation                  = 0x010000,
-  sps_fund_operation                      = 0x020000,
-  hardfork_hive_operation                 = 0x040000,
-  hardfork_hive_restore_operation         = 0x080000,
-  delayed_voting_operation                = 0x100000,
-  consolidate_treasury_balance_operation  = 0x200000,
-  effective_comment_vote_operation        = 0x400000,
-  ineffective_delete_comment_operation    = 0x800000,
-  sps_convert_operation                   = 0x1000000
+  fill_convert_request_operation          = 0x00000001,
+  author_reward_operation                 = 0x00000002,
+  curation_reward_operation               = 0x00000004,
+  comment_reward_operation                = 0x00000008,
+  liquidity_reward_operation              = 0x00000010,
+  interest_operation                      = 0x00000020,
+  fill_vesting_withdraw_operation         = 0x00000040,
+  fill_order_operation                    = 0x00000080,
+  shutdown_witness_operation              = 0x00000100,
+  fill_transfer_from_savings_operation    = 0x00000200,
+  hardfork_operation                      = 0x00000400,
+  comment_payout_update_operation         = 0x00000800,
+  return_vesting_delegation_operation     = 0x00001000,
+  comment_benefactor_reward_operation     = 0x00002000,
+  producer_reward_operation               = 0x00004000,
+  clear_null_account_balance_operation    = 0x00008000,
+  proposal_pay_operation                  = 0x00010000,
+  sps_fund_operation                      = 0x00020000,
+  hardfork_hive_operation                 = 0x00040000,
+  hardfork_hive_restore_operation         = 0x00080000,
+  delayed_voting_operation                = 0x00100000,
+  consolidate_treasury_balance_operation  = 0x00200000,
+  effective_comment_vote_operation        = 0x00400000,
+  ineffective_delete_comment_operation    = 0x00800000,
+  sps_convert_operation                   = 0x01000000,
+  expired_account_notification_operation  = 0x02000000,
+  changed_recovery_account_operation      = 0x04000000
 };
 
 /** Allows to specify range of blocks to retrieve virtual operations for.
@@ -125,7 +127,7 @@ enum enum_vops_filter : uint32_t
   *  \param block_range_end   - last block number (exclusive) to search for virtual operations
   *  \param operation_begin   - starting virtual operation in given block (inclusive)
   *  \param limit             - a limit of retrieved operations
-  *  \param block_range_end   - a filter that decides which an operation matches - used bitwise filtering equals to position in `hive::protocol::operation`
+  *  \param filter            - a filter that decides which an operation matches - used bitwise filtering equals to position in `hive::protocol::operation`
   */
 struct enum_virtual_ops_args
 {

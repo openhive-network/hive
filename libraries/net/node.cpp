@@ -657,10 +657,10 @@ namespace graphene { namespace net {
 
       void close();
 
-      void accept_connection_task(peer_connection_ptr new_peer);
+      void accept_connection_task(const peer_connection_ptr& new_peer);
       void accept_loop();
       void send_hello_message(const peer_connection_ptr& peer);
-      void connect_to_task(peer_connection_ptr new_peer, const fc::ip::endpoint& remote_endpoint);
+      void connect_to_task(const peer_connection_ptr& new_peer, const fc::ip::endpoint& remote_endpoint);
       bool is_connection_to_endpoint_in_progress(const fc::ip::endpoint& remote_endpoint);
 
       void move_peer_to_active_list(const peer_connection_ptr& peer);
@@ -1356,7 +1356,7 @@ namespace graphene { namespace net {
 
         uint32_t handshaking_timeout = _node_configuration.peer_inactivity_timeout;
         fc::time_point handshaking_disconnect_threshold = fc::time_point::now() - fc::seconds(handshaking_timeout);
-        for( const peer_connection_ptr handshaking_peer : _handshaking_connections )
+        for( const peer_connection_ptr& handshaking_peer : _handshaking_connections )
           if( handshaking_peer->connection_initiation_time < handshaking_disconnect_threshold &&
               handshaking_peer->get_last_message_received_time() < handshaking_disconnect_threshold &&
               handshaking_peer->get_last_message_sent_time() < handshaking_disconnect_threshold )
@@ -1723,13 +1723,13 @@ namespace graphene { namespace net {
         dlog("is_already_connected_to_id returning true because the peer is us");
         return true;
       }
-      for (const peer_connection_ptr active_peer : _active_connections)
+      for (const peer_connection_ptr& active_peer : _active_connections)
         if (node_id == active_peer->node_id)
         {
           dlog("is_already_connected_to_id returning true because the peer is already in our active list");
           return true;
         }
-      for (const peer_connection_ptr handshaking_peer : _handshaking_connections)
+      for (const peer_connection_ptr& handshaking_peer : _handshaking_connections)
         if (node_id == handshaking_peer->node_id)
         {
           dlog("is_already_connected_to_id returning true because the peer is already in our handshaking list");
@@ -2917,7 +2917,7 @@ namespace graphene { namespace net {
 
         bool we_advertised_this_item_to_a_peer = false;
         bool we_requested_this_item_from_a_peer = false;
-        for (const peer_connection_ptr peer : _active_connections)
+        for (const peer_connection_ptr& peer : _active_connections)
         {
           if (peer->inventory_advertised_to_peer.find(advertised_item_id) != peer->inventory_advertised_to_peer.end())
           {
@@ -3238,7 +3238,7 @@ namespace graphene { namespace net {
           }
         }
       }
-      else
+      else //client did not accept block
       {
         // invalid message received
         for (const peer_connection_ptr& peer : _active_connections)
@@ -3886,15 +3886,15 @@ namespace graphene { namespace net {
 
         size_t minutes_to_average = std::min(_average_network_write_speed_minutes.size(), (size_t)15);
         boost::circular_buffer<uint32_t>::iterator start_iter = _average_network_write_speed_minutes.end() - minutes_to_average;
-        reply.upload_rate_fifteen_minutes = std::accumulate(start_iter, _average_network_write_speed_minutes.end(), 0) / (uint32_t)minutes_to_average;
+        reply.upload_rate_fifteen_minutes = std::accumulate(start_iter, _average_network_write_speed_minutes.end(), 0u) / (uint32_t)minutes_to_average;
         start_iter = _average_network_read_speed_minutes.end() - minutes_to_average;
-        reply.download_rate_fifteen_minutes = std::accumulate(start_iter, _average_network_read_speed_minutes.end(), 0) / (uint32_t)minutes_to_average;
+        reply.download_rate_fifteen_minutes = std::accumulate(start_iter, _average_network_read_speed_minutes.end(), 0u) / (uint32_t)minutes_to_average;
 
         minutes_to_average = std::min(_average_network_write_speed_minutes.size(), (size_t)60);
         start_iter = _average_network_write_speed_minutes.end() - minutes_to_average;
-        reply.upload_rate_one_hour = std::accumulate(start_iter, _average_network_write_speed_minutes.end(), 0) / (uint32_t)minutes_to_average;
+        reply.upload_rate_one_hour = std::accumulate(start_iter, _average_network_write_speed_minutes.end(), 0u) / (uint32_t)minutes_to_average;
         start_iter = _average_network_read_speed_minutes.end() - minutes_to_average;
-        reply.download_rate_one_hour = std::accumulate(start_iter, _average_network_read_speed_minutes.end(), 0) / (uint32_t)minutes_to_average;
+        reply.download_rate_one_hour = std::accumulate(start_iter, _average_network_read_speed_minutes.end(), 0u) / (uint32_t)minutes_to_average;
       }
 
       fc::time_point now = fc::time_point::now();
@@ -4010,7 +4010,7 @@ namespace graphene { namespace net {
       peer->number_of_unfetched_item_ids = 0;
       peer->we_need_sync_items_from_peer = true;
       peer->last_block_delegate_has_seen = item_hash_t();
-      peer->last_block_time_delegate_has_seen = _delegate->get_block_time(item_hash_t());
+      peer->last_block_time_delegate_has_seen = fc::time_point_sec::min();
       peer->inhibit_fetching_sync_blocks = false;
       fetch_next_batch_of_item_ids_from_peer( peer.get() );
     }
@@ -4341,7 +4341,7 @@ namespace graphene { namespace net {
       }
     } // node_impl::close()
 
-    void node_impl::accept_connection_task( peer_connection_ptr new_peer )
+    void node_impl::accept_connection_task( const peer_connection_ptr& new_peer )
     {
       new_peer->accept_connection(); // this blocks until the secure connection is fully negotiated
       send_hello_message(new_peer);
@@ -4419,7 +4419,7 @@ namespace graphene { namespace net {
       peer->send_message(message(hello));
     }
 
-    void node_impl::connect_to_task(peer_connection_ptr new_peer,
+    void node_impl::connect_to_task(const peer_connection_ptr& new_peer,
                                     const fc::ip::endpoint& remote_endpoint)
     {
       VERIFY_CORRECT_THREAD();

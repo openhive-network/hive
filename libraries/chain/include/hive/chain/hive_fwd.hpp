@@ -7,15 +7,11 @@
 #include <chainbase/util/object_id.hpp>
 #include <chainbase/util/object_id_serialization.hpp>
 
-#ifdef ENABLE_MIRA
-#include <mira/multi_index_container_fwd.hpp>
-#endif
-
 namespace fc {
 
 namespace raw {
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
 template<typename Stream>
 inline void pack( Stream& s, const chainbase::shared_string& ss );
 template<typename Stream>

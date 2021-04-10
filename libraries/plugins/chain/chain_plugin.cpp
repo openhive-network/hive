@@ -31,7 +31,6 @@ using namespace hive;
 
 using fc::flat_map;
 using hive::chain::block_id_type;
-namespace asio = boost::asio;
 
 using hive::plugins::chain::synchronization_type;
 using index_memory_details_cntr_t = hive::utilities::benchmark_dumper::index_memory_details_cntr_t;
@@ -82,7 +81,7 @@ class chain_plugin_impl
     void start_write_processing();
     void stop_write_processing();
 
-    bool start_replay_processing( synchronization_type& on_sync );
+    bool start_replay_processing();
 
     void initial_settings();
     void open();
@@ -97,7 +96,6 @@ class chain_plugin_impl
     uint64_t                         shared_memory_size = 0;
     uint16_t                         shared_file_full_threshold = 0;
     uint16_t                         shared_file_scale_rate = 0;
-    int16_t                          sps_remove_threshold = -1;
     uint32_t                         chainbase_flags = 0;
     bfs::path                        shared_memory_dir;
     bool                             replay = false;
@@ -122,7 +120,7 @@ class chain_plugin_impl
     bool                             running = true;
     std::shared_ptr< std::thread >   write_processor_thread;
     boost::lockfree::queue< write_context* > write_queue;
-    int16_t                          write_lock_hold_time = 500;
+    int16_t                          write_lock_hold_time = HIVE_BLOCK_INTERVAL * 1000 / 6; // 1/6 of block time (millseconds)
 
     vector< string >                 loaded_plugins;
     fc::mutable_variant_object       plugin_state_opts;
@@ -131,7 +129,7 @@ class chain_plugin_impl
     database  db;
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
-  
+
     hive::utilities::benchmark_dumper   dumper;
     hive::chain::open_args              db_open_args;
     get_indexes_memory_details_type     get_indexes_memory_details;
@@ -288,7 +286,7 @@ void chain_plugin_impl::start_write_processing()
           fc::microseconds write_lock_acquisition_time = write_lock_acquired_time - write_lock_request_time;
           if( write_lock_acquisition_time > fc::milliseconds( 50 ) )
           {
-            wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}μs exceeds warning threshold of 50ms", 
+            wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}μs exceeds warning threshold of 50ms",
                  ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
           }
 
@@ -311,7 +309,7 @@ void chain_plugin_impl::start_write_processing()
               if (write_lock_held_duration > fc::milliseconds( write_lock_hold_time ) )
               {
                 wlog("Stopped processing write_queue before empty because we exceeded ${write_lock_hold_time}ms, "
-                     "held lock for ${write_lock_held_duration}μs", 
+                     "held lock for ${write_lock_held_duration}μs",
                      ("write_lock_hold_time", write_lock_hold_time)
                      ("write_lock_held_duration", write_lock_held_duration.count()));
                 break;
@@ -342,7 +340,7 @@ void chain_plugin_impl::stop_write_processing()
   write_processor_thread.reset();
 }
 
-bool chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
+bool chain_plugin_impl::start_replay_processing()
 {
   bool replay_is_last_operation = replay_blockchain();
 
@@ -350,8 +348,10 @@ bool chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
   {
     if( !appbase::app().is_interrupt_request() )
     {
+      ilog("Generating artificial interrupt request...");
+
       /*
-        Triggering artifical signal.
+        Triggering artificial signal.
         Whole application should be closed in identical way, as if it was closed by user.
         This case occurs only when `exit-after-replay` switch is used.
       */
@@ -360,7 +360,7 @@ bool chain_plugin_impl::start_replay_processing( synchronization_type& on_sync )
   }
   else
   {
-    //if `stop_replay_at` > 0 stay in API node context( without p2p connections )
+    //if `stop_replay_at` > 0 stay in API node context( without synchronization )
     if( stop_replay_at > 0 )
       is_p2p_enabled = false;
   }
@@ -409,23 +409,6 @@ void chain_plugin_impl::initial_settings()
 
   fc::variant database_config;
 
-#ifdef ENABLE_MIRA
-  try
-  {
-    database_config = fc::json::from_file( database_cfg, fc::json::strict_parser );
-  }
-  catch ( const std::exception& e )
-  {
-    elog( "Error while parsing database configuration: ${e}", ("e", e.what()) );
-    exit( EXIT_FAILURE );
-  }
-  catch ( const fc::exception& e )
-  {
-    elog( "Error while parsing database configuration: ${e}", ("e", e.what()) );
-    exit( EXIT_FAILURE );
-  }
-#endif
-
   db_open_args.data_dir = app().data_dir() / "blockchain";
   db_open_args.shared_mem_dir = shared_memory_dir;
   db_open_args.initial_supply = HIVE_INIT_SUPPLY;
@@ -433,7 +416,6 @@ void chain_plugin_impl::initial_settings()
   db_open_args.shared_file_size = shared_memory_size;
   db_open_args.shared_file_full_threshold = shared_file_full_threshold;
   db_open_args.shared_file_scale_rate = shared_file_scale_rate;
-  db_open_args.sps_remove_threshold = sps_remove_threshold;
   db_open_args.chainbase_flags = chainbase_flags;
   db_open_args.do_validate_invariants = validate_invariants;
   db_open_args.stop_replay_at = stop_replay_at;
@@ -601,8 +583,7 @@ bfs::path chain_plugin::state_storage_dir() const
 void chain_plugin::set_program_options(options_description& cli, options_description& cfg)
 {
   cfg.add_options()
-      ("sps-remove-threshold", bpo::value<uint16_t>()->default_value( 200 ), "Maximum numbers of proposals/votes which can be removed in the same cycle")
-      ("shared-file-dir", bpo::value<bfs::path>()->default_value("blockchain"),
+      ("shared-file-dir", bpo::value<bfs::path>()->default_value("blockchain"), // NOLINT(clang-analyzer-optin.cplusplus.VirtualCall)
         "the location of the chain shared memory files (absolute path or relative to application data dir)")
       ("shared-file-size", bpo::value<string>()->default_value("54G"), "Size of the shared memory file. Default: 54G. If running a full node, increase this value to 200G.")
       ("shared-file-full-threshold", bpo::value<uint16_t>()->default_value(0),
@@ -612,27 +593,19 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("checkpoint,c", bpo::value<vector<string>>()->composing(), "Pairs of [BLOCK_NUM,BLOCK_ID] that should be enforced as checkpoints.")
       ("flush-state-interval", bpo::value<uint32_t>(),
         "flush shared memory changes to disk every N blocks")
-#ifdef ENABLE_MIRA
-      ("memory-replay-indices", bpo::value<vector<string>>()->multitoken()->composing(), "Specify which indices should be in memory during replay")
-#endif
       ;
   cli.add_options()
-      ("sps-remove-threshold", bpo::value<uint16_t>()->default_value( 200 ), "Maximum numbers of proposals/votes which can be removed in the same cycle")
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
       ("force-open", bpo::bool_switch()->default_value(false), "force open the database, skipping the environment check" )
       ("resync-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and block log" )
       ("stop-replay-at-block", bpo::value<uint32_t>(), "Stop after reaching given block number")
       ("exit-after-replay", bpo::bool_switch()->default_value(false), "Exit after reaching given block number")
-      ("force-replay", bpo::bool_switch()->default_value(false), "Before replaying clean all old files")
+      ("force-replay", bpo::bool_switch()->default_value(false), "Before replaying clean all old files. If specifed, `--replay-blockchain` flag is implied")
       ("advanced-benchmark", "Make profiling for every plugin.")
       ("set-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks")
       ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
-#ifdef ENABLE_MIRA
-      ("database-cfg", bpo::value<bfs::path>()->default_value("database.cfg"), "The database configuration file location")
-      ("memory-replay,m", bpo::bool_switch()->default_value(false), "Replay with state in memory instead of on disk")
-#endif
 #ifdef IS_TEST_NET
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
 #endif
@@ -659,15 +632,13 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   if( options.count( "shared-file-scale-rate" ) )
     my->shared_file_scale_rate = options.at( "shared-file-scale-rate" ).as< uint16_t >();
 
-  my->sps_remove_threshold = options.at( "sps-remove-threshold" ).as< uint16_t >();
-
   my->chainbase_flags |= options.at( "force-open" ).as< bool >() ? chainbase::skip_env_check : chainbase::skip_nothing;
 
-  my->replay              = options.at( "replay-blockchain").as<bool>();
+  my->force_replay        = options.count( "force-replay" ) ? options.at( "force-replay" ).as<bool>() : false;
+  my->replay              = options.at( "replay-blockchain").as<bool>() || my->force_replay;
   my->resync              = options.at( "resync-blockchain").as<bool>();
   my->stop_replay_at      = options.count( "stop-replay-at-block" ) ? options.at( "stop-replay-at-block" ).as<uint32_t>() : 0;
   my->exit_after_replay   = options.count( "exit-after-replay" ) ? options.at( "exit-after-replay" ).as<bool>() : false;
-  my->force_replay        = options.count( "force-replay" ) ? options.at( "force-replay" ).as<bool>() : false;
   my->benchmark_interval  =
     options.count( "set-benchmark-interval" ) ? options.at( "set-benchmark-interval" ).as<uint32_t>() : 0;
   my->check_locks         = options.at( "check-locks" ).as< bool >();
@@ -695,29 +666,6 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   {
     my->statsd_on_replay = options.at( "statsd-record-on-replay" ).as< bool >();
   }
-#ifdef ENABLE_MIRA
-  my->database_cfg = options.at( "database-cfg" ).as< bfs::path >();
-
-  if( my->database_cfg.is_relative() )
-    my->database_cfg = app().data_dir() / my->database_cfg;
-
-  if( !bfs::exists( my->database_cfg ) )
-  {
-    my->write_default_database_config( my->database_cfg );
-  }
-
-  my->replay_in_memory = options.at( "memory-replay" ).as< bool >();
-  if ( options.count( "memory-replay-indices" ) )
-  {
-    std::vector<std::string> indices = options.at( "memory-replay-indices" ).as< vector< string > >();
-    for ( auto& element : indices )
-    {
-      std::vector< std::string > tmp;
-      boost::split( tmp, element, boost::is_any_of("\t ") );
-      my->replay_memory_indices.insert( my->replay_memory_indices.end(), tmp.begin(), tmp.end() );
-    }
-  }
-#endif
 
 #ifdef IS_TEST_NET
   if( options.count( "chain-id" ) )
@@ -751,7 +699,7 @@ void chain_plugin::plugin_startup()
   if( my->replay )
   {
     ilog("Replaying...");
-    if( !my->start_replay_processing( on_sync ) )
+    if( !my->start_replay_processing() )
     {
       ilog("P2P enabling after replaying...");
       my->work( on_sync );
@@ -766,7 +714,7 @@ void chain_plugin::plugin_startup()
       {
         ilog("Replaying...");
         //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
-        if( !my->start_replay_processing( on_sync ) )
+        if( !my->start_replay_processing() )
         {
           ilog("P2P enabling after replaying...");
           my->work( on_sync );
@@ -904,7 +852,7 @@ void chain_plugin::register_block_generator( const std::string& plugin_name, std
     wlog( "Overriding a previously registered block generator by: ${registrant}", ("registrant", my->block_generator_registrant) );
 
   my->block_generator_registrant = plugin_name;
-  my->block_generator = block_producer;
+  my->block_generator = std::move( block_producer );
 }
 
 bool chain_plugin::is_p2p_enabled() const

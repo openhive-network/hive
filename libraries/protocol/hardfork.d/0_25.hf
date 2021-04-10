@@ -1,11 +1,13 @@
 #ifndef HIVE_HARDFORK_1_25
 #define HIVE_HARDFORK_1_25 25
 
-#ifdef IS_TEST_NET
-    #define HIVE_HARDFORK_1_25_TIME 1606651200 //  sunday, 29 Nov 2020 00:00:00 GMT
-#else // IS LIVE HIVE NETWORK
-    #define HIVE_HARDFORK_1_25_TIME 1640952000 //  Thursday, 31 December 2021 12:00:00 GMT
-#endif
+long next_hf_time();
+
+#define HIVE_HARDFORK_1_25_TIME next_hf_time()
+
 #define HIVE_HARDFORK_1_25_VERSION hardfork_version( 1, 25 )
+
+#define HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT  (fc::days(182))
+#define HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP  (fc::time_point_sec(HIVE_HARDFORK_1_25_TIME) + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD)
 
 #endif

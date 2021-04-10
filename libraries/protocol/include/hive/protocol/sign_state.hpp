@@ -13,7 +13,7 @@ struct sign_state
     * produce a signature for this key, else returns false.
     */
   bool signed_by( const public_key_type& k );
-  bool check_authority( string id );
+  bool check_authority( const string& id );
 
   /**
     *  Checks to see if we have signatures of the active authorites of

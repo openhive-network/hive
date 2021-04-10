@@ -44,8 +44,6 @@
 
 #include <boost/scope_exit.hpp>
 
-#include <rocksdb/perf_context.h>
-
 #include <iostream>
 
 #include <cstdint>
@@ -55,36 +53,24 @@
 
 #include <stdlib.h>
 
-long hf24_time()
+long next_hf_time()
 {
-  long hf24Time =
+  // current "next hardfork" is HF25
+  long hfTime =
 #ifdef IS_TEST_NET
     1588334400; // Friday, 1 May 2020 12:00:00 GMT
 #else
-    1601992800; // Tuesday, 06-Oct-2020 14:00:00 UTC
-
+    1640952000; //  Thursday, 31 December 2021 12:00:00 GMT
 #endif /// IS_TEST_NET
-  const char* value = getenv("HIVE_HF24_TIME");
+
+  const char* value = getenv("HIVE_HF25_TIME");
   if(value != nullptr)
   {
-    hf24Time = atol(value);
-    ilog("HIVE_HF24_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hf24Time));
+    hfTime = atol(value);
+    ilog("HIVE_HF25_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hfTime));
   }
 
-  return hf24Time;
-}
-
-long hf23_time()
-{
-  long hf23Time = 1584712800; // Friday, 20 March 2020 14:00:00 GMT
-  const char* value = getenv("HIVE_HF23_TIME");
-  if(value != nullptr)
-  {
-    hf23Time = atol(value);
-    ilog("HIVE_HF23_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hf23Time));
-  }
-
-  return hf23Time;
+  return hfTime;
 }
 
 namespace hive { namespace chain {
@@ -116,8 +102,6 @@ FC_REFLECT( hive::chain::operation_schema_repr, (id)(type) )
 FC_REFLECT( hive::chain::db_schema, (types)(object_types)(operation_type)(custom_operation_types) )
 
 namespace hive { namespace chain {
-
-using boost::container::flat_set;
 
 struct reward_fund_context
 {
@@ -156,10 +140,10 @@ void database::open( const open_args& args )
 
     helpers::environment_extension_resources environment_extension(
                                                 appbase::app().get_version_string(),
-                                                std::move( appbase::app().get_plugins_names() ),
+                                                appbase::app().get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension );
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
 
     initialize_indexes();
     initialize_evaluators();
@@ -180,9 +164,7 @@ void database::open( const open_args& args )
     // Rewind all undo state. This should return us to the state at the last irreversible block.
     with_write_lock( [&]()
     {
-#ifndef ENABLE_MIRA
       undo_all();
-#endif
 
       if( args.chainbase_flags & chainbase::skip_env_check )
       {
@@ -199,11 +181,11 @@ void database::open( const open_args& args )
 
     if( head_block_num() )
     {
-      auto head_block = _block_log.read_block_by_num( head_block_num() );
+      optional<signed_block> head_block = _block_log.read_block_by_num( head_block_num() );
       // This assertion should be caught and a reindex should occur
-      FC_ASSERT( head_block.valid() && head_block->first.id() == head_block_id(), "Chain state does not match block log. Please reindex blockchain." );
+      FC_ASSERT( head_block && head_block->id() == head_block_id(), "Chain state does not match block log. Please reindex blockchain." );
 
-      _fork_db.start_block( head_block->first );
+      _fork_db.start_block( *head_block );
     }
 
     with_read_lock( [&]()
@@ -211,6 +193,9 @@ void database::open( const open_args& args )
       init_hardforks(); // Writes to local state, but reads from db
     });
 
+#ifdef IS_TEST_NET
+  /// Leave the chain-id passed to cmdline option.
+#else
     with_read_lock( [&]()
     {
       const auto& hardforks = get_hardfork_property_object();
@@ -220,7 +205,8 @@ void database::open( const open_args& args )
         set_chain_id(HIVE_CHAIN_ID);
       }
     });
-      
+#endif /// IS_TEST_NET
+
     if (args.benchmark.first)
     {
       args.benchmark.second(0, get_abstract_index_cntr());
@@ -230,7 +216,6 @@ void database::open( const open_args& args )
 
     _shared_file_full_threshold = args.shared_file_full_threshold;
     _shared_file_scale_rate = args.shared_file_scale_rate;
-    _sps_remove_threshold = args.sps_remove_threshold;
 
     auto account = find< account_object, by_name >( "nijeah" );
     if( account != nullptr && account->to_withdraw < 0 )
@@ -247,36 +232,7 @@ void database::open( const open_args& args )
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
 
-#ifdef ENABLE_MIRA
-void reindex_set_index_helper( database& db, mira::index_type type, const boost::filesystem::path& p, const boost::any& cfg, std::vector< std::string > indices )
-{
-  index_delegate_map delegates;
-
-  if ( indices.size() > 0 )
-  {
-    for ( auto& index_name : indices )
-    {
-      if ( db.has_index_delegate( index_name ) )
-        delegates[ index_name ] = db.get_index_delegate( index_name );
-      else
-        wlog( "Encountered an unknown index name '${name}'.", ("name", index_name) );
-    }
-  }
-  else
-  {
-    delegates = db.index_delegates();
-  }
-
-  std::string type_str = type == mira::index_type::mira ? "mira" : "bmic";
-  for ( auto const& delegate : delegates )
-  {
-    ilog( "Converting index '${name}' to ${type} type.", ("name", delegate.first)("type", type_str) );
-    delegate.second.set_index_type( db, type, p, cfg );
-  }
-}
-#endif
-
-uint32_t database::reindex_internal( const open_args& args, std::pair< signed_block, uint64_t >& block_data )
+uint32_t database::reindex_internal( const open_args& args, signed_block& block )
 {
   uint64_t skip_flags =
     skip_witness_signature |
@@ -290,7 +246,7 @@ uint32_t database::reindex_internal( const open_args& args, std::pair< signed_bl
     skip_validate_invariants |
     skip_block_log;
 
-  auto last_block_num = _block_log.head()->block_num();
+  uint32_t last_block_num = _block_log.head()->block_num();
   if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
     last_block_num = args.stop_replay_at;
   if( args.benchmark.first > 0 )
@@ -298,59 +254,41 @@ uint32_t database::reindex_internal( const open_args& args, std::pair< signed_bl
     args.benchmark.second( 0, get_abstract_index_cntr() );
   }
 
-  while( !appbase::app().is_interrupt_request() && block_data.first.block_num() != last_block_num )
+  while( !appbase::app().is_interrupt_request() && block.block_num() != last_block_num )
   {
-    auto cur_block_num = block_data.first.block_num();
-    if( cur_block_num % 100000 == 0 )
-    {
-      std::cerr << "   " << double( cur_block_num ) * 100 / last_block_num << "%   " << cur_block_num << " of " << last_block_num << "   (" <<
-#ifdef ENABLE_MIRA
-      get_cache_size()  << " objects cached using " << (get_cache_usage() >> 20) << "M"
-#else
-      (get_free_memory() >> 20) << "M free"
-#endif
-      << ")\n";
+    uint32_t cur_block_num = block.block_num();
 
-      //rocksdb::SetPerfLevel(rocksdb::kEnableCount);
-      //rocksdb::get_perf_context()->Reset();
-    }
-    apply_block( block_data.first, skip_flags );
-
-    if( cur_block_num % 100000 == 0 )
-    {
-      //std::cout << rocksdb::get_perf_context()->ToString() << std::endl;
-      if( cur_block_num % 1000000 == 0 )
-      {
-        dump_lb_call_counts();
-      }
-    }
+    apply_block( block, skip_flags );
 
     if( (args.benchmark.first > 0) && (cur_block_num % args.benchmark.first == 0) )
       args.benchmark.second( cur_block_num, get_abstract_index_cntr() );
 
     if( !appbase::app().is_interrupt_request() )
     {
-      block_data = _block_log.read_block( block_data.second );
+      optional<signed_block> next_block = _block_log.read_block_by_num(cur_block_num + 1);
+      FC_ASSERT(next_block, "Unable to read block ${block_num} from the block log during reindexing, but it should be in the log", 
+                ("block_num", cur_block_num + 1));
+      block = std::move(*next_block);
     }
   }
 
   if( appbase::app().is_interrupt_request() )
   {
-    ilog("Replaying is interrupted on user request. Last applied: ( block number: ${n} )( trx: ${trx} )", ( "n", block_data.first.block_num() )( "trx", block_data.first.id() ) );
+    ilog("Replaying is interrupted on user request. Last applied: ( block number: ${n} )( trx: ${trx} )", ( "n", block.block_num() )( "trx", block.id() ) );
   }
   else
   {
-    apply_block( block_data.first, skip_flags );
+    apply_block( block, skip_flags );
   }
 
-  return block_data.first.block_num();
+  return block.block_num();
 }
 
 bool database::is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const
 {
-  auto _head = _block_log.head();
-  auto _head_block_num_origin = _head.valid() ? _head->block_num() : 0;
-  auto _head_block_num_state = head_block_num();
+  boost::shared_ptr<signed_block> _head = _block_log.head();
+  uint32_t _head_block_num_origin = _head ? _head->block_num() : 0;
+  uint32_t _head_block_num_state = head_block_num();
 
   if( head_block_num_origin )
     *head_block_num_origin = _head_block_num_origin;
@@ -375,15 +313,8 @@ uint32_t database::reindex( const open_args& args )
 
   try
   {
-
     ilog( "Reindexing Blockchain" );
 
-    if( args.force_replay )
-      wipe( args.data_dir, args.shared_mem_dir, false );
-    else
-      close();
-
-    open( args );
 
     if( appbase::app().is_interrupt_request() )
       return 0;
@@ -394,81 +325,63 @@ uint32_t database::reindex( const open_args& args )
 
     HIVE_TRY_NOTIFY(_pre_reindex_signal, note);
 
-#ifdef ENABLE_MIRA
-    if( args.replay_in_memory )
-    {
-      ilog( "Configuring replay to use memory..." );
-      reindex_set_index_helper( *this, mira::index_type::bmic, args.shared_mem_dir, args.database_cfg, args.replay_memory_indices );
-    }
-#endif
-
     _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
 
-    auto start = fc::time_point::now();
+    auto start_time = fc::time_point::now();
     HIVE_ASSERT( _block_log.head(), block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
 
     ilog( "Replaying blocks..." );
 
     with_write_lock( [&]()
     {
-      _block_log.set_locking( false );
-
-      optional< std::pair< signed_block, uint64_t > > start;
+      optional<signed_block> start_block;
 
       bool replay_required = true;
 
       if( _head_block_num > 0 )
       {
         if( args.stop_replay_at == 0 || args.stop_replay_at > _head_block_num )
-          start = _block_log.read_block_by_num( _head_block_num + 1 );
+          start_block = _block_log.read_block_by_num( _head_block_num + 1 );
 
-        if( !start.valid() )
+        if( !start_block )
         {
-          start = _block_log.read_block_by_num( _head_block_num );
-          FC_ASSERT( start.valid(), "Head block number for state: ${h} but for `block_log` this block doesn't exist", ( "h", _head_block_num ) );
+          start_block = _block_log.read_block_by_num( _head_block_num );
+          FC_ASSERT( start_block, "Head block number for state: ${h} but for `block_log` this block doesn't exist", ( "h", _head_block_num ) );
 
           replay_required = false;
         }
       }
       else
       {
-        start = _block_log.read_block( 0 );
+        start_block = _block_log.read_block_by_num( 1 );
       }
 
       if( replay_required )
       {
-        auto _last_block_number = ( *start ).first.block_num();
+        auto _last_block_number = start_block->block_num();
         if( _last_block_number && !args.force_replay )
           ilog("Resume of replaying. Last applied block: ${n}", ( "n", _last_block_number - 1 ) );
 
-        note.last_block_number = reindex_internal( args, *start );
+        note.last_block_number = reindex_internal( args, *start_block );
       }
       else
       {
-        note.last_block_number = ( *start ).first.block_num();
+        note.last_block_number = start_block->block_num();
       }
 
       if( (args.benchmark.first > 0) && (note.last_block_number % args.benchmark.first == 0) )
         args.benchmark.second( note.last_block_number, get_abstract_index_cntr() );
       set_revision( head_block_num() );
-      _block_log.set_locking( true );
 
       //get_index< account_index >().indices().print_stats();
     });
 
-    if( _block_log.head()->block_num() )
+    if ( _block_log.head()->block_num() )
       _fork_db.start_block( *_block_log.head() );
 
-#ifdef ENABLE_MIRA
-    if( args.replay_in_memory )
-    {
-      ilog( "Migrating state to disk..." );
-      reindex_set_index_helper( *this, mira::index_type::mira, args.shared_mem_dir, args.database_cfg, args.replay_memory_indices );
-    }
-#endif
-
-    auto end = fc::time_point::now();
-    ilog( "Done reindexing, elapsed time: ${t} sec", ("t",double((end-start).count())/1000000.0 ) );
+    auto end_time = fc::time_point::now();
+    ilog("Done reindexing, elapsed time: ${elapsed_time} sec", 
+         ("elapsed_time", double((end_time - start_time).count()) / 1000000.0));
 
     note.reindex_success = true;
 
@@ -499,10 +412,6 @@ void database::close(bool rewind)
     // we have to clear_pending() after we're done popping to get a clean
     // DB state (issue #336).
     clear_pending();
-
-#ifdef ENABLE_MIRA
-    undo_all();
-#endif
 
     chainbase::database::flush();
     chainbase::database::close();
@@ -550,9 +459,9 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
     }
 
     // Next we query the block log.   Irreversible blocks are here.
-    auto b = _block_log.read_block_by_num( block_num );
-    if( b.valid() )
-      return b->first.id();
+    optional<signed_block> b = _block_log.read_block_by_num( block_num );
+    if( b )
+      return b->id();
 
     // Finally we query the fork DB.
     shared_ptr< fork_item > fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
@@ -577,10 +486,10 @@ optional<signed_block> database::fetch_block_by_id( const block_id_type& id )con
   auto b = _fork_db.fetch_block( id );
   if( !b )
   {
-    auto tmp = _block_log.read_block_by_num( protocol::block_header::num_from_id( id ) );
+    optional<signed_block> tmp = _block_log.read_block_by_num( protocol::block_header::num_from_id( id ) );
 
-    if( tmp && tmp->first.id() == id )
-      return tmp->first;
+    if( tmp && tmp->id() == id )
+      return *tmp;
 
     return optional<signed_block>();
   }
@@ -588,20 +497,69 @@ optional<signed_block> database::fetch_block_by_id( const block_id_type& id )con
   return b->data;
 } FC_CAPTURE_AND_RETHROW() }
 
+// this version of fetch_block_by_number() assumes the caller is holding a read lock on the database
 optional<signed_block> database::fetch_block_by_number( uint32_t block_num )const
 { try {
-  optional< signed_block > b;
   shared_ptr< fork_item > fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
 
   if( fitem )
-    b = fitem->data;
+    return fitem->data;
   else
-  {
-    auto block_data =_block_log.read_block_by_num( block_num ); 
-    b = block_data.valid() ? block_data->first : optional<signed_block>();
-  }
+    return _block_log.read_block_by_num( block_num ); 
+} FC_LOG_AND_RETHROW() }
 
-  return b;
+// this version doesn't assume the caller has a read lock.  It will get its own lock for the
+// portion of the function that requires it.
+optional<signed_block> database::fetch_block_by_number_unlocked( uint32_t block_num )
+{ try {
+  shared_ptr< fork_item > fitem;
+  with_read_lock( [&]()
+  {
+    fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
+  });
+
+  if( fitem )
+    return fitem->data;
+  else
+    return _block_log.read_block_by_num( block_num ); 
+} FC_LOG_AND_RETHROW() }
+
+std::vector<signed_block> database::fetch_block_range_unlocked( const uint32_t starting_block_num, const uint32_t count )
+{ try {
+  // for debugging, put the head block back so it should straddle the last irreversible
+  // const uint32_t starting_block_num = head_block_num() - 30;
+  FC_ASSERT(starting_block_num > 0, "Invalid starting block number");
+  FC_ASSERT(count > 0, "Why ask for zero blocks?");
+  FC_ASSERT(count <= 1000, "You can only ask for 1000 blocks at a time");
+  idump((starting_block_num)(count));
+
+  vector<fork_item> fork_items;
+  with_read_lock( [&]()
+  {
+    fork_items = _fork_db.fetch_block_range_on_main_branch_by_number( starting_block_num, count );
+  });
+  idump((fork_items.size()));
+  if (!fork_items.empty())
+    idump((fork_items.front().num));
+
+  // if the fork database returns some blocks, it means:
+  // - that the last block in the range [starting_block_num, starting_block_num + count - 1]
+  // - any block before the first block it returned should be in the block log
+  uint32_t remaining_count = fork_items.empty() ? count : fork_items.front().num - starting_block_num;
+  idump((remaining_count));
+  vector<signed_block> result;
+
+  if (remaining_count)
+    result = _block_log.read_block_range_by_num(starting_block_num, remaining_count);
+
+  idump((result.size()));
+  if (!result.empty())
+    idump((result.front().block_num())(result.back().block_num()));
+  result.reserve(result.size() + fork_items.size());
+  for (fork_item& item : fork_items)
+    result.emplace_back(std::move(item.data));
+
+  return result;
 } FC_LOG_AND_RETHROW() }
 
 const signed_transaction database::get_recent_transaction( const transaction_id_type& trx_id ) const
@@ -637,6 +595,24 @@ chain_id_type database::get_chain_id() const
   return hive_chain_id;
 }
 
+chain_id_type database::get_old_chain_id() const
+{
+#ifdef IS_TEST_NET
+  return hive_chain_id; /// In testnet always use the chain-id passed as hived option
+#else
+  return STEEM_CHAIN_ID;
+#endif /// IS_TEST_NET
+}
+
+chain_id_type database::get_new_chain_id() const
+{
+#ifdef IS_TEST_NET
+  return hive_chain_id; /// In testnet always use the chain-id passed as hived option
+#else
+  return HIVE_CHAIN_ID;
+#endif /// IS_TEST_NET
+}
+
 void database::set_chain_id( const chain_id_type& chain_id )
 {
   hive_chain_id = chain_id;
@@ -644,25 +620,24 @@ void database::set_chain_id( const chain_id_type& chain_id )
   idump( (hive_chain_id) );
 }
 
-void database::foreach_block(std::function<bool(const signed_block_header&, const signed_block&)> processor) const
+void database::foreach_block(const std::function<bool(const signed_block_header&, const signed_block&)>& processor) const
 {
   if(!_block_log.head())
     return;
 
-  auto itr = _block_log.read_block( 0 );
-  auto last_block_num = _block_log.head()->block_num();
-  signed_block_header previousBlockHeader = itr.first;
-  while( itr.first.block_num() != last_block_num )
+  uint32_t last_block_num = _block_log.head()->block_num();
+  signed_block_header previous_block_header;
+  for (uint32_t block_num = 1; block_num <= last_block_num; ++block_num)
   {
-    const signed_block& b = itr.first;
-    if(processor(previousBlockHeader, b) == false)
+    optional<signed_block> this_block = _block_log.read_block_by_num(block_num);
+    if (!this_block) // should never happen since we're only iterating up to last_block_num
       return;
-
-    previousBlockHeader = b;
-    itr = _block_log.read_block( itr.second );
+    if (block_num == 1)
+      previous_block_header = *this_block;
+    if (!processor(previous_block_header, *this_block))
+      return;
+    previous_block_header = *this_block;
   }
-
-  processor(previousBlockHeader, itr.first);
 }
 
 void database::foreach_tx(std::function<bool(const signed_block_header&, const signed_block&,
@@ -774,7 +749,8 @@ const comment_object* database::find_comment( const account_name_type& author, c
   return find_comment( acc->get_id(), permlink );
 }
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
+
 const comment_object& database::get_comment( const account_id_type& author, const string& permlink )const
 { try {
   return get< comment_object, by_permlink >( comment_object::compute_author_and_permlink_hash( author, permlink ) );
@@ -796,6 +772,7 @@ const comment_object* database::find_comment( const account_name_type& author, c
   if(acc == nullptr) return nullptr;
   return find_comment( acc->get_id(), permlink );
 }
+
 #endif
 
 const escrow_object& database::get_escrow( const account_name_type& name, uint32_t escrow_id )const
@@ -1041,6 +1018,7 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
   if( blocks.size() > 1 )
   {
     vector< std::pair< account_name_type, fc::time_point_sec > > witness_time_pairs;
+    witness_time_pairs.reserve( blocks.size() );
     for( const auto& b : blocks )
     {
       witness_time_pairs.push_back( std::make_pair( b->data.witness, b->data.timestamp ) );
@@ -1529,6 +1507,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
       else
         adjust_balance( to_account, new_vesting );
       // Update global vesting pool numbers.
+      const auto& smt = get< smt_token_object, by_symbol >( liquid.symbol );
       modify( smt, [&]( smt_token_object& smt_object )
       {
         if( to_reward_balance )
@@ -1599,7 +1578,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
 // we modify the database.
 // This allows us to implement virtual op pre-notifications in the Before function.
 template< typename Before >
-asset create_vesting2( database& db, const account_object& to_account, asset liquid, bool to_reward_balance, Before&& before_vesting_callback )
+asset create_vesting2( database& db, const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
 {
   try
   {
@@ -1618,7 +1597,7 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
   * @param to_account - the account to receive the new vesting shares
   * @param liquid     - HIVE or liquid SMT to be converted to vesting shares
   */
-asset database::create_vesting( const account_object& to_account, asset liquid, bool to_reward_balance )
+asset database::create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance )
 {
   return create_vesting2( *this, to_account, liquid, to_reward_balance, []( asset vests_created ) {} );
 }
@@ -1651,13 +1630,13 @@ void database::adjust_proxied_witness_votes( const account_object& a,
                         const std::array< share_type, HIVE_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
                         int depth )
 {
-  if( a.proxy != HIVE_PROXY_TO_SELF_ACCOUNT )
+  if( a.has_proxy() )
   {
     /// nested proxies are not supported, vote will not propagate
     if( depth >= HIVE_MAX_PROXY_RECURSION_DEPTH )
       return;
 
-    const auto& proxy = get_account( a.proxy );
+    const auto& proxy = get_account( a.get_proxy() );
 
     modify( proxy, [&]( account_object& a )
     {
@@ -1680,13 +1659,13 @@ void database::adjust_proxied_witness_votes( const account_object& a,
 
 void database::adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth )
 {
-  if( a.proxy != HIVE_PROXY_TO_SELF_ACCOUNT )
+  if( a.has_proxy() )
   {
     /// nested proxies are not supported, vote will not propagate
     if( depth >= HIVE_MAX_PROXY_RECURSION_DEPTH )
       return;
 
-    const auto& proxy = get_account( a.proxy );
+    const auto& proxy = get_account( a.get_proxy() );
 
     modify( proxy, [&]( account_object& a )
     {
@@ -1701,7 +1680,16 @@ void database::adjust_proxied_witness_votes( const account_object& a, share_type
   }
 }
 
-void database::adjust_witness_votes( const account_object& a, share_type delta )
+void database::nullify_proxied_witness_votes( const account_object& a )
+{
+  std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
+  delta[ 0 ] = -a.get_real_vesting_shares();
+  for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
+    delta[ i + 1 ] = -a.proxied_vsf_votes[ i ];
+  adjust_proxied_witness_votes( a, delta );
+}
+
+void database::adjust_witness_votes( const account_object& a, const share_type& delta )
 {
   const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
   auto itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
@@ -2016,7 +2004,7 @@ void database::lock_account( const account_object& account )
 
   modify( account, []( account_object& a )
   {
-    a.recovery_account = a.name;
+    a.set_recovery_account( a );
   } );
 
   auto rec_req = find< account_recovery_request_object, by_account >( account.name );
@@ -2076,7 +2064,7 @@ void database::gather_balance( const std::string& name, const asset& balance, co
 void database::clear_accounts( const std::set< std::string >& cleared_accounts )
 {
   auto treasury_name = get_treasury_name();
-  for( auto account_name : cleared_accounts )
+  for( const auto& account_name : cleared_accounts )
   {
     const auto* account_ptr = find_account( account_name );
     if( account_ptr == nullptr )
@@ -2598,7 +2586,7 @@ share_type database::pay_curators( const comment_object& comment, const comment_
         {
           unclaimed_rewards -= claim;
           const auto& voter = get( item->voter );
-          operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.permlink ) );
+          operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.permlink ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
           create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
             [&]( const asset& reward )
             {
@@ -2711,7 +2699,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         auto curators_vesting_payout = calculate_vesting( *this, asset( curation_tokens, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
         operation vop = author_reward_operation( comment_author, to_string( comment_cashout.permlink ), hbd_payout.first, hbd_payout.second, asset( 0, VESTS_SYMBOL ),
-                                                curators_vesting_payout );
+                                                curators_vesting_payout, has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
         create_vesting2( *this, author, asset( vesting_hive, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
           [&]( const asset& vesting_payout )
@@ -3094,7 +3082,7 @@ asset database::get_liquidity_reward()const
     return asset( 0, HIVE_SYMBOL );
 
   const auto& props = get_dynamic_global_properties();
-  static_assert( HIVE_LIQUIDITY_REWARD_PERIOD_SEC == 60*60, "this code assumes a 1 hour time interval" );
+  static_assert( HIVE_LIQUIDITY_REWARD_PERIOD_SEC == 60*60, "this code assumes a 1 hour time interval" ); // NOLINT(misc-redundant-expression)
   asset percent( protocol::calc_percent_reward_per_hour< HIVE_LIQUIDITY_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL );
   return std::max( percent, HIVE_MIN_LIQUIDITY_REWARD );
 }
@@ -3142,6 +3130,7 @@ asset database::get_producer_reward()
     {
       a.balance += pay;
     } );
+    push_virtual_operation( producer_reward_operation( witness_account.name, pay ) );
   }
 
   return pay;
@@ -3207,7 +3196,7 @@ uint16_t database::get_curation_rewards_percent() const
     return HIVE_1_PERCENT * 50;
 }
 
-share_type database::pay_reward_funds( share_type reward )
+share_type database::pay_reward_funds( const share_type& reward )
 {
   const auto& reward_idx = get_index< reward_fund_index, by_id >();
   share_type used_rewards = 0;
@@ -3287,10 +3276,10 @@ asset database::to_hive( const asset& hbd )const
 void database::account_recovery_processing()
 {
   // Clear expired recovery requests
-  const auto& rec_req_idx = get_index< account_recovery_request_index >().indices().get< by_expiration >();
+  const auto& rec_req_idx = get_index< account_recovery_request_index, by_expiration >();
   auto rec_req = rec_req_idx.begin();
 
-  while( rec_req != rec_req_idx.end() && rec_req->expires <= head_block_time() )
+  while( rec_req != rec_req_idx.end() && rec_req->get_expiration_time() <= head_block_time() )
   {
     remove( *rec_req );
     rec_req = rec_req_idx.begin();
@@ -3307,15 +3296,20 @@ void database::account_recovery_processing()
   }
 
   // Apply effective recovery_account changes
-  const auto& change_req_idx = get_index< change_recovery_account_request_index >().indices().get< by_effective_date >();
+  const auto& change_req_idx = get_index< change_recovery_account_request_index, by_effective_date >();
   auto change_req = change_req_idx.begin();
 
-  while( change_req != change_req_idx.end() && change_req->effective_on <= head_block_time() )
+  while( change_req != change_req_idx.end() && change_req->get_execution_time() <= head_block_time() )
   {
-    modify( get_account( change_req->account_to_recover ), [&]( account_object& a )
+    const auto& account = get_account( change_req->get_account_to_recover() );
+    const auto& old_recovery_account_name = account.get_recovery_account();
+    const auto& new_recovery_account = get_account( change_req->get_recovery_account() );
+    modify( account, [&]( account_object& a )
     {
-      a.recovery_account = change_req->recovery_account;
+      a.set_recovery_account( new_recovery_account );
     });
+
+    push_virtual_operation(changed_recovery_account_operation( account.name, old_recovery_account_name, new_recovery_account.name ));
 
     remove( *change_req );
     change_req = change_req_idx.begin();
@@ -3354,19 +3348,13 @@ void database::process_decline_voting_rights()
   {
     const auto& account = get< account_object, by_name >( itr->account );
 
-    /// remove all current votes
-    std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH+1> delta;
-    delta[0] = -account.get_real_vesting_shares();
-    for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-      delta[i+1] = -account.proxied_vsf_votes[i];
-    adjust_proxied_witness_votes( account, delta );
-
+    nullify_proxied_witness_votes( account );
     clear_witness_votes( account );
 
     modify( account, [&]( account_object& a )
     {
       a.can_vote = false;
-      a.proxy = HIVE_PROXY_TO_SELF_ACCOUNT;
+      a.clear_proxy();
     });
 
     remove( *itr );
@@ -3795,7 +3783,6 @@ void database::apply_block( const signed_block& next_block, uint32_t skip )
 
 void database::check_free_memory( bool force_print, uint32_t current_block_num )
 {
-#ifndef ENABLE_MIRA
   uint64_t free_mem = get_free_memory();
   uint64_t max_mem = get_max_memory();
 
@@ -3831,7 +3818,6 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
         elog( "Free memory is now ${n}M. Increase shared file size immediately!" , ("n", free_mb) );
     }
   }
-#endif
 }
 
 void database::_apply_block( const signed_block& next_block )
@@ -3963,6 +3949,8 @@ void database::_apply_block( const signed_block& next_block )
   _current_op_in_trx = 0;
   _current_virtual_op = 0;
 
+  remove_expired_governance_votes();
+
   update_global_dynamic_data(next_block);
   update_signing_witness(signing_witness, next_block);
 
@@ -3972,11 +3960,6 @@ void database::_apply_block( const signed_block& next_block )
   clear_expired_transactions();
   clear_expired_orders();
   clear_expired_delegations();
-
-  if( next_block.block_num() % 100000 == 0 )
-  {
-
-  }
 
   update_witness_schedule(*this);
 
@@ -4018,7 +4001,6 @@ void database::_apply_block( const signed_block& next_block )
   // last call of applying a block because it is the only thing that is not
   // reversible.
   migrate_irreversible_state();
-  trim_cache();
 
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (next_block.block_num()) ) }
 
@@ -5138,7 +5120,7 @@ void database::adjust_smt_balance( const account_object& owner, const asset& del
     bo = &new_balance_object;
   }
 
-  modify( *bo, std::move( modifier ) );
+  modify( *bo, std::forward<modifier_type>( modifier ) );
   if( bo->is_empty() )
   {
     // Zero balance is the same as non object balance at all.
@@ -5166,7 +5148,6 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
         {
           acnt.hbd_seconds += fc::uint128_t(a.get_hbd_balance().amount.value) * (head_block_time() - a.hbd_seconds_last_update).to_seconds();
           acnt.hbd_seconds_last_update = head_block_time();
-
           if( acnt.hbd_seconds > 0 &&
               (acnt.hbd_seconds_last_update - acnt.hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
           {
@@ -5244,26 +5225,6 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
         FC_ASSERT( false, "invalid symbol" );
     }
   });
-}
-
-void database::set_index_delegate( const std::string& n, index_delegate&& d )
-{
-  _index_delegate_map[ n ] = std::move( d );
-}
-
-const index_delegate& database::get_index_delegate( const std::string& n )
-{
-  return _index_delegate_map.at( n );
-}
-
-bool database::has_index_delegate( const std::string& n )
-{
-  return _index_delegate_map.find( n ) != _index_delegate_map.end();
-}
-
-const index_delegate_map& database::index_delegates()
-{
-  return _index_delegate_map;
 }
 
 void database::adjust_balance( const account_object& a, const asset& delta )
@@ -5577,10 +5538,13 @@ void database::init_hardforks()
   FC_ASSERT( HIVE_HARDFORK_1_24 == 24, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_24 ] = fc::time_point_sec( HIVE_HARDFORK_1_24_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_24 ] = HIVE_HARDFORK_1_24_VERSION;
-#ifdef IS_TEST_NET
   FC_ASSERT( HIVE_HARDFORK_1_25 == 25, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_25 ] = fc::time_point_sec( HIVE_HARDFORK_1_25_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_25 ] = HIVE_HARDFORK_1_25_VERSION;
+#ifdef IS_TEST_NET
+  FC_ASSERT( HIVE_HARDFORK_1_26 == 26, "Invalid hardfork configuration" );
+  _hardfork_versions.times[ HIVE_HARDFORK_1_26 ] = fc::time_point_sec( HIVE_HARDFORK_1_26_TIME );
+  _hardfork_versions.versions[ HIVE_HARDFORK_1_26 ] = HIVE_HARDFORK_1_26_VERSION;
 #endif
 
   const auto& hardforks = get_hardfork_property_object();
@@ -5971,7 +5935,25 @@ void database::apply_hardfork( uint32_t hardfork )
     case HIVE_HARDFORK_1_24:
     {
       restore_accounts( hardforkprotect::get_restored_accounts() );
+#ifdef IS_TEST_NET
+      /// Don't change chain_id in testnet build.
+#else
       set_chain_id(HIVE_CHAIN_ID);
+#endif /// IS_TEST_NET
+      break;
+    }
+    case HIVE_HARDFORK_1_25:
+    {
+      modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
+      {
+        rfo.curation_reward_curve = linear;
+      });
+      modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      {
+        gpo.reverse_auction_seconds = 0;
+        gpo.early_voting_seconds    = HIVE_EARLY_VOTING_SECONDS_HF25;
+        gpo.mid_voting_seconds      = HIVE_MID_VOTING_SECONDS_HF25;
+      });
       break;
     }
     case HIVE_SMT_HARDFORK:
@@ -6066,7 +6048,7 @@ void database::validate_invariants()const
       total_vesting += itr->get_vesting();
       total_vesting += itr->get_vest_rewards();
       pending_vesting_hive += itr->get_vest_rewards_as_hive();
-      total_vsf_votes += ( itr->proxy == HIVE_PROXY_TO_SELF_ACCOUNT ?
+      total_vsf_votes += ( !itr->has_proxy() ?
                       itr->witness_vote_weight() :
                       ( HIVE_MAX_PROXY_RECURSION_DEPTH > 0 ?
                           itr->proxied_vsf_votes[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
@@ -6315,9 +6297,12 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     // Need to update all VESTS in accounts and the total VESTS in the dgpo
     for( const auto& account : get_index< account_index, by_id >() )
     {
+      asset old_vesting_shares = account.vesting_shares;
+      asset new_vesting_shares = account.vesting_shares;
       modify( account, [&]( account_object& a )
       {
         a.vesting_shares.amount *= magnitude;
+        new_vesting_shares = a.vesting_shares;
         a.withdrawn             *= magnitude;
         a.to_withdraw           *= magnitude;
         a.vesting_withdraw_rate  = asset( a.to_withdraw / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
@@ -6327,6 +6312,8 @@ void database::perform_vesting_share_split( uint32_t magnitude )
         for( uint32_t i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
           a.proxied_vsf_votes[i] *= magnitude;
       } );
+      if (old_vesting_shares != new_vesting_shares)
+        push_virtual_operation( vesting_shares_split_operation(account.name, old_vesting_shares, new_vesting_shares) );
     }
 
     const auto& comments = get_index< comment_cashout_index >().indices();
@@ -6421,7 +6408,7 @@ void database::retally_witness_votes()
   // Apply all existing votes by account
   for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
   {
-    if( itr->proxy != HIVE_PROXY_TO_SELF_ACCOUNT ) continue;
+    if( itr->has_proxy() ) continue;
 
     const auto& a = *itr;
 
@@ -6444,7 +6431,7 @@ void database::retally_witness_vote_counts( bool force )
   {
     const auto& a = *itr;
     uint16_t witnesses_voted_for = 0;
-    if( force || (a.proxy != HIVE_PROXY_TO_SELF_ACCOUNT  ) )
+    if( force || a.has_proxy() )
     {
       const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
       auto wit_itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
@@ -6467,6 +6454,47 @@ void database::retally_witness_vote_counts( bool force )
 optional< chainbase::database::session >& database::pending_transaction_session()
 {
   return _pending_tx_session;
+}
+
+void database::remove_expired_governance_votes()
+{
+  if (!has_hardfork(HIVE_HARDFORK_1_25))
+    return;
+
+  const auto& accounts = get_index<account_index, by_governance_vote_expiration_ts>();
+  auto acc_it = accounts.begin();
+  time_point_sec first_expiring = acc_it->get_governance_vote_expiration_ts();
+  time_point_sec now = head_block_time();
+
+  if( first_expiring > now )
+    return;
+
+  const auto& proposal_votes = get_index< proposal_vote_index, by_voter_proposal >();
+  remove_guard obj_perf( get_remove_threshold() );
+
+  while( acc_it != accounts.end() && acc_it->get_governance_vote_expiration_ts() <= now )
+  {
+    const auto& account = *acc_it;
+    ++acc_it;
+
+    if( sps_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
+    {
+      nullify_proxied_witness_votes( account );
+      clear_witness_votes( account );
+      modify( account, [&]( account_object& a )
+      {
+        a.clear_proxy();
+        a.set_governance_vote_expired();
+      } );
+      push_virtual_operation( expired_account_notification_operation( account.name ) );
+    }
+    else
+    {
+      ilog("Threshold exceeded while processing account ${account} with expired governance vote.",
+        ("account", account.name)); // to be continued in next block
+      break;
+    }
+  }
 }
 
 } } //hive::chain

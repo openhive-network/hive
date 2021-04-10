@@ -74,13 +74,14 @@ OPTION( ENABLE_MIRA "Build source with MIRA (ON OR OFF)" OFF )
 MESSAGE( STATUS "ENABLE_MIRA: ${ENABLE_MIRA}" )
 if( ENABLE_MIRA )
   MESSAGE( STATUS "     " )
-  MESSAGE( STATUS "             CONFIGURING FOR MIRA             " )
+  MESSAGE( FATAL_ERROR "             NOTE: MIRA HAS BEEN REMOVED             " )
   MESSAGE( STATUS "     " )
-  SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DENABLE_MIRA" )
-  SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DENABLE_MIRA" )
 endif()
 
 OPTION( LOW_MEMORY_NODE "Build source for low memory node (ON OR OFF)" OFF )
+include( CMakeDependentOption )
+CMAKE_DEPENDENT_OPTION( STORE_ACCOUNT_METADATA "Keep the json_metadata for accounts, normally discarded on low memory nodes" OFF "LOW_MEMORY_NODE" ON )
+
 MESSAGE( STATUS "LOW_MEMORY_NODE: ${LOW_MEMORY_NODE}" )
 if( LOW_MEMORY_NODE )
   MESSAGE( STATUS "     " )
@@ -88,16 +89,16 @@ if( LOW_MEMORY_NODE )
   MESSAGE( STATUS "     " )
   SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIS_LOW_MEM" )
   SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIS_LOW_MEM" )
-endif()
 
-OPTION (COLLECT_ACCOUNT_METADATA "Allows to enable/disable storing account metadata" ON)
-MESSAGE( STATUS "COLLECT_ACCOUNT_METADATA: ${COLLECT_ACCOUNT_METADATA}" )
-if( COLLECT_ACCOUNT_METADATA )
-  MESSAGE( STATUS "     " )
-  MESSAGE( STATUS "             CONFIGURING FOR ACCOUNT METADATA SUPPORT      " )
-  MESSAGE( STATUS "     " )
-  SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCOLLECT_ACCOUNT_METADATA" )
-  SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCOLLECT_ACCOUNT_METADATA" )
+  MESSAGE( STATUS "STORE_ACCOUNT_METADATA: ${STORE_ACCOUNT_METADATA}" )
+  if( STORE_ACCOUNT_METADATA )
+    MESSAGE( STATUS "     " )
+    MESSAGE( STATUS "                 BUT STILL INDEXING ACCOUNT METADATA      " )
+    MESSAGE( STATUS "     " )
+    SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCOLLECT_ACCOUNT_METADATA" )
+    SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCOLLECT_ACCOUNT_METADATA" )
+  endif()
+
 endif()
 
 OPTION( SUPPORT_COMMENT_CONTENT "Build source with enabled comment content support (ON OR OFF)" OFF )
@@ -144,11 +145,36 @@ if( HIVE_STATIC_BUILD AND ( ( MSVC AND NOT MINGW ) OR APPLE ) )
 endif()
 MESSAGE( STATUS "HIVE_STATIC_BUILD: ${HIVE_STATIC_BUILD}" )
 
-SET( HIVE_LINT_LEVEL "OFF" CACHE STRING "Lint level during Hive build (FULL, HIGH, LOW, OFF)" )
+SET( HIVE_LINT "OFF" CACHE STRING "Enable linting with clang-tidy during compilation" )
 find_program(
    CLANG_TIDY_EXE
    NAMES "clang-tidy"
    DOC "Path to clain-tidy executable"
+)
+
+SET( CLANG_TIDY_IGNORED
+"-fuchsia-default-arguments\
+,-hicpp-*\
+,-cert-err60-cpp\
+,-llvm-namespace-comment\
+,-cert-err09-cpp\
+,-cert-err61-cpp\
+,-fuchsia-overloaded-operator\
+,-misc-throw-by-value-catch-by-reference\
+,-misc-unused-parameters\
+,-clang-analyzer-core.uninitialized.Assign\
+,-llvm-include-order\
+,-clang-diagnostic-unused-lambda-capture\
+,-misc-macro-parentheses\
+,-boost-use-to-string\
+,-misc-lambda-function-name\
+,-cert-err58-cpp\
+,-cert-err34-c\
+,-cppcoreguidelines-*\
+,-modernize-*\
+,-clang-diagnostic-#pragma-messages\
+,-google-*\
+,-readability-*"
 )
 
 if( NOT CLANG_TIDY_EXE )
@@ -157,18 +183,12 @@ elseif( VERSION LESS 3.6 )
    messgae( STATUS "clang-tidy found but only supported with CMake version >= 3.6" )
 else()
    message( STATUS "clany-tidy found: ${CLANG_TIDY_EXE}" )
-   if( "${HIVE_LINT_LEVEL}" STREQUAL "FULL" )
-      message( STATUS "Linting level set to: FULL" )
-      set( DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks='*'" )
-   elseif( "${HIVE_LINT_LEVEL}" STREQUAL "HIGH" )
-      message( STATUS "Linting level set to: HIGH" )
-      set( DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks='boost-use-to-string,clang-analyzer-*,cppcoreguidelines-*,llvm-*,misc-*,performance-*,readability-*'" )
-   elseif( "${HIVE_LINT_LEVEL}" STREQUAL "LOW" )
-      message( STATUS "Linting level set to: LOW" )
-      set( DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks='clang-analyzer-*'" )
+   if( HIVE_LINT )
+      message( STATUS "Linting enabled" )
+      set( DO_CLANG_TIDY ${CLANG_TIDY_EXE};-checks=*,${CLANG_TIDY_IGNORED};--warnings-as-errors=* )
    else()
       unset( CLANG_TIDY_EXE )
-      message( STATUS "Linting level set to: OFF" )
+      message( STATUS "Linting disabled" )
    endif()
 endif( NOT CLANG_TIDY_EXE )
 
@@ -286,7 +306,6 @@ endif()
 # fc/src/compress/miniz.c breaks strict aliasing. The Linux kernel builds with no strict aliasing
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -Werror -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
-# -Werror
 
 # external_plugins needs to be compiled first because libraries/app depends on HIVE_EXTERNAL_PLUGINS being fully populated
 add_subdirectory( external_plugins )
@@ -309,7 +328,7 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
 
 SET(CPACK_PACKAGE_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
 set(CPACK_PACKAGE_NAME "hive")
-set(CPACK_PACKAGE_VENDOR "Steemit, Inc.")
+set(CPACK_PACKAGE_VENDOR "Hive Community")
 set(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}")
@@ -356,14 +375,11 @@ else()
 MESSAGE( STATUS "\n\n             CONFIGURED FOR NO SUPPORT OF SMT             \n\n" )
 endif()
 
-if( ENABLE_MIRA )
-MESSAGE( STATUS "\n\n             CONFIGURED FOR MIRA                  \n\n" )
-else()
-MESSAGE( STATUS "\n\n             CONFIGURED FOR BMIC MMAP             \n\n" )
-endif()
-
 if( LOW_MEMORY_NODE )
   MESSAGE( STATUS "\n\n             CONFIGURED FOR LOW MEMORY NODE          \n\n" )
+  if( STORE_ACCOUNT_METADATA )
+    MESSAGE( STATUS "\n\n             BUT STILL STORING ACCOUNT METADATA          \n\n" )
+  endif()
 else()
   MESSAGE( STATUS "\n\n             CONFIGURED FOR FULL NODE                \n\n" )
 endif()

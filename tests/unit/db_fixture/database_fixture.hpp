@@ -263,12 +263,15 @@ struct database_fixture {
     const share_type& fee
   );
 
+  void push_transaction( const operation& op, const fc::ecc::private_key& key );
+
   void fund( const string& account_name, const share_type& amount = 500000 );
   void fund( const string& account_name, const asset& amount );
   void transfer( const string& from, const string& to, const asset& amount );
   void convert( const string& account_name, const asset& amount );
   void vest( const string& from, const string& to, const asset& amount );
   void vest( const string& from, const share_type& amount );
+  void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
   void proxy( const string& account, const string& proxy );
   void set_price_feed( const price& new_price );
   void set_witness_props( const flat_map< string, vector< char > >& new_props );
@@ -282,6 +285,17 @@ struct database_fixture {
   asset get_vesting( const string& account_name )const;
   asset get_vest_rewards( const string& account_name )const;
   asset get_vest_rewards_as_hive( const string& account_name )const;
+
+private:
+
+  void post_comment_internal( const std::string& _author, const std::string& _permlink, const std::string& _title, const std::string& _body, const std::string& _parent_permlink, const fc::ecc::private_key& _key );
+
+public:
+
+  void post_comment_with_block_generation( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key );
+  void post_comment( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key);
+  void vote( std::string _author, std::string _permlink, std::string _voter, int16_t _weight, const fc::ecc::private_key& _key );
+
   void sign( signed_transaction& trx, const fc::ecc::private_key& key );
 
   vector< operation > get_last_operations( uint32_t ops );
@@ -367,13 +381,14 @@ struct sps_proposal_database_fixture : public virtual clean_database_fixture
 
   void remove_proposal(account_name_type _deleter, flat_set<int64_t> _proposal_id, const fc::ecc::private_key& _key);
 
-   void update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key );
-   bool find_vote_for_proposal(const std::string& _user, int64_t _proposal_id);
+  void update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key, time_point_sec* end_date = nullptr );
+  bool find_vote_for_proposal(const std::string& _user, int64_t _proposal_id);
 
   uint64_t get_nr_blocks_until_maintenance_block();
   uint64_t get_nr_blocks_until_daily_maintenance_block();
 
-  void post_comment( std::string _authro, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key);
+  void witness_vote( account_name_type _voter, account_name_type _witness, const fc::ecc::private_key& _key, bool _approve = true );
+  void proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key );
 
   struct create_proposal_data
   {
@@ -405,24 +420,20 @@ struct sps_proposal_database_fixture_performance : public sps_proposal_database_
                   : sps_proposal_database_fixture( shared_file_size_in_mb )
   {
     db->get_benchmark_dumper().set_enabled( true );
-    db->set_sps_remove_threshold( -1 );
+    db_plugin->debug_update( []( database& db )
+    {
+      db.set_remove_threshold( -1 );
+    });
   }
 };
 
 
 struct hf23_database_fixture : public clean_database_fixture
 {
-  private:
-
-    void push_transaction( const operation& op, const fc::ecc::private_key& key );
-
-  public:
-
     hf23_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
                     : clean_database_fixture( shared_file_size_in_mb ){}
     virtual ~hf23_database_fixture(){}
 
-    void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
     void delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key );
 };
 
@@ -436,10 +447,6 @@ struct hf24_database_fixture : public clean_database_fixture
 
 struct delayed_vote_database_fixture : public virtual clean_database_fixture
 {
-  private:
-
-    void push_transaction( const operation& op, const fc::ecc::private_key& key );
-
   public:
 
     delayed_vote_database_fixture( uint16_t shared_file_size_in_mb = 8 )
@@ -447,7 +454,6 @@ struct delayed_vote_database_fixture : public virtual clean_database_fixture
     virtual ~delayed_vote_database_fixture(){}
 
     void witness_vote( const std::string& account, const std::string& witness, const bool approve, const fc::ecc::private_key& key );
-    void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
     void withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key );
     void proxy( const string& account, const string& proxy, const fc::ecc::private_key& key );
     void decline_voting_rights( const string& account, const bool decline, const fc::ecc::private_key& key );

@@ -127,7 +127,7 @@ struct discussion_query
 
 struct discussion_query_result
 {
-  vector< discussion > discussions;
+  vector< hive::plugins::tags::discussion > discussions;
 };
 
 typedef get_discussion_args      get_content_replies_args;

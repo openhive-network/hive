@@ -128,7 +128,7 @@ namespace hive { namespace protocol {
 
     FC_ASSERT( beneficiaries.size(), "Must specify at least one beneficiary" );
     FC_ASSERT( beneficiaries.size() < HIVE_BENEFICIARY_LIMIT,
-      "Cannot specify more than ${max} beneficiaries.", ("max", HIVE_BENEFICIARY_LIMIT - 1) ); // Require size serializtion fits in one byte.
+      "Cannot specify more than ${max} beneficiaries.", ("max", HIVE_BENEFICIARY_LIMIT - 1) ); // Require size serialization fits in one byte.
 
     validate_account_name( beneficiaries[0].account );
     FC_ASSERT( beneficiaries[0].weight <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to one account" );
@@ -141,7 +141,7 @@ namespace hive { namespace protocol {
       FC_ASSERT( beneficiaries[i].weight <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to one account" );
       sum += beneficiaries[i].weight;
       FC_ASSERT( sum <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to a comment" ); // Have to check incrementally to avoid overflow
-      FC_ASSERT( beneficiaries[i - 1] < beneficiaries[i], "Benficiaries must be specified in sorted order (account ascending)" );
+      FC_ASSERT( beneficiaries[i - 1] < beneficiaries[i], "Beneficiaries must be specified in sorted order (account ascending)" );
     }
   }
 
@@ -264,7 +264,7 @@ namespace hive { namespace protocol {
     itr = props.find( "maximum_block_size" );
     if( itr != props.end() )
     {
-      uint32_t maximum_block_size;
+      uint32_t maximum_block_size = 0u;
       fc::raw::unpack_from_vector( itr->second, maximum_block_size );
       FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT, "maximum_block_size smaller than minimum max block size" );
     }
@@ -275,7 +275,7 @@ namespace hive { namespace protocol {
 
     if( itr != props.end() )
     {
-      uint16_t hbd_interest_rate;
+      uint16_t hbd_interest_rate = 0u;
       fc::raw::unpack_from_vector( itr->second, hbd_interest_rate );
       FC_ASSERT( hbd_interest_rate >= 0, "hbd_interest_rate must be positive" );
       FC_ASSERT( hbd_interest_rate <= HIVE_100_PERCENT, "hbd_interest_rate must not exceed 100%" );
@@ -316,7 +316,7 @@ namespace hive { namespace protocol {
     itr = props.find( "account_subsidy_budget" );
     if( itr != props.end() )
     {
-      int32_t account_subsidy_budget;
+      int32_t account_subsidy_budget  = 0u;
       fc::raw::unpack_from_vector( itr->second, account_subsidy_budget ); // Checks that the value can be deserialized
       FC_ASSERT( account_subsidy_budget >= HIVE_RD_MIN_BUDGET, "Budget must be at least ${n}", ("n", HIVE_RD_MIN_BUDGET) );
       FC_ASSERT( account_subsidy_budget <= HIVE_RD_MAX_BUDGET, "Budget must be at most ${n}", ("n", HIVE_RD_MAX_BUDGET) );
@@ -325,7 +325,7 @@ namespace hive { namespace protocol {
     itr = props.find( "account_subsidy_decay" );
     if( itr != props.end() )
     {
-      uint32_t account_subsidy_decay;
+      uint32_t account_subsidy_decay = 0u;
       fc::raw::unpack_from_vector( itr->second, account_subsidy_decay ); // Checks that the value can be deserialized
       FC_ASSERT( account_subsidy_decay >= HIVE_RD_MIN_DECAY, "Decay must be at least ${n}", ("n", HIVE_RD_MIN_DECAY) );
       FC_ASSERT( account_subsidy_decay <= HIVE_RD_MAX_DECAY, "Decay must be at most ${n}", ("n", HIVE_RD_MAX_DECAY) );
@@ -341,7 +341,7 @@ namespace hive { namespace protocol {
   void account_witness_proxy_operation::validate() const
   {
     validate_account_name( account );
-    if( proxy.size() )
+    if( !is_clearing_proxy() )
       validate_account_name( proxy );
     FC_ASSERT( proxy != account, "Cannot proxy to self" );
   }

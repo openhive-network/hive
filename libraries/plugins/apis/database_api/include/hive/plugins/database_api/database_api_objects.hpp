@@ -231,7 +231,8 @@ struct api_dynamic_global_property_object
     vesting_reward_percent( o.vesting_reward_percent ),
     sps_fund_percent( o.sps_fund_percent ),
     sps_interval_ledger( o.sps_interval_ledger ),
-    downvote_pool_percent( o.downvote_pool_percent )
+    downvote_pool_percent( o.downvote_pool_percent ),
+    current_remove_threshold( o.current_remove_threshold )
 #ifdef HIVE_ENABLE_SMT
     , smt_creation_fee( o.smt_creation_fee )
 #endif
@@ -278,6 +279,7 @@ struct api_dynamic_global_property_object
   uint16_t                        sps_fund_percent;
   asset                           sps_interval_ledger;
   uint16_t                        downvote_pool_percent;
+  int16_t                         current_remove_threshold;
 #ifdef HIVE_ENABLE_SMT
   asset                           smt_creation_fee;
 #endif
@@ -287,9 +289,9 @@ struct api_change_recovery_account_request_object
 {
   api_change_recovery_account_request_object( const change_recovery_account_request_object& o, const database& db ):
     id( o.get_id() ),
-    account_to_recover( o.account_to_recover ),
-    recovery_account( o.recovery_account ),
-    effective_on( o.effective_on )
+    account_to_recover( o.get_account_to_recover() ),
+    recovery_account( o.get_recovery_account() ),
+    effective_on( o.get_execution_time() )
   {}
 
   change_recovery_account_request_id_type id;
@@ -455,14 +457,14 @@ struct api_account_object
 {
   api_account_object( const account_object& a, const database& db, bool delayed_votes_active ) :
     id( a.get_id() ),
-    name( a.name ),
+    name( a.get_name() ),
     memo_key( a.memo_key ),
-    proxy( a.proxy ),
+    proxy( HIVE_PROXY_TO_SELF_ACCOUNT ),
     last_account_update( a.last_account_update ),
     created( a.created ),
     mined( a.mined ),
-    recovery_account( a.recovery_account ),
-    reset_account( a.reset_account ),
+    recovery_account( a.get_recovery_account() ),
+    reset_account( HIVE_NULL_ACCOUNT ),
     last_account_recovery( a.last_account_recovery ),
     comment_count( a.comment_count ),
     lifetime_vote_count( a.lifetime_vote_count ),
@@ -502,8 +504,12 @@ struct api_account_object
     last_post_edit( a.last_post_edit ),
     last_vote_time( a.last_vote_time ),
     post_bandwidth( a.post_bandwidth ),
-    pending_claimed_accounts( a.pending_claimed_accounts )
+    pending_claimed_accounts( a.pending_claimed_accounts ),
+    governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
   {
+    if( a.has_proxy() )
+      proxy = db.get_account( a.get_proxy() ).get_name();
+
     size_t n = a.proxied_vsf_votes.size();
     proxied_vsf_votes.reserve( n );
     for( size_t i=0; i<n; i++ )
@@ -615,6 +621,7 @@ struct api_account_object
   bool              is_smt = false;
 
   fc::optional< vector< delayed_votes_data > >  delayed_votes;
+  time_point_sec governance_vote_expiration_ts;
 };
 
 struct api_owner_authority_history_object
@@ -639,9 +646,9 @@ struct api_account_recovery_request_object
 {
   api_account_recovery_request_object( const account_recovery_request_object& o, const database& db ) :
     id( o.get_id() ),
-    account_to_recover( o.account_to_recover ),
-    new_owner_authority( authority( o.new_owner_authority ) ),
-    expires( o.expires )
+    account_to_recover( o.get_account_to_recover() ),
+    new_owner_authority( authority( o.get_new_owner_authority() ) ),
+    expires( o.get_expiration_time() )
   {}
 
   api_account_recovery_request_object() {}
@@ -850,7 +857,7 @@ struct api_smt_token_object
   api_smt_token_object( const smt_token_object& token, const database& db )
     : token( token.copy_chain_object() ) //FIXME: exposes internal chain object as API result
   {
-    const smt_ico_object* ico = db.find< chain::smt_ico_object, chain::by_symbol >( token.liquid_symbol );
+    const smt_ico_object* ico = db.find< smt_ico_object, by_symbol >( token.liquid_symbol );
     if ( ico != nullptr )
       this->ico = ico->copy_chain_object(); //FIXME: exposes internal chain object as API result
   }
@@ -1063,7 +1070,7 @@ FC_REFLECT( hive::plugins::database_api::api_dynamic_global_property_object,
           (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)
           (available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)(next_maintenance_time)
           (last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)
-          (sps_interval_ledger)(downvote_pool_percent)
+          (sps_interval_ledger)(downvote_pool_percent)(current_remove_threshold)
 #ifdef HIVE_ENABLE_SMT
           (smt_creation_fee)
 #endif
@@ -1107,7 +1114,8 @@ FC_REFLECT( hive::plugins::database_api::api_account_object,
           (last_post)(last_root_post)(last_post_edit)(last_vote_time)
           (post_bandwidth)(pending_claimed_accounts)
           (is_smt)
-    (delayed_votes)
+          (delayed_votes)
+          (governance_vote_expiration_ts)
         )
 
 FC_REFLECT( hive::plugins::database_api::api_owner_authority_history_object,

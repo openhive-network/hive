@@ -274,15 +274,6 @@ namespace hive { namespace chain {
 
 } }
 
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template<> struct is_static_length< hive::chain::witness_vote_object > : public boost::true_type {};
-template<> struct is_static_length< hive::chain::witness_schedule_object > : public boost::true_type {};
-
-} // mira
-#endif
-
 FC_REFLECT_ENUM( hive::chain::witness_object::witness_schedule_type, (elected)(timeshare)(miner)(none) )
 
 FC_REFLECT( hive::chain::chain_properties,

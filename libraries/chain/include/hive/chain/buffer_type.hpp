@@ -37,6 +37,6 @@ template< typename T, typename B > inline T unpack_from_buffer( const B& raw )
 
 } } // fc::raw
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
 FC_REFLECT_TYPENAME( hive::chain::buffer_type )
 #endif

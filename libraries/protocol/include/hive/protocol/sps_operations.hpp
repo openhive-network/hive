@@ -30,21 +30,28 @@ struct create_proposal_operation : public base_operation
   void get_required_active_authorities( flat_set<account_name_type>& a )const { a.insert( creator ); }
 };
 
+struct update_proposal_end_date
+{
+  time_point_sec end_date;
+};
+
+typedef static_variant<
+        void_t,
+        update_proposal_end_date
+        > update_proposal_extension;
+
+typedef flat_set< update_proposal_extension > update_proposal_extensions_type;
+
 struct update_proposal_operation : public base_operation
 {
   int64_t proposal_id;
-
   account_name_type creator;
-
   /// Amount of HBDs to be daily paid to the `receiver` account, if updated, has to be lower or equal to the current amount
   asset daily_pay;
-
   string subject;
-
   /// Given link shall be a valid permlink. Must be posted by creator or the receiver.
   string permlink;
-
-  extensions_type extensions;
+  update_proposal_extensions_type extensions;
 
   void validate()const;
 
@@ -156,4 +163,5 @@ FC_REFLECT( hive::protocol::update_proposal_operation, (proposal_id)(creator)(da
 FC_REFLECT( hive::protocol::update_proposal_votes_operation, (voter)(proposal_ids)(approve)(extensions) )
 FC_REFLECT( hive::protocol::remove_proposal_operation, (proposal_owner)(proposal_ids)(extensions) )
 FC_REFLECT(hive::protocol::proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx))
+FC_REFLECT( hive::protocol::update_proposal_end_date, (end_date) )
 
