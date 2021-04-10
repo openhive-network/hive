@@ -2597,7 +2597,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, sam_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+    /// Starting from HF25 voting for already paid posts is allowed again.
+    db->push_transaction( tx, 0 );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2614,7 +2615,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, bob_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+    /// Starting from HF25 voting for already paid posts is allowed again.
+    db->push_transaction( tx, 0 );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2631,8 +2633,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, dave_private_key );
-
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+    /// Starting from HF25 voting for already paid posts is allowed again.
+    db->push_transaction( tx, 0 );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2986,7 +2988,7 @@ BOOST_AUTO_TEST_CASE( generate_account_subsidies )
     };
 
     const witness_schedule_object& wso = db->get_witness_schedule_object();
-    BOOST_CHECK_EQUAL( wso.account_subsidy_rd.resource_unit, HIVE_ACCOUNT_SUBSIDY_PRECISION );
+    BOOST_CHECK_EQUAL( wso.account_subsidy_rd.resource_unit, static_cast<uint64_t>(HIVE_ACCOUNT_SUBSIDY_PRECISION) );
     BOOST_CHECK_EQUAL( wso.account_subsidy_rd.budget_per_time_unit, 5123 );
     BOOST_CHECK(  is_pool_in_equilibrium( int64_t( wso.account_subsidy_rd.pool_eq )  , wso.account_subsidy_rd.budget_per_time_unit, wso.account_subsidy_rd.decay_params ) );
     BOOST_CHECK( !is_pool_in_equilibrium( int64_t( wso.account_subsidy_rd.pool_eq )-1, wso.account_subsidy_rd.budget_per_time_unit, wso.account_subsidy_rd.decay_params ) );
@@ -3064,9 +3066,9 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
       generate_block();
 
       // The transaction fails in generate_block(), meaning it is removed from the local node's transaction list
-      BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), 0 );
+      BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), 0u );
       BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 0 );
-      BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0 );
+      BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0u );
     } while( db->get< witness_object, by_name >( db->get_scheduled_witness( 1 ) ).schedule == witness_object::timeshare );
 
     db->push_transaction( tx, 0 );
@@ -3074,9 +3076,9 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     BOOST_CHECK( db->_pending_tx.size() == 1 );
     // But generate another block, as a non-time-share witness, and it works
     generate_block();
-    BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), 1 );
+    BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), 1u );
     BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
-    BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0 );
+    BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0u );
 
     while( db->get< witness_object, by_name >( db->get_scheduled_witness( 1 ) ).schedule == witness_object::timeshare )
     {
@@ -3100,7 +3102,7 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     BOOST_CHECK_EQUAL( db->_pending_tx.size(), n+1 );
     generate_block();
     BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), n );
-    BOOST_CHECK_EQUAL( db->_pending_tx.size(), 1 );
+    BOOST_CHECK_EQUAL( db->_pending_tx.size(), 1u );
   }
   FC_LOG_AND_RETHROW()
 }

@@ -386,7 +386,7 @@ IF(NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.(a|lib)$")
 IF(MSVC)
 add_definitions(/DBOOST_TEST_DYN_LINK)
 ELSE(MSVC)
-add_definitions(-DBOOST_TEST_DYN_LINK)
+# add_definitions(-DBOOST_TEST_DYN_LINK)
 ENDIF(MSVC)
 ENDIF()
 

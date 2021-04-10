@@ -72,7 +72,7 @@ static fc::hmac<fc::sha224> mac_224;
 static fc::hmac<fc::sha256> mac_256;
 static fc::hmac<fc::sha512> mac_512;
 
-template<int N,int M>
+template<unsigned int N,unsigned int M>
 static void run_test( const fc::string& key, const fc::string& data, const fc::string& expect_224,
                       const fc::string& expect_256, const fc::string& expect_512 )
 {

@@ -1944,7 +1944,8 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   else
   {
-    FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_1_24 ), "Votes evaluating for comment that is paid out is forbidden." );
+    /// Remove this assertion after HF25
+    FC_ASSERT((!_db.has_hardfork( HIVE_HARDFORK_1_24 ) || _db.has_hardfork( HIVE_HARDFORK_1_25 )), "Votes evaluating for comment that is paid out is forbidden." );
   }
 
   if( !comment_cashout || _db.calculate_discussion_payout_time( *comment_cashout ) == fc::time_point_sec::maximum() )

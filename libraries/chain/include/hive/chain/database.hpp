@@ -47,26 +47,13 @@ namespace chain {
   struct prepare_snapshot_supplement_notification;
   struct load_snapshot_supplement_notification;
 
+  class database;
   
   struct hardfork_versions
   {
     fc::time_point_sec         times[ HIVE_NUM_HARDFORKS + 1 ];
     protocol::hardfork_version versions[ HIVE_NUM_HARDFORKS + 1 ];
   };
-
-  class database;
-
-#ifdef ENABLE_MIRA
-  using set_index_type_func = std::function< void(database&, mira::index_type, const boost::filesystem::path&, const boost::any&) >;
-#endif
-
-  struct index_delegate {
-#ifdef ENABLE_MIRA
-    set_index_type_func set_index_type;
-#endif
-  };
-
-  using index_delegate_map = std::map< std::string, index_delegate >;
 
   class database_impl;
   class custom_operation_interpreter;
@@ -267,7 +254,7 @@ namespace chain {
       const comment_object&  get_comment(  const account_name_type& author, const shared_string& permlink )const;
       const comment_object*  find_comment( const account_name_type& author, const shared_string& permlink )const;
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
       const comment_object&  get_comment(  const account_id_type& author, const string& permlink )const;
       const comment_object*  find_comment( const account_id_type& author, const string& permlink )const;
 
@@ -624,11 +611,6 @@ namespace chain {
 
       optional< chainbase::database::session >& pending_transaction_session();
 
-      void set_index_delegate( const std::string& n, index_delegate&& d );
-      const index_delegate& get_index_delegate( const std::string& n );
-      bool has_index_delegate( const std::string& n );
-      const index_delegate_map& index_delegates();
-
 #ifdef IS_TEST_NET
       bool liquidity_rewards_enabled = true;
       bool skip_price_feed_limit_check = true;
@@ -807,7 +789,6 @@ namespace chain {
       std::string                   _json_schema;
 
       util::advanced_benchmark_dumper  _benchmark_dumper;
-      index_delegate_map            _index_delegate_map;
 
       fc::signal<void(const required_action_notification&)> _pre_apply_required_action_signal;
       fc::signal<void(const required_action_notification&)> _post_apply_required_action_signal;

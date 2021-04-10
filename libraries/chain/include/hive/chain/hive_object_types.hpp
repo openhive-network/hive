@@ -195,25 +195,11 @@ enum bandwidth_type
 
 } } //hive::chain
 
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template< typename T > struct is_static_length< chainbase::oid< T > > : public boost::true_type {};
-template< typename T > struct is_static_length< chainbase::oid_ref< T > > : public boost::true_type {};
-template< typename T > struct is_static_length< fc::fixed_string< T > > : public boost::true_type {};
-template<> struct is_static_length< hive::protocol::account_name_type > : public boost::true_type {};
-template<> struct is_static_length< hive::protocol::asset_symbol_type > : public boost::true_type {};
-template<> struct is_static_length< hive::protocol::asset > : public boost::true_type {};
-template<> struct is_static_length< hive::protocol::price > : public boost::true_type {};
-
-} // mira
-#endif
-
 namespace fc
 {
 class variant;
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
 inline void to_variant( const hive::chain::shared_string& s, variant& var )
 {
   var = fc::string( hive::chain::to_string( s ) );
@@ -226,11 +212,10 @@ inline void from_variant( const variant& var, hive::chain::shared_string& s )
 }
 #endif
 
-
 namespace raw
 {
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
 template< typename Stream >
 void pack( Stream& s, const chainbase::shared_string& ss )
 {
@@ -299,7 +284,7 @@ void unpack( Stream& s, boost::interprocess::flat_map< K, V, C, A >& value, uint
   }
 }
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
 template< typename T >
 T unpack_from_vector( const hive::chain::buffer_type& s )
 {
@@ -365,7 +350,7 @@ FC_REFLECT_ENUM( hive::chain::object_type,
 #endif
           )
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
 FC_REFLECT_TYPENAME( hive::chain::shared_string )
 #endif
 

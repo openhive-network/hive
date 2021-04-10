@@ -107,26 +107,19 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
       db._log_hardforks = false;
       open_test_database( db, data_dir.path() );
 
-#ifndef ENABLE_MIRA
       BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block.block_num() );
-#endif
 
       b = cutoff_block;
       for( uint32_t i = 0; i < 200; ++i )
       {
-#ifndef ENABLE_MIRA
         BOOST_CHECK( db.head_block_id() == b.id() );
-#else
-        BOOST_CHECK( i==0 || ( db.head_block_id() == b.id() ) );
-#endif
+
         //witness_id_type prev_witness = b.witness;
         string cur_witness = db.get_scheduled_witness(1);
         //BOOST_CHECK( cur_witness != prev_witness );
         b = bp.generate_block(db.get_slot_time(1), cur_witness, init_account_priv_key, database::skip_nothing);
       }
-#ifndef ENABLE_MIRA
       BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block.block_num()+200 );
-#endif
     }
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
@@ -229,22 +222,22 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
     //The two databases are on distinct forks now, but at the same height. Make a block on db2, make it invalid, then
     //pass it to db1 and assert that db1 doesn't switch to the new fork.
     signed_block good_block;
-    BOOST_CHECK_EQUAL(db1.head_block_num(), 13);
-    BOOST_CHECK_EQUAL(db2.head_block_num(), 13);
+    BOOST_CHECK_EQUAL(db1.head_block_num(), 13u);
+    BOOST_CHECK_EQUAL(db2.head_block_num(), 13u);
     {
       auto b = bp2.generate_block(db2.get_slot_time(1), db2.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
       good_block = b;
       b.transactions.emplace_back(signed_transaction());
       b.transactions.back().operations.emplace_back(transfer_operation());
       b.sign( init_account_priv_key );
-      BOOST_CHECK_EQUAL(b.block_num(), 14);
+      BOOST_CHECK_EQUAL(b.block_num(), 14u);
       HIVE_CHECK_THROW(PUSH_BLOCK( db1, b ), fc::exception);
     }
-    BOOST_CHECK_EQUAL(db1.head_block_num(), 13);
+    BOOST_CHECK_EQUAL(db1.head_block_num(), 13u);
     BOOST_CHECK_EQUAL(db1.head_block_id().str(), db1_tip);
 
     // assert that db1 switches to new fork with good block
-    BOOST_CHECK_EQUAL(db2.head_block_num(), 14);
+    BOOST_CHECK_EQUAL(db2.head_block_num(), 14u);
     PUSH_BLOCK( db1, good_block );
     BOOST_CHECK_EQUAL(db1.head_block_id().str(), db2.head_block_id().str());
   } catch (fc::exception& e) {
@@ -606,7 +599,7 @@ BOOST_FIXTURE_TEST_CASE( rsf_missed_blocks, clean_database_fixture )
       "1111111111111111111111111111111111111111111111111111111111111111"
       "1111111111111111111111111111111111111111111111111111111111111111"
     );
-    BOOST_CHECK_EQUAL( db->witness_participation_rate(), HIVE_100_PERCENT );
+    BOOST_CHECK_EQUAL( db->witness_participation_rate(), static_cast<uint32_t>(HIVE_100_PERCENT) );
 
     BOOST_TEST_MESSAGE("Generating a block skipping 1" );
     generate_block( ~database::skip_fork_db, init_account_priv_key, 1 );
@@ -719,7 +712,7 @@ BOOST_FIXTURE_TEST_CASE( skip_block, clean_database_fixture )
     BOOST_REQUIRE( db->head_block_num() == 2 );
 
     witness::block_producer bp( *db );
-    int init_block_num = db->head_block_num();
+    unsigned int init_block_num = db->head_block_num();
     int miss_blocks = fc::minutes( 1 ).to_seconds() / HIVE_BLOCK_INTERVAL;
     auto witness = db->get_scheduled_witness( miss_blocks );
     auto block_time = db->get_slot_time( miss_blocks );

@@ -62,7 +62,6 @@ libraries/jsonball/gensrc/
 libraries/jsonball/template_context/
 libraries/manifest/gensrc/
 libraries/manifest/template_context/
-libraries/mira/test/mira_test
 libraries/utilities/git_revision.cpp
 libraries/vendor/rocksdb/RocksDBConfig.cmake
 libraries/vendor/rocksdb/RocksDBConfigVersion.cmake

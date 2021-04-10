@@ -44,8 +44,6 @@
 
 #include <boost/scope_exit.hpp>
 
-#include <rocksdb/perf_context.h>
-
 #include <iostream>
 
 #include <cstdint>
@@ -145,7 +143,7 @@ void database::open( const open_args& args )
                                                 appbase::app().get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension );
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
 
     initialize_indexes();
     initialize_evaluators();
@@ -166,9 +164,7 @@ void database::open( const open_args& args )
     // Rewind all undo state. This should return us to the state at the last irreversible block.
     with_write_lock( [&]()
     {
-#ifndef ENABLE_MIRA
       undo_all();
-#endif
 
       if( args.chainbase_flags & chainbase::skip_env_check )
       {
@@ -236,35 +232,6 @@ void database::open( const open_args& args )
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
 
-#ifdef ENABLE_MIRA
-void reindex_set_index_helper( database& db, mira::index_type type, const boost::filesystem::path& p, const boost::any& cfg, std::vector< std::string > indices )
-{
-  index_delegate_map delegates;
-
-  if ( indices.size() > 0 )
-  {
-    for ( auto& index_name : indices )
-    {
-      if ( db.has_index_delegate( index_name ) )
-        delegates[ index_name ] = db.get_index_delegate( index_name );
-      else
-        wlog( "Encountered an unknown index name '${name}'.", ("name", index_name) );
-    }
-  }
-  else
-  {
-    delegates = db.index_delegates();
-  }
-
-  std::string type_str = type == mira::index_type::mira ? "mira" : "bmic";
-  for ( auto const& delegate : delegates )
-  {
-    ilog( "Converting index '${name}' to ${type} type.", ("name", delegate.first)("type", type_str) );
-    delegate.second.set_index_type( db, type, p, cfg );
-  }
-}
-#endif
-
 uint32_t database::reindex_internal( const open_args& args, signed_block& block )
 {
   uint64_t skip_flags =
@@ -290,29 +257,8 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
   while( !appbase::app().is_interrupt_request() && block.block_num() != last_block_num )
   {
     uint32_t cur_block_num = block.block_num();
-    if( cur_block_num % 100000 == 0 )
-    {
-      std::cerr << "   " << double( cur_block_num ) * 100 / last_block_num << "%   " << cur_block_num << " of " << last_block_num << "   (" <<
-#ifdef ENABLE_MIRA
-      get_cache_size()  << " objects cached using " << (get_cache_usage() >> 20) << "M"
-#else
-      (get_free_memory() >> 20) << "M free"
-#endif
-      << ")\n";
 
-      //rocksdb::SetPerfLevel(rocksdb::kEnableCount);
-      //rocksdb::get_perf_context()->Reset();
-    }
     apply_block( block, skip_flags );
-
-    if( cur_block_num % 100000 == 0 )
-    {
-      //std::cout << rocksdb::get_perf_context()->ToString() << std::endl;
-      if( cur_block_num % 1000000 == 0 )
-      {
-        dump_lb_call_counts();
-      }
-    }
 
     if( (args.benchmark.first > 0) && (cur_block_num % args.benchmark.first == 0) )
       args.benchmark.second( cur_block_num, get_abstract_index_cntr() );
@@ -369,12 +315,6 @@ uint32_t database::reindex( const open_args& args )
   {
     ilog( "Reindexing Blockchain" );
 
-    if( args.force_replay )
-      wipe( args.data_dir, args.shared_mem_dir, false );
-    else
-      close();
-
-    open( args );
 
     if( appbase::app().is_interrupt_request() )
       return 0;
@@ -384,14 +324,6 @@ uint32_t database::reindex( const open_args& args )
     note.force_replay = args.force_replay || _head_block_num == 0;
 
     HIVE_TRY_NOTIFY(_pre_reindex_signal, note);
-
-#ifdef ENABLE_MIRA
-    if( args.replay_in_memory )
-    {
-      ilog( "Configuring replay to use memory..." );
-      reindex_set_index_helper( *this, mira::index_type::bmic, args.shared_mem_dir, args.database_cfg, args.replay_memory_indices );
-    }
-#endif
 
     _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
 
@@ -447,14 +379,6 @@ uint32_t database::reindex( const open_args& args )
     if ( _block_log.head()->block_num() )
       _fork_db.start_block( *_block_log.head() );
 
-#ifdef ENABLE_MIRA
-    if ( args.replay_in_memory )
-    {
-      ilog( "Migrating state to disk..." );
-      reindex_set_index_helper( *this, mira::index_type::mira, args.shared_mem_dir, args.database_cfg, args.replay_memory_indices );
-    }
-#endif
-
     auto end_time = fc::time_point::now();
     ilog("Done reindexing, elapsed time: ${elapsed_time} sec", 
          ("elapsed_time", double((end_time - start_time).count()) / 1000000.0));
@@ -488,10 +412,6 @@ void database::close(bool rewind)
     // we have to clear_pending() after we're done popping to get a clean
     // DB state (issue #336).
     clear_pending();
-
-#ifdef ENABLE_MIRA
-    undo_all();
-#endif
 
     chainbase::database::flush();
     chainbase::database::close();
@@ -829,7 +749,8 @@ const comment_object* database::find_comment( const account_name_type& author, c
   return find_comment( acc->get_id(), permlink );
 }
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
+
 const comment_object& database::get_comment( const account_id_type& author, const string& permlink )const
 { try {
   return get< comment_object, by_permlink >( comment_object::compute_author_and_permlink_hash( author, permlink ) );
@@ -851,6 +772,7 @@ const comment_object* database::find_comment( const account_name_type& author, c
   if(acc == nullptr) return nullptr;
   return find_comment( acc->get_id(), permlink );
 }
+
 #endif
 
 const escrow_object& database::get_escrow( const account_name_type& name, uint32_t escrow_id )const
@@ -3390,14 +3312,14 @@ void database::account_recovery_processing()
   while( change_req != change_req_idx.end() && change_req->get_execution_time() <= head_block_time() )
   {
     const auto& account = get_account( change_req->get_account_to_recover() );
-    const auto& old_recovery_account = get_account( account.get_recovery_account() );
+    const auto& old_recovery_account_name = account.get_recovery_account();
     const auto& new_recovery_account = get_account( change_req->get_recovery_account() );
     modify( account, [&]( account_object& a )
     {
       a.set_recovery_account( new_recovery_account );
     });
 
-    push_virtual_operation(changed_recovery_account_operation( account.name, old_recovery_account.name, new_recovery_account.name ));
+    push_virtual_operation(changed_recovery_account_operation( account.name, old_recovery_account_name, new_recovery_account.name ));
 
     remove( *change_req );
     change_req = change_req_idx.begin();
@@ -3871,7 +3793,6 @@ void database::apply_block( const signed_block& next_block, uint32_t skip )
 
 void database::check_free_memory( bool force_print, uint32_t current_block_num )
 {
-#ifndef ENABLE_MIRA
   uint64_t free_mem = get_free_memory();
   uint64_t max_mem = get_max_memory();
 
@@ -3907,7 +3828,6 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
         elog( "Free memory is now ${n}M. Increase shared file size immediately!" , ("n", free_mb) );
     }
   }
-#endif
 }
 
 void database::_apply_block( const signed_block& next_block )
@@ -4091,7 +4011,6 @@ void database::_apply_block( const signed_block& next_block )
   // last call of applying a block because it is the only thing that is not
   // reversible.
   migrate_irreversible_state();
-  trim_cache();
 
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (next_block.block_num()) ) }
 
@@ -5329,26 +5248,6 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
         FC_ASSERT( false, "invalid symbol" );
     }
   });
-}
-
-void database::set_index_delegate( const std::string& n, index_delegate&& d )
-{
-  _index_delegate_map[ n ] = d;
-}
-
-const index_delegate& database::get_index_delegate( const std::string& n )
-{
-  return _index_delegate_map.at( n );
-}
-
-bool database::has_index_delegate( const std::string& n )
-{
-  return _index_delegate_map.find( n ) != _index_delegate_map.end();
-}
-
-const index_delegate_map& database::index_delegates()
-{
-  return _index_delegate_map;
 }
 
 void database::adjust_balance( const account_object& a, const asset& delta )

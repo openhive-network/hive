@@ -289,14 +289,6 @@ namespace hive { namespace chain {
 
 } } // hive::chain
 
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template<> struct is_static_length< hive::chain::comment_vote_object > : public boost::true_type {};
-
-} // mira
-#endif
-
 FC_REFLECT( hive::chain::comment_object,
           (id)(root_comment)(parent_comment)
           (author_and_permlink_hash)(depth)

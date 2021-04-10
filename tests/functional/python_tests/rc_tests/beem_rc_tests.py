@@ -401,7 +401,6 @@ def test_delegate_to_pool_full():
 
 
 def test_delegate_from_pool_full():
-    # TODO: overdelegating, bob has a max of 20 rc so he's blocked, but alice has a max of 100 so she can still use the pool
     rc = RC(node_client)
     logger.info("delegate rc from pool full tests")
     rc.delegate_to_pool("initminer", "secondpool", '100')
@@ -600,11 +599,32 @@ def test_delegate_from_pool_full():
     assert rc_account['delegation_slots'][0]['max_mana'] == 0
 
     logger.info("Test recreating a delegation that was partially used after deleting it")
-    rc.delegate_from_pool("secondpool", "bob", 30)
+    rc.delegate_from_pool("secondpool", "bob", 6)
     rc_account = node_client.rpc.find_rc_accounts(["bob"])[0]
     assert rc_account['delegation_slots'][0]['delegator'] == "secondpool"
-    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] == 30
-    assert rc_account['delegation_slots'][0]['max_mana'] == 30
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] == 6
+    assert rc_account['delegation_slots'][0]['max_mana'] == 6
+
+    logger.info("Test emptying a delegation but not the pool and check if other delegatees can still use rc")
+    # use up all the remaining RC
+    bob_has_rc = True
+    while bob_has_rc:
+        try:
+            Account("bob", hive_instance=node_client).transfer("bob", 1.000, "TESTS")
+            hive_utils.common.wait_n_blocks(args.node_url, 1)
+        except Exception:
+            bob_has_rc = False
+            pass
+
+
+    rc_account = node_client.rpc.find_rc_accounts(["bob"])[0]
+    assert rc_account['delegation_slots'][0]['delegator'] == "secondpool"
+    assert rc_account['delegation_slots'][0]["rc_manabar"]["current_mana"] < 6
+    assert rc_account['delegation_slots'][0]['max_mana'] == 6
+
+    # Should be able to use RC
+    Account("rctest1", hive_instance=node_client).transfer("rctest1", 1.000, "TESTS")
+
 
 
 def delegation_rc_exploit_test():
@@ -725,7 +745,6 @@ if __name__ == '__main__':
     if node is not None:
         node.run_hive_node(["--enable-stale-production"])
 
-
     try:
         if node is None or node.is_running():
             node_client = Hive(node=[node_url], no_broadcast=False, keys=keys)
@@ -761,4 +780,3 @@ if __name__ == '__main__':
             with open(args.junit_output, "w") as junit_xml:
                 TestSuite.to_file(junit_xml, [test_suite], prettyprint=False)
         sys.exit(return_code)
-

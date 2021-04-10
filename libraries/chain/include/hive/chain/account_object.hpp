@@ -594,16 +594,6 @@ namespace hive { namespace chain {
   > change_recovery_account_request_index;
 } }
 
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template<> struct is_static_length< hive::chain::vesting_delegation_object > : public boost::true_type {};
-template<> struct is_static_length< hive::chain::vesting_delegation_expiration_object > : public boost::true_type {};
-template<> struct is_static_length< hive::chain::change_recovery_account_request_object > : public boost::true_type {};
-
-} // mira
-#endif
-
 FC_REFLECT( hive::chain::account_object,
           (id)(name)(memo_key)(proxy)(last_account_update)
           (created)(mined)

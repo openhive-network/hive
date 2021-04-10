@@ -14,14 +14,13 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
     public:
 
-#ifdef ENABLE_MIRA
+#ifdef ENABLE_STD_ALLOCATOR
       environment_check()
 #else
       template< typename Allocator >
       environment_check( allocator< Allocator > a )
                   : version_info( a ), plugins( a )
 #endif
-
       {
         memset( &compiler_version, 0, sizeof( compiler_version ) );
         memcpy( &compiler_version, __VERSION__, std::min<size_t>( strlen(__VERSION__), 256 ) );
@@ -44,7 +43,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
       environment_check& operator = ( const environment_check& other )
       {
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
         plugins = plugins;
 #endif
         compiler_version = other.compiler_version;
@@ -63,18 +62,15 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         retVal += ", \"apple\":" + std::to_string(apple);
         retVal += ", \"windows\":" + std::to_string(windows);
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
         retVal += ", " + std::string( version_info.c_str() );
         retVal += ", " + dump( plugins );
 #endif
-
         retVal += "}";
 
         return retVal;
       }
-
-#ifndef ENABLE_MIRA
-
+#ifndef ENABLE_STD_ALLOCATOR
       template< typename Set >
       std::string dump( const Set& source ) const
       {
@@ -136,7 +132,6 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       shared_string                 version_info;
       t_flat_set< shared_string >   plugins;
 #endif
-
       boost::array<char,256>  compiler_version;
       bool                    debug = false;
       bool                    apple = false;
@@ -145,18 +140,18 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       bool                    created_storage = true;
   };
 
-  void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension )
+  void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file )
   {
     assert( dir.is_absolute() );
     bfs::create_directories( dir );
     if( _data_dir != dir ) close();
+    if( wipe_shared_file ) wipe( dir );
 
     _data_dir = dir;
     _database_cfg = database_cfg;
-
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
     auto abs_path = bfs::absolute( dir / "shared_memory.bin" );
-
+    
     if( bfs::exists( abs_path ) )
     {
       _file_size = bfs::file_size( abs_path );
@@ -214,97 +209,28 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     _flock = bip::file_lock( abs_path.generic_string().c_str() );
     if( !_flock.try_lock() )
       BOOST_THROW_EXCEPTION( std::runtime_error( "could not gain write access to the shared memory file" ) );
-#else
-    for( auto& item : _index_list )
-    {
-      item->open( _data_dir, _database_cfg );
-    }
 #endif
+
     _is_open = true;
   }
 
   void database::flush() {
-#ifndef ENABLE_MIRA
     if( _segment )
       _segment->flush();
     if( _meta )
       _meta->flush();
-#else
-    for( auto& item : _index_list )
-    {
-      item->flush();
-    }
-#endif
-  }
-
-  size_t database::get_cache_usage() const
-  {
-#ifdef ENABLE_MIRA
-    size_t cache_size = 0;
-    for( const auto& i : _index_list )
-    {
-      cache_size += i->get_cache_usage();
-    }
-    return cache_size;
-#else
-    return 0;
-#endif
-  }
-
-  size_t database::get_cache_size() const
-  {
-#ifdef ENABLE_MIRA
-    size_t cache_size = 0;
-    for( const auto& i : _index_list )
-    {
-      cache_size += i->get_cache_size();
-    }
-    return cache_size;
-#else
-    return 0;
-#endif
-  }
-
-  void database::dump_lb_call_counts()
-  {
-#ifdef ENABLE_MIRA
-    for( const auto& i : _index_list )
-    {
-      i->dump_lb_call_counts();
-    }
-#endif
-  }
-
-  void database::trim_cache()
-  {
-#ifdef ENABLE_MIRA
-    if( _index_list.size() )
-    {
-      (*_index_list.begin())->trim_cache();
-    }
-#endif
   }
 
   void database::close()
   {
     if( _is_open )
     {
-#ifndef ENABLE_MIRA
       _segment.reset();
       _meta.reset();
       _data_dir = bfs::path();
 
       wipe_indexes();
 
-#else
-      undo_all();
-
-      for( auto& item : _index_list )
-      {
-        item->close();
-      }
-      wipe_indexes();
-#endif
       _is_open = false;
     }
   }
@@ -318,7 +244,6 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   void database::wipe( const bfs::path& dir )
   {
     assert( !_is_open );
-#ifndef ENABLE_MIRA
     _segment.reset();
     _meta.reset();
     bfs::remove_all( dir / "shared_memory.bin" );
@@ -327,21 +252,10 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
     wipe_indexes();
 
-#else
-    for( auto& item : _index_list )
-    {
-      item->wipe( dir );
-    }
-
-    wipe_indexes();
-
-    _index_types.clear();
-#endif
   }
 
   void database::resize( size_t new_shared_file_size )
   {
-#ifndef ENABLE_MIRA
     if( _undo_session_count )
       BOOST_THROW_EXCEPTION( std::runtime_error( "Cannot resize shared memory file while undo session is active" ) );
 
@@ -356,7 +270,6 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     {
       index_type->add_index( *this );
     }
-#endif
   }
 
   void database::set_require_locking( bool enable_require_locking )
