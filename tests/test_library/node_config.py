@@ -95,6 +95,10 @@ class NodeConfig:
         self.private_key = None
         self.witness_skip_enforce_bandwidth = None
 
+        entries = super().__getattribute__('entries')
+        for key in ['shared_file_dir', 'account_history_rocksdb_path', 'snapshot_root_dir']:
+            entries[key] = String()
+
     def __check_if_key_is_valid(self, key):
         entries = super().__getattribute__('entries')
         if key not in entries.keys():
