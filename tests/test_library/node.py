@@ -24,8 +24,7 @@ class Node:
 
         from .node_configs.default import create_default_config
         self.config = create_default_config()
-        self.add_plugin('network_broadcast_api')
-        self.add_plugin('network_node_api')
+        self.config.plugin += ['network_broadcast_api', 'network_node_api']
         self.config.shared_file_size = '6G'
         self.config.enable_stale_production = 1
         self.config.required_participation = 0
@@ -40,12 +39,6 @@ class Node:
 
         process.kill()
         process.wait()
-
-    def add_plugin(self, plugin):
-        if not self.config.plugin:
-            self.config.plugin = []
-
-        self.config.plugin += plugin
 
     def set_directory(self, directory):
         self.directory = Path(directory).absolute()
@@ -213,8 +206,8 @@ class Node:
         self.executable_file_path = executable_file_path
 
     def set_witness(self, witness_name, key=None):
-        if 'witness' not in self.config['plugin']:
-            self.add_plugin('witness')
+        if 'witness' not in self.config.plugin:
+            self.config.plugin += ['witness']
 
         if key is None:
             witness = Account(witness_name)
