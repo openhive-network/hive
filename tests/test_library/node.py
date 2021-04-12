@@ -53,11 +53,10 @@ class Node:
         if plugin not in supported_plugins:
             raise Exception(f'Plugin {plugin} is not supported')
 
-        self.config.add_entry(
-            'plugin',
-            plugin,
-            'Plugin(s) to enable, may be specified multiple times',
-        )
+        if not self.config.plugin:
+            self.config.plugin = []
+
+        self.config.plugin += plugin
 
     def set_directory(self, directory):
         self.directory = Path(directory).absolute()
