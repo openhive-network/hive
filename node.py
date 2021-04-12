@@ -23,53 +23,11 @@ class Node:
         self.finalizer = None
 
         self.config = NodeConfig()
-        self.config.add_entry(
-            'log-appender',
-            '{"appender":"stderr","stream":"std_error"} {"appender":"p2p","file":"logs/p2p/p2p.log"}',
-            'Appender definition json: {"appender", "stream", "file"} Can only specify a file OR a stream'
-        )
-
-        self.config.add_entry(
-            'log-logger',
-            '{"name": "default", "level": "info", "appender": "stderr"} {"name": "p2p", "level": "warn", "appender": "p2p"}',
-            'Logger definition json: {"name", "level", "appender"}'
-        )
-
-        self.config.add_entry(
-            'backtrace',
-            'yes',
-            'Whether to print backtrace on SIGSEGV'
-        )
-
-        self.add_plugin('account_by_key')
-        self.add_plugin('account_by_key_api')
-        self.add_plugin('condenser_api')
         self.add_plugin('network_broadcast_api')
         self.add_plugin('network_node_api')
-
-        self.config.add_entry(
-            'shared-file-dir',
-            '"blockchain"',
-            'The location of the chain shared memory files (absolute path or relative to application data dir)'
-        )
-
-        self.config.add_entry(
-            'shared-file-size',
-            '6G',
-            'Size of the shared memory file. Default: 54G. If running a full node, increase this value to 200G'
-        )
-
-        self.config.add_entry(
-            'enable-stale-production',
-            '1',
-            'Enable block production, even if the chain is stale'
-        )
-
-        self.config.add_entry(
-            'required-participation',
-            '0',
-            'Percent of witnesses (0-99) that must be participating in order to produce blocks'
-        )
+        self.config.shared_file_size = '6G'
+        self.config.enable_stale_production = 1
+        self.config.required_participation = 0
 
     def __str__(self):
         return f'{self.network.name}::{self.name}' if self.network is not None else self.name
@@ -126,7 +84,7 @@ class Node:
         self.config.add_entry('webserver-http-endpoint', endpoint)
 
     def get_webserver_http_endpoints(self):
-        return self.config['webserver-http-endpoint']
+        return self.config.webserver_http_endpoint
 
     def add_webserver_ws_endpoint(self, endpoint):
         self.config.add_entry('webserver-ws-endpoint', endpoint)
