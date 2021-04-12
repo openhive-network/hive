@@ -4,7 +4,6 @@ import time
 
 
 from .node_api.node_apis import Apis
-from .node_config import NodeConfig
 from .account import Account
 
 
@@ -190,6 +189,7 @@ class Node:
             from time import sleep
             sleep(0.1)
 
+            from .node_config import NodeConfig
             self.config = NodeConfig()
             self.config.load_from_file(self.directory / 'config.ini')
 
