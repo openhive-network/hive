@@ -60,7 +60,7 @@ long next_hf_time()
 #ifdef IS_TEST_NET
     1588334400; // Friday, 1 May 2020 12:00:00 GMT
 #else
-    1640952000; //  Thursday, 31 December 2021 12:00:00 GMT
+    1622548800; // Tuesday, 1 June 2021 12:00:00 GMT
 #endif /// IS_TEST_NET
 
   const char* value = getenv("HIVE_HF25_TIME");
