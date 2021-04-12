@@ -67,6 +67,7 @@ class rc_account_object : public object< rc_account_object_type, rc_account_obje
     account_name_type     account;
     account_name_type     creator;
     hive::chain::util::manabar   rc_manabar;
+    // Base rc granted from the account creation fee
     asset                 max_rc_creation_adjustment = asset( 0, VESTS_SYMBOL );
     asset                 vests_delegated_to_pools = asset( 0, VESTS_SYMBOL );
     fc::array< account_name_type, HIVE_RC_MAX_SLOTS > indel_slots;

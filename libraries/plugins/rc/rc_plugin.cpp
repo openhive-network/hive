@@ -981,12 +981,12 @@ struct post_apply_operation_visitor
 
   void update_outdel_overflow( const account_name_type& account, const asset& amount ) const
   {
-    // TODO: Build unit tests for this
     if( amount.symbol != VESTS_SYMBOL ) return;
 
     const auto& rc_acc = _db.get< rc_account_object, by_name >( account );
 
     int64_t new_max_mana = get_maximum_rc( _db.get< account_object, by_name >( account ), rc_acc );
+
     int64_t pool_del_delta = 0;
     int64_t returned_rcs = 0;
     vector< const rc_indel_edge_object* > edges_to_remove;
@@ -1002,7 +1002,6 @@ struct post_apply_operation_visitor
       while( needed_rcs > 0 && rc_del_itr != rc_del_idx.end() && rc_del_itr->from_account == account )
       {
         int64_t edge_delta_rc = std::min( needed_rcs, rc_del_itr->amount.amount.value );
-
         const auto& rc_pool = _db.get< rc_delegation_pool_object, by_account_symbol >( boost::make_tuple( rc_del_itr->to_pool, VESTS_SYMBOL ) );
         auto pool_manabar = rc_pool.rc_pool_manabar;
 
@@ -1028,7 +1027,7 @@ struct post_apply_operation_visitor
           pool.max_rc -= edge_delta_rc;
           pool.rc_pool_manabar = pool_manabar;
         });
-
+        // If the needed RC allow us to leave the delegation untouched, we just change the delegation to take it into account
         if( rc_del_itr->amount.amount.value > edge_delta_rc )
         {
           _db.modify( *rc_del_itr, [&]( rc_indel_edge_object& indel )
@@ -1036,6 +1035,7 @@ struct post_apply_operation_visitor
             indel.amount.amount.value -= edge_delta_rc;
           });
         }
+        // Otherwise we remove it
         else
         {
           edges_to_remove.push_back( &(*rc_del_itr) );
@@ -1052,7 +1052,7 @@ struct post_apply_operation_visitor
 
     _db.modify( rc_acc, [&]( rc_account_object& rca )
     {
-      rca.rc_manabar.current_mana += returned_rcs;
+      rca.rc_manabar.current_mana = std::min(rca.rc_manabar.current_mana + returned_rcs, std::max(new_max_mana, int64_t(0)));
       rca.vests_delegated_to_pools.amount.value -= pool_del_delta;
       rca.out_delegations -= edges_to_remove.size();
     });

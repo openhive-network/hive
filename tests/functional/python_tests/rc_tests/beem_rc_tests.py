@@ -250,6 +250,7 @@ def test_delegate_to_pool_full():
 
     rc.delegate_to_pool("alice", 'alice', '0')
     rc_account_before = node_client.rpc.find_rc_accounts(["alice"])[0]
+    assert rc_account_before['vests_delegated_to_pools']['amount'] == '0'
     assert rc_account_before['out_delegation_total'] == 0, "out_delegation_total is not 0"
     rc.delegate_to_pool("alice", 'alice', '100')
     rc_account_after = node_client.rpc.find_rc_accounts(["alice"])[0]
@@ -257,6 +258,7 @@ def test_delegate_to_pool_full():
         rc_account_before['rc_manabar']['current_mana'] - rc_account_after['rc_manabar']['current_mana'])
     assert rc_account_before['max_rc'] - rc_account_after['max_rc'] == 100, "max rc was not affected by the delegation to the pool"
     assert rc_account_after['out_delegation_total'] == 1, "out_delegation_total was not changed"
+    assert rc_account_after['vests_delegated_to_pools']['amount'] == '100'
     pool = node_client.rpc.find_rc_delegation_pools(["alice"])[0]
     assert pool['account'] == 'alice'
     assert pool['max_rc'] == 100
@@ -276,6 +278,13 @@ def test_delegate_to_pool_full():
         pass
     else:
         assert False, "Shouldn't be able to delegate more rc than the account has"
+
+    try:
+        rc.delegate_to_pool("alice", 'alice', '0.1')
+    except Exception:
+        pass
+    else:
+        assert False, "Shouldn't be able to delegate fractions"
 
     logger.info("Testing emptying an rc pool with a delegation to an account")
     rc.set_slot_delegator("alice", "rctest2", 0, args.creator)
@@ -363,8 +372,11 @@ def test_delegate_to_pool_full():
 
     logger.info("Test changing the max_rc of a pool when you don't have enough current_rc to match your max_rc delegation")
     rc_account = node_client.rpc.find_rc_accounts(["alice"])[0]
+    assert rc_account['vests_delegated_to_pools']['amount'] == '0'
     rc_delegated_to_initminer = str(rc_account['max_rc'] - 200)
     rc.delegate_to_pool("alice", 'initminer', rc_delegated_to_initminer)
+    rc_account = node_client.rpc.find_rc_accounts(["alice"])[0]
+    assert rc_account['vests_delegated_to_pools']['amount'] == rc_delegated_to_initminer
     # use RC
     test_utils.create_post(node_client, "alice", "permlink123")
     # delegate 200 when the account's current_mana is less than that
@@ -423,6 +435,17 @@ def test_delegate_from_pool_full():
         pass
     else:
         assert False, "Shouldn't be able to delegate more rc than the max rc in the pool"
+
+    # TODO: INVESTIGATE THIS
+    '''
+    try:
+        rc.delegate_from_pool("secondpool", "bob", 0.5)
+    except Exception:
+        pass
+    else:
+        assert False, "Shouldn't be able to delegate fractions of RC"
+    '''
+
 
     try:
         test_utils.create_post(node_client, "bob", "permlink123")
@@ -626,7 +649,6 @@ def test_delegate_from_pool_full():
     Account("rctest1", hive_instance=node_client).transfer("rctest1", 1.000, "TESTS")
 
 
-
 def delegation_rc_exploit_test():
     rc = RC(node_client)
     logger.info("Test exploiting delegations to gain RC")
@@ -644,10 +666,8 @@ def delegation_rc_exploit_test():
         assert False, "Shouldn't be able to delegate more than their current mana"
 
     # delegate most of the rc out
-    rc_account = node_client.rpc.find_rc_accounts(["eve"])[0]
     rc.delegate_to_pool("eve", "eve", "20")
     rc.delegate_from_pool("eve", "eve", 20)
-    rc_account = node_client.rpc.find_rc_accounts(["eve"])[0]
 
     # use the mana
     hive_utils.common.wait_n_blocks(args.node_url, 1)
@@ -679,6 +699,90 @@ def delegation_rc_exploit_test():
     assert rc_account_after['delegation_slots'][2]['delegator'] == "eve"
     assert rc_account_after['delegation_slots'][2]['max_mana'] == 20
     assert rc_account_before['delegation_slots'][2]["rc_manabar"]["current_mana"] == rc_account_after['delegation_slots'][2]["rc_manabar"]["current_mana"]
+
+
+def test_hp_undelegate():
+    rc = RC(node_client)
+    logger.info("Test undelegating a hive power delegation")
+    rc.set_slot_delegator("martin", "martin", 0, "initminer")
+
+    # create the pool objects in case they don't already exist
+    rc.delegate_to_pool("initminer", "eve", "1")
+    rc.delegate_to_pool("initminer", "initminer", "1")
+    rc.delegate_to_pool("initminer", "dave", "1")
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+
+    # delegate 100 vests to martin
+    Account(args.creator, hive_instance=node_client).delegate_vesting_shares("martin", "0.0000100")
+
+    # delegate half of the rc
+    rc.delegate_to_pool("martin", "martin", "5")
+    rc_account_before = node_client.rpc.find_rc_accounts(["martin"])[0]
+
+    assert rc_account_before['out_delegation_total'] == 1
+
+    # delegate from the pool to myself
+    rc.delegate_from_pool("martin", "martin", 5)
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+    # remove the hp delegation
+    Account(args.creator, hive_instance=node_client).delegate_vesting_shares("martin", "0.0000000 VESTS")
+    rc_account_after = node_client.rpc.find_rc_accounts(["martin"])[0]
+    pool_after = node_client.rpc.find_rc_delegation_pools(["martin"])[0]
+
+    assert pool_after['account'] == 'martin'
+    assert pool_after['max_rc'] == 0
+    assert pool_after['rc_pool_manabar']['current_mana'] == 0, "pool current mana was not reset to 0 following the hp undelegation"
+    assert rc_account_after['rc_manabar']['current_mana'] == 0, "account current mana was not reset to 0 following the hp undelegation"
+    assert rc_account_after['max_rc'] == 0
+    assert rc_account_after['vests_delegated_to_pools']['amount'] == '0'
+    assert rc_account_after['out_delegation_total'] == 0, "The delegation to the pool was not deleted even though we no longer have the max_rc for it"
+    assert rc_account_after['delegation_slots'][0]['delegator'] == "martin"
+    # 4 because the account had 10 rc, he used 3 to delegate 5 to the pool, so 2 left then he delegated 5 from the pool to himself, consuming 2 from his own rc and 1 from the delegation he just did
+    assert rc_account_after['delegation_slots'][0]["rc_manabar"]["current_mana"] == 4, "the delegation from the pool should not be affected"
+    assert rc_account_after['delegation_slots'][0]['max_mana'] == 5, "the delegation from the pool should not be affected"
+
+    logger.info("Test undelegating a hive power delegation with multiple rc pools delegations from the account")
+    Account(args.creator, hive_instance=node_client).delegate_vesting_shares("martin", "0.0000500 VESTS")
+    rc_account_before = node_client.rpc.find_rc_accounts(["martin"])[0]
+    assert rc_account_before['rc_manabar']['current_mana'] == 50
+    assert rc_account_before['max_rc'] == 50
+
+
+    # delegate to multiple pools
+    rc.delegate_to_pool("martin", "martin", "10")
+    rc.delegate_to_pool("martin", "eve", "10")
+    hive_utils.common.wait_n_blocks(args.node_url, 1)
+    rc.delegate_to_pool("martin", "initminer", "10")
+    rc.delegate_to_pool("martin", "dave", "10")
+
+    pool_martin_before = node_client.rpc.find_rc_delegation_pools(["martin"])[0]
+    pool_eve_before = node_client.rpc.find_rc_delegation_pools(["eve"])[0]
+    pool_initminer_before = node_client.rpc.find_rc_delegation_pools(["initminer"])[0]
+    pool_dave_before = node_client.rpc.find_rc_delegation_pools(["dave"])[0]
+    rc_account_before = node_client.rpc.find_rc_accounts(["martin"])[0]
+    Account(args.creator, hive_instance=node_client).delegate_vesting_shares("martin", "0.0000000 VESTS")
+    rc_account_after = node_client.rpc.find_rc_accounts(["martin"])[0]
+    pool_martin_after = node_client.rpc.find_rc_delegation_pools(["martin"])[0]
+    pool_eve_after = node_client.rpc.find_rc_delegation_pools(["eve"])[0]
+    pool_initminer_after = node_client.rpc.find_rc_delegation_pools(["initminer"])[0]
+    pool_dave_after = node_client.rpc.find_rc_delegation_pools(["dave"])[0]
+
+    assert pool_martin_after['account'] == 'martin'
+    assert pool_martin_after['max_rc'] == 0
+    assert pool_martin_after['rc_pool_manabar']['current_mana'] == 0, "pool current mana was not reset to 0 following the hp undelegation"
+
+    assert pool_eve_after['account'] == 'eve'
+    assert pool_eve_after['max_rc'] < pool_eve_before['max_rc']
+    assert pool_eve_after['rc_pool_manabar']['current_mana'] < pool_eve_before['rc_pool_manabar']['current_mana']
+
+    assert pool_initminer_after['account'] == 'initminer'
+    assert pool_initminer_after['max_rc'] < pool_initminer_before['max_rc']
+    assert pool_initminer_after['rc_pool_manabar']['current_mana'] < pool_initminer_before['rc_pool_manabar']['current_mana']
+
+    assert pool_dave_after['account'] == 'dave'
+    assert pool_dave_after['max_rc'] < pool_dave_before['max_rc']
+    assert pool_dave_after['rc_pool_manabar']['current_mana'] < pool_dave_before['rc_pool_manabar']['current_mana']
+
 
 
 if __name__ == '__main__':
@@ -730,7 +834,8 @@ if __name__ == '__main__':
         {"name": "rctest2", "private_key": "5JcQCDVnu7v7PWpsKUD8TcQqhB1v2WvSbfhK8JzDywdKEWBddNX", "public_key": "TST6rb6ZbcvqufSHbpt6gAWT4YniDHLnMvU7QoEZbRvNG31USzYnX"},
         {"name": "rctest3", "private_key": "5J1QbAFcF9Xp9gVtvNMXbmzA16Cy15nKjCCZiVQa2ZxMmhZQnBd", "public_key": "TST7vFHFVKpH9R37e6M6n7CkV6CAQZFR41Gc2f4nxNu7EW9347shb"},
         {"name": "eve", "private_key": "5Jb6QtKKwoxf2aQBHTxP8zSPcAiduwZutRYezfNFGJhoG11skUx", "public_key": "TST5zjb6WQuLtbngGNFyGspLFScA5j41X2gGSJaKE8hmry5an9q6N"},
-        {"name": "badpool", "private_key": "5HubGcDgerXgebpqyREHxNJqotUrycYPcbSWznnaJ8UgXqoZ35U", "public_key": "TST5zE21bgn1B7gzXtXnfY3LFcp67SD1rd8eNttGZhgQXEeBsCQUV"},
+        {"name": "martin", "private_key": "5KQ8gUAgjVf7BSHktHw8QFLn5vuaSoc6EpZbLnMvn3iLy7L8cPd", "public_key": "TST5uKQfr34AEzVYHMRxdRcSiG73yJgw73KzLvxgnYMKitCBu2zqt"},
+        {"name": "dave", "private_key": "5HsYANFF2CEoAC4q4gouAD8i9dpscVnLYVWdRtUFUtY9N8D9uG7", "public_key": "TST7ow2ZDfeDj1Gm8gb96h8MnQNP7TG6CFsQN1NRbGATPnEfQjQr8"},
     ]
     account_names = [v['name'] for v in accounts]
 
@@ -767,6 +872,7 @@ if __name__ == '__main__':
             test_delegate_to_pool_full()
             test_delegate_from_pool_full()
             delegation_rc_exploit_test()
+            test_hp_undelegate()
         else:
             raise Exception("no node detected")
     except Exception as ex:
