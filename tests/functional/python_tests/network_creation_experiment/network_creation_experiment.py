@@ -1,4 +1,4 @@
-from test_library import Network, KeyGenerator, Witness
+from test_library import Account, KeyGenerator, Network
 
 
 import os
@@ -66,7 +66,7 @@ def prepare_witnesses(_witnesses, wallet):
   fs = []
   log.info("Attempting to prepare {0} of witnesses".format(str(len(_witnesses))))
   for account_name in _witnesses:
-    witness = Witness(account_name)
+    witness = Account(account_name)
     pub_key = witness.public_key
     future = executor.submit(register_witness, wallet, account_name, "https://" + account_name + ".net", pub_key)
     fs.append(future)
@@ -99,7 +99,7 @@ if __name__ == "__main__":
         error = False
         init_logger(os.path.abspath(__file__))
 
-        Witness.key_generator = KeyGenerator('../../../../build/programs/util/get_dev_key')
+        Account.key_generator = KeyGenerator('../../../../build/programs/util/get_dev_key')
 
         alpha_witness_names = [f'witness{i}-alpha' for i in range(20)]
         beta_witness_names = [f'witness{i}-beta' for i in range(20)]
