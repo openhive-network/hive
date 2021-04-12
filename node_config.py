@@ -96,6 +96,7 @@ class NodeConfig:
         self.witness_skip_enforce_bandwidth = None
 
         entries = super().__getattribute__('entries')
+        entries['plugin'] = List(Untouched)
         for key in ['shared_file_dir', 'account_history_rocksdb_path', 'snapshot_root_dir']:
             entries[key] = String()
 
