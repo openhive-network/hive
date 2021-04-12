@@ -167,7 +167,7 @@ class NodeConfig:
         import re
 
         def parse_entry_line(line):
-            result = re.match(r'^\s*([\w\-]+)\s*=\s*(.*)\s*$', line)
+            result = re.match(r'^\s*([\w\-]+)\s*=\s*(.*?)\s*$', line)
             return (result[1], result[2]) if result is not None else None
 
         def is_entry_line(line):
