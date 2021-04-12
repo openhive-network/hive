@@ -1,7 +1,7 @@
-# This test forces that DEFAULT_CONFIG will be always up to date.
+# This test forces that create_default_config will be always up to date.
 
 from test_library import Node
-from test_library.node_configs.default import DEFAULT_CONFIG
+from test_library.node_configs.default import create_default_config
 
 
 def generate_default_config():
@@ -19,15 +19,16 @@ def generate_default_config():
 
 
 def test_default_config_values():
+    default_config = create_default_config()
     generated = generate_default_config()
-    if DEFAULT_CONFIG != generated:
+    if default_config != generated:
         print('Found differences:')
-        differences = DEFAULT_CONFIG.get_differences_between(generated)
+        differences = default_config.get_differences_between(generated)
 
         for key, (default_value, generated_value) in differences.items():
             print()
             print(key)
-            print('In DEFAULT_CONFIG:', default_value)
+            print('In default_config:', default_value)
             print('Generated:        ', generated_value)
 
-        assert False, 'Modify DEFAULT_CONFIG to match default generated config'
+        assert False, 'Modify config returned from create_default_config to match default generated config'
