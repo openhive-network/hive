@@ -22,7 +22,8 @@ class Node:
         self.stderr_file = None
         self.finalizer = None
 
-        self.config = NodeConfig()
+        from .node_configs.default import create_default_config
+        self.config = create_default_config()
         self.add_plugin('network_broadcast_api')
         self.add_plugin('network_node_api')
         self.config.shared_file_size = '6G'
