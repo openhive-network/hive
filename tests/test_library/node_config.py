@@ -2,6 +2,11 @@ from .node_config_entry_types import *
 
 
 class NodeConfig:
+    class __UnsetType:
+        pass
+
+    UNSET = __UnsetType()
+
     def __init__(self):
         super().__setattr__('SUPPORTED_ENTRIES', [
             'log_appender', 'log_console_appender', 'log_file_appender', 'log_logger', 'backtrace', 'plugin',
@@ -28,72 +33,72 @@ class NodeConfig:
         super().__setattr__('entries', {entry: Untouched() for entry in supported_entries})
 
         # For IDE to support member names hints
-        self.log_appender = None
-        self.log_console_appender = None
-        self.log_file_appender = None
-        self.log_logger = None
-        self.backtrace = None
-        self.plugin = None
-        self.account_history_track_account_range = None
-        self.track_account_range = None
-        self.account_history_whitelist_ops = None
-        self.history_whitelist_ops = None
-        self.account_history_blacklist_ops = None
-        self.history_blacklist_ops = None
-        self.history_disable_pruning = None
-        self.account_history_rocksdb_path = None
-        self.account_history_rocksdb_track_account_range = None
-        self.account_history_rocksdb_whitelist_ops = None
-        self.account_history_rocksdb_blacklist_ops = None
-        self.block_data_export_file = None
-        self.block_log_info_print_interval_seconds = None
-        self.block_log_info_print_irreversible = None
-        self.block_log_info_print_file = None
-        self.shared_file_dir = None
-        self.shared_file_size = None
-        self.shared_file_full_threshold = None
-        self.shared_file_scale_rate = None
-        self.checkpoint = None
-        self.flush_state_interval = None
-        self.cashout_logging_starting_block = None
-        self.cashout_logging_ending_block = None
-        self.cashout_logging_log_path_dir = None
-        self.debug_node_edit_script = None
-        self.edit_script = None
-        self.follow_max_feed_size = None
-        self.follow_start_feeds = None
-        self.log_json_rpc = None
-        self.market_history_bucket_size = None
-        self.market_history_buckets_per_size = None
-        self.p2p_endpoint = None
-        self.p2p_max_connections = None
-        self.seed_node = None
-        self.p2p_seed_node = None
-        self.p2p_parameters = None
-        self.rc_skip_reject_not_enough_rc = None
-        self.rc_compute_historical_rc = None
-        self.rc_start_at_block = None
-        self.rc_account_whitelist = None
-        self.snapshot_root_dir = None
-        self.statsd_endpoint = None
-        self.statsd_batchsize = None
-        self.statsd_whitelist = None
-        self.statsd_blacklist = None
-        self.tags_start_promoted = None
-        self.tags_skip_startup_update = None
-        self.transaction_status_block_depth = None
-        self.transaction_status_track_after_block = None
-        self.webserver_http_endpoint = None
-        self.webserver_unix_endpoint = None
-        self.webserver_ws_endpoint = None
-        self.webserver_enable_permessage_deflate = None
-        self.rpc_endpoint = None
-        self.webserver_thread_pool_size = None
-        self.enable_stale_production = None
-        self.required_participation = None
-        self.witness = None
-        self.private_key = None
-        self.witness_skip_enforce_bandwidth = None
+        self.log_appender = self.UNSET
+        self.log_console_appender = self.UNSET
+        self.log_file_appender = self.UNSET
+        self.log_logger = self.UNSET
+        self.backtrace = self.UNSET
+        self.plugin = self.UNSET
+        self.account_history_track_account_range = self.UNSET
+        self.track_account_range = self.UNSET
+        self.account_history_whitelist_ops = self.UNSET
+        self.history_whitelist_ops = self.UNSET
+        self.account_history_blacklist_ops = self.UNSET
+        self.history_blacklist_ops = self.UNSET
+        self.history_disable_pruning = self.UNSET
+        self.account_history_rocksdb_path = self.UNSET
+        self.account_history_rocksdb_track_account_range = self.UNSET
+        self.account_history_rocksdb_whitelist_ops = self.UNSET
+        self.account_history_rocksdb_blacklist_ops = self.UNSET
+        self.block_data_export_file = self.UNSET
+        self.block_log_info_print_interval_seconds = self.UNSET
+        self.block_log_info_print_irreversible = self.UNSET
+        self.block_log_info_print_file = self.UNSET
+        self.shared_file_dir = self.UNSET
+        self.shared_file_size = self.UNSET
+        self.shared_file_full_threshold = self.UNSET
+        self.shared_file_scale_rate = self.UNSET
+        self.checkpoint = self.UNSET
+        self.flush_state_interval = self.UNSET
+        self.cashout_logging_starting_block = self.UNSET
+        self.cashout_logging_ending_block = self.UNSET
+        self.cashout_logging_log_path_dir = self.UNSET
+        self.debug_node_edit_script = self.UNSET
+        self.edit_script = self.UNSET
+        self.follow_max_feed_size = self.UNSET
+        self.follow_start_feeds = self.UNSET
+        self.log_json_rpc = self.UNSET
+        self.market_history_bucket_size = self.UNSET
+        self.market_history_buckets_per_size = self.UNSET
+        self.p2p_endpoint = self.UNSET
+        self.p2p_max_connections = self.UNSET
+        self.seed_node = self.UNSET
+        self.p2p_seed_node = self.UNSET
+        self.p2p_parameters = self.UNSET
+        self.rc_skip_reject_not_enough_rc = self.UNSET
+        self.rc_compute_historical_rc = self.UNSET
+        self.rc_start_at_block = self.UNSET
+        self.rc_account_whitelist = self.UNSET
+        self.snapshot_root_dir = self.UNSET
+        self.statsd_endpoint = self.UNSET
+        self.statsd_batchsize = self.UNSET
+        self.statsd_whitelist = self.UNSET
+        self.statsd_blacklist = self.UNSET
+        self.tags_start_promoted = self.UNSET
+        self.tags_skip_startup_update = self.UNSET
+        self.transaction_status_block_depth = self.UNSET
+        self.transaction_status_track_after_block = self.UNSET
+        self.webserver_http_endpoint = self.UNSET
+        self.webserver_unix_endpoint = self.UNSET
+        self.webserver_ws_endpoint = self.UNSET
+        self.webserver_enable_permessage_deflate = self.UNSET
+        self.rpc_endpoint = self.UNSET
+        self.webserver_thread_pool_size = self.UNSET
+        self.enable_stale_production = self.UNSET
+        self.required_participation = self.UNSET
+        self.witness = self.UNSET
+        self.private_key = self.UNSET
+        self.witness_skip_enforce_bandwidth = self.UNSET
 
         entries = super().__getattribute__('entries')
         entries['plugin'] = List(Plugin)
@@ -111,6 +116,11 @@ class NodeConfig:
         self.__check_if_key_is_valid(key)
 
         entries = super().__getattribute__('entries')
+
+        if value is self.UNSET:
+            entries[key].clear()
+            return
+
         entries[key].set_value(value)
 
     def __getattr__(self, key):
@@ -151,7 +161,7 @@ class NodeConfig:
     def write_to_lines(self):
         file_entries = []
         for key, entry in self.entries.items():
-            if not entry.get_value():
+            if not entry.is_set():
                 continue
 
             value = entry.serialize_to_text()
