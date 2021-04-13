@@ -143,7 +143,10 @@ class NodeConfig:
         self.__check_if_key_internal_is_valid(key)
 
         entries = super().__getattribute__('entries')
-        return entries[key].get_value()
+        if entries[key].is_set():
+            return entries[key].get_value()
+
+        return self.UNSET
 
     def __str__(self):
         supported_entries = super().__getattribute__('SUPPORTED_ENTRIES')
