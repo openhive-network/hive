@@ -109,13 +109,22 @@ class NodeConfig:
         self.private_key = self.UNSET
         self.witness_skip_enforce_bandwidth = self.UNSET
 
-    def __check_if_key_is_valid(self, key):
-        entries = super().__getattribute__('entries')
-        if key not in entries.keys():
+    def __check_if_key_internal_is_valid(self, key):
+        """Internal keys (used inside this class) have underscores instead of hyphens"""
+
+        supported_keys = super().__getattribute__('SUPPORTED_ENTRIES')
+        if key not in supported_keys:
+            raise AttributeError('Wrong config item name')
+
+    def __check_if_key_from_file_is_valid(self, key):
+        """Keys from file have hyphens instead of underscores (like internal keys)"""
+
+        supported_keys = [entry.replace('_', '-') for entry in super().__getattribute__('SUPPORTED_ENTRIES')]
+        if key not in supported_keys:
             raise AttributeError('Wrong config item name')
 
     def __setattr__(self, key, value):
-        self.__check_if_key_is_valid(key)
+        self.__check_if_key_internal_is_valid(key)
 
         entries = super().__getattribute__('entries')
 
@@ -126,7 +135,7 @@ class NodeConfig:
         entries[key].set_value(value)
 
     def __getattr__(self, key):
-        self.__check_if_key_is_valid(key)
+        self.__check_if_key_internal_is_valid(key)
 
         entries = super().__getattribute__('entries')
         return entries[key].get_value()
@@ -191,6 +200,8 @@ class NodeConfig:
         for line in lines:
             if is_entry_line(line):
                 key, value = parse_entry_line(line)
+                self.__check_if_key_from_file_is_valid(key)
+
                 entries = super().__getattribute__('entries')
                 entries[key.replace('-', '_')].parse_from_text(value)
 
