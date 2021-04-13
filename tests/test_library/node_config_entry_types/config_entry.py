@@ -1,6 +1,6 @@
 class ConfigEntry:
     def __init__(self):
-        self._value = None
+        self._value = self._get_unset_value()
         self.__is_set = False
 
     def _parse_from_text(self, text):
