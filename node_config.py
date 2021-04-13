@@ -31,7 +31,16 @@ class NodeConfig:
         supported_entries = super().__getattribute__('SUPPORTED_ENTRIES')
 
         super().__setattr__('entries', {entry: Untouched() for entry in supported_entries})
+        self.__clear()
 
+        entries = super().__getattribute__('entries')
+        entries['plugin'] = List(Plugin)
+        entries['witness'] = List(String, single_line=False)
+        entries['private_key'] = List(Untouched, single_line=False)
+        for key in ['shared_file_dir', 'account_history_rocksdb_path', 'snapshot_root_dir']:
+            entries[key] = String()
+
+    def __clear(self):
         # For IDE to support member names hints
         self.log_appender = self.UNSET
         self.log_console_appender = self.UNSET
@@ -99,13 +108,6 @@ class NodeConfig:
         self.witness = self.UNSET
         self.private_key = self.UNSET
         self.witness_skip_enforce_bandwidth = self.UNSET
-
-        entries = super().__getattribute__('entries')
-        entries['plugin'] = List(Plugin)
-        entries['witness'] = List(String, single_line=False)
-        entries['private_key'] = List(Untouched, single_line=False)
-        for key in ['shared_file_dir', 'account_history_rocksdb_path', 'snapshot_root_dir']:
-            entries[key] = String()
 
     def __check_if_key_is_valid(self, key):
         entries = super().__getattribute__('entries')
