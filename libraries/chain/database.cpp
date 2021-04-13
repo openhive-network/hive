@@ -4202,18 +4202,22 @@ try {
         if( has_hardfork( HIVE_HARDFORK_0_14__230 ) )
         {
           // This block limits the effective median price to force HBD to remain at or
-          // below 10% of the combined market cap of HIVE and HBD.
+          // below 10% of the combined market cap of HIVE and HBD. The reason is to prevent
+          // individual with a lot of HBD to use sharp decline in HIVE price to make
+          // in-chain-but-out-of-market conversion to HIVE and take over the blockchain
           //
           // For example, if we have 500 HIVE and 100 HBD, the price is limited to
           // 900 HBD / 500 HIVE which works out to be $1.80.  At this price, 500 HIVE
           // would be valued at 500 * $1.80 = $900.  100 HBD is by definition always $100,
           // so the combined market cap is $900 + $100 = $1000.
 
-          const auto& gpo = get_dynamic_global_properties();
-
-          if( gpo.get_current_hbd_supply().amount > 0 )
+          const auto& dgpo = get_dynamic_global_properties();
+          auto hbd_supply = dgpo.get_current_hbd_supply();
+          if( has_hardfork( HIVE_HARDFORK_1_25_HBD_HARD_CAP ) )
+            hbd_supply -= get_treasury().get_hbd_balance();
+          if( hbd_supply.amount > 0 )
           {
-            price min_price( asset( 9 * gpo.get_current_hbd_supply().amount, HBD_SYMBOL ), gpo.current_supply );
+            price min_price( asset( 9 * hbd_supply.amount, HBD_SYMBOL ), dgpo.get_current_supply() );
 
             if( min_price > fho.current_median_history )
             {
