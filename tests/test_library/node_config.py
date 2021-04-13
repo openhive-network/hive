@@ -3,7 +3,8 @@ from .node_config_entry_types import *
 
 class NodeConfig:
     class __UnsetType:
-        pass
+        def __bool__(self):
+            return False
 
     UNSET = __UnsetType()
 
