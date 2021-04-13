@@ -2,9 +2,6 @@ from .untouched import Untouched
 
 
 class Plugin(Untouched):
-    def __init__(self):
-        super().__init__()
-
     @staticmethod
     def __check_if_plugin_is_supported(plugin):
         supported_plugins = [
@@ -19,11 +16,10 @@ class Plugin(Untouched):
         if plugin not in supported_plugins:
             raise Exception(f'Plugin {plugin} is not supported')
 
-    def parse_from_text(self, text):
-        super().parse_from_text(text)
-        self.__check_if_plugin_is_supported(super().value)
+    def _parse_from_text(self, plugin):
+        self.__check_if_plugin_is_supported(plugin)
+        super()._parse_from_text(plugin)
 
-    @Untouched.value.setter
-    def value(self, value):
+    def _set_value(self, value):
         self.__check_if_plugin_is_supported(value)
-        Untouched.value.fset(self, value)
+        super()._set_value(value)
