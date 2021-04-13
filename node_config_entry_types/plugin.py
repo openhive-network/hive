@@ -23,11 +23,7 @@ class Plugin(Untouched):
         super().parse_from_text(text)
         self.__check_if_plugin_is_supported(super().value)
 
-    @property
-    def value(self):
-        return super().value
-
-    @value.setter
+    @Untouched.value.setter
     def value(self, value):
-        super().value = value
-        self.__check_if_plugin_is_supported(super().value)
+        self.__check_if_plugin_is_supported(value)
+        Untouched.value.fset(self, value)
