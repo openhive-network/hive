@@ -4,7 +4,7 @@ from .config_entry import ConfigEntry
 class List(ConfigEntry):
     def __init__(self, item_type, separator=' ', begin='', end='', single_line=True):
         self.__item_type = item_type
-        self.__values = None
+        self.__values = []
 
         self.__separator = separator
         self.__begin = begin
