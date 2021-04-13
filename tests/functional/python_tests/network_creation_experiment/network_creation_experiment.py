@@ -1,198 +1,29 @@
 from test_library import Network, KeyGenerator, Witness
 
-import json
+
 import os
 import sys
 import time
 import concurrent.futures
 import random
 
-sys.path.append("../../../tests_api")
-from jsonsocket import hived_call
-from hive.steem.client import SteemClient
-
 # TODO: Remove dependency from cli_wallet/tests directory.
 #       This modules [utils.logger] should be somewhere higher.
 sys.path.append("../cli_wallet/tests")
 from utils.logger import log, init_logger
 
-CONCURRENCY = 50
+CONCURRENCY = None
 
 
-def set_password(_url):
-    log.debug("Call to set_password")
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "set_password",
-      "params": ["testpassword"]
-      } ), "utf-8" ) + b"\r\n"
+def register_witness(wallet, _account_name, _witness_url, _block_signing_public_key):
+    wallet.api.update_witness(
+        _account_name,
+        _witness_url,
+        _block_signing_public_key,
+        {"account_creation_fee": "3.000 TESTS", "maximum_block_size": 65536, "sbd_interest_rate": 0}
+    )
 
-    status, response = hived_call(_url, data=request)
-    return status, response
-
-def unlock(_url):
-    log.debug("Call to unlock")
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "unlock",
-      "params": ["testpassword"]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = hived_call(_url, data=request)
-    return status, response
-
-
-def import_key(_url, k):
-    log.debug("Call to import_key")
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "import_key",
-      "params": [k]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = hived_call(_url, data=request)
-    return status, response
-
-def checked_hived_call(_url, data):
-  status, response = hived_call(_url, data)
-  if status == False or response is None or "result" not in response:
-    log.error("Request failed: {0} with response {1}".format(str(data), str(response)))
-    raise Exception("Broken response for request {0}: {1}".format(str(data), str(response)))
-
-  return status, response
-
-def wallet_call(_url, data):
-  unlock(_url)
-  status, response = checked_hived_call(_url, data)
-
-  return status, response
-
-def create_account(_url, _creator, account_name, wallets_urls=None):
-    account = Witness(account_name)
-
-    _name = account_name
-    _pubkey = account.public_key
-    _privkey = account.private_key
-
-    log.info("Call to create account {0} {1}".format(str(_creator), str(_name)))
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "create_account_with_keys",
-      "params": [_creator, _name, "", _pubkey, _pubkey, _pubkey, _pubkey, 1]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
-    if wallets_urls == None:
-      status, response = import_key(_url, _privkey)
-    else:
-      for wallet_url in wallets_urls:
-        status, response = import_key(wallet_url, _privkey)
-
-def transfer(_url, _sender, _receiver, _amount, _memo):
-    log.info("Attempting to transfer from {0} to {1}, amount: {2}".format(str(_sender), str(_receiver), str(_amount)))
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "transfer",
-      "params": [_sender, _receiver, _amount, _memo, 1]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
-
-def transfer_to_vesting(_url, _sender, _receiver, _amount):
-    log.info("Attempting to transfer_to_vesting from {0} to {1}, amount: {2}".format(str(_sender), str(_receiver), str(_amount)))
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "transfer_to_vesting",
-      "params": [_sender, _receiver, _amount, 1]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
-
-def set_voting_proxy(_account, _proxy, _url):
-    log.info("Attempting to set account `{0} as proxy to {1}".format(str(_proxy), str(_account)))
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "set_voting_proxy",
-      "params": [_account, _proxy, 1]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
-
-def vote_for_witness(_account, _witness, _approve, _url):
-  if(_approve):
-    log.info("Account `{0} votes for wittness {1}".format(str(_account), str(_witness)))
-  else:
-    log.info("Account `{0} revoke its votes for wittness {1}".format(str(_account), str(_witness)))
-
-  request = bytes( json.dumps( {
-    "jsonrpc": "2.0",
-    "id": 0,
-    "method": "vote_for_witness",
-    "params": [_account, _witness, _approve, 1]
-    } ), "utf-8" ) + b"\r\n"
-
-  status, response = wallet_call(_url, data=request)
-
-def vote_for_witnesses(_account, _witnesses, _approve, _url):
-  executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
-  fs = []
-  for i, w in enumerate(_witnesses):
-    if(isinstance(w, str)):
-      witness_name = w
-    else:
-      witness_name = w["account_name"]
-    if(isinstance(_account, list)):
-      account_name = _account[i]
-    else:
-      account_name = _account
-    future = executor.submit(vote_for_witness, account_name, witness_name, _approve, _url)
-    fs.append(future)
-  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
-
-def register_witness(_url, _account_name, _witness_url, _block_signing_public_key):
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "update_witness",
-      "params": [_account_name, _witness_url, _block_signing_public_key, {"account_creation_fee": "3.000 TESTS","maximum_block_size": 65536,"sbd_interest_rate": 0}, 1]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
-
-def unregister_witness(_url, _account_name):
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "update_witness",
-      "params": [_account_name, "https://heaven.net", "STM1111111111111111111111111111111114T1Anm", {"account_creation_fee": "3.000 TESTS","maximum_block_size": 65536,"sbd_interest_rate": 0}, 1]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
-
-def info(_url):
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "info",
-      "params": []
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(_url, data=request)
-
-    return response["result"]
-
-def get_amount(_asset):
-  amount, symbol = _asset.split(" ")
-  return float(amount)
-
-def self_vote(_witnesses, _url):
+def self_vote(_witnesses, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
   for w in _witnesses:
@@ -200,112 +31,66 @@ def self_vote(_witnesses, _url):
       account_name = w
     else:
       account_name = w["account_name"]
-    future = executor.submit(vote_for_witness, account_name, account_name, 1, _url)
+    future = executor.submit(wallet.api.vote_for_witness, account_name, account_name, 1)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+  for future in fs:
+    future.result()
 
-def prepare_accounts(_accounts, _url, wallets_urls=None):
+def prepare_accounts(_accounts, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
   log.info("Attempting to create {0} accounts".format(len(_accounts)))
   for account in _accounts:
-    future = executor.submit(create_account, _url, "initminer", account, wallets_urls)
+    future = executor.submit(wallet.api.create_account_with_keys, 'initminer', account)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+  for future in fs:
+    future.result()
 
-def configure_initial_vesting(_accounts, a, b, _tests, _url):
+  fs = []
+  for account in _accounts:
+    future = executor.submit(wallet.api.import_key, Witness(account).private_key)
+    fs.append(future)
+  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+  for future in fs:
+    future.result()
+
+def configure_initial_vesting(_accounts, a, b, _tests, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
-  log.info("Attempting to prepare {0} of witnesses".format(str(len(_accounts))))
+  log.info("Configuring initial vesting for {0} of witnesses".format(str(len(_accounts))))
   for account_name in _accounts:
     value = random.randint(a, b)
     amount = str(value) + ".000 " + _tests
-    future = executor.submit(transfer_to_vesting, _url, "initminer", account_name, amount)
+    future = executor.submit(wallet.api.transfer_to_vesting, "initminer", account_name, amount)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+  for future in fs:
+    future.result()
 
-def prepare_witnesses(_witnesses, _url):
+def prepare_witnesses(_witnesses, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
   log.info("Attempting to prepare {0} of witnesses".format(str(len(_witnesses))))
   for account_name in _witnesses:
     witness = Witness(account_name)
     pub_key = witness.public_key
-    future = executor.submit(register_witness, _url, account_name, "https://" + account_name + ".net", pub_key)
+    future = executor.submit(register_witness, wallet, account_name, "https://" + account_name + ".net", pub_key)
     fs.append(future)
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+  for future in fs:
+    future.result()
 
-def synchronize_balances(_accounts, _url, _mainNetUrl):
-  log.info("Attempting to synchronize balances of {0} accounts".format(str(len(_accounts))))
-
-  accountList = []
-
-  for a in _accounts:
-    accountList.append(a["account_name"])
-
-  client = Client(_mainNetUrl)
-  accounts = client.get_accounts(accountList)
-
-  log.info("Successfully retrieved info for {0} accounts".format(str(len(accounts))))
-
-  for a in accounts:
-    name = a["name"]
-    vests = a["vesting_shares"]
-    steem = a["balance"]
-    sbd = a["sbd_balance"]
-
-    log.info("Account {0} balances: `{1}', `{2}', `{3}'".format(str(name), str(steem), str(sbd), str(vests)))
-
-    steem_amount, steem_symbol = steem.split(" ")
-
-    if(float(steem_amount) > 0):
-      tests = steem.replace("STEEM", "TESTS")
-      transfer(_url, "initminer", name, tests, "initial balance sync")
-
-    sbd_amount, sbd_symbol = sbd.split(" ")
-    if(float(sbd_amount) > 0):
-      tbd = sbd.replace("SBD", "TBD")
-      transfer(_url, "initminer", name, tbd, "initial balance sync")
-
-def list_accounts(url):
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "list_accounts",
-      "params": ["", 100]
-      } ), "utf-8" ) + b"\r\n"
-
-    status, response = wallet_call(url, data=request)
-    print(response)
-
-def list_top_witnesses(_url):
-    start_object = [200277786075957257, ""]
-    request = bytes( json.dumps( {
-      "jsonrpc": "2.0",
-      "id": 0,
-      "method": "database_api.list_witnesses",
-      "params": {
-        "limit": 100,
-        "order": "by_vote_name",
-        "start": start_object
-      }
-    } ), "utf-8" ) + b"\r\n"
-
-    status, response = checked_hived_call(_url, data=request)
+def list_top_witnesses(node):
+    start_object = [200277786075957257, '']
+    response = node.api.database.list_witnesses(100, 'by_vote_name', start_object)
     return response["result"]["witnesses"]
 
 def print_top_witnesses(witnesses, node):
-  while not node.is_http_listening():
-    time.sleep(1)
-
-  if not node.get_webserver_http_endpoints():
-    raise Exception("Node hasn't set any http endpoint")
-
-  api_node_url = node.get_webserver_http_endpoints()[0]
-
   witnesses_set = set(witnesses)
 
-  top_witnesses = list_top_witnesses(api_node_url)
+  top_witnesses = list_top_witnesses(node)
   position = 1
   for w in top_witnesses:
     owner = w["owner"]
@@ -324,12 +109,8 @@ if __name__ == "__main__":
 
         Witness.key_generator = KeyGenerator('../../../../build/programs/util/get_dev_key')
 
-        VOTERS = 420
-        alpha_witness_names = [f'witness{i}-alpha' for i in range(21)]
-        beta_witness_names = [f'witness{i}-beta' for i in range(21)]
-        voter_names = [f'voter{i}' for i in range(VOTERS)]
-        votes = {}
-
+        alpha_witness_names = [f'witness{i}-alpha' for i in range(20)]
+        beta_witness_names = [f'witness{i}-beta' for i in range(20)]
 
         # Create first network
         alpha_net = Network('Alpha', port_range=range(51000, 52000))
@@ -370,101 +151,56 @@ if __name__ == "__main__":
         alpha_net.run()
         beta_net.run()
 
-        alpha_wallet = alpha_net.attach_wallet()
-        beta_wallet = beta_net.attach_wallet()
+        wallet = alpha_net.attach_wallet()
 
         time.sleep(3)  # Wait for wallet to start
 
         # Run original test script
-        alpha_wallet_url = f'http://127.0.0.1:{alpha_wallet.http_server_port}'
-        beta_wallet_url = f'http://127.0.0.1:{beta_wallet.http_server_port}'
-
-        for wallet_url in [alpha_wallet_url, beta_wallet_url]:
-          set_password(wallet_url)
-          unlock(wallet_url)
-          import_key(wallet_url, Witness('initminer').private_key)
+        wallet.api.set_password()
+        wallet.api.unlock()
+        wallet.api.import_key(Witness('initminer').private_key)
 
         all_witnesses = alpha_witness_names + beta_witness_names
+        random.shuffle(all_witnesses)
 
         print("Witness state before voting")
         print_top_witnesses(all_witnesses, api_node)
-        list_accounts(alpha_wallet_url)
+        print(wallet.api.list_accounts()[1])
 
-        prepare_accounts(all_witnesses, alpha_wallet_url, [alpha_wallet_url, beta_wallet_url])
-        prepare_accounts(voter_names, alpha_wallet_url, [alpha_wallet_url, beta_wallet_url])
-        configure_initial_vesting(all_witnesses, 10, 10, "TESTS", alpha_wallet_url)
-        configure_initial_vesting(voter_names, 1000, 1000, "TESTS", alpha_wallet_url)
-
-        # configure witnesses
-        prepare_witnesses(alpha_witness_names, alpha_wallet_url)
-        prepare_witnesses(beta_witness_names, alpha_wallet_url)
-
-        witnesses_to_vote = []
-        for v in voter_names:
-          w = random.choice(all_witnesses)
-          witnesses_to_vote.append(w)
-          votes[v] = w
-        vote_for_witnesses(voter_names, witnesses_to_vote, 1, alpha_wallet_url)
-
+        prepare_accounts(all_witnesses, wallet)
+        configure_initial_vesting(all_witnesses, 500, 1000, "TESTS", wallet)
+        prepare_witnesses(all_witnesses, wallet)
+        self_vote(all_witnesses, wallet)
 
         print("Witness state after voting")
         print_top_witnesses(all_witnesses, api_node)
+        print(wallet.api.list_accounts()[1])
 
-        # wait until configured witnesses are selected as  active witnesses
-        print("Waiting 63 seconds for witness to be elected")
-        time.sleep(63)
+        for i in range(20):
+          configure_initial_vesting(['initminer'], 1, 1, "TESTS", wallet)
+
+        print("Waiting for network synchronization...")
         alpha_net.wait_for_synchronization_of_all_nodes()
         beta_net.wait_for_synchronization_of_all_nodes()
-
-        print("Witness state before split")
-        print_top_witnesses(all_witnesses, api_node)
 
         print(60 * '=')
         print(' Network successfully prepared')
         print(60 * '=')
+        print()
 
-        input('Press enter to disconnect networks')
+        print('Waiting for block 60')
+        alpha_node0.wait_for_block(60)
+
         alpha_net.disconnect_from(beta_net)
         print('Disconnected')
 
-        print('Enter fraction of voters switching after disconnected')
-        frac_str = input()
-        frac = float(frac_str)
-        voters_that_changed_mind = int(frac * VOTERS)
+        print('Waiting for block 70')
+        alpha_node0.wait_for_block(70)
 
-
-        voters_alpha = []
-        voters_beta = []
-        witness_to_revoke_votes_alpha = []
-        witness_to_revoke_votes_beta = []
-        witnesses_to_vote_alpha = []
-        witnesses_to_vote_beta = []
-        for i in range(voters_that_changed_mind):
-          v = voter_names[i]
-          if votes[v] in alpha_witness_names:
-            voters_beta.append(v)
-            witness_to_revoke_votes_beta.append(votes[v])
-            w = random.choice(beta_witness_names)
-            witnesses_to_vote_beta.append(w)
-            votes[v] = w
-          else:
-            voters_alpha.append(v)
-            witness_to_revoke_votes_alpha.append(votes[v])
-            w = random.choice(alpha_witness_names)
-            witnesses_to_vote_alpha.append(w)
-            votes[v] = w
-
-        vote_for_witnesses(voters_alpha, witness_to_revoke_votes_alpha, 0, alpha_wallet_url)
-        vote_for_witnesses(voters_alpha, witnesses_to_vote_alpha, 1, alpha_wallet_url)
-
-        vote_for_witnesses(voters_beta, witness_to_revoke_votes_beta, 0, beta_wallet_url)
-        vote_for_witnesses(voters_beta, witnesses_to_vote_beta, 1, beta_wallet_url)
-
-        input('Press enter to reconnect networks')
         alpha_net.connect_with(beta_net)
         print('Reconnected')
 
-        while True:
+        while(True):
           pass
 
     except Exception as _ex:
