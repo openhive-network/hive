@@ -111,24 +111,24 @@ class NodeConfig:
         self.__check_if_key_is_valid(key)
 
         entries = super().__getattribute__('entries')
-        entries[key].value = value
+        entries[key].set_value(value)
 
     def __getattr__(self, key):
         self.__check_if_key_is_valid(key)
 
         entries = super().__getattribute__('entries')
-        return entries[key].value
+        return entries[key].get_value()
 
     def __str__(self):
         supported_entries = super().__getattribute__('SUPPORTED_ENTRIES')
-        return '\n'.join([f'{key}={item.value}' for key, item in supported_entries.items()])
+        return '\n'.join([f'{key}={item.get_value()}' for key, item in supported_entries.items()])
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             raise Exception('Comparison with unsupported type')
 
         entries = super().__getattribute__('entries')
-        return all([item.value == getattr(other, key) for key, item in entries.items()])
+        return all([item.get_value() == getattr(other, key) for key, item in entries.items()])
 
     def __ne__(self, other):
         return not self == other
@@ -151,7 +151,7 @@ class NodeConfig:
     def write_to_lines(self):
         file_entries = []
         for key, entry in self.entries.items():
-            if not entry.value:
+            if not entry.get_value():
                 continue
 
             value = entry.serialize_to_text()
