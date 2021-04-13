@@ -16,7 +16,7 @@ from hive.steem.client import SteemClient
 sys.path.append("../cli_wallet/tests")
 from utils.logger import log, init_logger
 
-CONCURRENCY = None
+CONCURRENCY = 50
 
 
 def set_password(_url):
@@ -324,8 +324,12 @@ if __name__ == "__main__":
 
         Witness.key_generator = KeyGenerator('../../../../build/programs/util/get_dev_key')
 
+        VOTERS = 420
         alpha_witness_names = [f'witness{i}-alpha' for i in range(21)]
         beta_witness_names = [f'witness{i}-beta' for i in range(21)]
+        voter_names = [f'voter{i}' for i in range(VOTERS)]
+        votes = {}
+
 
         # Create first network
         alpha_net = Network('Alpha', port_range=range(51000, 52000))
@@ -387,13 +391,21 @@ if __name__ == "__main__":
         list_accounts(alpha_wallet_url)
 
         prepare_accounts(all_witnesses, alpha_wallet_url, [alpha_wallet_url, beta_wallet_url])
-        configure_initial_vesting(all_witnesses, 1000, 1000, "TESTS", alpha_wallet_url)
+        prepare_accounts(voter_names, alpha_wallet_url, [alpha_wallet_url, beta_wallet_url])
+        configure_initial_vesting(all_witnesses, 10, 10, "TESTS", alpha_wallet_url)
+        configure_initial_vesting(voter_names, 1000, 1000, "TESTS", alpha_wallet_url)
 
         # configure witnesses
-        prepare_witnesses(alpha_witness_names[:14], alpha_wallet_url)
-        prepare_witnesses(beta_witness_names[:7], alpha_wallet_url)
-        self_vote(alpha_witness_names[:14], alpha_wallet_url)
-        self_vote(beta_witness_names[:7], alpha_wallet_url)
+        prepare_witnesses(alpha_witness_names, alpha_wallet_url)
+        prepare_witnesses(beta_witness_names, alpha_wallet_url)
+
+        witnesses_to_vote = []
+        for v in voter_names:
+          w = random.choice(all_witnesses)
+          witnesses_to_vote.append(w)
+          votes[v] = w
+        vote_for_witnesses(voter_names, witnesses_to_vote, 1, alpha_wallet_url)
+
 
         print("Witness state after voting")
         print_top_witnesses(all_witnesses, api_node)
@@ -403,9 +415,6 @@ if __name__ == "__main__":
         time.sleep(63)
         alpha_net.wait_for_synchronization_of_all_nodes()
         beta_net.wait_for_synchronization_of_all_nodes()
-        # after a  while configure additional witnesses
-        prepare_witnesses(alpha_witness_names[14:], alpha_wallet_url)
-        prepare_witnesses(beta_witness_names[7:], alpha_wallet_url)
 
         print("Witness state before split")
         print_top_witnesses(all_witnesses, api_node)
@@ -418,12 +427,38 @@ if __name__ == "__main__":
         alpha_net.disconnect_from(beta_net)
         print('Disconnected')
 
-        # change witnesses in each subnet
-        vote_for_witnesses(beta_witness_names[:7], beta_witness_names[:7], 0, alpha_wallet_url)
-        vote_for_witnesses(beta_witness_names[:7], alpha_witness_names[14:], 1, alpha_wallet_url)
+        print('Enter fraction of voters switching after disconnected')
+        frac_str = input()
+        frac = float(frac_str)
+        voters_that_changed_mind = int(frac * VOTERS)
 
-        vote_for_witnesses(alpha_witness_names[:14], alpha_witness_names[:14], 0, beta_wallet_url)
-        vote_for_witnesses(alpha_witness_names[:14], beta_witness_names[7:], 1, beta_wallet_url)
+
+        voters_alpha = []
+        voters_beta = []
+        witness_to_revoke_votes_alpha = []
+        witness_to_revoke_votes_beta = []
+        witnesses_to_vote_alpha = []
+        witnesses_to_vote_beta = []
+        for i in range(voters_that_changed_mind):
+          v = voter_names[i]
+          if votes[v] in alpha_witness_names:
+            voters_beta.append(v)
+            witness_to_revoke_votes_beta.append(votes[v])
+            w = random.choice(beta_witness_names)
+            witnesses_to_vote_beta.append(w)
+            votes[v] = w
+          else:
+            voters_alpha.append(v)
+            witness_to_revoke_votes_alpha.append(votes[v])
+            w = random.choice(alpha_witness_names)
+            witnesses_to_vote_alpha.append(w)
+            votes[v] = w
+
+        vote_for_witnesses(voters_alpha, witness_to_revoke_votes_alpha, 0, alpha_wallet_url)
+        vote_for_witnesses(voters_alpha, witnesses_to_vote_alpha, 1, alpha_wallet_url)
+
+        vote_for_witnesses(voters_beta, witness_to_revoke_votes_beta, 0, beta_wallet_url)
+        vote_for_witnesses(voters_beta, witnesses_to_vote_beta, 1, beta_wallet_url)
 
         input('Press enter to reconnect networks')
         alpha_net.connect_with(beta_net)
