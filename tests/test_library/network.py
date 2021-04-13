@@ -45,7 +45,7 @@ class Network:
 
     def assign_ports_for_nodes(self):
         for node in self.nodes:
-            if not node.get_p2p_endpoints():
+            if node.get_p2p_endpoint() is None:
                 node.add_p2p_endpoint(f'0.0.0.0:{self.allocate_port()}')
 
             if not node.get_webserver_http_endpoints():
