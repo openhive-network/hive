@@ -4,12 +4,62 @@ import signal
 import time
 
 from .node import Node
+from .witness import Witness
 
 
 class Wallet:
+    class __Api:
+        def __init__(self, wallet):
+            self.__wallet = wallet
+
+        def __send(self, method, *params, jsonrpc='2.0', id=0):
+            return self.__wallet.send(method, *params, jsonrpc=jsonrpc, id=id)
+
+        def info(self):
+            return self.__send('info')
+
+        def set_password(self, password='default-password'):
+            self.__wallet.password = password
+            return self.__send('set_password', self.__wallet.password)
+
+        def unlock(self, password=None):
+            return self.__send('unlock', self.__wallet.password if password is None else password)
+
+        def import_key(self, key):
+            return self.__send('import_key', key)
+
+        def create_account_with_keys(self, creator, new_account_name, json_meta='', owner=None, active=None,
+                                     posting=None, memo=None, broadcast=True):
+            account = Witness(new_account_name)
+            return self.__send(
+                'create_account_with_keys',
+                creator,
+                new_account_name,
+                json_meta,
+                owner if owner is not None else account.public_key,
+                active if active is not None else account.public_key,
+                posting if posting is not None else account.public_key,
+                memo if memo is not None else account.public_key,
+                broadcast
+            )
+
+        def transfer_to_vesting(self, sender, receiver, amount, broadcast=True):
+            return self.__send('transfer_to_vesting', sender, receiver, amount, broadcast)
+
+        def list_accounts(self, lowerbound='', limit=100):
+            return self.__send('list_accounts', lowerbound, limit)
+
+        def update_witness(self, witness_name, url, block_signing_key, props, broadcast=True):
+            return self.__send('update_witness', witness_name, url, block_signing_key, props, broadcast)
+
+        def vote_for_witness(self, account_to_vote_with, witness_to_vote_for, approve, broadcast=True):
+            return self.__send('vote_for_witness', account_to_vote_with, witness_to_vote_for, approve, broadcast)
+
     def __init__(self, directory=Path()):
+        self.api = Wallet.__Api(self)
         self.http_server_port = None
         self.connected_node = None
+        self.password = None
 
         self.directory = directory
         self.executable_file_path = None
@@ -87,3 +137,15 @@ class Wallet:
 
     def set_http_server_port(self, port):
         self.http_server_port = port
+
+    def send(self, method, *params, jsonrpc='2.0', id=0):
+        endpoint = f'http://127.0.0.1:{self.http_server_port}'
+        message = {
+            'jsonrpc': jsonrpc,
+            'id': id,
+            'method': method,
+            'params': list(params)
+        }
+
+        from . import communication
+        return communication.request(endpoint, message)

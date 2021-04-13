@@ -1,7 +1,7 @@
 class NodeConfig:
     class Entry:
         def __init__(self, value, description='description'):
-            self.values = {value}
+            self.values = [value]
             self.description = description
 
         def __str__(self):
@@ -37,7 +37,7 @@ class NodeConfig:
             return
 
         entry = self.entries[key]
-        entry.values.add(value)
+        entry.values.append(value)
 
     def write_to_file(self, file_path):
         file_entries = []

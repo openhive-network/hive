@@ -1,19 +1,58 @@
 from pathlib import Path
-import json
 import subprocess
-import sys
 import time
 
-
-sys.path.append("../../../tests_api")
-from jsonsocket import hived_call
 
 from .node_config import NodeConfig
 from .witness import Witness
 
 
 class Node:
+    class __Apis:
+        pass
+
+    class __ApiBase:
+        def __init__(self, node, name):
+            self.__name = name
+            self.__node = node
+
+        def send(self, method, params=None, jsonrpc='2.0', id=1):
+            return self.__node.send(f'{self.__name}.{method}', params, jsonrpc=jsonrpc, id=id)
+
+    class __DatabaseApi(__ApiBase):
+        def __init__(self, node):
+            super().__init__(node, 'database_api')
+
+        def list_witnesses(self, limit, order, start):
+            return self.send(
+                'list_witnesses',
+                {
+                    'limit': limit,
+                    'order': order,
+                    'start': start,
+                }
+            )
+
+    class __NetworkNodeApi(__ApiBase):
+        def __init__(self, node):
+            super().__init__(node, 'network_node_api')
+
+        def get_info(self):
+            return self.send('get_info')
+
+        def set_allowed_peers(self, allowed_peers):
+            return self.send(
+                'set_allowed_peers',
+                {
+                    'allowed_peers': allowed_peers,
+                }
+            )
+
     def __init__(self, name='unnamed', network=None, directory=Path()):
+        self.api = Node.__Apis()
+        self.api.database = Node.__DatabaseApi(self)
+        self.api.network_node = Node.__NetworkNodeApi(self)
+
         self.network = network
         self.name = name
         self.directory = directory
@@ -47,6 +86,10 @@ class Node:
         self.add_plugin('condenser_api')
         self.add_plugin('network_broadcast_api')
         self.add_plugin('network_node_api')
+        self.add_plugin('account_history_rocksdb')
+        self.add_plugin('account_history')
+        self.add_plugin('account_history_api')
+
 
         self.config.add_entry(
             'shared-file-dir',
@@ -90,6 +133,10 @@ class Node:
             'network_broadcast_api',
             'network_node_api',
             'witness',
+            'account_history_rocksdb',
+            'account_history',
+            'account_history_api',
+
         }
 
         if plugin not in supported_plugins:
@@ -170,6 +217,14 @@ class Node:
 
         return False
 
+    def wait_for_block(self, num):
+        while True:
+            with open(self.directory/'stderr.txt') as output:
+                for line in output:
+                    if f'transactions on block {num}' in line or f'Generated block #{num}' in line:
+                        return
+            time.sleep(1)
+
     def wait_for_synchronization(self):
         while not self.is_synchronized():
             time.sleep(1)
@@ -182,42 +237,42 @@ class Node:
 
         return False
 
-    def get_id(self):
-        request = bytes(json.dumps({
-            "jsonrpc": "2.0",
-            "method": "network_node_api.get_info",
-            "id": 1,
-        }), "utf-8") + b"\r\n"
+    def send(self, method, params=None, jsonrpc='2.0', id=1):
+        message = {
+            'jsonrpc': jsonrpc,
+            'id': id,
+            'method': method,
+        }
+
+        if params is not None:
+            message['params'] = params
+
+        if not self.get_webserver_http_endpoints():
+            raise Exception('Webserver http endpoint is unknown')
+
+        from urllib.parse import urlparse
+        endpoint = f'http://{urlparse(self.get_webserver_http_endpoints()[0], "http").path}'
+
+        if '0.0.0.0' in endpoint:
+            endpoint = endpoint.replace('0.0.0.0', '127.0.0.1')
 
         while not self.is_http_listening():
             time.sleep(1)
 
-        success, response = hived_call(self.get_webserver_http_endpoints()[0], data=request)
+        from . import communication
+        success, response = communication.request(endpoint, message)
 
         if not success:
-            raise Exception('Missing answer from node')
+            raise Exception(f'Unknown communication error occurred, response: {response}')
 
+        return response
+
+    def get_id(self):
+        response = self.api.network_node.get_info()
         return response['result']['node_id']
 
     def set_allowed_nodes(self, nodes):
-        request = bytes(json.dumps({
-            "jsonrpc": "2.0",
-            "method": "network_node_api.set_allowed_peers",
-            "params": {
-                "allowed_peers": [node.get_id() for node in nodes]
-            },
-            "id": 1,
-        }), "utf-8") + b"\r\n"
-
-        while not self.is_http_listening():
-            time.sleep(1)
-
-        success, response = hived_call(self.get_webserver_http_endpoints()[0], data=request)
-
-        if not success:
-            raise Exception('Missing answer from node')
-
-        return response
+        return self.api.network_node.set_allowed_peers([node.get_id() for node in nodes])
 
     def run(self):
         if not self.executable_file_path:
@@ -225,6 +280,8 @@ class Node:
             self.executable_file_path = get_hived_path()
 
         self.directory.mkdir(parents=True)
+        rocksdb_storage_directory = self.directory / 'blockchain' / 'account-history-rocksdb-storage'
+        rocksdb_storage_directory.mkdir(parents=True)
 
         config_file_path = self.directory.joinpath('config.ini')
         self.config.write_to_file(config_file_path)
@@ -244,7 +301,7 @@ class Node:
             stderr=None if self.print_to_terminal else self.stderr_file,
         )
 
-        print(f'[{self}] Run with pid {self.process.pid}')
+        print(f'[{self}] Run with pid {self.process.pid}, with http server {self.get_webserver_http_endpoints()[0]}')
 
     def close(self):
         self.process.kill()
