@@ -9,7 +9,6 @@ def test_parsing_single_line_of_untouched():
     items = List(Untouched)
     items.parse_from_text(' '.join(expected_items))
 
-    assert len(items) == 5
     assert items.get_value() == expected_items
 
 
@@ -31,7 +30,6 @@ def test_parsing_single_line_of_integers():
     items = List(Integer, begin='[', separator=',', end=']')
     items.parse_from_text(input_text)
 
-    assert len(items) == 5
     assert items.get_value() == expected_items
 
 
