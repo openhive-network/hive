@@ -51,14 +51,11 @@ class Node:
     def get_name(self):
         return self.name
 
-    def get_p2p_endpoints(self):
-        if 'p2p-endpoint' not in self.config:
-            self.add_p2p_endpoint(f'0.0.0.0:{self.network.allocate_port()}')
+    def get_p2p_endpoint(self):
+        if not self.config.p2p_endpoint:
+            self.config.p2p_endpoint = f'0.0.0.0:{self.network.allocate_port()}'
 
-        return self.config['p2p-endpoint']
-
-    def add_p2p_endpoint(self, endpoint):
-        self.config.add_entry('p2p-endpoint', endpoint)
+        return self.config.p2p_endpoint
 
     def add_webserver_http_endpoint(self, endpoint):
         self.config.add_entry('webserver-http-endpoint', endpoint)
@@ -73,18 +70,14 @@ class Node:
         return self.config['webserver-ws-endpoint']
 
     def add_seed_node(self, seed_node):
-        endpoints = seed_node.get_p2p_endpoints()
+        endpoint = seed_node.get_p2p_endpoint()
 
-        if len(endpoints) == 0:
+        if endpoint is None:
             raise Exception(f'Cannot connect {self} to {seed_node}; has no endpoints')
 
-        endpoint = endpoints[0]
         port = endpoint.split(':')[1]
 
-        self.config.add_entry(
-            'p2p-seed-node',
-            f'127.0.0.1:{port}',
-        )
+        self.config.p2p_seed_node += [f'127.0.0.1:{port}']
 
     def redirect_output_to_terminal(self):
         self.print_to_terminal = True
