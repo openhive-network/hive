@@ -35,6 +35,8 @@ class NodeConfig:
 
         entries = super().__getattribute__('entries')
         entries['plugin'] = List(Plugin)
+        entries['p2p_endpoint'] = Untouched()
+        entries['p2p_seed_node'] = List(Untouched)
         entries['witness'] = List(String, single_line=False)
         entries['private_key'] = List(Untouched, single_line=False)
         for key in ['shared_file_dir', 'account_history_rocksdb_path', 'snapshot_root_dir']:
