@@ -335,9 +335,6 @@ struct cluster_database_fixture
 
   using content_method = std::function<void( ptr_hardfork_database_fixture& )>;
 
-  ptr_hardfork_database_fixture _24;
-  ptr_hardfork_database_fixture _25;
-
   cluster_database_fixture( uint16_t _shared_file_size_in_mb = database_fixture::shared_file_size_in_mb_512 );
   virtual ~cluster_database_fixture();
 
