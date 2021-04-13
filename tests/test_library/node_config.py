@@ -148,23 +148,22 @@ class NodeConfig:
 
         return differences
 
-    def write_to_file(self, file_path):
+    def write_to_lines(self):
         file_entries = []
+        for key, entry in self.entries.items():
+            if not entry.value:
+                continue
+
+            value = entry.serialize_to_text()
+            value = value if isinstance(value, list) else [value]
+            for v in value:
+                file_entries.append(f"{key.replace('_', '-')} = {v}")
+
+        return file_entries
+
+    def write_to_file(self, file_path):
         with open(file_path, 'w') as file:
-            for key, entry in self.entries.items():
-                file_entry = f'# {entry.description}\n' if entry.description else ''
-
-                if key in ['private-key', 'witness']:
-                    for value in entry.values:
-                        file_entry += f'{key} = {value}\n'
-                else:
-                    file_entry += f'{key} = '
-                    file_entry += ' '.join(entry.values)
-                    file_entry += '\n'
-
-                file_entries.append(file_entry)
-
-            file.write('\n'.join(file_entries))
+            file.write('\n'.join(self.write_to_lines()))
 
     def load_from_lines(self, lines):
         import re
