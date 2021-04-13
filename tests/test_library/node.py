@@ -213,13 +213,12 @@ class Node:
             witness = Account(witness_name)
             key = witness.private_key
 
-        self.config.add_entry(
-            'witness',
-            f'"{witness_name}"',
-            'Name of witness controlled by this node'
-        )
+        if self.config.witness is None:
+            self.config.witness = []
 
-        self.config.add_entry(
-            'private-key',
-            key
-        )
+        self.config.witness += witness_name
+
+        if self.config.private_key is None:
+            self.config.private_key = []
+
+        self.config.private_key += key
