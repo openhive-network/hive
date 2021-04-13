@@ -20,10 +20,10 @@ def values():
 def test_parsing(entry, values):
     for input_text, expected in values:
         entry.parse_from_text(input_text)
-        assert entry.value == expected
+        assert entry.get_value() == expected
 
 
 def test_serializing(entry, values):
     for expected, input_value in values:
-        entry.value = input_value
+        entry.set_value(input_value)
         assert entry.serialize_to_text() == expected
