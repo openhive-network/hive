@@ -187,6 +187,7 @@ class NodeConfig:
         def is_entry_line(line):
             return parse_entry_line(line) is not None
 
+        self.__clear()
         for line in lines:
             if is_entry_line(line):
                 key, value = parse_entry_line(line)
