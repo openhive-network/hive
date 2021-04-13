@@ -1140,12 +1140,15 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
   auto opIterator = volatileIdx.lower_bound(*blockRangeBegin);
   for(; opIterator != volatileIdx.end() && opIterator->block < *blockRangeEnd; ++opIterator)
   {
-    uint64_t opId = opIterator->op_in_trx;
-    opId |= static_cast<uint64_t>(opIterator->trx_in_block) << 32;
+    if(*collectedIrreversibleBlock < opIterator->block)
+    {
+      uint64_t opId = opIterator->op_in_trx;
+      opId |= static_cast<uint64_t>(opIterator->trx_in_block) << 32;
 
-    rocksdb_operation_object persistentOp(*opIterator);
-    persistentOp.id = opId;
-    retVal.emplace_back(std::move(persistentOp));
+      rocksdb_operation_object persistentOp(*opIterator);
+      persistentOp.id = opId;
+      retVal.emplace_back(std::move(persistentOp));
+    }
   }
 
   if(retVal.empty() == false)
@@ -1986,7 +1989,8 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
     while(itr != volatile_idx.end() && itr->block <= block_num)
     {
       rocksdb_operation_object obj(*itr);
-      importOperation(obj, itr->impacted);
+      if(obj.block == block_num)
+        importOperation(obj, itr->impacted);
       to_delete.push_back(&(*itr));
       ++itr;
     }
