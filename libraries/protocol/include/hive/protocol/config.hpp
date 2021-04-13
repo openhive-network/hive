@@ -54,6 +54,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_GLOBAL_REMOVE_THRESHOLD          20
 
+#define HIVE_START_MINER_VOTING_BLOCK         30
+
 #else // IS LIVE HIVE NETWORK
 
 #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 25, 0) )
@@ -92,6 +94,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_GLOBAL_REMOVE_THRESHOLD          200
 
+#define HIVE_START_MINER_VOTING_BLOCK         (HIVE_BLOCKS_PER_DAY * 30)
+
 #endif
 
 #define VESTS_SYMBOL  (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_VESTS ) )
@@ -108,7 +112,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_BLOCKS_PER_YEAR                  (365*24*60*60/HIVE_BLOCK_INTERVAL)
 #define HIVE_BLOCKS_PER_DAY                   (24*60*60/HIVE_BLOCK_INTERVAL)
 #define HIVE_START_VESTING_BLOCK              (HIVE_BLOCKS_PER_DAY * 7)
-#define HIVE_START_MINER_VOTING_BLOCK         (HIVE_BLOCKS_PER_DAY * 30)
 
 #define HIVE_INIT_MINER_NAME                  "initminer"
 #define HIVE_NUM_INIT_MINERS                  1
