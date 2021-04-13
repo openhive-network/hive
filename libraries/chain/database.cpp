@@ -4774,7 +4774,10 @@ void database::update_last_irreversible_block()
     }
   }
 
-  _previous_ireversible_block_num = old_last_irreversible;
+  for( uint32_t i = old_last_irreversible; i <= dpo.last_irreversible_block_num; ++i )
+  {
+    notify_irreversible_block( i );
+  }
 } FC_CAPTURE_AND_RETHROW() }
 
 void database::migrate_irreversible_state()
@@ -4828,11 +4831,6 @@ void database::migrate_irreversible_state()
 
     // This deletes undo state
     commit( dpo.last_irreversible_block_num );
-
-    for( uint32_t i = _previous_ireversible_block_num; i <= dpo.last_irreversible_block_num; ++i )
-    {
-      notify_irreversible_block( i );
-    }
   }
   FC_CAPTURE_AND_RETHROW()
 }

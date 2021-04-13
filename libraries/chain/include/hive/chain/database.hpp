@@ -777,8 +777,6 @@ namespace chain {
       uint16_t                      _shared_file_full_threshold = 0;
       uint16_t                      _shared_file_scale_rate = 0;
 
-      uint32_t                      _previous_ireversible_block_num = 0;
-
       bool                          snapshot_loaded = false;
 
       flat_map< custom_id_type, std::shared_ptr< custom_operation_interpreter > >   _custom_operation_interpreters;
