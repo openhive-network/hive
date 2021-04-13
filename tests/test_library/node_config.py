@@ -97,6 +97,8 @@ class NodeConfig:
 
         entries = super().__getattribute__('entries')
         entries['plugin'] = List(Plugin)
+        entries['witness'] = List(String)
+        entries['private_key'] = List(Untouched)
         for key in ['shared_file_dir', 'account_history_rocksdb_path', 'snapshot_root_dir']:
             entries[key] = String()
 
