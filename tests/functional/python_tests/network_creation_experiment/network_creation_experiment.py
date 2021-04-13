@@ -176,21 +176,21 @@ if __name__ == "__main__":
         print_top_witnesses(all_witnesses, api_node)
         print(wallet.api.list_accounts())
 
-        for i in range(20):
+        for i in range(10):
           configure_initial_vesting(['initminer'], 1, 1, "TESTS", wallet)
 
         print(60 * '=')
         print(' Network successfully prepared')
         print(60 * '=')
 
-        print('Waiting for block 60')
-        alpha_node0.wait_for_block(60)
+        print('Waiting for 20 more blocks')
+        time.sleep(60)
 
         alpha_net.disconnect_from(beta_net)
         print('Disconnected')
 
-        print('Waiting for block 70')
-        alpha_node0.wait_for_block(70)
+        print('Waiting 60 seconds')
+        time.sleep(60)
 
         alpha_net.connect_with(beta_net)
         print('Reconnected')
