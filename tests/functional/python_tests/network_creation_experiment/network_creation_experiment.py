@@ -160,6 +160,10 @@ if __name__ == "__main__":
         wallet.api.unlock()
         wallet.api.import_key(Witness('initminer').private_key)
 
+        print("Waiting for network synchronization...")
+        alpha_net.wait_for_synchronization_of_all_nodes()
+        beta_net.wait_for_synchronization_of_all_nodes()
+
         all_witnesses = alpha_witness_names + beta_witness_names
         random.shuffle(all_witnesses)
 
@@ -178,10 +182,6 @@ if __name__ == "__main__":
 
         for i in range(20):
           configure_initial_vesting(['initminer'], 1, 1, "TESTS", wallet)
-
-        print("Waiting for network synchronization...")
-        alpha_net.wait_for_synchronization_of_all_nodes()
-        beta_net.wait_for_synchronization_of_all_nodes()
 
         print(60 * '=')
         print(' Network successfully prepared')
