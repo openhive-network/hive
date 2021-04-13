@@ -35,20 +35,3 @@ class List(ConfigEntry):
 
         values = [serialize_value(value) for value in self._value]
         return self.__begin + self.__separator.join(values) + self.__end if self.__single_line else values
-
-    def __len__(self):
-        return len(self._value)
-
-    def __iter__(self):
-        return self.value.__iter__()
-
-    def __eq__(self, other):
-        if isinstance(other, List):
-            other = other.value
-        elif not isinstance(other, list):
-            raise Exception('Comparison with unsupported type')
-
-        return self.value == other
-
-    def __ne__(self, other):
-        return not self == other
