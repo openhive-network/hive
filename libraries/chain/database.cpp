@@ -4726,7 +4726,6 @@ void database::update_signing_witness(const witness_object& signing_witness, con
 void database::update_last_irreversible_block()
 { try {
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-  auto old_last_irreversible = dpo.last_irreversible_block_num;
 
   /**
     * Prior to voting taking over, we must be more conservative...
@@ -4773,11 +4772,6 @@ void database::update_last_irreversible_block()
       } );
     }
   }
-
-  for( uint32_t i = old_last_irreversible; i <= dpo.last_irreversible_block_num; ++i )
-  {
-    notify_irreversible_block( i );
-  }
 } FC_CAPTURE_AND_RETHROW() }
 
 void database::migrate_irreversible_state()
@@ -4820,9 +4814,14 @@ void database::migrate_irreversible_state()
         for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
         {
           _block_log.append( block_itr->get()->data );
+
+          uint32_t i = (*block_itr)->num;
+          notify_irreversible_block( i );
         }
 
         _block_log.flush();
+
+
       }
     }
 
