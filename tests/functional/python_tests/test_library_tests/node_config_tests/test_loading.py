@@ -35,3 +35,17 @@ def test_incorrect_plugins(config):
     for incorrect_plugin in ['UNDEFINED_PLUGIN', 'witnness', 'p3p', '']:
         with pytest.raises(Exception):
             config.load_from_lines([f'plugin = {incorrect_plugin}'])
+
+
+def test_multi_line_entry_loading(config):
+    config.load_from_lines([
+        'witness = "initminer"',
+        'witness = "other-witness"',
+        'private-key = 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n',
+        'private-key = 5JcCHFFWPW2DryUFDVd7ZXVj2Zo67rqMcvcq5inygZGBAPR1JoR',
+    ])
+
+    assert 'initminer' in config.witness
+    assert 'other-witness' in config.witness
+    assert '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n' in config.private_key
+    assert '5JcCHFFWPW2DryUFDVd7ZXVj2Zo67rqMcvcq5inygZGBAPR1JoR' in config.private_key
