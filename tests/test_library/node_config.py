@@ -3,6 +3,9 @@ from .node_config_entry_types import *
 
 class NodeConfig:
     class __UnsetType:
+        def __iadd__(self, other):
+            return other
+
         def __bool__(self):
             return False
 
