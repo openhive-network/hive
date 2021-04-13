@@ -16,7 +16,8 @@ class List(ConfigEntry):
         return []
 
     def _parse_from_text(self, text):
-        self._value = []
+        if self.__single_line:
+            self._value = []
 
         import re
         match_result = re.match(fr'^\s*{re.escape(self.__begin)}(.*){re.escape(self.__end)}\s*$', text)
