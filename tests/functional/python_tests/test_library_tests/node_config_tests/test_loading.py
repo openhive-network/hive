@@ -42,6 +42,16 @@ def test_incorrect_plugins(config):
             config.load_from_lines([f'plugin = {incorrect_plugin}'])
 
 
+def test_single_line_entry_loading(config):
+    config.load_from_lines([
+        'plugin = account_by_key',
+        'plugin = condenser_api',
+    ])
+
+    assert 'account_by_key' in config.plugin
+    assert 'condenser_api' in config.plugin
+
+
 def test_multi_line_entry_loading(config):
     config.load_from_lines([
         'witness = "initminer"',
