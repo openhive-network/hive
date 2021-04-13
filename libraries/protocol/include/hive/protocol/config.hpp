@@ -146,8 +146,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_VOTE_DUST_THRESHOLD              (50000000)
 #define HIVE_DOWNVOTE_POOL_PERCENT_HF21       (25*HIVE_1_PERCENT)
 
-#define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS (60*60*24*30) // 30 days
-#define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       (60*60*24*1)  // 1 day
+#define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS (20) // 20 seconds
+#define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       (2)  // 2 seconds
 
 #define HIVE_MIN_ROOT_COMMENT_INTERVAL        (fc::seconds(60*5)) // 5 minutes
 #define HIVE_MIN_REPLY_INTERVAL               (fc::seconds(20)) // 20 seconds
