@@ -10,14 +10,14 @@ def test_parsing_single_line_of_untouched():
     items.parse_from_text(' '.join(expected_items))
 
     assert len(items) == 5
-    assert items == expected_items
+    assert items.get_value() == expected_items
 
 
 def test_serializing_single_line_of_untouched():
     input_items = ['network_node_api', 'account_by_key', 'witness', 'network_broadcast_api', 'condenser_api']
 
     items = List(Untouched)
-    items.value = input_items
+    items.set_value(input_items)
 
     serialized = items.serialize_to_text()
 
@@ -32,7 +32,7 @@ def test_parsing_single_line_of_integers():
     items.parse_from_text(input_text)
 
     assert len(items) == 5
-    assert items.value == expected_items
+    assert items.get_value() == expected_items
 
 
 def test_serializing_single_line_of_integers():
@@ -40,7 +40,7 @@ def test_serializing_single_line_of_integers():
     expected = '[15,60,300,3600,86400]'
 
     items = List(Integer, begin='[', separator=',', end=']')
-    items.value = input_items
+    items.set_value(input_items)
 
     assert items.serialize_to_text() == expected
 
@@ -50,6 +50,6 @@ def test_serializing_multiple_lines_of_strings():
     expected = [f'"{item}"' for item in input_items]
 
     items = List(String, single_line=False)
-    items.value = input_items
+    items.set_value(input_items)
 
     assert items.serialize_to_text() == expected
