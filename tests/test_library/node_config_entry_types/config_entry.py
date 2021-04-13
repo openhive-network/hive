@@ -45,4 +45,4 @@ class ConfigEntry:
     # Final method, shouldn't be overridden
     def clear(self):
         self.__is_set = False
-        self._value = None
+        self._value = self._get_unset_value()
