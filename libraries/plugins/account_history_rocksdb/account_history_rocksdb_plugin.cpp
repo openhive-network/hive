@@ -1967,7 +1967,11 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
 {
   if( _reindexing ) return;
 
-  if( block_num <= _cached_irreversible_block ) return;
+  uint32_t fallbackIrreversibleBlock = 0;
+  
+  /// In case of genesis block (and fresh testnet) there can be no LIB at begin.
+
+  if( block_num <= get_lib(&fallbackIrreversibleBlock) ) return;
 
   _currently_persisted_irreversible_block.store(block_num);
 
@@ -1982,12 +1986,7 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
     while(itr != volatile_idx.end() && itr->block <= block_num)
     {
       rocksdb_operation_object obj(*itr);
-      if(obj.block == block_num)
-        importOperation(obj, itr->impacted);
-      else
-      {
-        elog("PREVENTED IMPORTING INTO AC STORAGE operations on block ${no}", ("no", block_num));
-      }
+      importOperation(obj, itr->impacted);
       to_delete.push_back(&(*itr));
       ++itr;
     }
