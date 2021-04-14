@@ -2669,6 +2669,8 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   const auto& fhistory = _db.get_feed_history();
   FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot convert HIVE because there is no price feed." );
 
+  //if you change something here take a look at wallet_api::estimate_hive_collateral as well
+
   //apply fee to current rolling minimum price
   price immediate_price_with_fee = fhistory.current_min_history.get_scaled( HIVE_100_PERCENT + HIVE_COLLATERALIZED_CONVERSION_FEE, o.amount.symbol );
   

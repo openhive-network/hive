@@ -47,12 +47,12 @@
 
 //redirect exceptions from chainbase to the same place as the one from FC_ASSERT
 #define CHAINBASE_THROW_EXCEPTION( exception )                 \
-  {                                                            \
+  do {                                                         \
     auto ex = exception;                                       \
     if( fc::enable_record_assert_trip )                        \
       fc::record_assert_trip( __FILE__, __LINE__, ex.what() ); \
     BOOST_THROW_EXCEPTION( ex );                               \
-  }
+  } while( false )
 
 namespace helpers
 {
@@ -286,10 +286,10 @@ namespace chainbase {
       typedef undo_state< value_type >                              undo_state_type;
 
       generic_index( allocator<value_type> a, bfs::path p )
-      :_stack(a),_indices( a, p ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) { }
+      :_stack(a),_indices( a, p ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) {}
 
       generic_index( allocator<value_type> a )
-      :_stack(a),_indices( a ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) { }
+      :_stack(a),_indices( a ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) {}
 
       void validate()const {
         if( sizeof(typename MultiIndexType::value_type) != _size_of_value_type || sizeof(*this) != _size_of_this )
@@ -426,7 +426,7 @@ namespace chainbase {
       session start_undo_session()
       {
         ++_revision;
-        
+
         _stack.emplace_back( _indices.get_allocator() );
         _stack.back().old_next_id = _next_id;
         _stack.back().revision = _revision;
@@ -932,7 +932,7 @@ namespace chainbase {
       auto get_segment_manager() -> decltype( ((bip::managed_mapped_file*)nullptr)->get_segment_manager()) {
         return _segment->get_segment_manager();
       }
-      
+
       unsigned long long get_total_system_memory() const
       {
 #if !defined( __APPLE__ ) // OS X does not support _SC_AVPHYS_PAGES

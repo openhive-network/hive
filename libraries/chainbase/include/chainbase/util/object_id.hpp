@@ -23,7 +23,7 @@ class oid
   __id_type _id;
 
 public:
-  explicit oid( __id_type i ) : _id( i ) {}
+  explicit oid( __id_type i ) : _id( i ) {} //lack of default makes sure all chain-object constructors fill their id members
 
   oid& operator++() { ++_id; return *this; }
 
