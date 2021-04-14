@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
         print("Witness state before voting")
         print_top_witnesses(all_witnesses, api_node)
-        print(wallet.api.list_accounts()[1])
+        print(wallet.api.list_accounts())
 
         prepare_accounts(all_witnesses, wallet)
         configure_initial_vesting(all_witnesses, 500, 1000, "TESTS", wallet)
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
         print("Witness state after voting")
         print_top_witnesses(all_witnesses, api_node)
-        print(wallet.api.list_accounts()[1])
+        print(wallet.api.list_accounts())
 
         print("Waiting for network synchronization...")
         alpha_net.wait_for_synchronization_of_all_nodes()
