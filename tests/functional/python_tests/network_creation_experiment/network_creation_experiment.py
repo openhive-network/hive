@@ -6,6 +6,7 @@ import sys
 import time
 import concurrent.futures
 import random
+from string import Template
 
 # TODO: Remove dependency from cli_wallet/tests directory.
 #       This modules [utils.logger] should be somewhere higher.
@@ -92,6 +93,14 @@ def print_top_witnesses(witnesses, node):
 
     log.info("Witness # {0:2d}, group: {1}, name: `{2}', votes: {3}".format(position, group, w["owner"], w["votes"]))
     position = position + 1
+
+def get_producer_reward_operations(ops):
+    result = []
+    for op in ops:
+        op_type = op["op"]["type"]
+        if op_type == "producer_reward_operation":
+            result.append(op)
+    return result
 
 
 if __name__ == "__main__":
@@ -196,7 +205,24 @@ if __name__ == "__main__":
         print('Reconnected')
 
         while(True):
-          pass
+          time.sleep(2)
+          method = 'account_history_api.get_ops_in_block'
+          params = { "block_num": 0, "only_virtual": True }
+          alpha_duplicates = []
+          beta_duplicates = []
+          for i in range(0, 300):
+            params['block_num'] = i
+            print(params)
+            alpha_response = alpha_node0.send(method, params)
+            if get_producer_reward_operations(alpha_response):
+              alpha_duplicates.append(i)
+            beta_response = beta_node0.send(method, params)
+            if get_producer_reward_operations(beta_response):
+              beta_duplicates.append(i)
+
+          print("duplicates in alpha network:", alpha_duplicates)
+          print("duplicates in beta network:", beta_duplicates)
+
 
     except Exception as _ex:
         log.exception(str(_ex))
