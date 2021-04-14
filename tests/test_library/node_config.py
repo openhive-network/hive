@@ -44,6 +44,8 @@ class NodeConfig:
         entries['webserver_http_endpoint'] = Untouched()
         entries['webserver_unix_endpoint'] = Untouched()
         entries['webserver_ws_endpoint'] = Untouched()
+        entries['enable_stale_production'] = Boolean()
+        entries['required_participation'] = Integer()
         entries['witness'] = List(String, single_line=False)
         entries['private_key'] = List(Untouched, single_line=False)
         for key in ['shared_file_dir', 'account_history_rocksdb_path', 'snapshot_root_dir']:
