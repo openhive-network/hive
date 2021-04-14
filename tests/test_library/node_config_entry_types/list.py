@@ -2,6 +2,35 @@ from .config_entry import ConfigEntry
 
 
 class List(ConfigEntry):
+    class __ListWithFixedAdditionOperator(list):
+        """List fixing Python built in lists with addition
+
+        Problem:
+            Built in Python list works strange when addition is performed.
+
+            This is invalid code:
+                ['x'] + 'abc'
+
+            But this works "fine":
+                x = ['x']
+                x += 'abc'
+                assert x == ['x', 'a', 'b', 'c']
+
+            This behavior is unacceptable for our List class, because when you write:
+                config.private_key += '5KfubvGdvPdzYqB8d6S6xiSNKjpywqeSQpf5eNXwHP4q36p6bup'
+            you end up with:
+                assert config.private_key == ['5', 'K', 'f', 'u', 'b' ...and so on
+
+        Expected behavior (with this class):
+            config.private_key += '5KfubvGdvPdzYqB8d6S6xiSNKjpywqeSQpf5eNXwHP4q36p6bup'
+            assert config.private_key == ['5KfubvGdvPdzYqB8d6S6xiSNKjpywqeSQpf5eNXwHP4q36p6bup']
+        """
+        def __iadd__(self, other):
+            if not isinstance(other, list):
+                other = [other]
+
+            return super().__iadd__(other)
+
     def __init__(self, item_type, separator=' ', begin='', end='', single_line=True):
         super().__init__()
 
@@ -13,7 +42,7 @@ class List(ConfigEntry):
         self.__single_line = single_line
 
     def _get_unset_value(self):
-        return []
+        return self.__ListWithFixedAdditionOperator()
 
     def _parse_from_text(self, text):
         import re
@@ -33,3 +62,12 @@ class List(ConfigEntry):
 
         values = [serialize_value(value) for value in self._value]
         return self.__begin + self.__separator.join(values) + self.__end if self.__single_line else values
+
+    def _set_value(self, value):
+        if not isinstance(value, list):
+            value = [value]
+
+        self._value = self.__ListWithFixedAdditionOperator(value)
+
+    def _get_value(self):
+        return self.__ListWithFixedAdditionOperator(self._value)
