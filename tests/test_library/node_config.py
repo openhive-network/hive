@@ -159,12 +159,12 @@ class NodeConfig:
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             raise Exception('Comparison with unsupported type')
-        return not self.get_differences_between(other)
+        return not self.get_differences_between(other, stop_at_first_difference=True)
 
     def __ne__(self, other):
         return not self == other
 
-    def get_differences_between(self, other):
+    def get_differences_between(self, other, stop_at_first_difference=False):
         differences = {}
         supported_entries = super().__getattribute__('SUPPORTED_ENTRIES')
         for member in supported_entries:
@@ -173,6 +173,8 @@ class NodeConfig:
 
             if mine != his:
                 differences[member] = (mine, his)
+                if stop_at_first_difference:
+                    break
 
         return differences
 
