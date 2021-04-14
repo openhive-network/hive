@@ -159,17 +159,12 @@ class NodeConfig:
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             raise Exception('Comparison with unsupported type')
-
-        entries = super().__getattribute__('entries')
-        return all([item.get_value() == getattr(other, key) for key, item in entries.items()])
+        return not self.get_differences_between(other)
 
     def __ne__(self, other):
         return not self == other
 
     def get_differences_between(self, other):
-        if self == other:
-            return None
-
         differences = {}
         supported_entries = super().__getattribute__('SUPPORTED_ENTRIES')
         for member in supported_entries:
