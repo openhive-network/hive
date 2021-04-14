@@ -31,8 +31,8 @@ def create_default_config():
     config.transaction_status_block_depth = '64000'
     config.transaction_status_track_after_block = '0'
     config.webserver_thread_pool_size = '32'
-    config.enable_stale_production = '0'
-    config.required_participation = '33'
+    config.enable_stale_production = False
+    config.required_participation = 33
     config.witness_skip_enforce_bandwidth = '1'
 
     return config
