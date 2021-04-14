@@ -23,10 +23,6 @@ class Node:
 
         from .node_configs.default import create_default_config
         self.config = create_default_config()
-        self.config.plugin += ['network_broadcast_api', 'network_node_api']
-        self.config.shared_file_size = '6G'
-        self.config.enable_stale_production = 1
-        self.config.required_participation = 0
 
     def __str__(self):
         return f'{self.network.name}::{self.name}' if self.network is not None else self.name
