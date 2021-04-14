@@ -23,3 +23,19 @@ def test_adding_multiple_items_in_few_lines(config):
     config.private_key += ['2']
     config.private_key += ['3']
     assert config.private_key == ['1', '2', '3']
+
+
+def test_setting_string_instead_of_list(config):
+    config.private_key = '5KFirstQmyBxGKqXCv5qRhip'
+    assert config.private_key == ['5KFirstQmyBxGKqXCv5qRhip']
+
+
+def test_adding_first_string_instead_of_list(config):
+    config.private_key += '5KFirstQmyBxGKqXCv5qRhip'
+    assert config.private_key == ['5KFirstQmyBxGKqXCv5qRhip']
+
+
+def test_adding_second_string_instead_of_list(config):
+    config.private_key = ['5KFirstQmyBxGKqXCv5qRhip']
+    config.private_key += '5KSecondXPdzYqB8d6S66bup'
+    assert config.private_key == ['5KFirstQmyBxGKqXCv5qRhip', '5KSecondXPdzYqB8d6S66bup']
