@@ -1358,6 +1358,11 @@ void database::notify_load_snapshot_data_supplement(const load_snapshot_suppleme
   HIVE_TRY_NOTIFY(_load_snapshot_supplement_signal, note) 
 }
 
+void database::notify_comment_reward(const comment_reward_notification& note)
+{
+  HIVE_TRY_NOTIFY(_comment_reward_signal, note) 
+}
+
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
 {
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
@@ -2633,17 +2638,14 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       }
 
       const share_type reward = util::get_rshare_reward( ctx );
-#ifdef IS_TEST_NET
-      if( allow_last_reward )
-        last_reward.push_back( reward );
-#endif
-
       uint128_t reward_tokens = uint128_t( reward.value );
+      share_type curation_tokens;
+      share_type author_tokens;
 
       if( reward_tokens > 0 )
       {
-        share_type curation_tokens = ( ( reward_tokens * get_curation_rewards_percent() ) / HIVE_100_PERCENT ).to_uint64();
-        share_type author_tokens = reward_tokens.to_uint64() - curation_tokens;
+        curation_tokens = ( ( reward_tokens * get_curation_rewards_percent() ) / HIVE_100_PERCENT ).to_uint64();
+        author_tokens = reward_tokens.to_uint64() - curation_tokens;
 
         share_type curation_remainder = pay_curators( comment, comment_cashout, curation_tokens );
 
@@ -2732,6 +2734,8 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             a.posting_rewards += author_tokens;
           });
       }
+
+      notify_comment_reward( { reward, author_tokens, curation_tokens } );
 
       if( !has_hardfork( HIVE_HARDFORK_0_17__774 ) )
         adjust_rshares2( util::evaluate_reward_curve( comment_cashout.net_rshares.value ), 0 );
@@ -4576,6 +4580,11 @@ boost::signals2::connection database::add_snapshot_supplement_handler(const prep
 boost::signals2::connection database::add_snapshot_supplement_handler(const load_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
   return connect_impl(_load_snapshot_supplement_signal, func, plugin, group, "->load_snapshot_data_supplement");
+}
+
+boost::signals2::connection database::add_comment_reward_handler(const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
+{
+  return connect_impl(_comment_reward_signal, func, plugin, group, "->comment_reward");
 }
 
 const witness_object& database::validate_block_header( uint32_t skip, const signed_block& next_block )const

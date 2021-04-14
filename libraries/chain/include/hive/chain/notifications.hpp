@@ -54,4 +54,14 @@ struct optional_action_notification
   const hive::protocol::optional_automated_action& action;
 };
 
+struct comment_reward_notification
+{
+  comment_reward_notification( const share_type& _total_reward, share_type _author_tokens, share_type _curation_tokens )
+  : total_reward( _total_reward ), author_tokens( _author_tokens ), curation_tokens( _curation_tokens ) {}
+
+  share_type total_reward;
+  share_type author_tokens;
+  share_type curation_tokens;
+};
+
 } }

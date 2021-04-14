@@ -146,6 +146,10 @@ struct curation_rewards_handler
   clean_database_fixture&                   test_object;
   chain::database&                          db;
 
+  std::vector<share_type>                   total_rewards;
+
+  boost::signals2::connection               _comment_reward_con;
+
   void preparation( bool enter )
   {
     if( !prepare )
@@ -160,8 +164,6 @@ struct curation_rewards_handler
     {
       configuration_data = configuration_data_copy;
     }
-
-    db.allow_last_reward = enter;
   }
 
   curation_rewards_handler( clean_database_fixture& _test_object, chain::database& _db, bool _prepare = true )
@@ -169,12 +171,21 @@ struct curation_rewards_handler
   {
     create_printer();
 
+    _comment_reward_con = db.add_comment_reward_handler(
+      [&]( const comment_reward_notification& note )
+      {
+        total_rewards.push_back( note.total_reward );
+      },
+      appbase::app().get_plugin< hive::plugins::debug_node::debug_node_plugin >()
+    );
+
     preparation( true/*enter*/ );
   }
 
   ~curation_rewards_handler()
   {
     preparation( false/*enter*/ );
+    chain::util::disconnect_signal( _comment_reward_con );
   }
 
   void prepare_author( std::set<uint32_t> _authors )
@@ -880,9 +891,8 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
       crh.make_payment();
       total_rewards_pool_after = crh.current_total_reward();
 
-      BOOST_REQUIRE( executor->db->last_reward.size() );
-      reward = executor->db->last_reward[0];
-      executor->db->last_reward.clear();
+      BOOST_REQUIRE( !crh.total_rewards.empty() );
+      reward = crh.total_rewards[0];
     };
 
     reward_stat::rewards_stats posting_stats_hf24;
@@ -1080,9 +1090,8 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
       crh.make_payment();
       total_rewards_pool_after = crh.current_total_reward();
 
-      BOOST_REQUIRE( executor->db->last_reward.size() );
-      reward = executor->db->last_reward[0];
-      executor->db->last_reward.clear();
+      BOOST_REQUIRE( !crh.total_rewards.empty() );
+      reward = crh.total_rewards[0];
     };
 
     reward_stat::rewards_stats posting_stats_hf24;
@@ -1284,9 +1293,8 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
       crh.make_payment();
       total_rewards_pool_after = crh.current_total_reward();
 
-      BOOST_REQUIRE( executor->db->last_reward.size() );
-      reward = executor->db->last_reward[0];
-      executor->db->last_reward.clear();
+      BOOST_REQUIRE( !crh.total_rewards.empty() );
+      reward = crh.total_rewards[0];
     };
 
     reward_stat::rewards_stats posting_stats_hf24;
@@ -1531,10 +1539,9 @@ BOOST_AUTO_TEST_CASE( two_comments_in_the_same_blocks )
       crh.make_payment();
       total_rewards_pool_after = crh.current_total_reward();
 
-      BOOST_REQUIRE_EQUAL( executor->db->last_reward.size(), 2 );
-      for( auto& item : executor->db->last_reward )
+      BOOST_REQUIRE_EQUAL( crh.total_rewards.size(), 2 );
+      for( auto& item : crh.total_rewards )
         possible_reward.emplace_back( reward_stat{ static_cast<uint64_t>( item.value ) } );
-      executor->db->last_reward.clear();
     };
 
     reward_stat::rewards_stats posting_stats_hf24;
@@ -1811,10 +1818,9 @@ BOOST_AUTO_TEST_CASE( two_comments_in_different_blocks )
       crh.make_payment( 0/*back_offset_blocks*/, 1/*comment_idx*/ );
       total_rewards_pool_after[1] = crh.current_total_reward();
 
-      BOOST_REQUIRE_EQUAL( executor->db->last_reward.size(), 2 );
-      for( auto& item : executor->db->last_reward )
+      BOOST_REQUIRE_EQUAL( crh.total_rewards.size(), 2 );
+      for( auto& item : crh.total_rewards )
         possible_reward.emplace_back( reward_stat{ static_cast<uint64_t>( item.value ) } );
-      executor->db->last_reward.clear();
     };
 
     reward_stat::rewards_stats posting_stats_hf24;

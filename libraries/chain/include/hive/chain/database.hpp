@@ -359,9 +359,11 @@ namespace chain {
       using prepare_snapshot_handler_t = std::function < void(const database&, const database::abstract_index_cntr_t&)>;
       using prepare_snapshot_data_supplement_handler_t = std::function < void(const prepare_snapshot_supplement_notification&) >;
       using load_snapshot_data_supplement_handler_t = std::function < void(const load_snapshot_supplement_notification&) >;
+      using comment_reward_notification_handler_t = std::function < void(const comment_reward_notification&) >;
 
       void notify_prepare_snapshot_data_supplement(const prepare_snapshot_supplement_notification& n);
       void notify_load_snapshot_data_supplement(const load_snapshot_supplement_notification& n);
+      void notify_comment_reward(const comment_reward_notification& note);
 
     private:
       template <typename TSignal,
@@ -410,6 +412,8 @@ namespace chain {
       /// <param name="group"></param>
       /// <returns></returns>
       boost::signals2::connection add_snapshot_supplement_handler       (const load_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
+
+      boost::signals2::connection add_comment_reward_handler            (const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
       //////////////////// db_witness_schedule.cpp ////////////////////
 
@@ -610,8 +614,6 @@ namespace chain {
       bool skip_price_feed_limit_check = true;
       bool skip_transaction_delta_check = true;
       bool disable_low_mem_warning = true;
-      bool allow_last_reward = false;
-      std::vector<share_type> last_reward;
 #endif
 
 #ifdef HIVE_ENABLE_SMT
@@ -874,6 +876,11 @@ namespace chain {
         * Internal signal to execute deferred registration of plugin indexes.
         */
       fc::signal<void()>                                    _plugin_index_signal;
+
+      /// <summary>
+      ///  Emitted when rewards for author and curators are paid out.
+      /// </summary>
+      fc::signal<void(const comment_reward_notification&)>          _comment_reward_signal;
   };
 
   struct reindex_notification
