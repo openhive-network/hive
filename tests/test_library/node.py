@@ -206,12 +206,5 @@ class Node:
             witness = Account(witness_name)
             key = witness.private_key
 
-        if self.config.witness is None:
-            self.config.witness = []
-
-        self.config.witness += witness_name
-
-        if self.config.private_key is None:
-            self.config.private_key = []
-
-        self.config.private_key += key
+        self.config.witness += [witness_name]
+        self.config.private_key += [key]
