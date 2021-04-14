@@ -89,6 +89,14 @@ class Node:
 
         return False
 
+    def wait_for_block(self, num):
+        while True:
+            with open(self.directory/'stderr.txt') as output:
+                for line in output:
+                    if f'transactions on block {num}' in line or f'Generated block #{num}' in line:
+                        return
+            time.sleep(1)
+
     def wait_for_synchronization(self):
         while not self.is_synchronized():
             time.sleep(1)
