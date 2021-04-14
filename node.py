@@ -57,18 +57,6 @@ class Node:
 
         return self.config.p2p_endpoint
 
-    def add_webserver_http_endpoint(self, endpoint):
-        self.config.add_entry('webserver-http-endpoint', endpoint)
-
-    def get_webserver_http_endpoints(self):
-        return self.config.webserver_http_endpoint
-
-    def add_webserver_ws_endpoint(self, endpoint):
-        self.config.add_entry('webserver-ws-endpoint', endpoint)
-
-    def get_webserver_ws_endpoints(self):
-        return self.config['webserver-ws-endpoint']
-
     def add_seed_node(self, seed_node):
         endpoint = seed_node.get_p2p_endpoint()
 
@@ -123,11 +111,11 @@ class Node:
         if params is not None:
             message['params'] = params
 
-        if not self.get_webserver_http_endpoints():
+        if not self.config.webserver_http_endpoint:
             raise Exception('Webserver http endpoint is unknown')
 
         from urllib.parse import urlparse
-        endpoint = f'http://{urlparse(self.get_webserver_http_endpoints()[0], "http").path}'
+        endpoint = f'http://{urlparse(self.config.webserver_http_endpoint, "http").path}'
 
         if '0.0.0.0' in endpoint:
             endpoint = endpoint.replace('0.0.0.0', '127.0.0.1')
@@ -187,8 +175,8 @@ class Node:
             self.config.load_from_file(self.directory / 'config.ini')
 
         print(f'[{self}] Run with pid {self.process.pid}, ', end='')
-        if self.get_webserver_http_endpoints():
-            print(f'with http server {self.get_webserver_http_endpoints()[0]}')
+        if self.config.webserver_http_endpoint:
+            print(f'with http server {self.config.webserver_http_endpoint}')
         else:
             print('without http server')
 
