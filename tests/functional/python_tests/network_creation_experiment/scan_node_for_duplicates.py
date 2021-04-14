@@ -3,7 +3,7 @@ import requests
 import json
 
 
-def get_reward_operations(ops):
+def get_producer_reward_operations(ops):
     result = []
     for op in ops:
         op_type = op["op"]["type"]
@@ -50,7 +50,7 @@ if __name__ == "__main__":
         response = json.loads(result.text)
         ops = response["result"]["ops"]
         length = len(ops)
-        reward_operations = get_reward_operations(ops)
+        reward_operations = get_producer_reward_operations(ops)
         size = len(reward_operations)
         print(f'int block {i} there is {length} ops including {size} producer reward operations')
 
