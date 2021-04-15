@@ -147,14 +147,14 @@ class Wallet:
 
         from .communication import CommunicationError
         success = False
-        for _ in range(5):
+        for _ in range(30):
             try:
                 self.api.info()
 
                 success = True
                 break
             except CommunicationError:
-                time.sleep(0.5)
+                time.sleep(1)
 
         if not success:
             raise Exception(f'Problem with starting wallet occurred. See {self.get_stderr_file_path()} for more details.')
