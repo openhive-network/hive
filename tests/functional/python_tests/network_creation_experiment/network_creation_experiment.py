@@ -6,7 +6,6 @@ import sys
 import time
 import concurrent.futures
 import random
-from string import Template
 
 # TODO: Remove dependency from cli_wallet/tests directory.
 #       This modules [utils.logger] should be somewhere higher.
@@ -110,8 +109,8 @@ if __name__ == "__main__":
 
         Account.key_generator = KeyGenerator('../../../../build/programs/util/get_dev_key')
 
-        alpha_witness_names = [f'witness{i}-alpha' for i in range(20)]
-        beta_witness_names = [f'witness{i}-beta' for i in range(20)]
+        alpha_witness_names = [f'witness{i}-alpha' for i in range(10)]
+        beta_witness_names = [f'witness{i}-beta' for i in range(10)]
 
         # Create first network
         alpha_net = Network('Alpha', port_range=range(51000, 52000))
@@ -133,6 +132,7 @@ if __name__ == "__main__":
         beta_node0 = beta_net.add_node('Node0')
         beta_node1 = beta_net.add_node('Node1')
         api_node = beta_net.add_node('Node2')
+        api_node.config.plugin.remove('witness')
 
         # Create witnesses
         init_node.set_witness('initminer')
@@ -162,12 +162,13 @@ if __name__ == "__main__":
         alpha_net.run()
         beta_net.run()
 
-        wallet = alpha_net.attach_wallet()
-
-        # Run original test script
         print("Waiting for network synchronization...")
         alpha_net.wait_for_synchronization_of_all_nodes()
         beta_net.wait_for_synchronization_of_all_nodes()
+
+        wallet = alpha_net.attach_wallet()
+
+        # Run original test script
 
         all_witnesses = alpha_witness_names + beta_witness_names
         random.shuffle(all_witnesses)
@@ -207,20 +208,17 @@ if __name__ == "__main__":
         while(True):
           time.sleep(2)
           method = 'account_history_api.get_ops_in_block'
-          params = { "block_num": 0, "only_virtual": True }
           alpha_duplicates = []
           beta_duplicates = []
           for i in range(0, 300):
-            params['block_num'] = i
-            response = alpha_node0.send(method, params)
+            response = alpha_node0.api.account_history.get_ops_in_block(i, True)
             ops = response["result"]["ops"]
             reward_operations = get_producer_reward_operations(ops)
             size = len(reward_operations)
             if size > 1:
               alpha_duplicates.append(i)
           for i in range(0, 300):
-            params['block_num'] = i
-            response = beta_node0.send(method, params)
+            response = beta_node0.api.account_history.get_ops_in_block(i, True)
             ops = response["result"]["ops"]
             reward_operations = get_producer_reward_operations(ops)
             size = len(reward_operations)
