@@ -382,6 +382,14 @@ namespace fc
    void from_variant( const variant& var,  uint32_t& vo );
    /** @ingroup Serializable */
    template<typename T>
+   void to_variant( optional<T>& var, const variant& vo )
+   {
+      if( var.is_null() )
+        vo = variant();
+      else
+        to_variant( *var, vo );
+   }
+   template<typename T>
    void from_variant( const variant& var,  optional<T>& vo )
    {
       if( var.is_null() ) vo = optional<T>();

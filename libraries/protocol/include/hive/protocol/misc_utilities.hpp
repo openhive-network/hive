@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fc/reflect/reflect.hpp>
+
 namespace hive { namespace protocol {
 
 enum curve_id
@@ -12,7 +14,15 @@ enum curve_id
   convergent_square_root
 };
 
-} } // hive::utilities
+struct dynamic_serializer
+{
+  /*
+    This switch is used for switching of serialization.
+  */
+  static bool legacy_enabled;
+};
+
+} } // hive::protocol
 
 
 FC_REFLECT_ENUM(

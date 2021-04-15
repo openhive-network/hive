@@ -6,7 +6,7 @@
 
 #include <hive/chain/witness_objects.hpp>
 
-#include <hive/plugins/condenser_api/condenser_api_legacy_asset.hpp>
+#include <hive/protocol/asset.hpp>
 
 namespace hive { namespace plugins { namespace condenser_api {
 
