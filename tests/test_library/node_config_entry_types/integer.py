@@ -7,3 +7,9 @@ class Integer(ConfigEntry):
 
     def _serialize_to_text(self):
         return str(self._value)
+
+    def _set_value(self, value):
+        if type(value) is not int:
+            raise TypeError(f'int was expected, but {value} with type {type(value)} was passed')
+
+        self._value = value
