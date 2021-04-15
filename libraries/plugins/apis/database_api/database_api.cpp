@@ -1724,7 +1724,7 @@ DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
         &database_api_impl::filter_default< chain::smt_contribution_object > );
       break;
     }
-#ifndef IS_LOW_MEM
+// #ifndef IS_LOW_MEM // indexing by contributor might cause optimization problems in the future
     case ( by_contributor ):
     {
       auto key = args.start.get_array();
@@ -1744,7 +1744,7 @@ DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
         &database_api_impl::filter_default< chain::smt_contribution_object > );
       break;
     }
-#endif
+// #endif
     default:
       FC_ASSERT( false, "Unknown or unsupported sort order" );
   }
