@@ -655,25 +655,15 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
   /// this loop can be skiped for validate-only nodes as it is merely gathering stats for indicies
   if( _db.has_hardfork( HIVE_HARDFORK_0_6__80 ) && !comment.is_root() )
   {
-    auto parent = &_db.get_comment( comment.get_parent_id() );
+    const comment_cashout_object* parent = _db.find_comment_cashout( _db.get_comment( comment.get_parent_id() ) );
     auto now = _db.head_block_time();
-    while( parent )
+    if( parent )
     {
-      const comment_cashout_object* _parent = _db.find_comment_cashout( *parent );
-      if( _parent )
+      _db.modify( *parent, [&]( comment_cashout_object& p )
       {
-        _db.modify( *_parent, [&]( comment_cashout_object& p )
-        {
-          p.children--;
-          p.active = now;
-        } );
-      }
-  #ifndef IS_LOW_MEM
-      if( !parent->is_root() )
-        parent = &_db.get_comment( parent->get_parent_id() );
-      else
-  #endif
-        parent = nullptr;
+        p.children--;
+        p.active = now;
+      } );
     }
   }
 
@@ -869,23 +859,13 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
     _db.create< comment_cashout_object >( new_comment, auth, o.permlink, _now, cashout_time, reward_weight );
 
-/// this loop can be skiped for validate-only nodes as it is merely gathering stats for indicies
-    while( parent )
+    const comment_cashout_object* _parent = _db.find_comment_cashout( *parent );
+    if( _parent )
     {
-      const comment_cashout_object* _parent = _db.find_comment_cashout( *parent );
-      if( _parent )
-      {
-        _db.modify( *_parent, [&]( comment_cashout_object& p ){
-          p.children++;
-          p.active = _now;
-        });
-      }
-#ifndef IS_LOW_MEM
-      if( !parent->is_root() )
-        parent = &_db.get_comment( parent->get_parent_id() );
-      else
-#endif
-        parent = nullptr;
+      _db.modify( *_parent, [&]( comment_cashout_object& p ){
+        p.children++;
+        p.active = _now;
+      });
     }
 
   }

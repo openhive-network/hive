@@ -6370,8 +6370,6 @@ void database::retally_comment_children()
   {
     if( !itr->is_root() )
     {
-// Low memory nodes only need immediate child count, full nodes track total children
-#ifdef IS_LOW_MEM
       const comment_cashout_object* comment_cashout = find_comment_cashout( itr->get_parent_id() );
       if( comment_cashout )
       {
@@ -6380,26 +6378,6 @@ void database::retally_comment_children()
           c.children++;
         });
       }
-#else
-      const comment_object* parent = &get_comment( itr->get_parent_id() );
-      while( parent )
-      {
-        const comment_cashout_object* comment_cashout = find_comment_cashout( *parent );
-
-        if( comment_cashout )
-        {
-          modify( *comment_cashout, [&]( comment_cashout_object& c )
-          {
-            c.children++;
-          });
-        }
-
-        if( !parent->is_root() )
-          parent = &get_comment( parent->get_parent_id() );
-        else
-          parent = nullptr;
-      }
-#endif
     }
   }
 }
