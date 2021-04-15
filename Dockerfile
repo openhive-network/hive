@@ -1,9 +1,7 @@
 #Usage: DOCKER_BUILDKIT=1 docker build --no-cache  --target=testnet_node_builder .
 
-ARG LOW_MEMORY_NODE=ON
 ARG CLEAR_VOTES=ON
 ARG BUILD_HIVE_TESTNET=OFF
-ARG ENABLE_MIRA=OFF
 ARG HIVE_LINT=OFF
 FROM registry.gitlab.syncad.com/hive/hive/hive-baseenv:latest AS builder
 
@@ -22,7 +20,7 @@ FROM builder AS consensus_node_builder
 
 RUN \
   cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh "ON" "ON" "OFF" "OFF" "ON"
+    ${src_dir}/ciscripts/build.sh "ON" "OFF" "ON"
 
 ###################################################################################################
 ##                                  CONSENSUS NODE CONFIGURATION                                 ##
@@ -57,7 +55,7 @@ FROM builder AS fat_node_builder
 
 RUN \
   cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh "OFF" "OFF" "OFF" "ON"
+    ${src_dir}/ciscripts/build.sh "OFF" "OFF"
 
 ###################################################################################################
 ##                                      FAT NODE CONFIGURATION                                   ##
@@ -90,21 +88,18 @@ CMD "${install_base_dir}/fat-node/hived.run"
 
 FROM builder AS general_node_builder
 
-ARG LOW_MEMORY_NODE
+
 ARG CLEAR_VOTES
 ARG BUILD_HIVE_TESTNET
-ARG ENABLE_MIRA
 ARG HIVE_LINT
 
-ENV LOW_MEMORY_NODE=${LOW_MEMORY_NODE}
 ENV CLEAR_VOTES=${CLEAR_VOTES}
 ENV BUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}
-ENV ENABLE_MIRA=${ENABLE_MIRA}
 ENV HIVE_LINT=${HIVE_LINT}
 
 RUN \
   cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${ENABLE_MIRA} ${HIVE_LINT}
+    ${src_dir}/ciscripts/build.sh ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${HIVE_LINT}
 
 ###################################################################################################
 ##                                    GENERAL NODE CONFIGURATION                                 ##
@@ -137,15 +132,11 @@ CMD "${install_base_dir}/hive-node/hived.run"
 
 FROM builder AS testnet_node_builder
 
-ARG LOW_MEMORY_NODE=OFF
 ARG CLEAR_VOTES=OFF
-ARG ENABLE_MIRA=OFF
 ARG HIVE_LINT=ON
 
-ENV LOW_MEMORY_NODE=${LOW_MEMORY_NODE}
 ENV CLEAR_VOTES=${CLEAR_VOTES}
 ENV BUILD_HIVE_TESTNET="ON"
-ENV ENABLE_MIRA=${ENABLE_MIRA}
 ENV HIVE_LINT=${HIVE_LINT}
 
 RUN \
@@ -153,7 +144,7 @@ RUN \
       apt-get update && \
       apt-get install -y clang && \
       apt-get install -y clang-tidy && \
-      ${src_dir}/ciscripts/build.sh ${LOW_MEMORY_NODE} ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${ENABLE_MIRA} ${HIVE_LINT} && \
+      ${src_dir}/ciscripts/build.sh ${CLEAR_VOTES} ${BUILD_HIVE_TESTNET} ${HIVE_LINT} && \
       apt-get install -y screen && \
       pip3 install -U secp256k1prp && \
       git clone https://gitlab.syncad.com/hive/beem.git && \
