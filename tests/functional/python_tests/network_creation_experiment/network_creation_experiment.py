@@ -137,6 +137,16 @@ if __name__ == "__main__":
             node =  random.choice(beta_witness_nodes)
             node.set_witness(name)
 
+        init_node.config.enable_stale_production = True
+        init_node.config.required_participation = 0
+
+        for node in alpha_net.nodes + beta_net.nodes:
+            node.config.shared_file_size = '6G'
+            node.config.plugin += [
+                'network_broadcast_api', 'network_node_api', 'account_history', 'account_history_api',
+                'account_history_rocksdb',
+            ]
+
         # Run
         alpha_net.connect_with(beta_net)
 
