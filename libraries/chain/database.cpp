@@ -2790,9 +2790,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       }
       else
       {
-#ifdef CLEAR_VOTES
         remove( cur_vote );
-#endif
       }
     }
 

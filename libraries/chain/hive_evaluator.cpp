@@ -1432,26 +1432,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   if( !comment_cashout || ( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && _db.calculate_discussion_payout_time( *comment_cashout ) == fc::time_point_sec::maximum() ) )
   {
-#ifndef CLEAR_VOTES
-    const auto& comment_vote_idx = _db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-    auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
-
-    if( itr == comment_vote_idx.end() )
-      _db.create< comment_vote_object >( [&]( comment_vote_object& cvo )
-      {
-        cvo.voter = voter.get_id();
-        cvo.comment = comment.get_id();
-        cvo.vote_percent = o.weight;
-        cvo.last_update = _db.head_block_time();
-      });
-    else
-      _db.modify( *itr, [&]( comment_vote_object& cvo )
-      {
-        cvo.vote_percent = o.weight;
-        cvo.last_update = _db.head_block_time();
-      });
-#endif
-
     return;
   }
 
@@ -1857,32 +1837,11 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   if( !comment_cashout || _db.calculate_discussion_payout_time( *comment_cashout ) == fc::time_point_sec::maximum() )
   {
-#ifndef CLEAR_VOTES
-    const auto& comment_vote_idx = _db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-    auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
-
-    if( itr == comment_vote_idx.end() )
-      _db.create< comment_vote_object >( [&]( comment_vote_object& cvo )
-      {
-        cvo.voter = voter.get_id();
-        cvo.comment = comment.get_id();
-        cvo.vote_percent = o.weight;
-        cvo.last_update = _db.head_block_time();
-      });
-    else
-      _db.modify( *itr, [&]( comment_vote_object& cvo )
-      {
-        cvo.vote_percent = o.weight;
-        cvo.last_update = _db.head_block_time();
-      });
-#endif
-
     return;
   }
-  else
-  {
-    FC_ASSERT( _db.head_block_time() < comment_cashout->cashout_time, "Comment is actively being rewarded. Cannot vote on comment." );
-  }
+
+  FC_ASSERT( _db.head_block_time() < comment_cashout->cashout_time, "Comment is actively being rewarded. Cannot vote on comment." );
+
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
   auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
