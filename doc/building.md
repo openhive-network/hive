@@ -12,6 +12,8 @@ running tests, it is recommended to build as release.
 
 ### LOW_MEMORY_NODE=[OFF/ON]
 
+**LOW MEMORY NODE option has been deprecated. By default it is ON.**
+
 Builds hived to be a consensus-only low memory node. Data and fields not
 needed for consensus are not stored in the object database.  This option is
 recommended for witnesses and seed-nodes.

@@ -37,7 +37,7 @@ repository root.)
     cmake \
         -DCMAKE_BUILD_TYPE=Debug \
         -DBUILD_HIVE_TESTNET=ON \
-        -DLOW_MEMORY_NODE=OFF \
+        -DLOW_MEMORY_NODE=ON \
         -DCLEAR_VOTES=ON \
         ..
     make -j$(nproc) chain_test
