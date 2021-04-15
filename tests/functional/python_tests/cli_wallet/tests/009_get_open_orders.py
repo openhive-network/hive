@@ -21,8 +21,8 @@ if __name__ == "__main__":
             assert(result_sell[0]['orderid'] == 1)
             assert(result_sell[0]['seller'] == user)
             assert(result_sell[0]['for_sale'] == 10000)
-            assert(result_sell[0]['sell_price']['base']['amount'] == '10000')
-            assert(result_sell[0]['sell_price']['quote']['amount'] == '1000000')
+            assert(result_sell[0]['sell_price']['base'] == '10.000 TESTS')
+            assert(result_sell[0]['sell_price']['quote'] == '1000.000 TBD')
 
             log.info( "testing buy order :10.000 TBD for 1000.000 TESTS created by user {}".format( user ) )
             wallet.create_order(user, "2", "10.000 TBD", "1000.000 TESTS", "false", "9999", "true")
@@ -31,6 +31,6 @@ if __name__ == "__main__":
             assert(result_buy[1]['orderid'] == 2)
             assert(result_buy[1]['seller'] == user)
             assert(result_buy[1]['for_sale'] == 10000)
-            assert(result_buy[1]['sell_price']['base']['amount'] == '10000')
-            assert(result_buy[1]['sell_price']['quote']['amount'] == '1000000')
+            assert(result_buy[1]['sell_price']['base'] == '10.000 TBD')
+            assert(result_buy[1]['sell_price']['quote'] == '1000.000 TESTS')
 

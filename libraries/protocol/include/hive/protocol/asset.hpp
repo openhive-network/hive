@@ -98,6 +98,36 @@ namespace hive { namespace protocol {
     }
   };
 
+  struct legacy_asset
+  {
+    public:
+      legacy_asset() {}
+
+      legacy_asset( const asset& a )
+      {
+        amount = a.amount;
+        symbol = a.symbol;
+      }
+
+      asset to_asset()const
+      {
+        return asset( amount, symbol );
+      }
+
+      operator asset()const { return to_asset(); }
+
+      static legacy_asset from_asset( const asset& a )
+      {
+        return legacy_asset( a );
+      }
+
+      string to_string()const;
+      static legacy_asset from_string( const string& from );
+
+      share_type                       amount;
+      asset_symbol_type                symbol = HIVE_SYMBOL;
+  };
+
   /** Represents quotation of the relative value of asset against another asset.
       Similar to 'currency pair' used to determine value of currencies.
 
@@ -208,11 +238,15 @@ namespace hive { namespace protocol {
 } } // hive::protocol
 
 namespace fc {
-  void to_variant( const hive::protocol::asset& var,  fc::variant& vo );
-  void from_variant( const fc::variant& var,  hive::protocol::asset& vo );
+    void to_variant( const hive::protocol::asset& var,  fc::variant& vo );
+    void from_variant( const fc::variant& var,  hive::protocol::asset& vo );
+
+    void to_variant( const hive::protocol::legacy_asset& a, fc::variant& var );
+    void from_variant( const fc::variant& var, hive::protocol::legacy_asset& a );
 }
 
 FC_REFLECT( hive::protocol::asset, (amount)(symbol) )
+FC_REFLECT( hive::protocol::legacy_asset, (amount)(symbol) )
 FC_REFLECT( hive::protocol::price, (base)(quote) )
 
 FC_REFLECT( hive::protocol::HBD_asset, (amount) )

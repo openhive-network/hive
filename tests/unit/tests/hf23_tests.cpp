@@ -39,7 +39,7 @@ namespace
 
 std::string asset_to_string( const asset& a )
 {
-  return hive::plugins::condenser_api::legacy_asset::from_asset( a ).to_string();
+  return hive::protocol::legacy_asset::from_asset( a ).to_string();
 }
 
 } // namespace

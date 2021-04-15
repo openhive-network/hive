@@ -46,6 +46,7 @@ class wallet_bridge_api_impl
         (list_witnesses)
         (get_witness)
         (get_conversion_requests)
+        (get_collateralized_conversion_requests)
         (get_order_book)
         (get_open_orders)
         (get_owner_history)
@@ -395,6 +396,13 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_conversion_requests )
   return _database_api->find_hbd_conversion_requests({account}).requests;
 }
 
+DEFINE_API_IMPL( wallet_bridge_api_impl, get_collateralized_conversion_requests )
+{
+  FC_ASSERT( _database_api, "database_api_plugin not enabled." );
+  FC_ASSERT( args.get_array()[0].is_string(), "account name required as first argument" );
+  const protocol::account_name_type account = args.get_array()[0].get_string();
+  return _database_api->find_collateralized_conversion_requests({account}).requests;
+}
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_order_book )
 {
   FC_ASSERT( _market_history_api, "market_history_api_plugin not enabled." );
@@ -605,6 +613,7 @@ DEFINE_READ_APIS(
   (list_witnesses)
   (get_witness)
   (get_conversion_requests)
+  (get_collateralized_conversion_requests)
   (get_order_book)
   (get_open_orders)
   (get_owner_history)

@@ -160,6 +160,7 @@ struct api_convert_request_object
 
 struct api_collateralized_convert_request_object
 {
+  api_collateralized_convert_request_object() {}
   api_collateralized_convert_request_object( const collateralized_convert_request_object& o, const database& db ) :
     id( o.get_id() ),
     owner( db.get_account( o.get_owner() ).get_name() ),
