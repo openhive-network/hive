@@ -1292,7 +1292,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_06 )
 
     for( uint32_t i = 0; i < 10; ++i )
     {
-      int64_t cnt = 0;
+      size_t cnt = 0;
       for( auto& item : accs )
       {
         const uint64_t pre_size{ withdraw_items->size() };
@@ -1359,7 +1359,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_05 )
     {
       for( uint32_t i = 0; i < 29; ++i )
       {
-        int64_t cnt = 0;
+        size_t cnt = 0;
         for( auto& item : accs )
         {
           dv.add_delayed_value( db->get_account( item ), start_time + fc::days(1), 10'000 );
@@ -1541,7 +1541,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_04 )
       move_forward( fc::days( 4 ) );
     }
     {
-      int64_t cnt = 0;
+      size_t cnt = 0;
       delayed_voting::opt_votes_update_data_items withdraw_items = delayed_voting::votes_update_data_items();
 
       for( auto& item : accs )
