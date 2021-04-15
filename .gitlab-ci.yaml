@@ -17,8 +17,8 @@ testnet_node_build:
   script:
     # prevent build when config is not relected
     - ./ciscripts/compare_for_get_config.bash $PWD
-    # CLEAR_VOTES=OFF TESTNET=ON HIVE_LINT=ON
-    - ./ciscripts/build.sh OFF ON ON
+    # TESTNET=ON HIVE_LINT=ON
+    - ./ciscripts/build.sh ON ON
     - mkdir -p "$CI_JOB_NAME"/tests/unit
     - mv build/install-root "$CI_JOB_NAME"
     - mv contrib/hived.run "$CI_JOB_NAME"
@@ -39,8 +39,8 @@ consensus_build:
   script:
     # prevent build when config is not relected
     - ./ciscripts/compare_for_get_config.bash $PWD
-    # CLEAR_VOTES=ON TESTNET=OFF HIVE_LINT=ON
-    - ./ciscripts/build.sh ON OFF ON
+    # TESTNET=OFF HIVE_LINT=ON
+    - ./ciscripts/build.sh OFF ON
     - mkdir "$CI_JOB_NAME"
     - mv build/install-root "$CI_JOB_NAME"
     - mv contrib/hived.run "$CI_JOB_NAME"
