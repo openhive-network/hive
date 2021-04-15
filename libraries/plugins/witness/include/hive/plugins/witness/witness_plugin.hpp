@@ -12,7 +12,7 @@
 #define RESERVE_RATIO_PRECISION ((int64_t)10000)
 #define RESERVE_RATIO_MIN_INCREMENT ((int64_t)5000)
 
-#define WITNESS_CUSTOM_OP_BLOCK_LIMIT 50000
+#define WITNESS_CUSTOM_OP_BLOCK_LIMIT 5
 
 namespace hive { namespace plugins { namespace witness {
 
