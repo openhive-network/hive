@@ -28,7 +28,7 @@ def test_default_config_values():
         for key, (default_value, generated_value) in differences.items():
             print()
             print(key)
-            print('In default_config:', default_value)
-            print('Generated:        ', generated_value)
+            print(f'In default_config: {default_value} {type(default_value)}')
+            print(f'Generated:         {generated_value} {type(generated_value)}')
 
         assert False, 'Modify config returned from create_default_config to match default generated config'
