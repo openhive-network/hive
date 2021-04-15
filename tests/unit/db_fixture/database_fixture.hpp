@@ -11,7 +11,7 @@
 #include <hive/utilities/key_conversion.hpp>
 
 #include <hive/plugins/block_api/block_api_plugin.hpp>
-#include <hive/plugins/condenser_api/condenser_api_legacy_asset.hpp>
+#include <hive/protocol/asset.hpp>
 #include <hive/plugins/database_api/database_api_plugin.hpp>
 
 #include <fc/network/http/connection.hpp>
@@ -166,7 +166,7 @@ do {                                                              \
   asset_symbol_type name ## _symbol = get_new_smt_symbol( decimal_places, db );
 
 #define ASSET( s ) \
-  hive::plugins::condenser_api::legacy_asset::from_string( s ).to_asset()
+  hive::protocol::legacy_asset::from_string( s ).to_asset()
 
 #define FUND( account_name, amount ) \
   fund( account_name, amount ); \

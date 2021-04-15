@@ -29,7 +29,7 @@
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/database.hpp>
 
-#include <hive/plugins/condenser_api/condenser_api_legacy_asset.hpp>
+#include <hive/protocol/asset.hpp>
 #include <hive/plugins/condenser_api/condenser_api_legacy_objects.hpp>
 
 #include <fc/crypto/digest.hpp>
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE( legacy_asset_test )
 {
   try
   {
-    using hive::plugins::condenser_api::legacy_asset;
+    using hive::protocol::legacy_asset;
 
     BOOST_CHECK_EQUAL( legacy_asset().symbol.decimals(), 3 );
     BOOST_CHECK_EQUAL( legacy_asset().to_string(), "0.000 TESTS" );
