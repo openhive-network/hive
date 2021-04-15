@@ -46,7 +46,7 @@
 #endif
 
 #define VESTS_SYMBOL_SER    (uint64_t(6) | (VESTS_SYMBOL_U64 << 8)) ///< VESTS|VESTS with 6 digits of precision
-#define OBSOLETE_SYMBOL_SER (uint64_t(3) | (OBSOLETE_SYMBOL_U64 << 8)) ///< HIVE|TESTS with 3 digits of precision
+#define OBSOLETE_SYMBOL_SER (uint64_t(3) | (OBSOLETE_SYMBOL_U64 << 8)) ///< STEEM|TESTS with 3 digits of precision
 #define OBD_SYMBOL_SER      (uint64_t(3) | (OBD_SYMBOL_U64 << 8)) ///< SBD|TBD with 3 digits of precision
 
 #define HIVE_ASSET_MAX_DECIMALS  12

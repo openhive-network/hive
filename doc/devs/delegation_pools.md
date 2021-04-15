@@ -1,6 +1,6 @@
 ## Delegation Pools
 
-Delegation pools are a solution primarily to the "push" approach of HP delegations. In order to "fund" new accounts, a surplus of HP must be delegated. This incentivizes abuse of faucets and ties up significant amounts of HP in delegations to accounts that may not be using it. This feature has a secondary benefit that allow users to pool RCs to fund actions for SMTs. SMTs are a unique entity in Steem in that actions are performed on behalf of an SMT (similarly to the implicit "blockchain" entity used for comment rewards, inflation, etc.) yet are still user created and thus need to be rate limited by some mechanism or else the blockchain would be open to DoS exploits/attacks.
+Delegation pools are a solution primarily to the "push" approach of HP delegations. In order to "fund" new accounts, a surplus of HP must be delegated. This incentivizes abuse of faucets and ties up significant amounts of HP in delegations to accounts that may not be using it. This feature has a secondary benefit that allow users to pool RCs to fund actions for SMTs. SMTs are a unique entity in Hive in that actions are performed on behalf of an SMT (similarly to the implicit "blockchain" entity used for comment rewards, inflation, etc.) yet are still user created and thus need to be rate limited by some mechanism or else the blockchain would be open to DoS exploits/attacks.
 
 The basic structure looks like this:
 
