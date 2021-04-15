@@ -20,6 +20,8 @@ recommended for witnesses and seed-nodes.
 
 ### CLEAR_VOTES=[ON/OFF]
 
+**CLEAR VOTES option has been deprecated. By default it is ON.**
+
 Clears old votes from memory that are no longer required for consensus.
 
 ### BUILD_HIVE_TESTNET=[OFF/ON]
