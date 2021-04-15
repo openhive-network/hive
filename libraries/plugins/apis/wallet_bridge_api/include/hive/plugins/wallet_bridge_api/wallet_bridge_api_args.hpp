@@ -87,6 +87,10 @@ typedef fc::optional<database_api::api_witness_object>  get_witness_return;
 typedef variant                                             get_conversion_requests_args;
 typedef vector< database_api::api_convert_request_object >  get_conversion_requests_return;
 
+/* get_collateralized_conversion_requests */
+typedef variant                                                           get_collateralized_conversion_requests_args;
+typedef vector< database_api::api_collateralized_convert_request_object > get_collateralized_conversion_requests_return;
+
 /* get_order_book */
 typedef variant                                 get_order_book_args;
 typedef market_history::get_order_book_return   get_order_book_return;
