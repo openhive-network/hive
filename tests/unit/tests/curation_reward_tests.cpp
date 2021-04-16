@@ -1113,6 +1113,264 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
     }
 }
 
+void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, bool restore_author_reward_curve )
+{
+    auto preparation = []( curation_rewards_handler& crh, cluster_database_fixture::ptr_hardfork_database_fixture& executor )
+    {
+      crh.prepare_author( { 0, 1 } );
+      crh.prepare_voters_0_80();
+      crh.create_printer();
+      executor->generate_block();
+
+      executor->set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      executor->generate_block();
+
+      crh.prepare_funds();
+      executor->generate_block();
+
+      return crh.calculate_reward();
+    };
+
+    auto execution = []( curation_rewards_handler& crh, cluster_database_fixture::ptr_hardfork_database_fixture& executor,
+                          share_type total_rewards_pool_before[], share_type total_rewards_pool_after[] )
+    {
+      size_t vote_counter = 0;
+
+      const uint32_t nr_votes_first = 75;
+      const uint32_t nr_votes_second = 1;
+
+      std::string permlink  = "somethingpermlink";
+
+      crh.prepare_comment( permlink, 0/*author_number*/ );
+      executor->generate_block();
+      crh.set_start_time( executor->db->head_block_time() );
+
+      //All votes( for both comments ) are in the same block.
+      for( uint32_t i = 0; i < nr_votes_first; ++i )
+        crh.voting( vote_counter, 0/*author_number*/, permlink, { 0 } );
+      executor->generate_block();
+
+      //More blocks in order to generate some rewards by inflation( especially, when HF is applied )
+      const int increasing_rewards_factor = 100;
+      executor->generate_blocks( increasing_rewards_factor );
+
+      crh.prepare_comment( permlink, 1/*author_number*/ );
+      executor->generate_block();
+      crh.set_start_time( executor->db->head_block_time(), 1/*comment_idx*/ );
+
+      //All votes( for both comments ) are in the same block.
+      for( uint32_t i = 0; i < nr_votes_second; ++i )
+        crh.voting( vote_counter, 1/*author_number*/, permlink, { 0 }, 1/*comment_idx*/ );
+      executor->generate_block();
+
+      crh.make_payment( 1/*back_offset_blocks*/ );
+      total_rewards_pool_before[0] = crh.current_total_reward();
+      crh.make_payment();
+      total_rewards_pool_after[0] = crh.current_total_reward();
+
+      executor->generate_blocks( increasing_rewards_factor );
+
+      crh.make_payment( 1/*back_offset_blocks*/, 1/*comment_idx*/ );
+      total_rewards_pool_before[1] = crh.current_total_reward();
+      crh.make_payment( 0/*back_offset_blocks*/, 1/*comment_idx*/ );
+      total_rewards_pool_after[1] = crh.current_total_reward();
+    };
+
+    std::vector<comment_reward_info> comment_rewards_hf24;
+
+    auto hf24_content = [&]( cluster_database_fixture::ptr_hardfork_database_fixture& executor )
+    {
+      //=====hf24=====
+      reward_stat::rewards_stats early_stats[2];
+      reward_stat::rewards_stats late_stats[2];
+
+      share_type total_rewards_pool_before[2];
+      share_type total_rewards_pool_after[2];
+
+      curation_rewards_handler crh( *executor, *( executor->db ) );
+
+      share_type reward_per_block = preparation( crh, executor );
+
+      {
+        //**********************HF 24 is activated**********************
+        execution( crh, executor, total_rewards_pool_before, total_rewards_pool_after );
+
+        crh.curation_gathering( early_stats[0], late_stats[0] );
+        crh.curation_gathering( early_stats[1], late_stats[1], 1/*comment_idx*/ );
+
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards.size(), 2 );
+        comment_rewards_hf24 = crh.comment_rewards;
+      }
+
+      {
+        BOOST_TEST_MESSAGE( "reward_per_block" );
+        reward_stat::display_reward( reward_per_block );
+
+        BOOST_TEST_MESSAGE( "*****HF-24*****" );
+        BOOST_TEST_MESSAGE( "curation rewards" );
+        reward_stat::display_stats( early_stats[0] );
+        reward_stat::display_stats( late_stats[0] );
+
+        BOOST_TEST_MESSAGE( "curation rewards(2)" );
+        reward_stat::display_stats( early_stats[1] );
+        reward_stat::display_stats( late_stats[1] );
+
+        BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
+        reward_stat::display_reward( total_rewards_pool_before[0] );
+        BOOST_TEST_MESSAGE( "current pool of rewards after payment" );
+        reward_stat::display_reward( total_rewards_pool_after[0] );
+
+        BOOST_TEST_MESSAGE( "current pool of rewards before payment(2)" );
+        reward_stat::display_reward( total_rewards_pool_before[1] );
+        BOOST_TEST_MESSAGE( "current pool of rewards after payment(2)" );
+        reward_stat::display_reward( total_rewards_pool_after[1] );
+
+        BOOST_TEST_MESSAGE( "comment rewards" );
+        for( auto& item : crh.comment_rewards )
+          reward_stat::display_comment_rewards( item );
+      }
+
+      uint32_t _sum_curation_rewards[2]  = { 0, 0 };
+      {
+        for( uint32_t c = 0; c < 2; ++c )
+        {
+          for( auto& item : early_stats[c] )
+            _sum_curation_rewards[c] += item.value;
+        }
+
+        BOOST_TEST_MESSAGE( "*****HF24:SUM CURATION REWARDS*****" );
+        BOOST_TEST_MESSAGE( "sum_curation_rewards" );
+        BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[0] ).c_str() );
+        BOOST_TEST_MESSAGE( "sum_curation_rewards(2)" );
+        BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[1] ).c_str() );
+
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.value );
+      }
+      {
+        /*
+          Not used rewards are returned back after processing first comment,
+          therefore second reward in HF24 is higher than second reward in HF25.
+        */
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 40330 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 179 );
+      }
+
+      executor->validate_database();
+    };
+
+    std::vector<comment_reward_info> comment_rewards_hf25;
+
+    auto hf25_content = [&]( cluster_database_fixture::ptr_hardfork_database_fixture& executor )
+    {
+      //=====hf25=====
+      reward_stat::rewards_stats early_stats[2];
+      reward_stat::rewards_stats mid_stats[2];
+      reward_stat::rewards_stats late_stats[2];
+
+      share_type total_rewards_pool_before[2];
+      share_type total_rewards_pool_after[2];
+
+      if( restore_author_reward_curve )
+      {
+        executor->db_plugin->debug_update( []( database& db )
+        {
+          db.modify( db.get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
+          {
+            rfo.author_reward_curve = convergent_linear;
+          });
+        });
+      }
+
+      curation_rewards_handler crh( *executor, *( executor->db ) );
+
+      share_type reward_per_block = preparation( crh, executor );
+
+      {
+        //**********************HF 25 is activated**********************
+        execution( crh, executor, total_rewards_pool_before, total_rewards_pool_after );
+
+        crh.curation_gathering( early_stats[0], mid_stats[0], late_stats[0] );
+        crh.curation_gathering( early_stats[1], mid_stats[1], late_stats[1], 1/*comment_idx*/ );
+
+        BOOST_REQUIRE( !crh.comment_rewards.empty() );
+        comment_rewards_hf25 = crh.comment_rewards;
+      }
+
+      {
+        BOOST_TEST_MESSAGE( "reward_per_block" );
+        reward_stat::display_reward( reward_per_block );
+
+        BOOST_TEST_MESSAGE( "*****HF-25*****" );
+        BOOST_TEST_MESSAGE( "curation rewards" );
+        reward_stat::display_stats( early_stats[0] );
+        reward_stat::display_stats( mid_stats[0] );
+        reward_stat::display_stats( late_stats[0] );
+
+        BOOST_TEST_MESSAGE( "curation rewards(2)" );
+        reward_stat::display_stats( early_stats[1] );
+        reward_stat::display_stats( mid_stats[1] );
+        reward_stat::display_stats( late_stats[1] );
+
+        BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
+        reward_stat::display_reward( total_rewards_pool_before[0] );
+        BOOST_TEST_MESSAGE( "current pool of rewards after payment" );
+        reward_stat::display_reward( total_rewards_pool_after[0] );
+
+        BOOST_TEST_MESSAGE( "current pool of rewards before payment(2)" );
+        reward_stat::display_reward( total_rewards_pool_before[1] );
+        BOOST_TEST_MESSAGE( "current pool of rewards after payment(2)" );
+        reward_stat::display_reward( total_rewards_pool_after[1] );
+
+        BOOST_TEST_MESSAGE( "comment rewards" );
+        for( auto& item : crh.comment_rewards )
+          reward_stat::display_comment_rewards( item );
+      }
+
+      uint32_t _sum_curation_rewards[2]  = { 0, 0 };
+      {
+        for( uint32_t c = 0; c < 2; ++c )
+        {
+          for( auto& item : early_stats[c] )
+            _sum_curation_rewards[c] += item.value;
+        }
+
+        BOOST_TEST_MESSAGE( "*****HF25:SUM CURATION REWARDS*****" );
+        BOOST_TEST_MESSAGE( "sum_curation_rewards" );
+        BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[0] ).c_str() );
+        BOOST_TEST_MESSAGE( "sum_curation_rewards(2)" );
+        BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[1] ).c_str() );
+
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.value );
+      }
+      {
+        /*
+          Not used rewards are returned back after processing first comment,
+          therefore second reward in HF24 is higher than second reward in HF25.
+        */
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 40330 );
+        if( restore_author_reward_curve )
+        {
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 24 );
+        }
+        else
+        {
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 41 );
+        }
+        
+      }
+
+      executor->validate_database();
+    };
+
+    cluster.execute_24( hf24_content );
+    cluster.execute_25( hf25_content );
+
+    BOOST_REQUIRE_EQUAL(  comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
+    BOOST_REQUIRE_GT(     comment_rewards_hf24[1].author_tokens.value, comment_rewards_hf25[1].author_tokens.value );
+}
+
 BOOST_FIXTURE_TEST_SUITE( curation_reward_tests2, cluster_database_fixture )
 
 BOOST_AUTO_TEST_CASE( one_vote_per_comment )
@@ -1778,242 +2036,29 @@ BOOST_AUTO_TEST_CASE( two_comments_in_different_blocks )
     BOOST_TEST_MESSAGE( "HF24: Both comments in `reverse_auction_seconds` window in different blocks. First comment with many votes, second comment with 1 vote." );
     BOOST_TEST_MESSAGE( "HF25: Both comments in `early_window` in different blocks. First comment with many votes, second comment with 1 vote." );
 
-    auto preparation = []( curation_rewards_handler& crh, ptr_hardfork_database_fixture& executor )
-    {
-      crh.prepare_author( { 0, 1 } );
-      crh.prepare_voters_0_80();
-      crh.create_printer();
-      executor->generate_block();
+    /*
+      Changes in HF25: 
+        1)  curation_reward_curve:  convergent_square_root  ->  linear
+        2)  author_reward_curve:    convergent_linear       ->  linear
 
-      executor->set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-      executor->generate_block();
+      This test checks only the change number `1`, so it's possible to check how this change influences on author rewards,
+      taking into consideration HF24 vs HF25.
+    */
+    two_comments_in_different_blocks_impl( *this, true/*restore_author_reward_curve*/ );
 
-      crh.prepare_funds();
-      executor->generate_block();
+  }
+  FC_LOG_AND_RETHROW()
+}
 
-      return crh.calculate_reward();
-    };
+BOOST_AUTO_TEST_CASE( two_comments_in_different_blocks_v2 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: curation rewards before and after HF25. Reward during whole rewards-time (7 days). 2 comments in every hardfork." );
+    BOOST_TEST_MESSAGE( "HF24: Both comments in `reverse_auction_seconds` window in different blocks. First comment with many votes, second comment with 1 vote." );
+    BOOST_TEST_MESSAGE( "HF25: Both comments in `early_window` in different blocks. First comment with many votes, second comment with 1 vote." );
 
-    auto execution = []( curation_rewards_handler& crh, ptr_hardfork_database_fixture& executor,
-                          share_type total_rewards_pool_before[], share_type total_rewards_pool_after[] )
-    {
-      size_t vote_counter = 0;
-
-      const uint32_t nr_votes_first = 75;
-      const uint32_t nr_votes_second = 1;
-
-      std::string permlink  = "somethingpermlink";
-
-      crh.prepare_comment( permlink, 0/*author_number*/ );
-      executor->generate_block();
-      crh.set_start_time( executor->db->head_block_time() );
-
-      //All votes( for both comments ) are in the same block.
-      for( uint32_t i = 0; i < nr_votes_first; ++i )
-        crh.voting( vote_counter, 0/*author_number*/, permlink, { 0 } );
-      executor->generate_block();
-
-      //More blocks in order to generate some rewards by inflation( especially, when HF is applied )
-      const int increasing_rewards_factor = 100;
-      executor->generate_blocks( increasing_rewards_factor );
-
-      crh.prepare_comment( permlink, 1/*author_number*/ );
-      executor->generate_block();
-      crh.set_start_time( executor->db->head_block_time(), 1/*comment_idx*/ );
-
-      //All votes( for both comments ) are in the same block.
-      for( uint32_t i = 0; i < nr_votes_second; ++i )
-        crh.voting( vote_counter, 1/*author_number*/, permlink, { 0 }, 1/*comment_idx*/ );
-      executor->generate_block();
-
-      crh.make_payment( 1/*back_offset_blocks*/ );
-      total_rewards_pool_before[0] = crh.current_total_reward();
-      crh.make_payment();
-      total_rewards_pool_after[0] = crh.current_total_reward();
-
-      executor->generate_blocks( increasing_rewards_factor );
-
-      crh.make_payment( 1/*back_offset_blocks*/, 1/*comment_idx*/ );
-      total_rewards_pool_before[1] = crh.current_total_reward();
-      crh.make_payment( 0/*back_offset_blocks*/, 1/*comment_idx*/ );
-      total_rewards_pool_after[1] = crh.current_total_reward();
-    };
-
-    std::vector<comment_reward_info> comment_rewards_hf24;
-
-    auto hf24_content = [&]( ptr_hardfork_database_fixture& executor )
-    {
-      //=====hf24=====
-      reward_stat::rewards_stats early_stats[2];
-      reward_stat::rewards_stats late_stats[2];
-
-      share_type total_rewards_pool_before[2];
-      share_type total_rewards_pool_after[2];
-
-      curation_rewards_handler crh( *executor, *( executor->db ) );
-
-      share_type reward_per_block = preparation( crh, executor );
-
-      {
-        //**********************HF 24 is activated**********************
-        execution( crh, executor, total_rewards_pool_before, total_rewards_pool_after );
-
-        crh.curation_gathering( early_stats[0], late_stats[0] );
-        crh.curation_gathering( early_stats[1], late_stats[1], 1/*comment_idx*/ );
-
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards.size(), 2 );
-        comment_rewards_hf24 = crh.comment_rewards;
-      }
-
-      {
-        BOOST_TEST_MESSAGE( "reward_per_block" );
-        reward_stat::display_reward( reward_per_block );
-
-        BOOST_TEST_MESSAGE( "*****HF-24*****" );
-        BOOST_TEST_MESSAGE( "curation rewards" );
-        reward_stat::display_stats( early_stats[0] );
-        reward_stat::display_stats( late_stats[0] );
-
-        BOOST_TEST_MESSAGE( "curation rewards(2)" );
-        reward_stat::display_stats( early_stats[1] );
-        reward_stat::display_stats( late_stats[1] );
-
-        BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
-        reward_stat::display_reward( total_rewards_pool_before[0] );
-        BOOST_TEST_MESSAGE( "current pool of rewards after payment" );
-        reward_stat::display_reward( total_rewards_pool_after[0] );
-
-        BOOST_TEST_MESSAGE( "current pool of rewards before payment(2)" );
-        reward_stat::display_reward( total_rewards_pool_before[1] );
-        BOOST_TEST_MESSAGE( "current pool of rewards after payment(2)" );
-        reward_stat::display_reward( total_rewards_pool_after[1] );
-
-        BOOST_TEST_MESSAGE( "comment rewards" );
-        for( auto& item : crh.comment_rewards )
-          reward_stat::display_comment_rewards( item );
-      }
-
-      uint32_t _sum_curation_rewards[2]  = { 0, 0 };
-      {
-        for( uint32_t c = 0; c < 2; ++c )
-        {
-          for( auto& item : early_stats[c] )
-            _sum_curation_rewards[c] += item.value;
-        }
-
-        BOOST_TEST_MESSAGE( "*****HF24:SUM CURATION REWARDS*****" );
-        BOOST_TEST_MESSAGE( "sum_curation_rewards" );
-        BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[0] ).c_str() );
-        BOOST_TEST_MESSAGE( "sum_curation_rewards(2)" );
-        BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[1] ).c_str() );
-
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.value );
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.value );
-      }
-      {
-        /*
-          Not used rewards are returned back after processing first comment,
-          therefore second reward in HF24 is higher than second reward in HF25.
-        */
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 40330 );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 179 );
-      }
-
-      executor->validate_database();
-    };
-
-    std::vector<comment_reward_info> comment_rewards_hf25;
-
-    auto hf25_content = [&]( ptr_hardfork_database_fixture& executor )
-    {
-      //=====hf25=====
-      reward_stat::rewards_stats early_stats[2];
-      reward_stat::rewards_stats mid_stats[2];
-      reward_stat::rewards_stats late_stats[2];
-
-      share_type total_rewards_pool_before[2];
-      share_type total_rewards_pool_after[2];
-
-      curation_rewards_handler crh( *executor, *( executor->db ) );
-
-      share_type reward_per_block = preparation( crh, executor );
-
-      {
-        //**********************HF 25 is activated**********************
-        execution( crh, executor, total_rewards_pool_before, total_rewards_pool_after );
-
-        crh.curation_gathering( early_stats[0], mid_stats[0], late_stats[0] );
-        crh.curation_gathering( early_stats[1], mid_stats[1], late_stats[1], 1/*comment_idx*/ );
-
-        BOOST_REQUIRE( !crh.comment_rewards.empty() );
-        comment_rewards_hf25 = crh.comment_rewards;
-      }
-
-      {
-        BOOST_TEST_MESSAGE( "reward_per_block" );
-        reward_stat::display_reward( reward_per_block );
-
-        BOOST_TEST_MESSAGE( "*****HF-25*****" );
-        BOOST_TEST_MESSAGE( "curation rewards" );
-        reward_stat::display_stats( early_stats[0] );
-        reward_stat::display_stats( mid_stats[0] );
-        reward_stat::display_stats( late_stats[0] );
-
-        BOOST_TEST_MESSAGE( "curation rewards(2)" );
-        reward_stat::display_stats( early_stats[1] );
-        reward_stat::display_stats( mid_stats[1] );
-        reward_stat::display_stats( late_stats[1] );
-
-        BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
-        reward_stat::display_reward( total_rewards_pool_before[0] );
-        BOOST_TEST_MESSAGE( "current pool of rewards after payment" );
-        reward_stat::display_reward( total_rewards_pool_after[0] );
-
-        BOOST_TEST_MESSAGE( "current pool of rewards before payment(2)" );
-        reward_stat::display_reward( total_rewards_pool_before[1] );
-        BOOST_TEST_MESSAGE( "current pool of rewards after payment(2)" );
-        reward_stat::display_reward( total_rewards_pool_after[1] );
-
-        BOOST_TEST_MESSAGE( "comment rewards" );
-        for( auto& item : crh.comment_rewards )
-          reward_stat::display_comment_rewards( item );
-      }
-
-      uint32_t _sum_curation_rewards[2]  = { 0, 0 };
-      {
-        for( uint32_t c = 0; c < 2; ++c )
-        {
-          for( auto& item : early_stats[c] )
-            _sum_curation_rewards[c] += item.value;
-        }
-
-        BOOST_TEST_MESSAGE( "*****HF25:SUM CURATION REWARDS*****" );
-        BOOST_TEST_MESSAGE( "sum_curation_rewards" );
-        BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[0] ).c_str() );
-        BOOST_TEST_MESSAGE( "sum_curation_rewards(2)" );
-        BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[1] ).c_str() );
-
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.value );
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.value );
-      }
-      {
-        /*
-          Not used rewards are returned back after processing first comment,
-          therefore second reward in HF24 is higher than second reward in HF25.
-        */
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 40330 );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 24 );
-      }
-
-      executor->validate_database();
-    };
-
-    execute_24( hf24_content );
-    execute_25( hf25_content );
-
-    BOOST_REQUIRE_EQUAL(  comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
-    BOOST_REQUIRE_GT(     comment_rewards_hf24[1].author_tokens.value, comment_rewards_hf25[1].author_tokens.value );
-
+    two_comments_in_different_blocks_impl( *this, false/*restore_author_reward_curve*/ );
   }
   FC_LOG_AND_RETHROW()
 }
