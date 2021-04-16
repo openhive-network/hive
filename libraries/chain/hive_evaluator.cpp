@@ -859,13 +859,16 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
     _db.create< comment_cashout_object >( new_comment, auth, o.permlink, _now, cashout_time, reward_weight );
 
-    const comment_cashout_object* _parent = _db.find_comment_cashout( *parent );
-    if( _parent )
+    if( parent )
     {
-      _db.modify( *_parent, [&]( comment_cashout_object& p ){
-        p.children++;
-        p.active = _now;
-      });
+      const comment_cashout_object* _parent = _db.find_comment_cashout( *parent );
+      if( _parent )
+      {
+        _db.modify( *_parent, [&]( comment_cashout_object& p ){
+          p.children++;
+          p.active = _now;
+        });
+      }
     }
 
   }

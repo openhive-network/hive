@@ -19,7 +19,7 @@ FROM builder AS consensus_node_builder
 
 RUN \
   cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh "ON" "OFF" "ON"
+    ${src_dir}/ciscripts/build.sh "OFF" "ON"
 
 ###################################################################################################
 ##                                  CONSENSUS NODE CONFIGURATION                                 ##
@@ -54,7 +54,7 @@ FROM builder AS fat_node_builder
 
 RUN \
   cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh "OFF" "OFF"
+    ${src_dir}/ciscripts/build.sh "OFF"
 
 ###################################################################################################
 ##                                      FAT NODE CONFIGURATION                                   ##
