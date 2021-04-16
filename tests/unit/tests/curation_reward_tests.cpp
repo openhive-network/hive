@@ -480,31 +480,6 @@ struct curation_rewards_handler
     }
   }
 
-  void posting_gathering_impl( reward_stat::rewards_stats& posting_stats, const std::string& author )
-  {
-    const auto& acc = db.get_account( author );
-    auto reward = static_cast<uint32_t>( acc.posting_rewards.value );
-    posting_stats.emplace_back( reward_stat{ reward } );
-  }
-
-  void posting_gathering( reward_stat::rewards_stats& posting_stats, fc::optional<uint32_t> author )
-  {
-    if( author.valid() )
-    {
-      auto found_author = authors.find( *author );
-      BOOST_REQUIRE( found_author != authors.end() );
-
-      posting_gathering_impl( posting_stats, found_author->second );
-    }
-    else
-    {
-      for( auto& author : authors )
-      {
-        posting_gathering_impl( posting_stats, author.second );
-      }
-    }
-  }
-
   void make_payment( uint32_t back_offset_blocks = 0, uint32_t comment_idx = 0 )
   {
     BOOST_REQUIRE_LT( comment_idx, curve_printers.size() );
@@ -907,7 +882,6 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
       total_rewards_pool_after = crh.current_total_reward();
     };
 
-    reward_stat::rewards_stats posting_stats_hf24;
     std::vector<comment_reward_info> comment_rewards_hf24;
 
     auto hf24_content = [&]( ptr_hardfork_database_fixture& executor )
@@ -927,7 +901,6 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
         execution( crh, executor, total_rewards_pool_before, total_rewards_pool_after );
 
         crh.curation_gathering( early_stats, late_stats );
-        crh.posting_gathering( posting_stats_hf24, 0/*author_number*/ );
 
         BOOST_REQUIRE( !crh.comment_rewards.empty() );
         comment_rewards_hf24 = crh.comment_rewards;
@@ -942,9 +915,6 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
         reward_stat::display_stats( early_stats );
         reward_stat::display_stats( late_stats );
 
-        BOOST_TEST_MESSAGE( "posting rewards" );
-        reward_stat::display_stats( posting_stats_hf24 );
-
         BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
         reward_stat::display_reward( total_rewards_pool_before );
         BOOST_TEST_MESSAGE( "current pool of rewards after payment" );
@@ -958,31 +928,29 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
         /*
           early_stats.size() == 1
           late_stats == empty
-          early_stats[0] < posting_stats_hf24[0]                 ( curation_reward < author_reward )
-          reward > early_stats[0] + posting_stats_hf24[0]   ( current_reward > curation_reward + author_reward )
+          early_stats[0] < author_tokens[0]                 ( curation_reward < author_reward )
+          reward > early_stats[0] + author_tokens[0]   ( current_reward > curation_reward + author_reward )
           checking exact values
         */
         BOOST_REQUIRE_EQUAL( early_stats.size(), 1 );
         BOOST_REQUIRE( late_stats.empty() );
-        BOOST_REQUIRE_LT( early_stats[0].value, posting_stats_hf24[0].value );
-        BOOST_REQUIRE_GT( crh.comment_rewards[0].total_reward.value, early_stats[0].value + posting_stats_hf24[0].value );
+        BOOST_REQUIRE_LT( early_stats[0].value, crh.comment_rewards[0].author_tokens.value );
+        BOOST_REQUIRE_GT( crh.comment_rewards[0].total_reward.value, early_stats[0].value + crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_EQUAL( early_stats[0].value,   1864 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf24.size(), 1 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf24[0].value, 37300 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
       }
       {
         /*
-          total_rewards_pool_before + reward_per_block == total_rewards_pool_after + early_stats[0] + posting_stats_hf24[0]
+          total_rewards_pool_before + reward_per_block == total_rewards_pool_after + early_stats[0] + author_tokens[0]
         */
         auto _temp_before = total_rewards_pool_before.value + reward_per_block.value;
-        auto _temp_after = total_rewards_pool_after.value + early_stats[0].value + posting_stats_hf24[0].value;
+        auto _temp_after = total_rewards_pool_after.value + early_stats[0].value + crh.comment_rewards[0].author_tokens.value;
         BOOST_REQUIRE_EQUAL( _temp_before, _temp_after );
       }
 
       executor->validate_database();
     };
 
-    reward_stat::rewards_stats posting_stats_hf25;
     std::vector<comment_reward_info> comment_rewards_hf25;
 
     auto hf25_content = [&]( ptr_hardfork_database_fixture& executor )
@@ -1003,7 +971,6 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
         execution( crh, executor, total_rewards_pool_before, total_rewards_pool_after );
 
         crh.curation_gathering( early_stats, mid_stats, late_stats );
-        crh.posting_gathering( posting_stats_hf25, 0/*author_number*/ );
 
         BOOST_REQUIRE( !crh.comment_rewards.empty() );
         comment_rewards_hf25 = crh.comment_rewards;
@@ -1019,9 +986,6 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
         reward_stat::display_stats( mid_stats );
         reward_stat::display_stats( late_stats );
 
-        BOOST_TEST_MESSAGE( "posting rewards" );
-        reward_stat::display_stats( posting_stats_hf25 );
-
         BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
         reward_stat::display_reward( total_rewards_pool_before );
         BOOST_TEST_MESSAGE( "current pool of rewards after payment" );
@@ -1036,25 +1000,24 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
           early_stats.size() == 1
           mid_stats == empty
           late_stats == empty
-          early_stats[0] == posting_stats_hf25[0]            ( curation_reward == author_reward )
-          crh.comment_rewards[0].total_reward.value = early_stats[0] + posting_stats_hf25[0]   ( current_reward == curation_reward + author_reward )
+          early_stats[0] == author_tokens[0]            ( curation_reward == author_reward )
+          total_reward[0] = early_stats[0] + author_tokens[0]   ( current_reward == curation_reward + author_reward )
           checking exact values
         */
         BOOST_REQUIRE_EQUAL( early_stats.size(), 1 );
         BOOST_REQUIRE( mid_stats.empty() );
         BOOST_REQUIRE( late_stats.empty() );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value, posting_stats_hf25[0].value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, early_stats[0].value + posting_stats_hf25[0].value );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value, crh.comment_rewards[0].author_tokens.value );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, early_stats[0].value + crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_EQUAL( early_stats[0].value,   37300 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf25.size(), 1 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf25[0].value, 37300 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
       }
       {
         /*
-          total_rewards_pool_before + reward_per_block == total_rewards_pool_after + early_stats[0] + posting_stats_hf25[0]
+          total_rewards_pool_before + reward_per_block == total_rewards_pool_after + early_stats[0] + author_tokens[0]
         */
         auto _temp_before = total_rewards_pool_before.value + reward_per_block.value;
-        auto _temp_after = total_rewards_pool_after.value + early_stats[0].value + posting_stats_hf25[0].value;
+        auto _temp_after = total_rewards_pool_after.value + early_stats[0].value + crh.comment_rewards[0].author_tokens.value;
         BOOST_REQUIRE_EQUAL( _temp_before, _temp_after );
       }
 
@@ -1064,7 +1027,7 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
     execute_24( hf24_content );
     execute_25( hf25_content );
 
-    BOOST_REQUIRE_EQUAL( posting_stats_hf24[0].value, posting_stats_hf25[0].value );
+    BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -1111,7 +1074,6 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
       total_rewards_pool_after = crh.current_total_reward();
     };
 
-    reward_stat::rewards_stats posting_stats_hf24;
     std::vector<comment_reward_info> comment_rewards_hf24;
 
     auto hf24_content = [&]( ptr_hardfork_database_fixture& executor )
@@ -1131,7 +1093,6 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
         execution( crh, executor, total_rewards_pool_before, total_rewards_pool_after );
 
         crh.curation_gathering( early_stats, late_stats );
-        crh.posting_gathering( posting_stats_hf24, 0/*author_number*/ );
         BOOST_REQUIRE( !crh.comment_rewards.empty() );
         comment_rewards_hf24 = crh.comment_rewards;
       }
@@ -1144,9 +1105,6 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
         BOOST_TEST_MESSAGE( "curation rewards" );
         reward_stat::display_stats( early_stats );
         reward_stat::display_stats( late_stats );
-
-        BOOST_TEST_MESSAGE( "posting rewards" );
-        reward_stat::display_stats( posting_stats_hf24 );
 
         BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
         reward_stat::display_reward( total_rewards_pool_before );
@@ -1161,31 +1119,29 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
         /*
           early_stats.size() == empty
           late_stats == 1
-          late_stats[0] == posting_stats_hf24[0]                 ( curation_reward == author_reward )
-          crh.comment_rewards[0].total_reward.value == late_stats[0] + posting_stats_hf24[0]   ( current_reward == curation_reward + author_reward )
+          late_stats[0] == author_tokens[0]                 ( curation_reward == author_reward )
+          crh.comment_rewards[0].total_reward.value == late_stats[0] + author_tokens[0]   ( current_reward == curation_reward + author_reward )
           checking exact values
         */
         BOOST_REQUIRE( early_stats.empty() );
         BOOST_REQUIRE_EQUAL( late_stats.size(), 1 );
-        BOOST_REQUIRE_EQUAL( late_stats[0].value, posting_stats_hf24[0].value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, late_stats[0].value + posting_stats_hf24[0].value );
+        BOOST_REQUIRE_EQUAL( late_stats[0].value, crh.comment_rewards[0].author_tokens.value );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, late_stats[0].value + crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_EQUAL( late_stats[0].value,    37300 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf24.size(), 1 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf24[0].value, 37300 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
       }
       {
         /*
-          total_rewards_pool_before + reward_per_block == total_rewards_pool_after + late_stats[0] + posting_stats_hf24[0]
+          total_rewards_pool_before + reward_per_block == total_rewards_pool_after + late_stats[0] + author_tokens[0]
         */
         auto _temp_before = total_rewards_pool_before.value + reward_per_block.value;
-        auto _temp_after = total_rewards_pool_after.value + late_stats[0].value + posting_stats_hf24[0].value;
+        auto _temp_after = total_rewards_pool_after.value + late_stats[0].value + crh.comment_rewards[0].author_tokens.value;
         BOOST_REQUIRE_EQUAL( _temp_before, _temp_after );
       }
 
       executor->validate_database();
     };
 
-    reward_stat::rewards_stats posting_stats_hf25;
     std::vector<comment_reward_info> comment_rewards_hf25;
 
     auto hf25_content = [&]( ptr_hardfork_database_fixture& executor )
@@ -1206,7 +1162,6 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
         execution( crh, executor, total_rewards_pool_before, total_rewards_pool_after );
 
         crh.curation_gathering( early_stats, mid_stats, late_stats );
-        crh.posting_gathering( posting_stats_hf25, 0/*author_number*/ );
         BOOST_REQUIRE( !crh.comment_rewards.empty() );
         comment_rewards_hf25 = crh.comment_rewards;
       }
@@ -1220,9 +1175,6 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
         reward_stat::display_stats( early_stats );
         reward_stat::display_stats( mid_stats );
         reward_stat::display_stats( late_stats );
-
-        BOOST_TEST_MESSAGE( "posting rewards" );
-        reward_stat::display_stats( posting_stats_hf25 );
 
         BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
         reward_stat::display_reward( total_rewards_pool_before );
@@ -1238,25 +1190,24 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
           early_stats.size() == 1
           mid_stats == empty
           late_stats == empty
-          early_stats[0] == posting_stats_hf25[0]            ( curation_reward == author_reward )
-          crh.comment_rewards[0].total_reward.value = early_stats[0] + posting_stats_hf25[0]   ( current_reward == curation_reward + author_reward )
+          early_stats[0] == author_tokens[0]            ( curation_reward == author_reward )
+          crh.comment_rewards[0].total_reward.value = early_stats[0] + author_tokens[0]   ( current_reward == curation_reward + author_reward )
           checking exact values
         */
         BOOST_REQUIRE_EQUAL( early_stats.size(), 1 );
         BOOST_REQUIRE( mid_stats.empty() );
         BOOST_REQUIRE( late_stats.empty() );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value, posting_stats_hf25[0].value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, early_stats[0].value + posting_stats_hf25[0].value );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value, crh.comment_rewards[0].author_tokens.value );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, early_stats[0].value + crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_EQUAL( early_stats[0].value,   37300 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf25.size(), 1 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf25[0].value, 37300 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
       }
       {
         /*
-          total_rewards_pool_before + reward_per_block == total_rewards_pool_after + early_stats[0] + posting_stats_hf25[0]
+          total_rewards_pool_before + reward_per_block == total_rewards_pool_after + early_stats[0] + author_tokens[0]
         */
         auto _temp_before = total_rewards_pool_before.value + reward_per_block.value;
-        auto _temp_after = total_rewards_pool_after.value + early_stats[0].value + posting_stats_hf25[0].value;
+        auto _temp_after = total_rewards_pool_after.value + early_stats[0].value + crh.comment_rewards[0].author_tokens.value;
         BOOST_REQUIRE_EQUAL( _temp_before, _temp_after );
       }
 
@@ -1266,7 +1217,7 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
     execute_24( hf24_content );
     execute_25( hf25_content );
 
-    BOOST_REQUIRE_EQUAL( posting_stats_hf24[0].value, posting_stats_hf25[0].value );
+    BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -1317,7 +1268,6 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
       total_rewards_pool_after = crh.current_total_reward();
     };
 
-    reward_stat::rewards_stats posting_stats_hf24;
     std::vector<comment_reward_info> comment_rewards_hf24;
 
     auto hf24_content = [&]( ptr_hardfork_database_fixture& executor )
@@ -1337,7 +1287,6 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
         execution( crh, executor, total_rewards_pool_before, total_rewards_pool_after );
 
         crh.curation_gathering( early_stats, late_stats );
-        crh.posting_gathering( posting_stats_hf24, 0/*author_number*/ );
         BOOST_REQUIRE( !crh.comment_rewards.empty() );
         comment_rewards_hf24 = crh.comment_rewards;
       }
@@ -1350,9 +1299,6 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
         BOOST_TEST_MESSAGE( "curation rewards" );
         reward_stat::display_stats( early_stats );
         reward_stat::display_stats( late_stats );
-
-        BOOST_TEST_MESSAGE( "posting rewards" );
-        reward_stat::display_stats( posting_stats_hf24 );
 
         BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
         reward_stat::display_reward( total_rewards_pool_before );
@@ -1371,8 +1317,8 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
           early_stats.size() == empty
           late_stats == nr_votes
           previous_reward > next_reward
-          _sum_curation_rewards == posting_stats_hf24[0]                 ( sum_curation_rewards == author_reward )
-          crh.comment_rewards[0].total_reward.value == _sum_curation_rewards + posting_stats_hf24[0]   ( current_reward == sum_curation_rewards + author_reward )
+          _sum_curation_rewards == author_tokens[0]                 ( sum_curation_rewards == author_reward )
+          crh.comment_rewards[0].total_reward.value == _sum_curation_rewards + author_tokens[0]   ( current_reward == sum_curation_rewards + author_reward )
           checking exact values
         */
         BOOST_REQUIRE( early_stats.empty() );
@@ -1388,29 +1334,27 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
         for( uint32_t i = 0; i < nr_votes - 1; ++i )
           BOOST_REQUIRE_GT( late_stats[i].value, late_stats[i+1].value );
 
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards + 2/*rounding*/, posting_stats_hf24[0].value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, _sum_curation_rewards + 2/*rounding*/ + posting_stats_hf24[0].value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards + 2/*rounding*/, crh.comment_rewards[0].author_tokens.value );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, _sum_curation_rewards + 2/*rounding*/ + crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_EQUAL( late_stats[0].value,  10529 );
         BOOST_REQUIRE_EQUAL( late_stats[1].value,  8551 );
         BOOST_REQUIRE_EQUAL( late_stats[2].value,  7083 );
         BOOST_REQUIRE_EQUAL( late_stats[3].value,  5963 );
         BOOST_REQUIRE_EQUAL( late_stats[4].value,  5172 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf24.size(), 1 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf24[0].value, 37300 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
       }
       {
         /*
-          total_rewards_pool_before + reward_per_block == total_rewards_pool_after + _sum + posting_stats_hf24[0]
+          total_rewards_pool_before + reward_per_block == total_rewards_pool_after + _sum + author_tokens[0]
         */
         auto _temp_before = total_rewards_pool_before.value + reward_per_block.value;
-        auto _temp_after = total_rewards_pool_after.value + _sum_curation_rewards + posting_stats_hf24[0].value;
+        auto _temp_after = total_rewards_pool_after.value + _sum_curation_rewards + crh.comment_rewards[0].author_tokens.value;
         BOOST_REQUIRE_EQUAL( _temp_before, _temp_after );
       }
 
       executor->validate_database();
     };
 
-    reward_stat::rewards_stats posting_stats_hf25;
     std::vector<comment_reward_info> comment_rewards_hf25;
 
     auto hf25_content = [&]( ptr_hardfork_database_fixture& executor )
@@ -1431,7 +1375,6 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
         execution( crh, executor, total_rewards_pool_before, total_rewards_pool_after );
 
         crh.curation_gathering( early_stats, mid_stats, late_stats );
-        crh.posting_gathering( posting_stats_hf25, 0/*author_number*/ );
         BOOST_REQUIRE( !crh.comment_rewards.empty() );
         comment_rewards_hf25 = crh.comment_rewards;
       }
@@ -1445,9 +1388,6 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
         reward_stat::display_stats( early_stats );
         reward_stat::display_stats( mid_stats );
         reward_stat::display_stats( late_stats );
-
-        BOOST_TEST_MESSAGE( "posting rewards" );
-        reward_stat::display_stats( posting_stats_hf25 );
 
         BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
         reward_stat::display_reward( total_rewards_pool_before );
@@ -1467,8 +1407,8 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
           mid_stats == empty
           late_stats == empty
           previous_reward == next_reward
-          _sum_curation_rewards == posting_stats_hf25[0]                 ( sum_curation_rewards == author_reward )
-          crh.comment_rewards[0].total_reward.value = _sum_curation_rewards + posting_stats_hf25[0]    ( current_reward == sum_curation_rewards + author_reward )
+          _sum_curation_rewards == author_tokens[0]                 ( sum_curation_rewards == author_reward )
+          crh.comment_rewards[0].total_reward.value = _sum_curation_rewards + author_tokens[0]    ( current_reward == sum_curation_rewards + author_reward )
           checking exact values
         */
         BOOST_REQUIRE_EQUAL( early_stats.size(), nr_votes );
@@ -1485,20 +1425,19 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
         for( uint32_t i = 0; i < nr_votes - 1; ++i )
           BOOST_REQUIRE_EQUAL( early_stats[i].value, early_stats[i+1].value );
 
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards, posting_stats_hf25[0].value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, _sum_curation_rewards + posting_stats_hf25[0].value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards, crh.comment_rewards[0].author_tokens.value );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, _sum_curation_rewards + crh.comment_rewards[0].author_tokens.value );
 
         for( uint32_t i = 0; i < nr_votes; ++i )
           BOOST_REQUIRE_EQUAL( early_stats[i].value, 7460 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf25.size(), 1 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf25[0].value, 37300 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
       }
       {
         /*
-          total_rewards_pool_before + reward_per_block == total_rewards_pool_after + _sum + posting_stats_hf25[0]
+          total_rewards_pool_before + reward_per_block == total_rewards_pool_after + _sum + author_tokens[0]
         */
         auto _temp_before = total_rewards_pool_before.value + reward_per_block.value;
-        auto _temp_after = total_rewards_pool_after.value + _sum_curation_rewards + posting_stats_hf25[0].value;
+        auto _temp_after = total_rewards_pool_after.value + _sum_curation_rewards + crh.comment_rewards[0].author_tokens.value;
         BOOST_REQUIRE_EQUAL( _temp_before, _temp_after );
       }
 
@@ -1508,7 +1447,7 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
     execute_24( hf24_content );
     execute_25( hf25_content );
 
-    BOOST_REQUIRE_EQUAL( posting_stats_hf24[0].value, posting_stats_hf25[0].value );
+    BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
 
   }
   FC_LOG_AND_RETHROW()
@@ -1566,7 +1505,6 @@ BOOST_AUTO_TEST_CASE( two_comments_in_the_same_blocks )
       total_rewards_pool_after = crh.current_total_reward();
     };
 
-    reward_stat::rewards_stats posting_stats_hf24;
     std::vector<comment_reward_info> comment_rewards_hf24;
 
     auto hf24_content = [&]( ptr_hardfork_database_fixture& executor )
@@ -1586,8 +1524,6 @@ BOOST_AUTO_TEST_CASE( two_comments_in_the_same_blocks )
         execution( crh, executor, total_rewards_pool_before, total_rewards_pool_after );
 
         crh.curation_gathering( early_stats[0], late_stats[0] );
-        crh.posting_gathering( posting_stats_hf24, 0/*author_number*/ );
-        crh.posting_gathering( posting_stats_hf24, 1/*author_number*/ );
 
         BOOST_REQUIRE_EQUAL( crh.comment_rewards.size(), 2 );
         comment_rewards_hf24 = crh.comment_rewards;
@@ -1619,9 +1555,6 @@ BOOST_AUTO_TEST_CASE( two_comments_in_the_same_blocks )
         reward_stat::display_stats( early_stats[1] );
         reward_stat::display_stats( late_stats[1] );
 
-        BOOST_TEST_MESSAGE( "posting rewards" );
-        reward_stat::display_stats( posting_stats_hf24 );
-
         BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
         reward_stat::display_reward( total_rewards_pool_before );
         BOOST_TEST_MESSAGE( "current pool of rewards after payment" );
@@ -1651,15 +1584,13 @@ BOOST_AUTO_TEST_CASE( two_comments_in_the_same_blocks )
           Not used rewards are returned back after(!) processing all comments, therefore it doesn't matter how much it's returned,
           if all comments are in the same block.
         */
-        BOOST_REQUIRE_EQUAL( posting_stats_hf24.size(), 2 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf24[0].value, 36951 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf24[1].value, 289 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 36951 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 289 );
       }
 
       executor->validate_database();
     };
 
-    reward_stat::rewards_stats posting_stats_hf25;
     std::vector<comment_reward_info> comment_rewards_hf25;
 
     auto hf25_content = [&]( ptr_hardfork_database_fixture& executor )
@@ -1681,8 +1612,6 @@ BOOST_AUTO_TEST_CASE( two_comments_in_the_same_blocks )
         execution( crh, executor, total_rewards_pool_before, total_rewards_pool_after );
 
         crh.curation_gathering( early_stats[0], mid_stats[0], late_stats[0] );
-        crh.posting_gathering( posting_stats_hf25, 0/*author_number*/ );
-        crh.posting_gathering( posting_stats_hf25, 1/*author_number*/ );
 
         BOOST_REQUIRE_EQUAL( crh.comment_rewards.size(), 2 );
         comment_rewards_hf25 = crh.comment_rewards;
@@ -1723,9 +1652,6 @@ BOOST_AUTO_TEST_CASE( two_comments_in_the_same_blocks )
         reward_stat::display_stats( mid_stats[1] );
         reward_stat::display_stats( late_stats[1] );
 
-        BOOST_TEST_MESSAGE( "posting rewards" );
-        reward_stat::display_stats( posting_stats_hf25 );
-
         BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
         reward_stat::display_reward( total_rewards_pool_before );
         BOOST_TEST_MESSAGE( "current pool of rewards after payment" );
@@ -1760,9 +1686,8 @@ BOOST_AUTO_TEST_CASE( two_comments_in_the_same_blocks )
           Not used rewards are returned back after(!) processing all comments, therefore it doesn't matter how much it's returned,
           if all comments are in the same block.
         */
-        BOOST_REQUIRE_EQUAL( posting_stats_hf25.size(), 2 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf25[0].value, 36951 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf25[1].value, 289 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 36951 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 289 );
       }
 
       executor->validate_database();
@@ -1771,8 +1696,8 @@ BOOST_AUTO_TEST_CASE( two_comments_in_the_same_blocks )
     execute_24( hf24_content );
     execute_25( hf25_content );
 
-    BOOST_REQUIRE_EQUAL( posting_stats_hf24[0].value, posting_stats_hf25[0].value );
-    BOOST_REQUIRE_EQUAL( posting_stats_hf24[1].value, posting_stats_hf25[1].value );
+    BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
+    BOOST_REQUIRE_EQUAL( comment_rewards_hf24[1].author_tokens.value, comment_rewards_hf25[1].author_tokens.value );
 
   }
   FC_LOG_AND_RETHROW()
@@ -1847,7 +1772,6 @@ BOOST_AUTO_TEST_CASE( two_comments_in_different_blocks )
       total_rewards_pool_after[1] = crh.current_total_reward();
     };
 
-    reward_stat::rewards_stats posting_stats_hf24;
     std::vector<comment_reward_info> comment_rewards_hf24;
 
     auto hf24_content = [&]( ptr_hardfork_database_fixture& executor )
@@ -1869,8 +1793,6 @@ BOOST_AUTO_TEST_CASE( two_comments_in_different_blocks )
 
         crh.curation_gathering( early_stats[0], late_stats[0] );
         crh.curation_gathering( early_stats[1], late_stats[1], 1/*comment_idx*/ );
-        crh.posting_gathering( posting_stats_hf24, 0/*author_number*/ );
-        crh.posting_gathering( posting_stats_hf24, 1/*author_number*/ );
 
         BOOST_REQUIRE_EQUAL( crh.comment_rewards.size(), 2 );
         comment_rewards_hf24 = crh.comment_rewards;
@@ -1888,9 +1810,6 @@ BOOST_AUTO_TEST_CASE( two_comments_in_different_blocks )
         BOOST_TEST_MESSAGE( "curation rewards(2)" );
         reward_stat::display_stats( early_stats[1] );
         reward_stat::display_stats( late_stats[1] );
-
-        BOOST_TEST_MESSAGE( "posting rewards" );
-        reward_stat::display_stats( posting_stats_hf24 );
 
         BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
         reward_stat::display_reward( total_rewards_pool_before[0] );
@@ -1926,15 +1845,13 @@ BOOST_AUTO_TEST_CASE( two_comments_in_different_blocks )
           Not used rewards are returned back after processing first comment,
           therefore second reward in HF24 is higher than second reward in HF25.
         */
-        BOOST_REQUIRE_EQUAL( posting_stats_hf24.size(), 2 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf24[0].value, 40330 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf24[1].value, 179 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 40330 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 179 );
       }
 
       executor->validate_database();
     };
 
-    reward_stat::rewards_stats posting_stats_hf25;
     std::vector<comment_reward_info> comment_rewards_hf25;
 
     auto hf25_content = [&]( ptr_hardfork_database_fixture& executor )
@@ -1957,8 +1874,6 @@ BOOST_AUTO_TEST_CASE( two_comments_in_different_blocks )
 
         crh.curation_gathering( early_stats[0], mid_stats[0], late_stats[0] );
         crh.curation_gathering( early_stats[1], mid_stats[1], late_stats[1], 1/*comment_idx*/ );
-        crh.posting_gathering( posting_stats_hf25, 0/*author_number*/ );
-        crh.posting_gathering( posting_stats_hf25, 1/*author_number*/ );
 
         BOOST_REQUIRE( !crh.comment_rewards.empty() );
         comment_rewards_hf25 = crh.comment_rewards;
@@ -1978,9 +1893,6 @@ BOOST_AUTO_TEST_CASE( two_comments_in_different_blocks )
         reward_stat::display_stats( early_stats[1] );
         reward_stat::display_stats( mid_stats[1] );
         reward_stat::display_stats( late_stats[1] );
-
-        BOOST_TEST_MESSAGE( "posting rewards" );
-        reward_stat::display_stats( posting_stats_hf25 );
 
         BOOST_TEST_MESSAGE( "current pool of rewards before payment" );
         reward_stat::display_reward( total_rewards_pool_before[0] );
@@ -2016,9 +1928,8 @@ BOOST_AUTO_TEST_CASE( two_comments_in_different_blocks )
           Not used rewards are returned back after processing first comment,
           therefore second reward in HF24 is higher than second reward in HF25.
         */
-        BOOST_REQUIRE_EQUAL( posting_stats_hf25.size(), 2 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf25[0].value, 40330 );
-        BOOST_REQUIRE_EQUAL( posting_stats_hf25[1].value, 24 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 40330 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 24 );
       }
 
       executor->validate_database();
@@ -2027,8 +1938,8 @@ BOOST_AUTO_TEST_CASE( two_comments_in_different_blocks )
     execute_24( hf24_content );
     execute_25( hf25_content );
 
-    BOOST_REQUIRE_EQUAL(  posting_stats_hf24[0].value, posting_stats_hf25[0].value );
-    BOOST_REQUIRE_GT(     posting_stats_hf24[1].value, posting_stats_hf25[1].value );
+    BOOST_REQUIRE_EQUAL(  comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
+    BOOST_REQUIRE_GT(     comment_rewards_hf24[1].author_tokens.value, comment_rewards_hf25[1].author_tokens.value );
 
   }
   FC_LOG_AND_RETHROW()
