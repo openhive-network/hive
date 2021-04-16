@@ -1,18 +1,9 @@
 import pytest
 
-from test_library.paths_to_executables_implementation import *
-
-@pytest.fixture
-def paths():
-    return PathsToExecutables()
+from fixtures import paths, executables
 
 
-@pytest.fixture
-def executable_names():
-    return ['hived', 'cli_wallet', 'get_dev_key']
-
-
-def test_missing_paths(paths, executable_names):
-    for executable in executable_names:
+def test_missing_paths(paths, executables):
+    for executable in executables:
         with pytest.raises(Exception):
-            paths.get_path_of(executable)
+            paths.get_path_of(executable.name)
