@@ -75,7 +75,7 @@ for test in Tests:
             print(f'[FAIL][{stop :.2f}s] {test} failed')
 
         try:
-            v = f"""ps -A -o pid,cmd | grep "{args.hived_working_dir}" | grep -v SCREEN | grep -v grep | grep -v python3 | cut -d '/' -f 1 | xargs kill -9 """
+            v = f"""ps -A -o pid,cmd | grep "{args.hived_working_dir}" | grep -v SCREEN | grep -v grep | grep -v python3 | cut -d '/' -f 1 | xargs -r kill -9 """
             print(v)
             system(v)
             v = f"""mv {joinpath(args.hived_working_dir, "*.log")} {joinpath(args.arti, test.replace('.py', '_hived.log'))} 2>/dev/null"""
