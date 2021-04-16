@@ -937,6 +937,7 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
         BOOST_REQUIRE_LT( early_stats[0].value, crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_GT( crh.comment_rewards[0].total_reward.value, early_stats[0].value + crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_EQUAL( early_stats[0].value,   1864 );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value,   crh.comment_rewards[0].curation_tokens.value );
         BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
       }
       {
@@ -1010,6 +1011,7 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
         BOOST_REQUIRE_EQUAL( early_stats[0].value, crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, early_stats[0].value + crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_EQUAL( early_stats[0].value,   37300 );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value,   crh.comment_rewards[0].curation_tokens.value );
         BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
       }
       {
@@ -1128,6 +1130,7 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
         BOOST_REQUIRE_EQUAL( late_stats[0].value, crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, late_stats[0].value + crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_EQUAL( late_stats[0].value,    37300 );
+        BOOST_REQUIRE_EQUAL( late_stats[0].value,    crh.comment_rewards[0].curation_tokens.value );
         BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
       }
       {
@@ -1200,6 +1203,7 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
         BOOST_REQUIRE_EQUAL( early_stats[0].value, crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, early_stats[0].value + crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_EQUAL( early_stats[0].value,   37300 );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value,   crh.comment_rewards[0].curation_tokens.value );
         BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
       }
       {
@@ -1331,6 +1335,8 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
         BOOST_TEST_MESSAGE( "sum_curation_rewards" );
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards ).c_str() );
 
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards, crh.comment_rewards[0].curation_tokens.value );
+
         for( uint32_t i = 0; i < nr_votes - 1; ++i )
           BOOST_REQUIRE_GT( late_stats[i].value, late_stats[i+1].value );
 
@@ -1421,6 +1427,8 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
 
         BOOST_TEST_MESSAGE( "sum_curation_rewards" );
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards ).c_str() );
+
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards, crh.comment_rewards[0].curation_tokens.value );
 
         for( uint32_t i = 0; i < nr_votes - 1; ++i )
           BOOST_REQUIRE_EQUAL( early_stats[i].value, early_stats[i+1].value );
@@ -1578,6 +1586,9 @@ BOOST_AUTO_TEST_CASE( two_comments_in_the_same_blocks )
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[0] ).c_str() );
         BOOST_TEST_MESSAGE( "sum_curation_rewards(2)" );
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[1] ).c_str() );
+
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.value );
       }
       {
         /*
@@ -1680,6 +1691,9 @@ BOOST_AUTO_TEST_CASE( two_comments_in_the_same_blocks )
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[0] ).c_str() );
         BOOST_TEST_MESSAGE( "sum_curation_rewards(2)" );
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[1] ).c_str() );
+
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.value );
       }
       {
         /*
@@ -1839,6 +1853,9 @@ BOOST_AUTO_TEST_CASE( two_comments_in_different_blocks )
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[0] ).c_str() );
         BOOST_TEST_MESSAGE( "sum_curation_rewards(2)" );
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[1] ).c_str() );
+
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.value );
       }
       {
         /*
@@ -1922,6 +1939,9 @@ BOOST_AUTO_TEST_CASE( two_comments_in_different_blocks )
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[0] ).c_str() );
         BOOST_TEST_MESSAGE( "sum_curation_rewards(2)" );
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[1] ).c_str() );
+
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.value );
       }
       {
         /*
