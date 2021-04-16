@@ -367,11 +367,18 @@ namespace hive
         blockchain_configuration_t();
       };
 
-      extern blockchain_configuration_t g_blockchain_configuration;
+      extern
+#ifndef IS_TEST_NET
+      const
+#endif
+      blockchain_configuration_t g_blockchain_configuration;
     }
   }
 
   const protocol::blockchain_configuration::blockchain_configuration_t &get_blockchain_configuration();
+
+#ifdef IS_TEST_NET
   void set_blockchain_configuration(const protocol::blockchain_configuration::blockchain_configuration_t &);
   void restore_blockchain_configuration();
+#endif
 } // hive::protocol::blockchain_configuration
