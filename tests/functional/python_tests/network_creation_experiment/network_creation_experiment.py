@@ -217,12 +217,17 @@ if __name__ == "__main__":
           beta_duplicates = []
           for i in range(0, 300):
             params['block_num'] = i
-            print(params)
             alpha_response = alpha_node0.send(method, params)
-            if get_producer_reward_operations(alpha_response):
+            alpha_ops = alpha_response["result"]["ops"]
+            alpha_reward_ops = get_producer_reward_operations(alpha_ops)
+            alpha_size = len(alpha_reward_ops)
+            if alpha_size > 1:
               alpha_duplicates.append(i)
             beta_response = beta_node0.send(method, params)
-            if get_producer_reward_operations(beta_response):
+            beta_ops = beta_response["result"]["ops"]
+            beta_reward_ops = get_producer_reward_operations(beta_ops)
+            beta_size = len(beta_reward_ops)
+            if beta_size > 1:
               beta_duplicates.append(i)
 
           print("duplicates in alpha network:", alpha_duplicates)
