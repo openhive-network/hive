@@ -5961,6 +5961,7 @@ void database::apply_hardfork( uint32_t hardfork )
       modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
       {
         rfo.curation_reward_curve = linear;
+        rfo.author_reward_curve   = linear;
       });
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
