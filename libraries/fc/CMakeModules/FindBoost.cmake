@@ -522,7 +522,7 @@ if(WIN32)
 
   # If you want to observe which libraries are being linked against
   # then defining BOOST_LIB_DIAGNOSTIC will cause the auto-linking
-  # code to emit a #pragma message each time a library is selected
+  # code to emit a // #pragma message each time a library is selected
   # for linking.
   set(Boost_LIB_DIAGNOSTIC_DEFINITIONS "-DBOOST_LIB_DIAGNOSTIC")
 endif()

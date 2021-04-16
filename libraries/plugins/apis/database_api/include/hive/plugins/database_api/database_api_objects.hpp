@@ -192,7 +192,7 @@ struct api_limit_order_object
 
 struct api_dynamic_global_property_object
 {
-  api_dynamic_global_property_object( const dynamic_global_property_object& o, const database& db ) :
+  explicit api_dynamic_global_property_object( const dynamic_global_property_object& o) :
     id( o.get_id() ),
     head_block_number( o.head_block_number ),
     head_block_id( o.head_block_id ),

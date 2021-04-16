@@ -15,6 +15,10 @@
 
 #include <fc/git_revision.hpp>
 
+#include <thread>
+#include <mutex>
+#include <iomanip>
+
 namespace hive { namespace plugins { namespace database_api {
 
 api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_object& cc, const database&)
@@ -231,6 +235,13 @@ class database_api_impl
 };
 
 
+void custom_log_destructor::operator()(database_api_impl* ptr) const
+{
+	std::cerr << "DATABASE_API_IMPL DESTROY !!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl
+						<< "Thread id: " << std::this_thread::get_id() << std::endl
+						<< boost::stacktrace::stacktrace() << std::endl;
+	if(ptr) delete ptr;
+}
 
 
 //////////////////////////////////////////////////////////////////////
@@ -240,8 +251,11 @@ class database_api_impl
 //////////////////////////////////////////////////////////////////////
 
 database_api::database_api()
-  : my( new database_api_impl() )
 {
+  my = boost::unique_ptr<database_api_impl, custom_log_destructor>{ new database_api_impl(), custom_log_destructor{} };
+
+
+  std::cerr << "my creation: " << std::hex << (uint64_t)my.get() << std::endl;
   JSON_RPC_REGISTER_API( HIVE_DATABASE_API_PLUGIN_NAME );
 }
 
@@ -277,7 +291,10 @@ DEFINE_API_IMPL( database_api_impl, get_version )
 
 DEFINE_API_IMPL( database_api_impl, get_dynamic_global_properties )
 {
-  return api_dynamic_global_property_object( _db.get_dynamic_global_properties(), _db );
+	std::cerr << "############################ 1: "<< std::this_thread::get_id() << '\n';
+	const dynamic_global_property_object& copy{ _db.get_dynamic_global_properties() };
+	std::cerr << "############################ 2: "<< std::this_thread::get_id() << '\n';
+  return api_dynamic_global_property_object( copy );
 }
 
 DEFINE_API_IMPL( database_api_impl, get_witness_schedule )
@@ -1911,8 +1928,40 @@ DEFINE_API_IMPL( database_api_impl, is_known_transaction )
 
 DEFINE_LOCKLESS_APIS( database_api, (get_config)(get_version) )
 
+std::mutex mtx;
+
+template<typename T>
+inline uint64_t dummy_fun_bla_bla_bla(const T& v) 
+{ 
+  const std::lock_guard<std::mutex> lock(mtx);
+  return (uint64_t)(v.get()); 
+}
+
+get_dynamic_global_properties_return database_api::get_dynamic_global_properties( const get_dynamic_global_properties_args& args, const bool lock )
+{
+  std::cerr << "thread_id: " << std::this_thread::get_id() << '\n';
+  std::stringstream ss;
+  std::cerr << "1.....\n";
+  ss <<  "my: " << std::hex << dummy_fun_bla_bla_bla(my) << std::endl;
+  std::cerr << "2.....\n";
+  std::cerr << ss.str();
+  std::cerr << "3.....\n";
+
+  FC_ASSERT( my.get(), "my is nullptr" );
+
+  //orginal
+  if( lock )
+  {
+    return my->_db.with_read_lock( [&args, this](){ return my->get_dynamic_global_properties( args ); });
+  }
+  else
+  {
+    return my->get_dynamic_global_properties( args );
+  }
+}
+
 DEFINE_READ_APIS( database_api,
-  (get_dynamic_global_properties)
+  // (get_dynamic_global_properties)
   (get_witness_schedule)
   (get_hardfork_properties)
   (get_reward_funds)

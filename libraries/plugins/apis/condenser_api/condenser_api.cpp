@@ -254,11 +254,15 @@ namespace detail
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_dynamic_global_properties )
-  {
+  {try{
     CHECK_ARG_SIZE( 0 )
     get_dynamic_global_properties_return gpo = _database_api->get_dynamic_global_properties( {} );
-
     return gpo;
+	}catch(...)
+	{
+		std::cerr << "COUGHT!!!!!" << std::endl;
+		return get_dynamic_global_properties_return{};
+	}
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_chain_properties )

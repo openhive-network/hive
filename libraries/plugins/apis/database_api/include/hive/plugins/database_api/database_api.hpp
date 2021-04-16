@@ -5,11 +5,19 @@
 #include <hive/plugins/database_api/database_api_args.hpp>
 #include <hive/plugins/database_api/database_api_objects.hpp>
 
+#include <thread>
+#include <boost/stacktrace.hpp>
+
 #define DATABASE_API_SINGLE_QUERY_LIMIT 1000
 
 namespace hive { namespace plugins { namespace database_api {
 
 class database_api_impl;
+
+struct custom_log_destructor
+{
+  void operator()(database_api_impl* ptr) const;
+};
 
 class database_api
 {
@@ -164,7 +172,8 @@ class database_api
     )
 
   private:
-    std::unique_ptr< database_api_impl > my;
+    // std::unique_ptr< database_api_impl, custom_log_destructor > my;
+    boost::unique_ptr< database_api_impl, custom_log_destructor > my;
 };
 
 } } } //hive::plugins::database_api

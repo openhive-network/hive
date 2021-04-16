@@ -21,6 +21,9 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <thread>
+#include <boost/stacktrace.hpp>
+
 
 FILE *popen(const char *command, const char *mode);
 int pclose(FILE *stream);
@@ -81,8 +84,28 @@ void print_stacktrace_linenums( void** addrlist, int addrlen )
    std::cerr << output << std::endl;
 }
 
-void print_stacktrace(std::ostream& out, unsigned int max_frames /* = 63 */, void* caller_overwrite_hack /* = nullptr */ )
+struct tmp_scope_printer
 {
+  std::ostream& output;
+  std::stringstream ss{};
+
+  ~tmp_scope_printer()
+  {
+    output << ss.str();
+  }
+};
+
+
+void print_stacktrace(std::ostream& _out, unsigned int max_frames /* = 63 */, void* caller_overwrite_hack /* = nullptr */ )
+{
+    tmp_scope_printer guard{ _out };
+    auto& out = guard.ss;
+    out << "thread_id: " << std::this_thread::get_id() << '\n';
+    out << boost::stacktrace::stacktrace();
+    // const auto stack = boost::stacktrace::stacktrace();
+    // for(const auto& frame : stack)
+      // out << frame.source_file() << ":" << frame.source_line() << " " << frame.name() << "\n";
+    return;
     out << "stack trace:" << std::endl;
 
     // storage array for stack trace address data

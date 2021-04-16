@@ -103,7 +103,7 @@ void stats_export_plugin_impl::on_post_apply_block( const block_notification& no
   if( !stats )
     return;
 
-  stats->global_properties = api_dynamic_global_property_object( _db.get_dynamic_global_properties(), _db );
+  stats->global_properties = api_dynamic_global_property_object( _db.get_dynamic_global_properties() );
   for( const signed_transaction& tx : note.block.transactions )
   {
     stats->transaction_stats.emplace_back();
