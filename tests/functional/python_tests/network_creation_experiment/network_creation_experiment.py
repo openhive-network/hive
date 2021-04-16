@@ -155,6 +155,8 @@ if __name__ == "__main__":
                 'network_broadcast_api', 'network_node_api', 'account_history', 'account_history_api',
                 'account_history_rocksdb',
             ]
+            node.config.enable_stale_production = True
+            node.config.required_participation = 0
 
         # Run
         alpha_net.connect_with(beta_net)
@@ -167,6 +169,7 @@ if __name__ == "__main__":
         beta_net.wait_for_synchronization_of_all_nodes()
 
         wallet = alpha_net.attach_wallet()
+        beta_wallet = beta_net.attach_wallet()
 
         # Run original test script
 
@@ -186,21 +189,30 @@ if __name__ == "__main__":
         print_top_witnesses(all_witnesses, api_node)
         print(wallet.api.list_accounts())
 
-        for i in range(10):
-          configure_initial_vesting(['initminer'], 1, 1, "TESTS", wallet)
+        time.sleep(60)
 
         print(60 * '=')
         print(' Network successfully prepared')
         print(60 * '=')
 
-        print('Waiting for 20 more blocks')
-        time.sleep(60)
-
+        print("Press enter to disconnect")
+        input()
         alpha_net.disconnect_from(beta_net)
         print('Disconnected')
 
-        print('Waiting 60 seconds')
-        time.sleep(60)
+
+        for i in range(0, 10):
+          time.sleep(2)
+
+          info = wallet.api.info()
+          last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
+          print("alpha last_irreversible_block_num: ", last_irreversible_block_num)
+
+          info = beta_wallet.api.info()
+          last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
+          print("beta last_irreversible_block_num: ", last_irreversible_block_num)
+
+
 
         alpha_net.connect_with(beta_net)
         print('Reconnected')
@@ -225,8 +237,14 @@ if __name__ == "__main__":
             if size > 1:
               beta_duplicates.append(i)
 
-          print("duplicates in alpha network:", alpha_duplicates)
-          print("duplicates in beta network:", beta_duplicates)
+          print("duplicates in alpha network: ", alpha_duplicates)
+          info = wallet.api.info()
+          last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
+          print("alpha last_irreversible_block_num: ", last_irreversible_block_num)
+          print("duplicates in beta network: ", beta_duplicates)
+          info = beta_wallet.api.info()
+          last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
+          print("beta last_irreversible_block_num: ", last_irreversible_block_num)
 
 
     except Exception as _ex:
