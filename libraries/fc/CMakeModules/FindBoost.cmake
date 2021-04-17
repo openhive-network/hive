@@ -177,6 +177,7 @@ if (NOT Boost_NO_BOOST_CMAKE)
   # Do the same find_package call but look specifically for the CMake version.
   # Note that args are passed in the Boost_FIND_xxxxx variables, so there is no
   # need to delegate them to this find_package call.
+  cmake_policy(SET CMP0057 NEW)
   find_package(Boost QUIET NO_MODULE)
   mark_as_advanced(Boost_DIR)
 
@@ -902,7 +903,7 @@ endif()
 # On versions < 1.35, remove the System library from the considered list
 # since it wasn't added until 1.35.
 if(Boost_VERSION AND Boost_FIND_COMPONENTS)
-   if(Boost_VERSION LESS 103500)
+   if(Boost_VERSION_MACRO LESS 103500)
      list(REMOVE_ITEM Boost_FIND_COMPONENTS system)
    endif()
 endif()
