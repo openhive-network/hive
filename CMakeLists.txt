@@ -184,6 +184,10 @@ ENDIF(WIN32)
 
 FIND_PACKAGE(Boost 1.58 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
+if( NOT Boost_VERSION_MACRO ) # FindBoost in CMake version >=3.15 reports Boost_VERSION in x.y.z format
+  set( Boost_VERSION_MACRO Boost_VERSION )
+endif()
+
 if( NOT( Boost_VERSION_MACRO LESS 106900 ) )
    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
