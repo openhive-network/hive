@@ -54,7 +54,11 @@ namespace fc {
       #ifdef _WIN64
       fc::fwd<impl,0x81> my;
       #else
-      fc::fwd<impl,0x70> my;
+        #if BOOST_VERSION >= 107000
+        fc::fwd<impl,0x70> my;
+        #else
+        fc::fwd<impl,0x54> my;
+        #endif
       #endif
   };
   typedef std::shared_ptr<tcp_socket> tcp_socket_ptr;
