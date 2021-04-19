@@ -67,6 +67,11 @@ class rocksdb_operation_object
     uint16_t                   virtual_op = 0;
     time_point_sec             timestamp;
     serialize_buffer_t         serialized_op;
+
+    bool operator<( const rocksdb_operation_object& obj ) const
+    {
+      return std::tie( block, trx_in_block, op_in_trx, virtual_op ) < std::tie( obj.block, obj.trx_in_block, obj.op_in_trx, obj.virtual_op );
+    }
 };
 
 struct by_block;
