@@ -819,9 +819,8 @@ private:
     if(_storage == nullptr)
       return;
 
-    /// If there are still not yet saved changes let's do it now.
-    if(_collectedOps != 0)
-      flushWriteBuffer();
+    // lib (last irreversible block) has not been saved so far
+    flushWriteBuffer();
 
     ::rocksdb::FlushOptions fOptions;
     for(const auto& cf : _columnHandles)
@@ -1597,7 +1596,11 @@ uint32_t account_history_rocksdb_plugin::impl::get_lib(const uint32_t* fallbackI
 
   uint32_t lib = 0;
   load( lib, data.data(), data.size() );
-  return lib;
+
+  if(lib < _cached_irreversible_block)
+    return _cached_irreversible_block;
+  else
+    return lib;
 }
 
 void account_history_rocksdb_plugin::impl::update_lib( uint32_t lib )
@@ -1945,8 +1948,7 @@ void account_history_rocksdb_plugin::impl::importData(unsigned int blockLimit)
   }
   );
 
-  if(_collectedOps != 0)
-    flushWriteBuffer();
+  flushWriteBuffer();
 
   const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&, bool){});
   ilog( "RocksDb data import - Performance report at block ${n}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
@@ -2041,7 +2043,36 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
   {
     std::lock_guard<std::mutex> lk(_currently_persisted_irreversible_mtx);
 
-    while(itr != volatile_idx.end() && itr->block <= block_num)
+    // it is unlikely we get here but flush storage in this case
+    if(itr != volatile_idx.end() && itr->block < block_num)
+    {
+      flushStorage();
+
+      while(itr != volatile_idx.end() && itr->block < block_num)
+      {
+        std::multiset< rocksdb_operation_object > ops;
+        find_operations_by_block(itr->block, false, // don't include reversible, only already imported ops
+          [&ops](const rocksdb_operation_object& op)
+          {
+            ops.emplace(op);
+          }
+        );
+
+        uint32_t this_itr_block = itr->block;
+        while(itr != volatile_idx.end() && itr->block == this_itr_block)
+        {
+          rocksdb_operation_object obj(*itr);
+          to_delete.push_back(&(*itr));
+          // check that operation is already stored as irreversible as it will be not imported
+          FC_ASSERT(ops.count(obj), "operation in block ${block} was not imported until irreversible block ${irreversible}", ("block", this_itr_block)("irreversible", block_num));
+          dlog("prevented importing duplicate operation from block ${block} when handling irreversible block ${irreversible}",
+            ("block", obj.block)("irreversible", block_num));
+          itr++;
+        }
+      }
+    }
+
+    while(itr != volatile_idx.end() && itr->block == block_num)
     {
       rocksdb_operation_object obj(*itr);
       importOperation(obj, itr->impacted);

@@ -4121,7 +4121,7 @@ void database::_apply_block( const signed_block& next_block )
   update_global_dynamic_data(next_block);
   update_signing_witness(signing_witness, next_block);
 
-  update_last_irreversible_block();
+  uint32_t old_last_irreversible = update_last_irreversible_block();
 
   create_block_summary(next_block);
   clear_expired_transactions();
@@ -4170,7 +4170,7 @@ void database::_apply_block( const signed_block& next_block )
   // and commits irreversible state to the database. This should always be the
   // last call of applying a block because it is the only thing that is not
   // reversible.
-  migrate_irreversible_state();
+  migrate_irreversible_state(old_last_irreversible);
 
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (next_block.block_num()) ) }
 
@@ -4914,10 +4914,10 @@ void database::update_signing_witness(const witness_object& signing_witness, con
   } );
 } FC_CAPTURE_AND_RETHROW() }
 
-void database::update_last_irreversible_block()
+uint32_t database::update_last_irreversible_block()
 { try {
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-  auto old_last_irreversible = dpo.last_irreversible_block_num;
+  uint32_t old_last_irreversible = dpo.last_irreversible_block_num;
 
   /**
     * Prior to voting taking over, we must be more conservative...
@@ -4964,14 +4964,10 @@ void database::update_last_irreversible_block()
       } );
     }
   }
-
-  for( uint32_t i = old_last_irreversible; i <= dpo.last_irreversible_block_num; ++i )
-  {
-    notify_irreversible_block( i );
-  }
+  return old_last_irreversible;
 } FC_CAPTURE_AND_RETHROW() }
 
-void database::migrate_irreversible_state()
+void database::migrate_irreversible_state(uint32_t old_last_irreversible)
 {
   // This method should happen atomically. We cannot prevent unclean shutdown in the middle
   // of the call, but all side effects happen at the end to minize the chance that state
@@ -5022,6 +5018,11 @@ void database::migrate_irreversible_state()
 
     // This deletes undo state
     commit( dpo.last_irreversible_block_num );
+
+    for( uint32_t i = old_last_irreversible + 1; i <= dpo.last_irreversible_block_num; ++i )
+    {
+      notify_irreversible_block( i );
+    }
   }
   FC_CAPTURE_AND_RETHROW()
 }
