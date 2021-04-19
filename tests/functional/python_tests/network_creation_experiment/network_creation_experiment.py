@@ -150,13 +150,24 @@ if __name__ == "__main__":
         init_node.config.required_participation = 0
 
         for node in alpha_net.nodes + beta_net.nodes:
-            node.config.shared_file_size = '6G'
-            node.config.plugin += [
-                'network_broadcast_api', 'network_node_api', 'account_history', 'account_history_api',
-                'account_history_rocksdb',
-            ]
+            # FIXME: This shouldn't be set in all nodes, but let's test it
             node.config.enable_stale_production = True
             node.config.required_participation = 0
+
+            node.config.shared_file_size = '6G'
+
+            plugins = node.config.plugin
+            plugins.remove('witness')
+            node.config.plugin = plugins
+
+            node.config.plugin += [
+                'network_broadcast_api', 'network_node_api', 'account_history_rocksdb', 'account_history',
+                'account_history_api', 'witness'
+            ]
+
+        plugins = api_node.config.plugin
+        plugins.remove('witness')
+        api_node.config.plugin = plugins
 
         # Run
         alpha_net.connect_with(beta_net)
