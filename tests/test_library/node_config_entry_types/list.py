@@ -70,4 +70,4 @@ class List(ConfigEntry):
         self._value = self.__ListWithFixedAdditionOperator(value)
 
     def _get_value(self):
-        return self.__ListWithFixedAdditionOperator(self._value)
+        return self._value

@@ -39,3 +39,9 @@ def test_adding_second_string_instead_of_list(config):
     config.private_key = ['5KFirstQmyBxGKqXCv5qRhip']
     config.private_key += '5KSecondXPdzYqB8d6S66bup'
     assert config.private_key == ['5KFirstQmyBxGKqXCv5qRhip', '5KSecondXPdzYqB8d6S66bup']
+
+
+def test_remove_item_from_list(config):
+    config.plugin = ['witness', 'account_by_key', 'account_by_key_api', 'condenser_api']
+    config.plugin.remove('witness')
+    assert config.plugin == ['account_by_key', 'account_by_key_api', 'condenser_api']
