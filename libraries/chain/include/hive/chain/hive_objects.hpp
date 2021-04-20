@@ -343,7 +343,7 @@ namespace hive { namespace chain {
       const account_id_type& _to_id,  const asset& _amount, const string& _memo, const uint16_t _recurrence,
       const uint8_t _consecutive_failures = 0)
       : id( _id ), trigger_date( _trigger_date ), end_date( _end_date ), from_id( _from_id ), to_id( _to_id ),
-      amount( _amount ), memo( _memo ), recurrence( _recurrence ), consecutive_failures( _consecutive_failures )
+      amount( _amount ), memo( shared_string(_memo.c_str(), a) ), recurrence( _recurrence ), consecutive_failures( _consecutive_failures )
       {}
 
       time_point_sec    trigger_date;
@@ -352,13 +352,13 @@ namespace hive { namespace chain {
       account_id_type   to_id;
       asset             amount;
       /// The memo is plain-text, any encryption on the memo is up to a higher level protocol.
-      string            memo;
+      shared_string     memo;
       /// How often will the payment be triggered, unit: hours
       uint16_t          recurrence = 0;
       // How many payment have failed in a row, at HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES the object is deleted
-      uint8_t          consecutive_failures = 0;
+      uint8_t           consecutive_failures = 0;
 
-      CHAINBASE_UNPACK_CONSTRUCTOR(recurrent_transfer_object);
+      CHAINBASE_UNPACK_CONSTRUCTOR(recurrent_transfer_object, (memo));
   };
 
   struct by_price;

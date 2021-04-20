@@ -1015,7 +1015,7 @@ struct api_recurrent_transfer_object
     from( from_name ),
     to( to_name ),
     amount( o.amount ),
-    memo( o.memo ),
+    memo( to_string(o.memo) ),
     recurrence( o.recurrence ),
     consecutive_failures( o.consecutive_failures )
     {}

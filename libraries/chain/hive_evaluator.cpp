@@ -3387,7 +3387,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
     _db.modify( *itr, [&]( recurrent_transfer_object& rt )
     {
       rt.amount = op.amount;
-      rt.memo = op.memo;
+      from_string( rt.memo, op.memo );
       rt.recurrence = op.recurrence;
       rt.trigger_date = next_trigger_date;
       rt.end_date = op.end_date;
