@@ -174,6 +174,14 @@ if __name__ == "__main__":
         wallet = alpha_net.attach_wallet()
         beta_wallet = beta_net.attach_wallet()
 
+        # We are waiting here for block 63, because witness participation is counting
+        # by dividing total produced blocks in last 128 slots by 128. When we were waiting
+        # too short, for example 42 blocks, then participation equals 42 / 128 = 32.81%.
+        # It is not enough, because 33% is required. 63 blocks guarantee, that this
+        # requirement is always fulfilled (63 / 128 = 49.22%, which is greater than 33%).
+        logger.info('Wait for block 63 (to fulfill required 33% of witness participation)')
+        init_node.wait_for_block_with_number(3 * 21)
+
         # Run original test script
 
         all_witnesses = alpha_witness_names + beta_witness_names
@@ -192,7 +200,11 @@ if __name__ == "__main__":
         print_top_witnesses(all_witnesses, api_node)
         print(wallet.api.list_accounts())
 
-        time.sleep(60)
+        # FIXME: It is workaround solution.
+        #        Replace it with waiting until irreversible block will move.
+        #        I mean: read current irreversible block number and wait until it change.
+        logger.info('Wait 42 blocks (until irreversible block will move)')
+        init_node.wait_number_of_blocks(2 * 21)
 
         alpha_net.disconnect_from(beta_net)
         print('Disconnected')
