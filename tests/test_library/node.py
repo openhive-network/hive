@@ -5,6 +5,7 @@ import time
 
 from .node_api.node_apis import Apis
 from .account import Account
+from . import logger
 
 
 class Node:
@@ -20,6 +21,7 @@ class Node:
         self.stdout_file = None
         self.stderr_file = None
         self.finalizer = None
+        self.logger = logger.getLogger(f'{__name__}.{self.network}.{self.name}')
 
         from .node_configs.default import create_default_config
         self.config = create_default_config()
