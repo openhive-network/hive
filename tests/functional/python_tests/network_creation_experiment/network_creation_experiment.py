@@ -1,16 +1,10 @@
-from test_library import Account, KeyGenerator, Network
+from test_library import Account, KeyGenerator, logger, Network
 
 
 import os
-import sys
 import time
 import concurrent.futures
 import random
-
-# TODO: Remove dependency from cli_wallet/tests directory.
-#       This modules [utils.logger] should be somewhere higher.
-sys.path.append("../cli_wallet/tests")
-from utils.logger import log, init_logger
 
 CONCURRENCY = None
 
@@ -40,7 +34,7 @@ def self_vote(_witnesses, wallet):
 def prepare_accounts(_accounts, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
-  log.info("Attempting to create {0} accounts".format(len(_accounts)))
+  logger.info("Attempting to create {0} accounts".format(len(_accounts)))
   for account in _accounts:
     future = executor.submit(wallet.create_account, account)
     fs.append(future)
@@ -51,7 +45,7 @@ def prepare_accounts(_accounts, wallet):
 def configure_initial_vesting(_accounts, a, b, _tests, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
-  log.info("Configuring initial vesting for {0} of witnesses".format(str(len(_accounts))))
+  logger.info("Configuring initial vesting for {0} of witnesses".format(str(len(_accounts))))
   for account_name in _accounts:
     value = random.randint(a, b)
     amount = str(value) + ".000 " + _tests
@@ -64,7 +58,7 @@ def configure_initial_vesting(_accounts, a, b, _tests, wallet):
 def prepare_witnesses(_witnesses, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
-  log.info("Attempting to prepare {0} of witnesses".format(str(len(_witnesses))))
+  logger.info("Attempting to prepare {0} of witnesses".format(str(len(_witnesses))))
   for account_name in _witnesses:
     witness = Account(account_name)
     pub_key = witness.public_key
@@ -90,7 +84,7 @@ def print_top_witnesses(witnesses, node):
     if owner in witnesses_set:
       group = "W"
 
-    log.info("Witness # {0:2d}, group: {1}, name: `{2}', votes: {3}".format(position, group, w["owner"], w["votes"]))
+    logger.info("Witness # {0:2d}, group: {1}, name: `{2}', votes: {3}".format(position, group, w["owner"], w["votes"]))
     position = position + 1
 
 def get_producer_reward_operations(ops):
@@ -105,7 +99,6 @@ def get_producer_reward_operations(ops):
 if __name__ == "__main__":
     try:
         error = False
-        init_logger(os.path.abspath(__file__))
 
         Account.key_generator = KeyGenerator('../../../../build/programs/util/get_dev_key')
 
@@ -258,13 +251,13 @@ if __name__ == "__main__":
 
 
     except Exception as _ex:
-        log.exception(str(_ex))
+        logger.exception(str(_ex))
         error = True
     finally:
         if error:
-            log.error("TEST `{0}` failed".format(__file__))
+            logger.error("TEST `{0}` failed".format(__file__))
             exit(1)
         else:
-            log.info("TEST `{0}` passed".format(__file__))
+            logger.info("TEST `{0}` passed".format(__file__))
             exit(0)
 
