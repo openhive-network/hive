@@ -1,5 +1,6 @@
 import logging
 from logging import debug, info, warning, error, critical, exception
+from logging import getLogger
 
 from pathlib import Path
 
