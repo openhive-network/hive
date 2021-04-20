@@ -139,8 +139,6 @@ void print(std::ostream& stream, const curve_printer& cp)
 
 #define key(account) account ## _private_key
 
-using namespace hive::protocol::testnet_blockchain_configuration;
-
 struct curation_rewards_handler
 {
   const uint32_t seven_days                 = 60*60*24*7;
@@ -937,6 +935,7 @@ BOOST_AUTO_TEST_CASE( one_vote_for_comment )
     print_all( std::cout, crh.get_printer() );
     print( std::cout, crh.get_printer() );
 
+    validate_database();
   }
   FC_LOG_AND_RETHROW()
 }

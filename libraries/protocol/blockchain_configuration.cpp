@@ -32,6 +32,7 @@ namespace hive
         hive_max_block_size{hive_max_transaction_size.get() * hive_block_interval * 2000u},
         hive_feed_interval_blocks{hive_blocks_per_hour.get()},
         hive_conversion_delay{fc::hours(hive_feed_history_window.get())},
+        hive_collateralized_conversion_delay{hive_conversion_delay.get()},
         hive_delegation_return_period_hf0{hive_cashout_window_seconds.get()},
         hive_root_post_parent{ hive::protocol::account_name_type{} },
         hive_treasury_fee{10 * hive_blockchain_precision.get()},

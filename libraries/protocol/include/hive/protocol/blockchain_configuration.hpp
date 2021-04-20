@@ -240,6 +240,11 @@ namespace hive
         member_uint_t hive_content_reward_percent_hf21{65u * hive_1_percent};
         member_uint_t hive_proposal_fund_percent_hf21{10 * hive_1_percent};
         member_hugeint_t hive_hf21_convergent_linear_recent_claims{fc::uint128_t(0, 503600561838938636ull)};
+        member_int_t hive_max_recurrent_transfer_end_date{730};
+        member_int_t hive_max_open_recurrent_transfers{255};
+        member_int_t hive_max_consecutive_recurrent_transfer_failures{10};
+        member_int_t hive_max_recurrent_transfers_per_block{1000};
+        member_int_t hive_min_recurrent_transfers_recurrence{24};
         member_hugeint_t hive_content_constant_hf21{fc::uint128_t(0, 2000000000000ull)};
         member_uint_t hive_miner_pay_percent{hive_1_percent};
         member_int_t hive_max_ration_decay_rate{1000000};
@@ -299,6 +304,9 @@ namespace hive
         member_uint_t hive_min_feeds{hive_max_witnesses / 3u};
         member_time_t hive_conversion_delay_pre_hf_16{fc::days(7)};
         member_time_t hive_conversion_delay;
+        member_time_t hive_collateralized_conversion_delay;
+        member_int_t hive_conversion_collateral_ratio{2 * hive_100_percent};
+        member_int_t hive_collateralized_conversion_fee{5 * hive_1_percent};
         member_int_t hive_min_undo_history{10};
         member_uint_t hive_max_undo_history{10000u};
         member_int_t hive_min_transaction_expiration_limit{hive_block_interval * 5};

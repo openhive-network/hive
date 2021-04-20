@@ -11,7 +11,6 @@
 #ifdef	IS_TEST_NET
 
 #define HIVE_INIT_PRIVATE_KEY		hive::get_blockchain_configuration().hive_init_private_key.get()
-/// Allows to limit number of total produced blocks.
 #define TESTNET_BLOCK_LIMIT		hive::get_blockchain_configuration().testnet_block_limit.get()
 #define HIVE_ADDRESS_PREFIX		"TST"
 #define HIVE_INIT_PUBLIC_KEY_STR		std::string( hive::protocol::public_key_type(hive::get_blockchain_configuration().hive_init_private_key.get().get_public_key()) )
@@ -19,9 +18,6 @@
 #define HIVE_ADDRESS_PREFIX		"STM"
 #define HIVE_INIT_PUBLIC_KEY_STR		"STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
 #endif
-
-////////// constexpresions
-// theese have to be known during compile time, because they are used as template parameters, or dependencies of them
 
 #define HIVE_100_PERCENT hive::protocol::blockchain_configuration::hive_100_percent
 #define HIVE_1_PERCENT hive::protocol::blockchain_configuration::hive_1_percent
@@ -146,6 +142,11 @@
 #define HIVE_CONTENT_REWARD_PERCENT_HF21		hive::get_blockchain_configuration().hive_content_reward_percent_hf21.get()
 #define HIVE_PROPOSAL_FUND_PERCENT_HF21		hive::get_blockchain_configuration().hive_proposal_fund_percent_hf21.get()
 #define HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS		hive::get_blockchain_configuration().hive_hf21_convergent_linear_recent_claims.get()
+#define HIVE_MAX_RECURRENT_TRANSFER_END_DATE		hive::get_blockchain_configuration().hive_max_recurrent_transfer_end_date.get()
+#define HIVE_MAX_OPEN_RECURRENT_TRANSFERS		hive::get_blockchain_configuration().hive_max_open_recurrent_transfers.get()
+#define HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES		hive::get_blockchain_configuration().hive_max_consecutive_recurrent_transfer_failures.get()
+#define HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK		hive::get_blockchain_configuration().hive_max_recurrent_transfers_per_block.get()
+#define HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE		hive::get_blockchain_configuration().hive_min_recurrent_transfers_recurrence.get()
 #define HIVE_CONTENT_CONSTANT_HF21		hive::get_blockchain_configuration().hive_content_constant_hf21.get()
 #define HIVE_MINER_PAY_PERCENT		hive::get_blockchain_configuration().hive_miner_pay_percent.get()
 #define HIVE_MAX_RATION_DECAY_RATE		hive::get_blockchain_configuration().hive_max_ration_decay_rate.get()
@@ -205,6 +206,9 @@
 #define HIVE_MIN_FEEDS		hive::get_blockchain_configuration().hive_min_feeds.get()
 #define HIVE_CONVERSION_DELAY_PRE_HF_16		hive::get_blockchain_configuration().hive_conversion_delay_pre_hf_16.get()
 #define HIVE_CONVERSION_DELAY		hive::get_blockchain_configuration().hive_conversion_delay.get()
+#define HIVE_COLLATERALIZED_CONVERSION_DELAY		hive::get_blockchain_configuration().hive_collateralized_conversion_delay.get()
+#define HIVE_COLLATERALIZED_CONVERSION_FEE		hive::get_blockchain_configuration().hive_collateralized_conversion_fee.get()
+#define HIVE_CONVERSION_COLLATERAL_RATIO		hive::get_blockchain_configuration().hive_conversion_collateral_ratio.get()
 #define HIVE_MIN_UNDO_HISTORY		hive::get_blockchain_configuration().hive_min_undo_history.get()
 #define HIVE_MAX_UNDO_HISTORY		hive::get_blockchain_configuration().hive_max_undo_history.get()
 #define HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT		hive::get_blockchain_configuration().hive_min_transaction_expiration_limit.get()
