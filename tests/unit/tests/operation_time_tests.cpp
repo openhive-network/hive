@@ -1833,6 +1833,99 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
   FC_LOG_AND_RETHROW();
 }
 
+BOOST_AUTO_TEST_CASE(hbd_savings_interest)
+{
+  using hive::plugins::condenser_api::legacy_asset;
+
+  try
+  {
+    ACTORS((alice))
+      generate_block();
+    vest(HIVE_INIT_MINER_NAME, "alice", ASSET("10.000 TESTS"));
+
+    set_price_feed(price(ASSET("1.000 TBD"), ASSET("1.000 TESTS")));
+
+    BOOST_TEST_MESSAGE("Testing savings interest over smallest interest period");
+
+    auto alice_funds = ASSET("31.903 TBD");
+    fund("alice", alice_funds);
+
+    transfer_to_savings_operation savings_supply;
+    savings_supply.from = "alice";
+    savings_supply.to = "alice";
+    savings_supply.memo = "New Tesla fund";
+    savings_supply.amount = alice_funds;
+    push_transaction(savings_supply, alice_private_key);
+
+    fund("alice", ASSET("3.000 TBD"));
+
+    auto start_time = db->get_account("alice").savings_hbd_seconds_last_update;
+    auto alice_hbd = get_hbd_balance("alice");
+
+    BOOST_REQUIRE(alice_hbd == ASSET("3.000 TBD"));
+
+    auto alice_hbd_savings = get_hbd_savings("alice");
+    BOOST_REQUIRE(alice_hbd_savings == alice_funds);
+
+    generate_blocks(db->head_block_time() + fc::seconds(HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC), true);
+
+    BOOST_REQUIRE(get_hbd_balance("alice") == ASSET("3.000 TBD"));
+
+    transfer_to_savings_operation transfer;
+    transfer.to = "alice";
+    transfer.from = "alice";
+    transfer.memo = "Interest trigger";
+    transfer.amount = ASSET("1.000 TBD");
+
+    /// This op is needed to trigger interest payment...
+    push_transaction(transfer, alice_private_key);
+
+    auto& gpo = db->get_dynamic_global_properties();
+    BOOST_REQUIRE(gpo.get_hbd_interest_rate() > 0);
+
+    BOOST_TEST_MESSAGE("Alice HDB saving balance: " + legacy_asset::from_asset(get_hbd_savings("alice")).to_string());
+
+    auto interest_op = get_last_operations(1)[0].get< interest_operation >();
+    BOOST_REQUIRE(static_cast<uint64_t>(get_hbd_savings("alice").amount.value) == alice_hbd_savings.amount.value + ASSET("1.000 TBD").amount.value + ((((uint128_t(alice_hbd_savings.amount.value) * (db->head_block_time() - start_time).to_seconds()) / HIVE_SECONDS_PER_YEAR) * gpo.get_hbd_interest_rate()) / HIVE_100_PERCENT).to_uint64());
+    BOOST_REQUIRE(interest_op.owner == "alice");
+    BOOST_REQUIRE(interest_op.interest == get_hbd_savings("alice") - (alice_hbd_savings + ASSET("1.000 TBD")));
+
+    BOOST_TEST_MESSAGE("Alice got HDB saving interests: " + legacy_asset::from_asset(interest_op.interest).to_string());
+
+    validate_database();
+
+    BOOST_TEST_MESSAGE("Testing savings interest under interest period");
+
+    start_time = db->get_account("alice").savings_hbd_seconds_last_update;
+    alice_hbd_savings = get_hbd_savings("alice");
+
+    generate_blocks(db->head_block_time() + fc::seconds(HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC / 2), true);
+    
+    /// This op is needed to trigger interest payment...
+    push_transaction(transfer, alice_private_key);
+
+    BOOST_REQUIRE(get_hbd_savings("alice") == alice_hbd_savings + ASSET("1.000 TBD"));
+
+    validate_database();
+
+    auto alice_coindays = uint128_t(alice_hbd_savings.amount.value) * (db->head_block_time() - start_time).to_seconds();
+    alice_hbd_savings = get_hbd_savings("alice");
+    start_time = db->get_account("alice").savings_hbd_seconds_last_update;
+
+    BOOST_TEST_MESSAGE("Testing savings interest for longer period");
+
+    generate_blocks(db->head_block_time() + fc::seconds((HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC * 7) / 3), true);
+    
+    /// This op is needed to trigger interest payment...
+    push_transaction(transfer, alice_private_key);
+
+    BOOST_REQUIRE(static_cast<uint64_t>(get_hbd_savings("alice").amount.value) == alice_hbd_savings.amount.value + ASSET("1.000 TBD").amount.value + ((((uint128_t(alice_hbd_savings.amount.value) * (db->head_block_time() - start_time).to_seconds() + alice_coindays) / HIVE_SECONDS_PER_YEAR) * gpo.get_hbd_interest_rate()) / HIVE_100_PERCENT).to_uint64());
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW();
+}
+
 BOOST_AUTO_TEST_CASE( liquidity_rewards )
 {
   using std::abs;
