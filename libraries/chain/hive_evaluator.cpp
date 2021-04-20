@@ -3373,6 +3373,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
     _db.remove( *itr );
     _db.modify(from_account, [&](account_object& a )
     {
+      FC_ASSERT( a.open_recurrent_transfers > 0 );
       a.open_recurrent_transfers--;
     });
   } else

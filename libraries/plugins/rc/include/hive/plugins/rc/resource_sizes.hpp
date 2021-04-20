@@ -97,7 +97,6 @@ struct state_object_size_info
   int64_t proposal_vote_object_member_size     = 8   *STATE_BYTES_SCALE;
 
   // recurrent_transfer_operation
-  // TODO: figure out the difference between member and base
   int64_t recurrent_transfer_object_base_size = 60 * STATE_BYTES_SCALE; // TODO: figure out right value
 
 };

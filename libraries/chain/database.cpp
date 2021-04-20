@@ -2399,7 +2399,7 @@ void database::process_recurrent_transfers()
 
         if (consecutive_failures < HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES) {
           modify(current_recurrent_transfer, [&](recurrent_transfer_object &rt) {
-            rt.consecutive_failures = consecutive_failures;
+            ++rt.consecutive_failures;
             rt.trigger_date = now + fc::hours(current_recurrent_transfer.recurrence);
           });
           // false means the recurrent transfer was not deleted
@@ -2410,6 +2410,7 @@ void database::process_recurrent_transfers()
           remove( current_recurrent_transfer );
           modify(from_account, [&](account_object& a )
           {
+            FC_ASSERT( a.open_recurrent_transfers > 0 );
             a.open_recurrent_transfers--;
           });
           // true means the recurrent transfer was deleted
@@ -2430,17 +2431,29 @@ void database::expire_recurrent_transfers()
     const auto& recurrent_transfers_by_end_date = get_index< recurrent_transfer_index >().indices().get< by_end_date >();
     auto itr = recurrent_transfers_by_end_date.begin();
 
+    // uint16_t is okay because we stop at 1000, if the limit changes, make sure to check if it fits in the integer.
+    uint16_t processed_expirations = 0;
+
     while( itr != recurrent_transfers_by_end_date.end() && itr->end_date <= now )
     {
+      // we don't want to process too many expirations in a single block
+      if (processed_expirations >= HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK) {
+        ilog("Reached max processed recurrent transfers this block");
+        return;
+      }
+
       const auto& old_recurrent_transfer = *itr;
       ++itr;
 
       modify(get_account( old_recurrent_transfer.from_id ), [&](account_object& a )
       {
+        FC_ASSERT( a.open_recurrent_transfers > 0 );
         a.open_recurrent_transfers--;
       });
 
+
       remove( old_recurrent_transfer );
+      processed_expirations++;
     }
   }
 }

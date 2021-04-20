@@ -1094,7 +1094,6 @@ FC_REFLECT( hive::plugins::condenser_api::api_account_object,
           (proxied_vsf_votes)(witnesses_voted_for)
           (last_post)(last_root_post)(last_vote_time)
           (post_bandwidth)(pending_claimed_accounts)
-          (delayed_votes)
           (governance_vote_expiration_ts)
           (delayed_votes)(open_recurrent_transfers)
         )
