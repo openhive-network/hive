@@ -728,7 +728,7 @@ class wallet_api
       * @param from The account the funds are coming from
       * @param to The account the funds are going to
       * @param amount The funds being transferred. i.e. "100.000 HIVE"
-      * @param memo A memo for the transactionm, encrypted with the to account's public memo key
+      * @param memo A memo for the transaction, encrypted with the to account's public memo key
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction transfer(
@@ -899,7 +899,7 @@ class wallet_api
       *  @param request_id - an unique ID assigned by from account, the id is used to cancel the operation and can be reused after the transfer completes
       *  @param to         - the account getting the transfer
       *  @param amount     - the amount of assets to be transfered
-      *  @param memo A memo for the transactionm, encrypted with the to account's public memo key
+      *  @param memo A memo for the transaction, encrypted with the to account's public memo key
       *  @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction transfer_from_savings(
@@ -1305,6 +1305,36 @@ class wallet_api
     condenser_api::legacy_signed_transaction remove_proposal( const account_name_type& deleter,
                                             const flat_set< int64_t >& ids,
                                             bool broadcast );
+
+    /**
+      * Creates a recurrent transfer of funds from one account to another. HIVE and HBD can be transferred.
+      *
+      * @param from The account the funds are coming from
+      * @param to The account from which the funds are going to
+      * @param amount The funds being transferred. i.e. "100.000 HIVE"
+      * @param memo A memo for the transaction, encrypted with the to account's public memo key
+      * @param recurrence how often the transfer should be executed in hours. eg: 24
+      * @param end_date when should the recurrent payment expire
+      * @param broadcast true if you wish to broadcast the transaction
+      */
+    condenser_api::legacy_signed_transaction recurrent_transfer(
+            account_name_type from,
+            account_name_type to,
+            condenser_api::legacy_asset amount,
+            string memo,
+            uint16_t recurrence,
+            time_point_sec end_date,
+            bool broadcast );
+
+  /**
+      * Finds a recurrent transfer
+
+      * @param from The account from which the funds are coming from
+      */
+  vector< database_api::api_recurrent_transfer_object > find_recurrent_transfers(
+          account_name_type from );
+
+
 };
 
 struct plain_keys {
@@ -1356,6 +1386,7 @@ FC_API( hive::wallet::wallet_api,
       (get_account_history)
       (get_state)
       (get_withdraw_routes)
+      (find_recurrent_transfers)
 
       /// transaction api
       (claim_account_creation)
@@ -1411,6 +1442,7 @@ FC_API( hive::wallet::wallet_api,
       (decrypt_memo)
       (decline_voting_rights)
       (claim_reward_balance)
+      (recurrent_transfer)
 
       /// helper api
       (get_prototype_operation)

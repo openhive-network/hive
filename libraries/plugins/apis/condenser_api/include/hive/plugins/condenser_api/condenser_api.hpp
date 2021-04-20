@@ -151,6 +151,7 @@ struct api_account_object
     last_vote_time( a.last_vote_time ),
     post_bandwidth( a.post_bandwidth ),
     pending_claimed_accounts( a.pending_claimed_accounts ),
+    open_recurrent_transfers( a.open_recurrent_transfers ),
     governance_vote_expiration_ts( a.governance_vote_expiration_ts )
   {
     voting_power = _compute_voting_power(a);
@@ -237,6 +238,8 @@ struct api_account_object
   uint32_t          post_bandwidth = 0;
 
   share_type        pending_claimed_accounts = 0;
+
+  uint16_t          open_recurrent_transfers = 0;
 
   fc::optional< vector< delayed_votes_data > > delayed_votes;
 
@@ -947,6 +950,7 @@ DEFINE_API_ARGS( is_known_transaction,                   vector< variant >,   bo
 DEFINE_API_ARGS( list_proposals,                         vector< variant >,   vector< api_proposal_object > )
 DEFINE_API_ARGS( find_proposals,                         vector< variant >,   vector< api_proposal_object > )
 DEFINE_API_ARGS( list_proposal_votes,                    vector< variant >,   vector< database_api::api_proposal_vote_object > )
+DEFINE_API_ARGS( find_recurrent_transfers,               vector< variant >,   vector< database_api::api_recurrent_transfer_object > )
 
 #undef DEFINE_API_ARGS
 
@@ -1046,6 +1050,7 @@ public:
     (list_proposals)
     (find_proposals)
     (list_proposal_votes)
+    (find_recurrent_transfers)
   )
 
   private:
@@ -1091,6 +1096,7 @@ FC_REFLECT( hive::plugins::condenser_api::api_account_object,
           (post_bandwidth)(pending_claimed_accounts)
           (delayed_votes)
           (governance_vote_expiration_ts)
+          (delayed_votes)(open_recurrent_transfers)
         )
 
 FC_REFLECT_DERIVED( hive::plugins::condenser_api::extended_account, (hive::plugins::condenser_api::api_account_object),

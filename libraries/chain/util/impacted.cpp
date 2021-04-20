@@ -193,6 +193,11 @@ struct get_impacted_account_visitor
     _impacted.insert( op.new_account_name );
   }
 
+  void operator()( const recurrent_transfer_operation& op )
+  {
+      _impacted.insert( op.from );
+      _impacted.insert( op.to );
+  }
 
   // vops
 
@@ -387,6 +392,19 @@ struct get_impacted_account_visitor
   void operator()( const system_warning_operation& op )
   {
     _impacted.insert( HIVE_INIT_MINER_NAME );
+  }
+
+
+  void operator()( const fill_recurrent_transfer_operation& op )
+  {
+    _impacted.insert( op.from );
+    _impacted.insert( op.to );
+  }
+
+  void operator()( const failed_recurrent_transfer_operation& op )
+  {
+    _impacted.insert( op.from );
+    _impacted.insert( op.to );
   }
 
   //void operator()( const operation& op ){}

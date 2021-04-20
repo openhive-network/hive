@@ -382,6 +382,13 @@ struct count_operation_visitor
     execution_time_count += _e.remove_proposal_operation_exec_time;
   }
 
+  void operator()( const recurrent_transfer_operation& op )const
+  {
+    state_bytes_count += _w.recurrent_transfer_object_base_size,
+    execution_time_count += _e.recurrent_transfer_operation_exec_time;
+    market_op_count++;
+  }
+
   void operator()( const recover_account_operation& ) const {}
   void operator()( const pow_operation& ) const {}
   void operator()( const pow2_operation& ) const {}
@@ -423,6 +430,8 @@ struct count_operation_visitor
   void operator()( const expired_account_notification_operation& ) const {}
   void operator()( const changed_recovery_account_operation& ) const {}
   void operator()( const system_warning_operation& ) const {}
+  void operator()( const fill_recurrent_transfer_operation& ) const {}
+  void operator()( const failed_recurrent_transfer_operation& ) const {}
 
   // Optional Actions
 #ifdef IS_TEST_NET

@@ -799,6 +799,12 @@ struct pre_apply_operation_visitor
     regenerate( op.proposal_owner );
   }
 
+  void operator()( const recurrent_transfer_operation& op )const
+  {
+    regenerate( op.from );
+    regenerate( op.to );
+  }
+
   template< typename Op >
   void operator()( const Op& op )const {}
 };

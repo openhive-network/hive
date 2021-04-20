@@ -72,6 +72,7 @@ namespace hive { namespace protocol {
         remove_proposal_operation, // 46
         update_proposal_operation, // 47
         collateralized_convert_operation, // 48
+        recurrent_transfer_operation, // 49
 
 #ifdef HIVE_ENABLE_SMT
         /// SMT operations
@@ -118,7 +119,9 @@ namespace hive { namespace protocol {
         vesting_shares_split_operation, // last_regular + 30
         account_created_operation, // last_regular + 31
         fill_collateralized_convert_request_operation, // last_regular + 32
-        system_warning_operation // last_regular + 33
+        system_warning_operation, // last_regular + 33,
+        fill_recurrent_transfer_operation, // last_regular + 34
+        failed_recurrent_transfer_operation // last_regular + 35
       > operation;
 
   /*void operation_get_required_authorities( const operation& op,

@@ -2353,6 +2353,99 @@ void database::process_delayed_voting( const block_notification& note )
 }
 
 /**
+  *  Iterates over all recurrent transfers with a due date date before
+  *  the head block time and then executes the transfers
+  */
+void database::process_recurrent_transfers()
+{
+  if( has_hardfork( HIVE_HARDFORK_1_25 ) ) {
+    auto now = head_block_time();
+    const auto& recurrent_transfers_by_date = get_index< recurrent_transfer_index >().indices().get< by_trigger_date >();
+    auto itr = recurrent_transfers_by_date.begin();
+
+    // uint16_t is okay because we stop at 1000, if the limit changes, make sure to check if it fits in the integer.
+    uint16_t processed_transfers = 0;
+
+    while( itr != recurrent_transfers_by_date.end() && itr->trigger_date <= now )
+    {
+      // Since this is an intensive process, we don't want to process too many recurrent transfers in a single block
+      if (processed_transfers >= HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK) {
+        ilog("Reached max processed recurrent transfers this block");
+        return;
+      }
+
+      auto& current_recurrent_transfer = *itr;
+      ++itr;
+
+      const auto& from_account = get_account( current_recurrent_transfer.from_id );
+      const auto& to_account = get_account( current_recurrent_transfer.to_id );
+      asset available = get_balance( from_account, current_recurrent_transfer.amount.symbol );
+
+      // If we have enough money, we proceed with the transfer
+      if (available >= current_recurrent_transfer.amount) {
+        adjust_balance(from_account, -current_recurrent_transfer.amount);
+        adjust_balance(to_account, current_recurrent_transfer.amount);
+
+        modify( current_recurrent_transfer, [&]( recurrent_transfer_object& rt )
+        {
+          rt.consecutive_failures = 0; // reset the consecutive failures counter
+          rt.trigger_date = now + fc::hours( current_recurrent_transfer.recurrence );
+        });
+
+        push_virtual_operation(fill_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount));
+        processed_transfers++;
+      } else {
+        uint8_t consecutive_failures = current_recurrent_transfer.consecutive_failures + 1;
+
+        if (consecutive_failures < HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES) {
+          modify(current_recurrent_transfer, [&](recurrent_transfer_object &rt) {
+            rt.consecutive_failures = consecutive_failures;
+            rt.trigger_date = now + fc::hours(current_recurrent_transfer.recurrence);
+          });
+          // false means the recurrent transfer was not deleted
+          push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, consecutive_failures, false));
+        } else {
+          // if we had too many consecutive failures, remove the recurrent payment object
+          auto amount = current_recurrent_transfer.amount;
+          remove( current_recurrent_transfer );
+          modify(from_account, [&](account_object& a )
+          {
+            a.open_recurrent_transfers--;
+          });
+          // true means the recurrent transfer was deleted
+          push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, amount, consecutive_failures, true));
+        }
+      }
+    }
+  }
+}
+
+/**
+  *  Iterates over all recurrent transfers and expires them if end_date is before the head block time
+  */
+void database::expire_recurrent_transfers()
+{
+  if( has_hardfork( HIVE_HARDFORK_1_25 ) ) {
+    auto now = head_block_time();
+    const auto& recurrent_transfers_by_end_date = get_index< recurrent_transfer_index >().indices().get< by_end_date >();
+    auto itr = recurrent_transfers_by_end_date.begin();
+
+    while( itr != recurrent_transfers_by_end_date.end() && itr->end_date <= now )
+    {
+      const auto& old_recurrent_transfer = *itr;
+      ++itr;
+
+      modify(get_account( old_recurrent_transfer.from_id ), [&](account_object& a )
+      {
+        a.open_recurrent_transfers--;
+      });
+
+      remove( old_recurrent_transfer );
+    }
+  }
+}
+
+/**
   * This method updates total_reward_shares2 on DGPO, and children_rshares2 on comments, when a comment's rshares2 changes
   * from old_rshares2 to new_rshares2.  Maintaining invariants that children_rshares2 is the sum of all descendants' rshares2,
   * and dgpo.total_reward_shares2 is the total number of rshares2 outstanding.
@@ -3529,6 +3622,7 @@ void database::initialize_evaluators()
   _my->_evaluator_registry.register_evaluator< update_proposal_evaluator                >();
   _my->_evaluator_registry.register_evaluator< update_proposal_votes_evaluator          >();
   _my->_evaluator_registry.register_evaluator< remove_proposal_evaluator                >();
+  _my->_evaluator_registry.register_evaluator< recurrent_transfer_evaluator             >();
 
 
 #ifdef IS_TEST_NET
@@ -4063,6 +4157,10 @@ void database::_apply_block( const signed_block& next_block )
   process_proposals( note ); //new HBD converted here does not count towards limit
   process_delayed_voting( note );
   remove_expired_governance_votes();
+
+  // Make sure we always expire the recurrent transfers before processing them
+  expire_recurrent_transfers();
+  process_recurrent_transfers();
 
   generate_required_actions();
   generate_optional_actions();

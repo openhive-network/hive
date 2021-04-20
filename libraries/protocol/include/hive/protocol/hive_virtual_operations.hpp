@@ -375,6 +375,29 @@ namespace hive { namespace protocol {
     string message;
   };
 
+
+ struct fill_recurrent_transfer_operation : public virtual_operation
+ {
+     fill_recurrent_transfer_operation() {}
+     fill_recurrent_transfer_operation(account_name_type f, account_name_type t, const asset& a) : from(f), to( t ), amount( a ) {}
+
+     account_name_type from;
+     account_name_type to;
+     asset amount;
+ };
+
+ struct failed_recurrent_transfer_operation : public virtual_operation
+ {
+   failed_recurrent_transfer_operation() {}
+   failed_recurrent_transfer_operation(const account_name_type f,const account_name_type t, const asset& a, uint8_t cf, bool d) : from(f), to( t ), amount( a ), consecutive_failures( cf ), deleted( d ) {}
+
+     account_name_type from;
+     account_name_type to;
+     asset amount;
+     uint8_t consecutive_failures;
+     bool deleted; // Indicates that the recurrent transfer was deleted due to too many consecutive failures
+ };
+
 } } //hive::protocol
 
 FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payout_must_be_claimed) )
@@ -409,3 +432,5 @@ FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
 FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
 FC_REFLECT( hive::protocol::system_warning_operation, (message) )
+FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount) )
+FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(consecutive_failures)(deleted) )

@@ -1092,7 +1092,33 @@ namespace hive { namespace protocol {
     void get_required_active_authorities( flat_set< account_name_type >& a ) const { a.insert( delegator ); }
     void validate() const;
   };
-} } // hive::protocol
+
+  /**
+    * @ingroup operations
+    *
+    * @brief Transfers any liquid asset (nonvesting) every fixed amount of time from one account to another.
+    */
+  struct recurrent_transfer_operation : public base_operation
+  {
+    account_name_type from;
+    /// Account to transfer asset to
+    account_name_type to;
+    /// The amount of asset to transfer from @ref from to @ref to
+    asset             amount;
+    /// The memo is plain-text, any encryption on the memo is up to a higher level protocol.
+    string            memo;
+    /// How often will the payment be triggered, unit: hours
+    uint16_t          recurrence;
+
+    time_point_sec    end_date;
+    /// Extensions. Not currently used.
+    extensions_type   extensions;
+
+    void              validate()const;
+    void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(from); }
+  };
+
+  } } // hive::protocol
 
 
 FC_REFLECT( hive::protocol::transfer_to_savings_operation, (from)(to)(amount)(memo) )
@@ -1201,8 +1227,9 @@ FC_REFLECT( hive::protocol::request_account_recovery_operation, (recovery_accoun
 FC_REFLECT( hive::protocol::recover_account_operation, (account_to_recover)(new_owner_authority)(recent_owner_authority)(extensions) );
 FC_REFLECT( hive::protocol::change_recovery_account_operation, (account_to_recover)(new_recovery_account)(extensions) );
 FC_REFLECT( hive::protocol::decline_voting_rights_operation, (account)(decline) );
-FC_REFLECT( hive::protocol::claim_reward_balance_operation, (account)(reward_hive)(reward_hbd)(reward_vests) )
+FC_REFLECT( hive::protocol::claim_reward_balance_operation, (account)(reward_hive)(reward_hbd)(reward_vests) );
 #ifdef HIVE_ENABLE_SMT
 FC_REFLECT( hive::protocol::claim_reward_balance2_operation, (account)(extensions)(reward_tokens) )
 #endif
 FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
+FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence) );

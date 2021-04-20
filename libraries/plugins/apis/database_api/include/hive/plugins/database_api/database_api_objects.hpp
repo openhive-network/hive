@@ -522,6 +522,7 @@ struct api_account_object
     last_vote_time( a.last_vote_time ),
     post_bandwidth( a.post_bandwidth ),
     pending_claimed_accounts( a.pending_claimed_accounts ),
+    open_recurrent_transfers( a.open_recurrent_transfers ),
     governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
   {
     if( a.has_proxy() )
@@ -634,6 +635,7 @@ struct api_account_object
   uint32_t          post_bandwidth = 0;
 
   share_type        pending_claimed_accounts = 0;
+  uint16_t          open_recurrent_transfers = 0;
 
   bool              is_smt = false;
 
@@ -1001,6 +1003,39 @@ struct api_proposal_vote_object
   api_proposal_object     proposal;
 };
 
+
+struct api_recurrent_transfer_object
+{
+  api_recurrent_transfer_object() = default;
+
+  api_recurrent_transfer_object( const recurrent_transfer_object& o, const database& db, account_name_type from_name, account_name_type to_name ):
+    id( o.get_id() ),
+    trigger_date( o.trigger_date ),
+    end_date( o.end_date ),
+    from_id( o.from_id ),
+    from( from_name ),
+    to_id( o.to_id ),
+    to( to_name ),
+    amount( o.amount ),
+    memo( o.memo ),
+    recurrence( o.recurrence ),
+    consecutive_failures( o.consecutive_failures )
+    {}
+
+    recurrent_transfer_id_type id;
+    time_point_sec    trigger_date;
+    time_point_sec    end_date;
+    account_id_type   from_id;
+    account_name_type from;
+    account_id_type   to_id;
+    account_name_type to;
+    asset             amount;
+    string            memo;
+    uint16_t          recurrence;
+    uint8_t          consecutive_failures;
+};
+
+
 struct order
 {
   price                order_price;
@@ -1139,7 +1174,7 @@ FC_REFLECT( hive::plugins::database_api::api_account_object,
           (posting_rewards)
           (proxied_vsf_votes)(witnesses_voted_for)
           (last_post)(last_root_post)(last_post_edit)(last_vote_time)
-          (post_bandwidth)(pending_claimed_accounts)
+          (post_bandwidth)(pending_claimed_accounts)(open_recurrent_transfers)
           (is_smt)
           (delayed_votes)
           (governance_vote_expiration_ts)
@@ -1278,3 +1313,4 @@ FC_REFLECT( hive::plugins::database_api::api_proposal_vote_object,
 FC_REFLECT( hive::plugins::database_api::order, (order_price)(real_price)(hive)(hbd)(created) );
 
 FC_REFLECT( hive::plugins::database_api::order_book, (asks)(bids) );
+FC_REFLECT(hive::plugins::database_api::api_recurrent_transfer_object, (id)(trigger_date)(from_id)(from)(to_id)(to)(amount)(memo)(recurrence)(consecutive_failures)(end_date))

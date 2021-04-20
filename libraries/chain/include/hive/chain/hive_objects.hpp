@@ -333,6 +333,36 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(reward_fund_object);
   };
 
+  class recurrent_transfer_object : public object< recurrent_transfer_object_type, recurrent_transfer_object >
+  {
+    CHAINBASE_OBJECT( recurrent_transfer_object );
+    public:
+      template< typename Allocator >
+      recurrent_transfer_object(allocator< Allocator > a, uint64_t _id,
+      const time_point_sec& _trigger_date, const time_point_sec& _end_date, const account_id_type& _from_id,
+      const account_id_type& _to_id,  const asset& _amount, const string& _memo, const uint16_t& _recurrence,
+      const uint8_t& _consecutive_failures = 0)
+      : id( _id ), trigger_date( _trigger_date ), end_date( _end_date ), from_id( _from_id ), to_id( _to_id ),
+      amount( _amount ), memo(_memo), recurrence( _recurrence), consecutive_failures(_consecutive_failures)
+      {
+        FC_ASSERT( _recurrence != 0 );
+      }
+
+      time_point_sec    trigger_date;
+      time_point_sec    end_date;
+      account_id_type   from_id;
+      account_id_type   to_id;
+      asset             amount;
+      /// The memo is plain-text, any encryption on the memo is up to a higher level protocol.
+      string            memo;
+      /// How often will the payment be triggered, unit: hours
+      uint16_t          recurrence = 0;
+      // How many payment have failed in a row, at HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES the object is deleted
+      uint8_t          consecutive_failures = 0;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(recurrent_transfer_object);
+  };
+
   struct by_price;
   struct by_expiration;
   struct by_account;
@@ -553,6 +583,44 @@ namespace hive { namespace chain {
     allocator< reward_fund_object >
   > reward_fund_index;
 
+  struct by_from_to_id;
+  struct by_from_id;
+  struct by_trigger_date;
+  struct by_end_date;
+  typedef multi_index_container<
+    recurrent_transfer_object,
+    indexed_by<
+      ordered_unique< tag< by_id >,
+        const_mem_fun< recurrent_transfer_object, recurrent_transfer_object::id_type, &recurrent_transfer_object::get_id > >,
+      ordered_unique< tag< by_trigger_date >,
+        composite_key< recurrent_transfer_object,
+          member< recurrent_transfer_object, time_point_sec, &recurrent_transfer_object::trigger_date >,
+          const_mem_fun< recurrent_transfer_object, recurrent_transfer_object::id_type, &recurrent_transfer_object::get_id >
+        >
+      >,
+      ordered_unique< tag< by_from_id >,
+        composite_key< recurrent_transfer_object,
+          member< recurrent_transfer_object, account_id_type, &recurrent_transfer_object::from_id >,
+          const_mem_fun< recurrent_transfer_object, recurrent_transfer_object::id_type, &recurrent_transfer_object::get_id >
+        >
+      >,
+      ordered_unique< tag< by_end_date >,
+        composite_key< recurrent_transfer_object,
+          member< recurrent_transfer_object, time_point_sec, &recurrent_transfer_object::end_date >,
+          const_mem_fun< recurrent_transfer_object, recurrent_transfer_object::id_type, &recurrent_transfer_object::get_id >
+        >
+      >,
+      ordered_unique< tag< by_from_to_id >,
+        composite_key< recurrent_transfer_object,
+          member< recurrent_transfer_object, account_id_type, &recurrent_transfer_object::from_id >,
+          member< recurrent_transfer_object, account_id_type, &recurrent_transfer_object::to_id >
+        >,
+        composite_key_compare< std::less< account_id_type >, std::less< account_id_type > >
+      >
+    >,
+    allocator< recurrent_transfer_object >
+  > recurrent_transfer_index;
+
 } } // hive::chain
 
 #include <hive/chain/comment_object.hpp>
@@ -610,3 +678,6 @@ FC_REFLECT( hive::chain::reward_fund_object,
         (curation_reward_curve)
       )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::reward_fund_object, hive::chain::reward_fund_index )
+
+FC_REFLECT(hive::chain::recurrent_transfer_object, (id)(trigger_date)(from_id)(to_id)(amount)(memo)(recurrence)(consecutive_failures)(end_date))
+CHAINBASE_SET_INDEX_TYPE( hive::chain::recurrent_transfer_object, hive::chain::recurrent_transfer_index )
