@@ -17,6 +17,7 @@ def register_witness(wallet, _account_name, _witness_url, _block_signing_public_
         {"account_creation_fee": "3.000 TESTS", "maximum_block_size": 65536, "sbd_interest_rate": 0}
     )
 
+
 def self_vote(_witnesses, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
@@ -31,6 +32,7 @@ def self_vote(_witnesses, wallet):
   for future in fs:
     future.result()
 
+
 def prepare_accounts(_accounts, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
@@ -41,6 +43,7 @@ def prepare_accounts(_accounts, wallet):
   res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
   for future in fs:
     future.result()
+
 
 def configure_initial_vesting(_accounts, a, b, _tests, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
@@ -55,6 +58,7 @@ def configure_initial_vesting(_accounts, a, b, _tests, wallet):
   for future in fs:
     future.result()
 
+
 def prepare_witnesses(_witnesses, wallet):
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
   fs = []
@@ -68,10 +72,12 @@ def prepare_witnesses(_witnesses, wallet):
   for future in fs:
     future.result()
 
+
 def list_top_witnesses(node):
     start_object = [200277786075957257, '']
     response = node.api.database.list_witnesses(100, 'by_vote_name', start_object)
     return response["result"]["witnesses"]
+
 
 def print_top_witnesses(witnesses, node):
   witnesses_set = set(witnesses)
@@ -86,6 +92,7 @@ def print_top_witnesses(witnesses, node):
 
     logger.info("Witness # {0:2d}, group: {1}, name: `{2}', votes: {3}".format(position, group, w["owner"], w["votes"]))
     position = position + 1
+
 
 def get_producer_reward_operations(ops):
     result = []
@@ -196,7 +203,6 @@ if __name__ == "__main__":
         alpha_net.disconnect_from(beta_net)
         print('Disconnected')
 
-
         for i in range(0, 10):
           time.sleep(2)
 
@@ -207,8 +213,6 @@ if __name__ == "__main__":
           info = beta_wallet.api.info()
           last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
           print("beta last_irreversible_block_num: ", last_irreversible_block_num)
-
-
 
         alpha_net.connect_with(beta_net)
         print('Reconnected')
@@ -242,7 +246,6 @@ if __name__ == "__main__":
           last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
           print("beta last_irreversible_block_num: ", last_irreversible_block_num)
 
-
     except Exception as _ex:
         logger.exception(str(_ex))
         error = True
@@ -253,4 +256,3 @@ if __name__ == "__main__":
         else:
             logger.info("TEST `{0}` passed".format(__file__))
             exit(0)
-
