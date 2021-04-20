@@ -121,7 +121,6 @@ if __name__ == "__main__":
         init_node = alpha_net.add_node('InitNode')
         alpha_node0 = alpha_net.add_node('Node0')
         alpha_node1 = alpha_net.add_node('Node1')
-        alpha_node2 = alpha_net.add_node('Node2')
 
         # Create second network
         beta_net = Network('Beta', port_range=range(52000, 53000))
@@ -136,7 +135,7 @@ if __name__ == "__main__":
 
         # Create witnesses
         init_node.set_witness('initminer')
-        alpha_witness_nodes = [alpha_node0, alpha_node1, alpha_node2]
+        alpha_witness_nodes = [alpha_node0, alpha_node1]
         for name in alpha_witness_names:
             node =  random.choice(alpha_witness_nodes)
             node.set_witness(name)
@@ -146,13 +145,10 @@ if __name__ == "__main__":
             node =  random.choice(beta_witness_nodes)
             node.set_witness(name)
 
-        init_node.config.enable_stale_production = True
-        init_node.config.required_participation = 0
-
         for node in alpha_net.nodes + beta_net.nodes:
             # FIXME: This shouldn't be set in all nodes, but let's test it
-            node.config.enable_stale_production = True
-            node.config.required_participation = 0
+            node.config.enable_stale_production = False
+            node.config.required_participation = 33
 
             node.config.shared_file_size = '6G'
 
@@ -161,9 +157,12 @@ if __name__ == "__main__":
             node.config.plugin = plugins
 
             node.config.plugin += [
-                'network_broadcast_api', 'network_node_api', 'account_history_rocksdb', 'account_history',
+                'network_broadcast_api', 'network_node_api', 'account_history', 'account_history_rocksdb',
                 'account_history_api', 'witness'
             ]
+
+        init_node.config.enable_stale_production = True
+        init_node.config.required_participation = 0
 
         plugins = api_node.config.plugin
         plugins.remove('witness')
