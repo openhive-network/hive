@@ -144,10 +144,7 @@ if __name__ == "__main__":
 
             node.config.shared_file_size = '6G'
 
-            plugins = node.config.plugin
-            plugins.remove('witness')
-            node.config.plugin = plugins
-
+            node.config.plugin.remove('witness')
             node.config.plugin += [
                 'network_broadcast_api', 'network_node_api', 'account_history', 'account_history_rocksdb',
                 'account_history_api', 'witness'
@@ -156,9 +153,7 @@ if __name__ == "__main__":
         init_node.config.enable_stale_production = True
         init_node.config.required_participation = 0
 
-        plugins = api_node.config.plugin
-        plugins.remove('witness')
-        api_node.config.plugin = plugins
+        api_node.config.plugin.remove('witness')
 
         # Run
         alpha_net.connect_with(beta_net)
