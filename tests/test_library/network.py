@@ -18,6 +18,9 @@ class Network:
         self.hived_executable_file_path = None
         self.wallet_executable_file_path = None
 
+    def __str__(self):
+        return self.name
+
     def allocate_port(self):
         if self.next_free_port not in self.port_range:
             raise Exception('There is no free ports to use')
