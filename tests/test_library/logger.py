@@ -35,5 +35,8 @@ def __start_logging():
     file_handler.setLevel(logging.DEBUG)
     logging.root.addHandler(file_handler)
 
+    # Suppress debug logs from selected built-in python libraries
+    logging.getLogger('urllib3.connectionpool').setLevel(logging.INFO)
+
 
 __start_logging()
