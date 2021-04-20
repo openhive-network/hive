@@ -9,6 +9,10 @@ __stream_handler = logging.NullHandler()
 __file_handler = logging.NullHandler()
 
 
+def show_debug_logs_on_stdout():
+    __stream_handler.setLevel(logging.DEBUG)
+
+
 def __remove_old_log_if_exists():
     try:
         __log_path.unlink()
