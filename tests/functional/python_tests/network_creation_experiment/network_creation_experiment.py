@@ -124,7 +124,6 @@ if __name__ == "__main__":
         beta_node0 = beta_net.add_node('Node0')
         beta_node1 = beta_net.add_node('Node1')
         api_node = beta_net.add_node('Node2')
-        api_node.config.plugin.remove('witness')
 
         # Create witnesses
         init_node.set_witness('initminer')
