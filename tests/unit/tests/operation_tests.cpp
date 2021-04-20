@@ -9746,7 +9746,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
     recurrent_transfer_operation op;
     op.memo = "test";
     op.amount = ASSET( "1.000 TESTS" );
-    op.recurrence = 72;
+    op.recurrence = 24;
     op.end_date = db->head_block_time() + fc::days( 60 );
 
     // 1000 recurrent transfers
@@ -9777,21 +9777,55 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
     BOOST_TEST_MESSAGE( "Testing: executing the first 1000 recurrent transfers");
     generate_block();
 
+    const auto recurrent_transfer_no_drift_before = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, actor0_id) )->copy_chain_object();
+
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "750.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "actor0" ).amount.value == ASSET( "4.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "actor123" ).amount.value == ASSET( "4.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "actor250" ).amount.value == ASSET( "0.000 TESTS" ).amount.value );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 251);
+    BOOST_REQUIRE( recurrent_transfer_no_drift_before.trigger_date == db->head_block_time() + fc::days(1));
 
     BOOST_TEST_MESSAGE( "Executing the remaining 4 recurrent payments");
     generate_block();
+
+    const auto recurrent_transfer_drift_before = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, actor250_id) )->copy_chain_object();
 
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "747.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "actor0" ).amount.value == ASSET( "4.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "actor123" ).amount.value == ASSET( "4.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "actor250" ).amount.value == ASSET( "12.000 TESTS" ).amount.value );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 251);
+    BOOST_REQUIRE( recurrent_transfer_drift_before.trigger_date == db->head_block_time() + fc::days(1));
     validate_database();
+
+    auto blocks_until_next_execution = fc::days(1).to_seconds() / HIVE_BLOCK_INTERVAL - 1;
+    ilog("generating ${blocks} blocks", ("blocks", blocks_until_next_execution));
+    generate_blocks( blocks_until_next_execution );
+
+    BOOST_TEST_MESSAGE( "Testing: executing the first 1000 recurrent transfers for the second time");
+
+    const auto recurrent_transfer_no_drift_after = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, actor0_id) )->copy_chain_object();
+
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "497.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "actor0" ).amount.value == ASSET( "8.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "actor123" ).amount.value == ASSET( "8.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "actor250" ).amount.value == ASSET( "12.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 251);
+    BOOST_REQUIRE( recurrent_transfer_no_drift_after.trigger_date ==  recurrent_transfer_no_drift_before.trigger_date + fc::hours(recurrent_transfer_no_drift_before.recurrence));
+
+    BOOST_TEST_MESSAGE( "Executing the remaining 4 recurrent payments for the second time");
+    generate_block();
+
+    const auto recurrent_transfer_drift_after = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, actor250_id) )->copy_chain_object();
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "494.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "actor0" ).amount.value == ASSET( "8.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "actor123" ).amount.value == ASSET( "8.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "actor250" ).amount.value == ASSET( "24.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 251);
+    BOOST_REQUIRE( recurrent_transfer_drift_after.trigger_date ==  recurrent_transfer_drift_before.trigger_date + fc::hours(recurrent_transfer_drift_before.recurrence));
+    validate_database();
+
  }
   FC_LOG_AND_RETHROW()
 }

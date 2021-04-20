@@ -2389,7 +2389,12 @@ void database::process_recurrent_transfers()
         modify( current_recurrent_transfer, [&]( recurrent_transfer_object& rt )
         {
           rt.consecutive_failures = 0; // reset the consecutive failures counter
-          rt.trigger_date = now + fc::hours( current_recurrent_transfer.recurrence );
+          // If this is the first execution trigger_date is HIVE_GENESIS_TIME
+          if (rt.trigger_date == HIVE_GENESIS_TIME) {
+            rt.trigger_date = now + fc::hours(current_recurrent_transfer.recurrence);
+          } else {
+            rt.trigger_date += fc::hours(current_recurrent_transfer.recurrence);
+          }
         });
 
         push_virtual_operation(fill_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount));
@@ -2400,7 +2405,12 @@ void database::process_recurrent_transfers()
         if (consecutive_failures < HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES) {
           modify(current_recurrent_transfer, [&](recurrent_transfer_object &rt) {
             ++rt.consecutive_failures;
-            rt.trigger_date = now + fc::hours(current_recurrent_transfer.recurrence);
+            // If this is the first execution trigger_date is HIVE_GENESIS_TIME
+            if (rt.trigger_date == HIVE_GENESIS_TIME) {
+              rt.trigger_date = now + fc::hours(current_recurrent_transfer.recurrence);
+            } else {
+              rt.trigger_date += fc::hours(current_recurrent_transfer.recurrence);
+            }
           });
           // false means the recurrent transfer was not deleted
           push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, consecutive_failures, false));

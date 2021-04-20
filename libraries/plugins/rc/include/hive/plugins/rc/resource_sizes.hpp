@@ -97,7 +97,7 @@ struct state_object_size_info
   int64_t proposal_vote_object_member_size     = 8   *STATE_BYTES_SCALE;
 
   // recurrent_transfer_operation
-  int64_t recurrent_transfer_object_base_size = 60 * STATE_BYTES_SCALE; // TODO: figure out right value
+  int64_t recurrent_transfer_object_base_size = 80 * STATE_BYTES_SCALE;
 
 };
 
@@ -142,7 +142,7 @@ struct operation_exec_info
   int64_t withdraw_vesting_operation_exec_time                =  10400;
   int64_t witness_set_properties_operation_exec_time          =   9500;
   int64_t witness_update_operation_exec_time                  =   9500;
-  int64_t recurrent_transfer_operation_exec_time              =  31700;
+  int64_t recurrent_transfer_operation_exec_time              = 228200;
 
 #ifdef HIVE_ENABLE_SMT
   int64_t claim_reward_balance2_operation_exec_time           = 0;
