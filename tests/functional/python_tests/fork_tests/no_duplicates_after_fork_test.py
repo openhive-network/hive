@@ -1,6 +1,5 @@
 from test_library import Account, KeyGenerator, logger, Network
 
-
 import os
 import time
 import concurrent.futures
@@ -19,58 +18,58 @@ def register_witness(wallet, _account_name, _witness_url, _block_signing_public_
 
 
 def self_vote(_witnesses, wallet):
-  executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
-  fs = []
-  for w in _witnesses:
-    if(isinstance(w, str)):
-      account_name = w
-    else:
-      account_name = w["account_name"]
-    future = executor.submit(wallet.api.vote_for_witness, account_name, account_name, 1)
-    fs.append(future)
-  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
-  for future in fs:
-    future.result()
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
+    fs = []
+    for w in _witnesses:
+        if (isinstance(w, str)):
+            account_name = w
+        else:
+            account_name = w["account_name"]
+        future = executor.submit(wallet.api.vote_for_witness, account_name, account_name, 1)
+        fs.append(future)
+    res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+    for future in fs:
+        future.result()
 
 
 def prepare_accounts(_accounts, wallet):
-  executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
-  fs = []
-  logger.info("Attempting to create {0} accounts".format(len(_accounts)))
-  for account in _accounts:
-    future = executor.submit(wallet.create_account, account)
-    fs.append(future)
-  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
-  for future in fs:
-    future.result()
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
+    fs = []
+    logger.info("Attempting to create {0} accounts".format(len(_accounts)))
+    for account in _accounts:
+        future = executor.submit(wallet.create_account, account)
+        fs.append(future)
+    res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+    for future in fs:
+        future.result()
 
 
 def configure_initial_vesting(_accounts, a, b, _tests, wallet):
-  executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
-  fs = []
-  logger.info("Configuring initial vesting for {0} of witnesses".format(str(len(_accounts))))
-  for account_name in _accounts:
-    value = random.randint(a, b)
-    amount = str(value) + ".000 " + _tests
-    future = executor.submit(wallet.api.transfer_to_vesting, "initminer", account_name, amount)
-    fs.append(future)
-  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
-  for future in fs:
-    future.result()
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
+    fs = []
+    logger.info("Configuring initial vesting for {0} of witnesses".format(str(len(_accounts))))
+    for account_name in _accounts:
+        value = random.randint(a, b)
+        amount = str(value) + ".000 " + _tests
+        future = executor.submit(wallet.api.transfer_to_vesting, "initminer", account_name, amount)
+        fs.append(future)
+    res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+    for future in fs:
+        future.result()
 
 
 def prepare_witnesses(_witnesses, wallet):
-  executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
-  fs = []
-  logger.info("Attempting to prepare {0} of witnesses".format(str(len(_witnesses))))
-  for account_name in _witnesses:
-    witness = Account(account_name)
-    pub_key = witness.public_key
-    future = executor.submit(register_witness, wallet, account_name, "https://" + account_name + ".net", pub_key)
-    fs.append(future)
-  res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
-  for future in fs:
-    future.result()
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
+    fs = []
+    logger.info("Attempting to prepare {0} of witnesses".format(str(len(_witnesses))))
+    for account_name in _witnesses:
+        witness = Account(account_name)
+        pub_key = witness.public_key
+        future = executor.submit(register_witness, wallet, account_name, "https://" + account_name + ".net", pub_key)
+        fs.append(future)
+    res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
+    for future in fs:
+        future.result()
 
 
 def list_top_witnesses(node):
@@ -80,18 +79,19 @@ def list_top_witnesses(node):
 
 
 def print_top_witnesses(witnesses, node):
-  witnesses_set = set(witnesses)
+    witnesses_set = set(witnesses)
 
-  top_witnesses = list_top_witnesses(node)
-  position = 1
-  for w in top_witnesses:
-    owner = w["owner"]
-    group = "U"
-    if owner in witnesses_set:
-      group = "W"
+    top_witnesses = list_top_witnesses(node)
+    position = 1
+    for w in top_witnesses:
+        owner = w["owner"]
+        group = "U"
+        if owner in witnesses_set:
+            group = "W"
 
-    logger.info("Witness # {0:2d}, group: {1}, name: `{2}', votes: {3}".format(position, group, w["owner"], w["votes"]))
-    position = position + 1
+        logger.info(
+            "Witness # {0:2d}, group: {1}, name: `{2}', votes: {3}".format(position, group, w["owner"], w["votes"]))
+        position = position + 1
 
 
 def get_producer_reward_operations(ops):
@@ -138,12 +138,12 @@ if __name__ == "__main__":
         init_node.set_witness('initminer')
         alpha_witness_nodes = [alpha_node0, alpha_node1]
         for name in alpha_witness_names:
-            node =  random.choice(alpha_witness_nodes)
+            node = random.choice(alpha_witness_nodes)
             node.set_witness(name)
 
         beta_witness_nodes = [beta_node0, beta_node1]
         for name in beta_witness_names:
-            node =  random.choice(beta_witness_nodes)
+            node = random.choice(beta_witness_nodes)
             node.set_witness(name)
 
         for node in alpha_net.nodes + beta_net.nodes:
@@ -212,47 +212,47 @@ if __name__ == "__main__":
         print('Disconnected')
 
         for i in range(0, 10):
-          time.sleep(2)
+            time.sleep(2)
 
-          info = wallet.api.info()
-          last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
-          print("alpha last_irreversible_block_num: ", last_irreversible_block_num)
+            info = wallet.api.info()
+            last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
+            print("alpha last_irreversible_block_num: ", last_irreversible_block_num)
 
-          info = beta_wallet.api.info()
-          last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
-          print("beta last_irreversible_block_num: ", last_irreversible_block_num)
+            info = beta_wallet.api.info()
+            last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
+            print("beta last_irreversible_block_num: ", last_irreversible_block_num)
 
         alpha_net.connect_with(beta_net)
         print('Reconnected')
 
-        while(True):
-          time.sleep(2)
-          method = 'account_history_api.get_ops_in_block'
-          alpha_duplicates = []
-          beta_duplicates = []
-          for i in range(0, 300):
-            response = alpha_node0.api.account_history.get_ops_in_block(i, True)
-            ops = response["result"]["ops"]
-            reward_operations = get_producer_reward_operations(ops)
-            size = len(reward_operations)
-            if size > 1:
-              alpha_duplicates.append(i)
-          for i in range(0, 300):
-            response = beta_node0.api.account_history.get_ops_in_block(i, True)
-            ops = response["result"]["ops"]
-            reward_operations = get_producer_reward_operations(ops)
-            size = len(reward_operations)
-            if size > 1:
-              beta_duplicates.append(i)
+        while True:
+            time.sleep(2)
+            method = 'account_history_api.get_ops_in_block'
+            alpha_duplicates = []
+            beta_duplicates = []
+            for i in range(0, 300):
+                response = alpha_node0.api.account_history.get_ops_in_block(i, True)
+                ops = response["result"]["ops"]
+                reward_operations = get_producer_reward_operations(ops)
+                size = len(reward_operations)
+                if size > 1:
+                    alpha_duplicates.append(i)
+            for i in range(0, 300):
+                response = beta_node0.api.account_history.get_ops_in_block(i, True)
+                ops = response["result"]["ops"]
+                reward_operations = get_producer_reward_operations(ops)
+                size = len(reward_operations)
+                if size > 1:
+                    beta_duplicates.append(i)
 
-          print("duplicates in alpha network: ", alpha_duplicates)
-          info = wallet.api.info()
-          last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
-          print("alpha last_irreversible_block_num: ", last_irreversible_block_num)
-          print("duplicates in beta network: ", beta_duplicates)
-          info = beta_wallet.api.info()
-          last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
-          print("beta last_irreversible_block_num: ", last_irreversible_block_num)
+            print("duplicates in alpha network: ", alpha_duplicates)
+            info = wallet.api.info()
+            last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
+            print("alpha last_irreversible_block_num: ", last_irreversible_block_num)
+            print("duplicates in beta network: ", beta_duplicates)
+            info = beta_wallet.api.info()
+            last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
+            print("beta last_irreversible_block_num: ", last_irreversible_block_num)
 
     except Exception as _ex:
         logger.exception(str(_ex))
