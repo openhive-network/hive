@@ -97,9 +97,11 @@ struct remove_proposal_operation : public base_operation
 struct proposal_pay_operation : public virtual_operation
 {
   proposal_pay_operation() = default;
-  proposal_pay_operation( const account_name_type _receiver, const account_name_type _treasury, const asset& _payment,
+  proposal_pay_operation( uint32_t proposal_id, const account_name_type _receiver, const account_name_type _treasury, const asset& _payment,
     transaction_id_type _trx_id, uint16_t _op_in_trx )
     : receiver( _receiver ), payer( _treasury ), payment( _payment ), trx_id( _trx_id ), op_in_trx( _op_in_trx ) {}
+
+  uint32_t proposal_id;
 
   /// Name of the account which is paid for
   account_name_type receiver;
@@ -162,6 +164,6 @@ FC_REFLECT( hive::protocol::create_proposal_operation, (creator)(receiver)(start
 FC_REFLECT( hive::protocol::update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink)(extensions))
 FC_REFLECT( hive::protocol::update_proposal_votes_operation, (voter)(proposal_ids)(approve)(extensions) )
 FC_REFLECT( hive::protocol::remove_proposal_operation, (proposal_owner)(proposal_ids)(extensions) )
-FC_REFLECT(hive::protocol::proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx))
+FC_REFLECT(hive::protocol::proposal_pay_operation, (proposal_id)(receiver)(payer)(payment)(trx_id)(op_in_trx))
 FC_REFLECT( hive::protocol::update_proposal_end_date, (end_date) )
 

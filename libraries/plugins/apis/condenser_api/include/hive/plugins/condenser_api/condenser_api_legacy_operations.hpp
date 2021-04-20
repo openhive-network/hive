@@ -1238,6 +1238,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   {
     legacy_proposal_pay_operation() {}
     legacy_proposal_pay_operation( const proposal_pay_operation& op ) :
+      proposal_id( op.proposal_id ),
       receiver( op.receiver ),
       payer( op.payer ),
       payment( legacy_asset::from_asset( op.payment ) ),
@@ -1248,6 +1249,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     operator proposal_pay_operation()const
     {
       proposal_pay_operation op;
+      op.proposal_id = proposal_id;
       op.receiver = receiver;
       op.payer = payer;
       op.payment = payment;
@@ -1256,6 +1258,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       return op;
     }
 
+    uint32_t             proposal_id;
     account_name_type    receiver;
     account_name_type    payer;
     legacy_asset         payment;
@@ -2144,7 +2147,7 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_producer_reward_operation, (pro
 FC_REFLECT( hive::plugins::condenser_api::legacy_claim_account_operation, (creator)(fee)(extensions) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_pow_reward_operation, (worker)(reward) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_pay_operation, (receiver)(payer)(payment)(trx_id)(op_in_trx) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_pay_operation, (proposal_id)(receiver)(payer)(payment)(trx_id)(op_in_trx) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_sps_fund_operation, (fund_account)(additional_funds) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink)(extensions) )
