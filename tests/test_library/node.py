@@ -109,6 +109,7 @@ class Node:
 
     def wait_for_synchronization(self):
         while not self.is_synchronized():
+            self.logger.debug('Waiting for synchronization...')
             time.sleep(1)
 
     def is_synchronized(self):
