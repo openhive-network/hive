@@ -374,7 +374,14 @@ target_include_directories(fc
 IF(NOT WIN32)
   set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
 ENDIF()
-target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} )
+
+if( HIVE_STATIC_BUILD )
+   target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES}
+      ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} "-Wl,-Bstatic" ${readline_libraries} "-ltinfo" "-Wl,-Bdynamic" ${ECC_LIB} )
+else( HIVE_STATIC_BUILD )
+  target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} )
+endif( HIVE_STATIC_BUILD )
+
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
