@@ -180,11 +180,12 @@ class Node:
             self.config = NodeConfig()
             self.config.load_from_file(self.directory / 'config.ini')
 
-        print(f'[{self}] Run with pid {self.process.pid}, ', end='')
+        message = f'Run with pid {self.process.pid}, '
         if self.config.webserver_http_endpoint:
-            print(f'with http server {self.config.webserver_http_endpoint}')
+            message += f'with http server {self.config.webserver_http_endpoint}'
         else:
-            print('without http server')
+            message += 'without http server'
+        self.logger.info(message)
 
     def close(self):
         self.finalizer()
