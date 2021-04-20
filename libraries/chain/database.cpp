@@ -5156,7 +5156,8 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
         }
         break;
       case HIVE_ASSET_NUM_HBD:
-        if( a.hbd_seconds_last_update != head_block_time() )
+        /// Starting from HF 25 HBD interest will be paid only from saving balance.
+        if( has_hardfork(HIVE_HARDFORK_1_25) == false && a.hbd_seconds_last_update != head_block_time() )
         {
           acnt.hbd_seconds += fc::uint128_t(a.get_hbd_balance().amount.value) * (head_block_time() - a.hbd_seconds_last_update).to_seconds();
           acnt.hbd_seconds_last_update = head_block_time();

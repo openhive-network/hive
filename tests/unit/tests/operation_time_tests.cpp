@@ -1769,12 +1769,21 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     db->push_transaction( tx, 0 );
 
     auto& gpo = db->get_dynamic_global_properties();
-    auto interest_op = get_last_operations( 1 )[0].get< interest_operation >();
+    BOOST_REQUIRE(gpo.get_hbd_interest_rate() > 0);
 
-    BOOST_REQUIRE( gpo.get_hbd_interest_rate() > 0 );
-    BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
-    BOOST_REQUIRE( interest_op.owner == "alice" );
-    BOOST_REQUIRE( interest_op.interest.amount.value == get_hbd_balance( "alice" ).amount.value - ( alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value ) );
+    if(db->has_hardfork(HIVE_HARDFORK_1_25))
+    {
+      /// After HF 25 only HBD held on savings should get interest
+      BOOST_REQUIRE(get_hbd_balance("alice").amount.value == alice_hbd.amount.value - ASSET("1.000 TBD").amount.value);
+    }
+    else
+    {
+      auto interest_op = get_last_operations( 1 )[0].get< interest_operation >();
+      BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
+      BOOST_REQUIRE( interest_op.owner == "alice" );
+      BOOST_REQUIRE( interest_op.interest.amount.value == get_hbd_balance( "alice" ).amount.value - ( alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value ) );
+    }
+
     validate_database();
 
     BOOST_TEST_MESSAGE( "Testing interest under interest period" );
@@ -1809,7 +1818,16 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() + alice_coindays ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
+    if(db->has_hardfork(HIVE_HARDFORK_1_25))
+    {
+      /// After HF 25 only HBD held on savings should get interest
+      BOOST_REQUIRE(get_hbd_balance("alice").amount.value == alice_hbd.amount.value - ASSET("1.000 TBD").amount.value);
+    }
+    else
+    {
+      BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() + alice_coindays ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
+    }
+
     validate_database();
   }
   FC_LOG_AND_RETHROW();
