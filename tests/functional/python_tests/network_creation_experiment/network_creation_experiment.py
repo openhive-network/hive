@@ -194,12 +194,6 @@ if __name__ == "__main__":
 
         time.sleep(60)
 
-        print(60 * '=')
-        print(' Network successfully prepared')
-        print(60 * '=')
-
-        print("Press enter to disconnect")
-        input()
         alpha_net.disconnect_from(beta_net)
         print('Disconnected')
 
