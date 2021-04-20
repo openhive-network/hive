@@ -95,6 +95,22 @@ class Node:
                         return
             time.sleep(1)
 
+    def wait_for_block_with_number(self, number):
+        last_printed = None
+
+        last = self.__get_last_block_number()
+        while last < number:
+            if last_printed != last:
+                self.logger.debug(f'Waiting for block with number {number} (last: {last})')
+                last_printed = last
+
+            time.sleep(2)
+            last = self.__get_last_block_number()
+
+    def __get_last_block_number(self):
+        response = self.api.database.get_dynamic_global_properties()
+        return response['result']['head_block_number']
+
     def wait_for_synchronization(self):
         while not self.is_synchronized():
             time.sleep(1)
