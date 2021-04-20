@@ -144,10 +144,9 @@ if __name__ == "__main__":
 
             node.config.shared_file_size = '6G'
 
-            node.config.plugin.remove('witness')
             node.config.plugin += [
                 'network_broadcast_api', 'network_node_api', 'account_history', 'account_history_rocksdb',
-                'account_history_api', 'witness'
+                'account_history_api'
             ]
 
         init_node.config.enable_stale_production = True
