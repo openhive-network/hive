@@ -966,7 +966,7 @@ class wallet_api
       bool broadcast = false );
 
     /**
-      *  This method will convert HIVE to HBD at the current_median_history price plus HIVE_COLLATERALIZED_CONVERSION_FEE (5%)
+      *  This method will convert HIVE to HBD at the market_median_history price plus HIVE_COLLATERALIZED_CONVERSION_FEE (5%)
       *  after HIVE_COLLATERALIZED_CONVERSION_DELAY (3.5 days) from the time it is executed. The caller gets HBD immediately
       *  calculated at current_min_history corrected with fee (as if conversion took place immediately, but only HIVE amount
       *  sliced by HIVE_CONVERSION_COLLATERAL_RATIO is calculated - that is, half the amount) and remainder from collateral

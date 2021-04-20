@@ -711,6 +711,7 @@ struct api_feed_history_object
   api_feed_history_object( const feed_history_object& f ) :
     id( f.get_id() ),
     current_median_history( f.current_median_history ),
+    market_median_history( f.market_median_history ),
     current_min_history( f.current_min_history ),
     current_max_history( f.current_max_history ),
     price_history( f.price_history.begin(), f.price_history.end() )
@@ -720,6 +721,7 @@ struct api_feed_history_object
 
   feed_history_id_type id;
   price                current_median_history;
+  price                market_median_history;
   price                current_min_history;
   price                current_max_history;
   deque< price >       price_history;
@@ -1172,6 +1174,7 @@ FC_REFLECT( hive::plugins::database_api::api_savings_withdraw_object,
 FC_REFLECT( hive::plugins::database_api::api_feed_history_object,
           (id)
           (current_median_history)
+          (market_median_history)
           (current_min_history)
           (current_max_history)
           (price_history)

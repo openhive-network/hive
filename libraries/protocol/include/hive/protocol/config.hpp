@@ -286,8 +286,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_CONVERSION_DELAY_PRE_HF_16       (fc::days(7))
 #define HIVE_CONVERSION_DELAY                 (fc::hours(HIVE_FEED_HISTORY_WINDOW)) //3.5 day conversion
 #define HIVE_COLLATERALIZED_CONVERSION_DELAY  HIVE_CONVERSION_DELAY
-#define HIVE_CONVERSION_COLLATERAL_RATIO      2 * HIVE_100_PERCENT //has to be at least 100%
-#define HIVE_COLLATERALIZED_CONVERSION_FEE    5 * HIVE_1_PERCENT //has to be positive
+#define HIVE_CONVERSION_COLLATERAL_RATIO      (2 * HIVE_100_PERCENT) //has to be at least 100%
+#define HIVE_COLLATERALIZED_CONVERSION_FEE    (5 * HIVE_1_PERCENT) //has to be positive
 
 #define HIVE_MIN_UNDO_HISTORY                 10
 #define HIVE_MAX_UNDO_HISTORY                 10000

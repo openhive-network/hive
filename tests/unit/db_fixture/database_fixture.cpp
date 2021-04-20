@@ -421,7 +421,8 @@ void database_fixture::fund(
 
 void database_fixture::fund(
   const string& account_name,
-  const asset& amount
+  const asset& amount,
+  bool update_print_rate
   )
 {
   try
@@ -434,6 +435,19 @@ void database_fixture::fund(
         db.adjust_supply(amount);
         // Note that SMT have no equivalent of HBD, hence no virtual supply, hence no need to update it.
         return;
+      }
+
+      const auto& median_feed = db.get_feed_history();
+      if( amount.symbol == HBD_SYMBOL )
+      {
+        if( median_feed.current_median_history.is_null() )
+          db.modify( median_feed, [&]( feed_history_object& f )
+        {
+          f.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
+          f.market_median_history = f.current_median_history;
+          f.current_min_history = f.current_median_history;
+          f.current_max_history = f.current_median_history;
+        } );
       }
 
       db.modify( db.get_account( account_name ), [&]( account_object& a )
@@ -452,22 +466,14 @@ void database_fixture::fund(
         if( amount.symbol == HIVE_SYMBOL )
           gpo.current_supply += amount;
         else if( amount.symbol == HBD_SYMBOL )
+        {
           gpo.current_hbd_supply += amount;
+          gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * median_feed.current_median_history;
+        }
       });
 
-      if( amount.symbol == HBD_SYMBOL )
-      {
-        const auto& median_feed = db.get_feed_history();
-        if( median_feed.current_median_history.is_null() )
-          db.modify( median_feed, [&]( feed_history_object& f )
-          {
-            f.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
-            f.current_min_history = f.current_median_history;
-            f.current_max_history = f.current_median_history;
-          });
-      }
-
-      db.update_virtual_supply();
+      if( update_print_rate )
+        db.update_virtual_supply();
     }, default_skip );
   }
   FC_CAPTURE_AND_RETHROW( (account_name)(amount) )
@@ -607,7 +613,7 @@ void database_fixture::proxy( const string& account, const string& proxy )
   } FC_CAPTURE_AND_RETHROW( (account)(proxy) )
 }
 
-void database_fixture::set_price_feed( const price& new_price )
+void database_fixture::set_price_feed( const price& new_price, bool stop_at_update_block )
 {
   for( size_t i = 1; i < 8; i++ )
   {
@@ -622,7 +628,10 @@ void database_fixture::set_price_feed( const price& new_price )
     trx.clear();
   }
 
-  generate_blocks( HIVE_BLOCKS_PER_HOUR );
+  if( stop_at_update_block )
+    generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( db->head_block_num() % HIVE_FEED_INTERVAL_BLOCKS ) );
+  else
+    generate_blocks( HIVE_BLOCKS_PER_HOUR );
 
   BOOST_REQUIRE(
 #ifdef IS_TEST_NET

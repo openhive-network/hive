@@ -3283,8 +3283,12 @@ void database::process_conversions()
     const auto& request_by_date = get_index< collateralized_convert_request_index, by_conversion_date >();
     auto itr = request_by_date.begin();
 
-    //note that we are using median price instead of minimal as it was during immediate part of this conversion
-    price corrected_price = fhistory.current_median_history.get_scaled( HIVE_100_PERCENT + HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
+    //note that we are using market median price instead of minimal as it was during immediate part of this
+    //conversion or current median price as is used in other conversions; the former is by design - we are supposed
+    //to use median price here, minimal during immediate conversion was to prevent gaming, the latter is for rare
+    //case, when this conversion happens when median price does not reflect market conditions when hard limit was
+    //hit - see update_median_feed()
+    price corrected_price = fhistory.market_median_history.get_scaled( HIVE_100_PERCENT + HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
 
     while( itr != request_by_date.end() && itr->get_conversion_date() <= now )
     {
@@ -3704,6 +3708,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
     create< feed_history_object >( [&]( feed_history_object& o )
     {
       o.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
+      o.market_median_history = o.current_median_history;
       o.current_min_history = o.current_median_history;
       o.current_max_history = o.current_median_history;
     });
@@ -4192,6 +4197,7 @@ try {
         std::vector< price > copy( fho.price_history.begin(), fho.price_history.end() );
         std::sort( copy.begin(), copy.end() );
         fho.current_median_history = copy[copy.size()/2];
+        fho.market_median_history = fho.current_median_history;
         fho.current_min_history = copy.front();
         fho.current_max_history = copy.back();
 
@@ -4227,7 +4233,7 @@ try {
 
               fho.current_median_history = min_price;
             }
-            //should we also correct current_min_history?
+            //should we also correct current_min_history? note that we MUST NOT change market_median_history
             if( min_price > fho.current_max_history )
               fho.current_max_history = min_price;
           }
@@ -4767,16 +4773,11 @@ uint16_t database::calculate_HBD_percent()
     virtual_supply = hbd_supply * median_price + dgpo.get_current_supply();
   }
 
+  auto hbd_as_hive = fc::uint128_t( ( hbd_supply * median_price ).amount.value );
+  hbd_as_hive *= HIVE_100_PERCENT;
   if( has_hardfork( HIVE_HARDFORK_0_21 ) )
-  {
-    return uint16_t( ( ( fc::uint128_t( ( hbd_supply * median_price ).amount.value ) * HIVE_100_PERCENT + virtual_supply.amount.value / 2 )
-      / virtual_supply.amount.value ).to_uint64() );
-  }
-  else
-  {
-    return uint16_t( ( ( fc::uint128_t( ( hbd_supply * median_price ).amount.value ) * HIVE_100_PERCENT )
-      / virtual_supply.amount.value ).to_uint64() );
-  }
+    hbd_as_hive += virtual_supply.amount.value / 2; // added rounding
+  return uint16_t( ( hbd_as_hive / virtual_supply.amount.value ).to_uint64() );
 }
 
 void database::update_virtual_supply()

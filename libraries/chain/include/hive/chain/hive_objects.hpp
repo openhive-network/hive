@@ -221,7 +221,8 @@ namespace hive { namespace chain {
     public:
       CHAINBASE_DEFAULT_CONSTRUCTOR( feed_history_object, (price_history) )
 
-      price current_median_history; ///< the current median of the price history, used as the base for convert operations
+      price current_median_history; ///< the current median of the price history, used as the base for most convert operations
+      price market_median_history; ///< same as current_median_history except when the latter is artificially changed upward
       price current_min_history; ///< used as immediate price for collateralized conversion (after fee correction)
       price current_max_history;
 
@@ -562,7 +563,7 @@ FC_REFLECT( hive::chain::limit_order_object,
 CHAINBASE_SET_INDEX_TYPE( hive::chain::limit_order_object, hive::chain::limit_order_index )
 
 FC_REFLECT( hive::chain::feed_history_object,
-          (id)(current_median_history)(current_min_history)(current_max_history)(price_history) )
+          (id)(current_median_history)(market_median_history)(current_min_history)(current_max_history)(price_history) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::feed_history_object, hive::chain::feed_history_index )
 
 FC_REFLECT( hive::chain::convert_request_object,

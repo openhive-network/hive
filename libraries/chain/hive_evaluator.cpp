@@ -2668,6 +2668,11 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
 
   const auto& fhistory = _db.get_feed_history();
   FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot convert HIVE because there is no price feed." );
+  const auto& dgpo = _db.get_dynamic_global_properties();
+  FC_ASSERT( dgpo.hbd_print_rate > 0, "Creation of new HBD blocked at this time due to global limit." );
+    //note that feed and therefore print rate is updated once per hour, so without above check there could be
+    //enough room for new HBD, but there is a chance the official price would still be artificial (artificial
+    //price is not used in this conversion, but users might think it is - better to stop them from making mistake)
 
   //if you change something here take a look at wallet_api::estimate_hive_collateral as well
 
@@ -2680,15 +2685,19 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
 
   //immediately create HBD
   auto converted_amount = for_immediate_conversion * immediate_price_with_fee;
+  FC_ASSERT( converted_amount.amount > 0, "Amount of collateral too low - conversion gives no HBD" );
   _db.adjust_balance( owner, converted_amount );
 
-  const auto& dgpo = _db.get_dynamic_global_properties();
   _db.modify( dgpo, [&]( dynamic_global_property_object& p )
   {
     //HIVE supply (and virtual supply in part related to HIVE) will be corrected after actual conversion
     p.current_hbd_supply += converted_amount;
     p.virtual_supply += converted_amount * fhistory.current_median_history;
   } );
+  //note that we created new HBD out of thin air and we will burn the related HIVE when actual conversion takes
+  //place; there is alternative approach - we could burn all collateral now and print back excess when we are
+  //to return it to the user; the difference slightly changes calculations below, that is, currently we might
+  //allow slightly more HBD to be printed
 
   uint16_t percent_hbd = _db.calculate_HBD_percent();
   FC_ASSERT( percent_hbd <= dgpo.hbd_stop_percent, "Creation of new ${hbd} violates global limit.", ( "hbd", converted_amount ) );

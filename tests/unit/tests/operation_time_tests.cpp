@@ -2848,9 +2848,19 @@ BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
     const auto& gpo = db->get_dynamic_global_properties();
     auto new_exchange_rate = price( gpo.get_current_hbd_supply(), asset( ( HIVE_100_PERCENT ) * gpo.get_current_supply().amount, HIVE_SYMBOL ) );
     set_price_feed( new_exchange_rate );
-    set_price_feed( new_exchange_rate );
+    set_price_feed( new_exchange_rate, true );
 
-    BOOST_REQUIRE( db->get_feed_history().current_median_history > new_exchange_rate && db->get_feed_history().current_median_history < exchange_rate );
+    auto recent_ops = get_last_operations( 2 );
+    auto sys_warn_op = recent_ops.back().get< system_warning_operation >();
+    BOOST_REQUIRE( sys_warn_op.message.compare( 0, 27, "HIVE price corrected upward" ) == 0 );
+
+    const auto& feed = db->get_feed_history();
+    BOOST_REQUIRE( feed.current_median_history > new_exchange_rate && feed.current_median_history < exchange_rate );
+    BOOST_REQUIRE( feed.market_median_history == new_exchange_rate );
+    BOOST_REQUIRE( feed.current_min_history == new_exchange_rate );
+    BOOST_REQUIRE( feed.current_max_history == exchange_rate );
+
+    validate_database();
   }
   FC_LOG_AND_RETHROW()
 }

@@ -471,6 +471,7 @@ struct api_feed_history_object
   api_feed_history_object() {}
   api_feed_history_object( const database_api::api_feed_history_object& f ) :
     current_median_history( f.current_median_history ),
+    market_median_history( f.market_median_history ),
     current_min_history( f.current_min_history ),
     current_max_history( f.current_max_history )
   {
@@ -482,6 +483,7 @@ struct api_feed_history_object
 
   feed_history_id_type   id;
   legacy_price           current_median_history;
+  legacy_price           market_median_history;
   legacy_price           current_min_history;
   legacy_price           current_max_history;
   deque< legacy_price >  price_history;
@@ -1140,6 +1142,7 @@ FC_REFLECT( hive::plugins::condenser_api::api_witness_schedule_object,
 FC_REFLECT( hive::plugins::condenser_api::api_feed_history_object,
           (id)
           (current_median_history)
+          (market_median_history)
           (current_min_history)
           (current_max_history)
           (price_history)

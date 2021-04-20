@@ -266,14 +266,14 @@ struct database_fixture {
   void push_transaction( const operation& op, const fc::ecc::private_key& key );
 
   void fund( const string& account_name, const share_type& amount = 500000 );
-  void fund( const string& account_name, const asset& amount );
+  void fund( const string& account_name, const asset& amount, bool update_print_rate = true );
   void transfer( const string& from, const string& to, const asset& amount );
   void convert( const string& account_name, const asset& amount );
   void vest( const string& from, const string& to, const asset& amount );
   void vest( const string& from, const share_type& amount );
   void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
   void proxy( const string& account, const string& proxy );
-  void set_price_feed( const price& new_price );
+  void set_price_feed( const price& new_price, bool stop_at_update_block = false );
   void set_witness_props( const flat_map< string, vector< char > >& new_props );
   account_id_type get_account_id( const string& account_name )const;
   asset get_balance( const string& account_name )const;
