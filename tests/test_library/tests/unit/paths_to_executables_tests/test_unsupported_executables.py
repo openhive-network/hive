@@ -1,6 +1,6 @@
 import pytest
 
-from fixtures import paths
+from fixtures import empty_paths as paths
 
 
 def test_unsupported_executable(paths):

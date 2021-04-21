@@ -1,4 +1,4 @@
-from fixtures import paths, executables
+from fixtures import empty_paths as paths, executables
 
 
 def test_environment_variables_paths(paths, executables):
