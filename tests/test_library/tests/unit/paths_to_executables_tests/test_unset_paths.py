@@ -1,6 +1,6 @@
 import pytest
 
-from fixtures import paths, executables
+from fixtures import empty_paths as paths, executables
 
 
 def test_missing_paths(paths, executables):
