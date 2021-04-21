@@ -14,6 +14,7 @@ def empty_paths():
     paths = PathsToExecutables()
     paths.parse_command_line_arguments([])
     paths.set_environment_variables({})
+    paths.set_installed_executables({})
     return paths
 
 

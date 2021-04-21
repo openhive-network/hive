@@ -13,6 +13,7 @@ class PathsToExecutables:
         self.paths = {}
         self.command_line_arguments = None
         self.environment_variables = None
+        self.installed_executables = None
         self.supported_executables = [
             self.__ExecutableDetails('hived'),
             self.__ExecutableDetails('cli_wallet'),
@@ -21,6 +22,7 @@ class PathsToExecutables:
 
         self.parse_command_line_arguments()
         self.set_environment_variables()
+        self.set_installed_executables()
 
     def __is_supported(self, executable_name):
         return any([executable_name == executable.name for executable in self.supported_executables])
@@ -37,6 +39,9 @@ class PathsToExecutables:
 
         if executable_name in self.environment_variables and self.environment_variables[executable_name] is not None:
             return self.environment_variables[executable_name]
+
+        if executable_name in self.installed_executables and self.installed_executables[executable_name] is not None:
+            return self.installed_executables[executable_name]
 
         raise Exception(f'Missing path to {executable_name}')
 
@@ -68,3 +73,18 @@ class PathsToExecutables:
                 self.environment_variables[executable.name] = variables[executable.environment_variable]
             else:
                 self.environment_variables[executable.name] = None
+
+    def set_installed_executables(self, installed_executables=None):
+        self.installed_executables = {}
+
+        if installed_executables is None:
+            import shutil
+            for executable in self.supported_executables:
+                self.installed_executables[executable.name] = shutil.which(executable.name)
+            return
+
+        for executable in self.supported_executables:
+            if executable.name in installed_executables.keys():
+                self.installed_executables[executable.name] = installed_executables[executable.name]
+            else:
+                self.installed_executables[executable.name] = None
