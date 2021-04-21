@@ -1,3 +1,7 @@
+class NotSupported(Exception):
+    pass
+
+
 class PathsToExecutables:
     class __ExecutableDetails:
         def __init__(self, name):
@@ -18,7 +22,13 @@ class PathsToExecutables:
         self.parse_command_line_arguments()
         self.set_environment_variables()
 
+    def __is_supported(self, executable_name):
+        return any([executable_name == executable.name for executable in self.supported_executables])
+
     def get_path_of(self, executable_name):
+        if not self.__is_supported(executable_name):
+            raise NotSupported(f'Executable {executable_name} is not supported')
+
         if executable_name in self.paths:
             return self.paths[executable_name]
 
