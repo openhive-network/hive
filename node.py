@@ -191,7 +191,7 @@ class Node:
 
             from .node_config import NodeConfig
             self.config = NodeConfig()
-            self.config.load_from_file(self.directory / 'config.ini')
+            self.config.load_from_file(config_file_path)
 
         message = f'Run with pid {self.process.pid}, '
         if self.config.webserver_http_endpoint:
