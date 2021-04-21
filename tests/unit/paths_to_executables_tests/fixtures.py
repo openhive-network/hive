@@ -11,12 +11,13 @@ def paths():
 @pytest.fixture
 def executables():
     class Executable:
-        def __init__(self, name):
+        def __init__(self, name, command_line_argument):
             self.name = name
             self.path = f'{self.name}_path'
+            self.argument = command_line_argument
 
     return [
-        Executable('hived'),
-        Executable('cli_wallet'),
-        Executable('get_dev_key'),
+        Executable('hived', '--hived-path'),
+        Executable('cli_wallet', '--cli-wallet-path'),
+        Executable('get_dev_key', '--get-dev-key-path'),
     ]
