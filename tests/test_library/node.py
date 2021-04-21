@@ -187,7 +187,8 @@ class Node:
         if self.config is None:
             # Wait for config generation
             from time import sleep
-            sleep(0.1)
+            while not config_file_path.exists():
+                sleep(0.01)
 
             from .node_config import NodeConfig
             self.config = NodeConfig()
