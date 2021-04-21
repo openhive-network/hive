@@ -1258,7 +1258,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       return op;
     }
 
-    uint32_t             proposal_id;
+    uint32_t             proposal_id = 0;
     account_name_type    receiver;
     account_name_type    payer;
     legacy_asset         payment;
