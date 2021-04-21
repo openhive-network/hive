@@ -1,6 +1,7 @@
-from fixtures import paths
+from fixtures import paths, executables
 
 
-def test_command_line_arguments_paths(paths):
-    paths.parse_command_line_arguments(['--hived-path', 'example/hive/path'])
-    assert paths.get_path_of('hived') == 'example/hive/path'
+def test_command_line_arguments_paths(paths, executables):
+    for executable in executables:
+        paths.parse_command_line_arguments([executable.argument, executable.path])
+        assert paths.get_path_of(executable.name) == executable.path
