@@ -17,8 +17,7 @@ def empty_paths():
     return paths
 
 
-@pytest.fixture
-def executables():
+def __executables():
     class Executable:
         def __init__(self, name, command_line_argument, environment_variable):
             self.name = name
@@ -31,3 +30,13 @@ def executables():
         Executable('cli_wallet', '--cli-wallet-path', 'CLI_WALLET_PATH'),
         Executable('get_dev_key', '--get-dev-key-path', 'GET_DEV_KEY_PATH'),
     ]
+
+
+@pytest.fixture
+def executables():
+    return __executables()
+
+
+@pytest.fixture
+def executable():
+    return __executables()[0]
