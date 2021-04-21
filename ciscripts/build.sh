@@ -24,6 +24,7 @@ cmake \
     -DHIVE_LINT=${HIVE_LINT} \
     .. 
 make -j$(nproc)
+ldd "${BUILD_DIR}/programs/cli_wallet/cli_wallet" # Check HIVE_STATIC_BUILD
 make install
 cd .. 
 
