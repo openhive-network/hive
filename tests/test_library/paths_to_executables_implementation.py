@@ -41,6 +41,9 @@ class PathsToExecutables:
         raise Exception(f'Missing path to {executable_name}')
 
     def set_path_of(self, executable_name, executable_path):
+        if not self.__is_supported(executable_name):
+            raise NotSupported(f'Executable {executable_name} is not supported')
+
         self.paths[executable_name] = executable_path
 
     def parse_command_line_arguments(self, arguments=None):
