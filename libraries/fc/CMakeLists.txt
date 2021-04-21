@@ -279,10 +279,6 @@ if(WIN32)
 endif(WIN32)
 # end readline stuff
 
-if( NOT CPP_STANDARD )
-  set( CPP_STANDARD, "-std=c++11" )
-endif()
-
 IF(WIN32)
   target_compile_definitions(fc PUBLIC WIN32 NOMINMAX _WIN32_WINNT=0x0501 _CRT_SECURE_NO_WARNINGS
     _SCL_SERCURE_NO_WARNINGS
@@ -304,12 +300,12 @@ ELSE()
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall")
 
   IF(APPLE)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPP_STANDARD} -stdlib=libc++ -Wall")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall")
   ELSE()
     if( NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
-      target_compile_options(fc PUBLIC ${CPP_STANDARD} -Wall -fnon-call-exceptions)
+      target_compile_options(fc PUBLIC -Wall -fnon-call-exceptions)
     endif()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPP_STANDARD} -Wall -fnon-call-exceptions")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fnon-call-exceptions")
   ENDIF()
 ENDIF()
 
