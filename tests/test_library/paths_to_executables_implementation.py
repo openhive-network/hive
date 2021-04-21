@@ -1,6 +1,15 @@
 class PathsToExecutables:
+    class __ExecutableDetails:
+        def __init__(self, name):
+            self.name = name
+
     def __init__(self):
         self.paths = {}
+        self.supported_executables = [
+            self.__ExecutableDetails('hived'),
+            self.__ExecutableDetails('cli_wallet'),
+            self.__ExecutableDetails('get_dev_key'),
+        ]
 
     def get_path_of(self, executable_name):
         if executable_name in self.paths:
