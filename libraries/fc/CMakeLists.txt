@@ -259,15 +259,18 @@ setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC DONT_INSTALL_LIBRARY )
 
 # begin readline stuff
 find_package(Curses)
+
+if( HIVE_STATIC_BUILD )
+  set( Readline_USE_STATIC_LIBS ON CACHE BOOL "Use static readline libraries" )
+endif()
 find_package(Readline)
 
 file(GLOB HEADERS "include/bts/cli/*.hpp")
 
 if (READLINE_FOUND)
   target_compile_definitions (fc PRIVATE HAVE_READLINE)
-  set(readline_libraries ${Readline_LIBRARY})
   if (CURSES_FOUND)
-    list(APPEND readline_libraries ${CURSES_LIBRARY})
+    list(APPEND Readline_LIBRARIES ${CURSES_LIBRARY})
   endif()
   set(readline_includes ${Readline_INCLUDE_DIR})
 endif()
@@ -375,13 +378,7 @@ IF(NOT WIN32)
   set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
 ENDIF()
 
-if( HIVE_STATIC_BUILD )
-   target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES}
-      ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} "-Wl,-Bstatic" ${readline_libraries} "-ltinfo" "-Wl,-Bdynamic" ${ECC_LIB} )
-else( HIVE_STATIC_BUILD )
-  target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} )
-endif( HIVE_STATIC_BUILD )
-
+target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
