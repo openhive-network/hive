@@ -10,6 +10,13 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
+struct window_input_data
+{
+  uint32_t nr_voters  = 0;
+  uint32_t interval   = 0;
+  uint32_t amount     = 0;
+};
+
 struct comment_reward_info
 {
   share_type total_reward;
@@ -145,8 +152,10 @@ struct curation_rewards_handler
     mid window(24 hours from 24 hours)      <86400;259200)
     late window(until 7 days from 48 hours) <259200;604800)
   */
-   const int32_t early_window               = 86400;
-   const int32_t mid_window                 = 259200;
+  const int32_t early_window                = 86400;
+  const int32_t mid_window                  = 259200;
+
+  static const uint32_t default_amount      = 1'000'000;
 
   configuration                             configuration_data_copy;
 
@@ -349,15 +358,36 @@ struct curation_rewards_handler
 
   }
 
-  void prepare_funds()
+  void prepare_funds_impl( uint32_t idx, uint32_t amount )
   {
-    const auto TESTS_1000 = ASSET( "1000.000 TESTS" );
-    const auto TESTS_100 = ASSET( "100.000 TESTS" );
+      test_object.fund( voters[idx], asset( amount, HIVE_SYMBOL ) );
+      test_object.vest( voters[idx], voters[idx], asset( amount / 10, HIVE_SYMBOL ), voter_keys[idx] );
+  }
+
+  void prepare_funds( const window_input_data& early, const window_input_data& mid, const window_input_data& late )
+  {
+    uint32_t amount;
 
     for( uint32_t i = 0; i < voters.size(); ++i )
     {
-      test_object.fund( voters[i], TESTS_1000 );
-      test_object.vest( voters[i], voters[i], TESTS_100, voter_keys[i] );
+      if( i < early.nr_voters )
+        amount = early.amount;
+      else if( i < mid.nr_voters )
+        amount = mid.amount;
+      else if( i < late.nr_voters )
+        amount = late.amount;
+      else
+        amount = default_amount;
+
+      prepare_funds_impl( i, amount );
+    }
+  }
+
+  void prepare_funds( uint32_t amount = curation_rewards_handler::default_amount )
+  {
+    for( uint32_t i = 0; i < voters.size(); ++i )
+    {
+      prepare_funds_impl( i, amount );
     }
   }
 
@@ -526,69 +556,226 @@ struct curation_rewards_handler
 
 BOOST_FIXTURE_TEST_SUITE( curation_reward_tests, clean_database_fixture )
 
-BOOST_AUTO_TEST_CASE( basic_test )
+void basic_test_impl(
+                      const std::string& test_name,
+                      clean_database_fixture& mgr_test,
+                      const window_input_data& early,
+                      const window_input_data& mid,
+                      const window_input_data& late,
+                      uint32_t reward, const fc::optional<uint32_t>& offset = fc::optional<uint32_t>() )
+{
+  curation_rewards_handler crh( mgr_test, *( mgr_test.db ) );
+
+  crh.prepare_author( { 0 } );
+  crh.prepare_voters();
+  mgr_test.generate_block();
+
+  mgr_test.set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+  mgr_test.generate_block();
+
+  crh.prepare_funds( early, mid, late );
+  mgr_test.generate_block();
+
+  uint32_t author_number = 0;
+  std::string permlink  = "somethingpermlink";
+
+  crh.prepare_comment( permlink, author_number );
+  mgr_test.generate_block();
+
+  crh.set_start_time( mgr_test.db->head_block_time() );
+
+  if( offset.valid() )
+    mgr_test.generate_blocks( mgr_test.db->head_block_time() + fc::seconds( *offset ) );
+
+  std::vector<uint32_t> early_votes_time( early.nr_voters,  early.interval );
+  std::vector<uint32_t> mid_votes_time(   mid.nr_voters,    mid.interval );
+  std::vector<uint32_t> late_votes_time(  late.nr_voters,   late.interval );
+
+  size_t vote_counter = 0;
+  crh.voting( vote_counter, author_number, permlink, early_votes_time );
+  crh.voting( vote_counter, author_number, permlink, mid_votes_time );
+  crh.voting( vote_counter, author_number, permlink, late_votes_time );
+  crh.make_payment();
+
+  reward_stat::rewards_stats early_stats;
+  reward_stat::rewards_stats mid_stats;
+  reward_stat::rewards_stats late_stats;
+
+  crh.curation_gathering( early_stats, mid_stats, late_stats );
+
+  auto cmp = [ reward ]( const reward_stat::rewards_stats& stats_a, const reward_stat::rewards_stats& stats_b, uint32_t factor )
+  {
+    BOOST_REQUIRE( factor == 2 || factor == 4 );
+
+    auto _cmp = [ reward, factor ]( const reward_stat& item_a, const reward_stat& item_b )
+    {
+      if( factor == 2 )
+        return item_a.value == reward && ( item_a.value / factor == item_b.value );
+      else
+        return item_a.value && ( item_a.value / factor == item_b.value );
+    };
+    reward_stat::check_phases( stats_a, stats_b, _cmp );
+  };
+
+  {
+    BOOST_TEST_MESSAGE( "Comparison phases: `early` and `mid`" );
+    cmp( early_stats, mid_stats, 2/*factor*/ );
+    if( early_stats.empty() ^ mid_stats.empty() )
+    {
+      if( !early_stats.empty() )
+        BOOST_REQUIRE_EQUAL( early_stats[0].value, reward );
+      else
+        BOOST_REQUIRE_EQUAL( mid_stats[0].value, reward );
+    }
+  }
+  {
+    BOOST_TEST_MESSAGE( "Comparison phases: `mid` and `late`" );
+    cmp( mid_stats, late_stats, 4/*factor*/ );
+    if( mid_stats.empty() ^ late_stats.empty() )
+    {
+      if( !mid_stats.empty() )
+      {
+        if( early_stats.empty() )
+          BOOST_REQUIRE_EQUAL( mid_stats[0].value, reward );
+        else
+          BOOST_REQUIRE_EQUAL( mid_stats[0].value, reward / 2 );
+      }
+      else
+      {
+        if( early_stats.empty() && mid_stats.empty() )
+          BOOST_REQUIRE_EQUAL( late_stats[0].value, reward );
+        else if( mid_stats.empty() )
+          BOOST_REQUIRE_EQUAL( late_stats[0].value, reward / 4 );
+        else
+          BOOST_REQUIRE_EQUAL( late_stats[0].value, reward / 8 );
+      }
+    }
+  }
+
+  print_all( std::cout, crh.get_printer() );
+  print( std::cout, crh.get_printer() );
+
+  std::ofstream file( test_name );
+  print( file, crh.get_printer() );
+
+  mgr_test.validate_database();
+}
+
+BOOST_AUTO_TEST_CASE( basic_test_v0 )
 {
   try
   {
     BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in every window." );
 
-    curation_rewards_handler crh( *this, *db );
+    auto _a = curation_rewards_handler::default_amount;
 
-    crh.prepare_author( { 0 } );
-    crh.prepare_voters();
-    generate_block();
+    basic_test_impl( "00.content_format.time:curation_reward.csv",
+                      *this,
+                      window_input_data{ 25/*nr_voters*/, 12/*interval*/    , _a }/*early*/,
+                      window_input_data{ 39/*nr_voters*/, 4480/*interval*/  , _a }/*mid*/,
+                      window_input_data{ 95/*nr_voters*/, 4480/*interval*/  , _a }/*late*/, 645/*reward*/ );
+  }
+  FC_LOG_AND_RETHROW()
+}
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-    generate_block();
+BOOST_AUTO_TEST_CASE( basic_test_v1 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in 2 windows: early, mid." );
 
-    crh.prepare_funds();
-    generate_block();
+    auto _a = curation_rewards_handler::default_amount;
 
-    uint32_t author_number = 0;
-    std::string permlink  = "somethingpermlink";
+    basic_test_impl( "01.content_format.time:curation_reward.csv",
+                      *this,
+                      window_input_data{ 25/*nr_voters*/, 12/*interval*/    , _a }/*early*/,
+                      window_input_data{ 39/*nr_voters*/, 4479/*interval*/  , _a }/*mid*/,
+                      window_input_data()/*late*/, 761/*reward*/ );
+  }
+  FC_LOG_AND_RETHROW()
+}
 
-    crh.prepare_comment( permlink, author_number );
-    generate_block();
+BOOST_AUTO_TEST_CASE( basic_test_v2 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in 2 windows: early, mid." );
 
-    crh.set_start_time( db->head_block_time() );
+    auto _a = curation_rewards_handler::default_amount;
 
-    std::vector<uint32_t> early_votes_time( 25, 12 );
-    std::vector<uint32_t> mid_votes_time( 39, 4480 );
-    std::vector<uint32_t> late_votes_time( 95, 4480 );
+    basic_test_impl( "02.content_format.time:curation_reward.csv",
+                      *this,
+                      window_input_data{ 25/*nr_voters*/, 12/*interval*/    , _a }/*early*/,
+                      window_input_data{ 134/*nr_voters*/, 1930/*interval*/ , _a }/*mid*/,
+                      window_input_data()/*late*/, 411/*reward*/ );
+  }
+  FC_LOG_AND_RETHROW()
+}
 
-    size_t vote_counter = 0;
-    crh.voting( vote_counter, author_number, permlink, early_votes_time );
-    crh.voting( vote_counter, author_number, permlink, mid_votes_time );
-    crh.voting( vote_counter, author_number, permlink, late_votes_time );
-    crh.make_payment();
+BOOST_AUTO_TEST_CASE( basic_test_v3 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in early window." );
 
-    reward_stat::rewards_stats early_stats;
-    reward_stat::rewards_stats mid_stats;
-    reward_stat::rewards_stats late_stats;
+    auto _a = curation_rewards_handler::default_amount;
 
-    crh.curation_gathering( early_stats, mid_stats, late_stats );
+    basic_test_impl( "03.content_format.time:curation_reward.csv",
+                      *this,
+                      window_input_data{ 50/*nr_voters*/, 1720/*interval*/, _a }/*early*/,
+                      window_input_data()/*mid*/,
+                      window_input_data()/*late*/, 805/*reward*/ );
+  }
+  FC_LOG_AND_RETHROW()
+}
 
-    {
-      BOOST_TEST_MESSAGE( "Comparison phases: `early` and `mid`" );
-      auto cmp = []( const reward_stat& item_a, const reward_stat& item_b )
-      {
-        return item_a.value == 645 && ( item_a.value / 2 == item_b.value );
-      };
-      reward_stat::check_phases( early_stats, mid_stats, cmp );
-    }
-    {
-      BOOST_TEST_MESSAGE( "Comparison phases: `mid` and `late`" );
-      auto cmp = []( const reward_stat& item_a, const reward_stat& item_b )
-      {
-        return item_a.value && ( item_a.value / 4 == item_b.value );
-      };
-      reward_stat::check_phases( mid_stats, late_stats, cmp );
-    }
+BOOST_AUTO_TEST_CASE( basic_test_v4 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in mid window." );
 
-    print_all( std::cout, crh.get_printer() );
-    print( std::cout, crh.get_printer() );
+    auto _a = curation_rewards_handler::default_amount;
 
-    validate_database();
+    basic_test_impl( "04.content_format.time:curation_reward.csv",
+                      *this,
+                      window_input_data()/*early*/,
+                      window_input_data{ 50, 300/*interval*/, _a }/*mid*/,
+                      window_input_data()/*late*/, 806/*reward*/, 25*3600/*offset*/ );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( basic_test_v5 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in early window." );
+
+    auto _a = curation_rewards_handler::default_amount * 2;
+
+    basic_test_impl( "05.content_format.time:curation_reward.csv",
+                      *this,
+                      window_input_data{ 50/*nr_voters*/, 1720/*interval*/, _a }/*early*/,
+                      window_input_data()/*mid*/,
+                      window_input_data()/*late*/, 805/*reward*/ );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( basic_test_v6 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in mid window." );
+
+    auto _a = curation_rewards_handler::default_amount * 2;
+
+    basic_test_impl( "06.content_format.time:curation_reward.csv",
+                      *this,
+                      window_input_data()/*early*/,
+                      window_input_data{ 50, 300/*interval*/, _a }/*mid*/,
+                      window_input_data()/*late*/, 806/*reward*/, 25*3600/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
