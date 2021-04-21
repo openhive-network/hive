@@ -66,26 +66,44 @@ extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
       << req_throw_info << std::endl;                  \
 }*/
 
-#define HIVE_REQUIRE_THROW( expr, exc_type )              \
+#define HIVE_REQUIRE_THROW( expr, exc_type )           \
   BOOST_REQUIRE_THROW( expr, exc_type );
 
-#define HIVE_CHECK_THROW( expr, exc_type )                \
-{                                                         \
-  std::string req_throw_info = fc::json::to_string(      \
-    fc::mutable_variant_object()                        \
-    ("source_file", __FILE__)                           \
-    ("source_lineno", __LINE__)                         \
-    ("expr", #expr)                                     \
-    ("exc_type", #exc_type)                             \
-    );                                                  \
-  if( fc::enable_record_assert_trip )                    \
-    std::cout << "HIVE_CHECK_THROW begin "              \
+#define HIVE_CHECK_THROW( expr, exc_type )             \
+{                                                      \
+  std::string req_throw_info = fc::json::to_string(    \
+    fc::mutable_variant_object()                       \
+    ("source_file", __FILE__)                          \
+    ("source_lineno", __LINE__)                        \
+    ("expr", #expr)                                    \
+    ("exc_type", #exc_type)                            \
+    );                                                 \
+  if( fc::enable_record_assert_trip )                  \
+    std::cout << "HIVE_CHECK_THROW begin "             \
       << req_throw_info << std::endl;                  \
-  BOOST_CHECK_THROW( expr, exc_type );                   \
-  if( fc::enable_record_assert_trip )                    \
-    std::cout << "HIVE_CHECK_THROW end "                \
+  BOOST_CHECK_THROW( expr, exc_type );                 \
+  if( fc::enable_record_assert_trip )                  \
+    std::cout << "HIVE_CHECK_THROW end "               \
       << req_throw_info << std::endl;                  \
 }
+
+#define HIVE_REQUIRE_ASSERT( expr, assert_test )                  \
+do {                                                              \
+  bool flag = fc::enable_record_assert_trip;                      \
+  fc::enable_record_assert_trip = true;                           \
+  HIVE_REQUIRE_THROW( expr, fc::assert_exception );               \
+  BOOST_REQUIRE_EQUAL( fc::last_assert_expression, assert_test ); \
+  fc::enable_record_assert_trip = flag;                           \
+} while(false)
+
+#define HIVE_REQUIRE_CHAINBASE_ASSERT( expr, assert_msg )         \
+do {                                                              \
+  bool flag = fc::enable_record_assert_trip;                      \
+  fc::enable_record_assert_trip = true;                           \
+  HIVE_REQUIRE_THROW( expr, fc::exception );                      \
+  BOOST_REQUIRE_EQUAL( fc::last_assert_expression, assert_msg );  \
+  fc::enable_record_assert_trip = flag;                           \
+} while(false)
 
 #define REQUIRE_OP_VALIDATION_FAILURE_2( op, field, value, exc_type ) \
 { \

@@ -251,6 +251,8 @@ namespace fc
       const char* expr
       )
    {
+      last_assert_expression = expr;
+
       fc::mutable_variant_object assert_trip_info =
          fc::mutable_variant_object()
          ("source_file", filename)
@@ -263,14 +265,15 @@ namespace fc
 
       if( enable_assert_stacktrace )
       {
-        std::stringstream out;
-        out << "FC_ASSERT / CHAINBASE_THROW_EXCEPTION!" << std::endl;
-        print_stacktrace( out, 128, nullptr, false );
-        wlog( out.str() );
+         std::stringstream out;
+         out << "FC_ASSERT / CHAINBASE_THROW_EXCEPTION!" << std::endl;
+         print_stacktrace( out, 128, nullptr, false );
+         wlog( out.str() );
       }
    }
 
    bool enable_record_assert_trip = false;
    bool enable_assert_stacktrace = false;
+   string last_assert_expression;
 
 } // fc
