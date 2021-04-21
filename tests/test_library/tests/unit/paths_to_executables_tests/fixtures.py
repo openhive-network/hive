@@ -4,8 +4,17 @@ from test_library.paths_to_executables_implementation import *
 
 
 @pytest.fixture
-def paths():
-    return PathsToExecutables()
+def empty_paths():
+    """Returns PathsToExecutables object without any value from current environment.
+
+    Doesn't matter if user has e.g. set environment variable searched by this object or
+    script is run with some command line argument. All such information are ignored.
+    """
+
+    paths = PathsToExecutables()
+    paths.parse_command_line_arguments([])
+    paths.set_environment_variables({})
+    return paths
 
 
 @pytest.fixture
