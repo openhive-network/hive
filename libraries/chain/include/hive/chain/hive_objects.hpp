@@ -343,8 +343,20 @@ namespace hive { namespace chain {
       const account_id_type& _to_id,  const asset& _amount, const string& _memo, const uint16_t _recurrence,
       const uint8_t _consecutive_failures = 0)
       : id( _id ), trigger_date( _trigger_date ), end_date( _end_date ), from_id( _from_id ), to_id( _to_id ),
-      amount( _amount ), memo( shared_string(_memo.c_str(), a) ), recurrence( _recurrence ), consecutive_failures( _consecutive_failures )
-      {}
+      amount( _amount ), memo( a ), recurrence( _recurrence ), consecutive_failures( _consecutive_failures )
+      {
+        from_string( memo, _memo );
+      }
+
+      time_point_sec get_next_trigger_date(time_point_sec head_block_time)
+      {
+        // If this is the first execution trigger_date is HIVE_GENESIS_TIME
+        if (trigger_date == HIVE_GENESIS_TIME) {
+          return head_block_time + fc::hours(recurrence);
+        } else {
+          return trigger_date + fc::hours(recurrence);
+        }
+      }
 
       time_point_sec    trigger_date;
       time_point_sec    end_date;

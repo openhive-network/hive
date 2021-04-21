@@ -9463,7 +9463,6 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_validate )
   FC_LOG_AND_RETHROW()
 }
 
-
 BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
 {
   try
@@ -9473,7 +9472,6 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    idump((alice.open_recurrent_transfers));
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
 
     fund( "alice", 10000 );
@@ -9551,15 +9549,19 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     generate_block();
     BOOST_TEST_MESSAGE( "--- test updating the reccurence" );
 
-    op.recurrence = 100;
+    op.recurrence = 96;
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
     tx.clear();
 
+    idump((recurrent_transfer->trigger_date));
+    idump((db->head_block_time()));
+    idump((recurrent_transfer->recurrence));
+    idump((db->head_block_time() + fc::hours(op.recurrence)));
     BOOST_REQUIRE( recurrent_transfer->trigger_date == db->head_block_time() + fc::hours(op.recurrence) );
-    BOOST_REQUIRE( recurrent_transfer->recurrence == 100 );
+    BOOST_REQUIRE( recurrent_transfer->recurrence == 96 );
     BOOST_REQUIRE( recurrent_transfer->trigger_date != recurrent_transfer_new.trigger_date );
     validate_database();
 

@@ -3359,7 +3359,6 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
 
   if( itr == rt_idx.end() )
   {
-
     // If the recurrent transfer is not found and the amount is 0 it means the user wants to delete a transfer that doesnt exists
     FC_ASSERT( op.amount.amount != 0, "Cannot create a recurrent transfer with 0 amount");
     _db.create< recurrent_transfer_object >(HIVE_GENESIS_TIME, op.end_date, from_account.get_id(), to_account.get_id(), op.amount, op.memo, op.recurrence);
@@ -3378,7 +3377,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
     });
   } else
   {
-    // If the recurrence is different, update the next trigger date to reflect it
+    // If the recurrence is different, replace the next trigger date to reflect it
     time_point_sec next_trigger_date = itr->trigger_date;
     if (itr->recurrence != op.recurrence) {
       next_trigger_date = _db.head_block_time() + fc::hours(op.recurrence );
