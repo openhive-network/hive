@@ -23,6 +23,8 @@
 #include <chainbase/state_snapshot_support.hpp>
 #include <chainbase/util/object_id.hpp>
 
+#include <fc/exception/exception.hpp>
+
 #include <array>
 #include <atomic>
 #include <fstream>
@@ -42,6 +44,15 @@
   #define CHAINBASE_REQUIRE_READ_LOCK(m, t)
   #define CHAINBASE_REQUIRE_WRITE_LOCK(m, t)
 #endif
+
+//redirect exceptions from chainbase to the same place as the one from FC_ASSERT
+#define CHAINBASE_THROW_EXCEPTION( exception )                 \
+  do {                                                         \
+    auto ex = exception;                                       \
+    if( fc::enable_record_assert_trip )                        \
+      fc::record_assert_trip( __FILE__, __LINE__, ex.what() ); \
+    BOOST_THROW_EXCEPTION( ex );                               \
+  } while( false )
 
 namespace helpers
 {
@@ -161,18 +172,18 @@ namespace chainbase {
   #define CHAINBASE_OBJECT_1( object_class ) CHAINBASE_OBJECT_false( object_class )
   #define CHAINBASE_OBJECT_2( object_class, allow_default ) CHAINBASE_OBJECT_##allow_default( object_class )
   #define CHAINBASE_OBJECT_true( object_class ) CHAINBASE_OBJECT_COMMON( object_class ); public: object_class() : id(0) {} private:
-  #define CHAINBASE_OBJECT_COMMON( object_class )                      \
-  private:                                                             \
+  #define CHAINBASE_OBJECT_COMMON( object_class )                     \
+  private:                                                            \
     id_type id;                                                       \
     object_class( const object_class& source ) = default;             \
     /* problem with this being private? you most likely did           \
-      auto chain_object = db.get(...);                               \
-      instead of                                                     \
-      auto& chain_object_ref = db.get(...);                          \
-      In case you actually need copy, use copy_chain_object() below  \
+      auto chain_object = db.get(...);                                \
+      instead of                                                      \
+      auto& chain_object_ref = db.get(...);                           \
+      In case you actually need copy, use copy_chain_object() below   \
     */                                                                \
     object_class& operator= ( const object_class& source ) = default; \
-  public:                                                              \
+  public:                                                             \
     id_type get_id() const { return id; }                             \
     object_class( object_class&& source ) = default;                  \
     object_class& operator= ( object_class&& source ) = default;      \
@@ -193,17 +204,17 @@ namespace chainbase {
 
 
   #define CHAINBASE_ALLOCATED_MEMBERS( r, init, member ) , member( init )
-  #define CHAINBASE_DEFAULT_CONSTRUCTOR( OBJECT_TYPE, ALLOCATED_MEMBERS... )                \
-  template<typename Constructor, typename Allocator>                                        \
-  OBJECT_TYPE( Allocator&& a, uint64_t _id, Constructor&& c )                               \
+  #define CHAINBASE_DEFAULT_CONSTRUCTOR( OBJECT_TYPE, ALLOCATED_MEMBERS... )               \
+  template<typename Constructor, typename Allocator>                                       \
+  OBJECT_TYPE( Allocator&& a, uint64_t _id, Constructor&& c )                              \
     : id( _id ) BOOST_PP_SEQ_FOR_EACH( CHAINBASE_ALLOCATED_MEMBERS, a, ALLOCATED_MEMBERS ) \
   { c(*this); }
 
-  #define CHAINBASE_UNPACK_CONSTRUCTOR( OBJECT_TYPE, ALLOCATED_MEMBERS... )                 \
-  private: template<typename Allocator>                                                     \
-  OBJECT_TYPE( Allocator&& a, uint64_t _id, std::function<void(OBJECT_TYPE&)> unpackFn)     \
+  #define CHAINBASE_UNPACK_CONSTRUCTOR( OBJECT_TYPE, ALLOCATED_MEMBERS... )                \
+  private: template<typename Allocator>                                                    \
+  OBJECT_TYPE( Allocator&& a, uint64_t _id, std::function<void(OBJECT_TYPE&)> unpackFn)    \
     : id( _id ) BOOST_PP_SEQ_FOR_EACH( CHAINBASE_ALLOCATED_MEMBERS, a, ALLOCATED_MEMBERS ) \
-  { unpackFn(*this); }                                                                      \
+  { unpackFn(*this); }                                                                     \
   template <class T> friend class chainbase::generic_index
 
 
@@ -275,14 +286,14 @@ namespace chainbase {
       typedef undo_state< value_type >                              undo_state_type;
 
       generic_index( allocator<value_type> a, bfs::path p )
-      :_stack(a),_indices( a, p ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) { }
+      :_stack(a),_indices( a, p ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) {}
 
       generic_index( allocator<value_type> a )
-      :_stack(a),_indices( a ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) { }
+      :_stack(a),_indices( a ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) {}
 
       void validate()const {
         if( sizeof(typename MultiIndexType::value_type) != _size_of_value_type || sizeof(*this) != _size_of_this )
-          BOOST_THROW_EXCEPTION( std::runtime_error("content of memory does not match data expected by executable") );
+          CHAINBASE_THROW_EXCEPTION( std::runtime_error("content of memory does not match data expected by executable") );
       }
 
       /**
@@ -296,7 +307,7 @@ namespace chainbase {
         auto insert_result = _indices.emplace( _indices.get_allocator(), new_id, std::forward<Args>( args )... );
 
         if( !insert_result.second ) {
-          BOOST_THROW_EXCEPTION( std::logic_error("could not insert object, most likely a uniqueness constraint was violated") );
+          CHAINBASE_THROW_EXCEPTION( std::logic_error("could not insert object, most likely a uniqueness constraint was violated") );
         }
 
         ++_next_id;
@@ -322,7 +333,7 @@ namespace chainbase {
           std::string msg = "could not insert unpacked object, most likely a uniqueness constraint was violated: `" + s +
             std::string("' conflicting object:`") + s2 + "'";
 
-          BOOST_THROW_EXCEPTION(std::logic_error(msg));
+          CHAINBASE_THROW_EXCEPTION(std::logic_error(msg));
           }
 
         ++_next_id;
@@ -335,7 +346,7 @@ namespace chainbase {
         on_modify( obj );
         auto itr = _indices.iterator_to( obj );
         auto ok = _indices.modify( itr, std::forward<Modifier>( m ) );
-        if( !ok ) BOOST_THROW_EXCEPTION( std::logic_error( "Could not modify object, most likely a uniqueness constraint was violated" ) );
+        if( !ok ) CHAINBASE_THROW_EXCEPTION( std::logic_error( "Could not modify object, most likely a uniqueness constraint was violated" ) );
       }
 
       void remove( const value_type& obj ) {
@@ -360,7 +371,7 @@ namespace chainbase {
       template<typename CompatibleKey>
       const value_type& get( CompatibleKey&& key )const {
         auto ptr = find( std::forward<CompatibleKey>( key ) );
-        if( !ptr ) BOOST_THROW_EXCEPTION( std::out_of_range("key not found") );
+        if( !ptr ) CHAINBASE_THROW_EXCEPTION( std::out_of_range("key not found") );
         return *ptr;
       }
 
@@ -415,7 +426,7 @@ namespace chainbase {
       session start_undo_session()
       {
         ++_revision;
-        
+
         _stack.emplace_back( _indices.get_allocator() );
         _stack.back().old_next_id = _next_id;
         _stack.back().revision = _revision;
@@ -449,7 +460,7 @@ namespace chainbase {
             ok = _indices.emplace( std::move( item.second ) ).second;
           }
 
-          if( !ok ) BOOST_THROW_EXCEPTION( std::logic_error( "Could not modify object, most likely a uniqueness constraint was violated" ) );
+          if( !ok ) CHAINBASE_THROW_EXCEPTION( std::logic_error( "Could not modify object, most likely a uniqueness constraint was violated" ) );
         }
 
         for( const auto& id : head.new_ids )
@@ -460,7 +471,7 @@ namespace chainbase {
 
         for( auto& item : head.removed_values ) {
           bool ok = _indices.emplace( std::move( item.second ) ).second;
-          if( !ok ) BOOST_THROW_EXCEPTION( std::logic_error( "Could not restore object, most likely a uniqueness constraint was violated" ) );
+          if( !ok ) CHAINBASE_THROW_EXCEPTION( std::logic_error( "Could not restore object, most likely a uniqueness constraint was violated" ) );
         }
 
         _stack.pop_back();
@@ -597,7 +608,7 @@ namespace chainbase {
 
       void set_revision( int64_t revision )
       {
-        if( _stack.size() != 0 ) BOOST_THROW_EXCEPTION( std::logic_error("cannot set revision while there is an existing undo stack") );
+        if( _stack.size() != 0 ) CHAINBASE_THROW_EXCEPTION( std::logic_error("cannot set revision while there is an existing undo stack") );
         _revision = revision;
       }
 
@@ -921,7 +932,7 @@ namespace chainbase {
       auto get_segment_manager() -> decltype( ((bip::managed_mapped_file*)nullptr)->get_segment_manager()) {
         return _segment->get_segment_manager();
       }
-      
+
       unsigned long long get_total_system_memory() const
       {
 #if !defined( __APPLE__ ) // OS X does not support _SC_AVPHYS_PAGES
@@ -961,7 +972,7 @@ namespace chainbase {
         if( !has_index< MultiIndexType >() )
         {
           std::string type_name = boost::core::demangle( typeid( typename index_type::value_type ).name() );
-          BOOST_THROW_EXCEPTION( std::runtime_error( "unable to find index for " + type_name + " in database" ) );
+          CHAINBASE_THROW_EXCEPTION( std::runtime_error( "unable to find index for " + type_name + " in database" ) );
         }
 
         return *index_type_ptr( _index_map[index_type::value_type::type_id]->get() );
@@ -975,7 +986,7 @@ namespace chainbase {
         if( !has_index< MultiIndexType >() )
         {
           std::string type_name = boost::core::demangle( typeid( typename index_type::value_type ).name() );
-          BOOST_THROW_EXCEPTION( std::runtime_error( "unable to find index for " + type_name + " in database" ) );
+          CHAINBASE_THROW_EXCEPTION( std::runtime_error( "unable to find index for " + type_name + " in database" ) );
         }
 
         _index_map[index_type::value_type::type_id]->add_index_extension( ext );
@@ -991,7 +1002,7 @@ namespace chainbase {
         if( !has_index< MultiIndexType >() )
         {
           std::string type_name = boost::core::demangle( typeid( typename index_type::value_type ).name() );
-          BOOST_THROW_EXCEPTION( std::runtime_error( "unable to find index for " + type_name + " in database" ) );
+          CHAINBASE_THROW_EXCEPTION( std::runtime_error( "unable to find index for " + type_name + " in database" ) );
         }
 
         return index_type_ptr( _index_map[index_type::value_type::type_id]->get() )->indicies().template get<ByIndex>();
@@ -1007,7 +1018,7 @@ namespace chainbase {
         if( !has_index< MultiIndexType >() )
         {
           std::string type_name = boost::core::demangle( typeid( typename index_type::value_type ).name() );
-          BOOST_THROW_EXCEPTION( std::runtime_error( "unable to find index for " + type_name + " in database" ) );
+          CHAINBASE_THROW_EXCEPTION( std::runtime_error( "unable to find index for " + type_name + " in database" ) );
         }
 
         return *index_type_ptr( _index_map[index_type::value_type::type_id]->get() );
@@ -1042,7 +1053,7 @@ namespace chainbase {
           auto obj = find< ObjectType, IndexedByType >( std::forward< CompatibleKey >( key ) );
           if( !obj )
           {
-            BOOST_THROW_EXCEPTION( std::out_of_range( "unknown key" ) );
+            CHAINBASE_THROW_EXCEPTION( std::out_of_range( "unknown key" ) );
           }
           return *obj;
       }
@@ -1052,7 +1063,7 @@ namespace chainbase {
       {
           CHAINBASE_REQUIRE_READ_LOCK("get", ObjectType);
           auto obj = find< ObjectType >( key );
-          if( !obj ) BOOST_THROW_EXCEPTION( std::out_of_range( "unknown key") );
+          if( !obj ) CHAINBASE_THROW_EXCEPTION( std::out_of_range( "unknown key") );
           return *obj;
       }
 
@@ -1108,7 +1119,7 @@ namespace chainbase {
         else
         {
           if( !lock.timed_lock( boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds( wait_micro ) ) )
-            BOOST_THROW_EXCEPTION( lock_exception() );
+            CHAINBASE_THROW_EXCEPTION( lock_exception() );
         }
 
         return callback();
@@ -1158,7 +1169,7 @@ namespace chainbase {
         std::string type_name = boost::core::demangle( typeid( typename index_type::value_type ).name() );
 
         if( !( _index_map.size() <= type_id || _index_map[ type_id ] == nullptr ) ) {
-          BOOST_THROW_EXCEPTION( std::logic_error( type_name + "::type_id is already in use" ) );
+          CHAINBASE_THROW_EXCEPTION( std::logic_error( type_name + "::type_id is already in use" ) );
         }
         index_type* idx_ptr =  nullptr;
 #ifdef ENABLE_STD_ALLOCATOR

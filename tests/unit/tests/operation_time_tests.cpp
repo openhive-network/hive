@@ -1464,8 +1464,11 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
     BOOST_TEST_MESSAGE( "Get feed history object" );
     auto& feed_history = db->get_feed_history();
     BOOST_TEST_MESSAGE( "Check state" );
-    BOOST_REQUIRE( feed_history.current_median_history == price( asset( 1000, HBD_SYMBOL ), asset( 99000, HIVE_SYMBOL) ) );
-    BOOST_REQUIRE( feed_history.price_history[ 0 ] == price( asset( 1000, HBD_SYMBOL ), asset( 99000, HIVE_SYMBOL) ) );
+    {
+      auto expected_price = price( asset( 1000, HBD_SYMBOL ), asset( 99000, HIVE_SYMBOL ) );
+      BOOST_REQUIRE( feed_history.current_median_history == expected_price );
+      BOOST_REQUIRE( feed_history.price_history[ 0 ] == expected_price );
+    }
     validate_database();
 
     for ( int i = 0; i < 23; i++ )
@@ -1530,8 +1533,8 @@ BOOST_AUTO_TEST_CASE( convert_delay )
 
     BOOST_TEST_MESSAGE( "Verify conversion is not applied" );
     const auto& alice_2 = db->get_account( "alice" );
-    const auto& convert_request_idx = db->get_index< convert_request_index >().indices().get< by_owner >();
-    auto convert_request = convert_request_idx.find( boost::make_tuple( "alice", 2 ) );
+    const auto& convert_request_idx = db->get_index< convert_request_index, by_owner >();
+    auto convert_request = convert_request_idx.find( boost::make_tuple( alice_2.get_id(), 2 ) );
 
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
     BOOST_REQUIRE( alice_2.get_balance().amount.value == 0 );
@@ -1545,7 +1548,7 @@ BOOST_AUTO_TEST_CASE( convert_delay )
     const auto& alice_3 = db->get_account( "alice" );
     auto vop = get_last_operations( 1 )[0].get< fill_convert_request_operation >();
 
-    convert_request = convert_request_idx.find( boost::make_tuple( "alice", 2 ) );
+    convert_request = convert_request_idx.find( boost::make_tuple( alice_3.get_id(), 2 ) );
     BOOST_REQUIRE( convert_request == convert_request_idx.end() );
     BOOST_REQUIRE( alice_3.get_balance().amount.value == 2500 );
     BOOST_REQUIRE( alice_3.get_hbd_balance().amount.value == ( start_balance - op.amount ).amount.value );
@@ -2956,9 +2959,19 @@ BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
     const auto& gpo = db->get_dynamic_global_properties();
     auto new_exchange_rate = price( gpo.get_current_hbd_supply(), asset( ( HIVE_100_PERCENT ) * gpo.get_current_supply().amount, HIVE_SYMBOL ) );
     set_price_feed( new_exchange_rate );
-    set_price_feed( new_exchange_rate );
+    set_price_feed( new_exchange_rate, true );
 
-    BOOST_REQUIRE( db->get_feed_history().current_median_history > new_exchange_rate && db->get_feed_history().current_median_history < exchange_rate );
+    auto recent_ops = get_last_operations( 2 );
+    auto sys_warn_op = recent_ops.back().get< system_warning_operation >();
+    BOOST_REQUIRE( sys_warn_op.message.compare( 0, 27, "HIVE price corrected upward" ) == 0 );
+
+    const auto& feed = db->get_feed_history();
+    BOOST_REQUIRE( feed.current_median_history > new_exchange_rate && feed.current_median_history < exchange_rate );
+    BOOST_REQUIRE( feed.market_median_history == new_exchange_rate );
+    BOOST_REQUIRE( feed.current_min_history == new_exchange_rate );
+    BOOST_REQUIRE( feed.current_max_history == exchange_rate );
+
+    validate_database();
   }
   FC_LOG_AND_RETHROW()
 }

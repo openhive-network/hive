@@ -53,6 +53,7 @@ struct remote_node_api
   vector< condenser_api::api_vesting_delegation_expiration_object > get_expiring_vesting_delegations( account_name_type, time_point_sec, uint32_t );
   vector< optional< condenser_api::api_witness_object > > get_witnesses( vector< witness_id_type > );
   vector< condenser_api::api_convert_request_object > get_conversion_requests( account_name_type );
+  vector< condenser_api::api_collateralized_convert_request_object > get_collateralized_conversion_requests( account_name_type );
   optional< condenser_api::api_witness_object > get_witness_by_account( account_name_type );
   vector< condenser_api::api_witness_object > get_witnesses_by_vote( account_name_type, uint32_t );
   vector< account_name_type > lookup_witness_accounts( string, uint32_t );
@@ -129,6 +130,7 @@ FC_API( hive::wallet::remote_node_api,
       (get_expiring_vesting_delegations)
       (get_witnesses)
       (get_conversion_requests)
+      (get_collateralized_conversion_requests)
       (get_witness_by_account)
       (get_witnesses_by_vote)
       (lookup_witness_accounts)

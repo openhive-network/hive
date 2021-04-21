@@ -2,7 +2,6 @@
 
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/util/tiny_asset.hpp>
 #include <hive/protocol/smt_operations.hpp>
 
 #ifdef HIVE_ENABLE_SMT

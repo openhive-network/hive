@@ -23,7 +23,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_GENESIS_TIME                     (fc::time_point_sec(1451606400))
 #define HIVE_MINING_TIME                      (fc::time_point_sec(1451606400))
-#define HIVE_CASHOUT_WINDOW_SECONDS           configuration_data.get_hive_cashout_windows_seconds()
+#define HIVE_CASHOUT_WINDOW_SECONDS           configuration_data.get_hive_cashout_window_seconds()
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12  (HIVE_CASHOUT_WINDOW_SECONDS)
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17  (HIVE_CASHOUT_WINDOW_SECONDS)
 #define HIVE_SECOND_CASHOUT_WINDOW            (60*60*24*3) /// 3 days
@@ -285,6 +285,9 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MIN_FEEDS                        (HIVE_MAX_WITNESSES/3) /// protects the network from conversions before price has been established
 #define HIVE_CONVERSION_DELAY_PRE_HF_16       (fc::days(7))
 #define HIVE_CONVERSION_DELAY                 (fc::hours(HIVE_FEED_HISTORY_WINDOW)) //3.5 day conversion
+#define HIVE_COLLATERALIZED_CONVERSION_DELAY  HIVE_CONVERSION_DELAY
+#define HIVE_CONVERSION_COLLATERAL_RATIO      (2 * HIVE_100_PERCENT) //has to be at least 100%
+#define HIVE_COLLATERALIZED_CONVERSION_FEE    (5 * HIVE_1_PERCENT) //has to be positive
 
 #define HIVE_MIN_UNDO_HISTORY                 10
 #define HIVE_MAX_UNDO_HISTORY                 10000

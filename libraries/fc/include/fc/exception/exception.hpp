@@ -309,6 +309,7 @@ namespace fc
      );
 
   extern bool enable_record_assert_trip;
+  extern bool enable_assert_stacktrace;
 } // namespace fc
 
 #if __APPLE__

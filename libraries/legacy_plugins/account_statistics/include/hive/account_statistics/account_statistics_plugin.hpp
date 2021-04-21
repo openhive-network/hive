@@ -91,6 +91,7 @@ public:
   share_type           hbd_to_be_converted = 0;                  ///< Amount of HBD to be converted
   uint32_t             hbd_conversion_requests_filled = 0;       ///< HBD conversion requests filled
   share_type           hive_converted = 0;                       ///< Amount of HIVE that was converted
+  //note: collateralized convert requests not handled here - plugin is assumed obsolete
   uint32_t             limit_orders_created = 0;                 ///< Limit orders created by this account
   uint32_t             limit_orders_filled = 0;                  ///< Limit orders filled by this account
   uint32_t             limit_orders_cancelled = 0;               ///< Limit orders cancelled by this account

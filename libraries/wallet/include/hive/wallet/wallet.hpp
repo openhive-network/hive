@@ -660,6 +660,13 @@ class wallet_api
       */
     vector< condenser_api::api_convert_request_object > get_conversion_requests( const string& owner );
 
+    /** Returns collateralized conversion requests by an account
+      *
+      * @param owner Account name of the account owning the requests
+      *
+      * @returns All pending collateralized conversion requests by account
+      */
+    vector< condenser_api::api_collateralized_convert_request_object > get_collateralized_conversion_requests( const string& owner );
 
     /**
       * Update a witness object owned by the given account.
@@ -946,8 +953,8 @@ class wallet_api
       bool broadcast = false );
 
     /**
-      *  This method will convert HBD to HIVE at the current_median_history price one
-      *  week from the time it is executed. This method depends upon there being a valid price feed.
+      *  This method will convert HBD to HIVE at the current_median_history price HIVE_CONVERSION_DELAY
+      *  (3.5 days) from the time it is executed. This method depends upon there being a valid price feed.
       *
       *  @param from The account requesting conversion of its HBD i.e. "1.000 HBD"
       *  @param amount The amount of HBD to convert
@@ -959,8 +966,31 @@ class wallet_api
       bool broadcast = false );
 
     /**
+      *  This method will convert HIVE to HBD at the market_median_history price plus HIVE_COLLATERALIZED_CONVERSION_FEE (5%)
+      *  after HIVE_COLLATERALIZED_CONVERSION_DELAY (3.5 days) from the time it is executed. The caller gets HBD immediately
+      *  calculated at current_min_history corrected with fee (as if conversion took place immediately, but only HIVE amount
+      *  sliced by HIVE_CONVERSION_COLLATERAL_RATIO is calculated - that is, half the amount) and remainder from collateral
+      *  amount is returned after actual conversion takes place. This method depends upon there being a valid price feed.
+      *
+      *  @param from The account requesting conversion of its HIVE i.e. "2.000 HIVE"
+      *  @param amount The amount of HIVE collateral
+      *  @param broadcast true if you wish to broadcast the transaction
+      */
+    condenser_api::legacy_signed_transaction convert_hive_with_collateral(
+      const string& from,
+      const condenser_api::legacy_asset& collateral_amount,
+      bool broadcast = false );
+
+    /**
+      *  Calculates amount of HIVE collateral to be passed to convert_hive_with_collateral in order to immediately get
+      *  given hbd_amount_to_get in HBD. Note that there is no guarantee to get given HBD - when actual transaction
+      *  takes place price might be different than during estimation.
+      */
+    condenser_api::legacy_asset estimate_hive_collateral( const condenser_api::legacy_asset& hbd_amount_to_get );
+
+    /**
       * A witness can public a price feed for the HIVE:HBD market. The median price feed is used
-      * to process conversion requests from HBD to HIVE.
+      * to process conversion requests between HBD and HIVE.
       *
       * @param witness The witness publishing the price feed
       * @param exchange_rate The desired exchange rate
@@ -1322,6 +1352,7 @@ FC_API( hive::wallet::wallet_api,
       (get_ops_in_block)
       (get_feed_history)
       (get_conversion_requests)
+      (get_collateralized_conversion_requests)
       (get_account_history)
       (get_state)
       (get_withdraw_routes)
@@ -1359,6 +1390,8 @@ FC_API( hive::wallet::wallet_api,
       (withdraw_vesting)
       (set_withdraw_vesting_route)
       (convert_hbd)
+      (convert_hive_with_collateral)
+      (estimate_hive_collateral)
       (publish_feed)
       (get_order_book)
       (get_open_orders)

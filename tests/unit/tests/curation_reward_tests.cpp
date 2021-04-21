@@ -173,7 +173,7 @@ struct curation_rewards_handler
     if( enter )
     {
       configuration_data_copy = configuration_data;
-      configuration_data.set_hive_cashout_windows_seconds( seven_days );/*7 days like in mainnet*/
+      configuration_data.set_hive_cashout_window_seconds( seven_days );/*7 days like in mainnet*/
     }
     else
     {

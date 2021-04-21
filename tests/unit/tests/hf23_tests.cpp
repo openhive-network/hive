@@ -1158,6 +1158,26 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
     REQUIRE_BALANCE( "0.000", "5.100", get_balance, "TESTS" );
     REQUIRE_BALANCE( "0.000", "0.063", get_hbd_balance, "TBD" );
     UNDO_CLEAR;
+
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    {
+      collateralized_convert_operation op;
+      op.owner = "alice";
+      op.amount = ASSET( "1.000 TESTS" );
+      tx.operations.push_back( op );
+      sign( tx, alice_private_key );
+      db->push_transaction( tx, 0 );
+    }
+    tx.clear();
+
+    //collateralized conversion was not present when account clearing was executed, clear_account is not prepared for it
+    //note that if you decide to handle it, you have to consider that HBD was produced from thin air and was already transfered,
+    //while collateral that should be partially burned during actual conversion is still in global supply; in other words you
+    //should actually finish conversion instead of passing collateral to treasury, because otherwise the temporary state of
+    //having more HIVE than is proper, will become permanent
+    HIVE_REQUIRE_THROW( db->clear_account( db->get_account( "alice" ) ), fc::exception );
+
+    database_fixture::validate_database();
   }
   FC_LOG_AND_RETHROW()
 

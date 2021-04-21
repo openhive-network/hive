@@ -3106,7 +3106,7 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
-    const auto& convert_request_idx = db->get_index< convert_request_index >().indices().get< by_owner >();
+    const auto& convert_request_idx = db->get_index< convert_request_index, by_owner >();
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
 
@@ -3161,13 +3161,13 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     BOOST_REQUIRE( new_bob.get_balance().amount.value == ASSET( "3.000 TESTS" ).amount.value );
     BOOST_REQUIRE( new_bob.get_hbd_balance().amount.value == ASSET( "4.000 TBD" ).amount.value );
 
-    auto convert_request = convert_request_idx.find( boost::make_tuple( op.owner, op.requestid ) );
+    auto convert_request = convert_request_idx.find( boost::make_tuple( get_account_id( op.owner ), op.requestid ) );
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
-    BOOST_REQUIRE( convert_request->owner == op.owner );
-    BOOST_REQUIRE( convert_request->requestid == op.requestid );
-    BOOST_REQUIRE( convert_request->amount.amount.value == op.amount.amount.value );
+    BOOST_REQUIRE( convert_request->get_owner() == get_account_id( op.owner ) );
+    BOOST_REQUIRE( convert_request->get_request_id() == op.requestid );
+    BOOST_REQUIRE( convert_request->get_convert_amount().amount.value == op.amount.amount.value );
     //BOOST_REQUIRE( convert_request->premium == 100000 );
-    BOOST_REQUIRE( convert_request->conversion_date == db->head_block_time() + HIVE_CONVERSION_DELAY );
+    BOOST_REQUIRE( convert_request->get_conversion_date() == db->head_block_time() + HIVE_CONVERSION_DELAY );
 
     BOOST_TEST_MESSAGE( "--- Test failure from repeated id" );
     op.amount = ASSET( "2.000 TESTS" );
@@ -3180,13 +3180,13 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     BOOST_REQUIRE( new_bob.get_balance().amount.value == ASSET( "3.000 TESTS" ).amount.value );
     BOOST_REQUIRE( new_bob.get_hbd_balance().amount.value == ASSET( "4.000 TBD" ).amount.value );
 
-    convert_request = convert_request_idx.find( boost::make_tuple( op.owner, op.requestid ) );
+    convert_request = convert_request_idx.find( boost::make_tuple( get_account_id( op.owner ), op.requestid ) );
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
-    BOOST_REQUIRE( convert_request->owner == op.owner );
-    BOOST_REQUIRE( convert_request->requestid == op.requestid );
-    BOOST_REQUIRE( convert_request->amount.amount.value == ASSET( "3.000 TBD" ).amount.value );
+    BOOST_REQUIRE( convert_request->get_owner() == get_account_id( op.owner ) );
+    BOOST_REQUIRE( convert_request->get_request_id() == op.requestid );
+    BOOST_REQUIRE( convert_request->get_convert_amount().amount.value == ASSET( "3.000 TBD" ).amount.value );
     //BOOST_REQUIRE( convert_request->premium == 100000 );
-    BOOST_REQUIRE( convert_request->conversion_date == db->head_block_time() + HIVE_CONVERSION_DELAY );
+    BOOST_REQUIRE( convert_request->get_conversion_date() == db->head_block_time() + HIVE_CONVERSION_DELAY );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -3206,6 +3206,384 @@ BOOST_AUTO_TEST_CASE( fixture_convert_checks_balance )
   }
   FC_LOG_AND_RETHROW()
 
+}
+
+BOOST_AUTO_TEST_CASE( collateralized_convert_authorities )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: collateralized_convert_authorities" );
+
+    ACTORS( (alice)(bob) )
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "4.000 TESTS" ) ) );
+
+    fund( "alice", ASSET( "300.000 TBD" ) );
+    fund( "alice", ASSET( "1000.000 TESTS" ) );
+
+    collateralized_convert_operation op;
+    op.owner = "alice";
+    op.amount = ASSET( "200.000 TESTS" );
+
+    signed_transaction tx;
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    tx.operations.push_back( op );
+
+    BOOST_TEST_MESSAGE( "--- Test failure when no signatures" );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_missing_active_auth );
+
+    BOOST_TEST_MESSAGE( "--- Test failure when signed by a signature not in the account's authority" );
+    sign( tx, alice_post_key );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_missing_active_auth );
+
+    BOOST_TEST_MESSAGE( "--- Test failure when duplicate signatures" );
+    tx.signatures.clear();
+    sign( tx, alice_private_key );
+    sign( tx, alice_private_key );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_duplicate_sig );
+
+    BOOST_TEST_MESSAGE( "--- Test failure when signed by an additional signature not in the creator's authority" );
+    tx.signatures.clear();
+    sign( tx, alice_private_key );
+    sign( tx, bob_private_key );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_irrelevant_sig );
+
+    BOOST_TEST_MESSAGE( "--- Test success with owner signature" );
+    tx.signatures.clear();
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+
+    validate_database();
+    generate_block();
+
+    //remove price feed to check one unlikely scenario
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_feed_history(), [&]( feed_history_object& feed )
+      {
+        feed.current_median_history = feed.market_median_history =
+          feed.current_min_history = feed.current_max_history = price();
+      } );
+    } );
+
+    BOOST_TEST_MESSAGE( "--- Test failure without price feed" );
+    tx.signatures.clear();
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: collateralized_convert_apply" );
+    ACTORS( (alice)(bob) );
+
+    generate_block();
+
+    const auto& dgpo = db->get_dynamic_global_properties();
+    const auto& feed = db->get_feed_history();
+    db->skip_price_feed_limit_check = false;
+    
+    price price_1_for_4 = price( ASSET( "1.000 TBD" ), ASSET( "4.000 TESTS" ) );
+    set_price_feed( price_1_for_4 );
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_4 );
+
+    flat_map< string, vector<char> > props;
+    props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0 );
+    set_witness_props( props );
+
+    fund( "alice", ASSET( "100.000 TBD" ) );
+    fund( "alice", ASSET( "1000.000 TESTS" ) );
+    fund( "bob", ASSET( "100.000 TBD" ) );
+
+    BOOST_TEST_MESSAGE( "--- Test failure sending non-HIVE collateral" );
+    collateralized_convert_operation op;
+    op.owner = "alice";
+    op.amount = ASSET( "5.000 TBD" );
+    signed_transaction tx;
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    tx.operations.push_back( op );
+    sign( tx, alice_private_key );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+    tx.clear();
+    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) );
+
+    BOOST_TEST_MESSAGE( "--- Test failure sending negative collateral" );
+    op.amount = ASSET( "-5.000 TESTS" );
+    tx.operations.push_back( op );
+    sign( tx, alice_private_key );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+    tx.clear();
+
+    BOOST_TEST_MESSAGE( "--- Test failure sending zero collateral" );
+    op.amount = ASSET( "0.000 TESTS" );
+    tx.operations.push_back( op );
+    sign( tx, alice_private_key );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+    tx.clear();
+
+    BOOST_TEST_MESSAGE( "--- Test failure sending too small collateral" );
+    op.amount = ASSET( "0.009 TESTS" ); //0.004 TESTS for immediate conversion which would give 0.001 TBD if there was no extra 5% fee
+    tx.operations.push_back( op );
+    sign( tx, alice_private_key );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+    tx.clear();
+
+    BOOST_TEST_MESSAGE( "--- Test failure sending collateral exceeding balance" );
+    op.amount = ASSET( "1000.001 TESTS" );
+    tx.operations.push_back( op );
+    sign( tx, alice_private_key );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+    tx.clear();
+
+    transfer( HIVE_INIT_MINER_NAME, "alice", ASSET( "9000.000 TESTS" ) );
+    auto alice_balance = get_balance( "alice" );
+    BOOST_REQUIRE( alice_balance == ASSET( "10000.000 TESTS" ) );
+
+    BOOST_TEST_MESSAGE( "--- Test ok - conversion at 25 cents per HIVE, both initial and actual" );
+    op.amount = ASSET( "1000.000 TESTS" );
+    tx.operations.push_back( op );
+    auto conversion_time = db->head_block_time();
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+    tx.clear();
+
+    alice_balance -= ASSET( "1000.000 TESTS" );
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "119.047 TBD" ) ); // 1000/2 collateral * 10/42 price with fee
+    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) );
+
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "--- Test failure - conversion with duplicate id" );
+    op.amount = ASSET( "1000.000 TESTS" );
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+    tx.clear();
+
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
+
+    generate_blocks( conversion_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
+
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    generate_block(); //actual conversion
+    alice_balance += ASSET( "500.003 TESTS" ); //getting back excess collateral (1000 - 119.047 * 42/10)
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) ); //actual conversion does not give any more HBD
+    {
+      auto recent_ops = get_last_operations( 1 );
+      auto convert_op = recent_ops.back().get< fill_collateralized_convert_request_operation >();
+      BOOST_REQUIRE( convert_op.owner == "alice" );
+      BOOST_REQUIRE( convert_op.requestid == 0 );
+      BOOST_REQUIRE( convert_op.amount_in == ASSET( "499.997 TESTS" ) );
+      BOOST_REQUIRE( convert_op.amount_out == ASSET( "119.047 TBD" ) );
+      BOOST_REQUIRE( convert_op.excess_collateral == ASSET( "500.003 TESTS" ) );
+    }
+
+    BOOST_TEST_MESSAGE( "--- Test ok - conversion at 25 cents initial, 12.5 cents per HIVE actual" );
+    op.amount = ASSET( "1000.000 TESTS" );
+    tx.operations.push_back( op );
+    auto conversion_2_time = db->head_block_time();
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+    tx.clear();
+
+    alice_balance -= ASSET( "1000.000 TESTS" );
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "119.047 TBD" ) ); // 1000/2 collateral * 10/42 price with fee
+    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) );
+
+    price price_1_for_8 = price( ASSET( "1.000 TBD" ), ASSET( "8.000 TESTS" ) );
+    set_price_feed( price_1_for_8 );
+    set_price_feed( price_1_for_8 ); //need to do it twice or median won't be the one required
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_8 );
+
+    generate_blocks( conversion_2_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
+
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    generate_block(); //actual conversion
+    alice_balance += ASSET( "0.006 TESTS" ); //almost no excess collateral (1000 - 119.047 * 84/10)
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
+
+    BOOST_TEST_MESSAGE( "--- Test ok - conversion at 12.5 cents initial, 5 cents per HIVE actual" );
+    op.amount = ASSET( "1000.000 TESTS" );
+    tx.operations.push_back( op );
+    auto conversion_3_time = db->head_block_time();
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+    tx.clear();
+
+    alice_balance -= ASSET( "1000.000 TESTS" );
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "59.523 TBD" ) ); // 1000/2 collateral * 10/84 price with fee
+    //transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) ); leave it this time on account
+
+    price price_1_for_20 = price( ASSET( "1.000 TBD" ), ASSET( "20.000 TESTS" ) );
+    set_price_feed( price_1_for_20 );
+    set_price_feed( price_1_for_20 );
+    set_price_feed( price_1_for_20 );
+    set_price_feed( price_1_for_20 ); //four times required to override three previous records as median
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_20 );
+
+    generate_blocks( conversion_3_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
+
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    generate_block(); //actual conversion
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance ); //no excess collateral
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "59.523 TBD" ) ); //even though there was too little collateral we still don't try to take back produced HBD
+    {
+      auto recent_ops = get_last_operations( 2 );
+      auto sys_warn_op = recent_ops.back().get< system_warning_operation >();
+      BOOST_REQUIRE( sys_warn_op.message.compare( 0, 23, "Insufficient collateral" ) == 0 );
+    }
+    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) );
+
+    BOOST_TEST_MESSAGE( "--- Setting amount of HBD in the system to the edge of hard limit" );
+    {
+      fc::uint128_t amount( dgpo.get_current_supply().amount.value );
+      uint16_t limit2 = 2 * dgpo.hbd_stop_percent + HIVE_1_BASIS_POINT; //there is rounding when percent is calculated, hence some strange correction
+      amount = ( amount * limit2 ) / ( 2 * HIVE_100_PERCENT - limit2 );
+      auto new_hbd = asset( amount.to_uint64(), HIVE_SYMBOL ) * feed.current_median_history;
+      new_hbd -= dgpo.get_current_hbd_supply() - db->get_treasury().get_hbd_balance();
+      fund( "alice", new_hbd, false );
+      uint16_t percent = db->calculate_HBD_percent();
+      BOOST_REQUIRE_EQUAL( percent, dgpo.hbd_stop_percent );
+    }
+
+    BOOST_TEST_MESSAGE( "--- Test failure on too many HBD in the system" );
+    op.amount = ASSET( "0.042 TESTS" ); //minimal amount of collateral that gives nonzero HBD at current price
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+    tx.clear();
+
+    const auto& collateralized_convert_request_idx = db->get_index< collateralized_convert_request_index, by_owner >();
+    BOOST_REQUIRE( collateralized_convert_request_idx.empty() );
+
+    //let's make some room for conversion (treasury HBD does not count)
+    transfer( "alice", db->get_treasury_name(), ASSET( "25.000 TBD" ) );
+
+    BOOST_TEST_MESSAGE( "--- Test ok - conversion at 5 cents initial, 5 cents per HIVE actual (while price is artificial)" );
+    op.amount = ASSET( "1000.000 TESTS" );
+    tx.operations.push_back( op );
+    auto conversion_4_time = db->head_block_time();
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    auto alice_hbd_balance = get_hbd_balance( "alice" );
+    db->push_transaction( tx, 0 );
+    tx.clear();
+
+    alice_balance -= ASSET( "1000.000 TESTS" );
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    alice_hbd_balance += ASSET( "23.809 TBD" ); // 1000/2 collateral * 1/21 price with fee
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd_balance );
+
+    BOOST_TEST_MESSAGE( "--- Test ok - regular conversion at artificial price" );
+    {
+      //let's schedule conversion from HBD to hive
+      convert_operation opc;
+      opc.owner = "bob";
+      opc.amount = ASSET( "20.000 TBD" );
+      tx.operations.push_back( opc );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      sign( tx, bob_private_key );
+      db->push_transaction( tx, 0 );
+      tx.clear();
+    }
+    generate_block();
+
+    //since we are nearly on the edge of HBD hard limit, let's use the opportunity and test what happens when we try to cross it
+    fund( "bob", dgpo.get_current_hbd_supply() );
+    generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( dgpo.head_block_number % HIVE_FEED_INTERVAL_BLOCKS ) );
+    //last feed update should've put up artificial price of HIVE
+    auto recent_ops = get_last_operations( 2 );
+    auto sys_warn_op = recent_ops.back().get< system_warning_operation >();
+    BOOST_REQUIRE( sys_warn_op.message.compare( 0, 27, "HIVE price corrected upward" ) == 0 );
+
+    price price_1_for_10 = price( ASSET( "1.000 TBD" ), ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE( ( feed.current_median_history > price_1_for_10 ) && feed.current_median_history < price_1_for_8 );
+    BOOST_REQUIRE( feed.current_max_history == price_1_for_4 ); //it is hard to force artificial correction of max price when it is so high to begin with
+    BOOST_REQUIRE( feed.market_median_history == price_1_for_20 ); //market driven median price should be intact
+    BOOST_REQUIRE( feed.current_min_history == price_1_for_20 ); //minimal price should be intact
+
+    generate_blocks( conversion_4_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
+
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "0.000 TESTS" ) );
+    generate_block(); //actual conversion
+    alice_balance += ASSET( "500.011 TESTS" ); //excess collateral (1000 - 23.809 * 21/1) - alice used fee corrected market_median_price...
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "199.102 TESTS" ) ); //...but bob used ~1/10 price (artificial current_median_history)
+
+    //put HBD on treasury where it does not count, but try to make some conversion with artificial price before it is changed back down
+    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) );
+    transfer( "bob", db->get_treasury_name(), get_hbd_balance( "bob" ) );
+
+    BOOST_TEST_MESSAGE( "--- Test failed - conversion initiated while artificial price is active" );
+    op.amount = ASSET( "1000.000 TESTS" );
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+    tx.clear();
+
+    generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( dgpo.head_block_number % HIVE_FEED_INTERVAL_BLOCKS ) );
+
+    //since HBD on treasury does not count the price should now be back to normal price
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_20 );
+    BOOST_REQUIRE( feed.market_median_history == price_1_for_20 );
+    BOOST_REQUIRE( feed.current_min_history == price_1_for_20 );
+    BOOST_REQUIRE( feed.current_max_history == price_1_for_4 );
+
+    BOOST_TEST_MESSAGE( "--- Test ok - conversion at 5 cents initial, 50 cents per HIVE actual" );
+    op.amount = ASSET( "1000.000 TESTS" );
+    tx.operations.push_back( op );
+    auto conversion_5_time = db->head_block_time();
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+    tx.clear();
+
+    alice_balance -= ASSET( "1000.000 TESTS" );
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "23.809 TBD" ) ); // 1000/2 collateral * 1/21 price with fee
+
+    price price_1_for_2 = price( ASSET( "1.000 TBD" ), ASSET( "2.000 TESTS" ) );
+    set_price_feed( price_1_for_2 );
+    set_price_feed( price_1_for_2 );
+    set_price_feed( price_1_for_2 );
+    set_price_feed( price_1_for_2 );
+    set_price_feed( price_1_for_2 );
+    set_price_feed( price_1_for_2 );
+    set_price_feed( price_1_for_2 );
+    set_price_feed( price_1_for_2 );
+    set_price_feed( price_1_for_2 );
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_2 );
+
+    generate_blocks( conversion_5_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
+
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    generate_block(); //actual conversion
+    alice_balance += ASSET( "950.002 TESTS" ); //a lot of excess collateral (1000 - 23.809 * 21/10)
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
 }
 
 BOOST_AUTO_TEST_CASE( limit_order_create_validate )

@@ -484,7 +484,8 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
 #endif
   ); 
   BOOST_CHECK_EQUAL( sizeof( comment_vote_object ), 48u ); //at most <7d> of votes on unpaid comments
-  BOOST_CHECK_EQUAL( sizeof( convert_request_object ), 56u ); //at most <3.5d> of conversion requests
+  BOOST_CHECK_EQUAL( sizeof( convert_request_object ), 24u ); //at most <3.5d> of conversion requests
+  BOOST_CHECK_EQUAL( sizeof( collateralized_convert_request_object ), 32u ); //at most <3.5d> of conversion requests
   BOOST_CHECK_EQUAL( sizeof( escrow_object ), 120u ); //small but potentially lasting forever, limited to 255*account_object
   BOOST_CHECK_EQUAL( sizeof( savings_withdraw_object ), 104u ); //at most <3d> of saving withdrawals
   BOOST_CHECK_EQUAL( sizeof( limit_order_object ), 80u ); //at most <28d> of limit orders
@@ -501,7 +502,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   );
   BOOST_CHECK_EQUAL( sizeof( block_summary_object ), 24u ); //always 64k objects
   BOOST_CHECK_EQUAL( sizeof( hardfork_property_object ), 120u );
-  BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 136u ); //dynamic size worth 7*24 of sizeof(price)
+  BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 232u ); //dynamic size worth 7*24 of sizeof(price)
   BOOST_CHECK_EQUAL( sizeof( witness_schedule_object ), 536u );
 
   //TODO: categorize and evaluate size potential of SMT related objects:

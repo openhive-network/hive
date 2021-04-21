@@ -80,6 +80,8 @@ class database_api_impl
       (find_vesting_delegation_expirations)
       (list_hbd_conversion_requests)
       (find_hbd_conversion_requests)
+      (list_collateralized_conversion_requests)
+      (find_collateralized_conversion_requests)
       (list_decline_voting_rights_requests)
       (find_decline_voting_rights_requests)
       (get_comment_pending_payouts)
@@ -308,7 +310,7 @@ DEFINE_API_IMPL( database_api_impl, get_reward_funds )
 
 DEFINE_API_IMPL( database_api_impl, get_current_price_feed )
 {
-  return _db.get_feed_history().current_median_history;;
+  return _db.get_feed_history().current_median_history;
 }
 
 DEFINE_API_IMPL( database_api_impl, get_feed_history )
@@ -1001,8 +1003,15 @@ DEFINE_API_IMPL( database_api_impl, list_hbd_conversion_requests )
     case( by_account ):
     {
       auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
+      account_id_type owner_id;
+      if( key.first != "" )
+      {
+        const auto* owner = _db.find_account( key.first );
+        FC_ASSERT( owner != nullptr, "Given account does not exist." );
+        owner_id = owner->get_id();
+      }
       iterate_results< chain::convert_request_index, chain::by_owner >(
-        boost::make_tuple( key.first, key.second ),
+        boost::make_tuple( owner_id, key.second ),
         result.requests,
         args.limit,
         &database_api_impl::on_push_default< api_convert_request_object, convert_request_object >,
@@ -1019,10 +1028,15 @@ DEFINE_API_IMPL( database_api_impl, list_hbd_conversion_requests )
 DEFINE_API_IMPL( database_api_impl, find_hbd_conversion_requests )
 {
   find_hbd_conversion_requests_return result;
-  const auto& convert_idx = _db.get_index< chain::convert_request_index, chain::by_owner >();
-  auto itr = convert_idx.lower_bound( args.account );
 
-  while( itr != convert_idx.end() && itr->owner == args.account && result.requests.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
+  const auto* owner = _db.find_account( args.account );
+  FC_ASSERT( owner != nullptr, "Given account does not exist." );
+  account_id_type owner_id = owner->get_id();
+
+  const auto& convert_idx = _db.get_index< chain::convert_request_index, chain::by_owner >();
+  auto itr = convert_idx.lower_bound( owner_id );
+
+  while( itr != convert_idx.end() && itr->get_owner() == owner_id && result.requests.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
   {
     result.requests.emplace_back( *itr, _db );
     ++itr;
@@ -1031,6 +1045,72 @@ DEFINE_API_IMPL( database_api_impl, find_hbd_conversion_requests )
   return result;
 }
 
+/* Collateralized Conversion Requests */
+
+DEFINE_API_IMPL( database_api_impl, list_collateralized_conversion_requests )
+{
+  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+
+  list_collateralized_conversion_requests_return result;
+  result.requests.reserve( args.limit );
+
+  switch( args.order )
+  {
+    case( by_conversion_date ):
+    {
+      auto key = args.start.as< std::pair< time_point_sec, collateralized_convert_request_id_type > >();
+      iterate_results< chain::collateralized_convert_request_index, chain::by_conversion_date >(
+        boost::make_tuple( key.first, key.second ),
+        result.requests,
+        args.limit,
+        &database_api_impl::on_push_default< api_collateralized_convert_request_object, collateralized_convert_request_object >,
+        &database_api_impl::filter_default< collateralized_convert_request_object > );
+      break;
+    }
+    case( by_account ):
+    {
+      auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
+      account_id_type owner_id;
+      if( key.first != "" )
+      {
+        const auto* owner = _db.find_account( key.first );
+        FC_ASSERT( owner != nullptr, "Given account does not exist." );
+        owner_id = owner->get_id();
+      }
+      iterate_results< chain::collateralized_convert_request_index, chain::by_owner >(
+        boost::make_tuple( owner_id, key.second ),
+        result.requests,
+        args.limit,
+        &database_api_impl::on_push_default< api_collateralized_convert_request_object, collateralized_convert_request_object >,
+        &database_api_impl::filter_default< collateralized_convert_request_object > );
+      break;
+    }
+    default:
+      FC_ASSERT( false, "Unknown or unsupported sort order" );
+  }
+
+  return result;
+}
+
+DEFINE_API_IMPL( database_api_impl, find_collateralized_conversion_requests )
+{
+  find_collateralized_conversion_requests_return result;
+
+  const auto* owner = _db.find_account( args.account );
+  FC_ASSERT( owner != nullptr, "Given account does not exist." );
+  account_id_type owner_id = owner->get_id();
+
+  const auto& convert_idx = _db.get_index< chain::collateralized_convert_request_index, chain::by_owner >();
+  auto itr = convert_idx.lower_bound( owner_id );
+
+  while( itr != convert_idx.end() && itr->get_owner() == owner_id && result.requests.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
+  {
+    result.requests.emplace_back( *itr, _db );
+    ++itr;
+  }
+
+  return result;
+}
 
 /* Decline Voting Rights Requests */
 
@@ -1942,6 +2022,8 @@ DEFINE_READ_APIS( database_api,
   (find_vesting_delegation_expirations)
   (list_hbd_conversion_requests)
   (find_hbd_conversion_requests)
+  (list_collateralized_conversion_requests)
+  (find_collateralized_conversion_requests)
   (list_decline_voting_rights_requests)
   (find_decline_voting_rights_requests)
   (get_comment_pending_payouts)

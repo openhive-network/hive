@@ -6,12 +6,16 @@
 #include <hive/protocol/misc_utilities.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
+#include <hive/chain/account_object.hpp>
 
 #include <boost/multiprecision/cpp_int.hpp>
 
 
 namespace hive { namespace chain {
 
+  using hive::protocol::HBD_asset;
+  using hive::protocol::HIVE_asset;
+  using hive::protocol::VEST_asset;
   using hive::protocol::asset;
   using hive::protocol::price;
   using hive::protocol::asset_symbol_type;
@@ -28,21 +32,65 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       convert_request_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _owner, const asset& _amount, const time_point_sec& _conversion_time, uint32_t _requestid )
-        : id( _id ), owner( _owner ), requestid( _requestid ), amount( _amount ), conversion_date( _conversion_time )
+        const account_object& _owner, const HBD_asset& _amount, const time_point_sec& _conversion_time, uint32_t _requestid )
+        : id( _id ), owner( _owner.get_id() ), amount( _amount ), requestid( _requestid ), conversion_date( _conversion_time )
       {}
 
       //amount of HBD to be converted to HIVE
-      const asset& get_convert_amount() const { return amount; }
+      const HBD_asset& get_convert_amount() const { return amount; }
 
-      account_name_type owner; //< TODO: can be replaced with account_id_type
-      uint32_t          requestid = 0; ///< id set by owner, the owner,requestid pair must be unique
-      asset             amount; //< TODO: can be replaced with HBD_asset
-      time_point_sec    conversion_date; ///< at this time the feed_history_median_price * amount
+      //request owner
+      account_id_type get_owner() const { return owner; }
+      //request id - unique id of request among active requests of the same owner
+      uint32_t get_request_id() const { return requestid; }
+      //time of actual conversion
+      time_point_sec get_conversion_date() const { return conversion_date; }
+
+    private:
+      account_id_type owner;
+      HBD_asset       amount;
+      uint32_t        requestid = 0; //< id set by owner, the owner,requestid pair must be unique
+      time_point_sec  conversion_date; //< actual conversion takes place at that time
 
     CHAINBASE_UNPACK_CONSTRUCTOR(convert_request_object);
   };
 
+  /**
+    *  This object is used to track pending requests to convert HIVE to HBD with collateral
+    */
+  class collateralized_convert_request_object : public object< collateralized_convert_request_object_type, collateralized_convert_request_object >
+  {
+    CHAINBASE_OBJECT( collateralized_convert_request_object );
+    public:
+      template< typename Allocator >
+      collateralized_convert_request_object( allocator< Allocator > a, uint64_t _id,
+        const account_object& _owner, const HIVE_asset& _collateral_amount, const HBD_asset& _converted_amount,
+        const time_point_sec& _conversion_time, uint32_t _requestid )
+        : id( _id ), owner( _owner.get_id() ), collateral_amount( _collateral_amount ), converted_amount( _converted_amount ),
+        requestid( _requestid ), conversion_date( _conversion_time )
+      {}
+
+      //amount of HIVE collateral
+      const HIVE_asset& get_collateral_amount() const { return collateral_amount; }
+      //amount of HBD that was already given to owner
+      const HBD_asset& get_converted_amount() const { return converted_amount; }
+
+      //request owner
+      account_id_type get_owner() const { return owner; }
+      //request id - unique id of request among active requests of the same owner
+      uint32_t get_request_id() const { return requestid; }
+      //time of actual conversion
+      time_point_sec get_conversion_date() const { return conversion_date; }
+
+    private:
+      account_id_type owner;
+      HIVE_asset      collateral_amount;
+      HBD_asset       converted_amount;
+      uint32_t        requestid = 0; //< id set by owner, the (owner,requestid) pair must be unique
+      time_point_sec  conversion_date; //< actual conversion takes place at that time, excess collateral is returned to owner
+
+      CHAINBASE_UNPACK_CONSTRUCTOR( collateralized_convert_request_object );
+  };
 
   class escrow_object : public object< escrow_object_type, escrow_object >
   {
@@ -164,15 +212,19 @@ namespace hive { namespace chain {
 
 
   /**
-    *  This object gets updated once per hour, on the hour
+    *  This object gets updated once per hour, on the hour. Tracks price of HIVE (technically in HBD, but
+    *  the meaning is in dollars).
     */
-  class feed_history_object  : public object< feed_history_object_type, feed_history_object >
+  class feed_history_object : public object< feed_history_object_type, feed_history_object >
   {
     CHAINBASE_OBJECT( feed_history_object );
     public:
       CHAINBASE_DEFAULT_CONSTRUCTOR( feed_history_object, (price_history) )
 
-      price current_median_history; ///< the current median of the price history, used as the base for convert operations
+      price current_median_history; ///< the current median of the price history, used as the base for most convert operations
+      price market_median_history; ///< same as current_median_history except when the latter is artificially changed upward
+      price current_min_history; ///< used as immediate price for collateralized conversion (after fee correction)
+      price current_max_history;
 
       using t_price_history = t_deque< price >;
 
@@ -321,19 +373,42 @@ namespace hive { namespace chain {
         const_mem_fun< convert_request_object, convert_request_object::id_type, &convert_request_object::get_id > >,
       ordered_unique< tag< by_conversion_date >,
         composite_key< convert_request_object,
-          member< convert_request_object, time_point_sec, &convert_request_object::conversion_date >,
+          const_mem_fun< convert_request_object, time_point_sec, &convert_request_object::get_conversion_date >,
           const_mem_fun< convert_request_object, convert_request_object::id_type, &convert_request_object::get_id >
         >
       >,
       ordered_unique< tag< by_owner >,
         composite_key< convert_request_object,
-          member< convert_request_object, account_name_type, &convert_request_object::owner >,
-          member< convert_request_object, uint32_t, &convert_request_object::requestid >
+          const_mem_fun< convert_request_object, account_id_type, &convert_request_object::get_owner >,
+          const_mem_fun< convert_request_object, uint32_t, &convert_request_object::get_request_id >
         >
       >
     >,
     allocator< convert_request_object >
   > convert_request_index;
+
+  struct by_owner;
+  struct by_conversion_date;
+  typedef multi_index_container<
+    collateralized_convert_request_object,
+    indexed_by<
+      ordered_unique< tag< by_id >,
+        const_mem_fun< collateralized_convert_request_object, collateralized_convert_request_object::id_type, &collateralized_convert_request_object::get_id > >,
+      ordered_unique< tag< by_conversion_date >,
+        composite_key< collateralized_convert_request_object,
+          const_mem_fun< collateralized_convert_request_object, time_point_sec, &collateralized_convert_request_object::get_conversion_date >,
+          const_mem_fun< collateralized_convert_request_object, collateralized_convert_request_object::id_type, &collateralized_convert_request_object::get_id >
+        >
+      >,
+      ordered_unique< tag< by_owner >,
+        composite_key< collateralized_convert_request_object,
+          const_mem_fun< collateralized_convert_request_object, account_id_type, &collateralized_convert_request_object::get_owner >,
+          const_mem_fun< collateralized_convert_request_object, uint32_t, &collateralized_convert_request_object::get_request_id >
+        >
+      >
+    >,
+    allocator< collateralized_convert_request_object >
+  > collateralized_convert_request_index;
 
   struct by_owner;
   struct by_volume_weight;
@@ -488,12 +563,16 @@ FC_REFLECT( hive::chain::limit_order_object,
 CHAINBASE_SET_INDEX_TYPE( hive::chain::limit_order_object, hive::chain::limit_order_index )
 
 FC_REFLECT( hive::chain::feed_history_object,
-          (id)(current_median_history)(price_history) )
+          (id)(current_median_history)(market_median_history)(current_min_history)(current_max_history)(price_history) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::feed_history_object, hive::chain::feed_history_index )
 
 FC_REFLECT( hive::chain::convert_request_object,
-          (id)(owner)(requestid)(amount)(conversion_date) )
+          (id)(owner)(amount)(requestid)(conversion_date) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::convert_request_object, hive::chain::convert_request_index )
+
+FC_REFLECT( hive::chain::collateralized_convert_request_object,
+          (id)(owner)(collateral_amount)(converted_amount)(requestid)(conversion_date) )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::collateralized_convert_request_object, hive::chain::collateralized_convert_request_index )
 
 FC_REFLECT( hive::chain::liquidity_reward_balance_object,
           (id)(owner)(hive_volume)(hbd_volume)(weight)(last_update) )

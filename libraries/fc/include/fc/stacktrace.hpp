@@ -10,7 +10,7 @@
 
 namespace fc {
 
-void print_stacktrace(std::ostream& out, unsigned int max_frames = 63, void* caller_overwrite_hack = nullptr);
+void print_stacktrace(std::ostream& out, unsigned int max_frames = 63, void* caller_overwrite_hack = nullptr, bool addr2line = true);
 void print_stacktrace_on_segfault();
 
 }

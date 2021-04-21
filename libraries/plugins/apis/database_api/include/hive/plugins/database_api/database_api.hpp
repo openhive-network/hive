@@ -83,6 +83,8 @@ class database_api
       (find_vesting_delegation_expirations)
       (list_hbd_conversion_requests)
       (find_hbd_conversion_requests)
+      (list_collateralized_conversion_requests)
+      (find_collateralized_conversion_requests)
       (list_decline_voting_rights_requests)
       (find_decline_voting_rights_requests)
 

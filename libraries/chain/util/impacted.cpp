@@ -221,6 +221,11 @@ struct get_impacted_account_visitor
     _impacted.insert( op.owner );
   }
 
+  void operator()( const fill_collateralized_convert_request_operation& op )
+  {
+    _impacted.insert( op.owner );
+  }
+
   void operator()( const fill_vesting_withdraw_operation& op )
   {
     _impacted.insert( op.from_account );
@@ -378,6 +383,12 @@ struct get_impacted_account_visitor
     _impacted.insert( op.old_recovery_account );
     _impacted.insert( op.new_recovery_account );
   }
+
+  void operator()( const system_warning_operation& op )
+  {
+    _impacted.insert( HIVE_INIT_MINER_NAME );
+  }
+
   //void operator()( const operation& op ){}
 };
 
