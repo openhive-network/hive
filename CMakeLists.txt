@@ -5,22 +5,12 @@ cmake_minimum_required( VERSION 3.2 )
 set( BLOCKCHAIN_NAME "Hive" )
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_C_STANDARD 99 )
+set( CMAKE_CXX_STANDARD_REQUIRED ON )
 set( CMAKE_CXX_EXTENSIONS OFF )
 
 set( GUI_CLIENT_EXECUTABLE_NAME Hive )
 set( CUSTOM_URL_SCHEME "gcs" )
 set( INSTALLER_APP_ID "68ad7005-8eee-49c9-95ce-9eed97e5b347" )
-
-# http://stackoverflow.com/a/18369825
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7)
-        message(FATAL_ERROR "GCC version must be at least 7!")
-    endif()
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4)
-        message(FATAL_ERROR "Clang version must be at least 4!")
-    endif()
-endif()
 
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules" )
 
