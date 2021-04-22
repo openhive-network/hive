@@ -61,6 +61,7 @@ class _PathsToExecutables:
         if executable_name in self.installed_executables and self.installed_executables[executable_name] is not None:
             return self.installed_executables[executable_name]
 
+        self.print_configuration_hint()
         raise Exception(f'Missing path to {executable_name}')
 
     def set_path_of(self, executable_name, executable_path):
