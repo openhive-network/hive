@@ -83,7 +83,10 @@ class _PathsToExecutables:
         if variables is None:
             from os import path, getenv
             for executable in self.supported_executables:
-                self.environment_variables[executable.name] = path.expandvars(getenv(executable.environment_variable))
+                environment_variable = getenv(executable.environment_variable)
+                if environment_variable is not None:
+                    environment_variable = path.expandvars(environment_variable)
+                self.environment_variables[executable.name] = environment_variable
             return
 
         for executable in self.supported_executables:
