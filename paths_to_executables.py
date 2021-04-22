@@ -2,7 +2,7 @@ class NotSupported(Exception):
     pass
 
 
-class PathsToExecutables:
+class _PathsToExecutables:
     class __ExecutableDetails:
         def __init__(self, name, default_path_from_build):
             self.name = name
