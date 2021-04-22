@@ -226,7 +226,6 @@ if __name__ == "__main__":
     print('Reconnected')
 
     while True:
-        time.sleep(2)
         method = 'account_history_api.get_ops_in_block'
         alpha_duplicates = []
         beta_duplicates = []
@@ -253,3 +252,4 @@ if __name__ == "__main__":
         info = beta_wallet.api.info()
         last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
         print("beta last_irreversible_block_num: ", last_irreversible_block_num)
+        alpha_node0.wait_number_of_blocks(1)
