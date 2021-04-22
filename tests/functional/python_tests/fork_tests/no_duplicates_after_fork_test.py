@@ -103,7 +103,7 @@ def get_producer_reward_operations(ops):
     return result
 
 
-if __name__ == "__main__":
+def test_no_duplicates_after_fork():
     logger.show_debug_logs_on_stdout()  # TODO: Remove this before delivery
 
     alpha_witness_names = [f'witness{i}-alpha' for i in range(10)]
