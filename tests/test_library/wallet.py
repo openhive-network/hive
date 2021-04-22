@@ -5,6 +5,7 @@ import time
 
 from .account import Account
 from .node import Node
+from . import logger
 
 
 class Wallet:
@@ -67,9 +68,10 @@ class Wallet:
         self.stderr_file = None
         self.process = None
         self.finalizer = None
+        self.logger = logger.getLogger(__name__)  # FIXME: Replace this with separate logger for each wallet
 
     @staticmethod
-    def __close_process(process):
+    def __close_process(process, logger_from_wallet):
         if not process:
             return
 
@@ -77,10 +79,10 @@ class Wallet:
 
         try:
             return_code = process.wait(timeout=3)
+            logger_from_wallet.debug(f'Closed with {return_code} return code')
         except subprocess.TimeoutExpired:
             process.send_signal(signal.SIGKILL)
-
-        print(f'[Wallet] Closed with {return_code} return code')
+            logger_from_wallet.warning(f"Send SIGKILL because process didn't close before timeout")
 
     def get_stdout_file_path(self):
         return self.directory / 'stdout.txt'
@@ -119,7 +121,7 @@ class Wallet:
         self.stderr_file = open(self.get_stderr_file_path(), 'w')
 
         if not self.connected_node.is_ws_listening():
-            print(f'[Wallet] Waiting for node {self.connected_node} to listen...')
+            self.logger.info(f'Waiting for node {self.connected_node} to listen...')
 
         while not self.connected_node.is_ws_listening():
             time.sleep(1)
@@ -140,7 +142,7 @@ class Wallet:
         )
 
         import weakref
-        self.finalizer = weakref.finalize(self, Wallet.__close_process, self.process)
+        self.finalizer = weakref.finalize(self, Wallet.__close_process, self.process, self.logger)
 
         while not self.__is_ready():
             time.sleep(0.1)
@@ -163,7 +165,7 @@ class Wallet:
         self.api.unlock()
         self.api.import_key(Account('initminer').private_key)
 
-        print(f'[Wallet] Started with pid {self.process.pid}, listening on port {self.http_server_port}')
+        self.logger.info(f'Started, listening on port {self.http_server_port}')
 
     def connect_to(self, node: Node):
         self.connected_node = node
