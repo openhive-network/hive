@@ -171,10 +171,6 @@ class Wallet:
     def close(self):
         self.finalizer()
 
-    def wait_for_close(self):
-        return_code = self.process.wait()
-        print(f'[Wallet] Closed with {return_code} return code')
-
     def set_executable_file_path(self, executable_file_path):
         self.executable_file_path = executable_file_path
 
