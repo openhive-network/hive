@@ -201,6 +201,11 @@ if __name__ == "__main__":
         logger.info('Wait 21 blocks (when new witnesses will be surely active)')
         init_node.wait_number_of_blocks(21)
 
+        # Reason of this wait is to enable moving forward of irreversible block
+        # after subnetworks disconnection.
+        logger.info('Wait 21 blocks (when every witness sign at least one block)')
+        init_node.wait_number_of_blocks(21)
+
         alpha_net.disconnect_from(beta_net)
         print('Disconnected')
 
