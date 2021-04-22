@@ -4,10 +4,11 @@ class NotSupported(Exception):
 
 class PathsToExecutables:
     class __ExecutableDetails:
-        def __init__(self, name):
+        def __init__(self, name, default_path_from_build):
             self.name = name
             self.argument = f'--{name.replace("_", "-")}-path'
             self.environment_variable = f'{name}_PATH'.upper()
+            self.default_path_from_build = default_path_from_build
 
     def __init__(self):
         self.paths = {}
@@ -15,9 +16,9 @@ class PathsToExecutables:
         self.environment_variables = None
         self.installed_executables = None
         self.supported_executables = [
-            self.__ExecutableDetails('hived'),
-            self.__ExecutableDetails('cli_wallet'),
-            self.__ExecutableDetails('get_dev_key'),
+            self.__ExecutableDetails('hived', 'programs/hived/hived'),
+            self.__ExecutableDetails('cli_wallet', 'programs/cli_wallet/cli_wallet'),
+            self.__ExecutableDetails('get_dev_key', 'programs/util/get_dev_key'),
         ]
 
         self.parse_command_line_arguments()
@@ -26,6 +27,14 @@ class PathsToExecutables:
 
     def __is_supported(self, executable_name):
         return any([executable_name == executable.name for executable in self.supported_executables])
+
+    def print_configuration_hint(self):
+        hive_build_path = 'HIVE_BUILD_PATH'
+        print(f'Edit {hive_build_path} below, add following lines to /etc/environment and restart computer.\n')
+
+        print(f'{hive_build_path}= # Should be something like: \'/home/dev/hive/build\'')
+        for executable in self.supported_executables:
+            print(f'{executable.environment_variable}=\'${{{hive_build_path}}}/{executable.default_path_from_build}\'')
 
     def print_paths_in_use(self):
         entries = []
@@ -72,9 +81,9 @@ class PathsToExecutables:
         self.environment_variables = {}
 
         if variables is None:
-            import os
+            from os import path, getenv
             for executable in self.supported_executables:
-                self.environment_variables[executable.name] = os.getenv(executable.environment_variable)
+                self.environment_variables[executable.name] = path.expandvars(getenv(executable.environment_variable))
             return
 
         for executable in self.supported_executables:
