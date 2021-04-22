@@ -5,6 +5,7 @@ cmake_minimum_required( VERSION 3.2 )
 set( BLOCKCHAIN_NAME "Hive" )
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_C_STANDARD 99 )
+set( CMAKE_CXX_EXTENSIONS OFF )
 
 set( GUI_CLIENT_EXECUTABLE_NAME Hive )
 set( CUSTOM_URL_SCHEME "gcs" )
