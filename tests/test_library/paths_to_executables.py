@@ -106,3 +106,18 @@ class _PathsToExecutables:
                 self.installed_executables[executable.name] = installed_executables[executable.name]
             else:
                 self.installed_executables[executable.name] = None
+
+
+__paths = _PathsToExecutables()
+
+
+def get_path_of(executable_name):
+    return __paths.get_path_of(executable_name)
+
+
+def set_path_of(executable_name, executable_path):
+    __paths.set_path_of(executable_name, executable_path)
+
+
+def print_paths_in_use():
+    __paths.print_paths_in_use()
