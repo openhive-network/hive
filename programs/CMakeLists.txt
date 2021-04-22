@@ -1,3 +1,4 @@
+add_subdirectory( blockchain_converter )
 add_subdirectory( build_helpers )
 add_subdirectory( cli_wallet )
 add_subdirectory( hived )
