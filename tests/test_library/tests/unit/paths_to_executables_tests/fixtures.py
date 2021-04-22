@@ -1,6 +1,6 @@
 import pytest
 
-from test_library.paths_to_executables import *
+from test_library.paths_to_executables import _PathsToExecutables
 
 
 @pytest.fixture
@@ -11,7 +11,7 @@ def empty_paths():
     script is run with some command line argument. All such information are ignored.
     """
 
-    paths = PathsToExecutables()
+    paths = _PathsToExecutables()
     paths.parse_command_line_arguments([])
     paths.set_environment_variables({})
     paths.set_installed_executables({})
