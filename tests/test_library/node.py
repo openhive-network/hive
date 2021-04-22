@@ -154,8 +154,8 @@ class Node:
 
     def run(self):
         if not self.executable_file_path:
-            from .paths_to_executables import get_hived_path
-            self.executable_file_path = get_hived_path()
+            from . import paths_to_executables
+            self.executable_file_path = paths_to_executables.get_path_of('hived')
 
         if self.directory.exists():
             from shutil import rmtree
