@@ -197,10 +197,9 @@ if __name__ == "__main__":
         print(wallet.api.list_accounts())
 
         # FIXME: It is workaround solution.
-        #        Replace it with waiting until irreversible block will move.
-        #        I mean: read current irreversible block number and wait until it change.
-        logger.info('Wait 42 blocks (until irreversible block will move)')
-        init_node.wait_number_of_blocks(2 * 21)
+        #        Replace it with waiting until new witnesses will be active.
+        logger.info('Wait 21 blocks (when new witnesses will be surely active)')
+        init_node.wait_number_of_blocks(21)
 
         alpha_net.disconnect_from(beta_net)
         print('Disconnected')
