@@ -27,6 +27,15 @@ class PathsToExecutables:
     def __is_supported(self, executable_name):
         return any([executable_name == executable.name for executable in self.supported_executables])
 
+    def print_paths_in_use(self):
+        entries = []
+        for executable in self.supported_executables:
+            entries += [
+                f'Name: {executable.name}\n'
+                f'Path: {self.get_path_of(executable.name)}\n'
+            ]
+        print('\n'.join(entries))
+
     def get_path_of(self, executable_name):
         if not self.__is_supported(executable_name):
             raise NotSupported(f'Executable {executable_name} is not supported')
