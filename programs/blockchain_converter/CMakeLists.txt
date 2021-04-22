@@ -1,0 +1,27 @@
+add_executable( blockchain_converter main.cpp )
+
+if( HIVE_STATIC_BUILD )
+  target_link_libraries( blockchain_converter PRIVATE
+                         "-static-libstdc++ -static-libgcc"
+                         fc
+  )
+else( HIVE_STATIC_BUILD )
+  target_link_libraries( blockchain_converter PRIVATE
+                         fc
+  )
+endif( HIVE_STATIC_BUILD )
+
+if( CLANG_TIDY_EXE )
+  set_target_properties(
+    blockchain_converter PROPERTIES
+    CXX_CLANG_TIDY "${DO_CLANG_TIDY}"
+  )
+endif( CLANG_TIDY_EXE )
+
+install( TARGETS
+blockchain_converter
+
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
