@@ -308,8 +308,9 @@ namespace fc
      const char* expr
      );
 
-  extern bool enable_record_assert_trip;
-  extern bool enable_assert_stacktrace;
+  extern bool enable_record_assert_trip; //enables logging assertions to output and allows other flags below to take effect
+  extern bool enable_assert_stacktrace; //turns on stacktrace on assertions - useful for replay when assertions should not happen
+  extern string last_assert_expression; //filled with assertion test expression when enable_record_assert_trip
 } // namespace fc
 
 #if __APPLE__
