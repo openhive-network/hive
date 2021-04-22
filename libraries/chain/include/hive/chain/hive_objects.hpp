@@ -348,14 +348,9 @@ namespace hive { namespace chain {
         from_string( memo, _memo );
       }
 
-      time_point_sec get_next_trigger_date(time_point_sec head_block_time)
+      time_point_sec get_next_trigger_date()
       {
-        // If this is the first execution trigger_date is HIVE_GENESIS_TIME
-        if (trigger_date == HIVE_GENESIS_TIME) {
-          return head_block_time + fc::hours(recurrence);
-        } else {
           return trigger_date + fc::hours(recurrence);
-        }
       }
 
       time_point_sec    trigger_date;

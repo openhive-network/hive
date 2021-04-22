@@ -1097,6 +1097,8 @@ namespace hive { namespace protocol {
     * @ingroup operations
     *
     * @brief Creates/updates/removes a recurrent transfer (Transfers any liquid asset (nonvesting) every fixed amount of time from one account to another)
+    * If amount is set to 0, the recurrent transfer will be deleted
+    * If there is already a recurrent transfer matching from and to, the recurrent transfer will be updated
     */
   struct recurrent_transfer_operation : public base_operation
   {
@@ -1105,7 +1107,7 @@ namespace hive { namespace protocol {
     account_name_type to;
     /// The amount of asset to transfer from @ref from to @ref to
     asset             amount;
-    /// The memo is plain-text, any encryption on the memo is up to a higher level protocol.
+
     string            memo;
     /// How often will the payment be triggered, unit: hours
     uint16_t          recurrence = 0;

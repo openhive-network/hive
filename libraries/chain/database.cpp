@@ -2389,10 +2389,10 @@ void database::process_recurrent_transfers()
         modify( current_recurrent_transfer, [&]( recurrent_transfer_object& rt )
         {
           rt.consecutive_failures = 0; // reset the consecutive failures counter
-          rt.trigger_date = rt.get_next_trigger_date(now);
+          rt.trigger_date = rt.get_next_trigger_date();
         });
 
-        push_virtual_operation(fill_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount));
+        push_virtual_operation(fill_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, to_string(current_recurrent_transfer.memo)));
         processed_transfers++;
       } else {
         uint8_t consecutive_failures = current_recurrent_transfer.consecutive_failures + 1;
@@ -2400,10 +2400,10 @@ void database::process_recurrent_transfers()
         if (consecutive_failures < HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES) {
           modify(current_recurrent_transfer, [&](recurrent_transfer_object &rt) {
             ++rt.consecutive_failures;
-            rt.trigger_date = rt.get_next_trigger_date(now);
+            rt.trigger_date = rt.get_next_trigger_date();
           });
           // false means the recurrent transfer was not deleted
-          push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, consecutive_failures, false));
+          push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), false));
         } else {
           // if we had too many consecutive failures, remove the recurrent payment object
           auto amount = current_recurrent_transfer.amount;
@@ -2414,7 +2414,7 @@ void database::process_recurrent_transfers()
             a.open_recurrent_transfers--;
           });
           // true means the recurrent transfer was deleted
-          push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, amount, consecutive_failures, true));
+          push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, amount, consecutive_failures, to_string(current_recurrent_transfer.memo), true));
         }
       }
     }
