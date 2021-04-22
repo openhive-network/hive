@@ -1,6 +1,6 @@
 import pytest
 
-from test_library.paths_to_executables_implementation import *
+from test_library.paths_to_executables import *
 
 
 @pytest.fixture
