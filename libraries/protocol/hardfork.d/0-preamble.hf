@@ -12,7 +12,7 @@
 #include <hive/protocol/version.hpp>
 #include <set>
 
-#ifdef IS_TEST_NET
+#if defined(IS_TEST_NET) && defined(HIVE_ENABLE_SMT)
 #define HIVE_NUM_HARDFORKS 26
 #else
 #define HIVE_NUM_HARDFORKS 25

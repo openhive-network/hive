@@ -5645,7 +5645,7 @@ void database::init_hardforks()
   FC_ASSERT( HIVE_HARDFORK_1_25 == 25, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_25 ] = fc::time_point_sec( HIVE_HARDFORK_1_25_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_25 ] = HIVE_HARDFORK_1_25_VERSION;
-#ifdef IS_TEST_NET
+#if defined(IS_TEST_NET) && defined(HIVE_ENABLE_SMT)
   FC_ASSERT( HIVE_HARDFORK_1_26 == 26, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_26 ] = fc::time_point_sec( HIVE_HARDFORK_1_26_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_26 ] = HIVE_HARDFORK_1_26_VERSION;
