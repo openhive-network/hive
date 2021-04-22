@@ -109,16 +109,12 @@ if __name__ == "__main__":
 
         logger.show_debug_logs_on_stdout()  # TODO: Remove this before delivery
 
-        Account.key_generator = KeyGenerator('../../../../build/programs/util/get_dev_key')
-
         alpha_witness_names = [f'witness{i}-alpha' for i in range(10)]
         beta_witness_names = [f'witness{i}-beta' for i in range(10)]
 
         # Create first network
         alpha_net = Network('Alpha', port_range=range(51000, 52000))
         alpha_net.set_directory('experimental_network')
-        alpha_net.set_hived_executable_file_path('../../../../build/programs/hived/hived')
-        alpha_net.set_wallet_executable_file_path('../../../../build/programs/cli_wallet/cli_wallet')
 
         init_node = alpha_net.add_node('InitNode')
         alpha_node0 = alpha_net.add_node('Node0')
@@ -127,8 +123,6 @@ if __name__ == "__main__":
         # Create second network
         beta_net = Network('Beta', port_range=range(52000, 53000))
         beta_net.set_directory('experimental_network')
-        beta_net.set_hived_executable_file_path('../../../../build/programs/hived/hived')
-        beta_net.set_wallet_executable_file_path('../../../../build/programs/cli_wallet/cli_wallet')
 
         beta_node0 = beta_net.add_node('Node0')
         beta_node1 = beta_net.add_node('Node1')
