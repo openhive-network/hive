@@ -3,8 +3,8 @@ import subprocess
 import signal
 import time
 
-from .node import Node
 from .account import Account
+from .node import Node
 
 
 class Wallet:
