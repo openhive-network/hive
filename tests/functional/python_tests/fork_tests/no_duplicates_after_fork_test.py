@@ -225,7 +225,7 @@ def test_no_duplicates_after_fork():
     alpha_net.connect_with(beta_net)
     print('Reconnected')
 
-    while True:
+    for _ in range(40):
         method = 'account_history_api.get_ops_in_block'
         alpha_duplicates = []
         beta_duplicates = []
@@ -244,12 +244,5 @@ def test_no_duplicates_after_fork():
             if size > 1:
                 beta_duplicates.append(i)
 
-        print("duplicates in alpha network: ", alpha_duplicates)
-        info = wallet.api.info()
-        last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
-        print("alpha last_irreversible_block_num: ", last_irreversible_block_num)
-        print("duplicates in beta network: ", beta_duplicates)
-        info = beta_wallet.api.info()
-        last_irreversible_block_num = info["result"]["last_irreversible_block_num"]
-        print("beta last_irreversible_block_num: ", last_irreversible_block_num)
+        assert not alpha_duplicates and not beta_duplicates
         alpha_node0.wait_number_of_blocks(1)
