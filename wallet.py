@@ -104,8 +104,8 @@ class Wallet:
 
     def run(self):
         if not self.executable_file_path:
-            from .paths_to_executables import get_cli_wallet_path
-            self.executable_file_path = get_cli_wallet_path()
+            from . import paths_to_executables
+            self.executable_file_path = paths_to_executables.get_path_of('cli_wallet')
 
         if not self.connected_node:
             raise Exception('Server websocket RPC endpoint not set, use Wallet.connect_to method')

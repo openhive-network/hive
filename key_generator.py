@@ -8,8 +8,8 @@ class KeyGenerator:
 
     def generate_keys(self, account_name, secret='secret'):
         if self.executable_path is None:
-            from .paths_to_executables import get_key_generator_path
-            self.executable_path = get_key_generator_path()
+            from . import paths_to_executables
+            self.executable_path = paths_to_executables.get_path_of('get_dev_key')
 
         if account_name == 'initminer':
             return {
