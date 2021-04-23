@@ -2,96 +2,6 @@ from test_library import Account, KeyGenerator, logger, Network
 
 import os
 import time
-import concurrent.futures
-import random
-
-CONCURRENCY = None
-
-
-def register_witness(wallet, _account_name, _witness_url, _block_signing_public_key):
-    wallet.api.update_witness(
-        _account_name,
-        _witness_url,
-        _block_signing_public_key,
-        {"account_creation_fee": "3.000 TESTS", "maximum_block_size": 65536, "sbd_interest_rate": 0}
-    )
-
-
-def self_vote(_witnesses, wallet):
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
-    fs = []
-    for w in _witnesses:
-        if (isinstance(w, str)):
-            account_name = w
-        else:
-            account_name = w["account_name"]
-        future = executor.submit(wallet.api.vote_for_witness, account_name, account_name, 1)
-        fs.append(future)
-    res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
-    for future in fs:
-        future.result()
-
-
-def prepare_accounts(_accounts, wallet):
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
-    fs = []
-    logger.info("Attempting to create {0} accounts".format(len(_accounts)))
-    for account in _accounts:
-        future = executor.submit(wallet.create_account, account)
-        fs.append(future)
-    res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
-    for future in fs:
-        future.result()
-
-
-def configure_initial_vesting(_accounts, a, b, _tests, wallet):
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
-    fs = []
-    logger.info("Configuring initial vesting for {0} of witnesses".format(str(len(_accounts))))
-    for account_name in _accounts:
-        value = random.randint(a, b)
-        amount = str(value) + ".000 " + _tests
-        future = executor.submit(wallet.api.transfer_to_vesting, "initminer", account_name, amount)
-        fs.append(future)
-    res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
-    for future in fs:
-        future.result()
-
-
-def prepare_witnesses(_witnesses, wallet):
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENCY)
-    fs = []
-    logger.info("Attempting to prepare {0} of witnesses".format(str(len(_witnesses))))
-    for account_name in _witnesses:
-        witness = Account(account_name)
-        pub_key = witness.public_key
-        future = executor.submit(register_witness, wallet, account_name, "https://" + account_name + ".net", pub_key)
-        fs.append(future)
-    res = concurrent.futures.wait(fs, timeout=None, return_when=concurrent.futures.ALL_COMPLETED)
-    for future in fs:
-        future.result()
-
-
-def list_top_witnesses(node):
-    start_object = [200277786075957257, '']
-    response = node.api.database.list_witnesses(100, 'by_vote_name', start_object)
-    return response["result"]["witnesses"]
-
-
-def print_top_witnesses(witnesses, node):
-    witnesses_set = set(witnesses)
-
-    top_witnesses = list_top_witnesses(node)
-    position = 1
-    for w in top_witnesses:
-        owner = w["owner"]
-        group = "U"
-        if owner in witnesses_set:
-            group = "W"
-
-        logger.info(
-            "Witness # {0:2d}, group: {1}, name: `{2}', votes: {3}".format(position, group, w["owner"], w["votes"]))
-        position = position + 1
 
 
 def count_producer_reward_operations(node, begin=1, end=500):
@@ -132,9 +42,12 @@ def test_no_duplicates_after_node_restart():
         node.config.shared_file_size = '6G'
 
         node.config.plugin += [
-            'network_broadcast_api', 'network_node_api', 'account_history', 'account_history_rocksdb',
+            'network_broadcast_api', 'account_history', 'account_history_rocksdb',
             'account_history_api'
         ]
+
+        node.config.log_appender = '{"appender":"stderr","stream":"std_error"} {"appender":"p2p","file":"logs/p2p/p2p.log"}'
+        node.config.log_logger = '{"name":"default","level":"debug","appender":"stderr"} {"name":"p2p","level":"warn","appender":"p2p"}'
 
     init_node.config.enable_stale_production = True
     init_node.config.required_participation = 0
@@ -149,11 +62,15 @@ def test_no_duplicates_after_node_restart():
 
     time.sleep(60)
 
+    alpha_node0.close()
+    alpha_node0.run()
+    alpha_node0.wait_for_synchronization()
+
     for _ in range(40):
         alpha_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
-        alpha_reward_operations = count_producer_reward_operations(alpha_node0, begin=alpha_irreversible-30, end=alpha_irreversible)
+        alpha_reward_operations = count_producer_reward_operations(alpha_node0, begin=alpha_irreversible-40, end=alpha_irreversible)
 
-        assert sum(i==1 for i in alpha_reward_operations.values()) == 30
+        assert sum(i==1 for i in alpha_reward_operations.values()) == 40
 
         alpha_node0.wait_number_of_blocks(1)
 

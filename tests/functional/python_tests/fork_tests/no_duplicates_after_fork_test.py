@@ -154,6 +154,9 @@ def test_no_duplicates_after_fork():
             'account_history_api'
         ]
 
+        node.config.log_appender = '{"appender":"stderr","stream":"std_error"} {"appender":"p2p","file":"logs/p2p/p2p.log"}'
+        node.config.log_logger = '{"name":"default","level":"debug","appender":"stderr"} {"name":"p2p","level":"warn","appender":"p2p"}'
+
     init_node.config.enable_stale_production = True
     init_node.config.required_participation = 0
 
