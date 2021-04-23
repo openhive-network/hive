@@ -94,13 +94,18 @@ def print_top_witnesses(witnesses, node):
         position = position + 1
 
 
-def get_producer_reward_operations(ops):
-    result = []
-    for op in ops:
-        op_type = op["op"]["type"]
-        if op_type == "producer_reward_operation":
-            result.append(op)
-    return result
+def count_producer_reward_operations(node, begin=1, end=500):
+    count = {}
+    method = 'account_history_api.get_ops_in_block'
+    for i in range(begin, end):
+        response = node.api.account_history.get_ops_in_block(i, True)
+        ops = response["result"]["ops"]
+        count[i] = 0
+        for op in ops:
+            op_type = op["op"]["type"]
+            if op_type == "producer_reward_operation":
+                count[i] += 1
+    return count
 
 
 def test_no_duplicates_after_fork():
@@ -226,23 +231,12 @@ def test_no_duplicates_after_fork():
     print('Reconnected')
 
     for _ in range(40):
-        method = 'account_history_api.get_ops_in_block'
-        alpha_duplicates = []
-        beta_duplicates = []
-        for i in range(0, 300):
-            response = alpha_node0.api.account_history.get_ops_in_block(i, True)
-            ops = response["result"]["ops"]
-            reward_operations = get_producer_reward_operations(ops)
-            size = len(reward_operations)
-            if size > 1:
-                alpha_duplicates.append(i)
-        for i in range(0, 300):
-            response = beta_node0.api.account_history.get_ops_in_block(i, True)
-            ops = response["result"]["ops"]
-            reward_operations = get_producer_reward_operations(ops)
-            size = len(reward_operations)
-            if size > 1:
-                beta_duplicates.append(i)
+        alpha_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
+        alpha_reward_operations = count_producer_reward_operations(alpha_node0, begin=alpha_irreversible-30, end=alpha_irreversible)
+        beta_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
+        beta_reward_operations = count_producer_reward_operations(beta_node0, begin=beta_irreversible-30, end=beta_irreversible)
 
-        assert not alpha_duplicates and not beta_duplicates
+        assert sum(i==1 for i in alpha_reward_operations.values()) == 30
+        assert sum(i==1 for i in beta_reward_operations.values()) == 30
+
         alpha_node0.wait_number_of_blocks(1)
