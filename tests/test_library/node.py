@@ -15,6 +15,7 @@ class Node:
         self.network = network
         self.name = name
         self.directory = Path(directory) if directory is not None else Path(f'./{self.name}')
+        self.produced_files = False
         self.print_to_terminal = False
         self.executable_file_path = None
         self.process = None
@@ -162,10 +163,10 @@ class Node:
             from . import paths_to_executables
             self.executable_file_path = paths_to_executables.get_path_of('hived')
 
-        if self.directory.exists():
+        if not self.produced_files and self.directory.exists():
             from shutil import rmtree
             rmtree(self.directory)
-        self.directory.mkdir(parents=True)
+        self.directory.mkdir(parents=True, exist_ok=True)
 
         config_file_path = self.directory.joinpath('config.ini')
         if self.config is not None:
@@ -199,6 +200,7 @@ class Node:
             self.config = NodeConfig()
             self.config.load_from_file(config_file_path)
 
+        self.produced_files = True
         message = f'Run with pid {self.process.pid}, '
         if self.config.webserver_http_endpoint:
             message += f'with http server {self.config.webserver_http_endpoint}'
