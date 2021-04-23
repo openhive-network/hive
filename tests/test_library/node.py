@@ -31,17 +31,19 @@ class Node:
         return f'{self.network}::{self.name}' if self.network is not None else self.name
 
     @staticmethod
-    def __close_process(process):
+    def __close_process(process, logger_from_node):
         if not process:
             return
 
         import signal
         process.send_signal(signal.SIGINT)
         try:
-            process.wait(timeout=3)
+            return_code = process.wait(timeout=3)
+            logger_from_node.debug(f'Closed with {return_code} return code')
         except subprocess.TimeoutExpired:
             process.kill()
             process.wait()
+            logger_from_node.warning(f"Send SIGKILL because process didn't close before timeout")
 
     def set_directory(self, directory):
         self.directory = Path(directory).absolute()
@@ -188,7 +190,7 @@ class Node:
         )
 
         import weakref
-        self.finalizer = weakref.finalize(self, Node.__close_process, self.process)
+        self.finalizer = weakref.finalize(self, Node.__close_process, self.process, self.logger)
 
         if self.config is None:
             # Wait for config generation
