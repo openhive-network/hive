@@ -22,18 +22,25 @@ from hive_utils.resources.configini import config
 test_args = []
 junit_test_cases=[]
 summary_file_name = "summary.txt"
+test_filter=None
 
 def check_subdirs(_dir):
   error = False
   tests = sorted(glob.glob(_dir+"/*.py"))
   if tests:
+    if test_filter:
+      print("Tests filtered with {}".format(test_filter))
+    else:
+      print("Tests not filtered")
     for test in tests:
-      root_error = run_script(test)
-      if root_error:
-        error = root_error
+      if not test_filter or test_filter in test:
+        root_error = run_script(test)
+        if root_error:
+          error = root_error
   return error
 
 def prepare_config(args):
+  global test_filter
   def strip_address( addr : str ):
     return addr.split('/')[2]
 
@@ -59,6 +66,8 @@ def prepare_config(args):
   if os.path.exists(blockchain_dir):
     rmtree(blockchain_dir)
   cfg.generate(os.path.join(datadir, "config.ini"))
+  if "test_filter" in args:
+    test_filter = args.test_filter
 
 def run_script(_test, _multiplier = 1, _interpreter = None ):
   try:
@@ -89,7 +98,7 @@ if __name__ == "__main__":
         summary.writelines("Cli wallet test started at {0}.\n".format(str(datetime.datetime.now())[:-7]))
     args = parser.parse_args()
     for key, val in args.__dict__.items():
-        if key in ["hive_path", "hive_working_dir", "hive_config_path", "rpc_allowip"] or isinstance(val, bool):
+        if key in ["hive_path", "hive_working_dir", "hive_config_path", "rpc_allowip", "test_filter"] or isinstance(val, bool):
             continue
         if val:
             test_args.append("--"+key.replace("_","-")+ " ")

@@ -22,4 +22,5 @@ parser.add_argument("--hive-path"          , dest="hive_path"          , help = 
 parser.add_argument("--hive-working-dir"   , dest="hive_working_dir"   , default="/tmp/hived-data/", help = "Path to hived working directory")
 parser.add_argument("--hive-config-path"   , dest="hive_config_path"   , default="../../hive_utils/resources/config.ini.in",help = "Path to source config.ini file")
 parser.add_argument("--junit-output"       , dest="junit_output"       , default=None, help="Filename for generating jUnit-compatible XML output")
+parser.add_argument("--test-filter"        , dest="test_filter"        , default=None, help="Substring for filtering tests by name")
 args = parser.parse_args()
