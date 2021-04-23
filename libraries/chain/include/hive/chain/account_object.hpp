@@ -190,7 +190,7 @@ namespace hive { namespace chain {
 
     public:
 
-      public_key_type   memo_key;   //public_key_type - 33 bytes
+      public_key_type   memo_key;   //public_key_type - 33 bytes; ABW: it belongs to metadata as it is not used by consensus, but witnesses need it here since they don't COLLECT_ACCOUNT_METADATA
 
       fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes;// = std::vector<share_type>( HIVE_MAX_PROXY_RECURSION_DEPTH, 0 ); ///< the total VFS votes proxied to this account
 

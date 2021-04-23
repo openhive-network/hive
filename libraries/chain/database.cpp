@@ -2018,6 +2018,7 @@ void database::lock_account( const account_object& account )
   modify( account, []( account_object& a )
   {
     a.set_recovery_account( a );
+    a.memo_key = public_key_type();
   } );
 
   auto rec_req = find< account_recovery_request_object, by_account >( account.name );
