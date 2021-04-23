@@ -34,8 +34,13 @@ class Node:
         if not process:
             return
 
-        process.kill()
-        process.wait()
+        import signal
+        process.send_signal(signal.SIGINT)
+        try:
+            process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
 
     def set_directory(self, directory):
         self.directory = Path(directory).absolute()
