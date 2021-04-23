@@ -251,7 +251,9 @@ struct api_dynamic_global_property_object
     sps_fund_percent( o.sps_fund_percent ),
     sps_interval_ledger( o.sps_interval_ledger ),
     downvote_pool_percent( o.downvote_pool_percent ),
-    current_remove_threshold( o.current_remove_threshold )
+    current_remove_threshold( o.current_remove_threshold ),
+    early_voting_seconds( o.early_voting_seconds ),
+    mid_voting_seconds( o.mid_voting_seconds )
 #ifdef HIVE_ENABLE_SMT
     , smt_creation_fee( o.smt_creation_fee )
 #endif
@@ -299,6 +301,8 @@ struct api_dynamic_global_property_object
   asset                           sps_interval_ledger;
   uint16_t                        downvote_pool_percent;
   int16_t                         current_remove_threshold;
+  uint64_t                        early_voting_seconds;
+  uint64_t                        mid_voting_seconds;
 #ifdef HIVE_ENABLE_SMT
   asset                           smt_creation_fee;
 #endif
@@ -1093,7 +1097,7 @@ FC_REFLECT( hive::plugins::database_api::api_dynamic_global_property_object,
           (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)
           (available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)(next_maintenance_time)
           (last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)
-          (sps_interval_ledger)(downvote_pool_percent)(current_remove_threshold)
+          (sps_interval_ledger)(downvote_pool_percent)(current_remove_threshold)(early_voting_seconds)(mid_voting_seconds)
 #ifdef HIVE_ENABLE_SMT
           (smt_creation_fee)
 #endif

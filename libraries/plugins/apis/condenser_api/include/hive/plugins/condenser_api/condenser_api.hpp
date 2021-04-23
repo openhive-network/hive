@@ -310,7 +310,9 @@ struct extended_dynamic_global_properties
     sps_fund_percent( o.sps_fund_percent ),
     sps_interval_ledger( legacy_asset::from_asset( o.sps_interval_ledger ) ),
     downvote_pool_percent( o.downvote_pool_percent ),
-    current_remove_threshold( o.current_remove_threshold )
+    current_remove_threshold( o.current_remove_threshold ),
+    early_voting_seconds( o.early_voting_seconds ),
+    mid_voting_seconds( o.mid_voting_seconds )
   {}
 
   uint32_t          head_block_number = 0;
@@ -368,6 +370,9 @@ struct extended_dynamic_global_properties
   uint16_t          downvote_pool_percent = 0;
 
   int16_t           current_remove_threshold = HIVE_GLOBAL_REMOVE_THRESHOLD;
+
+  uint64_t          early_voting_seconds  = 0;
+  uint64_t          mid_voting_seconds    = 0;
 };
 
 struct api_witness_object
@@ -1101,7 +1106,7 @@ FC_REFLECT( hive::plugins::condenser_api::extended_dynamic_global_properties,
         (maximum_block_size)(required_actions_partition_percent)(current_aslot)(recent_slots_filled)(participation_count)(last_irreversible_block_num)
         (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)(available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)
         (next_maintenance_time)(last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)(sps_interval_ledger)
-        (downvote_pool_percent)(current_remove_threshold)
+        (downvote_pool_percent)(current_remove_threshold)(early_voting_seconds)(mid_voting_seconds)
         )
 
 FC_REFLECT( hive::plugins::condenser_api::api_witness_object,
