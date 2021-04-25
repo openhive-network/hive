@@ -180,8 +180,6 @@ namespace hive { namespace chain {
       uint16_t min_recurrent_transfers_recurrence = HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE;
       uint16_t max_open_recurrent_transfers = HIVE_MAX_OPEN_RECURRENT_TRANSFERS;
 
-
-
 #ifdef HIVE_ENABLE_SMT
       asset smt_creation_fee = asset( 1000, HBD_SYMBOL ); //< TODO: replace with HBD_asset
 #endif

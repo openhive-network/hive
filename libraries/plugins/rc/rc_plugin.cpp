@@ -322,7 +322,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   rc_transaction_info tx_info;
 
   // How many resources does the transaction use?
-  count_resources( note.transaction, tx_info.usage );
+  count_resources( note.transaction, tx_info.usage, _db.head_block_time() );
 
   // How many RC does this transaction cost?
   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
@@ -433,7 +433,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
   count_resources_result count;
   for( const signed_transaction& tx : note.block.transactions )
   {
-    count_resources( tx, count );
+    count_resources( tx, count, _db.head_block_time() );
   }
 
   block_extensions_count_resources_visitor ext_visitor( count );

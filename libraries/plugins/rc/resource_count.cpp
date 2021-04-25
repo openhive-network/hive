@@ -19,8 +19,9 @@ struct count_operation_visitor
 
   const state_object_size_info& _w;
   const operation_exec_info& _e;
+  const time_point_sec& _head_block_time;
 
-  count_operation_visitor( const state_object_size_info& w, const operation_exec_info& e ) : _w(w), _e(e) {}
+  count_operation_visitor( const state_object_size_info& w, const operation_exec_info& e, const time_point_sec& h = HIVE_GENESIS_TIME ) : _w(w), _e(e), _head_block_time(h) {}
 
   int64_t get_authority_byte_count( const authority& auth )const
   {
@@ -384,8 +385,14 @@ struct count_operation_visitor
 
   void operator()( const recurrent_transfer_operation& op )const
   {
-    state_bytes_count += _w.recurrent_transfer_object_base_size,
-    execution_time_count += _e.recurrent_transfer_operation_exec_time;
+    state_bytes_count += _w.recurrent_transfer_object_base_size;
+
+    // if _head_block_time has it's default date it means it's computed using the optional operations which shouldn't happen
+    FC_ASSERT(_head_block_time != HIVE_GENESIS_TIME, "Cannot compute recurrent transfer operation via optional ops");
+
+    uint32_t execution_count = (op.end_date.sec_since_epoch() - _head_block_time.sec_since_epoch()) / fc::hours(op.recurrence).to_seconds();
+
+    execution_time_count += _e.recurrent_transfer_operation_exec_time * execution_count;
     market_op_count++;
   }
 
@@ -451,12 +458,13 @@ typedef count_operation_visitor count_optional_action_visitor;
 
 void count_resources(
   const signed_transaction& tx,
-  count_resources_result& result )
+  count_resources_result& result,
+  const time_point_sec head_block_time )
 {
   static const state_object_size_info size_info;
   static const operation_exec_info exec_info;
   const int64_t tx_size = int64_t( fc::raw::pack_size( tx ) );
-  count_operation_visitor vtor( size_info, exec_info );
+  count_operation_visitor vtor( size_info, exec_info, head_block_time );
 
   result.resource_count[ resource_history_bytes ] += tx_size;
 
@@ -480,7 +488,7 @@ void count_resources(
 
 void count_resources(
   const optional_automated_action& action,
-  count_resources_result& result )
+  count_resources_result& result)
 {
   static const state_object_size_info size_info;
   static const operation_exec_info exec_info;

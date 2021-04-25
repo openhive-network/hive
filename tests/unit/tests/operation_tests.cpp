@@ -9779,6 +9779,5 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
   FC_LOG_AND_RETHROW()
 }
 
-
 BOOST_AUTO_TEST_SUITE_END()
 #endif
