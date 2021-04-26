@@ -1,6 +1,6 @@
 import pytest
 
-from test_library.children_names import ChildrenNames
+from test_library.children_names import ChildrenNames, NameAlreadyInUse
 
 
 @pytest.fixture
@@ -11,3 +11,9 @@ def names():
 def test_next_names_have_increasing_number(names):
     for i in range(5):
         assert names.create_name() == f'Name{i}'
+
+
+def test_registered_name_collision_with_already_generated(names):
+    name_already_in_use = names.create_name()
+    with pytest.raises(NameAlreadyInUse):
+        names.register_name(name_already_in_use)
