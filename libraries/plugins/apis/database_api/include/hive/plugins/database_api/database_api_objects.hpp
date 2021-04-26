@@ -262,12 +262,12 @@ struct api_dynamic_global_property_object
   api_dynamic_global_property_object() {}
 
   dynamic_global_property_id_type id;
-  uint32_t                        head_block_number;
+  uint32_t                        head_block_number                   = 0;
   block_id_type                   head_block_id;
   time_point_sec                  time;
   account_name_type               current_witness;
-  uint64_t                        total_pow;
-  uint32_t                        num_pow_witnesses;
+  uint64_t                        total_pow  = 0;
+  uint32_t                        num_pow_witnesses                   = 0;
   asset                           virtual_supply;
   asset                           current_supply;
   asset                           init_hbd_supply;
@@ -278,31 +278,31 @@ struct api_dynamic_global_property_object
   fc::uint128                     total_reward_shares2;
   asset                           pending_rewarded_vesting_shares;
   asset                           pending_rewarded_vesting_hive;
-  uint16_t                        hbd_interest_rate;
-  uint16_t                        hbd_print_rate;
-  uint32_t                        maximum_block_size;
-  uint16_t                        required_actions_partition_percent;
-  uint64_t                        current_aslot;
+  uint16_t                        hbd_interest_rate                   = 0;
+  uint16_t                        hbd_print_rate                      = 0;
+  uint32_t                        maximum_block_size                  = 0;
+  uint16_t                        required_actions_partition_percent  = 0;
+  uint64_t                        current_aslot                       = 0;
   fc::uint128_t                   recent_slots_filled;
-  uint8_t                         participation_count;
-  uint32_t                        last_irreversible_block_num;
-  uint32_t                        vote_power_reserve_rate;
-  uint32_t                        delegation_return_period;
-  uint64_t                        reverse_auction_seconds;
-  int64_t                         available_account_subsidies;
-  uint16_t                        hbd_stop_percent;
-  uint16_t                        hbd_start_percent;
+  uint8_t                         participation_count                 = 0;
+  uint32_t                        last_irreversible_block_num         = 0;
+  uint32_t                        vote_power_reserve_rate             = 0;
+  uint32_t                        delegation_return_period            = 0;
+  uint64_t                        reverse_auction_seconds             = 0;
+  int64_t                         available_account_subsidies         = 0;
+  uint16_t                        hbd_stop_percent                    = 0;
+  uint16_t                        hbd_start_percent                   = 0;
   time_point_sec                  next_maintenance_time;
   time_point_sec                  last_budget_time;
   time_point_sec                  next_daily_maintenance_time;
-  uint16_t                        content_reward_percent;
-  uint16_t                        vesting_reward_percent;
-  uint16_t                        sps_fund_percent;
+  uint16_t                        content_reward_percent              = 0;
+  uint16_t                        vesting_reward_percent              = 0;
+  uint16_t                        sps_fund_percent                    = 0;
   asset                           sps_interval_ledger;
-  uint16_t                        downvote_pool_percent;
-  int16_t                         current_remove_threshold;
-  uint64_t                        early_voting_seconds;
-  uint64_t                        mid_voting_seconds;
+  uint16_t                        downvote_pool_percent               = 0;
+  int16_t                         current_remove_threshold            = 0;
+  uint64_t                        early_voting_seconds                = 0;
+  uint64_t                        mid_voting_seconds                  = 0;
 #ifdef HIVE_ENABLE_SMT
   asset                           smt_creation_fee;
 #endif
