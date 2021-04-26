@@ -364,23 +364,25 @@ struct curation_rewards_handler
       test_object.vest( voters[idx], voters[idx], asset( amount / 10, HIVE_SYMBOL ), voter_keys[idx] );
   }
 
+  void prepare_funds( uint32_t& counter, const window_input_data& window )
+  {
+    for( uint32_t i = counter; i < counter + window.nr_voters; ++i )
+    {
+      prepare_funds_impl( i, window.amount );
+    }
+
+    counter += window.nr_voters;
+  }
+
   void prepare_funds( const window_input_data& early, const window_input_data& mid, const window_input_data& late )
   {
-    uint32_t amount = 0;
+    BOOST_REQUIRE_GE( voters.size(), early.nr_voters + mid.nr_voters + late.nr_voters );
 
-    for( uint32_t i = 0; i < voters.size(); ++i )
-    {
-      if( i < early.nr_voters )
-        amount = early.amount;
-      else if( i < ( mid.nr_voters + early.nr_voters ) )
-        amount = mid.amount;
-      else if( i < ( late.nr_voters + mid.nr_voters + early.nr_voters ) )
-        amount = late.amount;
-      else
-        break;
+    uint32_t counter = 0;
 
-      prepare_funds_impl( i, amount );
-    }
+    prepare_funds( counter, early );
+    prepare_funds( counter, mid );
+    prepare_funds( counter, late );
   }
 
   void prepare_funds( uint32_t amount = curation_rewards_handler::default_amount )
