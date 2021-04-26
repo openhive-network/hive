@@ -4032,8 +4032,6 @@ void database::_apply_block( const signed_block& next_block )
   _current_op_in_trx = 0;
   _current_virtual_op = 0;
 
-  remove_expired_governance_votes();
-
   update_global_dynamic_data(next_block);
   update_signing_witness(signing_witness, next_block);
 
@@ -4065,6 +4063,7 @@ void database::_apply_block( const signed_block& next_block )
   process_decline_voting_rights();
   process_proposals( note ); //new HBD converted here does not count towards limit
   process_delayed_voting( note );
+  remove_expired_governance_votes();
 
   generate_required_actions();
   generate_optional_actions();
