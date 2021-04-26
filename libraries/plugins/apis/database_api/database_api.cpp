@@ -1985,7 +1985,7 @@ DEFINE_API_IMPL( database_api_impl, find_smt_token_emissions )
 DEFINE_API_IMPL( database_api_impl, is_known_transaction )
 {
   is_known_transaction_return result;
-  result.is_known = _db.is_known_transaction(args.transaction_id);
+  result.is_known = _db.is_known_transaction(args.id);
   return result;
 }
 
