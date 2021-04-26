@@ -17,3 +17,5 @@ class ChildrenNames:
     def register_name(self, name):
         if name in self.names:
             raise NameAlreadyInUse()
+
+        self.names.append(name)
