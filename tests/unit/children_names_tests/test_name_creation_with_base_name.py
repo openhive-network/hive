@@ -23,3 +23,9 @@ def test_registered_name_collision_with_already_registered(names):
     names.register_name('SomeName')
     with pytest.raises(NameAlreadyInUse):
         names.register_name('SomeName')
+
+
+def test_registered_names_are_skipped_during_creation(names):
+    registered = names.register_name('Name0')
+    created = names.create_name()
+    assert created != registered
