@@ -17,3 +17,9 @@ def test_registered_name_collision_with_already_generated(names):
     name_already_in_use = names.create_name()
     with pytest.raises(NameAlreadyInUse):
         names.register_name(name_already_in_use)
+
+
+def test_registered_name_collision_with_already_registered(names):
+    names.register_name('SomeName')
+    with pytest.raises(NameAlreadyInUse):
+        names.register_name('SomeName')
