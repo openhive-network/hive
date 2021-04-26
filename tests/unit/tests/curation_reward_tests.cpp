@@ -366,18 +366,18 @@ struct curation_rewards_handler
 
   void prepare_funds( const window_input_data& early, const window_input_data& mid, const window_input_data& late )
   {
-    uint32_t amount;
+    uint32_t amount = 0;
 
     for( uint32_t i = 0; i < voters.size(); ++i )
     {
       if( i < early.nr_voters )
         amount = early.amount;
-      else if( i < mid.nr_voters )
+      else if( i < ( mid.nr_voters + early.nr_voters ) )
         amount = mid.amount;
-      else if( i < late.nr_voters )
+      else if( i < ( late.nr_voters + mid.nr_voters + early.nr_voters ) )
         amount = late.amount;
       else
-        amount = default_amount;
+        break;
 
       prepare_funds_impl( i, amount );
     }
@@ -690,7 +690,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v1 )
                       *this,
                       window_input_data{ 25/*nr_voters*/, 12/*interval*/    , _a }/*early*/,
                       window_input_data{ 39/*nr_voters*/, 4479/*interval*/  , _a }/*mid*/,
-                      window_input_data()/*late*/, 761/*reward*/ );
+                      window_input_data()/*late*/, 760/*reward*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -724,7 +724,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v3 )
                       *this,
                       window_input_data{ 50/*nr_voters*/, 1720/*interval*/, _a }/*early*/,
                       window_input_data()/*mid*/,
-                      window_input_data()/*late*/, 805/*reward*/ );
+                      window_input_data()/*late*/, 805/*reward*/, 12/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -740,8 +740,8 @@ BOOST_AUTO_TEST_CASE( basic_test_v4 )
     basic_test_impl( "04.content_format.time:curation_reward.csv",
                       *this,
                       window_input_data()/*early*/,
-                      window_input_data{ 50, 300/*interval*/, _a }/*mid*/,
-                      window_input_data()/*late*/, 806/*reward*/, 25*3600/*offset*/ );
+                      window_input_data{ 50/*nr_voters*/, 300/*interval*/, _a }/*mid*/,
+                      window_input_data()/*late*/, 805/*reward*/, 25*3600/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -758,7 +758,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v5 )
                       *this,
                       window_input_data{ 50/*nr_voters*/, 1720/*interval*/, _a }/*early*/,
                       window_input_data()/*mid*/,
-                      window_input_data()/*late*/, 805/*reward*/ );
+                      window_input_data()/*late*/, 805/*reward*/, 12/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -774,8 +774,46 @@ BOOST_AUTO_TEST_CASE( basic_test_v6 )
     basic_test_impl( "06.content_format.time:curation_reward.csv",
                       *this,
                       window_input_data()/*early*/,
-                      window_input_data{ 50, 300/*interval*/, _a }/*mid*/,
-                      window_input_data()/*late*/, 806/*reward*/, 25*3600/*offset*/ );
+                      window_input_data{ 50/*nr_voters*/, 300/*interval*/, _a }/*mid*/,
+                      window_input_data()/*late*/, 805/*reward*/, 25*3600/*offset*/ );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( basic_test_v7 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days)." );
+    BOOST_TEST_MESSAGE( "Totally 50 voters vote on 1 comment" );
+    BOOST_TEST_MESSAGE( "1 voter votes in early window, rest of voters vote in mid window." );
+
+    auto _a = curation_rewards_handler::default_amount * 2;
+
+    basic_test_impl( "07.content_format.time:curation_reward.csv",
+                      *this,
+                      window_input_data{ 1/*nr_voters*/, 12/*interval*/, _a }/*early*/,
+                      window_input_data{ 49/*nr_voters*/, 300/*interval*/, _a }/*mid*/,
+                      window_input_data()/*late*/, 1579/*reward*/, 24*3600 - 90/*offset*/ );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( basic_test_v8 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days)." );
+    BOOST_TEST_MESSAGE( "Totally 50 voters vote on 1 comment" );
+    BOOST_TEST_MESSAGE( "5 voters vote in early window, rest of voters vote in mid window." );
+
+    auto _a = curation_rewards_handler::default_amount * 2;
+
+    basic_test_impl( "08.content_format.time:curation_reward.csv",
+                      *this,
+                      window_input_data{ 5/*nr_voters*/, 12/*interval*/, _a }/*early*/,
+                      window_input_data{ 45/*nr_voters*/, 300/*interval*/, _a }/*mid*/,
+                      window_input_data()/*late*/, 1464/*reward*/, 24*3600 - 90/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
