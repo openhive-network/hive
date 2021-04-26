@@ -15,7 +15,7 @@ const std::vector< std::string > default_seeds = {
   "hiveseed-se.privex.io:2001",          // privex
   "node.mahdiyari.info:2001",            // mahdiyari
   "rpc.ausbit.dev:2001",                 // ausbitbank
-  "seed.chitty.me:2001",                 // chitty
+  "api.hive.blog:2001",                  // blocktrades
   "seed.hivekings.com:2001",             // drakos
   "seed.liondani.com:2016",              // liondani
   "seed.openhive.network:2001",          // gtg
