@@ -20,9 +20,9 @@ def test_registered_name_collision_with_already_generated(names):
 
 
 def test_registered_name_collision_with_already_registered(names):
-    names.register_name('SomeName')
+    already_registered = names.register_name('SomeName')
     with pytest.raises(NameAlreadyInUse):
-        names.register_name('SomeName')
+        names.register_name(already_registered)
 
 
 def test_registered_names_are_skipped_during_creation(names):
