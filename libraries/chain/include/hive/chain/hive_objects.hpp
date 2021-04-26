@@ -348,12 +348,24 @@ namespace hive { namespace chain {
         from_string( memo, _memo );
       }
 
-      time_point_sec get_next_trigger_date()
+      void update_next_trigger_date()
       {
-          return trigger_date + fc::hours(recurrence);
+          trigger_date += fc::hours(recurrence);
       }
 
-      time_point_sec    trigger_date;
+      time_point_sec get_trigger_date() const
+      {
+          return trigger_date;
+      }
+
+      void set_trigger_date(time_point_sec _trigger_date)
+      {
+          trigger_date = _trigger_date;
+      }
+
+    private:
+        time_point_sec    trigger_date;
+    public:
       time_point_sec    end_date;
       account_id_type   from_id;
       account_id_type   to_id;
@@ -599,7 +611,7 @@ namespace hive { namespace chain {
         const_mem_fun< recurrent_transfer_object, recurrent_transfer_object::id_type, &recurrent_transfer_object::get_id > >,
       ordered_unique< tag< by_trigger_date >,
         composite_key< recurrent_transfer_object,
-          member< recurrent_transfer_object, time_point_sec, &recurrent_transfer_object::trigger_date >,
+          const_mem_fun< recurrent_transfer_object, time_point_sec, &recurrent_transfer_object::get_trigger_date >,
           const_mem_fun< recurrent_transfer_object, recurrent_transfer_object::id_type, &recurrent_transfer_object::get_id >
         >
       >,

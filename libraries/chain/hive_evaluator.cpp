@@ -3378,7 +3378,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
   } else
   {
     // If the recurrence is different, replace the next trigger date to reflect it
-    time_point_sec next_trigger_date = itr->trigger_date;
+    time_point_sec next_trigger_date = itr->get_trigger_date();
     if (itr->recurrence != op.recurrence) {
       next_trigger_date = _db.head_block_time() + fc::hours(op.recurrence );
     }
@@ -3388,7 +3388,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
       rt.amount = op.amount;
       from_string( rt.memo, op.memo );
       rt.recurrence = op.recurrence;
-      rt.trigger_date = next_trigger_date;
+      rt.set_trigger_date(next_trigger_date);
       rt.end_date = op.end_date;
     });
   }

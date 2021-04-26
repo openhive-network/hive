@@ -1018,7 +1018,7 @@ struct api_recurrent_transfer_object
 
   api_recurrent_transfer_object( const recurrent_transfer_object& o, const account_name_type from_name, const account_name_type to_name ):
     id( o.get_id() ),
-    trigger_date( o.trigger_date ),
+    trigger_date( o.get_trigger_date() ),
     end_date( o.end_date ),
     from( from_name ),
     to( to_name ),

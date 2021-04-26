@@ -2366,7 +2366,7 @@ void database::process_recurrent_transfers()
     // uint16_t is okay because we stop at 1000, if the limit changes, make sure to check if it fits in the integer.
     uint16_t processed_transfers = 0;
 
-    while( itr != recurrent_transfers_by_date.end() && itr->trigger_date <= now )
+    while( itr != recurrent_transfers_by_date.end() && itr->get_trigger_date() <= now )
     {
       // Since this is an intensive process, we don't want to process too many recurrent transfers in a single block
       if (processed_transfers >= HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK) {
@@ -2389,7 +2389,7 @@ void database::process_recurrent_transfers()
         modify( current_recurrent_transfer, [&]( recurrent_transfer_object& rt )
         {
           rt.consecutive_failures = 0; // reset the consecutive failures counter
-          rt.trigger_date = rt.get_next_trigger_date();
+          rt.update_next_trigger_date();
         });
 
         push_virtual_operation(fill_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, to_string(current_recurrent_transfer.memo)));
@@ -2400,7 +2400,7 @@ void database::process_recurrent_transfers()
         if (consecutive_failures < HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES) {
           modify(current_recurrent_transfer, [&](recurrent_transfer_object &rt) {
             ++rt.consecutive_failures;
-            rt.trigger_date = rt.get_next_trigger_date();
+            rt.update_next_trigger_date();
           });
           // false means the recurrent transfer was not deleted
           push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), false));
