@@ -316,7 +316,6 @@ struct extended_dynamic_global_properties
     current_remove_threshold( o.current_remove_threshold ),
     early_voting_seconds( o.early_voting_seconds ),
     mid_voting_seconds( o.mid_voting_seconds ),
-    current_remove_threshold( o.current_remove_threshold ),
     max_consecutive_recurrent_transfer_failures( o.max_consecutive_recurrent_transfer_failures ),
     max_recurrent_transfer_end_date( o.max_recurrent_transfer_end_date ),
     min_recurrent_transfers_recurrence( o.min_recurrent_transfers_recurrence ),
