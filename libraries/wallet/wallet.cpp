@@ -2394,11 +2394,10 @@ condenser_api::legacy_asset wallet_api::estimate_hive_collateral(
   //must reflect calculations from collateralized_convert_evaluator::do_apply
 
   auto fhistory = get_feed_history();
-  price immediate_price_with_fee = fhistory.current_min_history;
-  FC_ASSERT( !immediate_price_with_fee.is_null(), "Cannot estimate conversion collateral because there is no price feed." );
-  immediate_price_with_fee = immediate_price_with_fee.get_scaled( HIVE_100_PERCENT + HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
+  FC_ASSERT( !static_cast<price>( fhistory.current_median_history ).is_null(), "Cannot estimate conversion collateral because there is no price feed." );
 
-  auto needed_hive = hbd_amount_to_get * immediate_price_with_fee;
+  auto needed_hive = multiply_with_fee( hbd_amount_to_get, fhistory.current_min_history,
+    HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
   uint128_t _amount = ( uint128_t( needed_hive.amount.value ) * HIVE_CONVERSION_COLLATERAL_RATIO ) / HIVE_100_PERCENT;
   asset required_collateral = asset( _amount.to_uint64(), HIVE_SYMBOL );
 

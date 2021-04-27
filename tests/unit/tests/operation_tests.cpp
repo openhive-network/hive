@@ -3294,6 +3294,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     set_price_feed( price_1_for_4 );
     BOOST_REQUIRE( feed.current_median_history == price_1_for_4 );
 
+    //prevent HBD interest from interfering with the test
     flat_map< string, vector<char> > props;
     props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0 );
     set_witness_props( props );
@@ -3528,6 +3529,107 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     generate_block(); //actual conversion
     alice_balance += ASSET( "950.002 TESTS" ); //a lot of excess collateral (1000 - 23.809 * 21/10)
     BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( collateralized_convert_narrow_price )
+{
+  //test covers bug where fee was not applied, because price scaling code was truncating it
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: collateralized_convert_narrow_price" );
+    ACTORS( (alice) );
+
+    generate_block();
+
+    const auto& feed = db->get_feed_history();
+    db->skip_price_feed_limit_check = false;
+
+    price price_1_for_2 = price( ASSET( "0.001 TBD" ), ASSET( "0.002 TESTS" ) );
+    set_price_feed( price_1_for_2 );
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_2 );
+
+    //prevent HBD interest from interfering with the test
+    flat_map< string, vector<char> > props;
+    props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0 );
+    set_witness_props( props );
+
+    fund( "alice", ASSET( "0.042 TESTS" ) );
+
+    BOOST_TEST_MESSAGE( "--- Test ok - conversion at 50 cents per HIVE, both initial and actual" );
+    collateralized_convert_operation op;
+    op.owner = "alice";
+    op.amount = ASSET( "0.042 TESTS" );
+    auto conversion_time = db->head_block_time();
+    push_transaction( op, alice_private_key );
+
+    BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.010 TBD" ) ); // 0.042/2 collateral * 10/21 price with fee
+
+    generate_blocks( conversion_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
+
+    BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.010 TBD" ) );
+    generate_block(); //actual conversion
+    BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "0.021 TESTS" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.010 TBD" ) );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( collateralized_convert_wide_price )
+{
+  //test covers potential bug where application of fee to price would exceed 64bit
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: collateralized_convert_wide_price" );
+    ACTORS( ( alice ) );
+
+    generate_block();
+
+    const auto& feed = db->get_feed_history();
+    db->skip_price_feed_limit_check = false;
+
+    price price_1_for_2 = price( ASSET( "4611686018427387.000 TBD" ), ASSET( "9223372036854774.000 TESTS" ) );
+    set_price_feed( price_1_for_2 );
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_2 );
+
+    //prevent HBD interest from interfering with the test
+    flat_map< string, vector<char> > props;
+    props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0 );
+    set_witness_props( props );
+
+    fund( "alice", ASSET( "50000000.000 TESTS" ) );
+
+    BOOST_TEST_MESSAGE( "--- Test failure on too many HBD in the system" );
+    collateralized_convert_operation op;
+    op.owner = "alice";
+    op.amount = ASSET( "42000000.000 TESTS" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "percent_hbd <= dgpo.hbd_stop_percent" );
+
+    BOOST_TEST_MESSAGE( "--- Test ok - conversion at 50 cents per HIVE, both initial and actual" );
+    op.amount = ASSET( "4200000.000 TESTS" );
+    auto conversion_time = db->head_block_time();
+    auto alice_balance = get_balance( "alice" );
+    push_transaction( op, alice_private_key );
+    alice_balance -= ASSET( "4200000.000 TESTS" );
+
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "1000000.000 TBD" ) );
+
+    generate_blocks( conversion_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
+
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "1000000.000 TBD" ) );
+    generate_block(); //actual conversion
+    alice_balance += ASSET( "2100000.000 TESTS" );
+    BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "1000000.000 TBD" ) );
 
     validate_database();
   }

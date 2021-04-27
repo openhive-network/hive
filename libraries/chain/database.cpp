@@ -3291,19 +3291,18 @@ void database::process_conversions()
     const auto& request_by_date = get_index< collateralized_convert_request_index, by_conversion_date >();
     auto itr = request_by_date.begin();
 
-    //note that we are using market median price instead of minimal as it was during immediate part of this
-    //conversion or current median price as is used in other conversions; the former is by design - we are supposed
-    //to use median price here, minimal during immediate conversion was to prevent gaming, the latter is for rare
-    //case, when this conversion happens when median price does not reflect market conditions when hard limit was
-    //hit - see update_median_feed()
-    price corrected_price = fhistory.market_median_history.get_scaled( HIVE_100_PERCENT + HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
-
     while( itr != request_by_date.end() && itr->get_conversion_date() <= now )
     {
       const auto& owner = get_account( itr->get_owner() );
 
       //calculate how much HIVE we'd need for already created HBD at current corrected price
-      auto required_hive = itr->get_converted_amount() * corrected_price;
+      //note that we are using market median price instead of minimal as it was during immediate part of this
+      //conversion or current median price as is used in other conversions; the former is by design - we are supposed
+      //to use median price here, minimal during immediate conversion was to prevent gaming; the latter is for rare
+      //case, when this conversion happens when median price does not reflect market conditions when hard limit was
+      //hit - see update_median_feed()
+      auto required_hive = multiply_with_fee( itr->get_converted_amount(), fhistory.market_median_history,
+        HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
       auto excess_collateral = itr->get_collateral_amount() - required_hive;
       if( excess_collateral.amount < 0 )
       {

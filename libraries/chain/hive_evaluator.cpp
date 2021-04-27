@@ -2552,15 +2552,13 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
 
   //if you change something here take a look at wallet_api::estimate_hive_collateral as well
 
-  //apply fee to current rolling minimum price
-  price immediate_price_with_fee = fhistory.current_min_history.get_scaled( HIVE_100_PERCENT + HIVE_COLLATERALIZED_CONVERSION_FEE, o.amount.symbol );
-  
   //cut amount by collateral ratio
   uint128_t _amount = ( uint128_t( o.amount.amount.value ) * HIVE_100_PERCENT ) / HIVE_CONVERSION_COLLATERAL_RATIO;
   asset for_immediate_conversion = asset( _amount.to_uint64(), o.amount.symbol );
 
-  //immediately create HBD
-  auto converted_amount = for_immediate_conversion * immediate_price_with_fee;
+  //immediately create HBD - apply fee to current rolling minimum price
+  auto converted_amount = multiply_with_fee( for_immediate_conversion, fhistory.current_min_history,
+    HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
   FC_ASSERT( converted_amount.amount > 0, "Amount of collateral too low - conversion gives no HBD" );
   _db.adjust_balance( owner, converted_amount );
 

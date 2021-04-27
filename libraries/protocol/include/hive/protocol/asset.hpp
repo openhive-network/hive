@@ -143,11 +143,6 @@ namespace hive { namespace protocol {
     bool is_null()const;
     void validate()const;
 
-    /** Creates new price modified by given scale factor applied to specific asset.
-        Used f.e. to apply fee to collateralized conversions. Parameter scale in basis points.
-    */
-    price get_scaled( uint16_t scale, asset_symbol_type apply_to ) const;
-
   }; /// price
 
   price operator / ( const asset& base, const asset& quote );
@@ -162,6 +157,12 @@ namespace hive { namespace protocol {
   bool  operator == ( const price& a, const price& b );
   bool  operator != ( const price& a, const price& b );
   asset operator *  ( const asset& a, const price& b );
+
+  /** Applies price to given asset in order to calculate its value in the second asset (like operator* ).
+      Additionally applies fee scale factor to specific asset in price. Used f.e. to apply fee to
+      collateralized conversions. Fee scale parameter in basis points.
+    */
+  asset multiply_with_fee( const asset& a, const price& p, uint16_t fee, asset_symbol_type apply_fee_to );
 
   /** Represents thin version of asset with fixed symbol.
    *  MUST NOT be used in operations (it needs to be clear what asset is part of

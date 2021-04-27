@@ -285,19 +285,18 @@ DEFINE_PRICE_COMPARISON_OPERATOR( >= )
 asset operator * ( const asset& a, const price& b )
 {
   bool is_negative = a.amount.value < 0;
+  uint128_t result( is_negative ? -a.amount.value : a.amount.value );
   if( a.symbol == b.base.symbol )
   {
-    uint128_t result( is_negative ? -a.amount.value : a.amount.value );
     result = ( result * b.quote.amount.value ) / b.base.amount.value;
     return asset( is_negative ? -result.to_uint64() : result.to_uint64(), b.quote.symbol );
   }
-  else if( a.symbol == b.quote.symbol )
+  else
   {
-    uint128_t result( is_negative ? -a.amount.value : a.amount.value );
+    FC_ASSERT( a.symbol == b.quote.symbol, "invalid ${asset} * ${price}", ( "asset", a )( "price", b ) );
     result = ( result * b.base.amount.value ) / b.quote.amount.value;
     return asset( is_negative ? -result.to_uint64() : result.to_uint64(), b.base.symbol );
   }
-  FC_THROW_EXCEPTION( fc::assert_exception, "invalid ${asset} * ${price}", ("asset",a)("price",b) );
 }
 
 price operator / ( const asset& base, const asset& quote )
@@ -317,19 +316,32 @@ void price::validate() const
   FC_ASSERT( base.symbol != quote.symbol );
 } FC_CAPTURE_AND_RETHROW( (base)(quote) ) }
 
-price price::get_scaled( uint16_t scale, asset_symbol_type apply_to ) const
+asset multiply_with_fee( const asset& a, const price& p, uint16_t fee, asset_symbol_type apply_fee_to )
 {
-  if( apply_to == base.symbol )
+  bool is_negative = a.amount.value < 0;
+  uint128_t result( is_negative ? -a.amount.value : a.amount.value );
+  uint16_t scale_b = HIVE_100_PERCENT, scale_q = HIVE_100_PERCENT;
+  if( apply_fee_to == p.base.symbol )
   {
-    uint128_t _base = ( uint128_t( base.amount.value ) * scale ) / HIVE_100_PERCENT;
-    return price( asset( _base.to_uint64(), base.symbol ), quote );
+    scale_b += fee;
   }
-  else if( apply_to == quote.symbol )
+  else
   {
-    uint128_t _quote = ( uint128_t( quote.amount.value ) * scale ) / HIVE_100_PERCENT;
-    return price( base, asset( _quote.to_uint64(), quote.symbol ) );
+    FC_ASSERT( apply_fee_to == p.quote.symbol, "Invalid fee symbol ${at} for price ${p}", ( "at", apply_fee_to )( "p", p ) );
+    scale_q += fee;
   }
-  FC_THROW_EXCEPTION( fc::assert_exception, "Invalid modifier symbol ${at} for price ${p}", ( "at", apply_to )( "p", *this ) );
+
+  if( a.symbol == p.base.symbol )
+  {
+    result = ( result * p.quote.amount.value * scale_q ) / ( uint128_t( p.base.amount.value ) * scale_b );
+    return asset( is_negative ? -result.to_uint64() : result.to_uint64(), p.quote.symbol );
+  }
+  else 
+  {
+    FC_ASSERT( a.symbol == p.quote.symbol, "invalid ${asset} * ${price}", ( "asset", a )( "price", p ) );
+    result = ( result * p.base.amount.value * scale_b ) / ( uint128_t ( p.quote.amount.value ) * scale_q );
+    return asset( is_negative ? -result.to_uint64() : result.to_uint64(), p.base.symbol );
+  }
 }
 
 } } // hive::protocol
