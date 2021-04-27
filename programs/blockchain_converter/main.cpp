@@ -14,7 +14,7 @@ int main( int argc, char** argv )
       opts.add_options()
       ("help,h", "Print this help message and exit.")
       ("private-key,k", bpo::value< std::string >(), "init miner private key")
-      ("chain-id,d", bpo::value< std::string >(), "chain ID to convert")
+      ("chain-id,c", bpo::value< std::string >(), "chain ID to convert")
       ("input,i", bpo::value< std::string >(), "input block log")
       ("output,o", bpo::value< std::string >(), "output block log; defaults to [input]_out" )
       ;
