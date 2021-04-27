@@ -3,6 +3,7 @@ from shutil import rmtree
 
 from .node import Node
 from .wallet import Wallet
+from . import logger
 
 
 class Network:
@@ -14,6 +15,7 @@ class Network:
         self.next_free_port = port_range.start
         self.is_running = False
         self.disconnected_networks = []
+        self.logger = logger.getLogger(f'{__name__}.{self}')
 
         self.hived_executable_file_path = None
         self.wallet_executable_file_path = None
