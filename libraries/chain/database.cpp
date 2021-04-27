@@ -2393,7 +2393,6 @@ void database::process_recurrent_transfers()
         });
 
         push_virtual_operation(fill_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, to_string(current_recurrent_transfer.memo)));
-        processed_transfers++;
       } else {
         uint8_t consecutive_failures = current_recurrent_transfer.consecutive_failures + 1;
 
@@ -2416,6 +2415,7 @@ void database::process_recurrent_transfers()
           });
         }
       }
+      processed_transfers++;
     }
   }
 }
