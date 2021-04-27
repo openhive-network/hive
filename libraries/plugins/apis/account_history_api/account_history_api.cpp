@@ -263,7 +263,7 @@ struct filtering_visitor
 {
   typedef void result_type;
 
-  bool check(uint32_t filter, const hive::protocol::operation& op)
+  bool check(uint64_t filter, const hive::protocol::operation& op)
   {
     _filter = filter;
     _accepted = false;
@@ -288,7 +288,7 @@ struct filtering_visitor
   (account_created_operation)(fill_collateralized_convert_request_operation)(system_warning_operation) )
 
 private:
-  uint32_t _filter = 0;
+  uint64_t _filter = 0;
   bool     _accepted = false;
 };
 

@@ -30,13 +30,13 @@ struct api_operation_object
   }
 
   hive::protocol::transaction_id_type trx_id;
-  uint32_t                               block = 0;
-  uint32_t                               trx_in_block = 0;
-  uint32_t                               op_in_trx = 0;
-  uint32_t                               virtual_op = 0;
-  uint64_t                               operation_id = 0;
-  fc::time_point_sec                     timestamp;
-  hive::protocol::operation             op;
+  uint32_t                            block = 0;
+  uint32_t                            trx_in_block = 0;
+  uint32_t                            op_in_trx = 0;
+  uint32_t                            virtual_op = 0;
+  uint64_t                            operation_id = 0;
+  fc::time_point_sec                  timestamp;
+  hive::protocol::operation           op;
 
   bool operator<( const api_operation_object& obj ) const
   {
@@ -145,7 +145,7 @@ struct enum_virtual_ops_args
   fc::optional<bool> group_by_block;
   fc::optional< uint64_t > operation_begin;
   fc::optional< uint32_t > limit;
-  fc::optional< uint32_t > filter;
+  fc::optional< uint64_t > filter;
 };
 
 struct ops_array_wrapper
@@ -166,7 +166,7 @@ struct ops_array_wrapper
 struct enum_virtual_ops_return
 {
   vector<api_operation_object> ops;
-  std::set<ops_array_wrapper> ops_by_block;
+  std::set<ops_array_wrapper>  ops_by_block;
   uint32_t                     next_block_range_begin = 0;
   uint64_t                     next_operation_begin   = 0;
 };
