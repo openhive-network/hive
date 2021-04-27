@@ -605,7 +605,8 @@ public:
       // opening the db, so that is not a good place to write the initial lib.
       try
       {
-        get_lib();
+        uint32_t lib = get_lib();
+        _cached_irreversible_block.store(lib);
       }
       catch( fc::assert_exception& )
       {
@@ -2050,7 +2051,7 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
 
       while(itr != volatile_idx.end() && itr->block < block_num)
       {
-        std::multiset< rocksdb_operation_object > ops;
+        std::set< rocksdb_operation_object > ops;
         find_operations_by_block(itr->block, false, // don't include reversible, only already imported ops
           [&ops](const rocksdb_operation_object& op)
           {

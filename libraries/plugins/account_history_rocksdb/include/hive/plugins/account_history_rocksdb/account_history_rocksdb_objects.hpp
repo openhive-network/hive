@@ -70,7 +70,7 @@ class rocksdb_operation_object
 
     bool operator<( const rocksdb_operation_object& obj ) const
     {
-      return std::tie( block, trx_in_block, op_in_trx, virtual_op ) < std::tie( obj.block, obj.trx_in_block, obj.op_in_trx, obj.virtual_op );
+      return serialized_op < obj.serialized_op;
     }
 };
 
