@@ -307,9 +307,9 @@ struct api_dynamic_global_property_object
   int16_t                         current_remove_threshold            = 0;
   uint64_t                        early_voting_seconds                = 0;
   uint64_t                        mid_voting_seconds                  = 0;
-  uint16_t                        max_consecutive_recurrent_transfer_failures = HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES;
+  uint8_t                        max_consecutive_recurrent_transfer_failures = HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES;
   uint16_t                        max_recurrent_transfer_end_date = HIVE_MAX_RECURRENT_TRANSFER_END_DATE;
-  uint16_t                        min_recurrent_transfers_recurrence = HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE;
+  uint8_t                        min_recurrent_transfers_recurrence = HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE;
   uint16_t                        max_open_recurrent_transfers = HIVE_MAX_OPEN_RECURRENT_TRANSFERS;
 #ifdef HIVE_ENABLE_SMT
   asset                           smt_creation_fee;

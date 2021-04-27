@@ -340,10 +340,9 @@ namespace hive { namespace chain {
       template< typename Allocator >
       recurrent_transfer_object(allocator< Allocator > a, uint64_t _id,
       const time_point_sec& _trigger_date, const time_point_sec& _end_date, const account_id_type& _from_id,
-      const account_id_type& _to_id,  const asset& _amount, const string& _memo, const uint16_t _recurrence,
-      const uint8_t _consecutive_failures = 0)
+      const account_id_type& _to_id,  const asset& _amount, const string& _memo, const uint16_t _recurrence)
       : id( _id ), trigger_date( _trigger_date ), end_date( _end_date ), from_id( _from_id ), to_id( _to_id ),
-      amount( _amount ), memo( a ), recurrence( _recurrence ), consecutive_failures( _consecutive_failures )
+      amount( _amount ), memo( a ), recurrence( _recurrence )
       {
         from_string( memo, _memo );
       }
@@ -358,12 +357,16 @@ namespace hive { namespace chain {
           return trigger_date;
       }
 
-      void set_trigger_date(time_point_sec _trigger_date)
+      // if the recurrence changed, we must update the trigger_date
+      void set_recurrence_trigger_date( const time_point_sec& _head_block_time, uint16_t _recurrence )
       {
-          trigger_date = _trigger_date;
+        if ( _recurrence != recurrence )
+          trigger_date = _head_block_time + fc::hours( _recurrence );
+
+        recurrence = _recurrence;
       }
 
-    private:
+  private:
         time_point_sec    trigger_date;
     public:
       time_point_sec    end_date;

@@ -459,7 +459,7 @@ typedef count_operation_visitor count_optional_action_visitor;
 void count_resources(
   const signed_transaction& tx,
   count_resources_result& result,
-  const time_point_sec head_block_time )
+  const time_point_sec& head_block_time )
 {
   static const state_object_size_info size_info;
   static const operation_exec_info exec_info;

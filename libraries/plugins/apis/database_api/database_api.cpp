@@ -1628,7 +1628,7 @@ DEFINE_API_IMPL( database_api_impl, find_recurrent_transfers ) {
   find_recurrent_transfers_return result;
 
   const auto* from_account = _db.find_account( args.from );
-  FC_ASSERT( from_account != nullptr, "Given from account does not exist." );
+  FC_ASSERT( from_account != nullptr, "Given 'from' account does not exist." );
   auto from_account_id = from_account->get_id();
 
   const auto &idx = _db.get_index<chain::recurrent_transfer_index, chain::by_from_id>();

@@ -30,7 +30,7 @@ struct count_resources_result
 void count_resources(
   const hive::protocol::signed_transaction& tx,
   count_resources_result& result,
-  time_point_sec head_block_time
+  const time_point_sec& head_block_time
   );
 
 void count_resources(

@@ -1234,4 +1234,4 @@ FC_REFLECT( hive::protocol::claim_reward_balance_operation, (account)(reward_hiv
 FC_REFLECT( hive::protocol::claim_reward_balance2_operation, (account)(extensions)(reward_tokens) )
 #endif
 FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
-FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence) );
+FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(end_date)(extensions) );

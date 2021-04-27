@@ -381,9 +381,9 @@ struct extended_dynamic_global_properties
   uint64_t          early_voting_seconds  = 0;
   uint64_t          mid_voting_seconds    = 0;
 
-  uint16_t          max_consecutive_recurrent_transfer_failures = HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES;
+  uint8_t          max_consecutive_recurrent_transfer_failures = HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES;
   uint16_t          max_recurrent_transfer_end_date = HIVE_MAX_RECURRENT_TRANSFER_END_DATE;
-  uint16_t          min_recurrent_transfers_recurrence = HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE;
+  uint8_t          min_recurrent_transfers_recurrence = HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE;
   uint16_t          max_open_recurrent_transfers = HIVE_MAX_OPEN_RECURRENT_TRANSFERS;
 };
 
@@ -1121,7 +1121,7 @@ FC_REFLECT( hive::plugins::condenser_api::extended_dynamic_global_properties,
         (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)(available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)
         (next_maintenance_time)(last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)(sps_interval_ledger)
         (downvote_pool_percent)(current_remove_threshold)(early_voting_seconds)(mid_voting_seconds)
-        (downvote_pool_percent)(current_remove_threshold)(max_consecutive_recurrent_transfer_failures)(max_recurrent_transfer_end_date)(min_recurrent_transfers_recurrence)
+        (max_consecutive_recurrent_transfer_failures)(max_recurrent_transfer_end_date)(min_recurrent_transfers_recurrence)
         (max_open_recurrent_transfers)
         )
 

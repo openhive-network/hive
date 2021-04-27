@@ -2406,15 +2406,14 @@ void database::process_recurrent_transfers()
           push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), false));
         } else {
           // if we had too many consecutive failures, remove the recurrent payment object
-          auto amount = current_recurrent_transfer.amount;
+          // true means the recurrent transfer was deleted
+          push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), true));
           remove( current_recurrent_transfer );
           modify(from_account, [&](account_object& a )
           {
             FC_ASSERT( a.open_recurrent_transfers > 0 );
             a.open_recurrent_transfers--;
           });
-          // true means the recurrent transfer was deleted
-          push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, amount, consecutive_failures, to_string(current_recurrent_transfer.memo), true));
         }
       }
     }
