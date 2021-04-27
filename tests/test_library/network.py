@@ -44,6 +44,13 @@ class Network:
         return self.directory / self.name
 
     def add_node(self, node_name):
+        self.logger.warning(
+            f'Method {self.add_node.__name__} is deprecated and will be removed in future version. '
+            f'Use {self.create_node.__name__} instead.'
+        )
+        return self.create_node(node_name)
+
+    def create_node(self, node_name=None):
         node = Node(name=node_name, network=self)
         self.nodes.append(node)
         return node
