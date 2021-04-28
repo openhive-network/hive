@@ -1,6 +1,7 @@
 from pathlib import Path
 from shutil import rmtree
 
+from .children_names import ChildrenNames
 from .node import Node
 from .wallet import Wallet
 from . import logger
@@ -10,6 +11,7 @@ class Network:
     def __init__(self, name, port_range=range(49152, 65536)):
         self.name = name
         self.directory = Path('.').absolute()
+        self.children_names = ChildrenNames()
         self.nodes = []
         self.port_range = port_range
         self.next_free_port = port_range.start
@@ -51,6 +53,11 @@ class Network:
         return self.create_node(node_name)
 
     def create_node(self, node_name=None):
+        if node_name is not None:
+            self.children_names.register_name(node_name)
+        else:
+            node_name = self.children_names.create_name('Node')
+
         node = Node(name=node_name, network=self)
         self.nodes.append(node)
         return node
