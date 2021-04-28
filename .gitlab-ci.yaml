@@ -199,7 +199,7 @@ fork_tests:
     - export HIVED_PATH=$CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived
     - export CLI_WALLET_PATH=$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet
     - export GET_DEV_KEY_PATH=$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key
-    - pytest -s
+    - pytest -s no_duplicates_after_fork_test.py
   artifacts:
     paths:
     - tests/functional/python_tests/fork_tests/experimental_network

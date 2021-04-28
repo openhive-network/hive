@@ -233,14 +233,14 @@ def test_no_duplicates_after_fork():
     alpha_net.connect_with(beta_net)
     print('Reconnected')
 
-    for _ in range(40):
+    for _ in range(50):
         alpha_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
-        alpha_reward_operations = count_producer_reward_operations(alpha_node0, begin=alpha_irreversible-30, end=alpha_irreversible)
+        alpha_reward_operations = count_producer_reward_operations(alpha_node0, begin=alpha_irreversible-50, end=alpha_irreversible)
         beta_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
-        beta_reward_operations = count_producer_reward_operations(beta_node0, begin=beta_irreversible-30, end=beta_irreversible)
+        beta_reward_operations = count_producer_reward_operations(beta_node0, begin=beta_irreversible-50, end=beta_irreversible)
 
-        assert sum(i==1 for i in alpha_reward_operations.values()) == 30
-        assert sum(i==1 for i in beta_reward_operations.values()) == 30
+        assert sum(i==1 for i in alpha_reward_operations.values()) == 50
+        assert sum(i==1 for i in beta_reward_operations.values()) == 50
 
         alpha_node0.wait_number_of_blocks(1)
 

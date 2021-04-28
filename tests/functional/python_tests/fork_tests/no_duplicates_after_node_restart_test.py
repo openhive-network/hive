@@ -60,20 +60,18 @@ def test_no_duplicates_after_node_restart():
 
     wallet = alpha_net.attach_wallet()
 
-    time.sleep(60)
-
     print("Restarting node0...")
     alpha_node0.close()
     alpha_node0.run()
+
+    print("Waiting for network synchronization...")
     alpha_node0.wait_for_synchronization()
 
-    time.sleep(60)
-
-    for _ in range(40):
+    for _ in range(50):
         alpha_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
-        alpha_reward_operations = count_producer_reward_operations(alpha_node0, begin=alpha_irreversible-40, end=alpha_irreversible)
+        alpha_reward_operations = count_producer_reward_operations(alpha_node0, begin=alpha_irreversible-50, end=alpha_irreversible)
 
-        assert sum(i==1 for i in alpha_reward_operations.values()) == 40
+        assert sum(i==1 for i in alpha_reward_operations.values()) == 50
 
         alpha_node0.wait_number_of_blocks(1)
 
