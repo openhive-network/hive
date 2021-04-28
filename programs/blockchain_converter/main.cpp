@@ -21,6 +21,7 @@ int main( int argc, char** argv )
       opts.add_options()
       ("help,h", "Print this help message and exit.")
       ("private-key,k", bpo::value< std::string >(), "init miner private key")
+      ("chain-id,c", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "new chain ID")
       ("input,i", bpo::value< std::string >(), "input block log")
       ("output,o", bpo::value< std::string >(), "output block log; defaults to [input]_out" )
       ;
@@ -41,6 +42,19 @@ int main( int argc, char** argv )
 
     fc::path block_log_in( options["input"].as< std::string >() );
     fc::path block_log_out( out_file );
+
+    hive::protocol::chain_id_type _hive_chain_id;
+
+    auto chain_id_str = options["chain-id"].as< std::string >();
+
+    try
+    {
+      _hive_chain_id = chain_id_type( chain_id_str);
+    }
+    catch( fc::exception& )
+    {
+      FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
+    }
 
     fc::optional< fc::ecc::private_key > private_key = hive::utilities::wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse private key" );
