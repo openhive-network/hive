@@ -56,29 +56,25 @@ struct pre_operation_visitor
   void operator()( const account_update_operation& op )const
   {
     _plugin.clear_cache();
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( op.account );
-    if( acct_itr ) _plugin.cache_auths( *acct_itr );
+    cache_auths_of( op.account );
   }
 
   void operator()( const account_update2_operation& op )const
   {
     _plugin.clear_cache();
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( op.account );
-    if( acct_itr ) _plugin.cache_auths( *acct_itr );
+    cache_auths_of( op.account );
   }
 
   void operator()( const create_claimed_account_operation& op )const
   {
     _plugin.clear_cache();
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( op.new_account_name );
-    if( acct_itr ) _plugin.cache_auths( *acct_itr );
+    cache_auths_of( op.new_account_name );
   }
 
   void operator()( const recover_account_operation& op )const
   {
     _plugin.clear_cache();
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( op.account_to_recover );
-    if( acct_itr ) _plugin.cache_auths( *acct_itr );
+    cache_auths_of( op.account_to_recover );
   }
 
   void operator()( const pow_operation& op )const
@@ -89,6 +85,14 @@ struct pre_operation_visitor
   void operator()( const pow2_operation& op )const
   {
     _plugin.clear_cache();
+  }
+
+private:
+
+  void cache_auths_of( const account_name_type& account_name )const
+  {
+    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( account_name );
+    if( acct_itr ) _plugin.cache_auths( *acct_itr );
   }
 };
 
