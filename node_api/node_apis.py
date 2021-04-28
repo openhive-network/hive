@@ -1,4 +1,5 @@
 from .account_history_api import AccountHistoryApi
+from .condenser_api import CondenserApi
 from .database_api import DatabaseApi
 from .network_node_api import NetworkNodeApi
 
@@ -8,5 +9,6 @@ class Apis:
         self.__node = node
 
         self.account_history = AccountHistoryApi(self.__node)
+        self.condenser = CondenserApi(self.__node)
         self.database = DatabaseApi(self.__node)
         self.network_node = NetworkNodeApi(self.__node)
