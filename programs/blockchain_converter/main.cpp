@@ -33,7 +33,7 @@ int main( int argc, char** argv )
 
     bpo::store( bpo::parse_command_line(argc, argv, opts), options );
 
-    if( options.count("help") || !options.count("private-key") || !options.count("input") )
+    if( options.count("help") || !options.count("private-key") || !options.count("input") || !options.count("chain-id") )
     {
       std::cout << opts << "\n";
       return 0;
@@ -62,19 +62,39 @@ int main( int argc, char** argv )
     fc::optional< fc::ecc::private_key > private_key = wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse private key" );
 
-    block_log log;
+    block_log log_in, log_out;
 
-    log.open( block_log_in );
+    log_in.open( block_log_in );
+    log_out.open( block_log_out );
 
-    for( uint32_t block_num = 1; block_num <= log.head()->block_num(); ++block_num )
+    for( uint32_t block_num = 1; block_num <= log_in.head()->block_num(); ++block_num )
     {
-      fc::optional< signed_block > block = log.read_block_by_num( block_num );
+      fc::optional< signed_block > block = log_in.read_block_by_num( block_num );
       FC_ASSERT( block.valid(), "unable to read block" );
 
-      std::cout << block->block_num() << '\n';
+      // TODO: Derived keys
+
+      block->sign( *private_key );
+
+      for( auto transaction = block->transactions.begin(); transaction != block->transactions.end(); ++transaction )
+      {
+        // TODO: operations visitor: transaction->operations = transaction->visit(  ); for converting assets
+        for( auto signature = transaction->signatures.begin(); signature != transaction->signatures.end(); ++signature )
+          *signature = private_key->sign_compact( transaction->sig_digest( _hive_chain_id ), fc::ecc::fc_canonical );
+      }
+
+      block->transaction_merkle_root = block->calculate_merkle_root();
+
+      log_out.append( *block );
+
+      if( block_num % 1000 == 0 )
+        std::cout << "Rewritten block: " << block_num << '\r';
     }
 
-    log.close();
+    log_in.close();
+    log_out.close();
+
+    std::cout << "block_log conversion completed\n";
 
     return 0;
   }
