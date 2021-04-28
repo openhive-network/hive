@@ -67,11 +67,6 @@ class rocksdb_operation_object
     uint16_t                   virtual_op = 0;
     time_point_sec             timestamp;
     serialize_buffer_t         serialized_op;
-
-    bool operator<( const rocksdb_operation_object& obj ) const
-    {
-      return serialized_op < obj.serialized_op;
-    }
 };
 
 struct by_block;
