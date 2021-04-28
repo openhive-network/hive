@@ -6,6 +6,8 @@
 
 #include <hive/utilities/key_conversion.hpp>
 
+#include <hive/chain/block_log.hpp>
+
 #include <iostream>
 
 namespace bpo = boost::program_options;
@@ -42,6 +44,20 @@ int main( int argc, char** argv )
 
     fc::optional< fc::ecc::private_key > private_key = hive::utilities::wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse private key" );
+
+    hive::chain::block_log log;
+
+    log.open( block_log_in );
+
+    for( uint32_t block_num = 1; block_num <= log.head()->block_num(); ++block_num )
+    {
+      fc::optional< hive::protocol::signed_block > block = log.read_block_by_num( block_num );
+      FC_ASSERT( block.valid(), "unable to read block" );
+
+      std::cout << block->block_num() << '\n';
+    }
+
+    log.close();
 
     return 0;
   }

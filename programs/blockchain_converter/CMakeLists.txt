@@ -3,11 +3,11 @@ add_executable( blockchain_converter main.cpp )
 if( HIVE_STATIC_BUILD )
   target_link_libraries( blockchain_converter PRIVATE
                          "-static-libstdc++ -static-libgcc"
-                         hive_utilities fc
+                         hive_chain hive_utilities fc
   )
 else( HIVE_STATIC_BUILD )
   target_link_libraries( blockchain_converter PRIVATE
-                         hive_utilities fc
+                         hive_chain hive_utilities fc
   )
 endif( HIVE_STATIC_BUILD )
 
