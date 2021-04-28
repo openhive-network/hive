@@ -62,9 +62,12 @@ def test_no_duplicates_after_node_restart():
 
     time.sleep(60)
 
+    print("Restarting node0...")
     alpha_node0.close()
     alpha_node0.run()
     alpha_node0.wait_for_synchronization()
+
+    time.sleep(60)
 
     for _ in range(40):
         alpha_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
