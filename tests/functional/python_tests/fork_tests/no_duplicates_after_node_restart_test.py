@@ -77,4 +77,7 @@ def test_no_duplicates_after_node_restart():
 
         alpha_node0.wait_number_of_blocks(1)
 
-    # Restart alpha node
+
+    # cleanup
+    for node in alpha_net:
+        node.close()

@@ -243,3 +243,8 @@ def test_no_duplicates_after_fork():
         assert sum(i==1 for i in beta_reward_operations.values()) == 30
 
         alpha_node0.wait_number_of_blocks(1)
+
+    # cleanup
+    for node in alpha_net + beta_net:
+        node.close()
+
