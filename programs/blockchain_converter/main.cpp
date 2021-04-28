@@ -10,6 +10,9 @@
 
 #include <iostream>
 
+using namespace hive::chain;
+using namespace hive::protocol;
+using namespace hive::utilities;
 namespace bpo = boost::program_options;
 
 int main( int argc, char** argv )
@@ -17,7 +20,7 @@ int main( int argc, char** argv )
   try
   {
     // Setup logging config
-    boost::program_options::options_description opts;
+    bpo::options_description opts;
       opts.add_options()
       ("help,h", "Print this help message and exit.")
       ("private-key,k", bpo::value< std::string >(), "init miner private key")
@@ -43,7 +46,7 @@ int main( int argc, char** argv )
     fc::path block_log_in( options["input"].as< std::string >() );
     fc::path block_log_out( out_file );
 
-    hive::protocol::chain_id_type _hive_chain_id;
+    chain_id_type _hive_chain_id;
 
     auto chain_id_str = options["chain-id"].as< std::string >();
 
@@ -56,16 +59,16 @@ int main( int argc, char** argv )
       FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
     }
 
-    fc::optional< fc::ecc::private_key > private_key = hive::utilities::wif_to_key( options["private-key"].as< std::string >() );
+    fc::optional< fc::ecc::private_key > private_key = wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse private key" );
 
-    hive::chain::block_log log;
+    block_log log;
 
     log.open( block_log_in );
 
     for( uint32_t block_num = 1; block_num <= log.head()->block_num(); ++block_num )
     {
-      fc::optional< hive::protocol::signed_block > block = log.read_block_by_num( block_num );
+      fc::optional< signed_block > block = log.read_block_by_num( block_num );
       FC_ASSERT( block.valid(), "unable to read block" );
 
       std::cout << block->block_num() << '\n';
