@@ -99,6 +99,11 @@ class Network:
 
         self.is_running = True
 
+    def close(self):
+        for node in self.nodes:
+            if node.is_running():
+                node.close()
+
     def attach_wallet(self):
         if len(self.nodes) == 0:
             raise Exception('Cannot connect wallet to network without nodes')
