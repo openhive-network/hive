@@ -1,6 +1,7 @@
 from pathlib import Path
 import subprocess
 import time
+import weakref
 
 
 from .node_api.node_apis import Apis
@@ -12,7 +13,6 @@ class Node:
     def __init__(self, creator, name='unnamed', directory=None, configure_for_block_production=False):
         self.api = Apis(self)
 
-        import weakref
         self.creator = weakref.proxy(creator)
         self.name = name
         self.directory = Path(directory) if directory is not None else Path(f'./{self.name}')
@@ -203,7 +203,6 @@ class Node:
             stderr=None if self.print_to_terminal else self.stderr_file,
         )
 
-        import weakref
         self.finalizer = weakref.finalize(self, Node.__close_process, self.process, self.logger)
 
         if use_existing_config:
