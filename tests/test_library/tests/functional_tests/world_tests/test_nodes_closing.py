@@ -9,7 +9,6 @@ def test_if_single_node_is_closed():
         node.set_witness('initminer')
 
         node.run()
-        node.wait_for_synchronization()
 
     assert not node.is_running()
 
@@ -27,7 +26,6 @@ def test_if_all_nodes_in_network_are_closed():
             network.create_node()
 
         network.run()
-        network.wait_for_synchronization_of_all_nodes()
 
         nodes = world.nodes()
 
