@@ -9,7 +9,7 @@ from . import logger
 
 
 class Node:
-    def __init__(self, creator, name='unnamed', directory=None):
+    def __init__(self, creator, name='unnamed', directory=None, configure_for_block_production=False):
         self.api = Apis(self)
 
         import weakref
@@ -27,6 +27,11 @@ class Node:
 
         from .node_configs.default import create_default_config
         self.config = create_default_config()
+
+        if configure_for_block_production:
+            self.config.enable_stale_production = True
+            self.config.required_participation = 0
+            self.set_witness('initminer')
 
     def __str__(self):
         from .network import Network
