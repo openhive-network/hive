@@ -180,6 +180,7 @@ class Node:
 
         config_file_path = self.directory.joinpath('config.ini')
         if not use_existing_config:
+            self.__set_unset_endpoints()
             self.config.write_to_file(config_file_path)
 
         if not self.print_to_terminal:
@@ -220,6 +221,17 @@ class Node:
         else:
             message += 'without http server'
         self.logger.info(message)
+
+    def __set_unset_endpoints(self):
+        from .node_config import NodeConfig
+        if self.config.p2p_endpoint is NodeConfig.UNSET:
+            self.config.p2p_endpoint = f'0.0.0.0:{self.creator.allocate_port()}'
+
+        if self.config.webserver_http_endpoint is NodeConfig.UNSET:
+            self.config.webserver_http_endpoint = f'0.0.0.0:{self.creator.allocate_port()}'
+
+        if self.config.webserver_ws_endpoint is NodeConfig.UNSET:
+            self.config.webserver_ws_endpoint = f'0.0.0.0:{self.creator.allocate_port()}'
 
     def close(self):
         self.finalizer()
