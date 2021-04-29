@@ -9,10 +9,11 @@ from . import logger
 
 
 class Node:
-    def __init__(self, name='unnamed', network=None, directory=None):
+    def __init__(self, creator, name='unnamed', directory=None):
         self.api = Apis(self)
 
-        self.network = network
+        import weakref
+        self.creator = weakref.proxy(creator)
         self.name = name
         self.directory = Path(directory) if directory is not None else Path(f'./{self.name}')
         self.produced_files = False
@@ -22,13 +23,14 @@ class Node:
         self.stdout_file = None
         self.stderr_file = None
         self.finalizer = None
-        self.logger = logger.getLogger(f'{__name__}.{self.network}.{self.name}')
+        self.logger = logger.getLogger(f'{__name__}.{self.creator}.{self.name}')
 
         from .node_configs.default import create_default_config
         self.config = create_default_config()
 
     def __str__(self):
-        return f'{self.network}::{self.name}' if self.network is not None else self.name
+        from .network import Network
+        return f'{self.creator}::{self.name}' if isinstance(self.creator, Network) else self.name
 
     @staticmethod
     def __close_process(process, logger_from_node):
@@ -59,7 +61,7 @@ class Node:
 
     def get_p2p_endpoint(self):
         if not self.config.p2p_endpoint:
-            self.config.p2p_endpoint = f'0.0.0.0:{self.network.allocate_port()}'
+            self.config.p2p_endpoint = f'0.0.0.0:{self.creator.allocate_port()}'
 
         return self.config.p2p_endpoint
 
