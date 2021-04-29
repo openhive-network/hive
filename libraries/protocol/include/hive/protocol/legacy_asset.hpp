@@ -94,10 +94,13 @@ inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sy
   switch( ser )
   {
 #ifdef IS_TEST_NET /* Blockchain converter needs to be able to deserialize mainnet symbols: */
+    case (uint64_t(3) | ((uint64_t('S') | (uint64_t('T') << 8) | (uint64_t('E') << 16) | (uint64_t('E') << 24) | (uint64_t('M') << 32)) << 8) ):
+      sym.ser = OBSOLETE_SYMBOL_SER;
+      break;
     case (uint64_t(1) | ((uint64_t('S') | (uint64_t('T') << 8) | (uint64_t('E') << 16) | (uint64_t('E') << 24) | (uint64_t('M') << 32)) << 8) ):
     case (uint64_t(2) | ((uint64_t('S') | (uint64_t('T') << 8) | (uint64_t('E') << 16) | (uint64_t('E') << 24) | (uint64_t('M') << 32)) << 8) ):
     case (uint64_t(5) | ((uint64_t('S') | (uint64_t('T') << 8) | (uint64_t('E') << 16) | (uint64_t('E') << 24) | (uint64_t('M') << 32)) << 8) ):
-    ser = OBSOLETE_SYMBOL_LEGACY_SER_1;
+      ser = OBSOLETE_SYMBOL_LEGACY_SER_1;
 #endif
     case OBSOLETE_SYMBOL_LEGACY_SER_1:
     case OBSOLETE_SYMBOL_LEGACY_SER_2:
