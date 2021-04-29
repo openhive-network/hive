@@ -1,15 +1,13 @@
 # This test forces that create_default_config will be always up to date.
 
-from test_library import Node
+from test_library import World
 from test_library.node_configs.default import create_default_config
 
 
 def generate_default_config():
-    node = Node('test_node')
-    from pathlib import Path
-    node.set_executable_file_path(Path(__file__).parent / '../../../../../build/programs/hived/hived')
-    node.run(use_existing_config=True, wait_until_live=False)
-    node.close()
+    with World() as world:
+        node = world.create_node()
+        node.run(use_existing_config=True, wait_until_live=False)
 
     from shutil import rmtree
     rmtree(node.directory)
