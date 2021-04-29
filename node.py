@@ -160,7 +160,10 @@ class Node:
     def set_allowed_nodes(self, nodes):
         return self.api.network_node.set_allowed_peers([node.get_id() for node in nodes])
 
-    def run(self):
+    def run(self, wait_until_live=True):
+        """
+        :param wait_until_live: Stops execution until node will generate or receive blocks.
+        """
         if not self.executable_file_path:
             from . import paths_to_executables
             self.executable_file_path = paths_to_executables.get_path_of('hived')
@@ -203,6 +206,9 @@ class Node:
             self.config.load_from_file(config_file_path)
 
         self.produced_files = True
+        if wait_until_live:
+            self.wait_for_synchronization()
+
         message = f'Run with pid {self.process.pid}, '
         if self.config.webserver_http_endpoint:
             message += f'with http server {self.config.webserver_http_endpoint}'

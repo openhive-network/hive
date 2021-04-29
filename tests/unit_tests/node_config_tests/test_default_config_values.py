@@ -9,7 +9,7 @@ def generate_default_config():
     from pathlib import Path
     node.set_executable_file_path(Path(__file__).parent / '../../../../../build/programs/hived/hived')
     node.config = None
-    node.run()
+    node.run(wait_until_live=False)
     node.close()
 
     from shutil import rmtree
