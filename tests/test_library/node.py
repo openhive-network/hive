@@ -160,9 +160,12 @@ class Node:
     def set_allowed_nodes(self, nodes):
         return self.api.network_node.set_allowed_peers([node.get_id() for node in nodes])
 
-    def run(self, wait_until_live=True):
+    def run(self, wait_until_live=True, use_existing_config=False):
         """
         :param wait_until_live: Stops execution until node will generate or receive blocks.
+        :param use_existing_config: Skip generation of config file and use already existing. It means that all
+                                    current config values will be ignored and overridden by values from file.
+                                    When config file is missing hived generates default config.
         """
         if not self.executable_file_path:
             from . import paths_to_executables
@@ -174,7 +177,7 @@ class Node:
         self.directory.mkdir(parents=True, exist_ok=True)
 
         config_file_path = self.directory.joinpath('config.ini')
-        if self.config is not None:
+        if not use_existing_config:
             self.config.write_to_file(config_file_path)
 
         if not self.print_to_terminal:
@@ -195,7 +198,7 @@ class Node:
         import weakref
         self.finalizer = weakref.finalize(self, Node.__close_process, self.process, self.logger)
 
-        if self.config is None:
+        if use_existing_config:
             # Wait for config generation
             from time import sleep
             while not config_file_path.exists():
