@@ -3,6 +3,7 @@
 
 #include <fc/filesystem.hpp>
 #include <fc/exception/exception.hpp>
+#include <fc/io/json.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
 
@@ -27,6 +28,8 @@ int main( int argc, char** argv )
       ("chain-id,c", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "new chain ID")
       ("input,i", bpo::value< std::string >(), "input block log")
       ("output,o", bpo::value< std::string >(), "output block log; defaults to [input]_out" )
+      ("log-per-block,l", bpo::value< uint32_t >()->default_value( 0 ), "Displays blocks in JSON format every n blocks")
+      ("log-specific,s", bpo::value< uint32_t >()->default_value( 0 ), "Displays only block with specified number")
       ;
 
     bpo::variables_map options;
@@ -38,6 +41,9 @@ int main( int argc, char** argv )
       std::cout << opts << "\n";
       return 0;
     }
+
+    uint32_t log_per_block = options["log-per-block"].as< uint32_t >();
+    uint32_t log_specific = options["log-specific"].as< uint32_t >();
 
     std::string out_file;
     if( !options.count("output") )
@@ -74,6 +80,16 @@ int main( int argc, char** argv )
       fc::optional< signed_block > block = log_in.read_block_by_num( block_num );
       FC_ASSERT( block.valid(), "unable to read block" );
 
+      if ( ( log_per_block > 0 && block_num % log_per_block == 0 ) || log_specific == block_num )
+      {
+        fc::json json_block;
+        fc::variant v;
+        fc::to_variant( *block, v );
+
+        std::cout << "Rewritten block: " << block_num
+          << ". Data before conversion: " << json_block.to_string( v ) << '\n';
+      }
+
       // TODO: Derived keys
 
       block->sign( *private_key );
@@ -86,8 +102,14 @@ int main( int argc, char** argv )
 
       log_out.append( *block );
 
-      if( block_num % 1000 == 0 )
-        std::cout << "Rewritten block: " << block_num << '\r';
+      if ( ( log_per_block > 0 && block_num % log_per_block == 0 ) || log_specific == block_num )
+      {
+        fc::json json_block;
+        fc::variant v;
+        fc::to_variant( *block, v );
+
+        std::cout << "After conversion: " << json_block.to_string( v ) << '\n';
+      }
     }
 
     log_in.close();
