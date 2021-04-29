@@ -136,6 +136,15 @@ namespace hive { namespace protocol {
 
   bool is_virtual_operation( const operation& op );
 
+  struct convert_operations_visitor
+  {
+    typedef operation result_type;
+
+    // No signatures modification ops
+    template< typename T >
+    const T& operator()( const T& op )const { return op; }
+  };
+
 } } // hive::protocol
 
 namespace fc
