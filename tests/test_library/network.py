@@ -53,12 +53,19 @@ class Network:
         return self.create_node(node_name)
 
     def create_node(self, node_name=None):
+        return self.__create_node(node_name, configure_for_block_production=False)
+
+    def create_init_node(self, node_name='InitNode'):
+        """Creates node which is ready to produce blocks"""
+        return self.__create_node(node_name, configure_for_block_production=True)
+
+    def __create_node(self, node_name, configure_for_block_production):
         if node_name is not None:
             self.children_names.register_name(node_name)
         else:
             node_name = self.children_names.create_name('Node')
 
-        node = Node(self, node_name)
+        node = Node(self, node_name, configure_for_block_production=configure_for_block_production)
         self.nodes.append(node)
         return node
 
