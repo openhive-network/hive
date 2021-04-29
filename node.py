@@ -9,6 +9,10 @@ from .account import Account
 from . import logger
 
 
+class NodeIsNotRunning(Exception):
+    pass
+
+
 class Node:
     def __init__(self, creator, name, directory=None, configure_for_block_production=False):
         self.api = Apis(self)
@@ -60,6 +64,17 @@ class Node:
             return False
 
         return self.process.poll() is None
+
+    def attach_wallet(self):
+        if not self.is_running():
+            raise NodeIsNotRunning('Before attaching wallet you have to run node')
+
+        from .wallet import Wallet
+        wallet = Wallet(self.creator, self.directory / '../Wallet')
+        wallet.connect_to(self)
+        wallet.run()
+
+        return wallet
 
     def get_name(self):
         return self.name
