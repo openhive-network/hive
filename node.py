@@ -10,7 +10,7 @@ from . import logger
 
 
 class Node:
-    def __init__(self, creator, name='unnamed', directory=None, configure_for_block_production=False):
+    def __init__(self, creator, name, directory=None, configure_for_block_production=False):
         self.api = Apis(self)
 
         self.creator = weakref.proxy(creator)
