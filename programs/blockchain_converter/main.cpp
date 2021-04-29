@@ -15,19 +15,6 @@ using namespace hive::protocol;
 using namespace hive::utilities;
 namespace bpo = boost::program_options;
 
-/* struct convert_operations_visitor : public fc::visitor< operation >
-{
-  const account_create_operation& operator()( const account_create_operation& op )const
-  {
-    op.get().fee = asset( op.get().fee.amount, op.get().fee.symbol ); // TODO: Convert this
-    return op;
-  }
-
-  // No assets ops
-  template< typename T >
-  const T& operator()( const T& op )const { return op; }
-}; */
-
 int main( int argc, char** argv )
 {
   try
@@ -90,11 +77,8 @@ int main( int argc, char** argv )
       block->sign( *private_key );
 
       for( auto transaction = block->transactions.begin(); transaction != block->transactions.end(); ++transaction )
-      {
-        // transaction->operations = transaction->visit( convert_operations_visitor() );
         for( auto signature = transaction->signatures.begin(); signature != transaction->signatures.end(); ++signature )
           *signature = private_key->sign_compact( transaction->sig_digest( _hive_chain_id ), fc::ecc::fc_canonical );
-      }
 
       block->transaction_merkle_root = block->calculate_merkle_root();
 
