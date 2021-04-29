@@ -17,6 +17,8 @@
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/utilities/plugin_utilities.hpp>
 
+#include <hive/plugins/condenser_api/condenser_api.hpp>
+
 #include <appbase/application.hpp>
 
 #include <rocksdb/db.h>
@@ -77,6 +79,7 @@ using hive::protocol::signed_transaction;
 using hive::chain::operation_notification;
 using hive::chain::transaction_id_type;
 
+using hive::plugins::condenser_api::legacy_asset;
 using hive::utilities::benchmark_dumper;
 
 using ::rocksdb::DB;
@@ -935,6 +938,28 @@ private:
   bool                             _reindexing = false;
 
   bool                             _prune = false;
+
+  struct saved_balances
+  {
+    asset hive_balance = asset(0, HIVE_SYMBOL);
+    asset savings_hive_balance = asset(0, HIVE_SYMBOL);
+
+    asset hbd_balance = asset(0, HBD_SYMBOL);
+    asset savings_hbd_balance = asset(0, HBD_SYMBOL);
+
+    asset vesting_shares = asset(0, VESTS_SYMBOL);
+    asset delegated_vesting_shares = asset(0, VESTS_SYMBOL);
+    asset received_vesting_shares = asset(0, VESTS_SYMBOL);
+
+    asset reward_hbd_balance = asset(0, HBD_SYMBOL);
+    asset reward_hive_balance = asset(0, HIVE_SYMBOL);
+    asset reward_vesting_balance = asset(0, VESTS_SYMBOL);
+    asset reward_vesting_hive_balance = asset(0, HIVE_SYMBOL);
+  };
+  optional<string>                 _balance_csv_filename;
+  std::ofstream                    _balance_csv_file;
+  std::map<string, saved_balances> _saved_balances;
+  unsigned                         _balance_csv_line_count = 0;
 };
 
 void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_options::variables_map& options)
@@ -973,6 +998,27 @@ void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_o
 
   if(_blacklisted_op_list.empty() == false)
     ilog( "Account History: blacklisting ops ${o}", ("o", _blacklisted_op_list) );
+
+  if (options.count("account-history-rocksdb-dump-balance-history"))
+  {
+    _balance_csv_filename = options.at("account-history-rocksdb-dump-balance-history").as<std::string>();
+    _balance_csv_file.open(*_balance_csv_filename, std::ios_base::out | std::ios_base::trunc);
+    _balance_csv_file << "account" << ","
+                      << "block_num" << ","
+                      << "timestamp" << ","
+                      << "hive" << ","
+                      << "savings_hive" << ","
+                      << "hbd" << ","
+                      << "savings_hbd" << ","
+                      << "vesting_shares" << ","
+                      << "delegated_vesting_shares" << ","
+                      << "received_vesting_shares" << ","
+                      << "reward_hive" << ","
+                      << "reward_hbd" << ","
+                      << "reward_vesting_shares" << ","
+                      << "reward_vesting_hive" << "\n";
+    _balance_csv_file.flush();
+  }
 
   appbase::app().get_plugin< chain::chain_plugin >().report_state_options( _self.name(), state_opts );
 }
@@ -1812,6 +1858,14 @@ void account_history_rocksdb_plugin::impl::on_post_reindex(const hive::chain::re
   printReport( note.last_block_number, "RocksDB data reindex finished." );
 }
 
+std::string get_asset_amount(const asset& amount)
+{
+   std::string asset_with_amount_string = legacy_asset::from_asset(amount).to_string();
+   size_t space_pos = asset_with_amount_string.find(' ');
+   assert(space_pos != std::string::npos);
+   return asset_with_amount_string.substr(0, space_pos);
+}
+
 void account_history_rocksdb_plugin::impl::printReport(uint32_t blockNo, const char* detailText) const
 {
   ilog("${t}Processed blocks: ${n}, containing: ${tx} transactions and ${op} operations.\n"
@@ -2018,6 +2072,113 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_block(const block_notifi
 
 void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notification& bn)
 {
+  if (_balance_csv_filename)
+  {
+    // check the balances of all tracked accounts, emit a line in the CSV file if any have changed
+    // since the last block
+    const auto& account_idx = _mainDb.get_index<hive::chain::account_index>().indices().get<hive::chain::by_name>();
+    for (auto range : _tracked_accounts)
+    {
+      const std::string& lower = range.first;
+      const std::string& upper = range.second;
+
+      auto account_iter = account_idx.lower_bound(range.first);
+      while (account_iter != account_idx.end() &&
+             account_iter->name <= upper)
+      {
+        const account_object& account = *account_iter;
+
+        auto saved_balance_iter = _saved_balances.find(account_iter->name);
+        bool balances_changed = saved_balance_iter == _saved_balances.end();
+        saved_balances& saved_balance_record = _saved_balances[account_iter->name];
+
+        if (saved_balance_record.hive_balance != account.balance)
+        {
+          saved_balance_record.hive_balance = account.balance;
+          balances_changed = true;
+        }
+        if (saved_balance_record.savings_hive_balance != account.savings_balance)
+        {
+          saved_balance_record.savings_hive_balance = account.savings_balance;
+          balances_changed = true;
+        }
+        if (saved_balance_record.hbd_balance != account.hbd_balance)
+        {
+          saved_balance_record.hbd_balance = account.hbd_balance;
+          balances_changed = true;
+        }
+        if (saved_balance_record.savings_hbd_balance != account.savings_hbd_balance)
+        {
+          saved_balance_record.savings_hbd_balance = account.savings_hbd_balance;
+          balances_changed = true;
+        }
+
+        if (saved_balance_record.reward_hbd_balance != account.reward_hbd_balance)
+        {
+          saved_balance_record.reward_hbd_balance = account.reward_hbd_balance;
+          balances_changed = true;
+        }
+        if (saved_balance_record.reward_hive_balance != account.reward_hive_balance)
+        {
+          saved_balance_record.reward_hive_balance = account.reward_hive_balance;
+          balances_changed = true;
+        }
+        if (saved_balance_record.reward_vesting_balance != account.reward_vesting_balance)
+        {
+          saved_balance_record.reward_vesting_balance = account.reward_vesting_balance;
+          balances_changed = true;
+        }
+        if (saved_balance_record.reward_vesting_hive_balance != account.reward_vesting_hive)
+        {
+          saved_balance_record.reward_vesting_hive_balance = account.reward_vesting_hive;
+          balances_changed = true;
+        }
+
+        if (saved_balance_record.vesting_shares != account.vesting_shares)
+        {
+          saved_balance_record.vesting_shares = account.vesting_shares;
+          balances_changed = true;
+        }
+        if (saved_balance_record.delegated_vesting_shares != account.delegated_vesting_shares)
+        {
+          saved_balance_record.delegated_vesting_shares = account.delegated_vesting_shares;
+          balances_changed = true;
+        }
+        if (saved_balance_record.received_vesting_shares != account.received_vesting_shares)
+        {
+          saved_balance_record.received_vesting_shares = account.received_vesting_shares;
+          balances_changed = true;
+        }
+
+        if (balances_changed)
+        {
+          _balance_csv_file << (string)account.name << ","
+                            << bn.block.block_num() << ","
+                            << bn.block.timestamp.to_iso_string() << ","
+                            << get_asset_amount(saved_balance_record.hive_balance) << ","
+                            << get_asset_amount(saved_balance_record.savings_hive_balance) << ","
+                            << get_asset_amount(saved_balance_record.hbd_balance) << ","
+                            << get_asset_amount(saved_balance_record.savings_hbd_balance) << ","
+                            << get_asset_amount(saved_balance_record.vesting_shares) << ","
+                            << get_asset_amount(saved_balance_record.delegated_vesting_shares) << ","
+                            << get_asset_amount(saved_balance_record.received_vesting_shares) << ","
+                            << get_asset_amount(saved_balance_record.reward_hive_balance) << ","
+                            << get_asset_amount(saved_balance_record.reward_hbd_balance) << ","
+                            << get_asset_amount(saved_balance_record.reward_vesting_balance) << ","
+                            << get_asset_amount(saved_balance_record.reward_vesting_hive_balance) << "\n";
+          // flush every 10k lines
+          ++_balance_csv_line_count;
+          if (_balance_csv_line_count > 10000)
+          {
+            _balance_csv_line_count = 0;
+            _balance_csv_file.flush();
+          }
+        }
+        ++account_iter;
+      }
+    }
+  }
+
   if(_reindexing) return;
 
   _currently_processed_block.store(0);
@@ -2056,6 +2217,7 @@ void account_history_rocksdb_plugin::set_program_options(
       "Allows to force immediate data import at plugin startup. By default storage is supplied during reindex process.")
     ("account-history-rocksdb-stop-import-at-block", bpo::value<uint32_t>()->default_value(0),
       "Allows to specify block number, the data import process should stop at.")
+    ("account-history-rocksdb-dump-balance-history", boost::program_options::value< string >(), "Dumps balances for all tracked accounts to a CSV file every time they change")
   ;
 }
 
