@@ -44,6 +44,16 @@ class Wallet:
                 broadcast
             )
 
+        def create_funded_account_with_keys(self, creator, new_account_name, initial_amount, memo, json_meta, owner_key,
+                                            active_key, posting_key, memo_key, broadcast):
+            return self.__send(
+                'create_funded_account_with_keys', creator, new_account_name, initial_amount, memo, json_meta,
+                owner_key, active_key, posting_key, memo_key, broadcast
+            )
+
+        def claim_account_creation(self, creator, fee, broadcast):
+            return self.__send('claim_account_creation', creator, fee, broadcast)
+
         def transfer_to_vesting(self, sender, receiver, amount, broadcast=True):
             return self.__send('transfer_to_vesting', sender, receiver, amount, broadcast)
 
