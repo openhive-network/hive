@@ -75,6 +75,8 @@ int main( int argc, char** argv )
     log_in.open( block_log_in );
     log_out.open( block_log_out );
 
+    convert_operations_visitor cov;
+
     for( uint32_t block_num = 1; block_num <= log_in.head()->block_num(); ++block_num )
     {
       fc::optional< signed_block > block = log_in.read_block_by_num( block_num );
@@ -95,8 +97,11 @@ int main( int argc, char** argv )
       block->sign( *private_key );
 
       for( auto transaction = block->transactions.begin(); transaction != block->transactions.end(); ++transaction )
+      {
+        transaction->visit( cov );
         for( auto signature = transaction->signatures.begin(); signature != transaction->signatures.end(); ++signature )
           *signature = private_key->sign_compact( transaction->sig_digest( _hive_chain_id ), fc::ecc::fc_canonical );
+      }
 
       block->transaction_merkle_root = block->calculate_merkle_root();
 
