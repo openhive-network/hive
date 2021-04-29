@@ -42,6 +42,8 @@ int main( int argc, char** argv )
     std::string out_file;
     if( !options.count("output") )
       out_file = options["input"].as< std::string >() + "_out";
+    else
+      out_file = options["output"].as< std::string >();
 
     fc::path block_log_in( options["input"].as< std::string >() );
     fc::path block_log_out( out_file );
