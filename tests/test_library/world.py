@@ -41,7 +41,7 @@ class World:
         else:
             name = self.children_names.create_name('Node')
 
-        node = Node(name)
+        node = Node(self, name)
         self.__nodes.append(node)
         return node
 

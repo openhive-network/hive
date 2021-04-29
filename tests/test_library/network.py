@@ -58,7 +58,7 @@ class Network:
         else:
             node_name = self.children_names.create_name('Node')
 
-        node = Node(name=node_name, network=self)
+        node = Node(self, node_name)
         self.nodes.append(node)
         return node
 
