@@ -214,11 +214,6 @@ inline void unpack( Stream& s, hive::protocol::asset_symbol_type& sym, uint32_t 
       FC_ASSERT( ser == (uint64_t(3) | ((uint64_t('S') | (uint64_t('B') << 8) | (uint64_t('D') << 16)) << 8)), "invalid asset bits" );
       sym.asset_num = HIVE_ASSET_NUM_HBD;
       break;
-    case (uint64_t(6) | ((uint64_t('V') | (uint64_t('E') << 8) | (uint64_t('S') << 16) | (uint64_t('T') << 24) | (uint64_t('S') << 32)) << 8)) & 0xFFFFFFFF:
-      s.read( ((char*) &ser)+4, 4 );
-      FC_ASSERT( ser == (uint64_t(6) | ((uint64_t('V') | (uint64_t('E') << 8) | (uint64_t('S') << 16) | (uint64_t('T') << 24) | (uint64_t('S') << 32)) << 8)), "invalid asset bits" );
-      sym.asset_num = HIVE_ASSET_NUM_VESTS;
-      break;
 #endif
     default:
       sym.asset_num = uint32_t( ser );
