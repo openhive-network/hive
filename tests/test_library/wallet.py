@@ -124,7 +124,7 @@ class Wallet:
             raise Exception('Server websocket RPC endpoint not set, use Wallet.connect_to method')
 
         if not self.http_server_port:
-            raise Exception('Http server port is not set, use Wallet.set_http_server_port method')
+            self.http_server_port = self.creator.allocate_port()
 
         self.directory.mkdir(parents=True, exist_ok=True)
 
