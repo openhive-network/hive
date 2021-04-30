@@ -8,6 +8,8 @@
 
 #include <hive/utilities/key_conversion.hpp>
 
+#include <fc/io/raw.hpp>
+
 namespace hive {
 
   using namespace protocol;
@@ -180,7 +182,14 @@ namespace hive {
 
     const witness_set_properties_operation& convert_operations_visitor::operator()( witness_set_properties_operation& op )const
     {
-      // TODO: properties check for public keys
+      auto key_itr = op.props.find( "key" );
+
+      if( key_itr != op.props.end() )
+      {
+        public_key_type signing_key;
+        fc::raw::unpack_from_vector( key_itr->second, signing_key );
+        op.props.at( "key" ) = fc::raw::pack_to_vector( derived_keys->get_public(signing_key) );
+      }
 
       return op;
     }
