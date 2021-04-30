@@ -74,19 +74,12 @@ class Node:
     def get_name(self):
         return self.name
 
-    def get_p2p_endpoint(self):
-        if not self.config.p2p_endpoint:
-            from .port import Port
-            self.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
-
-        return self.config.p2p_endpoint
-
     def add_seed_node(self, seed_node):
-        endpoint = seed_node.get_p2p_endpoint()
+        if not seed_node.config.p2p_endpoint:
+            from .port import Port
+            seed_node.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
 
-        if endpoint is None:
-            raise Exception(f'Cannot connect {self} to {seed_node}; has no endpoints')
-
+        endpoint = seed_node.config.p2p_endpoint
         port = endpoint.split(':')[1]
 
         self.config.p2p_seed_node += [f'127.0.0.1:{port}']
