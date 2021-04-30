@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 #include <unordered_map>
+#include <string>
 
 #include <hive/protocol/operations.hpp>
 
@@ -85,9 +86,17 @@ namespace hive {
   private:
     // Key is the public key from original the original block log and T is private key derived from initminer's private key
     std::unordered_map< public_key_type, fc::ecc::private_key > keys;
+
     int sequence_number = 0;
+    std::string private_key_wif;
 
   public:
+
+    derived_keys_map( const std::string& private_key_wif )
+      : private_key_wif( private_key_wif ) {}
+
+    derived_keys_map( const fc::ecc::private_key& private_key )
+      : private_key_wif( key_to_wif(private_key) ) {}
 
     /// Generates public key from the private key mapped to the public key from the original block_log
     public_key_type get_public( const public_key_type& original )const
@@ -100,14 +109,14 @@ namespace hive {
     const fc::ecc::private_key& operator[]( const public_key_type& original )
     {
       if( keys.find( original ) != keys.end() )
-        return (*keys.emplace( original, derive_private_key( key_to_wif(key), sequence_number++ ) ).first).second;
+        return (*keys.emplace( original, derive_private_key( private_key_wif, sequence_number++ ) ).first).second;
       return keys.at( original );
     }
 
     const fc::ecc::private_key& at( const public_key_type& original )
     {
       if( keys.find( original ) != keys.end() )
-        return (*keys.emplace( original, derive_private_key( key_to_wif(key), sequence_number++ ) ).first).second;
+        return (*keys.emplace( original, derive_private_key( private_key_wif, sequence_number++ ) ).first).second;
       return keys.at( original );
     }
   };
