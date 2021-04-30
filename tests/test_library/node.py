@@ -76,7 +76,8 @@ class Node:
 
     def get_p2p_endpoint(self):
         if not self.config.p2p_endpoint:
-            self.config.p2p_endpoint = f'0.0.0.0:{self.creator.allocate_port()}'
+            from .port import Port
+            self.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
 
         return self.config.p2p_endpoint
 
@@ -237,14 +238,16 @@ class Node:
 
     def __set_unset_endpoints(self):
         from .node_config import NodeConfig
+        from .port import Port
+
         if self.config.p2p_endpoint is NodeConfig.UNSET:
-            self.config.p2p_endpoint = f'0.0.0.0:{self.creator.allocate_port()}'
+            self.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
 
         if self.config.webserver_http_endpoint is NodeConfig.UNSET:
-            self.config.webserver_http_endpoint = f'0.0.0.0:{self.creator.allocate_port()}'
+            self.config.webserver_http_endpoint = f'0.0.0.0:{Port.allocate()}'
 
         if self.config.webserver_ws_endpoint is NodeConfig.UNSET:
-            self.config.webserver_ws_endpoint = f'0.0.0.0:{self.creator.allocate_port()}'
+            self.config.webserver_ws_endpoint = f'0.0.0.0:{Port.allocate()}'
 
     def close(self):
         self.finalizer()

@@ -124,7 +124,8 @@ class Wallet:
             raise Exception('Server websocket RPC endpoint not set, use Wallet.connect_to method')
 
         if not self.http_server_port:
-            self.http_server_port = self.creator.allocate_port()
+            from .port import Port
+            self.http_server_port = Port.allocate()
 
         import shutil
         shutil.rmtree(self.directory, ignore_errors=True)
