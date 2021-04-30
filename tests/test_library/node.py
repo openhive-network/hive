@@ -93,6 +93,14 @@ class Node:
     def redirect_output_to_terminal(self):
         self.print_to_terminal = True
 
+    def is_p2p_plugin_started(self):
+        with open(self.directory / 'stderr.txt') as output:
+            for line in output:
+                if 'P2P Plugin started' in line:
+                    return True
+
+        return False
+
     def is_http_listening(self):
         with open(self.directory / 'stderr.txt') as output:
             for line in output:
@@ -131,6 +139,11 @@ class Node:
     def __get_last_block_number(self):
         response = self.api.database.get_dynamic_global_properties()
         return response['result']['head_block_number']
+
+    def wait_for_p2p_plugin_start(self):
+        while not self.is_p2p_plugin_started():
+            self.logger.debug('Waiting for p2p plugin start...')
+            time.sleep(1)
 
     def wait_for_synchronization(self):
         while not self.is_synchronized():
