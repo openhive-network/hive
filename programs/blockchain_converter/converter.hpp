@@ -52,31 +52,31 @@ namespace hive {
 
       const account_create_operation& operator()( account_create_operation& op )const;
 
-      const account_create_with_delegation_operation& operator()( const account_create_with_delegation_operation& op )const;
+      const account_create_with_delegation_operation& operator()( account_create_with_delegation_operation& op )const;
 
-      const account_update_operation& operator()( const account_update_operation& op )const;
+      const account_update_operation& operator()( account_update_operation& op )const;
 
-      const account_update2_operation& operator()( const account_update2_operation& op )const;
+      const account_update2_operation& operator()( account_update2_operation& op )const;
 
-      const create_claimed_account_operation& operator()( const create_claimed_account_operation& op )const;
+      const create_claimed_account_operation& operator()( create_claimed_account_operation& op )const;
 
-      const witness_update_operation& operator()( const witness_update_operation& op )const;
+      const witness_update_operation& operator()( witness_update_operation& op )const;
 
-      const witness_set_properties_operation& operator()( const witness_set_properties_operation& op )const;
+      const witness_set_properties_operation& operator()( witness_set_properties_operation& op )const;
 
-      const custom_binary_operation& operator()( const custom_binary_operation& op )const;
+      const custom_binary_operation& operator()( custom_binary_operation& op )const;
 
-      const pow2_operation& operator()( const pow2_operation& op )const;
+      const pow2_operation& operator()( pow2_operation& op )const;
 
-      const report_over_production_operation& operator()( const report_over_production_operation& op )const;
+      const report_over_production_operation& operator()( report_over_production_operation& op )const;
 
-      const request_account_recovery_operation& operator()( const request_account_recovery_operation& op )const;
+      const request_account_recovery_operation& operator()( request_account_recovery_operation& op )const;
 
-      const recover_account_operation& operator()( const recover_account_operation& op )const;
+      const recover_account_operation& operator()( recover_account_operation& op )const;
 
       // No signatures modification ops
       template< typename T >
-      const T& operator()( const T& op )const
+      const T& operator()( T& op )const
       {
         FC_ASSERT( !op.is_virtual(), "block log should not contain virtual operations" );
         return op;
