@@ -1,6 +1,14 @@
 #pragma once
 
+#include <memory>
+#include <stdexcept>
+#include <unordered_map>
+
 #include <hive/protocol/operations.hpp>
+
+#include <hive/wallet/wallet.hpp>
+
+#include <hive/utilities/key_conversion.hpp>
 
 namespace hive {
 
@@ -8,12 +16,26 @@ namespace hive {
 
   namespace converter {
 
-  struct convert_operations_visitor
+  class convert_operations_visitor
   {
+  private:
+    std::shared_ptr< derived_keys_map > derived_keys;
+
+  public:
     typedef operation result_type;
 
+    convert_operations_visitor( const std::shared_ptr< derived_keys_map >& derived_keys )
+      : derived_keys( derived_keys ) {}
+
     const account_create_operation& operator()( const account_create_operation& op )const
-    { return op; }
+    {
+      for( auto& key : op.owner.key_auths )
+      {
+        op.owner.key_auths.first = derived_keys->get_public(op.owner.key_auths.first);
+      }
+
+      return op;
+    }
 
     const account_create_with_delegation_operation& operator()( const account_create_with_delegation_operation& op )const
     { return op; }
@@ -54,6 +76,38 @@ namespace hive {
     {
       FC_ASSERT( !op.is_virtual(), "block log should not contain virtual operations" );
       return op;
+    }
+  };
+
+  class derived_keys_map
+  {
+  private:
+    // Key is public key from original block log and T is private key derived from initminer's private key
+    std::unordered_map< public_key_type, fc::ecc::private_key > keys;
+    int sequence_number = 0;
+
+  public:
+
+    /// Generates public key from the private key mapped to the public key from the original block_log
+    public_key_type get_public( const public_key_type& original )const
+    {
+      return at( original ).get_public_key();
+    }
+
+    /// Inserts key to the container if public key was not found in the unordered_map.
+    /// Returns const reference to the private key mapped to the public key from the original block_log.
+    const fc::ecc::private_key& operator[]( const public_key_type& original )const
+    {
+      if( keys.find( original ) != keys.end() )
+        return (*keys.emplace( original, derive_private_key( key_to_wif(key), sequence_number++ ) ).first).second;
+      return keys.at( original );
+    }
+
+    const fc::ecc::private_key& at( const public_key_type& original )const
+    {
+      if( keys.find( original ) != keys.end() )
+        return (*keys.emplace( original, derive_private_key( key_to_wif(key), sequence_number++ ) ).first).second;
+      return keys.at( original );
     }
   };
 
