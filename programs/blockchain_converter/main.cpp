@@ -10,6 +10,7 @@
 #include <hive/chain/block_log.hpp>
 
 #include <iostream>
+#include <memory>
 
 #include "converter.hpp"
 
@@ -78,6 +79,8 @@ int main( int argc, char** argv )
     log_in.open( block_log_in );
     log_out.open( block_log_out );
 
+    std::shared_ptr< derived_keys_map > derived_keys;
+
     for( uint32_t block_num = 1; block_num <= log_in.head()->block_num(); ++block_num )
     {
       fc::optional< signed_block > block = log_in.read_block_by_num( block_num );
@@ -93,13 +96,11 @@ int main( int argc, char** argv )
           << ". Data before conversion: " << json_block.to_string( v ) << '\n';
       }
 
-      // TODO: Derived keys
-
       block->sign( *private_key );
 
       for( auto transaction = block->transactions.begin(); transaction != block->transactions.end(); ++transaction )
       {
-        transaction->visit( convert_operations_visitor() );
+        transaction->visit( convert_operations_visitor( derived_keys ) );
         for( auto signature = transaction->signatures.begin(); signature != transaction->signatures.end(); ++signature )
           *signature = private_key->sign_compact( transaction->sig_digest( _hive_chain_id ), fc::ecc::fc_canonical );
       }
