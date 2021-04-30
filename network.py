@@ -90,7 +90,7 @@ class Network:
         for node in self.nodes[1:]:
             node.add_seed_node(seed_node)
 
-    def run(self):
+    def run(self, wait_for_live=True):
         directory = self.get_directory()
         if directory.exists():
             rmtree(directory)
@@ -106,6 +106,9 @@ class Network:
             node.run()
 
         self.is_running = True
+
+        if wait_for_live:
+            self.wait_for_synchronization_of_all_nodes()
 
     def close(self):
         for node in self.nodes:
