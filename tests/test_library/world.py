@@ -9,11 +9,16 @@ class World:
         self.port_range = PortRange(49152, 65536)
         self.__networks = []
         self.__nodes = []
+        self.__wallets = []
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        for wallet in self.__wallets:
+            if wallet.is_running():
+                wallet.close()
+
         for node in self.__nodes:
             if node.is_running():
                 node.close()
@@ -51,6 +56,17 @@ class World:
         node = Node(self, name, configure_for_block_production=configure_for_block_production)
         self.__nodes.append(node)
         return node
+
+    def attach_wallet_to(self, node):
+        name = self.children_names.create_name(f'{node}Wallet')
+
+        from .wallet import Wallet
+        wallet = Wallet(self, node.directory.parent / name)
+        wallet.connect_to(node)
+        wallet.run()
+
+        self.__wallets.append(wallet)
+        return wallet
 
     def nodes(self):
         """Returns list of all nodes in the world (including nodes in networks)"""
