@@ -126,7 +126,9 @@ class Wallet:
         if not self.http_server_port:
             self.http_server_port = self.creator.allocate_port()
 
-        self.directory.mkdir(parents=True, exist_ok=True)
+        import shutil
+        shutil.rmtree(self.directory, ignore_errors=True)
+        self.directory.mkdir(parents=True)
 
         self.stdout_file = open(self.get_stdout_file_path(), 'w')
         self.stderr_file = open(self.get_stderr_file_path(), 'w')
