@@ -15,6 +15,7 @@ namespace hive {
 
   using namespace protocol;
   using namespace utilities;
+  using namespace wallet::detail;
 
   namespace converter {
 
@@ -36,7 +37,7 @@ namespace hive {
         : private_key_wif( key_to_wif(private_key) ) {}
 
       /// Generates public key from the private key mapped to the public key from the original block_log
-      public_key_type get_public( const public_key_type& original )const
+      public_key_type get_public( const public_key_type& original )
       {
         return at( original ).get_public_key();
       }
@@ -73,7 +74,7 @@ namespace hive {
       {
         for( auto& key : op.owner.key_auths )
         {
-          op.owner.key_auths.first = derived_keys->get_public(op.owner.key_auths.first);
+          key.first = derived_keys->get_public(key.first);
         }
 
         return op;
