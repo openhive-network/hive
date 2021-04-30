@@ -1318,8 +1318,10 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
           break;
         }
 
-        if(processor(op, op.id, false))
-          ++cntLimit;
+        /// Accept only virtual operations
+        if(op.virtual_op > 0)
+          if(processor(op, op.id, false))
+            ++cntLimit;
 
         lastFoundBlock = op.block;
       }
@@ -1398,8 +1400,10 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
           break;
         }
 
-        if(processor(op, op.id, false))
-          ++cntLimit;
+        /// Accept only virtual operations
+        if(op.virtual_op > 0)
+          if(processor(op, op.id, false))
+            ++cntLimit;
 
         lastFoundBlock = op.block;
       }
