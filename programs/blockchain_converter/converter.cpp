@@ -29,19 +29,19 @@ namespace hive {
     const fc::ecc::private_key& derived_keys_map::operator[]( const public_key_type& original )
     {
       if( keys.find( original ) != keys.end() )
-        return (*keys.emplace( original,
-            fc::ecc::private_key::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + ' ' + std::to_string( keys.size() ) )))
-          ).first).second;
-      return keys.at( original );
+        return keys.at( original );
+      return (*keys.emplace( original,
+          fc::ecc::private_key::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + ' ' + std::to_string( keys.size() ) )))
+        ).first).second;
     }
 
     const fc::ecc::private_key& derived_keys_map::at( const public_key_type& original )
     {
       if( keys.find( original ) != keys.end() )
-        return (*keys.emplace( original,
-            fc::ecc::private_key::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + ' ' + std::to_string( keys.size() ) )))
-          ).first).second;
-      return keys.at( original );
+        return keys.at( original );
+      return (*keys.emplace( original,
+          fc::ecc::private_key::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + ' ' + std::to_string( keys.size() ) )))
+        ).first).second;
     }
 
 
