@@ -13,6 +13,7 @@
 namespace hive {
 
   using namespace protocol;
+  using namespace utilities;
 
   namespace converter {
 
@@ -82,7 +83,7 @@ namespace hive {
   class derived_keys_map
   {
   private:
-    // Key is public key from original block log and T is private key derived from initminer's private key
+    // Key is the public key from original the original block log and T is private key derived from initminer's private key
     std::unordered_map< public_key_type, fc::ecc::private_key > keys;
     int sequence_number = 0;
 
@@ -96,14 +97,14 @@ namespace hive {
 
     /// Inserts key to the container if public key was not found in the unordered_map.
     /// Returns const reference to the private key mapped to the public key from the original block_log.
-    const fc::ecc::private_key& operator[]( const public_key_type& original )const
+    const fc::ecc::private_key& operator[]( const public_key_type& original )
     {
       if( keys.find( original ) != keys.end() )
         return (*keys.emplace( original, derive_private_key( key_to_wif(key), sequence_number++ ) ).first).second;
       return keys.at( original );
     }
 
-    const fc::ecc::private_key& at( const public_key_type& original )const
+    const fc::ecc::private_key& at( const public_key_type& original )
     {
       if( keys.find( original ) != keys.end() )
         return (*keys.emplace( original, derive_private_key( key_to_wif(key), sequence_number++ ) ).first).second;
