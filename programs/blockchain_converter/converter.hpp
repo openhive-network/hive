@@ -17,7 +17,7 @@ namespace hive {
     class derived_keys_map
     {
     private:
-      // Key is the public key from original the original block log and T is private key derived from initminer's private key
+      // Key is the public key from the original block log and T is private key derived from initminer's private key
       std::map< public_key_type, fc::ecc::private_key > keys;
 
       std::string private_key_wif;
