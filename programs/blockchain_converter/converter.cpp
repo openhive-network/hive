@@ -70,37 +70,177 @@ namespace hive {
     }
 
     const account_create_with_delegation_operation& convert_operations_visitor::operator()( const account_create_with_delegation_operation& op )const
-    { return op; }
+    {
+      typename authority::key_authority_map keys;
+
+      for( auto& key : op.owner.key_auths )
+        keys[ derived_keys->get_public(key.first) ] = key.second;
+      op.owner.key_auths = keys;
+      keys.clear();
+
+      for( auto& key : op.active.key_auths )
+        keys[ derived_keys->get_public(key.first) ] = key.second;
+      op.active.key_auths = keys;
+      keys.clear();
+
+      for( auto& key : op.posting.key_auths )
+        keys[ derived_keys->get_public(key.first) ] = key.second;
+      op.posting.key_auths = keys;
+
+      return op;
+    }
 
     const account_update_operation& convert_operations_visitor::operator()( const account_update_operation& op )const
-    { return op; }
+    {
+      typename authority::key_authority_map keys;
+
+      if( op.owner.valid() )
+      {
+        for( auto& key : op.owner.key_auths )
+          keys[ derived_keys->get_public(key.first) ] = key.second;
+        op.owner.key_auths = keys;
+        keys.clear();
+      }
+
+      if( op.owner.valid() )
+      {
+        for( auto& key : op.active.key_auths )
+          keys[ derived_keys->get_public(key.first) ] = key.second;
+        op.active.key_auths = keys;
+        keys.clear();
+      }
+
+      if( op.owner.valid() )
+      {
+        for( auto& key : op.posting.key_auths )
+          keys[ derived_keys->get_public(key.first) ] = key.second;
+        op.posting.key_auths = keys;
+      }
+
+      return op;
+    }
 
     const account_update2_operation& convert_operations_visitor::operator()( const account_update2_operation& op )const
-    { return op; }
+    {
+      typename authority::key_authority_map keys;
+
+      if( op.owner.valid() )
+      {
+        for( auto& key : op.owner.key_auths )
+          keys[ derived_keys->get_public(key.first) ] = key.second;
+        op.owner.key_auths = keys;
+        keys.clear();
+      }
+
+      if( op.owner.valid() )
+      {
+        for( auto& key : op.active.key_auths )
+          keys[ derived_keys->get_public(key.first) ] = key.second;
+        op.active.key_auths = keys;
+        keys.clear();
+      }
+
+      if( op.owner.valid() )
+      {
+        for( auto& key : op.posting.key_auths )
+          keys[ derived_keys->get_public(key.first) ] = key.second;
+        op.posting.key_auths = keys;
+      }
+
+      return op;
+    }
 
     const create_claimed_account_operation& convert_operations_visitor::operator()( const create_claimed_account_operation& op )const
-    { return op; }
+    {
+      typename authority::key_authority_map keys;
+
+      for( auto& key : op.owner.key_auths )
+        keys[ derived_keys->get_public(key.first) ] = key.second;
+      op.owner.key_auths = keys;
+      keys.clear();
+
+      for( auto& key : op.active.key_auths )
+        keys[ derived_keys->get_public(key.first) ] = key.second;
+      op.active.key_auths = keys;
+      keys.clear();
+
+      for( auto& key : op.posting.key_auths )
+        keys[ derived_keys->get_public(key.first) ] = key.second;
+      op.posting.key_auths = keys;
+
+      return op;
+    }
 
     const witness_update_operation& convert_operations_visitor::operator()( const witness_update_operation& op )const
-    { return op; }
+    {
+      op.block_signing_key = derived_keys->get_public(op.block_signing_key);
+
+      return op;
+    }
 
     const witness_set_properties_operation& convert_operations_visitor::operator()( const witness_set_properties_operation& op )const
-    { return op; }
+    {
+      // TODO: properties check for public keys
+
+      return op;
+    }
 
     const custom_binary_operation& convert_operations_visitor::operator()( const custom_binary_operation& op )const
-    { return op; }
+    {
+      typename authority::key_authority_map keys;
+
+      for( auto& auth : op.required_auths )
+      {
+        for( auto& key : auth.key_auths )
+          keys[ derived_keys->get_public(key.first) ] = key.second;
+        auth.key_auths = keys;
+        keys.clear();
+      }
+
+      return op;
+    }
 
     const pow2_operation& convert_operations_visitor::operator()( const pow2_operation& op )const
-    { return op; }
+    {
+      if( op.new_owner_key.valid() )
+        op.new_owner_key = derived_keys->get_public(op.new_owner_key);
+
+      return op;
+    }
 
     const report_over_production_operation& convert_operations_visitor::operator()( const report_over_production_operation& op )const
-    { return op; }
+    {
+      // TODO: Signed block headers
+
+      return op;
+    }
 
     const request_account_recovery_operation& convert_operations_visitor::operator()( const request_account_recovery_operation& op )const
-    { return op; }
+    {
+      typename authority::key_authority_map keys;
+
+      for( auto& key : op.new_owner_authority )
+        keys[ derived_keys->get_public(key.first) ] = key.second;
+      op.new_owner_authority.key_auths = keys;
+
+      return op;
+    }
 
     const recover_account_operation& convert_operations_visitor::operator()( const recover_account_operation& op )const
-    { return op; }
+    {
+      typename authority::key_authority_map keys;
+
+      for( auto& key : op.new_owner_authority )
+        keys[ derived_keys->get_public(key.first) ] = key.second;
+      op.new_owner_authority.key_auths = keys;
+      keys.clear();
+
+      for( auto& key : op.recent_owner_authority )
+        keys[ derived_keys->get_public(key.first) ] = key.second;
+      op.recent_owner_authority.key_auths = keys;
+
+      return op;
+    }
 
   }
 }
