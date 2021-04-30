@@ -13,6 +13,7 @@ class Network:
         self.directory = Path('.').absolute()
         self.children_names = ChildrenNames()
         self.nodes = []
+        self.__wallets = []
         self.port_range = port_range
         self.next_free_port = port_range.start
         self.is_running = False
@@ -111,6 +112,10 @@ class Network:
             if node.is_running():
                 node.close()
 
+        for wallet in self.__wallets:
+            if wallet.is_running():
+                wallet.close()
+
     def attach_wallet(self):
         if len(self.nodes) == 0:
             raise Exception('Cannot connect wallet to network without nodes')
@@ -118,16 +123,13 @@ class Network:
         return self.attach_wallet_to(self.nodes[0])
 
     def attach_wallet_to(self, node):
-        if len(self.nodes) == 0:
-            raise Exception('Cannot connect wallet to network without nodes')
+        name = self.children_names.create_name(f'{node.name}Wallet')
 
-        wallet = Wallet(self.get_directory() / 'Wallet')
-        wallet.set_http_server_port(self.allocate_port())
+        wallet = Wallet(self, self.get_directory() / name)
         wallet.connect_to(node)
-
-        wallet.set_executable_file_path(self.wallet_executable_file_path)
         wallet.run()
 
+        self.__wallets.append(wallet)
         return wallet
 
     def connect_with(self, network):

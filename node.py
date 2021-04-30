@@ -69,12 +69,7 @@ class Node:
         if not self.is_running():
             raise NodeIsNotRunning('Before attaching wallet you have to run node')
 
-        from .wallet import Wallet
-        wallet = Wallet(self.creator, self.directory / '../Wallet')
-        wallet.connect_to(self)
-        wallet.run()
-
-        return wallet
+        return self.creator.attach_wallet_to(self)
 
     def get_name(self):
         return self.name
