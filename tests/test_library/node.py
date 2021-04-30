@@ -65,6 +65,16 @@ class Node:
 
         return self.process.poll() is None
 
+    def is_able_to_produce_blocks(self):
+        conditions = [
+            self.config.enable_stale_production,
+            self.config.required_participation == 0,
+            bool(self.config.witness),
+            bool(self.config.private_key),
+        ]
+
+        return all(conditions)
+
     def attach_wallet(self):
         if not self.is_running():
             raise NodeIsNotRunning('Before attaching wallet you have to run node')
