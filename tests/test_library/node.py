@@ -181,9 +181,9 @@ class Node:
     def set_allowed_nodes(self, nodes):
         return self.api.network_node.set_allowed_peers([node.get_id() for node in nodes])
 
-    def run(self, wait_until_live=True, use_existing_config=False):
+    def run(self, wait_for_live=True, use_existing_config=False):
         """
-        :param wait_until_live: Stops execution until node will generate or receive blocks.
+        :param wait_for_live: Stops execution until node will generate or receive blocks.
         :param use_existing_config: Skip generation of config file and use already existing. It means that all
                                     current config values will be ignored and overridden by values from file.
                                     When config file is missing hived generates default config.
@@ -229,7 +229,7 @@ class Node:
             self.config.load_from_file(config_file_path)
 
         self.produced_files = True
-        if wait_until_live:
+        if wait_for_live:
             self.wait_for_synchronization()
 
         message = f'Run with pid {self.process.pid}, '
