@@ -69,7 +69,7 @@ namespace hive {
       return op;
     }
 
-    const account_create_with_delegation_operation& convert_operations_visitor::operator()( const account_create_with_delegation_operation& op )const
+    const account_create_with_delegation_operation& convert_operations_visitor::operator()( account_create_with_delegation_operation& op )const
     {
       typename authority::key_authority_map keys;
 
@@ -90,7 +90,7 @@ namespace hive {
       return op;
     }
 
-    const account_update_operation& convert_operations_visitor::operator()( const account_update_operation& op )const
+    const account_update_operation& convert_operations_visitor::operator()( account_update_operation& op )const
     {
       typename authority::key_authority_map keys;
 
@@ -120,7 +120,7 @@ namespace hive {
       return op;
     }
 
-    const account_update2_operation& convert_operations_visitor::operator()( const account_update2_operation& op )const
+    const account_update2_operation& convert_operations_visitor::operator()( account_update2_operation& op )const
     {
       typename authority::key_authority_map keys;
 
@@ -150,7 +150,7 @@ namespace hive {
       return op;
     }
 
-    const create_claimed_account_operation& convert_operations_visitor::operator()( const create_claimed_account_operation& op )const
+    const create_claimed_account_operation& convert_operations_visitor::operator()( create_claimed_account_operation& op )const
     {
       typename authority::key_authority_map keys;
 
@@ -171,21 +171,21 @@ namespace hive {
       return op;
     }
 
-    const witness_update_operation& convert_operations_visitor::operator()( const witness_update_operation& op )const
+    const witness_update_operation& convert_operations_visitor::operator()( witness_update_operation& op )const
     {
       op.block_signing_key = derived_keys->get_public(op.block_signing_key);
 
       return op;
     }
 
-    const witness_set_properties_operation& convert_operations_visitor::operator()( const witness_set_properties_operation& op )const
+    const witness_set_properties_operation& convert_operations_visitor::operator()( witness_set_properties_operation& op )const
     {
       // TODO: properties check for public keys
 
       return op;
     }
 
-    const custom_binary_operation& convert_operations_visitor::operator()( const custom_binary_operation& op )const
+    const custom_binary_operation& convert_operations_visitor::operator()( custom_binary_operation& op )const
     {
       typename authority::key_authority_map keys;
 
@@ -200,7 +200,7 @@ namespace hive {
       return op;
     }
 
-    const pow2_operation& convert_operations_visitor::operator()( const pow2_operation& op )const
+    const pow2_operation& convert_operations_visitor::operator()( pow2_operation& op )const
     {
       if( op.new_owner_key.valid() )
         op.new_owner_key = derived_keys->get_public(op.new_owner_key);
@@ -208,14 +208,14 @@ namespace hive {
       return op;
     }
 
-    const report_over_production_operation& convert_operations_visitor::operator()( const report_over_production_operation& op )const
+    const report_over_production_operation& convert_operations_visitor::operator()( report_over_production_operation& op )const
     {
       // TODO: Signed block headers
 
       return op;
     }
 
-    const request_account_recovery_operation& convert_operations_visitor::operator()( const request_account_recovery_operation& op )const
+    const request_account_recovery_operation& convert_operations_visitor::operator()( request_account_recovery_operation& op )const
     {
       typename authority::key_authority_map keys;
 
@@ -226,7 +226,7 @@ namespace hive {
       return op;
     }
 
-    const recover_account_operation& convert_operations_visitor::operator()( const recover_account_operation& op )const
+    const recover_account_operation& convert_operations_visitor::operator()( recover_account_operation& op )const
     {
       typename authority::key_authority_map keys;
 
