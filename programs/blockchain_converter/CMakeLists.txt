@@ -1,4 +1,4 @@
-add_executable( blockchain_converter main.cpp )
+add_executable( blockchain_converter main.cpp converter.cpp )
 
 if( HIVE_STATIC_BUILD )
   target_link_libraries( blockchain_converter PRIVATE
