@@ -2,12 +2,10 @@
 
 #include <memory>
 #include <stdexcept>
-#include <unordered_map>
+#include <map>
 #include <string>
 
 #include <hive/protocol/operations.hpp>
-
-#include <hive/wallet/wallet.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
 
@@ -15,7 +13,6 @@ namespace hive {
 
   using namespace protocol;
   using namespace utilities;
-  using namespace wallet::detail;
 
   namespace converter {
 
@@ -23,9 +20,9 @@ namespace hive {
     {
     private:
       // Key is the public key from original the original block log and T is private key derived from initminer's private key
-      std::unordered_map< public_key_type, fc::ecc::private_key > keys;
+      std::map< public_key_type, fc::ecc::private_key > keys;
 
-      int sequence_number = 0;
+      uint32_t sequence_number = 0;
       std::string private_key_wif;
 
     public:
@@ -47,14 +44,18 @@ namespace hive {
       const fc::ecc::private_key& operator[]( const public_key_type& original )
       {
         if( keys.find( original ) != keys.end() )
-          return (*keys.emplace( original, derive_private_key( private_key_wif, sequence_number++ ) ).first).second;
+          return (*keys.emplace( original,
+              fc::ecc::private_key::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + " " + std::to_string( sequence_number++ ) )))
+            ).first).second;
         return keys.at( original );
       }
 
       const fc::ecc::private_key& at( const public_key_type& original )
       {
         if( keys.find( original ) != keys.end() )
-          return (*keys.emplace( original, derive_private_key( private_key_wif, sequence_number++ ) ).first).second;
+          return (*keys.emplace( original,
+              fc::ecc::private_key::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + " " + std::to_string( sequence_number++ ) )))
+            ).first).second;
         return keys.at( original );
       }
     };
