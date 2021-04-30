@@ -22,7 +22,6 @@ namespace hive {
       // Key is the public key from original the original block log and T is private key derived from initminer's private key
       std::map< public_key_type, fc::ecc::private_key > keys;
 
-      uint32_t sequence_number = 0;
       std::string private_key_wif;
 
     public:
@@ -34,27 +33,27 @@ namespace hive {
         : private_key_wif( key_to_wif(private_key) ) {}
 
       /// Generates public key from the private key mapped to the public key from the original block_log
-      public_key_type get_public( const public_key_type& original )
+      public_key_type get_public( const public_key_type& original )const
       {
         return at( original ).get_public_key();
       }
 
       /// Inserts key to the container if public key was not found in the unordered_map.
       /// Returns const reference to the private key mapped to the public key from the original block_log.
-      const fc::ecc::private_key& operator[]( const public_key_type& original )
+      const fc::ecc::private_key& operator[]( const public_key_type& original )const
       {
         if( keys.find( original ) != keys.end() )
           return (*keys.emplace( original,
-              fc::ecc::private_key::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + " " + std::to_string( sequence_number++ ) )))
+              fc::ecc::private_key::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + ' ' + std::to_string( keys.size() ) )))
             ).first).second;
         return keys.at( original );
       }
 
-      const fc::ecc::private_key& at( const public_key_type& original )
+      const fc::ecc::private_key& at( const public_key_type& original )const
       {
         if( keys.find( original ) != keys.end() )
           return (*keys.emplace( original,
-              fc::ecc::private_key::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + " " + std::to_string( sequence_number++ ) )))
+              fc::ecc::private_key::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + ' ' + std::to_string( keys.size() ) )))
             ).first).second;
         return keys.at( original );
       }
