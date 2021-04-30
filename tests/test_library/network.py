@@ -60,25 +60,15 @@ class Network:
         self.nodes.append(node)
         return node
 
-    def assign_ports_for_nodes(self):
-        from .port import Port
-
-        for node in self.nodes:
-            if node.get_p2p_endpoint() is None:
-                node.add_p2p_endpoint(f'0.0.0.0:{Port.allocate()}')
-
-            from .node_config import NodeConfig
-            if node.config.webserver_http_endpoint is NodeConfig.UNSET:
-                node.config.webserver_http_endpoint = f'0.0.0.0:{Port.allocate()}'
-
-            if node.config.webserver_ws_endpoint is NodeConfig.UNSET:
-                node.config.webserver_ws_endpoint = f'0.0.0.0:{Port.allocate()}'
-
     def connect_nodes(self):
         if len(self.nodes) < 2:
             return
 
+        from .port import Port
         seed_node = self.nodes[0]
+        if not seed_node.config.p2p_endpoint:
+            seed_node.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
+
         for node in self.nodes[1:]:
             node.add_seed_node(seed_node)
 
@@ -89,9 +79,7 @@ class Network:
 
         directory.mkdir(parents=True)
 
-        self.assign_ports_for_nodes()
         self.connect_nodes()
-
         for node in self.nodes:
             node.set_directory(self.get_directory() / node.get_name())
             node.set_executable_file_path(self.hived_executable_file_path)
