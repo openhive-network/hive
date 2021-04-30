@@ -100,12 +100,6 @@ class Network:
             if wallet.is_running():
                 wallet.close()
 
-    def attach_wallet(self):
-        if len(self.nodes) == 0:
-            raise Exception('Cannot connect wallet to network without nodes')
-
-        return self.attach_wallet_to(self.nodes[0])
-
     def attach_wallet_to(self, node):
         name = self.children_names.create_name(f'{node.name}Wallet')
 
