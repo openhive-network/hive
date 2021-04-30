@@ -79,7 +79,7 @@ int main( int argc, char** argv )
     log_in.open( block_log_in );
     log_out.open( block_log_out );
 
-    std::shared_ptr< derived_keys_map > derived_keys( *private_key );
+    auto derived_keys = std::make_shared< derived_keys_map >( *private_key );
 
     for( uint32_t block_num = 1; block_num <= log_in.head()->block_num(); ++block_num )
     {
