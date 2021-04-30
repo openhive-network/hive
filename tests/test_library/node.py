@@ -94,28 +94,23 @@ class Node:
         self.print_to_terminal = True
 
     def is_p2p_plugin_started(self):
-        with open(self.directory / 'stderr.txt') as output:
-            for line in output:
-                if 'P2P Plugin started' in line:
-                    return True
-
-        return False
+        return self.__any_line_in_stderr(lambda line: 'P2P Plugin started' in line)
 
     def is_http_listening(self):
-        with open(self.directory / 'stderr.txt') as output:
-            for line in output:
-                if 'start listening for http requests' in line:
-                    return True
-
-        return False
+        return self.__any_line_in_stderr(lambda line: 'start listening for http requests' in line)
 
     def is_ws_listening(self):
-        # TODO: This can be implemented in smarter way...
-        #       Fix also Node.is_http_listening
-        #       and also Node.is_synced
-        with open(self.directory/'stderr.txt') as output:
+        return self.__any_line_in_stderr(lambda line: 'start listening for ws requests' in line)
+
+    def is_synchronized(self):
+        return self.__any_line_in_stderr(
+            lambda line: 'transactions on block' in line or 'Generated block #' in line
+        )
+
+    def __any_line_in_stderr(self, predicate):
+        with open(self.directory / 'stderr.txt') as output:
             for line in output:
-                if 'start listening for ws requests' in line:
+                if predicate(line):
                     return True
 
         return False
@@ -149,14 +144,6 @@ class Node:
         while not self.is_synchronized():
             self.logger.debug('Waiting for synchronization...')
             time.sleep(1)
-
-    def is_synchronized(self):
-        with open(self.directory/'stderr.txt') as output:
-            for line in output:
-                if 'transactions on block' in line or 'Generated block #' in line:
-                    return True
-
-        return False
 
     def send(self, method, params=None, jsonrpc='2.0', id=1):
         message = {
