@@ -121,7 +121,10 @@ class Network:
             raise Exception('Unable to connect empty network')
 
         if not self.is_running:
-            self.nodes[0].add_seed_node(network.nodes[0])
+            if any([node.is_able_to_produce_blocks() for node in self.nodes]):
+                network.nodes[0].add_seed_node(self.nodes[0])
+            else:
+                self.nodes[0].add_seed_node(network.nodes[0])
             return
 
         if network not in self.disconnected_networks:
