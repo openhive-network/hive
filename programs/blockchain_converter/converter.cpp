@@ -96,25 +96,25 @@ namespace hive {
 
       if( op.owner.valid() )
       {
-        for( auto& key : op.owner.key_auths )
+        for( auto& key : (*op.owner).key_auths )
           keys[ derived_keys->get_public(key.first) ] = key.second;
-        op.owner.key_auths = keys;
+        (*op.owner).key_auths = keys;
         keys.clear();
       }
 
-      if( op.owner.valid() )
+      if( op.active.valid() )
       {
-        for( auto& key : op.active.key_auths )
+        for( auto& key : (*op.active).key_auths )
           keys[ derived_keys->get_public(key.first) ] = key.second;
-        op.active.key_auths = keys;
+        (*op.active).key_auths = keys;
         keys.clear();
       }
 
-      if( op.owner.valid() )
+      if( op.posting.valid() )
       {
-        for( auto& key : op.posting.key_auths )
+        for( auto& key : (*op.posting).key_auths )
           keys[ derived_keys->get_public(key.first) ] = key.second;
-        op.posting.key_auths = keys;
+        (*op.posting).key_auths = keys;
       }
 
       return op;
@@ -126,25 +126,25 @@ namespace hive {
 
       if( op.owner.valid() )
       {
-        for( auto& key : op.owner.key_auths )
+        for( auto& key : (*op.owner).key_auths )
           keys[ derived_keys->get_public(key.first) ] = key.second;
-        op.owner.key_auths = keys;
+        (*op.owner).key_auths = keys;
         keys.clear();
       }
 
-      if( op.owner.valid() )
+      if( op.active.valid() )
       {
-        for( auto& key : op.active.key_auths )
+        for( auto& key : (*op.active).key_auths )
           keys[ derived_keys->get_public(key.first) ] = key.second;
-        op.active.key_auths = keys;
+        (*op.active).key_auths = keys;
         keys.clear();
       }
 
-      if( op.owner.valid() )
+      if( op.posting.valid() )
       {
-        for( auto& key : op.posting.key_auths )
+        for( auto& key : (*op.posting).key_auths )
           keys[ derived_keys->get_public(key.first) ] = key.second;
-        op.posting.key_auths = keys;
+        (*op.posting).key_auths = keys;
       }
 
       return op;
@@ -203,7 +203,7 @@ namespace hive {
     const pow2_operation& convert_operations_visitor::operator()( pow2_operation& op )const
     {
       if( op.new_owner_key.valid() )
-        op.new_owner_key = derived_keys->get_public(op.new_owner_key);
+        *op.new_owner_key = derived_keys->get_public(*op.new_owner_key);
 
       return op;
     }
@@ -219,7 +219,7 @@ namespace hive {
     {
       typename authority::key_authority_map keys;
 
-      for( auto& key : op.new_owner_authority )
+      for( auto& key : op.new_owner_authority.key_auths )
         keys[ derived_keys->get_public(key.first) ] = key.second;
       op.new_owner_authority.key_auths = keys;
 
@@ -230,12 +230,12 @@ namespace hive {
     {
       typename authority::key_authority_map keys;
 
-      for( auto& key : op.new_owner_authority )
+      for( auto& key : op.new_owner_authority.key_auths )
         keys[ derived_keys->get_public(key.first) ] = key.second;
       op.new_owner_authority.key_auths = keys;
       keys.clear();
 
-      for( auto& key : op.recent_owner_authority )
+      for( auto& key : op.recent_owner_authority.key_auths )
         keys[ derived_keys->get_public(key.first) ] = key.second;
       op.recent_owner_authority.key_auths = keys;
 
