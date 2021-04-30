@@ -8,14 +8,12 @@ from . import logger
 
 
 class Network:
-    def __init__(self, name, port_range=range(49152, 65536)):
+    def __init__(self, name):
         self.name = name
         self.directory = Path('.').absolute()
         self.children_names = ChildrenNames()
         self.nodes = []
         self.__wallets = []
-        self.port_range = port_range
-        self.next_free_port = port_range.start
         self.is_running = False
         self.disconnected_networks = []
         self.logger = logger.getLogger(f'{__name__}.{self}')
@@ -25,14 +23,6 @@ class Network:
 
     def __str__(self):
         return self.name
-
-    def allocate_port(self):
-        if self.next_free_port not in self.port_range:
-            raise Exception('There is no free ports to use')
-
-        port = self.next_free_port
-        self.next_free_port += self.port_range.step
-        return port
 
     def set_directory(self, directory):
         self.directory = Path(directory).absolute()
@@ -71,16 +61,18 @@ class Network:
         return node
 
     def assign_ports_for_nodes(self):
+        from .port import Port
+
         for node in self.nodes:
             if node.get_p2p_endpoint() is None:
-                node.add_p2p_endpoint(f'0.0.0.0:{self.allocate_port()}')
+                node.add_p2p_endpoint(f'0.0.0.0:{Port.allocate()}')
 
             from .node_config import NodeConfig
             if node.config.webserver_http_endpoint is NodeConfig.UNSET:
-                node.config.webserver_http_endpoint = f'0.0.0.0:{self.allocate_port()}'
+                node.config.webserver_http_endpoint = f'0.0.0.0:{Port.allocate()}'
 
             if node.config.webserver_ws_endpoint is NodeConfig.UNSET:
-                node.config.webserver_ws_endpoint = f'0.0.0.0:{self.allocate_port()}'
+                node.config.webserver_ws_endpoint = f'0.0.0.0:{Port.allocate()}'
 
     def connect_nodes(self):
         if len(self.nodes) < 2:

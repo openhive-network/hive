@@ -1,12 +1,10 @@
 from . import Network, Node
 from .children_names import ChildrenNames
-from .port_range import PortRange
 
 
 class World:
     def __init__(self):
         self.children_names = ChildrenNames()
-        self.port_range = PortRange(49152, 65536)
         self.__networks = []
         self.__nodes = []
         self.__wallets = []
@@ -75,8 +73,3 @@ class World:
         for network in self.__networks:
             nodes += network.nodes
         return nodes
-
-    # FIXME: This method shouldn't be visible for library user. Consider making World a facade
-    #        (Facade design pattern) and move all details to WorldImpl or something like that.
-    def allocate_port(self):
-        return self.port_range.allocate_port()
