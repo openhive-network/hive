@@ -44,123 +44,51 @@ namespace hive {
 
     const account_create_operation& convert_operations_visitor::operator()( account_create_operation& op )
     {
-      typename authority::key_authority_map keys;
-
-      for( auto& key : op.owner.key_auths )
-        keys[ converter->get_keys().get_public(key.first) ] = key.second;
-      op.owner.key_auths = keys;
-      keys.clear();
-
-      for( auto& key : op.active.key_auths )
-        keys[ converter->get_keys().get_public(key.first) ] = key.second;
-      op.active.key_auths = keys;
-      keys.clear();
-
-      for( auto& key : op.posting.key_auths )
-        keys[ converter->get_keys().get_public(key.first) ] = key.second;
-      op.posting.key_auths = keys;
+      op.owner.key_auths = converter->convert_authorities( op.owner.key_auths );
+      op.active.key_auths = converter->convert_authorities( op.active.key_auths );
+      op.posting.key_auths = converter->convert_authorities( op.posting.key_auths );
 
       return op;
     }
 
     const account_create_with_delegation_operation& convert_operations_visitor::operator()( account_create_with_delegation_operation& op )
     {
-      typename authority::key_authority_map keys;
-
-      for( auto& key : op.owner.key_auths )
-        keys[ converter->get_keys().get_public(key.first) ] = key.second;
-      op.owner.key_auths = keys;
-      keys.clear();
-
-      for( auto& key : op.active.key_auths )
-        keys[ converter->get_keys().get_public(key.first) ] = key.second;
-      op.active.key_auths = keys;
-      keys.clear();
-
-      for( auto& key : op.posting.key_auths )
-        keys[ converter->get_keys().get_public(key.first) ] = key.second;
-      op.posting.key_auths = keys;
+      op.owner.key_auths = converter->convert_authorities( op.owner.key_auths );
+      op.active.key_auths = converter->convert_authorities( op.active.key_auths );
+      op.posting.key_auths = converter->convert_authorities( op.posting.key_auths );
 
       return op;
     }
 
     const account_update_operation& convert_operations_visitor::operator()( account_update_operation& op )
     {
-      typename authority::key_authority_map keys;
-
       if( op.owner.valid() )
-      {
-        for( auto& key : (*op.owner).key_auths )
-          keys[ converter->get_keys().get_public(key.first) ] = key.second;
-        (*op.owner).key_auths = keys;
-        keys.clear();
-      }
-
+        (*op.owner).key_auths = converter->convert_authorities( (*op.owner).key_auths );
       if( op.active.valid() )
-      {
-        for( auto& key : (*op.active).key_auths )
-          keys[ converter->get_keys().get_public(key.first) ] = key.second;
-        (*op.active).key_auths = keys;
-        keys.clear();
-      }
-
+        (*op.active).key_auths = converter->convert_authorities( (*op.active).key_auths );
       if( op.posting.valid() )
-      {
-        for( auto& key : (*op.posting).key_auths )
-          keys[ converter->get_keys().get_public(key.first) ] = key.second;
-        (*op.posting).key_auths = keys;
-      }
+        (*op.posting).key_auths = converter->convert_authorities( (*op.posting).key_auths );
 
       return op;
     }
 
     const account_update2_operation& convert_operations_visitor::operator()( account_update2_operation& op )
     {
-      typename authority::key_authority_map keys;
-
       if( op.owner.valid() )
-      {
-        for( auto& key : (*op.owner).key_auths )
-          keys[ converter->get_keys().get_public(key.first) ] = key.second;
-        (*op.owner).key_auths = keys;
-        keys.clear();
-      }
-
+        (*op.owner).key_auths = converter->convert_authorities( (*op.owner).key_auths );
       if( op.active.valid() )
-      {
-        for( auto& key : (*op.active).key_auths )
-          keys[ converter->get_keys().get_public(key.first) ] = key.second;
-        (*op.active).key_auths = keys;
-        keys.clear();
-      }
-
+        (*op.active).key_auths = converter->convert_authorities( (*op.active).key_auths );
       if( op.posting.valid() )
-      {
-        for( auto& key : (*op.posting).key_auths )
-          keys[ converter->get_keys().get_public(key.first) ] = key.second;
-        (*op.posting).key_auths = keys;
-      }
+        (*op.posting).key_auths = converter->convert_authorities( (*op.posting).key_auths );
 
       return op;
     }
 
     const create_claimed_account_operation& convert_operations_visitor::operator()( create_claimed_account_operation& op )
     {
-      typename authority::key_authority_map keys;
-
-      for( auto& key : op.owner.key_auths )
-        keys[ converter->get_keys().get_public(key.first) ] = key.second;
-      op.owner.key_auths = keys;
-      keys.clear();
-
-      for( auto& key : op.active.key_auths )
-        keys[ converter->get_keys().get_public(key.first) ] = key.second;
-      op.active.key_auths = keys;
-      keys.clear();
-
-      for( auto& key : op.posting.key_auths )
-        keys[ converter->get_keys().get_public(key.first) ] = key.second;
-      op.posting.key_auths = keys;
+      op.owner.key_auths = converter->convert_authorities( op.owner.key_auths );
+      op.active.key_auths = converter->convert_authorities( op.active.key_auths );
+      op.posting.key_auths = converter->convert_authorities( op.posting.key_auths );
 
       return op;
     }
@@ -188,15 +116,8 @@ namespace hive {
 
     const custom_binary_operation& convert_operations_visitor::operator()( custom_binary_operation& op )
     {
-      typename authority::key_authority_map keys;
-
       for( auto& auth : op.required_auths )
-      {
-        for( auto& key : auth.key_auths )
-          keys[ converter->get_keys().get_public(key.first) ] = key.second;
-        auth.key_auths = keys;
-        keys.clear();
-      }
+        auth.key_auths = converter->convert_authorities( auth.key_auths );
 
       return op;
     }
@@ -219,27 +140,15 @@ namespace hive {
 
     const request_account_recovery_operation& convert_operations_visitor::operator()( request_account_recovery_operation& op )
     {
-      typename authority::key_authority_map keys;
-
-      for( auto& key : op.new_owner_authority.key_auths )
-        keys[ converter->get_keys().get_public(key.first) ] = key.second;
-      op.new_owner_authority.key_auths = keys;
+      op.new_owner_authority.key_auths = converter->convert_authorities( op.new_owner_authority.key_auths );
 
       return op;
     }
 
     const recover_account_operation& convert_operations_visitor::operator()( recover_account_operation& op )
     {
-      typename authority::key_authority_map keys;
-
-      for( auto& key : op.new_owner_authority.key_auths )
-        keys[ converter->get_keys().get_public(key.first) ] = key.second;
-      op.new_owner_authority.key_auths = keys;
-      keys.clear();
-
-      for( auto& key : op.recent_owner_authority.key_auths )
-        keys[ converter->get_keys().get_public(key.first) ] = key.second;
-      op.recent_owner_authority.key_auths = keys;
+      op.new_owner_authority.key_auths = converter->convert_authorities( op.new_owner_authority.key_auths );
+      op.recent_owner_authority.key_auths = converter->convert_authorities( op.recent_owner_authority.key_auths );
 
       return op;
     }
@@ -288,6 +197,16 @@ namespace hive {
         return fc::ecc::fc_canonical;
 
       return fc::ecc::non_canonical;
+    }
+
+    typename authority::key_authority_map blockchain_converter::convert_authorities( const typename authority::key_authority_map& auths )const
+    {
+      typename authority::key_authority_map auth_keys;
+
+      for( auto& key : auths )
+        auth_keys[ keys->get_public(key.first) ] = key.second;
+
+      return auth_keys;
     }
 
     derived_keys_map& blockchain_converter::get_keys()
