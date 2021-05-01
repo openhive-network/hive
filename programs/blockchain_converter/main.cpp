@@ -100,6 +100,9 @@ int main( int argc, char** argv )
 
       converter.convert_signed_block( *block );
 
+      if( block_num % 1000 == 0 )
+        std::cout << "[ " << int( float(block_num) / log_in.head()->block_num() * 100 ) << "% ]: " << block_num << '/' << log_in.head()->block_num() << " blocks rewritten.\r";
+
       log_out.append( *block );
 
       if ( ( log_per_block > 0 && block_num % log_per_block == 0 ) || log_specific == block_num )
@@ -115,7 +118,7 @@ int main( int argc, char** argv )
     log_in.close();
     log_out.close();
 
-    std::cout << "block_log conversion completed\n";
+    std::cout << "\nblock_log conversion completed\n";
 
     return 0;
   }
