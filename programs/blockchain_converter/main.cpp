@@ -81,6 +81,8 @@ int main( int argc, char** argv )
 
     auto derived_keys = std::make_shared< derived_keys_map >( *private_key );
 
+    blockchain_converter converter( *private_key, _hive_chain_id );
+
     for( uint32_t block_num = 1; block_num <= log_in.head()->block_num(); ++block_num )
     {
       fc::optional< signed_block > block = log_in.read_block_by_num( block_num );
@@ -96,16 +98,7 @@ int main( int argc, char** argv )
           << ". Data before conversion: " << json_block.to_string( v ) << '\n';
       }
 
-      block->sign( *private_key );
-
-      for( auto transaction = block->transactions.begin(); transaction != block->transactions.end(); ++transaction )
-      {
-        transaction->visit( convert_operations_visitor( derived_keys ) );
-        for( auto signature = transaction->signatures.begin(); signature != transaction->signatures.end(); ++signature )
-          *signature = private_key->sign_compact( transaction->sig_digest( _hive_chain_id ), fc::ecc::fc_canonical );
-      }
-
-      block->transaction_merkle_root = block->calculate_merkle_root();
+      converter.convert_signed_block( *block );
 
       log_out.append( *block );
 

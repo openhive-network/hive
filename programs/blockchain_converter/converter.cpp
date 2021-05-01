@@ -5,6 +5,7 @@
 #include <string>
 
 #include <hive/protocol/operations.hpp>
+#include <hive/protocol/block.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
 
@@ -20,24 +21,15 @@ namespace hive {
     derived_keys_map::derived_keys_map( const std::string& private_key_wif )
       : private_key_wif( private_key_wif ) {}
 
-    derived_keys_map::derived_keys_map( const fc::ecc::private_key& private_key )
-      : private_key_wif( key_to_wif(private_key) ) {}
+    derived_keys_map::derived_keys_map( const fc::ecc::private_key& _private_key )
+      : private_key_wif( key_to_wif(_private_key) ) {}
 
     public_key_type derived_keys_map::get_public( const public_key_type& original )
     {
-      return at( original ).get_public_key();
+      return get_private( original ).get_public_key();
     }
 
-    const fc::ecc::private_key& derived_keys_map::operator[]( const public_key_type& original )
-    {
-      if( keys.find( original ) != keys.end() )
-        return keys.at( original );
-      return (*keys.emplace( original,
-          fc::ecc::private_key::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + ' ' + std::to_string( keys.size() ) )))
-        ).first).second;
-    }
-
-    const fc::ecc::private_key& derived_keys_map::at( const public_key_type& original )
+    const fc::ecc::private_key& derived_keys_map::get_private( const public_key_type& original )
     {
       if( keys.find( original ) != keys.end() )
         return keys.at( original );
@@ -47,59 +39,59 @@ namespace hive {
     }
 
 
-    convert_operations_visitor::convert_operations_visitor( const std::shared_ptr< derived_keys_map >& derived_keys )
-      : derived_keys( derived_keys ) {}
+    convert_operations_visitor::convert_operations_visitor( const std::shared_ptr< blockchain_converter >& converter )
+      : converter( converter ) {}
 
-    const account_create_operation& convert_operations_visitor::operator()( account_create_operation& op )const
+    const account_create_operation& convert_operations_visitor::operator()( account_create_operation& op )
     {
       typename authority::key_authority_map keys;
 
       for( auto& key : op.owner.key_auths )
-        keys[ derived_keys->get_public(key.first) ] = key.second;
+        keys[ converter->get_keys().get_public(key.first) ] = key.second;
       op.owner.key_auths = keys;
       keys.clear();
 
       for( auto& key : op.active.key_auths )
-        keys[ derived_keys->get_public(key.first) ] = key.second;
+        keys[ converter->get_keys().get_public(key.first) ] = key.second;
       op.active.key_auths = keys;
       keys.clear();
 
       for( auto& key : op.posting.key_auths )
-        keys[ derived_keys->get_public(key.first) ] = key.second;
+        keys[ converter->get_keys().get_public(key.first) ] = key.second;
       op.posting.key_auths = keys;
 
       return op;
     }
 
-    const account_create_with_delegation_operation& convert_operations_visitor::operator()( account_create_with_delegation_operation& op )const
+    const account_create_with_delegation_operation& convert_operations_visitor::operator()( account_create_with_delegation_operation& op )
     {
       typename authority::key_authority_map keys;
 
       for( auto& key : op.owner.key_auths )
-        keys[ derived_keys->get_public(key.first) ] = key.second;
+        keys[ converter->get_keys().get_public(key.first) ] = key.second;
       op.owner.key_auths = keys;
       keys.clear();
 
       for( auto& key : op.active.key_auths )
-        keys[ derived_keys->get_public(key.first) ] = key.second;
+        keys[ converter->get_keys().get_public(key.first) ] = key.second;
       op.active.key_auths = keys;
       keys.clear();
 
       for( auto& key : op.posting.key_auths )
-        keys[ derived_keys->get_public(key.first) ] = key.second;
+        keys[ converter->get_keys().get_public(key.first) ] = key.second;
       op.posting.key_auths = keys;
 
       return op;
     }
 
-    const account_update_operation& convert_operations_visitor::operator()( account_update_operation& op )const
+    const account_update_operation& convert_operations_visitor::operator()( account_update_operation& op )
     {
       typename authority::key_authority_map keys;
 
       if( op.owner.valid() )
       {
         for( auto& key : (*op.owner).key_auths )
-          keys[ derived_keys->get_public(key.first) ] = key.second;
+          keys[ converter->get_keys().get_public(key.first) ] = key.second;
         (*op.owner).key_auths = keys;
         keys.clear();
       }
@@ -107,7 +99,7 @@ namespace hive {
       if( op.active.valid() )
       {
         for( auto& key : (*op.active).key_auths )
-          keys[ derived_keys->get_public(key.first) ] = key.second;
+          keys[ converter->get_keys().get_public(key.first) ] = key.second;
         (*op.active).key_auths = keys;
         keys.clear();
       }
@@ -115,21 +107,21 @@ namespace hive {
       if( op.posting.valid() )
       {
         for( auto& key : (*op.posting).key_auths )
-          keys[ derived_keys->get_public(key.first) ] = key.second;
+          keys[ converter->get_keys().get_public(key.first) ] = key.second;
         (*op.posting).key_auths = keys;
       }
 
       return op;
     }
 
-    const account_update2_operation& convert_operations_visitor::operator()( account_update2_operation& op )const
+    const account_update2_operation& convert_operations_visitor::operator()( account_update2_operation& op )
     {
       typename authority::key_authority_map keys;
 
       if( op.owner.valid() )
       {
         for( auto& key : (*op.owner).key_auths )
-          keys[ derived_keys->get_public(key.first) ] = key.second;
+          keys[ converter->get_keys().get_public(key.first) ] = key.second;
         (*op.owner).key_auths = keys;
         keys.clear();
       }
@@ -137,7 +129,7 @@ namespace hive {
       if( op.active.valid() )
       {
         for( auto& key : (*op.active).key_auths )
-          keys[ derived_keys->get_public(key.first) ] = key.second;
+          keys[ converter->get_keys().get_public(key.first) ] = key.second;
         (*op.active).key_auths = keys;
         keys.clear();
       }
@@ -145,42 +137,42 @@ namespace hive {
       if( op.posting.valid() )
       {
         for( auto& key : (*op.posting).key_auths )
-          keys[ derived_keys->get_public(key.first) ] = key.second;
+          keys[ converter->get_keys().get_public(key.first) ] = key.second;
         (*op.posting).key_auths = keys;
       }
 
       return op;
     }
 
-    const create_claimed_account_operation& convert_operations_visitor::operator()( create_claimed_account_operation& op )const
+    const create_claimed_account_operation& convert_operations_visitor::operator()( create_claimed_account_operation& op )
     {
       typename authority::key_authority_map keys;
 
       for( auto& key : op.owner.key_auths )
-        keys[ derived_keys->get_public(key.first) ] = key.second;
+        keys[ converter->get_keys().get_public(key.first) ] = key.second;
       op.owner.key_auths = keys;
       keys.clear();
 
       for( auto& key : op.active.key_auths )
-        keys[ derived_keys->get_public(key.first) ] = key.second;
+        keys[ converter->get_keys().get_public(key.first) ] = key.second;
       op.active.key_auths = keys;
       keys.clear();
 
       for( auto& key : op.posting.key_auths )
-        keys[ derived_keys->get_public(key.first) ] = key.second;
+        keys[ converter->get_keys().get_public(key.first) ] = key.second;
       op.posting.key_auths = keys;
 
       return op;
     }
 
-    const witness_update_operation& convert_operations_visitor::operator()( witness_update_operation& op )const
+    const witness_update_operation& convert_operations_visitor::operator()( witness_update_operation& op )
     {
-      op.block_signing_key = derived_keys->get_public(op.block_signing_key);
+      op.block_signing_key = converter->get_keys().get_public(op.block_signing_key);
 
       return op;
     }
 
-    const witness_set_properties_operation& convert_operations_visitor::operator()( witness_set_properties_operation& op )const
+    const witness_set_properties_operation& convert_operations_visitor::operator()( witness_set_properties_operation& op )
     {
       auto key_itr = op.props.find( "key" );
 
@@ -188,20 +180,20 @@ namespace hive {
       {
         public_key_type signing_key;
         fc::raw::unpack_from_vector( key_itr->second, signing_key );
-        op.props.at( "key" ) = fc::raw::pack_to_vector( derived_keys->get_public(signing_key) );
+        op.props.at( "key" ) = fc::raw::pack_to_vector( converter->get_keys().get_public(signing_key) );
       }
 
       return op;
     }
 
-    const custom_binary_operation& convert_operations_visitor::operator()( custom_binary_operation& op )const
+    const custom_binary_operation& convert_operations_visitor::operator()( custom_binary_operation& op )
     {
       typename authority::key_authority_map keys;
 
       for( auto& auth : op.required_auths )
       {
         for( auto& key : auth.key_auths )
-          keys[ derived_keys->get_public(key.first) ] = key.second;
+          keys[ converter->get_keys().get_public(key.first) ] = key.second;
         auth.key_auths = keys;
         keys.clear();
       }
@@ -209,47 +201,96 @@ namespace hive {
       return op;
     }
 
-    const pow2_operation& convert_operations_visitor::operator()( pow2_operation& op )const
+    const pow2_operation& convert_operations_visitor::operator()( pow2_operation& op )
     {
       if( op.new_owner_key.valid() )
-        *op.new_owner_key = derived_keys->get_public(*op.new_owner_key);
+        *op.new_owner_key = converter->get_keys().get_public(*op.new_owner_key);
 
       return op;
     }
 
-    const report_over_production_operation& convert_operations_visitor::operator()( report_over_production_operation& op )const
+    const report_over_production_operation& convert_operations_visitor::operator()( report_over_production_operation& op )
     {
-      // TODO: Signed block headers
+      converter->convert_signed_header( op.first_block );
+      converter->convert_signed_header( op.second_block );
 
       return op;
     }
 
-    const request_account_recovery_operation& convert_operations_visitor::operator()( request_account_recovery_operation& op )const
+    const request_account_recovery_operation& convert_operations_visitor::operator()( request_account_recovery_operation& op )
     {
       typename authority::key_authority_map keys;
 
       for( auto& key : op.new_owner_authority.key_auths )
-        keys[ derived_keys->get_public(key.first) ] = key.second;
+        keys[ converter->get_keys().get_public(key.first) ] = key.second;
       op.new_owner_authority.key_auths = keys;
 
       return op;
     }
 
-    const recover_account_operation& convert_operations_visitor::operator()( recover_account_operation& op )const
+    const recover_account_operation& convert_operations_visitor::operator()( recover_account_operation& op )
     {
       typename authority::key_authority_map keys;
 
       for( auto& key : op.new_owner_authority.key_auths )
-        keys[ derived_keys->get_public(key.first) ] = key.second;
+        keys[ converter->get_keys().get_public(key.first) ] = key.second;
       op.new_owner_authority.key_auths = keys;
       keys.clear();
 
       for( auto& key : op.recent_owner_authority.key_auths )
-        keys[ derived_keys->get_public(key.first) ] = key.second;
+        keys[ converter->get_keys().get_public(key.first) ] = key.second;
       op.recent_owner_authority.key_auths = keys;
 
       return op;
     }
 
+
+    blockchain_converter::blockchain_converter( const fc::ecc::private_key& _private_key, const chain_id_type& chain_id )
+      : _private_key( _private_key ), chain_id( chain_id ), keys( std::make_shared< derived_keys_map >( _private_key ) ) {}
+
+    void blockchain_converter::convert_signed_block( signed_block& _signed_block )
+    {
+      convert_signed_header( _signed_block );
+
+      for( auto _transaction = _signed_block.transactions.begin(); _transaction != _signed_block.transactions.end(); ++_transaction )
+      {
+        _transaction->visit( convert_operations_visitor( std::shared_ptr< blockchain_converter >(this) ) );
+        for( auto _signature = _transaction->signatures.begin(); _signature != _transaction->signatures.end(); ++_signature )
+          *_signature = convert_signature_from_header( *_signature, _signed_block ).sign_compact( _transaction->sig_digest( chain_id ), get_canon_type( *_signature ) );
+      }
+
+      _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
+    }
+
+    void blockchain_converter::convert_signed_header( signed_block_header& _signed_header )
+    {
+      _signed_header.sign( convert_signature_from_header( _signed_header.witness_signature, _signed_header ), get_canon_type( _signed_header.witness_signature ) );
+    }
+
+    const fc::ecc::private_key& blockchain_converter::convert_signature_from_header( const signature_type& _signature, const signed_block_header& _signed_header )
+    {
+      switch( get_canon_type( _signature ) )
+      {
+        case fc::ecc::bip_0062:
+          return keys->get_private( _signed_header.signee(fc::ecc::bip_0062) );
+        case fc::ecc::fc_canonical:
+          return keys->get_private( _signed_header.signee(fc::ecc::fc_canonical) );
+        default:
+          return keys->get_private( _signed_header.signee(fc::ecc::non_canonical) );
+      }
+    }
+
+    fc::ecc::canonical_signature_type blockchain_converter::get_canon_type( const signature_type& _signature )const
+    {
+      if ( fc::ecc::public_key::is_canonical( _signature, fc::ecc::bip_0062 ) )
+        return fc::ecc::bip_0062;
+      else if ( fc::ecc::public_key::is_canonical( _signature, fc::ecc::fc_canonical ) )
+        return fc::ecc::fc_canonical;
+
+      return fc::ecc::non_canonical;
+    }
+
+    derived_keys_map& blockchain_converter::get_keys()
+    { return *keys; }
   }
 }
