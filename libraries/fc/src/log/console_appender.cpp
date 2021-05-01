@@ -99,7 +99,7 @@ namespace fc {
 
       ///////////////
       std::stringstream line;
-      line << (m.get_context().get_timestamp().time_since_epoch().count() % (1000ll*1000ll*60ll*60))/1000 <<"ms ";
+      line << m.get_context().get_timestamp().time_since_epoch().count()/1000 <<"ms ";
       line << std::setw(30)<< std::left <<file_line.str();
 
       auto me = m.get_context().get_method();

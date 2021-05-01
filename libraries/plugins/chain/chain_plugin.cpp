@@ -16,7 +16,7 @@
 #include <boost/optional.hpp>
 #include <boost/bind.hpp>
 #include <boost/preprocessor/stringize.hpp>
-#include <boost/thread/future.hpp>
+
 #include <boost/lockfree/queue.hpp>
 
 #include <thread>
@@ -248,6 +248,9 @@ void chain_plugin_impl::start_write_processing()
 {
   write_processor_thread = std::make_shared< std::thread >( [&]()
   {
+    ilog("Write processing thread started.");
+
+    const fc::microseconds block_wait_max_time = fc::seconds(10*HIVE_BLOCK_INTERVAL);
     bool is_syncing = true;
     write_context* cxt;
     write_request_visitor req_visitor;
@@ -275,11 +278,16 @@ void chain_plugin_impl::start_write_processing()
       * in. When the node is live the rate at which writes come in is slower and busy waiting is
       * not an optimal use of system resources when we could give CPU time to read threads.
       */
+    fc::time_point last_popped_block_time = fc::time_point::now();
+    fc::time_point last_msg_time = last_popped_block_time;
+
     while( running )
     {
       if( write_queue.pop( cxt ) )
       {
-	fc::time_point write_lock_request_time = fc::time_point::now();
+        last_popped_block_time = fc::time_point::now();
+
+	      fc::time_point write_lock_request_time = fc::time_point::now();
         db.with_write_lock( [&]()
         {
           fc::time_point write_lock_acquired_time = fc::time_point::now();
@@ -320,13 +328,31 @@ void chain_plugin_impl::start_write_processing()
             {
               break;
             }
+
+            last_popped_block_time = fc::time_point::now();
           }
         });
       }
 
       if( !is_syncing )
         boost::this_thread::sleep_for( boost::chrono::milliseconds( 10 ) );
+
+      auto now = fc::time_point::now();
+      if((now - last_popped_block_time) > block_wait_max_time)
+      {
+        if (now - last_msg_time > block_wait_max_time)
+        {
+          last_msg_time = now;
+          wlog("No P2P data (block/transaction) received in last ${t} seconds... P2P network seems to be stucked.", ("t", block_wait_max_time.to_seconds()));
+          /// To avoid log pollution
+          wlog("Checking for new P2P data once per ${t} seconds...", ("t", HIVE_BLOCK_INTERVAL));
+        }
+
+        boost::this_thread::sleep_for(boost::chrono::seconds(HIVE_BLOCK_INTERVAL));
+      }
     }
+
+    ilog("Write processing thread finished.");
   });
 }
 
@@ -335,7 +361,11 @@ void chain_plugin_impl::stop_write_processing()
   running = false;
 
   if( write_processor_thread )
+  {
+    ilog("Waiting for write processing thread finish...");
     write_processor_thread->join();
+    ilog("Write processing thread stopped.");
+  }
 
   write_processor_thread.reset();
 }
