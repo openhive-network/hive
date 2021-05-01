@@ -57,6 +57,8 @@ namespace hive {
 
       fc::ecc::canonical_signature_type get_canon_type( const signature_type& _signature )const;
 
+      typename authority::key_authority_map convert_authorities( const typename authority::key_authority_map& auths )const;
+
       derived_keys_map& get_keys();
     };
 
