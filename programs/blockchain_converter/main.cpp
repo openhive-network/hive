@@ -79,8 +79,6 @@ int main( int argc, char** argv )
     log_in.open( block_log_in );
     log_out.open( block_log_out );
 
-    auto derived_keys = std::make_shared< derived_keys_map >( *private_key );
-
     blockchain_converter converter( *private_key, _hive_chain_id );
 
     for( uint32_t block_num = 1; block_num <= log_in.head()->block_num(); ++block_num )
@@ -100,7 +98,7 @@ int main( int argc, char** argv )
 
       converter.convert_signed_block( *block );
 
-      if( block_num % 1000 == 0 )
+      if( block_num % 1000 == 0 ) // Progress
         std::cout << "[ " << int( float(block_num) / log_in.head()->block_num() * 100 ) << "% ]: " << block_num << '/' << log_in.head()->block_num() << " blocks rewritten.\r";
 
       log_out.append( *block );
