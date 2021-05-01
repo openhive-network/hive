@@ -39,7 +39,7 @@ namespace hive {
     }
 
 
-    convert_operations_visitor::convert_operations_visitor( const std::shared_ptr< blockchain_converter >& converter )
+    convert_operations_visitor::convert_operations_visitor( blockchain_converter* converter )
       : converter( converter ) {}
 
     const account_create_operation& convert_operations_visitor::operator()( account_create_operation& op )
@@ -163,7 +163,7 @@ namespace hive {
 
       for( auto _transaction = _signed_block.transactions.begin(); _transaction != _signed_block.transactions.end(); ++_transaction )
       {
-        _transaction->visit( convert_operations_visitor( std::shared_ptr< blockchain_converter >(this) ) );
+        _transaction->visit( convert_operations_visitor( this ) );
         for( auto _signature = _transaction->signatures.begin(); _signature != _transaction->signatures.end(); ++_signature )
           *_signature = convert_signature_from_header( *_signature, _signed_block ).sign_compact( _transaction->sig_digest( chain_id ), get_canon_type( *_signature ) );
       }
