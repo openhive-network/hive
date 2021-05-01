@@ -65,12 +65,12 @@ namespace hive {
     class convert_operations_visitor
     {
     private:
-      std::shared_ptr< blockchain_converter > converter;
+      blockchain_converter* converter;
 
     public:
       typedef operation result_type;
 
-      convert_operations_visitor( const std::shared_ptr< blockchain_converter >& converter );
+      convert_operations_visitor( blockchain_converter* converter );
 
       const account_create_operation& operator()( account_create_operation& op );
 
