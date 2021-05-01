@@ -11,7 +11,7 @@
 
 namespace hive {
 
-  using namespace protocol; /// XXX: Using using ... instead of using namespace is propably a better idea
+  using namespace protocol;
 
   namespace converter {
 
@@ -32,8 +32,8 @@ namespace hive {
       /// Generates public key from the private key mapped to the public key from the original block_log
       public_key_type get_public( const public_key_type& original );
 
-      /// Inserts key to the container if public key was not found in the unordered_map.
-      /// Returns const reference to the private key mapped to the public key from the original block_log.
+      /// Inserts key to the container if public key from the original block log was not found in the map.
+      /// Returns const reference to the generated derived private key.
       const fc::ecc::private_key& get_private( const public_key_type& original );
 
       // TODO: Save to file or convert into wallet.json
@@ -47,6 +47,7 @@ namespace hive {
       std::shared_ptr< derived_keys_map > keys;
 
     public:
+      /// All converted blocks will be signed using keys derived from the given private key
       blockchain_converter( const fc::ecc::private_key& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID );
 
       void convert_signed_block( signed_block& _signed_block );
@@ -55,6 +56,7 @@ namespace hive {
 
       const fc::ecc::private_key& convert_signature_from_header( const signature_type& _signature, const signed_block_header& _signed_header );
 
+      /// Tries to guess canon type using given signature. If not found it is defaulted to fc::ecc::non_canonical
       fc::ecc::canonical_signature_type get_canon_type( const signature_type& _signature )const;
 
       typename authority::key_authority_map convert_authorities( const typename authority::key_authority_map& auths )const;
