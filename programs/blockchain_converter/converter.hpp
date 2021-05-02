@@ -17,13 +17,9 @@ namespace hive {
 
     class derived_keys_map
     {
-    private:
-      // Key is the public key from the original block log and T is private key derived from initminer's private key
-      std::map< public_key_type, fc::ecc::private_key > keys;
-
-      std::string private_key_wif;
-
     public:
+
+      typedef std::map< public_key_type, fc::ecc::private_key > keys_map_type;
 
       derived_keys_map( const std::string& private_key_wif );
 
@@ -37,6 +33,11 @@ namespace hive {
       const fc::ecc::private_key& get_private( const public_key_type& original );
 
       // TODO: Save to file or convert into wallet.json
+    private:
+      // Key is the public key from the original block log and T is private key derived from initminer's private key
+      keys_map_type keys;
+
+      std::string   private_key_wif;
     };
 
     class blockchain_converter
