@@ -42,9 +42,9 @@ namespace hive {
     class blockchain_converter
     {
     private:
-      fc::ecc::private_key                _private_key;
-      chain_id_type                       chain_id;
-      std::shared_ptr< derived_keys_map > keys;
+      fc::ecc::private_key _private_key;
+      chain_id_type        chain_id;
+      derived_keys_map     keys;
 
     public:
       /// All converted blocks will be signed using keys derived from the given private key
@@ -59,7 +59,7 @@ namespace hive {
       /// Tries to guess canon type using given signature. If not found it is defaulted to fc::ecc::non_canonical
       fc::ecc::canonical_signature_type get_canon_type( const signature_type& _signature )const;
 
-      typename authority::key_authority_map convert_authorities( const typename authority::key_authority_map& auths )const;
+      typename authority::key_authority_map convert_authorities( const typename authority::key_authority_map& auths );
 
       derived_keys_map& get_keys();
     };
@@ -74,29 +74,29 @@ namespace hive {
 
       convert_operations_visitor( blockchain_converter* converter );
 
-      const account_create_operation& operator()( account_create_operation& op );
+      const account_create_operation& operator()( account_create_operation& op )const;
 
-      const account_create_with_delegation_operation& operator()( account_create_with_delegation_operation& op );
+      const account_create_with_delegation_operation& operator()( account_create_with_delegation_operation& op )const;
 
-      const account_update_operation& operator()( account_update_operation& op );
+      const account_update_operation& operator()( account_update_operation& op )const;
 
-      const account_update2_operation& operator()( account_update2_operation& op );
+      const account_update2_operation& operator()( account_update2_operation& op )const;
 
-      const create_claimed_account_operation& operator()( create_claimed_account_operation& op );
+      const create_claimed_account_operation& operator()( create_claimed_account_operation& op )const;
 
-      const witness_update_operation& operator()( witness_update_operation& op );
+      const witness_update_operation& operator()( witness_update_operation& op )const;
 
-      const witness_set_properties_operation& operator()( witness_set_properties_operation& op );
+      const witness_set_properties_operation& operator()( witness_set_properties_operation& op )const;
 
-      const custom_binary_operation& operator()( custom_binary_operation& op );
+      const custom_binary_operation& operator()( custom_binary_operation& op )const;
 
-      const pow2_operation& operator()( pow2_operation& op );
+      const pow2_operation& operator()( pow2_operation& op )const;
 
-      const report_over_production_operation& operator()( report_over_production_operation& op );
+      const report_over_production_operation& operator()( report_over_production_operation& op )const;
 
-      const request_account_recovery_operation& operator()( request_account_recovery_operation& op );
+      const request_account_recovery_operation& operator()( request_account_recovery_operation& op )const;
 
-      const recover_account_operation& operator()( recover_account_operation& op );
+      const recover_account_operation& operator()( recover_account_operation& op )const;
 
       // No signatures modification ops
       template< typename T >
