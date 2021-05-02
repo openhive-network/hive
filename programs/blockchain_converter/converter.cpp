@@ -27,7 +27,7 @@ namespace hive {
     derived_keys_map::derived_keys_map( const std::string& private_key_wif )
       : private_key_wif( private_key_wif ) {}
 
-    derived_keys_map::derived_keys_map( const fc::ecc::private_key& _private_key )
+    derived_keys_map::derived_keys_map( const private_key_type& _private_key )
       : private_key_wif( key_to_wif(_private_key) ) {}
 
     public_key_type derived_keys_map::get_public( const public_key_type& original )
@@ -35,16 +35,16 @@ namespace hive {
       return get_private( original ).get_public_key();
     }
 
-    const fc::ecc::private_key& derived_keys_map::get_private( const public_key_type& original )
+    const private_key_type& derived_keys_map::get_private( const public_key_type& original )
     {
       if( keys.find( original ) != keys.end() )
         return keys.at( original );
       return (*keys.emplace( original,
-          fc::ecc::private_key::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + ' ' + std::to_string( keys.size() ) )))
+          private_key_type::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + ' ' + std::to_string( keys.size() ) )))
         ).first).second;
     }
 
-    const fc::ecc::private_key& derived_keys_map::at( const public_key_type& original )const
+    const private_key_type& derived_keys_map::at( const public_key_type& original )const
     {
       return keys.at( original );
     }
@@ -199,7 +199,7 @@ namespace hive {
     }
 
 
-    blockchain_converter::blockchain_converter( const fc::ecc::private_key& _private_key, const chain_id_type& chain_id )
+    blockchain_converter::blockchain_converter( const private_key_type& _private_key, const chain_id_type& chain_id )
       : _private_key( _private_key ), chain_id( chain_id ), keys( _private_key ) {}
 
     void blockchain_converter::convert_signed_block( signed_block& _signed_block )
@@ -221,7 +221,7 @@ namespace hive {
       _signed_header.sign( convert_signature_from_header( _signed_header.witness_signature, _signed_header ), get_canon_type( _signed_header.witness_signature ) );
     }
 
-    const fc::ecc::private_key& blockchain_converter::convert_signature_from_header( const signature_type& _signature, const signed_block_header& _signed_header )
+    const private_key_type& blockchain_converter::convert_signature_from_header( const signature_type& _signature, const signed_block_header& _signed_header )
     {
       switch( get_canon_type( _signature ) )
       {
@@ -255,6 +255,10 @@ namespace hive {
     }
 
     derived_keys_map& blockchain_converter::get_keys()
+    {
+      return keys;
+    }
+    const derived_keys_map& blockchain_converter::get_keys()const
     {
       return keys;
     }
