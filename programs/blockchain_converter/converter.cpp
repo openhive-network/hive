@@ -38,6 +38,19 @@ namespace hive {
         ).first).second;
     }
 
+    const fc::ecc::private_key& derived_keys_map::at( const public_key_type& original )const
+    {
+      return keys.at( original );
+    }
+
+    derived_keys_map::keys_map_type::iterator        begin()      { return keys.begin(); }
+    derived_keys_map::keys_map_type::const_iterator  begin()const { return keys.begin(); }
+    derived_keys_map::keys_map_type::const_iterator cbegin()const { return keys.begin(); }
+
+    derived_keys_map::keys_map_type::iterator        end()      { return keys.end(); }
+    derived_keys_map::keys_map_type::const_iterator  end()const { return keys.end(); }
+    derived_keys_map::keys_map_type::const_iterator cend()const { return keys.end(); }
+
 
     convert_operations_visitor::convert_operations_visitor( blockchain_converter* converter )
       : converter( converter ) {}
@@ -210,6 +223,8 @@ namespace hive {
     }
 
     derived_keys_map& blockchain_converter::get_keys()
-    { return keys; }
+    {
+      return keys;
+    }
   }
 }
