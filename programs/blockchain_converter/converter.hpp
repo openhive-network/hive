@@ -75,6 +75,7 @@ namespace hive {
       typename authority::key_authority_map convert_authorities( const typename authority::key_authority_map& auths );
 
       derived_keys_map& get_keys();
+      const derived_keys_map& get_keys()const;
     };
 
     class convert_operations_visitor
