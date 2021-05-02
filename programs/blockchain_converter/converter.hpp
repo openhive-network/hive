@@ -32,9 +32,19 @@ namespace hive {
       /// Returns const reference to the generated derived private key.
       const fc::ecc::private_key& get_private( const public_key_type& original );
 
+      /// Retrieves private key from the map. Throws std::out_of_range if given public key was not found.
+      const fc::ecc::private_key& at( const public_key_type& original )const;
+
+      keys_map_type::iterator        begin();
+      keys_map_type::const_iterator  begin()const;
+      keys_map_type::const_iterator cbegin()const;
+
+      keys_map_type::iterator        end();
+      keys_map_type::const_iterator  end()const;
+      keys_map_type::const_iterator cend()const;
+
       // TODO: Save to file or convert into wallet.json
     private:
-      // Key is the public key from the original block log and T is private key derived from initminer's private key
       keys_map_type keys;
 
       std::string   private_key_wif;
