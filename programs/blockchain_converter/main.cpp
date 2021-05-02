@@ -32,6 +32,8 @@ int main( int argc, char** argv )
       ("chain-id,c", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "new chain ID")
       ("input,i", bpo::value< std::string >(), "input block log")
       ("output,o", bpo::value< std::string >(), "output block log; defaults to [input]_out" )
+      ("wallet-file,w", bpo::value< std::string >()->implicit_value( "wallet.json" ), "optional wallet filename to save generated private keys" )
+      ("wallet-password,p", bpo::value< std::string >()->default_value( "password" ), "password to the generated wallet file" )
       ("log-per-block,l", bpo::value< uint32_t >()->default_value( 0 ), "Displays blocks in JSON format every n blocks")
       ("log-specific,s", bpo::value< uint32_t >()->default_value( 0 ), "Displays only block with specified number")
       ;
@@ -115,6 +117,12 @@ int main( int argc, char** argv )
 
     log_in.close();
     log_out.close();
+
+    if( options.count("wallet-file") )
+    {
+      converter.get_keys().save_wallet_file( options["wallet-password"].as< std::string >(), options["wallet-file"].as< std::string >() );
+      std::cout << "\nWallet file generated";
+    }
 
     std::cout << "\nblock_log conversion completed\n";
 

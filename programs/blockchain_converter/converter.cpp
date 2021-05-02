@@ -9,12 +9,18 @@
 
 #include <hive/utilities/key_conversion.hpp>
 
+#include <hive/wallet/wallet.hpp>
+
 #include <fc/io/raw.hpp>
+#include <fc/io/fstream.hpp>
+
+#include <fc/crypto/aes.hpp>
 
 namespace hive {
 
   using namespace protocol;
   using namespace utilities;
+  using namespace wallet;
 
   namespace converter {
 
@@ -51,6 +57,32 @@ namespace hive {
     derived_keys_map::keys_map_type::const_iterator  derived_keys_map::end()const { return keys.end(); }
     derived_keys_map::keys_map_type::const_iterator derived_keys_map::cend()const { return keys.end(); }
 
+    void derived_keys_map::save_wallet_file( const std::string& password, std::string wallet_filename )const
+    {
+      FC_ASSERT( !password.empty(), "password cannot be an empty string" );
+
+      plain_keys _pk;
+      for( auto& key : keys )
+        _pk.keys[ key.first ] = key_to_wif( key.second );
+
+      _pk.checksum = fc::sha512::hash(password.c_str(), password.size());
+
+      auto plain_txt = fc::raw::pack_to_vector(_pk);
+
+      wallet_data _wallet;
+
+      _wallet.cipher_keys = fc::aes_encrypt( _pk.checksum, plain_txt );
+
+      if( wallet_filename.empty() )
+        wallet_filename = "wallet.json";
+
+      std::string data = fc::json::to_pretty_string( _wallet );
+
+      fc::ofstream outfile{ fc::path( wallet_filename ) };
+      outfile.write( data.c_str(), data.length() );
+      outfile.flush();
+      outfile.close();
+    }
 
     convert_operations_visitor::convert_operations_visitor( blockchain_converter* converter )
       : converter( converter ) {}
