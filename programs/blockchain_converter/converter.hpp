@@ -43,8 +43,10 @@ namespace hive {
       keys_map_type::const_iterator  end()const;
       keys_map_type::const_iterator cend()const;
 
-      // TODO: Save to file or convert into wallet.json
+      void save_wallet_file( const std::string& password, std::string wallet_filename = "" )const;
+
     private:
+
       keys_map_type keys;
 
       std::string   private_key_wif;
