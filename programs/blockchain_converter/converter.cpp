@@ -43,13 +43,13 @@ namespace hive {
       return keys.at( original );
     }
 
-    derived_keys_map::keys_map_type::iterator        begin()      { return keys.begin(); }
-    derived_keys_map::keys_map_type::const_iterator  begin()const { return keys.begin(); }
-    derived_keys_map::keys_map_type::const_iterator cbegin()const { return keys.begin(); }
+    derived_keys_map::keys_map_type::iterator        derived_keys_map::begin()      { return keys.begin(); }
+    derived_keys_map::keys_map_type::const_iterator  derived_keys_map::begin()const { return keys.begin(); }
+    derived_keys_map::keys_map_type::const_iterator derived_keys_map::cbegin()const { return keys.begin(); }
 
-    derived_keys_map::keys_map_type::iterator        end()      { return keys.end(); }
-    derived_keys_map::keys_map_type::const_iterator  end()const { return keys.end(); }
-    derived_keys_map::keys_map_type::const_iterator cend()const { return keys.end(); }
+    derived_keys_map::keys_map_type::iterator        derived_keys_map::end()      { return keys.end(); }
+    derived_keys_map::keys_map_type::const_iterator  derived_keys_map::end()const { return keys.end(); }
+    derived_keys_map::keys_map_type::const_iterator derived_keys_map::cend()const { return keys.end(); }
 
 
     convert_operations_visitor::convert_operations_visitor( blockchain_converter* converter )
