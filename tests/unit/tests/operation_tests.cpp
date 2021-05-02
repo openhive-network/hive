@@ -9405,7 +9405,6 @@ BOOST_AUTO_TEST_CASE( account_update2_apply )
   FC_LOG_AND_RETHROW()
 }
 
-
 BOOST_AUTO_TEST_CASE( recurrent_transfer_validate )
 {
   try
@@ -9417,6 +9416,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_validate )
     op.to = "bob";
     op.memo = "Memo";
     op.recurrence = 24;
+    op.executions = 10;
     op.amount = asset( 100, HIVE_SYMBOL );
     op.validate();
 
@@ -9458,7 +9458,21 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_validate )
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
     op.from = "alice";
 
-    op.validate();
+    BOOST_TEST_MESSAGE( " --- recurrence * executions is too high with recurrence being every day" );
+    op.executions = HIVE_MAX_RECURRENT_TRANSFER_END_DATE + 1; // one day too many
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+
+    BOOST_TEST_MESSAGE( " --- recurrence * executions is too high with recurrence being every two days" );
+    op.recurrence = 48;
+    op.executions = HIVE_MAX_RECURRENT_TRANSFER_END_DATE / 2 + 1; // one day too many
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.executions = 10;
+
+    BOOST_TEST_MESSAGE( " --- executions is less than 2" );
+    op.executions = 1;
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.executions = 0;
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -9485,17 +9499,23 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     op.memo = "test";
     op.amount = ASSET( "5.000 TESTS" );
     op.recurrence = 72;
-    op.end_date = db->head_block_time() + fc::days( 60 );
+    op.executions = 10;
 
     BOOST_TEST_MESSAGE( "--- Test normal transaction" );
     push_transaction(op, alice_private_key);
 
+    const auto execution_block_time = db->head_block_time();
+    const auto& recurrent_transfer_pre_execution = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id) );
+
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "10.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "0.000 TESTS" ).amount.value );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 1 );
+    BOOST_REQUIRE( recurrent_transfer_pre_execution->get_trigger_date() == execution_block_time);
+    BOOST_REQUIRE( recurrent_transfer_pre_execution->recurrence == 72 );
+    BOOST_REQUIRE( recurrent_transfer_pre_execution->amount == ASSET( "5.000 TESTS" ) );
+    BOOST_REQUIRE( recurrent_transfer_pre_execution->remaining_executions == 10 );
+    BOOST_REQUIRE( recurrent_transfer_pre_execution->memo == "test" );
     validate_database();
-
-    const auto execution_block_time = db->head_block_time();
 
     generate_block();
     BOOST_TEST_MESSAGE( "--- test initial recurrent transfer execution" );
@@ -9503,16 +9523,16 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
     validate_database();
 
-    BOOST_TEST_MESSAGE( "--- test recurrent transfer trigger date post genesis execution" );
+    BOOST_TEST_MESSAGE( "--- test recurrent transfer trigger date and remaining executions post genesis execution" );
     const auto& recurrent_transfer = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id) );
 
     BOOST_REQUIRE( recurrent_transfer->get_trigger_date() == execution_block_time + fc::hours(op.recurrence) );
+    BOOST_REQUIRE( recurrent_transfer->remaining_executions == 9 );
 
     BOOST_TEST_MESSAGE( "--- test updating the recurrent transfer parameters" );
-
     op.memo = "test_updated";
     op.amount = ASSET( "2.000 TESTS" );
-    op.end_date = db->head_block_time() + fc::days( 45 );
+    op.executions = 20;
     push_transaction(op, alice_private_key);
 
     const auto recurrent_transfer_new = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id) )->copy_chain_object();
@@ -9520,7 +9540,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     BOOST_REQUIRE( recurrent_transfer_new.get_trigger_date() == recurrent_transfer->get_trigger_date());
     BOOST_REQUIRE( recurrent_transfer_new.recurrence == 72 );
     BOOST_REQUIRE( recurrent_transfer_new.amount == ASSET( "2.000 TESTS" ) );
-    BOOST_REQUIRE( recurrent_transfer_new.end_date == op.end_date );
+    BOOST_REQUIRE( recurrent_transfer_new.remaining_executions == 20 );
     BOOST_REQUIRE( recurrent_transfer_new.memo == "test_updated" );
     validate_database();
 
@@ -9535,7 +9555,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     validate_database();
 
     generate_block();
-    BOOST_TEST_MESSAGE( "--- test updating the reccurence" );
+    BOOST_TEST_MESSAGE( "--- test updating the recurrence" );
 
     op.recurrence = 96;
     push_transaction(op, alice_private_key);
@@ -9543,6 +9563,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     BOOST_REQUIRE( recurrent_transfer->get_trigger_date() == db->head_block_time() + fc::hours(op.recurrence) );
     BOOST_REQUIRE( recurrent_transfer->recurrence == 96 );
     BOOST_REQUIRE( recurrent_transfer->get_trigger_date() != recurrent_transfer_new.get_trigger_date() );
+    BOOST_REQUIRE( recurrent_transfer->remaining_executions == 20 );
     validate_database();
 
     generate_block();
@@ -9557,23 +9578,10 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     generate_block();
     op.amount = ASSET("50.000 TESTS");
 
-    BOOST_TEST_MESSAGE( "--- test end date is in the past" );
-
-    op.end_date = db->head_block_time() - fc::days(1);
-
-    HIVE_REQUIRE_THROW( push_transaction(op, alice_private_key), fc::exception );
-    validate_database();
-
-    BOOST_TEST_MESSAGE( "--- test end date is too far in the future" );
-
-    op.end_date = db->head_block_time() + fc::days(5000);
-
-    HIVE_REQUIRE_THROW( push_transaction(op, alice_private_key), fc::exception );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- test not enough tokens for the first recurrent transfer" );
 
-    op.end_date = db->head_block_time() + fc::days(50);
     op.amount = ASSET("500000.000 TBD");
 
     HIVE_REQUIRE_THROW( push_transaction(op, alice_private_key), fc::exception );
@@ -9607,7 +9615,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_hbd )
     op.memo = "test";
     op.amount = ASSET( "10.000 TBD" );
     op.recurrence = 72;
-    op.end_date = db->head_block_time() + fc::days( 60 );
+    op.executions = 5;
     push_transaction(op, alice_private_key);
 
     const auto execution_block_time = db->head_block_time();
@@ -9652,7 +9660,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_open_transfers )
     op.memo = "test";
     op.amount = ASSET( "5.000 TESTS" );
     op.recurrence = 72;
-    op.end_date = db->head_block_time() + fc::days( 60 );
+    op.executions = 13;
 
     for (int i = 0; i < HIVE_MAX_OPEN_RECURRENT_TRANSFERS; i++) {
       op.to = "actor" + std::to_string(i);
@@ -9702,7 +9710,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
     op.memo = "test";
     op.amount = ASSET( "1.000 TESTS" );
     op.recurrence = 24;
-    op.end_date = db->head_block_time() + fc::days( 60 );
+    op.executions = 25;
 
     // 1000 recurrent transfers
     for (int k = 0; k < 4; k++) {

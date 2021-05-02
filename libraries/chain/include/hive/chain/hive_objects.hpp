@@ -339,22 +339,22 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       recurrent_transfer_object(allocator< Allocator > a, uint64_t _id,
-      const time_point_sec& _trigger_date, const time_point_sec& _end_date, const account_id_type& _from_id,
-      const account_id_type& _to_id,  const asset& _amount, const string& _memo, const uint16_t _recurrence)
-      : id( _id ), trigger_date( _trigger_date ), end_date( _end_date ), from_id( _from_id ), to_id( _to_id ),
-      amount( _amount ), memo( a ), recurrence( _recurrence )
+      const time_point_sec& _trigger_date, const account_id_type& _from_id,
+      const account_id_type& _to_id,  const asset& _amount, const string& _memo, const uint16_t _recurrence, const uint16_t _remaining_executions)
+      : id( _id ), trigger_date( _trigger_date ), from_id( _from_id ), to_id( _to_id ),
+      amount( _amount ), memo( a ), recurrence( _recurrence ), remaining_executions( _remaining_executions )
       {
         from_string( memo, _memo );
       }
 
       void update_next_trigger_date()
       {
-          trigger_date += fc::hours(recurrence);
+        trigger_date += fc::hours(recurrence);
       }
 
       time_point_sec get_trigger_date() const
       {
-          return trigger_date;
+        return trigger_date;
       }
 
       // if the recurrence changed, we must update the trigger_date
@@ -366,10 +366,9 @@ namespace hive { namespace chain {
         recurrence = _recurrence;
       }
 
-  private:
-        time_point_sec    trigger_date;
+    private:
+      time_point_sec    trigger_date;
     public:
-      time_point_sec    end_date;
       account_id_type   from_id;
       account_id_type   to_id;
       asset             amount;
@@ -377,10 +376,12 @@ namespace hive { namespace chain {
       shared_string     memo;
       /// How often will the payment be triggered, unit: hours
       uint16_t          recurrence = 0;
-      // How many payment have failed in a row, at HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES the object is deleted
+      /// How many payment have failed in a row, at HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES the object is deleted
       uint8_t           consecutive_failures = 0;
+      /// How many executions are remaining
+      uint16_t          remaining_executions = 0;
 
-      CHAINBASE_UNPACK_CONSTRUCTOR(recurrent_transfer_object, (memo));
+    CHAINBASE_UNPACK_CONSTRUCTOR(recurrent_transfer_object, (memo));
   };
 
   struct by_price;
@@ -606,7 +607,6 @@ namespace hive { namespace chain {
   struct by_from_to_id;
   struct by_from_id;
   struct by_trigger_date;
-  struct by_end_date;
   typedef multi_index_container<
     recurrent_transfer_object,
     indexed_by<
@@ -621,12 +621,6 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_from_id >,
         composite_key< recurrent_transfer_object,
           member< recurrent_transfer_object, account_id_type, &recurrent_transfer_object::from_id >,
-          const_mem_fun< recurrent_transfer_object, recurrent_transfer_object::id_type, &recurrent_transfer_object::get_id >
-        >
-      >,
-      ordered_unique< tag< by_end_date >,
-        composite_key< recurrent_transfer_object,
-          member< recurrent_transfer_object, time_point_sec, &recurrent_transfer_object::end_date >,
           const_mem_fun< recurrent_transfer_object, recurrent_transfer_object::id_type, &recurrent_transfer_object::get_id >
         >
       >,
@@ -699,5 +693,5 @@ FC_REFLECT( hive::chain::reward_fund_object,
       )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::reward_fund_object, hive::chain::reward_fund_index )
 
-FC_REFLECT(hive::chain::recurrent_transfer_object, (id)(trigger_date)(from_id)(to_id)(amount)(memo)(recurrence)(consecutive_failures)(end_date))
+FC_REFLECT(hive::chain::recurrent_transfer_object, (id)(trigger_date)(from_id)(to_id)(amount)(memo)(recurrence)(consecutive_failures)(remaining_executions) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::recurrent_transfer_object, hive::chain::recurrent_transfer_index )

@@ -1019,24 +1019,24 @@ struct api_recurrent_transfer_object
   api_recurrent_transfer_object( const recurrent_transfer_object& o, const account_name_type from_name, const account_name_type to_name ):
     id( o.get_id() ),
     trigger_date( o.get_trigger_date() ),
-    end_date( o.end_date ),
     from( from_name ),
     to( to_name ),
     amount( o.amount ),
     memo( to_string(o.memo) ),
     recurrence( o.recurrence ),
-    consecutive_failures( o.consecutive_failures )
+    consecutive_failures( o.consecutive_failures ),
+    remaining_executions( o.remaining_executions )
     {}
 
     recurrent_transfer_id_type id;
     time_point_sec    trigger_date;
-    time_point_sec    end_date;
     account_name_type from;
     account_name_type to;
     asset             amount;
     string            memo;
     uint16_t          recurrence = 0;
     uint8_t           consecutive_failures = 0;
+    uint16_t          remaining_executions = 0;
 };
 
 
@@ -1319,4 +1319,4 @@ FC_REFLECT( hive::plugins::database_api::api_proposal_vote_object,
 FC_REFLECT( hive::plugins::database_api::order, (order_price)(real_price)(hive)(hbd)(created) );
 
 FC_REFLECT( hive::plugins::database_api::order_book, (asks)(bids) );
-FC_REFLECT(hive::plugins::database_api::api_recurrent_transfer_object, (id)(trigger_date)(from)(to)(amount)(memo)(recurrence)(consecutive_failures)(end_date))
+FC_REFLECT(hive::plugins::database_api::api_recurrent_transfer_object, (id)(trigger_date)(from)(to)(amount)(memo)(recurrence)(consecutive_failures)(remaining_executions))

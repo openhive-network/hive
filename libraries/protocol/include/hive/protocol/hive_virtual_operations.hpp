@@ -379,24 +379,26 @@ namespace hive { namespace protocol {
  struct fill_recurrent_transfer_operation : public virtual_operation
  {
      fill_recurrent_transfer_operation() {}
-     fill_recurrent_transfer_operation(const account_name_type& f,const account_name_type& t, const asset& a, const string& m) : from( f ), to( t ), amount( a ), memo( m ) {}
+     fill_recurrent_transfer_operation(const account_name_type& f,const account_name_type& t, const asset& a, const string& m, int16_t re) : from( f ), to( t ), amount( a ), memo( m ), remaining_executions(re) {}
 
      account_name_type from;
      account_name_type to;
      asset amount;
      string memo;
+     uint16_t remaining_executions = 0;
  };
 
  struct failed_recurrent_transfer_operation : public virtual_operation
  {
    failed_recurrent_transfer_operation() {}
-   failed_recurrent_transfer_operation(const account_name_type& f,const account_name_type& t, const asset& a, uint8_t cf, const string& m, bool d) : from( f ), to( t ), amount( a ), memo( m ), consecutive_failures( cf ), deleted( d ) {}
+   failed_recurrent_transfer_operation(const account_name_type& f,const account_name_type& t, const asset& a, uint8_t cf, const string& m, int16_t re, bool d) : from( f ), to( t ), amount( a ), memo( m ), consecutive_failures( cf ), remaining_executions(re), deleted( d ) {}
 
      account_name_type from;
      account_name_type to;
      asset amount;
      string memo;
      uint8_t consecutive_failures = 0;
+     uint16_t remaining_executions = 0;
      bool deleted = false; // Indicates that the recurrent transfer was deleted due to too many consecutive failures
  };
 
@@ -434,5 +436,5 @@ FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
 FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
 FC_REFLECT( hive::protocol::system_warning_operation, (message) )
-FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo) )
-FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(deleted) )
+FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
+FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(remaining_executions)(deleted) )

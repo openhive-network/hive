@@ -2803,36 +2803,36 @@ condenser_api::legacy_signed_transaction wallet_api::remove_proposal(const accou
   return my->sign_transaction( trx, broadcast );
 }
 
-  condenser_api::legacy_signed_transaction wallet_api::recurrent_transfer(
-    const account_name_type from,
-    const account_name_type to,
-    const condenser_api::legacy_asset amount,
-    const string memo,
-    uint16_t recurrence,
-    time_point_sec end_date,
-    bool broadcast ) {
-      try {
-        FC_ASSERT( !is_locked() );
-        check_memo( memo, get_account( from ) );
-        recurrent_transfer_operation op;
-        op.from = from;
-        op.to = to;
-        op.amount = amount.to_asset();
-        op.memo = get_encrypted_memo( from, to, memo );
-        op.recurrence = recurrence;
-        op.end_date = end_date;
+condenser_api::legacy_signed_transaction wallet_api::recurrent_transfer(
+ const account_name_type from,
+ const account_name_type to,
+ const condenser_api::legacy_asset amount,
+ const string memo,
+ uint16_t recurrence,
+ uint16_t executions,
+ bool broadcast ) {
+  try {
+    FC_ASSERT( !is_locked() );
+    check_memo( memo, get_account( from ) );
+    recurrent_transfer_operation op;
+    op.from = from;
+    op.to = to;
+    op.amount = amount.to_asset();
+    op.memo = get_encrypted_memo( from, to, memo );
+    op.recurrence = recurrence;
+    op.executions = executions;
 
-        signed_transaction tx;
-        tx.operations.push_back( op );
-        tx.validate();
+    signed_transaction tx;
+    tx.operations.push_back( op );
+    tx.validate();
 
-        return my->sign_transaction( tx, broadcast );
-      } FC_CAPTURE_AND_RETHROW( (from)(to)(amount)(memo)(recurrence)(end_date)(broadcast) )
-  }
+    return my->sign_transaction( tx, broadcast );
+  } FC_CAPTURE_AND_RETHROW( (from)(to)(amount)(memo)(recurrence)(executions)(broadcast) )
+}
 
-  vector< database_api::api_recurrent_transfer_object > wallet_api::find_recurrent_transfers(account_name_type from)
-  {
-    return my->_remote_api->find_recurrent_transfers( from );
-  }
+vector< database_api::api_recurrent_transfer_object > wallet_api::find_recurrent_transfers(account_name_type from)
+{
+  return my->_remote_api->find_recurrent_transfers( from );
+}
 
 } } // hive::wallet

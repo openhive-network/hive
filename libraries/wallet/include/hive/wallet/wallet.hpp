@@ -1314,7 +1314,7 @@ class wallet_api
       * @param amount The funds being transferred. i.e. "100.000 HIVE"
       * @param memo A memo for the transaction, encrypted with the to account's public memo key
       * @param recurrence how often the transfer should be executed in hours. eg: 24
-      * @param end_date when should the recurrent payment expire
+      * @param executions how many times should the recurrent transfer be executed
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction recurrent_transfer(
@@ -1323,7 +1323,7 @@ class wallet_api
             condenser_api::legacy_asset amount,
             string memo,
             uint16_t recurrence,
-            time_point_sec end_date,
+            uint16_t executions,
             bool broadcast );
 
   /**

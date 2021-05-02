@@ -322,7 +322,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   rc_transaction_info tx_info;
 
   // How many resources does the transaction use?
-  count_resources( note.transaction, tx_info.usage, _db.head_block_time() );
+  count_resources( note.transaction, tx_info.usage );
 
   // How many RC does this transaction cost?
   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
@@ -368,8 +368,7 @@ struct block_extensions_count_resources_visitor
   typedef void result_type;
 
   count_resources_result& _r;
-  time_point_sec _h;
-  block_extensions_count_resources_visitor( count_resources_result& r, const time_point_sec& h ) : _r( r ), _h( h ) {}
+  block_extensions_count_resources_visitor( count_resources_result& r ) : _r( r ) {}
 
   // Only optional actions need to be counted. We decided in design that
   // the operation should pay the cost for any required actions created
@@ -378,7 +377,7 @@ struct block_extensions_count_resources_visitor
   {
     for( const auto& a : opt_actions )
     {
-      count_resources( a, _r, _h );
+      count_resources( a, _r);
     }
   }
 
@@ -433,10 +432,10 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
   count_resources_result count;
   for( const signed_transaction& tx : note.block.transactions )
   {
-    count_resources( tx, count, _db.head_block_time() );
+    count_resources( tx, count );
   }
 
-  block_extensions_count_resources_visitor ext_visitor( count, _db.head_block_time() );
+  block_extensions_count_resources_visitor ext_visitor( count );
   for( const auto& e : note.block.extensions )
   {
     e.visit( ext_visitor );
@@ -1088,7 +1087,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   rc_optional_action_info opt_action_info;
 
   // How many resources does the transaction use?
-  count_resources( note.action, opt_action_info.usage, _db.head_block_time() );
+  count_resources( note.action, opt_action_info.usage );
 
   // How many RC does this transaction cost?
   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );

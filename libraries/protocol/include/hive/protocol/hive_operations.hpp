@@ -1112,7 +1112,8 @@ namespace hive { namespace protocol {
     /// How often will the payment be triggered, unit: hours
     uint16_t          recurrence = 0;
 
-    time_point_sec    end_date;
+    // How many times the recurrent payment will be executed
+    uint16_t          executions = 0;
     /// Extensions. Not currently used.
     extensions_type   extensions;
 
@@ -1234,4 +1235,4 @@ FC_REFLECT( hive::protocol::claim_reward_balance_operation, (account)(reward_hiv
 FC_REFLECT( hive::protocol::claim_reward_balance2_operation, (account)(extensions)(reward_tokens) )
 #endif
 FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
-FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(end_date)(extensions) );
+FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions)(extensions) );

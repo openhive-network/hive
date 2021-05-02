@@ -1384,7 +1384,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     amount( legacy_asset::from_asset( op.amount ) ),
     memo( op.memo ),
     recurrence( op.recurrence ),
-    end_date( op.end_date )
+    executions( op.executions )
     {}
 
     operator recurrent_transfer_operation()const
@@ -1395,7 +1395,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       op.amount = amount;
       op.memo = memo;
       op.recurrence = recurrence;
-      op.end_date = end_date;
+      op.executions = executions;
       return op;
     }
 
@@ -1404,7 +1404,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      amount;
     string            memo;
     uint16_t          recurrence = 0;
-    time_point_sec    end_date;
+    uint16_t          executions = 0;
   };
 
   typedef fc::static_variant<
@@ -2265,6 +2265,6 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_update_proposal_operation, (pro
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(end_date) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions) )
 
 FC_REFLECT_TYPENAME( hive::plugins::condenser_api::legacy_operation )

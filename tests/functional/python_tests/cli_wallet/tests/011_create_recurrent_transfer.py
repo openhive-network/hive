@@ -16,9 +16,7 @@ if __name__ == "__main__":
             recurrent_transfers_before_count = len(wallet.find_recurrent_transfers(creator)['result'])
             log.info("recurrent_transfers {0}".format(recurrent_transfers_before_count))
 
-            now = datetime.datetime.now()
-            end_date = (now + datetime.timedelta(days=6)).replace(microsecond=0).isoformat()
-            create_prop = wallet.recurrent_transfer(creator, receiver, "10.000 TBD", "This is a memo", "24", end_date, "true")
+            create_prop = wallet.recurrent_transfer(creator, receiver, "10.000 TBD", "This is a memo", "24", "6", "true")
 
             recurrent_transfers = wallet.find_recurrent_transfers(creator)['result']
             recurrent_transfers_after_count = len(recurrent_transfers)
@@ -32,4 +30,4 @@ if __name__ == "__main__":
             assert recurrent_transfer['memo'] == 'This is a memo'
             assert recurrent_transfer['recurrence'] == 24
             assert recurrent_transfer['consecutive_failures'] == 0
-            assert recurrent_transfer['end_date'] == end_date
+            assert recurrent_transfer['remaining_executions'] == 5
