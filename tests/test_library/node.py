@@ -58,7 +58,7 @@ class Node:
             logger_from_node.warning(f"Send SIGKILL because process didn't close before timeout")
 
     def set_directory(self, directory):
-        self.directory = Path(directory).absolute()
+        self.directory = Path(directory).absolute() / self.name
 
     def is_running(self):
         if not self.process:
