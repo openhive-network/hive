@@ -1,8 +1,8 @@
 #include "converter.hpp"
 
-#include <stdexcept>
 #include <map>
 #include <string>
+#include <limits>
 
 #include <hive/protocol/operations.hpp>
 #include <hive/protocol/block.hpp>
@@ -143,13 +143,22 @@ namespace hive {
 
     const witness_set_properties_operation& convert_operations_visitor::operator()( witness_set_properties_operation& op )const
     {
+      public_key_type signing_key;
+
       auto key_itr = op.props.find( "key" );
 
       if( key_itr != op.props.end() )
       {
-        public_key_type signing_key;
         fc::raw::unpack_from_vector( key_itr->second, signing_key );
         op.props.at( "key" ) = fc::raw::pack_to_vector( converter.get_keys().get_public(signing_key) );
+      }
+
+      auto new_signing_key_itr = op.props.find( "new_signing_key" );
+
+      if( new_signing_key_itr != op.props.end() )
+      {
+        fc::raw::unpack_from_vector( new_signing_key_itr->second, signing_key );
+        op.props.at( "new_signing_key" ) = fc::raw::pack_to_vector( converter.get_keys().get_public(signing_key) );
       }
 
       return op;
@@ -168,7 +177,19 @@ namespace hive {
       op.block_id = _signed_block.previous;
 
       op.work.worker = converter.get_keys().get_public( op.work.worker );
-      op.work.signature = converter.convert_signature_from_header( op.work.signature, _signed_block );
+
+      op.nonce = 0;
+      do
+      {
+        op.work.create(
+            converter.convert_signature_from_header( op.work.signature, _signed_block ),
+            op.work_input()
+          );
+        if ( op.nonce == std::numeric_limits< decltype( op.nonce ) >::max() )
+          FC_ASSERT( false, "Infinite loop detected during a pow_operation conversion. For your computer's safety I have gently thrown this exception." )
+        ++op.nonce;
+      }
+      while( op.work.work != fc::sha256::hash( public_key_type( op.work.signature, fc::sha256::hash( op.work.signature ), fc::ecc::non_canonical ) ) );
 
       return op;
     }
