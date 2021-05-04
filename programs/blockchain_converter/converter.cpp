@@ -167,6 +167,9 @@ namespace hive {
     {
       op.block_id = _signed_block.previous;
 
+      op.work.worker = converter.get_keys().get_public( op.work.worker );
+      op.work.signature = converter.convert_signature_from_header( op.work.signature, _signed_block );
+
       return op;
     }
 
