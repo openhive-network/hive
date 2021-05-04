@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from . import Network, Node
 from .children_names import ChildrenNames
 
@@ -8,6 +10,7 @@ class World:
         self.__networks = []
         self.__nodes = []
         self.__wallets = []
+        self.__directory = Path() / 'GeneratedInWorld'
 
     def __enter__(self):
         return self
@@ -32,6 +35,7 @@ class World:
             name = self.children_names.create_name('Network')
 
         network = Network(name)
+        network.set_directory(self.__directory)
         self.__networks.append(network)
         return network
 
@@ -52,6 +56,7 @@ class World:
             name = self.children_names.create_name('Node')
 
         node = Node(self, name, configure_for_block_production=configure_for_block_production)
+        node.set_directory(self.__directory)
         self.__nodes.append(node)
         return node
 
