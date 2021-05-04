@@ -81,7 +81,7 @@ class Network:
 
         self.connect_nodes()
         for node in self.nodes:
-            node.set_directory(self.get_directory() / node.get_name())
+            node.set_directory(self.get_directory())
             node.set_executable_file_path(self.hived_executable_file_path)
             node.run(wait_for_live=False)
             node.wait_for_p2p_plugin_start()
