@@ -60,7 +60,8 @@ namespace hive {
       /// All converted blocks will be signed using keys derived from the given private key
       blockchain_converter( const fc::ecc::private_key& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID );
 
-      void convert_signed_block( signed_block& _signed_block );
+      /// Sets signed_block previous member to the given value and re-signs content of the block using derived keys. Returns current block id.
+      block_id_type convert_signed_block( signed_block& _signed_block, const block_id_type& previous_block_id );
 
       void convert_signed_header( signed_block_header& _signed_header );
 
