@@ -191,7 +191,7 @@ test_library_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
-    PYTHONPATH: $CI_PROJECT_DIR/tests
+    PYTHONPATH: $CI_PROJECT_DIR/tests/test_library/package
     HIVED_PATH: $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived
     CLI_WALLET_PATH: $CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet
     GET_DEV_KEY_PATH: $CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key
