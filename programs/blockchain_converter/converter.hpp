@@ -80,11 +80,12 @@ namespace hive {
     {
     private:
       blockchain_converter& converter;
+      signed_block& _signed_block;
 
     public:
       typedef operation result_type;
 
-      convert_operations_visitor( blockchain_converter& converter );
+      convert_operations_visitor( blockchain_converter& converter, signed_block& _signed_block );
 
       const account_create_operation& operator()( account_create_operation& op )const;
 
@@ -101,6 +102,8 @@ namespace hive {
       const witness_set_properties_operation& operator()( witness_set_properties_operation& op )const;
 
       const custom_binary_operation& operator()( custom_binary_operation& op )const;
+
+      const pow_operation& operator()( pow_operation& op )const;
 
       const pow2_operation& operator()( pow2_operation& op )const;
 
