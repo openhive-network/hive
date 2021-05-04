@@ -198,7 +198,7 @@ namespace hive {
     blockchain_converter::blockchain_converter( const private_key_type& _private_key, const chain_id_type& chain_id )
       : _private_key( _private_key ), chain_id( chain_id ), keys( _private_key ) {}
 
-    void blockchain_converter::convert_signed_block( signed_block& _signed_block )
+    block_id_type blockchain_converter::convert_signed_block( signed_block& _signed_block, const block_id_type& previous_block_id )
     {
       convert_signed_header( _signed_block );
 
@@ -210,6 +210,10 @@ namespace hive {
       }
 
       _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
+
+      _signed_block.previous = previous_block_id;
+
+      return _signed_block.id();
     }
 
     void blockchain_converter::convert_signed_header( signed_block_header& _signed_header )
