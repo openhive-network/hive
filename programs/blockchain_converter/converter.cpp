@@ -80,8 +80,8 @@ namespace hive {
       outfile.close();
     }
 
-    convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter )
-      : converter( converter ) {}
+    convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, signed_block& _signed_block )
+      : converter( converter ), _signed_block(_signed_block) {}
 
     const account_create_operation& convert_operations_visitor::operator()( account_create_operation& op )const
     {
@@ -163,6 +163,13 @@ namespace hive {
       return op;
     }
 
+    const pow_operation& convert_operations_visitor::operator()( pow_operation& op )const
+    {
+      op.block_id = _signed_block.previous;
+
+      return op;
+    }
+
     const pow2_operation& convert_operations_visitor::operator()( pow2_operation& op )const
     {
       if( op.new_owner_key.valid() )
@@ -202,16 +209,16 @@ namespace hive {
     {
       convert_signed_header( _signed_block );
 
+      _signed_block.previous = previous_block_id;
+
       for( auto _transaction = _signed_block.transactions.begin(); _transaction != _signed_block.transactions.end(); ++_transaction )
       {
-        _transaction->visit( convert_operations_visitor( *this ) );
+        _transaction->visit( convert_operations_visitor( *this, _signed_block ) );
         for( auto _signature = _transaction->signatures.begin(); _signature != _transaction->signatures.end(); ++_signature )
           *_signature = convert_signature_from_header( *_signature, _signed_block ).sign_compact( _transaction->sig_digest( chain_id ), get_canon_type( *_signature ) );
       }
 
       _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
-
-      _signed_block.previous = previous_block_id;
 
       return _signed_block.id();
     }
