@@ -84,6 +84,8 @@ int main( int argc, char** argv )
 
     blockchain_converter converter( *private_key, _hive_chain_id );
 
+    block_id_type last_block_id;
+
     for( uint32_t block_num = 1; block_num <= log_in.head()->block_num(); ++block_num )
     {
       fc::optional< signed_block > block = log_in.read_block_by_num( block_num );
@@ -99,7 +101,7 @@ int main( int argc, char** argv )
           << ". Data before conversion: " << json_block.to_string( v ) << '\n';
       }
 
-      converter.convert_signed_block( *block );
+      last_block_id = converter.convert_signed_block( *block, last_block_id );
 
       if( block_num % 1000 == 0 ) // Progress
         std::cout << "[ " << int( float(block_num) / log_in.head()->block_num() * 100 ) << "% ]: " << block_num << '/' << log_in.head()->block_num() << " blocks rewritten.\r";
