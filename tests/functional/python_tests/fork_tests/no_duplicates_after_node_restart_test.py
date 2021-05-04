@@ -1,4 +1,4 @@
-from test_library import Account, KeyGenerator, logger, Network
+from test_library import logger, World
 
 import os
 import time
@@ -19,63 +19,45 @@ def count_producer_reward_operations(node, begin=1, end=500):
 
 
 def test_no_duplicates_after_node_restart():
-    logger.show_debug_logs_on_stdout()  # TODO: Remove this before delivery
+    with World() as world:
+        logger.show_debug_logs_on_stdout()  # TODO: Remove this before delivery
 
-    alpha_witness_names = [f'witness{i}-alpha' for i in range(10)]
-    beta_witness_names = [f'witness{i}-beta' for i in range(10)]
+        alpha_witness_names = [f'witness{i}-alpha' for i in range(10)]
+        beta_witness_names = [f'witness{i}-beta' for i in range(10)]
 
-    # Create first network
-    alpha_net = Network('Alpha', port_range=range(51000, 52000))
-    alpha_net.set_directory('experimental_network')
+        # Create first network
+        alpha_net = world.create_network('Alpha')
+        alpha_net.set_directory('experimental_network')
 
-    init_node = alpha_net.add_node('InitNode')
-    alpha_node0 = alpha_net.add_node('Node0')
+        init_node = alpha_net.create_init_node()
+        alpha_node0 = alpha_net.create_node()
 
-    # Create witnesses
-    init_node.set_witness('initminer')
+        # Create witnesses
+        for node in alpha_net.nodes:
+            node.config.shared_file_size = '6G'
 
-    for node in alpha_net.nodes:
-        # FIXME: This shouldn't be set in all nodes, but let's test it
-        node.config.enable_stale_production = False
-        node.config.required_participation = 33
+            node.config.plugin += [
+                'network_broadcast_api', 'account_history', 'account_history_rocksdb',
+                'account_history_api'
+            ]
 
-        node.config.shared_file_size = '6G'
+            node.config.log_appender = '{"appender":"stderr","stream":"std_error"} {"appender":"p2p","file":"logs/p2p/p2p.log"}'
+            node.config.log_logger = '{"name":"default","level":"debug","appender":"stderr"} {"name":"p2p","level":"warn","appender":"p2p"}'
 
-        node.config.plugin += [
-            'network_broadcast_api', 'account_history', 'account_history_rocksdb',
-            'account_history_api'
-        ]
+        # Run
+        logger.info('Running network, waiting for live...')
+        alpha_net.run()
 
-        node.config.log_appender = '{"appender":"stderr","stream":"std_error"} {"appender":"p2p","file":"logs/p2p/p2p.log"}'
-        node.config.log_logger = '{"name":"default","level":"debug","appender":"stderr"} {"name":"p2p","level":"warn","appender":"p2p"}'
+        wallet = init_node.attach_wallet()
 
-    init_node.config.enable_stale_production = True
-    init_node.config.required_participation = 0
+        print("Restarting node0...")
+        alpha_node0.close()
+        alpha_node0.run()
 
-    # Run
-    alpha_net.run()
+        for _ in range(50):
+            alpha_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
+            alpha_reward_operations = count_producer_reward_operations(alpha_node0, begin=alpha_irreversible-50, end=alpha_irreversible)
 
-    print("Waiting for network synchronization...")
-    alpha_net.wait_for_synchronization_of_all_nodes()
+            assert sum(i==1 for i in alpha_reward_operations.values()) == 50
 
-    wallet = alpha_net.attach_wallet()
-
-    print("Restarting node0...")
-    alpha_node0.close()
-    alpha_node0.run()
-
-    print("Waiting for network synchronization...")
-    alpha_node0.wait_for_synchronization()
-
-    for _ in range(50):
-        alpha_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
-        alpha_reward_operations = count_producer_reward_operations(alpha_node0, begin=alpha_irreversible-50, end=alpha_irreversible)
-
-        assert sum(i==1 for i in alpha_reward_operations.values()) == 50
-
-        alpha_node0.wait_number_of_blocks(1)
-
-
-    # cleanup
-    for node in alpha_net:
-        node.close()
+            alpha_node0.wait_number_of_blocks(1)

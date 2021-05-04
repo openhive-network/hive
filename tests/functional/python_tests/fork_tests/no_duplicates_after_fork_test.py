@@ -1,4 +1,4 @@
-from test_library import Account, KeyGenerator, logger, Network
+from test_library import Account, logger, World
 
 import os
 import time
@@ -109,142 +109,127 @@ def count_producer_reward_operations(node, begin=1, end=500):
 
 
 def test_no_duplicates_after_fork():
-    logger.show_debug_logs_on_stdout()  # TODO: Remove this before delivery
+    with World() as world:
+        logger.show_debug_logs_on_stdout()  # TODO: Remove this before delivery
 
-    alpha_witness_names = [f'witness{i}-alpha' for i in range(10)]
-    beta_witness_names = [f'witness{i}-beta' for i in range(10)]
+        alpha_witness_names = [f'witness{i}-alpha' for i in range(10)]
+        beta_witness_names = [f'witness{i}-beta' for i in range(10)]
 
-    # Create first network
-    alpha_net = Network('Alpha', port_range=range(51000, 52000))
-    alpha_net.set_directory('experimental_network')
+        # Create first network
+        alpha_net = world.create_network('Alpha')
+        alpha_net.set_directory('experimental_network')
 
-    init_node = alpha_net.add_node('InitNode')
-    alpha_node0 = alpha_net.add_node('Node0')
-    alpha_node1 = alpha_net.add_node('Node1')
+        init_node = alpha_net.create_init_node()
+        alpha_node0 = alpha_net.create_node()
+        alpha_node1 = alpha_net.create_node()
 
-    # Create second network
-    beta_net = Network('Beta', port_range=range(52000, 53000))
-    beta_net.set_directory('experimental_network')
+        # Create second network
+        beta_net = world.create_network('Beta')
+        beta_net.set_directory('experimental_network')
 
-    beta_node0 = beta_net.add_node('Node0')
-    beta_node1 = beta_net.add_node('Node1')
-    api_node = beta_net.add_node('Node2')
+        beta_node0 = beta_net.create_node()
+        beta_node1 = beta_net.create_node()
+        api_node = beta_net.create_node()
 
-    # Create witnesses
-    init_node.set_witness('initminer')
-    alpha_witness_nodes = [alpha_node0, alpha_node1]
-    for name in alpha_witness_names:
-        node = random.choice(alpha_witness_nodes)
-        node.set_witness(name)
+        # Create witnesses
+        alpha_witness_nodes = [alpha_node0, alpha_node1]
+        for name in alpha_witness_names:
+            node = random.choice(alpha_witness_nodes)
+            node.set_witness(name)
 
-    beta_witness_nodes = [beta_node0, beta_node1]
-    for name in beta_witness_names:
-        node = random.choice(beta_witness_nodes)
-        node.set_witness(name)
+        beta_witness_nodes = [beta_node0, beta_node1]
+        for name in beta_witness_names:
+            node = random.choice(beta_witness_nodes)
+            node.set_witness(name)
 
-    for node in alpha_net.nodes + beta_net.nodes:
-        # FIXME: This shouldn't be set in all nodes, but let's test it
-        node.config.enable_stale_production = False
-        node.config.required_participation = 33
+        for node in alpha_net.nodes + beta_net.nodes:
+            node.config.shared_file_size = '6G'
 
-        node.config.shared_file_size = '6G'
+            node.config.plugin += [
+                'network_broadcast_api', 'network_node_api', 'account_history', 'account_history_rocksdb',
+                'account_history_api'
+            ]
 
-        node.config.plugin += [
-            'network_broadcast_api', 'network_node_api', 'account_history', 'account_history_rocksdb',
-            'account_history_api'
-        ]
+            node.config.log_appender = '{"appender":"stderr","stream":"std_error"} {"appender":"p2p","file":"logs/p2p/p2p.log"}'
+            node.config.log_logger = '{"name":"default","level":"debug","appender":"stderr"} {"name":"p2p","level":"warn","appender":"p2p"}'
 
-        node.config.log_appender = '{"appender":"stderr","stream":"std_error"} {"appender":"p2p","file":"logs/p2p/p2p.log"}'
-        node.config.log_logger = '{"name":"default","level":"debug","appender":"stderr"} {"name":"p2p","level":"warn","appender":"p2p"}'
+        api_node.config.plugin.remove('witness')
 
-    init_node.config.enable_stale_production = True
-    init_node.config.required_participation = 0
+        # Run
+        alpha_net.connect_with(beta_net)
 
-    api_node.config.plugin.remove('witness')
+        print('Running networks, waiting for live...')
+        alpha_net.run()
+        beta_net.run()
 
-    # Run
-    alpha_net.connect_with(beta_net)
+        wallet = init_node.attach_wallet()
+        beta_wallet = beta_node0.attach_wallet()
 
-    alpha_net.run()
-    beta_net.run()
+        # We are waiting here for block 63, because witness participation is counting
+        # by dividing total produced blocks in last 128 slots by 128. When we were waiting
+        # too short, for example 42 blocks, then participation equals 42 / 128 = 32.81%.
+        # It is not enough, because 33% is required. 63 blocks guarantee, that this
+        # requirement is always fulfilled (63 / 128 = 49.22%, which is greater than 33%).
+        logger.info('Wait for block 63 (to fulfill required 33% of witness participation)')
+        init_node.wait_for_block_with_number(3 * 21)
 
-    print("Waiting for network synchronization...")
-    alpha_net.wait_for_synchronization_of_all_nodes()
-    beta_net.wait_for_synchronization_of_all_nodes()
+        # Run original test script
 
-    wallet = alpha_net.attach_wallet()
-    beta_wallet = beta_net.attach_wallet()
+        all_witnesses = alpha_witness_names + beta_witness_names
+        random.shuffle(all_witnesses)
 
-    # We are waiting here for block 63, because witness participation is counting
-    # by dividing total produced blocks in last 128 slots by 128. When we were waiting
-    # too short, for example 42 blocks, then participation equals 42 / 128 = 32.81%.
-    # It is not enough, because 33% is required. 63 blocks guarantee, that this
-    # requirement is always fulfilled (63 / 128 = 49.22%, which is greater than 33%).
-    logger.info('Wait for block 63 (to fulfill required 33% of witness participation)')
-    init_node.wait_for_block_with_number(3 * 21)
+        print("Witness state before voting")
+        print_top_witnesses(all_witnesses, api_node)
+        print(wallet.api.list_accounts())
 
-    # Run original test script
+        prepare_accounts(all_witnesses, wallet)
+        configure_initial_vesting(all_witnesses, 500, 1000, "TESTS", wallet)
+        prepare_witnesses(all_witnesses, wallet)
+        self_vote(all_witnesses, wallet)
 
-    all_witnesses = alpha_witness_names + beta_witness_names
-    random.shuffle(all_witnesses)
+        print("Witness state after voting")
+        print_top_witnesses(all_witnesses, api_node)
+        print(wallet.api.list_accounts())
 
-    print("Witness state before voting")
-    print_top_witnesses(all_witnesses, api_node)
-    print(wallet.api.list_accounts())
+        # FIXME: It is workaround solution.
+        #        Replace it with waiting until new witnesses will be active.
+        logger.info('Wait 21 blocks (when new witnesses will be surely active)')
+        init_node.wait_number_of_blocks(21)
 
-    prepare_accounts(all_witnesses, wallet)
-    configure_initial_vesting(all_witnesses, 500, 1000, "TESTS", wallet)
-    prepare_witnesses(all_witnesses, wallet)
-    self_vote(all_witnesses, wallet)
+        # Reason of this wait is to enable moving forward of irreversible block
+        # after subnetworks disconnection.
+        logger.info('Wait 21 blocks (when every witness sign at least one block)')
+        init_node.wait_number_of_blocks(21)
 
-    print("Witness state after voting")
-    print_top_witnesses(all_witnesses, api_node)
-    print(wallet.api.list_accounts())
+        alpha_net.disconnect_from(beta_net)
+        print('Disconnected')
 
-    # FIXME: It is workaround solution.
-    #        Replace it with waiting until new witnesses will be active.
-    logger.info('Wait 21 blocks (when new witnesses will be surely active)')
-    init_node.wait_number_of_blocks(21)
+        logger.info('Waiting until irreversible block number increase in both subnetworks')
+        irreversible_block_number_during_disconnection = wallet.api.info()["result"]["last_irreversible_block_num"]
+        while True:
+            current_irreversible_block = wallet.api.info()["result"]["last_irreversible_block_num"]
+            if current_irreversible_block > irreversible_block_number_during_disconnection:
+                break
+            logger.debug(f'Irreversible in {alpha_net}: {current_irreversible_block}')
+            alpha_node0.wait_number_of_blocks(1)
 
-    # Reason of this wait is to enable moving forward of irreversible block
-    # after subnetworks disconnection.
-    logger.info('Wait 21 blocks (when every witness sign at least one block)')
-    init_node.wait_number_of_blocks(21)
+        while True:
+            current_irreversible_block = beta_wallet.api.info()["result"]["last_irreversible_block_num"]
+            if current_irreversible_block > irreversible_block_number_during_disconnection:
+                break
+            logger.debug(f'Irreversible in {beta_net}: {current_irreversible_block}')
+            beta_node0.wait_number_of_blocks(1)
 
-    alpha_net.disconnect_from(beta_net)
-    print('Disconnected')
+        alpha_net.connect_with(beta_net)
+        print('Reconnected')
 
-    logger.info('Waiting until irreversible block number increase in both subnetworks')
-    irreversible_block_number_during_disconnection = wallet.api.info()["result"]["last_irreversible_block_num"]
-    while True:
-        current_irreversible_block = wallet.api.info()["result"]["last_irreversible_block_num"]
-        if current_irreversible_block > irreversible_block_number_during_disconnection:
-            break
-        logger.debug(f'Irreversible in {alpha_net}: {current_irreversible_block}')
-        alpha_node0.wait_number_of_blocks(1)
+        for _ in range(50):
+            alpha_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
+            alpha_reward_operations = count_producer_reward_operations(alpha_node0, begin=alpha_irreversible-50, end=alpha_irreversible)
+            beta_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
+            beta_reward_operations = count_producer_reward_operations(beta_node0, begin=beta_irreversible-50, end=beta_irreversible)
 
-    while True:
-        current_irreversible_block = beta_wallet.api.info()["result"]["last_irreversible_block_num"]
-        if current_irreversible_block > irreversible_block_number_during_disconnection:
-            break
-        logger.debug(f'Irreversible in {beta_net}: {current_irreversible_block}')
-        beta_node0.wait_number_of_blocks(1)
+            assert sum(i==1 for i in alpha_reward_operations.values()) == 50
+            assert sum(i==1 for i in beta_reward_operations.values()) == 50
 
-    alpha_net.connect_with(beta_net)
-    print('Reconnected')
-
-    for _ in range(50):
-        alpha_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
-        alpha_reward_operations = count_producer_reward_operations(alpha_node0, begin=alpha_irreversible-50, end=alpha_irreversible)
-        beta_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
-        beta_reward_operations = count_producer_reward_operations(beta_node0, begin=beta_irreversible-50, end=beta_irreversible)
-
-        assert sum(i==1 for i in alpha_reward_operations.values()) == 50
-        assert sum(i==1 for i in beta_reward_operations.values()) == 50
-
-        alpha_node0.wait_number_of_blocks(1)
-
-    # cleanup
-    for node in alpha_net + beta_net:
-        node.close()
-
+            alpha_node0.wait_number_of_blocks(1)
