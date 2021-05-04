@@ -14,7 +14,11 @@ class Plugin(Untouched):
         ]
 
         if plugin not in supported_plugins:
-            raise Exception(f'Plugin {plugin} is not supported')
+            raise Exception(
+                f'Plugin "{plugin}" is not supported.\n'
+                + 'List of supported plugins:\n'
+                + '\n'.join([f'- {supported}' for supported in supported_plugins])
+            )
 
     def _parse_from_text(self, plugin):
         self.__check_if_plugin_is_supported(plugin)
