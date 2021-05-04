@@ -10,7 +10,11 @@ class World:
         self.__networks = []
         self.__nodes = []
         self.__wallets = []
-        self.__directory = Path() / 'GeneratedInWorld'
+        self.__name = 'World'
+        self.__directory = Path() / f'GeneratedIn{self}'
+
+    def __str__(self):
+        return self.__name
 
     def __enter__(self):
         return self
