@@ -20,6 +20,7 @@ namespace hive {
     public:
 
       typedef std::map< public_key_type, fc::ecc::private_key > keys_map_type;
+      typedef keys_map_type::const_iterator                     const_iterator;
 
       derived_keys_map( const std::string& private_key_wif );
 
@@ -35,13 +36,9 @@ namespace hive {
       /// Retrieves private key from the map. Throws std::out_of_range if given public key was not found.
       const fc::ecc::private_key& at( const public_key_type& original )const;
 
-      keys_map_type::iterator        begin();
-      keys_map_type::const_iterator  begin()const;
-      keys_map_type::const_iterator cbegin()const;
+      const_iterator begin()const;
 
-      keys_map_type::iterator        end();
-      keys_map_type::const_iterator  end()const;
-      keys_map_type::const_iterator cend()const;
+      const_iterator end()const;
 
       void save_wallet_file( const std::string& password, std::string wallet_filename = "" )const;
 
@@ -81,12 +78,12 @@ namespace hive {
     class convert_operations_visitor
     {
     private:
-      blockchain_converter* converter;
+      blockchain_converter& converter;
 
     public:
       typedef operation result_type;
 
-      convert_operations_visitor( blockchain_converter* converter );
+      convert_operations_visitor( blockchain_converter& converter );
 
       const account_create_operation& operator()( account_create_operation& op )const;
 
