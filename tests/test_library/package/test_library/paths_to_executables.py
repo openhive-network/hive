@@ -56,6 +56,17 @@ class _PathsToExecutables:
             ]
         print('\n'.join(entries))
 
+    def get_paths_in_use(self):
+        paths = {}
+        for executable in self.supported_executables:
+            try:
+                path = self.get_path_of(executable.name)
+            except MissingPathToExecutable:
+                path = None
+
+            paths[executable.name] = path
+        return paths
+
     def get_path_of(self, executable_name):
         if not self.__is_supported(executable_name):
             raise NotSupported(f'Executable {executable_name} is not supported')
@@ -131,6 +142,10 @@ def get_path_of(executable_name):
 
 def set_path_of(executable_name, executable_path):
     __paths.set_path_of(executable_name, executable_path)
+
+
+def get_paths_in_use():
+    return __paths.get_paths_in_use()
 
 
 def print_paths_in_use():
