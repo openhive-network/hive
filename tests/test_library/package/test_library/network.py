@@ -103,7 +103,7 @@ class Network:
     def attach_wallet_to(self, node):
         name = self.children_names.create_name(f'{node.name}Wallet')
 
-        wallet = Wallet(self, self.get_directory() / name)
+        wallet = Wallet(name, self, self.get_directory())
         wallet.connect_to(node)
         wallet.run()
 
