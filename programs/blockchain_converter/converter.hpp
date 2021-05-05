@@ -58,6 +58,8 @@ namespace hive {
 
       uint32_t num_pow_witnesses = 0;
 
+      void pre_convert_operation( const signed_block& _signed_block );
+
     public:
       /// All converted blocks will be signed using keys derived from the given private key
       blockchain_converter( const fc::ecc::private_key& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID );
