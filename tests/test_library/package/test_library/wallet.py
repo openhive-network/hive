@@ -4,7 +4,6 @@ import signal
 import time
 
 from .account import Account
-from .node import Node
 from . import logger
 
 
@@ -181,7 +180,7 @@ class Wallet:
 
         self.logger.info(f'Started, listening on port {self.http_server_port}')
 
-    def connect_to(self, node: Node):
+    def connect_to(self, node):
         self.connected_node = node
 
     def close(self):
