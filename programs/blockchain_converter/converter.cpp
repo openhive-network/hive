@@ -242,6 +242,8 @@ namespace hive {
 
     block_id_type blockchain_converter::convert_signed_block( signed_block& _signed_block, const block_id_type& previous_block_id )
     {
+      pre_convert_operation( _signed_block );
+
       convert_signed_header( _signed_block );
 
       _signed_block.previous = previous_block_id;
@@ -304,6 +306,17 @@ namespace hive {
     uint32_t blockchain_converter::get_pow_witnesses()const
     {
       return num_pow_witnesses;
+    }
+
+    void blockchain_converter::pre_convert_operation( const signed_block& _signed_block )
+    {
+      if( _signed_block.num_from_id( _signed_block.previous ) /* db.head_block_num() */ % HIVE_MAX_WITNESSES == 0 )
+      {
+        if( _signed_block.timestamp.sec_since_epoch() > HIVE_HARDFORK_0_4_TIME ) // db.has_hardfork(HIVE_HARDFORK_0_4)
+          num_pow_witnesses = 0;
+        else if( num_pow_witnesses > HIVE_MAX_WITNESSES )
+            --num_pow_witnesses;
+      }
     }
 
     derived_keys_map& blockchain_converter::get_keys()
