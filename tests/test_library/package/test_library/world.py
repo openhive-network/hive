@@ -1,7 +1,8 @@
 from pathlib import Path
 
-from . import Network, Node
 from .children_names import ChildrenNames
+from .network import Network
+from .node import Node
 
 
 class World:
