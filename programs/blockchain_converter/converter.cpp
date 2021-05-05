@@ -178,7 +178,12 @@ namespace hive {
 
       op.work.worker = converter.get_keys().get_public( op.work.worker );
 
-      fc::sha256 old_op_work = op.work.work;
+      fc::sha256 target;
+      target._hash[0] = -1;
+      target._hash[1] = -1;
+      target._hash[2] = -1;
+      target._hash[3] = -1;
+      target = target >> (( converter.get_pow_witnesses() /4)+4);
 
       op.nonce = 0;
       do
@@ -191,7 +196,9 @@ namespace hive {
           FC_ASSERT( false, "Infinite loop detected during a pow_operation conversion. For your computer's safety I have gently thrown this exception." );
         op.nonce++;
       }
-      while( op.work.work < old_op_work );
+      while( target < op.work.work );
+
+      converter.add_pow_witnesses();
 
       return op;
     }
@@ -200,6 +207,8 @@ namespace hive {
     {
       if( op.new_owner_key.valid() )
         *op.new_owner_key = converter.get_keys().get_public(*op.new_owner_key);
+
+      converter.add_pow_witnesses();
 
       return op;
     }
@@ -285,6 +294,16 @@ namespace hive {
         auth_keys[ keys.get_public(key.first) ] = key.second;
 
       return auth_keys;
+    }
+
+    void blockchain_converter::add_pow_witnesses( uint32_t num )
+    {
+      num_pow_witnesses += num;
+    }
+
+    uint32_t blockchain_converter::get_pow_witnesses()const
+    {
+      return num_pow_witnesses;
     }
 
     derived_keys_map& blockchain_converter::get_keys()
