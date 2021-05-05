@@ -178,6 +178,8 @@ namespace hive {
 
       op.work.worker = converter.get_keys().get_public( op.work.worker );
 
+      fc::sha256 old_op_work = op.work.work;
+
       op.nonce = 0;
       do
       {
@@ -186,10 +188,10 @@ namespace hive {
             op.work_input()
           );
         if ( op.nonce == std::numeric_limits< decltype( op.nonce ) >::max() )
-          FC_ASSERT( false, "Infinite loop detected during a pow_operation conversion. For your computer's safety I have gently thrown this exception." )
-        ++op.nonce;
+          FC_ASSERT( false, "Infinite loop detected during a pow_operation conversion. For your computer's safety I have gently thrown this exception." );
+        op.nonce++;
       }
-      while( op.work.work != fc::sha256::hash( public_key_type( op.work.signature, fc::sha256::hash( op.work.signature ), fc::ecc::non_canonical ) ) );
+      while( op.work.work < old_op_work );
 
       return op;
     }
