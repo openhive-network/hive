@@ -8,6 +8,7 @@ import weakref
 from .node_api.node_apis import Apis
 from .account import Account
 from . import logger
+from .wallet import Wallet
 
 
 class NodeIsNotRunning(Exception):
@@ -76,7 +77,7 @@ class Node:
 
         return all(conditions)
 
-    def attach_wallet(self):
+    def attach_wallet(self) -> Wallet:
         if not self.is_running():
             raise NodeIsNotRunning('Before attaching wallet you have to run node')
 
