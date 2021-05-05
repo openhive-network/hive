@@ -79,7 +79,7 @@ class Wallet:
         self.stderr_file = None
         self.process = None
         self.finalizer = None
-        self.logger = logger.getLogger(__name__)  # FIXME: Replace this with separate logger for each wallet
+        self.logger = logger.getLogger(f'{__name__}.{self.creator}.{self.name}')
 
     @staticmethod
     def __close_process(process, logger_from_wallet):
