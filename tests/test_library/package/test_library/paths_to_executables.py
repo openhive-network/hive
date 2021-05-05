@@ -2,6 +2,10 @@ class NotSupported(Exception):
     pass
 
 
+class MissingPathToExecutable(Exception):
+    pass
+
+
 class _PathsToExecutables:
     class __ExecutableDetails:
         def __init__(self, name, default_path_from_build):
@@ -62,7 +66,7 @@ class _PathsToExecutables:
             return self.installed_executables[executable_name]
 
         self.print_configuration_hint()
-        raise Exception(f'Missing path to {executable_name}')
+        raise MissingPathToExecutable(f'Missing path to {executable_name}')
 
     def set_path_of(self, executable_name, executable_path):
         if not self.__is_supported(executable_name):
