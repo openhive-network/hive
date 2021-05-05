@@ -135,3 +135,7 @@ def set_path_of(executable_name, executable_path):
 
 def print_paths_in_use():
     __paths.print_paths_in_use()
+
+
+def print_configuration_hint():
+    print(__paths.get_configuration_hint())
