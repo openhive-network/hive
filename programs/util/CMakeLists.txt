@@ -136,3 +136,13 @@ install( TARGETS
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
+
+add_executable( operation_counter operation_counter.cpp )
+target_link_libraries( operation_counter PRIVATE hive_chain fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+install( TARGETS
+   operation_counter
+
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
