@@ -65,14 +65,15 @@ class Wallet:
         def vote_for_witness(self, account_to_vote_with, witness_to_vote_for, approve, broadcast=True):
             return self.__send('vote_for_witness', account_to_vote_with, witness_to_vote_for, approve, broadcast)
 
-    def __init__(self, creator, directory=Path()):
+    def __init__(self, name, creator, directory=Path()):
         self.api = Wallet.__Api(self)
         self.http_server_port = None
         self.connected_node = None
         self.password = None
 
         self.creator = creator
-        self.directory = directory
+        self.name = name
+        self.directory = directory / self.name
         self.executable_file_path = None
         self.stdout_file = None
         self.stderr_file = None

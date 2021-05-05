@@ -69,7 +69,7 @@ class World:
         name = self.children_names.create_name(f'{node}Wallet')
 
         from .wallet import Wallet
-        wallet = Wallet(self, node.directory.parent / name)
+        wallet = Wallet(name, self, node.directory.parent)
         wallet.connect_to(node)
         wallet.run()
 
