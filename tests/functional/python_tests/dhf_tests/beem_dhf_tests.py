@@ -397,7 +397,7 @@ def test_update_proposal(node, creator, wif):
         'subject' : new_subject,
         'prefix' : "TST",
         'permlink': proposals[0]["permlink"],
-        'extensions': [[1, {"update_proposal_end_date": end_date}]],
+        'end_date': end_date
     })
     try:
         s.finalizeOp(op, creator, "active")

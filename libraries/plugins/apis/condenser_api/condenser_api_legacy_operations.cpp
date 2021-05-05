@@ -128,7 +128,10 @@ void to_variant( const hive::plugins::condenser_api::legacy_update_proposal_exte
 
 void from_variant( const fc::variant& v, hive::plugins::condenser_api::legacy_update_proposal_extensions& sv )
 {
-  old_sv_from_variant( v, sv );
+  if( v.is_array() )
+    old_sv_from_variant( v, sv );
+  else
+    new_sv_from_variant( v, sv );
 }
 
 } // fc

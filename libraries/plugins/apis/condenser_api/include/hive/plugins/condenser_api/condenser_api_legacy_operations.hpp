@@ -2019,6 +2019,20 @@ void old_sv_from_variant( const fc::variant& v, T& sv )
   sv.visit( to_old_static_variant(ar[1]) );
 }
 
+template< typename T >
+void new_sv_from_variant( const fc::variant& v, T& sv )
+{
+  FC_ASSERT( v.is_object(), "Input data have to treated as object." );
+  auto v_object = v.get_object();
+
+  FC_ASSERT( v_object.contains( "type" ), "Type field doesn't exist." );
+  FC_ASSERT( v_object.contains( "value" ), "Value field doesn't exist." );
+
+  auto ar = v.get_object();
+  sv.set_which( static_cast< int64_t >( ar["type"].as_uint64() ) );
+  sv.visit( to_old_static_variant(ar["value"]) );
+}
+
 // allows detection of pre-rebranding calls and special error reaction
 // note: that and related code will be removed some time after HF24
 //       since all nodes and libraries should be updated by then
