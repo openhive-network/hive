@@ -2107,9 +2107,11 @@ void pow_apply( database& db, Operation o )
   if( db.has_hardfork( HIVE_HARDFORK_0_13__256 ) )
     FC_ASSERT( worker_account.last_account_update < db.head_block_time(), "Worker account must not have updated their account this block." );
 
+#ifndef IS_TEST_NET // due to the optimization issues with blockchain_converter performing proof of work for every pow operations, this check is applied only in mainnet
   fc::sha256 target = db.get_pow_target();
 
   FC_ASSERT( o.work.work < target, "Work lacks sufficient difficulty." );
+#endif
 
   db.modify( dgp, [&]( dynamic_global_property_object& p )
   {

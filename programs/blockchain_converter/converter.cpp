@@ -178,27 +178,10 @@ namespace hive {
 
       op.work.worker = converter.get_keys().get_public( op.work.worker );
 
-      fc::sha256 target;
-      target._hash[0] = -1;
-      target._hash[1] = -1;
-      target._hash[2] = -1;
-      target._hash[3] = -1;
-      target = target >> (( converter.get_pow_witnesses() /4)+4);
-
-      op.nonce = 0;
-      do
-      {
-        op.work.create(
-            converter.convert_signature_from_header( op.work.signature, _signed_block ),
-            op.work_input()
-          );
-        if ( op.nonce == std::numeric_limits< decltype( op.nonce ) >::max() )
-          FC_ASSERT( false, "Infinite loop detected during a pow_operation conversion. For your computer's safety I have gently thrown this exception." );
-        op.nonce++;
-      }
-      while( target < op.work.work );
-
-      converter.add_pow_witnesses();
+      op.work.create(
+          converter.convert_signature_from_header( op.work.signature, _signed_block ),
+          op.work_input()
+        );
 
       return op;
     }
@@ -207,8 +190,6 @@ namespace hive {
     {
       if( op.new_owner_key.valid() )
         *op.new_owner_key = converter.get_keys().get_public(*op.new_owner_key);
-
-      converter.add_pow_witnesses();
 
       return op;
     }
@@ -242,17 +223,16 @@ namespace hive {
 
     block_id_type blockchain_converter::convert_signed_block( signed_block& _signed_block, const block_id_type& previous_block_id )
     {
-      pre_convert_operation( _signed_block );
-
       convert_signed_header( _signed_block );
 
       _signed_block.previous = previous_block_id;
 
       for( auto _transaction = _signed_block.transactions.begin(); _transaction != _signed_block.transactions.end(); ++_transaction )
       {
-        _transaction->visit( convert_operations_visitor( *this, _signed_block ) );
+        _transaction->operations = _transaction->visit( convert_operations_visitor( *this, _signed_block ) );
         for( auto _signature = _transaction->signatures.begin(); _signature != _transaction->signatures.end(); ++_signature )
           *_signature = convert_signature_from_header( *_signature, _signed_block ).sign_compact( _transaction->sig_digest( chain_id ), get_canon_type( *_signature ) );
+        _transaction->set_reference_block( previous_block_id );
       }
 
       _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
@@ -296,27 +276,6 @@ namespace hive {
         auth_keys[ keys.get_public(key.first) ] = key.second;
 
       return auth_keys;
-    }
-
-    void blockchain_converter::add_pow_witnesses( uint32_t num )
-    {
-      num_pow_witnesses += num;
-    }
-
-    uint32_t blockchain_converter::get_pow_witnesses()const
-    {
-      return num_pow_witnesses;
-    }
-
-    void blockchain_converter::pre_convert_operation( const signed_block& _signed_block )
-    {
-      if( _signed_block.num_from_id( _signed_block.previous ) /* db.head_block_num() */ % HIVE_MAX_WITNESSES == 0 )
-      {
-        if( _signed_block.timestamp.sec_since_epoch() > HIVE_HARDFORK_0_4_TIME ) // db.has_hardfork(HIVE_HARDFORK_0_4)
-          num_pow_witnesses = 0;
-        else if( num_pow_witnesses > HIVE_MAX_WITNESSES )
-            --num_pow_witnesses;
-      }
     }
 
     derived_keys_map& blockchain_converter::get_keys()
