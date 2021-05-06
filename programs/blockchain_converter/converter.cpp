@@ -24,11 +24,8 @@ namespace hive {
 
   namespace converter {
 
-    derived_keys_map::derived_keys_map( const std::string& private_key_wif )
-      : private_key_wif( private_key_wif ) {}
-
     derived_keys_map::derived_keys_map( const private_key_type& _private_key )
-      : private_key_wif( key_to_wif(_private_key) ) {}
+      : _private_key( _private_key ) {}
 
     public_key_type derived_keys_map::get_public( const public_key_type& original )
     {
@@ -39,8 +36,11 @@ namespace hive {
     {
       if( keys.find( original ) != keys.end() )
         return keys.at( original );
+
+      auto serialized_key = original.operator fc::ecc::public_key().serialize();
+
       return (*keys.emplace( original,
-          private_key_type::regenerate(fc::sha256::hash(fc::sha512::hash( private_key_wif + ' ' + std::to_string( keys.size() ) )))
+          _private_key.child(fc::sha256::hash( serialized_key.data, serialized_key.size() ))
         ).first).second;
     }
 
