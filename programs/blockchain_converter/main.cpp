@@ -37,7 +37,11 @@ int main( int argc, char** argv )
     bpo::options_description opts;
       opts.add_options()
       ("help,h", "Print this help message and exit.")
-      ("private-key,k", bpo::value< std::string >(), "private key from which all other keys will be derived")
+      ("private-key,k", bpo::value< std::string >()
+#ifdef IS_TEST_NET
+        ->default_value( key_to_wif(HIVE_INIT_PRIVATE_KEY) )
+#endif
+        , "private key from which all other keys will be derived")
       ("chain-id,c", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "new chain ID")
       ("input,i", bpo::value< std::string >(), "input block log")
       ("output,o", bpo::value< std::string >(), "output block log; defaults to [input]_out" )
