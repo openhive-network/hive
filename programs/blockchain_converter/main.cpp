@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <memory>
+#include <csignal>
 
 #include "converter.hpp"
 
@@ -20,10 +21,18 @@ using namespace hive::utilities;
 using namespace hive::converter;
 namespace bpo = boost::program_options;
 
+namespace
+{
+  volatile sig_atomic_t stop_flag = 0; // signal flag
+}
+void signal_handler( int signal ) { stop_flag = signal; }
+
 int main( int argc, char** argv )
 {
   try
   {
+    signal( SIGINT, signal_handler );
+
     // Setup converter options
     bpo::options_description opts;
       opts.add_options()
@@ -89,7 +98,7 @@ int main( int argc, char** argv )
     // TODO: Save derived_keys_map state and restore
     FC_ASSERT( block_header::num_from_id( last_block_id ) == 0, "Conversion continuation is currently not supported." );
 
-    for( uint32_t block_num = block_header::num_from_id( last_block_id ) + 1; block_num <= log_in.head()->block_num(); ++block_num )
+    for( uint32_t block_num = block_header::num_from_id( last_block_id ) + 1; block_num <= log_in.head()->block_num() && !stop_flag; ++block_num )
     {
       fc::optional< signed_block > block = log_in.read_block_by_num( block_num );
       FC_ASSERT( block.valid(), "unable to read block" );
@@ -123,6 +132,9 @@ int main( int argc, char** argv )
         std::cout << "After conversion: " << json_block.to_string( v ) << '\n';
       }
     }
+
+    if( stop_flag )
+      std::cerr << "\nUser interrupt detected! Saving conversion state...";
 
     log_in.close();
     log_out.close();
