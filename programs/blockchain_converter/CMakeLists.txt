@@ -3,11 +3,11 @@ add_executable( blockchain_converter main.cpp converter.cpp )
 if( HIVE_STATIC_BUILD )
   target_link_libraries( blockchain_converter PRIVATE
                          "-static-libstdc++ -static-libgcc"
-                         hive_chain condenser_api_plugin hive_wallet hive_utilities fc
+                         hive_chain condenser_api_plugin hive_wallet hive_utilities fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS}
   )
 else( HIVE_STATIC_BUILD )
   target_link_libraries( blockchain_converter PRIVATE
-                         hive_chain condenser_api_plugin hive_wallet hive_utilities fc
+                         hive_chain condenser_api_plugin hive_wallet hive_utilities fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS}
   )
 endif( HIVE_STATIC_BUILD )
 
