@@ -86,6 +86,9 @@ int main( int argc, char** argv )
 
     block_id_type last_block_id = log_out.head() ? log_out.read_head().id() : block_id_type();
 
+    // TODO: Save derived_keys_map state and restore
+    FC_ASSERT( block_header::num_from_id( last_block_id ) == 0, "Conversion continuation is currently not supported." );
+
     for( uint32_t block_num = block_header::num_from_id( last_block_id ) + 1; block_num <= log_in.head()->block_num(); ++block_num )
     {
       fc::optional< signed_block > block = log_in.read_block_by_num( block_num );
