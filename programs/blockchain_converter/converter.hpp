@@ -56,10 +56,6 @@ namespace hive {
       chain_id_type        chain_id;
       derived_keys_map     keys;
 
-      uint32_t num_pow_witnesses = 0;
-
-      void pre_convert_operation( const signed_block& _signed_block );
-
     public:
       /// All converted blocks will be signed using keys derived from the given private key
       blockchain_converter( const fc::ecc::private_key& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID );
@@ -75,9 +71,6 @@ namespace hive {
       fc::ecc::canonical_signature_type get_canon_type( const signature_type& _signature )const;
 
       typename authority::key_authority_map convert_authorities( const typename authority::key_authority_map& auths );
-
-      void     add_pow_witnesses( uint32_t num = 1 );
-      uint32_t get_pow_witnesses()const;
 
       derived_keys_map& get_keys();
       const derived_keys_map& get_keys()const;
