@@ -124,7 +124,7 @@ miss_list = compare_snapshots(path_to_first_snapshot, path_to_second_snapshot)
 
 if len(miss_list) is not 0:
 	for val in miss_list:
-		print("checksum missmatch: '{}'".format(key))
+		print("checksum missmatch: '{}'".format(val))
 else:
 	print("all checksums matches")
 

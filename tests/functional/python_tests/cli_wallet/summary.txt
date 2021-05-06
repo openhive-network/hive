@@ -1,0 +1,13 @@
+Cli wallet test started at 2021-05-06 21:59:37.
+Test `./tests/000_create_proposal.py` passed.
+Test `./tests/001_update_proposal_votes.py` passed.
+Test `./tests/002_remove_proposal.py` passed.
+Test `./tests/003_list_proposal.py` passed.
+Test `./tests/004_list_voter_proposal.py` passed.
+Test `./tests/005_find_proposals.py` passed.
+Test `./tests/006_cli_wallet_help.py` passed.
+Test `./tests/007_create_proposal_fail_negative_payment.py` passed.
+Test `./tests/008_delayed_voting.py` passed.
+Test `./tests/009_get_open_orders.py` passed.
+Test `./tests/010_update_proposal.py` passed.
+Test `./tests/__init__.py` passed.

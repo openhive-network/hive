@@ -53,7 +53,8 @@ def prepare_config(args):
     "network_broadcast_api", "p2p", 
     "rc", "rc_api", "transaction_status", 
     "transaction_status_api", "webserver", "witness",
-    "market_history", "market_history_api" ])
+    "market_history", "market_history_api",
+    "account_history_rocksdb", "account_history_api" ])
 
   # option required by user
   cfg.webserver_http_endpoint = strip_address(args.server_http_endpoint)
