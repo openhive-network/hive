@@ -2102,7 +2102,6 @@ void pow_apply( database& db, Operation o )
   const auto& worker_auth = db.get< account_authority_object, by_account >( o.get_worker_account() );
   FC_ASSERT( worker_auth.active.num_auths() == 1, "Miners can only have one key authority. ${a}", ("a",worker_auth.active) );
   FC_ASSERT( worker_auth.active.key_auths.size() == 1, "Miners may only have one key authority." );
-  FC_ASSERT( worker_auth.active.key_auths.begin()->first == o.work.worker, "Work must be performed by key that signed the work." );
   FC_ASSERT( o.block_id == db.head_block_id(), "pow not for last block" );
   if( db.has_hardfork( HIVE_HARDFORK_0_13__256 ) )
     FC_ASSERT( worker_account.last_account_update < db.head_block_time(), "Worker account must not have updated their account this block." );
@@ -2111,6 +2110,9 @@ void pow_apply( database& db, Operation o )
   fc::sha256 target = db.get_pow_target();
 
   FC_ASSERT( o.work.work < target, "Work lacks sufficient difficulty." );
+
+  // Disabled in testnet due to the fact that there might be multiple pow_operations in block_log with the same worker_account and we do not know the state of resumed conversion in bc converter:
+  FC_ASSERT( worker_auth.active.key_auths.begin()->first == o.work.worker, "Work must be performed by key that signed the work." );
 #endif
 
   db.modify( dgp, [&]( dynamic_global_property_object& p )
