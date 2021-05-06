@@ -1,35 +1,22 @@
 from .config_entry import ConfigEntry
 
 
+class NotSupported(Exception):
+    pass
+
+
 class List(ConfigEntry):
     class __ListWithFixedAdditionOperator(list):
-        """List fixing Python built in lists with addition
+        """List with removed += operator, because there is no -= operator.
 
-        Problem:
-            Built in Python list works strange when addition is performed.
-
-            This is invalid code:
-                ['x'] + 'abc'
-
-            But this works "fine":
-                x = ['x']
-                x += 'abc'
-                assert x == ['x', 'a', 'b', 'c']
-
-            This behavior is unacceptable for our List class, because when you write:
-                config.private_key += '5KfubvGdvPdzYqB8d6S6xiSNKjpywqeSQpf5eNXwHP4q36p6bup'
-            you end up with:
-                assert config.private_key == ['5', 'K', 'f', 'u', 'b' ...and so on
-
-        Expected behavior (with this class):
-            config.private_key += '5KfubvGdvPdzYqB8d6S6xiSNKjpywqeSQpf5eNXwHP4q36p6bup'
-            assert config.private_key == ['5KfubvGdvPdzYqB8d6S6xiSNKjpywqeSQpf5eNXwHP4q36p6bup']
+        Consistent way of working with list config entries are methods:
+        - to add element: append or extend
+        - to remove element: remove
         """
         def __iadd__(self, other):
-            if not isinstance(other, list):
-                other = [other]
-
-            return super().__iadd__(other)
+            raise NotSupported(
+                f'Operator += is removed. Use methods "{self.append.__name__}" or "{self.extend.__name__}" instead.'
+            )
 
     def __init__(self, item_type, separator=' ', begin='', end='', single_line=True):
         super().__init__()
