@@ -18,7 +18,7 @@ def empty_config():
 
 
 def test_getting_unset_but_correct_entry(empty_config):
-    assert not empty_config.plugin
+    assert empty_config.plugin is NodeConfig.UNSET
 
 
 def test_getting_incorrect_entry(empty_config):
