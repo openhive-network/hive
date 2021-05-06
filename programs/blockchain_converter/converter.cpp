@@ -59,7 +59,7 @@ namespace hive {
 
       plain_keys _pk;
       for( auto& key : keys )
-        _pk.keys[ key.first ] = key_to_wif( key.second );
+        _pk.keys[ key.second.get_public_key() ] = key_to_wif( key.second );
 
       _pk.checksum = fc::sha512::hash(password.c_str(), password.size());
 
