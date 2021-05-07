@@ -69,6 +69,8 @@ void  fork_database::_push_block(const item_ptr& item)
 
   _index.insert(item);
   if( !_head || item->num > _head->num ) _head = item;
+
+  _push_next( item ); //check for any unlinked blocks that can now be linked to our fork
 }
 
 /**
@@ -86,7 +88,15 @@ void fork_database::_push_next( const item_ptr& new_item )
     {
       auto tmp = *itr;
       prev_idx.erase( itr );
-      _push_block( tmp );
+      try
+      {
+        _push_block( tmp );
+      }
+      catch(const fc::assert_exception& e)
+      {
+        //swallow invalid block exception so we can process other unlinked blocks
+        wdump((e.to_detail_string()));
+      }
 
       itr = prev_idx.find( new_item->id );
     }
