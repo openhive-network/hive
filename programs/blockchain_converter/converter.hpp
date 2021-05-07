@@ -37,11 +37,11 @@ namespace hive {
       /// Retrieves private key from the map. Throws std::out_of_range if given public key was not found.
       const private_key_type& at( const public_key_type& original )const;
 
+      bool emplace( const public_key_type& _public_key, const private_key_type& _private_key );
+
       const_iterator begin()const;
 
       const_iterator end()const;
-
-      bool emplace( const public_key_type& _public_key, const private_key_type& _private_key )const;
 
       void save_wallet_file( const std::string& password, std::string wallet_filename = "" )const;
 
