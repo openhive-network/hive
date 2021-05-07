@@ -49,6 +49,10 @@ namespace fc {
         static time_point min() { return time_point();                      }
 
         operator fc::string()const;
+        fc::string to_iso_string_in_seconds() const;
+        fc::string to_iso_string_in_milliseconds() const;
+        fc::string to_iso_string_in_microseconds() const;
+
         static time_point from_iso_string( const fc::string& s );
 
         const microseconds& time_since_epoch()const { return elapsed; }

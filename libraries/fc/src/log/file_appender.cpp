@@ -162,7 +162,7 @@ namespace fc {
    {
       std::stringstream line;
       //line << (m.get_context().get_timestamp().time_since_epoch().count() % (1000ll*1000ll*60ll*60))/1000 <<"ms ";
-      line << string(m.get_context().get_timestamp()) << " ";
+      line << m.get_context().get_timestamp().to_iso_string_in_milliseconds() << " ";
       line << std::setw( 21 ) << (m.get_context().get_task_name()).c_str() << " ";
 
       string method_name = m.get_context().get_method();
