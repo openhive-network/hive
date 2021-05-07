@@ -9,6 +9,8 @@
 
 #include <hive/chain/block_log.hpp>
 
+#include <hive/wallet/wallet.hpp>
+
 #include <iostream>
 #include <memory>
 #include <csignal>
@@ -19,6 +21,7 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::utilities;
 using namespace hive::converter;
+using namespace hive::wallet;
 namespace bpo = boost::program_options;
 
 namespace
@@ -32,6 +35,8 @@ int main( int argc, char** argv )
   try
   {
     signal( SIGINT, signal_handler );
+
+    // TODO: Add multiple sources and option details
 
     // Setup converter options
     bpo::options_description opts;
@@ -49,6 +54,9 @@ int main( int argc, char** argv )
       ("wallet-password,p", bpo::value< std::string >()->default_value( "password" ), "password to the generated wallet file" )
       ("log-per-block,l", bpo::value< uint32_t >()->default_value( 0 )->implicit_value( 1 ), "Displays blocks in JSON format every n blocks")
       ("log-specific,s", bpo::value< uint32_t >()->default_value( 0 ), "Displays only block with specified number")
+      ("owner-key", bpo::value< std::string >(), "owner key of the second authority")
+      ("active-key", bpo::value< std::string >(), "active key of the second authority")
+      ("posting-key", bpo::value< std::string >(), "posting key of the second authority")
       ;
 
     bpo::variables_map options;
@@ -87,8 +95,8 @@ int main( int argc, char** argv )
       FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
     }
 
-    fc::optional< fc::ecc::private_key > private_key = wif_to_key( options["private-key"].as< std::string >() );
-    FC_ASSERT( private_key.valid(), "unable to parse private key" );
+    fc::optional< private_key_type > private_key = wif_to_key( options["private-key"].as< std::string >() );
+    FC_ASSERT( private_key.valid(), "unable to parse the private key" );
 
     block_log log_in, log_out;
 
@@ -96,6 +104,40 @@ int main( int argc, char** argv )
     log_out.open( block_log_out );
 
     blockchain_converter converter( *private_key, _hive_chain_id );
+
+    private_key_type owner_key;
+    private_key_type active_key;
+    private_key_type posting_key;
+
+    if( options.count("owner-key") )
+    {
+      fc::optional< private_key_type > _owner_key = wif_to_key( options["owner-key"].as< std::string >() );
+      FC_ASSERT( _owner_key.valid(), "unable to parse the owner key of the second authority" );
+      owner_key = *_owner_key;
+    }
+    else
+      owner_key = private_key_type::generate();
+    converter.set_second_authority_key( owner_key, owner );
+
+    if( options.count("active-key") )
+    {
+      fc::optional< private_key_type > _active_key = wif_to_key( options["active-key"].as< std::string >() );
+      FC_ASSERT( _active_key.valid(), "unable to parse the active key of the second authority" );
+      active_key = *_active_key;
+    }
+    else
+      active_key = private_key_type::generate();
+    converter.set_second_authority_key( active_key, active );
+
+    if( options.count("posting-key") )
+    {
+      fc::optional< private_key_type > _posting_key = wif_to_key( options["posting-key"].as< std::string >() );
+      FC_ASSERT( _posting_key.valid(), "unable to parse the posting key of the second authority" );
+      posting_key = *_posting_key;
+    }
+    else
+      posting_key = private_key_type::generate();
+    converter.set_second_authority_key( posting_key, posting );
 
     block_id_type last_block_id = log_out.head() ? log_out.read_head().id() : block_id_type();
 
@@ -146,7 +188,11 @@ int main( int argc, char** argv )
       std::cout << "\nWallet file generated";
     }
 
-    std::cout << "\nblock_log conversion completed\n";
+    std::cout << "\nSecond authority wif private keys:\n"
+      << "Owner:   " << key_to_wif( owner_key ) << '\n'
+      << "Active:  " << key_to_wif( active_key ) << '\n'
+      << "Posting: " << key_to_wif( posting_key ) << '\n'
+      << "block_log conversion completed\n";
 
     return 0;
   }

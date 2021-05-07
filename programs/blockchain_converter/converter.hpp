@@ -9,9 +9,12 @@
 #include <hive/protocol/operations.hpp>
 #include <hive/protocol/block.hpp>
 
+#include <hive/wallet/wallet.hpp>
+
 namespace hive {
 
   using namespace protocol;
+  using namespace wallet;
 
   namespace converter {
 
@@ -38,6 +41,8 @@ namespace hive {
 
       const_iterator end()const;
 
+      bool emplace( const public_key_type& _public_key, const private_key_type& _private_key )const;
+
       void save_wallet_file( const std::string& password, std::string wallet_filename = "" )const;
 
     private:
@@ -54,6 +59,8 @@ namespace hive {
       chain_id_type    chain_id;
       derived_keys_map keys;
 
+      std::map< authority_type, private_key_type > second_authority;
+
     public:
       /// All converted blocks will be signed using keys derived from the given private key
       blockchain_converter( const private_key_type& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID );
@@ -68,7 +75,10 @@ namespace hive {
       /// Tries to guess canon type using given signature. If not found it is defaulted to fc::ecc::non_canonical
       fc::ecc::canonical_signature_type get_canon_type( const signature_type& _signature )const;
 
-      typename authority::key_authority_map convert_authorities( const typename authority::key_authority_map& auths );
+      typename authority::key_authority_map convert_authorities( const typename authority::key_authority_map& auths, authority_type type );
+
+      const private_key_type& get_second_authority_key( authority_type type )const;
+      void set_second_authority_key( const private_key_type& key, authority_type type );
 
       derived_keys_map& get_keys();
       const derived_keys_map& get_keys()const;
