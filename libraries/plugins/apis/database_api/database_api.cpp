@@ -237,10 +237,12 @@ class database_api_impl
 
 void custom_log_destructor::operator()(database_api_impl* ptr) const
 {
-	std::cerr << "DATABASE_API_IMPL DESTROY !!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl
-						<< "Thread id: " << std::this_thread::get_id() << std::endl
-						<< boost::stacktrace::stacktrace() << std::endl;
+	std::cerr << "DATABASE_API_IMPL DESTROY BEFORE!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl
+						<< "Thread id: " << std::this_thread::get_id() << std::endl;
+						//<< boost::stacktrace::stacktrace() << std::endl;
 	if(ptr) delete ptr;
+	std::cerr << "DATABASE_API_IMPL DESTROY AFTER!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl
+						<< "Thread id: " << std::this_thread::get_id() << std::endl;
 }
 
 
