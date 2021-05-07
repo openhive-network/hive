@@ -87,7 +87,7 @@ plugin_test:
     - public-runner-docker
 
 .beem_setup : &beem_setup |
-  git clone --depth=1 --single-branch --branch master https://github.com/holgern/beem.git
+  git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
   cd beem
   python3 -m pip install --upgrade pip
   python3 -m pip install --upgrade -r requirements-test.txt
