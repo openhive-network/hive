@@ -7,9 +7,9 @@
 
 #include <hive/utilities/key_conversion.hpp>
 
-#include <hive/chain/block_log.hpp>
+#include <hive/protocol/authority.hpp>
 
-#include <hive/wallet/wallet.hpp>
+#include <hive/chain/block_log.hpp>
 
 #include <iostream>
 #include <memory>
@@ -21,7 +21,6 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::utilities;
 using namespace hive::converter;
-using namespace hive::wallet;
 namespace bpo = boost::program_options;
 
 namespace
@@ -117,7 +116,7 @@ int main( int argc, char** argv )
     }
     else
       owner_key = private_key_type::generate();
-    converter.set_second_authority_key( owner_key, owner );
+    converter.set_second_authority_key( owner_key, authority::owner );
 
     if( options.count("active-key") )
     {
@@ -127,7 +126,7 @@ int main( int argc, char** argv )
     }
     else
       active_key = private_key_type::generate();
-    converter.set_second_authority_key( active_key, active );
+    converter.set_second_authority_key( active_key, authority::active );
 
     if( options.count("posting-key") )
     {
@@ -137,7 +136,7 @@ int main( int argc, char** argv )
     }
     else
       posting_key = private_key_type::generate();
-    converter.set_second_authority_key( posting_key, posting );
+    converter.set_second_authority_key( posting_key, authority::posting );
 
     block_id_type last_block_id = log_out.head() ? log_out.read_head().id() : block_id_type();
 
