@@ -13,3 +13,13 @@ class AccountHistoryApi(ApiBase):
                 'only_virtual': only_virtual,
             }
         )
+
+    def enum_virtual_ops(self, block_range_begin, block_range_end, include_reversible=False):
+        return self._send(
+            'enum_virtual_ops',
+            {
+                'block_range_begin': block_range_begin,
+                'block_range_end': block_range_end,
+                'include_reversible': include_reversible
+            }
+        )
