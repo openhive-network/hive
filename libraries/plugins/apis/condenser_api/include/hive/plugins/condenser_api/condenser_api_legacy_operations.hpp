@@ -85,7 +85,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef system_warning_operation               legacy_system_warning_operation;
   typedef ineffective_delete_comment_operation   legacy_ineffective_delete_comment_operation;
   typedef fill_recurrent_transfer_operation      legacy_fill_recurrent_transfer_operation;
-  typedef failed_recurrent_transfer_operation      legacy_failed_recurrent_transfer_operation;
+  typedef failed_recurrent_transfer_operation    legacy_failed_recurrent_transfer_operation;
 
   struct legacy_price
   {
@@ -1490,7 +1490,6 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_system_warning_operation,
         legacy_effective_comment_vote_operation,
         legacy_ineffective_delete_comment_operation,
-        legacy_system_warning_operation,
         legacy_recurrent_transfer_operation,
         legacy_fill_recurrent_transfer_operation,
         legacy_failed_recurrent_transfer_operation
@@ -1542,7 +1541,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const changed_recovery_account_operation& op )const       { l_op = op; return true; }
     bool operator()( const ineffective_delete_comment_operation& op )const     { l_op = op; return true; }
     bool operator()( const fill_recurrent_transfer_operation& op )const        { l_op = op; return true; }
-    bool operator()( const failed_recurrent_transfer_operation& op )const        { l_op = op; return true; }
+    bool operator()( const failed_recurrent_transfer_operation& op )const      { l_op = op; return true; }
 
     bool operator()( const transfer_operation& op )const
     {
