@@ -49,7 +49,7 @@ namespace hive {
       return keys.at( original );
     }
 
-    bool derived_keys_map::emplace( const public_key_type& _public_key, const private_key_type& _private_key )const
+    bool derived_keys_map::emplace( const public_key_type& _public_key, const private_key_type& _private_key )
     {
       return keys.emplace( _public_key, _private_key ).second;
     }
