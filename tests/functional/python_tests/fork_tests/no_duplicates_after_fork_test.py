@@ -202,26 +202,27 @@ def test_no_duplicates_after_fork():
         init_node.wait_number_of_blocks(21)
 
         alpha_net.disconnect_from(beta_net)
-        print('Disconnected')
+        logger.debug('Disconnected')
 
         logger.info('Waiting until irreversible block number increase in both subnetworks')
         irreversible_block_number_during_disconnection = wallet.api.info()["result"]["last_irreversible_block_num"]
+        logger.info(f'irreversible_block_number_during_disconnection: {irreversible_block_number_during_disconnection}')
         while True:
             current_irreversible_block = wallet.api.info()["result"]["last_irreversible_block_num"]
+            logger.debug(f'Irreversible in {alpha_net}: {current_irreversible_block}')
             if current_irreversible_block > irreversible_block_number_during_disconnection:
                 break
-            logger.debug(f'Irreversible in {alpha_net}: {current_irreversible_block}')
             alpha_node0.wait_number_of_blocks(1)
 
         while True:
             current_irreversible_block = beta_wallet.api.info()["result"]["last_irreversible_block_num"]
+            logger.debug(f'Irreversible in {beta_net}: {current_irreversible_block}')
             if current_irreversible_block > irreversible_block_number_during_disconnection:
                 break
-            logger.debug(f'Irreversible in {beta_net}: {current_irreversible_block}')
             beta_node0.wait_number_of_blocks(1)
 
         alpha_net.connect_with(beta_net)
-        print('Reconnected')
+        logger.debug('Reconnected')
 
         for _ in range(50):
             alpha_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
