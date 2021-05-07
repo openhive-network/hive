@@ -199,7 +199,7 @@ fork_tests:
     - python3 -m pip install --upgrade pip
     - python3 -m pip install pytest requests
     - cd tests/functional/python_tests/fork_tests
-    - pytest -s no_duplicates_after_fork_test.py
+    - pytest -s
   artifacts:
     paths:
     - tests/functional/python_tests/fork_tests/experimental_network

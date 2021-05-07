@@ -52,7 +52,6 @@ if __name__ == "__main__":
         length = len(ops)
         reward_operations = get_producer_reward_operations(ops)
         size = len(reward_operations)
-        print(f'int block {i} there is {length} ops including {size} producer reward operations')
 
         if(size>1):
             blocks_with_duplicates.append(i)

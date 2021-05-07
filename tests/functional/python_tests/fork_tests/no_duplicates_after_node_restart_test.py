@@ -37,7 +37,7 @@ def test_no_duplicates_after_node_restart():
             node.config.shared_file_size = '6G'
 
             node.config.plugin += [
-                'network_broadcast_api', 'account_history', 'account_history_rocksdb',
+                'network_broadcast_api', 'account_history_rocksdb',
                 'account_history_api'
             ]
 
@@ -52,7 +52,11 @@ def test_no_duplicates_after_node_restart():
 
         print("Restarting node0...")
         alpha_node0.close()
+
+        init_node.wait_number_of_blocks(20)
+
         alpha_node0.run()
+        init_node.wait_for_block_with_number(55)
 
         for _ in range(50):
             alpha_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]

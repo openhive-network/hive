@@ -146,7 +146,7 @@ def test_no_duplicates_after_fork():
             node.config.shared_file_size = '6G'
 
             node.config.plugin += [
-                'network_broadcast_api', 'network_node_api', 'account_history', 'account_history_rocksdb',
+                'network_broadcast_api', 'network_node_api', 'account_history_rocksdb',
                 'account_history_api'
             ]
 
