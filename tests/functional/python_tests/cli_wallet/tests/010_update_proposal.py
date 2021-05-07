@@ -20,21 +20,20 @@ def proposal_exists( block_number, end_date ):
     _result = output_ops['result']
     if len(_result) >= 1:
       if 'op' in _result[0]:
-        ops = _result[0]['op']
-        if len(ops) == 2:
-          _type = ops[0]
-          _value = ops[1]
+        _op = _result[0]['op']
+        if 'value' in _op:
+          _value = _op['value']
           if 'extensions' in _value:
             _extensions = _value['extensions']
             if len(_extensions) == 1:
               __extensions = _extensions[0]
-              if len(__extensions) == 2:
-                _extension_type = __extensions[0]
-                _extension_value = __extensions[1]
+              if 'type' in __extensions and 'value' in __extensions:
+                _extension_type = __extensions['type']
+                _extension_value = __extensions['value']
                 if 'end_date' in _extension_value:
                   _end_date = _extension_value['end_date']
-                if _extension_type == 1 and _end_date == end_date:
-                  return True
+                  if _extension_type == 'update_proposal_end_date' and _end_date == end_date:
+                    return True
   return False
 
 if __name__ == "__main__":
