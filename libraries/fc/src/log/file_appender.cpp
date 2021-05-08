@@ -161,9 +161,8 @@ namespace fc {
    void file_appender::log( const log_message& m )
    {
       std::stringstream line;
-      //line << (m.get_context().get_timestamp().time_since_epoch().count() % (1000ll*1000ll*60ll*60))/1000 <<"ms ";
-      line << string(m.get_context().get_timestamp()) << " ";
-      line << std::setw( 21 ) << (m.get_context().get_task_name()).c_str() << " ";
+      line << appender::format_time_as_string(m.get_context().get_timestamp(), my->cfg.time_format);
+      line << " " << std::setw( 21 ) << (m.get_context().get_task_name()).c_str() << " ";
 
       string method_name = m.get_context().get_method();
       // strip all leading scopes...

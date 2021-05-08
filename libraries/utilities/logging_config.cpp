@@ -96,6 +96,8 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
                                             fc::console_appender::level_color( fc::log_level::error,
                                                                   fc::console_appender::color::red));
           console_appender_config.stream = fc::variant( appender.stream ).as< fc::console_appender::stream::type >();
+          if (appender.time_format.length())
+            console_appender_config.time_format = fc::variant( appender.time_format ).as<fc::appender::time_format>();
           logging_config.appenders.push_back(
                                   fc::appender_config( appender.appender, "console", fc::variant( console_appender_config ) ) );
           found_logging_config = true;
@@ -114,6 +116,8 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
           file_appender_config.rotate = true;
           file_appender_config.rotation_interval = fc::hours(1);
           file_appender_config.rotation_limit = fc::days(1);
+          if (appender.time_format.length())
+            file_appender_config.time_format = fc::variant( appender.time_format ).as<fc::appender::time_format>();
           logging_config.appenders.push_back(
                                   fc::appender_config( appender.appender, "file", fc::variant( file_appender_config ) ) );
           found_logging_config = true;
