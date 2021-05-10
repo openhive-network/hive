@@ -37,7 +37,7 @@ class Node:
         if configure_for_block_production:
             self.config.enable_stale_production = True
             self.config.required_participation = 0
-            self.set_witness('initminer')
+            self.config.witness.append('initminer')
 
     def __str__(self):
         from .network import Network
@@ -265,14 +265,3 @@ class Node:
 
     def set_executable_file_path(self, executable_file_path):
         self.executable_file_path = executable_file_path
-
-    def set_witness(self, witness_name, key=None):
-        if 'witness' not in self.config.plugin:
-            self.config.plugin.append('witness')
-
-        if key is None:
-            witness = Account(witness_name)
-            key = witness.private_key
-
-        self.config.witness.append(witness_name)
-        self.config.private_key.append(key)
