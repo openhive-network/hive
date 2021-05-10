@@ -379,7 +379,7 @@ namespace hive { namespace protocol {
  struct fill_recurrent_transfer_operation : public virtual_operation
  {
      fill_recurrent_transfer_operation() {}
-     fill_recurrent_transfer_operation(const account_name_type& f,const account_name_type& t, const asset& a, const string& m, int16_t re) : from( f ), to( t ), amount( a ), memo( m ), remaining_executions(re) {}
+     fill_recurrent_transfer_operation(const account_name_type& f,const account_name_type& t, const asset& a, const string& m, uint16_t re) : from( f ), to( t ), amount( a ), memo( m ), remaining_executions(re) {}
 
      account_name_type from;
      account_name_type to;
@@ -391,7 +391,8 @@ namespace hive { namespace protocol {
  struct failed_recurrent_transfer_operation : public virtual_operation
  {
    failed_recurrent_transfer_operation() {}
-   failed_recurrent_transfer_operation(const account_name_type& f,const account_name_type& t, const asset& a, uint8_t cf, const string& m, int16_t re, bool d) : from( f ), to( t ), amount( a ), memo( m ), consecutive_failures( cf ), remaining_executions(re), deleted( d ) {}
+   failed_recurrent_transfer_operation(const account_name_type& f,const account_name_type& t, const asset& a, uint8_t cf, const string& m, uint16_t re, bool d) :
+     from( f ), to( t ), amount( a ), memo( m ), consecutive_failures( cf ), remaining_executions(re), deleted( d ) {}
 
      account_name_type from;
      account_name_type to;
