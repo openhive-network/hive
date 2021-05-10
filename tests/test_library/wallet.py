@@ -54,6 +54,9 @@ class Wallet:
         def claim_account_creation(self, creator, fee, broadcast):
             return self.__send('claim_account_creation', creator, fee, broadcast)
 
+        def transfer(self, sender, receiver, amount, memo, broadcast=True):
+            return self.__send('transfer', sender, receiver, amount, memo, broadcast)
+
         def transfer_to_vesting(self, sender, receiver, amount, broadcast=True):
             return self.__send('transfer_to_vesting', sender, receiver, amount, broadcast)
 
@@ -66,11 +69,11 @@ class Wallet:
         def vote_for_witness(self, account_to_vote_with, witness_to_vote_for, approve, broadcast=True):
             return self.__send('vote_for_witness', account_to_vote_with, witness_to_vote_for, approve, broadcast)
 
-        def vote(self, voter, author, permlink, weight, broadcast):
+        def vote(self, voter, author, permlink, weight, broadcast=True):
             return self.__send('vote', voter, author, permlink, weight, broadcast)
 
-        def post_comment(self, voter, author, permlink, weight, broadcast):
-            return self.__send('post_comment',  author, permlink, parent_author, parent_permlink, title, body, json)
+        def post_comment(self, author, permlink, parent_author, parent_permlink, title, body, json, broadcast=True):
+            return self.__send('post_comment', author, permlink, parent_author, parent_permlink, title, body, json, broadcast)
 
     def __init__(self, creator, directory=Path()):
         self.api = Wallet.__Api(self)

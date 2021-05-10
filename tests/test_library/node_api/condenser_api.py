@@ -9,4 +9,4 @@ class CondenserApi(ApiBase):
         return self._send('get_key_references', keys)
 
     def get_account_history(self, params):
-        return self._send('get_key_references', params)
+        return self._send('get_account_history', params)

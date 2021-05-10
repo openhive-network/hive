@@ -1,73 +1,87 @@
 import argparse
 import requests
 import json
+import time
 
 
-def get_producer_reward_operations(ops):
-    result = []
-    for op in ops:
-        op_type = op["op"]["type"]
-        if op_type == "producer_reward_operation":
-            result.append(op)
-    return result
+def get_lib(url):
+    properties_query_data = {
+        "jsonrpc": "2.0",
+        "method": "call",
+        "params": [
+            "database_api",
+            "get_dynamic_global_properties",
+            {}
+        ],
+        "id": 1
+    }
 
+    json_data = bytes(json.dumps(properties_query_data), "utf-8") + b"\r\n"
+    result = requests.post(url, data=json_data)
+    response = json.loads(result.text)
+    last_irreversible_block = response["result"]["last_irreversible_block_num"]
+    return last_irreversible_block
+
+
+def get_ops(url, block_num):
+    ops_query_data = {
+        "jsonrpc": "2.0",
+        "method": "call",
+        "params": [
+            "account_history_api",
+            "get_ops_in_block",
+            {
+                "block_num": block_num,
+                "only_virtual": False
+            }
+        ],
+        "id": 1
+    }
+    json_data = bytes(json.dumps(ops_query_data), "utf-8") + b"\r\n"
+    result = requests.post(url, data=json_data)
+    response = json.loads(result.text)
+    ops = response["result"]["ops"]
+    return ops
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('address', metavar='add', nargs=1, type=str, help="ip::port of node")
-    parser.add_argument('--start', type=int, help="start block", default=1)
-    parser.add_argument('--end', type=int, help="end block", default=1000)
+    parser.add_argument('url', metavar='add', nargs=1, type=str, help="endpoint protocol://ip:port")
     
     args = parser.parse_args()
 
-    print('address: ', args.address)
-    url = f'http://' + args.address[0]
-    print('start: ', args.start)
-    start = args.start
-    print('end: ', args.end)
-    end = args.end
+    url = args.url[0]
+    print('url: ', url)
 
-    blocks_with_duplicates = []
-    blocks_with_no_operations = []
+    start_lib = get_lib(url)
+    scanned_until = start_lib
+    last_irreversible_block = start_lib
+    
+    while True:
+        while True:
+            last_irreversible_block = get_lib(url)
+            print("last_irreversible_block: " + str(last_irreversible_block))
 
-    for i in range(start, end):
+            if last_irreversible_block == scanned_until:
+                time.sleep(1)
+            else:
+                break
+
+        for block_num in range(scanned_until+1, last_irreversible_block+1): 
+            ops = get_ops(url, block_num)
+
+            duplicates_count = 0
+            for j in range(len(ops)):
+                for i in range(j):
+                    op1 = ops[i]
+                    op2 = ops[j]
+                    if op1==op2:
+                        duplicates_count += 1
+                        print(f"FOUND DUPLICATES IN BLOCK {last_irreversible_block}")
+                        print(op1)
+                        print(op2)
+
+            if duplicates_count == 0:
+                print(f"NO DUPLICATES IN BLOCK {block_num}")
         
-        dict_data = {
-            "jsonrpc": "2.0",
-            "method": "call",
-            "params": [
-                "account_history_api",
-                "get_ops_in_block",
-                {
-                    "block_num": i,
-                    "only_virtual": True
-                }
-            ],
-            "id": 1
-        }
-        json_data = message = bytes(json.dumps(dict_data), "utf-8") + b"\r\n"
-        result = requests.post(url, data=message)
-        response = json.loads(result.text)
-        ops = response["result"]["ops"]
-        length = len(ops)
-        reward_operations = get_producer_reward_operations(ops)
-        size = len(reward_operations)
+        scanned_until = last_irreversible_block
 
-        if(size>1):
-            blocks_with_duplicates.append(i)
-        if(size==0):
-            blocks_with_no_operations.append(i)
-
-
-    if len(blocks_with_duplicates) == 0:
-        print('THERE ARE NO DUPLICATES')
-    else:
-        print('duplicates:')
-        print(blocks_with_duplicates)
-
-
-    if len(blocks_with_no_operations) == 0:
-        print('THERE ARE NO EMPTY BLOCKS')
-    else:
-        print('empty blocks:')
-        print(blocks_with_no_operations)
