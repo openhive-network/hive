@@ -9,7 +9,7 @@ def config():
 
 
 def test_addition_operator_is_removed(config):
-    from test_library.node_config_entry_types.list import NotSupported
+    from test_library.node_config_entry_types.list_entry import NotSupported
 
     with pytest.raises(NotSupported):
         config.witness += ['initminer']

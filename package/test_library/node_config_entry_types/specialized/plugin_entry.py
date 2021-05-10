@@ -1,4 +1,4 @@
-from ..untouched import Untouched
+from ..untouched_entry import Untouched
 
 
 class Plugin(Untouched):
