@@ -2053,7 +2053,7 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
       {
         auto comp = []( const rocksdb_operation_object& lhs, const rocksdb_operation_object& rhs )
         {
-          return std::tie( lhs.block, lhs.trx_in_block, lhs.op_in_trx, lhs.trx_id ) < std::tie( rhs.block, rhs.trx_in_block, rhs.op_in_trx, rhs.trx_id );
+          return std::tie( lhs.block, lhs.trx_in_block, lhs.op_in_trx, lhs.trx_id, lhs.virtual_op ) < std::tie( rhs.block, rhs.trx_in_block, rhs.op_in_trx, rhs.trx_id, rhs.virtual_op );
         };
         std::set< rocksdb_operation_object, decltype(comp) > ops( comp );
         find_operations_by_block(itr->block, false, // don't include reversible, only already imported ops
