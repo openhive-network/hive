@@ -2,6 +2,12 @@ from .config_entry import ConfigEntry
 
 
 class Integer(ConfigEntry):
+    class _ValueProxyType(ConfigEntry._ValueProxy, int):
+        def __new__(cls, entry):
+            return int.__new__(cls, entry._value)
+
+    _ValueProxy = _ValueProxyType
+
     def _parse_from_text(self, text):
         self._value = int(text)
 

@@ -2,6 +2,12 @@ from .config_entry import ConfigEntry
 
 
 class String(ConfigEntry):
+    class _ValueProxyType(ConfigEntry._ValueProxy, str):
+        def __new__(cls, entry):
+            return str.__new__(cls, entry._value)
+
+    _ValueProxy = _ValueProxyType
+
     def _parse_from_text(self, text):
         self._value = text.strip('"')
 

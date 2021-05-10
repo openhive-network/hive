@@ -2,15 +2,6 @@ from .node_config_entry_types import *
 
 
 class NodeConfig:
-    class __UnsetType:
-        def __iadd__(self, other):
-            return other
-
-        def __bool__(self):
-            return False
-
-    UNSET = __UnsetType()
-
     def __init__(self):
         super().__setattr__('SUPPORTED_ENTRIES', [
             'log_appender', 'log_console_appender', 'log_file_appender', 'log_logger', 'backtrace', 'plugin',
@@ -53,72 +44,72 @@ class NodeConfig:
 
     def __clear(self):
         # For IDE to support member names hints
-        self.log_appender = self.UNSET
-        self.log_console_appender = self.UNSET
-        self.log_file_appender = self.UNSET
-        self.log_logger = self.UNSET
-        self.backtrace = self.UNSET
-        self.plugin = self.UNSET
-        self.account_history_track_account_range = self.UNSET
-        self.track_account_range = self.UNSET
-        self.account_history_whitelist_ops = self.UNSET
-        self.history_whitelist_ops = self.UNSET
-        self.account_history_blacklist_ops = self.UNSET
-        self.history_blacklist_ops = self.UNSET
-        self.history_disable_pruning = self.UNSET
-        self.account_history_rocksdb_path = self.UNSET
-        self.account_history_rocksdb_track_account_range = self.UNSET
-        self.account_history_rocksdb_whitelist_ops = self.UNSET
-        self.account_history_rocksdb_blacklist_ops = self.UNSET
-        self.block_data_export_file = self.UNSET
-        self.block_log_info_print_interval_seconds = self.UNSET
-        self.block_log_info_print_irreversible = self.UNSET
-        self.block_log_info_print_file = self.UNSET
-        self.shared_file_dir = self.UNSET
-        self.shared_file_size = self.UNSET
-        self.shared_file_full_threshold = self.UNSET
-        self.shared_file_scale_rate = self.UNSET
-        self.checkpoint = self.UNSET
-        self.flush_state_interval = self.UNSET
-        self.cashout_logging_starting_block = self.UNSET
-        self.cashout_logging_ending_block = self.UNSET
-        self.cashout_logging_log_path_dir = self.UNSET
-        self.debug_node_edit_script = self.UNSET
-        self.edit_script = self.UNSET
-        self.follow_max_feed_size = self.UNSET
-        self.follow_start_feeds = self.UNSET
-        self.log_json_rpc = self.UNSET
-        self.market_history_bucket_size = self.UNSET
-        self.market_history_buckets_per_size = self.UNSET
-        self.p2p_endpoint = self.UNSET
-        self.p2p_max_connections = self.UNSET
-        self.seed_node = self.UNSET
-        self.p2p_seed_node = self.UNSET
-        self.p2p_parameters = self.UNSET
-        self.rc_skip_reject_not_enough_rc = self.UNSET
-        self.rc_compute_historical_rc = self.UNSET
-        self.rc_start_at_block = self.UNSET
-        self.rc_account_whitelist = self.UNSET
-        self.snapshot_root_dir = self.UNSET
-        self.statsd_endpoint = self.UNSET
-        self.statsd_batchsize = self.UNSET
-        self.statsd_whitelist = self.UNSET
-        self.statsd_blacklist = self.UNSET
-        self.tags_start_promoted = self.UNSET
-        self.tags_skip_startup_update = self.UNSET
-        self.transaction_status_block_depth = self.UNSET
-        self.transaction_status_track_after_block = self.UNSET
-        self.webserver_http_endpoint = self.UNSET
-        self.webserver_unix_endpoint = self.UNSET
-        self.webserver_ws_endpoint = self.UNSET
-        self.webserver_enable_permessage_deflate = self.UNSET
-        self.rpc_endpoint = self.UNSET
-        self.webserver_thread_pool_size = self.UNSET
-        self.enable_stale_production = self.UNSET
-        self.required_participation = self.UNSET
-        self.witness = self.UNSET
-        self.private_key = self.UNSET
-        self.witness_skip_enforce_bandwidth = self.UNSET
+        self.log_appender.clear()
+        self.log_console_appender.clear()
+        self.log_file_appender.clear()
+        self.log_logger.clear()
+        self.backtrace.clear()
+        self.plugin.clear()
+        self.account_history_track_account_range.clear()
+        self.track_account_range.clear()
+        self.account_history_whitelist_ops.clear()
+        self.history_whitelist_ops.clear()
+        self.account_history_blacklist_ops.clear()
+        self.history_blacklist_ops.clear()
+        self.history_disable_pruning.clear()
+        self.account_history_rocksdb_path.clear()
+        self.account_history_rocksdb_track_account_range.clear()
+        self.account_history_rocksdb_whitelist_ops.clear()
+        self.account_history_rocksdb_blacklist_ops.clear()
+        self.block_data_export_file.clear()
+        self.block_log_info_print_interval_seconds.clear()
+        self.block_log_info_print_irreversible.clear()
+        self.block_log_info_print_file.clear()
+        self.shared_file_dir.clear()
+        self.shared_file_size.clear()
+        self.shared_file_full_threshold.clear()
+        self.shared_file_scale_rate.clear()
+        self.checkpoint.clear()
+        self.flush_state_interval.clear()
+        self.cashout_logging_starting_block.clear()
+        self.cashout_logging_ending_block.clear()
+        self.cashout_logging_log_path_dir.clear()
+        self.debug_node_edit_script.clear()
+        self.edit_script.clear()
+        self.follow_max_feed_size.clear()
+        self.follow_start_feeds.clear()
+        self.log_json_rpc.clear()
+        self.market_history_bucket_size.clear()
+        self.market_history_buckets_per_size.clear()
+        self.p2p_endpoint.clear()
+        self.p2p_max_connections.clear()
+        self.seed_node.clear()
+        self.p2p_seed_node.clear()
+        self.p2p_parameters.clear()
+        self.rc_skip_reject_not_enough_rc.clear()
+        self.rc_compute_historical_rc.clear()
+        self.rc_start_at_block.clear()
+        self.rc_account_whitelist.clear()
+        self.snapshot_root_dir.clear()
+        self.statsd_endpoint.clear()
+        self.statsd_batchsize.clear()
+        self.statsd_whitelist.clear()
+        self.statsd_blacklist.clear()
+        self.tags_start_promoted.clear()
+        self.tags_skip_startup_update.clear()
+        self.transaction_status_block_depth.clear()
+        self.transaction_status_track_after_block.clear()
+        self.webserver_http_endpoint.clear()
+        self.webserver_unix_endpoint.clear()
+        self.webserver_ws_endpoint.clear()
+        self.webserver_enable_permessage_deflate.clear()
+        self.rpc_endpoint.clear()
+        self.webserver_thread_pool_size.clear()
+        self.enable_stale_production.clear()
+        self.required_participation.clear()
+        self.witness.clear()
+        self.private_key.clear()
+        self.witness_skip_enforce_bandwidth.clear()
 
     def __check_if_key_internal_is_valid(self, key):
         """Internal keys (used inside this class) have underscores instead of hyphens"""
@@ -138,21 +129,13 @@ class NodeConfig:
         self.__check_if_key_internal_is_valid(key)
 
         entries = super().__getattribute__('entries')
-
-        if value is self.UNSET:
-            entries[key].clear()
-            return
-
         entries[key].set_value(value)
 
     def __getattr__(self, key):
         self.__check_if_key_internal_is_valid(key)
 
         entries = super().__getattribute__('entries')
-        if entries[key].is_set():
-            return entries[key].get_value()
-
-        return self.UNSET
+        return entries[key].get_value()
 
     def __str__(self):
         supported_entries = super().__getattribute__('SUPPORTED_ENTRIES')

@@ -87,14 +87,14 @@ class Node:
         return self.name
 
     def add_seed_node(self, seed_node):
-        if not seed_node.config.p2p_endpoint:
+        if not seed_node.config.p2p_endpoint.is_set():
             from .port import Port
             seed_node.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
 
         endpoint = seed_node.config.p2p_endpoint
         port = endpoint.split(':')[1]
 
-        self.config.p2p_seed_node += [f'127.0.0.1:{port}']
+        self.config.p2p_seed_node.append(f'127.0.0.1:{port}')
 
     def redirect_output_to_terminal(self):
         self.print_to_terminal = True
@@ -166,7 +166,7 @@ class Node:
         if params is not None:
             message['params'] = params
 
-        if not self.config.webserver_http_endpoint:
+        if not self.config.webserver_http_endpoint.is_set():
             raise Exception('Webserver http endpoint is unknown')
 
         from urllib.parse import urlparse
@@ -249,16 +249,15 @@ class Node:
         self.logger.info(message)
 
     def __set_unset_endpoints(self):
-        from .node_config import NodeConfig
         from .port import Port
 
-        if self.config.p2p_endpoint is NodeConfig.UNSET:
+        if not self.config.p2p_endpoint.is_set():
             self.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
 
-        if self.config.webserver_http_endpoint is NodeConfig.UNSET:
+        if not self.config.webserver_http_endpoint.is_set():
             self.config.webserver_http_endpoint = f'0.0.0.0:{Port.allocate()}'
 
-        if self.config.webserver_ws_endpoint is NodeConfig.UNSET:
+        if not self.config.webserver_ws_endpoint.is_set():
             self.config.webserver_ws_endpoint = f'0.0.0.0:{Port.allocate()}'
 
     def close(self):
@@ -269,11 +268,11 @@ class Node:
 
     def set_witness(self, witness_name, key=None):
         if 'witness' not in self.config.plugin:
-            self.config.plugin += ['witness']
+            self.config.plugin.append('witness')
 
         if key is None:
             witness = Account(witness_name)
             key = witness.private_key
 
-        self.config.witness += [witness_name]
-        self.config.private_key += [key]
+        self.config.witness.append(witness_name)
+        self.config.private_key.append(key)

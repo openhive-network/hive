@@ -1,3 +1,5 @@
+from collections import UserList
+
 from .config_entry import ConfigEntry
 
 
@@ -6,20 +8,38 @@ class NotSupported(Exception):
 
 
 class List(ConfigEntry):
-    class __ListWithFixedAdditionOperator(list):
-        """List with removed += operator, because there is no -= operator.
+    class _BaseProxyType(ConfigEntry._BaseProxyType, UserList):
+        def __init__(self, entry):
+            ConfigEntry._BaseProxyType.__init__(self, entry)
 
-        Consistent way of working with list config entries are methods:
-        - to add element: append or extend
-        - to remove element: remove
-        """
+            UserList.__init__(self)
+            self.data = entry._value
+
         def __iadd__(self, other):
+            """Operator += is removed, because there is no -= operator.
+
+            Consistent way of working with list config entries are methods:
+            - to add element: append or extend
+            - to remove element: remove
+            """
+
             raise NotSupported(
                 f'Operator += is removed. Use methods "{self.append.__name__}" or "{self.extend.__name__}" instead.'
             )
 
+    class _UnsetProxyType(_BaseProxyType, ConfigEntry._UnsetProxy):
+        pass
+
+    class _ValueProxyType(_BaseProxyType, ConfigEntry._ValueProxy):
+        pass
+
+    _UnsetProxy = _UnsetProxyType
+    _ValueProxy = _ValueProxyType
+
     def __init__(self, item_type, separator=' ', begin='', end='', single_line=True):
         super().__init__()
+
+        self._value = []
 
         self.__item_type = item_type
 
@@ -28,8 +48,8 @@ class List(ConfigEntry):
         self.__end = end
         self.__single_line = single_line
 
-    def _get_unset_value(self):
-        return self.__ListWithFixedAdditionOperator()
+    def _is_set(self):
+        return bool(self._value)
 
     def _parse_from_text(self, text):
         import re
@@ -39,7 +59,11 @@ class List(ConfigEntry):
         for item_text in match_result[1].split(self.__separator):
             item = self.__item_type()
             item.parse_from_text(item_text)
-            self._value.append(item.get_value())
+            self._value.append(self.__remove_proxy_wrapper(item.get_value()))
+
+    @staticmethod
+    def __remove_proxy_wrapper(proxy):
+        return proxy.entry._value
 
     def _serialize_to_text(self):
         def serialize_value(value):
@@ -54,7 +78,7 @@ class List(ConfigEntry):
         if not isinstance(value, list):
             value = [value]
 
-        self._value = self.__ListWithFixedAdditionOperator(value)
+        self._value = value
 
-    def _get_value(self):
-        return self._value
+    def _clear(self):
+        self._value = []
