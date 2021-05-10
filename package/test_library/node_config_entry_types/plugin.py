@@ -22,7 +22,7 @@ class Plugin(Untouched):
 
     def _parse_from_text(self, plugin):
         self.__check_if_plugin_is_supported(plugin)
-        super()._parse_from_text(plugin)
+        return super()._parse_from_text(plugin)
 
     def _set_value(self, value):
         self.__check_if_plugin_is_supported(value)

@@ -10,6 +10,7 @@ class String(ConfigEntry):
 
     def _parse_from_text(self, text):
         self._value = text.strip('"')
+        return self._value
 
     def _serialize_to_text(self):
         return f'"{self._value}"'

@@ -58,12 +58,10 @@ class List(ConfigEntry):
 
         for item_text in match_result[1].split(self.__separator):
             item = self.__item_type()
-            item.parse_from_text(item_text)
-            self._value.append(self.__remove_proxy_wrapper(item.get_value()))
+            parsed = item.parse_from_text(item_text)
+            self._value.append(parsed)
 
-    @staticmethod
-    def __remove_proxy_wrapper(proxy):
-        return proxy.entry._value
+        return self._value
 
     def _serialize_to_text(self):
         def serialize_value(value):

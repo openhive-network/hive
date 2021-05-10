@@ -32,6 +32,7 @@ class ConfigEntry:
         return self.__is_set
 
     def _parse_from_text(self, text):
+        """Parse value from given text, store it inside entry and return."""
         raise Exception('Not implemented')
 
     def _serialize_to_text(self):

@@ -10,6 +10,7 @@ class Integer(ConfigEntry):
 
     def _parse_from_text(self, text):
         self._value = int(text)
+        return self._value
 
     def _serialize_to_text(self):
         return str(self._value)
