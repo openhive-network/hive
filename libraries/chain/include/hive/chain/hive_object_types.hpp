@@ -80,6 +80,7 @@ enum object_type
   proposal_object_type,
   proposal_vote_object_type,
   comment_cashout_object_type,
+  recurrent_transfer_object_type,
 #ifdef HIVE_ENABLE_SMT
   // SMT objects
   smt_token_object_type,
@@ -125,6 +126,7 @@ class vesting_delegation_expiration_object;
 class pending_required_action_object;
 class pending_optional_action_object;
 class comment_cashout_object;
+class recurrent_transfer_object;
 
 #ifdef HIVE_ENABLE_SMT
 class smt_token_object;
@@ -172,6 +174,7 @@ typedef oid_ref< vesting_delegation_expiration_object   > vesting_delegation_exp
 typedef oid_ref< pending_required_action_object         > pending_required_action_id_type;
 typedef oid_ref< pending_optional_action_object         > pending_optional_action_id_type;
 typedef oid_ref< comment_cashout_object                 > comment_cashout_id_type;
+typedef oid_ref< recurrent_transfer_object              > recurrent_transfer_id_type;
 
 #ifdef HIVE_ENABLE_SMT
 typedef oid_ref< smt_token_object                       > smt_token_id_type;
@@ -189,7 +192,7 @@ typedef oid_ref< proposal_vote_object                   > proposal_vote_id_type;
 enum bandwidth_type
 {
   post,    ///< Rate limiting posting reward eligibility over time
-  forum,   ///< Rate limiting for all forum related actins
+  forum,   ///< Rate limiting for all forum related actions
   market   ///< Rate limiting for all other actions
 };
 
@@ -338,6 +341,7 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (proposal_object_type)
             (proposal_vote_object_type)
             (comment_cashout_object_type)
+            (recurrent_transfer_object_type)
 
 #ifdef HIVE_ENABLE_SMT
             (smt_token_object_type)

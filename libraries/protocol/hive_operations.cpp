@@ -700,8 +700,8 @@ namespace hive { namespace protocol {
     FC_ASSERT( is_asset_type( reward_hive, HIVE_SYMBOL ), "Reward HIVE must be expressed in HIVE" );
     FC_ASSERT( is_asset_type( reward_hbd, HBD_SYMBOL ), "Reward HBD must be expressed in HBD" );
     FC_ASSERT( is_asset_type( reward_vests, VESTS_SYMBOL ), "Reward VESTS must be expressed in VESTS" );
-    FC_ASSERT( reward_hive.amount >= 0, "Cannot claim a negative amount" );
     FC_ASSERT( reward_hbd.amount >= 0, "Cannot claim a negative amount" );
+    FC_ASSERT( reward_hive.amount >= 0, "Cannot claim a negative amount" );
     FC_ASSERT( reward_vests.amount >= 0, "Cannot claim a negative amount" );
     FC_ASSERT( reward_hive.amount > 0 || reward_hbd.amount > 0 || reward_vests.amount > 0, "Must claim something." );
   }
@@ -733,6 +733,21 @@ namespace hive { namespace protocol {
     FC_ASSERT( delegator != delegatee, "You cannot delegate VESTS to yourself" );
     FC_ASSERT( is_asset_type( vesting_shares, VESTS_SYMBOL ), "Delegation must be VESTS" );
     FC_ASSERT( vesting_shares >= asset( 0, VESTS_SYMBOL ), "Delegation cannot be negative" );
+  }
+
+  void recurrent_transfer_operation::validate()const
+  { try {
+      validate_account_name( from );
+      validate_account_name( to );
+      FC_ASSERT( amount.symbol.is_vesting() == false, "Transfer of vesting is not allowed." );
+      FC_ASSERT( amount.amount >= 0, "Cannot transfer a negative amount (aka: stealing)" );
+      FC_ASSERT( recurrence >= HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE, "Cannot set a transfer recurrence that is less than ${recurrence} hours", ("recurrence", HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE) );
+      FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE, "Memo is too large" );
+      FC_ASSERT( fc::is_utf8( memo ), "Memo is not UTF8" );
+      FC_ASSERT( from != to, "Cannot set a transfer to yourself" );
+      FC_ASSERT(executions >= 2, "Executions must be at least 2, if you set executions to 1 the recurrent transfer will execute immediately and delete itself. You should use a normal transfer operation");
+      FC_ASSERT( fc::hours(recurrence * executions).to_seconds()  < fc::days(HIVE_MAX_RECURRENT_TRANSFER_END_DATE).to_seconds(), "Cannot set a transfer that would last for longer than ${days} days", ("days", HIVE_MAX_RECURRENT_TRANSFER_END_DATE) );
+    } FC_CAPTURE_AND_RETHROW( (*this) )
   }
 
 } } // hive::protocol

@@ -253,7 +253,11 @@ struct api_dynamic_global_property_object
     downvote_pool_percent( o.downvote_pool_percent ),
     current_remove_threshold( o.current_remove_threshold ),
     early_voting_seconds( o.early_voting_seconds ),
-    mid_voting_seconds( o.mid_voting_seconds )
+    mid_voting_seconds( o.mid_voting_seconds ),
+    max_consecutive_recurrent_transfer_failures( o.max_consecutive_recurrent_transfer_failures ),
+    max_recurrent_transfer_end_date( o.max_recurrent_transfer_end_date ),
+    min_recurrent_transfers_recurrence( o.min_recurrent_transfers_recurrence ),
+    max_open_recurrent_transfers( o.max_open_recurrent_transfers )
 #ifdef HIVE_ENABLE_SMT
     , smt_creation_fee( o.smt_creation_fee )
 #endif
@@ -303,6 +307,10 @@ struct api_dynamic_global_property_object
   int16_t                         current_remove_threshold            = 0;
   uint64_t                        early_voting_seconds                = 0;
   uint64_t                        mid_voting_seconds                  = 0;
+  uint8_t                        max_consecutive_recurrent_transfer_failures = HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES;
+  uint16_t                        max_recurrent_transfer_end_date = HIVE_MAX_RECURRENT_TRANSFER_END_DATE;
+  uint8_t                        min_recurrent_transfers_recurrence = HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE;
+  uint16_t                        max_open_recurrent_transfers = HIVE_MAX_OPEN_RECURRENT_TRANSFERS;
 #ifdef HIVE_ENABLE_SMT
   asset                           smt_creation_fee;
 #endif
@@ -522,6 +530,7 @@ struct api_account_object
     last_vote_time( a.last_vote_time ),
     post_bandwidth( a.post_bandwidth ),
     pending_claimed_accounts( a.pending_claimed_accounts ),
+    open_recurrent_transfers( a.open_recurrent_transfers ),
     governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
   {
     if( a.has_proxy() )
@@ -634,6 +643,7 @@ struct api_account_object
   uint32_t          post_bandwidth = 0;
 
   share_type        pending_claimed_accounts = 0;
+  uint16_t          open_recurrent_transfers = 0;
 
   bool              is_smt = false;
 
@@ -1001,6 +1011,35 @@ struct api_proposal_vote_object
   api_proposal_object     proposal;
 };
 
+
+struct api_recurrent_transfer_object
+{
+  api_recurrent_transfer_object() = default;
+
+  api_recurrent_transfer_object( const recurrent_transfer_object& o, const account_name_type from_name, const account_name_type to_name ):
+    id( o.get_id() ),
+    trigger_date( o.get_trigger_date() ),
+    from( from_name ),
+    to( to_name ),
+    amount( o.amount ),
+    memo( to_string(o.memo) ),
+    recurrence( o.recurrence ),
+    consecutive_failures( o.consecutive_failures ),
+    remaining_executions( o.remaining_executions )
+    {}
+
+    recurrent_transfer_id_type id;
+    time_point_sec    trigger_date;
+    account_name_type from;
+    account_name_type to;
+    asset             amount;
+    string            memo;
+    uint16_t          recurrence = 0;
+    uint8_t           consecutive_failures = 0;
+    uint16_t          remaining_executions = 0;
+};
+
+
 struct order
 {
   price                order_price;
@@ -1098,6 +1137,8 @@ FC_REFLECT( hive::plugins::database_api::api_dynamic_global_property_object,
           (available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)(next_maintenance_time)
           (last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)
           (sps_interval_ledger)(downvote_pool_percent)(current_remove_threshold)(early_voting_seconds)(mid_voting_seconds)
+          (max_consecutive_recurrent_transfer_failures)(max_recurrent_transfer_end_date)(min_recurrent_transfers_recurrence)
+          (max_open_recurrent_transfers)
 #ifdef HIVE_ENABLE_SMT
           (smt_creation_fee)
 #endif
@@ -1139,7 +1180,7 @@ FC_REFLECT( hive::plugins::database_api::api_account_object,
           (posting_rewards)
           (proxied_vsf_votes)(witnesses_voted_for)
           (last_post)(last_root_post)(last_post_edit)(last_vote_time)
-          (post_bandwidth)(pending_claimed_accounts)
+          (post_bandwidth)(pending_claimed_accounts)(open_recurrent_transfers)
           (is_smt)
           (delayed_votes)
           (governance_vote_expiration_ts)
@@ -1278,3 +1319,4 @@ FC_REFLECT( hive::plugins::database_api::api_proposal_vote_object,
 FC_REFLECT( hive::plugins::database_api::order, (order_price)(real_price)(hive)(hbd)(created) );
 
 FC_REFLECT( hive::plugins::database_api::order_book, (asks)(bids) );
+FC_REFLECT(hive::plugins::database_api::api_recurrent_transfer_object, (id)(trigger_date)(from)(to)(amount)(memo)(recurrence)(consecutive_failures)(remaining_executions))

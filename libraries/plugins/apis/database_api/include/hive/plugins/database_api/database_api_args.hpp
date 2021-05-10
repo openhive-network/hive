@@ -55,7 +55,7 @@ enum sort_order_type
   by_voter_proposal,
   by_proposal_voter,
   by_contributor,
-  by_symbol_id
+  by_symbol_id,
 };
 
 enum order_direction_type
@@ -523,6 +523,20 @@ struct list_proposal_votes_return
   vector< api_proposal_vote_object > proposal_votes;
 };
 
+/* Recurrent transfers */
+
+struct find_recurrent_transfers_args
+{
+  account_name_type from;
+};
+
+struct find_recurrent_transfers_return
+{
+  vector< api_recurrent_transfer_object > recurrent_transfers;
+};
+
+
+/* Transactions */
 
 struct get_transaction_hex_args
 {
@@ -868,6 +882,12 @@ FC_REFLECT( hive::plugins::database_api::find_proposals_args,
 
 FC_REFLECT( hive::plugins::database_api::list_proposal_votes_return,
   (proposal_votes) )
+
+FC_REFLECT( hive::plugins::database_api::find_recurrent_transfers_return,
+            (recurrent_transfers) )
+
+FC_REFLECT( hive::plugins::database_api::find_recurrent_transfers_args,
+            (from) )
 
 FC_REFLECT( hive::plugins::database_api::get_transaction_hex_args,
   (trx) )

@@ -93,6 +93,7 @@ struct remote_node_api
   vector< condenser_api::api_proposal_object > list_proposals( fc::variant, uint32_t, database_api::sort_order_type, database_api::order_direction_type, database_api::proposal_status );
   vector< condenser_api::api_proposal_object > find_proposals( vector< int64_t > );
   vector< database_api::api_proposal_vote_object > list_proposal_votes( fc::variant, uint32_t, database_api::sort_order_type, database_api::order_direction_type, database_api::proposal_status );
+  vector< database_api::api_recurrent_transfer_object > find_recurrent_transfers( account_name_type );
 };
 
 } }
@@ -170,4 +171,5 @@ FC_API( hive::wallet::remote_node_api,
       (list_proposals)
       (find_proposals)
       (list_proposal_votes)
+      (find_recurrent_transfers)
     )

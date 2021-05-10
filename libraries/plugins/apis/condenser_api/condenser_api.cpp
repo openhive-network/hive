@@ -139,6 +139,7 @@ namespace detail
         (list_proposals)
         (find_proposals)
         (list_proposal_votes)
+        (find_recurrent_transfers)
       )
 
       void on_post_apply_block( const signed_block& b );
@@ -1201,6 +1202,14 @@ namespace detail
     return _database_api->list_proposal_votes( list_args ).proposal_votes;
   }
 
+
+  DEFINE_API_IMPL( condenser_api_impl, find_recurrent_transfers )
+  {
+    CHECK_ARG_SIZE( 1 )
+
+    return _database_api->find_recurrent_transfers( { args[0].as< account_name_type >() } ).recurrent_transfers;
+  }
+
   void condenser_api_impl::on_post_apply_block( const signed_block& b )
   { try {
     boost::lock_guard< boost::mutex > guard( _mtx );
@@ -1444,6 +1453,7 @@ DEFINE_READ_APIS( condenser_api,
   (list_proposals)
   (list_proposal_votes)
   (find_proposals)
+  (find_recurrent_transfers)
 )
 
 } } } // hive::plugins::condenser_api

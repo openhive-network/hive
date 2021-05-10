@@ -175,6 +175,11 @@ namespace hive { namespace chain {
       // objects can accumulate over time but need to be removed in single operation f.e. proposal votes)
       int16_t current_remove_threshold = HIVE_GLOBAL_REMOVE_THRESHOLD; //negative means no limit
 
+      uint8_t max_consecutive_recurrent_transfer_failures = HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES;
+      uint16_t max_recurrent_transfer_end_date = HIVE_MAX_RECURRENT_TRANSFER_END_DATE;
+      uint8_t min_recurrent_transfers_recurrence = HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE;
+      uint16_t max_open_recurrent_transfers = HIVE_MAX_OPEN_RECURRENT_TRANSFERS;
+
 #ifdef HIVE_ENABLE_SMT
       asset smt_creation_fee = asset( 1000, HBD_SYMBOL ); //< TODO: replace with HBD_asset
 #endif
@@ -235,6 +240,10 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (sps_interval_ledger)
           (downvote_pool_percent)
           (current_remove_threshold)
+          (max_consecutive_recurrent_transfer_failures)
+          (max_recurrent_transfer_end_date)
+          (max_open_recurrent_transfers)
+          (min_recurrent_transfers_recurrence)
 #ifdef HIVE_ENABLE_SMT
           (smt_creation_fee)
 #endif

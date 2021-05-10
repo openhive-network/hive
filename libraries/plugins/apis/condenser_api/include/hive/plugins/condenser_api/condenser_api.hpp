@@ -151,6 +151,7 @@ struct api_account_object
     last_vote_time( a.last_vote_time ),
     post_bandwidth( a.post_bandwidth ),
     pending_claimed_accounts( a.pending_claimed_accounts ),
+    open_recurrent_transfers( a.open_recurrent_transfers ),
     governance_vote_expiration_ts( a.governance_vote_expiration_ts )
   {
     voting_power = _compute_voting_power(a);
@@ -238,6 +239,8 @@ struct api_account_object
 
   share_type        pending_claimed_accounts = 0;
 
+  uint16_t          open_recurrent_transfers = 0;
+
   fc::optional< vector< delayed_votes_data > > delayed_votes;
 
   time_point_sec governance_vote_expiration_ts;
@@ -312,7 +315,11 @@ struct extended_dynamic_global_properties
     downvote_pool_percent( o.downvote_pool_percent ),
     current_remove_threshold( o.current_remove_threshold ),
     early_voting_seconds( o.early_voting_seconds ),
-    mid_voting_seconds( o.mid_voting_seconds )
+    mid_voting_seconds( o.mid_voting_seconds ),
+    max_consecutive_recurrent_transfer_failures( o.max_consecutive_recurrent_transfer_failures ),
+    max_recurrent_transfer_end_date( o.max_recurrent_transfer_end_date ),
+    min_recurrent_transfers_recurrence( o.min_recurrent_transfers_recurrence ),
+    max_open_recurrent_transfers( o.max_open_recurrent_transfers )
   {}
 
   uint32_t          head_block_number = 0;
@@ -373,6 +380,11 @@ struct extended_dynamic_global_properties
 
   uint64_t          early_voting_seconds  = 0;
   uint64_t          mid_voting_seconds    = 0;
+
+  uint8_t          max_consecutive_recurrent_transfer_failures = HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES;
+  uint16_t          max_recurrent_transfer_end_date = HIVE_MAX_RECURRENT_TRANSFER_END_DATE;
+  uint8_t          min_recurrent_transfers_recurrence = HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE;
+  uint16_t          max_open_recurrent_transfers = HIVE_MAX_OPEN_RECURRENT_TRANSFERS;
 };
 
 struct api_witness_object
@@ -947,6 +959,7 @@ DEFINE_API_ARGS( is_known_transaction,                   vector< variant >,   bo
 DEFINE_API_ARGS( list_proposals,                         vector< variant >,   vector< api_proposal_object > )
 DEFINE_API_ARGS( find_proposals,                         vector< variant >,   vector< api_proposal_object > )
 DEFINE_API_ARGS( list_proposal_votes,                    vector< variant >,   vector< database_api::api_proposal_vote_object > )
+DEFINE_API_ARGS( find_recurrent_transfers,               vector< variant >,   vector< database_api::api_recurrent_transfer_object > )
 
 #undef DEFINE_API_ARGS
 
@@ -1046,6 +1059,7 @@ public:
     (list_proposals)
     (find_proposals)
     (list_proposal_votes)
+    (find_recurrent_transfers)
   )
 
   private:
@@ -1089,8 +1103,8 @@ FC_REFLECT( hive::plugins::condenser_api::api_account_object,
           (proxied_vsf_votes)(witnesses_voted_for)
           (last_post)(last_root_post)(last_vote_time)
           (post_bandwidth)(pending_claimed_accounts)
-          (delayed_votes)
           (governance_vote_expiration_ts)
+          (delayed_votes)(open_recurrent_transfers)
         )
 
 FC_REFLECT_DERIVED( hive::plugins::condenser_api::extended_account, (hive::plugins::condenser_api::api_account_object),
@@ -1107,6 +1121,8 @@ FC_REFLECT( hive::plugins::condenser_api::extended_dynamic_global_properties,
         (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)(available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)
         (next_maintenance_time)(last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)(sps_interval_ledger)
         (downvote_pool_percent)(current_remove_threshold)(early_voting_seconds)(mid_voting_seconds)
+        (max_consecutive_recurrent_transfer_failures)(max_recurrent_transfer_end_date)(min_recurrent_transfers_recurrence)
+        (max_open_recurrent_transfers)
         )
 
 FC_REFLECT( hive::plugins::condenser_api::api_witness_object,

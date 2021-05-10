@@ -95,6 +95,10 @@ struct state_object_size_info
   // proposal_vote_object
   int64_t proposal_vote_object_base_size       = 24  *STATE_BYTES_SCALE;
   int64_t proposal_vote_object_member_size     = 8   *STATE_BYTES_SCALE;
+
+  // recurrent_transfer_operation
+  int64_t recurrent_transfer_object_base_size = 80 * STATE_BYTES_SCALE;
+
 };
 
 struct operation_exec_info
@@ -138,6 +142,7 @@ struct operation_exec_info
   int64_t withdraw_vesting_operation_exec_time                =  10400;
   int64_t witness_set_properties_operation_exec_time          =   9500;
   int64_t witness_update_operation_exec_time                  =   9500;
+  int64_t recurrent_transfer_operation_exec_time              =  17200;
 
 #ifdef HIVE_ENABLE_SMT
   int64_t claim_reward_balance2_operation_exec_time           = 0;
@@ -243,5 +248,6 @@ FC_REFLECT( hive::plugins::rc::operation_exec_info,
   (update_proposal_operation_exec_time)
   (update_proposal_votes_operation_exec_time)
   (remove_proposal_operation_exec_time)
+  (recurrent_transfer_operation_exec_time)
 
   )

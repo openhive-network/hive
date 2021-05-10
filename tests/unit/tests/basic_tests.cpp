@@ -461,7 +461,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( comment_object ), 36u ); //85M+ growing fast
 
   //permanent objects (no operation to remove)
-  BOOST_CHECK_EQUAL( sizeof( account_object ), 424u ); //1.3M+
+  BOOST_CHECK_EQUAL( sizeof( account_object ), 432u ); //1.3M+
   BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 72u ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
   BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 248u ); //as many as account_object
   BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_object ), 48u ); //obsolete - only created/modified up to HF12 (683 objects)
@@ -495,7 +495,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
 
   //singletons (size only affects performance, especially with MIRA)
   BOOST_CHECK_EQUAL( sizeof( reward_fund_object ), 96u );
-  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 360u
+  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 368u
 #ifdef HIVE_ENABLE_SMT
     + 16
 #endif
@@ -504,6 +504,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( hardfork_property_object ), 120u );
   BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 232u ); //dynamic size worth 7*24 of sizeof(price)
   BOOST_CHECK_EQUAL( sizeof( witness_schedule_object ), 536u );
+  BOOST_CHECK_EQUAL( sizeof( recurrent_transfer_object ), 72u );
 
   //TODO: categorize and evaluate size potential of SMT related objects:
   //account_regular_balance_object

@@ -150,6 +150,7 @@ namespace hive { namespace chain {
       share_type        withdrawn = 0; /// Track how many shares have been withdrawn
       share_type        to_withdraw = 0; /// Might be able to look this up with operation history.
       share_type        pending_claimed_accounts = 0;
+      uint16_t          open_recurrent_transfers = 0; //for now max is 255, but it might change
 
       /*
         Total sum of VESTS from `delayed_votes` collection.
@@ -613,6 +614,7 @@ FC_REFLECT( hive::chain::account_object,
           (delayed_votes)
           (sum_delayed_votes)
           (governance_vote_expiration_ts)
+          (open_recurrent_transfers)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_object, hive::chain::account_index )

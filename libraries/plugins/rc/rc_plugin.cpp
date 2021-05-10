@@ -368,7 +368,6 @@ struct block_extensions_count_resources_visitor
   typedef void result_type;
 
   count_resources_result& _r;
-
   block_extensions_count_resources_visitor( count_resources_result& r ) : _r( r ) {}
 
   // Only optional actions need to be counted. We decided in design that
@@ -378,7 +377,7 @@ struct block_extensions_count_resources_visitor
   {
     for( const auto& a : opt_actions )
     {
-      count_resources( a, _r );
+      count_resources( a, _r);
     }
   }
 
