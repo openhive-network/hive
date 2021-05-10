@@ -126,8 +126,8 @@ enum enum_vops_filter : uint64_t
   account_created_operation                     = 0x0'40000000ull,
   fill_collateralized_convert_request_operation = 0x0'80000000ull,
   system_warning_operation                      = 0x1'00000000ull,
-  fill_recurrent_transfer_operation             = 0x1'00000001ull,
-  failed_recurrent_transfer_operation           = 0x1'00000002ull,
+  fill_recurrent_transfer_operation             = 0x2'00000000ull,
+  failed_recurrent_transfer_operation           = 0x4'00000000ull,
 };
 
 /** Allows to specify range of blocks to retrieve virtual operations for.
