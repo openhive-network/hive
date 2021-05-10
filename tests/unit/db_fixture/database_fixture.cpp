@@ -1437,6 +1437,8 @@ json_rpc_database_fixture::json_rpc_database_fixture()
 
   appbase::app().get_plugin< hive::plugins::condenser_api::condenser_api_plugin >().plugin_startup();
 
+  rpc_plugin->finalize_startup();
+
   db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
   BOOST_REQUIRE( db );
 
@@ -1513,6 +1515,8 @@ void json_rpc_database_fixture::review_answer( fc::variant& answer, int64_t code
 {
   fc::variant_object error;
   int64_t answer_code;
+
+  BOOST_TEST_MESSAGE( fc::json::to_string( answer ).c_str() );
 
   if( is_fail )
   {

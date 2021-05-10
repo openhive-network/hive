@@ -129,11 +129,30 @@ namespace detail
 
   class json_rpc_plugin_impl
   {
+
+    /*
+      Problem:
+        In general API plugins are attached to JSON plugin. Every attachment has to be done after initial actions.
+        If any methods are registered earlier, then it's a risk that calls to a node can be done before launching some initial actions in result undefined behaviour can occur f.e. segfault.
+
+      Solution:
+        Collections `proxy_data` are used when gathering of API methods when an initialization of plugins is in progress.
+        When all plugins are initialized, gathered data is moved into `data` object.
+    */
+    struct
+    {
+      map< string, api_description >                     _registered_apis;
+      vector< string >                                   _methods;
+      map< string, map< string, api_method_signature > > _method_sigs;
+    } data, proxy_data;
+
     public:
       json_rpc_plugin_impl();
       ~json_rpc_plugin_impl();
 
       void add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig );
+      void plugin_finalize_startup();
+      void plugin_pre_shutdown();
 
       api_method* find_api_method( std::string api, std::string method );
       api_method* process_params( string method, const fc::variant_object& request, fc::variant& func_args, string* method_name );
@@ -153,9 +172,6 @@ namespace detail
         (get_methods)
         (get_signature) )
 
-      map< string, api_description >                     _registered_apis;
-      vector< string >                                   _methods;
-      map< string, map< string, api_method_signature > > _method_sigs;
       std::unique_ptr< json_rpc_logger >                 _logger;
   };
 
@@ -164,12 +180,28 @@ namespace detail
 
   void json_rpc_plugin_impl::add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig )
   {
-    _registered_apis[ api_name ][ method_name ] = api;
-    _method_sigs[ api_name ][ method_name ] = sig;
+    proxy_data._registered_apis[ api_name ][ method_name ] = api;
+    proxy_data._method_sigs[ api_name ][ method_name ] = sig;
 
     std::stringstream canonical_name;
     canonical_name << api_name << '.' << method_name;
-    _methods.push_back( canonical_name.str() );
+    proxy_data._methods.push_back( canonical_name.str() );
+  }
+
+  void json_rpc_plugin_impl::plugin_finalize_startup()
+  {
+    std::sort( proxy_data._methods.begin(), proxy_data._methods.end() );
+
+    data._registered_apis = std::move( proxy_data._registered_apis );
+    data._methods         = std::move( proxy_data._methods );
+    data._method_sigs     = std::move( proxy_data._method_sigs );
+  }
+
+  void json_rpc_plugin_impl::plugin_pre_shutdown()
+  {
+    data._registered_apis.clear();
+    data._methods.clear();
+    data._method_sigs.clear();
   }
 
   void json_rpc_plugin_impl::initialize()
@@ -180,7 +212,7 @@ namespace detail
   get_methods_return json_rpc_plugin_impl::get_methods( const get_methods_args& args, bool lock )
   {
     FC_UNUSED( lock )
-    return _methods;
+    return data._methods;
   }
 
   get_signature_return json_rpc_plugin_impl::get_signature( const get_signature_args& args, bool lock )
@@ -190,8 +222,8 @@ namespace detail
     boost::split( v, args.method, boost::is_any_of( "." ) );
     FC_ASSERT( v.size() == 2, "Invalid method name" );
 
-    auto api_itr = _method_sigs.find( v[0] );
-    FC_ASSERT( api_itr != _method_sigs.end(), "Method ${api}.${method} does not exist.", ("api", v[0])("method", v[1]) );
+    auto api_itr = data._method_sigs.find( v[0] );
+    FC_ASSERT( api_itr != data._method_sigs.end(), "Method ${api}.${method} does not exist.", ("api", v[0])("method", v[1]) );
 
     auto method_itr = api_itr->second.find( v[1] );
     FC_ASSERT( method_itr != api_itr->second.end(), "Method ${api}.${method} does not exist", ("api", v[0])("method", v[1]) );
@@ -202,8 +234,8 @@ namespace detail
   api_method* json_rpc_plugin_impl::find_api_method( std::string api, std::string method )
   {
     STATSD_START_TIMER( "jsonrpc", "overhead", "find_api_method", 1.0f );
-    auto api_itr = _registered_apis.find( api );
-    FC_ASSERT( api_itr != _registered_apis.end(), "Could not find API ${api}", ("api", api) );
+    auto api_itr = data._registered_apis.find( api );
+    FC_ASSERT( api_itr != data._registered_apis.end(), "Could not find API ${api}", ("api", api) );
 
     auto method_itr = api_itr->second.find( method );
     FC_ASSERT( method_itr != api_itr->second.end(), "Could not find method ${method}", ("method", method) );
@@ -430,12 +462,19 @@ void json_rpc_plugin::plugin_initialize( const variables_map& options )
   }
 }
 
-void json_rpc_plugin::plugin_startup()
+void json_rpc_plugin::plugin_startup() {}
+
+void json_rpc_plugin::plugin_pre_shutdown()
 {
-  std::sort( my->_methods.begin(), my->_methods.end() );
+  my->plugin_pre_shutdown();
 }
 
 void json_rpc_plugin::plugin_shutdown() {}
+
+void json_rpc_plugin::plugin_finalize_startup()
+{
+  my->plugin_finalize_startup();
+}
 
 void json_rpc_plugin::add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig )
 {

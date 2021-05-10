@@ -151,6 +151,14 @@ void application::startup() {
       break;
   }
 
+  if( !is_interrupt_request() )
+  {
+    for( const auto& plugin : initialized_plugins )
+    {
+      plugin->finalize_startup();
+    }
+  }
+
   startup_io_handler.close();
 
   startup_thread.join();

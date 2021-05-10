@@ -48,9 +48,9 @@ namespace appbase {
       virtual void set_program_options( options_description& cli, options_description& cfg ) = 0;
       virtual void initialize(const variables_map& options) = 0;
       virtual void startup() = 0;
+      virtual void finalize_startup() = 0;
       virtual void pre_shutdown() = 0;
       virtual void shutdown() = 0;
-
     protected:
       typedef std::function<void(abstract_plugin&)> plugin_processor;
 
@@ -64,14 +64,22 @@ namespace appbase {
           It is a part of initialization process triggerred by main application.
       */
       virtual void plugin_initialize( const variables_map& options ) = 0;
+
       /** Abstract method to be reimplemented in final plugin implementation.
           It is a part of startup process triggerred by main application.
       */
       virtual void plugin_startup() = 0;
+
+      /** Abstract method to be reimplemented in final plugin implementation.
+          It is a part of final stage of startup process triggerred by main application.
+      */
+      virtual void plugin_finalize_startup() = 0;
+
       /** Abstract method to be reimplemented in final plugin implementation.
           It is a part of shutdown process triggerred by main application.
       */
       virtual void plugin_pre_shutdown() = 0;
+
       /** Abstract method to be reimplemented in final plugin implementation.
           It is a part of shutdown process triggerred by main application.
       */

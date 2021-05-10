@@ -242,6 +242,20 @@ namespace appbase {
           BOOST_THROW_EXCEPTION( std::runtime_error("Initial state was not initialized, so final state cannot be started.") );
       }
 
+      virtual void finalize_startup() override final
+      {
+        this->plugin_finalize_startup();
+      }
+
+      virtual void plugin_finalize_startup() override
+      {
+        /*
+          By default most plugins don't need any post-actions during startup.
+          Problem is with JSON plugin, that has API plugins attached to itself.
+          Linking plugins into JSON plugin has to be done after startup actions.
+        */
+      }
+
       virtual void plugin_pre_shutdown() override
       {
         /*
