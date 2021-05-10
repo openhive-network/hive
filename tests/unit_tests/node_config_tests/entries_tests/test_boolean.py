@@ -1,6 +1,6 @@
 import pytest
 
-from test_library.node_config_entry_types.boolean import Boolean
+from test_library.node_config_entry_types import Boolean
 
 
 @pytest.fixture

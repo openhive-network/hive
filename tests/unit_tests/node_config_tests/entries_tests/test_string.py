@@ -1,6 +1,6 @@
 import pytest
 
-from test_library.node_config_entry_types.string import String
+from test_library.node_config_entry_types import String
 
 
 @pytest.fixture

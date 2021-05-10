@@ -1,6 +1,6 @@
 import pytest
 
-from test_library.node_config_entry_types.untouched import Untouched
+from test_library.node_config_entry_types import Untouched
 
 
 @pytest.fixture
