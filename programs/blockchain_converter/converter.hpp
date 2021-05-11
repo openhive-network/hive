@@ -72,7 +72,7 @@ namespace hive {
       /// Tries to guess canon type using given signature. If not found it is defaulted to fc::ecc::non_canonical
       fc::ecc::canonical_signature_type get_canon_type( const signature_type& _signature )const;
 
-      typename authority::key_authority_map convert_authorities( const typename authority::key_authority_map& auths, authority::classification type );
+      void convert_authority( authority& _auth, authority::classification type );
 
       const private_key_type& get_second_authority_key( authority::classification type )const;
       void set_second_authority_key( const private_key_type& key, authority::classification type );
