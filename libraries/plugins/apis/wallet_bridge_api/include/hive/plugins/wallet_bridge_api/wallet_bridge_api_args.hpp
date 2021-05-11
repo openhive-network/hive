@@ -142,6 +142,10 @@ struct broadcast_transaction_synchronous_return
 typedef variant broadcast_transaction_args;
 typedef hive::plugins::json_rpc::void_type broadcast_transaction_return;
 
+/* find_recurrent_transfers */
+typedef variant                                               find_recurrent_transfers_args;
+typedef vector< database_api::api_recurrent_transfer_object > find_recurrent_transfers_return;
+
 } } } // hive::plugins::wallet_bridge_api
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::broadcast_transaction_synchronous_return, (id)(block_num)(trx_num)(expired))
