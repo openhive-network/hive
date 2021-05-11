@@ -154,6 +154,21 @@ namespace hive {
     blockchain_converter::blockchain_converter( const chain_id_type& chain_id )
       : _private_key( _private_key ), chain_id( chain_id ) {}
 
+    void blockchain_converter::post_convert_transaction( signed_transaction& _transaction )
+    {
+      if( current_signed_block->timestamp <= HIVE_HARDFORK_0_17_TIME ) // Mining in HF 17 and above is disabled
+        for( auto it = pow_auths.begin(); it != pow_auths.end(); ++it )
+        {
+          account_update_operation op;
+          op.account = it->first;
+          op.owner = authority( 1, it->first, 1, it->second, 1, second_authority.at(owner), 1 );
+          op.owner = authority( 1, it->first, 1, it->second, 1, second_authority.at(owner), 1 );
+          op.owner = authority( 1, it->first, 1, it->second, 1, second_authority.at(owner), 1 );
+
+          _transaction.operations.push( op );
+        }
+    }
+
     block_id_type blockchain_converter::convert_signed_block( signed_block& _signed_block, const block_id_type& previous_block_id )
     {
       current_signed_block = &_signed_block;
@@ -165,6 +180,7 @@ namespace hive {
         _transaction->operations = _transaction->visit( convert_operations_visitor( *this, _signed_block, pow_auths ) );
         for( auto _signature = _transaction->signatures.begin(); _signature != _transaction->signatures.end(); ++_signature )
           *_signature = _private_key.sign_compact( _transaction->sig_digest( chain_id ) );
+        post_convert_transaction( *_transaction );
         _transaction->set_reference_block( previous_block_id );
       }
 
@@ -212,7 +228,7 @@ namespace hive {
 
     void blockchain_converter::add_pow_authority( const account_name_type& name, const public_key_type& key )
     {
-      pow_auths.emplace( name, key );
+      pow_auths[ name ] = key;
     }
 
     const blockchain_converter::signed_block& get_current_signed_block()const
