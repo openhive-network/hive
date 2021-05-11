@@ -25,6 +25,8 @@ namespace hive {
       std::map< account_name_type, public_key_type >          pow_auths;
       std::map< authority::classification, private_key_type > second_authority;
 
+      void post_convert_transaction( signed_transaction& _transaction );
+
     public:
       /// All converted blocks will be signed using keys derived from the given private key
       blockchain_converter( const private_key_type& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID );
