@@ -35,47 +35,43 @@ int main( int argc, char** argv )
   {
     signal( SIGINT, signal_handler );
 
-    // TODO: Add multiple sources and option details
-
     // Setup converter options
-    bpo::options_description opts;
-      opts.add_options()
-      ("help,h", "Print this help message and exit.")
+    bpo::options_description generic_opts{"Generic options"};
+      generic_opts.add_options()
+      ("help,h", "Print this help message and exit.");
+    bpo::options_description blocklog_opts{"Block log options"};
+      blocklog_opts.add_options()
+      ("input,i", bpo::value< std::string >(), "input block log")
+      ("output,o", bpo::value< std::string >(), "output block log; defaults to [input]_out" );
+    bpo::options_description conversion_opts{"Conversion options"};
+      conversion_opts.add_options()
       ("chain-id,c", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "new chain ID")
       ("private-key,k", bpo::value< std::string >()
 #ifdef IS_TEST_NET
         ->default_value( key_to_wif(HIVE_INIT_PRIVATE_KEY) )
 #endif
-      , "private key from which all other keys will be derived")
-      ("input,i", bpo::value< std::string >(), "input block log")
-      ("output,o", bpo::value< std::string >(), "output block log; defaults to [input]_out" )
+      , "private key with which all transactions and blocks will be signed ")
+      ("owner-key,O", bpo::value< std::string >(), "owner key of the second authority")
+      ("active-key,A", bpo::value< std::string >(), "active key of the second authority")
+      ("posting-key,P", bpo::value< std::string >(), "posting key of the second authority");
+    bpo::options_description logging_opts{"Logging options"};
+      logging_opts.add_options()
       ("log-per-block,l", bpo::value< uint32_t >()->default_value( 0 )->implicit_value( 1 ), "Displays blocks in JSON format every n blocks")
-      ("log-specific,s", bpo::value< uint32_t >()->default_value( 0 ), "Displays only block with specified number")
-      ("owner-key", bpo::value< std::string >()
-#ifdef IS_TEST_NET
-        ->default_value( key_to_wif(HIVE_INIT_PRIVATE_KEY) )
-#endif
-      , "owner key of the second authority")
-      ("active-key", bpo::value< std::string >()
-#ifdef IS_TEST_NET
-        ->default_value( key_to_wif(HIVE_INIT_PRIVATE_KEY) )
-#endif
-      , "active key of the second authority")
-      ("posting-key", bpo::value< std::string >()
-#ifdef IS_TEST_NET
-        ->default_value( key_to_wif(HIVE_INIT_PRIVATE_KEY) )
-#endif
-      , "posting key of the second authority")
-      ;
+      ("log-specific,s", bpo::value< uint32_t >()->default_value( 0 ), "Displays only block with specified number");
+
+    bpo::options_description cmdline_options;
+      cmdline_options.add(generic_opts).add(blocklog_opts).add(conversion_opts).add(logging_opts);
+
+    bpo::positional_options_description pos_opts;
+    pos_opts.add("input", -1);
 
     bpo::variables_map options;
+    bpo::store( bpo::command_line_parser(argc, argv).options(cmdline_options).positional(pos_opts).run(), options );
 
-    bpo::store( bpo::parse_command_line(argc, argv, opts), options );
-
-    if( options.count("help") || !options.count("private-key") || !options.count("input") || !options.count("chain-id") )
+    if( options.count("help") || !options.count("input") )
     {
       std::cout << "Converts mainnet symbols to testnet symbols and adds second authority to all the accounts. Re-signs blocks using given private key.\n"
-        << opts << "\n";
+        << cmdline_options << "\n";
       return 0;
     }
 
@@ -117,9 +113,9 @@ int main( int argc, char** argv )
     private_key_type owner_key;
     private_key_type active_key;
     private_key_type posting_key;
-    fc::optional< private_key_type > _owner_key = wif_to_key( options["owner-key"].as< std::string >() );
-    fc::optional< private_key_type > _active_key = wif_to_key( options["active-key"].as< std::string >() );
-    fc::optional< private_key_type > _posting_key = wif_to_key( options["posting-key"].as< std::string >() );
+    fc::optional< private_key_type > _owner_key = wif_to_key( options.count("owner-key") ? options["owner-key"].as< std::string >() : "" );
+    fc::optional< private_key_type > _active_key = wif_to_key( options.count("active-key") ? options["active-key"].as< std::string >() : "" );
+    fc::optional< private_key_type > _posting_key = wif_to_key( options.count("posting-key") ? options["posting-key"].as< std::string >() : "" );
 
     if( options.count("owner-key") && _owner_key.valid() )
     {
