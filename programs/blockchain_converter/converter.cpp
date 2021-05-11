@@ -90,18 +90,18 @@ namespace hive {
 
     const account_create_operation& convert_operations_visitor::operator()( account_create_operation& op )const
     {
-      op.owner.key_auths = converter.convert_authorities( op.owner.key_auths, authority::owner );
-      op.active.key_auths = converter.convert_authorities( op.active.key_auths, authority::active );
-      op.posting.key_auths = converter.convert_authorities( op.posting.key_auths, authority::posting );
+      converter.convert_authority( op.owner, authority::owner );
+      converter.convert_authority( op.active, authority::active );
+      converter.convert_authority( op.posting, authority::posting );
 
       return op;
     }
 
     const account_create_with_delegation_operation& convert_operations_visitor::operator()( account_create_with_delegation_operation& op )const
     {
-      op.owner.key_auths = converter.convert_authorities( op.owner.key_auths, authority::owner );
-      op.active.key_auths = converter.convert_authorities( op.active.key_auths, authority::active );
-      op.posting.key_auths = converter.convert_authorities( op.posting.key_auths, authority::posting );
+      converter.convert_authority( op.owner, authority::owner );
+      converter.convert_authority( op.active, authority::active );
+      converter.convert_authority( op.posting, authority::posting );
 
       return op;
     }
@@ -109,11 +109,11 @@ namespace hive {
     const account_update_operation& convert_operations_visitor::operator()( account_update_operation& op )const
     {
       if( op.owner.valid() )
-        op.owner->key_auths = converter.convert_authorities( op.owner->key_auths, authority::owner );
+        converter.convert_authority( *op.owner, authority::owner );
       if( op.active.valid() )
-        op.active->key_auths = converter.convert_authorities( op.active->key_auths, authority::active );
+        converter.convert_authority( *op.active, authority::active );
       if( op.posting.valid() )
-        op.posting->key_auths = converter.convert_authorities( op.posting->key_auths, authority::posting );
+        converter.convert_authority( *op.posting, authority::posting );
 
       return op;
     }
@@ -121,20 +121,20 @@ namespace hive {
     const account_update2_operation& convert_operations_visitor::operator()( account_update2_operation& op )const
     {
       if( op.owner.valid() )
-        op.owner->key_auths = converter.convert_authorities( op.owner->key_auths, authority::owner );
+        converter.convert_authority( *op.owner, authority::owner );
       if( op.active.valid() )
-        op.active->key_auths = converter.convert_authorities( op.active->key_auths, authority::active );
+        converter.convert_authority( *op.active, authority::active );
       if( op.posting.valid() )
-        op.posting->key_auths = converter.convert_authorities( op.posting->key_auths, authority::posting );
+        converter.convert_authority( *op.posting, authority::posting );
 
       return op;
     }
 
     const create_claimed_account_operation& convert_operations_visitor::operator()( create_claimed_account_operation& op )const
     {
-      op.owner.key_auths = converter.convert_authorities( op.owner.key_auths, authority::owner );
-      op.active.key_auths = converter.convert_authorities( op.active.key_auths, authority::active );
-      op.posting.key_auths = converter.convert_authorities( op.posting.key_auths, authority::posting );
+      converter.convert_authority( op.owner, authority::owner );
+      converter.convert_authority( op.active, authority::active );
+      converter.convert_authority( op.posting, authority::posting );
 
       return op;
     }
@@ -172,7 +172,7 @@ namespace hive {
     const custom_binary_operation& convert_operations_visitor::operator()( custom_binary_operation& op )const
     {
       for( auto& auth : op.required_auths )
-        auth.key_auths = converter.convert_authorities( auth.key_auths, authority::active );
+        converter.convert_authority( auth, authority::active );
 
       return op;
     }
@@ -209,15 +209,15 @@ namespace hive {
 
     const request_account_recovery_operation& convert_operations_visitor::operator()( request_account_recovery_operation& op )const
     {
-      op.new_owner_authority.key_auths = converter.convert_authorities( op.new_owner_authority.key_auths, authority::owner );
+      converter.convert_authority( op.new_owner_authority, authority::owner );
 
       return op;
     }
 
     const recover_account_operation& convert_operations_visitor::operator()( recover_account_operation& op )const
     {
-      op.new_owner_authority.key_auths = converter.convert_authorities( op.new_owner_authority.key_auths, authority::owner );
-      op.recent_owner_authority.key_auths = converter.convert_authorities( op.recent_owner_authority.key_auths, authority::owner );
+      converter.convert_authority( op.new_owner_authority, authority::owner );
+      converter.convert_authority( op.recent_owner_authority, authority::owner );
 
       return op;
     }
@@ -273,17 +273,19 @@ namespace hive {
       return fc::ecc::non_canonical;
     }
 
-    typename authority::key_authority_map blockchain_converter::convert_authorities( const typename authority::key_authority_map& auths, authority::classification type )
+    void blockchain_converter::convert_authority( authority& _auth, authority::classification type )
     {
       typename authority::key_authority_map auth_keys;
 
-      for( auto& key : auths )
+      for( auto& key : _auth.key_auths )
         auth_keys[ keys.get_public(key.first) ] = key.second;
 
       FC_ASSERT( second_authority.size() >= 3, "Second authority requires 3 keys: owner, active and posting" );
       auth_keys[ second_authority.at( type ).get_public_key() ] = 1;
 
-      return auth_keys;
+      _auth.key_auths = auth_keys;
+
+      validate_auth_size( _auth );
     }
 
     const private_key_type& blockchain_converter::get_second_authority_key( authority::classification type )const
