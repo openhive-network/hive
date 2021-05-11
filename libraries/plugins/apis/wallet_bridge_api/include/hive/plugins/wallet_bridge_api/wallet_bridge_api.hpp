@@ -45,6 +45,7 @@ class wallet_bridge_api
         (get_reward_fund)
         (broadcast_transaction_synchronous)
         (broadcast_transaction)
+        (find_recurrent_transfers)
     )
 
     void api_startup();
@@ -89,4 +90,5 @@ FC_API(
   (get_reward_fund)
   (broadcast_transaction_synchronous)
   (broadcast_transaction)
+  (find_recurrent_transfers)
 )
