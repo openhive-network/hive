@@ -24,69 +24,8 @@ namespace hive {
 
   namespace converter {
 
-    derived_keys_map::derived_keys_map( const private_key_type& _private_key )
-      : _private_key( _private_key ) {}
-
-    public_key_type derived_keys_map::get_public( const public_key_type& original )
-    {
-      return get_private( original ).get_public_key();
-    }
-
-    const private_key_type& derived_keys_map::get_private( const public_key_type& original )
-    {
-      if( keys.find( original ) != keys.end() )
-        return keys.at( original );
-
-      auto serialized_key = original.operator fc::ecc::public_key().serialize();
-
-      return keys.emplace( original,
-          _private_key.child(fc::sha256::hash( serialized_key.data, serialized_key.size() ))
-        ).first->second;
-    }
-
-    const private_key_type& derived_keys_map::at( const public_key_type& original )const
-    {
-      return keys.at( original );
-    }
-
-    bool derived_keys_map::emplace( const public_key_type& _public_key, const private_key_type& _private_key )
-    {
-      return keys.emplace( _public_key, _private_key ).second;
-    }
-
-    derived_keys_map::const_iterator derived_keys_map::begin()const { return keys.begin(); }
-
-    derived_keys_map::const_iterator derived_keys_map::end()const { return keys.end(); }
-
-    void derived_keys_map::save_wallet_file( const std::string& password, std::string wallet_filename )const
-    {
-      FC_ASSERT( !password.empty(), "password cannot be an empty string" );
-
-      plain_keys _pk;
-      for( auto& key : keys )
-        _pk.keys[ key.second.get_public_key() ] = key_to_wif( key.second );
-
-      _pk.checksum = fc::sha512::hash(password.c_str(), password.size());
-
-      auto plain_txt = fc::raw::pack_to_vector(_pk);
-
-      wallet_data _wallet;
-
-      _wallet.cipher_keys = fc::aes_encrypt( _pk.checksum, plain_txt );
-
-      if( wallet_filename.empty() )
-        wallet_filename = "wallet.json";
-
-      std::string data = fc::json::to_pretty_string( _wallet );
-
-      fc::ofstream outfile{ fc::path( wallet_filename ) };
-      outfile.write( data.c_str(), data.length() );
-      outfile.flush();
-      outfile.close();
-    }
-
-    convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, signed_block& _signed_block )
-      : converter( converter ), _signed_block(_signed_block) {}
+    convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter )
+      : converter( converter ) {}
 
     const account_create_operation& convert_operations_visitor::operator()( account_create_operation& op )const
     {
@@ -141,7 +80,7 @@ namespace hive {
 
     const witness_update_operation& convert_operations_visitor::operator()( witness_update_operation& op )const
     {
-      op.block_signing_key = converter.get_keys().get_public(op.block_signing_key);
+      op.block_signing_key = converter.get_witness_key().get_public_key();
 
       return op;
     }
@@ -153,18 +92,12 @@ namespace hive {
       auto key_itr = op.props.find( "key" );
 
       if( key_itr != op.props.end() )
-      {
-        fc::raw::unpack_from_vector( key_itr->second, signing_key );
-        op.props.at( "key" ) = fc::raw::pack_to_vector( converter.get_keys().get_public(signing_key) );
-      }
+        op.props.at( "key" ) = fc::raw::pack_to_vector( converter.get_witness_key().get_public_key() );
 
       auto new_signing_key_itr = op.props.find( "new_signing_key" );
 
       if( new_signing_key_itr != op.props.end() )
-      {
-        fc::raw::unpack_from_vector( new_signing_key_itr->second, signing_key );
-        op.props.at( "new_signing_key" ) = fc::raw::pack_to_vector( converter.get_keys().get_public(signing_key) );
-      }
+        op.props.at( "new_signing_key" ) = fc::raw::pack_to_vector( converter.get_witness_key().get_public_key() );
 
       return op;
     }
@@ -179,14 +112,9 @@ namespace hive {
 
     const pow_operation& convert_operations_visitor::operator()( pow_operation& op )const
     {
-      op.block_id = _signed_block.previous;
+      op.block_id = converter.get_current_signed_block().previous;
 
-      op.work.worker = converter.get_keys().get_public( op.work.worker );
-
-      op.work.create(
-          converter.convert_signature_from_header( op.work.signature, _signed_block ),
-          op.work_input()
-        );
+      converter.add_pow_authority( op.worker_account, op.work.worker );
 
       return op;
     }
@@ -194,7 +122,7 @@ namespace hive {
     const pow2_operation& convert_operations_visitor::operator()( pow2_operation& op )const
     {
       if( op.new_owner_key.valid() )
-        *op.new_owner_key = converter.get_keys().get_public(*op.new_owner_key);
+        converter.add_pow_authority( ( op.work.which() ? op.work.get< equihash_pow >() : op.work.get< pow2 >() ).input.worker_account, *op.new_owner_key );
 
       return op;
     }
@@ -223,54 +151,33 @@ namespace hive {
     }
 
 
-    blockchain_converter::blockchain_converter( const private_key_type& _private_key, const chain_id_type& chain_id )
-      : _private_key( _private_key ), chain_id( chain_id ), keys( _private_key ) {}
+    blockchain_converter::blockchain_converter( const chain_id_type& chain_id )
+      : _private_key( _private_key ), chain_id( chain_id ) {}
 
     block_id_type blockchain_converter::convert_signed_block( signed_block& _signed_block, const block_id_type& previous_block_id )
     {
-      convert_signed_header( _signed_block );
+      current_signed_block = &_signed_block;
 
       _signed_block.previous = previous_block_id;
 
       for( auto _transaction = _signed_block.transactions.begin(); _transaction != _signed_block.transactions.end(); ++_transaction )
       {
-        _transaction->operations = _transaction->visit( convert_operations_visitor( *this, _signed_block ) );
+        _transaction->operations = _transaction->visit( convert_operations_visitor( *this, _signed_block, pow_auths ) );
         for( auto _signature = _transaction->signatures.begin(); _signature != _transaction->signatures.end(); ++_signature )
-          *_signature = convert_signature_from_header( *_signature, _signed_block ).sign_compact( _transaction->sig_digest( chain_id ), get_canon_type( *_signature ) );
+          *_signature = _private_key.sign_compact( _transaction->sig_digest( chain_id ) );
         _transaction->set_reference_block( previous_block_id );
       }
 
       _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
+
+      convert_signed_header( _signed_block );
 
       return _signed_block.id();
     }
 
     void blockchain_converter::convert_signed_header( signed_block_header& _signed_header )
     {
-      _signed_header.sign( convert_signature_from_header( _signed_header.witness_signature, _signed_header ), get_canon_type( _signed_header.witness_signature ) );
-    }
-
-    const private_key_type& blockchain_converter::convert_signature_from_header( const signature_type& _signature, const signed_block_header& _signed_header )
-    {
-      switch( get_canon_type( _signature ) )
-      {
-        case fc::ecc::bip_0062:
-          return keys.get_private( _signed_header.signee(fc::ecc::bip_0062) );
-        case fc::ecc::fc_canonical:
-          return keys.get_private( _signed_header.signee(fc::ecc::fc_canonical) );
-        default:
-          return keys.get_private( _signed_header.signee(fc::ecc::non_canonical) );
-      }
-    }
-
-    fc::ecc::canonical_signature_type blockchain_converter::get_canon_type( const signature_type& _signature )const
-    {
-      if ( fc::ecc::public_key::is_canonical( _signature, fc::ecc::bip_0062 ) )
-        return fc::ecc::bip_0062;
-      else if ( fc::ecc::public_key::is_canonical( _signature, fc::ecc::fc_canonical ) )
-        return fc::ecc::fc_canonical;
-
-      return fc::ecc::non_canonical;
+      _signed_header.sign( _private_key );
     }
 
     void blockchain_converter::convert_authority( authority& _auth, authority::classification type )
@@ -280,7 +187,6 @@ namespace hive {
       for( auto& key : _auth.key_auths )
         auth_keys[ keys.get_public(key.first) ] = key.second;
 
-      FC_ASSERT( second_authority.size() >= 3, "Second authority requires 3 keys: owner, active and posting" );
       auth_keys[ second_authority.at( type ).get_public_key() ] = 1;
 
       _auth.key_auths = auth_keys;
@@ -299,13 +205,19 @@ namespace hive {
       keys.emplace( key.get_public_key(), key );
     }
 
-    derived_keys_map& blockchain_converter::get_keys()
+    const priate_key_type& blockchain_converter::get_witness_key()const
     {
-      return keys;
+      return _private_key;
     }
-    const derived_keys_map& blockchain_converter::get_keys()const
+
+    void blockchain_converter::add_pow_authority( const account_name_type& name, const public_key_type& key )
     {
-      return keys;
+      pow_auths.emplace( name, key );
+    }
+
+    const blockchain_converter::signed_block& get_current_signed_block()const
+    {
+      return *current_signed_block;
     }
   }
 }
