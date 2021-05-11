@@ -41,7 +41,7 @@ namespace hive {
       const private_key_type& get_second_authority_key( authority::classification type )const;
       void set_second_authority_key( const private_key_type& key, authority::classification type );
 
-      const priate_key_type& get_witness_key()const;
+      const private_key_type& get_witness_key()const;
 
       void add_pow_authority( const account_name_type& name, const public_key_type& key );
 

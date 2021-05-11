@@ -172,6 +172,10 @@ int main( int argc, char** argv )
     else
       posting_key = private_key_type::generate();
 
+    converter.set_second_authority_key( owner_key, authority::owner );
+    converter.set_second_authority_key( active_key, authority::active );
+    converter.set_second_authority_key( posting_key, authority::posting );
+
     block_id_type last_block_id = log_out.head() ? log_out.read_head().id() : block_id_type();
 
     for( uint32_t block_num = block_header::num_from_id( last_block_id ) + 1; block_num <= log_in.head()->block_num() && !stop_flag; ++block_num )
@@ -211,15 +215,11 @@ int main( int argc, char** argv )
 
     if( stop_flag )
       std::cerr << "\nUser interrupt detected! Saving conversion state...";
+    if( log_out.head() && log_out.read_head().timestamp.sec_since_epoch() <= HIVE_HARDFORK_0_17_TIME )
+      std::cerr << "\nSecond authority has not been applied on the accounts created with proof of work operation. Try resuming the conversion process";
 
     log_in.close();
     log_out.close();
-
-    if( options.count("wallet-file") )
-    {
-      converter.get_keys().save_wallet_file( options["wallet-password"].as< std::string >(), options["wallet-file"].as< std::string >() );
-      std::cout << "\nWallet file generated";
-    }
 
     std::cout << "\nSecond authority wif private keys:\n"
       << "Owner:   " << key_to_wif( owner_key ) << '\n'
