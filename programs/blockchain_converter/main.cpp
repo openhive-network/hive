@@ -41,21 +41,31 @@ int main( int argc, char** argv )
     bpo::options_description opts;
       opts.add_options()
       ("help,h", "Print this help message and exit.")
+      ("chain-id,c", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "new chain ID")
       ("private-key,k", bpo::value< std::string >()
 #ifdef IS_TEST_NET
         ->default_value( key_to_wif(HIVE_INIT_PRIVATE_KEY) )
 #endif
-        , "private key from which all other keys will be derived")
-      ("chain-id,c", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "new chain ID")
+      , "private key from which all other keys will be derived")
       ("input,i", bpo::value< std::string >(), "input block log")
       ("output,o", bpo::value< std::string >(), "output block log; defaults to [input]_out" )
-      ("wallet-file,w", bpo::value< std::string >()->implicit_value( "wallet.json" ), "optional wallet filename to save generated private keys" )
-      ("wallet-password,p", bpo::value< std::string >()->default_value( "password" ), "password to the generated wallet file" )
       ("log-per-block,l", bpo::value< uint32_t >()->default_value( 0 )->implicit_value( 1 ), "Displays blocks in JSON format every n blocks")
       ("log-specific,s", bpo::value< uint32_t >()->default_value( 0 ), "Displays only block with specified number")
-      ("owner-key", bpo::value< std::string >(), "owner key of the second authority")
-      ("active-key", bpo::value< std::string >(), "active key of the second authority")
-      ("posting-key", bpo::value< std::string >(), "posting key of the second authority")
+      ("owner-key", bpo::value< std::string >()
+#ifdef IS_TEST_NET
+        ->default_value( key_to_wif(HIVE_INIT_PRIVATE_KEY) )
+#endif
+      , "owner key of the second authority")
+      ("active-key", bpo::value< std::string >()
+#ifdef IS_TEST_NET
+        ->default_value( key_to_wif(HIVE_INIT_PRIVATE_KEY) )
+#endif
+      , "active key of the second authority")
+      ("posting-key", bpo::value< std::string >()
+#ifdef IS_TEST_NET
+        ->default_value( key_to_wif(HIVE_INIT_PRIVATE_KEY) )
+#endif
+      , "posting key of the second authority")
       ;
 
     bpo::variables_map options;
@@ -64,7 +74,7 @@ int main( int argc, char** argv )
 
     if( options.count("help") || !options.count("private-key") || !options.count("input") || !options.count("chain-id") )
     {
-      std::cout << "Converts mainnet symbols to testnet symbols. Re-signs all blocks and transactions with keys derived from the provided private key\n"
+      std::cout << "Converts mainnet symbols to testnet symbols and adds second authority to all the accounts. Re-signs blocks using given private key.\n"
         << opts << "\n";
       return 0;
     }
@@ -107,36 +117,60 @@ int main( int argc, char** argv )
     private_key_type owner_key;
     private_key_type active_key;
     private_key_type posting_key;
+    fc::optional< private_key_type > _owner_key = wif_to_key( options["owner-key"].as< std::string >() );
+    fc::optional< private_key_type > _active_key = wif_to_key( options["active-key"].as< std::string >() );
+    fc::optional< private_key_type > _posting_key = wif_to_key( options["posting-key"].as< std::string >() );
 
-    if( options.count("owner-key") )
+    if( options.count("owner-key") && _owner_key.valid() )
     {
-      fc::optional< private_key_type > _owner_key = wif_to_key( options["owner-key"].as< std::string >() );
-      FC_ASSERT( _owner_key.valid(), "unable to parse the owner key of the second authority" );
       owner_key = *_owner_key;
+      if( !options.count( "active-key" ) )
+      {
+        std::cout << "Note: Using owner key as the active key!\n";
+        active_key = owner_key;
+      }
+      if( !options.count( "posting-key" ) )
+      {
+        std::cout << "Note: Using owner key as the posting key!\n";
+        posting_key = owner_key;
+      }
     }
     else
       owner_key = private_key_type::generate();
-    converter.set_second_authority_key( owner_key, authority::owner );
 
-    if( options.count("active-key") )
+    if( options.count("active-key") && _active_key.valid() )
     {
-      fc::optional< private_key_type > _active_key = wif_to_key( options["active-key"].as< std::string >() );
-      FC_ASSERT( _active_key.valid(), "unable to parse the active key of the second authority" );
       active_key = *_active_key;
+      if( !options.count( "owner-key" ) )
+      {
+        std::cout << "Note: Using active key as the owner key!\n";
+        owner_key = active_key;
+      }
+      if( !options.count( "posting-key" ) )
+      {
+        std::cout << "Note: Using active key as the posting key!\n";
+        posting_key = active_key;
+      }
     }
     else
       active_key = private_key_type::generate();
-    converter.set_second_authority_key( active_key, authority::active );
 
-    if( options.count("posting-key") )
+    if( options.count("posting-key") && _posting_key.valid() )
     {
-      fc::optional< private_key_type > _posting_key = wif_to_key( options["posting-key"].as< std::string >() );
-      FC_ASSERT( _posting_key.valid(), "unable to parse the posting key of the second authority" );
       posting_key = *_posting_key;
+      if( !options.count( "owner-key" ) )
+      {
+        std::cout << "Note: Using posting key as the owner key!\n";
+        owner_key = posting_key;
+      }
+      if( !options.count( "active-key" ) )
+      {
+        std::cout << "Note: Using posting key as the active key!\n";
+        active_key = posting_key;
+      }
     }
     else
       posting_key = private_key_type::generate();
-    converter.set_second_authority_key( posting_key, authority::posting );
 
     block_id_type last_block_id = log_out.head() ? log_out.read_head().id() : block_id_type();
 
