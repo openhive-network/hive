@@ -8,3 +8,6 @@
 	path = tests/tests_api
 	url = https://gitlab.syncad.com/hive/tests_api.git
 	branch = mi_tests_import
+[submodule "tests/test_tools"]
+	path = tests/test_tools
+	url = https://gitlab.syncad.com/hive/test-tools.git
