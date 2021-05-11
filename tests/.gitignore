@@ -1,1 +1,3 @@
-/.pytest_cache/
+.pytest_cache/
+GeneratedInWorld/
+logs/
