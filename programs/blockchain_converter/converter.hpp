@@ -15,47 +15,14 @@ namespace hive {
 
   namespace converter {
 
-    class derived_keys_map
-    {
-    public:
-
-      typedef std::map< public_key_type, private_key_type > keys_map_type;
-      typedef keys_map_type::const_iterator                 const_iterator;
-
-      derived_keys_map( const private_key_type& _private_key );
-
-      /// Generates public key from the private key mapped to the public key from the original block_log
-      public_key_type get_public( const public_key_type& original );
-
-      /// Inserts key to the container if public key from the original block log was not found in the map.
-      /// Returns const reference to the generated derived private key.
-      const private_key_type& get_private( const public_key_type& original );
-
-      /// Retrieves private key from the map. Throws std::out_of_range if given public key was not found.
-      const private_key_type& at( const public_key_type& original )const;
-
-      bool emplace( const public_key_type& _public_key, const private_key_type& _private_key );
-
-      const_iterator begin()const;
-
-      const_iterator end()const;
-
-      void save_wallet_file( const std::string& password, std::string wallet_filename = "" )const;
-
-    private:
-
-      keys_map_type    keys;
-
-      private_key_type _private_key;
-    };
-
     class blockchain_converter
     {
     private:
       private_key_type _private_key;
       chain_id_type    chain_id;
-      derived_keys_map keys;
+      signed_block*    current_signed_block;
 
+      std::map< account_name_type, public_key_type >          pow_auths;
       std::map< authority::classification, private_key_type > second_authority;
 
     public:
@@ -67,30 +34,27 @@ namespace hive {
 
       void convert_signed_header( signed_block_header& _signed_header );
 
-      const private_key_type& convert_signature_from_header( const signature_type& _signature, const signed_block_header& _signed_header );
-
-      /// Tries to guess canon type using given signature. If not found it is defaulted to fc::ecc::non_canonical
-      fc::ecc::canonical_signature_type get_canon_type( const signature_type& _signature )const;
-
       void convert_authority( authority& _auth, authority::classification type );
 
       const private_key_type& get_second_authority_key( authority::classification type )const;
       void set_second_authority_key( const private_key_type& key, authority::classification type );
 
-      derived_keys_map& get_keys();
-      const derived_keys_map& get_keys()const;
+      const priate_key_type& get_witness_key()const;
+
+      void add_pow_authority( const account_name_type& name, const public_key_type& key );
+
+      const signed_block& get_current_signed_block()const;
     };
 
     class convert_operations_visitor
     {
     private:
       blockchain_converter& converter;
-      signed_block& _signed_block;
 
     public:
       typedef operation result_type;
 
-      convert_operations_visitor( blockchain_converter& converter, signed_block& _signed_block );
+      convert_operations_visitor( blockchain_converter& converter );
 
       const account_create_operation& operator()( account_create_operation& op )const;
 
