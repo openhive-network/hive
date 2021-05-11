@@ -1,4 +1,4 @@
-from test_library import World
+from test_tools import World
 
 
 def test_if_single_node_is_closed():

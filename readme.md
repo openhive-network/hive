@@ -1,8 +1,8 @@
 ## Installation
 
-Run installation script. It will install TestLibrary and help you to select which hived, cli_wallet and such executables should be used by TestLibrary.
+Run installation script. It will install TestTools and help you to select which hived, cli_wallet and such executables should be used by TestTools.
 ```bash
-python3 hive/tests/test_library/install.py
+python3 hive/tests/test_tools/install.py
 ```
 
 ## Features
@@ -10,7 +10,7 @@ python3 hive/tests/test_library/install.py
 #### Easy testnet creation
 You can run testnet with node configured for blocks production and attached wallet with such simple script:
 ```python
-from test_library import World
+from test_tools import World
 
 if __name__ == '__main__':
     with World() as world:

@@ -1,7 +1,7 @@
 import pytest
 
 from fixtures import empty_paths as paths
-from test_library.paths_to_executables import NotSupported
+from test_tools.paths_to_executables import NotSupported
 
 
 def test_get_unsupported_executable(paths):

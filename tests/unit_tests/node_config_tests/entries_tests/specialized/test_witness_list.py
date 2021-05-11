@@ -1,7 +1,7 @@
 import pytest
 
-from test_library.node_config import NodeConfig
-from test_library import Account
+from test_tools.node_config import NodeConfig
+from test_tools import Account
 
 
 @pytest.fixture

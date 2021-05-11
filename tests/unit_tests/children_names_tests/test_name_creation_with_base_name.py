@@ -1,6 +1,6 @@
 import pytest
 
-from test_library.children_names import ChildrenNames, NameAlreadyInUse
+from test_tools.children_names import ChildrenNames, NameAlreadyInUse
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
 import pytest
 
-from test_library.node_config_entry_types import Boolean, Integer, List, String, Untouched
+from test_tools.node_config_entry_types import Boolean, Integer, List, String, Untouched
 
 
 @pytest.fixture

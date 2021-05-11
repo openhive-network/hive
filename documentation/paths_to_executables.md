@@ -1,6 +1,6 @@
 ## Paths to executables
 
-TestLibrary contains module which handles paths to executables using by TestLibrary (like _hived_, _cli_wallet_, and so on...). You can configure which executables should be used in following ways:
+TestTools contains module which handles paths to executables using by TestTools (like _hived_, _cli_wallet_, and so on...). You can configure which executables should be used in following ways:
 1. set directly in script
 2. passed as command line arguments
 3. environment variables
@@ -12,7 +12,7 @@ If you have paths configured in multiple ways (i.e. you have installed _hived_ a
 
 You can set path to executable directly in your script like on example below:
 ```python
-from test_library import paths_to_executables
+from test_tools import paths_to_executables
 paths_to_executables.set_path_of('hived', '/home/dev/hive/programs/hived/hived')
 ```
 

@@ -1,7 +1,7 @@
 # This test forces that create_default_config will be always up to date.
 
-from test_library import World
-from test_library.node_configs.default import create_default_config
+from test_tools import World
+from test_tools.node_configs.default import create_default_config
 
 
 def generate_default_config():

@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def check_paths_to_executables():
-    from test_library import paths_to_executables
+    from test_tools import paths_to_executables
     paths = paths_to_executables.get_paths_in_use()
 
     if any([path is None for executable, path in paths.items()]):
@@ -33,7 +33,7 @@ def install():
         check_paths_to_executables()
         exit(0)
 
-    source = this_script_directory / 'package/test_library/'
+    source = this_script_directory / 'package/test_tools/'
     destination.symlink_to(source)
 
     print(f'''You have successfully installed {package_name}.

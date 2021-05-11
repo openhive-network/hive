@@ -7,7 +7,7 @@ class WitnessList(List):
             self.entry._value.append(witness)
 
             if with_key:
-                from test_library import Account
+                from test_tools import Account
                 self.entry._append_private_key(Account(witness).private_key)
 
         def extend(self, witnesses, with_key=True):
