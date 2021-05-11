@@ -108,6 +108,7 @@ class chain_plugin_impl
     bool                             statsd_on_replay = false;
     uint32_t                         stop_replay_at = 0;
     bool                             exit_after_replay = false;
+    bool                             exit_before_replay = false;
     bool                             force_replay = false;
     uint32_t                         benchmark_interval = 0;
     uint32_t                         flush_interval = 0;
@@ -631,6 +632,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("resync-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and block log" )
       ("stop-replay-at-block", bpo::value<uint32_t>(), "Stop after reaching given block number")
       ("exit-after-replay", bpo::bool_switch()->default_value(false), "Exit after reaching given block number")
+      ("exit-before-replay", bpo::bool_switch()->default_value(false), "Exit before starting replay, handy for dumping snapshot without starting replay")
       ("force-replay", bpo::bool_switch()->default_value(false), "Before replaying clean all old files. If specifed, `--replay-blockchain` flag is implied")
       ("advanced-benchmark", "Make profiling for every plugin.")
       ("set-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks")
@@ -670,6 +672,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   my->resync              = options.at( "resync-blockchain").as<bool>();
   my->stop_replay_at      = options.count( "stop-replay-at-block" ) ? options.at( "stop-replay-at-block" ).as<uint32_t>() : 0;
   my->exit_after_replay   = options.count( "exit-after-replay" ) ? options.at( "exit-after-replay" ).as<bool>() : false;
+  my->exit_before_replay   = options.count( "exit-before-replay" ) ? options.at( "exit-before-replay" ).as<bool>() : false;
   my->benchmark_interval  =
     options.count( "set-benchmark-interval" ) ? options.at( "set-benchmark-interval" ).as<uint32_t>() : 0;
   my->check_locks         = options.at( "check-locks" ).as< bool >();
@@ -726,6 +729,12 @@ void chain_plugin::plugin_startup()
 
   ilog("Snapshot processing...");
   my->process_snapshot();
+
+  if(my->exit_before_replay)
+  {
+    ilog("Shutting down node without performing any action on user request");
+    return;
+  }
 
   if( my->replay )
   {
