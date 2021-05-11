@@ -58,6 +58,7 @@ class wallet_bridge_api_impl
         (get_reward_fund)
         (broadcast_transaction_synchronous)
         (broadcast_transaction)
+        (find_recurrent_transfers)
     )
 
     chain::chain_plugin&                                            _chain;
@@ -585,6 +586,13 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction )
   return _network_broadcast_api->broadcast_transaction( { tx } );
 }
 
+DEFINE_API_IMPL( wallet_bridge_api_impl, find_recurrent_transfers )
+{
+  FC_ASSERT( args.get_array()[0].is_string(), "Account name is required as first argument" );
+  const string acc_name = args.get_array()[0].get_string();
+  return _database_api->find_recurrent_transfers( { acc_name } ).recurrent_transfers;
+}
+
 DEFINE_LOCKLESS_APIS(
   wallet_bridge_api, 
   (get_version)
@@ -622,6 +630,7 @@ DEFINE_READ_APIS(
   (is_known_transaction)
   (list_proposal_votes)
   (get_reward_fund)
+  (find_recurrent_transfers)
 )
 
 
