@@ -122,7 +122,10 @@ namespace hive {
     const pow2_operation& convert_operations_visitor::operator()( pow2_operation& op )const
     {
       if( op.new_owner_key.valid() )
-        converter.add_pow_authority( ( op.work.which() ? op.work.get< equihash_pow >() : op.work.get< pow2 >() ).input.worker_account, *op.new_owner_key );
+        converter.add_pow_authority(
+          op.work.which() ? op.work.get< equihash_pow >().input.worker_account : op.work.get< pow2 >().input.worker_account,
+          *op.new_owner_key
+        );
 
       return op;
     }
@@ -151,22 +154,25 @@ namespace hive {
     }
 
 
-    blockchain_converter::blockchain_converter( const chain_id_type& chain_id )
+    blockchain_converter::blockchain_converter( const private_key_type& _private_key, const chain_id_type& chain_id )
       : _private_key( _private_key ), chain_id( chain_id ) {}
 
     void blockchain_converter::post_convert_transaction( signed_transaction& _transaction )
     {
-      if( current_signed_block->timestamp <= HIVE_HARDFORK_0_17_TIME ) // Mining in HF 17 and above is disabled
+      if( current_signed_block->timestamp.sec_since_epoch() <= HIVE_HARDFORK_0_17_TIME ) // Mining in HF 17 and above is disabled
+      {
         for( auto it = pow_auths.begin(); it != pow_auths.end(); ++it )
         {
           account_update_operation op;
           op.account = it->first;
-          op.owner = authority( 1, it->first, 1, it->second, 1, second_authority.at(owner), 1 );
-          op.owner = authority( 1, it->first, 1, it->second, 1, second_authority.at(owner), 1 );
-          op.owner = authority( 1, it->first, 1, it->second, 1, second_authority.at(owner), 1 );
+          op.owner = authority( 1, it->first, 1, it->second, 1, second_authority.at(authority::owner).get_public_key(), 1 );
+          op.active = authority( 1, it->first, 1, it->second, 1, second_authority.at(authority::active).get_public_key(), 1 );
+          op.posting = authority( 1, it->first, 1, it->second, 1, second_authority.at(authority::posting).get_public_key(), 1 );
 
-          _transaction.operations.push( op );
+          _transaction.operations.push_back( op );
         }
+        pow_auths.clear();
+      }
     }
 
     block_id_type blockchain_converter::convert_signed_block( signed_block& _signed_block, const block_id_type& previous_block_id )
@@ -177,7 +183,7 @@ namespace hive {
 
       for( auto _transaction = _signed_block.transactions.begin(); _transaction != _signed_block.transactions.end(); ++_transaction )
       {
-        _transaction->operations = _transaction->visit( convert_operations_visitor( *this, _signed_block, pow_auths ) );
+        _transaction->operations = _transaction->visit( convert_operations_visitor( *this ) );
         for( auto _signature = _transaction->signatures.begin(); _signature != _transaction->signatures.end(); ++_signature )
           *_signature = _private_key.sign_compact( _transaction->sig_digest( chain_id ) );
         post_convert_transaction( *_transaction );
@@ -198,14 +204,7 @@ namespace hive {
 
     void blockchain_converter::convert_authority( authority& _auth, authority::classification type )
     {
-      typename authority::key_authority_map auth_keys;
-
-      for( auto& key : _auth.key_auths )
-        auth_keys[ keys.get_public(key.first) ] = key.second;
-
-      auth_keys[ second_authority.at( type ).get_public_key() ] = 1;
-
-      _auth.key_auths = auth_keys;
+      _auth.key_auths[ second_authority.at( type ).get_public_key() ] = 1;
 
       validate_auth_size( _auth );
     }
@@ -218,10 +217,9 @@ namespace hive {
     void blockchain_converter::set_second_authority_key( const private_key_type& key, authority::classification type )
     {
       second_authority[ type ] = key;
-      keys.emplace( key.get_public_key(), key );
     }
 
-    const priate_key_type& blockchain_converter::get_witness_key()const
+    const private_key_type& blockchain_converter::get_witness_key()const
     {
       return _private_key;
     }
@@ -231,7 +229,7 @@ namespace hive {
       pow_auths[ name ] = key;
     }
 
-    const blockchain_converter::signed_block& get_current_signed_block()const
+    const signed_block& blockchain_converter::get_current_signed_block()const
     {
       return *current_signed_block;
     }
