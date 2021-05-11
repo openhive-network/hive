@@ -159,9 +159,9 @@ namespace hive {
 
     void blockchain_converter::post_convert_transaction( signed_transaction& _transaction )
     {
-      if( current_signed_block->timestamp.sec_since_epoch() <= HIVE_HARDFORK_0_17_TIME ) // Mining in HF 17 and above is disabled
+      if( current_signed_block->timestamp.sec_since_epoch() >= HIVE_HARDFORK_0_17_TIME ) // Mining in HF 17 and above is disabled
       {
-        for( auto it = pow_auths.begin(); it != pow_auths.end(); ++it )
+        for( auto it = pow_auths.begin(); it != pow_auths.end(); ++it ) // TODO: Maybe stack with pairs would be a better idea?
         {
           account_update_operation op;
           op.account = it->first;
