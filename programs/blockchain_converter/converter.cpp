@@ -159,7 +159,7 @@ namespace hive {
 
     void blockchain_converter::post_convert_transaction( signed_transaction& _transaction )
     {
-      if( current_signed_block->block_num() > HIVE_HARDFORK_0_17_BLOCK_NUM && pow_auths.size() ) // Mining in HF 17 and above is disabled
+      while( pow_auths.size() )
       {
         auto it = pow_auths.begin();
 
