@@ -56,22 +56,25 @@ struct pre_operation_visitor
   void operator()( const account_update_operation& op )const
   {
     _plugin.clear_cache();
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( op.account );
-    if( acct_itr ) _plugin.cache_auths( *acct_itr );
+    cache_auths_of( op.account );
   }
 
   void operator()( const account_update2_operation& op )const
   {
     _plugin.clear_cache();
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( op.account );
-    if( acct_itr ) _plugin.cache_auths( *acct_itr );
+    cache_auths_of( op.account );
+  }
+
+  void operator()( const create_claimed_account_operation& op )const
+  {
+    _plugin.clear_cache();
+    cache_auths_of( op.new_account_name );
   }
 
   void operator()( const recover_account_operation& op )const
   {
     _plugin.clear_cache();
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( op.account_to_recover );
-    if( acct_itr ) _plugin.cache_auths( *acct_itr );
+    cache_auths_of( op.account_to_recover );
   }
 
   void operator()( const pow_operation& op )const
@@ -82,6 +85,14 @@ struct pre_operation_visitor
   void operator()( const pow2_operation& op )const
   {
     _plugin.clear_cache();
+  }
+
+private:
+
+  void cache_auths_of( const account_name_type& account_name )const
+  {
+    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( account_name );
+    if( acct_itr ) _plugin.cache_auths( *acct_itr );
   }
 };
 
@@ -109,38 +120,37 @@ struct post_operation_visitor
 
   void operator()( const account_create_operation& op )const
   {
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( op.new_account_name );
-    if( acct_itr ) _plugin.update_key_lookup( *acct_itr );
+    update_key_lookup_of( op.new_account_name );
   }
 
   void operator()( const account_create_with_delegation_operation& op )const
   {
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( op.new_account_name );
-    if( acct_itr ) _plugin.update_key_lookup( *acct_itr );
+    update_key_lookup_of( op.new_account_name );
   }
 
   void operator()( const account_update_operation& op )const
   {
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( op.account );
-    if( acct_itr ) _plugin.update_key_lookup( *acct_itr );
+    update_key_lookup_of( op.account );
   }
 
   void operator()( const account_update2_operation& op )const
   {
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( op.account );
-    if( acct_itr ) _plugin.update_key_lookup( *acct_itr );
+    update_key_lookup_of( op.account );
+  }
+
+  void operator()( const create_claimed_account_operation& op )const
+  {
+    update_key_lookup_of( op.new_account_name );
   }
 
   void operator()( const recover_account_operation& op )const
   {
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( op.account_to_recover );
-    if( acct_itr ) _plugin.update_key_lookup( *acct_itr );
+    update_key_lookup_of( op.account_to_recover );
   }
 
   void operator()( const pow_operation& op )const
   {
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( op.worker_account );
-    if( acct_itr ) _plugin.update_key_lookup( *acct_itr );
+    update_key_lookup_of( op.worker_account );
   }
 
   void operator()( const pow2_operation& op )const
@@ -148,8 +158,7 @@ struct post_operation_visitor
     const account_name_type* worker_account = op.work.visit( pow2_work_get_account_visitor() );
     if( worker_account == nullptr )
       return;
-    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( *worker_account );
-    if( acct_itr ) _plugin.update_key_lookup( *acct_itr );
+    update_key_lookup_of( *worker_account );
   }
 
   void operator()( const hardfork_operation& op )const
@@ -171,6 +180,14 @@ struct post_operation_visitor
         });
       }
     }
+  }
+
+private:
+
+  void update_key_lookup_of( const account_name_type& account_name )const
+  {
+    auto acct_itr = _plugin._db.find< account_authority_object, by_account >( account_name );
+    if( acct_itr ) _plugin.update_key_lookup( *acct_itr );
   }
 };
 
