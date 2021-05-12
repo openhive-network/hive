@@ -32,8 +32,7 @@ Node has `config` member which allow for editing _hived_ _config.ini_ file. You 
 ```python
 node.config.enable_stale_production = True
 node.config.required_participation = 0
-node.config.witness += 'initminer'
-node.config.private_key += '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n'
+node.config.witness.append('initminer')
 ```
 
 > :warning: Type support is not completed yet. Not all config entries types are set correctly. At the moment most of them are treated as strings. So you have to write like:
