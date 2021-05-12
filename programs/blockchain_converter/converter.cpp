@@ -159,19 +159,18 @@ namespace hive {
 
     void blockchain_converter::post_convert_transaction( signed_transaction& _transaction )
     {
-      if( current_signed_block->timestamp.sec_since_epoch() >= HIVE_HARDFORK_0_17_TIME ) // Mining in HF 17 and above is disabled
+      if( current_signed_block->block_num() > HIVE_HARDFORK_0_17_BLOCK_NUM && pow_auths.size() ) // Mining in HF 17 and above is disabled
       {
-        for( auto it = pow_auths.begin(); it != pow_auths.end(); ++it ) // TODO: Maybe stack with pairs would be a better idea?
-        {
-          account_update_operation op;
-          op.account = it->first;
-          op.owner = authority( 1, it->first, 1, it->second, 1, second_authority.at(authority::owner).get_public_key(), 1 );
-          op.active = authority( 1, it->first, 1, it->second, 1, second_authority.at(authority::active).get_public_key(), 1 );
-          op.posting = authority( 1, it->first, 1, it->second, 1, second_authority.at(authority::posting).get_public_key(), 1 );
+        auto it = pow_auths.begin();
 
-          _transaction.operations.push_back( op );
-        }
-        pow_auths.clear();
+        account_update_operation op;
+        op.account = it->first;
+        op.owner = authority( 1, it->first, 1, it->second, 1, second_authority.at(authority::owner).get_public_key(), 1 );
+        op.active = authority( 1, it->first, 1, it->second, 1, second_authority.at(authority::active).get_public_key(), 1 );
+        op.posting = authority( 1, it->first, 1, it->second, 1, second_authority.at(authority::posting).get_public_key(), 1 );
+
+        _transaction.operations.push_back( op );
+        pow_auths.erase( it );
       }
     }
 

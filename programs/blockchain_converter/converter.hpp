@@ -9,6 +9,9 @@
 #include <hive/protocol/operations.hpp>
 #include <hive/protocol/block.hpp>
 
+
+#define HIVE_HARDFORK_0_17_BLOCK_NUM 10629455 // for pow operation
+
 namespace hive {
 
   using namespace protocol;
