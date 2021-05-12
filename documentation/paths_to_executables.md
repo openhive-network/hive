@@ -6,7 +6,7 @@ TestTools contains module which handles paths to executables using by TestTools 
 3. environment variables
 4. executable installation
 
-If you have paths configured in multiple ways (i.e. you have installed _hived_ and also passed its path as command line argument), they will be used with its priorities. Priorities are same as in list above; path set directly in script is the most important, above it is path passed as command line argument and so on. So in example mentioned earlier, installed _hived_ will be ignored and _hived_ path passed as command line argument will be used.
+If you have paths configured in multiple ways (i.e. you have installed _hived_ and also passed its path as command line argument), they will be used with its priorities. Priorities are same as in list above; path set directly in script is the most important, less important is path passed as command line argument and so on. So in example mentioned earlier, installed _hived_ will be ignored and _hived_ path passed as command line argument will be used.
 
 #### Set paths directly in script
 
