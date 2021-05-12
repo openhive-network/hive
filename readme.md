@@ -1,6 +1,6 @@
 ## Installation
 
-Run installation script. It will install TestTools and help you to select which hived, cli_wallet and such executables should be used by TestTools.
+Run installation script. It will install TestTools and help you to select which _hived_, _cli_wallet_ and such executables should be used by TestTools.
 ```bash
 python3 hive/tests/test_tools/install.py
 ```
