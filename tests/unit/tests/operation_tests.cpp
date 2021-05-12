@@ -9432,7 +9432,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_validate )
 
     BOOST_TEST_MESSAGE( " --- Memo too long" );
     std::string memo;
-    for ( int i = 0; i < HIVE_MAX_MEMO_SIZE + 1; i++ )
+    for ( uint32_t i = 0; i < HIVE_MAX_MEMO_SIZE + 1; i++ )
       memo += "x";
     op.memo = memo;
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
@@ -9647,8 +9647,14 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_open_transfers )
 
     generate_block();
 
-    #define CREATE_ACTORS(z, n, text) ACTORS( (actor ## n) );
-    BOOST_PP_REPEAT(HIVE_MAX_OPEN_RECURRENT_TRANSFERS, CREATE_ACTORS, )
+    for(int i = 0; i < HIVE_MAX_OPEN_RECURRENT_TRANSFERS; ++ i)
+    {
+      const fc::string name{ "actor" + std::to_string(i) };
+      fc::ecc::private_key post_key = generate_private_key( name + "_post" );
+      public_key_type pub_key = generate_private_key(name).get_public_key();
+      account_create(name, pub_key, post_key.get_public_key());
+    }
+
     generate_block();
 
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
