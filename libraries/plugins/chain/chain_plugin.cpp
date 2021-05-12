@@ -108,7 +108,7 @@ class chain_plugin_impl
     bool                             statsd_on_replay = false;
     uint32_t                         stop_replay_at = 0;
     bool                             exit_after_replay = false;
-    bool                             exit_before_replay = false;
+    bool                             exit_before_sync = false;
     bool                             force_replay = false;
     uint32_t                         benchmark_interval = 0;
     uint32_t                         flush_interval = 0;
@@ -586,6 +586,11 @@ void chain_plugin_impl::process_snapshot()
 void chain_plugin_impl::work( synchronization_type& on_sync )
 {
   ilog( "Started on blockchain with ${n} blocks, LIB: ${lb}", ("n", db.head_block_num())("lb", db.get_last_irreversible_block_num()) );
+  if(this->exit_before_sync)
+  {
+    ilog("Shutting down node without performing any action on user request");
+    return;
+  }else ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
 
   on_sync();
 
@@ -631,8 +636,8 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("force-open", bpo::bool_switch()->default_value(false), "force open the database, skipping the environment check" )
       ("resync-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and block log" )
       ("stop-replay-at-block", bpo::value<uint32_t>(), "Stop after reaching given block number")
-      ("exit-after-replay", bpo::bool_switch()->default_value(false), "Exit after reaching given block number")
-      ("exit-before-replay", bpo::bool_switch()->default_value(false), "Exit before starting replay, handy for dumping snapshot without starting replay")
+      ("exit-after-replay", bpo::bool_switch()->default_value(false), "[ DEPRECATED ] Exit after reaching given block number")
+      ("exit-before-sync", bpo::bool_switch()->default_value(false), "Exit before starting replay, handy for dumping snapshot without starting replay")
       ("force-replay", bpo::bool_switch()->default_value(false), "Before replaying clean all old files. If specifed, `--replay-blockchain` flag is implied")
       ("advanced-benchmark", "Make profiling for every plugin.")
       ("set-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks")
@@ -671,8 +676,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   my->replay              = options.at( "replay-blockchain").as<bool>() || my->force_replay;
   my->resync              = options.at( "resync-blockchain").as<bool>();
   my->stop_replay_at      = options.count( "stop-replay-at-block" ) ? options.at( "stop-replay-at-block" ).as<uint32_t>() : 0;
-  my->exit_after_replay   = options.count( "exit-after-replay" ) ? options.at( "exit-after-replay" ).as<bool>() : false;
-  my->exit_before_replay   = options.count( "exit-before-replay" ) ? options.at( "exit-before-replay" ).as<bool>() : false;
+  my->exit_before_sync   = options.count( "exit-before-sync" ) ? options.at( "exit-before-sync" ).as<bool>() : false;
   my->benchmark_interval  =
     options.count( "set-benchmark-interval" ) ? options.at( "set-benchmark-interval" ).as<uint32_t>() : 0;
   my->check_locks         = options.at( "check-locks" ).as< bool >();
@@ -682,6 +686,12 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     my->flush_interval = options.at( "flush-state-interval" ).as<uint32_t>();
   else
     my->flush_interval = 10000;
+
+  if(options.count( "exit-after-replay" ) > 0)
+  {
+    my->exit_after_replay = options.at( "exit-after-replay" ).as<bool>();
+    wlog("flag `--exit-after-replay` is deprecated, please consider usage of `--exit-before-sync` flag instead");
+  }
 
   if(options.count("checkpoint"))
   {
@@ -730,11 +740,6 @@ void chain_plugin::plugin_startup()
   ilog("Snapshot processing...");
   my->process_snapshot();
 
-  if(my->exit_before_replay)
-  {
-    ilog("Shutting down node without performing any action on user request");
-    return;
-  }
 
   if( my->replay )
   {
