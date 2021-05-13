@@ -184,18 +184,19 @@ consensus_build:
   tags:
     - public-runner-docker
 
-.use_test_tools: &use_test_tools
+.test_tools_based:
+  variables:
+    PYTHONPATH: "$CI_PROJECT_DIR/tests/test_tools/package"
+    HIVED_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
+    CLI_WALLET_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
+    GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
   before_script:
     - python3 -m pip install --upgrade pip
     - python3 -m pip install requests
-    - export PYTHONPATH="$CI_PROJECT_DIR/tests/test_tools/package"
-    - export HIVED_PATH="$CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
-    - export CLI_WALLET_PATH="$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
-    - export GET_DEV_KEY_PATH="$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
 
 create_account_tests:
-  << : *use_test_tools
   stage: test
+  extends: .test_tools_based
   needs:
     - job: testnet_node_build
       artifacts: true
@@ -208,8 +209,8 @@ create_account_tests:
     - public-runner-docker
 
 test_tools_tests:
-  << : *use_test_tools
   stage: test
+  extends: .test_tools_based
   needs:
     - job: testnet_node_build
       artifacts: true
