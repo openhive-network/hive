@@ -9,6 +9,9 @@
 #include <hive/protocol/operations.hpp>
 #include <hive/protocol/block.hpp>
 
+
+#define HIVE_HARDFORK_0_17_BLOCK_NUM 10629455 // for pow operation
+
 namespace hive {
 
   using namespace protocol;
@@ -22,8 +25,8 @@ namespace hive {
       chain_id_type    chain_id;
       signed_block*    current_signed_block;
 
-      std::map< account_name_type, public_key_type >          pow_auths;
-      std::map< authority::classification, private_key_type > second_authority;
+      std::map< account_name_type, std::pair< authority, authority::classification > >  pow_auths;
+      std::map< authority::classification, private_key_type >                           second_authority;
 
       void post_convert_transaction( signed_transaction& _transaction );
 
@@ -36,14 +39,15 @@ namespace hive {
 
       void convert_signed_header( signed_block_header& _signed_header );
 
-      void convert_authority( authority& _auth, authority::classification type );
+      void convert_authority( const account_name_type& name, authority& _auth, authority::classification type );
 
       const private_key_type& get_second_authority_key( authority::classification type )const;
       void set_second_authority_key( const private_key_type& key, authority::classification type );
 
       const private_key_type& get_witness_key()const;
 
-      void add_pow_authority( const account_name_type& name, const public_key_type& key );
+      void add_pow_authority( const account_name_type& name, authority auth, authority::classification type );
+      bool has_pow_authority( const account_name_type& name )const;
 
       const signed_block& get_current_signed_block()const;
     };
