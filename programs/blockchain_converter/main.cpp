@@ -43,7 +43,7 @@ int main( int argc, char** argv )
       blocklog_opts.add_options()
       ("input,i", bpo::value< std::string >(), "input block log")
       ("output,o", bpo::value< std::string >(), "output block log; defaults to [input]_out" );
-    bpo::options_description conversion_opts{"Conversion options"}; // TODO: Use private key for all option
+    bpo::options_description conversion_opts{"Conversion options"};
       conversion_opts.add_options()
       ("chain-id,c", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "new chain ID")
       ("private-key,k", bpo::value< std::string >()
@@ -53,7 +53,8 @@ int main( int argc, char** argv )
       , "private key with which all transactions and blocks will be signed ")
       ("owner-key,O", bpo::value< std::string >(), "owner key of the second authority")
       ("active-key,A", bpo::value< std::string >(), "active key of the second authority")
-      ("posting-key,P", bpo::value< std::string >(), "posting key of the second authority");
+      ("posting-key,P", bpo::value< std::string >(), "posting key of the second authority")
+      ("use-same-key,U", "use given private key as the owner, active and posting keys if not specified");
     bpo::options_description logging_opts{"Logging options"};
       logging_opts.add_options()
       ("log-per-block,l", bpo::value< uint32_t >()->default_value( 0 )->implicit_value( 1 ), "Displays blocks in JSON format every n blocks")
@@ -118,53 +119,23 @@ int main( int argc, char** argv )
     fc::optional< private_key_type > _posting_key = wif_to_key( options.count("posting-key") ? options["posting-key"].as< std::string >() : "" );
 
     if( options.count("owner-key") && _owner_key.valid() )
-    {
       owner_key = *_owner_key;
-      if( !options.count( "active-key" ) )
-      {
-        std::cout << "Note: Using owner key as the active key!\n";
-        active_key = owner_key;
-      }
-      if( !options.count( "posting-key" ) )
-      {
-        std::cout << "Note: Using owner key as the posting key!\n";
-        posting_key = owner_key;
-      }
-    }
+    else if( options.count("use-same-key") )
+      owner_key = *private_key;
     else
       owner_key = private_key_type::generate();
 
     if( options.count("active-key") && _active_key.valid() )
-    {
       active_key = *_active_key;
-      if( !options.count( "owner-key" ) )
-      {
-        std::cout << "Note: Using active key as the owner key!\n";
-        owner_key = active_key;
-      }
-      if( !options.count( "posting-key" ) )
-      {
-        std::cout << "Note: Using active key as the posting key!\n";
-        posting_key = active_key;
-      }
-    }
+    else if( options.count("use-same-key") )
+      active_key = *private_key;
     else
       active_key = private_key_type::generate();
 
     if( options.count("posting-key") && _posting_key.valid() )
-    {
       posting_key = *_posting_key;
-      if( !options.count( "owner-key" ) )
-      {
-        std::cout << "Note: Using posting key as the owner key!\n";
-        owner_key = posting_key;
-      }
-      if( !options.count( "active-key" ) )
-      {
-        std::cout << "Note: Using posting key as the active key!\n";
-        active_key = posting_key;
-      }
-    }
+    else if( options.count("use-same-key") )
+      posting_key = *private_key;
     else
       posting_key = private_key_type::generate();
 
