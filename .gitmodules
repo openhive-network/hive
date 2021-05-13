@@ -1,9 +1,6 @@
 [submodule "libraries/fc/vendor/secp256k1-zkp"]
 	path = libraries/fc/vendor/secp256k1-zkp
 	url = https://github.com/cryptonomex/secp256k1-zkp.git
-[submodule "libraries/fc/vendor/websocketpp"]
-	path = libraries/fc/vendor/websocketpp
-	url = https://github.com/zaphoyd/websocketpp.git
 [submodule "tests/tests_api"]
 	path = tests/tests_api
 	url = https://gitlab.syncad.com/hive/tests_api.git
@@ -11,3 +8,6 @@
 [submodule "tests/test_tools"]
 	path = tests/test_tools
 	url = https://gitlab.syncad.com/hive/test-tools.git
+[submodule "libraries/fc/vendor/websocketpp"]
+	path = libraries/fc/vendor/websocketpp
+	url = https://github.com/zaphoyd/websocketpp.git
