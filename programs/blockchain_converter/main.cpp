@@ -185,7 +185,7 @@ int main( int argc, char** argv )
     if( stop_flag )
       std::cerr << "\nUser interrupt detected! Saving conversion state...";
     if( block_num <= HIVE_HARDFORK_0_17_BLOCK_NUM )
-      std::cerr << "\nSecond authority has not been applied on the accounts created with proof of work operation. Try resuming the conversion process";
+      std::cerr << "\nSecond authority has not been applied on the accounts yet! Try resuming the conversion process";
 
     log_in.close();
     log_out.close();

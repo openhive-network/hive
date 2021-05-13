@@ -134,6 +134,8 @@ namespace hive {
           authority::owner
         );
       }
+      if( op.work.which() == 1 /*equihash_pow*/ )
+        op.work.get< equihash_pow >().prev_block = converter.get_current_signed_block().previous;
 
       return op;
     }
