@@ -646,7 +646,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
-#ifdef IS_TEST_NET
+#if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_BUILD)
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
 #endif
       ;
@@ -713,7 +713,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     my->statsd_on_replay = options.at( "statsd-record-on-replay" ).as< bool >();
   }
 
-#ifdef IS_TEST_NET
+#if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_BUILD)
   if( options.count( "chain-id" ) )
   {
     auto chain_id_str = options.at("chain-id").as< std::string >();
