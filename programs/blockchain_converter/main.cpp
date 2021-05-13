@@ -71,7 +71,7 @@ int main( int argc, char** argv )
 
     if( options.count("help") || !options.count("input") )
     {
-      std::cout << "Converts mainnet symbols to testnet symbols and adds second authority to all the accounts. Re-signs blocks using given private key.\n"
+      std::cout << "Changes chain id of the block log and adds second authority to all the accounts. Re-signs blocks using given private key.\n"
         << cmdline_options << "\n";
       return 0;
     }
@@ -144,6 +144,8 @@ int main( int argc, char** argv )
     converter.set_second_authority_key( posting_key, authority::posting );
 
     block_id_type last_block_id = log_out.head() ? log_out.read_head().id() : block_id_type();
+
+    FC_ASSERT( log_in.head(), "Your input block log is empty" );
 
     uint32_t block_num;
 
