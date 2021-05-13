@@ -731,6 +731,16 @@ protected:
     callback(lib::error_code());
   }
 
+  template <typename parent_type>
+  struct connection_wrapper : public parent_type
+  {
+    template<typename io_service_type>
+    static lib::error_code execute_init_asio( parent_type& source, io_service_type m_io_service )
+    {
+      return ( static_cast<connection_wrapper&>( source ) ).init_asio( m_io_service );
+    }
+  };
+
   /// Initialize a connection
   /**
     * init is called by an endpoint once for each newly created connection.
@@ -745,7 +755,8 @@ protected:
   lib::error_code init(transport_con_ptr tcon) {
     m_alog->write(log::alevel::devel, "transport::asio::init");
 
-    auto ec = tcon->init_asio(m_io_service);
+    using _type_without_ref = typename std::remove_reference<decltype( *tcon )>::type;
+    auto ec = connection_wrapper<_type_without_ref>::execute_init_asio( *tcon, m_io_service );
     if (ec) {return ec;}
 
     tcon->set_tcp_pre_init_handler(m_tcp_pre_init_handler);
