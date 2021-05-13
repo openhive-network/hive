@@ -434,8 +434,9 @@ class Wallet:
         if not success:
             raise Exception(f'Problem with starting wallet occurred. See {self.get_stderr_file_path()} for more details.')
 
-        self.api.set_password()
-        self.api.unlock()
+        password = 'password'
+        self.api.set_password(password)
+        self.api.unlock(password)
         self.api.import_key(Account('initminer').private_key)
 
         self.logger.info(f'Started, listening on port {self.http_server_port}')
