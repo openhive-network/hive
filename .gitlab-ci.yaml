@@ -191,8 +191,8 @@ hived_options_tests:
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
   before_script:
-    - python3 -m pip install --upgrade pip
-    - python3 -m pip install requests
+    - apt-get update -y && apt-get install -y python3 python3-pip python3-dev
+    - pip3 install requests
 
 create_account_tests:
   stage: test
@@ -202,7 +202,7 @@ create_account_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
-    - python3 -m pip install pytest
+    - pip3 install pytest
     - cd tests/functional/python_tests/create_account_tests
     - pytest
   tags:
@@ -216,7 +216,7 @@ test_tools_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
-    - python3 -m pip install pytest
+    - pip3 install pytest
     - cd tests/test_tools/tests
     - pytest
   tags:
