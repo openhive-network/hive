@@ -58,6 +58,23 @@ class Node:
             process.wait()
             logger_from_node.warning(f"Send SIGKILL because process didn't close before timeout")
 
+    def __is_test_net_build(self):
+        error_message = self.__run_hived_with_chain_id_argument()
+        return error_message == 'Error parsing command line: the required argument for option \'--chain-id\' is missing'
+
+    def __is_main_net_build(self):
+        error_message = self.__run_hived_with_chain_id_argument()
+        return error_message == 'Error parsing command line: unrecognised option \'--chain-id\''
+
+    def __run_hived_with_chain_id_argument(self):
+        hived_path = self.executable_file_path
+        if hived_path is None:
+            from test_tools import paths_to_executables
+            hived_path = paths_to_executables.get_path_of('hived')
+
+        result = subprocess.check_output([str(hived_path), '--chain-id'], stderr=subprocess.STDOUT)
+        return result.decode('utf-8').strip()
+
     def set_directory(self, directory):
         self.directory = Path(directory).absolute() / self.name
 
@@ -200,6 +217,17 @@ class Node:
         if not self.executable_file_path:
             from . import paths_to_executables
             self.executable_file_path = paths_to_executables.get_path_of('hived')
+
+        if not self.__is_test_net_build():
+            from test_tools import paths_to_executables
+            raise NotImplementedError(
+                f'You have configured path to non-testnet hived build.\n'
+                f'At the moment only testnet build is supported.\n'
+                f'Your current hived path is: {paths_to_executables.get_path_of("hived")}\n'
+                f'\n'
+                f'Please check following page if you need help with paths configuration:\n'
+                f'https://gitlab.syncad.com/hive/test-tools/-/blob/develop/documentation/paths_to_executables.md'
+            )
 
         if not self.produced_files and self.directory.exists():
             from shutil import rmtree
