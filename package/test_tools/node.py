@@ -58,6 +58,14 @@ class Node:
             process.wait()
             logger_from_node.warning(f"Send SIGKILL because process didn't close before timeout")
 
+    def __get_executable_build_version(self):
+        if self.__is_test_net_build():
+            return 'testnet'
+        elif self.__is_main_net_build():
+            return 'mainnet'
+        else:
+            return 'unrecognised'
+
     def __is_test_net_build(self):
         error_message = self.__run_hived_with_chain_id_argument()
         return error_message == 'Error parsing command line: the required argument for option \'--chain-id\' is missing'
@@ -274,6 +282,7 @@ class Node:
             message += f'with http server {self.config.webserver_http_endpoint}'
         else:
             message += 'without http server'
+        message += f', {self.__get_executable_build_version()} build'
         self.logger.info(message)
 
     def __set_unset_endpoints(self):
