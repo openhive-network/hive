@@ -477,7 +477,7 @@ namespace fc
       FC_RETHROW_EXCEPTION( er, LOG_LEVEL, FORMAT, __VA_ARGS__ ); \
    } catch( const std::exception& e ) {  \
       fc::exception fce( \
-                FC_LOG_MESSAGE( LOG_LEVEL, "${what}: " FORMAT,__VA_ARGS__("what",e.what())), \
+                BOOST_PP_EXPAND(FC_LOG_MESSAGE( LOG_LEVEL, "${what}: " FORMAT,__VA_ARGS__("what",e.what()))), \
                 fc::std_exception_code,\
                 typeid(e).name(), \
                 e.what() ) ; throw fce;\
