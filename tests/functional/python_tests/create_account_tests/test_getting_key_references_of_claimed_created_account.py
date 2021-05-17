@@ -22,5 +22,5 @@ def test_getting_key_references_of_claimed_created_account():
             'initminer', account.name, '0.000 TESTS', 'memo', '{}', key, key, key, key, True
         )
 
-        response = init_node.api.condenser.get_key_references([[account.public_key]])
+        response = init_node.api.condenser.get_key_references([account.public_key])
         assert response['result'] == [[account.name]]
