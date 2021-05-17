@@ -1893,7 +1893,7 @@ namespace graphene { namespace net {
       if (!_hard_fork_block_numbers.empty())
         user_data["last_known_fork_block_number"] = _hard_fork_block_numbers.back();
 
-      user_data["chain_id"] = _delegate->get_chain_id();
+      user_data["chain_id"] = _delegate->get_new_chain_id();
 
       return user_data;
     }
