@@ -35,6 +35,7 @@ void set_logging_program_options( boost::program_options::options_description& o
 
   std::vector< std::string > default_logger(
     { "{\"name\":\"default\",\"level\":\"info\",\"appender\":\"stderr\"}",
+      "{\"name\":\"user\",\"level\":\"debug\",\"appender\":\"stderr\"}",
       "{\"name\":\"p2p\",\"level\":\"warn\",\"appender\":\"p2p\"}" } );
   std::string str_default_logger = boost::algorithm::join( default_logger, " " );
 

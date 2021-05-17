@@ -462,9 +462,10 @@ void p2p_plugin_impl::sync_status( uint32_t item_type, uint32_t item_count )
   // any status reports to GUI go here
 }
 
-void p2p_plugin_impl::connection_count_changed( uint32_t c )
+void p2p_plugin_impl::connection_count_changed( uint32_t peer_count )
 {
   // any status reports to GUI go here
+  chain.connection_count_changed(peer_count);
 }
 
 uint32_t p2p_plugin_impl::get_block_number( const graphene::net::item_hash_t& block_id )
@@ -642,7 +643,8 @@ void p2p_plugin::plugin_startup()
       {
         ilog("P2P adding seed node ${s}", ("s", seed));
         my->node->add_node(seed);
-        my->node->connect_to_endpoint(seed);
+        //don't connect to seed nodes until we've started p2p network
+        //my->node->connect_to_endpoint(seed);
       }
       catch( graphene::net::already_connected_to_requested_peer& )
       {

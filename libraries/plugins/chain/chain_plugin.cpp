@@ -136,6 +136,7 @@ class chain_plugin_impl
 
     state_snapshot_provider*            snapshot_provider = nullptr;
     bool                                is_p2p_enabled = true;
+    std::atomic<uint32_t>               peer_count;
 };
 
 struct write_request_visitor
@@ -343,7 +344,7 @@ void chain_plugin_impl::start_write_processing()
         if (now - last_msg_time > block_wait_max_time)
         {
           last_msg_time = now;
-          wlog("No P2P data (block/transaction) received in last ${t} seconds... P2P network seems to be stucked.", ("t", block_wait_max_time.to_seconds()));
+          wlog("No P2P data (block/transaction) received in last ${t} seconds... peer_count=${peer_count}", ("t", block_wait_max_time.to_seconds())("peer_count",peer_count.load()));
           /// To avoid log pollution
           wlog("Checking for new P2P data once per ${t} seconds...", ("t", HIVE_BLOCK_INTERVAL));
         }
@@ -778,6 +779,11 @@ void chain_plugin::report_state_options( const string& plugin_name, const fc::va
 {
   my->loaded_plugins.push_back( plugin_name );
   my->plugin_state_opts( opts );
+}
+
+void chain_plugin::connection_count_changed(uint32_t peer_count)
+{
+  my->peer_count = peer_count;
 }
 
 bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip )

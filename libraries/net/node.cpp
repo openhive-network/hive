@@ -1687,7 +1687,7 @@ namespace graphene { namespace net {
     bool node_impl::is_accepting_new_connections()
     {
       VERIFY_CORRECT_THREAD();
-      return !_node_is_shutting_down && !_p2p_network_connect_loop_done.canceled() &&
+      return !_node_is_shutting_down && (!_p2p_network_connect_loop_done.valid() || !_p2p_network_connect_loop_done.canceled()) &&
          get_number_of_connections() <= _node_configuration.maximum_number_of_connections;
     }
 
@@ -2048,7 +2048,7 @@ namespace graphene { namespace net {
                                                               "I'm already connected to you");
           originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
           originating_peer->send_message(message(connection_rejected));
-          dlog("Received a hello_message from peer ${peer} that I'm already connected to (with id ${id}), rejection",
+          wlog("Received a hello_message from peer ${peer} that I'm already connected to (with id ${id}), rejection",
                ("peer", originating_peer->get_remote_endpoint())
                ("id", originating_peer->node_id));
         }
@@ -2062,7 +2062,7 @@ namespace graphene { namespace net {
                                                           "you are not in my allowed_peers list");
           originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
           originating_peer->send_message( message(connection_rejected ) );
-          dlog( "Received a hello_message from peer ${peer} who isn't in my allowed_peers list, rejection", ("peer", originating_peer->get_remote_endpoint() ) );
+          wlog( "Received a hello_message from peer ${peer} who isn't in my allowed_peers list, rejection", ("peer", originating_peer->get_remote_endpoint() ) );
         }
 #endif // ENABLE_P2P_DEBUGGING_API
         else
@@ -2107,7 +2107,7 @@ namespace graphene { namespace net {
                                                             "not accepting any more incoming connections");
             originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
             originating_peer->send_message(message(connection_rejected));
-            dlog("Received a hello_message from peer ${peer}, but I'm not accepting any more connections, rejection",
+            wlog("Received a hello_message from peer ${peer}, but I'm not accepting any more connections, rejection",
                  ("peer", originating_peer->get_remote_endpoint()));
           }
           else
@@ -2300,7 +2300,9 @@ namespace graphene { namespace net {
       }
       catch (const peer_is_on_an_unreachable_fork&)
       {
-        dlog("Peer is on a fork and there's no set of blocks we can provide to switch them to our fork");
+        //This was true when a full block synopsis was sent by the peer, now it's not
+        //dlog("Peer is on a fork and there's no set of blocks we can provide to switch them to our fork");
+        dlog("We don't have any blocks that fit within the reversible synopsis sent by peer: either it is too far ahead of us (likely case) or it is on a fork that can't be recovered from");
         // we reply with an empty list as if we had an empty blockchain;
         // we don't want to disconnect because they may be able to provide
         // us with blocks on their chain
@@ -4672,6 +4674,7 @@ namespace graphene { namespace net {
               }
               std::string error_message = error_message_stream.str();
               ulog(error_message);
+              wlog(error_message);
               _delegate->error_encountered( error_message, fc::oexception() );
               fc::usleep( fc::seconds(GRAPHENE_NET_PORT_WAIT_DELAY_SECONDS) );
             }
