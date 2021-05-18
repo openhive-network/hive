@@ -1,6 +1,6 @@
 # Building Hive
 
-Building Hive requires 8GB of RAM.
+Building Hive requires more than 8GB of RAM. Although 8GB RAM + swap works.
 
 ## Compile-Time Options (cmake)
 
@@ -52,20 +52,7 @@ will build out of the box without further effort:
         python3-jinja2
 
     # Boost packages (also required)
-    sudo apt-get install -y \
-        libboost-chrono-dev \
-        libboost-context-dev \
-        libboost-coroutine-dev \
-        libboost-date-time-dev \
-        libboost-filesystem-dev \
-        libboost-iostreams-dev \
-        libboost-locale-dev \
-        libboost-program-options-dev \
-        libboost-serialization-dev \
-        libboost-signals-dev \
-        libboost-system-dev \
-        libboost-test-dev \
-        libboost-thread-dev
+    sudo apt-get install -y libboost-all-dev
 
     # Optional packages (not required, but will make a nicer experience)
     sudo apt-get install -y \
