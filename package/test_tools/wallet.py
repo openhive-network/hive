@@ -9,11 +9,48 @@ from . import logger
 
 class Wallet:
     class __Api:
+        class __TransactionBuilder:
+            '''Helper class for sending multiple operations in single transaction'''
+
+            def __init__(self):
+                self.__transaction = None
+
+            def append_operation(self, response):
+                if self.__transaction is None:
+                    self.__transaction = response['result']
+                else:
+                    operation = response['result']['operations'][0]
+                    self.__transaction['operations'].append(operation)
+
+                return response
+
+            def get_transaction(self):
+                return self.__transaction
+
         def __init__(self, wallet):
             self.__wallet = wallet
+            self.__transaction_builder = None
+
+        def _start_gathering_operations_for_single_transaction(self):
+            if self.__transaction_builder is not None:
+                raise RuntimeError('You cannot create transaction inside another transaction')
+
+            self.__transaction_builder = self.__TransactionBuilder()
+
+        def _send_gathered_operations_as_single_transaction(self):
+            self.sign_transaction(
+                self.__transaction_builder.get_transaction(),
+                True
+            )
+            self.__transaction_builder = None
 
         def __send(self, method, *params, jsonrpc='2.0', id=0):
-            return self.__wallet.send(method, *params, jsonrpc=jsonrpc, id=id)
+            if self.__transaction_builder is None:
+                return self.__wallet.send(method, *params, jsonrpc=jsonrpc, id=id)
+
+            return self.__transaction_builder.append_operation(
+                self.__wallet.send(method, *params, jsonrpc=jsonrpc, id=id)
+            )
 
         def about(self):
             return self.__send('about')
@@ -472,3 +509,18 @@ class Wallet:
         self.api.import_key(account.private_key)
 
         return account
+
+    def in_single_transaction(self):
+        return SingleTransactionContext(self)
+
+
+class SingleTransactionContext:
+    def __init__(self, wallet_: Wallet):
+        self.__wallet = wallet_
+
+    def __enter__(self):
+        self.__wallet.api._start_gathering_operations_for_single_transaction()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.__wallet.api._send_gathered_operations_as_single_transaction()
