@@ -119,7 +119,7 @@ class wallet_api
       *
       * @returns Public block data on the blockchain
       */
-    serializer_wrapper<optional< block_api::api_signed_block_object >> get_block( uint32_t num );
+    optional<serializer_wrapper<block_api::api_signed_block_object>> get_block( uint32_t num );
 
     /** Returns sequence of operations included/generated in a specified block
       *
@@ -180,6 +180,13 @@ class wallet_api
       * @returns the public account data stored in the blockchain
       */
     serializer_wrapper<database_api::api_account_object> get_account( const string& account_name ) const;
+
+    /** Returns information about the given accounts.
+      *
+      * @param account_name the names of the accounts to provide information about
+      * @returns the public account data stored in the blockchain
+      */
+    serializer_wrapper<vector<database_api::api_account_object>> get_accounts( const vector<string>& account_names ) const;
 
     /** Returns the current wallet filename.
       *
@@ -650,7 +657,7 @@ class wallet_api
       * @param owner_account the name or id of the witness account owner, or the id of the witness
       * @returns the information about the witness stored in the block chain
       */
-    optional< database_api::api_witness_object > get_witness(const string& owner_account);
+    optional<serializer_wrapper<database_api::api_witness_object>> get_witness(const string& owner_account);
 
     /** Returns conversion requests by an account
       *
@@ -658,7 +665,7 @@ class wallet_api
       *
       * @returns All pending conversion requests by account
       */
-    vector< database_api::api_convert_request_object > get_conversion_requests( const string& owner );
+    serializer_wrapper<vector< database_api::api_convert_request_object >> get_conversion_requests( const string& owner );
 
     /** Returns collateralized conversion requests by an account
       *
@@ -921,10 +928,10 @@ class wallet_api
       bool broadcast = false );
 
     /**
-      * Set up a vesting withdraw request. The request is fulfilled once a week over the next two year (104 weeks).
+      * Set up a vesting withdraw request. The request is fulfilled once a week over the next 13 weeks.
       *
       * @param from The account the VESTS are withdrawn from
-      * @param vesting_shares The amount of VESTS to withdraw over the next two years. Each week (amount/104) shares are
+      * @param vesting_shares The amount of VESTS to withdraw over the next 13 weeks. Each week (amount/13) shares are
       *    withdrawn and deposited back as HIVE. i.e. "10.000000 VESTS"
       * @param broadcast true if you wish to broadcast the transaction
       */
@@ -998,7 +1005,7 @@ class wallet_api
       */
     serializer_wrapper<annotated_signed_transaction> publish_feed(
       const string& witness,
-      const price& exchange_rate,
+      const serializer_wrapper<price>& exchange_rate,
       bool broadcast );
 
     /** Signs a transaction.
@@ -1010,7 +1017,7 @@ class wallet_api
       * @return the signed version of the transaction
       */
     serializer_wrapper<annotated_signed_transaction> sign_transaction(
-      const signed_transaction& tx,
+      const serializer_wrapper<annotated_signed_transaction>& tx,
       bool broadcast = false);
 
     /** Returns an uninitialized object representing a given blockchain operation.
@@ -1375,6 +1382,7 @@ FC_API( hive::wallet::wallet_api,
       (list_witnesses)
       (get_witness)
       (get_account)
+      (get_accounts)
       (get_block)
       (get_ops_in_block)
       (get_feed_history)
@@ -1477,10 +1485,15 @@ namespace fc {
   template<typename T>
   inline void from_variant( const fc::variant& var, hive::wallet::serializer_wrapper<T>& a )
   {
+    //Compatibility with older shape of asset
+    bool old_legacy_enabled = hive::protocol::dynamic_serializer::legacy_enabled;
+    hive::protocol::dynamic_serializer::legacy_enabled = true;
+
     from_variant( var, a.value );
+
+    hive::protocol::dynamic_serializer::legacy_enabled = old_legacy_enabled;
   }
 
 } // fc
 
-FC_REFLECT_SIMPLE_TEMPLATE_EMPTY( (typename T), optional<T> )
 FC_REFLECT_TEMPLATE( (typename T), hive::wallet::serializer_wrapper<T>, (value) )

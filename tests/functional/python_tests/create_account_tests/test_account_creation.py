@@ -5,6 +5,9 @@ def test_account_creation():
         init_node = world.create_init_node()
         init_node.config.plugin.append('database_api')
         init_node.config.plugin.append('network_broadcast_api')
+        init_node.config.plugin.append('account_history_rocksdb')
+        init_node.config.plugin.append('account_history')
+        init_node.config.plugin.append('account_history_api')
         init_node.run()
 
         wallet = init_node.attach_wallet()
@@ -13,7 +16,8 @@ def test_account_creation():
         init_node.wait_number_of_blocks(3)
 
         #**************************************************************
-        response = wallet.api.create_account('initminer', 'newaccount', '{}', True)
+        logger.info('create_account...')
+        response = wallet.api.create_account('initminer', 'newaccount', '{}')
         logger.info(response)
 
         assert 'result' in response
@@ -37,6 +41,7 @@ def test_account_creation():
         owner_key = __key_auths[0]
 
         #**************************************************************
+        logger.info('list_my_accounts...')
         response = wallet.api.list_my_accounts([owner_key])
         logger.info(response)
 
@@ -44,13 +49,32 @@ def test_account_creation():
         assert len(response['result']) == 1
         _result = response['result'][0]
         assert 'balance' in _result
-        _result['balance'] == '0.000 TESTS'
+        assert _result['balance'] == '0.000 TESTS'
         assert 'savings_balance' in _result
-        _result['savings_balance'] == '0.000 TESTS'
+        assert _result['savings_balance'] == '0.000 TESTS'
 
         #**************************************************************
+        logger.info('list_accounts...')
         response = wallet.api.list_accounts('na', 1)
         logger.info(response)
         assert 'result' in response
         assert len(response['result']) == 1
         assert response['result'][0] == 'newaccount'
+
+        #**************************************************************
+        logger.info('get_account...')
+        response = wallet.api.get_account('newaccount')
+        logger.info(response)
+        assert 'result' in response
+        _result = response['result']
+        assert 'hbd_balance' in _result
+        assert _result['hbd_balance'] == '0.000 TBD'
+
+        #**************************************************************
+        logger.info('get_account_history...')
+        response = wallet.api.get_account_history('initminer', 2, 2)
+        logger.info(response)
+        assert 'result' in response
+        #this call has a custom formatter so typical JSON is inaccessible
+        assert len(response['result']) == 0
+
