@@ -517,9 +517,17 @@ class Wallet:
 class SingleTransactionContext:
     def __init__(self, wallet_: Wallet):
         self.__wallet = wallet_
+        self.__was_run_as_context_manager = False
+
+    def __del__(self):
+        if not self.__was_run_as_context_manager:
+            raise RuntimeError(
+                f'You used {Wallet.__name__}.{Wallet.in_single_transaction.__name__}() not in "with" statement'
+            )
 
     def __enter__(self):
         self.__wallet.api._start_gathering_operations_for_single_transaction()
+        self.__was_run_as_context_manager = True
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
