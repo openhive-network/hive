@@ -291,17 +291,15 @@ public:
   {
     auto dynamic_props = _remote_wallet_bridge_api->get_dynamic_global_properties({}, LOCK);
     fc::mutable_variant_object result;
-    result["witness_majority_version"] = fc::string( _remote_wallet_bridge_api->get_witness_schedule({}, LOCK).majority_version);
-    result["hardfork_version"] = fc::string( _remote_wallet_bridge_api->get_hardfork_version({}, LOCK) );
-    result["head_block_num"] = dynamic_props.head_block_number;
-    result["head_block_id"] = dynamic_props.head_block_id;
-    result["head_block_age"] = fc::get_approximate_relative_time_string(dynamic_props.time,
-                                                  time_point_sec(time_point::now()),
-                                                  " old");
-    result["participation"] = (100*dynamic_props.recent_slots_filled.popcount()) / 128.0;
-    result["median_hbd_price"] = _remote_wallet_bridge_api->get_current_median_history_price({}, LOCK);
-    result["account_creation_fee"] = _remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee;
-    result["post_reward_fund"] = _remote_wallet_bridge_api->get_reward_fund({HIVE_POST_REWARD_FUND_NAME}, LOCK );
+    result["witness_majority_version"]  = fc::string( _remote_wallet_bridge_api->get_witness_schedule({}, LOCK).majority_version);
+    result["hardfork_version"]          = fc::string( _remote_wallet_bridge_api->get_hardfork_version({}, LOCK) );
+    result["head_block_num"]            = dynamic_props.head_block_number;
+    result["head_block_id"]             = dynamic_props.head_block_id;
+    result["head_block_age"]            = fc::get_approximate_relative_time_string(dynamic_props.time, time_point_sec(time_point::now()), " old");
+    result["participation"]             = (100*dynamic_props.recent_slots_filled.popcount()) / 128.0;
+    result["median_hbd_price"]          = serializer_wrapper<protocol::price>{ _remote_wallet_bridge_api->get_current_median_history_price({}, LOCK) };
+    result["account_creation_fee"]      = serializer_wrapper<hive::protocol::legacy_asset>{ _remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee };
+    result["post_reward_fund"]          = serializer_wrapper<database_api::api_reward_fund_object>{ _remote_wallet_bridge_api->get_reward_fund({HIVE_POST_REWARD_FUND_NAME}, LOCK ) };
     return result;
   }
 
@@ -355,6 +353,11 @@ public:
     auto account = _remote_wallet_bridge_api->get_account( { account_name }, LOCK );
     FC_ASSERT( account.valid(), "Unknown account" );
     return *account;
+  }
+
+  vector<database_api::api_account_object> get_accounts( const vector<string>& account_names ) const
+  {
+    return _remote_wallet_bridge_api->get_accounts( {variant(account_names)}, LOCK );
   }
 
   string get_wallet_filename() const { return _wallet_filename; }
@@ -847,9 +850,9 @@ public:
         const auto& op = item.get_array()[1].get_object();
         ss << std::left << std::setw(10) << op["block"].as_string() << " ";
         ss << std::left << std::setw(15) << op["trx_id"].as_string() << " ";
-        const auto& opop = op["op"].get_array();
-        ss << std::left << std::setw(20) << opop[0].as_string() << " ";
-        ss << std::left << std::setw(50) << fc::json::to_string(opop[1]) << "\n ";
+        const auto& opop = op["op"].get_object();
+        ss << std::left << std::setw(20) << opop["type"].as_string() << " ";
+        ss << std::left << std::setw(50) << fc::json::to_string(opop["value"]) << "\n ";
       }
       return ss.str();
     };
@@ -1017,9 +1020,13 @@ bool wallet_api::copy_wallet_file(const string& destination_filename)
   return my->copy_wallet_file(destination_filename);
 }
 
-serializer_wrapper<optional< block_api::api_signed_block_object >> wallet_api::get_block(uint32_t num)
+optional<serializer_wrapper<block_api::api_signed_block_object>> wallet_api::get_block(uint32_t num)
 {
-  return { my->_remote_wallet_bridge_api->get_block( {num}, LOCK ).block };
+  block_api::get_block_return res = my->_remote_wallet_bridge_api->get_block( {num}, LOCK );
+  if( res.block.valid() )
+    return serializer_wrapper<block_api::api_signed_block_object>{ std::move( *(res.block) ) };
+  else
+    return serializer_wrapper<block_api::api_signed_block_object>{ block_api::api_signed_block_object() };
 }
 
 serializer_wrapper<vector< account_history::api_operation_object >> wallet_api::get_ops_in_block(uint32_t block_num, bool only_virtual)
@@ -1123,6 +1130,11 @@ serializer_wrapper<database_api::api_account_object> wallet_api::get_account( co
   return { my->get_account( account_name ) };
 }
 
+serializer_wrapper<vector<database_api::api_account_object>> wallet_api::get_accounts( const vector<string>& account_names ) const
+{
+  return { my->get_accounts( account_names ) };
+}
+
 bool wallet_api::import_key(const string& wif_key)
 {
   FC_ASSERT(!is_locked());
@@ -1177,9 +1189,13 @@ vector< account_name_type > wallet_api::list_witnesses(const string& lowerbound,
   return result;
 }
 
-optional< database_api::api_witness_object > wallet_api::get_witness( const string& owner_account)
+optional<serializer_wrapper<database_api::api_witness_object>> wallet_api::get_witness( const string& owner_account)
 {
-  return my->get_witness(owner_account);
+  optional<database_api::api_witness_object> res = my->get_witness(owner_account);
+  if( res.valid() )
+    return serializer_wrapper<database_api::api_witness_object>{ std::move( *res ) };
+  else
+    return serializer_wrapper<database_api::api_witness_object>{ database_api::api_witness_object() };
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::set_voting_proxy(const string& account_to_modify, const string& voting_account, bool broadcast /* = false */)
@@ -1188,9 +1204,9 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::set_voting_proxy(co
 void wallet_api::set_wallet_filename(string wallet_filename) { my->_wallet_filename = std::move(wallet_filename); }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::sign_transaction(
-  const signed_transaction& tx, bool broadcast /* = false */)
+  const serializer_wrapper<annotated_signed_transaction>& tx, bool broadcast /* = false */)
 { try {
-  signed_transaction appbase_tx( tx );
+  signed_transaction appbase_tx( tx.value );
   annotated_signed_transaction result = my->sign_transaction( appbase_tx, broadcast);
   return { result };
 } FC_CAPTURE_AND_RETHROW( (tx) ) }
@@ -2426,13 +2442,13 @@ hive::protocol::legacy_asset wallet_api::estimate_hive_collateral(
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::publish_feed(
   const string& witness,
-  const price& exchange_rate,
+  const serializer_wrapper<price>& exchange_rate,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
   feed_publish_operation op;
   op.publisher     = witness;
-  op.exchange_rate = price( exchange_rate );
+  op.exchange_rate = price( exchange_rate.value );
 
   signed_transaction tx;
   tx.operations.push_back( op );
@@ -2441,9 +2457,9 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::publish_feed(
   return { my->sign_transaction( tx, broadcast ) };
 }
 
-vector< database_api::api_convert_request_object > wallet_api::get_conversion_requests( const string& owner_account )
+serializer_wrapper<vector< database_api::api_convert_request_object >> wallet_api::get_conversion_requests( const string& owner_account )
 {
-  return my->_remote_wallet_bridge_api->get_conversion_requests( {owner_account}, LOCK );
+  return { my->_remote_wallet_bridge_api->get_conversion_requests( {owner_account}, LOCK ) };
 }
 
 serializer_wrapper<vector< database_api::api_collateralized_convert_request_object >> wallet_api::get_collateralized_conversion_requests( const string& owner_account )
@@ -2556,7 +2572,7 @@ serializer_wrapper<map< uint32_t, account_history::api_operation_object >> walle
       }
     }
   }
-  return { map< uint32_t, account_history::api_operation_object >() };
+  return { result };
 }
 
 vector< database_api::api_withdraw_vesting_route_object > wallet_api::get_withdraw_routes( const string& account, database_api::sort_order_type sort_type )const
