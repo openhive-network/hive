@@ -38,15 +38,25 @@ class Wallet:
             self.__transaction_builder = self.__TransactionBuilder()
 
         def _send_gathered_operations_as_single_transaction(self):
-            self.sign_transaction(
-                self.__transaction_builder.get_transaction(),
-                True
-            )
+            transaction = self.__transaction_builder.get_transaction()
             self.__transaction_builder = None
+
+            if transaction is not None:
+                self.sign_transaction(
+                    transaction,
+                    True
+                )
 
         def __send(self, method, jsonrpc='2.0', id=0, **params):
             if self.__transaction_builder is None:
                 return self.__wallet.send(method, *list(params.values()), jsonrpc=jsonrpc, id=id)
+
+            if 'broadcast' in params and params['broadcast'] == True:
+                raise RuntimeError(
+                    f'You cannot broadcast api call during transaction building.\n'
+                    f'\n'
+                    f'Replace broadcast parameter with value False.'
+                )
 
             return self.__transaction_builder.append_operation(
                 self.__wallet.send(method, *list(params.values()), jsonrpc=jsonrpc, id=id)
