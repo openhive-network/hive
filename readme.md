@@ -62,6 +62,29 @@ because type of `node.config.enable_stale_production` is `bool` and type of `nod
 #### Select which executables should library use
 You can select them in python script, via command line arguments, environment variables or by executables installation ([read more](documentation/paths_to_executables.md)).
 
+#### Send multiple operations in single wallet transaction
+TestTools provides support for sending single transaction containing multiple operations. It is helpful for optimizing scripts which send multiple transactions and wait 3 seconds for every transaction confirmation. When sending these operations in one transaction, you wait for only one confirmation, so your script executes much faster. You can do it with following syntax:
+```python
+with wallet.in_single_transaction():
+    wallet.api.create_account('initminer', account, '{}')
+    wallet.api.transfer('initminer', account, amount, 'memo')
+```
+In above example operations `create_account` and `transfer` are sent in single transaction during exiting from "with" statement.
+
+Implementation is very flexible and allows for using python control statements (ifs, loops), functions which sends wallet api calls and so on. See example below showing for-loop use case during transaction preparation.
+```python
+accounts_and_balances = {
+    'first': '100.000 TESTS',
+    'second': '200.000 TESTS',
+    'third': '300.000 TESTS',
+}
+
+with wallet.in_single_transaction():
+    for account, amount in accounts_and_balances.items():
+        wallet.api.create_account('initminer', account, '{}')
+        wallet.api.transfer('initminer', account, amount, 'memo')
+```
+
 #### Features waiting for description
 - Logger
 - Key generation with Account
