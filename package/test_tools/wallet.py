@@ -42,12 +42,26 @@ class Wallet:
             self.__transaction_builder = None
 
             if transaction is not None:
-                self.sign_transaction(
-                    transaction,
-                    True
-                )
+                self.sign_transaction(transaction)
 
         def __send(self, method, jsonrpc='2.0', id=0, **params):
+            import warnings
+            if 'broadcast' in params:
+                if params['broadcast'] is None:
+                    # Set broadcast default value, which is context dependent
+                    params['broadcast'] = bool(self.__transaction_builder is None)
+                elif params['broadcast'] is True and self.__transaction_builder is None:
+                    warnings.warn(
+                        'Avoid explicit setting "broadcast" parameter to True in this context, it is default value.\n'
+                        'It is considered bad practice, because obscures code and decreases its readability.'
+                    )
+                elif params['broadcast'] is False and self.__transaction_builder is not None:
+                    warnings.warn(
+                        'Avoid explicit setting "broadcast" parameter to False during registering operations in\n'
+                        'transaction. False is a default value in this context. It is considered bad practice,\n'
+                        'because obscures code and decreases its readability.'
+                    )
+
             if self.__transaction_builder is None:
                 return self.__wallet.send(method, *list(params.values()), jsonrpc=jsonrpc, id=id)
 
@@ -55,7 +69,8 @@ class Wallet:
                 raise RuntimeError(
                     f'You cannot broadcast api call during transaction building.\n'
                     f'\n'
-                    f'Replace broadcast parameter with value False.'
+                    f'Replace broadcast parameter with value False or better -- remove it\n'
+                    f'completely, because it is default value during transaction building.'
                 )
 
             return self.__transaction_builder.append_operation(

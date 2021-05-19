@@ -19,8 +19,8 @@ def test_sending_transaction_with_multiple_operations():
 
         with wallet.in_single_transaction():
             for account, amount in accounts_and_balances.items():
-                wallet.api.create_account('initminer', account, '{}', False)
-                wallet.api.transfer('initminer', account, amount, 'memo', False)
+                wallet.api.create_account('initminer', account, '{}')
+                wallet.api.transfer('initminer', account, amount, 'memo')
 
         for account, expected_balance in accounts_and_balances.items():
             balance = wallet.api.get_account(account)['result']['balance']
