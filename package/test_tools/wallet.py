@@ -22,8 +22,6 @@ class Wallet:
                     operation = response['result']['operations'][0]
                     self.__transaction['operations'].append(operation)
 
-                return response
-
             def get_transaction(self):
                 return self.__transaction
 
@@ -45,37 +43,45 @@ class Wallet:
                 self.sign_transaction(transaction)
 
         def __send(self, method, jsonrpc='2.0', id=0, **params):
-            import warnings
             if 'broadcast' in params:
-                if params['broadcast'] is None:
-                    # Set broadcast default value, which is context dependent
-                    params['broadcast'] = bool(self.__transaction_builder is None)
-                elif params['broadcast'] is True and self.__transaction_builder is None:
-                    warnings.warn(
-                        'Avoid explicit setting "broadcast" parameter to True in this context, it is default value.\n'
-                        'It is considered bad practice, because obscures code and decreases its readability.'
+                self.__handle_broadcast_parameter(params)
+
+            response = self.__wallet.send(method, *list(params.values()), jsonrpc=jsonrpc, id=id)
+
+            if self.__is_transaction_build_in_progress():
+                self.__transaction_builder.append_operation(response)
+
+            return response
+
+        def __handle_broadcast_parameter(self, params):
+            import warnings
+            if params['broadcast'] is None:
+                params['broadcast'] = self.__get_default_broadcast_value()
+            elif self.__is_transaction_build_in_progress():
+                if params['broadcast'] is True:
+                    raise RuntimeError(
+                        f'You cannot broadcast api call during transaction building.\n'
+                        f'\n'
+                        f'Replace broadcast parameter with value False or better -- remove it\n'
+                        f'completely, because it is default value during transaction building.'
                     )
-                elif params['broadcast'] is False and self.__transaction_builder is not None:
+                else:
                     warnings.warn(
                         'Avoid explicit setting "broadcast" parameter to False during registering operations in\n'
                         'transaction. False is a default value in this context. It is considered bad practice,\n'
                         'because obscures code and decreases its readability.'
                     )
-
-            if self.__transaction_builder is None:
-                return self.__wallet.send(method, *list(params.values()), jsonrpc=jsonrpc, id=id)
-
-            if 'broadcast' in params and params['broadcast'] == True:
-                raise RuntimeError(
-                    f'You cannot broadcast api call during transaction building.\n'
-                    f'\n'
-                    f'Replace broadcast parameter with value False or better -- remove it\n'
-                    f'completely, because it is default value during transaction building.'
+            elif params['broadcast'] is True and not self.__is_transaction_build_in_progress():
+                warnings.warn(
+                    'Avoid explicit setting "broadcast" parameter to True in this context, it is default value.\n'
+                    'It is considered bad practice, because obscures code and decreases its readability.'
                 )
 
-            return self.__transaction_builder.append_operation(
-                self.__wallet.send(method, *list(params.values()), jsonrpc=jsonrpc, id=id)
-            )
+        def __get_default_broadcast_value(self):
+            return False if self.__is_transaction_build_in_progress() else True
+
+        def __is_transaction_build_in_progress(self):
+            return self.__transaction_builder is not None
 
         def about(self):
             return self.__send('about')
