@@ -17,9 +17,9 @@ def test_getting_key_references_of_claimed_created_account():
 
         account = Account('alice')
         key = account.public_key
-        wallet.api.claim_account_creation('initminer', '0.000 TESTS', True)
+        wallet.api.claim_account_creation('initminer', '0.000 TESTS')
         wallet.api.create_funded_account_with_keys(
-            'initminer', account.name, '0.000 TESTS', 'memo', '{}', key, key, key, key, True
+            'initminer', account.name, '0.000 TESTS', 'memo', '{}', key, key, key, key
         )
 
         response = init_node.api.condenser.get_key_references([account.public_key])
