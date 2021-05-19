@@ -7,7 +7,7 @@ python3 hive/tests/test_tools/install.py
 
 ## Features
 
-#### Easy testnet creation
+### Easy testnet creation
 You can run testnet with node configured for blocks production and attached wallet with such simple script:
 ```python
 from test_tools import World
@@ -20,7 +20,7 @@ if __name__ == '__main__':
         wallet = node.attach_wallet()
 ```
 
-#### Node and wallet APIs
+### Node and wallet APIs
 Node and wallet has `api` member which allows for communication with them. You can communicate with node and wallet with following syntax:
 ```python
 # Example node calls
@@ -36,7 +36,7 @@ Use your IDE's code completion to get hints for wallet api calls like below. IDE
 
 ![Wallet api code completion example](./documentation/wallet_code_completion.png)
 
-#### Node configuration
+### Node configuration
 Node has `config` member which allow for editing _hived_ _config.ini_ file. You can configure node in following way:
 ```python
 node.config.enable_stale_production = True
@@ -59,10 +59,10 @@ if node.config.enable_stale_production and node.config.required_participation < 
 ```
 because type of `node.config.enable_stale_production` is `bool` and type of `node.config.required_participation` is `int`.
 
-#### Select which executables should library use
+### Select which executables should library use
 You can select them in python script, via command line arguments, environment variables or by executables installation ([read more](documentation/paths_to_executables.md)).
 
-#### Send multiple operations in single wallet transaction
+### Send multiple operations in single wallet transaction
 TestTools provides support for sending single transaction containing multiple operations. It is helpful for optimizing scripts which send multiple transactions and wait 3 seconds for every transaction confirmation. When sending these operations in one transaction, you wait for only one confirmation, so your script executes much faster. You can do it with following syntax:
 ```python
 with wallet.in_single_transaction():
@@ -85,7 +85,7 @@ with wallet.in_single_transaction():
         wallet.api.transfer('initminer', account, amount, 'memo')
 ```
 
-#### Features waiting for description
+### Features waiting for description
 - Logger
 - Key generation with Account
 - Network

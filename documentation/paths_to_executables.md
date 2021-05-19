@@ -8,7 +8,7 @@ TestTools contains module which handles paths to executables using by TestTools 
 
 If you have paths configured in multiple ways (i.e. you have installed _hived_ and also passed its path as command line argument), they will be used with its priorities. Priorities are same as in list above; path set directly in script is the most important, less important is path passed as command line argument and so on. So in example mentioned earlier, installed _hived_ will be ignored and _hived_ path passed as command line argument will be used.
 
-#### Set paths directly in script
+### Set paths directly in script
 
 You can set path to executable directly in your script like on example below:
 ```python
@@ -16,7 +16,7 @@ from test_tools import paths_to_executables
 paths_to_executables.set_path_of('hived', '/home/dev/hive/programs/hived/hived')
 ```
 
-#### Pass paths as command line arguments
+### Pass paths as command line arguments
 
 To pass path as command line argument you have to run your script with one of following parameters:
 | Executable    | Argument name        |
@@ -30,7 +30,7 @@ Example run with custom _hived_ path:
 python3 my_script.py --hived-path="/home/dev/hive/programs/hived/hived"
 ```
 
-#### Define paths as environment variables
+### Define paths as environment variables
 
 To define path using environment variables you have to use following variable names:
 | Executable    | Variable name        |
@@ -44,6 +44,6 @@ Example run with custom _hived_ path:
 HIVED_PATH="/home/dev/hive/programs/hived/hived" python3 my_script.py
 ```
 
-#### Install executables
+### Install executables
 
 Installed executables will be automatically detected.
