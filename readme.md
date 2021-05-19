@@ -21,9 +21,18 @@ if __name__ == '__main__':
 ```
 
 #### Node and wallet APIs
-> :warning: APIs are not fully implemented and contains only few selected calls.
+Node and wallet has `api` member which allows for communication with them. You can communicate with node and wallet with following syntax:
+```python
+# Example node calls
+node.api.condenser.get_key_references(['TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW'])
+node.api.database.list_witnesses(start=None, limit=100, order='by_name')
 
-Node and wallet has `api` member which allows for communication with them. Use your IDE's code completion to get hints like below. IDE should help you to write method names, but also parameters.
+# Example wallet calls
+wallet.api.create_account('initminer', 'john', '{}')
+wallet.api.get_account('john')
+```
+
+Use your IDE's code completion to get hints for wallet api calls like below. IDE should help you to write method names, but also parameters.
 
 ![Wallet api code completion example](./documentation/wallet_code_completion.png)
 
