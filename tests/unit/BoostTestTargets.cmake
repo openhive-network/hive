@@ -46,11 +46,11 @@ set(BOOST_TEST_TARGET_PREFIX "boosttest")
 if(NOT Boost_FOUND)
 	find_package(Boost 1.34.0 QUIET)
 endif()
-if("${Boost_VERSION}0" LESS "1034000")
+if("${Boost_VERSION_MACRO}0" LESS "1034000")
 	set(_shared_msg
 		"NOTE: boost::test-based targets and tests cannot "
 		"be added: boost >= 1.34.0 required but not found. "
-		"(found: '${Boost_VERSION}'; want >=103400) ")
+		"(found: '${Boost_VERSION_MACRO}'; want >=103400) ")
 	if(BUILD_TESTING)
 		message(FATAL_ERROR
 			${_shared_msg}
@@ -66,7 +66,7 @@ endif()
 include(GetForceIncludeDefinitions.cmake)
 include(CopyResourcesToBuildTree.cmake)
 
-if(Boost_FOUND AND NOT "${Boost_VERSION}0" LESS "1034000")
+if(Boost_FOUND AND NOT "${Boost_VERSION_MACRO}0" LESS "1034000")
 	set(_boosttesttargets_libs)
 	set(_boostConfig "BoostTestTargetsIncluded.h")
 	if(NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY)
@@ -131,7 +131,7 @@ function(add_boost_test _name)
 			"Syntax error in use of add_boost_test: at least one source file required!")
 	endif()
 
-	if(Boost_FOUND AND NOT "${Boost_VERSION}0" LESS "1034000")
+	if(Boost_FOUND AND NOT "${Boost_VERSION_MACRO}0" LESS "1034000")
 
 		include_directories(${Boost_INCLUDE_DIRS})
 
@@ -223,7 +223,7 @@ function(add_boost_test _name)
 			set(_test_command ${_target_name})
 		endif()
 
-		if(TESTS AND ( "${Boost_VERSION}" VERSION_GREATER "103799" ))
+		if(TESTS AND ( "${Boost_VERSION_MACRO}" VERSION_GREATER "103799" ))
 			foreach(_test ${TESTS})
 				add_test(
 					unit/${_name}-${_test}
