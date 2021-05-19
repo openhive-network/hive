@@ -389,7 +389,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_TEST_MESSAGE( " -- transaction status expiration test" );
 
     // The time of our last irreversible block
-    auto lib_time = db->fetch_block_by_number( db->get_dynamic_global_properties().last_irreversible_block_num )->timestamp;
+    auto lib_time = db->fetch_block_by_number( db->get_dynamic_global_properties().get_lib() )->timestamp;
     api_return = tx_status_api->api->find_transaction( { .transaction_id = transaction_id_type(), .expiration = lib_time } );
     BOOST_REQUIRE( api_return.status == expired_irreversible );
     BOOST_REQUIRE( api_return.block_num.valid() == false );

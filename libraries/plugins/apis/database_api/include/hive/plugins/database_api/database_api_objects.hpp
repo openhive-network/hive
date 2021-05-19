@@ -236,7 +236,7 @@ struct api_dynamic_global_property_object
     current_aslot( o.current_aslot ),
     recent_slots_filled( o.recent_slots_filled ),
     participation_count( o.participation_count ),
-    last_irreversible_block_num( o.last_irreversible_block_num ),
+    last_irreversible_block_num( o.get_lib()),
     vote_power_reserve_rate( o.vote_power_reserve_rate ),
     delegation_return_period( o.delegation_return_period ),
     reverse_auction_seconds( o.reverse_auction_seconds ),
