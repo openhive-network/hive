@@ -62,6 +62,18 @@ because type of `node.config.enable_stale_production` is `bool` and type of `nod
 ### Select which executables should library use
 You can select them in python script, via command line arguments, environment variables or by executables installation ([read more](documentation/paths_to_executables.md)).
 
+### Generate public and private keys
+Some tests requires multiple accounts creation. To perform operations on them keys are required. TestTools provides support for key generation with `Account` class. You only need to provide account name. Generated account contains member variables `private_key` and `public_key`, which can be used in tests. Optionally you can specify `secret` parameter, which affects generated keys.
+```python
+# Simple account creation example
+account = Account('John')
+print(account.private_key)  # Prints: 5KSJQHSBh4vxZVaY2fi3vbhDbkkg7C74pE4S3bigEQyct2RqMDf
+print(account.public_key)   # Prints: TST8FukVPod6riKr2mg94hhDanCzCYvivJtPdpcUVnEChaJ5N9QbC
+
+# Inline usage example
+print(Account('initminer').private_key)  # Prints: 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
+```
+
 ### Send multiple operations in single wallet transaction
 TestTools provides support for sending single transaction containing multiple operations. It is helpful for optimizing scripts which send multiple transactions and wait 3 seconds for every transaction confirmation. When sending these operations in one transaction, you wait for only one confirmation, so your script executes much faster. You can do it with following syntax:
 ```python
@@ -87,6 +99,5 @@ with wallet.in_single_transaction():
 
 ### Features waiting for description
 - Logger
-- Key generation with Account
 - Network
 - MainNet
