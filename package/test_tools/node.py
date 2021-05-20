@@ -169,7 +169,7 @@ class Node:
 
     def _wait_for_live(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
         from .private.wait_for import wait_for
-        wait_for(self.__is_live, timeout, 'Timeout of waiting for node live was reached')
+        wait_for(self.__is_live, timeout, f'Waiting too long for {self} live (to start produce or receive blocks)')
 
     def _send(self, method, params=None, jsonrpc='2.0', id=1):
         message = {
