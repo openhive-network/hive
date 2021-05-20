@@ -9814,8 +9814,6 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block_02 )
         }
     };
 
-    
-
     constexpr int blocks_per_day{ (24 * 3600) / HIVE_BLOCK_INTERVAL };
     constexpr int max_recurrent_transfers_per_day{ blocks_per_day * HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK};
     constexpr int actors_count_to_overflow{ (max_recurrent_transfers_per_day / HIVE_MAX_OPEN_RECURRENT_TRANSFERS) + 10 /* <- 10 more accounts */ };
@@ -9847,38 +9845,65 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block_02 )
 
     validate_database();
 
-    recurrent_transfer_operation ref_op;
+    // recurrent_transfer_operation ref_op;
     // ref_op.memo = "memo";
-    ref_op.amount = ASSET( "0.001 TESTS" );
-    ref_op.recurrence = 24;
-    ref_op.executions = 5;
-    const size_t ami_size = db->get_index<account_index>().indicies().size() * sizeof(typename hive::chain::account_object);
+    // ref_op.amount = ASSET( "0.001 TESTS" );
+    // ref_op.recurrence = 24;
+    // ref_op.executions = 5;
+    // const size_t ami_size = db->get_index<account_index>().indicies().size() * sizeof(typename hive::chain::account_object);
 
-    for(size_t i = 0; i < accounts.size(); ++i)
+    const size_t size = accounts.size();
+    for(size_t i = 0; i < size; ++i)
     {
-      std::cout << "setting transfers: " << i << std::endl;
-      recurrent_transfer_operation op{ ref_op };
-      op.from = accounts[i].name;
-      op.memo = accounts[i].name;
-      for(size_t j = 0; j < HIVE_MAX_OPEN_RECURRENT_TRANSFERS; j++)
-      {
-        if(i == j) continue;// prevent self
-        const fc::string p_name = accounts[i].name.operator fc::string();
-        const fc::string l_name = accounts[j].name.operator fc::string();
-        std::cout << p_name << " -> " << l_name << std::endl;
-        if(p_name == "actor284" && l_name == "actor254")
-        {
-          std::cout << "ERRROR" << std::endl;
-        }
-        op.to = accounts[j].name;
-        const size_t rmi_size = db->get_index<recurrent_transfer_index>().indicies().size();
-        std::cout << "rmi cnt = " << rmi_size << " size = " << ((rmi_size * sizeof(typename hive::chain::recurrent_transfer_object) ) + ami_size) / 1'000'000 << std::endl;
-        const auto fun = [&]{ push_transaction(op, accounts[i].pv_key); };
-        BOOST_REQUIRE_NO_THROW(fun());
-      }
+      BOOST_REQUIRE_NE( i, std::numeric_limits<size_t>::max() );
+      std::cout << i << " / " << size << std::endl;
       if(i % 4 == 0) generate_block();
-      BOOST_REQUIRE( 1 == 1 );
+  // _db.create< recurrent_transfer_object >(
+  // _db.head_block_time(), 
+  // from_account.get_id(), 
+  // to_account.get_id(), 
+  // op.amount,
+  // op.memo, 
+  // op.recurrence, 
+  // op.executions);
+
+      // const auto& x = db->create<recurrent_transfer_object>([&](recurrent_transfer_object& obj)
+
+      for(size_t j = 0; j < HIVE_MAX_OPEN_RECURRENT_TRANSFERS; ++j)
+      {
+        if(i == j) continue;
+        const std::string memo{ std::to_string(i) + "|" + std::to_string(j) };
+        const auto& x = db->create<recurrent_transfer_object>( db->head_block_time(), accounts[i].id, accounts[j].id, ASSET( "0.001 TESTS" ), memo, 24, 5 );
+        db->modify(x, [&](recurrent_transfer_object& obj){ obj.set_recurrence_trigger_date(db->head_block_time(), obj.recurrence); });
+        db->modify(db->get_account(accounts[i].id), [](account_object& obj) { obj.open_recurrent_transfers++;});
+      }
     }
+
+    // for(size_t i = 0; i < accounts.size(); ++i)
+    // {
+    //   std::cout << "setting transfers: " << i << std::endl;
+    //   recurrent_transfer_operation op{ ref_op };
+    //   op.from = accounts[i].name;
+    //   op.memo = accounts[i].name;
+    //   for(size_t j = 0; j < HIVE_MAX_OPEN_RECURRENT_TRANSFERS; j++)
+    //   {
+    //     if(i == j) continue;// prevent self
+    //     const fc::string p_name = accounts[i].name.operator fc::string();
+    //     const fc::string l_name = accounts[j].name.operator fc::string();
+    //     std::cout << p_name << " -> " << l_name << std::endl;
+    //     if(p_name == "actor284" && l_name == "actor254")
+    //     {
+    //       std::cout << "ERRROR" << std::endl;
+    //     }
+    //     op.to = accounts[j].name;
+    //     const size_t rmi_size = db->get_index<recurrent_transfer_index>().indicies().size();
+    //     std::cout << "rmi cnt = " << rmi_size << " size = " << ((rmi_size * sizeof(typename hive::chain::recurrent_transfer_object) ) + ami_size) / 1'000'000 << std::endl;
+    //     const auto fun = [&]{ push_transaction(op, accounts[i].pv_key); };
+    //     BOOST_REQUIRE_NO_THROW(fun());
+    //   }
+    //   if(i % 4 == 0) generate_block();
+    //   BOOST_REQUIRE( 1 == 1 );
+    // }
 
     generate_blocks( 1200 ); // 1 hour
     std::cout << "after 1h alice: " << alice.balance.amount.value << std::endl;
