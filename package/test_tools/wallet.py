@@ -499,10 +499,10 @@ class Wallet:
         self.stdout_file = open(self.get_stdout_file_path(), 'w')
         self.stderr_file = open(self.get_stderr_file_path(), 'w')
 
-        if not self.connected_node.is_ws_listening():
+        if not self.connected_node._is_ws_listening():
             self.logger.info(f'Waiting for node {self.connected_node} to listen...')
 
-        while not self.connected_node.is_ws_listening():
+        while not self.connected_node._is_ws_listening():
             time.sleep(1)
 
         self.process = subprocess.Popen(

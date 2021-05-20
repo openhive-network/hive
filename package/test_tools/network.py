@@ -84,7 +84,7 @@ class Network:
             node.set_directory(self.get_directory())
             node.set_executable_file_path(self.hived_executable_file_path)
             node.run(wait_for_live=False)
-            node.wait_for_p2p_plugin_start()
+            node._wait_for_p2p_plugin_start()
 
         self.is_running = True
 
@@ -101,7 +101,7 @@ class Network:
                 wallet.close()
 
     def attach_wallet_to(self, node):
-        name = self.children_names.create_name(f'{node.name}Wallet')
+        name = self.children_names.create_name(f'{node.get_name()}Wallet')
 
         wallet = Wallet(name, self, self.get_directory())
         wallet.connect_to(node)
@@ -152,4 +152,4 @@ class Network:
 
     def wait_for_live_on_all_nodes(self):
         for node in self.nodes:
-            node.wait_for_live()
+            node._wait_for_live()

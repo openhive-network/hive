@@ -10,7 +10,7 @@ class NodeApiCallProxy:
 
     def __call__(self, *args, **kwargs):
         self.__message['params'] = self._prepare_params(*args, **kwargs)
-        return self.__node.send(
+        return self.__node._send(
             self.__message['method'],
             self.__message['params'],
             jsonrpc=self.__message['jsonrpc'],
@@ -46,4 +46,4 @@ class ApiBase:
         return self._NodeApiCallProxyType(self.__node, f'{self.__name}.{item}')
 
     def _send(self, method, params=None, jsonrpc='2.0', id=1):
-        return self.__node.send(f'{self.__name}.{method}', params, jsonrpc=jsonrpc, id=id)
+        return self.__node._send(f'{self.__name}.{method}', params, jsonrpc=jsonrpc, id=id)

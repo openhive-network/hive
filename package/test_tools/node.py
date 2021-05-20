@@ -20,16 +20,16 @@ class Node:
     def __init__(self, creator, name, directory=None, configure_for_block_production=False):
         self.api = Apis(self)
 
-        self.creator = weakref.proxy(creator)
-        self.name = name
-        self.directory = Path(directory) if directory is not None else Path(f'./{self.name}')
-        self.produced_files = False
-        self.executable_file_path = None
-        self.process = None
-        self.stdout_file = None
-        self.stderr_file = None
-        self.finalizer = None
-        self.logger = logger.getLogger(f'{__name__}.{self.creator}.{self.name}')
+        self.__creator = weakref.proxy(creator)
+        self.__name = name
+        self.directory = Path(directory) if directory is not None else Path(f'./{self.__name}')
+        self.__produced_files = False
+        self.__executable_file_path = None
+        self.__process = None
+        self.__stdout_file = None
+        self.__stderr_file = None
+        self.__finalizer = None
+        self.__logger = logger.getLogger(f'{__name__}.{self.__creator}.{self.__name}')
 
         from .node_configs.default import create_default_config
         self.config = create_default_config()
@@ -41,7 +41,7 @@ class Node:
 
     def __str__(self):
         from .network import Network
-        return f'{self.creator}::{self.name}' if isinstance(self.creator, Network) else self.name
+        return f'{self.__creator}::{self.__name}' if isinstance(self.__creator, Network) else self.__name
 
     @staticmethod
     def __close_process(process, logger_from_node):
@@ -75,7 +75,7 @@ class Node:
         return error_message == 'Error parsing command line: unrecognised option \'--chain-id\''
 
     def __run_hived_with_chain_id_argument(self):
-        hived_path = self.executable_file_path
+        hived_path = self.__executable_file_path
         if hived_path is None:
             from test_tools import paths_to_executables
             hived_path = paths_to_executables.get_path_of('hived')
@@ -84,13 +84,13 @@ class Node:
         return result.decode('utf-8').strip()
 
     def set_directory(self, directory):
-        self.directory = Path(directory).absolute() / self.name
+        self.directory = Path(directory).absolute() / self.__name
 
     def is_running(self):
-        if not self.process:
+        if not self.__process:
             return False
 
-        return self.process.poll() is None
+        return self.__process.poll() is None
 
     def is_able_to_produce_blocks(self):
         conditions = [
@@ -106,10 +106,10 @@ class Node:
         if not self.is_running():
             raise NodeIsNotRunning('Before attaching wallet you have to run node')
 
-        return self.creator.attach_wallet_to(self)
+        return self.__creator.attach_wallet_to(self)
 
     def get_name(self):
-        return self.name
+        return self.__name
 
     def add_seed_node(self, seed_node):
         if not seed_node.config.p2p_endpoint.is_set():
@@ -121,16 +121,16 @@ class Node:
 
         self.config.p2p_seed_node.append(f'127.0.0.1:{port}')
 
-    def is_p2p_plugin_started(self):
+    def __is_p2p_plugin_started(self):
         return self.__any_line_in_stderr(lambda line: 'P2P Plugin started' in line)
 
-    def is_http_listening(self):
+    def __is_http_listening(self):
         return self.__any_line_in_stderr(lambda line: 'start listening for http requests' in line)
 
-    def is_ws_listening(self):
+    def _is_ws_listening(self):
         return self.__any_line_in_stderr(lambda line: 'start listening for ws requests' in line)
 
-    def is_live(self):
+    def __is_live(self):
         return self.__any_line_in_stderr(
             lambda line: 'transactions on block' in line or 'Generated block #' in line
         )
@@ -153,7 +153,7 @@ class Node:
         last = self.__get_last_block_number()
         while last < number:
             if last_printed != last:
-                self.logger.debug(f'Waiting for block with number {number} (last: {last})')
+                self.__logger.debug(f'Waiting for block with number {number} (last: {last})')
                 last_printed = last
 
             time.sleep(2)
@@ -163,14 +163,14 @@ class Node:
         response = self.api.database.get_dynamic_global_properties()
         return response['result']['head_block_number']
 
-    def wait_for_p2p_plugin_start(self):
-        while not self.is_p2p_plugin_started():
+    def _wait_for_p2p_plugin_start(self):
+        while not self.__is_p2p_plugin_started():
             self.logger.debug('Waiting for p2p plugin start...')
             time.sleep(1)
 
-    def wait_for_live(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
+    def _wait_for_live(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
         poll_time = 1.0
-        while not self.is_live():
+        while not self.__is_live():
             if timeout <= 0:
                 raise TimeoutError('Timeout of waiting for node live was reached')
 
@@ -178,7 +178,7 @@ class Node:
             time.sleep(min(poll_time, timeout))
             timeout -= poll_time
 
-    def send(self, method, params=None, jsonrpc='2.0', id=1):
+    def _send(self, method, params=None, jsonrpc='2.0', id=1):
         message = {
             'jsonrpc': jsonrpc,
             'id': id,
@@ -197,7 +197,7 @@ class Node:
         if '0.0.0.0' in endpoint:
             endpoint = endpoint.replace('0.0.0.0', '127.0.0.1')
 
-        while not self.is_http_listening():
+        while not self.__is_http_listening():
             time.sleep(1)
 
         from . import communication
@@ -219,9 +219,9 @@ class Node:
                                     current config values will be ignored and overridden by values from file.
                                     When config file is missing hived generates default config.
         """
-        if not self.executable_file_path:
+        if not self.__executable_file_path:
             from . import paths_to_executables
-            self.executable_file_path = paths_to_executables.get_path_of('hived')
+            self.__executable_file_path = paths_to_executables.get_path_of('hived')
 
         if not self.__is_test_net_build():
             from test_tools import paths_to_executables
@@ -234,7 +234,7 @@ class Node:
                 f'https://gitlab.syncad.com/hive/test-tools/-/blob/develop/documentation/paths_to_executables.md'
             )
 
-        if not self.produced_files and self.directory.exists():
+        if not self.__produced_files and self.directory.exists():
             from shutil import rmtree
             rmtree(self.directory)
         self.directory.mkdir(parents=True, exist_ok=True)
@@ -244,21 +244,21 @@ class Node:
             self.__set_unset_endpoints()
             self.config.write_to_file(config_file_path)
 
-        self.stdout_file = open(self.directory/'stdout.txt', 'w')
-        self.stderr_file = open(self.directory/'stderr.txt', 'w')
+        self.__stdout_file = open(self.directory/'stdout.txt', 'w')
+        self.__stderr_file = open(self.directory/'stderr.txt', 'w')
 
-        self.process = subprocess.Popen(
+        self.__process = subprocess.Popen(
             [
-                str(self.executable_file_path),
+                str(self.__executable_file_path),
                 '--chain-id=04e8b5fc4bb4ab3c0ee3584199a2e584bfb2f141222b3a0d1c74e8a75ec8ff39',
                 '-d', '.'
             ],
             cwd=self.directory,
-            stdout=self.stdout_file,
-            stderr=self.stderr_file,
+            stdout=self.__stdout_file,
+            stderr=self.__stderr_file,
         )
 
-        self.finalizer = weakref.finalize(self, Node.__close_process, self.process, self.logger)
+        self.__finalizer = weakref.finalize(self, Node.__close_process, self.__process, self.__logger)
 
         if use_existing_config:
             # Wait for config generation
@@ -269,17 +269,17 @@ class Node:
             self.config = NodeConfig()
             self.config.load_from_file(config_file_path)
 
-        self.produced_files = True
+        self.__produced_files = True
         if wait_for_live:
-            self.wait_for_live(timeout)
+            self._wait_for_live(timeout)
 
-        message = f'Run with pid {self.process.pid}, '
+        message = f'Run with pid {self.__process.pid}, '
         if self.config.webserver_http_endpoint:
             message += f'with http server {self.config.webserver_http_endpoint}'
         else:
             message += 'without http server'
         message += f', {self.__get_executable_build_version()} build'
-        self.logger.info(message)
+        self.__logger.info(message)
 
     def __set_unset_endpoints(self):
         from .port import Port
@@ -294,7 +294,7 @@ class Node:
             self.config.webserver_ws_endpoint = f'0.0.0.0:{Port.allocate()}'
 
     def close(self):
-        self.finalizer()
+        self.__finalizer()
 
     def set_executable_file_path(self, executable_file_path):
-        self.executable_file_path = executable_file_path
+        self.__executable_file_path = executable_file_path
