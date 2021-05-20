@@ -1,4 +1,3 @@
-import math
 from pathlib import Path
 import subprocess
 import time
@@ -16,6 +15,8 @@ class NodeIsNotRunning(Exception):
 
 
 class Node:
+    __DEFAULT_WAIT_FOR_LIVE_TIMEOUT = 20
+
     def __init__(self, creator, name, directory=None, configure_for_block_production=False):
         self.api = Apis(self)
 
@@ -171,7 +172,7 @@ class Node:
             self.logger.debug('Waiting for p2p plugin start...')
             time.sleep(1)
 
-    def wait_for_synchronization(self, timeout=math.inf):
+    def wait_for_synchronization(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
         poll_time = 1.0
         while not self.is_synchronized():
             if timeout <= 0:
@@ -213,7 +214,7 @@ class Node:
     def set_allowed_nodes(self, nodes):
         return self.api.network_node.set_allowed_peers(allowed_peers=[node.get_id() for node in nodes])
 
-    def run(self, wait_for_live=True, timeout=math.inf, use_existing_config=False):
+    def run(self, wait_for_live=True, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT, use_existing_config=False):
         """
         :param wait_for_live: Stops execution until node will generate or receive blocks.
         :param timeout: If wait_for_live is set to True, this parameter sets how long waiting can take. When
