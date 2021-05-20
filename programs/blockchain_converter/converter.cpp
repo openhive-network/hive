@@ -1,6 +1,7 @@
 #include "converter.hpp"
 
 #include <map>
+#include <array>
 #include <string>
 #include <limits>
 
@@ -246,35 +247,37 @@ namespace hive {
         else
           ++acc_name_itr;
 
+      // Get classification type (see pow_auths declaration)
+      int classification_type;
+      switch( type )
+      {
+        case authority::owner:           classification_type = 0; break;
+        default: case authority::active: classification_type = 1; break;
+        case authority::posting:         classification_type = 2; break;
+      }
+
       auto pow_auths_itr = pow_auths.find( name );
       if( pow_auths_itr != pow_auths.end() )
       {
-        int classification_type;
-        switch( type )
+        if( pow_auths_itr->second.at( classification_type ).valid() ) // Given classification type already exists in pow_auths
         {
-          case authority::owner:           classification_type = 0; break;
-          default: case authority::active: classification_type = 1; break;
-          case authority::posting:         classification_type = 2; break;
+          // Merge auths
+          for( const auto& _key : pow_auths_itr->second.at( classification_type )->key_auths )
+            auth.add_authority( _key.first, _key.second );
+          for( const auto& _acc : pow_auths_itr->second.at( classification_type )->account_auths )
+            auth.add_authority( _acc.first, _acc.second );
         }
+        else // Add second authority key to the auth before insertion
+          auth.add_authority( second_authority.at( type ).get_public_key(), 1 );
 
-        // Merge auths
-        for( const auto& _key : pow_auths_itr->second.at( classification_type ).key_auths )
-          auth.add_authority( _key.first, _key.second );
-        for( const auto& _acc : pow_auths_itr->second.at( classification_type ).account_auths )
-          auth.add_authority( _acc.first, _acc.second );
-
-        _auth->second.at( classification_type ) = auth;
+        pow_auths_itr->second.at( classification_type ) = auth;
       }
       else
       {
+        // Add new pow authority
         auth.add_authority( second_authority.at( type ).get_public_key(), 1 );
-        std::array< authority, 3 > auths_array;
-        switch( type )
-        {
-          case authority::owner:           auths_array[ 0 ] = auth; break;
-          default: case authority::active: auths_array[ 1 ] = auth; break;
-          case authority::posting:         auths_array[ 2 ] = auth; break;
-        }
+        std::array< fc::optional< authority >, 3 > auths_array;
+        auths_array[ classification_type ] = auth;
         pow_auths.emplace( name, auths_array );
       }
     }
