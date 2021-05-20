@@ -163,10 +163,9 @@ class Node:
         response = self.api.database.get_dynamic_global_properties()
         return response['result']['head_block_number']
 
-    def _wait_for_p2p_plugin_start(self):
-        while not self.__is_p2p_plugin_started():
-            self.logger.debug('Waiting for p2p plugin start...')
-            time.sleep(1)
+    def _wait_for_p2p_plugin_start(self, timeout=10):
+        from .private.wait_for import wait_for
+        wait_for(self.__is_p2p_plugin_started, timeout, f'Waiting too long for start of {self} p2p plugin')
 
     def _wait_for_live(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
         from .private.wait_for import wait_for
