@@ -25,8 +25,8 @@ namespace hive {
       chain_id_type    chain_id;
       signed_block*    current_signed_block;
 
-      std::map< account_name_type, std::pair< authority, authority::classification > >  pow_auths;
-      std::map< authority::classification, private_key_type >                           second_authority;
+      std::map< account_name_type, std::array< authority, 3 > >  pow_auths; // the array contains the following keys: owner, active and posting
+      std::map< authority::classification, private_key_type >    second_authority;
 
       void post_convert_transaction( signed_transaction& _transaction );
 
