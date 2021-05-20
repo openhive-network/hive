@@ -89,7 +89,7 @@ class Network:
         self.is_running = True
 
         if wait_for_live:
-            self.wait_for_synchronization_of_all_nodes()
+            self.wait_for_live_on_all_nodes()
 
     def close(self):
         for node in self.nodes:
@@ -150,6 +150,6 @@ class Network:
         for node in self.nodes:
             node.set_allowed_nodes([])
 
-    def wait_for_synchronization_of_all_nodes(self):
+    def wait_for_live_on_all_nodes(self):
         for node in self.nodes:
-            node.wait_for_synchronization()
+            node.wait_for_live()

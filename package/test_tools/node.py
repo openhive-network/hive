@@ -134,7 +134,7 @@ class Node:
     def is_ws_listening(self):
         return self.__any_line_in_stderr(lambda line: 'start listening for ws requests' in line)
 
-    def is_synchronized(self):
+    def is_live(self):
         return self.__any_line_in_stderr(
             lambda line: 'transactions on block' in line or 'Generated block #' in line
         )
@@ -172,13 +172,13 @@ class Node:
             self.logger.debug('Waiting for p2p plugin start...')
             time.sleep(1)
 
-    def wait_for_synchronization(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
+    def wait_for_live(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
         poll_time = 1.0
-        while not self.is_synchronized():
+        while not self.is_live():
             if timeout <= 0:
-                raise TimeoutError('Timeout of node synchronization was reached')
+                raise TimeoutError('Timeout of waiting for node live was reached')
 
-            self.logger.debug('Waiting for synchronization...')
+            self.logger.debug('Waiting for live...')
             time.sleep(min(poll_time, timeout))
             timeout -= poll_time
 
@@ -276,7 +276,7 @@ class Node:
 
         self.produced_files = True
         if wait_for_live:
-            self.wait_for_synchronization(timeout)
+            self.wait_for_live(timeout)
 
         message = f'Run with pid {self.process.pid}, '
         if self.config.webserver_http_endpoint:
