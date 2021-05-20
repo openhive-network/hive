@@ -46,7 +46,7 @@ typedef hive::plugins::account_history::account_history_plugin ah_plugin;
 using std::cout;
 using std::cerr;
 
-clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb, fc::optional<uint32_t> hardfork )
+clean_database_fixture::clean_database_fixture( size_t shared_file_size_in_mb, fc::optional<uint32_t> hardfork )
 {
   try {
   int argc = boost::unit_test::framework::master_test_suite().argc;
@@ -284,7 +284,7 @@ asset_symbol_type database_fixture::get_new_smt_symbol( uint8_t token_decimal_pl
 }
 #endif
 
-void database_fixture::open_database( uint16_t shared_file_size_in_mb )
+void database_fixture::open_database( size_t shared_file_size_in_mb )
 {
   if( !data_dir )
   {

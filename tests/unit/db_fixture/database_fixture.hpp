@@ -238,9 +238,10 @@ struct database_fixture {
 #endif
 
   static const uint16_t shared_file_size_in_mb_64 = 64;
+  // static const uint16_t shared_file_size_in_mb_64 = 8196;
   static const uint16_t shared_file_size_in_mb_512 = 512;
 
-  void open_database( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 );
+  void open_database( size_t shared_file_size_in_mb = shared_file_size_in_mb_64 );
   void generate_block(uint32_t skip = 0,
                       const fc::ecc::private_key& key = generate_private_key("init_key"),
                       int miss_blocks = 0);
@@ -331,7 +332,8 @@ public:
 
 struct clean_database_fixture : public database_fixture
 {
-  clean_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512, fc::optional<uint32_t> hardfork = fc::optional<uint32_t>() );
+	constexpr static size_t big_db_size_in_mb = 1024 * 16;
+  clean_database_fixture( size_t shared_file_size_in_mb = big_db_size_in_mb, fc::optional<uint32_t> hardfork = fc::optional<uint32_t>() );
   virtual ~clean_database_fixture();
 
   void resize_shared_mem( uint64_t size, fc::optional<uint32_t> hardfork = fc::optional<uint32_t>() );

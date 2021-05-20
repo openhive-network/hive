@@ -9686,7 +9686,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_open_transfers )
 }
 
 
-BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
+BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block_01 )
 {
   try
   {
@@ -9783,6 +9783,119 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
     BOOST_REQUIRE( recurrent_transfer_drift_after.get_trigger_date() ==  recurrent_transfer_drift_before.get_trigger_date() + fc::hours(recurrent_transfer_drift_before.recurrence));
     validate_database();
 
+ }
+  FC_LOG_AND_RETHROW()
+}
+
+
+BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block_02 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: too many open recurrent transfers" );
+    ACTORS( (alice) )
+    generate_block();
+
+    struct account_holder_t
+    {
+      fc::ecc::private_key pv_key;
+      fc::ecc::private_key post_key;
+      public_key_type pub_key;
+      account_name_type name;
+      account_id_type id;
+
+      account_holder_t(database_fixture& fix, const fc::string& n) :
+        pv_key{ generate_private_key( n ) },
+        post_key{ generate_private_key( n ) },
+        pub_key{ pv_key.get_public_key() },
+        name{ n }
+        {
+          id = fix.account_create( name, pub_key).get_id();
+        }
+    };
+
+    
+
+    constexpr int blocks_per_day{ (24 * 3600) / HIVE_BLOCK_INTERVAL };
+    constexpr int max_recurrent_transfers_per_day{ blocks_per_day * HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK};
+    constexpr int actors_count_to_overflow{ (max_recurrent_transfers_per_day / HIVE_MAX_OPEN_RECURRENT_TRANSFERS) + 10 /* <- 10 more accounts */ };
+
+    std::vector<account_holder_t> accounts;
+    accounts.reserve( actors_count_to_overflow );
+    const auto& initminer = db->get_account("initminer");
+
+    for(int i = 0; i < actors_count_to_overflow; ++i)
+    {
+      std::cout << "init: " << initminer.balance.amount.value << std::endl;
+      accounts.emplace_back( *this, fc::string("actor") + std::to_string(i) );
+      if(i % 10 == 0) generate_block();
+      BOOST_REQUIRE( 1 == 1 );
+      // std::cout << "added account: " << i << std::endl;
+      // if(i == 1'0000) FC_ASSERT(false);
+    }
+
+    for(int i = 0; i < actors_count_to_overflow; ++i)
+    {
+      std::cout << "init: " << initminer.balance.amount.value << ", fund:" << i << ", acc: " << accounts[i].name.operator fc::string() << std::endl;
+      fund( accounts[i].name, ASSET("10.000 TESTS") );
+      if(i % 10 == 0) generate_block();
+      BOOST_REQUIRE( 1 == 1 );
+    }
+    fund( "alice", ASSET("10.000 TESTS") );
+    BOOST_REQUIRE( 1 == 1 );
+    generate_blocks(20);
+
+    validate_database();
+
+    recurrent_transfer_operation ref_op;
+    // ref_op.memo = "memo";
+    ref_op.amount = ASSET( "0.001 TESTS" );
+    ref_op.recurrence = 24;
+    ref_op.executions = 5;
+    const size_t ami_size = db->get_index<account_index>().indicies().size() * sizeof(typename hive::chain::account_object);
+
+    for(size_t i = 0; i < accounts.size(); ++i)
+    {
+      std::cout << "setting transfers: " << i << std::endl;
+      recurrent_transfer_operation op{ ref_op };
+      op.from = accounts[i].name;
+      op.memo = accounts[i].name;
+      for(size_t j = 0; j < HIVE_MAX_OPEN_RECURRENT_TRANSFERS; j++)
+      {
+        if(i == j) continue;// prevent self
+        const fc::string p_name = accounts[i].name.operator fc::string();
+        const fc::string l_name = accounts[j].name.operator fc::string();
+        std::cout << p_name << " -> " << l_name << std::endl;
+        if(p_name == "actor284" && l_name == "actor254")
+        {
+          std::cout << "ERRROR" << std::endl;
+        }
+        op.to = accounts[j].name;
+        const size_t rmi_size = db->get_index<recurrent_transfer_index>().indicies().size();
+        std::cout << "rmi cnt = " << rmi_size << " size = " << ((rmi_size * sizeof(typename hive::chain::recurrent_transfer_object) ) + ami_size) / 1'000'000 << std::endl;
+        const auto fun = [&]{ push_transaction(op, accounts[i].pv_key); };
+        BOOST_REQUIRE_NO_THROW(fun());
+      }
+      if(i % 4 == 0) generate_block();
+      BOOST_REQUIRE( 1 == 1 );
+    }
+
+    generate_blocks( 1200 ); // 1 hour
+    std::cout << "after 1h alice: " << alice.balance.amount.value << std::endl;
+
+    generate_blocks( 23 * 1200 ); // 1 day
+    std::cout << "after 1 day alice: " << alice.balance.amount.value << std::endl;
+
+    generate_blocks( 6 * 24 * 1200 ); // 1 week
+    std::cout << "after 1 week alice: " << alice.balance.amount.value << std::endl;
+
+    generate_blocks( 3 * 7 * 24 * 1200 ); // 1 month
+    std::cout << "after 1 month alice: " << alice.balance.amount.value << std::endl;
+
+    generate_blocks( 4 * 7 * 24 * 1200 ); // 2 month
+    std::cout << "after 2 month alice: " << alice.balance.amount.value << std::endl;
+
+    validate_database();
  }
   FC_LOG_AND_RETHROW()
 }
