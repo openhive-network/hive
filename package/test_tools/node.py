@@ -24,7 +24,6 @@ class Node:
         self.name = name
         self.directory = Path(directory) if directory is not None else Path(f'./{self.name}')
         self.produced_files = False
-        self.print_to_terminal = False
         self.executable_file_path = None
         self.process = None
         self.stdout_file = None
@@ -121,9 +120,6 @@ class Node:
         port = endpoint.split(':')[1]
 
         self.config.p2p_seed_node.append(f'127.0.0.1:{port}')
-
-    def redirect_output_to_terminal(self):
-        self.print_to_terminal = True
 
     def is_p2p_plugin_started(self):
         return self.__any_line_in_stderr(lambda line: 'P2P Plugin started' in line)
@@ -248,9 +244,8 @@ class Node:
             self.__set_unset_endpoints()
             self.config.write_to_file(config_file_path)
 
-        if not self.print_to_terminal:
-            self.stdout_file = open(self.directory/'stdout.txt', 'w')
-            self.stderr_file = open(self.directory/'stderr.txt', 'w')
+        self.stdout_file = open(self.directory/'stdout.txt', 'w')
+        self.stderr_file = open(self.directory/'stderr.txt', 'w')
 
         self.process = subprocess.Popen(
             [
@@ -259,8 +254,8 @@ class Node:
                 '-d', '.'
             ],
             cwd=self.directory,
-            stdout=None if self.print_to_terminal else self.stdout_file,
-            stderr=None if self.print_to_terminal else self.stderr_file,
+            stdout=self.stdout_file,
+            stderr=self.stderr_file,
         )
 
         self.finalizer = weakref.finalize(self, Node.__close_process, self.process, self.logger)
