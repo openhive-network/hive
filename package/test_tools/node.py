@@ -169,14 +169,8 @@ class Node:
             time.sleep(1)
 
     def _wait_for_live(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
-        poll_time = 1.0
-        while not self.__is_live():
-            if timeout <= 0:
-                raise TimeoutError('Timeout of waiting for node live was reached')
-
-            self.logger.debug('Waiting for live...')
-            time.sleep(min(poll_time, timeout))
-            timeout -= poll_time
+        from .private.wait_for import wait_for
+        wait_for(self.__is_live, timeout, 'Timeout of waiting for node live was reached')
 
     def _send(self, method, params=None, jsonrpc='2.0', id=1):
         message = {
