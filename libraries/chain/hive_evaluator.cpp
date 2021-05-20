@@ -506,7 +506,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 
   if( o.owner )
   {
-#ifndef IS_TEST_NET
+#if !defined(IS_TEST_NET) && !defined(HIVE_CONVERTER_BUILD)
     if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
       FC_ASSERT( _db.head_block_time() - account_auth.last_owner_update > HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
 #endif
@@ -2169,7 +2169,9 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
   FC_ASSERT( !db.has_hardfork( HIVE_HARDFORK_0_17__770 ), "mining is now disabled" );
 
   const auto& dgp = db.get_dynamic_global_properties();
+#ifndef HIVE_CONVERTER_BUILD // due to the optimization issues with blockchain_converter performing proof of work for every pow operations, this check is applied only in mainnet
   uint32_t target_pow = db.get_pow_summary_target();
+#endif
   account_name_type worker_account;
 
   if( db.has_hardfork( HIVE_HARDFORK_0_16__551 ) )
@@ -2179,14 +2181,19 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     auto recent_block_num = protocol::block_header::num_from_id( work.input.prev_block );
     FC_ASSERT( recent_block_num > db.get_last_irreversible_block_num(),
       "Equihash pow done for block older than last irreversible block num" );
+#ifndef HIVE_CONVERTER_BUILD
     FC_ASSERT( work.pow_summary < target_pow, "Insufficient work difficulty. Work: ${w}, Target: ${t}", ("w",work.pow_summary)("t", target_pow) );
+#endif
     worker_account = work.input.worker_account;
   }
   else
   {
     const auto& work = o.work.get< pow2 >();
     FC_ASSERT( work.input.prev_block == db.head_block_id(), "Work not for last block" );
+
+#ifndef HIVE_CONVERTER_BUILD
     FC_ASSERT( work.pow_summary < target_pow, "Insufficient work difficulty. Work: ${w}, Target: ${t}", ("w",work.pow_summary)("t", target_pow) );
+#endif
     worker_account = work.input.worker_account;
   }
 
