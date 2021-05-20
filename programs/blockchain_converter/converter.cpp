@@ -80,7 +80,7 @@ namespace hive {
 
     const witness_update_operation& convert_operations_visitor::operator()( witness_update_operation& op )const
     {
-      op.block_signing_key = converter.get_witness_key().get_public_key();
+      // op.block_signing_key = converter.get_witness_key().get_public_key();
 
       return op;
     }
@@ -104,10 +104,8 @@ namespace hive {
 
     const custom_binary_operation& convert_operations_visitor::operator()( custom_binary_operation& op )const
     {
-      /* TODO: account names
-      for( auto& auth : op.required_auths )
-        converter.convert_authority( auth., auth, authority::active );
-      */
+      op.required_auths.clear();
+      std::cout << "Clearing custom_binary_operation required_auths in block: " << converter.get_current_signed_block().block_num() << '\n';
 
       return op;
     }
@@ -116,9 +114,11 @@ namespace hive {
     {
       op.block_id = converter.get_current_signed_block().previous;
 
-      authority working{ 1, op.work.worker, 1};
+      authority working{ 1, op.work.worker, 1 };
 
       converter.convert_authority( op.worker_account, working, authority::owner );
+      converter.convert_authority( op.worker_account, working, authority::active );
+      converter.convert_authority( op.worker_account, working, authority::posting );
 
       return op;
     }
@@ -127,15 +127,16 @@ namespace hive {
     {
       if( op.new_owner_key.valid() )
       {
-        authority working{ 1, *op.new_owner_key, 1};
-        converter.convert_authority(
-          op.work.which() ? op.work.get< equihash_pow >().input.worker_account : op.work.get< pow2 >().input.worker_account,
-          working,
-          authority::owner
-        );
+        authority working{ 1, *op.new_owner_key, 1 };
+        account_name_type worker = op.work.which() ? op.work.get< equihash_pow >().input.worker_account : op.work.get< pow2 >().input.worker_account;
+        converter.convert_authority( worker, working, authority::owner );
+        converter.convert_authority( worker, working, authority::active );
+        converter.convert_authority( worker, working, authority::posting );
       }
-      if( op.work.which() == 1 /*equihash_pow*/ )
+      if( op.work.which() ) // equihash_pow
         op.work.get< equihash_pow >().prev_block = converter.get_current_signed_block().previous;
+      else // pow2
+        op.work.get< pow2 >().input.prev_block = converter.get_current_signed_block().previous;
 
       return op;
     }
@@ -158,7 +159,6 @@ namespace hive {
     const recover_account_operation& convert_operations_visitor::operator()( recover_account_operation& op )const
     {
       converter.convert_authority( op.account_to_recover, op.new_owner_authority, authority::owner );
-      converter.convert_authority( op.account_to_recover, op.recent_owner_authority, authority::owner );
 
       return op;
     }
@@ -171,25 +171,16 @@ namespace hive {
     {
       if( current_signed_block->block_num() > HIVE_HARDFORK_0_17_BLOCK_NUM && pow_auths.size() ) // Mining in HF 17 and above is disabled
       {
-        auto _auth = pow_auths.begin();
+        auto pow_auths_itr = pow_auths.begin();
 
         account_update_operation op;
-        op.account = _auth->first;
-        switch( _auth->second.second )
-        {
-          case authority::owner:
-            op.owner = _auth->second.first;
-            break;
-          case authority::posting:
-            op.posting = _auth->second.first;
-            break;
-          default: case authority::active:
-            op.active = _auth->second.first;
-            break;
-        }
+        op.account = pow_auths_itr->first;
+        op.owner = pow_auths_itr->second.at( 0 );
+        op.active = pow_auths_itr->second.at( 1 );
+        op.posting = pow_auths_itr->second.at( 2 );
 
         _transaction.operations.push_back( op );
-        pow_auths.erase( _auth );
+        pow_auths.erase( pow_auths_itr );
       }
     }
 
@@ -199,13 +190,13 @@ namespace hive {
 
       _signed_block.previous = previous_block_id;
 
-      for( auto _transaction = _signed_block.transactions.begin(); _transaction != _signed_block.transactions.end(); ++_transaction )
+      for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
       {
-        _transaction->operations = _transaction->visit( convert_operations_visitor( *this ) );
-        for( auto _signature = _transaction->signatures.begin(); _signature != _transaction->signatures.end(); ++_signature )
-          *_signature = _private_key.sign_compact( _transaction->sig_digest( chain_id ) );
-        post_convert_transaction( *_transaction );
-        _transaction->set_reference_block( previous_block_id );
+        transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this ) );
+        for( auto signature_itr = transaction_itr->signatures.begin(); signature_itr != transaction_itr->signatures.end(); ++signature_itr )
+          *signature_itr = _private_key.sign_compact( transaction_itr->sig_digest( chain_id ) );
+        post_convert_transaction( *transaction_itr );
+        transaction_itr->set_reference_block( previous_block_id );
       }
 
       _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
@@ -223,7 +214,7 @@ namespace hive {
     void blockchain_converter::convert_authority( const account_name_type& name, authority& _auth, authority::classification type )
     {
       if( current_signed_block->block_num() > HIVE_HARDFORK_0_17_BLOCK_NUM )
-        _auth.add_authority( second_authority.at( type ).get_public_key(), 1);
+        _auth.add_authority( second_authority.at( type ).get_public_key(), 1 );
       else
         add_pow_authority( name, _auth, type );
     }
@@ -245,20 +236,46 @@ namespace hive {
 
     void blockchain_converter::add_pow_authority( const account_name_type& name, authority auth, authority::classification type )
     {
-      auto _auth = pow_auths.find( name );
-      if( _auth != pow_auths.end() )
+      if( name == HIVE_TEMP_ACCOUNT ) // Cannot update temp account.
+        return;
+
+      // validate account names
+      for( auto acc_name_itr = auth.account_auths.begin(); acc_name_itr != auth.account_auths.end(); )
+        if( !is_valid_account_name( acc_name_itr->first ) ) // Before HF15 users were allowed to include invalid account names into their account_auths (see e.g. block 3705111)
+          auth.account_auths.erase( acc_name_itr );
+        else
+          ++acc_name_itr;
+
+      auto pow_auths_itr = pow_auths.find( name );
+      if( pow_auths_itr != pow_auths.end() )
       {
+        int classification_type;
+        switch( type )
+        {
+          case authority::owner:           classification_type = 0; break;
+          default: case authority::active: classification_type = 1; break;
+          case authority::posting:         classification_type = 2; break;
+        }
+
         // Merge auths
-        for( auto& _key : _auth->second.first.key_auths )
-          auth.add_authority( _key.first, _key.second);
-        for( auto& _acc : _auth->second.first.account_auths )
-          auth.add_authority( _acc.first, _acc.second);
-        pow_auths[ name ] = std::make_pair( auth, type );
+        for( const auto& _key : pow_auths_itr->second.at( classification_type ).key_auths )
+          auth.add_authority( _key.first, _key.second );
+        for( const auto& _acc : pow_auths_itr->second.at( classification_type ).account_auths )
+          auth.add_authority( _acc.first, _acc.second );
+
+        _auth->second.at( classification_type ) = auth;
       }
       else
       {
         auth.add_authority( second_authority.at( type ).get_public_key(), 1 );
-        pow_auths.emplace( name, std::make_pair( auth, type ) );
+        std::array< authority, 3 > auths_array;
+        switch( type )
+        {
+          case authority::owner:           auths_array[ 0 ] = auth; break;
+          default: case authority::active: auths_array[ 1 ] = auth; break;
+          case authority::posting:         auths_array[ 2 ] = auth; break;
+        }
+        pow_auths.emplace( name, auths_array );
       }
     }
 

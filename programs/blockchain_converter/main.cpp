@@ -45,12 +45,8 @@ int main( int argc, char** argv )
       ("output,o", bpo::value< std::string >(), "output block log; defaults to [input]_out" );
     bpo::options_description conversion_opts{"Conversion options"};
       conversion_opts.add_options()
-      ("chain-id,c", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "new chain ID")
-      ("private-key,k", bpo::value< std::string >()
-#ifdef IS_TEST_NET
-        ->default_value( key_to_wif(HIVE_INIT_PRIVATE_KEY) )
-#endif
-      , "private key with which all transactions and blocks will be signed ")
+      ("chain-id,c", bpo::value< std::string >(), "new chain ID")
+      ("private-key,k", bpo::value< std::string >(), "private key with which all transactions and blocks will be signed ")
       ("owner-key,O", bpo::value< std::string >(), "owner key of the second authority")
       ("active-key,A", bpo::value< std::string >(), "active key of the second authority")
       ("posting-key,P", bpo::value< std::string >(), "posting key of the second authority")
@@ -69,7 +65,7 @@ int main( int argc, char** argv )
     bpo::variables_map options;
     bpo::store( bpo::command_line_parser(argc, argv).options(cmdline_options).positional(pos_opts).run(), options );
 
-    if( options.count("help") || !options.count("input") )
+    if( options.count("help") || !options.count("input") || !options.count("private-key") || !options.count("chain-id") )
     {
       std::cout << "Changes chain id of the block log and adds second authority to all the accounts. Re-signs blocks using given private key.\n"
         << cmdline_options << "\n";
@@ -94,7 +90,7 @@ int main( int argc, char** argv )
 
     try
     {
-      _hive_chain_id = chain_id_type( chain_id_str);
+      _hive_chain_id = chain_id_type( chain_id_str );
     }
     catch( fc::exception& )
     {
