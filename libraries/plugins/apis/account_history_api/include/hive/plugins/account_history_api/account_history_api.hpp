@@ -23,6 +23,7 @@ struct api_operation_object
     trx_id( op_obj.trx_id ),
     block( op_obj.block ),
     trx_in_block( op_obj.trx_in_block ),
+    op_in_trx( op_obj.op_in_trx ),
     virtual_op( op_obj.virtual_op ),
     timestamp( op_obj.timestamp )
   {
@@ -197,7 +198,7 @@ FC_REFLECT( hive::plugins::account_history::api_operation_object,
   (trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(op)(operation_id) )
 
 FC_REFLECT( hive::plugins::account_history::get_ops_in_block_args,
-  (block_num)(only_virtual) )
+  (block_num)(only_virtual)(include_reversible) )
 
 FC_REFLECT( hive::plugins::account_history::get_ops_in_block_return,
   (ops) )
