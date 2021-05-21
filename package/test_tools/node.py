@@ -1,7 +1,6 @@
 from pathlib import Path
 import subprocess
 import time
-import weakref
 
 
 from .node_api.node_apis import Apis
@@ -20,6 +19,7 @@ class Node:
     def __init__(self, creator, name, directory=None, configure_for_block_production=False):
         self.api = Apis(self)
 
+        import weakref
         self.__creator = weakref.proxy(creator)
         self.__name = name
         self.directory = Path(directory) if directory is not None else Path(f'./{self.__name}')
@@ -28,7 +28,6 @@ class Node:
         self.__process = None
         self.__stdout_file = None
         self.__stderr_file = None
-        self.__finalizer = None
         self.__logger = logger.getLogger(f'{__name__}.{self.__creator}.{self.__name}')
 
         from .node_configs.default import create_default_config
@@ -42,21 +41,6 @@ class Node:
     def __str__(self):
         from .network import Network
         return f'{self.__creator}::{self.__name}' if isinstance(self.__creator, Network) else self.__name
-
-    @staticmethod
-    def __close_process(process, logger_from_node):
-        if not process:
-            return
-
-        import signal
-        process.send_signal(signal.SIGINT)
-        try:
-            return_code = process.wait(timeout=3)
-            logger_from_node.debug(f'Closed with {return_code} return code')
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
-            logger_from_node.warning(f"Send SIGKILL because process didn't close before timeout")
 
     def __get_executable_build_version(self):
         if self.__is_test_net_build():
@@ -251,8 +235,6 @@ class Node:
             stderr=self.__stderr_file,
         )
 
-        self.__finalizer = weakref.finalize(self, Node.__close_process, self.__process, self.__logger)
-
         if use_existing_config:
             # Wait for config generation
             while not config_file_path.exists():
@@ -287,7 +269,21 @@ class Node:
             self.config.webserver_ws_endpoint = f'0.0.0.0:{Port.allocate()}'
 
     def close(self):
-        self.__finalizer()
+        self.__close_process()
+
+    def __close_process(self):
+        if self.__process is None:
+            return
+
+        import signal
+        self.__process.send_signal(signal.SIGINT)
+        try:
+            return_code = self.__process.wait(timeout=3)
+            self.__logger.debug(f'Closed with {return_code} return code')
+        except subprocess.TimeoutExpired:
+            self.__process.kill()
+            self.__process.wait()
+            self.__logger.warning(f"Send SIGKILL because process didn't close before timeout")
 
     def set_executable_file_path(self, executable_file_path):
         self.__executable_file_path = executable_file_path

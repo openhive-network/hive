@@ -1,6 +1,5 @@
 from pathlib import Path
 import subprocess
-import signal
 import time
 
 from .account import Account
@@ -443,22 +442,7 @@ class Wallet:
         self.stdout_file = None
         self.stderr_file = None
         self.process = None
-        self.finalizer = None
         self.logger = logger.getLogger(f'{__name__}.{self.creator}.{self.name}')
-
-    @staticmethod
-    def __close_process(process, logger_from_wallet):
-        if not process:
-            return
-
-        process.send_signal(signal.SIGINT)
-
-        try:
-            return_code = process.wait(timeout=3)
-            logger_from_wallet.debug(f'Closed with {return_code} return code')
-        except subprocess.TimeoutExpired:
-            process.send_signal(signal.SIGKILL)
-            logger_from_wallet.warning(f"Send SIGKILL because process didn't close before timeout")
 
     def get_stdout_file_path(self):
         return self.directory / 'stdout.txt'
@@ -525,9 +509,6 @@ class Wallet:
             stderr=self.stderr_file
         )
 
-        import weakref
-        self.finalizer = weakref.finalize(self, Wallet.__close_process, self.process, self.logger)
-
         timeout -= wait_for(self.__is_ready, timeout, f'{self} was not ready on time.', poll_time=0.1)
 
         timeout -= wait_for(
@@ -555,7 +536,21 @@ class Wallet:
         self.connected_node = node
 
     def close(self):
-        self.finalizer()
+        self.__close_process()
+
+    def __close_process(self):
+        if self.process is None:
+            return
+
+        import signal
+        self.process.send_signal(signal.SIGINT)
+        try:
+            return_code = self.process.wait(timeout=3)
+            self.logger.debug(f'Closed with {return_code} return code')
+        except subprocess.TimeoutExpired:
+            self.process.kill()
+            self.process.wait()
+            self.logger.warning(f"Send SIGKILL because process didn't close before timeout")
 
     def set_executable_file_path(self, executable_file_path):
         self.executable_file_path = executable_file_path
