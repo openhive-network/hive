@@ -2,9 +2,7 @@ from pathlib import Path
 import subprocess
 import time
 
-
 from .node_api.node_apis import Apis
-from .account import Account
 from . import logger
 from .wallet import Wallet
 
