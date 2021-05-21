@@ -1857,7 +1857,8 @@ void account_history_rocksdb_plugin::impl::on_post_reindex(const hive::chain::re
   flushStorage();
   _collectedOpsWriteLimit = 1;
   _reindexing = false;
-  update_lib( note.last_block_number ); // We always reindex irreversible blocks.
+  uint32_t non_undoable_block_num =_mainDb.last_non_undoable_block_num();
+  update_lib( non_undoable_block_num ); // Set same value as in global_property_object
 
   printReport( note.last_block_number, "RocksDB data reindex finished." );
 }
@@ -2032,14 +2033,16 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
   
   /// In case of genesis block (and fresh testnet) there can be no LIB at begin.
 
-  if( block_num <= get_lib(&fallbackIrreversibleBlock) ) return;
+  auto stored_lib = get_lib(&fallbackIrreversibleBlock);
+  
+  FC_ASSERT(block_num > stored_lib, "New irreversible block: ${nb} can't be less than already stored one: ${ob}", ("nb", block_num)("ob", stored_lib));
 
-  _currently_persisted_irreversible_block.store(block_num);
+  auto& volatileOpsGenericIndex = _mainDb.get_mutable_index<volatile_operation_index>();
 
   const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
   auto itr = volatile_idx.begin();
 
-  vector< const volatile_operation_object* > to_delete;
+  _currently_persisted_irreversible_block.store(block_num);
 
   {
     std::lock_guard<std::mutex> lk(_currently_persisted_irreversible_mtx);
@@ -2067,7 +2070,6 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
         while(itr != volatile_idx.end() && itr->block == this_itr_block)
         {
           rocksdb_operation_object obj(*itr);
-          to_delete.push_back(&(*itr));
           // check that operation is already stored as irreversible as it will be not imported
           FC_ASSERT(ops.count(obj), "operation in block ${block} was not imported until irreversible block ${irreversible}", ("block", this_itr_block)("irreversible", block_num));
           hive::protocol::operation op = fc::raw::unpack_from_buffer< hive::protocol::operation >( obj.serialized_op );
@@ -2078,18 +2080,18 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
       }
     }
 
-    while(itr != volatile_idx.end() && itr->block == block_num)
-    {
-      rocksdb_operation_object obj(*itr);
-      importOperation(obj, itr->impacted);
-      to_delete.push_back(&(*itr));
-      ++itr;
-    }
+    /// Range of reversible (volatile) ops to be processed should come from blocks (stored_lib, block_num]
+    auto moveRangeBeginI = volatile_idx.upper_bound(stored_lib);
 
-    for(const volatile_operation_object* o : to_delete)
-    {
-      _mainDb.remove(*o);
-    }
+    FC_ASSERT(moveRangeBeginI == volatile_idx.begin() || moveRangeBeginI == volatile_idx.end(), "All volatile ops processed by previous irreversible blocks should be already flushed");
+
+    auto moveRangeEndI = volatile_idx.upper_bound(block_num);
+    volatileOpsGenericIndex.move_to_external_storage<by_block>(moveRangeBeginI, moveRangeEndI, [this](const volatile_operation_object& operation) -> void
+      {
+        rocksdb_operation_object obj(operation);
+        importOperation(obj, operation.impacted);
+      }
+    );
 
     update_lib(block_num);
   }

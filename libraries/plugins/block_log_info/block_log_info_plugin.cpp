@@ -83,7 +83,7 @@ void block_log_info_plugin_impl::on_post_apply_block( const block_notification& 
       auto it = idx.begin();
       if( it == idx.end() )
         break;
-      if( it->data.block_num > dgpo.last_irreversible_block_num )
+      if( it->data.block_num > dgpo.get_lib())
         break;
       print_message( it->data );
       _db.remove( *it );
