@@ -172,11 +172,14 @@ class Node:
         if '0.0.0.0' in endpoint:
             endpoint = endpoint.replace('0.0.0.0', '127.0.0.1')
 
-        while not self.__is_http_listening():
-            time.sleep(1)
+        self.__wait_for_http_listening()
 
         from . import communication
         return communication.request(endpoint, message)
+
+    def __wait_for_http_listening(self, timeout=10):
+        from .private.wait_for import wait_for
+        wait_for(self.__is_http_listening, timeout, f'Waiting too long for {self} to start listening on http port')
 
     def get_id(self):
         response = self.api.network_node.get_info()
