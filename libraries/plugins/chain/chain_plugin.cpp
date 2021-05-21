@@ -584,7 +584,7 @@ void chain_plugin_impl::process_snapshot()
 
 void chain_plugin_impl::work( synchronization_type& on_sync )
 {
-  ilog( "Started on blockchain with ${n} blocks, LIB: ${lb}", ("n", db.head_block_num())("lb", db.last_non_undoable_block_num()) );
+  ilog( "Started on blockchain with ${n} blocks, LIB: ${lb}", ("n", db.head_block_num())("lb", db.get_last_irreversible_block_num()) );
 
   on_sync();
 

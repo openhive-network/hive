@@ -2427,7 +2427,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     const auto& work = o.work.get< equihash_pow >();
     FC_ASSERT( work.prev_block == db.head_block_id(), "Equihash pow op not for last block" );
     auto recent_block_num = protocol::block_header::num_from_id( work.input.prev_block );
-    FC_ASSERT( recent_block_num > dgp.get_lib(),
+    FC_ASSERT( recent_block_num > db.get_last_irreversible_block_num(),
       "Equihash pow done for block older than last irreversible block num" );
     FC_ASSERT( work.pow_summary < target_pow, "Insufficient work difficulty. Work: ${w}, Target: ${t}", ("w",work.pow_summary)("t", target_pow) );
     worker_account = work.input.worker_account;

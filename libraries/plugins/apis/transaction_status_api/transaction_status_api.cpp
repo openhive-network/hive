@@ -27,7 +27,7 @@ DEFINE_API_IMPL( transaction_status_api_impl, find_transaction )
   // Have we begun tracking?
   if ( _db.head_block_num() >= earliest_tracked_block_num )
   {
-    auto last_irreversible_block_num = _db.get_dynamic_global_properties().get_lib();
+    auto last_irreversible_block_num = _db.get_last_irreversible_block_num();
     auto tso = _db.find< transaction_status::transaction_status_object, transaction_status::by_trx_id >( args.transaction_id );
 
     // If we are actively tracking this transaction

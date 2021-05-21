@@ -342,7 +342,7 @@ std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_blockchain_synops
     synopsis.reserve(30);
     uint32_t high_block_num;
     uint32_t non_fork_high_block_num;
-    uint32_t low_block_num = chain.db().last_non_undoable_block_num();
+    uint32_t low_block_num = chain.db().get_last_irreversible_block_num();
     std::vector<block_id_type> fork_history;
 
     if (reference_point != item_hash_t())

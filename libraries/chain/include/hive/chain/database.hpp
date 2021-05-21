@@ -547,7 +547,12 @@ namespace chain {
 
       node_property_object& node_properties();
 
-      uint32_t last_non_undoable_block_num() const;
+      uint32_t get_last_irreversible_block_num()const;
+      void set_last_irreversible_block_num(uint32_t block_num);
+      struct irreversible_object_type
+      {
+        uint32_t last_irreversible_block_num = 0;
+      } *irreversible_object;
       //////////////////// db_init.cpp ////////////////////
 
       void initialize_evaluators();
@@ -556,6 +561,9 @@ namespace chain {
 
       /// Reset the object graph in-memory
       void initialize_indexes();
+
+      // Reset irreversible state (unaffected by undo)
+      void initialize_irreversible_storage();
 
       void resetState(const open_args& args);
 

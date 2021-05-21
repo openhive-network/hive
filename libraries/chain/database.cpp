@@ -147,6 +147,7 @@ void database::open( const open_args& args )
 
     initialize_indexes();
     initialize_evaluators();
+    initialize_irreversible_storage();
 
     if( !find< dynamic_global_property_object >() )
       with_write_lock( [&]()
@@ -162,7 +163,7 @@ void database::open( const open_args& args )
     });
 
    auto hb = head_block_num();
-   auto last_irreversible_block = last_non_undoable_block_num();
+   auto last_irreversible_block = get_last_irreversible_block_num();
 
    FC_ASSERT(hb >= last_irreversible_block);
 
@@ -177,18 +178,7 @@ void database::open( const open_args& args )
 
       FC_ASSERT(new_hb >= last_irreversible_block);
 
-      if(last_irreversible_block >= this->last_non_undoable_block_num())
-      {
-        ilog("Correcting last irreversible block number after reverting reversible block changes...");
-        const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-
-        modify(dpo, [last_irreversible_block](dynamic_global_property_object& _dpo) -> void
-        {
-          _dpo.set_lib(last_irreversible_block);
-        });
-      }
-
-      ilog("Blockchain state database is AT IRREVERSIBLE state specific to head block: ${hb} and LIB: ${lb}", ("hb", head_block_num())("lb", this->last_non_undoable_block_num()));
+      ilog("Blockchain state database is AT IRREVERSIBLE state specific to head block: ${hb} and LIB: ${lb}", ("hb", head_block_num())("lb", this->get_last_irreversible_block_num()));
 
       if( args.chainbase_flags & chainbase::skip_env_check )
       {
@@ -447,7 +437,7 @@ void database::close(bool rewind)
 
     chainbase::database::flush();
 
-    auto lib = this->last_non_undoable_block_num();
+    auto lib = this->get_last_irreversible_block_num();
 
     ilog("Database flushed at LIB: ${b}", ("b", lib));
 
@@ -3575,9 +3565,18 @@ node_property_object& database::node_properties()
   return _node_property_object;
 }
 
-uint32_t database::last_non_undoable_block_num() const
+uint32_t database::get_last_irreversible_block_num() const
 {
-  return get_dynamic_global_properties().get_lib();
+  elog("getting last_irreversible_block_num irreversible is ${l}", ("l", irreversible_object->last_irreversible_block_num));
+  elog("getting last_irreversible_block_num head is ${l}", ("l", head_block_num()));
+  return irreversible_object->last_irreversible_block_num;
+}
+
+void database::set_last_irreversible_block_num(uint32_t block_num)
+{
+  elog("setting last_irreversible_block_num previous ${l}", ("l", irreversible_object->last_irreversible_block_num));
+  irreversible_object->last_irreversible_block_num = block_num;
+  elog("setting last_irreversible_block_num new ${l}", ("l", irreversible_object->last_irreversible_block_num));
 }
 
 void database::initialize_evaluators()
@@ -3677,6 +3676,13 @@ void database::initialize_indexes()
 {
   initialize_core_indexes( *this );
   _plugin_index_signal();
+}
+
+void database::initialize_irreversible_storage()
+{
+    auto s = get_segment_manager();
+
+    irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
 }
 
 void database::resetState(const open_args& args)
@@ -4574,7 +4580,7 @@ void database::process_optional_actions( const optional_automated_actions& actio
   // and it is safe to delete.
   const auto& pending_action_idx = get_index< pending_optional_action_index, by_execution >();
   auto pending_itr = pending_action_idx.begin();
-  auto lib = fetch_block_by_number( get_dynamic_global_properties().get_lib());
+  auto lib = fetch_block_by_number( get_last_irreversible_block_num() );
 
   // This is always valid when running on mainnet because there are irreversible blocks
   // Testnet and unit tests, not so much. Could be ifdeffed with IS_TEST_NET, but seems
@@ -4876,10 +4882,10 @@ FC_TODO( "#ifndef not needed after HF 20 is live" );
 
   if( !(get_node_properties().skip_flags & skip_undo_history_check) )
   {
-    HIVE_ASSERT( _dgp.head_block_number - _dgp.get_lib() < HIVE_MAX_UNDO_HISTORY, undo_database_exception,
+    HIVE_ASSERT( _dgp.head_block_number - get_last_irreversible_block_num() < HIVE_MAX_UNDO_HISTORY, undo_database_exception,
             "The database does not have enough undo history to support a blockchain with so many missed blocks. "
             "Please add a checkpoint if you would like to continue applying blocks beyond this point.",
-            ("last_irreversible_block_num",_dgp.get_lib())("head", _dgp.head_block_number)
+            ("last_irreversible_block_num",get_last_irreversible_block_num())("head", _dgp.head_block_number)
             ("max_undo",HIVE_MAX_UNDO_HISTORY) );
   }
 } FC_CAPTURE_AND_RETHROW() }
@@ -4945,8 +4951,7 @@ void database::update_signing_witness(const witness_object& signing_witness, con
 
 uint32_t database::update_last_irreversible_block()
 { try {
-  const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-  uint32_t old_last_irreversible = dpo.get_lib();
+  uint32_t old_last_irreversible = get_last_irreversible_block_num();
 
   /**
     * Prior to voting taking over, we must be more conservative...
@@ -4954,11 +4959,8 @@ uint32_t database::update_last_irreversible_block()
     */
   if( head_block_num() < HIVE_START_MINER_VOTING_BLOCK )
   {
-    modify( dpo, [&]( dynamic_global_property_object& _dpo )
-    {
-      if ( head_block_num() > HIVE_MAX_WITNESSES )
-        _dpo.set_lib(head_block_num() - HIVE_MAX_WITNESSES);
-    } );
+    if ( head_block_num() > HIVE_MAX_WITNESSES )
+      set_last_irreversible_block_num(head_block_num() - HIVE_MAX_WITNESSES);
   }
   else
   {
@@ -4985,13 +4987,10 @@ uint32_t database::update_last_irreversible_block()
 
     uint32_t new_last_irreversible_block_num = wit_objs[offset]->last_confirmed_block_num;
 
-    if( new_last_irreversible_block_num > dpo.get_lib() )
+    if( new_last_irreversible_block_num > get_last_irreversible_block_num() )
     {
       //ilog("Last irreversible block changed to ${b}. Got from witness: ${w}", ("b", new_last_irreversible_block_num)("w", wit_objs[offset]->owner));
-      modify( dpo, [&]( dynamic_global_property_object& _dpo )
-      {
-        _dpo.set_lib(new_last_irreversible_block_num);
-      } );
+      set_last_irreversible_block_num(new_last_irreversible_block_num);
     }
   }
   return old_last_irreversible;
@@ -5022,11 +5021,11 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
       if( tmp_head )
         log_head_num = tmp_head->block_num();
 
-      if( log_head_num < dpo.get_lib() )
+      if( log_head_num < get_last_irreversible_block_num() )
       {
         // Check for all blocks that we want to write out to the block log but don't write any
         // unless we are certain they all exist in the fork db
-        while( log_head_num < dpo.get_lib())
+        while( log_head_num < get_last_irreversible_block_num() )
         {
           item_ptr block_ptr = _fork_db.fetch_block_on_main_branch_by_number( log_head_num+1 );
           FC_ASSERT( block_ptr, "Current fork in the fork database does not contain the last_irreversible_block" );
@@ -5044,17 +5043,17 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
     }
 
     // This deletes blocks from the fork db
-    _fork_db.set_max_size( dpo.head_block_number - dpo.get_lib() + 1 );
+    _fork_db.set_max_size( dpo.head_block_number - get_last_irreversible_block_num() + 1 );
 
     // This deletes undo state
-    commit( dpo.get_lib());
+    commit( get_last_irreversible_block_num() );
 
-    if(old_last_irreversible < dpo.get_lib())
+    if(old_last_irreversible < get_last_irreversible_block_num() )
     {
       //ilog("Updating last irreversible block to: ${b}. Old last irreversible was: ${ob}.",
-      //  ("b", dpo.get_lib())("ob", old_last_irreversible));
+      //  ("b", get_last_irreversible_block_num())("ob", old_last_irreversible));
 
-      for( uint32_t i = old_last_irreversible + 1; i <= dpo.get_lib(); ++i )
+      for( uint32_t i = old_last_irreversible + 1; i <= get_last_irreversible_block_num(); ++i )
       {
         notify_irreversible_block( i );
       }

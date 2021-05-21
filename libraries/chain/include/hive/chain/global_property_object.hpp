@@ -141,18 +141,6 @@ namespace hive { namespace chain {
       uint32_t last_irreversible_block_num = 0;
       public:
 
-      uint32_t get_lib() const
-      {
-        return last_irreversible_block_num;
-      }
-
-      void set_lib(uint32_t lib)
-      {
-        //ilog("Changing LIB from ${lb} to ${nb}", ("lb", last_irreversible_block_num)("nb", lib));
-        FC_ASSERT(lib >= last_irreversible_block_num);
-        last_irreversible_block_num = lib;
-      }
-
       /**
         * The number of votes regenerated per day.  Any user voting slower than this rate will be
         * "wasting" voting power through spillover; any user voting faster than this rate will have

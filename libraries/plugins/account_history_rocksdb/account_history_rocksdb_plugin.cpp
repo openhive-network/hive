@@ -1857,8 +1857,8 @@ void account_history_rocksdb_plugin::impl::on_post_reindex(const hive::chain::re
   flushStorage();
   _collectedOpsWriteLimit = 1;
   _reindexing = false;
-  uint32_t non_undoable_block_num =_mainDb.last_non_undoable_block_num();
-  update_lib( non_undoable_block_num ); // Set same value as in global_property_object
+  uint32_t last_irreversible_block_num =_mainDb.get_last_irreversible_block_num();
+  update_lib( last_irreversible_block_num ); // Set same value as in main database, as result of witness participation
 
   printReport( note.last_block_number, "RocksDB data reindex finished." );
 }
