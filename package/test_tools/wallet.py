@@ -537,6 +537,7 @@ class Wallet:
 
     def close(self):
         self.__close_process()
+        self.__close_opened_files()
 
     def __close_process(self):
         if self.process is None:
@@ -551,6 +552,10 @@ class Wallet:
             self.process.kill()
             self.process.wait()
             self.logger.warning(f"Send SIGKILL because process didn't close before timeout")
+
+    def __close_opened_files(self):
+        for file in [self.stdout_file, self.stderr_file]:
+            file.close()
 
     def set_executable_file_path(self, executable_file_path):
         self.executable_file_path = executable_file_path

@@ -270,6 +270,7 @@ class Node:
 
     def close(self):
         self.__close_process()
+        self.__close_opened_files()
 
     def __close_process(self):
         if self.__process is None:
@@ -284,6 +285,10 @@ class Node:
             self.__process.kill()
             self.__process.wait()
             self.__logger.warning(f"Send SIGKILL because process didn't close before timeout")
+
+    def __close_opened_files(self):
+        for file in [self.__stdout_file, self.__stderr_file]:
+            file.close()
 
     def set_executable_file_path(self, executable_file_path):
         self.__executable_file_path = executable_file_path
