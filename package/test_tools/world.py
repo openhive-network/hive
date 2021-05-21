@@ -65,13 +65,13 @@ class World:
         self.__nodes.append(node)
         return node
 
-    def attach_wallet_to(self, node):
+    def attach_wallet_to(self, node, timeout):
         name = self.children_names.create_name(f'{node}Wallet')
 
         from .wallet import Wallet
         wallet = Wallet(name, self, node.directory.parent)
         wallet.connect_to(node)
-        wallet.run()
+        wallet.run(timeout)
 
         self.__wallets.append(wallet)
         return wallet

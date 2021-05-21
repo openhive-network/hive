@@ -102,11 +102,11 @@ class Node:
 
         return all(conditions)
 
-    def attach_wallet(self) -> Wallet:
+    def attach_wallet(self, timeout=15) -> Wallet:
         if not self.is_running():
             raise NodeIsNotRunning('Before attaching wallet you have to run node')
 
-        return self.__creator.attach_wallet_to(self)
+        return self.__creator.attach_wallet_to(self, timeout)
 
     def get_name(self):
         return self.__name

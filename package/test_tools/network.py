@@ -100,12 +100,12 @@ class Network:
             if wallet.is_running():
                 wallet.close()
 
-    def attach_wallet_to(self, node):
+    def attach_wallet_to(self, node, timeout):
         name = self.children_names.create_name(f'{node.get_name()}Wallet')
 
         wallet = Wallet(name, self, self.get_directory())
         wallet.connect_to(node)
-        wallet.run()
+        wallet.run(timeout)
 
         self.__wallets.append(wallet)
         return wallet

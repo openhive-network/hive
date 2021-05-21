@@ -480,7 +480,9 @@ class Wallet:
 
         return False
 
-    def run(self):
+    def run(self, timeout):
+        from .private.wait_for import wait_for
+
         if not self.executable_file_path:
             from . import paths_to_executables
             self.executable_file_path = paths_to_executables.get_path_of('cli_wallet')
@@ -502,8 +504,11 @@ class Wallet:
         if not self.connected_node._is_ws_listening():
             self.logger.info(f'Waiting for node {self.connected_node} to listen...')
 
-        while not self.connected_node._is_ws_listening():
-            time.sleep(1)
+        timeout -= wait_for(
+            self.connected_node._is_ws_listening,
+            timeout,
+            f'{self} waited too long for {self.connected_node} to start listening on ws port'
+        )
 
         self.process = subprocess.Popen(
             [
@@ -523,22 +528,13 @@ class Wallet:
         import weakref
         self.finalizer = weakref.finalize(self, Wallet.__close_process, self.process, self.logger)
 
-        while not self.__is_ready():
-            time.sleep(0.1)
+        timeout -= wait_for(self.__is_ready, timeout, f'{self} was not ready on time.', poll_time=0.1)
 
-        from .communication import CommunicationError
-        success = False
-        for _ in range(30):
-            try:
-                self.api.info()
-
-                success = True
-                break
-            except CommunicationError:
-                time.sleep(1)
-
-        if not success:
-            raise Exception(f'Problem with starting wallet occurred. See {self.get_stderr_file_path()} for more details.')
+        timeout -= wait_for(
+            self.__is_communication_established,
+            timeout,
+            f'Problem with starting wallet occurred. See {self.get_stderr_file_path()} for more details.'
+        )
 
         password = 'password'
         self.api.set_password(password)
@@ -546,6 +542,14 @@ class Wallet:
         self.api.import_key(Account('initminer').private_key)
 
         self.logger.info(f'Started, listening on port {self.http_server_port}')
+
+    def __is_communication_established(self):
+        from .communication import CommunicationError
+        try:
+            self.api.info()
+        except CommunicationError:
+            return False
+        return True
 
     def connect_to(self, node):
         self.connected_node = node
