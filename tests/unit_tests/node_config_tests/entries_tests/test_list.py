@@ -59,3 +59,15 @@ def test_setting_incorrect_value_type():
         with pytest.raises(TypeError):
             items.set_value(incorrect_value)
             pytest.fail(f'Exception was not raised for value: {incorrect_value}')
+
+
+def test_setting_single_integer():
+    items = List(Integer)
+    items.set_value(5)  # Note: it is not [5], but 5
+    assert items.get_value() == [5]
+
+
+def test_setting_single_string():
+    items = List(String)
+    items.set_value('text')  # Note: it is not ['text'], but 'text'
+    assert items.get_value() == ['text']
