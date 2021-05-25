@@ -137,8 +137,6 @@ namespace hive { namespace chain {
       fc::uint128_t recent_slots_filled = fc::uint128::max_value();
       uint8_t       participation_count = 128; ///< Divide by 128 to compute participation percentage
 
-      uint32_t last_irreversible_block_num = 0;
-
       /**
         * The number of votes regenerated per day.  Any user voting slower than this rate will be
         * "wasting" voting power through spillover; any user voting faster than this rate will have
@@ -222,7 +220,6 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (current_aslot)
           (recent_slots_filled)
           (participation_count)
-          (last_irreversible_block_num)
           (vote_power_reserve_rate)
           (delegation_return_period)
           (reverse_auction_seconds)

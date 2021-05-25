@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
         //BOOST_CHECK( cur_witness != prev_witness );
         b = bp.generate_block(db.get_slot_time(1), cur_witness, init_account_priv_key, database::skip_nothing);
         BOOST_CHECK( b.witness == cur_witness );
-        uint32_t cutoff_height = db.get_dynamic_global_properties().last_irreversible_block_num;
+        uint32_t cutoff_height = db.get_last_irreversible_block_num();
         if( cutoff_height >= 200 )
         {
           auto block = db.fetch_block_by_number( cutoff_height );
