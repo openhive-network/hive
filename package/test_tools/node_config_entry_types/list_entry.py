@@ -20,9 +20,9 @@ class List(ConfigEntry):
             )
 
     def __init__(self, item_type, separator=' ', begin='', end='', single_line=True):
-        super().__init__(self.__ListWithoutAdditionOperator())
-
         self.__item_type = item_type
+
+        super().__init__(self.__ListWithoutAdditionOperator())
 
         self.__separator = separator
         self.__begin = begin
@@ -53,9 +53,15 @@ class List(ConfigEntry):
         values = [serialize_value(value) for value in self._value]
         return self.__begin + self.__separator.join(values) + self.__end if self.__single_line else values
 
-    @classmethod
-    def _validate(cls, value):
-        pass
+    def _validate(self, value):
+        def check_single_value(single_value, item_type):
+            item_type._validate(single_value)
+
+        if isinstance(value, list):
+            for single_value in value:
+                check_single_value(single_value, self.__item_type)
+        else:
+            check_single_value(value, self.__item_type)
 
     def _set_value(self, value):
         if not isinstance(value, list):
