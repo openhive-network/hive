@@ -956,7 +956,7 @@ public:
     return m;
   }
 
-  operation get_prototype_operation( string operation_name )
+  operation get_prototype_operation( const string& operation_name )
   {
     auto it = _prototype_ops.find( operation_name );
     if( it == _prototype_ops.end() )
@@ -1174,9 +1174,9 @@ condenser_api::legacy_signed_transaction wallet_api::sign_transaction(
   return result;
 } FC_CAPTURE_AND_RETHROW( (tx) ) }
 
-operation wallet_api::get_prototype_operation(string operation_name)
+operation wallet_api::get_prototype_operation( const string& operation_name )
 {
-  return my->get_prototype_operation( std::move(operation_name) );
+  return my->get_prototype_operation( operation_name );
 }
 
 string wallet_api::help()const
@@ -2804,10 +2804,10 @@ condenser_api::legacy_signed_transaction wallet_api::remove_proposal(const accou
 }
 
 condenser_api::legacy_signed_transaction wallet_api::recurrent_transfer(
- const account_name_type from,
- const account_name_type to,
- const condenser_api::legacy_asset amount,
- const string memo,
+ const account_name_type& from,
+ const account_name_type& to,
+ const condenser_api::legacy_asset& amount,
+ const string& memo,
  uint16_t recurrence,
  uint16_t executions,
  bool broadcast ) {
@@ -2830,7 +2830,7 @@ condenser_api::legacy_signed_transaction wallet_api::recurrent_transfer(
   } FC_CAPTURE_AND_RETHROW( (from)(to)(amount)(memo)(recurrence)(executions)(broadcast) )
 }
 
-vector< database_api::api_recurrent_transfer_object > wallet_api::find_recurrent_transfers(account_name_type from)
+vector< database_api::api_recurrent_transfer_object > wallet_api::find_recurrent_transfers(const account_name_type& from)
 {
   return my->_remote_api->find_recurrent_transfers( from );
 }

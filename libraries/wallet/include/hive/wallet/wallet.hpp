@@ -1029,7 +1029,7 @@ class wallet_api
       *                       (e.g., "global_parameters_update_operation")
       * @return a default-constructed operation of the given type
       */
-    operation get_prototype_operation(string operation_type);
+    operation get_prototype_operation( const string& operation_type );
 
     /**
       * Gets the current order book for HIVE:HBD
@@ -1318,10 +1318,10 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       */
     condenser_api::legacy_signed_transaction recurrent_transfer(
-            account_name_type from,
-            account_name_type to,
-            condenser_api::legacy_asset amount,
-            string memo,
+            const account_name_type& from,
+            const account_name_type& to,
+            const condenser_api::legacy_asset& amount,
+            const string& memo,
             uint16_t recurrence,
             uint16_t executions,
             bool broadcast );
@@ -1332,7 +1332,7 @@ class wallet_api
       * @param from The account from which the funds are coming from
       */
   vector< database_api::api_recurrent_transfer_object > find_recurrent_transfers(
-          account_name_type from );
+          const account_name_type& from );
 
 
 };

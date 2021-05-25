@@ -154,7 +154,7 @@ namespace detail
       void plugin_finalize_startup();
       void plugin_pre_shutdown();
 
-      api_method* find_api_method( std::string api, std::string method );
+      api_method* find_api_method( const std::string& api, const std::string& method );
       api_method* process_params( string method, const fc::variant_object& request, fc::variant& func_args, string* method_name );
       void rpc_id( const fc::variant_object& request, json_rpc_response& response );
       void rpc_jsonrpc( const fc::variant_object& request, json_rpc_response& response );
@@ -231,7 +231,7 @@ namespace detail
     return method_itr->second;
   }
 
-  api_method* json_rpc_plugin_impl::find_api_method( std::string api, std::string method )
+  api_method* json_rpc_plugin_impl::find_api_method( const std::string& api, const std::string& method )
   {
     STATSD_START_TIMER( "jsonrpc", "overhead", "find_api_method", 1.0f );
     auto api_itr = data._registered_apis.find( api );

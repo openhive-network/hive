@@ -1,6 +1,6 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
-#include  <boost/preprocessor/repetition/repeat.hpp>
+#include <boost/preprocessor/repetition/repeat.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
 
@@ -9676,10 +9676,43 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_open_transfers )
     BOOST_REQUIRE( get_balance( "actor254" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == HIVE_MAX_OPEN_RECURRENT_TRANSFERS);
 
-
     BOOST_TEST_MESSAGE( "Testing: Cannot create more than HIVE_MAX_OPEN_RECURRENT_TRANSFERS transfers");
     op.to = "bob";
-    HIVE_REQUIRE_THROW( push_transaction(op, alice_private_key), fc::exception );
+    HIVE_REQUIRE_ASSERT( push_transaction(op, alice_private_key), "from_account.open_recurrent_transfers < HIVE_MAX_OPEN_RECURRENT_TRANSFERS" );
+
+    BOOST_TEST_MESSAGE( "Testing: Can still edit existing transfer even when at HIVE_MAX_OPEN_RECURRENT_TRANSFERS transfers" );
+    op.to = "actor123";
+    op.memo = "edit";
+    op.amount = ASSET( "15.000 TESTS" );
+    op.recurrence = 24;
+    op.executions = 3;
+    auto edit_time = db->head_block_time();
+    push_transaction( op, alice_private_key );
+    generate_block();
+
+    // since edit does not trigger transfer right away (unless it was scheduled for that block)
+    // there should be no immediate change in balance
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "8725.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "actor123" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == HIVE_MAX_OPEN_RECURRENT_TRANSFERS );
+
+    generate_blocks( edit_time + fc::hours( 24 ), false );
+
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "8710.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "actor123" ).amount.value == ASSET( "20.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == HIVE_MAX_OPEN_RECURRENT_TRANSFERS );
+
+    BOOST_TEST_MESSAGE( "Testing: Can still remove existing transfer even when at HIVE_MAX_OPEN_RECURRENT_TRANSFERS transfers" );
+    op.to = "actor123";
+    op.memo = "erase";
+    op.amount = ASSET( "0.000 TESTS" );
+    push_transaction( op, alice_private_key );
+    generate_block();
+
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "8710.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "actor123" ).amount.value == ASSET( "20.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == HIVE_MAX_OPEN_RECURRENT_TRANSFERS - 1 );
+
     validate_database();
  }
   FC_LOG_AND_RETHROW()

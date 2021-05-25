@@ -431,7 +431,8 @@ vector< database_api::api_proposal_vote_object > remote_node_api::list_proposal_
   FC_ASSERT( false );
 }
 
-vector< database_api::api_recurrent_transfer_object > remote_node_api::find_recurrent_transfers(account_name_type)
+// NOLINTNEXTLINE
+vector< database_api::api_recurrent_transfer_object > remote_node_api::find_recurrent_transfers( const account_name_type& )
 {
   FC_ASSERT( false );
 }
