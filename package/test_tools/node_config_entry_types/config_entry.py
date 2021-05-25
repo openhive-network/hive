@@ -15,7 +15,11 @@ class ConfigEntry:
         return self._value
 
     def set_value(self, value):
-        self._validate(value)
+        try:
+            self._validate(value)
+        except TypeError as error:
+            raise ValueError(str(error)) from error
+
         self._set_value(value)
 
     def _set_value(self, value):

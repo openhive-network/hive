@@ -55,13 +55,23 @@ class List(ConfigEntry):
 
     def _validate(self, value):
         def check_single_value(single_value, item_type):
+            if single_value is None:
+                raise ValueError('You cannot store None in list')
             item_type._validate(single_value)
 
         if isinstance(value, list):
             for single_value in value:
                 check_single_value(single_value, self.__item_type)
         else:
-            check_single_value(value, self.__item_type)
+            try:
+                check_single_value(value, self.__item_type)
+            except ValueError as error:
+                raise ValueError(
+                    'To clear a list entry you have to write:\n'
+                    '  config.entry = []\n'
+                    'instead of:\n'
+                    '  config.entry = None'
+                ) from error
 
     def _set_value(self, value):
         if not isinstance(value, list):

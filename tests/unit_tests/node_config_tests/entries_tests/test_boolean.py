@@ -30,5 +30,5 @@ def test_serializing(entry, values):
 
 def test_different_type_assignments(entry):
     for incorrect_value in ['123', 0, 1, 2.718]:
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             entry.set_value(incorrect_value)

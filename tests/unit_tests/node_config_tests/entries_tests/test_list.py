@@ -55,8 +55,8 @@ def test_serializing_multiple_lines_of_strings():
 
 def test_setting_incorrect_value_type():
     items = List(Integer)
-    for incorrect_value in [True, '1', ['1'], [1, 2, '3']]:
-        with pytest.raises(TypeError):
+    for incorrect_value in [None, True, '1', ['1'], [1, 2, '3'], [None], [1, 2, None]]:
+        with pytest.raises(ValueError):
             items.set_value(incorrect_value)
             pytest.fail(f'Exception was not raised for value: {incorrect_value}')
 
