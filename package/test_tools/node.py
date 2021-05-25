@@ -2,6 +2,7 @@ from pathlib import Path
 import subprocess
 import time
 
+from .account import Account
 from .node_api.node_apis import Apis
 from . import logger
 from .wallet import Wallet
@@ -34,7 +35,12 @@ class Node:
         if configure_for_block_production:
             self.config.enable_stale_production = True
             self.config.required_participation = 0
-            self.config.witness.append('initminer')
+            self.__register_witness('initminer')
+
+    def __register_witness(self, name):
+        account = Account(name)
+        self.config.witness.append(account.name)
+        self.config.private_key.append(account.private_key)
 
     def __str__(self):
         from .network import Network
