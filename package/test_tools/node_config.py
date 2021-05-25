@@ -178,8 +178,9 @@ class NodeConfig:
 
                 self.__check_if_key_from_file_is_valid(key)
 
-                entries = self.__get_entries()
-                entries[key.replace('-', '_')].parse_from_text(value)
+                if value != '':
+                    entries = self.__get_entries()
+                    entries[key.replace('-', '_')].parse_from_text(value)
 
     def __check_if_key_from_file_is_valid(self, key_to_check):
         """Keys from file have hyphens instead of underscores"""

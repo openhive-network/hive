@@ -37,9 +37,10 @@ def test_correct_plugins(config):
 
 
 def test_incorrect_plugins(config):
-    for incorrect_plugin in ['UNDEFINED_PLUGIN', 'witnness', 'p3p', '']:
+    for incorrect_plugin in ['UNDEFINED_PLUGIN', 'witnness', 'p3p']:
         with pytest.raises(ValueError):
             config.load_from_lines([f'plugin = {incorrect_plugin}'])
+            pytest.fail(f'Exception was not raised for value: \"{incorrect_plugin}\"')
 
 
 def test_single_line_entry_loading(config):
@@ -64,3 +65,21 @@ def test_multi_line_entry_loading(config):
     assert 'other-witness' in config.witness
     assert '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n' in config.private_key
     assert '5JcCHFFWPW2DryUFDVd7ZXVj2Zo67rqMcvcq5inygZGBAPR1JoR' in config.private_key
+
+
+def test_entry_without_value_loading(config):
+    config.load_from_lines(
+        ['plugin = ']
+    )
+
+    assert not config.plugin
+
+
+def test_if_entries_without_value_not_clears_previous(config):
+    config.load_from_lines([
+        'plugin = account_by_key',
+        'plugin = condenser_api',
+        'plugin = ',
+    ])
+
+    assert config.plugin == ['account_by_key', 'condenser_api']
