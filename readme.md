@@ -41,7 +41,7 @@ Node has `config` member which allow for editing _hived_ _config.ini_ file. You 
 ```python
 node.config.enable_stale_production = True
 node.config.required_participation = 0
-node.config.witness.append('initminer')
+node.config.plugin.extend(['p2p', 'witness'])
 ```
 
 > :warning: Type support is not completed yet. Not all config entries types are set correctly. At the moment most of them are treated as strings. So you have to write like:
