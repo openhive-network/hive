@@ -54,7 +54,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_PROPOSAL_MAINTENANCE_PERIOD          3600
 #define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*60*24*1) // 1 day
 #define HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD    (60*60) /// 1 hour
-#define HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD    (fc::days(20))
+#define HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD    (fc::days(5))
 
 #define HIVE_GLOBAL_REMOVE_THRESHOLD          20
 
