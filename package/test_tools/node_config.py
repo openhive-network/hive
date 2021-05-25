@@ -160,6 +160,8 @@ class NodeConfig:
             file.write('\n'.join(self.write_to_lines()))
 
     def load_from_lines(self, lines):
+        assert isinstance(lines, list)
+
         import re
 
         def parse_entry_line(line):
