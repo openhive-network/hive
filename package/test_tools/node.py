@@ -286,7 +286,7 @@ class Node:
         import signal
         self.__process.send_signal(signal.SIGINT)
         try:
-            return_code = self.__process.wait(timeout=3)
+            return_code = self.__process.wait(timeout=10)
             self.__logger.debug(f'Closed with {return_code} return code')
         except subprocess.TimeoutExpired:
             self.__process.kill()
