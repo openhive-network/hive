@@ -94,7 +94,7 @@ class Node:
         return self.__name
 
     def add_seed_node(self, seed_node):
-        if not seed_node.config.p2p_endpoint.is_set():
+        if seed_node.config.p2p_endpoint is None:
             from .port import Port
             seed_node.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
 
@@ -163,7 +163,7 @@ class Node:
         if params is not None:
             message['params'] = params
 
-        if not self.config.webserver_http_endpoint.is_set():
+        if self.config.webserver_http_endpoint is None:
             raise Exception('Webserver http endpoint is unknown')
 
         from urllib.parse import urlparse
@@ -260,13 +260,13 @@ class Node:
     def __set_unset_endpoints(self):
         from .port import Port
 
-        if not self.config.p2p_endpoint.is_set():
+        if self.config.p2p_endpoint is None:
             self.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
 
-        if not self.config.webserver_http_endpoint.is_set():
+        if self.config.webserver_http_endpoint is None:
             self.config.webserver_http_endpoint = f'0.0.0.0:{Port.allocate()}'
 
-        if not self.config.webserver_ws_endpoint.is_set():
+        if self.config.webserver_ws_endpoint is None:
             self.config.webserver_ws_endpoint = f'0.0.0.0:{Port.allocate()}'
 
     def close(self):

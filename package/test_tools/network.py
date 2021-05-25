@@ -66,7 +66,7 @@ class Network:
 
         from .port import Port
         seed_node = self.nodes[0]
-        if not seed_node.config.p2p_endpoint:
+        if seed_node.config.p2p_endpoint is None:
             seed_node.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
 
         for node in self.nodes[1:]:
