@@ -18,18 +18,18 @@ def empty_config():
 
 
 def test_getting_unset_but_correct_entry(empty_config):
-    assert not empty_config.plugin.is_set()
+    assert empty_config.required_participation is None
 
 
 def test_getting_incorrect_entry(empty_config):
-    with pytest.raises(AttributeError):
+    with pytest.raises(KeyError):
         assert empty_config.incorrect_entry
 
 
 def test_setting_correct_entry(empty_config):
-    empty_config.plugin = 'witness'
+    empty_config.required_participation = 33
 
 
 def test_setting_incorrect_entry(empty_config):
-    with pytest.raises(AttributeError):
+    with pytest.raises(KeyError):
         empty_config.incorrect_entry = 'value'

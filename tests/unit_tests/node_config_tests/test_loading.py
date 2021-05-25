@@ -14,7 +14,7 @@ def test_single_value_loading(config):
 
 
 def test_incorrect_value_with_underscores_loading(config):
-    with pytest.raises(AttributeError):
+    with pytest.raises(KeyError):
         config.load_from_lines(['block_log_info_print_file = ILOG'])
 
 
@@ -38,7 +38,7 @@ def test_correct_plugins(config):
 
 def test_incorrect_plugins(config):
     for incorrect_plugin in ['UNDEFINED_PLUGIN', 'witnness', 'p3p', '']:
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             config.load_from_lines([f'plugin = {incorrect_plugin}'])
 
 

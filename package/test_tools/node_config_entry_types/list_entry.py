@@ -1,5 +1,3 @@
-from collections import UserList
-
 from .config_entry import ConfigEntry
 
 
@@ -8,13 +6,7 @@ class NotSupported(Exception):
 
 
 class List(ConfigEntry):
-    class _BaseProxyType(ConfigEntry._BaseProxyType, UserList):
-        def __init__(self, entry):
-            ConfigEntry._BaseProxyType.__init__(self, entry)
-
-            UserList.__init__(self)
-            self.data = entry._value
-
+    class __ListWithoutAdditionOperator(list):
         def __iadd__(self, other):
             """Operator += is removed, because there is no -= operator.
 
@@ -27,19 +19,8 @@ class List(ConfigEntry):
                 f'Operator += is removed. Use methods "{self.append.__name__}" or "{self.extend.__name__}" instead.'
             )
 
-    class _UnsetProxyType(_BaseProxyType, ConfigEntry._UnsetProxy):
-        pass
-
-    class _ValueProxyType(_BaseProxyType, ConfigEntry._ValueProxy):
-        pass
-
-    _UnsetProxy = _UnsetProxyType
-    _ValueProxy = _ValueProxyType
-
     def __init__(self, item_type, separator=' ', begin='', end='', single_line=True):
-        super().__init__()
-
-        self._value = []
+        super().__init__(self.__ListWithoutAdditionOperator())
 
         self.__item_type = item_type
 
@@ -48,10 +29,10 @@ class List(ConfigEntry):
         self.__end = end
         self.__single_line = single_line
 
-    def _is_set(self):
-        return bool(self._value)
+    def clear(self):
+        self.set_value([])
 
-    def _parse_from_text(self, text):
+    def parse_from_text(self, text):
         import re
         match_result = re.match(fr'^\s*{re.escape(self.__begin)}(.*){re.escape(self.__end)}\s*$', text)
         # TODO: Raise if can't match
@@ -63,7 +44,7 @@ class List(ConfigEntry):
 
         return self._value
 
-    def _serialize_to_text(self):
+    def serialize_to_text(self):
         def serialize_value(value):
             item = self.__item_type()
             item.set_value(value)
@@ -72,11 +53,12 @@ class List(ConfigEntry):
         values = [serialize_value(value) for value in self._value]
         return self.__begin + self.__separator.join(values) + self.__end if self.__single_line else values
 
+    @classmethod
+    def _validate(cls, value):
+        pass
+
     def _set_value(self, value):
         if not isinstance(value, list):
             value = [value]
 
-        self._value = value
-
-    def _clear(self):
-        self._value = []
+        self._value = self.__ListWithoutAdditionOperator(value)

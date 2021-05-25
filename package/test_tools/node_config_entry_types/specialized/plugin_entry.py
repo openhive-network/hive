@@ -2,8 +2,8 @@ from ..untouched_entry import Untouched
 
 
 class Plugin(Untouched):
-    @staticmethod
-    def __check_if_plugin_is_supported(plugin):
+    @classmethod
+    def __check_if_plugin_is_supported(cls, plugin):
         supported_plugins = [
             'account_by_key', 'account_by_key_api', 'account_history', 'account_history_api', 'account_history_rocksdb',
             'block_api', 'block_data_export', 'block_log_info', 'chain', 'chain_api', 'comment_cashout_logging',
@@ -14,16 +14,19 @@ class Plugin(Untouched):
         ]
 
         if plugin not in supported_plugins:
-            raise Exception(
+            raise ValueError(
                 f'Plugin "{plugin}" is not supported.\n'
                 + 'List of supported plugins:\n'
                 + '\n'.join([f'- {supported}' for supported in supported_plugins])
             )
 
-    def _parse_from_text(self, plugin):
-        self.__check_if_plugin_is_supported(plugin)
-        return super()._parse_from_text(plugin)
+    @classmethod
+    def _validate(cls, value):
+        super()._validate(value)
 
-    def _set_value(self, value):
-        self.__check_if_plugin_is_supported(value)
-        super()._set_value(value)
+        if value is not None:
+            cls.__check_if_plugin_is_supported(value)
+
+    def parse_from_text(self, plugin):
+        self.__check_if_plugin_is_supported(plugin)
+        return super().parse_from_text(plugin)

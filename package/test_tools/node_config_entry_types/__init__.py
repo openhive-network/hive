@@ -5,4 +5,3 @@ from .string_entry import String
 from .untouched_entry import Untouched
 
 from .specialized.plugin_entry import Plugin
-from .specialized.witness_list_entry import WitnessList

@@ -51,29 +51,3 @@ def test_serializing_multiple_lines_of_strings():
     items.set_value(input_items)
 
     assert items.serialize_to_text() == expected
-
-
-def test_if_value_is_set_after_append():
-    items = List(Integer)
-    items.get_value().append(0)
-    assert items.get_value().is_set()
-
-
-def test_if_value_is_set_after_extend():
-    items = List(Integer)
-    items.get_value().extend([0, 1, 2])
-    assert items.get_value().is_set()
-
-
-def test_if_value_is_not_set_after_remove():
-    items = List(Integer)
-    items.get_value().append(0)
-    items.get_value().remove(0)
-    assert not items.get_value().is_set()
-
-
-def test_clear():
-    items = List(Untouched)
-    items.get_value().append('x')
-    items.get_value().clear()
-    assert not items.get_value().is_set()
