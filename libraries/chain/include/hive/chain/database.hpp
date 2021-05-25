@@ -552,7 +552,7 @@ namespace chain {
       struct irreversible_object_type
       {
         uint32_t last_irreversible_block_num = 0;
-      } *irreversible_object;
+      } *irreversible_object = nullptr;
       //////////////////// db_init.cpp ////////////////////
 
       void initialize_evaluators();

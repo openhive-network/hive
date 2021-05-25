@@ -177,6 +177,8 @@ void database::open( const open_args& args )
       auto new_hb = head_block_num();
 
       FC_ASSERT(new_hb >= last_irreversible_block);
+      
+      FC_ASSERT(this->get_last_irreversible_block_num() == last_irreversible_block, "Undo operation should not touch irreversible block value");
 
       ilog("Blockchain state database is AT IRREVERSIBLE state specific to head block: ${hb} and LIB: ${lb}", ("hb", head_block_num())("lb", this->get_last_irreversible_block_num()));
 
@@ -439,7 +441,7 @@ void database::close(bool rewind)
 
     auto lib = this->get_last_irreversible_block_num();
 
-    ilog("Database flushed at LIB: ${b}", ("b", lib));
+    ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
 
     chainbase::database::close();
 
@@ -3567,16 +3569,19 @@ node_property_object& database::node_properties()
 
 uint32_t database::get_last_irreversible_block_num() const
 {
-  elog("getting last_irreversible_block_num irreversible is ${l}", ("l", irreversible_object->last_irreversible_block_num));
-  elog("getting last_irreversible_block_num head is ${l}", ("l", head_block_num()));
+  //ilog("getting last_irreversible_block_num irreversible is ${l}", ("l", irreversible_object->last_irreversible_block_num));
+  //ilog("getting last_irreversible_block_num head is ${l}", ("l", head_block_num()));
   return irreversible_object->last_irreversible_block_num;
 }
 
 void database::set_last_irreversible_block_num(uint32_t block_num)
 {
-  elog("setting last_irreversible_block_num previous ${l}", ("l", irreversible_object->last_irreversible_block_num));
+  //ilog("setting last_irreversible_block_num previous ${l}", ("l", irreversible_object->last_irreversible_block_num));
+  FC_ASSERT(block_num >= irreversible_object->last_irreversible_block_num, "Irreversible block can only move forward. Old: ${o}, new: ${n}",
+    ("o", irreversible_object->last_irreversible_block_num)("n", block_num));
+
   irreversible_object->last_irreversible_block_num = block_num;
-  elog("setting last_irreversible_block_num new ${l}", ("l", irreversible_object->last_irreversible_block_num));
+  //ilog("setting last_irreversible_block_num new ${l}", ("l", irreversible_object->last_irreversible_block_num));
 }
 
 void database::initialize_evaluators()
@@ -3680,9 +3685,9 @@ void database::initialize_indexes()
 
 void database::initialize_irreversible_storage()
 {
-    auto s = get_segment_manager();
+  auto s = get_segment_manager();
 
-    irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
+  irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
 }
 
 void database::resetState(const open_args& args)

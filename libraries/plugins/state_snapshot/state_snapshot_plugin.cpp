@@ -1168,25 +1168,25 @@ std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> state_snapsh
     }
   }
 
-  uint32_t lib;
+  uint32_t lib = 0;
 
   {
     ::rocksdb::ReadOptions rOptions;
 
     std::unique_ptr<::rocksdb::Iterator> irreversibleStateIterator(manifestDb->NewIterator(rOptions, cfHandles[3]));
     irreversibleStateIterator->SeekToFirst();
-    FC_ASSERT(irreversibleStateIterator->Valid(), "No entry for IRREVERSIBLE_STATE");
+    FC_ASSERT(irreversibleStateIterator->Valid(), "No entry for IRREVERSIBLE_STATE. Probably used old snapshot format (must be regenerated).");
 
     std::vector<char> buffer;
-    for(; irreversibleStateIterator->Valid(); irreversibleStateIterator->Next())
-    {
-      auto valueSlice = irreversibleStateIterator->value();
+    auto valueSlice = irreversibleStateIterator->value();
 
-      buffer.insert(buffer.end(), valueSlice.data(), valueSlice.data() + valueSlice.size());
-      chainbase::serialization::unpack_from_buffer(lib, buffer);
-      buffer.clear();
-      elog("lib: ${s}", ("s", lib));
-    }
+    buffer.insert(buffer.end(), valueSlice.data(), valueSlice.data() + valueSlice.size());
+    chainbase::serialization::unpack_from_buffer(lib, buffer);
+    buffer.clear();
+    //ilog("lib: ${s}", ("s", lib));
+
+    irreversibleStateIterator->Next();
+    FC_ASSERT(irreversibleStateIterator->Valid() == false, "Multiple entries specifying irreversible block ?");
   }
 
   for(auto* cfh : cfHandles)
@@ -1367,12 +1367,13 @@ void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName,
     load_snapshot_external_data(extDataIdx);
   }
 
+  auto last_irr_block = std::get<2>(snapshotManifest);
   // set irreversible block number after database::resetState
-  _mainDb.set_last_irreversible_block_num(std::get<2>(snapshotManifest));
+  _mainDb.set_last_irreversible_block_num(last_irr_block);
 
   auto blockNo = _mainDb.head_block_num();
 
-  ilog("Setting chainbase revision to ${b} block...", ("b", blockNo));
+  ilog("Setting chainbase revision to ${b} block... Loaded irreversible block is: ${lib}.", ("b", blockNo)("lib", last_irr_block));
   _mainDb.set_revision(blockNo);
 
   const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&, bool) {});
