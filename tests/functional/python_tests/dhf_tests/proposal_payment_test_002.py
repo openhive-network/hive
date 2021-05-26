@@ -152,10 +152,10 @@ if __name__ == '__main__':
             now = test_utils.date_from_iso(now)
 
             proposal_data = [
-                ['tester001', 1 + 0, 5, '24.000 TBD'], # starts one day from now and lasts five days
+                ['tester001', 1 + 0, 3, '24.000 TBD'], # starts one day from now and lasts three days
                 ['tester002', 1 + 0, 2, '24.000 TBD'], # starts one day from now and lasts two days
-                ['tester003', 1 + 2, 1, '24.000 TBD'], # starts three days from now and lasts one day
-                ['tester004', 1 + 4, 1, '24.000 TBD']  # starts four days from now and lasts one day
+                ['tester003', 1 + 1, 1, '24.000 TBD'], # starts two days from now and lasts one day
+                ['tester004', 1 + 2, 1, '24.000 TBD']  # starts three days from now and lasts one day
             ]
 
             proposals = [
@@ -172,7 +172,7 @@ if __name__ == '__main__':
             test_start_date = now + datetime.timedelta(days = 1)
             test_start_date_iso = test_utils.date_to_iso(test_start_date)
 
-            test_end_date = test_start_date + datetime.timedelta(days = 6, hours = 1)
+            test_end_date = test_start_date + datetime.timedelta(days = 4, hours = 1)
             test_end_date_iso = test_utils.date_to_iso(test_end_date)
 
             test_utils.create_proposals(node_client, proposals, wif)
@@ -223,7 +223,7 @@ if __name__ == '__main__':
             logger.info("Balances for accounts at time: {}".format(test_end_date_iso))
             balances = test_utils.print_balance(node_client, accounts)
             test_balances = [
-                '510000',
+                '462000',
                 '438000',
                 '414000',
                 '414000',
