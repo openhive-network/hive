@@ -19,7 +19,8 @@ Tests = [
     "proposal_payment_test_006.py",
     "proposal_payment_test_007.py",
     "proposal_payment_test_008.py",
-    "proposal_payment_test_009.py"
+    "proposal_payment_test_009.py",
+    "proposal_payment_test_with_governance_010.py"
 ]
 
 parser = argparse.ArgumentParser()
