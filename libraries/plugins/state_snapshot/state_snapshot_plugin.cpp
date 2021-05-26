@@ -1122,7 +1122,7 @@ std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> state_snapsh
 
       FC_ASSERT(keySlice.ToString() == info.name);
 
-      elog("Loaded manifest info for index ${i} having storage files: ${sf}", ("i", info.name)("sf", info.storage_files));
+      ilog("Loaded manifest info for index ${i} having storage files: ${sf}", ("i", info.name)("sf", info.storage_files));
 
       retVal.emplace(std::move(info));
 
