@@ -211,7 +211,7 @@ class Node:
         return response['result']['node_id']
 
     def set_allowed_nodes(self, nodes):
-        return self.api.network_node.set_allowed_peers([node.get_id() for node in nodes])
+        return self.api.network_node.set_allowed_peers(allowed_peers=[node.get_id() for node in nodes])
 
     def run(self, wait_for_live=True, timeout=math.inf, use_existing_config=False):
         """
