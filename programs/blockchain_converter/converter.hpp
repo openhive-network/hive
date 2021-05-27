@@ -24,7 +24,7 @@ namespace hive {
     private:
       private_key_type _private_key;
       chain_id_type    chain_id;
-      signed_block*    current_signed_block;
+      block_id_type    previous_block_id;
 
       std::map< account_name_type, std::array< fc::optional< authority >, 3 > >  pow_auths; // the array contains the following keys: owner, active and posting
       std::map< authority::classification, private_key_type >                    second_authority;
@@ -50,7 +50,7 @@ namespace hive {
       void add_pow_authority( const account_name_type& name, authority auth, authority::classification type );
       bool has_pow_authority( const account_name_type& name )const;
 
-      const signed_block& get_current_signed_block()const;
+      const block_id_type& get_previous_block_id()const;
     };
 
     class convert_operations_visitor

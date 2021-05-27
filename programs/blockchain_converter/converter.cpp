@@ -83,14 +83,14 @@ namespace hive {
     const custom_binary_operation& convert_operations_visitor::operator()( custom_binary_operation& op )const
     {
       op.required_auths.clear();
-      std::cout << "Clearing custom_binary_operation required_auths in block: " << converter.get_current_signed_block().block_num() << '\n';
+      std::cout << "Clearing custom_binary_operation required_auths in block: " << block_header::num_from_id( converter.get_previous_block_id() ) + 1 << '\n';
 
       return op;
     }
 
     const pow_operation& convert_operations_visitor::operator()( pow_operation& op )const
     {
-      op.block_id = converter.get_current_signed_block().previous;
+      op.block_id = converter.get_previous_block_id();
 
       authority working{ 1, op.work.worker, 1 };
 
@@ -112,9 +112,9 @@ namespace hive {
         converter.convert_authority( worker, working, authority::posting );
       }
       if( op.work.which() ) // equihash_pow
-        op.work.get< equihash_pow >().prev_block = converter.get_current_signed_block().previous;
+        op.work.get< equihash_pow >().prev_block = converter.get_previous_block_id();
       else // pow2
-        op.work.get< pow2 >().input.prev_block = converter.get_current_signed_block().previous;
+        op.work.get< pow2 >().input.prev_block = converter.get_previous_block_id();
 
       return op;
     }
@@ -147,7 +147,7 @@ namespace hive {
 
     void blockchain_converter::post_convert_transaction( signed_transaction& _transaction )
     {
-      if( current_signed_block->block_num() > HIVE_HARDFORK_0_17_BLOCK_NUM && pow_auths.size() ) // Mining in HF 17 and above is disabled
+      if( block_header::num_from_id( get_previous_block_id() ) + 1 > HIVE_HARDFORK_0_17_BLOCK_NUM && pow_auths.size() ) // Mining in HF 17 and above is disabled
       {
         auto pow_auths_itr = pow_auths.begin();
 
@@ -165,7 +165,7 @@ namespace hive {
 
     block_id_type blockchain_converter::convert_signed_block( signed_block& _signed_block, const block_id_type& previous_block_id )
     {
-      current_signed_block = &_signed_block;
+      this->previous_block_id = previous_block_id;
 
       _signed_block.previous = previous_block_id;
 
@@ -210,7 +210,7 @@ namespace hive {
 
     void blockchain_converter::convert_authority( const account_name_type& name, authority& _auth, authority::classification type )
     {
-      if( current_signed_block->block_num() > HIVE_HARDFORK_0_17_BLOCK_NUM )
+      if( block_header::num_from_id( get_previous_block_id() ) + 1 > HIVE_HARDFORK_0_17_BLOCK_NUM )
         _auth.add_authority( second_authority.at( type ).get_public_key(), 1 ); // Apply 2nd auth to every op after HF17
       else
         add_pow_authority( name, _auth, type );
@@ -283,9 +283,9 @@ namespace hive {
       return pow_auths.find( name ) != pow_auths.end();
     }
 
-    const signed_block& blockchain_converter::get_current_signed_block()const
+    const block_id_type& blockchain_converter::get_previous_block_id()const
     {
-      return *current_signed_block;
+      return previous_block_id;
     }
   }
 }
