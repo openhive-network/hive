@@ -1,3 +1,6 @@
+from os import getenv, path
+
+
 class NotSupported(Exception):
     pass
 
@@ -68,8 +71,7 @@ class _PathsToExecutables:
         return paths
 
     def get_path_of(self, executable_name):
-        if not self.__is_supported(executable_name):
-            raise NotSupported(f'Executable {executable_name} is not supported')
+        executable = self.__get_executable_details(executable_name)
 
         if executable_name in self.paths:
             return self.paths[executable_name]
@@ -77,13 +79,20 @@ class _PathsToExecutables:
         if getattr(self.command_line_arguments, executable_name) is not None:
             return getattr(self.command_line_arguments, executable_name)
 
-        if executable_name in self.environment_variables and self.environment_variables[executable_name] is not None:
-            return self.environment_variables[executable_name]
+        if executable.environment_variable in self.environment_variables:
+            return self.environment_variables[executable.environment_variable]
 
         if executable_name in self.installed_executables and self.installed_executables[executable_name] is not None:
             return self.installed_executables[executable_name]
 
         raise MissingPathToExecutable(f'Missing path to {executable_name}\n' + self.get_configuration_hint())
+
+    def __get_executable_details(self, executable_name):
+        for executable in self.supported_executables:
+            if executable.name == executable_name:
+                return executable
+
+        raise NotSupported(f'Executable {executable_name} is not supported')
 
     def set_path_of(self, executable_name, executable_path):
         if not self.__is_supported(executable_name):
@@ -100,22 +109,19 @@ class _PathsToExecutables:
         self.command_line_arguments, _ = parser.parse_known_args(arguments)
 
     def set_environment_variables(self, variables=None):
-        self.environment_variables = {}
-
         if variables is None:
-            from os import path, getenv
-            for executable in self.supported_executables:
-                environment_variable = getenv(executable.environment_variable)
-                if environment_variable is not None:
-                    environment_variable = path.expandvars(environment_variable)
-                self.environment_variables[executable.name] = environment_variable
-            return
+            variables = self.__get_environment_variables_from_operating_system()
 
+        self.environment_variables = {name: path.expandvars(value) for name, value in variables.items()}
+
+    def __get_environment_variables_from_operating_system(self):
+        variables = {}
         for executable in self.supported_executables:
-            if executable.environment_variable in variables.keys():
-                self.environment_variables[executable.name] = variables[executable.environment_variable]
-            else:
-                self.environment_variables[executable.name] = None
+            environment_variable = getenv(executable.environment_variable)
+            if environment_variable is not None:
+                variables[executable.environment_variable] = environment_variable
+
+        return variables
 
     def set_installed_executables(self, installed_executables=None):
         self.installed_executables = {}
