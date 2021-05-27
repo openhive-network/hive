@@ -151,6 +151,7 @@ namespace hive {
       {
         auto pow_auths_itr = pow_auths.begin();
 
+        // Add 2nd auth to the pow auths
         account_update_operation op;
         op.account = pow_auths_itr->first;
         op.owner = pow_auths_itr->second.at( 0 );
@@ -174,10 +175,13 @@ namespace hive {
       {
         transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this ) );
 
+        // re-sign ops
         for( auto signature_itr = transaction_itr->signatures.begin(); signature_itr != transaction_itr->signatures.end(); ++signature_itr )
           *signature_itr = _private_key.sign_compact( transaction_itr->sig_digest( chain_id ) );
 
+        // check for HF17 to add 2nd auth to the pow auths
         post_convert_transaction( *transaction_itr );
+
         transaction_itr->set_reference_block( previous_block_id );
 
         // Check for duplicated transaction ids
@@ -193,6 +197,7 @@ namespace hive {
 
       _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
 
+      // Sign header (using given witness' private key)
       convert_signed_header( _signed_block );
 
       return _signed_block.id();
@@ -206,7 +211,7 @@ namespace hive {
     void blockchain_converter::convert_authority( const account_name_type& name, authority& _auth, authority::classification type )
     {
       if( current_signed_block->block_num() > HIVE_HARDFORK_0_17_BLOCK_NUM )
-        _auth.add_authority( second_authority.at( type ).get_public_key(), 1 );
+        _auth.add_authority( second_authority.at( type ).get_public_key(), 1 ); // Apply 2nd auth to every op after HF17
       else
         add_pow_authority( name, _auth, type );
     }
