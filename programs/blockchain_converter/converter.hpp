@@ -32,7 +32,7 @@ namespace hive {
       void post_convert_transaction( signed_transaction& _transaction );
 
     public:
-      /// All converted blocks will be signed using keys derived from the given private key
+      /// All converted blocks will be signed using given private key
       blockchain_converter( const private_key_type& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID );
 
       /// Sets signed_block previous member to the given value and re-signs content of the block using derived keys. Returns current block id.
