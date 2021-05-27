@@ -42,3 +42,19 @@ def test_setting_broadcast_when_building_transaction():
         with wallet.in_single_transaction():
             with pytest.raises(RuntimeError):
                 wallet.api.create_account('initminer', 'alice', '{}', True)
+
+
+def test_getting_response():
+    with World() as world:
+        node = world.create_init_node()
+        node.config.plugin.append('network_broadcast_api')
+        node.config.plugin.append('database_api')
+        node.run()
+
+        wallet = node.attach_wallet()
+
+        with wallet.in_single_transaction() as transaction:
+            wallet.api.create_account('initminer', 'alice', '{}')
+            wallet.api.transfer('initminer', 'alice', '100.000 TESTS', 'memo')
+
+        assert transaction.get_response() is not None

@@ -39,7 +39,7 @@ class Wallet:
             self.__transaction_builder = None
 
             if transaction is not None:
-                self.sign_transaction(transaction)
+                return self.sign_transaction(transaction)
 
         def __send(self, method, jsonrpc='2.0', id=0, **params):
             if 'broadcast' in params:
@@ -595,7 +595,11 @@ class Wallet:
 class SingleTransactionContext:
     def __init__(self, wallet_: Wallet):
         self.__wallet = wallet_
+        self.__response = None
         self.__was_run_as_context_manager = False
+
+    def get_response(self):
+        return self.__response
 
     def __del__(self):
         if not self.__was_run_as_context_manager:
@@ -609,4 +613,4 @@ class SingleTransactionContext:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.__wallet.api._send_gathered_operations_as_single_transaction()
+        self.__response = self.__wallet.api._send_gathered_operations_as_single_transaction()
