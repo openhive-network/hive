@@ -118,7 +118,7 @@ int main( int argc, char** argv )
         ( argc, argv );
 
     if( !initialized )
-      return -1;
+      return 0;
 
     const auto& chainPlugin = theApp.get_plugin<hive::plugins::chain::chain_plugin>();
     auto chainId = chainPlugin.db().get_chain_id();
