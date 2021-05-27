@@ -1,6 +1,7 @@
 #include "converter.hpp"
 
 #include <map>
+#include <unordered_set>
 #include <array>
 #include <string>
 #include <limits>
@@ -75,30 +76,6 @@ namespace hive {
       converter.convert_authority( op.new_account_name, op.owner, authority::owner );
       converter.convert_authority( op.new_account_name, op.active, authority::active );
       converter.convert_authority( op.new_account_name, op.posting, authority::posting );
-
-      return op;
-    }
-
-    const witness_update_operation& convert_operations_visitor::operator()( witness_update_operation& op )const
-    {
-      // op.block_signing_key = converter.get_witness_key().get_public_key();
-
-      return op;
-    }
-
-    const witness_set_properties_operation& convert_operations_visitor::operator()( witness_set_properties_operation& op )const
-    {
-      public_key_type signing_key;
-
-      auto key_itr = op.props.find( "key" );
-
-      if( key_itr != op.props.end() )
-        op.props.at( "key" ) = fc::raw::pack_to_vector( converter.get_witness_key().get_public_key() );
-
-      auto new_signing_key_itr = op.props.find( "new_signing_key" );
-
-      if( new_signing_key_itr != op.props.end() )
-        op.props.at( "new_signing_key" ) = fc::raw::pack_to_vector( converter.get_witness_key().get_public_key() );
 
       return op;
     }
@@ -191,13 +168,27 @@ namespace hive {
 
       _signed_block.previous = previous_block_id;
 
+      std::unordered_set< transaction_id_type > txid_checker; // Keeps track of trx ids to change them if duplicated
+
       for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
       {
         transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this ) );
+
         for( auto signature_itr = transaction_itr->signatures.begin(); signature_itr != transaction_itr->signatures.end(); ++signature_itr )
           *signature_itr = _private_key.sign_compact( transaction_itr->sig_digest( chain_id ) );
+
         post_convert_transaction( *transaction_itr );
         transaction_itr->set_reference_block( previous_block_id );
+
+        // Check for duplicated transaction ids
+        while( !txid_checker.emplace( transaction_itr->id() ).second )
+        {
+          uint32_t tx_position = transaction_itr - _signed_block.transactions.begin();
+          std::cout << "Duplicate transaction [" << tx_position << "] in block with num: "  << _signed_block.block_num() << " detected."
+                    << "\nOld txid: " << transaction_itr->id().operator std::string();
+          transaction_itr->expiration += tx_position;
+          std::cout << "\nNew txid: " << transaction_itr->id().operator std::string() << '\n';
+        }
       }
 
       _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();

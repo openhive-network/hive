@@ -114,21 +114,21 @@ int main( int argc, char** argv )
     fc::optional< private_key_type > _active_key = wif_to_key( options.count("active-key") ? options["active-key"].as< std::string >() : "" );
     fc::optional< private_key_type > _posting_key = wif_to_key( options.count("posting-key") ? options["posting-key"].as< std::string >() : "" );
 
-    if( options.count("owner-key") && _owner_key.valid() )
+    if( _owner_key.valid() )
       owner_key = *_owner_key;
     else if( options.count("use-same-key") )
       owner_key = *private_key;
     else
       owner_key = private_key_type::generate();
 
-    if( options.count("active-key") && _active_key.valid() )
+    if( _active_key.valid() )
       active_key = *_active_key;
     else if( options.count("use-same-key") )
       active_key = *private_key;
     else
       active_key = private_key_type::generate();
 
-    if( options.count("posting-key") && _posting_key.valid() )
+    if( _posting_key.valid() )
       posting_key = *_posting_key;
     else if( options.count("use-same-key") )
       posting_key = *private_key;

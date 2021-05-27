@@ -73,10 +73,6 @@ namespace hive {
 
       const create_claimed_account_operation& operator()( create_claimed_account_operation& op )const;
 
-      const witness_update_operation& operator()( witness_update_operation& op )const;
-
-      const witness_set_properties_operation& operator()( witness_set_properties_operation& op )const;
-
       const custom_binary_operation& operator()( custom_binary_operation& op )const;
 
       const pow_operation& operator()( pow_operation& op )const;
