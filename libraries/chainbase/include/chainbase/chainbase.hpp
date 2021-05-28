@@ -361,6 +361,23 @@ namespace chainbase {
         return idx.erase(objI);
       }
 
+      template< typename ByIndex, typename ExternalStorageProcessor, typename Iterator = typename MultiIndexType::template index_iterator<ByIndex>::type >
+      void move_to_external_storage(Iterator begin, Iterator end, ExternalStorageProcessor&& processor)
+      {
+        auto& idx = _indices.template get< ByIndex >();
+
+        for(auto objectI = begin; objectI != end;)
+        {
+          processor(*objectI);
+
+          auto nextI = objectI;
+          ++nextI;
+          auto successor = idx.erase(objectI);
+          FC_ASSERT(successor == nextI);
+          objectI = successor;
+        }
+      }
+
       template<typename CompatibleKey>
       const value_type* find( CompatibleKey&& key )const {
         auto itr = _indices.find( std::forward<CompatibleKey>( key ) );

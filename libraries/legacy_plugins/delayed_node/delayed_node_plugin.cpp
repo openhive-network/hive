@@ -88,7 +88,8 @@ void delayed_node_plugin::sync_with_trusted_node()
   uint32_t pass_count = 0;
   while( true )
   {
-    hive::chain::dynamic_global_property_object remote_dpo = my->database_api->get_dynamic_global_properties();
+    api_dynamic_global_property_object remote_dpo = my->database_api->get_dynamic_global_properties();
+    //hive::chain::dynamic_global_property_object remote_dpo = my->database_api->get_dynamic_global_properties();
     if( remote_dpo.last_irreversible_block_num <= db.head_block_num() )
     {
       if( remote_dpo.last_irreversible_block_num < db.head_block_num() )
