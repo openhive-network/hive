@@ -1,8 +1,24 @@
-## Installation
+## How to start
+
+The easiest way of working with TestTools is to install them. Then package will know which executables (_hived_, _cli_wallet_, etc.) should use and your IDE will support code completion. It is recommended if you are a tester. But if you don't want to install anything, jump to **Run without installation** below. It might be better option if you want to run selected test only once.
+
+#### Installation
 
 Run installation script. It will install TestTools and help you to select which _hived_, _cli_wallet_ and such executables should be used by TestTools.
 ```bash
 python3 hive/tests/test_tools/install.py
+```
+
+#### Running without installation
+
+Run tests in current directory:
+```bash
+PYTHONPATH="${PYTHONPATH}:/home/dev/hive/tests/test_tools/package" HIVE_BUILD_ROOT_PATH="/home/dev/hive/build" pytest
+```
+
+Run selected script:
+```bash
+PYTHONPATH="${PYTHONPATH}:/home/dev/hive/tests/test_tools/package" HIVE_BUILD_ROOT_PATH="/home/dev/hive/build" python3 your_script.py
 ```
 
 ## Features
