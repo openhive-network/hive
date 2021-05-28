@@ -14,7 +14,7 @@ namespace hive { namespace converter { namespace plugins { namespace block_log_c
 
 namespace detail { class block_log_conversion_plugin_impl; }
 
-class block_log_conversion_plugin : public appbase::plugin< block_log_conversion_plugin >
+class block_log_conversion_plugin final : public appbase::plugin< block_log_conversion_plugin >
 {
 public:
   APPBASE_PLUGIN_REQUIRES()

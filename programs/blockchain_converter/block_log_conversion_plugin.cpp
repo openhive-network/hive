@@ -18,6 +18,8 @@
 
 #include <memory>
 
+#include "conversion_plugin.hpp"
+
 #include "converter.hpp"
 
 namespace bpo = boost::program_options;
@@ -32,19 +34,16 @@ namespace converter { namespace plugins { namespace block_log_conversion {
 
 namespace detail {
 
-  class block_log_conversion_plugin_impl {
+  class block_log_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
     block_log log_in, log_out;
-    uint32_t log_per_block, log_specific;
-    blockchain_converter converter;
 
     block_log_conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID )
-      : converter( _private_key, chain_id ) {}
+      : conversion_plugin_impl( _private_key, chain_id ) {}
 
-    void convert( uint32_t start_block_num, uint32_t stop_block_num );
+    virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
     void open( const fc::path& input, const fc::path& output );
     void close();
-    void print_wifs();
   };
 
   void block_log_conversion_plugin_impl::open( const fc::path& input, const fc::path& output )
@@ -117,32 +116,20 @@ namespace detail {
     log_in.close();
     log_out.close();
     if( block_header::num_from_id( converter.get_previous_block_id() ) + 1 <= HIVE_HARDFORK_0_17_BLOCK_NUM )
-      std::cerr << "\nSecond authority has not been applied on the accounts yet! Try resuming the conversion process\n";
+      std::cerr << "Second authority has not been applied on the accounts yet! Try resuming the conversion process\n";
   }
-
-  void block_log_conversion_plugin_impl::print_wifs()
-  {
-    std::cout << "\nSecond authority wif private keys:\n"
-      << "Owner:   " << key_to_wif( converter.get_second_authority_key( authority::owner ) ) << '\n'
-      << "Active:  " << key_to_wif( converter.get_second_authority_key( authority::active ) ) << '\n'
-      << "Posting: " << key_to_wif( converter.get_second_authority_key( authority::posting ) ) << '\n';
-  }
-
 
 } // detail
 
   block_log_conversion_plugin::block_log_conversion_plugin() {}
   block_log_conversion_plugin::~block_log_conversion_plugin() {}
 
-  void block_log_conversion_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg )
-  {
-    cli.add_options()
-      ("input,i", bpo::value< std::string >()->required(), "input block log")
-      ("output,o", bpo::value< std::string >(), "output block log; defaults to [input]_out" );
-  }
+  void block_log_conversion_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg ) {}
 
   void block_log_conversion_plugin::plugin_initialize( const bpo::variables_map& options )
   {
+    FC_ASSERT( options.count("input"), "You have to specify the input source for the " HIVE_BLOCK_LOG_CONVERSION_PLUGIN_NAME " plugin" );
+
     std::string out_file;
     if( !options.count("output") )
       out_file = options["input"].as< std::string >() + "_out";
