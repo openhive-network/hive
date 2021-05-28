@@ -11,6 +11,7 @@ class MissingPathToExecutable(Exception):
 
 
 class _PathsToExecutables:
+    BUILD_ROOT_PATH_COMMAND_LINE_ARGUMENT = '--build-root-path'
     BUILD_ROOT_PATH_ENVIRONMENT_VARIABLE = 'HIVE_BUILD_ROOT_PATH'
 
     class __ExecutableDetails:
@@ -82,6 +83,9 @@ class _PathsToExecutables:
         if getattr(self.command_line_arguments, executable_name) is not None:
             return getattr(self.command_line_arguments, executable_name)
 
+        if self.__is_build_root_set_as_command_line_argument():
+            return self.__get_path_relative_to_command_line_argument_build_root(executable)
+
         if executable.environment_variable in self.environment_variables:
             return self.environment_variables[executable.environment_variable]
 
@@ -100,6 +104,13 @@ class _PathsToExecutables:
 
         raise NotSupported(f'Executable {executable_name} is not supported')
 
+    def __is_build_root_set_as_command_line_argument(self):
+        return self.command_line_arguments.build_root is not None
+
+    def __get_path_relative_to_command_line_argument_build_root(self, executable):
+        build_root = Path(self.command_line_arguments.build_root)
+        return str(build_root.joinpath(executable.default_path_from_build))
+
     def __is_build_root_set_as_environment_variable(self):
         return self.BUILD_ROOT_PATH_ENVIRONMENT_VARIABLE in self.environment_variables
 
@@ -116,6 +127,8 @@ class _PathsToExecutables:
     def parse_command_line_arguments(self, arguments=None):
         from argparse import ArgumentParser
         parser = ArgumentParser()
+
+        parser.add_argument(self.BUILD_ROOT_PATH_COMMAND_LINE_ARGUMENT, dest='build_root')
         for executable in self.supported_executables:
             parser.add_argument(executable.argument, dest=executable.name)
 
