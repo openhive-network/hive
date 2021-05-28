@@ -36,12 +36,14 @@ def install():
     source = this_script_directory / 'package/test_tools/'
     destination.symlink_to(source)
 
-    print(f'''You have successfully installed {package_name}.
-
-    Details:
-      Symlink to [1] created in [2].
-      [1] {source}
-      [2] {destination}''')
+    print(
+        f'You have successfully installed {package_name}.\n'
+        f'\n'
+        f'Details:\n'
+        f'  Symlink to [1] created in [2].\n'
+        f'  [1] {source}\n'
+        f'  [2] {destination}'
+    )
 
     check_paths_to_executables()
 
