@@ -12,6 +12,7 @@
 #include <fc/exception/exception.hpp>
 
 #include "block_log_conversion_plugin.hpp"
+#include "node_based_conversion_plugin.hpp"
 
 using namespace hive::converter;
 using namespace hive::protocol;
@@ -39,7 +40,7 @@ int main( int argc, char** argv )
       logging_opts.add_options()
       ("log-per-block,l", bpo::value< uint32_t >()->default_value( 0 ), "displays blocks in JSON format every n blocks")
       ("log-specific,s", bpo::value< uint32_t >()->default_value( 0 ), "displays only block with specified number");
-    bpo::options_description conversion_opts{"Conversion options"};
+    bpo::options_description conversion_opts{"Conversion Options"};
       conversion_opts.add_options()
       ("chain-id,C", bpo::value< std::string >()->required(), "new chain ID")
       ("private-key,K", bpo::value< std::string >()->required(), "private key with which all transactions and blocks will be signed ")
@@ -48,10 +49,16 @@ int main( int argc, char** argv )
       ("posting-key,P", bpo::value< std::string >(), "posting key of the second authority")
       ("use-same-key,U", "use given private key as the owner, active and posting keys if not specified")
       ("stop-at-block,S", bpo::value< uint32_t >()->default_value( 0 ), "stop conversion at the given block number");
+      bpo::options_description source_opts{"Source options"};
+        source_opts.add_options()
+      ("input,i", bpo::value< std::string >(), "input source (depending on plugin enabled - block log path or hive API endpoint)")
+      ("output,o", bpo::value< std::string >(), "output source (depending on plugin enabled - block log path or hive API endpoint)" );
+      bpo::options_description cli_options{};
+        cli_options.add( source_opts ).add( logging_opts );
 
-    bc_converter_app.add_program_options( conversion_opts, logging_opts );
+    bc_converter_app.add_program_options( conversion_opts, cli_options );
 
-    // TODO: bc_converter_app.register_plugin< plugins::node_based_conversion::node_based_conversion_plugin >();
+    bc_converter_app.register_plugin< plugins::node_based_conversion::node_based_conversion_plugin >();
     bc_converter_app.register_plugin< plugins::block_log_conversion::block_log_conversion_plugin >();
 
     bc_converter_app.set_default_plugins< plugins::block_log_conversion::block_log_conversion_plugin >();
