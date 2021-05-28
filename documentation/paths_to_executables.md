@@ -19,29 +19,41 @@ paths_to_executables.set_path_of('hived', '/home/dev/hive/programs/hived/hived')
 ### Pass paths as command line arguments
 
 To pass path as command line argument you have to run your script with one of following parameters:
-| Executable    | Argument name        |
-| ------------- | -------------------- |
-| _hived_       | `--hived-path`       |
-| _cli_wallet_  | `--cli-wallet-path`  |
-| _get_dev_key_ | `--get-dev-key-path` |
+| Executable      | Argument name        |
+| --------------- | -------------------- |
+| All executables | `--build-root-path`  |
+| _hived_         | `--hived-path`       |
+| _cli_wallet_    | `--cli-wallet-path`  |
+| _get_dev_key_   | `--get-dev-key-path` |
+
+Example run with all executables from selected path:
+```bash
+python3 my_script.py --build-root-path="/home/dev/hive/build"
+```
 
 Example run with custom _hived_ path:
 ```bash
-python3 my_script.py --hived-path="/home/dev/hive/programs/hived/hived"
+python3 my_script.py --hived-path="/home/dev/hive/build/programs/hived/hived"
 ```
 
 ### Define paths as environment variables
 
 To define path using environment variables you have to use following variable names:
-| Executable    | Variable name        |
-| ------------- | -------------------- |
-| _hived_       | `HIVED_PATH`         |
-| _cli_wallet_  | `CLI_WALLET_PATH`    |
-| _get_dev_key_ | `GET_DEV_KEY_PATH`   |
+| Executable      | Variable name          |
+| --------------- | ---------------------- |
+| All executables | `HIVE_BUILD_ROOT_PATH` |
+| _hived_         | `HIVED_PATH`           |
+| _cli_wallet_    | `CLI_WALLET_PATH`      |
+| _get_dev_key_   | `GET_DEV_KEY_PATH`     |
+
+Example run with all executables from selected path:
+```bash
+HIVE_BUILD_ROOT_PATH="/home/dev/hive/build/" python3 my_script.py
+```
 
 Example run with custom _hived_ path:
 ```bash
-HIVED_PATH="/home/dev/hive/programs/hived/hived" python3 my_script.py
+HIVED_PATH="/home/dev/hive/build/programs/hived/hived" python3 my_script.py
 ```
 
 ### Install executables
