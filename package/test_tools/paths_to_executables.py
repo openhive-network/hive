@@ -1,4 +1,5 @@
 from os import getenv, path
+from pathlib import Path
 
 
 class NotSupported(Exception):
@@ -10,6 +11,8 @@ class MissingPathToExecutable(Exception):
 
 
 class _PathsToExecutables:
+    BUILD_ROOT_PATH_ENVIRONMENT_VARIABLE = 'HIVE_BUILD_ROOT_PATH'
+
     class __ExecutableDetails:
         def __init__(self, name, default_path_from_build):
             self.name = name
@@ -82,6 +85,9 @@ class _PathsToExecutables:
         if executable.environment_variable in self.environment_variables:
             return self.environment_variables[executable.environment_variable]
 
+        if self.__is_build_root_set_as_environment_variable():
+            return self.__get_path_relative_to_environment_variable_build_root(executable)
+
         if executable_name in self.installed_executables and self.installed_executables[executable_name] is not None:
             return self.installed_executables[executable_name]
 
@@ -93,6 +99,13 @@ class _PathsToExecutables:
                 return executable
 
         raise NotSupported(f'Executable {executable_name} is not supported')
+
+    def __is_build_root_set_as_environment_variable(self):
+        return self.BUILD_ROOT_PATH_ENVIRONMENT_VARIABLE in self.environment_variables
+
+    def __get_path_relative_to_environment_variable_build_root(self, executable):
+        build_root = Path(self.environment_variables[self.BUILD_ROOT_PATH_ENVIRONMENT_VARIABLE])
+        return str(build_root.joinpath(executable.default_path_from_build))
 
     def set_path_of(self, executable_name, executable_path):
         if not self.__is_supported(executable_name):
@@ -116,12 +129,19 @@ class _PathsToExecutables:
 
     def __get_environment_variables_from_operating_system(self):
         variables = {}
+
+        self.__append_environment_variable_value_if_defined(variables, self.BUILD_ROOT_PATH_ENVIRONMENT_VARIABLE)
+
         for executable in self.supported_executables:
-            environment_variable = getenv(executable.environment_variable)
-            if environment_variable is not None:
-                variables[executable.environment_variable] = environment_variable
+            self.__append_environment_variable_value_if_defined(variables, executable.environment_variable)
 
         return variables
+
+    @staticmethod
+    def __append_environment_variable_value_if_defined(variables, name):
+        variable = getenv(name)
+        if variable is not None:
+            variables[name] = variable
 
     def set_installed_executables(self, installed_executables=None):
         self.installed_executables = {}
