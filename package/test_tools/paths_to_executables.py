@@ -40,19 +40,10 @@ class _PathsToExecutables:
         return any([executable_name == executable.name for executable in self.supported_executables])
 
     def get_configuration_hint(self):
-        hive_build_path = 'HIVE_BUILD_PATH'
-        hint = f'Edit {hive_build_path} below, add following lines to /etc/environment and restart computer.\n'
-
-        hint += f'{hive_build_path}= # Should be something like: \'/home/dev/hive/build\'\n'
-
-        lines = []
-        for executable in self.supported_executables:
-            lines.append(
-                f'{executable.environment_variable}=\'${{{hive_build_path}}}/{executable.default_path_from_build}\''
-            )
-
-        hint += '\n'.join(lines)
-        return hint
+        return (
+            f'Edit and add following line to /etc/environment and restart computer.\n'
+            f'{self.BUILD_ROOT_PATH_ENVIRONMENT_VARIABLE}= # Should be something like: \"/home/dev/hive/build\"'
+        )
 
     def print_paths_in_use(self):
         entries = []
