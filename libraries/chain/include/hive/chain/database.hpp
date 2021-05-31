@@ -794,6 +794,8 @@ namespace chain {
 
       bool                          snapshot_loaded = false;
 
+      bool                          _is_open = false;
+
       flat_map< custom_id_type, std::shared_ptr< custom_operation_interpreter > >   _custom_operation_interpreters;
       std::string                   _json_schema;
 

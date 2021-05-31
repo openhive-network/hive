@@ -148,6 +148,7 @@ void database::open( const open_args& args )
     initialize_indexes();
     initialize_evaluators();
     initialize_irreversible_storage();
+    _is_open = true;
 
     if( !find< dynamic_global_property_object >() )
       with_write_lock( [&]()
@@ -439,9 +440,13 @@ void database::close(bool rewind)
 
     chainbase::database::flush();
 
-    auto lib = this->get_last_irreversible_block_num();
+    if( _is_open )
+    {
+      auto lib = this->get_last_irreversible_block_num();
 
-    ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
+      ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
+      _is_open = false;
+    }
 
     chainbase::database::close();
 
@@ -4982,8 +4987,12 @@ uint32_t database::update_last_irreversible_block()
     */
   if( head_block_num() < HIVE_START_MINER_VOTING_BLOCK )
   {
-    if ( head_block_num() > HIVE_MAX_WITNESSES )
-      set_last_irreversible_block_num(head_block_num() - HIVE_MAX_WITNESSES);
+    if ( head_block_num() > HIVE_MAX_WITNESSES ) {
+      uint32_t new_last_irreversible_block_num = head_block_num() - HIVE_MAX_WITNESSES;
+
+      if( new_last_irreversible_block_num > get_last_irreversible_block_num() )
+        set_last_irreversible_block_num(new_last_irreversible_block_num);
+    }
   }
   else
   {
