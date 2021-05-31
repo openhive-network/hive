@@ -3,6 +3,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/exception/diagnostic_information.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -365,8 +366,23 @@ void application::shutdown() {
 
 void application::finish()
 {
-  pre_shutdown();
-  shutdown();
+  try
+  {
+    pre_shutdown();
+    shutdown();
+  }
+  catch ( const boost::exception& e )
+  {
+    std::cerr << boost::diagnostic_information(e) << "\n";
+  }
+  catch( std::exception& e )
+  {
+    std::cout << ("exception: ") << e.what() << std::endl;
+  }
+  catch(...)
+  {
+    std::cout << "application shutdown: unknown error exception." << std::endl;
+  }
 }
 
 void application::exec()
@@ -382,7 +398,7 @@ void application::exec()
   else
   {
     std::cout << ("performing shutdown on interrupt request...") << std::endl;
-    shutdown();
+    finish();
   }
 
   std::cout << ("Leaving application main loop...") << std::endl;

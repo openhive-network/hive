@@ -81,13 +81,14 @@ class p2p_plugin_impl : public graphene::net::node_delegate
 public:
 
   p2p_plugin_impl( plugins::chain::chain_plugin& c )
-    : shutdown_helper( "P2P plugin", HIVE_P2P_NUMBER_THREAD_SENSITIVE_ACTIONS ), chain( c )
+    : shutdown_helper( "P2P plugin", HIVE_P2P_NUMBER_THREAD_SENSITIVE_ACTIONS, { "HIVE_P2P_BLOCK_HANDLER", "HIVE_P2P_TRANSACTION_HANDLER" } ), chain( c )
   {
   }
   virtual ~p2p_plugin_impl()
   {
-    shutdown_helper.prepare_shutdown();
-    shutdown_helper.wait();
+    ilog("P2P plugin is closing...");
+    shutdown_helper.shutdown();
+    ilog("P2P plugin was closed...");
   }
 
   bool is_included_block(const block_id_type& block_id);
@@ -622,8 +623,13 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
 void p2p_plugin::plugin_startup()
 {
+  ilog("P2P plugin startup...");
+
   if( !my->chain.is_p2p_enabled() )
+  {
+    ilog("P2P plugin is not enabled...");
     return;
+  }
 
   my->p2p_thread.async( [this]
   {
@@ -676,13 +682,15 @@ void p2p_plugin::plugin_startup()
 
 void p2p_plugin::plugin_pre_shutdown() {
 
+  ilog("Shutting down P2P Plugin...");
+
   if( !my->chain.is_p2p_enabled() )
+  {
+    ilog("P2P plugin is not enabled...");
     return;
+  }
 
-  ilog("Shutting down P2P Plugin");
-
-  my->shutdown_helper.prepare_shutdown();
-  my->shutdown_helper.wait();
+  my->shutdown_helper.shutdown();
 
   ilog("P2P Plugin: checking handle_block and handle_transaction activity");
   my->node->close();

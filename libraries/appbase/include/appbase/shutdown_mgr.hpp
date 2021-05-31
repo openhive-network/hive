@@ -15,7 +15,9 @@ namespace hive {
     std::promise<void>        promise;
     std::shared_future<void>  future;
     std::atomic_uint          activity;
-   
+    std::string               name;
+
+    shutdown_state( const std::string& _name ) : name( _name ){}
   };
 
   class shutdown_mgr
@@ -51,6 +53,8 @@ namespace hive {
         uint32_t cnt = 0;
         uint32_t time_maximum = 300;//30 seconds
 
+        ilog("Processing of '${name}' in progress...", ("name", state.name ) );
+
         do
         {
           if( state.activity.load() != 0 )
@@ -58,26 +62,31 @@ namespace hive {
             res = state.future.wait_for( std::chrono::milliseconds(100) );
             if( res != std::future_status::ready )
             {
-              ilog("finishing: ${s}, future status: ${fs}", ("s", fStatus( res ) )("fs", std::to_string( state.future.valid() ) ) );
+              ilog("finishing: ${s}, future status: ${fs}, attempt: ${attempt} ...", ("s", fStatus( res ) )("fs", std::to_string( state.future.valid() ) )("attempt", cnt + 1) );
             }
             FC_ASSERT( ++cnt <= time_maximum, "Closing the ${name} is terminated", ( "name", name ) );
           }
           else
           {
             res = std::future_status::ready;
+            ilog("A value from a different thread is read..." );
           }
         }
         while( res != std::future_status::ready );
+
+        ilog("Processing of '${name}' was finished...", ("name", state.name ) );
       }
 
     public:
 
-      shutdown_mgr( std::string _name, size_t _nr_actions )
+      shutdown_mgr( std::string _name, size_t _nr_actions, const std::vector< std::string >& names )
         : name( _name ), running( true )
       {
+        FC_ASSERT( _nr_actions == names.size() );
+
         for( size_t i = 0; i < _nr_actions; ++i )
         {
-          shutdown_state::ptr_shutdown_state _state( new shutdown_state() );
+          shutdown_state::ptr_shutdown_state _state( new shutdown_state( "shutdown-state type: " + names[i] ) );
           _state->future = std::shared_future<void>( _state->promise.get_future() );
           _state->activity.store( 0 );
 
@@ -85,9 +94,16 @@ namespace hive {
         }
       }
 
-      void prepare_shutdown()
+      void shutdown()
       {
         running.store( false );
+
+        for( auto& state : states )
+        {
+          shutdown_state* _state = state.get();
+          FC_ASSERT( _state, "State has NULL value" );
+          wait( *_state );
+        }
       }
 
       const std::atomic_bool& get_running() const
@@ -103,19 +119,6 @@ namespace hive {
         FC_ASSERT( _state, "State has NULL value" );
 
         return *_state;
-      }
-
-      void wait()
-      {
-        if( get_running().load() )
-          return;
-
-        for( auto& state : states )
-        {
-          shutdown_state* _state = state.get();
-          FC_ASSERT( _state, "State has NULL value" );
-          wait( *_state );
-        }
       }
   };
 
