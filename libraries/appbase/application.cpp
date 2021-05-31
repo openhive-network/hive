@@ -3,13 +3,11 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/exception/diagnostic_information.hpp>
 
 #include <iostream>
 #include <fstream>
 #include <thread>
-
-// can be removed with TODO
-#include "../fc/include/fc/macros.hpp"
 
 namespace appbase {
 
@@ -33,8 +31,8 @@ using bpo::options_description;
 using bpo::variables_map;
 using std::cout;
 
-io_handler::io_handler( bool _allow_close_when_signal_is_received, final_action_type&& _final_action )
-      : allow_close_when_signal_is_received( _allow_close_when_signal_is_received ), final_action( _final_action )
+io_handler::io_handler(application& _app, bool _allow_close_when_signal_is_received, final_action_type&& _final_action )
+      : allow_close_when_signal_is_received( _allow_close_when_signal_is_received ), final_action( _final_action ), app(_app)
 {
 }
 
@@ -45,7 +43,11 @@ boost::asio::io_service& io_handler::get_io_service()
 
 void io_handler::close()
 {
-  while( lock.test_and_set( std::memory_order_acquire ) );
+  /** Since signals can be processed asynchronously, it would be possible to call this twice
+  *    concurrently while op service is stopping.
+  */
+  while( lock.test_and_set( std::memory_order_acquire ) )
+    ;
 
   if( !closed )
   {
@@ -75,7 +77,10 @@ void io_handler::close_signal()
 
 void io_handler::handle_signal( uint32_t _last_signal_code )
 {
-  set_interrupt_request( _last_signal_code );
+  last_signal_code = _last_signal_code;
+
+  if(_last_signal_code == SIGINT || _last_signal_code == SIGTERM)
+    app.generate_interrupt_request();
 
   if( allow_close_when_signal_is_received )
     close();
@@ -90,6 +95,8 @@ void io_handler::attach_signals()
 
   signals = p_signal_set( new boost::asio::signal_set( io_serv, SIGINT, SIGTERM ) );
   signals->async_wait([ this ](const boost::system::error_code& err, int signal_number ) {
+  /// Handle signal only if it was really present (it is possible to get error_code for 'Operation cancelled' together with signal_number == 0)
+  if(signal_number != 0)
     handle_signal( signal_number );
   });
 }
@@ -97,16 +104,6 @@ void io_handler::attach_signals()
 void io_handler::run()
 {
   io_serv.run();
-}
-
-void io_handler::set_interrupt_request( uint32_t _last_signal_code )
-{
-  last_signal_code = _last_signal_code;
-}
-
-bool io_handler::is_interrupt_request() const
-{
-  return last_signal_code != 0;
 }
 
 class application_impl {
@@ -122,7 +119,14 @@ class application_impl {
 };
 
 application::application()
-:my(new application_impl()), main_io_handler( true/*allow_close_when_signal_is_received*/, [ this ](){ shutdown(); } )
+: pre_shutdown_plugins(
+  []( abstract_plugin* a, abstract_plugin* b )
+  {
+    assert( a && b );
+    return a->get_pre_shutdown_order() > b->get_pre_shutdown_order();
+  }
+),
+  my(new application_impl()), main_io_handler(*this, true/*allow_close_when_signal_is_received*/, [ this ](){ finish(); } )
 {
 }
 
@@ -130,17 +134,14 @@ application::~application() { }
 
 void application::startup() {
 
-  startup_io_handler = io_handler::p_io_handler( new io_handler  ( false/*allow_close_when_signal_is_received*/,
-                                              [ this ]()
-                                              {
-                                                _is_interrupt_request = startup_io_handler->is_interrupt_request();
-                                              }
-                                            ) );
-  startup_io_handler->attach_signals();
+  std::cout << "Setting up a startup_io_handler..." << std::endl;
 
-  std::thread startup_thread = std::thread( [&]()
+  io_handler startup_io_handler(*this, false/*allow_close_when_signal_is_received*/, []() {});
+  startup_io_handler.attach_signals();
+
+  std::thread startup_thread = std::thread( [&startup_io_handler]()
   {
-    startup_io_handler->run();
+    startup_io_handler.run();
   });
 
   for (const auto& plugin : initialized_plugins)
@@ -151,7 +152,16 @@ void application::startup() {
       break;
   }
 
-  startup_io_handler->close();
+  if( !is_interrupt_request() )
+  {
+    for( const auto& plugin : initialized_plugins )
+    {
+      plugin->finalize_startup();
+    }
+  }
+
+  startup_io_handler.close();
+
   startup_thread.join();
 }
 
@@ -264,7 +274,7 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
 
       data_dir = data_dir / app_dir.str();
 
-      FC_TODO( "Remove this check for Hive release 0.20.1+" )
+      #pragma message( "TODO: Remove this check for Hive release 0.20.1+" )
       bfs::path old_dir = bfs::current_path() / "witness_node_data_dir";
       if( bfs::exists( old_dir ) )
       {
@@ -325,6 +335,18 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
   }
 }
 
+void application::pre_shutdown()
+{
+  std::cout << "Before shutting down...\n";
+
+  for( auto& plugin : pre_shutdown_plugins )
+  {
+    plugin->pre_shutdown();
+  }
+
+  pre_shutdown_plugins.clear();
+}
+
 void application::shutdown() {
 
   std::cout << "Shutting down...\n";
@@ -342,7 +364,30 @@ void application::shutdown() {
   plugins.clear();
 }
 
-void application::exec() {
+void application::finish()
+{
+  try
+  {
+    pre_shutdown();
+    shutdown();
+  }
+  catch ( const boost::exception& e )
+  {
+    std::cerr << boost::diagnostic_information(e) << "\n";
+  }
+  catch( std::exception& e )
+  {
+    std::cout << ("exception: ") << e.what() << std::endl;
+  }
+  catch(...)
+  {
+    std::cout << "application shutdown: unknown error exception." << std::endl;
+  }
+}
+
+void application::exec()
+{
+  std::cout << ("Entering application main loop...") << std::endl;
 
   if( !is_interrupt_request() )
   {
@@ -351,10 +396,16 @@ void application::exec() {
     main_io_handler.run();
   }
   else
-    shutdown();
+  {
+    std::cout << ("performing shutdown on interrupt request...") << std::endl;
+    finish();
+  }
+
+  std::cout << ("Leaving application main loop...") << std::endl;
 }
 
-void application::write_default_config(const bfs::path& cfg_file) {
+void application::write_default_config(const bfs::path& cfg_file)
+{
   if(!bfs::exists(cfg_file.parent_path()))
     bfs::create_directories(cfg_file.parent_path());
 
@@ -404,7 +455,8 @@ abstract_plugin* application::find_plugin( const string& name )const
   return itr->second.get();
 }
 
-abstract_plugin& application::get_plugin(const string& name)const {
+abstract_plugin& application::get_plugin(const string& name)const
+{
   auto ptr = find_plugin(name);
   if(!ptr)
     BOOST_THROW_EXCEPTION(std::runtime_error("unable to find plugin: " + name));
