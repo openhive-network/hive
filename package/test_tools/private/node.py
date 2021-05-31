@@ -3,10 +3,9 @@ from pathlib import Path
 import subprocess
 import time
 
-from .account import Account
-from .node_api.node_apis import Apis
-from . import logger
-from .wallet import Wallet
+from test_tools import Account, logger
+from test_tools.node_api.node_apis import Apis
+from test_tools.wallet import Wallet
 
 
 class NodeIsNotRunning(Exception):
@@ -30,11 +29,11 @@ class Node:
         self.__stderr_file = None
         self.__logger = logger.getLogger(f'{__name__}.{self.__creator}.{self.__name}')
 
-        from .node_configs.default import create_default_config
+        from test_tools.node_configs.default import create_default_config
         self.config = create_default_config()
 
     def __str__(self):
-        from .network import Network
+        from test_tools.network import Network
         return f'{self.__creator}::{self.__name}' if isinstance(self.__creator, Network) else self.__name
 
     def __get_executable_build_version(self):
@@ -92,7 +91,7 @@ class Node:
 
     def add_seed_node(self, seed_node):
         if seed_node.config.p2p_endpoint is None:
-            from .port import Port
+            from test_tools.port import Port
             seed_node.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
 
         endpoint = seed_node.config.p2p_endpoint
@@ -127,7 +126,7 @@ class Node:
         self.wait_for_block_with_number(self.__get_last_block_number() + blocks_to_wait, timeout=timeout)
 
     def wait_for_block_with_number(self, number, *, timeout=math.inf):
-        from .private.wait_for import wait_for
+        from test_tools.private.wait_for import wait_for
         wait_for(
             lambda: self.__is_block_with_number_reached(number),
             timeout=timeout,
@@ -144,12 +143,12 @@ class Node:
         return response['result']['head_block_number']
 
     def _wait_for_p2p_plugin_start(self, timeout=10):
-        from .private.wait_for import wait_for
+        from test_tools.private.wait_for import wait_for
         wait_for(self.__is_p2p_plugin_started, timeout=timeout,
                  timeout_error_message=f'Waiting too long for start of {self} p2p plugin')
 
     def _wait_for_live(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
-        from .private.wait_for import wait_for
+        from test_tools.private.wait_for import wait_for
         wait_for(self.__is_live, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} live (to start produce or receive blocks)')
 
@@ -174,11 +173,11 @@ class Node:
 
         self.__wait_for_http_listening()
 
-        from . import communication
+        from test_tools import communication
         return communication.request(endpoint, message)
 
     def __wait_for_http_listening(self, timeout=10):
-        from .private.wait_for import wait_for
+        from test_tools.private.wait_for import wait_for
         wait_for(self.__is_http_listening, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} to start listening on http port')
 
@@ -199,7 +198,7 @@ class Node:
                                     When config file is missing hived generates default config.
         """
         if not self.__executable_file_path:
-            from . import paths_to_executables
+            from test_tools import paths_to_executables
             self.__executable_file_path = paths_to_executables.get_path_of('hived')
 
         if not self.__is_test_net_build():
@@ -242,7 +241,7 @@ class Node:
             while not config_file_path.exists():
                 time.sleep(0.01)
 
-            from .node_config import NodeConfig
+            from test_tools.node_config import NodeConfig
             self.config = NodeConfig()
             self.config.load_from_file(config_file_path)
 
@@ -259,7 +258,7 @@ class Node:
         self.__logger.info(message)
 
     def __set_unset_endpoints(self):
-        from .port import Port
+        from test_tools.port import Port
 
         if self.config.p2p_endpoint is None:
             self.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'

@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from .network import Network
-from .node import Node
 from .private.children_names import ChildrenNames
+from .private.node import Node
 from .private.nodes_creator import NodesCreator
 
 
