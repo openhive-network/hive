@@ -38,13 +38,6 @@ class Network(NodesCreator):
     def get_directory(self):
         return self._directory / self.name
 
-    def add_node(self, node_name):
-        self.logger.warning(
-            f'Method {self.add_node.__name__} is deprecated and will be removed in future version. '
-            f'Use {self.create_node.__name__} instead.'
-        )
-        return self.create_node(node_name)
-
     def connect_nodes(self):
         if len(self._nodes) < 2:
             return
