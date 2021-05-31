@@ -1,9 +1,9 @@
 from pathlib import Path
 from shutil import rmtree
 
-from .children_names import ChildrenNames
 from .node import Node
 from .wallet import Wallet
+from .private.children_names import ChildrenNames
 from .private.nodes_creator import NodesCreator
 from . import logger
 

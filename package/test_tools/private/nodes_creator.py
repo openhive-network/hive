@@ -2,8 +2,8 @@ from pathlib import Path
 import warnings
 
 from test_tools import Account
-from test_tools.children_names import ChildrenNames
 from test_tools.node import Node
+from test_tools.private.children_names import ChildrenNames
 
 
 class NodesCreator:

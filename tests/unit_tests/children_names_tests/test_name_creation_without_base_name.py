@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools.children_names import NameBaseNotSet, ChildrenNames
+from test_tools.private.children_names import NameBaseNotSet, ChildrenNames
 
 
 @pytest.fixture
