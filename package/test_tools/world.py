@@ -3,16 +3,18 @@ from pathlib import Path
 from .children_names import ChildrenNames
 from .network import Network
 from .node import Node
+from .private.nodes_creator import NodesCreator
 
 
-class World:
+class World(NodesCreator):
     def __init__(self):
-        self.children_names = ChildrenNames()
+        super().__init__()
+
+        self._children_names = ChildrenNames()
         self.__networks = []
-        self.__nodes = []
         self.__wallets = []
         self.__name = 'World'
-        self.__directory = Path() / f'GeneratedIn{self}'
+        self._directory = Path() / f'GeneratedIn{self}'
 
     def __str__(self):
         return self.__name
@@ -25,7 +27,7 @@ class World:
             if wallet.is_running():
                 wallet.close()
 
-        for node in self.__nodes:
+        for node in self._nodes:
             if node.is_running():
                 node.close()
 
@@ -35,38 +37,20 @@ class World:
 
     def create_network(self, name=None):
         if name is not None:
-            self.children_names.register_name(name)
+            self._children_names.register_name(name)
         else:
-            name = self.children_names.create_name('Network')
+            name = self._children_names.create_name('Network')
 
         network = Network(name)
-        network.set_directory(self.__directory)
+        network.set_directory(self._directory)
         self.__networks.append(network)
         return network
 
     def networks(self):
         return self.__networks
 
-    def create_node(self, name=None):
-        return self.__create_node(name, configure_for_block_production=False)
-
-    def create_init_node(self, name='InitNode'):
-        """Creates node which is ready to produce blocks"""
-        return self.__create_node(name, configure_for_block_production=True)
-
-    def __create_node(self, name, configure_for_block_production):
-        if name is not None:
-            self.children_names.register_name(name)
-        else:
-            name = self.children_names.create_name('Node')
-
-        node = Node(self, name, configure_for_block_production=configure_for_block_production)
-        node.set_directory(self.__directory)
-        self.__nodes.append(node)
-        return node
-
     def attach_wallet_to(self, node, timeout):
-        name = self.children_names.create_name(f'{node}Wallet')
+        name = self._children_names.create_name(f'{node}Wallet')
 
         from .wallet import Wallet
         wallet = Wallet(name, self, node.directory.parent)
@@ -79,7 +63,7 @@ class World:
     def nodes(self):
         """Returns list of all nodes in the world (including nodes in networks)"""
 
-        nodes = self.__nodes.copy()
+        nodes = self._nodes.copy()
         for network in self.__networks:
-            nodes += network.nodes
+            nodes += network.nodes()
         return nodes

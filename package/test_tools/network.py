@@ -4,15 +4,17 @@ from shutil import rmtree
 from .children_names import ChildrenNames
 from .node import Node
 from .wallet import Wallet
+from .private.nodes_creator import NodesCreator
 from . import logger
 
 
-class Network:
+class Network(NodesCreator):
     def __init__(self, name):
+        super().__init__()
+
         self.name = name
-        self.directory = Path('.').absolute()
-        self.children_names = ChildrenNames()
-        self.nodes = []
+        self._directory = Path('.').absolute()
+        self._children_names = ChildrenNames()
         self.__wallets = []
         self.is_running = False
         self.disconnected_networks = []
@@ -25,7 +27,7 @@ class Network:
         return self.name
 
     def set_directory(self, directory):
-        self.directory = Path(directory).absolute()
+        self._directory = Path(directory).absolute()
 
     def set_hived_executable_file_path(self, path):
         self.hived_executable_file_path = Path(path).absolute()
@@ -34,7 +36,7 @@ class Network:
         self.wallet_executable_file_path = Path(path).absolute()
 
     def get_directory(self):
-        return self.directory / self.name
+        return self._directory / self.name
 
     def add_node(self, node_name):
         self.logger.warning(
@@ -43,33 +45,16 @@ class Network:
         )
         return self.create_node(node_name)
 
-    def create_node(self, node_name=None):
-        return self.__create_node(node_name, configure_for_block_production=False)
-
-    def create_init_node(self, node_name='InitNode'):
-        """Creates node which is ready to produce blocks"""
-        return self.__create_node(node_name, configure_for_block_production=True)
-
-    def __create_node(self, node_name, configure_for_block_production):
-        if node_name is not None:
-            self.children_names.register_name(node_name)
-        else:
-            node_name = self.children_names.create_name('Node')
-
-        node = Node(self, node_name, configure_for_block_production=configure_for_block_production)
-        self.nodes.append(node)
-        return node
-
     def connect_nodes(self):
-        if len(self.nodes) < 2:
+        if len(self._nodes) < 2:
             return
 
         from .port import Port
-        seed_node = self.nodes[0]
+        seed_node = self._nodes[0]
         if seed_node.config.p2p_endpoint is None:
             seed_node.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
 
-        for node in self.nodes[1:]:
+        for node in self._nodes[1:]:
             node.add_seed_node(seed_node)
 
     def run(self, wait_for_live=True):
@@ -80,7 +65,7 @@ class Network:
         directory.mkdir(parents=True)
 
         self.connect_nodes()
-        for node in self.nodes:
+        for node in self._nodes:
             node.set_directory(self.get_directory())
             node.set_executable_file_path(self.hived_executable_file_path)
             node.run(wait_for_live=False)
@@ -92,7 +77,7 @@ class Network:
             self.wait_for_live_on_all_nodes()
 
     def close(self):
-        for node in self.nodes:
+        for node in self._nodes:
             if node.is_running():
                 node.close()
 
@@ -101,7 +86,7 @@ class Network:
                 wallet.close()
 
     def attach_wallet_to(self, node, timeout):
-        name = self.children_names.create_name(f'{node.get_name()}Wallet')
+        name = self._children_names.create_name(f'{node.get_name()}Wallet')
 
         wallet = Wallet(name, self, self.get_directory())
         wallet.connect_to(node)
@@ -111,14 +96,14 @@ class Network:
         return wallet
 
     def connect_with(self, network):
-        if len(self.nodes) == 0 or len(network.nodes) == 0:
+        if len(self._nodes) == 0 or len(network._nodes) == 0:
             raise Exception('Unable to connect empty network')
 
         if not self.is_running:
-            if any([node.is_able_to_produce_blocks() for node in self.nodes]):
-                network.nodes[0].add_seed_node(self.nodes[0])
+            if any([node.is_able_to_produce_blocks() for node in self._nodes]):
+                network._nodes[0].add_seed_node(self._nodes[0])
             else:
-                self.nodes[0].add_seed_node(network.nodes[0])
+                self._nodes[0].add_seed_node(network._nodes[0])
             return
 
         if network not in self.disconnected_networks:
@@ -132,7 +117,7 @@ class Network:
         network.disconnected_networks.remove(self)
 
     def disconnect_from(self, network):
-        if len(self.nodes) == 0 or len(network.nodes) == 0:
+        if len(self._nodes) == 0 or len(network._nodes) == 0:
             raise Exception('Unable to disconnect empty network')
 
         self.disconnected_networks.append(network)
@@ -142,14 +127,14 @@ class Network:
         network.allow_for_connections_only_between_nodes_in_network()
 
     def allow_for_connections_only_between_nodes_in_network(self):
-        for node_number in range(len(self.nodes)):
-            node = self.nodes[node_number]
-            node.set_allowed_nodes(self.nodes[:node_number] + self.nodes[node_number+1:])
+        for node_number in range(len(self._nodes)):
+            node = self._nodes[node_number]
+            node.set_allowed_nodes(self._nodes[:node_number] + self._nodes[node_number+1:])
 
     def allow_for_connections_with_anyone(self):
-        for node in self.nodes:
+        for node in self._nodes:
             node.set_allowed_nodes([])
 
     def wait_for_live_on_all_nodes(self):
-        for node in self.nodes:
+        for node in self._nodes:
             node._wait_for_live()
