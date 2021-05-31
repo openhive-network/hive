@@ -36,9 +36,9 @@ class Node:
         if configure_for_block_production:
             self.config.enable_stale_production = True
             self.config.required_participation = 0
-            self.__register_witness('initminer')
+            self._register_witness('initminer')
 
-    def __register_witness(self, name):
+    def _register_witness(self, name):
         account = Account(name)
         self.config.witness.append(account.name)
         self.config.private_key.append(account.private_key)
