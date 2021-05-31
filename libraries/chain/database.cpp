@@ -417,7 +417,8 @@ uint32_t database::reindex( const open_args& args )
 
 void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks)
 {
-  close();
+  if( get_is_open() )
+    close();
   chainbase::database::wipe( shared_mem_dir );
   if( include_blocks )
   {

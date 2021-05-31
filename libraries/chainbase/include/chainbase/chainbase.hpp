@@ -1176,6 +1176,10 @@ namespace chainbase {
       const abstract_index_cntr_t& get_abstract_index_cntr() const
         { return _index_list; }
 
+    protected:
+      bool get_is_open() const
+        { return _is_open; }
+
     private:
       template<typename MultiIndexType>
       void add_index_helper() {
