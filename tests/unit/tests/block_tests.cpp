@@ -911,5 +911,59 @@ BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
+{
+  try {
+    // this is required to reproduce issue with setting last irreversible block
+    // before block number HIVE_START_MINER_VOTING_BLOCK, if not then other test should be added
+    BOOST_REQUIRE( HIVE_MAX_WITNESSES + 1 < HIVE_START_MINER_VOTING_BLOCK );
+
+    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+    database db;
+    witness::block_producer bp( db );
+    db._log_hardforks = false;
+    open_test_database( db, data_dir.path() );
+
+    auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
+    {
+      uint32_t head_block_to_check = HIVE_MAX_WITNESSES - 3;
+      for( uint32_t i = 0; i < head_block_to_check; ++i )
+        bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+
+      db.set_last_irreversible_block_num(db.head_block_num());
+      bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+    }
+
+    {
+      uint32_t head_block_to_check = (HIVE_MAX_WITNESSES + HIVE_START_MINER_VOTING_BLOCK) / 2;
+      for( uint32_t i = db.head_block_num(); i < head_block_to_check; ++i )
+        bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+
+      db.set_last_irreversible_block_num(db.head_block_num());
+      bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+    }
+
+    {
+      uint32_t head_block_to_check = HIVE_START_MINER_VOTING_BLOCK + 3;
+      for( uint32_t i = db.head_block_num(); i < head_block_to_check; ++i )
+        bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+
+      db.set_last_irreversible_block_num(db.head_block_num());
+      bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+    }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( safe_closing_database )
+{
+  try {
+    database db;
+    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+    db.wipe( data_dir.path(), data_dir.path(), true );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
