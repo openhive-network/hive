@@ -1,6 +1,7 @@
 from pathlib import Path
 import warnings
 
+from test_tools import Account
 from test_tools.children_names import ChildrenNames
 from test_tools.node import Node
 
@@ -12,14 +13,17 @@ class NodesCreator:
         self._nodes = []
 
     def create_node(self, name=None):
-        return self.__create_node(name, configure_for_block_production=False)
+        return self.__create_node(name)
 
     def create_init_node(self, name='InitNode'):
         """Creates node which is ready to produce blocks"""
-        return self.__create_node(name, configure_for_block_production=True)
+        node = self.create_witness_node(name, witnesses=['initminer'])
+        node.config.enable_stale_production = True
+        node.config.required_participation = 0
+        return node
 
     def create_witness_node(self, name='WitnessNode', *, witnesses=None):
-        node = self.__create_node(name, configure_for_block_production=False)
+        node = self.__create_node(name)
         assert 'witness' in node.config.plugin
 
         if witnesses is None:
@@ -36,20 +40,26 @@ class NodesCreator:
             witnesses = []
 
         for witness in witnesses:
-            node._register_witness(witness)
+            self.__register_witness(node, witness)
 
         return node
 
-    def __create_node(self, name, configure_for_block_production):
+    def __create_node(self, name):
         if name is not None:
             self._children_names.register_name(name)
         else:
             name = self._children_names.create_name('Node')
 
-        node = Node(self, name, configure_for_block_production=configure_for_block_production)
+        node = Node(self, name)
         node.set_directory(self._directory)
         self._nodes.append(node)
         return node
+
+    @staticmethod
+    def __register_witness(node, witness_name):
+        witness = Account(witness_name)
+        node.config.witness.append(witness.name)
+        node.config.private_key.append(witness.private_key)
 
     def nodes(self):
         return self._nodes.copy()

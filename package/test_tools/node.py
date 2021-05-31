@@ -16,7 +16,7 @@ class NodeIsNotRunning(Exception):
 class Node:
     __DEFAULT_WAIT_FOR_LIVE_TIMEOUT = 20
 
-    def __init__(self, creator, name, directory=None, configure_for_block_production=False):
+    def __init__(self, creator, name, directory=None):
         self.api = Apis(self)
 
         import weakref
@@ -32,16 +32,6 @@ class Node:
 
         from .node_configs.default import create_default_config
         self.config = create_default_config()
-
-        if configure_for_block_production:
-            self.config.enable_stale_production = True
-            self.config.required_participation = 0
-            self._register_witness('initminer')
-
-    def _register_witness(self, name):
-        account = Account(name)
-        self.config.witness.append(account.name)
-        self.config.private_key.append(account.private_key)
 
     def __str__(self):
         from .network import Network
