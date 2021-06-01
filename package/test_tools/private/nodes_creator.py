@@ -22,8 +22,8 @@ class NodesCreator:
         node.config.required_participation = 0
         return node
 
-    def create_witness_node(self, name='WitnessNode', *, witnesses=None):
-        node = self.__create_node(name)
+    def create_witness_node(self, name=None, *, witnesses=None):
+        node = self.__create_node(name, default_name='WitnessNode')
         assert 'witness' in node.config.plugin
 
         if witnesses is None:
@@ -44,11 +44,11 @@ class NodesCreator:
 
         return node
 
-    def __create_node(self, name):
+    def __create_node(self, name, *, default_name='Node'):
         if name is not None:
             self._children_names.register_name(name)
         else:
-            name = self._children_names.create_name('Node')
+            name = self._children_names.create_name(default_name)
 
         node = Node(self, name)
         node.set_directory(self._directory)
