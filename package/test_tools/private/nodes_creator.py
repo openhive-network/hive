@@ -44,6 +44,12 @@ class NodesCreator:
 
         return node
 
+    def create_api_node(self, name=None):
+        node = self.__create_node(name, default_name='ApiNode')
+        self.__enable_all_api_plugins(node)
+        node.config.plugin.remove('witness')
+        return node
+
     def __create_node(self, name, *, default_name='Node'):
         if name is not None:
             self._children_names.register_name(name)
@@ -60,6 +66,14 @@ class NodesCreator:
         witness = Account(witness_name)
         node.config.witness.append(witness.name)
         node.config.private_key.append(witness.private_key)
+
+    @staticmethod
+    def __enable_all_api_plugins(node):
+        node.config.plugin.append('account_history_rocksdb')  # Required by account_history_api
+
+        from test_tools.node_config_entry_types import Plugin
+        all_api_plugins = [plugin for plugin in Plugin.SUPPORTED_PLUGINS if plugin.endswith('_api')]
+        node.config.plugin.extend([plugin for plugin in all_api_plugins if plugin not in node.config.plugin])
 
     def nodes(self):
         return self._nodes.copy()
