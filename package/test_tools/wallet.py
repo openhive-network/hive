@@ -490,8 +490,8 @@ class Wallet:
 
         timeout -= wait_for(
             self.connected_node._is_ws_listening,
-            timeout,
-            f'{self} waited too long for {self.connected_node} to start listening on ws port'
+            timeout=timeout,
+            timeout_error_message=f'{self} waited too long for {self.connected_node} to start listening on ws port'
         )
 
         self.process = subprocess.Popen(
@@ -509,12 +509,17 @@ class Wallet:
             stderr=self.stderr_file
         )
 
-        timeout -= wait_for(self.__is_ready, timeout, f'{self} was not ready on time.', poll_time=0.1)
+        timeout -= wait_for(
+            self.__is_ready,
+            timeout=timeout,
+            timeout_error_message=f'{self} was not ready on time.',
+            poll_time=0.1
+        )
 
         timeout -= wait_for(
             self.__is_communication_established,
-            timeout,
-            f'Problem with starting wallet occurred. See {self.get_stderr_file_path()} for more details.'
+            timeout=timeout,
+            timeout_error_message=f'Problem with starting wallet. See {self.get_stderr_file_path()} for more details.'
         )
 
         password = 'password'

@@ -153,11 +153,13 @@ class Node:
 
     def _wait_for_p2p_plugin_start(self, timeout=10):
         from .private.wait_for import wait_for
-        wait_for(self.__is_p2p_plugin_started, timeout, f'Waiting too long for start of {self} p2p plugin')
+        wait_for(self.__is_p2p_plugin_started, timeout=timeout,
+                 timeout_error_message=f'Waiting too long for start of {self} p2p plugin')
 
     def _wait_for_live(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
         from .private.wait_for import wait_for
-        wait_for(self.__is_live, timeout, f'Waiting too long for {self} live (to start produce or receive blocks)')
+        wait_for(self.__is_live, timeout=timeout,
+                 timeout_error_message=f'Waiting too long for {self} live (to start produce or receive blocks)')
 
     def _send(self, method, params=None, jsonrpc='2.0', id=1):
         message = {
@@ -185,7 +187,8 @@ class Node:
 
     def __wait_for_http_listening(self, timeout=10):
         from .private.wait_for import wait_for
-        wait_for(self.__is_http_listening, timeout, f'Waiting too long for {self} to start listening on http port')
+        wait_for(self.__is_http_listening, timeout=timeout,
+                 timeout_error_message=f'Waiting too long for {self} to start listening on http port')
 
     def get_id(self):
         response = self.api.network_node.get_info()

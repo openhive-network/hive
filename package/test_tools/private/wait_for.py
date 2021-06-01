@@ -1,7 +1,7 @@
 import math
 import time
 
-def wait_for(predicate, timeout=math.inf, timeout_error_message=None, poll_time=1.0):
+def wait_for(predicate, *, timeout=math.inf, timeout_error_message=None, poll_time=1.0):
     assert timeout >= 0
 
     already_waited = 0
