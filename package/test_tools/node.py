@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 import subprocess
 import time
@@ -131,21 +132,22 @@ class Node:
 
         return False
 
-    def wait_number_of_blocks(self, blocks_to_wait):
+    def wait_number_of_blocks(self, blocks_to_wait, *, timeout=math.inf):
         assert blocks_to_wait > 0
-        self.wait_for_block_with_number(self.__get_last_block_number() + blocks_to_wait)
+        self.wait_for_block_with_number(self.__get_last_block_number() + blocks_to_wait, timeout=timeout)
 
-    def wait_for_block_with_number(self, number):
-        last_printed = None
+    def wait_for_block_with_number(self, number, *, timeout=math.inf):
+        from .private.wait_for import wait_for
+        wait_for(
+            lambda: self.__is_block_with_number_reached(number),
+            timeout=timeout,
+            timeout_error_message=f'Waiting too long for block {number}',
+            poll_time=2.0
+        )
 
+    def __is_block_with_number_reached(self, number):
         last = self.__get_last_block_number()
-        while last < number:
-            if last_printed != last:
-                self.__logger.debug(f'Waiting for block with number {number} (last: {last})')
-                last_printed = last
-
-            time.sleep(2)
-            last = self.__get_last_block_number()
+        return last >= number
 
     def __get_last_block_number(self):
         response = self.api.database.get_dynamic_global_properties()
