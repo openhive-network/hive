@@ -8,7 +8,7 @@ class Plugin(Untouched):
         'condenser_api', 'database_api', 'debug_node', 'debug_node_api', 'follow', 'follow_api', 'json_rpc',
         'market_history', 'market_history_api', 'network_broadcast_api', 'network_node_api', 'p2p', 'rc', 'rc_api',
         'reputation', 'reputation_api', 'rewards_api', 'state_snapshot', 'stats_export', 'statsd', 'tags',
-        'tags_api', 'test_api', 'transaction_status', 'transaction_status_api', 'webserver', 'witness',
+        'tags_api', 'transaction_status', 'transaction_status_api', 'webserver', 'witness',
     ]
 
     @classmethod
