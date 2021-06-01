@@ -52,6 +52,21 @@ Use your IDE's code completion to get hints for wallet api calls like below. IDE
 
 ![Wallet api code completion example](./documentation/wallet_code_completion.png)
 
+### Node types
+Creation and initialization of nodes are simplified by predefined node types. Node types hide a lot of configuration stage and make tests more readable, because node purpose is directly expressed in code ([read more](documentation/node_types.md)). Following node types are supported:
+- init node,
+- witness node,
+- api node,
+- raw node.
+
+This is how network consisting of init, witness and api node can be defined:
+```python
+network = world.create_network()
+init_node = network.create_init_node()
+witness_node = network.create_witness_node(witnesses=[f'w{i}' for i in range(10)])
+api_node = network.create_api_node()
+```
+
 ### Node configuration
 Node has `config` member which allow for editing _hived_ _config.ini_ file. You can configure node in following way:
 ```python
