@@ -12,6 +12,6 @@ def test_init_node_startup():
 
 def test_startup_timeout():
     with World() as world:
-        node = world.create_node()
+        node = world.create_witness_node(witnesses=[])
         with pytest.raises(TimeoutError):
             node.run(timeout=2)

@@ -15,7 +15,7 @@ def test_if_all_nodes_in_network_are_closed():
 
         network.create_init_node()
         for _ in range(3):
-            network.create_node()
+            network.create_api_node()
 
         network.run()
 

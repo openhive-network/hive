@@ -6,7 +6,7 @@ from test_tools.node_configs.default import create_default_config
 
 def generate_default_config():
     with World() as world:
-        node = world.create_node()
+        node = world.create_raw_node()
         node.run(use_existing_config=True, wait_for_live=False)
 
     from shutil import rmtree
