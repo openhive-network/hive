@@ -1,4 +1,5 @@
 from test_tools import Account, logger, World
+import random
 
 
 def count_ops_by_type(node, op_type: str, start: int, limit: int = 50):
@@ -29,18 +30,26 @@ def test_account_history_duplicates():
         alpha_net = world.create_network('Alpha')
         init_node = alpha_net.create_init_node()
         alpha_node = alpha_net.create_node()
+        alpha_net.create_node()
+        alpha_net.create_node()
+        alpha_net.create_node()
 
         # Create second network
         beta_net = world.create_network('Beta')
         beta_node = beta_net.create_node()
+        beta_net.create_node()
+        beta_net.create_node()
+        beta_net.create_node()
         api_node = beta_net.create_node()
 
         # Create witnesses
         for name in alpha_witness_names:
-            alpha_node.config.witness.append(name)
+            node = random.choice(alpha_net.nodes)
+            node.config.witness.append(name)
 
         for name in beta_witness_names:
-            beta_node.config.witness.append(name)
+            node = random.choice(beta_net.nodes)
+            node.config.witness.append(name)
 
         # Prepare config
         for node in alpha_net.nodes + beta_net.nodes:
@@ -83,12 +92,11 @@ def test_account_history_duplicates():
                     {"account_creation_fee": "3.000 TESTS", "maximum_block_size": 65536, "sbd_interest_rate": 0}
                 )
 
-
         logger.info('Wait 21 blocks to schedule newly created witnesses')
         init_node.wait_number_of_blocks(21)
 
         logger.info("Witness state after voting")
-        response = node.api.database.list_witnesses(start=0, limit=100, order='by_name')
+        response = api_node.api.database.list_witnesses(start=0, limit=100, order='by_name')
         active_witnesses = response["result"]["witnesses"]
         active_witnesses_names = [witness["owner"] for witness in active_witnesses]
         logger.info(active_witnesses_names)
