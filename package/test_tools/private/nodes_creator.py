@@ -34,7 +34,7 @@ class NodesCreator:
         return node
 
     def create_witness_node(self, name=None, *, witnesses=None):
-        node = self.create_raw_node(name, default_name='WitnessNode')
+        node = self.__create_node_preconfigured_for_tests(name, default_name='WitnessNode')
         assert 'witness' in node.config.plugin
 
         if witnesses is None:
@@ -56,9 +56,14 @@ class NodesCreator:
         return node
 
     def create_api_node(self, name=None):
-        node = self.create_raw_node(name, default_name='ApiNode')
-        self.__enable_all_api_plugins(node)
+        node = self.__create_node_preconfigured_for_tests(name, default_name='ApiNode')
         node.config.plugin.remove('witness')
+        return node
+
+    def __create_node_preconfigured_for_tests(self, name, *, default_name):
+        node = self.create_raw_node(name, default_name=default_name)
+        self.__enable_all_api_plugins(node)
+        node.config.shared_file_size = '128M'
         return node
 
     def create_raw_node(self, name=None, *, default_name='RawNode'):
