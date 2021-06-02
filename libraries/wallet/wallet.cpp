@@ -624,13 +624,35 @@ public:
 
     auto approving_account_objects = _remote_api->get_accounts( v_approving_account_names );
 
-    /// TODO: recursively check one layer deeper in the authority tree for keys
+    FC_ASSERT( approving_account_objects.size() == v_approving_account_names.size(), "",
+      ("aco.size:", approving_account_objects.size())("acn",v_approving_account_names.size()) );
 
-    FC_ASSERT( approving_account_objects.size() == v_approving_account_names.size(), "", ("aco.size:", approving_account_objects.size())("acn",v_approving_account_names.size()) );
+    /// recursively check one layer deeper in the authority tree for keys
+    vector< account_name_type > v_approving_account_names_layer_deeper;
+    for(const auto& acct : approving_account_objects)
+    {
+      for(const auto& active_auth : acct.active.account_auths)
+        v_approving_account_names_layer_deeper.push_back(active_auth.first);
+
+      for(const auto& owner_auth : acct.owner.account_auths)
+        v_approving_account_names_layer_deeper.push_back(owner_auth.first);
+
+      for(const auto& posting_auth : acct.posting.account_auths)
+        v_approving_account_names_layer_deeper.push_back(posting_auth.first);
+    }
+
+    auto approving_account_objects_layer_deeper = _remote_api->get_accounts( v_approving_account_names_layer_deeper );
+
+    FC_ASSERT( approving_account_objects_layer_deeper.size() == v_approving_account_names_layer_deeper.size(), "",
+      ("aco.size:", approving_account_objects_layer_deeper.size())("acn",v_approving_account_names_layer_deeper.size()) );
+
+    auto all_approving_account_objects = approving_account_objects;
+    for( const auto& acct : approving_account_objects_layer_deeper )
+      all_approving_account_objects.push_back(acct);
 
     flat_map< string, condenser_api::api_account_object > approving_account_lut;
     size_t i = 0;
-    for( const auto& approving_acct : approving_account_objects )
+    for( const auto& approving_acct : all_approving_account_objects )
     {
       approving_account_lut[ approving_acct.name ] =  approving_acct;
       i++;
@@ -645,56 +667,68 @@ public:
       }
       else
       {
-        elog( "Tried to access authority for account ${a}.", ("a", name) );
-        elog( "Is it possible you are using an account authority? Signing with an account authority is currently not supported." );
+        elog( "Tried to access authority for account ${a} but not found in lut.", ("a", name) );
       }
 
       return result;
     };
 
     flat_set<public_key_type> approving_key_set;
-    for( account_name_type& acct_name : req_active_approvals )
+    auto collect_approving_keys = [&](const account_name_type& acct_name, authority_type type)
+      -> fc::optional< const condenser_api::api_account_object* >
     {
       const auto it = approving_account_lut.find( acct_name );
-      if( it == approving_account_lut.end() )
-        continue;
-      const condenser_api::api_account_object& acct = it->second;
-      vector<public_key_type> v_approving_keys = acct.active.get_keys();
-      wdump((v_approving_keys));
-      for( const public_key_type& approving_key : v_approving_keys )
+      fc::optional< const condenser_api::api_account_object* > acct;
+      if( it != approving_account_lut.end() )
       {
-        wdump((approving_key));
-        approving_key_set.insert( approving_key );
+        acct = &(it->second);
+        vector<public_key_type> v_approving_keys;
+        switch(type)
+        {
+          case owner:
+            v_approving_keys = (*acct)->owner.get_keys();
+            break;
+          case active:
+            v_approving_keys = (*acct)->active.get_keys();
+            break;
+          case posting:
+            v_approving_keys = (*acct)->posting.get_keys();
+            break;
+          default:
+            FC_ASSERT( false, "Unknown authority type" );
+        }
+        wdump((v_approving_keys));
+        for( const public_key_type& approving_key : v_approving_keys )
+        {
+          wdump((approving_key));
+          approving_key_set.insert( approving_key );
+        }
       }
+      return acct;
+    };
+
+    for( account_name_type& acct_name : req_active_approvals )
+    {
+      fc::optional< const condenser_api::api_account_object* > acct = collect_approving_keys(acct_name, active);
+      if( acct.valid() )
+        for( const auto& kv : (*acct)->active.account_auths )
+          collect_approving_keys(kv.first, active);
     }
 
     for( account_name_type& acct_name : req_posting_approvals )
     {
-      const auto it = approving_account_lut.find( acct_name );
-      if( it == approving_account_lut.end() )
-        continue;
-      const condenser_api::api_account_object& acct = it->second;
-      vector<public_key_type> v_approving_keys = acct.posting.get_keys();
-      wdump((v_approving_keys));
-      for( const public_key_type& approving_key : v_approving_keys )
-      {
-        wdump((approving_key));
-        approving_key_set.insert( approving_key );
-      }
+      fc::optional< const condenser_api::api_account_object* > acct = collect_approving_keys(acct_name, posting);
+      if( acct.valid() )
+        for( const auto& kv : (*acct)->posting.account_auths )
+          collect_approving_keys(kv.first, posting);
     }
 
     for( const account_name_type& acct_name : req_owner_approvals )
     {
-      const auto it = approving_account_lut.find( acct_name );
-      if( it == approving_account_lut.end() )
-        continue;
-      const condenser_api::api_account_object& acct = it->second;
-      vector<public_key_type> v_approving_keys = acct.owner.get_keys();
-      for( const public_key_type& approving_key : v_approving_keys )
-      {
-        wdump((approving_key));
-        approving_key_set.insert( approving_key );
-      }
+      fc::optional< const condenser_api::api_account_object* > acct = collect_approving_keys(acct_name, owner);
+      if( acct.valid() )
+        for( const auto& kv : (*acct)->owner.account_auths )
+          collect_approving_keys(kv.first, owner);
     }
     for( const authority& a : other_auths )
     {
