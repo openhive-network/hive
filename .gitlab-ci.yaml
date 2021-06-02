@@ -224,7 +224,7 @@ last_irreversible_block_tests:
   script:
     - pip3 install pytest
     - cd tests/functional/python_tests/last_irreversible_block_tests
-    - pytest
+    - pytest -s
   tags:
     - public-runner-docker
 

@@ -3,8 +3,6 @@ import requests
 import json
 import time
 
-# we stay delayed several blocks from last_irreversible_block (else this issue would not reproduce)
-DELAY = 30
 
 def get_lib(url):
     properties_query_data = {
@@ -47,7 +45,7 @@ def get_ops(url, block_num):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('url', metavar='https://api.hive.blog', nargs=1, type=str, help="endpoint protocol://ip:port")
+    parser.add_argument('url', metavar='add', nargs=1, type=str, help="endpoint protocol://ip:port")
     
     args = parser.parse_args()
 
@@ -61,15 +59,14 @@ if __name__ == "__main__":
     while True:
         while True:
             last_irreversible_block = get_lib(url)
-            #print("last_irreversible_block: " + str(last_irreversible_block))
+            print("last_irreversible_block: " + str(last_irreversible_block))
 
             if last_irreversible_block == scanned_until:
                 time.sleep(1)
             else:
                 break
-        print(f"last_irreversible_block: {last_irreversible_block}")
 
-        for block_num in range(scanned_until-DELAY, last_irreversible_block-DELAY): 
+        for block_num in range(scanned_until+1, last_irreversible_block+1): 
             ops = get_ops(url, block_num)
 
             duplicates_count = 0
@@ -79,7 +76,7 @@ if __name__ == "__main__":
                     op2 = ops[j]
                     if op1==op2:
                         duplicates_count += 1
-                        print(f"FOUND DUPLICATES IN BLOCK {block}")
+                        print(f"FOUND DUPLICATES IN BLOCK {block_num}")
                         print(op1)
                         print(op2)
 
