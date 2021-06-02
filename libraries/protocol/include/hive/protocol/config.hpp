@@ -60,7 +60,15 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_START_MINER_VOTING_BLOCK         30
 
+#define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS (60*60*24*1) /// 1 day
+#define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       (HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS)/30  /// We want to have at most 30 entries in the account's delayed voting collection (similary to mainnet)
+
+
 #else // IS LIVE HIVE NETWORK
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///                               LIVE HIVE NETWORK (MainNet)                                   ///
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 25, 0) )
 
@@ -99,6 +107,10 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_GLOBAL_REMOVE_THRESHOLD          200
 
 #define HIVE_START_MINER_VOTING_BLOCK         (HIVE_BLOCKS_PER_DAY * 30)
+
+#define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS (60*60*24*30) // 30 days
+#define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       (60*60*24*1)  // 1 day
+
 
 #endif
 
@@ -157,9 +169,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MIN_VOTE_INTERVAL_SEC            3
 #define HIVE_VOTE_DUST_THRESHOLD              (50000000)
 #define HIVE_DOWNVOTE_POOL_PERCENT_HF21       (25*HIVE_1_PERCENT)
-
-#define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS (60*60*24*30) // 30 days
-#define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       (60*60*24*1)  // 1 day
 
 #define HIVE_MIN_ROOT_COMMENT_INTERVAL        (fc::seconds(60*5)) // 5 minutes
 #define HIVE_MIN_REPLY_INTERVAL               (fc::seconds(20)) // 20 seconds
