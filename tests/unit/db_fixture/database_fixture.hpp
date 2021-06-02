@@ -257,7 +257,9 @@ struct database_fixture {
     */
   void generate_blocks(fc::time_point_sec timestamp, bool miss_intermediate_blocks = true);
 
+  void generate_seconds_blocks( uint32_t seconds, bool skip_interm_blocks = true );
   void generate_days_blocks( uint32_t days, bool skip_interm_blocks = true );
+
   fc::string get_current_time_iso_string() const;
 
   const account_object& account_create(
@@ -420,7 +422,7 @@ struct sps_proposal_database_fixture : public virtual clean_database_fixture
 
   int64_t create_proposal(   std::string creator, std::string receiver,
                     time_point_sec start_date, time_point_sec end_date,
-                    asset daily_pay, const fc::ecc::private_key& key );
+                    asset daily_pay, const fc::ecc::private_key& key, bool with_block_generation = true );
 
   void vote_proposal( std::string voter, const std::vector< int64_t >& id_proposals, bool approve, const fc::ecc::private_key& key );
 

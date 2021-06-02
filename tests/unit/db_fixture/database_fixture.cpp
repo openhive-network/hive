@@ -326,11 +326,16 @@ void database_fixture::generate_blocks(fc::time_point_sec timestamp, bool miss_i
   BOOST_REQUIRE( ( db->head_block_time() - timestamp ).to_seconds() < HIVE_BLOCK_INTERVAL );
 }
 
-void database_fixture::generate_days_blocks( uint32_t days, bool skip_interm_blocks )
+void database_fixture::generate_seconds_blocks( uint32_t seconds, bool skip_interm_blocks )
 {
   fc::time_point_sec timestamp = db->head_block_time();
-  timestamp += fc::days(days);
+  timestamp += fc::seconds(seconds);
   generate_blocks( timestamp, skip_interm_blocks );
+}
+
+void database_fixture::generate_days_blocks( uint32_t days, bool skip_interm_blocks )
+{
+  generate_seconds_blocks( days * 24 * 3600, skip_interm_blocks );
 }
 
 fc::string database_fixture::get_current_time_iso_string() const
@@ -1070,7 +1075,7 @@ void sps_proposal_database_fixture::plugin_prepare()
 
 int64_t sps_proposal_database_fixture::create_proposal( std::string creator, std::string receiver,
                   time_point_sec start_date, time_point_sec end_date,
-                  asset daily_pay, const fc::ecc::private_key& key )
+                  asset daily_pay, const fc::ecc::private_key& key, bool with_block_generation )
 {
   signed_transaction tx;
   create_proposal_operation op;
@@ -1087,7 +1092,10 @@ int64_t sps_proposal_database_fixture::create_proposal( std::string creator, std
   op.subject = std::to_string( cnt );
 
   const std::string permlink = "permlink" + std::to_string( cnt );
-  post_comment_with_block_generation(creator, permlink, "title", "body", "test", key);
+  if( with_block_generation )
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", key);
+  else
+    post_comment(creator, permlink, "title", "body", "test", key);
 
   op.permlink = permlink;
 
@@ -1347,17 +1355,17 @@ asset delayed_vote_database_fixture::to_vest( const asset& liquid, const bool to
 }
 
 template< typename COLLECTION >
-fc::optional< size_t > delayed_vote_database_fixture::get_position_in_delayed_voting_array( const COLLECTION& collection, size_t day, size_t minutes )
+fc::optional< size_t > delayed_vote_database_fixture::get_position_in_delayed_voting_array( const COLLECTION& collection, size_t nr_interval, size_t seconds )
 {
   if( collection.empty() )
     return fc::optional< size_t >();
 
-  auto time = collection[ 0 ].time + fc::days( day ) + fc::minutes( minutes );
+  auto time = collection[ 0 ].time + fc::seconds( HIVE_DELAYED_VOTING_INTERVAL_SECONDS * nr_interval ) + fc::seconds( seconds );
 
   size_t idx = 0;
   for( auto& item : collection )
   {
-    auto end_of_day = item.time + fc::days( 1 );
+    auto end_of_day = item.time + fc::seconds( HIVE_DELAYED_VOTING_INTERVAL_SECONDS );
 
     if( end_of_day > time )
       return idx;
