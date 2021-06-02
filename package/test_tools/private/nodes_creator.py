@@ -13,7 +13,7 @@ class NodesCreator:
         self._nodes = []
 
     def create_node(self, name=None):
-        return self.__create_node(name)
+        return self.create_raw_node(name)
 
     def create_init_node(self, name='InitNode'):
         """Creates node which is ready to produce blocks"""
@@ -23,7 +23,7 @@ class NodesCreator:
         return node
 
     def create_witness_node(self, name=None, *, witnesses=None):
-        node = self.__create_node(name, default_name='WitnessNode')
+        node = self.create_raw_node(name, default_name='WitnessNode')
         assert 'witness' in node.config.plugin
 
         if witnesses is None:
@@ -45,12 +45,12 @@ class NodesCreator:
         return node
 
     def create_api_node(self, name=None):
-        node = self.__create_node(name, default_name='ApiNode')
+        node = self.create_raw_node(name, default_name='ApiNode')
         self.__enable_all_api_plugins(node)
         node.config.plugin.remove('witness')
         return node
 
-    def __create_node(self, name, *, default_name='Node'):
+    def create_raw_node(self, name=None, *, default_name='RawNode'):
         if name is not None:
             self._children_names.register_name(name)
         else:
