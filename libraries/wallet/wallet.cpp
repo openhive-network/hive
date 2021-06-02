@@ -622,11 +622,37 @@ public:
 
     /// TODO: fetch the accounts specified via other_auths as well.
 
-    auto approving_account_objects = _remote_api->get_accounts( v_approving_account_names );
+    auto first_layer_approving_account_objects = _remote_api->get_accounts( v_approving_account_names );
 
-    /// TODO: recursively check one layer deeper in the authority tree for keys
+    FC_ASSERT( first_layer_approving_account_objects.size() == v_approving_account_names.size(), "", ("aco.size:", first_layer_approving_account_objects.size())("acn",v_approving_account_names.size()) );
 
-    FC_ASSERT( approving_account_objects.size() == v_approving_account_names.size(), "", ("aco.size:", approving_account_objects.size())("acn",v_approving_account_names.size()) );
+    vector< account_name_type > v_deeper_layer_approving_account_names;
+    for( const auto& approving_acct : first_layer_approving_account_objects )
+    {
+      for(const auto& auth : approving_acct.owner.account_auths)
+        v_deeper_layer_approving_account_names.push_back(auth.first);
+      for(const auto& auth : approving_acct.active.account_auths)
+        v_deeper_layer_approving_account_names.push_back(auth.first);
+      for(const auto& auth : approving_acct.posting.account_auths)
+        v_deeper_layer_approving_account_names.push_back(auth.first);      
+    }
+
+    auto print_names = [&](vector<account_name_type>& v) {
+      for(const auto& a : v)
+        elog("name: ${n}", ("n", a));
+    };
+    print_names(v_approving_account_names);
+    print_names(v_deeper_layer_approving_account_names);
+
+
+
+    auto deeper_layer_approving_account_objects = _remote_api->get_accounts( v_deeper_layer_approving_account_names );
+
+    FC_ASSERT( deeper_layer_approving_account_objects.size() == v_deeper_layer_approving_account_names.size(), "", ("aco.size:", deeper_layer_approving_account_objects.size())("acn",v_deeper_layer_approving_account_names.size()) );
+
+    auto approving_account_objects = first_layer_approving_account_objects;
+    for( const auto& acc : deeper_layer_approving_account_objects )
+      approving_account_objects.push_back(acc);
 
     flat_map< string, condenser_api::api_account_object > approving_account_lut;
     size_t i = 0;

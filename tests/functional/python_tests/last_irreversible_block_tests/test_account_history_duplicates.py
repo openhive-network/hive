@@ -22,7 +22,7 @@ def count_ops_by_type(node, op_type: str, start: int, limit: int = 50):
 
 def test_account_history_duplicates():
     with World() as world:
-        alpha_witness_names = [f'witness{i}-alpha' for i in range(11)]
+        alpha_witness_names = [f'witness{i}-alpha' for i in range(10)]
         beta_witness_names = [f'witness{i}-beta' for i in range(10)]
         all_witness_names = alpha_witness_names + beta_witness_names
 
@@ -30,17 +30,14 @@ def test_account_history_duplicates():
         alpha_net = world.create_network('Alpha')
         init_node = alpha_net.create_init_node()
         alpha_node = alpha_net.create_node()
-        alpha_net.create_node()
-        alpha_net.create_node()
-        alpha_net.create_node()
+        for i in range(3):
+            alpha_net.create_node()
 
         # Create second network
         beta_net = world.create_network('Beta')
         beta_node = beta_net.create_node()
-        beta_net.create_node()
-        beta_net.create_node()
-        beta_net.create_node()
-        api_node = beta_net.create_node()
+        for i in range(3):
+            beta_net.create_node()
 
         # Create witnesses
         for name in alpha_witness_names:
@@ -51,12 +48,18 @@ def test_account_history_duplicates():
             node = random.choice(beta_net.nodes)
             node.config.witness.append(name)
 
+        # Create api nodes
+        api_node = alpha_net.create_node()
+        beta_api_node = beta_net.create_node()
+
         # Prepare config
         for node in alpha_net.nodes + beta_net.nodes:
             node.config.shared_file_size = '54M'
             node.config.plugin.extend([
                 'network_broadcast_api', 'network_node_api', 'account_history_rocksdb', 'account_history_api'
             ])
+        api_node.config.plugin.remove('witness')
+        beta_api_node.config.plugin.remove('witness')
 
         # Run
         alpha_net.connect_with(beta_net)
@@ -66,8 +69,8 @@ def test_account_history_duplicates():
         beta_net.run()
 
         logger.info('Attaching wallets...')
-        wallet = init_node.attach_wallet()
-        beta_wallet = beta_node.attach_wallet()
+        wallet = api_node.attach_wallet()
+        beta_wallet = beta_api_node.attach_wallet()
 
         # We are waiting here for block 43, because witness participation is counting
         # by dividing total produced blocks in last 128 slots by 128. When we were waiting
@@ -100,7 +103,7 @@ def test_account_history_duplicates():
         active_witnesses = response["result"]["witnesses"]
         active_witnesses_names = [witness["owner"] for witness in active_witnesses]
         logger.info(active_witnesses_names)
-        assert len(active_witnesses_names) == 22
+        assert len(active_witnesses_names) == 21
 
         # Reason of this wait is to enable moving forward of irreversible block
         logger.info('Wait 21 blocks (when every witness sign at least one block)')
@@ -108,6 +111,7 @@ def test_account_history_duplicates():
 
         # Network should be set up at this time, with 21 active witnesses, enough participation rate
         # and irreversible block number lagging behind around 15-20 blocks head block number
+        init_node.close()
         result = wallet.api.info()["result"]
         irreversible = result["last_irreversible_block_num"]
         head = result["head_block_num"]
@@ -136,9 +140,9 @@ def test_account_history_duplicates():
         logger.info("Checking there are no duplicates in account_history.get_ops_in_block after fork...")
         for _ in range(10):
             alpha_irreversible = wallet.api.info()["result"]["last_irreversible_block_num"]
-            alpha_reward_operations = count_ops_by_type(alpha_node, 'producer_reward_operation', alpha_irreversible, limit=50)
+            alpha_reward_operations = count_ops_by_type(api_node, 'producer_reward_operation', alpha_irreversible, limit=50)
             beta_irreversible = beta_wallet.api.info()["result"]["last_irreversible_block_num"]
-            beta_reward_operations = count_ops_by_type(beta_node, 'producer_reward_operation', beta_irreversible, limit=50)
+            beta_reward_operations = count_ops_by_type(beta_api_node, 'producer_reward_operation', beta_irreversible, limit=50)
 
             assert sum(i==1 for i in alpha_reward_operations.values()) == 50
             assert sum(i==1 for i in beta_reward_operations.values()) == 50
@@ -164,7 +168,7 @@ def test_account_history_duplicates():
         # Test enum_virtual_ops for head block returns only virtual ops
         account_name = 'gamma-1'
         wallet.api.create_account('initminer', account_name, '')
-        init_node.wait_number_of_blocks(1)
+        api_node.wait_number_of_blocks(1)
 
         logger.info("Checking there are only virtual operations in account_history.enum_virtual_ops...")
         for _ in range(10):
