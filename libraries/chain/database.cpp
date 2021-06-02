@@ -58,9 +58,9 @@ long next_hf_time()
   // current "next hardfork" is HF25
   long hfTime =
 #ifdef IS_TEST_NET
-    1588334400; // Friday, 1 May 2020 12:00:00 GMT
+    1622808000; //  Friday, 4 June 2021 12:00:00
 #else
-    1622548800; // Tuesday, 1 June 2021 12:00:00 GMT
+    1625054400; //  Wednesday, 30 June 2021 12:00:00
 #endif /// IS_TEST_NET
 
   const char* value = getenv("HIVE_HF25_TIME");
@@ -431,6 +431,9 @@ void database::close(bool rewind)
 {
   try
   {
+    if(get_is_open() == false)
+      wlog("database::close method is MISUSED since it is NOT opened atm...");
+
     ilog( "Closing database" );
 
     // Since pop_block() will move tx's in the popped blocks into pending,
