@@ -61,7 +61,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_START_MINER_VOTING_BLOCK         30
 
 #define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS (60*60*24*1) /// 1 day
-#define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       (HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS)/30  /// We want to have at most 30 entries in the account's delayed voting collection (similary to mainnet)
+#define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       ((HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS)/30)  /// We want to have at most 30 entries in the account's delayed voting collection (similary to mainnet)
 
 
 #else // IS LIVE HIVE NETWORK
