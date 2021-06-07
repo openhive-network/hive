@@ -31,7 +31,6 @@ public:
 
 private:
   std::unique_ptr< detail::block_log_conversion_plugin_impl > my;
-  uint32_t stop_block_num;
 };
 
 } } } } // hive::converter::plugins::block_log_conversion

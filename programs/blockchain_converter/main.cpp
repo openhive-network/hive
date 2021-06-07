@@ -48,7 +48,8 @@ int main( int argc, char** argv )
       ("active-key,A", bpo::value< std::string >(), "active key of the second authority")
       ("posting-key,P", bpo::value< std::string >(), "posting key of the second authority")
       ("use-same-key,U", "use given private key as the owner, active and posting keys if not specified")
-      ("stop-at-block,S", bpo::value< uint32_t >()->default_value( 0 ), "stop conversion at the given block number");
+      ("resume-block,R", bpo::value< uint32_t >()->default_value( 0 ), "resume conversion from the given block number")
+      ("stop-block,S", bpo::value< uint32_t >()->default_value( 0 ), "stop conversion at the given block number");
       bpo::options_description source_opts{"Source options"};
         source_opts.add_options()
       ("input,i", bpo::value< std::string >(), "input source (depending on plugin enabled - block log path or hive API endpoint)")
