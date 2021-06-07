@@ -14,7 +14,10 @@ void account_history_api_plugin::plugin_initialize( const variables_map& options
   api = std::make_shared< account_history_api >();
 }
 
-void account_history_api_plugin::plugin_startup() {}
+void account_history_api_plugin::plugin_startup()
+{
+  api->api_startup();
+}
 void account_history_api_plugin::plugin_shutdown() {}
 
 } } } // hive::plugins::account_history

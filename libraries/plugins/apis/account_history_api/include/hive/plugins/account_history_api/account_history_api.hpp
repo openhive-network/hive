@@ -188,6 +188,9 @@ class account_history_api
     )
 
   private:
+    friend class account_history_api_plugin;
+    void api_startup();
+
     std::unique_ptr< detail::abstract_account_history_api_impl > my;
 };
 

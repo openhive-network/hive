@@ -375,7 +375,11 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 
 } // detail
 
-account_history_api::account_history_api()
+account_history_api::account_history_api() {}
+
+account_history_api::~account_history_api() {}
+
+void account_history_api::api_startup()
 {
   auto ah_cb = appbase::app().find_plugin< hive::plugins::account_history::account_history_plugin >();
   auto ah_rocks = appbase::app().find_plugin< hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin >();
@@ -395,11 +399,8 @@ account_history_api::account_history_api()
   {
     FC_ASSERT( false, "Account History API only works if account_history or account_history_rocksdb plugins are enabled" );
   }
-
   JSON_RPC_REGISTER_API( HIVE_ACCOUNT_HISTORY_API_PLUGIN_NAME );
 }
-
-account_history_api::~account_history_api() {}
 
 DEFINE_LOCKLESS_APIS( account_history_api ,
   (get_ops_in_block)
