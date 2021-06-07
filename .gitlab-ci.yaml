@@ -216,7 +216,7 @@ last_irreversible_block_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
-    - pip3 install pytest pytest-timeout
+    - pip3 install pytest
     - cd tests/functional/python_tests/last_irreversible_block_tests
     - pytest
   tags:
