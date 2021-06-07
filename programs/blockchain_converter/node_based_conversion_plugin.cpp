@@ -2,17 +2,23 @@
 
 #include <appbase/application.hpp>
 
+#include <fc/network/tcp_socket.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/optional.hpp>
 #include <fc/filesystem.hpp>
 #include <fc/io/json.hpp>
+#include <fc/network/resolve.hpp>
+#include <fc/network/url.hpp>
 #include <fc/variant.hpp>
+#include <fc/thread/thread.hpp>
+#include <fc/network/http/connection.hpp>
+#include <fc/rpc/http_api.hpp>
+#include <fc/api.hpp>
 
 #include <hive/chain/block_log.hpp>
-
 #include <hive/protocol/block.hpp>
-
 #include <hive/utilities/key_conversion.hpp>
+#include <hive/plugins/condenser_api/condenser_api_legacy_objects.hpp>
 
 #include <boost/program_options.hpp>
 
@@ -24,28 +30,202 @@
 
 namespace bpo = boost::program_options;
 
-namespace hive {
+namespace hive { namespace converter { namespace plugins { namespace node_based_conversion {
 
-using namespace chain;
-using namespace utilities;
-using namespace protocol;
-
-namespace converter { namespace plugins { namespace node_based_conversion {
+using namespace hive::chain;
+using namespace hive::utilities;
+using namespace hive::protocol;
+using namespace hive::plugins::condenser_api;
 
 namespace detail {
+
+  // XXX: This exists in p2p_plugin, http_plugin and node_based_conversion_plugin. It should be added to fc.
+  std::vector<fc::ip::endpoint> resolve_string_to_ip_endpoints( const std::string& endpoint_string )
+  {
+    try
+    {
+      string::size_type colon_pos = endpoint_string.find( ':' );
+      if( colon_pos == std::string::npos )
+        FC_THROW( "Missing required port number in endpoint string \"${endpoint_string}\"",
+              ("endpoint_string", endpoint_string) );
+
+      std::string port_string = endpoint_string.substr( colon_pos + 1 );
+
+      try
+      {
+        uint16_t port = boost::lexical_cast< uint16_t >( port_string );
+        std::string hostname = endpoint_string.substr( 0, colon_pos );
+        std::vector< fc::ip::endpoint > endpoints = fc::resolve( hostname, port );
+
+        if( endpoints.empty() )
+          FC_THROW_EXCEPTION( fc::unknown_host_exception, "The host name can not be resolved: ${hostname}", ("hostname", hostname) );
+
+        return endpoints;
+      }
+      catch( const boost::bad_lexical_cast& )
+      {
+        FC_THROW("Bad port: ${port}", ("port", port_string) );
+      }
+    }
+    FC_CAPTURE_AND_RETHROW( (endpoint_string) )
+  }
 
   class node_based_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
 
-    node_based_conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID )
-      : conversion_plugin_impl( _private_key, chain_id ) {}
+    node_based_conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id,
+      const std::string& input_url, const std::string& output_url );
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
+
+    void transmit( const signed_transaction& trx );
+
+    signed_block receive( uint32_t block_num );
+
+    fc::http::connection       input_con;
+    fc::url                    input_url;
+
+    fc::http::connection       output_con;
+    fc::url                    output_url;
   };
+
+  node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id,
+    const std::string& input_url, const std::string& output_url )
+    : conversion_plugin_impl( _private_key, chain_id ), input_url(input_url), output_url(output_url)
+  {
+    while( true )
+    {
+      input_con.connect_to( detail::resolve_string_to_ip_endpoints( *this->input_url.host() + ':' + std::to_string(*this->input_url.port()) )[0] );
+
+      if (input_con.get_socket().is_open())
+        break;
+
+      else
+      {
+        wlog("Error connecting to server RPC endpoint (input), retrying in 10 seconds");
+        fc::usleep(fc::seconds(10));
+      }
+    }
+
+    while( true )
+    {
+      output_con.connect_to( fc::ip::endpoint::from_string( *this->output_url.host() + ':' + std::to_string(*this->output_url.port()) ) );
+
+      if (output_con.get_socket().is_open())
+        break;
+
+      else
+      {
+        wlog("Error connecting to server RPC endpoint (output), retrying in 10 seconds");
+        fc::usleep(fc::seconds(10));
+      }
+    }
+  }
 
   void node_based_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
+    if( !start_block_num )
+      start_block_num = 1;
 
+    block_id_type last_block_id{};
+    signed_block block;
+
+    for( ; ( start_block_num <= stop_block_num || !stop_block_num ) && !appbase::app().is_interrupt_request(); ++start_block_num )
+    {
+      try
+      {
+        block = receive( start_block_num );
+      }
+      catch(const fc::exception& e)
+      {
+        std::cout << "Retrying in 1 second...\n";
+        fc::usleep(fc::seconds(1));
+        --start_block_num;
+        continue;
+      }
+
+      if( start_block_num % 1000 == 0 && stop_block_num ) // Progress
+      {
+        std::cout << "[ " << int( float(start_block_num) / stop_block_num * 100 ) << "% ]: " << start_block_num << '/' << stop_block_num << " blocks rewritten.\r";
+        std::cout.flush();
+      }
+
+      if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
+      {
+        fc::json json_block;
+        fc::variant v;
+        fc::to_variant( block, v );
+
+        std::cout << "Rewritten block: " << start_block_num
+          << ". Data before conversion: " << json_block.to_string( v ) << '\n';
+      }
+
+      if( block.transactions.size() == 0 )
+        continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
+
+      last_block_id = converter.convert_signed_block( block, last_block_id );
+
+      if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
+      {
+        fc::json json_block;
+        fc::variant v;
+        fc::to_variant( block, v );
+
+        std::cout << "After conversion: " << json_block.to_string( v ) << '\n';
+      }
+
+      for( const auto& trx : block.transactions )
+        transmit( trx );
+    }
+
+    if( !appbase::app().is_interrupt_request() )
+      appbase::app().generate_interrupt_request();
+  }
+
+  void node_based_conversion_plugin_impl::transmit( const signed_transaction& trx )
+  {
+    try
+    {
+      fc::json json_trx;
+      fc::variant v;
+      fc::to_variant( legacy_signed_transaction( trx ), v );
+
+      std::cout <<  "{\"jsonrpc\":\"2.0\",\"method\":\"condenser_api.broadcast_transaction\",\"params\":[" + json_trx.to_string( v ) + "],\"id\":1}\n";
+
+      auto reply = output_con.request( "POST", output_url, // output_con.get_socket().remote_endpoint().operator string()
+        "{\"jsonrpc\":\"2.0\",\"method\":\"condenser_api.broadcast_transaction\",\"params\":[" + json_trx.to_string( v ) + "],\"id\":1}"
+        /*,{ { "Content-Type", "application/json" } } */
+      );
+      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("id", trx.id().str())("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
+    }
+    catch (const fc::exception& e)
+    {
+      elog("Caught exception while broadcasting tx ${id}:  ${e}", ("id", trx.id().str())("e", e.to_detail_string()) );
+      throw;
+    }
+  }
+
+  signed_block node_based_conversion_plugin_impl::receive( uint32_t num )
+  {
+    try
+    {
+      auto reply = input_con.request( "POST", input_url,
+          "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block\",\"params\":{\"block_num\":" + std::to_string( num ) + "},\"id\":1}"
+          /*,{ { "Content-Type", "application/json" } } */
+      );
+      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("num", num)("code", reply.status) );
+      FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("num", num)("code", reply.status) );
+
+      fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
+      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", &*reply.body.begin()) );
+      FC_ASSERT( var_obj["result"].get_object().contains("block"), "No blocks in JSON response", ("body", &*reply.body.begin()) );
+      return var_obj["result"].get_object()["block"].as< signed_block >();
+    }
+    catch (const fc::exception& e)
+    {
+      elog("Caught exception while receiving block with number ${num}:  ${e}", ("num", num)("e", e.to_detail_string()) );
+      throw;
+    }
   }
 
 } // detail
@@ -58,6 +238,9 @@ namespace detail {
 
   void node_based_conversion_plugin::plugin_initialize( const bpo::variables_map& options )
   {
+    FC_ASSERT( options.count("input"), "You have to specify the input source for the " HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " plugin" );
+    FC_ASSERT( options.count("output"), "You have to specify the output source for the " HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " plugin" );
+
     chain_id_type _hive_chain_id;
 
     auto chain_id_str = options["chain-id"].as< std::string >();
@@ -74,7 +257,9 @@ namespace detail {
     fc::optional< private_key_type > private_key = wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse the private key" );
 
-    my = std::make_unique< detail::node_based_conversion_plugin_impl >( *private_key, _hive_chain_id );
+    my = std::make_unique< detail::node_based_conversion_plugin_impl >( *private_key, _hive_chain_id,
+      options.at( "input" ).as< std::string >(), options.at( "output" ).as< std::string >()
+    );
 
     my->log_per_block = options["log-per-block"].as< uint32_t >();
     my->log_specific = options["log-specific"].as< uint32_t >();
@@ -110,12 +295,13 @@ namespace detail {
     my->converter.set_second_authority_key( owner_key, authority::owner );
     my->converter.set_second_authority_key( active_key, authority::active );
     my->converter.set_second_authority_key( posting_key, authority::posting );
-
-    stop_block_num = options.at("stop-at-block").as< uint32_t >();
   }
 
   void node_based_conversion_plugin::plugin_startup() {
-    my->convert( 0, stop_block_num );
+    my->convert(
+      appbase::app().get_args().at("resume-block").as< uint32_t >(),
+      appbase::app().get_args().at( "stop-block" ).as< uint32_t >()
+    );
   }
   void node_based_conversion_plugin::plugin_shutdown()
   {

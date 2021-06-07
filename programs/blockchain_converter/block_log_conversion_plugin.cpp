@@ -67,7 +67,7 @@ namespace detail {
     if( !start_block_num )
       start_block_num = log_out.head() ? log_out.read_head().block_num() : 1;
 
-    if( !stop_block_num || stop_block_num > log_in.head()->block_num() )
+    if( !stop_block_num || stop_block_num > log_in.head()->block_num() ) // TODO: Make independent block_log_index
       stop_block_num = log_in.head()->block_num();
 
     block_id_type last_block_id{};
@@ -196,12 +196,13 @@ namespace detail {
     my->converter.set_second_authority_key( owner_key, authority::owner );
     my->converter.set_second_authority_key( active_key, authority::active );
     my->converter.set_second_authority_key( posting_key, authority::posting );
-
-    stop_block_num = options.at("stop-at-block").as< uint32_t >();
   }
 
   void block_log_conversion_plugin::plugin_startup() {
-    my->convert( 0, stop_block_num );
+    my->convert(
+      appbase::app().get_args().at("resume-block").as< uint32_t >(),
+      appbase::app().get_args().at( "stop-block" ).as< uint32_t >()
+    );
   }
   void block_log_conversion_plugin::plugin_shutdown()
   {
