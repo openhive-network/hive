@@ -62,12 +62,13 @@ namespace detail {
 
   void block_log_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
-    FC_ASSERT( log_in.head(), "Your input block log is empty" ); // TODO: Other way to check if input block_log is empty
+    FC_ASSERT( log_in.is_open() && log_out.is_open(), "Block logs should be opened before conversion" );
+    FC_ASSERT( log_in.head(), "Your input block log is empty" );
 
     if( !start_block_num )
       start_block_num = log_out.head() ? log_out.read_head().block_num() : 1;
 
-    if( !stop_block_num || stop_block_num > log_in.head()->block_num() ) // TODO: Make independent block_log_index
+    if( !stop_block_num || stop_block_num > log_in.head()->block_num() )
       stop_block_num = log_in.head()->block_num();
 
     block_id_type last_block_id{};
@@ -107,7 +108,7 @@ namespace detail {
       }
     }
 
-    if( !appbase::app().is_interrupt_request() )  // TODO: Make conversion run in a thread instead of interrupt requests
+    if( !appbase::app().is_interrupt_request() )
       appbase::app().generate_interrupt_request();
   }
 
