@@ -8,7 +8,7 @@ class KeyGenerator:
     def __init__(self, executable_path=None):
         self.executable_path = executable_path
 
-    def generate_keys(self, account_name, secret='secret'):
+    def generate_keys(self, account_name, *, secret='secret'):
         if self.executable_path is None:
             self.executable_path = paths_to_executables.get_path_of('get_dev_key')
 
