@@ -1,11 +1,10 @@
+from test_tools.private.key_generator import KeyGenerator
+
+
 class Account:
-    key_generator = None
+    key_generator = KeyGenerator()
 
     def __init__(self, name, secret='secret'):
-        if Account.key_generator is None:
-            from .private.key_generator import KeyGenerator
-            Account.key_generator = KeyGenerator()
-
         output = Account.key_generator.generate_keys(name, secret)
 
         self.name = name
