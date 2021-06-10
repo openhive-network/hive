@@ -3,7 +3,7 @@ class Account:
 
     def __init__(self, name, secret='secret'):
         if Account.key_generator is None:
-            from .key_generator import KeyGenerator
+            from .private.key_generator import KeyGenerator
             Account.key_generator = KeyGenerator()
 
         output = Account.key_generator.generate_keys(name, secret)
