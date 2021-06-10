@@ -158,12 +158,11 @@ namespace detail {
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
       {
-        fc::json json_block;
         fc::variant v;
         fc::to_variant( block, v );
 
         std::cout << "Rewritten block: " << start_block_num
-          << ". Data before conversion: " << json_block.to_string( v ) << '\n';
+          << ". Data before conversion: " << fc::json::to_string( v ) << '\n';
       }
 
       if( block.transactions.size() == 0 )
@@ -173,11 +172,10 @@ namespace detail {
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
       {
-        fc::json json_block;
         fc::variant v;
         fc::to_variant( block, v );
 
-        std::cout << "After conversion: " << json_block.to_string( v ) << '\n';
+        std::cout << "After conversion: " << fc::json::to_string( v ) << '\n';
       }
 
       for( const auto& trx : block.transactions )
@@ -192,14 +190,14 @@ namespace detail {
   {
     try
     {
-      fc::json json_trx;
       fc::variant v;
       fc::to_variant( legacy_signed_transaction( trx ), v );
 
-      std::cout <<  "{\"jsonrpc\":\"2.0\",\"method\":\"condenser_api.broadcast_transaction\",\"params\":[" + json_trx.to_string( v ) + "],\"id\":1}\n";
+      // TODO: Remove this debug request body print in the production
+      std::cout << "{\"jsonrpc\":\"2.0\",\"method\":\"condenser_api.broadcast_transaction\",\"params\":[" + fc::json::to_string( v ) + "],\"id\":1}\n";
 
       auto reply = output_con.request( "POST", output_url, // output_con.get_socket().remote_endpoint().operator string()
-        "{\"jsonrpc\":\"2.0\",\"method\":\"condenser_api.broadcast_transaction\",\"params\":[" + json_trx.to_string( v ) + "],\"id\":1}"
+        "{\"jsonrpc\":\"2.0\",\"method\":\"condenser_api.broadcast_transaction\",\"params\":[" + fc::json::to_string( v ) + "],\"id\":1}"
         /*,{ { "Content-Type", "application/json" } } */
       ); // FIXME: Unknown transmit HTTP error
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("id", trx.id().str())("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
@@ -215,7 +213,7 @@ namespace detail {
   signed_block node_based_conversion_plugin_impl::receive( uint32_t num )
   {
     FC_ASSERT( BlockBufferSize && BlockBufferSize <= 1000, "Block buffer size should be in the range 1-1000", ("BlockBufferSize",BlockBufferSize) );
-    static size_t last_block_range_start = -1; // initial value to satisfy `num < last_block_range_start` check to get new blocks on first call
+    static size_t last_block_range_start = -1; // initial value to satisfy the `num < last_block_range_start` check to get new blocks on first call
     static std::array< fc::variant, BlockBufferSize > block_buffer; // blocks lookup table
 
     if( num < last_block_range_start || num >= last_block_range_start + BlockBufferSize )
