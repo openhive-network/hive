@@ -128,6 +128,14 @@ with wallet.in_single_transaction():
         wallet.api.transfer('initminer', account, amount, 'memo')
 ```
 
+If you want to read response, you can name a returned context manager and call its `get_response` method after exiting `with` context, like this:
+```python
+with wallet.in_single_transaction() as transaction:
+    ...
+
+response = transaction.get_response()
+```
+
 ### Features waiting for description
 - Logger
 - Network
