@@ -137,6 +137,7 @@ namespace hive {
     const recover_account_operation& convert_operations_visitor::operator()( recover_account_operation& op )const
     {
       converter.convert_authority( op.account_to_recover, op.new_owner_authority, authority::owner );
+      converter.convert_authority( op.account_to_recover, op.recent_owner_authority, authority::owner ); // XXX: Check if fixes `Recent authority not found in authority history` FC_ASSERT
 
       return op;
     }
