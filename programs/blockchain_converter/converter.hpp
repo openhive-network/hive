@@ -11,7 +11,7 @@
 #include <hive/protocol/block.hpp>
 
 
-#define HIVE_HARDFORK_0_17_BLOCK_NUM 10629455 // for pow operation
+#define HIVE_HARDFORK_0_17_BLOCK_NUM 10629455 // for pow operations
 
 namespace hive {
 
@@ -35,7 +35,7 @@ namespace hive {
       /// All converted blocks will be signed using given private key
       blockchain_converter( const private_key_type& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID );
 
-      /// Sets signed_block previous member to the given value and re-signs content of the block using derived keys. Returns current block id.
+      /// Sets previous id of the block to the given value and re-signs content of the block. Converts transactions. Returns current block id
       block_id_type convert_signed_block( signed_block& _signed_block, const block_id_type& previous_block_id );
 
       void convert_signed_header( signed_block_header& _signed_header );
