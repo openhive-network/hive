@@ -80,6 +80,7 @@ namespace detail {
 
     void transmit( const signed_transaction& trx );
 
+    template< size_t BlockBufferSize >
     signed_block receive( uint32_t block_num );
 
     fc::http::connection       input_con;
@@ -134,7 +135,7 @@ namespace detail {
     {
       try
       {
-        block = receive( start_block_num );
+        block = receive< 1000 >( start_block_num );
       }
       catch(const fc::exception& e)
       {
@@ -144,9 +145,12 @@ namespace detail {
         continue;
       }
 
-      if( start_block_num % 1000 == 0 && stop_block_num ) // Progress
+      if( start_block_num % 1000 == 0 ) // Progress
       {
-        std::cout << "[ " << int( float(start_block_num) / stop_block_num * 100 ) << "% ]: " << start_block_num << '/' << stop_block_num << " blocks rewritten.\r";
+        if( stop_block_num )
+          std::cout << "[ " << int( float(start_block_num) / stop_block_num * 100 ) << "% ]: " << start_block_num << '/' << stop_block_num << " blocks rewritten.\r";
+        else
+          std::cout << start_block_num << " blocks rewritten.\r";
         std::cout.flush();
       }
 
@@ -195,7 +199,7 @@ namespace detail {
       auto reply = output_con.request( "POST", output_url, // output_con.get_socket().remote_endpoint().operator string()
         "{\"jsonrpc\":\"2.0\",\"method\":\"condenser_api.broadcast_transaction\",\"params\":[" + json_trx.to_string( v ) + "],\"id\":1}"
         /*,{ { "Content-Type", "application/json" } } */
-      );
+      ); // FIXME: Unknown transmit HTTP error
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("id", trx.id().str())("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
     }
     catch (const fc::exception& e)
@@ -205,27 +209,41 @@ namespace detail {
     }
   }
 
+  template< size_t BlockBufferSize >
   signed_block node_based_conversion_plugin_impl::receive( uint32_t num )
   {
-    try
-    {
-      auto reply = input_con.request( "POST", input_url,
-          "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block\",\"params\":{\"block_num\":" + std::to_string( num ) + "},\"id\":1}"
-          /*,{ { "Content-Type", "application/json" } } */
-      );
-      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("num", num)("code", reply.status) );
-      FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("num", num)("code", reply.status) );
+    FC_ASSERT( BlockBufferSize && BlockBufferSize <= 1000, "Block buffer size should be between 1-1000 range", ("BlockBufferSize",BlockBufferSize) );
+    static size_t last_block_range_start = 1;
+    static std::array< fc::variant, BlockBufferSize > block_buffer;
 
-      fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
-      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", &*reply.body.begin()) );
-      FC_ASSERT( var_obj["result"].get_object().contains("block"), "No blocks in JSON response", ("body", &*reply.body.begin()) );
-      return var_obj["result"].get_object()["block"].as< signed_block >();
-    }
-    catch (const fc::exception& e)
-    {
-      elog("Caught exception while receiving block with number ${num}:  ${e}", ("num", num)("e", e.to_detail_string()) );
-      throw;
-    }
+    if( num < last_block_range_start || num >= last_block_range_start + BlockBufferSize )
+      try
+      {
+        last_block_range_start = num - ( num % BlockBufferSize ) + 1;
+        auto reply = input_con.request( "POST", input_url,
+            "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_range\",\"params\":{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string(BlockBufferSize) + "},\"id\":1}"
+            /*,{ { "Content-Type", "application/json" } } */
+        );
+        FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("num", num)("code", reply.status) );
+        FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("num", num)("code", reply.status) );
+
+        fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
+        FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", &*reply.body.begin()) );
+        FC_ASSERT( var_obj["result"].get_object().contains("blocks"), "No blocks in JSON response", ("body", &*reply.body.begin()) );
+
+        const auto& blocks = var_obj["result"].get_object()["blocks"].get_array();
+
+        std::move( blocks.begin(), blocks.end(), block_buffer.begin() );
+      }
+      catch (const fc::exception& e)
+      {
+        elog("Caught exception while receiving block with number ${num}:  ${e}", ("num", num)("e", e.to_detail_string()) );
+        throw;
+      }
+
+    const fc::variant& var_block = block_buffer.at( num - last_block_range_start );
+
+    return var_block.as < signed_block >();
   }
 
 } // detail
@@ -234,7 +252,10 @@ namespace detail {
   node_based_conversion_plugin::~node_based_conversion_plugin() {}
 
   void node_based_conversion_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg )
-  {}
+  {
+    cfg.add_options()
+      ( "block-buffer-size", bpo::value< size_t >()->default_value( 1000 ), "Block buffer size" );
+  }
 
   void node_based_conversion_plugin::plugin_initialize( const bpo::variables_map& options )
   {

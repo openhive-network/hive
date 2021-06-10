@@ -14,7 +14,7 @@ namespace converter { namespace plugins {
 
   class conversion_plugin_impl {
   public:
-    uint32_t log_per_block, log_specific;
+    uint32_t log_per_block = 0, log_specific = 0;
     blockchain_converter converter;
 
     conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID )
