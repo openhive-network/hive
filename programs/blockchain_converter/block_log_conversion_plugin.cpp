@@ -107,7 +107,7 @@ namespace detail {
       }
     }
 
-    if( !appbase::app().is_interrupt_request() )
+    if( !appbase::app().is_interrupt_request() )  // TODO: Make conversion run in a thread instead of interrupt requests
       appbase::app().generate_interrupt_request();
   }
 
