@@ -1192,7 +1192,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
 */
 
 
-BOOST_AUTO_TEST_CASE( vesting_withdrawals )
+BOOST_AUTO_TEST_CASE( vesting_withdrawals, *boost::unit_test::disabled() )
 {
   try
   {

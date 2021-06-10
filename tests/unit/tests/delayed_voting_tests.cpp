@@ -2358,7 +2358,7 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
   generate_seconds_blocks( ( interval * (HIVE_DELAYED_VOTING_INTERVAL_SECONDS) ) - today ); \
   today = ( interval * (HIVE_DELAYED_VOTING_INTERVAL_SECONDS) )
 
-BOOST_AUTO_TEST_CASE( scenario_01 )
+BOOST_AUTO_TEST_CASE( scenario_01, *boost::unit_test::disabled())
 {
   try {
 
