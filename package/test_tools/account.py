@@ -5,7 +5,7 @@ class Account:
     key_generator = KeyGenerator()
 
     def __init__(self, name, secret='secret'):
-        output = Account.key_generator.generate_keys(name, secret)
+        output = self.key_generator.generate_keys(name, secret)
 
         self.name = name
         self.secret = secret
