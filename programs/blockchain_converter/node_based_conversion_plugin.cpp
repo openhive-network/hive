@@ -94,6 +94,7 @@ namespace detail {
     const std::string& input_url, const std::string& output_url )
     : conversion_plugin_impl( _private_key, chain_id ), input_url(input_url), output_url(output_url)
   {
+    // TODO: Support HTTP encrypted using TLS or SSL (HTTPS)
     while( true )
     {
       input_con.connect_to( detail::resolve_string_to_ip_endpoints( *this->input_url.host() + ':' + std::to_string(*this->input_url.port()) )[0] );
@@ -135,6 +136,7 @@ namespace detail {
     {
       try
       {
+        // XXX: Allow users to change the BlockBufferSize template argument:
         block = receive< 1000 >( start_block_num );
       }
       catch(const fc::exception& e)
@@ -212,9 +214,9 @@ namespace detail {
   template< size_t BlockBufferSize >
   signed_block node_based_conversion_plugin_impl::receive( uint32_t num )
   {
-    FC_ASSERT( BlockBufferSize && BlockBufferSize <= 1000, "Block buffer size should be between 1-1000 range", ("BlockBufferSize",BlockBufferSize) );
-    static size_t last_block_range_start = 1;
-    static std::array< fc::variant, BlockBufferSize > block_buffer;
+    FC_ASSERT( BlockBufferSize && BlockBufferSize <= 1000, "Block buffer size should be in the range 1-1000", ("BlockBufferSize",BlockBufferSize) );
+    static size_t last_block_range_start = -1; // initial value to satisfy `num < last_block_range_start` check to get new blocks on first call
+    static std::array< fc::variant, BlockBufferSize > block_buffer; // blocks lookup table
 
     if( num < last_block_range_start || num >= last_block_range_start + BlockBufferSize )
       try
@@ -225,6 +227,7 @@ namespace detail {
             /*,{ { "Content-Type", "application/json" } } */
         );
         FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("num", num)("code", reply.status) );
+        // TODO: Move to boost to support chunked transfer encoding in responses
         FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("num", num)("code", reply.status) );
 
         fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
@@ -241,9 +244,7 @@ namespace detail {
         throw;
       }
 
-    const fc::variant& var_block = block_buffer.at( num - last_block_range_start );
-
-    return var_block.as < signed_block >();
+    return block_buffer.at( num - last_block_range_start ).template as< signed_block >();
   }
 
 } // detail
