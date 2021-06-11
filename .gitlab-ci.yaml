@@ -229,6 +229,11 @@ test_tools_tests:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  artifacts:
+    name: "test-artifacts"
+    paths:
+    - "$CI_PROJECT_DIR/**/generated"
+    expire_in: 1 hours
   script:
     - pip3 install pytest
     - cd tests/test_tools/tests
