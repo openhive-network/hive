@@ -1,4 +1,4 @@
 __pycache__/
 .pytest_cache/
-GeneratedInWorld/
+generated_during_*/
 logs/
