@@ -47,41 +47,6 @@ EXPOSE 2001
 CMD "${install_base_dir}/consensus/hived.run"
 
 ###################################################################################################
-##                                            FAT NODE BUILD                                     ##
-###################################################################################################
-
-FROM builder AS fat_node_builder
-
-RUN \
-  cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh "OFF"
-
-###################################################################################################
-##                                      FAT NODE CONFIGURATION                                   ##
-###################################################################################################
-
-FROM builder AS fat_node
-ARG TRACKED_ACCOUNT_NAME
-ENV TRACKED_ACCOUNT_NAME=${TRACKED_ACCOUNT_NAME}
-ARG USE_PUBLIC_BLOCKLOG
-ENV USE_PUBLIC_BLOCKLOG=${USE_PUBLIC_BLOCKLOG}
-
-WORKDIR "${install_base_dir}/fat-node"
-# Get all needed files from previous stage, and throw away unneeded rest(like objects)
-COPY --from=fat_node_builder ${src_dir}/build/install-root/ ${src_dir}/contrib/hived.run ./
-COPY --from=fat_node_builder ${src_dir}/contrib/config-for-docker.ini  datadir/config.ini
-
-RUN \
-   ls -la && \
-   chmod +x hived.run
-
-# rpc service :
-EXPOSE 8090
-# p2p service :
-EXPOSE 2001
-CMD "${install_base_dir}/fat-node/hived.run"
-
-###################################################################################################
 ##                                          GENERAL NODE BUILD                                   ##
 ###################################################################################################
 
