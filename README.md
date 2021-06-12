@@ -56,13 +56,13 @@ But if you would still like to build from source, we also have [build instructio
 
 ## Dockerized Consensus Node
 
-To run a p2p node (ca. 16GB of memory is required at the moment):
+To run a Hive node (ca. 16GB of memory is required at the moment):
 
     docker run \
-        -d -p 2001:2001 -p 8090:8090 --name hived-default \
-        openhive-network/hive
+        -d -p 2001:2001 -p 8090:8090 --name hived \
+        hiveio/hive
 
-    docker logs -f hived-default  # follow along
+    docker logs -f hived  # follow along
 
 ## CLI Wallet
 
@@ -77,7 +77,7 @@ on how to use lcov to check code test coverage.
 
 ## Config File
 
-Run `hived` once to generate a data directory and config file. The default data directory location is `~/.hived`. Kill `hived`. If you want to modify the config to your liking, we have example config used in the docker image. ( [consensus node](contrib/config-for-docker.ini) ) All options will be present in the default config file and there may be more options needing to be changed from the docker configs (some of the options actually used in images are configured via command line).
+Run `hived` once to generate a data directory and config file. The default data directory location is `~/.hived`. Kill `hived`. If you want to modify the config to your liking, we have [example config](contrib/config-for-docker.ini) used in the docker image. All options will be present in the default config file and there may be more options needing to be changed from the docker configs (some of the options actually used in images are configured via command line).
 
 ## Seed Nodes
 
