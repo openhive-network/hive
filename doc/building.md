@@ -48,6 +48,10 @@ will build out of the box without further effort:
         libtool \
         make \
         pkg-config \
+        doxygen \
+        libncurses5-dev \
+        libreadline-dev \
+        perl \       
         python3 \
         python3-jinja2
 
@@ -66,13 +70,6 @@ will build out of the box without further effort:
         libboost-system-dev \
         libboost-test-dev \
         libboost-thread-dev
-
-    # Optional packages (not required, but will make a nicer experience)
-    sudo apt-get install -y \
-        doxygen \
-        libncurses5-dev \
-        libreadline-dev \
-        perl
 
     git clone https://github.com/openhive-network/hive
     cd hive
