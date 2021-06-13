@@ -51,7 +51,7 @@ will build out of the box without further effort:
         doxygen \
         libncurses5-dev \
         libreadline-dev \
-        perl \       
+        perl \
         python3 \
         python3-jinja2
 
