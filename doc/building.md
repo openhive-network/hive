@@ -42,6 +42,7 @@ will build out of the box without further effort:
         cmake \
         g++ \
         git \
+        zlib1g-dev \
         libbz2-dev \
         libsnappy-dev \
         libssl-dev \
@@ -83,6 +84,9 @@ will build out of the box without further effort:
     make install  # defaults to /usr/local
 
 If at any time you find this documentation not up to date or unprecise, please take a look at CI/CD scripts.
+
+Known issues:
+In Ubuntu 20.04 there's no longer `libboost-signals-dev` available. Removing it shouldn't be a problem because other boost libs depends on `libboost-dev` anyway (which includes signals2).
 
 ## Building on macOS X
 
