@@ -29,7 +29,7 @@ testnet_node_build:
     expire_in: 6 hours
   tags:
      - public-runner-docker
-#     - hived-for-tests
+     - hived-for-tests
 
 consensus_build:
   stage: build
@@ -267,7 +267,7 @@ hived_replay_tests:
     expire_in: 6 months
   tags:
     - public-runner-docker
-#    - hived-for-tests
+    - hived-for-tests
 
 package_consensus_node:
   stage: package
