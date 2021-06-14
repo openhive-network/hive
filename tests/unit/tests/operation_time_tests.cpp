@@ -1192,7 +1192,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
 */
 
 
-BOOST_AUTO_TEST_CASE( vesting_withdrawals, *boost::unit_test::disabled() )
+BOOST_AUTO_TEST_CASE( vesting_withdrawals )
 {
   try
   {
@@ -1249,9 +1249,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals, *boost::unit_test::disabled() )
 
       const auto& alice = db->get_account( "alice" );
 
-      //`delayed_voting_operation` is triggered for all witnesses + `alice` after `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` ( 30 days )
-      const int shift = ( i == 4 ) ? ( HIVE_MAX_WITNESSES + 1/*alice*/ ) : 0;
-      fill_op = get_last_operations( 2 + shift )[ 1 + shift ].get< fill_vesting_withdraw_operation >();
+      fill_op = get_last_operations( 2 )[ 1 ].get< fill_vesting_withdraw_operation >();
 
       BOOST_REQUIRE( alice.get_vesting().amount.value == ( vesting_shares - withdraw_rate ).amount.value );
       BOOST_REQUIRE( balance.amount.value + ( withdraw_rate * gpo.get_vesting_share_price() ).amount.value - alice.get_balance().amount.value <= 1 );
