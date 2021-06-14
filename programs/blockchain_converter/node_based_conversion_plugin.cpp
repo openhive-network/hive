@@ -39,37 +39,6 @@ using namespace hive::plugins::condenser_api;
 
 namespace detail {
 
-  // XXX: This exists in p2p_plugin, http_plugin and node_based_conversion_plugin. It should be added to fc.
-  std::vector<fc::ip::endpoint> resolve_string_to_ip_endpoints( const std::string& endpoint_string )
-  {
-    try
-    {
-      string::size_type colon_pos = endpoint_string.find( ':' );
-      if( colon_pos == std::string::npos )
-        FC_THROW( "Missing required port number in endpoint string \"${endpoint_string}\"",
-              ("endpoint_string", endpoint_string) );
-
-      std::string port_string = endpoint_string.substr( colon_pos + 1 );
-
-      try
-      {
-        uint16_t port = boost::lexical_cast< uint16_t >( port_string );
-        std::string hostname = endpoint_string.substr( 0, colon_pos );
-        std::vector< fc::ip::endpoint > endpoints = fc::resolve( hostname, port );
-
-        if( endpoints.empty() )
-          FC_THROW_EXCEPTION( fc::unknown_host_exception, "The host name can not be resolved: ${hostname}", ("hostname", hostname) );
-
-        return endpoints;
-      }
-      catch( const boost::bad_lexical_cast& )
-      {
-        FC_THROW("Bad port: ${port}", ("port", port_string) );
-      }
-    }
-    FC_CAPTURE_AND_RETHROW( (endpoint_string) )
-  }
-
   class node_based_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
 
@@ -108,40 +77,41 @@ namespace detail {
     this->input_url = fc::url(input_url);
     this->output_url = fc::url(output_url);
 
+    // Validate urls - must be in http://host:port format, where host can be either ipv4 address or domain name
+    FC_ASSERT( this->input_url.proto() == "http" && this->output_url.proto() == "http",
+      "Currently only http protocol is supported", ("in_proto",this->input_url.proto())("out_proto",this->output_url.proto()) );
+    FC_ASSERT( this->input_url.host().valid() && this->output_url.host().valid(), "You have to specify the host in url", ("input_url",input_url)("output_url",output_url) );
+    FC_ASSERT( this->input_url.port().valid() && this->output_url.port().valid(), "You have to specify the port in url", ("input_url",input_url)("output_url",output_url) );
+
     // TODO: Support HTTP encrypted using TLS or SSL (HTTPS)
-    while( true )
-    {
-      try
+    const auto connect = []( fc::http::connection& con, const fc::url& url ) {
+      while( true )
       {
-        input_con.connect_to( detail::resolve_string_to_ip_endpoints( *this->input_url.host() + ':' + std::to_string(*this->input_url.port()) )[0] );
-      } FC_CAPTURE_AND_RETHROW( (input_url) )
+        try
+        {
+          con.connect_to( fc::resolve( *url.host(), *url.port() )[0] ); // First try to resolve the domain name
+        }
+        catch( const fc::exception& e )
+        {
+          try
+          {
+            con.connect_to( fc::ip::endpoint( *url.host(), *url.port() ) );
+          } FC_CAPTURE_AND_RETHROW( (url) )
+        }
 
-      if (input_con.get_socket().is_open())
-        break;
+        if (con.get_socket().is_open())
+          break;
 
-      else
-      {
-        wlog("Error connecting to server RPC endpoint (input), retrying in 10 seconds");
-        fc::usleep(fc::seconds(10));
+        else
+        {
+          wlog("Error connecting to server RPC endpoint, retrying in 10 seconds");
+          fc::usleep(fc::seconds(10));
+        }
       }
-    }
+    };
 
-    while( true )
-    {
-      try
-      {
-        output_con.connect_to( fc::ip::endpoint::from_string( *this->output_url.host() + ':' + std::to_string(*this->output_url.port()) ) );
-      } FC_CAPTURE_AND_RETHROW( (output_url) )
-
-      if (output_con.get_socket().is_open())
-        break;
-
-      else
-      {
-        wlog("Error connecting to server RPC endpoint (output), retrying in 10 seconds");
-        fc::usleep(fc::seconds(10));
-      }
-    }
+    connect( input_con, this->input_url );
+    connect( output_con, this->output_url );
   }
 
   void node_based_conversion_plugin_impl::close()
@@ -228,13 +198,12 @@ namespace detail {
       fc::variant v;
       fc::to_variant( legacy_signed_transaction( trx ), v );
 
-      // TODO: Remove this debug request body print in the production
       std::cout << "{\"jsonrpc\":\"2.0\",\"method\":\"condenser_api.broadcast_transaction\",\"params\":[" + fc::json::to_string( v ) + "],\"id\":1}\n";
 
-      auto reply = output_con.request( "POST", output_url, // output_con.get_socket().remote_endpoint().operator string()
+      auto reply = output_con.request( "POST", output_url,
         "{\"jsonrpc\":\"2.0\",\"method\":\"condenser_api.broadcast_transaction\",\"params\":[" + fc::json::to_string( v ) + "],\"id\":1}"
         /*,{ { "Content-Type", "application/json" } } */
-      ); // FIXME: Unknown transmit HTTP error
+      ); // FIXME: asio.cpp:24 - Boost asio - Broken pipe error
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("id", trx.id().str())("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
     }
     catch (const fc::exception& e)
