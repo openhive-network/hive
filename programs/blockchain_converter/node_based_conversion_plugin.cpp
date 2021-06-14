@@ -209,19 +209,19 @@ namespace detail {
     }
   }
 
-  template< size_t BlockBufferSize >
+  template< size_t BlocksBufferSize >
   signed_block node_based_conversion_plugin_impl::receive( uint32_t num )
   {
-    FC_ASSERT( BlockBufferSize && BlockBufferSize <= 1000, "Block buffer size should be in the range 1-1000", ("BlockBufferSize",BlockBufferSize) );
+    FC_ASSERT( BlocksBufferSize && BlocksBufferSize <= 1000, "Blocks buffer size should be in the range 1-1000", ("BlocksBufferSize",BlocksBufferSize) );
     static size_t last_block_range_start = -1; // initial value to satisfy the `num < last_block_range_start` check to get new blocks on first call
-    static std::array< fc::variant, BlockBufferSize > block_buffer; // blocks lookup table
+    static std::array< fc::variant, BlocksBufferSize > blocks_buffer; // blocks lookup table
 
-    if( num < last_block_range_start || num >= last_block_range_start + BlockBufferSize )
+    if( num < last_block_range_start || num >= last_block_range_start + BlocksBufferSize )
       try
       {
-        last_block_range_start = num - ( num % BlockBufferSize ) + 1;
+        last_block_range_start = num - ( num % BlocksBufferSize ) + 1;
         auto reply = input_con.request( "POST", input_url,
-            "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_range\",\"params\":{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string(BlockBufferSize) + "},\"id\":1}"
+            "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_range\",\"params\":{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string(BlocksBufferSize) + "},\"id\":1}"
             /*,{ { "Content-Type", "application/json" } } */
         );
         FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("num", num)("code", reply.status) );
@@ -234,7 +234,7 @@ namespace detail {
 
         const auto& blocks = var_obj["result"].get_object()["blocks"].get_array();
 
-        std::move( blocks.begin(), blocks.end(), block_buffer.begin() );
+        std::move( std::make_move_iterator( blocks.begin() ), std::make_move_iterator( blocks.end() ), blocks_buffer.begin() );
       }
       catch (const fc::exception& e)
       {
@@ -242,7 +242,7 @@ namespace detail {
         throw;
       }
 
-    return block_buffer.at( num - last_block_range_start ).template as< signed_block >();
+    return blocks_buffer.at( num - last_block_range_start ).template as< signed_block >();
   }
 
 } // detail
@@ -253,7 +253,7 @@ namespace detail {
   void node_based_conversion_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg )
   {
     cfg.add_options()
-      ( "block-buffer-size", bpo::value< size_t >()->default_value( 1000 ), "Block buffer size" );
+      ( "blocks-buffer-size", bpo::value< size_t >()->default_value( 1000 ), "Blocks buffer size" );
   }
 
   void node_based_conversion_plugin::plugin_initialize( const bpo::variables_map& options )
