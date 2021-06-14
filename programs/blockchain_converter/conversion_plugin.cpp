@@ -6,6 +6,38 @@
 
 namespace hive { namespace converter { namespace plugins {
 
+  void conversion_plugin_impl::set_wifs( bool use_private, const std::string& _owner, const std::string& _active, const std::string& _posting )
+  {
+    fc::optional< private_key_type > _owner_key = wif_to_key( _owner );
+    fc::optional< private_key_type > _active_key = wif_to_key( _active );
+    fc::optional< private_key_type > _posting_key = wif_to_key( _posting );
+
+    if( use_private )
+      _owner_key = converter.get_witness_key();
+    else if( !_owner_key.valid() )
+      _owner_key = private_key_type::generate();
+
+    if( use_private )
+      _active_key = converter.get_witness_key();
+    else if( !_active_key.valid() )
+      _active_key = private_key_type::generate();
+
+    if( use_private )
+      _posting_key = converter.get_witness_key();
+    else if( !_posting_key.valid() )
+      _posting_key = private_key_type::generate();
+
+    converter.set_second_authority_key( *_owner_key, authority::owner );
+    converter.set_second_authority_key( *_active_key, authority::active );
+    converter.set_second_authority_key( *_posting_key, authority::posting );
+  }
+
+  void conversion_plugin_impl::set_logging( uint32_t log_per_block, uint32_t log_specific )
+  {
+    this->log_per_block = log_per_block;
+    this->log_specific = log_specific;
+  }
+
   void conversion_plugin_impl::print_wifs()const
   {
     std::cout << "Second authority wif private keys:\n"
