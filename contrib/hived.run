@@ -28,6 +28,12 @@ if [[ -e ${DATADIR}/blockchain/force_open ]]; then
   ARGS+=" --force-open"
 fi
 
+if [[ -e ${DATADIR}/blockchain/load_snapshot ]]; then
+  echo "We will load latest snapshot"
+  rm -fv ${DATADIR}/blockchain/load_snapshot
+  ARGS+=" --load-snapshot latest"
+fi
+
 if [[ ! -z "$TRACK_ACCOUNT" ]]; then
     ARGS+=" --plugin=account_history_rocksdb --plugin=account_history_api"
     ARGS+=" --account-history-rocksdb-track-account-range=[\"$TRACK_ACCOUNT\",\"$TRACK_ACCOUNT\"]"
