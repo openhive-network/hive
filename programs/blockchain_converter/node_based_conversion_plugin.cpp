@@ -73,8 +73,10 @@ namespace detail {
   class node_based_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
 
-    node_based_conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id,
-      const std::string& input_url, const std::string& output_url );
+    node_based_conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id );
+
+    void open( const std::string& input_url, const std::string& output_url );
+    void close();
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
 
@@ -90,14 +92,22 @@ namespace detail {
     fc::url                    output_url;
   };
 
-  node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id,
-    const std::string& input_url, const std::string& output_url )
-    : conversion_plugin_impl( _private_key, chain_id ), input_url(input_url), output_url(output_url)
+  node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id )
+    : conversion_plugin_impl( _private_key, chain_id )
+  {}
+
+  void node_based_conversion_plugin_impl::open( const std::string& input_url, const std::string& output_url )
   {
+    this->input_url = fc::url(input_url);
+    this->output_url = fc::url(output_url);
+
     // TODO: Support HTTP encrypted using TLS or SSL (HTTPS)
     while( true )
     {
-      input_con.connect_to( detail::resolve_string_to_ip_endpoints( *this->input_url.host() + ':' + std::to_string(*this->input_url.port()) )[0] );
+      try
+      {
+        input_con.connect_to( detail::resolve_string_to_ip_endpoints( *this->input_url.host() + ':' + std::to_string(*this->input_url.port()) )[0] );
+      } FC_CAPTURE_AND_RETHROW( (input_url) )
 
       if (input_con.get_socket().is_open())
         break;
@@ -111,7 +121,10 @@ namespace detail {
 
     while( true )
     {
-      output_con.connect_to( fc::ip::endpoint::from_string( *this->output_url.host() + ':' + std::to_string(*this->output_url.port()) ) );
+      try
+      {
+        output_con.connect_to( fc::ip::endpoint::from_string( *this->output_url.host() + ':' + std::to_string(*this->output_url.port()) ) );
+      } FC_CAPTURE_AND_RETHROW( (output_url) )
 
       if (output_con.get_socket().is_open())
         break;
@@ -124,8 +137,23 @@ namespace detail {
     }
   }
 
+  void node_based_conversion_plugin_impl::close()
+  {
+    if( input_con.get_socket().is_open() )
+      input_con.get_socket().close();
+
+    if( output_con.get_socket().is_open() )
+      output_con.get_socket().close();
+
+    if( block_header::num_from_id( converter.get_previous_block_id() ) + 1 <= HIVE_HARDFORK_0_17_BLOCK_NUM )
+      std::cerr << "Second authority has not been applied on the accounts yet! Try resuming the conversion process\n";
+  }
+
   void node_based_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
+    FC_ASSERT( input_con.get_socket().is_open(), "Input connection socket should be opened before performing the conversion", ("input_url", input_url) );
+    FC_ASSERT( output_con.get_socket().is_open(), "Output connection socket should be opened before performing the conversion", ("output_url", output_url) );
+
     if( !start_block_num )
       start_block_num = 1;
 
@@ -277,9 +305,7 @@ namespace detail {
     fc::optional< private_key_type > private_key = wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse the private key" );
 
-    my = std::make_unique< detail::node_based_conversion_plugin_impl >( *private_key, _hive_chain_id,
-      options.at( "input" ).as< std::string >(), options.at( "output" ).as< std::string >()
-    );
+    my = std::make_unique< detail::node_based_conversion_plugin_impl >( *private_key, _hive_chain_id );
 
     my->log_per_block = options["log-per-block"].as< uint32_t >();
     my->log_specific = options["log-specific"].as< uint32_t >();
@@ -315,6 +341,8 @@ namespace detail {
     my->converter.set_second_authority_key( owner_key, authority::owner );
     my->converter.set_second_authority_key( active_key, authority::active );
     my->converter.set_second_authority_key( posting_key, authority::posting );
+
+    my->open( options.at( "input" ).as< std::string >(), options.at( "output" ).as< std::string >() );
   }
 
   void node_based_conversion_plugin::plugin_startup() {
@@ -326,6 +354,7 @@ namespace detail {
   void node_based_conversion_plugin::plugin_shutdown()
   {
     my->print_wifs();
+    my->close();
   }
 
 } } } } // hive::converter::plugins::block_log_conversion
