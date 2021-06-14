@@ -57,12 +57,12 @@ namespace detail {
     {
       log_out.open( output );
     } FC_CAPTURE_AND_RETHROW( (output) )
-
   }
 
   void block_log_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
-    FC_ASSERT( log_in.is_open() && log_out.is_open(), "Block logs should be opened before conversion" );
+    FC_ASSERT( log_in.is_open(), "Input block log should be opened before the conversion" );
+    FC_ASSERT( log_out.is_open(), "Output block log should be opened before the conversion" );
     FC_ASSERT( log_in.head(), "Your input block log is empty" );
 
     if( !start_block_num )
@@ -114,8 +114,12 @@ namespace detail {
 
   void block_log_conversion_plugin_impl::close()
   {
-    log_in.close();
-    log_out.close();
+    if( log_in.is_open() )
+      log_in.close();
+
+    if( log_out.is_open() )
+      log_out.close();
+
     if( block_header::num_from_id( converter.get_previous_block_id() ) + 1 <= HIVE_HARDFORK_0_17_BLOCK_NUM )
       std::cerr << "Second authority has not been applied on the accounts yet! Try resuming the conversion process\n";
   }
@@ -161,10 +165,7 @@ namespace detail {
     my->log_per_block = options["log-per-block"].as< uint32_t >();
     my->log_specific = options["log-specific"].as< uint32_t >();
 
-    try
-    {
-      my->open( block_log_in, block_log_out );
-    } FC_CAPTURE_AND_RETHROW()
+    my->open( block_log_in, block_log_out );
 
     private_key_type owner_key;
     private_key_type active_key;
