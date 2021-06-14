@@ -178,7 +178,7 @@ namespace hive {
 
         // re-sign ops
         for( auto signature_itr = transaction_itr->signatures.begin(); signature_itr != transaction_itr->signatures.end(); ++signature_itr )
-          *signature_itr = _private_key.sign_compact( transaction_itr->sig_digest( chain_id ) );
+          *signature_itr = get_second_authority_key( authority::owner ).sign_compact( transaction_itr->sig_digest( chain_id ) ); // XXX: All operations are being signed using the owner key of the 2nd authority
 
         // check for HF17 to add 2nd auth to the pow auths
         post_convert_transaction( *transaction_itr );
