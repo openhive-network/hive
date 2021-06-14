@@ -2,8 +2,7 @@ from pathlib import Path
 import subprocess
 import time
 
-from .account import Account
-from . import logger
+from test_tools import Account, logger
 
 
 class Wallet:

@@ -1,50 +1,66 @@
 import logging
-from logging import debug, info, warning, error, critical, exception
-from logging import getLogger
-
 from pathlib import Path
 
-__log_path = Path('logs/run.log')
-__stream_handler = logging.NullHandler()
-__file_handler = logging.NullHandler()
 
+class Logger:
+    def __init__(self):
+        self.__log_path = Path('logs/run.log')
+        self.__stream_handler = logging.NullHandler()
+        self.__file_handler = logging.NullHandler()
 
-def show_debug_logs_on_stdout():
-    __stream_handler.setLevel(logging.DEBUG)
+        self.__start_logging()
 
+    def __start_logging(self):
+        self.__remove_old_log_if_exists()
 
-def __remove_old_log_if_exists():
-    try:
-        __log_path.unlink()
-    except FileNotFoundError:
-        pass
+        logging.root.setLevel(logging.DEBUG)
 
+        formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s (%(name)s, %(filename)s:%(lineno)s)')
 
-def __start_logging():
-    __remove_old_log_if_exists()
+        # Configure stream handler
+        from sys import stdout
+        self.__stream_handler = logging.StreamHandler(stdout)
+        self.__stream_handler.setFormatter(formatter)
+        self.__stream_handler.setLevel(logging.INFO)
+        logging.root.addHandler(self.__stream_handler)
 
-    logging.root.setLevel(logging.DEBUG)
+        # Configure file handler
+        self.__log_path.parent.mkdir(exist_ok=True)
+        self.__file_handler = logging.FileHandler(self.__log_path)
+        self.__file_handler.setFormatter(formatter)
+        self.__file_handler.setLevel(logging.DEBUG)
+        logging.root.addHandler(self.__file_handler)
 
-    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s (%(name)s, %(filename)s:%(lineno)s)')
+        # Suppress debug logs from selected built-in python libraries
+        logging.getLogger('urllib3.connectionpool').setLevel(logging.INFO)
 
-    # Configure stream handler
-    from sys import stdout
-    global __stream_handler
-    __stream_handler = logging.StreamHandler(stdout)
-    __stream_handler.setFormatter(formatter)
-    __stream_handler.setLevel(logging.INFO)
-    logging.root.addHandler(__stream_handler)
+    def __remove_old_log_if_exists(self):
+        try:
+            self.__log_path.unlink()
+        except FileNotFoundError:
+            pass
 
-    # Configure file handler
-    __log_path.parent.mkdir(exist_ok=True)
-    global __file_handler
-    __file_handler = logging.FileHandler(__log_path)
-    __file_handler.setFormatter(formatter)
-    __file_handler.setLevel(logging.DEBUG)
-    logging.root.addHandler(__file_handler)
+    def show_debug_logs_on_stdout(self):
+        __stream_handler.setLevel(logging.DEBUG)
 
-    # Suppress debug logs from selected built-in python libraries
-    logging.getLogger('urllib3.connectionpool').setLevel(logging.INFO)
+    # Wrapped functions from logging library
+    def debug(self, message):
+        logging.debug(message)
 
+    def info(self, message):
+        logging.info(message)
 
-__start_logging()
+    def warning(self, message):
+        logging.warning(message)
+
+    def error(self, message):
+        logging.error(message)
+
+    def critical(self, message):
+        logging.critical(message)
+
+    def exception(self, message):
+        logging.exception(message)
+
+    def getLogger(self, name):
+        return logging.getLogger(name)
