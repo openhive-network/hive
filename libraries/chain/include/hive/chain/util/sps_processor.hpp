@@ -43,11 +43,7 @@ class sps_processor
 
     asset get_treasury_fund();
 
-    asset get_daily_inflation();
-
     asset calculate_maintenance_budget( const time_point_sec& head_time );
-
-    void transfer_daily_inflation_to_treasury( const asset& daily_inflation );
 
     void transfer_payments( const time_point_sec& head_time, asset& maintenance_budget_limit, const t_proposals& proposals );
 

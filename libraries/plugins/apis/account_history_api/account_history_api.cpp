@@ -263,7 +263,7 @@ struct filtering_visitor
 {
   typedef void result_type;
 
-  bool check(uint32_t filter, const hive::protocol::operation& op)
+  bool check(uint64_t filter, const hive::protocol::operation& op)
   {
     _filter = filter;
     _accepted = false;
@@ -283,10 +283,13 @@ struct filtering_visitor
   (clear_null_account_balance_operation)(proposal_pay_operation)(sps_fund_operation)
   (hardfork_hive_operation)(hardfork_hive_restore_operation)(delayed_voting_operation)
   (consolidate_treasury_balance_operation)(effective_comment_vote_operation)(ineffective_delete_comment_operation)
-  (sps_convert_operation) )
+  (sps_convert_operation)(expired_account_notification_operation)(changed_recovery_account_operation)
+  (transfer_to_vesting_completed_operation)(pow_reward_operation)(vesting_shares_split_operation)
+  (account_created_operation)(fill_collateralized_convert_request_operation)(system_warning_operation)
+  (fill_recurrent_transfer_operation)(failed_recurrent_transfer_operation) )
 
 private:
-  uint32_t _filter = 0;
+  uint64_t _filter = 0;
   bool     _accepted = false;
 };
 

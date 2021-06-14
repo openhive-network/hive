@@ -129,6 +129,7 @@ ELSE(WIN32)
 
   LIST(APPEND BOOST_COMPONENTS coroutine)
 
+  cmake_policy(SET CMP0057 NEW)
   FIND_PACKAGE(Boost 1.53 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
   SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
@@ -259,15 +260,18 @@ setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC DONT_INSTALL_LIBRARY )
 
 # begin readline stuff
 find_package(Curses)
+
+if( HIVE_STATIC_BUILD )
+  set( Readline_USE_STATIC_LIBS ON CACHE BOOL "Use static readline libraries" )
+endif()
 find_package(Readline)
 
 file(GLOB HEADERS "include/bts/cli/*.hpp")
 
 if (READLINE_FOUND)
   target_compile_definitions (fc PRIVATE HAVE_READLINE)
-  set(readline_libraries ${Readline_LIBRARY})
   if (CURSES_FOUND)
-    list(APPEND readline_libraries ${CURSES_LIBRARY})
+    list(APPEND Readline_LIBRARIES ${CURSES_LIBRARY})
   endif()
   set(readline_includes ${Readline_INCLUDE_DIR})
 endif()
@@ -275,10 +279,6 @@ if(WIN32)
   target_compile_definitions( fc PRIVATE _CRT_NONSTDC_NO_DEPRECATE )
 endif(WIN32)
 # end readline stuff
-
-if( NOT CPP_STANDARD )
-  set( CPP_STANDARD, "-std=c++11" )
-endif()
 
 IF(WIN32)
   target_compile_definitions(fc PUBLIC WIN32 NOMINMAX _WIN32_WINNT=0x0501 _CRT_SECURE_NO_WARNINGS
@@ -298,15 +298,15 @@ IF(WIN32)
      # Put MinGW specific compiler settings here
   endif()
 ELSE()
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
   IF(APPLE)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPP_STANDARD} -stdlib=libc++ -Wall")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall")
   ELSE()
     if( NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
-      target_compile_options(fc PUBLIC ${CPP_STANDARD} -Wall -fnon-call-exceptions)
+      target_compile_options(fc PUBLIC -Wall -fnon-call-exceptions)
     endif()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPP_STANDARD} -Wall -fnon-call-exceptions")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fnon-call-exceptions")
   ENDIF()
 ENDIF()
 
@@ -360,7 +360,6 @@ target_include_directories(fc
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${Boost_INCLUDE_DIR}
     ${OPENSSL_INCLUDE_DIR}
-    "vendor/diff-match-patch-cpp-stl"
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
     "${readline_includes}"
 
@@ -375,7 +374,8 @@ target_include_directories(fc
 IF(NOT WIN32)
   set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
 ENDIF()
-target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} )
+
+target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
@@ -386,7 +386,7 @@ IF(NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.(a|lib)$")
 IF(MSVC)
 add_definitions(/DBOOST_TEST_DYN_LINK)
 ELSE(MSVC)
-add_definitions(-DBOOST_TEST_DYN_LINK)
+# add_definitions(-DBOOST_TEST_DYN_LINK)
 ENDIF(MSVC)
 ENDIF()
 

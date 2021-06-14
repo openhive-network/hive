@@ -35,15 +35,22 @@ namespace appbase {
         stopped ///< the plugin is no longer running
       };
 
+      enum pre_shutdown_order {
+        basic_order = 0,  ///most plugins don't need to be prepared before another plugins, therefore it doesn't matter when they will be closed
+        p2p_order   = 1   ///p2p plugin has to reject/break all connections at the start
+      };
+
       virtual ~abstract_plugin(){}
 
+      virtual pre_shutdown_order get_pre_shutdown_order()const = 0;
       virtual state get_state()const = 0;
       virtual const std::string& get_name()const  = 0;
       virtual void set_program_options( options_description& cli, options_description& cfg ) = 0;
       virtual void initialize(const variables_map& options) = 0;
       virtual void startup() = 0;
+      virtual void finalize_startup() = 0;
+      virtual void pre_shutdown() = 0;
       virtual void shutdown() = 0;
-
     protected:
       typedef std::function<void(abstract_plugin&)> plugin_processor;
 
@@ -57,15 +64,28 @@ namespace appbase {
           It is a part of initialization process triggerred by main application.
       */
       virtual void plugin_initialize( const variables_map& options ) = 0;
+
       /** Abstract method to be reimplemented in final plugin implementation.
           It is a part of startup process triggerred by main application.
       */
       virtual void plugin_startup() = 0;
+
+      /** Abstract method to be reimplemented in final plugin implementation.
+          It is a part of final stage of startup process triggerred by main application.
+      */
+      virtual void plugin_finalize_startup() = 0;
+
+      /** Abstract method to be reimplemented in final plugin implementation.
+          It is a part of shutdown process triggerred by main application.
+      */
+      virtual void plugin_pre_shutdown() = 0;
+
       /** Abstract method to be reimplemented in final plugin implementation.
           It is a part of shutdown process triggerred by main application.
       */
       virtual void plugin_shutdown() = 0;
 
+      virtual void set_pre_shutdown_order( pre_shutdown_order val ) = 0;
   };
 
   template<typename Impl>

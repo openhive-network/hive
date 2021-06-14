@@ -199,13 +199,13 @@ if __name__ == '__main__':
             # list proposals with inactive status, it shoud be list of pairs id:total_votes
             votes = test_utils.list_proposals(node_client, test_start_date_iso, "inactive")
             for vote in votes:
-                #should be 0 for all
+                # should be 0 for all
                 assert vote == 0, "All votes should be equal to 0"
 
             logger.info("Balances for accounts after creating proposals")
             balances = test_utils.print_balance(node_client, accounts)
             for balance in balances:
-                #should be 390.000 TBD for all
+                # should be 390.000 TBD for all
                 assert balance == '390000', "All balances should be equal to 390.000 TBD"
             test_utils.print_balance(node_client, [{'name' : args.treasury}])
 

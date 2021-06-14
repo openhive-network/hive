@@ -23,16 +23,17 @@ IF( WIN32 )
   set(BOOST_ALL_DYN_LINK OFF) # force dynamic linking for all libraries
 ENDIF(WIN32)
 
+cmake_policy(SET CMP0057 NEW)
 FIND_PACKAGE(Boost 1.57 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
 if( APPLE )
   # Apple Specific Options Here
   message( STATUS "Configuring ChainBase on OS X" )
-  set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11 -stdlib=libc++ -Wall -Wno-conversion" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -stdlib=libc++ -Wall -Wno-conversion" )
 else( APPLE )
   # Linux Specific Options Here
   message( STATUS "Configuring ChainBase on Linux" )
-  set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11 -Wall" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall" )
   set( rt_library rt )
   set( pthread_library pthread)
   if ( FULL_STATIC_BUILD )

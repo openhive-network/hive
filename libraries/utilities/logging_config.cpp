@@ -35,6 +35,7 @@ void set_logging_program_options( boost::program_options::options_description& o
 
   std::vector< std::string > default_logger(
     { "{\"name\":\"default\",\"level\":\"info\",\"appender\":\"stderr\"}",
+      "{\"name\":\"user\",\"level\":\"debug\",\"appender\":\"stderr\"}",
       "{\"name\":\"p2p\",\"level\":\"warn\",\"appender\":\"p2p\"}" } );
   std::string str_default_logger = boost::algorithm::join( default_logger, " " );
 
@@ -78,7 +79,7 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
     for( string& s : all_appenders )
     {
       std::size_t pos = 0;
-      while ((pos = s.find("{", pos)) != std::string::npos)
+      while ((pos = s.find('{', pos)) != std::string::npos)
       {
         auto appender = fc::json::from_string( s.substr( pos++ ) ).as< appender_args >();
         appender.validate();
@@ -96,6 +97,8 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
                                             fc::console_appender::level_color( fc::log_level::error,
                                                                   fc::console_appender::color::red));
           console_appender_config.stream = fc::variant( appender.stream ).as< fc::console_appender::stream::type >();
+          if (appender.time_format.length())
+            console_appender_config.time_format = fc::variant( appender.time_format ).as<fc::appender::time_format>();
           logging_config.appenders.push_back(
                                   fc::appender_config( appender.appender, "console", fc::variant( console_appender_config ) ) );
           found_logging_config = true;
@@ -114,6 +117,8 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
           file_appender_config.rotate = true;
           file_appender_config.rotation_interval = fc::hours(1);
           file_appender_config.rotation_limit = fc::days(1);
+          if (appender.time_format.length())
+            file_appender_config.time_format = fc::variant( appender.time_format ).as<fc::appender::time_format>();
           logging_config.appenders.push_back(
                                   fc::appender_config( appender.appender, "file", fc::variant( file_appender_config ) ) );
           found_logging_config = true;
@@ -128,7 +133,7 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
       for( string& s : loggers )
       {
         std::size_t pos = 0;
-        while ((pos = s.find("{", pos)) != std::string::npos)
+        while ((pos = s.find('{', pos)) != std::string::npos)
         {
           auto logger = fc::json::from_string( s.substr( pos++ ) ).as< logger_args >();
 

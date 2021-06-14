@@ -32,7 +32,6 @@
 namespace bpo = boost::program_options;
 using hive::protocol::version;
 using std::string;
-using std::vector;
 
 string& version_string()
 {

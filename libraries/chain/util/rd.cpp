@@ -88,7 +88,7 @@ void rd_setup_dynamics_params(
   // So we can set x = ceil((b << s) / d) = ((b << s) + (d-1)) / d.
 
   // Worst-case assert for the following is d=1, in which case b << s must be less than 2^64
-  static_assert( HIVE_RD_MAX_BUDGET < (uint64_t(1) << (64-HIVE_RD_DECAY_DENOM_SHIFT)),
+  static_assert( uint64_t(HIVE_RD_MAX_BUDGET) < (uint64_t(1) << (64-HIVE_RD_DECAY_DENOM_SHIFT)),
     "Computation of temp could overflow here, set smaller HIVE_RD_MAX_BUDGET" );
 
   fc::uint128_t temp = user_params.budget_per_time_unit;

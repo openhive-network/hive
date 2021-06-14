@@ -80,6 +80,8 @@ class database_api_impl
       (find_vesting_delegation_expirations)
       (list_hbd_conversion_requests)
       (find_hbd_conversion_requests)
+      (list_collateralized_conversion_requests)
+      (find_collateralized_conversion_requests)
       (list_decline_voting_rights_requests)
       (find_decline_voting_rights_requests)
       (get_comment_pending_payouts)
@@ -92,6 +94,7 @@ class database_api_impl
       (list_proposals)
       (find_proposals)
       (list_proposal_votes)
+      (find_recurrent_transfers)
       (get_transaction_hex)
       (get_required_signatures)
       (get_potential_signatures)
@@ -107,6 +110,7 @@ class database_api_impl
       (list_smt_token_emissions)
       (find_smt_token_emissions)
 #endif
+      (is_known_transaction)
     )
 
     template< typename ApiResultType, typename ResultType >
@@ -148,7 +152,7 @@ class database_api_impl
         auto itr = idx.iterator_to(*(_db.get_index<IndexType, hive::chain::by_id>().find( id )));
         auto end = idx.end();
 
-        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
       else if( direction == descending )
       {
@@ -156,7 +160,7 @@ class database_api_impl
         auto iter  = boost::make_reverse_iterator( index_it );
         auto iter_end = boost::make_reverse_iterator( idx.begin() );
 
-        iteration_loop< ResultType, OnPushType, FilterType >( iter, iter_end, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( iter, iter_end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
     }
 
@@ -172,7 +176,7 @@ class database_api_impl
     )
     {
       if ( last_index.valid() ) {
-        iterate_results_from_index< IndexType, OrderType >( *last_index, result, limit, std::move(on_push), std::move(filter), direction );
+        iterate_results_from_index< IndexType, OrderType >( *last_index, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter), direction );
         return;
       }
 
@@ -182,14 +186,14 @@ class database_api_impl
         auto itr = idx.lower_bound( start );
         auto end = idx.end();
 
-        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
       else if( direction == descending )
       {
         auto iter = boost::make_reverse_iterator( idx.upper_bound(start) );
         auto end_iter = boost::make_reverse_iterator( idx.begin() );
 
-        iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
     }
 
@@ -205,7 +209,7 @@ class database_api_impl
     {
       if( last_index.valid() )
       {
-        iterate_results_from_index< IndexType, OrderType >( *last_index, result, limit, std::move( on_push ), std::move( filter ), direction );
+        iterate_results_from_index< IndexType, OrderType >( *last_index, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter), direction );
         return;
       }
 
@@ -215,14 +219,14 @@ class database_api_impl
         auto itr = idx.begin();
         auto end = idx.end();
 
-        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
       else if( direction == descending )
       {
         auto iter = boost::make_reverse_iterator( idx.end() );
         auto end_iter = boost::make_reverse_iterator( idx.begin() );
 
-        iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::move(on_push), std::move(filter) );
+        iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
     }
 
@@ -307,7 +311,7 @@ DEFINE_API_IMPL( database_api_impl, get_reward_funds )
 
 DEFINE_API_IMPL( database_api_impl, get_current_price_feed )
 {
-  return _db.get_feed_history().current_median_history;;
+  return _db.get_feed_history().current_median_history;
 }
 
 DEFINE_API_IMPL( database_api_impl, get_feed_history )
@@ -468,8 +472,15 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
     case( by_proxy ):
     {
       auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+      account_id_type proxy_id;
+      if( key.first != HIVE_PROXY_TO_SELF_ACCOUNT )
+      {
+        const auto* proxy = _db.find_account( key.first );
+        FC_ASSERT( proxy != nullptr, "Given proxy account does not exist." );
+        proxy_id = proxy->get_id();
+      }
       iterate_results< chain::account_index, chain::by_proxy >(
-        boost::make_tuple( key.first, key.second ),
+        boost::make_tuple( proxy_id, key.second ),
         result.accounts,
         args.limit,
         [&]( const account_object& a, const database& db ){ return api_account_object( a, db, args.delayed_votes_active ); },
@@ -993,8 +1004,15 @@ DEFINE_API_IMPL( database_api_impl, list_hbd_conversion_requests )
     case( by_account ):
     {
       auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
+      account_id_type owner_id;
+      if( key.first != "" )
+      {
+        const auto* owner = _db.find_account( key.first );
+        FC_ASSERT( owner != nullptr, "Given account does not exist." );
+        owner_id = owner->get_id();
+      }
       iterate_results< chain::convert_request_index, chain::by_owner >(
-        boost::make_tuple( key.first, key.second ),
+        boost::make_tuple( owner_id, key.second ),
         result.requests,
         args.limit,
         &database_api_impl::on_push_default< api_convert_request_object, convert_request_object >,
@@ -1011,10 +1029,15 @@ DEFINE_API_IMPL( database_api_impl, list_hbd_conversion_requests )
 DEFINE_API_IMPL( database_api_impl, find_hbd_conversion_requests )
 {
   find_hbd_conversion_requests_return result;
-  const auto& convert_idx = _db.get_index< chain::convert_request_index, chain::by_owner >();
-  auto itr = convert_idx.lower_bound( args.account );
 
-  while( itr != convert_idx.end() && itr->owner == args.account && result.requests.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
+  const auto* owner = _db.find_account( args.account );
+  FC_ASSERT( owner != nullptr, "Given account does not exist." );
+  account_id_type owner_id = owner->get_id();
+
+  const auto& convert_idx = _db.get_index< chain::convert_request_index, chain::by_owner >();
+  auto itr = convert_idx.lower_bound( owner_id );
+
+  while( itr != convert_idx.end() && itr->get_owner() == owner_id && result.requests.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
   {
     result.requests.emplace_back( *itr, _db );
     ++itr;
@@ -1023,6 +1046,72 @@ DEFINE_API_IMPL( database_api_impl, find_hbd_conversion_requests )
   return result;
 }
 
+/* Collateralized Conversion Requests */
+
+DEFINE_API_IMPL( database_api_impl, list_collateralized_conversion_requests )
+{
+  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+
+  list_collateralized_conversion_requests_return result;
+  result.requests.reserve( args.limit );
+
+  switch( args.order )
+  {
+    case( by_conversion_date ):
+    {
+      auto key = args.start.as< std::pair< time_point_sec, collateralized_convert_request_id_type > >();
+      iterate_results< chain::collateralized_convert_request_index, chain::by_conversion_date >(
+        boost::make_tuple( key.first, key.second ),
+        result.requests,
+        args.limit,
+        &database_api_impl::on_push_default< api_collateralized_convert_request_object, collateralized_convert_request_object >,
+        &database_api_impl::filter_default< collateralized_convert_request_object > );
+      break;
+    }
+    case( by_account ):
+    {
+      auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
+      account_id_type owner_id;
+      if( key.first != "" )
+      {
+        const auto* owner = _db.find_account( key.first );
+        FC_ASSERT( owner != nullptr, "Given account does not exist." );
+        owner_id = owner->get_id();
+      }
+      iterate_results< chain::collateralized_convert_request_index, chain::by_owner >(
+        boost::make_tuple( owner_id, key.second ),
+        result.requests,
+        args.limit,
+        &database_api_impl::on_push_default< api_collateralized_convert_request_object, collateralized_convert_request_object >,
+        &database_api_impl::filter_default< collateralized_convert_request_object > );
+      break;
+    }
+    default:
+      FC_ASSERT( false, "Unknown or unsupported sort order" );
+  }
+
+  return result;
+}
+
+DEFINE_API_IMPL( database_api_impl, find_collateralized_conversion_requests )
+{
+  find_collateralized_conversion_requests_return result;
+
+  const auto* owner = _db.find_account( args.account );
+  FC_ASSERT( owner != nullptr, "Given account does not exist." );
+  account_id_type owner_id = owner->get_id();
+
+  const auto& convert_idx = _db.get_index< chain::collateralized_convert_request_index, chain::by_owner >();
+  auto itr = convert_idx.lower_bound( owner_id );
+
+  while( itr != convert_idx.end() && itr->get_owner() == owner_id && result.requests.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
+  {
+    result.requests.emplace_back( *itr, _db );
+    ++itr;
+  }
+
+  return result;
+}
 
 /* Decline Voting Rights Requests */
 
@@ -1109,7 +1198,7 @@ DEFINE_API_IMPL(database_api_impl, get_comment_pending_payouts)
     }
   }
 
-  return std::move(retval);
+  return retval;
 }
 
 /* Comments */
@@ -1533,6 +1622,26 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
   return result;
 }
 
+/* Find recurrent transfers   */
+
+DEFINE_API_IMPL( database_api_impl, find_recurrent_transfers ) {
+  find_recurrent_transfers_return result;
+
+  const auto* from_account = _db.find_account( args.from );
+  FC_ASSERT( from_account != nullptr, "Given 'from' account does not exist." );
+  auto from_account_id = from_account->get_id();
+
+  const auto &idx = _db.get_index<chain::recurrent_transfer_index, chain::by_from_id>();
+  auto itr = idx.find(from_account_id);
+
+  while (itr != idx.end() && itr->from_id == from_account_id && result.recurrent_transfers.size() <= DATABASE_API_SINGLE_QUERY_LIMIT) {
+    const auto& to_account = _db.get_account( itr->to_id );
+    result.recurrent_transfers.emplace_back(*itr, from_account->name, to_account.name);
+    ++itr;
+  }
+
+  return result;
+}
 
 //////////////////////////////////////////////////////////////////////
 //                                                                  //
@@ -1716,7 +1825,7 @@ DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
         &database_api_impl::filter_default< chain::smt_contribution_object > );
       break;
     }
-#ifndef IS_LOW_MEM
+// #ifndef IS_LOW_MEM // indexing by contributor might cause optimization problems in the future
     case ( by_contributor ):
     {
       auto key = args.start.get_array();
@@ -1736,7 +1845,7 @@ DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
         &database_api_impl::filter_default< chain::smt_contribution_object > );
       break;
     }
-#endif
+// #endif
     default:
       FC_ASSERT( false, "Unknown or unsupported sort order" );
   }
@@ -1894,6 +2003,13 @@ DEFINE_API_IMPL( database_api_impl, find_smt_token_emissions )
 
 #endif
 
+DEFINE_API_IMPL( database_api_impl, is_known_transaction )
+{
+  is_known_transaction_return result;
+  result.is_known = _db.is_known_transaction(args.id);
+  return result;
+}
+
 DEFINE_LOCKLESS_APIS( database_api, (get_config)(get_version) )
 
 DEFINE_READ_APIS( database_api,
@@ -1927,6 +2043,8 @@ DEFINE_READ_APIS( database_api,
   (find_vesting_delegation_expirations)
   (list_hbd_conversion_requests)
   (find_hbd_conversion_requests)
+  (list_collateralized_conversion_requests)
+  (find_collateralized_conversion_requests)
   (list_decline_voting_rights_requests)
   (find_decline_voting_rights_requests)
   (get_comment_pending_payouts)
@@ -1939,6 +2057,7 @@ DEFINE_READ_APIS( database_api,
   (find_proposals)
   (list_proposal_votes)
   (get_order_book)
+  (find_recurrent_transfers)
   (get_transaction_hex)
   (get_required_signatures)
   (get_potential_signatures)
@@ -1954,6 +2073,7 @@ DEFINE_READ_APIS( database_api,
   (list_smt_token_emissions)
   (find_smt_token_emissions)
 #endif
+  (is_known_transaction)
 )
 
 } } } // hive::plugins::database_api

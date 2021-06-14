@@ -137,8 +137,6 @@ namespace hive { namespace chain {
       fc::uint128_t recent_slots_filled = fc::uint128::max_value();
       uint8_t       participation_count = 128; ///< Divide by 128 to compute participation percentage
 
-      uint32_t last_irreversible_block_num = 0;
-
       /**
         * The number of votes regenerated per day.  Any user voting slower than this rate will be
         * "wasting" voting power through spillover; any user voting faster than this rate will have
@@ -149,6 +147,8 @@ namespace hive { namespace chain {
       uint32_t delegation_return_period = HIVE_DELEGATION_RETURN_PERIOD_HF0;
 
       uint64_t reverse_auction_seconds = HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6;
+      uint64_t early_voting_seconds = 0;
+      uint64_t mid_voting_seconds = 0;
 
       int64_t available_account_subsidies = 0;
 
@@ -169,6 +169,15 @@ namespace hive { namespace chain {
 
       uint16_t downvote_pool_percent = 0;
 
+      // limits number of objects removed in one automatic operation (only applies to situations where many
+      // objects can accumulate over time but need to be removed in single operation f.e. proposal votes)
+      int16_t current_remove_threshold = HIVE_GLOBAL_REMOVE_THRESHOLD; //negative means no limit
+
+      uint8_t max_consecutive_recurrent_transfer_failures = HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES;
+      uint16_t max_recurrent_transfer_end_date = HIVE_MAX_RECURRENT_TRANSFER_END_DATE;
+      uint8_t min_recurrent_transfers_recurrence = HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE;
+      uint16_t max_open_recurrent_transfers = HIVE_MAX_OPEN_RECURRENT_TRANSFERS;
+
 #ifdef HIVE_ENABLE_SMT
       asset smt_creation_fee = asset( 1000, HBD_SYMBOL ); //< TODO: replace with HBD_asset
 #endif
@@ -185,14 +194,6 @@ namespace hive { namespace chain {
   > dynamic_global_property_index;
 
 } } // hive::chain
-
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template<> struct is_static_length< hive::chain::dynamic_global_property_object > : public boost::true_type {};
-
-} // mira
-#endif
 
 FC_REFLECT( hive::chain::dynamic_global_property_object,
           (id)
@@ -219,10 +220,11 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (current_aslot)
           (recent_slots_filled)
           (participation_count)
-          (last_irreversible_block_num)
           (vote_power_reserve_rate)
           (delegation_return_period)
           (reverse_auction_seconds)
+          (early_voting_seconds)
+          (mid_voting_seconds)
           (available_account_subsidies)
           (hbd_stop_percent)
           (hbd_start_percent)
@@ -234,6 +236,11 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (sps_fund_percent)
           (sps_interval_ledger)
           (downvote_pool_percent)
+          (current_remove_threshold)
+          (max_consecutive_recurrent_transfer_failures)
+          (max_recurrent_transfer_end_date)
+          (max_open_recurrent_transfers)
+          (min_recurrent_transfers_recurrence)
 #ifdef HIVE_ENABLE_SMT
           (smt_creation_fee)
 #endif

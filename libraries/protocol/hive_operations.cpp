@@ -128,7 +128,7 @@ namespace hive { namespace protocol {
 
     FC_ASSERT( beneficiaries.size(), "Must specify at least one beneficiary" );
     FC_ASSERT( beneficiaries.size() < HIVE_BENEFICIARY_LIMIT,
-      "Cannot specify more than ${max} beneficiaries.", ("max", HIVE_BENEFICIARY_LIMIT - 1) ); // Require size serializtion fits in one byte.
+      "Cannot specify more than ${max} beneficiaries.", ("max", HIVE_BENEFICIARY_LIMIT - 1) ); // Require size serialization fits in one byte.
 
     validate_account_name( beneficiaries[0].account );
     FC_ASSERT( beneficiaries[0].weight <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to one account" );
@@ -141,7 +141,7 @@ namespace hive { namespace protocol {
       FC_ASSERT( beneficiaries[i].weight <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to one account" );
       sum += beneficiaries[i].weight;
       FC_ASSERT( sum <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to a comment" ); // Have to check incrementally to avoid overflow
-      FC_ASSERT( beneficiaries[i - 1] < beneficiaries[i], "Benficiaries must be specified in sorted order (account ascending)" );
+      FC_ASSERT( beneficiaries[i - 1] < beneficiaries[i], "Beneficiaries must be specified in sorted order (account ascending)" );
     }
   }
 
@@ -264,7 +264,7 @@ namespace hive { namespace protocol {
     itr = props.find( "maximum_block_size" );
     if( itr != props.end() )
     {
-      uint32_t maximum_block_size;
+      uint32_t maximum_block_size = 0u;
       fc::raw::unpack_from_vector( itr->second, maximum_block_size );
       FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT, "maximum_block_size smaller than minimum max block size" );
     }
@@ -275,7 +275,7 @@ namespace hive { namespace protocol {
 
     if( itr != props.end() )
     {
-      uint16_t hbd_interest_rate;
+      uint16_t hbd_interest_rate = 0u;
       fc::raw::unpack_from_vector( itr->second, hbd_interest_rate );
       FC_ASSERT( hbd_interest_rate >= 0, "hbd_interest_rate must be positive" );
       FC_ASSERT( hbd_interest_rate <= HIVE_100_PERCENT, "hbd_interest_rate must not exceed 100%" );
@@ -316,7 +316,7 @@ namespace hive { namespace protocol {
     itr = props.find( "account_subsidy_budget" );
     if( itr != props.end() )
     {
-      int32_t account_subsidy_budget;
+      int32_t account_subsidy_budget  = 0u;
       fc::raw::unpack_from_vector( itr->second, account_subsidy_budget ); // Checks that the value can be deserialized
       FC_ASSERT( account_subsidy_budget >= HIVE_RD_MIN_BUDGET, "Budget must be at least ${n}", ("n", HIVE_RD_MIN_BUDGET) );
       FC_ASSERT( account_subsidy_budget <= HIVE_RD_MAX_BUDGET, "Budget must be at most ${n}", ("n", HIVE_RD_MAX_BUDGET) );
@@ -325,7 +325,7 @@ namespace hive { namespace protocol {
     itr = props.find( "account_subsidy_decay" );
     if( itr != props.end() )
     {
-      uint32_t account_subsidy_decay;
+      uint32_t account_subsidy_decay = 0u;
       fc::raw::unpack_from_vector( itr->second, account_subsidy_decay ); // Checks that the value can be deserialized
       FC_ASSERT( account_subsidy_decay >= HIVE_RD_MIN_DECAY, "Decay must be at least ${n}", ("n", HIVE_RD_MIN_DECAY) );
       FC_ASSERT( account_subsidy_decay <= HIVE_RD_MAX_DECAY, "Decay must be at most ${n}", ("n", HIVE_RD_MAX_DECAY) );
@@ -341,7 +341,7 @@ namespace hive { namespace protocol {
   void account_witness_proxy_operation::validate() const
   {
     validate_account_name( account );
-    if( proxy.size() )
+    if( !is_clearing_proxy() )
       validate_account_name( proxy );
     FC_ASSERT( proxy != account, "Cannot proxy to self" );
   }
@@ -554,6 +554,14 @@ namespace hive { namespace protocol {
     FC_ASSERT( amount.amount > 0, "Must convert some HBD" );
   }
 
+  void collateralized_convert_operation::validate()const
+  {
+    validate_account_name( owner );
+    /// only allow conversion from HIVE to HBD (at least for now)
+    FC_ASSERT( is_asset_type( amount, HIVE_SYMBOL ), "Can only convert HIVE to HBD" );
+    FC_ASSERT( amount.amount > 0, "Must convert some HIVE" );
+  }
+
   void report_over_production_operation::validate()const
   {
     validate_account_name( reporter );
@@ -692,8 +700,8 @@ namespace hive { namespace protocol {
     FC_ASSERT( is_asset_type( reward_hive, HIVE_SYMBOL ), "Reward HIVE must be expressed in HIVE" );
     FC_ASSERT( is_asset_type( reward_hbd, HBD_SYMBOL ), "Reward HBD must be expressed in HBD" );
     FC_ASSERT( is_asset_type( reward_vests, VESTS_SYMBOL ), "Reward VESTS must be expressed in VESTS" );
-    FC_ASSERT( reward_hive.amount >= 0, "Cannot claim a negative amount" );
     FC_ASSERT( reward_hbd.amount >= 0, "Cannot claim a negative amount" );
+    FC_ASSERT( reward_hive.amount >= 0, "Cannot claim a negative amount" );
     FC_ASSERT( reward_vests.amount >= 0, "Cannot claim a negative amount" );
     FC_ASSERT( reward_hive.amount > 0 || reward_hbd.amount > 0 || reward_vests.amount > 0, "Must claim something." );
   }
@@ -725,6 +733,21 @@ namespace hive { namespace protocol {
     FC_ASSERT( delegator != delegatee, "You cannot delegate VESTS to yourself" );
     FC_ASSERT( is_asset_type( vesting_shares, VESTS_SYMBOL ), "Delegation must be VESTS" );
     FC_ASSERT( vesting_shares >= asset( 0, VESTS_SYMBOL ), "Delegation cannot be negative" );
+  }
+
+  void recurrent_transfer_operation::validate()const
+  { try {
+      validate_account_name( from );
+      validate_account_name( to );
+      FC_ASSERT( amount.symbol.is_vesting() == false, "Transfer of vesting is not allowed." );
+      FC_ASSERT( amount.amount >= 0, "Cannot transfer a negative amount (aka: stealing)" );
+      FC_ASSERT( recurrence >= HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE, "Cannot set a transfer recurrence that is less than ${recurrence} hours", ("recurrence", HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE) );
+      FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE, "Memo is too large" );
+      FC_ASSERT( fc::is_utf8( memo ), "Memo is not UTF8" );
+      FC_ASSERT( from != to, "Cannot set a transfer to yourself" );
+      FC_ASSERT(executions >= 2, "Executions must be at least 2, if you set executions to 1 the recurrent transfer will execute immediately and delete itself. You should use a normal transfer operation");
+      FC_ASSERT( fc::hours(recurrence * executions).to_seconds()  < fc::days(HIVE_MAX_RECURRENT_TRANSFER_END_DATE).to_seconds(), "Cannot set a transfer that would last for longer than ${days} days", ("days", HIVE_MAX_RECURRENT_TRANSFER_END_DATE) );
+    } FC_CAPTURE_AND_RETHROW( (*this) )
   }
 
 } } // hive::protocol

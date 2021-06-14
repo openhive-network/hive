@@ -56,23 +56,23 @@ BOOST_AUTO_TEST_CASE( parse_size_test )
   BOOST_CHECK_THROW( fc::parse_size( "" ), fc::parse_error_exception );
   BOOST_CHECK_THROW( fc::parse_size( "k" ), fc::parse_error_exception );
 
-  BOOST_CHECK_EQUAL( fc::parse_size( "0" ), 0 );
-  BOOST_CHECK_EQUAL( fc::parse_size( "1" ), 1 );
-  BOOST_CHECK_EQUAL( fc::parse_size( "2" ), 2 );
-  BOOST_CHECK_EQUAL( fc::parse_size( "3" ), 3 );
-  BOOST_CHECK_EQUAL( fc::parse_size( "4" ), 4 );
+  BOOST_CHECK_EQUAL( fc::parse_size( "0" ), 0u );
+  BOOST_CHECK_EQUAL( fc::parse_size( "1" ), 1u );
+  BOOST_CHECK_EQUAL( fc::parse_size( "2" ), 2u );
+  BOOST_CHECK_EQUAL( fc::parse_size( "3" ), 3u );
+  BOOST_CHECK_EQUAL( fc::parse_size( "4" ), 4u );
 
-  BOOST_CHECK_EQUAL( fc::parse_size( "9" ),   9 );
-  BOOST_CHECK_EQUAL( fc::parse_size( "10" ), 10 );
-  BOOST_CHECK_EQUAL( fc::parse_size( "11" ), 11 );
-  BOOST_CHECK_EQUAL( fc::parse_size( "12" ), 12 );
+  BOOST_CHECK_EQUAL( fc::parse_size( "9" ),   9u );
+  BOOST_CHECK_EQUAL( fc::parse_size( "10" ), 10u );
+  BOOST_CHECK_EQUAL( fc::parse_size( "11" ), 11u );
+  BOOST_CHECK_EQUAL( fc::parse_size( "12" ), 12u );
 
-  BOOST_CHECK_EQUAL( fc::parse_size( "314159265"), 314159265 );
-  BOOST_CHECK_EQUAL( fc::parse_size( "1k" ), 1024 );
+  BOOST_CHECK_EQUAL( fc::parse_size( "314159265"), 314159265u );
+  BOOST_CHECK_EQUAL( fc::parse_size( "1k" ), 1024u );
   BOOST_CHECK_THROW( fc::parse_size( "1a" ), fc::parse_error_exception );
-  BOOST_CHECK_EQUAL( fc::parse_size( "1kb" ), 1000 );
-  BOOST_CHECK_EQUAL( fc::parse_size( "1MiB" ), 1048576 );
-  BOOST_CHECK_EQUAL( fc::parse_size( "32G" ), 34359738368 );
+  BOOST_CHECK_EQUAL( fc::parse_size( "1kb" ), 1000u );
+  BOOST_CHECK_EQUAL( fc::parse_size( "1MiB" ), 1048576u );
+  BOOST_CHECK_EQUAL( fc::parse_size( "32G" ), 34359738368u );
 }
 
 /**
@@ -434,21 +434,21 @@ BOOST_AUTO_TEST_CASE( curation_weight_test )
 
 }
 
-#if !defined ENABLE_MIRA && !defined ENABLE_STD_ALLOCATOR
+#ifndef ENABLE_STD_ALLOCATOR
 BOOST_AUTO_TEST_CASE( chain_object_size )
 {
   //typical elements of various objects
-  BOOST_CHECK_EQUAL( sizeof( account_object::id_type ), 4 ); //hidden first element of all objects (here just an example, all are the same size)
-  BOOST_CHECK_EQUAL( sizeof( account_id_type ), 4 ); //all id_refs are of the same size
-  BOOST_CHECK_EQUAL( sizeof( time_point_sec ), 4 );
-  BOOST_CHECK_EQUAL( sizeof( share_type ), 8 );
-  BOOST_CHECK_EQUAL( sizeof( HIVE_asset ), 8 ); //all tiny assets are of the same size
-  BOOST_CHECK_EQUAL( sizeof( asset ), 16 );
-  BOOST_CHECK_EQUAL( sizeof( account_name_type ), 16 );
-  BOOST_CHECK_EQUAL( sizeof( shared_string ), 32 ); //it has dynamic component as well
-  BOOST_CHECK_EQUAL( sizeof( price ), 32 );
-  BOOST_CHECK_EQUAL( sizeof( t_vector< char > ), 32 ); //it has dynamic component as well, all vectors have the same static size
-
+  BOOST_CHECK_EQUAL( sizeof( account_object::id_type ), 4u ); //hidden first element of all objects (here just an example, all are the same size)
+  BOOST_CHECK_EQUAL( sizeof( account_id_type ), 4u ); //all id_refs are of the same size
+  BOOST_CHECK_EQUAL( sizeof( time_point_sec ), 4u );
+  BOOST_CHECK_EQUAL( sizeof( share_type ), 8u );
+  BOOST_CHECK_EQUAL( sizeof( HIVE_asset ), 8u ); //all tiny assets are of the same size
+  BOOST_CHECK_EQUAL( sizeof( asset ), 16u );
+  BOOST_CHECK_EQUAL( sizeof( account_name_type ), 16u );
+  BOOST_CHECK_EQUAL( sizeof( shared_string ), 32u ); //it has dynamic component as well
+  BOOST_CHECK_EQUAL( sizeof( price ), 32u );
+  BOOST_CHECK_EQUAL( sizeof( t_vector< char > ), 32u ); //it has dynamic component as well, all vectors have the same static size
+  BOOST_CHECK_EQUAL( sizeof( public_key_type ), 33u );
   /*
   The purpose of this test is to make you think about the impact on RAM when you make changes in chain objects.
   Also somewhat helps in catching new problems with alignment (f.e. when you added a flag member and object
@@ -458,52 +458,53 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   */
 
   //top RAM gluttons
-  BOOST_CHECK_EQUAL( sizeof( comment_object ), 36 ); //85M+ growing fast
-  BOOST_CHECK_EQUAL( sizeof( comment_content_object ), 104 ); //as many as comment_object, dynamic size matters the most, in HiveMind
+  BOOST_CHECK_EQUAL( sizeof( comment_object ), 36u ); //85M+ growing fast
 
   //permanent objects (no operation to remove)
-  BOOST_CHECK_EQUAL( sizeof( account_object ), 488 ); //1.3M+
-  BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 72 ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
-  BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 248 ); //as many as account_object
-  BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_object ), 48 ); //obsolete - only created/modified up to HF12 (683 objects)
-  BOOST_CHECK_EQUAL( sizeof( witness_object ), 352 ); //small but potentially as many as account_object
+  BOOST_CHECK_EQUAL( sizeof( account_object ), 424u ); //1.3M+
+  BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 72u ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
+  BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 248u ); //as many as account_object
+  BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_object ), 48u ); //obsolete - only created/modified up to HF12 (683 objects)
+  BOOST_CHECK_EQUAL( sizeof( witness_object ), 352u ); //small but potentially as many as account_object
 
   //lasting objects (operation to create and remove, but with potential to grow)
-  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_object ), 64 ); //1M+ (potential of account_object squared !!!)
-  BOOST_CHECK_EQUAL( sizeof( withdraw_vesting_route_object ), 48 ); //45k (potential of 10*account_object)
-  BOOST_CHECK_EQUAL( sizeof( witness_vote_object ), 40 ); //450k (potential of 30*account_object)
+  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_object ), 64u ); //1M+ (potential of account_object squared !!!)
+  BOOST_CHECK_EQUAL( sizeof( withdraw_vesting_route_object ), 48u ); //45k (potential of 10*account_object)
+  BOOST_CHECK_EQUAL( sizeof( witness_vote_object ), 40u ); //450k (potential of 30*account_object)
 
   //buffered objects (operation to create, op/vop to remove after certain time)
-  BOOST_CHECK_EQUAL( sizeof( transaction_object ), 64 ); //at most <1h> of transactions
-  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_expiration_object ), 48 ); //at most <5d> of undelegates
-  BOOST_CHECK_EQUAL( sizeof( owner_authority_history_object ), 104 ); //at most <30d> of ownership updates
-  BOOST_CHECK_EQUAL( sizeof( account_recovery_request_object ), 104 ); //at most <1d> of account recoveries
-  BOOST_CHECK_EQUAL( sizeof( change_recovery_account_request_object ), 48 ); //at most <30d> of recovery account changes
-  BOOST_CHECK_EQUAL( sizeof( comment_cashout_object ), 200 //at most <7d> of unpaid comments (all comments prior to HF19)
+  BOOST_CHECK_EQUAL( sizeof( transaction_object ), 64u ); //at most <1h> of transactions
+  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_expiration_object ), 48u ); //at most <5d> of undelegates
+  BOOST_CHECK_EQUAL( sizeof( owner_authority_history_object ), 104u ); //at most <30d> of ownership updates
+  BOOST_CHECK_EQUAL( sizeof( account_recovery_request_object ), 96u ); //at most <1d> of account recoveries
+  BOOST_CHECK_EQUAL( sizeof( change_recovery_account_request_object ), 40u ); //at most <30d> of recovery account changes
+  BOOST_CHECK_EQUAL( sizeof( comment_cashout_object ), 200u //at most <7d> of unpaid comments (all comments prior to HF19)
 #ifdef HIVE_ENABLE_SMT
     + 32
 #endif
   ); 
-  BOOST_CHECK_EQUAL( sizeof( comment_vote_object ), 48 ); //at most <7d> of votes on unpaid comments
-  BOOST_CHECK_EQUAL( sizeof( convert_request_object ), 56 ); //at most <3.5d> of conversion requests
-  BOOST_CHECK_EQUAL( sizeof( escrow_object ), 120 ); //small but potentially lasting forever, limited to 255*account_object
-  BOOST_CHECK_EQUAL( sizeof( savings_withdraw_object ), 104 ); //at most <3d> of saving withdrawals
-  BOOST_CHECK_EQUAL( sizeof( limit_order_object ), 80 ); //at most <28d> of limit orders
-  BOOST_CHECK_EQUAL( sizeof( decline_voting_rights_request_object ), 32 ); //at most <30d> of decline requests
-  BOOST_CHECK_EQUAL( sizeof( proposal_object ), 144 ); //potentially infinite, but costs a lot to make (especially after HF24)
-  BOOST_CHECK_EQUAL( sizeof( proposal_vote_object ), 32 ); //potentially infinite, but limited by account_object and time of proposal_object life
+  BOOST_CHECK_EQUAL( sizeof( comment_vote_object ), 48u ); //at most <7d> of votes on unpaid comments
+  BOOST_CHECK_EQUAL( sizeof( convert_request_object ), 24u ); //at most <3.5d> of conversion requests
+  BOOST_CHECK_EQUAL( sizeof( collateralized_convert_request_object ), 32u ); //at most <3.5d> of conversion requests
+  BOOST_CHECK_EQUAL( sizeof( escrow_object ), 120u ); //small but potentially lasting forever, limited to 255*account_object
+  BOOST_CHECK_EQUAL( sizeof( savings_withdraw_object ), 104u ); //at most <3d> of saving withdrawals
+  BOOST_CHECK_EQUAL( sizeof( limit_order_object ), 80u ); //at most <28d> of limit orders
+  BOOST_CHECK_EQUAL( sizeof( decline_voting_rights_request_object ), 32u ); //at most <30d> of decline requests
+  BOOST_CHECK_EQUAL( sizeof( proposal_object ), 144u ); //potentially infinite, but costs a lot to make (especially after HF24)
+  BOOST_CHECK_EQUAL( sizeof( proposal_vote_object ), 32u ); //potentially infinite, but limited by account_object and time of proposal_object life
 
   //singletons (size only affects performance, especially with MIRA)
-  BOOST_CHECK_EQUAL( sizeof( reward_fund_object ), 96 );
-  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 344
+  BOOST_CHECK_EQUAL( sizeof( reward_fund_object ), 96u );
+  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 368u
 #ifdef HIVE_ENABLE_SMT
     + 16
 #endif
   );
-  BOOST_CHECK_EQUAL( sizeof( block_summary_object ), 24 ); //always 64k objects
-  BOOST_CHECK_EQUAL( sizeof( hardfork_property_object ), 120 );
-  BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 136 ); //dynamic size worth 7*24 of sizeof(price)
-  BOOST_CHECK_EQUAL( sizeof( witness_schedule_object ), 536 );
+  BOOST_CHECK_EQUAL( sizeof( block_summary_object ), 24u ); //always 64k objects
+  BOOST_CHECK_EQUAL( sizeof( hardfork_property_object ), 120u );
+  BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 232u ); //dynamic size worth 7*24 of sizeof(price)
+  BOOST_CHECK_EQUAL( sizeof( witness_schedule_object ), 536u );
+  BOOST_CHECK_EQUAL( sizeof( recurrent_transfer_object ), 72u );
 
   //TODO: categorize and evaluate size potential of SMT related objects:
   //account_regular_balance_object

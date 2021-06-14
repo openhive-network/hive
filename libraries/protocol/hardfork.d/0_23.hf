@@ -1,9 +1,7 @@
 #ifndef HIVE_HARDFORK_0_23
 #define HIVE_HARDFORK_0_23 23
 
-long hf23_time();
-
-#define HIVE_HARDFORK_0_23_TIME        hf23_time()
+#define HIVE_HARDFORK_0_23_TIME 1584712800 // Friday, 20 March 2020 14:00:00 GMT
 
 #define HIVE_HARDFORK_0_23_VERSION hardfork_version( 0, 23 )
 

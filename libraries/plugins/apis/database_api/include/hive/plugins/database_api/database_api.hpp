@@ -83,6 +83,8 @@ class database_api
       (find_vesting_delegation_expirations)
       (list_hbd_conversion_requests)
       (find_hbd_conversion_requests)
+      (list_collateralized_conversion_requests)
+      (find_collateralized_conversion_requests)
       (list_decline_voting_rights_requests)
       (find_decline_voting_rights_requests)
 
@@ -108,6 +110,11 @@ class database_api
       (list_proposals)
       (find_proposals)
       (list_proposal_votes)
+
+      ////////////////////////
+      // Recurrent payments //
+      ////////////////////////
+      (find_recurrent_transfers)
 
       ////////////////////////////
       // Authority / validation //
@@ -160,6 +167,7 @@ class database_api
       (list_smt_token_emissions)
       (find_smt_token_emissions)
 #endif
+      (is_known_transaction)
     )
 
   private:

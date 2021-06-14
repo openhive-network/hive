@@ -69,16 +69,21 @@ namespace bpo = boost::program_options;
 int main( int argc, char** argv )
 {
   try {
+    const char* raw_password_from_environment = std::getenv("HIVE_WALLET_PASSWORD");
+    std::string unlock_password_from_environment = raw_password_from_environment ? raw_password_from_environment : "";
 
     boost::program_options::options_description opts;
       opts.add_options()
       ("help,h", "Print this help message and exit.")
       ("server-rpc-endpoint,s", bpo::value<string>()->implicit_value("ws://127.0.0.1:8090"), "Server websocket RPC endpoint")
       ("cert-authority,a", bpo::value<string>()->default_value("_default"), "Trusted CA bundle file for connecting to wss:// TLS server")
+      ("retry-server-connection", "Keep trying to connect to the Server websocket RPC endpoint if the first attempt fails")
       ("rpc-endpoint,r", bpo::value<string>()->implicit_value("127.0.0.1:8091"), "Endpoint for wallet websocket RPC to listen on")
       ("rpc-tls-endpoint,t", bpo::value<string>()->implicit_value("127.0.0.1:8092"), "Endpoint for wallet websocket TLS RPC to listen on")
       ("rpc-tls-certificate,c", bpo::value<string>()->implicit_value("server.pem"), "PEM certificate for wallet websocket TLS RPC")
       ("rpc-http-endpoint,H", bpo::value<string>()->implicit_value("127.0.0.1:8093"), "Endpoint for wallet HTTP RPC to listen on")
+      ("unlock", bpo::value<string>()->implicit_value(unlock_password_from_environment), "Password to automatically unlock wallet with "
+                                                                                         "or use HIVE_WALLET_PASSWORD environment variable if no password is supplied")
       ("daemon,d", "Run the wallet in daemon mode" )
       ("rpc-http-allowip", bpo::value<vector<string>>()->multitoken(), "Allows only specified IPs to connect to the HTTP endpoint" )
       ("wallet-file,w", bpo::value<string>()->implicit_value("wallet.json"), "wallet to load")
@@ -163,7 +168,28 @@ int main( int argc, char** argv )
 
     fc::http::websocket_client client( options["cert-authority"].as<std::string>() );
     idump((wdata.ws_server));
-    auto con  = client.connect( wdata.ws_server );
+    fc::http::websocket_connection_ptr con;
+
+    for (;;)
+    {
+      try
+      {
+        con = client.connect( wdata.ws_server );
+      }
+      catch (const fc::exception& e)
+      {
+        if (!options.count("retry-server-connection"))
+          throw;
+      }
+      if (con)
+        break;
+      else
+      {
+        wlog("Error connecting to server RPC endpoint, retrying in 10 seconds");
+        fc::usleep(fc::seconds(10));
+      }
+    }
+
     auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
 
     auto remote_api = apic->get_remote_api< hive::wallet::remote_node_api >( 0, "condenser_api" );
@@ -243,8 +269,8 @@ int main( int argc, char** argv )
       _http_server->on_request(
         [&]( const fc::http::request& req, const fc::http::server::response& resp )
         {
-          auto itr = allowed_ip_set.find( fc::ip::endpoint::from_string(req.remote_endpoint).get_address() );
-          if( itr == allowed_ip_set.end() ) {
+          if( allowed_ip_set.find( fc::ip::endpoint::from_string(req.remote_endpoint).get_address() ) == allowed_ip_set.end() &&
+              allowed_ip_set.find( fc::ip::address() ) == allowed_ip_set.end() ) {
             elog("rejected connection from ${ip} because it isn't in allowed set ${s}", ("ip",req.remote_endpoint)("s",allowed_ip_set) );
             resp.set_status( fc::http::reply::NotAuthorized );
             return;
@@ -254,6 +280,10 @@ int main( int argc, char** argv )
           conn->register_api( wapi );
           conn->on_request( req, resp );
         } );
+    }
+
+    if( options.count("unlock" ) ) {
+      wapi->unlock( options.at("unlock").as<string>() );
     }
 
     if( !options.count( "daemon" ) )

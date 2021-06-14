@@ -25,7 +25,6 @@ void create_proposal_operation::validate()const
 void update_proposal_operation::validate()const
 {
   validate_account_name( creator );
-
   FC_ASSERT( proposal_id >= 0, "The proposal id can't be negative" );
   FC_ASSERT( daily_pay.amount >= 0, "Daily pay can't be negative value" );
   FC_ASSERT( daily_pay.symbol.asset_num == HIVE_ASSET_NUM_HBD, "Daily pay should be expressed in HBD");

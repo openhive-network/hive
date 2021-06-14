@@ -90,14 +90,6 @@ namespace hive { namespace chain {
   > account_history_index;
 } }
 
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template<> struct is_static_length< hive::chain::account_history_object > : public boost::true_type {};
-
-} // mira
-#endif
-
 FC_REFLECT( hive::chain::operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(serialized_op) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::operation_object, hive::chain::operation_index )
 

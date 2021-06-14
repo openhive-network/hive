@@ -234,6 +234,11 @@ struct operation_process
     });
   }
 
+  void operator()( const collateralized_convert_operation& op )const
+  {
+    FC_ASSERT( false && "Unhandled, plugin assumed to be obsolete" );
+  }
+
   void operator()( const fill_convert_request_operation& op )const
   {
     _db.modify( _bucket, [&]( bucket_object& b )
@@ -241,6 +246,11 @@ struct operation_process
       b.hbd_conversion_requests_filled++;
       b.hive_converted += op.amount_out.amount;
     });
+  }
+
+  void operator()( const fill_collateralized_convert_request_operation& op )const
+  {
+    FC_ASSERT( false && "Unhandled, plugin assumed to be obsolete" );
   }
 };
 

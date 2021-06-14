@@ -45,6 +45,30 @@ namespace fc {
       return ap;
    }
 
+   /* static */ std::string appender::format_time_as_string(time_point time, time_format format)
+   {
+      std::stringstream result;
+      switch (format) {
+      case appender::time_format::milliseconds_since_epoch:
+        result << time.time_since_epoch().count() / 1000 << "ms";
+        break;
+      case appender::time_format::iso_8601_seconds:
+        result << time.to_iso_string_in_seconds();
+        break;
+      case appender::time_format::iso_8601_milliseconds:
+        result << time.to_iso_string_in_milliseconds();
+        break;
+      case appender::time_format::iso_8601_microseconds:
+        result << time.to_iso_string_in_microseconds();
+        break;
+      case appender::time_format::milliseconds_since_hour:
+      default:
+        result << (time.time_since_epoch().count() % (1000ll * 1000ll * 60ll * 60)) / 1000 << "ms";
+      }
+      return result.str();
+   }
+
+
    /*
     Assiging a function return to a static variable allows code exectution on
     initialization. In a perfect world, we would not do this. This results in an

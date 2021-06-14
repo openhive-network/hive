@@ -143,10 +143,10 @@ struct api_convert_request_object
 {
   api_convert_request_object( const convert_request_object& o, const database& db ):
     id( o.get_id() ),
-    owner( o.owner ),
-    requestid( o.requestid ),
-    amount( o.amount ),
-    conversion_date( o.conversion_date )
+    owner( db.get_account( o.get_owner() ).get_name() ),
+    requestid( o.get_request_id() ),
+    amount( o.get_convert_amount() ),
+    conversion_date( o.get_conversion_date() )
   {}
 
   convert_request_id_type id;
@@ -154,6 +154,25 @@ struct api_convert_request_object
   uint32_t                requestid;
   asset                   amount;
   time_point_sec          conversion_date;
+};
+
+struct api_collateralized_convert_request_object
+{
+  api_collateralized_convert_request_object( const collateralized_convert_request_object& o, const database& db ) :
+    id( o.get_id() ),
+    owner( db.get_account( o.get_owner() ).get_name() ),
+    requestid( o.get_request_id() ),
+    collateral_amount( o.get_collateral_amount() ),
+    converted_amount( o.get_converted_amount() ),
+    conversion_date( o.get_conversion_date() )
+  {}
+
+  collateralized_convert_request_id_type id;
+  account_name_type                      owner;
+  uint32_t                               requestid;
+  asset                                  collateral_amount;
+  asset                                  converted_amount;
+  time_point_sec                         conversion_date;
 };
 
 struct api_decline_voting_rights_request_object
@@ -217,7 +236,7 @@ struct api_dynamic_global_property_object
     current_aslot( o.current_aslot ),
     recent_slots_filled( o.recent_slots_filled ),
     participation_count( o.participation_count ),
-    last_irreversible_block_num( o.last_irreversible_block_num ),
+    last_irreversible_block_num( db.get_last_irreversible_block_num()),
     vote_power_reserve_rate( o.vote_power_reserve_rate ),
     delegation_return_period( o.delegation_return_period ),
     reverse_auction_seconds( o.reverse_auction_seconds ),
@@ -231,7 +250,14 @@ struct api_dynamic_global_property_object
     vesting_reward_percent( o.vesting_reward_percent ),
     sps_fund_percent( o.sps_fund_percent ),
     sps_interval_ledger( o.sps_interval_ledger ),
-    downvote_pool_percent( o.downvote_pool_percent )
+    downvote_pool_percent( o.downvote_pool_percent ),
+    current_remove_threshold( o.current_remove_threshold ),
+    early_voting_seconds( o.early_voting_seconds ),
+    mid_voting_seconds( o.mid_voting_seconds ),
+    max_consecutive_recurrent_transfer_failures( o.max_consecutive_recurrent_transfer_failures ),
+    max_recurrent_transfer_end_date( o.max_recurrent_transfer_end_date ),
+    min_recurrent_transfers_recurrence( o.min_recurrent_transfers_recurrence ),
+    max_open_recurrent_transfers( o.max_open_recurrent_transfers )
 #ifdef HIVE_ENABLE_SMT
     , smt_creation_fee( o.smt_creation_fee )
 #endif
@@ -240,12 +266,12 @@ struct api_dynamic_global_property_object
   api_dynamic_global_property_object() {}
 
   dynamic_global_property_id_type id;
-  uint32_t                        head_block_number;
+  uint32_t                        head_block_number                   = 0;
   block_id_type                   head_block_id;
   time_point_sec                  time;
   account_name_type               current_witness;
-  uint64_t                        total_pow;
-  uint32_t                        num_pow_witnesses;
+  uint64_t                        total_pow  = 0;
+  uint32_t                        num_pow_witnesses                   = 0;
   asset                           virtual_supply;
   asset                           current_supply;
   asset                           init_hbd_supply;
@@ -256,28 +282,35 @@ struct api_dynamic_global_property_object
   fc::uint128                     total_reward_shares2;
   asset                           pending_rewarded_vesting_shares;
   asset                           pending_rewarded_vesting_hive;
-  uint16_t                        hbd_interest_rate;
-  uint16_t                        hbd_print_rate;
-  uint32_t                        maximum_block_size;
-  uint16_t                        required_actions_partition_percent;
-  uint64_t                        current_aslot;
+  uint16_t                        hbd_interest_rate                   = 0;
+  uint16_t                        hbd_print_rate                      = 0;
+  uint32_t                        maximum_block_size                  = 0;
+  uint16_t                        required_actions_partition_percent  = 0;
+  uint64_t                        current_aslot                       = 0;
   fc::uint128_t                   recent_slots_filled;
-  uint8_t                         participation_count;
-  uint32_t                        last_irreversible_block_num;
-  uint32_t                        vote_power_reserve_rate;
-  uint32_t                        delegation_return_period;
-  uint64_t                        reverse_auction_seconds;
-  int64_t                         available_account_subsidies;
-  uint16_t                        hbd_stop_percent;
-  uint16_t                        hbd_start_percent;
+  uint8_t                         participation_count                 = 0;
+  uint32_t                        last_irreversible_block_num         = 0;
+  uint32_t                        vote_power_reserve_rate             = 0;
+  uint32_t                        delegation_return_period            = 0;
+  uint64_t                        reverse_auction_seconds             = 0;
+  int64_t                         available_account_subsidies         = 0;
+  uint16_t                        hbd_stop_percent                    = 0;
+  uint16_t                        hbd_start_percent                   = 0;
   time_point_sec                  next_maintenance_time;
   time_point_sec                  last_budget_time;
   time_point_sec                  next_daily_maintenance_time;
-  uint16_t                        content_reward_percent;
-  uint16_t                        vesting_reward_percent;
-  uint16_t                        sps_fund_percent;
+  uint16_t                        content_reward_percent              = 0;
+  uint16_t                        vesting_reward_percent              = 0;
+  uint16_t                        sps_fund_percent                    = 0;
   asset                           sps_interval_ledger;
-  uint16_t                        downvote_pool_percent;
+  uint16_t                        downvote_pool_percent               = 0;
+  int16_t                         current_remove_threshold            = 0;
+  uint64_t                        early_voting_seconds                = 0;
+  uint64_t                        mid_voting_seconds                  = 0;
+  uint8_t                        max_consecutive_recurrent_transfer_failures = HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES;
+  uint16_t                        max_recurrent_transfer_end_date = HIVE_MAX_RECURRENT_TRANSFER_END_DATE;
+  uint8_t                        min_recurrent_transfers_recurrence = HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE;
+  uint16_t                        max_open_recurrent_transfers = HIVE_MAX_OPEN_RECURRENT_TRANSFERS;
 #ifdef HIVE_ENABLE_SMT
   asset                           smt_creation_fee;
 #endif
@@ -287,9 +320,9 @@ struct api_change_recovery_account_request_object
 {
   api_change_recovery_account_request_object( const change_recovery_account_request_object& o, const database& db ):
     id( o.get_id() ),
-    account_to_recover( o.account_to_recover ),
-    recovery_account( o.recovery_account ),
-    effective_on( o.effective_on )
+    account_to_recover( o.get_account_to_recover() ),
+    recovery_account( o.get_recovery_account() ),
+    effective_on( o.get_execution_time() )
   {}
 
   change_recovery_account_request_id_type id;
@@ -365,12 +398,6 @@ struct api_comment_object
 
     }
 
-#if !defined(IS_LOW_MEM) && defined(STORE_COMMENT_CONTENT)
-    const auto& con = db.get< chain::comment_content_object, chain::by_comment >( o.get_id() );
-    title = to_string( con.title );
-    body = to_string( con.body );
-    json_metadata = to_string( con.json_metadata );
-#endif
   }
 
   api_comment_object(){}
@@ -455,14 +482,14 @@ struct api_account_object
 {
   api_account_object( const account_object& a, const database& db, bool delayed_votes_active ) :
     id( a.get_id() ),
-    name( a.name ),
+    name( a.get_name() ),
     memo_key( a.memo_key ),
-    proxy( a.proxy ),
+    proxy( HIVE_PROXY_TO_SELF_ACCOUNT ),
     last_account_update( a.last_account_update ),
     created( a.created ),
     mined( a.mined ),
-    recovery_account( a.recovery_account ),
-    reset_account( a.reset_account ),
+    recovery_account( a.get_recovery_account() ),
+    reset_account( HIVE_NULL_ACCOUNT ),
     last_account_recovery( a.last_account_recovery ),
     comment_count( a.comment_count ),
     lifetime_vote_count( a.lifetime_vote_count ),
@@ -502,8 +529,13 @@ struct api_account_object
     last_post_edit( a.last_post_edit ),
     last_vote_time( a.last_vote_time ),
     post_bandwidth( a.post_bandwidth ),
-    pending_claimed_accounts( a.pending_claimed_accounts )
+    pending_claimed_accounts( a.pending_claimed_accounts ),
+    open_recurrent_transfers( a.open_recurrent_transfers ),
+    governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
   {
+    if( a.has_proxy() )
+      proxy = db.get_account( a.get_proxy() ).get_name();
+
     size_t n = a.proxied_vsf_votes.size();
     proxied_vsf_votes.reserve( n );
     for( size_t i=0; i<n; i++ )
@@ -611,10 +643,12 @@ struct api_account_object
   uint32_t          post_bandwidth = 0;
 
   share_type        pending_claimed_accounts = 0;
+  uint16_t          open_recurrent_transfers = 0;
 
   bool              is_smt = false;
 
   fc::optional< vector< delayed_votes_data > >  delayed_votes;
+  time_point_sec governance_vote_expiration_ts;
 };
 
 struct api_owner_authority_history_object
@@ -639,9 +673,9 @@ struct api_account_recovery_request_object
 {
   api_account_recovery_request_object( const account_recovery_request_object& o, const database& db ) :
     id( o.get_id() ),
-    account_to_recover( o.account_to_recover ),
-    new_owner_authority( authority( o.new_owner_authority ) ),
-    expires( o.expires )
+    account_to_recover( o.get_account_to_recover() ),
+    new_owner_authority( authority( o.get_new_owner_authority() ) ),
+    expires( o.get_expiration_time() )
   {}
 
   api_account_recovery_request_object() {}
@@ -685,6 +719,9 @@ struct api_feed_history_object
   api_feed_history_object( const feed_history_object& f ) :
     id( f.get_id() ),
     current_median_history( f.current_median_history ),
+    market_median_history( f.market_median_history ),
+    current_min_history( f.current_min_history ),
+    current_max_history( f.current_max_history ),
     price_history( f.price_history.begin(), f.price_history.end() )
   {}
 
@@ -692,6 +729,9 @@ struct api_feed_history_object
 
   feed_history_id_type id;
   price                current_median_history;
+  price                market_median_history;
+  price                current_min_history;
+  price                current_max_history;
   deque< price >       price_history;
 };
 
@@ -850,7 +890,7 @@ struct api_smt_token_object
   api_smt_token_object( const smt_token_object& token, const database& db )
     : token( token.copy_chain_object() ) //FIXME: exposes internal chain object as API result
   {
-    const smt_ico_object* ico = db.find< chain::smt_ico_object, chain::by_symbol >( token.liquid_symbol );
+    const smt_ico_object* ico = db.find< smt_ico_object, by_symbol >( token.liquid_symbol );
     if ( ico != nullptr )
       this->ico = ico->copy_chain_object(); //FIXME: exposes internal chain object as API result
   }
@@ -971,6 +1011,35 @@ struct api_proposal_vote_object
   api_proposal_object     proposal;
 };
 
+
+struct api_recurrent_transfer_object
+{
+  api_recurrent_transfer_object() = default;
+
+  api_recurrent_transfer_object( const recurrent_transfer_object& o, const account_name_type from_name, const account_name_type to_name ):
+    id( o.get_id() ),
+    trigger_date( o.get_trigger_date() ),
+    from( from_name ),
+    to( to_name ),
+    amount( o.amount ),
+    memo( to_string(o.memo) ),
+    recurrence( o.recurrence ),
+    consecutive_failures( o.consecutive_failures ),
+    remaining_executions( o.remaining_executions )
+    {}
+
+    recurrent_transfer_id_type id;
+    time_point_sec    trigger_date;
+    account_name_type from;
+    account_name_type to;
+    asset             amount;
+    string            memo;
+    uint16_t          recurrence = 0;
+    uint8_t           consecutive_failures = 0;
+    uint16_t          remaining_executions = 0;
+};
+
+
 struct order
 {
   price                order_price;
@@ -1045,6 +1114,10 @@ FC_REFLECT( hive::plugins::database_api::api_convert_request_object,
           (id)(owner)(requestid)(amount)(conversion_date)
         )
 
+FC_REFLECT( hive::plugins::database_api::api_collateralized_convert_request_object,
+          (id)(owner)(requestid)(collateral_amount)(converted_amount)(conversion_date)
+        )
+
 FC_REFLECT( hive::plugins::database_api::api_decline_voting_rights_request_object,
           (id)(account)(effective_date)
         )
@@ -1063,7 +1136,9 @@ FC_REFLECT( hive::plugins::database_api::api_dynamic_global_property_object,
           (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)
           (available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)(next_maintenance_time)
           (last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)
-          (sps_interval_ledger)(downvote_pool_percent)
+          (sps_interval_ledger)(downvote_pool_percent)(current_remove_threshold)(early_voting_seconds)(mid_voting_seconds)
+          (max_consecutive_recurrent_transfer_failures)(max_recurrent_transfer_end_date)(min_recurrent_transfers_recurrence)
+          (max_open_recurrent_transfers)
 #ifdef HIVE_ENABLE_SMT
           (smt_creation_fee)
 #endif
@@ -1105,9 +1180,10 @@ FC_REFLECT( hive::plugins::database_api::api_account_object,
           (posting_rewards)
           (proxied_vsf_votes)(witnesses_voted_for)
           (last_post)(last_root_post)(last_post_edit)(last_vote_time)
-          (post_bandwidth)(pending_claimed_accounts)
+          (post_bandwidth)(pending_claimed_accounts)(open_recurrent_transfers)
           (is_smt)
-    (delayed_votes)
+          (delayed_votes)
+          (governance_vote_expiration_ts)
         )
 
 FC_REFLECT( hive::plugins::database_api::api_owner_authority_history_object,
@@ -1137,6 +1213,9 @@ FC_REFLECT( hive::plugins::database_api::api_savings_withdraw_object,
 FC_REFLECT( hive::plugins::database_api::api_feed_history_object,
           (id)
           (current_median_history)
+          (market_median_history)
+          (current_min_history)
+          (current_max_history)
           (price_history)
         )
 
@@ -1240,3 +1319,4 @@ FC_REFLECT( hive::plugins::database_api::api_proposal_vote_object,
 FC_REFLECT( hive::plugins::database_api::order, (order_price)(real_price)(hive)(hbd)(created) );
 
 FC_REFLECT( hive::plugins::database_api::order_book, (asks)(bids) );
+FC_REFLECT(hive::plugins::database_api::api_recurrent_transfer_object, (id)(trigger_date)(from)(to)(amount)(memo)(recurrence)(consecutive_failures)(remaining_executions))

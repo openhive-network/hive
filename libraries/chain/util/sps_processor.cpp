@@ -12,7 +12,6 @@ using hive::chain::proposal_index;
 using hive::chain::proposal_id_type;
 using hive::chain::proposal_vote_index;
 using hive::chain::by_proposal_voter;
-using hive::chain::by_voter_proposal;
 using hive::protocol::proposal_pay_operation;
 using hive::chain::sps_helper;
 using hive::chain::dynamic_global_property_object;
@@ -23,43 +22,45 @@ const std::string sps_processor::calculating_name = "sps_processor_calculate";
 
 bool sps_processor::is_maintenance_period( const time_point_sec& head_time ) const
 {
-  return db.get_dynamic_global_properties().next_maintenance_time <= head_time;
+  auto due_time = db.get_dynamic_global_properties().next_maintenance_time;
+  return due_time <= head_time;
 }
 
 bool sps_processor::is_daily_maintenance_period( const time_point_sec& head_time ) const
 {
   /// No DHF conversion until HF24 !
-  return db.has_hardfork(HIVE_HARDFORK_1_24) && db.get_dynamic_global_properties().next_daily_maintenance_time <= head_time;
+  if( !db.has_hardfork( HIVE_HARDFORK_1_24 ) )
+    return false;
+  auto due_time = db.get_dynamic_global_properties().next_daily_maintenance_time;
+  return due_time <= head_time;
 }
 
 void sps_processor::remove_proposals( const time_point_sec& head_time )
 {
   FC_TODO("implement proposal removal based on automatic actions")
-  auto& proposalIndex = db.get_mutable_index< proposal_index >();
-  auto& byEndDateIdx = proposalIndex.indices().get< by_end_date >();
 
-  auto& votesIndex = db.get_mutable_index< proposal_vote_index >();
-  auto& byVoterIdx = votesIndex.indices().get< by_proposal_voter >();
+  auto& byEndDateIdx = db.get_index< proposal_index, by_end_date >();
+  auto& byVoterIdx = db.get_index< proposal_vote_index, by_proposal_voter >();
 
-  auto found = byEndDateIdx.upper_bound( head_time );
+  auto end = byEndDateIdx.upper_bound( head_time );
   auto itr = byEndDateIdx.begin();
 
-  sps_removing_reducer obj_perf( db.get_sps_remove_threshold() );
+  remove_guard obj_perf( db.get_remove_threshold() );
 
-  while( itr != found )
+  while( itr != end )
   {
+    const auto& proposal = *itr;
+    ++itr;
     /*
-      It was decided that automatic removing of old proposals will be blocked.
-      In result it will be possible to find expired proposals, by API call `list_proposals` with `expired` flag.
-      Maybe in the future removing will be re-enabled.
-
-      Proposals can be removed only by explicit call of `remove_proposal_operation`.
+      It was decided that automatic removing of old proposals is to be blocked in order to allow looking for
+      expired proposals (by API call `list_proposals` with `expired` flag). Maybe in the future removing will be re-enabled.
+      For now proposals can be removed only by explicit call of `remove_proposal_operation` - that operation removes some
+      data and if threshold is reached, remaining proposals are marked as `removed` and are removed in regular per-block
+      cycles here.
     */
-    if( itr->removed )
-      itr = sps_helper::remove_proposal< by_end_date >( itr, proposalIndex, votesIndex, byVoterIdx, obj_perf );
-    else
-      ++itr;
-    if( obj_perf.done )
+    if( proposal.removed )
+      sps_helper::remove_proposal( proposal, byVoterIdx, db, obj_perf );
+    if( obj_perf.done() )
       break;
   }
 }
@@ -68,6 +69,7 @@ void sps_processor::find_proposals( const time_point_sec& head_time, t_proposals
 {
   const auto& pidx = db.get_index< proposal_index >().indices().get< by_start_date >();
 
+  FC_TODO("avoid scanning all proposals by use of end_date index, don't list future proposals - use index directly");
   std::for_each( pidx.begin(), pidx.upper_bound( head_time ), [&]( auto& proposal )
   {
     if( head_time >= proposal.start_date && head_time <= proposal.end_date )
@@ -92,7 +94,7 @@ uint64_t sps_processor::calculate_votes( uint32_t pid )
     const auto& _voter = db.get_account( found->voter );
 
     //If _voter has set proxy, then his votes aren't taken into consideration
-    if( _voter.proxy == HIVE_PROXY_TO_SELF_ACCOUNT )
+    if( !_voter.has_proxy() )
     {
       auto sum = _voter.witness_vote_weight();
       ret += sum.value;
@@ -137,59 +139,20 @@ asset sps_processor::get_treasury_fund()
   return treasury_account.get_hbd_balance();
 }
 
-asset sps_processor::get_daily_inflation()
-{
-  FC_TODO( "to invent how to get inflation needed for HIVE_TREASURY_ACCOUNT" )
-  return asset( 0, HBD_SYMBOL );
-}
-
 asset sps_processor::calculate_maintenance_budget( const time_point_sec& head_time )
 {
   //Get funds from 'treasury' account ( treasury_fund )
   asset treasury_fund = get_treasury_fund();
 
-  //Get daily proposal inflation ( daily_proposal_inflation )
-  asset daily_inflation = get_daily_inflation();
-
-  FC_ASSERT( treasury_fund.symbol == daily_inflation.symbol, "symbols must be the same" );
-
   //Calculate budget for given maintenance period
   uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().last_budget_time ).to_seconds();
 
   //Calculate daily_budget_limit
-  int64_t daily_budget_limit = treasury_fund.amount.value / total_amount_divider + daily_inflation.amount.value;
+  int64_t daily_budget_limit = treasury_fund.amount.value / total_amount_divider;
 
   daily_budget_limit = ( ( uint128_t( passed_time_seconds ) * daily_budget_limit ) / daily_seconds ).to_uint64();
 
-  //Transfer daily_proposal_inflation to `treasury account`
-  transfer_daily_inflation_to_treasury( daily_inflation );
-
   return asset( daily_budget_limit, treasury_fund.symbol );
-}
-
-void sps_processor::transfer_daily_inflation_to_treasury( const asset& daily_inflation )
-{
-  /*
-    Now `daily_inflation` is always zero. Take a look at `get_daily_inflation`
-
-    Comment from Michael Vandeberg:
-
-      Is this printing new HBD?
-
-      That's not how we have handled inflation in the past.
-      Either inflation should be paid, per block,
-      in to the treasury account in database::process_funds or added to a temp fund in the dgpo
-      that is then transferred in to the treasury account during maintenance.
-  */
-  FC_TODO( "to choose how to transfer inflation into HIVE_TREASURY_ACCOUNT" )
-  // Ifdeffing this out so that no inflation is accidentally created on main net.
-#ifdef IS_TEST_NET
-  if( daily_inflation.amount.value > 0 )
-  {
-    const auto& treasury_account = db.get_treasury();
-    db.adjust_balance( treasury_account, daily_inflation );
-  }
-#endif
 }
 
 void sps_processor::transfer_payments( const time_point_sec& head_time, asset& maintenance_budget_limit, const t_proposals& proposals )
@@ -200,13 +163,12 @@ void sps_processor::transfer_payments( const time_point_sec& head_time, asset& m
   const auto& treasury_account = db.get_treasury();
 
   uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().last_budget_time ).to_seconds();
-  uint128_t ratio = ( passed_time_seconds * HIVE_100_PERCENT ) / daily_seconds;
 
   auto processing = [this, &treasury_account]( const proposal_object& _item, const asset& payment )
   {
     const auto& receiver_account = db.get_account( _item.receiver );
 
-    operation vop = proposal_pay_operation( _item.receiver, db.get_treasury_name(), payment, db.get_current_trx(), db.get_current_op_in_trx() );
+    operation vop = proposal_pay_operation( _item.proposal_id, _item.receiver, db.get_treasury_name(), payment, db.get_current_trx(), db.get_current_op_in_trx() );
     /// Push vop to be recorded by other parts (like AH plugin etc.)
     db.push_virtual_operation(vop);
     /// Virtual ops have no evaluators, so operation must be immediately "evaluated"
@@ -222,7 +184,16 @@ void sps_processor::transfer_payments( const time_point_sec& head_time, asset& m
     if( _item.total_votes == 0 )
       break;
 
-    asset period_pay = asset( ( ratio * _item.daily_pay.amount.value ).to_uint64() / HIVE_100_PERCENT, _item.daily_pay.symbol );
+    asset period_pay;
+    if( db.has_hardfork(HIVE_HARDFORK_1_25) )
+    {
+      period_pay = asset((( passed_time_seconds * _item.daily_pay.amount.value ) / daily_seconds ), _item.daily_pay.symbol );
+    }
+    else
+    {
+      uint128_t ratio = ( passed_time_seconds * HIVE_100_PERCENT ) / daily_seconds;
+      period_pay = asset( ( ratio * _item.daily_pay.amount.value ).to_uint64() / HIVE_100_PERCENT, _item.daily_pay.symbol );
+    }
 
     if( period_pay >= maintenance_budget_limit )
     {
@@ -241,6 +212,8 @@ void sps_processor::update_settings( const time_point_sec& head_time )
 {
   db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& _dgpo )
   {
+    //shifting from current time instead of proper maintenance time causes drift
+    //when maintenance block was missed, but the fix is problematic - see MR!168 for details
     _dgpo.next_maintenance_time = head_time + fc::seconds( HIVE_PROPOSAL_MAINTENANCE_PERIOD );
     _dgpo.last_budget_time = head_time;
   } );
@@ -353,6 +326,8 @@ void sps_processor::convert_funds( const block_notification& note )
 
   db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& _dgpo )
   {
+    //shifting from current time instead of proper maintenance time causes drift
+    //when maintenance block was missed, but the fix is problematic - see MR!168 for details
     _dgpo.next_daily_maintenance_time = note.block.timestamp + fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD );
   } );
 

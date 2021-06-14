@@ -38,7 +38,7 @@ namespace detail
       bool is_accessible() const;
       bool filter_by_namespace( const std::string& ns, const std::string& stat ) const;
 
-      void execute_operation( const std::string& ns, const std::string& stat, std::function< void() > op ) const;
+      void execute_operation( const std::string& ns, const std::string& stat, const std::function< void() >& op ) const;
 
       void increment( const std::string& ns, const std::string& stat, const std::string& key,                       const float frequency ) const noexcept;
       void decrement( const std::string& ns, const std::string& stat, const std::string& key,                       const float frequency ) const noexcept;
@@ -132,7 +132,7 @@ namespace detail
     return _blacklist != found;
   }
 
-  void statsd_plugin_impl::execute_operation( const std::string& ns, const std::string& stat, std::function< void() > op ) const
+  void statsd_plugin_impl::execute_operation( const std::string& ns, const std::string& stat, const std::function< void() >& op ) const
   {
     if( !is_accessible() ) return;
     if( !filter_by_namespace( ns, stat ) ) return;

@@ -15,17 +15,18 @@ LIST(APPEND BOOST_COMPONENTS thread
                              unit_test_framework
                              locale)
 
+cmake_policy(SET CMP0057 NEW)
 FIND_PACKAGE(Boost 1.58 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 set( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
 
 if( APPLE )
   # Apple Specific Options Here
   message( STATUS "Configuring AppBase on OS X" )
-  set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++14 -stdlib=libc++ -Wall -Wno-conversion -Wno-deprecated-declarations" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -stdlib=libc++ -Wall -Wno-conversion -Wno-deprecated-declarations" )
 else( APPLE )
   # Linux Specific Options Here
   message( STATUS "Configuring AppBase on Linux" )
-  set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++14 -Wall" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall" )
   set( rt_library rt )
   set( pthread_library pthread)
   if ( FULL_STATIC_BUILD )

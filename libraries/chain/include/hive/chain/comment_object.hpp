@@ -8,8 +8,6 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/account_object.hpp>
 
-#include <hive/chain/util/tiny_asset.hpp>
-
 #include <fc/crypto/ripemd160.hpp>
 
 #define HIVE_ROOT_POST_PARENT_ID hive::chain::account_id_type::null_id()
@@ -172,21 +170,6 @@ namespace hive { namespace chain {
 #endif
   };
 
-  class comment_content_object : public object< comment_content_object_type, comment_content_object >
-  {
-    CHAINBASE_OBJECT( comment_content_object );
-    public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( comment_content_object, (title)(body)(json_metadata) )
-
-      comment_id_type   comment;
-
-      shared_string     title;
-      shared_string     body;
-      shared_string     json_metadata;
-
-    CHAINBASE_UNPACK_CONSTRUCTOR(comment_content_object, (title)(body)(json_metadata));
-  };
-
   /**
     * This index maintains the set of voter/comment pairs that have been used, voters cannot
     * vote on the same comment more than once per payout period.
@@ -274,28 +257,7 @@ namespace hive { namespace chain {
     allocator< comment_cashout_object >
   > comment_cashout_index;
 
-  struct by_comment;
-
-  typedef multi_index_container<
-    comment_content_object,
-    indexed_by<
-      ordered_unique< tag< by_id >,
-        const_mem_fun< comment_content_object, comment_content_object::id_type, &comment_content_object::get_id > >,
-      ordered_unique< tag< by_comment >,
-        member< comment_content_object, comment_id_type, &comment_content_object::comment > >
-    >,
-    allocator< comment_content_object >
-  > comment_content_index;
-
 } } // hive::chain
-
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template<> struct is_static_length< hive::chain::comment_vote_object > : public boost::true_type {};
-
-} // mira
-#endif
 
 FC_REFLECT( hive::chain::comment_object,
           (id)(root_comment)(parent_comment)
@@ -319,10 +281,6 @@ FC_REFLECT( hive::chain::comment_cashout_object,
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_cashout_object, hive::chain::comment_cashout_index )
-
-FC_REFLECT( hive::chain::comment_content_object,
-        (id)(comment)(title)(body)(json_metadata) )
-CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_content_object, hive::chain::comment_content_index )
 
 FC_REFLECT( hive::chain::comment_vote_object,
           (id)(voter)(comment)(weight)(rshares)(vote_percent)(last_update)(num_changes)
@@ -369,31 +327,6 @@ namespace helpers
 #ifdef HIVE_ENABLE_SMT
           info._item_additional_allocation += o.allowed_vote_assets.capacity()*sizeof(t_votable_assets::value_type);
 #endif
-        }
-      }
-
-      return info;
-    }
-  };
-
-  template <>
-  class index_statistic_provider<hive::chain::comment_content_index>
-  {
-  public:
-    typedef hive::chain::comment_content_index IndexType;
-
-    index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
-    {
-      index_statistic_info info;
-      gather_index_static_data(index, &info);
-
-      if(onlyStaticInfo == false)
-      {
-        for(const auto& o : index)
-        {
-          info._item_additional_allocation += o.title.capacity()*sizeof(shared_string::value_type);
-          info._item_additional_allocation += o.body.capacity()*sizeof(shared_string::value_type);
-          info._item_additional_allocation += o.json_metadata.capacity()*sizeof(shared_string::value_type);
         }
       }
 

@@ -152,10 +152,10 @@ namespace hive { namespace chain {
     my->block_file = file;
     my->index_file = fc::path( file.generic_string() + ".index" );
 
-    my->block_log_fd = ::open(my->block_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT, 0644);
+    my->block_log_fd = ::open(my->block_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
     if (my->block_log_fd == -1)
       FC_THROW("Error opening block log file ${filename}: ${error}", ("filename", my->block_file)("error", strerror(errno)));
-    my->block_index_fd = ::open(my->index_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT, 0644);
+    my->block_index_fd = ::open(my->index_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
     if (my->block_index_fd == -1)
       FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", my->index_file)("error", strerror(errno)));
     my->block_log_size = get_file_size(my->block_log_fd);
@@ -462,7 +462,7 @@ namespace hive { namespace chain {
       //create and size the new temporary index file (block_log.index.new)
       fc::path new_index_file(my->index_file.generic_string() + ".new");
       const size_t block_index_size = block_num * sizeof(uint64_t);
-      int new_index_fd = ::open(new_index_file.generic_string().c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);
+      int new_index_fd = ::open(new_index_file.generic_string().c_str(), O_RDWR | O_CREAT | O_TRUNC | O_CLOEXEC, 0644);
       if (new_index_fd == -1)
         FC_THROW("Error opening temporary new index file ${filename}: ${error}", ("filename", new_index_file.generic_string())("error", strerror(errno)));
       if (ftruncate(new_index_fd, block_index_size) == -1)
@@ -572,7 +572,7 @@ namespace hive { namespace chain {
 #endif //NOT USE_BACKWARD_INDEX
 
       ilog("opening new block index");
-      my->block_index_fd = ::open(my->index_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT, 0644);
+      my->block_index_fd = ::open(my->index_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
       if (my->block_index_fd == -1)
         FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", my->index_file)("error", strerror(errno)));
       //report size of new index file and verify it is the right size for the blocks in block log

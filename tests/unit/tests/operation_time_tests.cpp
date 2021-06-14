@@ -1192,7 +1192,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
 */
 
 
-BOOST_AUTO_TEST_CASE( vesting_withdrawals )
+BOOST_AUTO_TEST_CASE( vesting_withdrawals, *boost::unit_test::disabled() )
 {
   try
   {
@@ -1219,7 +1219,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     asset withdraw_rate = new_alice.vesting_withdraw_rate;
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
-    generate_blocks( next_withdrawal - ( HIVE_BLOCK_INTERVAL / 2 ), true);
+    generate_blocks( next_withdrawal - HIVE_BLOCK_INTERVAL );
 
     BOOST_REQUIRE( get_vesting( "alice" ).amount.value == vesting_shares.amount.value );
 
@@ -1464,8 +1464,11 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
     BOOST_TEST_MESSAGE( "Get feed history object" );
     auto& feed_history = db->get_feed_history();
     BOOST_TEST_MESSAGE( "Check state" );
-    BOOST_REQUIRE( feed_history.current_median_history == price( asset( 1000, HBD_SYMBOL ), asset( 99000, HIVE_SYMBOL) ) );
-    BOOST_REQUIRE( feed_history.price_history[ 0 ] == price( asset( 1000, HBD_SYMBOL ), asset( 99000, HIVE_SYMBOL) ) );
+    {
+      auto expected_price = price( asset( 1000, HBD_SYMBOL ), asset( 99000, HIVE_SYMBOL ) );
+      BOOST_REQUIRE( feed_history.current_median_history == expected_price );
+      BOOST_REQUIRE( feed_history.price_history[ 0 ] == expected_price );
+    }
     validate_database();
 
     for ( int i = 0; i < 23; i++ )
@@ -1530,8 +1533,8 @@ BOOST_AUTO_TEST_CASE( convert_delay )
 
     BOOST_TEST_MESSAGE( "Verify conversion is not applied" );
     const auto& alice_2 = db->get_account( "alice" );
-    const auto& convert_request_idx = db->get_index< convert_request_index >().indices().get< by_owner >();
-    auto convert_request = convert_request_idx.find( boost::make_tuple( "alice", 2 ) );
+    const auto& convert_request_idx = db->get_index< convert_request_index, by_owner >();
+    auto convert_request = convert_request_idx.find( boost::make_tuple( alice_2.get_id(), 2 ) );
 
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
     BOOST_REQUIRE( alice_2.get_balance().amount.value == 0 );
@@ -1545,7 +1548,7 @@ BOOST_AUTO_TEST_CASE( convert_delay )
     const auto& alice_3 = db->get_account( "alice" );
     auto vop = get_last_operations( 1 )[0].get< fill_convert_request_operation >();
 
-    convert_request = convert_request_idx.find( boost::make_tuple( "alice", 2 ) );
+    convert_request = convert_request_idx.find( boost::make_tuple( alice_3.get_id(), 2 ) );
     BOOST_REQUIRE( convert_request == convert_request_idx.end() );
     BOOST_REQUIRE( alice_3.get_balance().amount.value == 2500 );
     BOOST_REQUIRE( alice_3.get_hbd_balance().amount.value == ( start_balance - op.amount ).amount.value );
@@ -1769,12 +1772,21 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     db->push_transaction( tx, 0 );
 
     auto& gpo = db->get_dynamic_global_properties();
-    auto interest_op = get_last_operations( 1 )[0].get< interest_operation >();
+    BOOST_REQUIRE(gpo.get_hbd_interest_rate() > 0);
 
-    BOOST_REQUIRE( gpo.get_hbd_interest_rate() > 0 );
-    BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
-    BOOST_REQUIRE( interest_op.owner == "alice" );
-    BOOST_REQUIRE( interest_op.interest.amount.value == get_hbd_balance( "alice" ).amount.value - ( alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value ) );
+    if(db->has_hardfork(HIVE_HARDFORK_1_25))
+    {
+      /// After HF 25 only HBD held on savings should get interest
+      BOOST_REQUIRE(get_hbd_balance("alice").amount.value == alice_hbd.amount.value - ASSET("1.000 TBD").amount.value);
+    }
+    else
+    {
+      auto interest_op = get_last_operations( 1 )[0].get< interest_operation >();
+      BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
+      BOOST_REQUIRE( interest_op.owner == "alice" );
+      BOOST_REQUIRE( interest_op.interest.amount.value == get_hbd_balance( "alice" ).amount.value - ( alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value ) );
+    }
+
     validate_database();
 
     BOOST_TEST_MESSAGE( "Testing interest under interest period" );
@@ -1809,7 +1821,109 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() + alice_coindays ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
+    if(db->has_hardfork(HIVE_HARDFORK_1_25))
+    {
+      /// After HF 25 only HBD held on savings should get interest
+      BOOST_REQUIRE(get_hbd_balance("alice").amount.value == alice_hbd.amount.value - ASSET("1.000 TBD").amount.value);
+    }
+    else
+    {
+      BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() + alice_coindays ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW();
+}
+
+BOOST_AUTO_TEST_CASE(hbd_savings_interest)
+{
+  using hive::plugins::condenser_api::legacy_asset;
+
+  try
+  {
+    ACTORS((alice))
+      generate_block();
+    vest(HIVE_INIT_MINER_NAME, "alice", ASSET("10.000 TESTS"));
+
+    set_price_feed(price(ASSET("1.000 TBD"), ASSET("1.000 TESTS")));
+
+    BOOST_TEST_MESSAGE("Testing savings interest over smallest interest period");
+
+    auto alice_funds = ASSET("31.903 TBD");
+    fund("alice", alice_funds);
+
+    transfer_to_savings_operation savings_supply;
+    savings_supply.from = "alice";
+    savings_supply.to = "alice";
+    savings_supply.memo = "New Tesla fund";
+    savings_supply.amount = alice_funds;
+    push_transaction(savings_supply, alice_private_key);
+
+    fund("alice", ASSET("3.000 TBD"));
+
+    auto start_time = db->get_account("alice").savings_hbd_seconds_last_update;
+    auto alice_hbd = get_hbd_balance("alice");
+
+    BOOST_REQUIRE(alice_hbd == ASSET("3.000 TBD"));
+
+    auto alice_hbd_savings = get_hbd_savings("alice");
+    BOOST_REQUIRE(alice_hbd_savings == alice_funds);
+
+    generate_blocks(db->head_block_time() + fc::seconds(HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC), true);
+
+    BOOST_REQUIRE(get_hbd_balance("alice") == ASSET("3.000 TBD"));
+
+    transfer_to_savings_operation transfer;
+    transfer.to = "alice";
+    transfer.from = "alice";
+    transfer.memo = "Interest trigger";
+    transfer.amount = ASSET("1.000 TBD");
+
+    /// This op is needed to trigger interest payment...
+    push_transaction(transfer, alice_private_key);
+
+    auto& gpo = db->get_dynamic_global_properties();
+    BOOST_REQUIRE(gpo.get_hbd_interest_rate() > 0);
+
+    BOOST_TEST_MESSAGE("Alice HDB saving balance: " + legacy_asset::from_asset(get_hbd_savings("alice")).to_string());
+
+    auto interest_op = get_last_operations(1)[0].get< interest_operation >();
+    BOOST_REQUIRE(static_cast<uint64_t>(get_hbd_savings("alice").amount.value) == alice_hbd_savings.amount.value + ASSET("1.000 TBD").amount.value + ((((uint128_t(alice_hbd_savings.amount.value) * (db->head_block_time() - start_time).to_seconds()) / HIVE_SECONDS_PER_YEAR) * gpo.get_hbd_interest_rate()) / HIVE_100_PERCENT).to_uint64());
+    BOOST_REQUIRE(interest_op.owner == "alice");
+    BOOST_REQUIRE(interest_op.interest == get_hbd_savings("alice") - (alice_hbd_savings + ASSET("1.000 TBD")));
+
+    BOOST_TEST_MESSAGE("Alice got HDB saving interests: " + legacy_asset::from_asset(interest_op.interest).to_string());
+
+    validate_database();
+
+    BOOST_TEST_MESSAGE("Testing savings interest under interest period");
+
+    start_time = db->get_account("alice").savings_hbd_seconds_last_update;
+    alice_hbd_savings = get_hbd_savings("alice");
+
+    generate_blocks(db->head_block_time() + fc::seconds(HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC / 2), true);
+    
+    /// This op is needed to trigger interest payment...
+    push_transaction(transfer, alice_private_key);
+
+    BOOST_REQUIRE(get_hbd_savings("alice") == alice_hbd_savings + ASSET("1.000 TBD"));
+
+    validate_database();
+
+    auto alice_coindays = uint128_t(alice_hbd_savings.amount.value) * (db->head_block_time() - start_time).to_seconds();
+    alice_hbd_savings = get_hbd_savings("alice");
+    start_time = db->get_account("alice").savings_hbd_seconds_last_update;
+
+    BOOST_TEST_MESSAGE("Testing savings interest for longer period");
+
+    generate_blocks(db->head_block_time() + fc::seconds((HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC * 7) / 3), true);
+    
+    /// This op is needed to trigger interest payment...
+    push_transaction(transfer, alice_private_key);
+
+    BOOST_REQUIRE(static_cast<uint64_t>(get_hbd_savings("alice").amount.value) == alice_hbd_savings.amount.value + ASSET("1.000 TBD").amount.value + ((((uint128_t(alice_hbd_savings.amount.value) * (db->head_block_time() - start_time).to_seconds() + alice_coindays) / HIVE_SECONDS_PER_YEAR) * gpo.get_hbd_interest_rate()) / HIVE_100_PERCENT).to_uint64());
+
     validate_database();
   }
   FC_LOG_AND_RETHROW();
@@ -2597,7 +2711,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, sam_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+    /// Starting from HF25 voting for already paid posts is allowed again.
+    db->push_transaction( tx, 0 );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2614,7 +2729,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, bob_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+    /// Starting from HF25 voting for already paid posts is allowed again.
+    db->push_transaction( tx, 0 );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2631,8 +2747,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, dave_private_key );
-
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+    /// Starting from HF25 voting for already paid posts is allowed again.
+    db->push_transaction( tx, 0 );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2843,9 +2959,19 @@ BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
     const auto& gpo = db->get_dynamic_global_properties();
     auto new_exchange_rate = price( gpo.get_current_hbd_supply(), asset( ( HIVE_100_PERCENT ) * gpo.get_current_supply().amount, HIVE_SYMBOL ) );
     set_price_feed( new_exchange_rate );
-    set_price_feed( new_exchange_rate );
+    set_price_feed( new_exchange_rate, true );
 
-    BOOST_REQUIRE( db->get_feed_history().current_median_history > new_exchange_rate && db->get_feed_history().current_median_history < exchange_rate );
+    auto recent_ops = get_last_operations( 2 );
+    auto sys_warn_op = recent_ops.back().get< system_warning_operation >();
+    BOOST_REQUIRE( sys_warn_op.message.compare( 0, 27, "HIVE price corrected upward" ) == 0 );
+
+    const auto& feed = db->get_feed_history();
+    BOOST_REQUIRE( feed.current_median_history > new_exchange_rate && feed.current_median_history < exchange_rate );
+    BOOST_REQUIRE( feed.market_median_history == new_exchange_rate );
+    BOOST_REQUIRE( feed.current_min_history == new_exchange_rate );
+    BOOST_REQUIRE( feed.current_max_history == exchange_rate );
+
+    validate_database();
   }
   FC_LOG_AND_RETHROW()
 }
@@ -2986,7 +3112,7 @@ BOOST_AUTO_TEST_CASE( generate_account_subsidies )
     };
 
     const witness_schedule_object& wso = db->get_witness_schedule_object();
-    BOOST_CHECK_EQUAL( wso.account_subsidy_rd.resource_unit, HIVE_ACCOUNT_SUBSIDY_PRECISION );
+    BOOST_CHECK_EQUAL( wso.account_subsidy_rd.resource_unit, static_cast<uint64_t>(HIVE_ACCOUNT_SUBSIDY_PRECISION) );
     BOOST_CHECK_EQUAL( wso.account_subsidy_rd.budget_per_time_unit, 5123 );
     BOOST_CHECK(  is_pool_in_equilibrium( int64_t( wso.account_subsidy_rd.pool_eq )  , wso.account_subsidy_rd.budget_per_time_unit, wso.account_subsidy_rd.decay_params ) );
     BOOST_CHECK( !is_pool_in_equilibrium( int64_t( wso.account_subsidy_rd.pool_eq )-1, wso.account_subsidy_rd.budget_per_time_unit, wso.account_subsidy_rd.decay_params ) );
@@ -3064,9 +3190,9 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
       generate_block();
 
       // The transaction fails in generate_block(), meaning it is removed from the local node's transaction list
-      BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), 0 );
+      BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), 0u );
       BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 0 );
-      BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0 );
+      BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0u );
     } while( db->get< witness_object, by_name >( db->get_scheduled_witness( 1 ) ).schedule == witness_object::timeshare );
 
     db->push_transaction( tx, 0 );
@@ -3074,9 +3200,9 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     BOOST_CHECK( db->_pending_tx.size() == 1 );
     // But generate another block, as a non-time-share witness, and it works
     generate_block();
-    BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), 1 );
+    BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), 1u );
     BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
-    BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0 );
+    BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0u );
 
     while( db->get< witness_object, by_name >( db->get_scheduled_witness( 1 ) ).schedule == witness_object::timeshare )
     {
@@ -3100,10 +3226,139 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     BOOST_CHECK_EQUAL( db->_pending_tx.size(), n+1 );
     generate_block();
     BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), n );
-    BOOST_CHECK_EQUAL( db->_pending_tx.size(), 1 );
+    BOOST_CHECK_EQUAL( db->_pending_tx.size(), 1u );
   }
   FC_LOG_AND_RETHROW()
 }
+
+BOOST_AUTO_TEST_CASE( recurrent_transfer_expiration )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: recurrent transfer expiration" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+
+    fund( "alice", ASSET("100.000 TESTS") );
+    fund( "alice", ASSET("100.000 TBD") );
+
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "100.000 TESTS" ).amount.value );
+
+    recurrent_transfer_operation op;
+    op.from = "alice";
+    op.to = "bob";
+    op.memo = "test";
+    op.amount = ASSET( "5.000 TESTS" );
+    op.recurrence = 24;
+    op.executions = 2;
+    push_transaction(op, alice_private_key);
+
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "100.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "0.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 1 );
+    validate_database();
+
+    generate_block();
+    BOOST_TEST_MESSAGE( "--- test initial recurrent transfer execution" );
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "95.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
+    validate_database();
+
+    auto blocks_until_expiration = (fc::hours(op.recurrence * op.executions) + fc::seconds(30)).to_seconds() / HIVE_BLOCK_INTERVAL;
+    ilog("generating ${blocks} blocks", ("blocks", blocks_until_expiration));
+    generate_blocks( blocks_until_expiration );
+
+    const auto* recurrent_transfer = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id) );
+    BOOST_TEST_MESSAGE( "--- test recurrent transfer fully executed" );
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "90.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "10.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( recurrent_transfer == nullptr );
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+
+    BOOST_TEST_MESSAGE( "Waiting another 24 hours to see if the recurrent transfer does not execute again past its expiration" );
+
+    auto blocks_until_next_execution = fc::days(1).to_seconds() / HIVE_BLOCK_INTERVAL;
+    ilog("generating ${blocks} blocks", ("blocks", blocks_until_next_execution));
+    generate_blocks( blocks_until_next_execution );
+
+    const auto* recurrent_transfer_post_expiration = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id) );
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "90.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "10.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( recurrent_transfer_post_expiration == nullptr );
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+
+    validate_database();
+ }
+ FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( recurrent_transfer_consecutive_failure_deletion )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: recurrent transfer failure deletion" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+
+    fund( "alice", ASSET("5.000 TESTS") );
+    fund( "alice", ASSET("100.000 TBD") );
+
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
+
+    recurrent_transfer_operation op;
+    op.from = "alice";
+    op.to = "bob";
+    op.memo = "test";
+    op.amount = ASSET( "5.000 TESTS" );
+    op.recurrence = 24;
+    op.executions = 100;
+    push_transaction(op, alice_private_key);
+
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "0.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 1 );
+    validate_database();
+
+    generate_block();
+    BOOST_TEST_MESSAGE( "--- test initial recurrent transfer execution" );
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "0.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
+    validate_database();
+
+    auto blocks_until_failure = (fc::days(10) + fc::seconds(60) ).to_seconds() / HIVE_BLOCK_INTERVAL;
+    ilog("generating ${blocks} blocks", ("blocks", blocks_until_failure));
+    generate_blocks( blocks_until_failure );
+
+    const auto* recurrent_transfer = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id) );
+    BOOST_TEST_MESSAGE( "--- test recurrent transfer got deleted" );
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "0.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( recurrent_transfer == nullptr );
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+
+    BOOST_TEST_MESSAGE( "Waiting another 24 hours to see if the recurrent transfer does not execute again past its deletion" );
+
+    fund( "alice", ASSET("5.000 TESTS") );
+    auto blocks_until_next_execution = fc::days(1).to_seconds() / HIVE_BLOCK_INTERVAL;
+    ilog("generating ${blocks} blocks", ("blocks", blocks_until_next_execution));
+    generate_blocks( blocks_until_next_execution );
+
+    const auto* recurrent_transfer_post_deletion = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id) );
+    BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( recurrent_transfer_post_deletion == nullptr );
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+    validate_database();
+ }
+ FC_LOG_AND_RETHROW()
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 #endif

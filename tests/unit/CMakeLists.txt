@@ -171,6 +171,11 @@ add_boost_test( chain_test
    operation_tests/account_update2_validate
    operation_tests/account_update2_authorities
    operation_tests/account_update2_apply
+   operation_tests/recurrent_transfer_max_transfer_processed_per_block
+   operation_tests/recurrent_transfer_max_open_transfers
+   operation_tests/recurrent_transfer_hbd
+   operation_tests/recurrent_transfer_apply
+   operation_tests/recurrent_transfer_validate
    operation_time_tests/comment_payout_equalize
    operation_time_tests/comment_payout_dust
    operation_time_tests/recent_claims_decay
@@ -188,10 +193,14 @@ add_boost_test( chain_test
    operation_time_tests/clear_null_account
    operation_time_tests/generate_account_subsidies
    operation_time_tests/account_subsidy_witness_limits
+   operation_time_tests/recurrent_transfer_consecutive_failure_deletion
+   operation_time_tests/recurrent_transfer_expiration
    proposal_tests/generating_payments
    proposal_tests/generating_payments_01
    proposal_tests/generating_payments_02
    proposal_tests/generating_payments_03
+   proposal_tests/generating_payments_04
+   proposal_tests/generating_payments_05
    proposal_tests/proposals_maintenance
    proposal_tests/proposal_object_apply
    proposal_tests/proposal_vote_object_apply

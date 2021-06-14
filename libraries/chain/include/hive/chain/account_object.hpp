@@ -12,7 +12,6 @@
 #include <hive/chain/util/manabar.hpp>
 
 #include <hive/chain/util/delayed_voting_processor.hpp>
-#include <hive/chain/util/tiny_asset.hpp>
 
 #include <numeric>
 
@@ -32,8 +31,8 @@ namespace hive { namespace chain {
         const time_point_sec& _creation_time, bool _mined,
         const account_name_type& _recovery_account,
         bool _fill_mana, const asset& incoming_delegation )
-        : id( _id ), name( _name ), memo_key( _memo_key ), created( _creation_time ), mined( _mined ),
-        recovery_account( _recovery_account ), delayed_votes( a )
+        : id( _id ), name( _name ), recovery_account( _recovery_account ), created( _creation_time ),
+        mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
       {
         received_vesting_shares += incoming_delegation;
         voting_manabar.last_update_time = _creation_time.sec_since_epoch();
@@ -75,27 +74,47 @@ namespace hive { namespace chain {
       //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
       asset get_vest_rewards_as_hive() const { return reward_vesting_hive; }
 
+      //gives name of the account
+      const account_name_type& get_name() const { return name; }
+
+      //tells if account has some other account casting governance votes in its name
+      bool has_proxy() const { return proxy != account_id_type(); }
+      //account's proxy (if any)
+      account_id_type get_proxy() const { return proxy; }
+      //sets proxy to neutral (account will vote for itself)
+      void clear_proxy() { proxy = account_id_type(); }
+      //sets proxy to given account
+      void set_proxy(const account_object& new_proxy)
+      {
+        FC_ASSERT( &new_proxy != this );
+        proxy = new_proxy.get_id();
+      }
+
+      //tells if account has some designated account that can initiate recovery (if not, top witness can)
+      bool has_recovery_account() const { return recovery_account.length(); }
+      //account's recovery account (if any), that is, an account that can authorize request_account_recovery_operation
+      const account_name_type& get_recovery_account() const { return recovery_account; }
+      //sets new recovery account
+      void set_recovery_account(const account_object& new_recovery_account)
+      {
+        recovery_account = new_recovery_account.name;
+      }
+
+      //members are organized in such a way that the object takes up as little space as possible (note that object starts with 4byte id).
+
+    private:
+      account_id_type   proxy;
+    public:
       account_name_type name;
-      public_key_type   memo_key;
-      account_name_type proxy;
+    private:
+      account_name_type recovery_account; //cannot be changed to id because there are plenty of accounts with "steem" recovery created before it was created in b.1097
 
-      time_point_sec    last_account_update;
+    public:
+      uint128_t         hbd_seconds; ///< total HBD * how long it has been held
+      uint128_t         savings_hbd_seconds; ///< total HBD * how long it has been held
 
-      time_point_sec    created;
-      bool              mined = true;
-      account_name_type recovery_account;
-      account_name_type reset_account = HIVE_NULL_ACCOUNT;
-      time_point_sec    last_account_recovery;
-      uint32_t          comment_count = 0;
-      uint32_t          lifetime_vote_count = 0;
-      uint32_t          post_count = 0;
-
-      bool              can_vote = true;
       util::manabar     voting_manabar;
       util::manabar     downvote_manabar;
-
-      HIVE_asset        balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
-      HIVE_asset        savings_balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
 
       /**
         *  HBD Deposits pay interest based upon the interest rate set by witnesses. The purpose of these
@@ -110,51 +129,71 @@ namespace hive { namespace chain {
         *
         *  @defgroup hbd_data HBD Balance Data
         */
-      ///@{
+
       HBD_asset         hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
-      uint128_t         hbd_seconds; ///< total HBD * how long it has been held
-      time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
-      time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
-
-
       HBD_asset         savings_hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
-      uint128_t         savings_hbd_seconds; ///< total HBD * how long it has been held
-      time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
-      time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
-
-      uint8_t           savings_withdraw_requests = 0;
-      ///@}
-
       HBD_asset         reward_hbd_balance = asset( 0, HBD_SYMBOL );
+
       HIVE_asset        reward_hive_balance = asset( 0, HIVE_SYMBOL );
-      VEST_asset        reward_vesting_balance = asset( 0, VESTS_SYMBOL );
       HIVE_asset        reward_vesting_hive = asset( 0, HIVE_SYMBOL );
+      HIVE_asset        balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
+      HIVE_asset        savings_balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
 
-      share_type        curation_rewards = 0;
-      share_type        posting_rewards = 0;
-
+      VEST_asset        reward_vesting_balance = asset( 0, VESTS_SYMBOL );
       VEST_asset        vesting_shares = asset( 0, VESTS_SYMBOL ); ///< total vesting shares held by this account, controls its voting power
       VEST_asset        delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
       VEST_asset        received_vesting_shares = asset( 0, VESTS_SYMBOL );
-
       VEST_asset        vesting_withdraw_rate = asset( 0, VESTS_SYMBOL ); ///< at the time this is updated it can be at most vesting_shares/104
-      time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
+
+      share_type        curation_rewards = 0;
+      share_type        posting_rewards = 0;
       share_type        withdrawn = 0; /// Track how many shares have been withdrawn
       share_type        to_withdraw = 0; /// Might be able to look this up with operation history.
-      uint16_t          withdraw_routes = 0; //max 10, why is it 16bit?
-      uint16_t          pending_transfers = 0; //for now max is 255, but it might change
+      share_type        pending_claimed_accounts = 0;
 
-      fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes;// = std::vector<share_type>( HIVE_MAX_PROXY_RECURSION_DEPTH, 0 ); ///< the total VFS votes proxied to this account
+      /*
+        Total sum of VESTS from `delayed_votes` collection.
+        It's a helper variable needed for better performance.
+      */
+      ushare_type       sum_delayed_votes = 0;
 
-      uint16_t          witnesses_voted_for = 0; //max 30, why is it 16bit?
-
+      time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
+      time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
+      time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
+      time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
+      time_point_sec    last_account_recovery;
+      time_point_sec    created;
+      time_point_sec    last_account_update;
       time_point_sec    last_post;
       time_point_sec    last_root_post = fc::time_point_sec::min();
       time_point_sec    last_post_edit;
       time_point_sec    last_vote_time;
+      time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
+
+    private:
+      time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
+
+    public:
+
+      uint32_t          comment_count = 0;
+      uint32_t          lifetime_vote_count = 0;
+      uint32_t          post_count = 0;
       uint32_t          post_bandwidth = 0;
 
-      share_type        pending_claimed_accounts = 0;
+      uint16_t          withdraw_routes = 0; //max 10, why is it 16bit?
+      uint16_t          pending_transfers = 0; //for now max is 255, but it might change
+      uint16_t          open_recurrent_transfers = 0; //for now max is 255, but it might change
+      uint16_t          witnesses_voted_for = 0; //max 30, why is it 16bit?
+
+      uint8_t           savings_withdraw_requests = 0;
+      bool              can_vote = true;
+      bool              mined = true;
+
+    public:
+
+      public_key_type   memo_key;   //public_key_type - 33 bytes; ABW: it belongs to metadata as it is not used by consensus, but witnesses need it here since they don't COLLECT_ACCOUNT_METADATA
+
+      fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes;// = std::vector<share_type>( HIVE_MAX_PROXY_RECURSION_DEPTH, 0 ); ///< the total VFS votes proxied to this account
 
       using t_delayed_votes = t_vector< delayed_votes_data >;
       /*
@@ -162,11 +201,28 @@ namespace hive { namespace chain {
         VESTS from day `X` will be matured after `X` + 30 days ( because `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )
       */
       t_delayed_votes   delayed_votes;
-      /*
-        Total sum of VESTS from `delayed_votes` collection.
-        It's a helper variable needed for better performance.
-      */
-      ushare_type       sum_delayed_votes = 0;
+
+      //methods
+
+      time_point_sec get_governance_vote_expiration_ts() const
+      {
+        return governance_vote_expiration_ts;
+      }
+
+      void set_governance_vote_expired()
+      {
+        governance_vote_expiration_ts = time_point_sec::maximum();
+      }
+
+      void update_governance_vote_expiration_ts(const time_point_sec vote_time)
+      {
+        governance_vote_expiration_ts = vote_time + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+        if (governance_vote_expiration_ts < HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP)
+        {
+          const int64_t DIVIDER = HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT.to_seconds();
+          governance_vote_expiration_ts = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + fc::seconds(governance_vote_expiration_ts.sec_since_epoch() % DIVIDER);
+        }
+      }
 
       time_point_sec get_the_earliest_time() const
       {
@@ -290,16 +346,33 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       account_recovery_request_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _account_to_recover, const authority& _new_owner_authority, const time_point_sec& _expiration_time )
-        : id( _id ), account_to_recover( _account_to_recover ), new_owner_authority( allocator< shared_authority >( a ) ),
-        expires( _expiration_time )
+        const account_object& _account_to_recover, const authority& _new_owner_authority, const time_point_sec& _expiration_time )
+        : id( _id ), expires( _expiration_time ), account_to_recover( _account_to_recover.get_name() ),
+        new_owner_authority( allocator< shared_authority >( a ) )
       {
         new_owner_authority = _new_owner_authority;
       }
 
+      //account whos owner authority is being modified
+      const account_name_type& get_account_to_recover() const { return account_to_recover; }
+
+      //new owner authority requested to be set during recovery operation
+      const shared_authority& get_new_owner_authority() const { return new_owner_authority; }
+      //sets different new owner authority (also moves time when request will expire)
+      void set_new_owner_authority( const authority& _new_owner_authority, const time_point_sec& _new_expiration_time )
+      {
+        new_owner_authority = _new_owner_authority;
+        expires = _new_expiration_time;
+      }
+
+      //time when the request will be automatically removed if not used
+      time_point_sec get_expiration_time() const { return expires; }
+
+    private:
+      time_point_sec    expires;
       account_name_type account_to_recover;
       shared_authority  new_owner_authority;
-      time_point_sec    expires;
+      
     CHAINBASE_UNPACK_CONSTRUCTOR(account_recovery_request_object, (new_owner_authority));
   };
 
@@ -307,17 +380,39 @@ namespace hive { namespace chain {
   {
     CHAINBASE_OBJECT( change_recovery_account_request_object );
     public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( change_recovery_account_request_object )
+      template< typename Allocator >
+      change_recovery_account_request_object( allocator< Allocator > a, uint64_t _id,
+        const account_object& _account_to_recover, const account_object& _recovery_account, const time_point_sec& _effect_time )
+        : id( _id ), effective_on( _effect_time ), account_to_recover( _account_to_recover.name ), recovery_account( _recovery_account.name )
+      {}
 
-      account_name_type account_to_recover;
-      account_name_type recovery_account;
+      //account whos recovery account is being modified
+      const account_name_type& get_account_to_recover() const { return account_to_recover; }
+
+      //new recovery account being set
+      const account_name_type& get_recovery_account() const { return recovery_account; }
+      //sets different new recovery account (also moves time when actual change will take place)
+      void set_recovery_account( const account_object& new_recovery_account, const time_point_sec& _new_effect_time )
+      {
+        recovery_account = new_recovery_account.name;
+        effective_on = _new_effect_time;
+      }
+
+      //time when actual change of recovery account is to be executed
+      time_point_sec get_execution_time() const { return effective_on; }
+
+    private:
       time_point_sec    effective_on;
+      account_name_type account_to_recover; //changing it to id would influence response from database_api.list_change_recovery_account_requests
+      account_name_type recovery_account; //could be changed to id
+      
     CHAINBASE_UNPACK_CONSTRUCTOR(change_recovery_account_request_object);
   };
 
   struct by_proxy;
   struct by_next_vesting_withdrawal;
   struct by_delayed_voting;
+  struct by_governance_vote_expiration_ts;
   /**
     * @ingroup object_index
     */
@@ -330,7 +425,7 @@ namespace hive { namespace chain {
         member< account_object, account_name_type, &account_object::name > >,
       ordered_unique< tag< by_proxy >,
         composite_key< account_object,
-          member< account_object, account_name_type, &account_object::proxy >,
+          const_mem_fun< account_object, account_id_type, &account_object::get_proxy >,
           member< account_object, account_name_type, &account_object::name >
         > /// composite key by proxy
       >,
@@ -343,6 +438,12 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_delayed_voting >,
         composite_key< account_object,
           const_mem_fun< account_object, time_point_sec, &account_object::get_the_earliest_time >,
+          const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
+        >
+      >,
+      ordered_unique< tag< by_governance_vote_expiration_ts >,
+        composite_key< account_object,
+          const_mem_fun< account_object, time_point_sec, &account_object::get_governance_vote_expiration_ts >,
           const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
         >
       >
@@ -458,14 +559,14 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< account_recovery_request_object, account_recovery_request_object::id_type, &account_recovery_request_object::get_id > >,
       ordered_unique< tag< by_account >,
-        member< account_recovery_request_object, account_name_type, &account_recovery_request_object::account_to_recover >
+        const_mem_fun< account_recovery_request_object, const account_name_type&, &account_recovery_request_object::get_account_to_recover >
       >,
       ordered_unique< tag< by_expiration >,
         composite_key< account_recovery_request_object,
-          member< account_recovery_request_object, time_point_sec, &account_recovery_request_object::expires >,
-          member< account_recovery_request_object, account_name_type, &account_recovery_request_object::account_to_recover >
+          const_mem_fun< account_recovery_request_object, time_point_sec, &account_recovery_request_object::get_expiration_time >,
+          const_mem_fun< account_recovery_request_object, const account_name_type&, &account_recovery_request_object::get_account_to_recover >
         >,
-        composite_key_compare< std::less< time_point_sec >, std::less< account_name_type > >
+        composite_key_compare< std::less< time_point_sec >, std::less< const account_name_type& > >
       >
     >,
     allocator< account_recovery_request_object >
@@ -479,34 +580,24 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< change_recovery_account_request_object, change_recovery_account_request_object::id_type, &change_recovery_account_request_object::get_id > >,
       ordered_unique< tag< by_account >,
-        member< change_recovery_account_request_object, account_name_type, &change_recovery_account_request_object::account_to_recover >
+        const_mem_fun< change_recovery_account_request_object, const account_name_type&, &change_recovery_account_request_object::get_account_to_recover >
       >,
       ordered_unique< tag< by_effective_date >,
         composite_key< change_recovery_account_request_object,
-          member< change_recovery_account_request_object, time_point_sec, &change_recovery_account_request_object::effective_on >,
-          member< change_recovery_account_request_object, account_name_type, &change_recovery_account_request_object::account_to_recover >
+          const_mem_fun< change_recovery_account_request_object, time_point_sec, &change_recovery_account_request_object::get_execution_time >,
+          const_mem_fun< change_recovery_account_request_object, const account_name_type&, &change_recovery_account_request_object::get_account_to_recover >
         >,
-        composite_key_compare< std::less< time_point_sec >, std::less< account_name_type > >
+        composite_key_compare< std::less< time_point_sec >, std::less< const account_name_type& > >
       >
     >,
     allocator< change_recovery_account_request_object >
   > change_recovery_account_request_index;
 } }
 
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template<> struct is_static_length< hive::chain::vesting_delegation_object > : public boost::true_type {};
-template<> struct is_static_length< hive::chain::vesting_delegation_expiration_object > : public boost::true_type {};
-template<> struct is_static_length< hive::chain::change_recovery_account_request_object > : public boost::true_type {};
-
-} // mira
-#endif
-
 FC_REFLECT( hive::chain::account_object,
           (id)(name)(memo_key)(proxy)(last_account_update)
           (created)(mined)
-          (recovery_account)(last_account_recovery)(reset_account)
+          (recovery_account)(last_account_recovery)
           (comment_count)(lifetime_vote_count)(post_count)(can_vote)(voting_manabar)(downvote_manabar)
           (balance)
           (savings_balance)
@@ -515,13 +606,14 @@ FC_REFLECT( hive::chain::account_object,
           (reward_hive_balance)(reward_hbd_balance)(reward_vesting_balance)(reward_vesting_hive)
           (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)
           (vesting_withdraw_rate)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
-          (pending_transfers)(curation_rewards)
+          (pending_transfers)(open_recurrent_transfers)(curation_rewards)
           (posting_rewards)
           (proxied_vsf_votes)(witnesses_voted_for)
           (last_post)(last_root_post)(last_post_edit)(last_vote_time)(post_bandwidth)
           (pending_claimed_accounts)
           (delayed_votes)
           (sum_delayed_votes)
+          (governance_vote_expiration_ts)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_object, hive::chain::account_index )

@@ -74,6 +74,19 @@ int64_t calc_votes( const PROPOSAL_VOTE_IDX& proposal_vote_idx, const std::vecto
   return cnt;
 }
 
+struct expired_account_notification_operation_visitor
+{
+  typedef account_name_type result_type;
+  mutable std::string debug_type_name; //mangled visited type name - to make it easier to debug
+
+  template<typename T>
+  result_type operator()( const T& op ) const { debug_type_name = typeid( T ).name(); return account_name_type(); }
+  result_type operator()( const expired_account_notification_operation& op ) const
+  {
+    debug_type_name = typeid( expired_account_notification_operation ).name(); return op.account;
+  }
+};
+
 BOOST_FIXTURE_TEST_SUITE( proposal_tests, sps_proposal_database_fixture )
 
 BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
@@ -98,7 +111,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     auto start_date = db->head_block_time();
 
     auto daily_pay = ASSET( "48.000 TBD" );
-    auto hourly_pay = ASSET( "1.996 TBD" );// hourly_pay != ASSET( "2.000 TBD" ) because lack of rounding
+    auto hourly_pay = ASSET( "2.000 TBD" );
 
     FUND( creator, ASSET( "160.000 TESTS" ) );
     FUND( creator, ASSET( "80.000 TBD" ) );
@@ -122,13 +135,13 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     auto end_date_02 = start_date_02 + fc::hours( 48 );
     //=====================preparing=====================
 
-    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_proposal_id >();
+    const auto& proposal_idx = db->get_index< proposal_index, by_proposal_id >();
 
     //Needed basic operations
     int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key );
-    generate_blocks( 1 );
+    generate_block();
     int64_t id_proposal_01 = create_proposal( creator, receiver, start_date_02, end_date_02, daily_pay, alice_private_key );
-    generate_blocks( 1 );
+    generate_block();
 
     /*
       proposal_00
@@ -140,35 +153,35 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     {
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
       found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
-      BOOST_REQUIRE_EQUAL( found_votes_00, 0 );
-      BOOST_REQUIRE_EQUAL( found_votes_01, 0 );
+      BOOST_REQUIRE_EQUAL( found_votes_00, 0u );
+      BOOST_REQUIRE_EQUAL( found_votes_01, 0u );
     }
 
     vote_proposal( voter_00, { id_proposal_00 }, true/*approve*/, carol_private_key );
-    generate_blocks( 1 );
+    generate_block();
 
     {
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
       found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
-      BOOST_REQUIRE_EQUAL( found_votes_00, 0 );
-      BOOST_REQUIRE_EQUAL( found_votes_01, 0 );
+      BOOST_REQUIRE_EQUAL( found_votes_00, 0u ); //votes are only counted during maintenance periods (so we don't have to remove them when proxy is set)
+      BOOST_REQUIRE_EQUAL( found_votes_01, 0u );
     }
 
     vote_proposal( voter_01, { id_proposal_01 }, true/*approve*/, dan_private_key );
-    generate_blocks( 1 );
+    generate_block();
 
     {
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
       found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
-      BOOST_REQUIRE_EQUAL( found_votes_00, 0 );
-      BOOST_REQUIRE_EQUAL( found_votes_01, 0 );
+      BOOST_REQUIRE_EQUAL( found_votes_00, 0u );
+      BOOST_REQUIRE_EQUAL( found_votes_01, 0u ); //like above
     }
 
     //skipping interest generating is necessary
     transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ));
-    generate_block( 5 );
+    generate_block();
     transfer( HIVE_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 TBD" ) );
-    generate_block( 5 );
+    generate_block();
 
     const auto& dgpo = db->get_dynamic_global_properties();
     auto old_hbd_supply = dgpo.current_hbd_supply;
@@ -189,7 +202,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
 
       auto next_block = get_nr_blocks_until_maintenance_block();
       generate_blocks( next_block - 1 );
-      generate_blocks( 1 );
+      generate_block();
 
       auto treasury_hbd_inflation = dgpo.current_hbd_supply - old_hbd_supply;
       auto after_creator_hbd_balance = _creator.hbd_balance;
@@ -215,8 +228,8 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
       //Passed ~1h - one reward for `proposal_00` was paid out
       found_votes_00 = calc_total_votes( proposal_idx, id_proposal_00 );
       found_votes_01 = calc_total_votes( proposal_idx, id_proposal_01 );
-      BOOST_REQUIRE_GT( found_votes_00, 0 );
-      BOOST_REQUIRE_GT( found_votes_01, 0 );
+      BOOST_REQUIRE_GT( found_votes_00, 0u );
+      BOOST_REQUIRE_GT( found_votes_01, 0u );
     }
     {
       auto time_movement = start_date + fc::hours( 24 );
@@ -264,6 +277,683 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: db_remove_expired_governance_votes" );
+    ACTORS( (acc1)(acc2)(acc3)(acc4)(acc5)(acc6)(acc7)(acc8)(accw)(accw2)(accp)(pxy) )
+    fund( "acc1", 1000 ); vest( "acc1", 1000 );
+    fund( "acc2", 2000 ); vest( "acc2", 2000 );
+    fund( "acc3", 3000 ); vest( "acc3", 3000 );
+    fund( "acc4", 4000 ); vest( "acc4", 4000 );
+    fund( "acc5", 5000 ); vest( "acc5", 5000 );
+    fund( "acc6", 6000 ); vest( "acc6", 6000 );
+    fund( "acc7", 7000 ); vest( "acc7", 7000 );
+    fund( "acc8", 8000 ); vest( "acc8", 8000 );
+
+    generate_block();
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    const fc::time_point_sec LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT;
+
+    auto proposal_creator = "accp";
+    FUND( proposal_creator, ASSET( "10000.000 TBD" ) );
+
+    auto start_1 = db->head_block_time();
+    auto start_2 = db->head_block_time() + fc::seconds(15);
+    auto start_3 = db->head_block_time() + fc::seconds(30);
+
+    auto end_1 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((100));
+    auto end_2 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((101));
+    auto end_3 = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days((102));
+
+    int64_t proposal_1 = create_proposal( proposal_creator, "acc1",  start_1,  end_1, asset( 100, HBD_SYMBOL ), accp_private_key );
+    int64_t proposal_2 = create_proposal( proposal_creator, "acc2",  start_2,  end_2, asset( 100, HBD_SYMBOL ), accp_private_key );
+    int64_t proposal_3 = create_proposal( proposal_creator, "acc3",  start_3,  end_3, asset( 100, HBD_SYMBOL ), accp_private_key );
+
+    private_key_type accw_witness_key = generate_private_key( "accw_key" );
+    witness_create( "accw", accw_private_key, "foo.bar", accw_witness_key.get_public_key(), 1000 );
+    private_key_type accw_witness2_key = generate_private_key( "accw2_key" );
+    witness_create( "accw2", accw2_private_key, "foo.bar", accw_witness2_key.get_public_key(), 1000 );
+
+    //if we vote before hardfork 25
+    generate_block();
+    fc::time_point_sec hardfork_25_time(HIVE_HARDFORK_1_25_TIME);
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
+      {
+        //fake timestamp of current block so we don't need to wait for creation of 39mln blocks in next line
+        //even though it is skipping it still takes a lot of time, especially under debugger
+        gpo.time = hardfork_25_time - fc::days( 202 );
+      } );
+    } );
+    generate_blocks(hardfork_25_time - fc::days(201));
+    BOOST_REQUIRE(db->head_block_time() < hardfork_25_time - fc::days(200));
+    witness_vote("acc1", "accw2", acc1_private_key); //201 days before HF25
+    generate_days_blocks(25);
+    vote_proposal("acc2", {proposal_1}, true, acc2_private_key); //176 days before HF25
+    generate_days_blocks(25);
+    vote_proposal("acc2", {proposal_2}, true, acc2_private_key); //151 days before HF25
+    generate_days_blocks(25);
+    witness_vote("acc3", "accw", acc3_private_key); //126 days before HF25
+    generate_days_blocks(25);
+    vote_proposal("acc4", {proposal_2}, true, acc4_private_key); //101 days before HF25
+    generate_days_blocks(25);
+    vote_proposal("acc5", {proposal_3}, true, acc5_private_key); //76 days before HF25
+    generate_days_blocks(25);
+    proxy("acc6", "pxy", acc6_private_key); //51 days before HF25
+    {
+      time_point_sec acc_6_vote_expiration_ts_before_proxy_action = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
+      //being set as someone's proxy does not affect expiration
+      BOOST_REQUIRE( db->get_account( "pxy" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+      generate_days_blocks(25);
+      witness_vote("pxy", "accw2", pxy_private_key); //26 days before HF25
+      time_point_sec acc_6_vote_expiration_ts_after_proxy_action = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
+      //governance action on a proxy does not affect expiration on account that uses that proxy...
+      BOOST_REQUIRE( acc_6_vote_expiration_ts_before_proxy_action == acc_6_vote_expiration_ts_after_proxy_action );
+      proxy("acc6", "", acc6_private_key); //26 days before HF25
+      time_point_sec acc_6_vote_expiration_ts_after_proxy_removal = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
+      //...but clearing proxy does
+      BOOST_REQUIRE( acc_6_vote_expiration_ts_after_proxy_removal == db->get_account( "pxy" ).get_governance_vote_expiration_ts() );
+    }
+    //unvoting proposal (even the one that the account did not vote for before) also resets expiration (same with witness, but you can't unvote witness you didn't vote for)
+    vote_proposal("acc7", {proposal_2}, false, acc7_private_key); //26 days before HF25
+    generate_block();
+
+    {
+      time_point_sec acc_1_vote_expiration_ts = db->get_account( "acc1" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_2_vote_expiration_ts = db->get_account( "acc2" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_3_vote_expiration_ts = db->get_account( "acc3" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_4_vote_expiration_ts = db->get_account( "acc4" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_5_vote_expiration_ts = db->get_account( "acc5" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_6_vote_expiration_ts = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_7_vote_expiration_ts = db->get_account( "acc7" ).get_governance_vote_expiration_ts();
+      time_point_sec pxy_vote_expiration_ts   = db->get_account( "pxy" ).get_governance_vote_expiration_ts();
+
+      BOOST_REQUIRE(acc_1_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_1_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+      BOOST_REQUIRE(acc_2_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_2_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+      BOOST_REQUIRE(acc_3_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_3_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+      BOOST_REQUIRE(acc_4_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_4_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+      BOOST_REQUIRE(acc_5_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_5_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+      BOOST_REQUIRE(acc_6_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_6_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+      BOOST_REQUIRE(acc_7_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_7_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+      BOOST_REQUIRE(pxy_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && pxy_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS );
+
+      const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
+      BOOST_REQUIRE(witness_votes.size() == 3);
+      BOOST_REQUIRE(witness_votes.count("acc1") == 1);
+      BOOST_REQUIRE(witness_votes.count("acc3") == 1);
+      BOOST_REQUIRE(witness_votes.count("pxy") == 1);
+
+      const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
+      BOOST_REQUIRE(proposal_votes.size() == 4);
+      BOOST_REQUIRE(proposal_votes.count("acc2") == 2);
+      BOOST_REQUIRE(proposal_votes.count("acc4") == 1);
+      BOOST_REQUIRE(proposal_votes.count("acc5") == 1);
+    }
+
+    //make all votes expired. Now vote expiration time is vote time + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
+    generate_blocks(LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+
+    {
+      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+
+      const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
+      BOOST_REQUIRE(witness_votes.empty());
+
+      const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
+      BOOST_REQUIRE(proposal_votes.empty());
+    }
+
+    witness_vote("acc1", "accw", acc1_private_key);
+    witness_vote("acc1", "accw2", acc1_private_key);
+    witness_vote("acc2", "accw", acc2_private_key);
+    time_point_sec expected_expiration_time = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+
+    //this proposal vote should be removed
+    vote_proposal("acc3", {proposal_1}, true, acc3_private_key);
+    generate_block();
+    vote_proposal("acc3", {proposal_1}, false, acc3_private_key);
+    time_point_sec expected_expiration_time_2 = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+
+    //this witness vote should not be removed
+    generate_days_blocks(1);
+    witness_vote("acc8", "accw", acc8_private_key);
+    generate_blocks( expected_expiration_time - fc::seconds( HIVE_BLOCK_INTERVAL ) );
+
+    {
+      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+
+      const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
+      BOOST_REQUIRE(witness_votes.count("acc1") == 2);
+      BOOST_REQUIRE(witness_votes.count("acc2") == 1);
+      BOOST_REQUIRE(witness_votes.count("acc8") == 1);
+      BOOST_REQUIRE(witness_votes.size() == 4);
+
+      const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
+      BOOST_REQUIRE(proposal_votes.empty());
+    }
+    generate_block();
+    {
+      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+    }
+    generate_block();
+    {
+      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+
+      const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
+      BOOST_REQUIRE(witness_votes.count("acc8") == 1);
+      BOOST_REQUIRE(witness_votes.size() == 1 );
+    }
+    generate_days_blocks(1, false);
+    {
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
+      BOOST_REQUIRE(witness_votes.empty());
+    }
+
+    vote_proposal("acc3", {proposal_1}, true, acc3_private_key);
+    vote_proposal("acc3", {proposal_2}, true, acc3_private_key);
+    vote_proposal("acc4", {proposal_1}, true, acc4_private_key);
+    expected_expiration_time = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+
+    //in this case we should have 0 witness votes but expiration period should be updated.
+    witness_vote("acc2", "accw", acc2_private_key);
+    witness_vote("acc2", "accw2", acc2_private_key);
+    witness_vote("acc6", "accw", acc6_private_key);
+    generate_block();
+    witness_vote("acc2", "accw", acc2_private_key, false);
+    witness_vote("acc2", "accw2", acc2_private_key, false);
+    witness_vote("acc6", "accw", acc6_private_key, false);
+    expected_expiration_time_2 = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+
+    //this proposal vote should not be removed
+    generate_days_blocks(1);
+    vote_proposal("acc8", {proposal_3}, true, acc8_private_key);
+
+    generate_blocks( expected_expiration_time - fc::seconds( HIVE_BLOCK_INTERVAL ) );
+
+    {
+      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+
+      const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
+      BOOST_REQUIRE(witness_votes.empty());
+
+      const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
+      BOOST_REQUIRE(proposal_votes.count("acc3") == 2);
+      BOOST_REQUIRE(proposal_votes.count("acc4") == 1);
+      BOOST_REQUIRE(proposal_votes.count("acc8") == 1);
+      BOOST_REQUIRE(proposal_votes.size() == 4);
+    }
+    generate_block();
+    {
+      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+    }
+    generate_block();
+    {
+      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+
+      const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
+      BOOST_REQUIRE(proposal_votes.count("acc8") == 1);
+      BOOST_REQUIRE(proposal_votes.size() == 1);
+    }
+    generate_days_blocks(1, false);
+    {
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
+      BOOST_REQUIRE(proposal_votes.empty());
+    }
+
+    witness_vote("acc1", "accw2", acc1_private_key);
+    vote_proposal("acc4", {proposal_1}, true, acc4_private_key);
+    witness_vote("acc5", "accw", acc5_private_key);
+    witness_vote("acc5", "accw2", acc5_private_key);
+    vote_proposal("acc6", {proposal_1}, true, acc6_private_key);
+    vote_proposal("acc6", {proposal_2}, true, acc6_private_key);
+    vote_proposal("acc6", {proposal_3}, true, acc6_private_key);
+    vote_proposal("acc7", {proposal_1}, true, acc7_private_key);
+    witness_vote("acc7", "accw", acc7_private_key);
+    witness_vote("acc8", "accw", acc8_private_key);
+    expected_expiration_time = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+    generate_blocks( expected_expiration_time - fc::seconds( HIVE_BLOCK_INTERVAL ) );
+
+    {
+      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+
+      const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
+      BOOST_REQUIRE(witness_votes.count("acc1") == 1);
+      BOOST_REQUIRE(witness_votes.count("acc2") == 0);
+      BOOST_REQUIRE(witness_votes.count("acc3") == 0);
+      BOOST_REQUIRE(witness_votes.count("acc4") == 0);
+      BOOST_REQUIRE(witness_votes.count("acc5") == 2);
+      BOOST_REQUIRE(witness_votes.count("acc6") == 0);
+      BOOST_REQUIRE(witness_votes.count("acc7") == 1);
+      BOOST_REQUIRE(witness_votes.count("acc8") == 1);
+      BOOST_REQUIRE(witness_votes.size() == 5);
+
+      const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
+      BOOST_REQUIRE(proposal_votes.count("acc1") == 0);
+      BOOST_REQUIRE(proposal_votes.count("acc2") == 0);
+      BOOST_REQUIRE(proposal_votes.count("acc3") == 0);
+      BOOST_REQUIRE(proposal_votes.count("acc4") == 1);
+      BOOST_REQUIRE(proposal_votes.count("acc5") == 0);
+      BOOST_REQUIRE(proposal_votes.count("acc6") == 3);
+      BOOST_REQUIRE(proposal_votes.count("acc7") == 1);
+      BOOST_REQUIRE(proposal_votes.count("acc8") == 0);
+      BOOST_REQUIRE(proposal_votes.size() == 5);
+    }
+    generate_block();
+    {
+      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+
+      const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
+      BOOST_REQUIRE(witness_votes.empty());
+
+      const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
+      BOOST_REQUIRE(proposal_votes.empty());
+
+      // first one is producer_reward_operation, later we should have expired_account_notification_operation
+      const auto& last_operations = get_last_operations(6);
+      BOOST_REQUIRE(last_operations[0].get<expired_account_notification_operation>().account == "acc8");
+      BOOST_REQUIRE(last_operations[1].get<expired_account_notification_operation>().account == "acc7");
+      BOOST_REQUIRE(last_operations[2].get<expired_account_notification_operation>().account == "acc6");
+      BOOST_REQUIRE(last_operations[3].get<expired_account_notification_operation>().account == "acc5");
+      BOOST_REQUIRE(last_operations[4].get<expired_account_notification_operation>().account == "acc4");
+      BOOST_REQUIRE(last_operations[5].get<expired_account_notification_operation>().account == "acc1");
+
+      BOOST_REQUIRE(db->get_account( "acc1" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE(db->get_account( "acc2" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE(db->get_account( "acc3" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE(db->get_account( "acc4" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE(db->get_account( "acc5" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE(db->get_account( "acc6" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE(db->get_account( "acc7" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE(db->get_account( "acc8" ).witnesses_voted_for == 0);
+
+      time_point_sec first_expiring_ts = db->get_index<account_index, by_governance_vote_expiration_ts>().begin()->get_governance_vote_expiration_ts();
+      BOOST_REQUIRE(first_expiring_ts == fc::time_point_sec::maximum());
+    }
+
+    generate_block();
+
+    //Check if proxy removing works well. acc1 is proxy, acc2 is grandparent proxy
+    proxy("acc3", "acc1", acc3_private_key);
+    proxy("acc4", "acc1", acc4_private_key);
+    generate_blocks(db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD);
+    proxy("acc5", "acc1", acc5_private_key);
+    proxy("acc1", "acc2", acc1_private_key);
+
+    generate_blocks(2);
+    BOOST_REQUIRE(!db->get_account("acc3").has_proxy());
+    BOOST_REQUIRE(!db->get_account("acc4").has_proxy());
+    BOOST_REQUIRE(db->get_account("acc5").get_proxy() == db->get_account("acc1").get_id());
+    BOOST_REQUIRE(db->get_account("acc1").get_proxy() == db->get_account("acc2").get_id());
+    BOOST_REQUIRE(db->get_account("acc1").proxied_vsf_votes_total() == db->get_account("acc5").get_real_vesting_shares());
+    BOOST_REQUIRE(db->get_account("acc2").proxied_vsf_votes_total() == (db->get_account("acc1").get_real_vesting_shares() + db->get_account("acc5").get_real_vesting_shares()));
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+/*
+BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: proposals_with_decline_voting_rights" );
+    ACTORS((acc1)(acc2)(accp)(dwr))
+    fund( "dwr", 1000 ); vest( "dwr", 1000 );
+
+    generate_block();
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    const fc::time_point_sec LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT;
+    const fc::time_point_sec hardfork_25_time( HIVE_HARDFORK_1_25_TIME );
+
+    FUND( "accp", ASSET( "10000.000 TBD" ) );
+    int64_t proposal_1 = create_proposal( "accp", "acc1", hardfork_25_time - fc::days( 50 ), LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days( 50 ), asset( 100, HBD_SYMBOL ), accp_private_key );
+    int64_t proposal_2 = create_proposal( "accp", "acc2", hardfork_25_time - fc::days( 150 ), LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days( 150 ), asset( 100, HBD_SYMBOL ), accp_private_key );
+    generate_block();
+
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
+      {
+        //fake timestamp of current block so we don't need to wait for creation of 39mln blocks in next line
+        //even though it is skipping it still takes a lot of time, especially under debugger
+        gpo.time = hardfork_25_time - fc::days( 202 );
+      } );
+    } );
+    generate_blocks( hardfork_25_time - fc::days( 201 ) );
+    BOOST_REQUIRE( db->head_block_time() < hardfork_25_time - fc::days( 200 ) );
+
+    vote_proposal( "dwr", { proposal_1, proposal_2 }, true, dwr_private_key );
+    generate_blocks( hardfork_25_time - fc::days( 100 ) );
+    //TODO: check balance of acc1 (0) and acc2 (50 days worth of proposal pay)
+
+    {
+      signed_transaction tx;
+      decline_voting_rights_operation op;
+      op.account = "dwr";
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      sign( tx, dwr_private_key );
+      db->push_transaction( tx, 0 );
+      generate_block();
+      time_point_sec dwr_vote_expiration_ts = db->get_account( "dwr" ).get_governance_vote_expiration_ts();
+      //it takes only 60 seconds in testnet to finish declining, but it is not finished yet
+      BOOST_REQUIRE( dwr_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && dwr_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS );
+    }
+    generate_blocks( hardfork_25_time - fc::days( 25 ) );
+    //TODO: check balance of acc1 (0) and acc2 (50 days worth of proposal pay, maybe more if it caught one more payout before decline finalized)
+
+    //at this point dwr successfully declined voting rights (long ago) - his expiration should be set in stone even if he tries to clear his (nonexisting) votes
+    BOOST_REQUIRE( db->get_account( "dwr" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+    vote_proposal( "dwr", { proposal_2 }, false, dwr_private_key );
+    BOOST_REQUIRE( db->get_account( "dwr" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+    //TODO: decide if finalization of decline should remove existing proposal votes (and if so add tests on number of active votes)
+
+    generate_blocks( LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS );
+    generate_block();
+
+    generate_days_blocks( 25 );
+    //TODO: check balance of acc1 and acc2 (no change since last time)
+    BOOST_REQUIRE( db->get_account( "dwr" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+*/
+
+BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: db_remove_expired_governance_votes when threshold stops processing" );
+
+    ACTORS(
+    (a00)(a01)(a02)(a03)(a04)(a05)(a06)(a07)(a08)(a09)
+    (a10)(a11)(a12)(a13)(a14)(a15)(a16)(a17)(a18)(a19)
+    (a20)(a21)(a22)(a23)(a24)(a25)(a26)(a27)(a28)(a29)
+    (a30)(a31)(a32)(a33)(a34)(a35)(a36)(a37)(a38)(a39)
+    (a40)(a41)(a42)(a43)(a44)(a45)(a46)(a47)(a48)(a49)
+    (a50)(a51)(a52)(a53)(a54)(a55)(a56)(a57)(a58)(a59)
+    //witnesses
+    (w00)(w01)(w02)(w03)(w04)(w05)(w06)(w07)(w08)(w09)
+    (w10)(w11)(w12)(w13)(w14)(w15)(w16)(w17)(w18)(w19)
+    (w20)(w21)(w22)(w23)(w24)(w25)(w26)(w27)(w28)(w29)
+    )
+
+    struct initial_data
+    {
+      std::string account;
+      fc::ecc::private_key key;
+    };
+
+    std::vector< initial_data > users = {
+      {"a00", a00_private_key }, {"a01", a01_private_key }, {"a02", a02_private_key }, {"a03", a03_private_key }, {"a04", a04_private_key }, {"a05", a05_private_key }, {"a06", a06_private_key }, {"a07", a07_private_key }, {"a08", a08_private_key }, {"a09", a09_private_key },
+      {"a10", a10_private_key }, {"a11", a11_private_key }, {"a12", a12_private_key }, {"a13", a13_private_key }, {"a14", a14_private_key }, {"a15", a15_private_key }, {"a16", a16_private_key }, {"a17", a17_private_key }, {"a18", a18_private_key }, {"a19", a19_private_key },
+      {"a20", a20_private_key }, {"a21", a21_private_key }, {"a22", a22_private_key }, {"a23", a23_private_key }, {"a24", a24_private_key }, {"a25", a25_private_key }, {"a26", a26_private_key }, {"a27", a27_private_key }, {"a28", a28_private_key }, {"a29", a29_private_key },
+      {"a30", a30_private_key }, {"a31", a31_private_key }, {"a32", a32_private_key }, {"a33", a33_private_key }, {"a34", a34_private_key }, {"a35", a35_private_key }, {"a36", a36_private_key }, {"a37", a37_private_key }, {"a38", a38_private_key }, {"a39", a39_private_key },
+      {"a40", a40_private_key }, {"a41", a41_private_key }, {"a42", a42_private_key }, {"a43", a43_private_key }, {"a44", a44_private_key }, {"a45", a45_private_key }, {"a46", a46_private_key }, {"a47", a47_private_key }, {"a48", a48_private_key }, {"a49", a49_private_key },
+      {"a50", a50_private_key }, {"a51", a51_private_key }, {"a52", a52_private_key }, {"a53", a53_private_key }, {"a54", a54_private_key }, {"a55", a55_private_key }, {"a56", a56_private_key }, {"a57", a57_private_key }, {"a58", a58_private_key }, {"a59", a59_private_key },
+    };
+
+    //HIVE_MAX_ACCOUNT_WITNESS_VOTES is 30 for now so only 30 witnesses.
+    std::vector< initial_data > witnesses = {
+      {"w00", w00_private_key }, {"w01", w01_private_key }, {"w02", w02_private_key }, {"w03", w03_private_key }, {"w04", w04_private_key }, {"w05", w05_private_key }, {"w06", w06_private_key }, {"w07", w07_private_key }, {"w08", w08_private_key }, {"w09", w09_private_key },
+      {"w10", w10_private_key }, {"w11", w11_private_key }, {"w12", w12_private_key }, {"w13", w13_private_key }, {"w14", w14_private_key }, {"w15", w15_private_key }, {"w16", w16_private_key }, {"w17", w17_private_key }, {"w18", w18_private_key }, {"w19", w19_private_key },
+      {"w20", w20_private_key }, {"w21", w21_private_key }, {"w22", w22_private_key }, {"w23", w23_private_key }, {"w24", w24_private_key }, {"w25", w25_private_key }, {"w26", w26_private_key }, {"w27", w27_private_key }, {"w28", w28_private_key }, {"w29", w29_private_key }
+    };
+
+    for (const auto& witness : witnesses)
+    {
+      private_key_type witness_key = generate_private_key( witness.account + "_key" );
+      witness_create( witness.account, witness.key, "foo.bar", witness_key.get_public_key(), 1000 );
+    }
+    generate_block();
+
+    const auto& proposal_vote_idx = db->get_index< proposal_vote_index, by_id >();
+    const auto& witness_vote_idx = db->get_index< witness_vote_index, by_id >();
+    const auto& account_idx = db->get_index<account_index, by_governance_vote_expiration_ts>();
+
+    const fc::time_point_sec LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT;
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
+      {
+        //fake timestamp of current block so we don't need to wait for creation of 40mln blocks in next line
+        //even though it is skipping it still takes a lot of time, especially under debugger
+        gpo.time = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS - fc::days( 1 );
+      } );
+    } );
+    generate_blocks(LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
+
+    std::vector<int64_t> proposals;
+    proposals.reserve( users.size() );
+    time_point_sec proposals_start_time = db->head_block_time();
+    time_point_sec proposals_end_time = proposals_start_time + fc::days(450);
+    std::string receiver = db->get_treasury_name();
+
+    for(const auto& user : users )
+    {
+      FUND( user.account, ASSET( "100000.000 TBD" ) );
+      proposals.push_back(create_proposal( user.account, receiver,  proposals_start_time,  proposals_end_time, asset( 100, HBD_SYMBOL ), user.key));
+    }
+
+    generate_block();
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    fc::time_point_sec expiration_time = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+    for (const auto& user : users)
+    {
+      for (const auto proposal : proposals)
+        vote_proposal(user.account, {proposal}, true, user.key);
+
+      for (const auto& witness : witnesses)
+        witness_vote(user.account, witness.account, user.key);
+
+      generate_block();
+    }
+
+    size_t expected_votes=0, expected_witness_votes=0, expected_expirations=0;
+    int i;
+    auto check_vote_count = [&]()
+    {
+      auto found_votes = proposal_vote_idx.size();
+      auto found_witness_votes = witness_vote_idx.size();
+      size_t found_expirations = std::distance( account_idx.begin(), account_idx.upper_bound( expiration_time ) );
+      BOOST_REQUIRE_EQUAL( found_votes, expected_votes );
+      BOOST_REQUIRE_EQUAL( found_witness_votes, expected_witness_votes );
+      BOOST_REQUIRE_EQUAL( found_expirations, expected_expirations );
+    };
+
+    //check that even though accounts expire and fail to clear before another account expires, it still clears in the end, just can take longer
+    {
+      auto threshold = db->get_remove_threshold();
+      BOOST_REQUIRE_EQUAL( threshold, 20 );
+
+      generate_blocks( expiration_time - fc::seconds( HIVE_BLOCK_INTERVAL ) ); //note that during skipping automated actions don't work
+
+      expected_votes = 60 * 60;
+      expected_witness_votes = 60 * 30;
+      expected_expirations = 0;
+      expiration_time = db->head_block_time() - fc::seconds(1);
+      check_vote_count();
+
+      auto userI = users.begin();
+      i = users.size();
+      while( expected_votes > 0 )
+      {
+        generate_block();
+        expiration_time = db->head_block_time();
+        if( i > 0 )
+        {
+          ++expected_expirations;
+          --i;
+        }
+        expected_votes -= threshold; //not all proposal votes of "expired user" are removed due to limitation (user's proposal votes will be removed completely every 60/20 blocks)
+        if( (expected_votes%60) == 0 )
+        {
+          --expected_expirations;
+          expected_witness_votes -= 30; //witness votes are always removed completely because there is fixed max number, but we need to actually reach that point - it also moves to next user
+          const auto& last_operations = get_last_operations( 1 );
+          expired_account_notification_operation_visitor v;
+          account_name_type acc_name = last_operations.back().visit( v );
+          BOOST_REQUIRE( acc_name == userI->account );
+          ++userI;
+        }
+        
+        check_vote_count();
+      }
+    }
+
+    generate_block();
+
+    //revote, but in slightly different configuration
+    //we will be filling 5 times 10 users expiring in the same time, each has 3 proposal votes, with exception of 30..39 range
+    //however in the same time, with shift of 10, we will be also applying [multi-level] proxy; in the end we expect the following:
+    //(note that establishing proxy clears witness votes but not proposal votes)
+    //users[0] .. user[9] - vote for themselves (and become proxy for others)
+    //users[10] .. user[19] - proxy to above (and have inactive proposal votes)
+    //users[20] .. user[29] - proxy to above (and have inactive proposal votes)
+    //users[30] .. user[39] - proxy to above
+    //users[40] .. user[49] - vote for themselves
+    //users[50] .. user[59] - don't vote at all
+    expiration_time = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+    {
+      auto userI = users.begin();
+      i = 0;
+      while( i<50 )
+      {
+        if( i < 30 || ( i >= 40 && i < 50 ) )
+          vote_proposal( userI->account, { proposals.front(), proposals[1], proposals.back() }, true, userI->key );
+
+        for( const auto& witness : witnesses )
+          witness_vote( userI->account, witness.account, userI->key );
+
+        if( i >= 10 && i < 40 )
+          proxy( userI->account, users[ i-10 ].account, userI->key );
+
+        if( (++i % 10) == 0 )
+          generate_block();
+        ++userI;
+      }
+    }
+
+    generate_blocks( expiration_time - fc::seconds(HIVE_BLOCK_INTERVAL) );
+    //couple of accounts do governance action almost at the last moment (removing of proposal vote, for some that was even inactive, for some there was no such vote anymore - still counts)
+    for ( i = 0; i < 6; ++i )
+      vote_proposal( users[10*i].account, { proposals.front() }, false, users[10*i].key );
+
+    //check multiple accounts expiring in the same time
+    {
+      expected_votes = 3 * 40 - 4;
+      expected_witness_votes = 20 * 30;
+      expected_expirations = 0;
+      expiration_time = db->head_block_time();
+      check_vote_count();
+
+      generate_block(); //users 1..9 expire, but only 1..6 fully clear (2 votes from 7)
+      expiration_time = db->head_block_time();
+      expected_expirations += 9 - 6;
+      expected_votes -= 20;
+      expected_witness_votes -= 6 * 30;
+      check_vote_count();
+
+      generate_block(); //users 11..19 expire, but 7..9,11..14 clear (1 vote from 15)
+      expiration_time = db->head_block_time();
+      expected_expirations += 9 - 7;
+      expected_votes -= 20;
+      expected_witness_votes -= 3 * 30; //11..14 had proxy so no witness votes
+      check_vote_count();
+
+      generate_block(); //users 21..29 expire, but 15..19,21..22 clear (0 votes from 23)
+      expiration_time = db->head_block_time();
+      expected_expirations += 9 - 7;
+      expected_votes -= 20;
+      expected_witness_votes -= 0 * 30; //all cleared had proxy, no witness votes
+      check_vote_count();
+
+      generate_block(); //users 31..39 expire, but 23..28 clear (2 votes from 29)
+      expiration_time = db->head_block_time();
+      expected_expirations += 9 - 6;
+      expected_votes -= 20;
+      expected_witness_votes -= 0 * 30; //all cleared had proxy, no witness votes
+      check_vote_count();
+
+      generate_block(); //users 41..49 expire, but 29,31..39,41..46 clear (1 vote from 47)
+      expiration_time = db->head_block_time();
+      expected_expirations += 9 - 16;
+      expected_votes -= 20;
+      expected_witness_votes -= 6 * 30; //only 41..46 had witness votes
+      check_vote_count();
+
+      generate_block(); //no new users expire, 47..49 clear (unused limit is 12)
+      expiration_time = db->head_block_time();
+      expected_expirations = 0; //6 users are active (long expiration time), rest is fully expired
+      expected_votes = 8; //0,10,20,40 have 2 votes active each
+      expected_witness_votes = 2 * 30; //0,30 have 30 witness votes active each
+      check_vote_count();
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+
 BOOST_AUTO_TEST_CASE( generating_payments )
 {
   try
@@ -283,7 +973,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     auto start_date = db->head_block_time();
 
     auto daily_pay = ASSET( "48.000 TBD" );
-    auto hourly_pay = ASSET( "1.996 TBD" );// hourly_pay != ASSET( "2.000 TBD" ) because lack of rounding
+    auto hourly_pay = ASSET( "2.000 TBD" );
 
     FUND( creator, ASSET( "160.000 TESTS" ) );
     FUND( creator, ASSET( "80.000 TBD" ) );
@@ -306,7 +996,6 @@ BOOST_AUTO_TEST_CASE( generating_payments )
 
     vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
     generate_blocks( 1 );
-
     //skipping interest generating is necessary
     transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ));
     generate_block( 5 );
@@ -399,7 +1088,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     auto end_date = start_date + end_time_shift;
 
     auto daily_pay = ASSET( "24.000 TBD" );
-    auto paid = ASSET( "4.990 TBD" );// paid != ASSET( "5.000 TBD" ) because lack of rounding
+    auto paid = ASSET( "5.000 TBD" );
 
     FUND( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
     //=====================preparing=====================
@@ -502,7 +1191,6 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
     for( auto item : inits )
     {
       vote_proposal( item.account, {0}, true/*approve*/, item.key);
-
       generate_block();
 
       const account_object& account = db->get_account( item.account );
@@ -526,6 +1214,14 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
       auto found_votes = calc_proposal_votes( proposal_vote_idx, 0 );
       BOOST_REQUIRE( found_proposals == 1 );
       BOOST_REQUIRE( found_votes == 10 );
+    }
+
+    {
+      generate_block();
+      auto found_proposals = calc_proposals( proposal_idx, { 0 } );
+      auto found_votes = calc_proposal_votes( proposal_vote_idx, 0 );
+      BOOST_REQUIRE( found_proposals == 0 );
+      BOOST_REQUIRE( found_votes == 0 );
     }
 
     for( auto item : inits )
@@ -650,20 +1346,11 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - no payout, because of lack of votes
     */
     ilog("");
-    payment_checker( { ASSET( "0.998 TBD" ), ASSET( "0.998 TBD" ), ASSET( "0.000 TBD" ) } );
-    //ideally: ASSET( "1.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "0.000 TBD" ) but there is lack of rounding
+    payment_checker( { ASSET("1.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "0.000 TBD" ) } );
 
     {
       BOOST_TEST_MESSAGE( "Setting proxy. The account `tester01` don't want to vote. Every decision is made by account `tester00`" );
-      account_witness_proxy_operation op;
-      op.account = tester01_account;
-      op.proxy = tester00_account;
-
-      signed_transaction tx;
-      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      tx.operations.push_back( op );
-      sign( tx, inits[ tester01_account ] );
-      db->push_transaction( tx, 0 );
+      proxy( tester01_account, tester00_account, inits[ tester01_account ] );
     }
 
     generate_blocks( start_date + end_time_shift[ interval++ ] + fc::seconds( 10 ), false );
@@ -673,8 +1360,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - no payout, because of lack of votes
     */
     ilog("");
-    payment_checker( { ASSET( "1.996 TBD" ), ASSET( "0.998 TBD" ), ASSET( "0.000 TBD" ) } );
-    //ideally: ASSET( "2.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "0.000 TBD" ) but there is lack of rounding
+    payment_checker( { ASSET( "2.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "0.000 TBD" ) } );
 
     vote_proposal( tester02_account, {2}, true/*approve*/, inits[ tester02_account ] );
     generate_block();
@@ -686,20 +1372,11 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - got payout, because voted for his proposal
     */
     ilog("");
-    payment_checker( { ASSET( "2.994 TBD" ), ASSET( "0.998 TBD" ), ASSET( "2082.369 TBD" ) } );
-    //ideally: ASSET( "3.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "2082.346 TBD" ) but there is lack of rounding
+    payment_checker( { ASSET( "3.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "2082.367 TBD" ) } );
 
     {
       BOOST_TEST_MESSAGE( "Proxy doesn't exist. Now proposal with id = 3 has the most votes. This proposal grabs all payouts." );
-      account_witness_proxy_operation op;
-      op.account = tester01_account;
-      op.proxy = "";
-
-      signed_transaction tx;
-      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      tx.operations.push_back( op );
-      sign( tx, inits[ tester01_account ] );
-      db->push_transaction( tx, 0 );
+      proxy( tester01_account, "", inits[ tester01_account ] );
     }
 
     generate_blocks( start_date + end_time_shift[ interval++ ] + fc::seconds( 10 ), false );
@@ -709,8 +1386,261 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - got payout, because voted for his proposal
     */
     ilog("");
-    payment_checker( { ASSET( "2.994 TBD" ), ASSET( "0.998 TBD" ), ASSET( "4164.874 TBD" ) } );
-    //ideally: ASSET( "3.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "4164.824 TBD" ) but there is lack of rounding
+    payment_checker( { ASSET( "3.000 TBD" ), ASSET( "1.000 TBD" ), ASSET( "4164.872 TBD" ) } );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( generating_payments_04 )
+{
+try
+  {
+    BOOST_TEST_MESSAGE( "Testing: payment truncating" );
+
+    ACTORS( (alice)(bob)(carol)(dave) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    //=====================preparing=====================
+    auto creator = "alice";
+    auto receiver = "bob";
+
+    auto start_date = db->head_block_time();
+
+    auto daily_pay = ASSET( "2378.447 TBD" );
+    auto hourly_pay = ASSET( "99.101 TBD" ); //99.101958(3)
+
+    FUND( creator, ASSET( "160.000 TESTS" ) );
+    FUND( creator, ASSET( "80.000 TBD" ) );
+    FUND( db->get_treasury_name(), ASSET( "500000.000 TBD" ) );
+
+    auto voter_01 = "carol";
+
+    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "1.000 TESTS" ));
+
+    //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
+    start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+    generate_blocks( start_date );
+
+    auto end_date = start_date + fc::days( 2 );
+    //=====================preparing=====================
+
+    //Needed basic operations
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key );
+    generate_block();
+
+    vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
+    generate_block();
+
+    //skipping interest generating is necessary
+    transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ));
+    generate_block();
+    transfer( HIVE_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+    generate_block();
+
+    const auto& dgpo = db->get_dynamic_global_properties();
+    auto old_hbd_supply = dgpo.get_current_hbd_supply();
+
+
+    const account_object& _creator = db->get_account( creator );
+    const account_object& _receiver = db->get_account( receiver );
+    const account_object& _voter_01 = db->get_account( voter_01 );
+    const account_object& _treasury = db->get_treasury();
+
+    {
+      BOOST_TEST_MESSAGE( "---Payment---" );
+
+      auto before_creator_hbd_balance = _creator.get_hbd_balance();
+      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
+      auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
+
+      auto next_block = get_nr_blocks_until_maintenance_block();
+      generate_blocks( next_block - 1 );
+      generate_block();
+
+      auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
+      auto after_creator_hbd_balance = _creator.get_hbd_balance();
+      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
+      auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
+
+      BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
+
+      BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
+      BOOST_REQUIRE( before_voter_01_hbd_balance == after_voter_01_hbd_balance );
+      BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation + hourly_pay );
+    }
+
+    validate_database();
+  }
+FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( generating_payments_05 )
+{
+try
+  {
+    BOOST_TEST_MESSAGE( "Testing: payment not truncating" );
+
+    ACTORS( (alice)(bob)(carol)(dave) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    //=====================preparing=====================
+    auto creator = "alice";
+    auto receiver = "bob";
+
+    auto start_date = db->head_block_time();
+
+    auto daily_pay = ASSET( "2378.448 TBD" );
+    auto hourly_pay = ASSET( "99.102 TBD" );
+
+    FUND( creator, ASSET( "160.000 TESTS" ) );
+    FUND( creator, ASSET( "80.000 TBD" ) );
+    FUND( db->get_treasury_name(), ASSET( "500000.000 TBD" ) );
+
+    auto voter_01 = "carol";
+
+    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "1.000 TESTS" ));
+
+    //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
+    start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+    generate_blocks( start_date );
+
+    auto end_date = start_date + fc::days( 2 );
+    //=====================preparing=====================
+
+    //Needed basic operations
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key );
+    generate_block();
+
+    vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
+    generate_block();
+
+    //skipping interest generating is necessary
+    transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ));
+    generate_block();
+    transfer( HIVE_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+    generate_block();
+
+    const auto& dgpo = db->get_dynamic_global_properties();
+    auto old_hbd_supply = dgpo.get_current_hbd_supply();
+
+
+    const account_object& _creator = db->get_account( creator );
+    const account_object& _receiver = db->get_account( receiver );
+    const account_object& _voter_01 = db->get_account( voter_01 );
+    const account_object& _treasury = db->get_treasury();
+
+    {
+      BOOST_TEST_MESSAGE( "---Payment---" );
+
+      auto before_creator_hbd_balance = _creator.get_hbd_balance();
+      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
+      auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
+
+      auto next_block = get_nr_blocks_until_maintenance_block();
+      generate_blocks( next_block - 1 );
+      generate_block();
+
+      auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
+      auto after_creator_hbd_balance = _creator.get_hbd_balance();
+      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
+      auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
+
+      BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
+      BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
+      BOOST_REQUIRE( before_voter_01_hbd_balance == after_voter_01_hbd_balance );
+      BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation + hourly_pay );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( expired_proposals_forbidden_voting)
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: when proposals are expired, then voting on such proposals are not allowed" );
+
+    ACTORS( (alice)(bob)(carol)(carol1)(carol2) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    //=====================preparing=====================
+    auto creator = "alice";
+    auto receiver = "bob";
+
+    auto start_time = db->head_block_time();
+
+    auto start_date_00 = start_time + fc::seconds( 30 );
+    auto end_date_00 = start_time + fc::minutes( 100 );
+
+    auto start_date_01 = start_time + fc::seconds( 40 );
+    auto end_date_01 = start_time + fc::minutes( 300 );
+
+    auto start_date_02 = start_time + fc::seconds( 50 );
+    auto end_date_02 = start_time + fc::minutes( 200 );
+
+    auto daily_pay = asset( 100, HBD_SYMBOL );
+
+    FUND( creator, ASSET( "100.000 TBD" ) );
+    //=====================preparing=====================
+
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date_00, end_date_00, daily_pay, alice_private_key );
+    generate_block();
+
+    int64_t id_proposal_01 = create_proposal( creator, receiver, start_date_01, end_date_01, daily_pay, alice_private_key );
+    generate_block();
+
+    int64_t id_proposal_02 = create_proposal( creator, receiver, start_date_02, end_date_02, daily_pay, alice_private_key );
+    generate_block();
+
+    {
+      vote_proposal( "carol", { id_proposal_00, id_proposal_01, id_proposal_02 }, true/*approve*/, carol_private_key );
+      generate_blocks( 1 );
+      vote_proposal( "carol", { id_proposal_00, id_proposal_01, id_proposal_02 }, false/*approve*/, carol_private_key );
+      generate_blocks( 1 );
+    }
+    start_time = db->head_block_time();
+    {
+      generate_blocks( start_time + fc::minutes( 110 ) );
+      HIVE_REQUIRE_THROW( vote_proposal( "carol", { id_proposal_00 }, true/*approve*/, carol_private_key ), fc::exception);
+      vote_proposal( "carol", { id_proposal_01 }, true/*approve*/, carol_private_key );
+      vote_proposal( "carol", { id_proposal_02 }, true/*approve*/, carol_private_key );
+      generate_blocks( 1 );
+    }
+    {
+      generate_blocks( start_time + fc::minutes( 210 ) );
+      HIVE_REQUIRE_THROW( vote_proposal( "carol1", { id_proposal_00 }, true/*approve*/, carol1_private_key ), fc::exception);
+      vote_proposal( "carol1", { id_proposal_01 }, true/*approve*/, carol1_private_key );
+      HIVE_REQUIRE_THROW( vote_proposal( "carol1", { id_proposal_02 }, true/*approve*/, carol1_private_key ), fc::exception);
+      generate_blocks( 1 );
+    }
+    {
+      generate_blocks( start_time + fc::minutes( 310 ) );
+      HIVE_REQUIRE_THROW( vote_proposal( "carol2", { id_proposal_00 }, true/*approve*/, carol2_private_key ), fc::exception);
+      HIVE_REQUIRE_THROW( vote_proposal( "carol2", { id_proposal_01 }, true/*approve*/, carol2_private_key ), fc::exception);
+      HIVE_REQUIRE_THROW( vote_proposal( "carol2", { id_proposal_02 }, true/*approve*/, carol2_private_key ), fc::exception);
+      generate_blocks( 1 );
+    }
+
+    BOOST_REQUIRE( exist_proposal( id_proposal_00 ) );
+    BOOST_REQUIRE( exist_proposal( id_proposal_01 ) );
+    BOOST_REQUIRE( exist_proposal( id_proposal_02 ) );
 
     validate_database();
   }
@@ -829,7 +1759,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     auto subject = "hello";
     auto permlink = "somethingpermlink";
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
 
     FUND( creator, ASSET( "80.000 TBD" ) );
 
@@ -919,7 +1849,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_free_increase )
     auto subject = "hello";
     auto permlink = "somethingpermlink";
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
 
     FUND( creator, ASSET( "80.000 TBD" ) );
 
@@ -2211,7 +3141,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
 
     generate_blocks( start_time + ( start_time_shift + end_time_shift - block_interval ) );
 
-    auto threshold = db->get_sps_remove_threshold();
+    auto threshold = db->get_remove_threshold();
     auto nr_stages = current_active_proposals / threshold;
 
     for( auto i = 0; i < nr_stages; ++i )
@@ -2317,7 +3247,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
 
     generate_blocks( start_time + ( start_time_shift + end_time_shift - block_interval ) );
 
-    auto threshold = db->get_sps_remove_threshold();
+    auto threshold = db->get_remove_threshold();
     auto current_active_anything = current_active_proposals + current_active_votes;
     auto nr_stages = current_active_anything / threshold;
 
@@ -2413,7 +3343,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
     auto current_active_votes = current_active_proposals * static_cast< int16_t > ( inits.size() );
     BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );
 
-    auto threshold = db->get_sps_remove_threshold();
+    auto threshold = db->get_remove_threshold();
     BOOST_REQUIRE( threshold == 20 );
 
     flat_set< int64_t > _proposals_id( proposals_id.begin(), proposals_id.end() );
@@ -2518,7 +3448,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
     auto current_active_votes = current_active_proposals * static_cast< int16_t > ( inits.size() );
     BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );
 
-    auto threshold = db->get_sps_remove_threshold();
+    auto threshold = db->get_remove_threshold();
     BOOST_REQUIRE( threshold == 20 );
 
     /*
@@ -2760,7 +3690,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
     auto current_active_votes = current_active_proposals * static_cast< int16_t > ( inits.size() );
     BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );
 
-    auto threshold = db->get_sps_remove_threshold();
+    auto threshold = db->get_remove_threshold();
     BOOST_REQUIRE( threshold == 20 );
 
     /*
@@ -3020,8 +3950,10 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
 
     auto subject = "hello";
     auto permlink = "somethingpermlink";
+    auto new_permlink = "somethingpermlink2";
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, new_permlink, "title", "body", "test", alice_private_key);
 
     FUND( creator, ASSET( "80.000 TBD" ) );
 
@@ -3062,10 +3994,32 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
     BOOST_REQUIRE( found->permlink == permlink );
 
     BOOST_TEST_MESSAGE("-- updating");
-    update_proposal(found->proposal_id, creator, daily_pay, "Other subject", permlink, alice_private_key);
+
+    time_point_sec new_end_date = end_date - fc::days( 1 );
+    auto new_subject = "Other subject";
+    auto new_daily_pay = asset( 100, HBD_SYMBOL );
+
+    update_proposal(found->proposal_id, creator, new_daily_pay, new_subject, new_permlink, alice_private_key);
     generate_block();
     found = proposal_idx.find( creator );
-    BOOST_REQUIRE( found->subject == "Other subject" );
+    BOOST_REQUIRE( found->creator == creator );
+    BOOST_REQUIRE( found->receiver == receiver );
+    BOOST_REQUIRE( found->start_date == start_date );
+    BOOST_REQUIRE( found->end_date == end_date );
+    BOOST_REQUIRE( found->daily_pay == new_daily_pay );
+    BOOST_REQUIRE( found->subject == new_subject );
+    BOOST_REQUIRE( found->permlink == new_permlink );
+
+    update_proposal(found->proposal_id, creator, new_daily_pay, new_subject, new_permlink, alice_private_key, &new_end_date);
+    generate_block();
+    found = proposal_idx.find( creator );
+    BOOST_REQUIRE( found->creator == creator );
+    BOOST_REQUIRE( found->receiver == receiver );
+    BOOST_REQUIRE( found->start_date == start_date );
+    BOOST_REQUIRE( found->end_date == new_end_date );
+    BOOST_REQUIRE( found->daily_pay == new_daily_pay );
+    BOOST_REQUIRE( found->subject == new_subject );
+    BOOST_REQUIRE( found->permlink == new_permlink );
 
     validate_database();
   } FC_LOG_AND_RETHROW()
@@ -3085,7 +4039,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_001 )
 
     auto creator    = "alice";
     auto receiver   = "bob";
-    auto start_date = db->head_block_time() + fc::days( 1 );
+    time_point_sec start_date = db->head_block_time() + fc::days( 1 );
     auto end_date   = start_date + fc::days( 2 );
     auto daily_pay  = asset( 100, HBD_SYMBOL );
     auto subject = "hello";
@@ -3095,7 +4049,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_001 )
 
     signed_transaction tx;
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -3143,7 +4097,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_002 )
 
     signed_transaction tx;
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -3193,7 +4147,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_003 )
 
     signed_transaction tx;
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -3246,57 +4200,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_004 )
 
     signed_transaction tx;
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
-
-    create_proposal_operation op;
-    op.creator = creator;
-    op.receiver = receiver;
-    op.start_date = start_date;
-    op.end_date = end_date;
-    op.daily_pay = daily_pay;
-    op.subject = subject;
-    op.permlink = permlink;
-    tx.operations.push_back( op );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
-
-    tx.operations.clear();
-    tx.signatures.clear();
-
-    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
-    auto proposal = proposal_idx.find( creator );
-
-    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), "", permlink, alice_private_key), fc::exception);
-
-    validate_database();
-  } FC_LOG_AND_RETHROW()
-}
-
-BOOST_AUTO_TEST_CASE( update_proposal_005 )
-{
-  try
-  {
-    BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid subject" );
-    ACTORS( (alice)(bob) )
-    generate_block();
-
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-    generate_block();
-
-    auto creator    = "alice";
-    auto receiver   = "bob";
-    auto start_date = db->head_block_time() + fc::days( 1 );
-    auto end_date   = start_date + fc::days( 2 );
-    auto daily_pay  = asset( 100, HBD_SYMBOL );
-    auto subject = "hello";
-    auto permlink = "somethingpermlink";
-
-    FUND( creator, ASSET( "80.000 TBD" ) );
-
-    signed_transaction tx;
-
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -3326,7 +4230,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_005 )
   } FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE( update_proposal_006 )
+BOOST_AUTO_TEST_CASE( update_proposal_005 )
 {
   try
   {
@@ -3339,7 +4243,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
 
     auto creator    = "alice";
     auto receiver   = "bob";
-    auto start_date = db->head_block_time() + fc::days( 1 );
+    fc::time_point_sec start_date = db->head_block_time() + fc::days( 1 );
     auto end_date   = start_date + fc::days( 2 );
     auto daily_pay  = asset( 100, HBD_SYMBOL );
     auto subject = "hello";
@@ -3349,8 +4253,8 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
 
     signed_transaction tx;
 
-    post_comment(creator, permlink, "title", "body", "test", alice_private_key);
-    post_comment("dave", "davepermlink", "title", "body", "test", dave_private_key);
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
+    post_comment_with_block_generation("dave", "davepermlink", "title", "body", "test", dave_private_key);
 
     create_proposal_operation op;
     op.creator = creator;
@@ -3376,6 +4280,58 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
     HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), subject, "doesntexist", alice_private_key), fc::exception);
     // Post exists but is made by an user that is neither the receiver or the creator
     HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), subject, "davepermlink", alice_private_key), fc::exception);
+
+    validate_database();
+  } FC_LOG_AND_RETHROW()
+}
+
+
+BOOST_AUTO_TEST_CASE( update_proposal_006 )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid end_date" );
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    auto creator    = "alice";
+    auto receiver   = "bob";
+    fc::time_point_sec start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date   = start_date + fc::days( 2 );
+    fc::time_point_sec end_date_invalid = start_date + fc::days( 3 );
+    auto daily_pay  = asset( 100, HBD_SYMBOL );
+    auto subject = "hello";
+    auto permlink = "somethingpermlink";
+
+    FUND( creator, ASSET( "80.000 TBD" ) );
+
+    signed_transaction tx;
+
+    post_comment_with_block_generation(creator, permlink, "title", "body", "test", alice_private_key);
+
+    create_proposal_operation op;
+    op.creator = creator;
+    op.receiver = receiver;
+    op.start_date = start_date;
+    op.end_date = end_date;
+    op.daily_pay = daily_pay;
+    op.subject = subject;
+    op.permlink = permlink;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+
+    tx.operations.clear();
+    tx.signatures.clear();
+
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
+    auto proposal = proposal_idx.find( creator );
+    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), subject, permlink, alice_private_key, &start_date), fc::exception);
+    HIVE_REQUIRE_THROW( update_proposal(proposal->proposal_id, creator, asset( 110, HBD_SYMBOL ), subject, permlink, alice_private_key, &end_date_invalid), fc::exception);
 
     validate_database();
   } FC_LOG_AND_RETHROW()
@@ -3557,7 +4513,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
     auto current_active_votes = current_active_proposals * static_cast< int16_t > ( inits.size() );
     BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );
 
-    auto threshold = db->get_sps_remove_threshold();
+    auto threshold = db->get_remove_threshold();
     BOOST_REQUIRE( threshold == -1 );
 
     generate_blocks( start_time + fc::seconds( HIVE_PROPOSAL_MAINTENANCE_CLEANUP ) );
@@ -3589,6 +4545,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
   FC_LOG_AND_RETHROW()
 }
 
+// This generating payment is part of proposal_tests_performance
 BOOST_AUTO_TEST_CASE( generating_payments )
 {
   try
@@ -3640,7 +4597,17 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     auto end_date = start_date + end_time_shift;
 
     auto daily_pay = ASSET( "24.000 TBD" );
-    auto paid = ASSET( "1.000 TBD" );//because only 1 hour
+    auto paid = ASSET( "1.000 TBD" ); // because only 1 hour
+
+    /* This unit test triggers an edge case where the maintenance window for proposals happens after 1h and 3s (one block)
+      due to block skipping (in mainnet that can happen if maintenance block is missed).
+      normal case:
+      3600 (passed seconds) * 24000 (daily pay) / 86400 (seconds in day) = 1000 => 1.000 TBD
+      edge case:
+      3603 * 24000 / 86400 = 1000.833333 -> 1000 => still 1.000 TBD
+      It is possible to miss more blocks and as a result get even longer time covered by maintenance giving more than
+      expected pay in single maintenance, but in the same time payout periods will drift even more.
+     */
 
     FUND( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
     //=====================preparing=====================

@@ -3,22 +3,17 @@ project( Hive )
 cmake_minimum_required( VERSION 3.2 )
 
 set( BLOCKCHAIN_NAME "Hive" )
+
 set( CMAKE_CXX_STANDARD 14 )
+set( CMAKE_CXX_EXTENSIONS OFF )
+set( CMAKE_CXX_STANDARD_REQUIRED ON )
+
+set( CMAKE_C_STANDARD 99 )
+set( CMAKE_C_STANDARD_REQUIRED ON )
 
 set( GUI_CLIENT_EXECUTABLE_NAME Hive )
 set( CUSTOM_URL_SCHEME "gcs" )
 set( INSTALLER_APP_ID "68ad7005-8eee-49c9-95ce-9eed97e5b347" )
-
-# http://stackoverflow.com/a/18369825
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
-        message(FATAL_ERROR "GCC version must be at least 4.8!")
-    endif()
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
-        message(FATAL_ERROR "Clang version must be at least 3.3!")
-    endif()
-endif()
 
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules" )
 
@@ -74,27 +69,25 @@ OPTION( ENABLE_MIRA "Build source with MIRA (ON OR OFF)" OFF )
 MESSAGE( STATUS "ENABLE_MIRA: ${ENABLE_MIRA}" )
 if( ENABLE_MIRA )
   MESSAGE( STATUS "     " )
-  MESSAGE( STATUS "             CONFIGURING FOR MIRA             " )
+  MESSAGE( FATAL_ERROR "             NOTE: MIRA HAS BEEN REMOVED             " )
   MESSAGE( STATUS "     " )
-  SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DENABLE_MIRA" )
-  SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DENABLE_MIRA" )
 endif()
 
-OPTION( LOW_MEMORY_NODE "Build source for low memory node (ON OR OFF)" OFF )
+OPTION( LOW_MEMORY_NODE "Build source for low memory node (ON OR OFF)" ON )
 MESSAGE( STATUS "LOW_MEMORY_NODE: ${LOW_MEMORY_NODE}" )
+MESSAGE( STATUS "     " )
 if( LOW_MEMORY_NODE )
-  MESSAGE( STATUS "     " )
-  MESSAGE( STATUS "             CONFIGURING FOR LOW MEMORY NODE      " )
-  MESSAGE( STATUS "     " )
-  SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIS_LOW_MEM" )
-  SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIS_LOW_MEM" )
+  MESSAGE( WARNING "             NOTE: LOW MEMORY NODE OPTION HAS BEEN DEPRECATED      " )
+else()
+  MESSAGE( FATAL_ERROR "             NOTE: LOW MEMORY NODE OPTION HAS BEEN DEPRECATED      " )
 endif()
+MESSAGE( STATUS "     " )
 
-OPTION (COLLECT_ACCOUNT_METADATA "Allows to enable/disable storing account metadata" ON)
-MESSAGE( STATUS "COLLECT_ACCOUNT_METADATA: ${COLLECT_ACCOUNT_METADATA}" )
-if( COLLECT_ACCOUNT_METADATA )
+OPTION( STORE_ACCOUNT_METADATA "Keep the json_metadata for accounts (ON OR OFF)" ON )
+MESSAGE( STATUS "STORE_ACCOUNT_METADATA: ${STORE_ACCOUNT_METADATA}" )
+if( STORE_ACCOUNT_METADATA )
   MESSAGE( STATUS "     " )
-  MESSAGE( STATUS "             CONFIGURING FOR ACCOUNT METADATA SUPPORT      " )
+  MESSAGE( STATUS "                 CONFIGURING TO INDEX ACCOUNT METADATA      " )
   MESSAGE( STATUS "     " )
   SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCOLLECT_ACCOUNT_METADATA" )
   SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCOLLECT_ACCOUNT_METADATA" )
@@ -103,17 +96,9 @@ endif()
 OPTION( SUPPORT_COMMENT_CONTENT "Build source with enabled comment content support (ON OR OFF)" OFF )
 MESSAGE( STATUS "SUPPORT_COMMENT_CONTENT: ${SUPPORT_COMMENT_CONTENT}" )
 IF (SUPPORT_COMMENT_CONTENT)
-  if( LOW_MEMORY_NODE )
-    MESSAGE( WARNING "Ignoring SUPPORT_COMMENT_CONTENT setting due to enabled LOW_MEMORY_NODE")
-  ELSE()
-    MESSAGE( STATUS "     " )
-    MESSAGE( STATUS "             CONFIGURING FOR COMMENT_CONTENT_SUPPORT      " )
-    MESSAGE( STATUS "     " )
-    SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSTORE_COMMENT_CONTENT" )
-    SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSTORE_COMMENT_CONTENT" )
-  endif()
-ELSE()
-  MESSAGE( STATUS "             CONFIGURING to skip COMMENT_CONTENT objects      " )
+  MESSAGE( STATUS "     " )
+  MESSAGE( FATAL_ERROR "             COMMENT_CONTENT_SUPPORT HAS BEEN REMOVED!      " )
+  MESSAGE( STATUS "     " )
 ENDIF()
 
 OPTION( CHAINBASE_CHECK_LOCKING "Check locks in chainbase (ON or OFF)" ON )
@@ -126,8 +111,8 @@ endif()
 OPTION( CLEAR_VOTES "Build source to clear old votes from memory" ON )
 if( CLEAR_VOTES )
   MESSAGE( STATUS "   CONFIGURING TO CLEAR OLD VOTES FROM MEMORY" )
-  SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCLEAR_VOTES" )
-  SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCLEAR_VOTES" )
+else()
+  MESSAGE( FATAL_ERROR "   NOTE: CLEAR OLD VOTES OPTION HAS BEEN DEPRECATED" )
 endif()
 
 OPTION( SKIP_BY_TX_ID "Skip ordering operation history by transaction id (ON or OFF)" OFF )
@@ -144,11 +129,36 @@ if( HIVE_STATIC_BUILD AND ( ( MSVC AND NOT MINGW ) OR APPLE ) )
 endif()
 MESSAGE( STATUS "HIVE_STATIC_BUILD: ${HIVE_STATIC_BUILD}" )
 
-SET( HIVE_LINT_LEVEL "OFF" CACHE STRING "Lint level during Hive build (FULL, HIGH, LOW, OFF)" )
+SET( HIVE_LINT "OFF" CACHE STRING "Enable linting with clang-tidy during compilation" )
 find_program(
    CLANG_TIDY_EXE
    NAMES "clang-tidy"
    DOC "Path to clain-tidy executable"
+)
+
+SET( CLANG_TIDY_IGNORED
+"-fuchsia-default-arguments\
+,-hicpp-*\
+,-cert-err60-cpp\
+,-llvm-namespace-comment\
+,-cert-err09-cpp\
+,-cert-err61-cpp\
+,-fuchsia-overloaded-operator\
+,-misc-throw-by-value-catch-by-reference\
+,-misc-unused-parameters\
+,-clang-analyzer-core.uninitialized.Assign\
+,-llvm-include-order\
+,-clang-diagnostic-unused-lambda-capture\
+,-misc-macro-parentheses\
+,-boost-use-to-string\
+,-misc-lambda-function-name\
+,-cert-err58-cpp\
+,-cert-err34-c\
+,-cppcoreguidelines-*\
+,-modernize-*\
+,-clang-diagnostic-#pragma-messages\
+,-google-*\
+,-readability-*"
 )
 
 if( NOT CLANG_TIDY_EXE )
@@ -157,18 +167,12 @@ elseif( VERSION LESS 3.6 )
    messgae( STATUS "clang-tidy found but only supported with CMake version >= 3.6" )
 else()
    message( STATUS "clany-tidy found: ${CLANG_TIDY_EXE}" )
-   if( "${HIVE_LINT_LEVEL}" STREQUAL "FULL" )
-      message( STATUS "Linting level set to: FULL" )
-      set( DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks='*'" )
-   elseif( "${HIVE_LINT_LEVEL}" STREQUAL "HIGH" )
-      message( STATUS "Linting level set to: HIGH" )
-      set( DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks='boost-use-to-string,clang-analyzer-*,cppcoreguidelines-*,llvm-*,misc-*,performance-*,readability-*'" )
-   elseif( "${HIVE_LINT_LEVEL}" STREQUAL "LOW" )
-      message( STATUS "Linting level set to: LOW" )
-      set( DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks='clang-analyzer-*'" )
+   if( HIVE_LINT )
+      message( STATUS "Linting enabled" )
+      set( DO_CLANG_TIDY ${CLANG_TIDY_EXE};-checks=*,${CLANG_TIDY_IGNORED};--warnings-as-errors=* )
    else()
       unset( CLANG_TIDY_EXE )
-      message( STATUS "Linting level set to: OFF" )
+      message( STATUS "Linting disabled" )
    endif()
 endif( NOT CLANG_TIDY_EXE )
 
@@ -178,9 +182,14 @@ IF( WIN32 )
   set(BOOST_ALL_DYN_LINK OFF) # force dynamic linking for all libraries
 ENDIF(WIN32)
 
+cmake_policy(SET CMP0057 NEW)
 FIND_PACKAGE(Boost 1.58 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
-if( NOT( Boost_VERSION LESS 106900 ) )
+if( NOT Boost_VERSION_MACRO ) # FindBoost in CMake version >=3.15 reports Boost_VERSION in x.y.z format
+  set( Boost_VERSION_MACRO Boost_VERSION )
+endif()
+
+if( NOT( Boost_VERSION_MACRO LESS 106900 ) )
    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
 endif()
@@ -221,7 +230,7 @@ if( WIN32 )
       SET(TCL_LIBRARY ${TCL_LIBS})
 
    elseif( MINGW )
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fpermissive -msse4.2 -Wa,-mbig-obj")
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -msse4.2 -Wa,-mbig-obj")
       SET(CMAKE_CXX_FLAGS_RELEASE "-O3")
       # Optimization flag apparently needed to get rid of "File too big" assembler errors when compiling in Debug mode
       # See: https://stackoverflow.com/questions/14125007/gcc-string-table-overflow-error-during-compilation/14601779#29479701
@@ -242,11 +251,11 @@ else( WIN32 ) # Apple AND Linux
     if( APPLE )
         # Apple Specific Options Here
         message( STATUS "Configuring Hive on OS X" )
-        set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11 -stdlib=libc++ -Wall -Wno-conversion -Wno-deprecated-declarations" )
+        set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -stdlib=libc++ -Wall -Wno-conversion -Wno-deprecated-declarations" )
     else( APPLE )
         # Linux Specific Options Here
         message( STATUS "Configuring Hive on Linux" )
-        set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11 -Wall" )
+        set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall" )
         set( rt_library rt )
         set( pthread_library pthread)
         if ( NOT DEFINED crypto_library )
@@ -286,7 +295,6 @@ endif()
 # fc/src/compress/miniz.c breaks strict aliasing. The Linux kernel builds with no strict aliasing
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -Werror -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
-# -Werror
 
 # external_plugins needs to be compiled first because libraries/app depends on HIVE_EXTERNAL_PLUGINS being fully populated
 add_subdirectory( external_plugins )
@@ -309,7 +317,7 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
 
 SET(CPACK_PACKAGE_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
 set(CPACK_PACKAGE_NAME "hive")
-set(CPACK_PACKAGE_VENDOR "Steemit, Inc.")
+set(CPACK_PACKAGE_VENDOR "Hive Community")
 set(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}")
@@ -356,14 +364,11 @@ else()
 MESSAGE( STATUS "\n\n             CONFIGURED FOR NO SUPPORT OF SMT             \n\n" )
 endif()
 
-if( ENABLE_MIRA )
-MESSAGE( STATUS "\n\n             CONFIGURED FOR MIRA                  \n\n" )
-else()
-MESSAGE( STATUS "\n\n             CONFIGURED FOR BMIC MMAP             \n\n" )
-endif()
-
 if( LOW_MEMORY_NODE )
   MESSAGE( STATUS "\n\n             CONFIGURED FOR LOW MEMORY NODE          \n\n" )
+  if( STORE_ACCOUNT_METADATA )
+    MESSAGE( STATUS "\n\n             BUT STILL STORING ACCOUNT METADATA          \n\n" )
+  endif()
 else()
   MESSAGE( STATUS "\n\n             CONFIGURED FOR FULL NODE                \n\n" )
 endif()

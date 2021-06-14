@@ -54,12 +54,12 @@ enum object_type
   block_summary_object_type,
   witness_schedule_object_type,
   comment_object_type,
-  comment_content_object_type,
   comment_vote_object_type,
   witness_vote_object_type,
   limit_order_object_type,
   feed_history_object_type,
   convert_request_object_type,
+  collateralized_convert_request_object_type,
   liquidity_reward_balance_object_type,
   operation_object_type,
   account_history_object_type,
@@ -80,6 +80,7 @@ enum object_type
   proposal_object_type,
   proposal_vote_object_type,
   comment_cashout_object_type,
+  recurrent_transfer_object_type,
 #ifdef HIVE_ENABLE_SMT
   // SMT objects
   smt_token_object_type,
@@ -101,12 +102,12 @@ class transaction_object;
 class block_summary_object;
 class witness_schedule_object;
 class comment_object;
-class comment_content_object;
 class comment_vote_object;
 class witness_vote_object;
 class limit_order_object;
 class feed_history_object;
 class convert_request_object;
+class collateralized_convert_request_object;
 class liquidity_reward_balance_object;
 class operation_object;
 class account_history_object;
@@ -125,6 +126,7 @@ class vesting_delegation_expiration_object;
 class pending_required_action_object;
 class pending_optional_action_object;
 class comment_cashout_object;
+class recurrent_transfer_object;
 
 #ifdef HIVE_ENABLE_SMT
 class smt_token_object;
@@ -148,12 +150,12 @@ typedef oid_ref< transaction_object                     > transaction_object_id_
 typedef oid_ref< block_summary_object                   > block_summary_id_type;
 typedef oid_ref< witness_schedule_object                > witness_schedule_id_type;
 typedef oid_ref< comment_object                         > comment_id_type;
-typedef oid_ref< comment_content_object                 > comment_content_id_type;
 typedef oid_ref< comment_vote_object                    > comment_vote_id_type;
 typedef oid_ref< witness_vote_object                    > witness_vote_id_type;
 typedef oid_ref< limit_order_object                     > limit_order_id_type;
 typedef oid_ref< feed_history_object                    > feed_history_id_type;
 typedef oid_ref< convert_request_object                 > convert_request_id_type;
+typedef oid_ref< collateralized_convert_request_object  > collateralized_convert_request_id_type;
 typedef oid_ref< liquidity_reward_balance_object        > liquidity_reward_balance_id_type;
 typedef oid_ref< operation_object                       > operation_id_type;
 typedef oid_ref< account_history_object                 > account_history_id_type;
@@ -172,6 +174,7 @@ typedef oid_ref< vesting_delegation_expiration_object   > vesting_delegation_exp
 typedef oid_ref< pending_required_action_object         > pending_required_action_id_type;
 typedef oid_ref< pending_optional_action_object         > pending_optional_action_id_type;
 typedef oid_ref< comment_cashout_object                 > comment_cashout_id_type;
+typedef oid_ref< recurrent_transfer_object              > recurrent_transfer_id_type;
 
 #ifdef HIVE_ENABLE_SMT
 typedef oid_ref< smt_token_object                       > smt_token_id_type;
@@ -189,31 +192,17 @@ typedef oid_ref< proposal_vote_object                   > proposal_vote_id_type;
 enum bandwidth_type
 {
   post,    ///< Rate limiting posting reward eligibility over time
-  forum,   ///< Rate limiting for all forum related actins
+  forum,   ///< Rate limiting for all forum related actions
   market   ///< Rate limiting for all other actions
 };
 
 } } //hive::chain
 
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template< typename T > struct is_static_length< chainbase::oid< T > > : public boost::true_type {};
-template< typename T > struct is_static_length< chainbase::oid_ref< T > > : public boost::true_type {};
-template< typename T > struct is_static_length< fc::fixed_string< T > > : public boost::true_type {};
-template<> struct is_static_length< hive::protocol::account_name_type > : public boost::true_type {};
-template<> struct is_static_length< hive::protocol::asset_symbol_type > : public boost::true_type {};
-template<> struct is_static_length< hive::protocol::asset > : public boost::true_type {};
-template<> struct is_static_length< hive::protocol::price > : public boost::true_type {};
-
-} // mira
-#endif
-
 namespace fc
 {
 class variant;
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
 inline void to_variant( const hive::chain::shared_string& s, variant& var )
 {
   var = fc::string( hive::chain::to_string( s ) );
@@ -226,11 +215,10 @@ inline void from_variant( const variant& var, hive::chain::shared_string& s )
 }
 #endif
 
-
 namespace raw
 {
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
 template< typename Stream >
 void pack( Stream& s, const chainbase::shared_string& ss )
 {
@@ -299,7 +287,7 @@ void unpack( Stream& s, boost::interprocess::flat_map< K, V, C, A >& value, uint
   }
 }
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
 template< typename T >
 T unpack_from_vector( const hive::chain::buffer_type& s )
 {
@@ -327,12 +315,12 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (block_summary_object_type)
             (witness_schedule_object_type)
             (comment_object_type)
-            (comment_content_object_type)
             (comment_vote_object_type)
             (witness_vote_object_type)
             (limit_order_object_type)
             (feed_history_object_type)
             (convert_request_object_type)
+            (collateralized_convert_request_object_type)
             (liquidity_reward_balance_object_type)
             (operation_object_type)
             (account_history_object_type)
@@ -353,6 +341,7 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (proposal_object_type)
             (proposal_vote_object_type)
             (comment_cashout_object_type)
+            (recurrent_transfer_object_type)
 
 #ifdef HIVE_ENABLE_SMT
             (smt_token_object_type)
@@ -365,7 +354,7 @@ FC_REFLECT_ENUM( hive::chain::object_type,
 #endif
           )
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
 FC_REFLECT_TYPENAME( hive::chain::shared_string )
 #endif
 

@@ -7,7 +7,7 @@ namespace hive { namespace utilities {
 
 typedef std::function<void(const char* key)> TScanErrorCallback;
 
-unsigned long long read_u64_value_from(FILE* input, const char* key, unsigned key_length, TScanErrorCallback error_callback)
+unsigned long long read_u64_value_from(FILE* input, const char* key, unsigned key_length, const TScanErrorCallback& error_callback)
 {
   char line_buffer[PROC_STATUS_LINE_LENGTH];
   while( fgets(line_buffer, PROC_STATUS_LINE_LENGTH, input) != nullptr )
@@ -33,7 +33,7 @@ unsigned long long read_u64_value_from(FILE* input, const char* key, unsigned ke
 bool benchmark_dumper::read_mem(pid_t pid, uint64_t* current_virtual, uint64_t* peak_virtual)
 {
   const char* procPath = "/proc/self/status";
-  FILE* input = fopen(procPath, "r");
+  FILE* input = fopen(procPath, "re");
   if(input == NULL)
   {
     elog( "cannot read: ${file} file.", ("file", procPath) );

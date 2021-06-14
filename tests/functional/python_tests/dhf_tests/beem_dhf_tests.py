@@ -358,17 +358,21 @@ def test_iterate_results_test(node, creator_account, receiver_account, wif, subj
 
 @junit_test_case
 def test_update_proposal(node, creator, wif):
-    logger.info("Testing: update_proposal")
+    from beembase.operations import Update_proposal
+    from datetime import timedelta
+    import dateutil.parser
     s = Hive(node = [node], no_broadcast = False, keys = [wif])
+
+    logger.info("Testing: update_proposal without updating the end date")
     proposals = s.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
     print(proposals[0])
-    from beembase.operations import Update_proposal
-    subject = "Some new proposal subject"
+    new_subject = "Some new proposal subject"
+    new_daily_pay = "15.000 TBD"
     op = Update_proposal(**{
         'proposal_id' : proposals[0]["proposal_id"],
         'creator' : proposals[0]["creator"],
-        'daily_pay' : "16.000 TBD",
-        'subject' : subject,
+        'daily_pay' : new_daily_pay,
+        'subject' : new_subject,
         'permlink': proposals[0]["permlink"]
     })
     try:
@@ -380,7 +384,31 @@ def test_update_proposal(node, creator, wif):
 
     proposals = s.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
     print(proposals[0])
-    assert proposals[0]["subject"] == subject, "Subjects dont match"
+    assert proposals[0]["subject"] == new_subject, "Subjects dont match"
+    assert proposals[0]["daily_pay"] == new_daily_pay, "daily pay dont match"
+
+    logger.info("Testing: update_proposal and updating the end date")
+    end_date = test_utils.date_to_iso(dateutil.parser.parse(proposals[0]['end_date']) - timedelta(days=1))
+
+    op = Update_proposal(**{
+        'proposal_id' : proposals[0]["proposal_id"],
+        'creator' : proposals[0]["creator"],
+        'daily_pay' : "15.000 TBD",
+        'subject' : new_subject,
+        'prefix' : "TST",
+        'permlink': proposals[0]["permlink"],
+        'end_date': end_date
+    })
+    try:
+        s.finalizeOp(op, creator, "active")
+    except Exception as ex:
+        logger.exception("Exception: {}".format(ex))
+        raise ex
+    hive_utils.common.wait_n_blocks(node, 3)
+
+    proposals = s.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
+    print(proposals[0])
+    assert proposals[0]["end_date"] == end_date, "End date doesn't match"
 
 if __name__ == '__main__':
     logger.info("Performing SPS tests")
@@ -442,7 +470,7 @@ if __name__ == '__main__':
         sys.exit(1)
     except Exception as ex:
         logger.error("Exception: {}".format(ex))
-        if node is not None: 
+        if node is not None:
             node.stop_hive_node()
     finally:
         if args.junit_output is not None:

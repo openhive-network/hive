@@ -11,9 +11,9 @@ BOOST_AUTO_TEST_CASE(real128_test)
 {
    BOOST_CHECK_EQUAL(string(real128()), string("0."));
    BOOST_CHECK_EQUAL(string(real128(0)), string("0."));
-   BOOST_CHECK_EQUAL(real128(8).to_uint64(), 8);
-   BOOST_CHECK_EQUAL(real128(6789).to_uint64(), 6789);
-   BOOST_CHECK_EQUAL(real128(10000).to_uint64(), 10000);
+   BOOST_CHECK_EQUAL(real128(8).to_uint64(), 8u);
+   BOOST_CHECK_EQUAL(real128(6789).to_uint64(), 6789u);
+   BOOST_CHECK_EQUAL(real128(10000).to_uint64(), 10000u);
    BOOST_CHECK_EQUAL(string(real128(1)), string("1."));
    BOOST_CHECK_EQUAL(string(real128(5)), string("5."));
    BOOST_CHECK_EQUAL(string(real128(12345)), string("12345."));
@@ -41,8 +41,8 @@ BOOST_AUTO_TEST_CASE(real128_test)
    BOOST_CHECK_EQUAL( string(pi*1), "3.1415926535" );
    BOOST_CHECK_EQUAL( string(pi*0), "0." );
 
-   BOOST_CHECK_EQUAL(real128("12345.6789").to_uint64(), 12345);
-   BOOST_CHECK_EQUAL((real128("12345.6789")*10000).to_uint64(), 123456789);
+   BOOST_CHECK_EQUAL(real128("12345.6789").to_uint64(), 12345u);
+   BOOST_CHECK_EQUAL((real128("12345.6789")*10000).to_uint64(), 123456789u);
    BOOST_CHECK_EQUAL(string(real128("12345.6789")), string("12345.6789"));
 
    BOOST_CHECK_EQUAL( real128(uint64_t(-1)).to_uint64(), uint64_t(-1) );

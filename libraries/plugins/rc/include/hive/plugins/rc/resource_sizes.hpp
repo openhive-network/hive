@@ -55,6 +55,8 @@ struct state_object_size_info
 
   // convert_request_object
   int64_t convert_request_object_base_size   = 48     *STATE_BYTES_SCALE;
+  // collateralized_convert_request_object
+  int64_t collateralized_convert_request_object_base_size = 48 * STATE_BYTES_SCALE;
 
   // decline_voting_rights_request_object
   int64_t decline_voting_rights_request_object_base_size = 28*STATE_BYTES_SCALE;
@@ -93,6 +95,10 @@ struct state_object_size_info
   // proposal_vote_object
   int64_t proposal_vote_object_base_size       = 24  *STATE_BYTES_SCALE;
   int64_t proposal_vote_object_member_size     = 8   *STATE_BYTES_SCALE;
+
+  // recurrent_transfer_operation
+  int64_t recurrent_transfer_object_base_size = 80 * STATE_BYTES_SCALE;
+
 };
 
 struct operation_exec_info
@@ -110,6 +116,7 @@ struct operation_exec_info
   int64_t comment_operation_exec_time                         = 114100;
   int64_t comment_options_operation_exec_time                 =  13200;
   int64_t convert_operation_exec_time                         =  15700;
+  int64_t collateralized_convert_operation_exec_time          =  15700;
   int64_t create_claimed_account_operation_exec_time          =  57700;
   int64_t custom_operation_exec_time                          =  11400;
   int64_t custom_json_operation_exec_time                     =  11400;
@@ -135,6 +142,7 @@ struct operation_exec_info
   int64_t withdraw_vesting_operation_exec_time                =  10400;
   int64_t witness_set_properties_operation_exec_time          =   9500;
   int64_t witness_update_operation_exec_time                  =   9500;
+  int64_t recurrent_transfer_operation_exec_time              =  17200;
 
 #ifdef HIVE_ENABLE_SMT
   int64_t claim_reward_balance2_operation_exec_time           = 0;
@@ -147,7 +155,7 @@ struct operation_exec_info
 #endif
 
   int64_t create_proposal_operation_exec_time                  =   31700;
-  int64_t update_proposal_operation_exec_time            =   9600;
+  int64_t update_proposal_operation_exec_time                  =   9600;
   int64_t update_proposal_votes_operation_exec_time            =   12000;
   int64_t remove_proposal_operation_exec_time                  =   12000;
 };
@@ -167,6 +175,7 @@ FC_REFLECT( hive::plugins::rc::state_object_size_info,
   ( comment_object_beneficiaries_member_size )
   ( comment_vote_object_base_size )
   ( convert_request_object_base_size )
+  ( collateralized_convert_request_object_base_size )
   ( decline_voting_rights_request_object_base_size )
   ( escrow_object_base_size )
   ( limit_order_object_base_size )
@@ -198,6 +207,7 @@ FC_REFLECT( hive::plugins::rc::operation_exec_info,
   ( comment_operation_exec_time )
   ( comment_options_operation_exec_time )
   ( convert_operation_exec_time )
+  ( collateralized_convert_operation_exec_time )
   ( create_claimed_account_operation_exec_time )
   ( custom_operation_exec_time )
   ( custom_json_operation_exec_time )
@@ -238,5 +248,6 @@ FC_REFLECT( hive::plugins::rc::operation_exec_info,
   (update_proposal_operation_exec_time)
   (update_proposal_votes_operation_exec_time)
   (remove_proposal_operation_exec_time)
+  (recurrent_transfer_operation_exec_time)
 
   )

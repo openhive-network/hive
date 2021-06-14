@@ -15,6 +15,9 @@ namespace hive { namespace chain {
   using hive::protocol::version;
   using hive::protocol::hardfork_version;
   using hive::protocol::price;
+  using hive::protocol::HBD_asset;
+  using hive::protocol::HIVE_asset;
+  using hive::protocol::VEST_asset;
   using hive::protocol::asset;
   using hive::protocol::asset_symbol_type;
   using hive::chain::util::rd_dynamics_params;
@@ -273,15 +276,6 @@ namespace hive { namespace chain {
   > witness_schedule_index;
 
 } }
-
-#ifdef ENABLE_MIRA
-namespace mira {
-
-template<> struct is_static_length< hive::chain::witness_vote_object > : public boost::true_type {};
-template<> struct is_static_length< hive::chain::witness_schedule_object > : public boost::true_type {};
-
-} // mira
-#endif
 
 FC_REFLECT_ENUM( hive::chain::witness_object::witness_schedule_type, (elected)(timeshare)(miner)(none) )
 

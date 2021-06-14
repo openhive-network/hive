@@ -43,6 +43,7 @@ public:
 
   void report_state_options( const string& plugin_name, const fc::variant_object& opts );
 
+  void connection_count_changed(uint32_t peer_count);
   bool accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip );
   void accept_transaction( const hive::chain::signed_transaction& trx );
   hive::chain::signed_block generate_block(

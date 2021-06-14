@@ -150,7 +150,9 @@ struct api_account_object
     last_root_post( a.last_root_post ),
     last_vote_time( a.last_vote_time ),
     post_bandwidth( a.post_bandwidth ),
-    pending_claimed_accounts( a.pending_claimed_accounts )
+    pending_claimed_accounts( a.pending_claimed_accounts ),
+    open_recurrent_transfers( a.open_recurrent_transfers ),
+    governance_vote_expiration_ts( a.governance_vote_expiration_ts )
   {
     voting_power = _compute_voting_power(a);
     proxied_vsf_votes.insert( proxied_vsf_votes.end(), a.proxied_vsf_votes.begin(), a.proxied_vsf_votes.end() );
@@ -237,7 +239,11 @@ struct api_account_object
 
   share_type        pending_claimed_accounts = 0;
 
+  uint16_t          open_recurrent_transfers = 0;
+
   fc::optional< vector< delayed_votes_data > > delayed_votes;
+
+  time_point_sec governance_vote_expiration_ts;
 };
 
 struct extended_account : public api_account_object
@@ -263,99 +269,6 @@ struct extended_account : public api_account_object
   optional< vector< string > >                             feed;             /// feed posts for this user
   optional< vector< string > >                             recent_replies;   /// blog posts for this user
   optional< vector< string > >                             recommended;      /// posts recommened for this user
-};
-
-struct api_comment_object
-{
-  api_comment_object( const database_api::api_comment_object& c ):
-    id( c.id ),
-    category( c.category ),
-    parent_author( c.parent_author ),
-    parent_permlink( c.parent_permlink ),
-    author( c.author ),
-    permlink( c.permlink ),
-    title( c.title ),
-    body( c.body ),
-    json_metadata( c.json_metadata ),
-    last_update( c.last_update ),
-    created( c.created ),
-    active( c.active ),
-    last_payout( c.last_payout ),
-    depth( c.depth ),
-    children( c.children ),
-    net_rshares( c.net_rshares ),
-    abs_rshares( c.abs_rshares ),
-    vote_rshares( c.vote_rshares ),
-    children_abs_rshares( c.children_abs_rshares ),
-    cashout_time( c.cashout_time ),
-    max_cashout_time( c.max_cashout_time ),
-    total_vote_weight( c.total_vote_weight ),
-    reward_weight( c.reward_weight ),
-    total_payout_value( legacy_asset::from_asset( c.total_payout_value ) ),
-    curator_payout_value( legacy_asset::from_asset( c.curator_payout_value ) ),
-    author_rewards( c.author_rewards ),
-    net_votes( c.net_votes ),
-    root_author( c.root_author ),
-    root_permlink( c.root_permlink ),
-    max_accepted_payout( legacy_asset::from_asset( c.max_accepted_payout ) ),
-    percent_hbd( c.percent_hbd ),
-    allow_replies( c.allow_replies ),
-    allow_votes( c.allow_votes ),
-    allow_curation_rewards( c.allow_curation_rewards )
-  {
-    for( auto& route : c.beneficiaries )
-    {
-      beneficiaries.push_back( route );
-    }
-  }
-
-  api_comment_object(){}
-
-  comment_id_type   id;
-  string            category;
-  string            parent_author;
-  string            parent_permlink;
-  string            author;
-  string            permlink;
-
-  string            title;
-  string            body;
-  string            json_metadata;
-  time_point_sec    last_update;
-  time_point_sec    created;
-  time_point_sec    active;
-  time_point_sec    last_payout;
-
-  uint8_t           depth = 0;
-  uint32_t          children = 0;
-
-  share_type        net_rshares;
-  share_type        abs_rshares;
-  share_type        vote_rshares;
-
-  share_type        children_abs_rshares;
-  time_point_sec    cashout_time;
-  time_point_sec    max_cashout_time;
-  uint64_t          total_vote_weight = 0;
-
-  uint16_t          reward_weight = 0;
-
-  legacy_asset      total_payout_value = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
-  legacy_asset      curator_payout_value = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
-
-  share_type        author_rewards;
-
-  int32_t           net_votes = 0;
-
-  account_name_type root_author;
-  string            root_permlink;
-
-  legacy_asset      max_accepted_payout = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
-  uint16_t          percent_hbd = 0;
-  bool              allow_replies = false;
-  bool              allow_votes = false;
-  bool              allow_curation_rewards = false;
-  vector< beneficiary_route_type > beneficiaries;
 };
 
 struct extended_dynamic_global_properties
@@ -399,7 +312,14 @@ struct extended_dynamic_global_properties
     vesting_reward_percent( o.vesting_reward_percent ),
     sps_fund_percent( o.sps_fund_percent ),
     sps_interval_ledger( legacy_asset::from_asset( o.sps_interval_ledger ) ),
-    downvote_pool_percent( o.downvote_pool_percent )
+    downvote_pool_percent( o.downvote_pool_percent ),
+    current_remove_threshold( o.current_remove_threshold ),
+    early_voting_seconds( o.early_voting_seconds ),
+    mid_voting_seconds( o.mid_voting_seconds ),
+    max_consecutive_recurrent_transfer_failures( o.max_consecutive_recurrent_transfer_failures ),
+    max_recurrent_transfer_end_date( o.max_recurrent_transfer_end_date ),
+    min_recurrent_transfers_recurrence( o.min_recurrent_transfers_recurrence ),
+    max_open_recurrent_transfers( o.max_open_recurrent_transfers )
   {}
 
   uint32_t          head_block_number = 0;
@@ -455,6 +375,16 @@ struct extended_dynamic_global_properties
   legacy_asset      sps_interval_ledger = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
 
   uint16_t          downvote_pool_percent = 0;
+
+  int16_t           current_remove_threshold = HIVE_GLOBAL_REMOVE_THRESHOLD;
+
+  uint64_t          early_voting_seconds  = 0;
+  uint64_t          mid_voting_seconds    = 0;
+
+  uint8_t          max_consecutive_recurrent_transfer_failures = HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES;
+  uint16_t          max_recurrent_transfer_end_date = HIVE_MAX_RECURRENT_TRANSFER_END_DATE;
+  uint8_t          min_recurrent_transfers_recurrence = HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE;
+  uint16_t          max_open_recurrent_transfers = HIVE_MAX_OPEN_RECURRENT_TRANSFERS;
 };
 
 struct api_witness_object
@@ -557,7 +487,10 @@ struct api_feed_history_object
 {
   api_feed_history_object() {}
   api_feed_history_object( const database_api::api_feed_history_object& f ) :
-    current_median_history( f.current_median_history )
+    current_median_history( f.current_median_history ),
+    market_median_history( f.market_median_history ),
+    current_min_history( f.current_min_history ),
+    current_max_history( f.current_max_history )
   {
     for( auto& p : f.price_history )
     {
@@ -567,6 +500,9 @@ struct api_feed_history_object
 
   feed_history_id_type   id;
   legacy_price           current_median_history;
+  legacy_price           market_median_history;
+  legacy_price           current_min_history;
+  legacy_price           current_max_history;
   deque< legacy_price >  price_history;
 };
 
@@ -709,6 +645,27 @@ struct api_convert_request_object
   time_point_sec    conversion_date;
 };
 
+struct api_collateralized_convert_request_object
+{
+  api_collateralized_convert_request_object() {}
+  api_collateralized_convert_request_object( const database_api::api_collateralized_convert_request_object& c ) :
+    id( c.id ),
+    owner( c.owner ),
+    requestid( c.requestid ),
+    collateral_amount( legacy_asset::from_asset( c.collateral_amount ) ),
+    converted_amount( legacy_asset::from_asset( c.converted_amount) ),
+    conversion_date( c.conversion_date )
+  {}
+
+  collateralized_convert_request_id_type id;
+
+  account_name_type owner;
+  uint32_t          requestid = 0;
+  legacy_asset      collateral_amount;
+  legacy_asset      converted_amount;
+  time_point_sec    conversion_date;
+};
+
 struct api_proposal_object
 {
   api_proposal_object() {}
@@ -735,42 +692,6 @@ struct api_proposal_object
   string            subject;
   string            permlink;
   uint64_t          total_votes = 0;
-};
-
-struct discussion : public api_comment_object
-{
-  discussion() {}
-
-  discussion( const api_comment_object& c ) : api_comment_object( c ) {}
-
-  discussion( const tags::discussion& d ) :
-    api_comment_object( d ),
-    url( d.url ),
-    root_title( d.root_title ),
-    pending_payout_value( legacy_asset::from_asset( d.pending_payout_value ) ),
-    total_pending_payout_value( legacy_asset::from_asset( d.total_pending_payout_value ) ),
-    active_votes( d.active_votes ),
-    replies( d.replies ),
-    author_reputation( d.author_reputation ),
-    promoted( legacy_asset::from_asset( d.promoted ) ),
-    body_length( d.body_length ),
-    reblogged_by( d.reblogged_by ),
-    first_reblogged_by( d.first_reblogged_by ),
-    first_reblogged_on( d.first_reblogged_on )
-  {}
-
-  string                        url; /// /category/@rootauthor/root_permlink#author/permlink
-  string                        root_title;
-  legacy_asset                  pending_payout_value = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) ); ///< HBD
-  legacy_asset                  total_pending_payout_value = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) ); ///< HBD including replies
-  vector< tags::vote_state >    active_votes;
-  vector< string >              replies; ///< author/slug mapping
-  share_type                    author_reputation = 0;
-  legacy_asset                  promoted = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
-  uint32_t                      body_length = 0;
-  vector< account_name_type >   reblogged_by;
-  optional< account_name_type > first_reblogged_by;
-  optional< time_point_sec >    first_reblogged_on;
 };
 
 struct tag_index
@@ -807,16 +728,12 @@ struct state
   tag_index                                          tag_idx;
 
   /**
-    * "" is the global tags::discussion index
+    * "" is the global tags::discussion_ index
     */
   map< string, discussion_index >                    discussion_idx;
 
-  map< string, api_tag_object >                tags;
+  map< string, api_tag_object >                      tags;
 
-  /**
-    *  map from account/slug to full nested tags::discussion
-    */
-  map< string, discussion >                          content;
   map< string, extended_account >                    accounts;
 
   map< string, api_witness_object >                  witnesses;
@@ -865,46 +782,6 @@ struct broadcast_transaction_synchronous_return
   int32_t               block_num = 0;
   int32_t               trx_num   = 0;
   bool                  expired   = false;
-};
-
-struct comment_feed_entry
-{
-  comment_feed_entry( const follow::comment_feed_entry& c ) :
-    comment( c.comment ),
-    reblog_on( c.reblog_on ),
-    entry_id( c.entry_id )
-  {
-    reblog_by.resize( c.reblog_by.size() );
-
-    for( auto& a : c.reblog_by )
-    {
-      reblog_by.push_back( a );
-    }
-  }
-
-  comment_feed_entry() {}
-
-  api_comment_object            comment;
-  vector< account_name_type >   reblog_by;
-  time_point_sec                reblog_on;
-  uint32_t                      entry_id = 0;
-};
-
-struct comment_blog_entry
-{
-  comment_blog_entry( const follow::comment_blog_entry& c ) :
-    comment( c.comment ),
-    blog( c.blog ),
-    reblog_on( c.reblog_on ),
-    entry_id( c.entry_id )
-  {}
-
-  comment_blog_entry() {}
-
-  api_comment_object   comment;
-  string               blog;
-  time_point_sec       reblog_on;
-  uint32_t             entry_id = 0;
 };
 
 struct ticker
@@ -984,6 +861,12 @@ struct market_trade
   legacy_asset   open_pays;
 };
 
+struct no_return {};
+using discussion_api_object = no_return;
+using discussion_api_object_collection = no_return;
+using comment_feed_entry = no_return;
+using comment_blog_entry = no_return;
+
 #define DEFINE_API_ARGS( api_name, arg_type, return_type )  \
 typedef arg_type api_name ## _args;                         \
 typedef return_type api_name ## _return;
@@ -1020,6 +903,7 @@ DEFINE_API_ARGS( get_vesting_delegations,                vector< variant >,   ve
 DEFINE_API_ARGS( get_expiring_vesting_delegations,       vector< variant >,   vector< api_vesting_delegation_expiration_object > )
 DEFINE_API_ARGS( get_witnesses,                          vector< variant >,   vector< optional< api_witness_object > > )
 DEFINE_API_ARGS( get_conversion_requests,                vector< variant >,   vector< api_convert_request_object > )
+DEFINE_API_ARGS( get_collateralized_conversion_requests, vector< variant >,   vector< api_collateralized_convert_request_object > )
 DEFINE_API_ARGS( get_witness_by_account,                 vector< variant >,   optional< api_witness_object > )
 DEFINE_API_ARGS( get_witnesses_by_vote,                  vector< variant >,   vector< api_witness_object > )
 DEFINE_API_ARGS( lookup_witness_accounts,                vector< variant >,   vector< account_name_type > )
@@ -1033,24 +917,24 @@ DEFINE_API_ARGS( verify_authority,                       vector< variant >,   bo
 DEFINE_API_ARGS( verify_account_authority,               vector< variant >,   bool )
 DEFINE_API_ARGS( get_active_votes,                       vector< variant >,   vector< tags::vote_state > )
 DEFINE_API_ARGS( get_account_votes,                      vector< variant >,   vector< account_vote > )
-DEFINE_API_ARGS( get_content,                            vector< variant >,   discussion )
-DEFINE_API_ARGS( get_content_replies,                    vector< variant >,   vector< discussion > )
+DEFINE_API_ARGS( get_content,                            vector< variant >,   discussion_api_object )
+DEFINE_API_ARGS( get_content_replies,                    vector< variant >,   discussion_api_object_collection )
 DEFINE_API_ARGS( get_tags_used_by_author,                vector< variant >,   vector< tags::tag_count_object > )
-DEFINE_API_ARGS( get_post_discussions_by_payout,         vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_comment_discussions_by_payout,      vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_discussions_by_trending,            vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_discussions_by_created,             vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_discussions_by_active,              vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_discussions_by_cashout,             vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_discussions_by_votes,               vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_discussions_by_children,            vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_discussions_by_hot,                 vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_discussions_by_feed,                vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_discussions_by_blog,                vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_discussions_by_comments,            vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_discussions_by_promoted,            vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_replies_by_last_update,             vector< variant >,   vector< discussion > )
-DEFINE_API_ARGS( get_discussions_by_author_before_date,  vector< variant >,   vector< discussion > )
+DEFINE_API_ARGS( get_post_discussions_by_payout,         vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_comment_discussions_by_payout,      vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_discussions_by_trending,            vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_discussions_by_created,             vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_discussions_by_active,              vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_discussions_by_cashout,             vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_discussions_by_votes,               vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_discussions_by_children,            vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_discussions_by_hot,                 vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_discussions_by_feed,                vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_discussions_by_blog,                vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_discussions_by_comments,            vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_discussions_by_promoted,            vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_replies_by_last_update,             vector< variant >,   discussion_api_object_collection )
+DEFINE_API_ARGS( get_discussions_by_author_before_date,  vector< variant >,   discussion_api_object_collection )
 DEFINE_API_ARGS( get_account_history,                    vector< variant >,   get_account_history_return_type )
 DEFINE_API_ARGS( broadcast_transaction,                  vector< variant >,   json_rpc::void_type )
 DEFINE_API_ARGS( broadcast_block,                        vector< variant >,   json_rpc::void_type )
@@ -1071,9 +955,11 @@ DEFINE_API_ARGS( get_trade_history,                      vector< variant >,   ve
 DEFINE_API_ARGS( get_recent_trades,                      vector< variant >,   vector< market_trade > )
 DEFINE_API_ARGS( get_market_history,                     vector< variant >,   vector< market_history::bucket_object > )
 DEFINE_API_ARGS( get_market_history_buckets,             vector< variant >,   flat_set< uint32_t > )
+DEFINE_API_ARGS( is_known_transaction,                   vector< variant >,   bool )
 DEFINE_API_ARGS( list_proposals,                         vector< variant >,   vector< api_proposal_object > )
 DEFINE_API_ARGS( find_proposals,                         vector< variant >,   vector< api_proposal_object > )
 DEFINE_API_ARGS( list_proposal_votes,                    vector< variant >,   vector< database_api::api_proposal_vote_object > )
+DEFINE_API_ARGS( find_recurrent_transfers,               vector< variant >,   vector< database_api::api_recurrent_transfer_object > )
 
 #undef DEFINE_API_ARGS
 
@@ -1116,6 +1002,7 @@ public:
     (get_expiring_vesting_delegations)
     (get_witnesses)
     (get_conversion_requests)
+    (get_collateralized_conversion_requests)
     (get_witness_by_account)
     (get_witnesses_by_vote)
     (lookup_witness_accounts)
@@ -1168,9 +1055,11 @@ public:
     (get_recent_trades)
     (get_market_history)
     (get_market_history_buckets)
+    (is_known_transaction)
     (list_proposals)
     (find_proposals)
     (list_proposal_votes)
+    (find_recurrent_transfers)
   )
 
   private:
@@ -1189,7 +1078,7 @@ FC_REFLECT( hive::plugins::condenser_api::api_tag_object,
         (name)(total_payouts)(net_votes)(top_posts)(comments)(trending) )
 
 FC_REFLECT( hive::plugins::condenser_api::state,
-        (current_route)(props)(tag_idx)(tags)(content)(accounts)(witnesses)(discussion_idx)(witness_schedule)(feed_price)(error) )
+        (current_route)(props)(tag_idx)(tags)(accounts)(witnesses)(discussion_idx)(witness_schedule)(feed_price)(error) )
 
 FC_REFLECT( hive::plugins::condenser_api::api_limit_order_object,
         (id)(created)(expiration)(seller)(orderid)(for_sale)(sell_price)(real_price)(rewarded) )
@@ -1214,24 +1103,12 @@ FC_REFLECT( hive::plugins::condenser_api::api_account_object,
           (proxied_vsf_votes)(witnesses_voted_for)
           (last_post)(last_root_post)(last_vote_time)
           (post_bandwidth)(pending_claimed_accounts)
-          (delayed_votes)
+          (governance_vote_expiration_ts)
+          (delayed_votes)(open_recurrent_transfers)
         )
 
 FC_REFLECT_DERIVED( hive::plugins::condenser_api::extended_account, (hive::plugins::condenser_api::api_account_object),
         (vesting_balance)(reputation)(transfer_history)(market_history)(post_history)(vote_history)(other_history)(witness_votes)(tags_usage)(guest_bloggers)(open_orders)(comments)(feed)(blog)(recent_replies)(recommended) )
-
-FC_REFLECT( hive::plugins::condenser_api::api_comment_object,
-          (id)(author)(permlink)
-          (category)(parent_author)(parent_permlink)
-          (title)(body)(json_metadata)(last_update)(created)(active)(last_payout)
-          (depth)(children)
-          (net_rshares)(abs_rshares)(vote_rshares)
-          (children_abs_rshares)(cashout_time)(max_cashout_time)
-          (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(author_rewards)(net_votes)
-          (root_author)(root_permlink)
-          (max_accepted_payout)(percent_hbd)(allow_replies)(allow_votes)(allow_curation_rewards)
-          (beneficiaries)
-        )
 
 FC_REFLECT( hive::plugins::condenser_api::extended_dynamic_global_properties,
         (head_block_number)(head_block_id)(time)
@@ -1242,7 +1119,10 @@ FC_REFLECT( hive::plugins::condenser_api::extended_dynamic_global_properties,
         (hbd_interest_rate)(hbd_print_rate)
         (maximum_block_size)(required_actions_partition_percent)(current_aslot)(recent_slots_filled)(participation_count)(last_irreversible_block_num)
         (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)(available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)
-        (next_maintenance_time)(last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)(sps_interval_ledger)(downvote_pool_percent)
+        (next_maintenance_time)(last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)(sps_interval_ledger)
+        (downvote_pool_percent)(current_remove_threshold)(early_voting_seconds)(mid_voting_seconds)
+        (max_consecutive_recurrent_transfer_failures)(max_recurrent_transfer_end_date)(min_recurrent_transfers_recurrence)
+        (max_open_recurrent_transfers)
         )
 
 FC_REFLECT( hive::plugins::condenser_api::api_witness_object,
@@ -1283,6 +1163,9 @@ FC_REFLECT( hive::plugins::condenser_api::api_witness_schedule_object,
 FC_REFLECT( hive::plugins::condenser_api::api_feed_history_object,
           (id)
           (current_median_history)
+          (market_median_history)
+          (current_min_history)
+          (current_max_history)
           (price_history)
         )
 
@@ -1324,14 +1207,11 @@ FC_REFLECT( hive::plugins::condenser_api::api_vesting_delegation_expiration_obje
 FC_REFLECT( hive::plugins::condenser_api::api_convert_request_object,
           (id)(owner)(requestid)(amount)(conversion_date) )
 
+FC_REFLECT( hive::plugins::condenser_api::api_collateralized_convert_request_object,
+          (id)(owner)(requestid)(collateral_amount)(converted_amount)(conversion_date) )
+
 FC_REFLECT( hive::plugins::condenser_api::api_proposal_object,
           (id)(proposal_id)(creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink)(total_votes) )
-
-FC_REFLECT_DERIVED( hive::plugins::condenser_api::discussion, (hive::plugins::condenser_api::api_comment_object),
-          (url)(root_title)(pending_payout_value)(total_pending_payout_value)
-          (active_votes)(replies)(author_reputation)(promoted)
-          (body_length)(reblogged_by)(first_reblogged_by)(first_reblogged_on)
-        )
 
 FC_REFLECT( hive::plugins::condenser_api::scheduled_hardfork,
         (hf_version)(live_time) )
@@ -1345,12 +1225,6 @@ FC_REFLECT_ENUM( hive::plugins::condenser_api::withdraw_route_type, (incoming)(o
 
 FC_REFLECT( hive::plugins::condenser_api::broadcast_transaction_synchronous_return,
         (id)(block_num)(trx_num)(expired) )
-
-FC_REFLECT( hive::plugins::condenser_api::comment_feed_entry,
-        (comment)(reblog_by)(reblog_on)(entry_id) )
-
-FC_REFLECT( hive::plugins::condenser_api::comment_blog_entry,
-        (comment)(blog)(reblog_on)(entry_id) )
 
 FC_REFLECT( hive::plugins::condenser_api::ticker,
         (latest)(lowest_ask)(highest_bid)(percent_change)(hive_volume)(hbd_volume) )
@@ -1366,3 +1240,5 @@ FC_REFLECT( hive::plugins::condenser_api::order_book,
 
 FC_REFLECT( hive::plugins::condenser_api::market_trade,
         (date)(current_pays)(open_pays) )
+
+FC_REFLECT_EMPTY( hive::plugins::condenser_api::no_return )

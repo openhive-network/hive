@@ -38,7 +38,7 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
-constexpr int DAYS_FOR_DELAYED_VOTING{ (HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / HIVE_DELAYED_VOTING_INTERVAL_SECONDS) };
+constexpr int NR_INTERVALS_IN_DELAYED_VOTING{ (HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / HIVE_DELAYED_VOTING_INTERVAL_SECONDS) };
 
 #define VOTING_POWER( account ) db->get_account( account ).witness_vote_weight().value
 #define PROXIED_VSF( account ) db->get_account( account ).proxied_vsf_votes_total().value
@@ -92,8 +92,8 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
     
     // create one proposal
     create_proposal_data cpd(db->head_block_time());
-    cpd.end_date = cpd.start_date + fc::days( 2* DAYS_FOR_DELAYED_VOTING );
-    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key );
+    cpd.end_date = cpd.start_date + fc::days( 2* NR_INTERVALS_IN_DELAYED_VOTING );
+    int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
     BOOST_REQUIRE(proposal_1 >= 0);
 
     // carol vest
@@ -102,19 +102,23 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
     // carol votes
     vote_proposal("carol", { proposal_1 }, true, carol_private_key);
 
+    const int cycle = 24;
+    const int time_offset = HIVE_DELAYED_VOTING_INTERVAL_SECONDS / cycle;
     // check
-    for(int i = 0; i < (24*DAYS_FOR_DELAYED_VOTING) - 1; i++)
+    for(int i = 0; i < (cycle*NR_INTERVALS_IN_DELAYED_VOTING) - 1; i++)
     {
-      generate_blocks( db->head_block_time() + fc::hours(1).to_seconds());
+      generate_blocks( db->head_block_time() + fc::seconds( time_offset ).to_seconds());
       auto * ptr = find_proposal(proposal_1);
       BOOST_REQUIRE( ptr != nullptr );
       BOOST_REQUIRE( ptr->total_votes == 0ul );
     }
 
-    generate_days_blocks( 1, true );
+    generate_seconds_blocks( time_offset, true );
+    generate_seconds_blocks( 3600, true );
+
     auto * ptr = find_proposal(proposal_1);
     BOOST_REQUIRE( ptr != nullptr );
-    BOOST_REQUIRE( static_cast<long>( ptr->total_votes ) == get_vesting( "carol" ).amount.value );
+    BOOST_REQUIRE_EQUAL( static_cast<long>( ptr->total_votes ), get_vesting( "carol" ).amount.value );
 
     validate_database();
   }
@@ -157,14 +161,16 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     
     // create one proposal
     create_proposal_data cpd1(db->head_block_time());
-    cpd1.end_date = cpd1.start_date + fc::days( 2* DAYS_FOR_DELAYED_VOTING );
-    int64_t proposal_1 = create_proposal( cpd1.creator, cpd1.receiver, cpd1.start_date, cpd1.end_date, cpd1.daily_pay, alice_private_key );
+    cpd1.end_date = cpd1.start_date + fc::days( 2* NR_INTERVALS_IN_DELAYED_VOTING );
+    cpd1.creator = "alice";
+    int64_t proposal_1 = create_proposal( cpd1.creator, cpd1.receiver, cpd1.start_date, cpd1.end_date, cpd1.daily_pay, alice_private_key, false/*with_block_generation*/ );
     BOOST_REQUIRE(proposal_1 >= 0);
 
     // create one proposal
     create_proposal_data cpd2(db->head_block_time());
-    cpd2.end_date = cpd2.start_date + fc::days( 2* DAYS_FOR_DELAYED_VOTING );
-    int64_t proposal_2 = create_proposal( cpd2.creator, cpd2.receiver, cpd2.start_date, cpd2.end_date, cpd2.daily_pay, alice_private_key );
+    cpd2.end_date = cpd2.start_date + fc::days( 2* NR_INTERVALS_IN_DELAYED_VOTING );
+    cpd2.creator = "bob";
+    int64_t proposal_2 = create_proposal( cpd2.creator, cpd2.receiver, cpd2.start_date, cpd2.end_date, cpd2.daily_pay, bob_private_key, false/*with_block_generation*/ );
     BOOST_REQUIRE(proposal_2 >= 0);
 
     // carol vest
@@ -177,20 +183,22 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     auto * ptr = find_proposal(proposal_1); //<- just init
 
     // check
-    for(int i = 0; i < (24*DAYS_FOR_DELAYED_VOTING) - 1; i++)
+    const int cycle = 24;
+    const int time_offset = HIVE_DELAYED_VOTING_INTERVAL_SECONDS / cycle;
+    for(int i = 0; i < (cycle*NR_INTERVALS_IN_DELAYED_VOTING) - 1; i++)
     {
-      generate_blocks( db->head_block_time() + fc::hours(1).to_seconds());
+      generate_blocks( db->head_block_time() + fc::seconds(time_offset).to_seconds());
       ptr = find_proposal(proposal_1);
       BOOST_REQUIRE( ptr != nullptr );
       BOOST_REQUIRE( ptr->total_votes == 0ul );
 
-      if( i == (12 * DAYS_FOR_DELAYED_VOTING))
+      if( i == (12 * NR_INTERVALS_IN_DELAYED_VOTING))
       {
         vest("carol", "carol", ASSET("10.000 TESTS"), carol_private_key);
         vote_proposal("carol", { proposal_1, proposal_2 }, true, carol_private_key);
       }
 
-      if(i > (12 * DAYS_FOR_DELAYED_VOTING))
+      if(i > (12 * NR_INTERVALS_IN_DELAYED_VOTING))
       {
         ptr = find_proposal(proposal_2);
         BOOST_REQUIRE( ptr != nullptr );
@@ -198,7 +206,8 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
       }
     }
 
-    generate_days_blocks( 1, true );
+    generate_seconds_blocks( time_offset, true );
+    generate_seconds_blocks( 3600, true );
     ptr = find_proposal(proposal_1);
     BOOST_REQUIRE( ptr != nullptr );
     BOOST_REQUIRE( static_cast<long>(ptr->total_votes) == carol_power_1 );
@@ -207,9 +216,9 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     BOOST_REQUIRE( ptr != nullptr );
     BOOST_REQUIRE( static_cast<long>(ptr->total_votes) == carol_power_1 );
 
-    for(int i = 0; i < ( 12 * ( DAYS_FOR_DELAYED_VOTING / 2 ) ) - 1; i++)
+    for(int i = 0; i < ( 12 * ( NR_INTERVALS_IN_DELAYED_VOTING / 2 ) ) - 1; i++)
     {
-      generate_blocks( db->head_block_time() + fc::hours(1).to_seconds());
+      generate_blocks( db->head_block_time() + fc::seconds(time_offset).to_seconds());
       ptr = find_proposal(proposal_2);
       BOOST_REQUIRE( ptr != nullptr );
       BOOST_REQUIRE( static_cast<long>(ptr->total_votes) == carol_power_1 );
@@ -217,7 +226,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     
     for(int _ = 0; _ < 8; _++ )
     {
-      generate_days_blocks( 1, true );
+      generate_seconds_blocks( 3600, true );
       ptr = find_proposal(proposal_2);
     }
     BOOST_REQUIRE( get_vesting( "carol" ).amount.value == static_cast<long>(ptr->total_votes) );
@@ -237,6 +246,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: Setting proxy - more complex tests" );
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
 
     auto start_time = db->head_block_time();
 
@@ -268,11 +280,11 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
     proxy_data proxy_31;
 
 
-    auto fill = [ this ]( proxy_data& proxy, const std::string& account_name, size_t day, size_t minutes )
+    auto fill = [ this ]( proxy_data& proxy, const std::string& account_name, size_t nr_interval, size_t seconds )
     {
       auto dq = db->get_account( account_name ).delayed_votes;
 
-      fc::optional< size_t > idx = get_position_in_delayed_voting_array( dq, day, minutes );
+      fc::optional< size_t > idx = get_position_in_delayed_voting_array( dq, nr_interval, seconds );
       if( !idx.valid() )
         return;
 
@@ -284,18 +296,18 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
       proxy[ account_name ] = dq[ *idx ];
     };
 
-    auto cmp = [ this ]( proxy_data& proxy, const std::string& account_name, size_t val, uint32_t day, size_t minutes )
+    auto cmp = [ this ]( proxy_data& proxy, const std::string& account_name, size_t val, size_t nr_interval, size_t seconds )
     {
       auto dq = db->get_account( account_name ).delayed_votes;
 
-      fc::optional< size_t > idx = get_position_in_delayed_voting_array( dq, day, minutes );
+      fc::optional< size_t > idx = get_position_in_delayed_voting_array( dq, nr_interval, seconds );
       if( !idx.valid() )
         return true;
 
       auto found = proxy.find( account_name );
       if( found == proxy.end() )
       {
-        //current day doesn't exist yet, but previous day must exist
+        //current number of interval doesn't exist yet, but previous number of interval must exist
         BOOST_REQUIRE( dq.size() > 0 );
         return true;
       }
@@ -309,21 +321,19 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
     share_type votes_witness1 = get_votes( "witness1" );
     share_type votes_witness2 = get_votes( "witness2" );
 
-    size_t day = 0;
+    size_t nr_interval = 0;
+
 
     {
       BOOST_TEST_MESSAGE( "Getting init data..." );
-      fill( proxy_0, "alice",    day, 0/*minutes*/ );
-      fill( proxy_0, "bob",      day, 0/*minutes*/ );
-      fill( proxy_0, "celine",   day, 0/*minutes*/ );
-      fill( proxy_0, "witness1", day, 0/*minutes*/ );
-      fill( proxy_0, "witness2", day, 0/*minutes*/ );
+      fill( proxy_0, "alice",    nr_interval, 0/*seconds*/ );
+      fill( proxy_0, "bob",      nr_interval, 0/*seconds*/ );
+      fill( proxy_0, "celine",   nr_interval, 0/*seconds*/ );
+      fill( proxy_0, "witness1", nr_interval, 0/*seconds*/ );
+      fill( proxy_0, "witness2", nr_interval, 0/*seconds*/ );
     }
     {
       BOOST_TEST_MESSAGE( "Preparing accounts..." );
-
-      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-      generate_block();
 
       FUND( "alice", ASSET( "10000.000 TESTS" ) );
       FUND( "bob", ASSET( "10000.000 TESTS" ) );
@@ -337,32 +347,32 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
       auto _v1 = vamount( _1 );
       vest( "alice", "alice", _1, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_0, "alice", _v1, day, 0/*minutes*/ ) );
-      fill( proxy_0, "alice", day, 0/*minutes*/ );
+      BOOST_REQUIRE( cmp( proxy_0, "alice", _v1, nr_interval, 0/*seconds*/ ) );
+      fill( proxy_0, "alice", nr_interval, 0/*seconds*/ );
       generate_block();
 
       auto _v2 = vamount( _2 );
       vest( "alice", "bob", _2, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_0, "bob", _v2, day, 0/*minutes*/ ) );
-      fill( proxy_0, "bob", day, 0/*minutes*/ );
+      BOOST_REQUIRE( cmp( proxy_0, "bob", _v2, nr_interval, 0/*seconds*/ ) );
+      fill( proxy_0, "bob", nr_interval, 0/*seconds*/ );
       generate_block();
 
       auto _v3 = vamount( _3 );
       vest( "alice", "celine", _3, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_0, "celine", _v3, day, 0/*minutes*/ ) );
-      fill( proxy_0, "celine", day, 0/*minutes*/ );
+      BOOST_REQUIRE( cmp( proxy_0, "celine", _v3, nr_interval, 0/*seconds*/ ) );
+      fill( proxy_0, "celine", nr_interval, 0/*seconds*/ );
       generate_block();
 
       auto _v4 = vamount( _4 );
       vest( "alice", "witness1", _4, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_0, "witness1", _v4, day, 0/*minutes*/ ) );
-      fill( proxy_0, "witness1", day, 0/*minutes*/ );
+      BOOST_REQUIRE( cmp( proxy_0, "witness1", _v4, nr_interval, 0/*seconds*/ ) );
+      fill( proxy_0, "witness1", nr_interval, 0/*seconds*/ );
       generate_block();
 
       auto _v5 = vamount( _5 );
       vest( "alice", "witness2", _5, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_0, "witness2", _v5, day, 0/*minutes*/ ) );
-      fill( proxy_0, "witness2", day, 0/*minutes*/ );
+      BOOST_REQUIRE( cmp( proxy_0, "witness2", _v5, nr_interval, 0/*seconds*/ ) );
+      fill( proxy_0, "witness2", nr_interval, 0/*seconds*/ );
       generate_block();
 
       BOOST_REQUIRE( get_votes( "witness1" ) == votes_witness1 );
@@ -409,11 +419,11 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
       */
     }
 
-    size_t minutes = 0;
+    size_t seconds = 0;
 
     {
       /*
-        *****`+ 1 day`*****
+        *****`+ 1 nr_interval`*****
         `alice`  makes vests
         `bob`    makes vests
         `alice`  makes vests
@@ -422,46 +432,46 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
       */
       start_time += HIVE_DELAYED_VOTING_INTERVAL_SECONDS;
       generate_blocks( start_time, true );
-      day = 1;
+      nr_interval = 1;
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*1*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*1*/ ), true );
       auto _v1 = vamount( _1 );
       vest( "alice", "alice", _1, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_1, "alice",  _v1, day, minutes ) );
-      fill( proxy_1, "alice", day, minutes );
+      BOOST_REQUIRE( cmp( proxy_1, "alice",  _v1, nr_interval, seconds ) );
+      fill( proxy_1, "alice", nr_interval, seconds );
       generate_block();
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*2*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*2*/ ), true );
       auto _v2 = vamount( _2 );
       vest( "alice", "bob", _2, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_1, "bob", _v2, day, minutes ) );
-      fill( proxy_1, "bob", day, minutes );
+      BOOST_REQUIRE( cmp( proxy_1, "bob", _v2, nr_interval, seconds ) );
+      fill( proxy_1, "bob", nr_interval, seconds );
       generate_block();
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*3*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*3*/ ), true );
       _v1 = vamount( _1 );
       vest( "alice", "alice", _1, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_1, "alice", _v1, day, minutes ) );
-      fill( proxy_1, "alice", day, minutes );
+      BOOST_REQUIRE( cmp( proxy_1, "alice", _v1, nr_interval, seconds ) );
+      fill( proxy_1, "alice", nr_interval, seconds );
       generate_block();
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*4*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*4*/ ), true );
       _v2 = vamount( _2 );
       vest( "alice", "bob", _2, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_1, "bob", _v2, day, minutes ) );
-      fill( proxy_1, "bob", day, minutes );
+      BOOST_REQUIRE( cmp( proxy_1, "bob", _v2, nr_interval, seconds ) );
+      fill( proxy_1, "bob", nr_interval, seconds );
       generate_block();
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*5*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*5*/ ), true );
       _v1 = vamount( _1 );
       vest( "alice", "celine", _1, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_1, "celine", _v1, day, minutes ) );
-      fill( proxy_1, "celine", day, minutes );
+      BOOST_REQUIRE( cmp( proxy_1, "celine", _v1, nr_interval, seconds ) );
+      fill( proxy_1, "celine", nr_interval, seconds );
       generate_block();
 
       BOOST_REQUIRE( get_votes( "witness1" ) == votes_witness1 );
@@ -469,28 +479,28 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
     }
     {
       /*
-        *****`+ 2 days`*****
+        *****`+ 2 nr_intervals`*****
         `alice`  makes vests
         `celine` makes vests
       */
       start_time += HIVE_DELAYED_VOTING_INTERVAL_SECONDS;
       generate_blocks( start_time, true );
-      day = 2;
+      nr_interval = 2;
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*6*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*6*/ ), true );
       auto _v5 = vamount( _5 );
       vest( "alice", "alice", _5, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_2, "alice", _v5, day, minutes ) );
-      fill( proxy_2, "alice", day, minutes );
+      BOOST_REQUIRE( cmp( proxy_2, "alice", _v5, nr_interval, seconds ) );
+      fill( proxy_2, "alice", nr_interval, seconds );
       generate_block();
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*7*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*7*/ ), true );
       auto _v2 = vamount( _2 );
       vest( "alice", "celine", _2, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_2, "celine", _v2, day, minutes ) );
-      fill( proxy_2, "celine", day, minutes );
+      BOOST_REQUIRE( cmp( proxy_2, "celine", _v2, nr_interval, seconds ) );
+      fill( proxy_2, "celine", nr_interval, seconds );
       generate_block();
 
       BOOST_REQUIRE( get_votes( "witness1" ) == votes_witness1 );
@@ -498,37 +508,37 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
     }
     {
       /*
-        *****`+ 15 days`*****
+        *****`+ 15 nr_intervals`*****
           `alice`  makes vests
           `bob`    makes vests
           `celine` makes vests
       */
       start_time += 13 * HIVE_DELAYED_VOTING_INTERVAL_SECONDS;
       generate_blocks( start_time, true );
-      day = 15;
+      nr_interval = 15;
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*8*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*8*/ ), true );
       auto _v2 = vamount( _2 );
       vest( "alice", "alice", _2, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_15, "alice", _v2, day, minutes ) );
-      fill( proxy_15, "alice", day, minutes );
+      BOOST_REQUIRE( cmp( proxy_15, "alice", _v2, nr_interval, seconds ) );
+      fill( proxy_15, "alice", nr_interval, seconds );
       generate_block();
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*9*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*9*/ ), true );
       auto _v3 = vamount( _3 );
       vest( "alice", "bob", _3, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_15, "bob", _v3, day, minutes ) );
-      fill( proxy_15, "bob", day, minutes );
+      BOOST_REQUIRE( cmp( proxy_15, "bob", _v3, nr_interval, seconds ) );
+      fill( proxy_15, "bob", nr_interval, seconds );
       generate_block();
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*10*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*10*/ ), true );
       auto _v4 = vamount( _4 );
       vest( "alice", "celine", _4, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_15, "celine", _v4, day, minutes ) );
-      fill( proxy_15, "celine", day, minutes );
+      BOOST_REQUIRE( cmp( proxy_15, "celine", _v4, nr_interval, seconds ) );
+      fill( proxy_15, "celine", nr_interval, seconds );
       generate_block();
 
       BOOST_REQUIRE( get_votes( "witness1" ) == votes_witness1 );
@@ -536,7 +546,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
     }
     {
       /*
-        *****`30 days - 1 block`*****
+        *****`30 nr_intervals - 1 block`*****
       */
       start_time += 15 * HIVE_DELAYED_VOTING_INTERVAL_SECONDS - HIVE_BLOCK_INTERVAL;
       generate_blocks( start_time, true );
@@ -600,14 +610,14 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
     {
       /*
-        *****`30 days`*****
+        *****`30 nr_intervals`*****
         `alice`  makes vests
         `bob`    makes vests
         `celine` makes vests
       */
       start_time += HIVE_BLOCK_INTERVAL;
       generate_blocks( start_time, true );
-      day = 30;
+      nr_interval = 30;
       size_t diff = 1;//because `1` element in delayed_votes has been removed already
 
       BOOST_REQUIRE( witness1_result_00 >= 0 );
@@ -616,28 +626,28 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
       BOOST_REQUIRE( get_votes( "witness1" ) == ( votes_witness1 + witness1_result_00.value ) );
       BOOST_REQUIRE( get_votes( "witness2" ) == ( votes_witness2 + witness2_result_00.value ) );
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*11*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*11*/ ), true );
       auto _v5 = vamount( _5 );
       vest( "alice", "alice", _5, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_30, "alice", _v5, day, minutes ) );
-      fill( proxy_30, "alice", day - diff, minutes );
+      BOOST_REQUIRE( cmp( proxy_30, "alice", _v5, nr_interval, seconds ) );
+      fill( proxy_30, "alice", nr_interval - diff, seconds );
       generate_block();
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*12*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*12*/ ), true );
       auto _v1 = vamount( _1 );
       vest( "alice", "bob", _1, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_30, "bob", _v1, day, minutes ) );
-      fill( proxy_30, "bob", day - diff, minutes );
+      BOOST_REQUIRE( cmp( proxy_30, "bob", _v1, nr_interval, seconds ) );
+      fill( proxy_30, "bob", nr_interval - diff, seconds );
       generate_block();
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*13*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*13*/ ), true );
       auto _v2 = vamount( _2 );
       vest( "alice", "celine", _2, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_30, "celine", _v2, day, minutes ) );
-      fill( proxy_30, "celine", day - diff, minutes );
+      BOOST_REQUIRE( cmp( proxy_30, "celine", _v2, nr_interval, seconds ) );
+      fill( proxy_30, "celine", nr_interval - diff, seconds );
       generate_block();
     }
 
@@ -659,27 +669,27 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
     {
       /*
-        *****`+ 31 days`*****
+        *****`+ 31 nr_intervals`*****
         `celine` makes vests
       */
       start_time += fc::seconds( HIVE_DELAYED_VOTING_INTERVAL_SECONDS ) ;
       generate_blocks( start_time, true );
-      day = 31;
+      nr_interval = 31;
       size_t diff = 2;//because `2` elements in delayed_votes have been removed already
 
-      ++minutes;
-      generate_blocks( start_time + fc::minutes( minutes/*14*/ ), true );
+      seconds += 3;
+      generate_blocks( start_time + fc::seconds( seconds/*14*/ ), true );
       auto _v5 = vamount( _5 );
       vest( "alice", "celine", _5, alice_private_key );
-      BOOST_REQUIRE( cmp( proxy_31, "celine", _v5, day, minutes ) );
-      fill( proxy_31, "celine", day - diff, minutes );
+      BOOST_REQUIRE( cmp( proxy_31, "celine", _v5, nr_interval, seconds ) );
+      fill( proxy_31, "celine", nr_interval - diff, seconds );
       generate_block();
     }
     {
       /*
-        *****`lasted 31 days`*****
+        *****`lasted 31 nr_intervals`*****
       */
-      start_time += fc::hours( 23 ) + fc::minutes( 59 );
+      start_time += fc::seconds( HIVE_DELAYED_VOTING_INTERVAL_SECONDS ) - fc::seconds( 30 );
       generate_blocks( start_time, true );
 
       BOOST_REQUIRE( witness1_result_01 > 0 );
@@ -691,12 +701,12 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
       idump( (votes_witness1) );
       idump( (witness1_result_00) );
       idump( (witness1_result_01) );
-      BOOST_REQUIRE( get_votes( "witness1" ) == ( votes_witness1 + ( witness1_result_00 + witness1_result_01 ).value ) );
+      BOOST_REQUIRE_EQUAL( get_votes( "witness1" ).value, ( votes_witness1 + ( witness1_result_00 + witness1_result_01 ).value ).value );
 
       idump( (votes_witness2) );
       idump( (witness2_result_00) );
       idump( (witness2_result_01) );
-      BOOST_REQUIRE( get_votes( "witness2" ) == ( votes_witness2 + ( witness2_result_00 + witness2_result_01 ).value ) );
+      BOOST_REQUIRE_EQUAL( get_votes( "witness2" ).value, ( votes_witness2 + ( witness2_result_00 + witness2_result_01 ).value ).value );
 
       start_time += fc::minutes( 1 );
       generate_blocks( start_time, true );
@@ -707,9 +717,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
     {
       /*
-        *****`lasted 32 days`*****
+        *****`lasted 32 nr_intervals`*****
       */
-      start_time += fc::hours( 23 ) + fc::minutes( 59 );
+      start_time += fc::seconds( HIVE_DELAYED_VOTING_INTERVAL_SECONDS ) - fc::seconds( 30 );
       generate_blocks( start_time, true );
 
       BOOST_REQUIRE( witness1_result_02 > 0 );
@@ -735,7 +745,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
     }
     {
       /*
-        *****`lasted 40 days`*****
+        *****`lasted 40 nr_intervals`*****
       */
       start_time += 8 * HIVE_DELAYED_VOTING_INTERVAL_SECONDS;
       generate_blocks( start_time, true );
@@ -780,7 +790,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
     {
       /*
-        *****`lasted 80 days`*****
+        *****`lasted 80 nr_intervals`*****
       */
       start_time += 40 * HIVE_DELAYED_VOTING_INTERVAL_SECONDS;
       generate_blocks( start_time, true );
@@ -1197,10 +1207,10 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
     BOOST_REQUIRE( basic_votes_1 == votes_01_1 );
     BOOST_REQUIRE( basic_votes_2 == votes_01_2 );
 
-    for(int i = 1; i < DAYS_FOR_DELAYED_VOTING - 1; i++)
+    for(int i = 1; i < NR_INTERVALS_IN_DELAYED_VOTING - 1; i++)
     {
       generate_blocks( start_time + (i * HIVE_DELAYED_VOTING_INTERVAL_SECONDS) , true );
-      if( i == static_cast<int>( DAYS_FOR_DELAYED_VOTING/2 )) witness_vote( "bob", "witness2", true/*approve*/, bob_private_key );
+      if( i == static_cast<int>( NR_INTERVALS_IN_DELAYED_VOTING/2 )) witness_vote( "bob", "witness2", true/*approve*/, bob_private_key );
       BOOST_REQUIRE( get_votes( "witness1" ) == votes_01_1 );
       BOOST_REQUIRE( get_votes( "witness2" ) == votes_01_2 );
     }
@@ -1292,7 +1302,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_06 )
 
     for( uint32_t i = 0; i < 10; ++i )
     {
-      int64_t cnt = 0;
+      size_t cnt = 0;
       for( auto& item : accs )
       {
         const uint64_t pre_size{ withdraw_items->size() };
@@ -1359,7 +1369,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_05 )
     {
       for( uint32_t i = 0; i < 29; ++i )
       {
-        int64_t cnt = 0;
+        size_t cnt = 0;
         for( auto& item : accs )
         {
           dv.add_delayed_value( db->get_account( item ), start_time + fc::days(1), 10'000 );
@@ -1401,6 +1411,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
 {
   try
   {
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
     // support function
     const auto get_delayed_vote_count = [&]( const account_name_type& name = "bob", const std::vector<uint64_t>& data_to_compare )
     {
@@ -1420,8 +1433,6 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
     BOOST_TEST_MESSAGE( "Testing: `delayed_voting::run` method" );
     const auto start_time = db->head_block_time();
     ACTORS( (alice)(celine)(bob)(witness) )
-    generate_block();
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     generate_block();
     FUND( "bob", ASSET( "100000.000 TESTS" ) );
     FUND( "celine", ASSET( "100000.000 TESTS" ) );
@@ -1456,7 +1467,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
 
     // check everyday for month
     bool s = false;
-    for(int i = 1; i < DAYS_FOR_DELAYED_VOTING - 1; i++)
+    for(int i = 1; i < NR_INTERVALS_IN_DELAYED_VOTING - 1; i++)
     {
       // 1 day
       generate_blocks( start_time + (i * HIVE_DELAYED_VOTING_INTERVAL_SECONDS) , true );
@@ -1541,7 +1552,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_04 )
       move_forward( fc::days( 4 ) );
     }
     {
-      int64_t cnt = 0;
+      size_t cnt = 0;
       delayed_voting::opt_votes_update_data_items withdraw_items = delayed_voting::votes_update_data_items();
 
       for( auto& item : accs )
@@ -1587,10 +1598,10 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
 
   BOOST_TEST_MESSAGE( "Testing: `delayed_voting::update_votes` method" );
 
-  ACTORS( (alice)(bob) )
+  set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
   generate_block();
 
-  set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+  ACTORS( (alice)(bob) )
   generate_block();
 
   FUND( "alice", ASSET( "10000.000 TESTS" ) );
@@ -1611,7 +1622,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
 
   delayed_voting dv = delayed_voting( *db );
 
-  fc::time_point_sec time = db->head_block_time() + fc::hours( 5 );
+  fc::time_point_sec time = db->head_block_time() + fc::minutes( 5 );
 
   auto& __alice = db->get_account( "alice" );
   auto alice_dv = __alice.delayed_votes;
@@ -1879,70 +1890,70 @@ BOOST_AUTO_TEST_CASE( delayed_voting_processor_01 )
     BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 1ul/*val*/ ) );
   }
   {
-    delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 1 )/*time*/, 2ul/*val*/ );
+    delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::minutes( 30 )/*time*/, 2ul/*val*/ );
     BOOST_REQUIRE( dq.size() == 1 );
     BOOST_REQUIRE( sum == 3 );
     BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 3/*val*/ ) );
   }
   {
-    delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 24 ) - fc::seconds( 1 )/*time*/, 3ul/*val*/ );
+    delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::seconds( HIVE_DELAYED_VOTING_INTERVAL_SECONDS ) - fc::seconds( 3 )/*time*/, 3ul/*val*/ );
     BOOST_REQUIRE( dq.size() == 1 );
     BOOST_REQUIRE( sum == 6 );
     BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 6/*val*/ ) );
   }
   {
-    delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 24 )/*time*/, 4ul/*val*/ );
+    delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::seconds( HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 4ul/*val*/ );
     BOOST_REQUIRE( dq.size() == 2 );
     BOOST_REQUIRE( sum == 10 );
     BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 6/*val*/ ) );
-    BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 24 )/*time*/, 4/*val*/ ) );
+    BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::seconds( HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 4/*val*/ ) );
   }
   {
-    delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 5ul/*val*/ );
+    delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::seconds( 2*HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 5ul/*val*/ );
     BOOST_REQUIRE( dq.size() == 3 );
     BOOST_REQUIRE( sum == 15 );
     BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 )/*time*/, 6/*val*/ ) );
-    BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 24 )/*time*/, 4/*val*/ ) );
-    BOOST_REQUIRE( cmp( 2/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, /*val*/5 ) );
+    BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::seconds( HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 4/*val*/ ) );
+    BOOST_REQUIRE( cmp( 2/*idx*/, time + fc::minutes( 1 ) + fc::seconds( 2*HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, /*val*/5 ) );
   }
   {
     delayed_voting_processor::erase_front( dq, sum );
     BOOST_REQUIRE( dq.size() == 2 );
     BOOST_REQUIRE( sum == 9 );
-    BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 24 )/*time*/, 4/*val*/ ) );
-    BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 5/*val*/ ) );
+    BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::seconds( HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 4/*val*/ ) );
+    BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::seconds( 2*HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 5/*val*/ ) );
   }
   {
     delayed_voting_processor::erase_front( dq, sum );
     BOOST_REQUIRE( dq.size() == 1 );
     BOOST_REQUIRE( sum == 5 );
-    BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 5/*val*/ ) );
+    BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::seconds( 2*HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 5/*val*/ ) );
   }
   {
-    delayed_voting_processor::add( dq, sum, time + fc::minutes( 2 ) + fc::hours( 2*24 )/*time*/, 6/*val*/ );
+    delayed_voting_processor::add( dq, sum, time + fc::minutes( 2 ) + fc::seconds( 2*HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 6/*val*/ );
     BOOST_REQUIRE( dq.size() == 1 );
     BOOST_REQUIRE( sum == 11 );
-    BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 11/*val*/ ) );
+    BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::seconds( 2*HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 11/*val*/ ) );
   }
   {
-    delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 3*24 )/*time*/, 7/*val*/ );
+    delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::seconds( 3*HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 7/*val*/ );
     BOOST_REQUIRE( dq.size() == 2 );
     BOOST_REQUIRE( sum == 18 );
-    BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 11/*val*/ ) );
-    BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 3*24 )/*time*/, 7/*val*/ ) );
+    BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::seconds( 2*HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 11/*val*/ ) );
+    BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::seconds( 3*HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 7/*val*/ ) );
   }
   {
-    delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::hours( 3*24 ) + fc::seconds( 3 )/*time*/, 8/*val*/ );
+    delayed_voting_processor::add( dq, sum, time + fc::minutes( 1 ) + fc::seconds( 3*HIVE_DELAYED_VOTING_INTERVAL_SECONDS ) + fc::seconds( 3 )/*time*/, 8/*val*/ );
     BOOST_REQUIRE( dq.size() == 2 );
     BOOST_REQUIRE( sum == 26 );
-    BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 2*24 )/*time*/, 11/*val*/ ) );
-    BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::hours( 3*24 )/*time*/, 15/*val*/ ) );
+    BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::seconds( 2*HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 11/*val*/ ) );
+    BOOST_REQUIRE( cmp( 1/*idx*/, time + fc::minutes( 1 ) + fc::seconds( 3*HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 15/*val*/ ) );
   }
   {
     delayed_voting_processor::erase_front( dq, sum );
     BOOST_REQUIRE( dq.size() == 1 );
     BOOST_REQUIRE( sum == 15 );
-    BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::hours( 3*24 )/*time*/, 15/*val*/ ) );
+    BOOST_REQUIRE( cmp( 0/*idx*/, time + fc::minutes( 1 ) + fc::seconds( 3*HIVE_DELAYED_VOTING_INTERVAL_SECONDS )/*time*/, 15/*val*/ ) );
   }
   {
     delayed_voting_processor::erase_front( dq, sum );
@@ -2185,6 +2196,9 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
   {
     BOOST_TEST_MESSAGE( "Testing: decline voting rights: casual use with cancel" );
 
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
     const std::function<bool(const account_name_type)>  is_cancelled = [&](const account_name_type name)
     {
       const auto& request_idx = db->get_index< decline_voting_rights_request_index >().indices().get< by_account >();
@@ -2192,9 +2206,6 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
     };
 
     ACTORS( (bob)(alice)(witness) )
-    generate_block();
-
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     generate_block();
 
     // auto start_time = db->head_block_time();
@@ -2247,10 +2258,10 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: simulation of trying to overcome system" );
 
-    ACTORS( (alice)(witness) )
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    ACTORS( (alice)(witness) )
     generate_block();
 
     //auto start_time = db->head_block_time();
@@ -2275,7 +2286,7 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
     share_type votes_01 = get_votes( "witness" );
     BOOST_REQUIRE( votes_01 == basic_votes );
 
-    generate_blocks( start_time + fc::days(DAYS_FOR_DELAYED_VOTING - 1) , true );
+    generate_blocks( start_time + fc::seconds( (NR_INTERVALS_IN_DELAYED_VOTING - 1) * HIVE_DELAYED_VOTING_INTERVAL_SECONDS ) , true );
     generate_block();
 
     // just before lock down alice vests huge amount of TESTs
@@ -2306,8 +2317,8 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
 
 #define WITNESS_VOTES( witness ) db->get_witness( witness ).votes.value
 
-#define DAY_REPORT( day ) \
-  BOOST_TEST_MESSAGE( "[scenario_01]: current day: " << day ); \
+#define INTERVAL_REPORT( day ) \
+  BOOST_TEST_MESSAGE( "[scenario_01]: current interval: " << day ); \
   ACCOUNT_REPORT( "alice" ); \
   ACCOUNT_REPORT( "alice0bp" ); \
   BOOST_TEST_MESSAGE( "[scenario_01]: " << "alice0bp" << " has " << WITNESS_VOTES( "alice0bp" ) << " votes" ); \
@@ -2343,11 +2354,11 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
   BOOST_REQUIRE( DELAYED_VOTES( "bob0bp" ) == expected_bob0bp_delayed_votes ); \
   BOOST_REQUIRE( VOTING_POWER( "bob" ) == WITNESS_VOTES( "bob0bp" ) )
 
-#define GOTO_DAY( day ) \
-  generate_days_blocks( day - today ); \
-  today = day
+#define GOTO_INTERVAL( interval ) \
+  generate_seconds_blocks( ( interval * (HIVE_DELAYED_VOTING_INTERVAL_SECONDS) ) - today ); \
+  today = ( interval * (HIVE_DELAYED_VOTING_INTERVAL_SECONDS) )
 
-BOOST_AUTO_TEST_CASE( scenario_01 )
+BOOST_AUTO_TEST_CASE( scenario_01, *boost::unit_test::disabled())
 {
   try {
 
@@ -2458,27 +2469,27 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   vest( "alice", "alice", ASSET( "1000.000 TESTS" ), alice_private_key );
   validate_database();
 
-  DAY_REPORT( today );
+  INTERVAL_REPORT( today );
   BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "300.000 TESTS" ) );
 
 /*
   Day 5: alice powers up 300 HIVE; she has 1300 vests, including delayed 1000 maturing on day 30 and 300 maturing on day 35, 0 HIVE
 */
   BOOST_TEST_MESSAGE( "[scenario_01]: before set_current_day( 5 ): " << get_current_time_iso_string() );
-  GOTO_DAY( 5 );
+  GOTO_INTERVAL( 5 );
   BOOST_TEST_MESSAGE( "[scenario_01]: after set_current_day( 5 ): " << get_current_time_iso_string() );
 
   BOOST_TEST_MESSAGE( "[scenario_01]: alice powers up 300" );
   vest( "alice", "alice", ASSET( "300.000 TESTS" ), alice_private_key );
   validate_database();
 
-  DAY_REPORT( today );
+  INTERVAL_REPORT( today );
   BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
 
 /*
   Day 10: alice powers down 1300 vests; this schedules virtual PD actions on days 17, 24, 31, 38, 45, 52, 59, 66, 73, 80, 87, 94 and 101
 */
-  GOTO_DAY( 10 );
+  GOTO_INTERVAL( 10 );
 
   int64_t new_vests = (get_vesting( "alice" ) - origin_alice_vests).amount.value;
   int64_t new_vests_portion = new_vests / HIVE_VESTING_WITHDRAW_INTERVALS;
@@ -2490,7 +2501,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   withdraw_vesting( "alice", asset( new_vests, VESTS_SYMBOL ), alice_private_key );
   validate_database();
 
-  DAY_REPORT( today );
+  INTERVAL_REPORT( today );
   BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
 
 /*
@@ -2523,8 +2534,8 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_bob0bp_delayed_votes = initial_bob0bp_delayed_votes;
   expected_carol_hive = initial_carol_hive;
 
-  GOTO_DAY( 17 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 17 );
+  INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - asset( new_vests_portion + 1, VESTS_SYMBOL );
   expected_alice_vests += asset( portion, VESTS_SYMBOL );
@@ -2536,8 +2547,8 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 24: PD of 100 vests from alice split like above
   alice 50S+1150v=0+1000(30d)+150(35d); bob 50v=0+25(47d)+25(54d); carol 50S
 */
-  GOTO_DAY( 24 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 24 );
+  INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - asset( 2 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 2 * portion, VESTS_SYMBOL );
@@ -2548,8 +2559,8 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 30: 1000 vests matures on alice, alice.bp receives 1000 vests of new voting power (1000v)
   alice 50S+1150v=1000+150(35d); bob 50v=0+25(47d)+25(54d); carol 50S
 */
-  GOTO_DAY( 30 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 30 );
+  INTERVAL_REPORT( today );
 
   expected_alice0bp_delayed_votes = 0;
   expected_bob0bp_delayed_votes = 0;
@@ -2559,8 +2570,8 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 31: PD of 100 vests from alice
   alice 75S+1075v=1000+75(35d); bob 75v=0+25(47d)+25(54d)+25(61d); carol 75S
 */
-  GOTO_DAY( 31 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 31 );
+  INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - asset( 3 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 3 * portion, VESTS_SYMBOL );
@@ -2571,16 +2582,16 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 35: remaining 75 vests mature on alice, alice.bp receives 75 vests of new voting power (1075v)
   alice 75S+1075v=1075; bob 75v=0+25(47d)+25(54d)+25(61d); carol 75S
 */
-  GOTO_DAY( 35 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 35 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
   
 /*
   Day 38: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (1000v)
   alice 100S+1000v=1000; bob 100v=0+25(47d)+25(54d)+25(61d)+25(68d); carol 100S
 */
-  GOTO_DAY( 38 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 38 );
+  INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - asset( 4 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 4 * portion, VESTS_SYMBOL );
@@ -2591,8 +2602,8 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 45: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (925v)
   alice 125S+925v=925; bob 125v=0+25(47d)+25(54d)+25(61d)+25(68d)+25(75d); carol 125S
 */
-  GOTO_DAY( 45 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 45 );
+  INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - asset( 5 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 5 * portion, VESTS_SYMBOL );
@@ -2603,16 +2614,16 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 47: first 25 vests mature on bob, bob.bp receives 25 vests of new voting power (25v)
   alice 125S+925v=925; bob 125v=25+25(54d)+25(61d)+25(68d)+25(75d); carol 125S
 */
-  GOTO_DAY( 47 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 47 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
   
 /*
   Day 52: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (850v)
   alice 150S+850v=850; bob 150v=25+25(54d)+25(61d)+25(68d)+25(75d)+25(82d); carol 150S
 */
-  GOTO_DAY( 52 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 52 );
+  INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - asset( 6 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 6 * portion, VESTS_SYMBOL );
@@ -2623,16 +2634,16 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 54: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (50v)
   alice 150S+850v=850; bob 150v=50+25(61d)+25(68d)+25(75d)+25(82d); carol 150S
 */
-  GOTO_DAY( 54 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 54 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
   
 /*
   Day 59: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (775v)
   alice 175S+775v=775; bob 175v=50+25(61d)+25(68d)+25(75d)+25(82d)+25(89d); carol 175S
 */
-  GOTO_DAY( 59 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 59 );
+  INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - asset( 7 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 7 * portion, VESTS_SYMBOL );
@@ -2643,16 +2654,16 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 61: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (75v)
   alice 175S+775v=775; bob 175v=75+25(68d)+25(75d)+25(82d)+25(89d); carol 175S
 */
-  GOTO_DAY( 61 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 61 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
   
 /*
   Day 66: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (700v)
   alice 200S+700v=700; bob 200v=75+25(68d)+25(75d)+25(82d)+25(89d)+25(96d); carol 200S
 */
-  GOTO_DAY( 66 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 66 );
+  INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - asset( 8 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 8 * portion, VESTS_SYMBOL );
@@ -2663,16 +2674,16 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 68: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (100v)
   alice 200S+700v=700; bob 200v=100+25(75d)+25(82d)+25(89d)+25(96d); carol 200S
 */
-  GOTO_DAY( 68 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 68 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
   
 /*
   Day 73: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (625v)
   alice 225S+625v=625; bob 225v=100+25(75d)+25(82d)+25(89d)+25(96d)+25(103d); carol 225S
 */
-  GOTO_DAY( 73 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 73 );
+  INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - asset( 9 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 9 * portion, VESTS_SYMBOL );
@@ -2683,16 +2694,16 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 75: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (125v)
   alice 225S+625v=625; bob 225v=125+25(82d)+25(89d)+25(96d)+25(103d); carol 225S
 */
-  GOTO_DAY( 75 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 75 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
   
 /*
   Day 80: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (550v)
   alice 250S+550v=550; bob 250v=125+25(82d)+25(89d)+25(96d)+25(103d)+25(110d); carol 250S
 */
-  GOTO_DAY( 80 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 80 );
+  INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - asset( 10 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 10 * portion, VESTS_SYMBOL );
@@ -2703,16 +2714,16 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 82: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (150v)
   alice 250S+550v=550; bob 250v=150+25(89d)+25(96d)+25(103d)+25(110d); carol 250S
 */
-  GOTO_DAY( 82 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 82 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
   
 /*
   Day 87: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (475v)
   alice 275S+475v=475; bob 275v=150+25(89d)+25(96d)+25(103d)+25(110d)+25(117d); carol 275S
 */
-  GOTO_DAY( 87 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 87 );
+  INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - asset( 11 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 11 * portion, VESTS_SYMBOL );
@@ -2723,16 +2734,16 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 89: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (175v)
   alice 275S+475v=475; bob 275v=175+25(96d)+25(103d)+25(110d)+25(117d); carol 275S
 */
-  GOTO_DAY( 89 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 89 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
   
 /*
   Day 94: PD of 100 vests from alice, alice.bp loses 75 vests of voting power (400v)
   alice 300S+400v=400; bob 300v=175+25(96d)+25(103d)+25(110d)+25(117d)+25(124d); carol 300S
 */
-  GOTO_DAY( 94 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 94 );
+  INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - asset( 12 * (new_vests_portion + 1), VESTS_SYMBOL );
   expected_alice_vests += asset( 12 * portion, VESTS_SYMBOL );
@@ -2743,16 +2754,16 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 96: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (200v)
   alice 300S+400v=400; bob 300v=200+25(103d)+25(110d)+25(117d)+25(124d); carol 300S
 */
-  GOTO_DAY( 96 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 96 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
   
 /*
   Day 101: last scheduled PD of 100 vests from alice, alice.bp loses 75 vests of voting power (325v)
   alice 325S+325v=325; bob 325v=200+25(103d)+25(110d)+25(117d)+25(124d)+25(131d); carol 325S
 */
-  GOTO_DAY( 101 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 101 );
+  INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - asset( new_vests, VESTS_SYMBOL );
   expected_alice_vests += asset( quarter - 3, VESTS_SYMBOL );
@@ -2764,40 +2775,40 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 103: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (225v)
   alice 325S+325v=325; bob 325v=225+25(110d)+25(117d)+25(124d)+25(131d); carol 325S
 */
-  GOTO_DAY( 103 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 103 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
   
 /*
   Day 110: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (250v)
   alice 325S+325v=325; bob 325v=250+25(117d)+25(124d)+25(131d); carol 325S
 */
-  GOTO_DAY( 110 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 110 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
   
 /*
   Day 117: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (275v)
   alice 325S+325v=325; bob 325v=275+25(124d)+25(131d); carol 325S
 */
-  GOTO_DAY( 117 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 117 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
   
 /*
   Day 124: 25 vests mature on bob, bob.bp receives 25 vests of new voting power (300v)
   alice 325S+325v=325; bob 325v=300+25(131d); carol 325S
 */
-  GOTO_DAY( 124 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 124 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
   
 /*
   Day 131: last 25 vests mature on bob, bob.bp receives 25 vests of new voting power (325v)
   alice 325S+325v=325; bob 325v=325; carol 325S
 */
-  GOTO_DAY( 131 );
-  DAY_REPORT( today );
+  GOTO_INTERVAL( 131 );
+  INTERVAL_REPORT( today );
   DAY_CHECK;
 
   }
@@ -2809,13 +2820,13 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 #undef ACCOUNT_REPORT
 #undef WITNESS_VOTES
 #undef DELAYED_VOTES
-#undef DAY_REPORT
+#undef INTERVAL_REPORT
 #undef CHECK_ACCOUNT_VESTS
 #undef CHECK_ACCOUNT_HIVE
 #undef CHECK_ACCOUNT_VP
 #undef CHECK_WITNESS_VOTES
 #undef DAY_CHECK
-#undef GOTO_DAY
+#undef GOTO_INTERVAL
 
 BOOST_AUTO_TEST_SUITE_END()
 

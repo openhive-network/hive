@@ -23,11 +23,7 @@ class oid
   __id_type _id;
 
 public:
-#ifdef ENABLE_MIRA
-  oid( __id_type i = 0 ) : _id( i ) {}
-#else
-  explicit oid( __id_type i ) : _id( i ) {} //lack of default outside of MIRA makes sure all chain-object constructors fill their id members
-#endif
+  explicit oid( __id_type i ) : _id( i ) {} //lack of default makes sure all chain-object constructors fill their id members
 
   oid& operator++() { ++_id; return *this; }
 

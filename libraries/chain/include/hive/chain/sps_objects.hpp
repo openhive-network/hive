@@ -135,20 +135,12 @@ typedef multi_index_container<
         member< proposal_vote_object, uint32_t, &proposal_vote_object::proposal_id >,
         member< proposal_vote_object, account_name_type, &proposal_vote_object::voter >
       >
-      >
+    >
   >,
   allocator< proposal_vote_object >
 > proposal_vote_index;
 
 } } // hive::chain
-
-#ifdef ENABLE_STD_ALLOCATOR
-namespace mira {
-
-template<> struct is_static_length< hive::chain::proposal_vote_object > : public boost::true_type {};
-
-} // mira
-#endif
 
 FC_REFLECT( hive::chain::proposal_object, (id)(proposal_id)(creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink)(total_votes)(removed) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::proposal_object, hive::chain::proposal_index )

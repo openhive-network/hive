@@ -8,7 +8,7 @@ log-logger = {"name":"default","level":"all","appender":"stderr"} {"name":"p2p",
 backtrace = yes
 
 # Plugin(s) to enable, may be specified multiple times
-plugin = witness database_api account_by_key_api network_broadcast_api condenser_api block_api transaction_status_api debug_node_api
+plugin = witness database_api account_by_key_api network_broadcast_api condenser_api block_api transaction_status_api debug_node_api account_history_rocksdb account_history_api
 
 # Disables automatic account history trimming
 history-disable-pruning = 0

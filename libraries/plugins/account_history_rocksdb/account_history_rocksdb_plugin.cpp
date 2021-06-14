@@ -17,6 +17,8 @@
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/utilities/plugin_utilities.hpp>
 
+#include <hive/plugins/condenser_api/condenser_api.hpp>
+
 #include <appbase/application.hpp>
 
 #include <rocksdb/db.h>
@@ -77,6 +79,7 @@ using hive::protocol::signed_transaction;
 using hive::chain::operation_notification;
 using hive::chain::transaction_id_type;
 
+using hive::plugins::condenser_api::legacy_asset;
 using hive::utilities::benchmark_dumper;
 
 using ::rocksdb::DB;
@@ -486,6 +489,7 @@ public:
   impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath) :
     _self(self),
     _mainDb(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db()),
+    _blockchainStoragePath(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
     _storagePath(storagePath),
     _writeBuffer(_storage, _columnHandles)
     {
@@ -571,6 +575,9 @@ public:
 
   void openDb()
   {
+    //Very rare case -  when a synchronization starts from the scratch and a node has AH plugin with rocksdb enabled and directories don't exist yet
+    bfs::create_directories( _blockchainStoragePath );
+
     createDbSchema(_storagePath);
 
     auto columnDefs = prepareColumnDefinitions(true);
@@ -598,7 +605,8 @@ public:
       // opening the db, so that is not a good place to write the initial lib.
       try
       {
-        get_lib();
+        uint32_t lib = get_lib();
+        _cached_irreversible_block.store(lib);
       }
       catch( fc::assert_exception& )
       {
@@ -812,9 +820,8 @@ private:
     if(_storage == nullptr)
       return;
 
-    /// If there are still not yet saved changes let's do it now.
-    if(_collectedOps != 0)
-      flushWriteBuffer();
+    // lib (last irreversible block) has not been saved so far
+    flushWriteBuffer();
 
     ::rocksdb::FlushOptions fOptions;
     for(const auto& cf : _columnHandles)
@@ -863,6 +870,7 @@ private:
 
   account_history_rocksdb_plugin&  _self;
   chain::database&                 _mainDb;
+  bfs::path                        _blockchainStoragePath;
   bfs::path                        _storagePath;
   std::unique_ptr<DB>              _storage;
   std::vector<ColumnFamilyHandle*> _columnHandles;
@@ -930,6 +938,28 @@ private:
   bool                             _reindexing = false;
 
   bool                             _prune = false;
+
+  struct saved_balances
+  {
+    asset hive_balance = asset(0, HIVE_SYMBOL);
+    asset savings_hive_balance = asset(0, HIVE_SYMBOL);
+
+    asset hbd_balance = asset(0, HBD_SYMBOL);
+    asset savings_hbd_balance = asset(0, HBD_SYMBOL);
+
+    asset vesting_shares = asset(0, VESTS_SYMBOL);
+    asset delegated_vesting_shares = asset(0, VESTS_SYMBOL);
+    asset received_vesting_shares = asset(0, VESTS_SYMBOL);
+
+    asset reward_hbd_balance = asset(0, HBD_SYMBOL);
+    asset reward_hive_balance = asset(0, HIVE_SYMBOL);
+    asset reward_vesting_balance = asset(0, VESTS_SYMBOL);
+    asset reward_vesting_hive_balance = asset(0, HIVE_SYMBOL);
+  };
+  optional<string>                 _balance_csv_filename;
+  std::ofstream                    _balance_csv_file;
+  std::map<string, saved_balances> _saved_balances;
+  unsigned                         _balance_csv_line_count = 0;
 };
 
 void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_options::variables_map& options)
@@ -968,6 +998,27 @@ void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_o
 
   if(_blacklisted_op_list.empty() == false)
     ilog( "Account History: blacklisting ops ${o}", ("o", _blacklisted_op_list) );
+
+  if (options.count("account-history-rocksdb-dump-balance-history"))
+  {
+    _balance_csv_filename = options.at("account-history-rocksdb-dump-balance-history").as<std::string>();
+    _balance_csv_file.open(*_balance_csv_filename, std::ios_base::out | std::ios_base::trunc);
+    _balance_csv_file << "account" << ","
+                      << "block_num" << ","
+                      << "timestamp" << ","
+                      << "hive" << ","
+                      << "savings_hive" << ","
+                      << "hbd" << ","
+                      << "savings_hbd" << ","
+                      << "vesting_shares" << ","
+                      << "delegated_vesting_shares" << ","
+                      << "received_vesting_shares" << ","
+                      << "reward_hive" << ","
+                      << "reward_hbd" << ","
+                      << "reward_vesting_shares" << ","
+                      << "reward_vesting_hive" << "\n";
+    _balance_csv_file.flush();
+  }
 
   appbase::app().get_plugin< chain::chain_plugin >().report_state_options( _self.name(), state_opts );
 }
@@ -1149,7 +1200,7 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
     *blockRangeEnd = retVal.back().block + 1;
   }
 
-  return std::move(retVal);
+  return retVal;
 }
 
 void account_history_rocksdb_plugin::impl::find_account_history_data(const account_name_type& name, uint64_t start,
@@ -1313,8 +1364,10 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
           break;
         }
 
-        if(processor(op, op.id, false))
-          ++cntLimit;
+        /// Accept only virtual operations
+        if(op.virtual_op > 0)
+          if(processor(op, op.id, false))
+            ++cntLimit;
 
         lastFoundBlock = op.block;
       }
@@ -1393,8 +1446,10 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
           break;
         }
 
-        if(processor(op, op.id, false))
-          ++cntLimit;
+        /// Accept only virtual operations
+        if(op.virtual_op > 0)
+          if(processor(op, op.id, false))
+            ++cntLimit;
 
         lastFoundBlock = op.block;
       }
@@ -1542,7 +1597,11 @@ uint32_t account_history_rocksdb_plugin::impl::get_lib(const uint32_t* fallbackI
 
   uint32_t lib = 0;
   load( lib, data.data(), data.size() );
-  return lib;
+
+  if(lib < _cached_irreversible_block)
+    return _cached_irreversible_block;
+  else
+    return lib;
 }
 
 void account_history_rocksdb_plugin::impl::update_lib( uint32_t lib )
@@ -1798,9 +1857,18 @@ void account_history_rocksdb_plugin::impl::on_post_reindex(const hive::chain::re
   flushStorage();
   _collectedOpsWriteLimit = 1;
   _reindexing = false;
-  update_lib( note.last_block_number ); // We always reindex irreversible blocks.
+  uint32_t last_irreversible_block_num =_mainDb.get_last_irreversible_block_num();
+  update_lib( last_irreversible_block_num ); // Set same value as in main database, as result of witness participation
 
   printReport( note.last_block_number, "RocksDB data reindex finished." );
+}
+
+std::string get_asset_amount(const asset& amount)
+{
+   std::string asset_with_amount_string = legacy_asset::from_asset(amount).to_string();
+   size_t space_pos = asset_with_amount_string.find(' ');
+   assert(space_pos != std::string::npos);
+   return asset_with_amount_string.substr(0, space_pos);
 }
 
 void account_history_rocksdb_plugin::impl::printReport(uint32_t blockNo, const char* detailText) const
@@ -1882,8 +1950,7 @@ void account_history_rocksdb_plugin::impl::importData(unsigned int blockLimit)
   }
   );
 
-  if(_collectedOps != 0)
-    flushWriteBuffer();
+  flushWriteBuffer();
 
   const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&, bool){});
   ilog( "RocksDb data import - Performance report at block ${n}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
@@ -1966,30 +2033,65 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
   
   /// In case of genesis block (and fresh testnet) there can be no LIB at begin.
 
-  if( block_num <= get_lib(&fallbackIrreversibleBlock) ) return;
+  auto stored_lib = get_lib(&fallbackIrreversibleBlock);
+  
+  FC_ASSERT(block_num > stored_lib, "New irreversible block: ${nb} can't be less than already stored one: ${ob}", ("nb", block_num)("ob", stored_lib));
 
-  _currently_persisted_irreversible_block.store(block_num);
+  auto& volatileOpsGenericIndex = _mainDb.get_mutable_index<volatile_operation_index>();
 
   const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
   auto itr = volatile_idx.begin();
 
-  vector< const volatile_operation_object* > to_delete;
+  _currently_persisted_irreversible_block.store(block_num);
 
   {
     std::lock_guard<std::mutex> lk(_currently_persisted_irreversible_mtx);
 
-    while(itr != volatile_idx.end() && itr->block <= block_num)
+    // it is unlikely we get here but flush storage in this case
+    if(itr != volatile_idx.end() && itr->block < block_num)
     {
-      rocksdb_operation_object obj(*itr);
-      importOperation(obj, itr->impacted);
-      to_delete.push_back(&(*itr));
-      ++itr;
+      flushStorage();
+
+      while(itr != volatile_idx.end() && itr->block < block_num)
+      {
+        auto comp = []( const rocksdb_operation_object& lhs, const rocksdb_operation_object& rhs )
+        {
+          return std::tie( lhs.block, lhs.trx_in_block, lhs.op_in_trx, lhs.trx_id, lhs.virtual_op ) < std::tie( rhs.block, rhs.trx_in_block, rhs.op_in_trx, rhs.trx_id, rhs.virtual_op );
+        };
+        std::set< rocksdb_operation_object, decltype(comp) > ops( comp );
+        find_operations_by_block(itr->block, false, // don't include reversible, only already imported ops
+          [&ops](const rocksdb_operation_object& op)
+          {
+            ops.emplace(op);
+          }
+        );
+
+        uint32_t this_itr_block = itr->block;
+        while(itr != volatile_idx.end() && itr->block == this_itr_block)
+        {
+          rocksdb_operation_object obj(*itr);
+          // check that operation is already stored as irreversible as it will be not imported
+          FC_ASSERT(ops.count(obj), "operation in block ${block} was not imported until irreversible block ${irreversible}", ("block", this_itr_block)("irreversible", block_num));
+          hive::protocol::operation op = fc::raw::unpack_from_buffer< hive::protocol::operation >( obj.serialized_op );
+          wlog("prevented importing duplicate operation from block ${block} when handling irreversible block ${irreversible}, operation: ${op}",
+            ("block", obj.block)("irreversible", block_num)("op", fc::json::to_string(op)));
+          itr++;
+        }
+      }
     }
 
-    for(const volatile_operation_object* o : to_delete)
-    {
-      _mainDb.remove(*o);
-    }
+    /// Range of reversible (volatile) ops to be processed should come from blocks (stored_lib, block_num]
+    auto moveRangeBeginI = volatile_idx.upper_bound(stored_lib);
+
+    FC_ASSERT(moveRangeBeginI == volatile_idx.begin() || moveRangeBeginI == volatile_idx.end(), "All volatile ops processed by previous irreversible blocks should be already flushed");
+
+    auto moveRangeEndI = volatile_idx.upper_bound(block_num);
+    volatileOpsGenericIndex.move_to_external_storage<by_block>(moveRangeBeginI, moveRangeEndI, [this](const volatile_operation_object& operation) -> void
+      {
+        rocksdb_operation_object obj(operation);
+        importOperation(obj, operation.impacted);
+      }
+    );
 
     update_lib(block_num);
   }
@@ -2009,6 +2111,113 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_block(const block_notifi
 
 void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notification& bn)
 {
+  if (_balance_csv_filename)
+  {
+    // check the balances of all tracked accounts, emit a line in the CSV file if any have changed
+    // since the last block
+    const auto& account_idx = _mainDb.get_index<hive::chain::account_index>().indices().get<hive::chain::by_name>();
+    for (auto range : _tracked_accounts)
+    {
+      const std::string& lower = range.first;
+      const std::string& upper = range.second;
+
+      auto account_iter = account_idx.lower_bound(range.first);
+      while (account_iter != account_idx.end() &&
+             account_iter->name <= upper)
+      {
+        const account_object& account = *account_iter;
+
+        auto saved_balance_iter = _saved_balances.find(account_iter->name);
+        bool balances_changed = saved_balance_iter == _saved_balances.end();
+        saved_balances& saved_balance_record = _saved_balances[account_iter->name];
+
+        if (saved_balance_record.hive_balance != account.balance)
+        {
+          saved_balance_record.hive_balance = account.balance;
+          balances_changed = true;
+        }
+        if (saved_balance_record.savings_hive_balance != account.savings_balance)
+        {
+          saved_balance_record.savings_hive_balance = account.savings_balance;
+          balances_changed = true;
+        }
+        if (saved_balance_record.hbd_balance != account.hbd_balance)
+        {
+          saved_balance_record.hbd_balance = account.hbd_balance;
+          balances_changed = true;
+        }
+        if (saved_balance_record.savings_hbd_balance != account.savings_hbd_balance)
+        {
+          saved_balance_record.savings_hbd_balance = account.savings_hbd_balance;
+          balances_changed = true;
+        }
+
+        if (saved_balance_record.reward_hbd_balance != account.reward_hbd_balance)
+        {
+          saved_balance_record.reward_hbd_balance = account.reward_hbd_balance;
+          balances_changed = true;
+        }
+        if (saved_balance_record.reward_hive_balance != account.reward_hive_balance)
+        {
+          saved_balance_record.reward_hive_balance = account.reward_hive_balance;
+          balances_changed = true;
+        }
+        if (saved_balance_record.reward_vesting_balance != account.reward_vesting_balance)
+        {
+          saved_balance_record.reward_vesting_balance = account.reward_vesting_balance;
+          balances_changed = true;
+        }
+        if (saved_balance_record.reward_vesting_hive_balance != account.reward_vesting_hive)
+        {
+          saved_balance_record.reward_vesting_hive_balance = account.reward_vesting_hive;
+          balances_changed = true;
+        }
+
+        if (saved_balance_record.vesting_shares != account.vesting_shares)
+        {
+          saved_balance_record.vesting_shares = account.vesting_shares;
+          balances_changed = true;
+        }
+        if (saved_balance_record.delegated_vesting_shares != account.delegated_vesting_shares)
+        {
+          saved_balance_record.delegated_vesting_shares = account.delegated_vesting_shares;
+          balances_changed = true;
+        }
+        if (saved_balance_record.received_vesting_shares != account.received_vesting_shares)
+        {
+          saved_balance_record.received_vesting_shares = account.received_vesting_shares;
+          balances_changed = true;
+        }
+
+        if (balances_changed)
+        {
+          _balance_csv_file << (string)account.name << ","
+                            << bn.block.block_num() << ","
+                            << bn.block.timestamp.to_iso_string() << ","
+                            << get_asset_amount(saved_balance_record.hive_balance) << ","
+                            << get_asset_amount(saved_balance_record.savings_hive_balance) << ","
+                            << get_asset_amount(saved_balance_record.hbd_balance) << ","
+                            << get_asset_amount(saved_balance_record.savings_hbd_balance) << ","
+                            << get_asset_amount(saved_balance_record.vesting_shares) << ","
+                            << get_asset_amount(saved_balance_record.delegated_vesting_shares) << ","
+                            << get_asset_amount(saved_balance_record.received_vesting_shares) << ","
+                            << get_asset_amount(saved_balance_record.reward_hive_balance) << ","
+                            << get_asset_amount(saved_balance_record.reward_hbd_balance) << ","
+                            << get_asset_amount(saved_balance_record.reward_vesting_balance) << ","
+                            << get_asset_amount(saved_balance_record.reward_vesting_hive_balance) << "\n";
+          // flush every 10k lines
+          ++_balance_csv_line_count;
+          if (_balance_csv_line_count > 10000)
+          {
+            _balance_csv_line_count = 0;
+            _balance_csv_file.flush();
+          }
+        }
+        ++account_iter;
+      }
+    }
+  }
+
   if(_reindexing) return;
 
   _currently_processed_block.store(0);
@@ -2047,6 +2256,7 @@ void account_history_rocksdb_plugin::set_program_options(
       "Allows to force immediate data import at plugin startup. By default storage is supplied during reindex process.")
     ("account-history-rocksdb-stop-import-at-block", bpo::value<uint32_t>()->default_value(0),
       "Allows to specify block number, the data import process should stop at.")
+    ("account-history-rocksdb-dump-balance-history", boost::program_options::value< string >(), "Dumps balances for all tracked accounts to a CSV file every time they change")
   ;
 }
 

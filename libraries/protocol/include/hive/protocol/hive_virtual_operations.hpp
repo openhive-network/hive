@@ -7,10 +7,11 @@
 
 namespace hive { namespace protocol {
 
-  struct author_reward_operation : public virtual_operation {
-    author_reward_operation(){}
-    author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v, const asset& c )
-      :author(a), permlink(p), hbd_payout(s), hive_payout(st), vesting_payout(v), curators_vesting_payout(c) {}
+  struct author_reward_operation : public virtual_operation
+  {
+    author_reward_operation() = default;
+    author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v, const asset& c, bool must_be_claimed)
+      :author(a), permlink(p), hbd_payout(s), hive_payout(st), vesting_payout(v), curators_vesting_payout(c), payout_must_be_claimed(must_be_claimed) {}
 
     account_name_type author;
     string            permlink;
@@ -18,19 +19,25 @@ namespace hive { namespace protocol {
     asset             hive_payout;
     asset             vesting_payout;
     asset             curators_vesting_payout;
+    /// If set to true, payout has been stored in the separate reward balance, and must be claimed
+    /// to be transferred to regular balance.
+    bool              payout_must_be_claimed = false;
   };
 
 
   struct curation_reward_operation : public virtual_operation
   {
-    curation_reward_operation(){}
-    curation_reward_operation( const string& c, const asset& r, const string& a, const string& p )
-      :curator(c), reward(r), comment_author(a), comment_permlink(p) {}
+    curation_reward_operation() = default;
+    curation_reward_operation( const string& c, const asset& r, const string& a, const string& p, bool must_be_claimed)
+      :curator(c), reward(r), comment_author(a), comment_permlink(p), payout_must_be_claimed(must_be_claimed) {}
 
     account_name_type curator;
     asset             reward;
     account_name_type comment_author;
     string            comment_permlink;
+    /// If set to true, payout has been stored in the separate reward balance, and must be claimed
+    /// to be transferred to regular balance.
+    bool              payout_must_be_claimed = false;
   };
 
 
@@ -74,14 +81,29 @@ namespace hive { namespace protocol {
 
   struct fill_convert_request_operation : public virtual_operation
   {
-    fill_convert_request_operation(){}
-    fill_convert_request_operation( const string& o, const uint32_t id, const asset& in, const asset& out )
+    fill_convert_request_operation() = default;
+    fill_convert_request_operation( const account_name_type& o, const uint32_t id, const HBD_asset& in, const HIVE_asset& out )
       :owner(o), requestid(id), amount_in(in), amount_out(out) {}
 
     account_name_type owner;
     uint32_t          requestid = 0;
-    asset             amount_in;
-    asset             amount_out;
+    asset             amount_in; //in HBD
+    asset             amount_out; //in HIVE
+  };
+
+  struct fill_collateralized_convert_request_operation : public virtual_operation
+  {
+    fill_collateralized_convert_request_operation() = default;
+    fill_collateralized_convert_request_operation( const account_name_type& o, const uint32_t id,
+      const HIVE_asset& in, const HBD_asset& out, const HIVE_asset& _excess_collateral )
+      :owner( o ), requestid( id ), amount_in( in ), amount_out( out ), excess_collateral( _excess_collateral )
+    {}
+
+    account_name_type owner;
+    uint32_t          requestid = 0;
+    asset             amount_in; //in HIVE
+    asset             amount_out; //in HBD
+    asset             excess_collateral; //in HIVE
   };
 
 
@@ -95,6 +117,52 @@ namespace hive { namespace protocol {
     account_name_type to_account;
     asset             withdrawn;
     asset             deposited;
+  };
+
+
+  struct transfer_to_vesting_completed_operation : public virtual_operation
+  {
+    transfer_to_vesting_completed_operation(){}
+    transfer_to_vesting_completed_operation( const string& f, const string& t, const asset& s, const asset& v )
+      :from_account(f), to_account(t), hive_vested(s), vesting_shares_received(v) {}
+
+    account_name_type from_account;
+    account_name_type to_account;
+    asset             hive_vested;
+    asset             vesting_shares_received;
+  };
+
+  struct pow_reward_operation : public virtual_operation
+  {
+    pow_reward_operation(){}
+    pow_reward_operation( const string& w, const asset& r )
+      :worker(w), reward(r) {}
+
+    account_name_type worker;
+    asset             reward;
+  };
+
+  struct vesting_shares_split_operation : public virtual_operation
+  {
+    vesting_shares_split_operation(){}
+    vesting_shares_split_operation( const string& o, const asset& old_vests, const asset& new_vests )
+      :owner(o), vesting_shares_before_split(old_vests), vesting_shares_after_split(new_vests) {}
+
+    account_name_type owner;
+    asset             vesting_shares_before_split;
+    asset             vesting_shares_after_split;
+  };
+
+  struct account_created_operation : public virtual_operation
+  {
+    account_created_operation(){}
+    account_created_operation( const string& new_account_name, const string& creator, const asset& initial_vesting_shares, const asset& initial_delegation )
+      :new_account_name(new_account_name), creator(creator), initial_vesting_shares(initial_vesting_shares), initial_delegation(initial_delegation) {}
+
+    account_name_type new_account_name;
+    account_name_type creator;
+    asset             initial_vesting_shares;
+    asset             initial_delegation; // if created with account_create_with_delegation
   };
 
 
@@ -278,15 +346,77 @@ namespace hive { namespace protocol {
     asset             hive_transferred;
   };
 
+  struct expired_account_notification_operation : public virtual_operation
+  {
+    expired_account_notification_operation() = default;
+    expired_account_notification_operation(const account_name_type& acc)
+      : account(acc) {}
+
+    account_name_type account;
+  };
+
+  struct changed_recovery_account_operation : public virtual_operation
+  {
+    changed_recovery_account_operation() = default;
+    changed_recovery_account_operation( const account_name_type& acc, const account_name_type& oldrec, const account_name_type& newrec )
+      : account( acc ), old_recovery_account( oldrec ), new_recovery_account( newrec ) {}
+
+    account_name_type account;
+    account_name_type old_recovery_account;
+    account_name_type new_recovery_account;
+  };
+
+  struct system_warning_operation : public virtual_operation
+  {
+    system_warning_operation() = default;
+    system_warning_operation( const string& _message )
+      : message( _message ) {}
+
+    string message;
+  };
+
+
+ struct fill_recurrent_transfer_operation : public virtual_operation
+ {
+     fill_recurrent_transfer_operation() {}
+     fill_recurrent_transfer_operation(const account_name_type& f,const account_name_type& t, const asset& a, const string& m, uint16_t re) : from( f ), to( t ), amount( a ), memo( m ), remaining_executions(re) {}
+
+     account_name_type from;
+     account_name_type to;
+     asset amount;
+     string memo;
+     uint16_t remaining_executions = 0;
+ };
+
+ struct failed_recurrent_transfer_operation : public virtual_operation
+ {
+   failed_recurrent_transfer_operation() {}
+   failed_recurrent_transfer_operation(const account_name_type& f,const account_name_type& t, const asset& a, uint8_t cf, const string& m, uint16_t re, bool d) :
+     from( f ), to( t ), amount( a ), memo( m ), consecutive_failures( cf ), remaining_executions(re), deleted( d ) {}
+
+     account_name_type from;
+     account_name_type to;
+     asset amount;
+     string memo;
+     uint8_t consecutive_failures = 0;
+     uint16_t remaining_executions = 0;
+     bool deleted = false; // Indicates that the recurrent transfer was deleted due to too many consecutive failures
+ };
+
 } } //hive::protocol
 
-FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout) )
-FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink) )
+FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payout_must_be_claimed) )
+FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::comment_reward_operation, (author)(permlink)(payout)(author_rewards)(total_payout_value)(curator_payout_value)(beneficiary_payout_value) )
 FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
+FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
+FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::liquidity_reward_operation, (owner)(payout) )
 FC_REFLECT( hive::protocol::interest_operation, (owner)(interest) )
 FC_REFLECT( hive::protocol::fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
+FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
+FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
+FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::shutdown_witness_operation, (owner) )
 FC_REFLECT( hive::protocol::fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
 FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
@@ -304,3 +434,8 @@ FC_REFLECT( hive::protocol::sps_fund_operation, (fund_account)(additional_funds)
 FC_REFLECT( hive::protocol::sps_convert_operation, (fund_account)(hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
+FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
+FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
+FC_REFLECT( hive::protocol::system_warning_operation, (message) )
+FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
+FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(remaining_executions)(deleted) )

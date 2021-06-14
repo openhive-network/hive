@@ -75,15 +75,13 @@ void block_log_info_plugin_impl::on_post_apply_block( const block_notification& 
       }
     }
 
-    const dynamic_global_property_object& dgpo = _db.get_dynamic_global_properties();
-
     const auto& idx = _db.get_index< block_log_pending_message_index, by_id >();
     while( true )
     {
       auto it = idx.begin();
       if( it == idx.end() )
         break;
-      if( it->data.block_num > dgpo.last_irreversible_block_num )
+      if( it->data.block_num > _db.get_last_irreversible_block_num())
         break;
       print_message( it->data );
       _db.remove( *it );

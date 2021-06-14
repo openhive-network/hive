@@ -18,9 +18,19 @@ else( MSVC )
    )
 endif( MSVC )
 
+include("${CMAKE_CURRENT_SOURCE_DIR}/get_config.d/generate_get_config.cmake")
+generate_get_config( 
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/hive/protocol/config.hpp"  # path to config.hpp
+  "${CMAKE_CURRENT_SOURCE_DIR}/get_config.d/get_config.cpp.in"    # path to get_config template file
+  "${CMAKE_CURRENT_BINARY_DIR}/get_config.cpp"                    # output path
+)
+
+#############
+
 ## SORT .cpp by most likely to change / break compile
 add_library( hive_protocol
 
+             testnet_blockchain_configuration.cpp
              smt_operations.cpp
              hive_operations.cpp
              sps_operations.cpp
@@ -35,7 +45,7 @@ add_library( hive_protocol
              block.cpp
              asset.cpp
              version.cpp
-             get_config.cpp
+             ${GET_CONFIG_CPP}
 
              ${HEADERS}
              ${hardfork_hpp_file}

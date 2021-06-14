@@ -14,102 +14,114 @@ namespace hive { namespace protocol {
     * or it will trigger a hardfork.
     */
   typedef fc::static_variant<
-        vote_operation,
-        comment_operation,
+        vote_operation, // 0
+        comment_operation, // 1
 
-        transfer_operation,
-        transfer_to_vesting_operation,
-        withdraw_vesting_operation,
+        transfer_operation, // 2
+        transfer_to_vesting_operation, // 3
+        withdraw_vesting_operation, // 4
 
-        limit_order_create_operation,
-        limit_order_cancel_operation,
+        limit_order_create_operation, // 5
+        limit_order_cancel_operation, // 6
 
-        feed_publish_operation,
-        convert_operation,
+        feed_publish_operation, // 7
+        convert_operation, // 8
 
-        account_create_operation,
-        account_update_operation,
+        account_create_operation, // 9
+        account_update_operation, // 10
 
-        witness_update_operation,
-        account_witness_vote_operation,
-        account_witness_proxy_operation,
+        witness_update_operation, // 11
+        account_witness_vote_operation, // 12
+        account_witness_proxy_operation, // 13
 
-        pow_operation,
+        pow_operation, // 14
 
-        custom_operation,
+        custom_operation, // 15
 
-        report_over_production_operation,
+        report_over_production_operation, // 16
 
-        delete_comment_operation,
-        custom_json_operation,
-        comment_options_operation,
-        set_withdraw_vesting_route_operation,
-        limit_order_create2_operation,
-        claim_account_operation,
-        create_claimed_account_operation,
-        request_account_recovery_operation,
-        recover_account_operation,
-        change_recovery_account_operation,
-        escrow_transfer_operation,
-        escrow_dispute_operation,
-        escrow_release_operation,
-        pow2_operation,
-        escrow_approve_operation,
-        transfer_to_savings_operation,
-        transfer_from_savings_operation,
-        cancel_transfer_from_savings_operation,
-        custom_binary_operation,
-        decline_voting_rights_operation,
-        reset_account_operation,
-        set_reset_account_operation,
-        claim_reward_balance_operation,
-        delegate_vesting_shares_operation,
-        account_create_with_delegation_operation,
-        witness_set_properties_operation,
-        account_update2_operation,
-        create_proposal_operation,
-        update_proposal_votes_operation,
-        remove_proposal_operation,
-        update_proposal_operation,
+        delete_comment_operation, // 17
+        custom_json_operation, // 18
+        comment_options_operation, // 19
+        set_withdraw_vesting_route_operation, // 20
+        limit_order_create2_operation, // 21
+        claim_account_operation, // 22
+        create_claimed_account_operation, // 23
+        request_account_recovery_operation, // 24
+        recover_account_operation, // 25
+        change_recovery_account_operation, // 26
+        escrow_transfer_operation, // 27
+        escrow_dispute_operation, // 28
+        escrow_release_operation, // 29
+        pow2_operation, // 30
+        escrow_approve_operation, // 31
+        transfer_to_savings_operation, // 32
+        transfer_from_savings_operation, // 33
+        cancel_transfer_from_savings_operation, // 34
+        custom_binary_operation, // 35
+        decline_voting_rights_operation, // 36
+        reset_account_operation, // 37
+        set_reset_account_operation, // 38
+        claim_reward_balance_operation, // 39
+        delegate_vesting_shares_operation, // 40
+        account_create_with_delegation_operation, // 41
+        witness_set_properties_operation, // 42
+        account_update2_operation, // 43
+        create_proposal_operation, // 44
+        update_proposal_votes_operation, // 45
+        remove_proposal_operation, // 46
+        update_proposal_operation, // 47
+        collateralized_convert_operation, // 48
+        recurrent_transfer_operation, // 49
 
 #ifdef HIVE_ENABLE_SMT
         /// SMT operations
-        claim_reward_balance2_operation,
+        claim_reward_balance2_operation, // last_pre_smt + 1
 
-        smt_setup_operation,
-        smt_setup_emissions_operation,
-        smt_set_setup_parameters_operation,
-        smt_set_runtime_parameters_operation,
-        smt_create_operation,
-        smt_contribute_operation,
+        smt_setup_operation, // last_pre_smt + 2
+        smt_setup_emissions_operation, // last_pre_smt + 3
+        smt_set_setup_parameters_operation, // last_pre_smt + 4
+        smt_set_runtime_parameters_operation, // last_pre_smt + 5
+        smt_create_operation, // last_pre_smt + 5
+        smt_contribute_operation, // last_pre_smt + 6
 #endif
 
         /// virtual operations below this point
-        fill_convert_request_operation,
-        author_reward_operation,
-        curation_reward_operation,
-        comment_reward_operation,
-        liquidity_reward_operation,
-        interest_operation,
-        fill_vesting_withdraw_operation,
-        fill_order_operation,
-        shutdown_witness_operation,
-        fill_transfer_from_savings_operation,
-        hardfork_operation,
-        comment_payout_update_operation,
-        return_vesting_delegation_operation,
-        comment_benefactor_reward_operation,
-        producer_reward_operation,
-        clear_null_account_balance_operation,
-        proposal_pay_operation,
-        sps_fund_operation,
-        hardfork_hive_operation,
-        hardfork_hive_restore_operation,
-        delayed_voting_operation,
-        consolidate_treasury_balance_operation,
-        effective_comment_vote_operation,
-        ineffective_delete_comment_operation,
-        sps_convert_operation
+        fill_convert_request_operation, // last_regular + 1
+        author_reward_operation, // last_regular + 2
+        curation_reward_operation, // last_regular + 3
+        comment_reward_operation, // last_regular + 4
+        liquidity_reward_operation, // last_regular + 5
+        interest_operation, // last_regular + 6
+        fill_vesting_withdraw_operation, // last_regular + 7
+        fill_order_operation, // last_regular + 8
+        shutdown_witness_operation, // last_regular + 9
+        fill_transfer_from_savings_operation, // last_regular + 10
+        hardfork_operation, // last_regular + 11
+        comment_payout_update_operation, // last_regular + 12
+        return_vesting_delegation_operation, // last_regular + 13
+        comment_benefactor_reward_operation, // last_regular + 14
+        producer_reward_operation, // last_regular + 15
+        clear_null_account_balance_operation, // last_regular + 16
+        proposal_pay_operation, // last_regular + 17
+        sps_fund_operation, // last_regular + 18
+        hardfork_hive_operation, // last_regular + 19
+        hardfork_hive_restore_operation, // last_regular + 20
+        delayed_voting_operation, // last_regular + 21
+        consolidate_treasury_balance_operation, // last_regular + 22
+        effective_comment_vote_operation, // last_regular + 23
+        ineffective_delete_comment_operation, // last_regular + 24
+        sps_convert_operation, // last_regular + 25
+        expired_account_notification_operation, // last_regular + 26
+        changed_recovery_account_operation, // last_regular + 27
+        transfer_to_vesting_completed_operation, // last_regular + 28
+        pow_reward_operation, // last_regular + 29
+        vesting_shares_split_operation, // last_regular + 30
+        account_created_operation, // last_regular + 31
+        fill_collateralized_convert_request_operation, // last_regular + 32
+        system_warning_operation, // last_regular + 33,
+        fill_recurrent_transfer_operation, // last_regular + 34
+        failed_recurrent_transfer_operation // last_regular + 35
       > operation;
 
   /*void operation_get_required_authorities( const operation& op,

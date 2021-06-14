@@ -17,6 +17,7 @@ struct appender_args
   std::string appender;
   std::string file;
   std::string stream;
+  std::string time_format;
 
   void validate();
 };
@@ -36,5 +37,5 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
 
 } } // hive::utilities
 
-FC_REFLECT( hive::utilities::appender_args, (appender)(file)(stream) )
+FC_REFLECT( hive::utilities::appender_args, (appender)(file)(stream)(time_format) )
 FC_REFLECT( hive::utilities::logger_args, (name)(level)(appender) )

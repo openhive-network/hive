@@ -98,7 +98,9 @@ class json_rpc_plugin : public appbase::plugin< json_rpc_plugin >
 
     virtual void plugin_initialize( const variables_map& options ) override;
     virtual void plugin_startup() override;
+    virtual void plugin_pre_shutdown() override;
     virtual void plugin_shutdown() override;
+    virtual void plugin_finalize_startup() override;
 
     void add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig );
     string call( const string& body );

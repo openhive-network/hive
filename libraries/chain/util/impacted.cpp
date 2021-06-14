@@ -38,6 +38,12 @@ struct get_impacted_account_visitor
     _impacted.insert( op.creator );
   }
 
+  void operator()( const account_created_operation& op )
+  {
+    _impacted.insert( op.creator );
+    _impacted.insert( op.new_account_name );
+  }
+
   void operator()( const comment_operation& op )
   {
     _impacted.insert( op.author );
@@ -110,7 +116,8 @@ struct get_impacted_account_visitor
   void operator()( const account_witness_proxy_operation& op )
   {
     _impacted.insert( op.account );
-    _impacted.insert( op.proxy );
+    if ( !op.is_clearing_proxy() )
+      _impacted.insert( op.proxy );
   }
 
   void operator()( const feed_publish_operation& op )
@@ -186,6 +193,11 @@ struct get_impacted_account_visitor
     _impacted.insert( op.new_account_name );
   }
 
+  void operator()( const recurrent_transfer_operation& op )
+  {
+      _impacted.insert( op.from );
+      _impacted.insert( op.to );
+  }
 
   // vops
 
@@ -214,10 +226,31 @@ struct get_impacted_account_visitor
     _impacted.insert( op.owner );
   }
 
+  void operator()( const fill_collateralized_convert_request_operation& op )
+  {
+    _impacted.insert( op.owner );
+  }
+
   void operator()( const fill_vesting_withdraw_operation& op )
   {
     _impacted.insert( op.from_account );
     _impacted.insert( op.to_account );
+  }
+
+  void operator()( const transfer_to_vesting_completed_operation& op )
+  {
+    _impacted.insert( op.from_account );
+    _impacted.insert( op.to_account );
+  }
+
+  void operator()( const pow_reward_operation& op )
+  {
+    _impacted.insert( op.worker );
+  }
+
+  void operator()( const vesting_shares_split_operation& op )
+  {
+    _impacted.insert( op.owner );
   }
 
   void operator()( const shutdown_witness_operation& op )
@@ -343,6 +376,37 @@ struct get_impacted_account_visitor
   {
     _impacted.insert( HIVE_NULL_ACCOUNT );
   }
+
+  void operator()( const expired_account_notification_operation& op )
+  {
+    _impacted.insert( op.account );
+  }
+
+  void operator()( const changed_recovery_account_operation& op )
+  {
+    _impacted.insert( op.account );
+    _impacted.insert( op.old_recovery_account );
+    _impacted.insert( op.new_recovery_account );
+  }
+
+  void operator()( const system_warning_operation& op )
+  {
+    _impacted.insert( HIVE_INIT_MINER_NAME );
+  }
+
+
+  void operator()( const fill_recurrent_transfer_operation& op )
+  {
+    _impacted.insert( op.from );
+    _impacted.insert( op.to );
+  }
+
+  void operator()( const failed_recurrent_transfer_operation& op )
+  {
+    _impacted.insert( op.from );
+    _impacted.insert( op.to );
+  }
+
   //void operator()( const operation& op ){}
 };
 

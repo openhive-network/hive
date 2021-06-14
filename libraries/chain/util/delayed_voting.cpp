@@ -3,8 +3,6 @@
 
 namespace hive { namespace chain {
 
-using hive::protocol::asset;
-
 void delayed_voting::add_delayed_value( const account_object& account, const time_point_sec& head_time, const ushare_type val )
 {
   db.modify( account, [&]( account_object& a )
@@ -24,7 +22,7 @@ void delayed_voting::erase_delayed_value( const account_object& account, const u
   } );
 }
 
-void delayed_voting::add_votes( opt_votes_update_data_items& items, const bool withdraw_executor, const share_type val, const account_object& account )
+void delayed_voting::add_votes( opt_votes_update_data_items& items, const bool withdraw_executor, const share_type& val, const account_object& account )
 {
   if( !items.valid() || val == 0 )
     return;

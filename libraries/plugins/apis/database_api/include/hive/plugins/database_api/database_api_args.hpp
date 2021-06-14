@@ -55,7 +55,7 @@ enum sort_order_type
   by_voter_proposal,
   by_proposal_voter,
   by_contributor,
-  by_symbol_id
+  by_symbol_id,
 };
 
 enum order_direction_type
@@ -359,6 +359,24 @@ struct find_hbd_conversion_requests_args
 typedef list_hbd_conversion_requests_return find_hbd_conversion_requests_return;
 
 
+/* Collateralized Converstions */
+
+typedef list_object_args_type list_collateralized_conversion_requests_args;
+
+struct list_collateralized_conversion_requests_return
+{
+  vector< api_collateralized_convert_request_object > requests;
+};
+
+
+struct find_collateralized_conversion_requests_args
+{
+  account_name_type account;
+};
+
+typedef list_collateralized_conversion_requests_return find_collateralized_conversion_requests_return;
+
+
 /* Decline Voting Rights Requests */
 
 typedef list_object_args_type list_decline_voting_rights_requests_args;
@@ -505,6 +523,20 @@ struct list_proposal_votes_return
   vector< api_proposal_vote_object > proposal_votes;
 };
 
+/* Recurrent transfers */
+
+struct find_recurrent_transfers_args
+{
+  account_name_type from;
+};
+
+struct find_recurrent_transfers_return
+{
+  vector< api_recurrent_transfer_object > recurrent_transfers;
+};
+
+
+/* Transactions */
 
 struct get_transaction_hex_args
 {
@@ -647,6 +679,16 @@ typedef list_smt_token_emissions_return find_smt_token_emissions_return;
 
 #endif
 
+struct is_known_transaction_args
+{
+  transaction_id_type id;
+};
+
+struct is_known_transaction_return
+{
+  bool is_known = false;
+};
+
 } } } // hive::database_api
 
 FC_REFLECT( hive::plugins::database_api::get_version_return,
@@ -782,6 +824,12 @@ FC_REFLECT( hive::plugins::database_api::list_hbd_conversion_requests_return,
 FC_REFLECT( hive::plugins::database_api::find_hbd_conversion_requests_args,
   (account) )
 
+FC_REFLECT( hive::plugins::database_api::list_collateralized_conversion_requests_return,
+  (requests) )
+
+FC_REFLECT( hive::plugins::database_api::find_collateralized_conversion_requests_args,
+  (account) )
+
 FC_REFLECT( hive::plugins::database_api::list_decline_voting_rights_requests_return,
   (requests) )
 
@@ -834,6 +882,12 @@ FC_REFLECT( hive::plugins::database_api::find_proposals_args,
 
 FC_REFLECT( hive::plugins::database_api::list_proposal_votes_return,
   (proposal_votes) )
+
+FC_REFLECT( hive::plugins::database_api::find_recurrent_transfers_return,
+            (recurrent_transfers) )
+
+FC_REFLECT( hive::plugins::database_api::find_recurrent_transfers_args,
+            (from) )
 
 FC_REFLECT( hive::plugins::database_api::get_transaction_hex_args,
   (trx) )
@@ -896,3 +950,9 @@ FC_REFLECT( hive::plugins::database_api::find_smt_token_emissions_args,
   (asset_symbol) )
 
 #endif
+
+FC_REFLECT( hive::plugins::database_api::is_known_transaction_args,
+   (id) )
+
+FC_REFLECT( hive::plugins::database_api::is_known_transaction_return,
+   (is_known) )

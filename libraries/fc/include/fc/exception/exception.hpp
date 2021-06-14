@@ -308,7 +308,9 @@ namespace fc
      const char* expr
      );
 
-  extern bool enable_record_assert_trip;
+  extern bool enable_record_assert_trip; //enables logging assertions to output and allows other flags below to take effect
+  extern bool enable_assert_stacktrace; //turns on stacktrace on assertions - useful for replay when assertions should not happen
+  extern string last_assert_expression; //filled with assertion test expression when enable_record_assert_trip
 } // namespace fc
 
 #if __APPLE__
@@ -475,7 +477,7 @@ namespace fc
       FC_RETHROW_EXCEPTION( er, LOG_LEVEL, FORMAT, __VA_ARGS__ ); \
    } catch( const std::exception& e ) {  \
       fc::exception fce( \
-                FC_LOG_MESSAGE( LOG_LEVEL, "${what}: " FORMAT,__VA_ARGS__("what",e.what())), \
+                BOOST_PP_EXPAND(FC_LOG_MESSAGE( LOG_LEVEL, "${what}: " FORMAT,__VA_ARGS__("what",e.what()))), \
                 fc::std_exception_code,\
                 typeid(e).name(), \
                 e.what() ) ; throw fce;\

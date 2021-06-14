@@ -49,7 +49,30 @@ namespace fc {
 
   time_point::operator fc::string()const
   {
-      return fc::string( time_point_sec( *this ) );
+    return fc::string( time_point_sec( *this ) );
+  }
+
+  fc::string time_point::to_iso_string_in_seconds() const
+  {
+    return fc::string( time_point_sec( *this ) );
+  }
+
+  fc::string time_point::to_iso_string_in_milliseconds() const
+  {
+    std::ostringstream os;
+    os << (std::string)(*this);
+    uint64_t milliseconds = (time_since_epoch().count() % 1000000) / 1000;
+    os << "." << std::setw(3) << std::setfill('0') << milliseconds;
+    return os.str();
+  }
+
+  fc::string time_point::to_iso_string_in_microseconds() const
+  {
+    std::ostringstream os;
+    os << (std::string)(*this);
+    uint64_t microseconds = time_since_epoch().count() % 1000000;
+    os << "." << std::setw(6) << std::setfill('0') << microseconds;
+    return os.str();
   }
 
   time_point time_point::from_iso_string( const fc::string& s )

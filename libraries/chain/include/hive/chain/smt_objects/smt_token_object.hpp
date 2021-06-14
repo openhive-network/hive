@@ -2,7 +2,6 @@
 
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/util/tiny_asset.hpp>
 #include <hive/protocol/smt_operations.hpp>
 
 #ifdef HIVE_ENABLE_SMT
@@ -195,7 +194,7 @@ typedef multi_index_container <
         const_mem_fun< smt_contribution_object, smt_contribution_object::id_type, &smt_contribution_object::get_id >
       >
     >
-#ifndef IS_LOW_MEM
+// #ifndef IS_LOW_MEM // indexing by contributor might cause optimization problems in the future
     ,
     ordered_unique< tag< by_contributor >,
       composite_key< smt_contribution_object,
@@ -204,7 +203,7 @@ typedef multi_index_container <
         member< smt_contribution_object, uint32_t, &smt_contribution_object::contribution_id >
       >
     >
-#endif
+// #endif
   >,
   allocator< smt_contribution_object >
 > smt_contribution_index;

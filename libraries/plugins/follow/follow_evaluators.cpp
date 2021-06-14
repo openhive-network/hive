@@ -170,9 +170,7 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
     const auto& idx = _db.get_index< follow_index >().indices().get< by_following_follower >();
     auto itr = idx.find( o.account );
 
-#ifndef ENABLE_MIRA
     const auto& old_feed_idx = _db.get_index< feed_index >().indices().get< by_feed >();
-#endif
 
     performance_data pd;
 
@@ -187,9 +185,7 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
 
           pd.init( o.account, _db.head_block_time(), c.get_id(), is_empty, is_empty ? 0 : feed_itr->account_feed_id );
           uint32_t next_id = 0;
-#ifndef ENABLE_MIRA
           perf.delete_old_objects< performance_data::t_creation_type::full_feed >( old_feed_idx, itr->follower, _plugin->max_feed_size, pd );
-#endif
 
           if( pd.s.creation )
           {

@@ -15,8 +15,8 @@ testnet_node_build:
   stage: build
   image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
   script:
-    # LOW_MEMORY=OFF CLEAR_VOTES=OFF TESTNET=ON ENABLE_MIRA=OFF
-    - ./ciscripts/build.sh OFF OFF ON OFF
+    # TESTNET=ON HIVE_LINT=ON
+    - ./ciscripts/build.sh ON ON
     - mkdir -p "$CI_JOB_NAME"/tests/unit
     - mv build/install-root "$CI_JOB_NAME"
     - mv contrib/hived.run "$CI_JOB_NAME"
@@ -35,8 +35,8 @@ consensus_build:
   stage: build
   image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
   script:
-    # LOW_MEMORY=ON CLEAR_VOTES=ON TESTNET=OFF ENABLE_MIRA=OFF
-    - ./ciscripts/build.sh ON ON OFF OFF
+    # TESTNET=OFF HIVE_LINT=ON
+    - ./ciscripts/build.sh OFF ON
     - mkdir "$CI_JOB_NAME"
     - mv build/install-root "$CI_JOB_NAME"
     - mv contrib/hived.run "$CI_JOB_NAME"
@@ -86,6 +86,15 @@ plugin_test:
   tags:
     - public-runner-docker
 
+.beem_setup : &beem_setup |
+  git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
+  cd beem
+  python3 -m pip install --upgrade pip
+  python3 -m pip install --upgrade -r requirements-test.txt
+  python3 setup.py install
+  cd ..
+  mkdir -p build/tests/hive-node-data
+
 beem_tests:
   stage: test
   needs:
@@ -95,13 +104,7 @@ beem_tests:
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
-    # boilerplate for installing latested beem
-    - git clone --depth=1 --single-branch --branch dk-hybrid-operations https://gitlab.syncad.com/hive/beem.git
-    - cd beem
-    - python3 setup.py install
-    - cd ..
-    # stuff specific to this test
-    - mkdir -p build/tests/hive-node-data
+    - *beem_setup
     - cd tests/functional/python_tests/dhf_tests
     - "python3 run_proposal_tests.py initminer hive.fund 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data"
     - rm -rf $CI_PROJECT_DIR/build/tests/hive-node-data
@@ -130,13 +133,7 @@ list_proposals_tests:
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
-    # boilerplate for installing latested beem
-    - git clone --depth=1 --single-branch --branch dk-hybrid-operations https://gitlab.syncad.com/hive/beem.git
-    - cd beem
-    - python3 setup.py install
-    - cd ..
-    # stuff specific to this test
-    - mkdir -p build/tests/hive-node-data
+    - *beem_setup
     - cd tests/functional/python_tests/dhf_tests
     - "python3 list_proposals_tests.py initminer initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --junit-output=list_proposals_tests.xml"
   artifacts:
@@ -144,6 +141,28 @@ list_proposals_tests:
     - tests/functional/python_tests/dhf_tests/hdf_list_proposal.log
     reports:
       junit: tests/functional/python_tests/dhf_tests/list_proposals_tests.xml
+    when: always
+    expire_in: 6 months
+  tags:
+    - public-runner-docker
+
+cli_wallet_tests:
+  stage: test
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    PYTHONPATH: $CI_PROJECT_DIR/tests/functional
+  script:
+    - *beem_setup
+    - cd tests/functional/python_tests/cli_wallet
+    - "python3 run.py --hive-path $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --hive-working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --path-to-cli $CI_PROJECT_DIR/testnet_node_build/install-root/bin --creator initminer --wif 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --junit-output=cli_wallet_tests.xml"
+  artifacts:
+    paths:
+    - tests/functional/python_tests/cli_wallet/tests/logs/cli_wallet.log
+    reports:
+      junit: tests/functional/python_tests/cli_wallet/cli_wallet_tests.xml
     when: always
     expire_in: 6 months
   tags:
@@ -159,9 +178,96 @@ hived_options_tests:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
     - cd tests/functional/python_tests/hived
+    - apt-get update -y && apt-get install -y python3 python3-pip python3-dev
+    - pip3 install -U psutil
     - "python3 hived_options_tests.py --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
   tags:
     - public-runner-docker
+
+.test_tools_based:
+  variables:
+    PYTHONPATH: "$CI_PROJECT_DIR/tests/test_tools/package"
+    HIVED_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
+    CLI_WALLET_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
+    GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
+  before_script:
+    - apt-get update -y && apt-get install -y python3 python3-pip python3-dev
+    - pip3 install requests
+
+create_account_tests:
+  stage: test
+  extends: .test_tools_based
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  script:
+    - pip3 install pytest
+    - cd tests/functional/python_tests/create_account_tests
+    - pytest
+  tags:
+    - public-runner-docker
+
+last_irreversible_block_tests:
+  stage: test
+  extends: .test_tools_based
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  script:
+    - pip3 install pytest pytest-timeout
+    - cd tests/functional/python_tests/last_irreversible_block_tests
+    - pytest
+  tags:
+    - public-runner-docker
+
+test_tools_tests:
+  stage: test
+  extends: .test_tools_based
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  script:
+    - pip3 install pytest
+    - cd tests/test_tools/tests
+    - pytest
+  tags:
+    - public-runner-docker
+
+hived_replay_tests:
+  stage: test
+  needs:
+    - job: consensus_build
+      artifacts: true
+  image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
+  variables:
+    PYTHONPATH: $CI_PROJECT_DIR/tests/functional
+  script:
+
+    - export ROOT_DIRECTORY=$PWD
+    - mkdir $ROOT_DIRECTORY/replay_logs
+    - cd tests/functional/python_tests/hived
+    - apt-get update -y && apt-get install -y python3 python3-pip python3-dev
+    - pip3 install -U wget psutil junit_xml gcovr secp256k1prp requests
+    - $CI_PROJECT_DIR/consensus_build/install-root/bin/truncate_block_log /blockchain/block_log /tmp/block_log 3000000
+
+    # quick replays for 10k blocks, with node restarts
+    - "python3 snapshot_1.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --block-log /tmp/block_log --blocks 10000 --artifact-directory $ROOT_DIRECTORY/replay_logs"
+    - "python3 snapshot_2.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --block-log /tmp/block_log --blocks 10000 --artifact-directory $ROOT_DIRECTORY/replay_logs"
+
+    # group of tests, that uses one node with 5 milion blocks replayed
+    - "python3 start_replay_tests.py --run-hived $CI_PROJECT_DIR/consensus_build/install-root/bin/hived --blocks 3000000 --block-log /tmp/block_log --test-directory $PWD/replay_based_tests --artifact-directory $ROOT_DIRECTORY/replay_logs"
+
+  artifacts:
+    paths:
+    - replay_logs
+    when: always
+    expire_in: 6 months
+  tags:
+    - public-runner-docker
+    - hived-for-tests
 
 package_consensus_node:
   stage: package
@@ -182,3 +288,4 @@ package_consensus_node:
     - "echo ===> the consensus node image for this build is: $CI_REGISTRY_IMAGE/consensus_node:$CI_COMMIT_SHORT_SHA"
   tags:
     - public-runner-docker
+

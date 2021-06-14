@@ -31,7 +31,7 @@ class HiveNode(object):
   hived_data_dir = None
   hived_args = list()
 
-  def __init__(self, binary_path : str, working_dir : str, binary_args : list):
+  def __init__(self, binary_path : str, working_dir : str, binary_args : list, stdout_stream = subprocess.PIPE, stderr_stream = None):
     logger.info("New hive node")
     if not os.path.exists(binary_path):
       raise ValueError("Path to hived binary is not valid.")
@@ -48,10 +48,13 @@ class HiveNode(object):
     if binary_args:
       self.hived_args.extend(binary_args)
 
+    self.stdout_stream = stdout_stream
+    self.stderr_stream = stderr_stream
+
   def __enter__(self):
     self.hived_lock.acquire()
 
-    from subprocess import Popen, PIPE
+    from subprocess import Popen, PIPE, DEVNULL
     from time import sleep
 
     hived_command = [
@@ -60,12 +63,14 @@ class HiveNode(object):
     ]
     hived_command.extend(self.hived_args)
 
-    self.hived_process = Popen(hived_command, stdout=PIPE, stderr=None)
+    self.hived_process = Popen(hived_command, stdout=self.stdout_stream, stderr=self.stderr_stream)
     self.hived_process.poll()
     sleep(5)
 
     if self.hived_process.returncode:
       raise Exception("Error during starting node")
+    
+    self.last_returncode = None
 
   def get_output(self):
     out, err = self.hived_process.communicate()
@@ -75,21 +80,35 @@ class HiveNode(object):
     logger.info("Closing node")
     from signal import SIGINT, SIGTERM
     from time import sleep
+    from psutil import pid_exists
 
     if self.hived_process is not None:
       self.hived_process.poll()
-      if self.hived_process.returncode != 0:
+      if pid_exists(self.hived_process.pid):
         self.hived_process.send_signal(SIGINT)
         sleep(7)
         self.hived_process.poll()
-        if self.hived_process.returncode != 0:
+        if pid_exists(self.hived_process.pid):
           self.hived_process.send_signal(SIGTERM)
           sleep(7)
           self.hived_process.poll()
-          if self.hived_process.returncode != 0:
+          if pid_exists(self.hived_process.pid):
             raise Exception("Error during stopping node. Manual intervention required.")
+    self.last_returncode = self.hived_process.returncode
     self.hived_process = None
     self.hived_lock.release()
+
+  # waits for node, to close. Recomended to use with `--exit-after-replay` flag
+  def wait_till_end(self):
+    assert self.hived_process is not None
+    # assert "--exit-after-replay" in self.hived_args
+
+    from time import sleep
+    from psutil import pid_exists, Process, STATUS_ZOMBIE
+
+    pid = self.hived_process.pid
+    while pid_exists(pid) and Process(pid).status() != STATUS_ZOMBIE:
+      sleep(0.25)
 
 class HiveNodeInScreen(object):
   def __init__(self, hive_executable, working_dir, config_src_path, run_using_existing_data = False, node_is_steem = False):
@@ -155,9 +174,7 @@ class HiveNodeInScreen(object):
       self.hive_executable,
       "-d",
       self.working_dir,
-      "--advanced-benchmark",
-      "--sps-remove-threshold",
-      "-1"
+      "--advanced-benchmark"
     ]
 
     parameters = parameters + additional_params

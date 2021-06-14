@@ -6,12 +6,13 @@ add_library( account_history_rocksdb_plugin
            )
 
 target_link_libraries( account_history_rocksdb_plugin
-   rocksdb chain_plugin hive_chain hive_protocol json_rpc_plugin rocksdb
+   rocksdb chain_plugin hive_chain hive_protocol json_rpc_plugin rocksdb condenser_api_plugin
    )
 
 target_include_directories( account_history_rocksdb_plugin
    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
           "${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/rocksdb/include"
+
    )
 
 install( TARGETS

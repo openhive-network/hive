@@ -39,6 +39,8 @@ RUN \
         libbz2-dev \
         liblz4-dev \
         libzstd-dev \
+        clang \
+        clang-tidy \
     && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \

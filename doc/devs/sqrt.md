@@ -1,8 +1,15 @@
-
 # Introduction
 
 In this document we derive the approximate integer square root function used by Hive for the curation curve
-[here](https://github.com/steemit/hive/issues/1052).
+[here](https://github.com/steemit/steem/issues/1052).
+
+Quoting `mvandeberg` here because original issue content might become unavailable:
+
+> The curation rewards curve should be changed to a square root function.
+> 
+> We need to decide how to handle curation rewards of posts prior to the hardfork. Because the actual hardfork time is flexible, I propose having two weight fields in the comment_vote_object and every vote on a comment for the week prior to the hardfork tracks both weights. Then, when the hardfork occurs, we can determine when the first comment paid out on the new curve was created and make a clean break at that particular time to optimize the implementation later.
+> 
+> This issue is a WIP while we are discussing the HF19 proposal [here](https://hive.blog/@steemitblog/proposing-steem-equality-0-19-0-as-the-next-fork).
 
 # MSB function
 

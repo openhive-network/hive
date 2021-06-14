@@ -657,10 +657,10 @@ namespace graphene { namespace net {
 
       void close();
 
-      void accept_connection_task(peer_connection_ptr new_peer);
+      void accept_connection_task(const peer_connection_ptr& new_peer);
       void accept_loop();
       void send_hello_message(const peer_connection_ptr& peer);
-      void connect_to_task(peer_connection_ptr new_peer, const fc::ip::endpoint& remote_endpoint);
+      void connect_to_task(const peer_connection_ptr& new_peer, const fc::ip::endpoint& remote_endpoint);
       bool is_connection_to_endpoint_in_progress(const fc::ip::endpoint& remote_endpoint);
 
       void move_peer_to_active_list(const peer_connection_ptr& peer);
@@ -1356,7 +1356,7 @@ namespace graphene { namespace net {
 
         uint32_t handshaking_timeout = _node_configuration.peer_inactivity_timeout;
         fc::time_point handshaking_disconnect_threshold = fc::time_point::now() - fc::seconds(handshaking_timeout);
-        for( const peer_connection_ptr handshaking_peer : _handshaking_connections )
+        for( const peer_connection_ptr& handshaking_peer : _handshaking_connections )
           if( handshaking_peer->connection_initiation_time < handshaking_disconnect_threshold &&
               handshaking_peer->get_last_message_received_time() < handshaking_disconnect_threshold &&
               handshaking_peer->get_last_message_sent_time() < handshaking_disconnect_threshold )
@@ -1687,7 +1687,7 @@ namespace graphene { namespace net {
     bool node_impl::is_accepting_new_connections()
     {
       VERIFY_CORRECT_THREAD();
-      return !_node_is_shutting_down && !_p2p_network_connect_loop_done.canceled() &&
+      return !_node_is_shutting_down && (!_p2p_network_connect_loop_done.valid() || !_p2p_network_connect_loop_done.canceled()) &&
          get_number_of_connections() <= _node_configuration.maximum_number_of_connections;
     }
 
@@ -1723,13 +1723,13 @@ namespace graphene { namespace net {
         dlog("is_already_connected_to_id returning true because the peer is us");
         return true;
       }
-      for (const peer_connection_ptr active_peer : _active_connections)
+      for (const peer_connection_ptr& active_peer : _active_connections)
         if (node_id == active_peer->node_id)
         {
           dlog("is_already_connected_to_id returning true because the peer is already in our active list");
           return true;
         }
-      for (const peer_connection_ptr handshaking_peer : _handshaking_connections)
+      for (const peer_connection_ptr& handshaking_peer : _handshaking_connections)
         if (node_id == handshaking_peer->node_id)
         {
           dlog("is_already_connected_to_id returning true because the peer is already in our handshaking list");
@@ -1893,7 +1893,7 @@ namespace graphene { namespace net {
       if (!_hard_fork_block_numbers.empty())
         user_data["last_known_fork_block_number"] = _hard_fork_block_numbers.back();
 
-      user_data["chain_id"] = _delegate->get_chain_id();
+      user_data["chain_id"] = _delegate->get_new_chain_id();
 
       return user_data;
     }
@@ -2048,7 +2048,7 @@ namespace graphene { namespace net {
                                                               "I'm already connected to you");
           originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
           originating_peer->send_message(message(connection_rejected));
-          dlog("Received a hello_message from peer ${peer} that I'm already connected to (with id ${id}), rejection",
+          wlog("Received a hello_message from peer ${peer} that I'm already connected to (with id ${id}), rejection",
                ("peer", originating_peer->get_remote_endpoint())
                ("id", originating_peer->node_id));
         }
@@ -2062,7 +2062,7 @@ namespace graphene { namespace net {
                                                           "you are not in my allowed_peers list");
           originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
           originating_peer->send_message( message(connection_rejected ) );
-          dlog( "Received a hello_message from peer ${peer} who isn't in my allowed_peers list, rejection", ("peer", originating_peer->get_remote_endpoint() ) );
+          wlog( "Received a hello_message from peer ${peer} who isn't in my allowed_peers list, rejection", ("peer", originating_peer->get_remote_endpoint() ) );
         }
 #endif // ENABLE_P2P_DEBUGGING_API
         else
@@ -2107,7 +2107,7 @@ namespace graphene { namespace net {
                                                             "not accepting any more incoming connections");
             originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
             originating_peer->send_message(message(connection_rejected));
-            dlog("Received a hello_message from peer ${peer}, but I'm not accepting any more connections, rejection",
+            wlog("Received a hello_message from peer ${peer}, but I'm not accepting any more connections, rejection",
                  ("peer", originating_peer->get_remote_endpoint()));
           }
           else
@@ -2300,7 +2300,9 @@ namespace graphene { namespace net {
       }
       catch (const peer_is_on_an_unreachable_fork&)
       {
-        dlog("Peer is on a fork and there's no set of blocks we can provide to switch them to our fork");
+        //This was true when a full block synopsis was sent by the peer, now it's not
+        //dlog("Peer is on a fork and there's no set of blocks we can provide to switch them to our fork");
+        dlog("We don't have any blocks that fit within the reversible synopsis sent by peer: either it is too far ahead of us (likely case) or it is on a fork that can't be recovered from");
         // we reply with an empty list as if we had an empty blockchain;
         // we don't want to disconnect because they may be able to provide
         // us with blocks on their chain
@@ -2879,6 +2881,7 @@ namespace graphene { namespace net {
       auto sync_item_iter = originating_peer->sync_items_requested_from_peer.find(requested_item.item_hash);
       if (sync_item_iter != originating_peer->sync_items_requested_from_peer.end())
       {
+        _active_sync_requests.erase(*sync_item_iter);
         originating_peer->sync_items_requested_from_peer.erase(sync_item_iter);
 
         if (originating_peer->peer_needs_sync_items_from_us)
@@ -2917,7 +2920,7 @@ namespace graphene { namespace net {
 
         bool we_advertised_this_item_to_a_peer = false;
         bool we_requested_this_item_from_a_peer = false;
-        for (const peer_connection_ptr peer : _active_connections)
+        for (const peer_connection_ptr& peer : _active_connections)
         {
           if (peer->inventory_advertised_to_peer.find(advertised_item_id) != peer->inventory_advertised_to_peer.end())
           {
@@ -3886,15 +3889,15 @@ namespace graphene { namespace net {
 
         size_t minutes_to_average = std::min(_average_network_write_speed_minutes.size(), (size_t)15);
         boost::circular_buffer<uint32_t>::iterator start_iter = _average_network_write_speed_minutes.end() - minutes_to_average;
-        reply.upload_rate_fifteen_minutes = std::accumulate(start_iter, _average_network_write_speed_minutes.end(), 0) / (uint32_t)minutes_to_average;
+        reply.upload_rate_fifteen_minutes = std::accumulate(start_iter, _average_network_write_speed_minutes.end(), 0u) / (uint32_t)minutes_to_average;
         start_iter = _average_network_read_speed_minutes.end() - minutes_to_average;
-        reply.download_rate_fifteen_minutes = std::accumulate(start_iter, _average_network_read_speed_minutes.end(), 0) / (uint32_t)minutes_to_average;
+        reply.download_rate_fifteen_minutes = std::accumulate(start_iter, _average_network_read_speed_minutes.end(), 0u) / (uint32_t)minutes_to_average;
 
         minutes_to_average = std::min(_average_network_write_speed_minutes.size(), (size_t)60);
         start_iter = _average_network_write_speed_minutes.end() - minutes_to_average;
-        reply.upload_rate_one_hour = std::accumulate(start_iter, _average_network_write_speed_minutes.end(), 0) / (uint32_t)minutes_to_average;
+        reply.upload_rate_one_hour = std::accumulate(start_iter, _average_network_write_speed_minutes.end(), 0u) / (uint32_t)minutes_to_average;
         start_iter = _average_network_read_speed_minutes.end() - minutes_to_average;
-        reply.download_rate_one_hour = std::accumulate(start_iter, _average_network_read_speed_minutes.end(), 0) / (uint32_t)minutes_to_average;
+        reply.download_rate_one_hour = std::accumulate(start_iter, _average_network_read_speed_minutes.end(), 0u) / (uint32_t)minutes_to_average;
       }
 
       fc::time_point now = fc::time_point::now();
@@ -4341,7 +4344,7 @@ namespace graphene { namespace net {
       }
     } // node_impl::close()
 
-    void node_impl::accept_connection_task( peer_connection_ptr new_peer )
+    void node_impl::accept_connection_task( const peer_connection_ptr& new_peer )
     {
       new_peer->accept_connection(); // this blocks until the secure connection is fully negotiated
       send_hello_message(new_peer);
@@ -4419,7 +4422,7 @@ namespace graphene { namespace net {
       peer->send_message(message(hello));
     }
 
-    void node_impl::connect_to_task(peer_connection_ptr new_peer,
+    void node_impl::connect_to_task(const peer_connection_ptr& new_peer,
                                     const fc::ip::endpoint& remote_endpoint)
     {
       VERIFY_CORRECT_THREAD();
@@ -4671,6 +4674,7 @@ namespace graphene { namespace net {
               }
               std::string error_message = error_message_stream.str();
               ulog(error_message);
+              wlog(error_message);
               _delegate->error_encountered( error_message, fc::oexception() );
               fc::usleep( fc::seconds(GRAPHENE_NET_PORT_WAIT_DELAY_SECONDS) );
             }

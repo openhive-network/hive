@@ -341,7 +341,8 @@ namespace detail {
     switch(result)
     {
       case block_production_condition::produced:
-        ilog("Generated block #${n} with timestamp ${t} at time ${c}", (capture));
+        ilog("Generated block #${n} with timestamp ${t} at time ${c}", ("n", capture["n"])("t", capture["t"])("c", capture["c"]));
+        
         break;
       case block_production_condition::not_synced:
   //         ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
@@ -353,10 +354,10 @@ namespace detail {
   //         ilog("Not producing block because slot has not yet arrived");
         break;
       case block_production_condition::no_private_key:
-        ilog("Not producing block because I don't have the private key for ${scheduled_key}", (capture) );
+        ilog("Not producing block because I don't have the private key for ${scheduled_key}", ("scheduled_key", capture["scheduled_key"]) );
         break;
       case block_production_condition::low_participation:
-        elog("Not producing block because node appears to be on a minority fork with only ${pct}% witness participation", (capture) );
+        elog("Not producing block because node appears to be on a minority fork with only ${pct}% witness participation", ("pct", capture["pct"]) );
         break;
       case block_production_condition::lag:
         elog("Not producing block because node didn't wake up within ${t}ms of the slot time.", ("t", BLOCK_PRODUCING_LAG_TIME));

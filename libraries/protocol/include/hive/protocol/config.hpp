@@ -3,13 +3,21 @@
  */
 #pragma once
 #include <hive/protocol/hardfork.hpp>
+#include <hive/protocol/testnet_blockchain_configuration.hpp>
 
 // WARNING!
 // Every symbol defined here needs to be handled appropriately in get_config.cpp
 // This is checked by get_config_check.sh called from Dockerfile
 
 #ifdef IS_TEST_NET
-#define HIVE_BLOCKCHAIN_VERSION               ( version(1, 25, 0) )
+
+using namespace hive::protocol::testnet_blockchain_configuration;
+
+#ifdef HIVE_ENABLE_SMT
+  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 26, 0) )
+#else
+  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 25, 0) )
+#endif
 
 #define HIVE_INIT_PRIVATE_KEY                 (fc::ecc::private_key::regenerate(fc::sha256::hash(std::string("init_key"))))
 #define HIVE_INIT_PUBLIC_KEY_STR              (std::string( hive::protocol::public_key_type(HIVE_INIT_PRIVATE_KEY.get_public_key()) ))
@@ -19,7 +27,7 @@
 
 #define HIVE_GENESIS_TIME                     (fc::time_point_sec(1451606400))
 #define HIVE_MINING_TIME                      (fc::time_point_sec(1451606400))
-#define HIVE_CASHOUT_WINDOW_SECONDS           (60*60) /// 1 hr
+#define HIVE_CASHOUT_WINDOW_SECONDS           configuration_data.get_hive_cashout_window_seconds()
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12  (HIVE_CASHOUT_WINDOW_SECONDS)
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17  (HIVE_CASHOUT_WINDOW_SECONDS)
 #define HIVE_SECOND_CASHOUT_WINDOW            (60*60*24*3) /// 3 days
@@ -45,11 +53,24 @@
 
 #define HIVE_PROPOSAL_MAINTENANCE_PERIOD          3600
 #define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*60*24*1) // 1 day
-#define HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD           (60*60) /// 1 hour
+#define HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD    (60*60) /// 1 hour
+#define HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD    (fc::days(5))
+
+#define HIVE_GLOBAL_REMOVE_THRESHOLD          20
+
+#define HIVE_START_MINER_VOTING_BLOCK         30
+
+#define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS (60*60*24*1) /// 1 day
+#define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       ((HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS)/30)  /// We want to have at most 30 entries in the account's delayed voting collection (similary to mainnet)
+
 
 #else // IS LIVE HIVE NETWORK
 
-#define HIVE_BLOCKCHAIN_VERSION               ( version(1, 24, 8) )
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///                               LIVE HIVE NETWORK (MainNet)                                   ///
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define HIVE_BLOCKCHAIN_VERSION               ( version(1, 25, 0) )
 
 #define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
 #define STEEM_CHAIN_ID                        fc::sha256()
@@ -80,7 +101,16 @@
 
 #define HIVE_PROPOSAL_MAINTENANCE_PERIOD           3600
 #define HIVE_PROPOSAL_MAINTENANCE_CLEANUP          (60*60*24*1) /// 1 day
-#define HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD           HIVE_ONE_DAY_SECONDS
+#define HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD     HIVE_ONE_DAY_SECONDS
+#define HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD     (fc::days(365))
+
+#define HIVE_GLOBAL_REMOVE_THRESHOLD          200
+
+#define HIVE_START_MINER_VOTING_BLOCK         (HIVE_BLOCKS_PER_DAY * 30)
+
+#define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS (60*60*24*30) // 30 days
+#define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       (60*60*24*1)  // 1 day
+
 
 #endif
 
@@ -98,7 +128,6 @@
 #define HIVE_BLOCKS_PER_YEAR                  (365*24*60*60/HIVE_BLOCK_INTERVAL)
 #define HIVE_BLOCKS_PER_DAY                   (24*60*60/HIVE_BLOCK_INTERVAL)
 #define HIVE_START_VESTING_BLOCK              (HIVE_BLOCKS_PER_DAY * 7)
-#define HIVE_START_MINER_VOTING_BLOCK         (HIVE_BLOCKS_PER_DAY * 30)
 
 #define HIVE_INIT_MINER_NAME                  "initminer"
 #define HIVE_NUM_INIT_MINERS                  1
@@ -123,6 +152,11 @@
 #define HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS (60*60*24*7) /// 1 week per interval
 #define HIVE_MAX_WITHDRAW_ROUTES              10
 #define HIVE_MAX_PENDING_TRANSFERS            255
+#define HIVE_MAX_OPEN_RECURRENT_TRANSFERS     255
+#define HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES     10
+#define HIVE_MAX_RECURRENT_TRANSFER_END_DATE   730 /// 2 years in days
+#define HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK 1000
+#define HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE 24
 #define HIVE_SAVINGS_WITHDRAW_TIME            (fc::days(3))
 #define HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT   100
 #define HIVE_VOTING_MANA_REGENERATION_SECONDS (5*60*60*24) // 5 day
@@ -130,12 +164,11 @@
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6 (60*30) /// 30 minutes
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20 (60*15) /// 15 minutes
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21 (60*5) /// 5 minutes
+#define HIVE_EARLY_VOTING_SECONDS_HF25 (24*60*60) /// 24 hours
+#define HIVE_MID_VOTING_SECONDS_HF25 (48*60*60) /// 48 hours
 #define HIVE_MIN_VOTE_INTERVAL_SEC            3
 #define HIVE_VOTE_DUST_THRESHOLD              (50000000)
 #define HIVE_DOWNVOTE_POOL_PERCENT_HF21       (25*HIVE_1_PERCENT)
-
-#define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS (60*60*24*30) // 30 days
-#define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       (60*60*24*1)  // 1 day
 
 #define HIVE_MIN_ROOT_COMMENT_INTERVAL        (fc::seconds(60*5)) // 5 minutes
 #define HIVE_MIN_REPLY_INTERVAL               (fc::seconds(20)) // 20 seconds
@@ -273,6 +306,9 @@
 #define HIVE_MIN_FEEDS                        (HIVE_MAX_WITNESSES/3) /// protects the network from conversions before price has been established
 #define HIVE_CONVERSION_DELAY_PRE_HF_16       (fc::days(7))
 #define HIVE_CONVERSION_DELAY                 (fc::hours(HIVE_FEED_HISTORY_WINDOW)) //3.5 day conversion
+#define HIVE_COLLATERALIZED_CONVERSION_DELAY  HIVE_CONVERSION_DELAY
+#define HIVE_CONVERSION_COLLATERAL_RATIO      (2 * HIVE_100_PERCENT) //has to be at least 100%
+#define HIVE_COLLATERALIZED_CONVERSION_FEE    (5 * HIVE_1_PERCENT) //has to be positive
 
 #define HIVE_MIN_UNDO_HISTORY                 10
 #define HIVE_MAX_UNDO_HISTORY                 10000

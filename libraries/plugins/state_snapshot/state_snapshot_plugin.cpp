@@ -147,7 +147,7 @@ rocksdb_cleanup_helper rocksdb_cleanup_helper::open(const ::rocksdb::Options& op
     throw std::exception();
     }
 
-  return std::move(retVal);
+  return retVal;
   }
 
 void rocksdb_cleanup_helper::close()
@@ -650,7 +650,7 @@ index_dump_writer::prepare(const std::string& indexDescription, size_t firstId, 
       right += ITEMS_PER_WORKER;
     }
   
-  return std::move(retVal);
+  return retVal;
   }
 
 void index_dump_writer::start(const workers& workers)
@@ -855,7 +855,7 @@ index_dump_reader::prepare(const std::string& indexDescription, snapshot_convert
   workers retVal;
   retVal.emplace_back(_builtWorkers.front().get());
 
-  return std::move(retVal);
+  return retVal;
   }
 
 void index_dump_reader::start(const workers& workers)
@@ -915,7 +915,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       void store_snapshot_manifest(const bfs::path& actualStoragePath, const std::vector<std::unique_ptr<index_dump_writer>>& builtWriters,
         const snapshot_dump_supplement_helper& dumpHelper) const;
 
-      std::pair<snapshot_manifest, plugin_external_data_index> load_snapshot_manifest(const bfs::path& actualStoragePath);
+      std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> load_snapshot_manifest(const bfs::path& actualStoragePath);
       void load_snapshot_external_data(const plugin_external_data_index& idx);
 
     private:
@@ -991,6 +991,7 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
   rocksdb_cleanup_helper db = rocksdb_cleanup_helper::open(dbOptions, manifestDbPath);
   ::rocksdb::ColumnFamilyHandle* manifestCF = db.create_column_family("INDEX_MANIFEST");
   ::rocksdb::ColumnFamilyHandle* externalDataCF = db.create_column_family("EXTERNAL_DATA");
+  ::rocksdb::ColumnFamilyHandle* snapshotManifestCF = db.create_column_family("IRREVERSIBLE_STATE");
 
   ::rocksdb::WriteOptions writeOptions;
 
@@ -1039,14 +1040,28 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
 
       throw std::exception();
     }
+  }
 
+  {
+    Slice key("LAST_IRREVERSIBLE_BLOCK");
+    uint32_t lib = _mainDb.get_last_irreversible_block_num();
+    Slice value(reinterpret_cast<const char*>(&lib), sizeof(uint32_t));
+    auto status = db->Put(writeOptions, snapshotManifestCF, key, value);
+
+    if(status.ok() == false)
+    {
+      elog("Cannot write an index manifest entry to output file: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
+      ilog("Failing key value: \"LAST_IRREVERSIBLE_BLOCK\"");
+
+      throw std::exception();
+    }
   }
 
   db.close();
   }
 
-std::pair<snapshot_manifest, plugin_external_data_index> state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath)
-  {
+std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath)
+{
   bfs::path manifestDbPath(actualStoragePath);
   manifestDbPath /= "snapshot-manifest";
 
@@ -1063,6 +1078,10 @@ std::pair<snapshot_manifest, plugin_external_data_index> state_snapshot_plugin::
 
   cfDescriptor = ::rocksdb::ColumnFamilyDescriptor();
   cfDescriptor.name = "EXTERNAL_DATA";
+  cfDescriptors.push_back(cfDescriptor);
+
+  cfDescriptor = ::rocksdb::ColumnFamilyDescriptor();
+  cfDescriptor.name = "IRREVERSIBLE_STATE";
   cfDescriptors.push_back(cfDescriptor);
 
   std::vector<::rocksdb::ColumnFamilyHandle*> cfHandles;
@@ -1085,29 +1104,29 @@ std::pair<snapshot_manifest, plugin_external_data_index> state_snapshot_plugin::
   snapshot_manifest retVal;
   
   {
-  ::rocksdb::ReadOptions rOptions;
+    ::rocksdb::ReadOptions rOptions;
 
-  std::unique_ptr<::rocksdb::Iterator> indexIterator(manifestDb->NewIterator(rOptions, cfHandles[1]));
+    std::unique_ptr<::rocksdb::Iterator> indexIterator(manifestDb->NewIterator(rOptions, cfHandles[1]));
 
-  std::vector<char> buffer;
-  for(indexIterator->SeekToFirst(); indexIterator->Valid(); indexIterator->Next())
+    std::vector<char> buffer;
+    for(indexIterator->SeekToFirst(); indexIterator->Valid(); indexIterator->Next())
     {
-    auto keySlice = indexIterator->key();
-    auto valueSlice = indexIterator->value();
+      auto keySlice = indexIterator->key();
+      auto valueSlice = indexIterator->value();
 
-    buffer.insert(buffer.end(), valueSlice.data(), valueSlice.data() + valueSlice.size());
+      buffer.insert(buffer.end(), valueSlice.data(), valueSlice.data() + valueSlice.size());
 
-    index_manifest_info info;
+      index_manifest_info info;
 
-    chainbase::serialization::unpack_from_buffer(info, buffer);
+      chainbase::serialization::unpack_from_buffer(info, buffer);
 
-    FC_ASSERT(keySlice.ToString() == info.name);
+      FC_ASSERT(keySlice.ToString() == info.name);
 
-    ilog("Loaded manifest info for index ${i} having storage files: ${sf}", ("i", info.name)("sf", info.storage_files));
+      ilog("Loaded manifest info for index ${i} having storage files: ${sf}", ("i", info.name)("sf", info.storage_files));
 
-    retVal.emplace(std::move(info));
+      retVal.emplace(std::move(info));
 
-    buffer.clear();
+      buffer.clear();
     }
   }
 
@@ -1149,20 +1168,41 @@ std::pair<snapshot_manifest, plugin_external_data_index> state_snapshot_plugin::
     }
   }
 
+  uint32_t lib = 0;
+
+  {
+    ::rocksdb::ReadOptions rOptions;
+
+    std::unique_ptr<::rocksdb::Iterator> irreversibleStateIterator(manifestDb->NewIterator(rOptions, cfHandles[3]));
+    irreversibleStateIterator->SeekToFirst();
+    FC_ASSERT(irreversibleStateIterator->Valid(), "No entry for IRREVERSIBLE_STATE. Probably used old snapshot format (must be regenerated).");
+
+    std::vector<char> buffer;
+    auto valueSlice = irreversibleStateIterator->value();
+
+    buffer.insert(buffer.end(), valueSlice.data(), valueSlice.data() + valueSlice.size());
+    chainbase::serialization::unpack_from_buffer(lib, buffer);
+    buffer.clear();
+    //ilog("lib: ${s}", ("s", lib));
+
+    irreversibleStateIterator->Next();
+    FC_ASSERT(irreversibleStateIterator->Valid() == false, "Multiple entries specifying irreversible block ?");
+  }
+
   for(auto* cfh : cfHandles)
-    {
+  {
     status = manifestDb->DestroyColumnFamilyHandle(cfh);
     if(status.ok() == false)
-      {
+    {
       elog("Cannot destroy column family handle...'. Error details: `${e}'.", ("e", status.ToString()));
-      }
     }
+  }
 
   manifestDb->Close();
   manifestDbPtr.release();
 
-  return std::make_pair(retVal, extDataIdx);
-  }
+  return std::make_tuple(retVal, extDataIdx, lib);
+}
 
 void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_external_data_index& idx)
   {
@@ -1200,11 +1240,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
     bfs::create_directories(actualStoragePath);
   else
   {
-    if( !bfs::is_empty(actualStoragePath) )
-    {
-      wlog("Directory ${p} is not empty. Creating snapshot rejected.", ("p", actualStoragePath.string()));
-      return;
-    }
+    FC_ASSERT(bfs::is_empty(actualStoragePath), "Directory ${p} is not empty. Creating snapshot rejected.", ("p", actualStoragePath.string()));
   }
   
 
@@ -1305,7 +1341,7 @@ void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName,
 
   for(chainbase::abstract_index* idx : indices)
     {
-    builtReaders.emplace_back(std::make_unique<index_dump_reader>(snapshotManifest.first, actualStoragePath));
+    builtReaders.emplace_back(std::make_unique<index_dump_reader>(std::get<0>(snapshotManifest), actualStoragePath));
     index_dump_reader* reader = builtReaders.back().get();
 
     if(_allow_concurrency)
@@ -1321,18 +1357,23 @@ void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName,
 
   threadpool.join_all();
 
-  if(snapshotManifest.second.empty())
+  plugin_external_data_index& extDataIdx = std::get<1>(snapshotManifest);
+  if(extDataIdx.empty())
   {
     ilog("Skipping external data load due to lack of data saved to the snapshot");
   }
   else
   {
-    load_snapshot_external_data(snapshotManifest.second);
+    load_snapshot_external_data(extDataIdx);
   }
+
+  auto last_irr_block = std::get<2>(snapshotManifest);
+  // set irreversible block number after database::resetState
+  _mainDb.set_last_irreversible_block_num(last_irr_block);
 
   auto blockNo = _mainDb.head_block_num();
 
-  ilog("Setting chainbase revision to ${b} block...", ("b", blockNo));
+  ilog("Setting chainbase revision to ${b} block... Loaded irreversible block is: ${lib}.", ("b", blockNo)("lib", last_irr_block));
   _mainDb.set_revision(blockNo);
 
   const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&, bool) {});

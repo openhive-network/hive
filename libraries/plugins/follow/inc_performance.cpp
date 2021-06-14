@@ -33,10 +33,8 @@ class performance_impl
     performance_impl( database& _db );
     ~performance_impl();
 
-#ifndef ENABLE_MIRA
     template< performance_data::t_creation_type CreationType, typename Index >
     uint32_t delete_old_objects( Index& old_idx, const account_name_type& start_account, uint32_t max_size, performance_data& pd ) const;
-#endif
 };
 
 
@@ -163,7 +161,6 @@ void performance_impl::remember_last( bool is_delayed, bool& init, Iterator& act
   }
 }
 
-#ifndef ENABLE_MIRA
 template< performance_data::t_creation_type CreationType, typename Index >
 uint32_t performance_impl::delete_old_objects( Index& old_idx, const account_name_type& start_account, uint32_t max_size, performance_data& pd ) const
 {
@@ -197,7 +194,6 @@ uint32_t performance_impl::delete_old_objects( Index& old_idx, const account_nam
 
   return next_id;
 }
-#endif
 
 performance::performance( database& _db )
       : my( new performance_impl( _db ) )
@@ -210,7 +206,6 @@ performance::~performance()
 
 }
 
-#ifndef ENABLE_MIRA
 template< performance_data::t_creation_type CreationType, typename Index >
 uint32_t performance::delete_old_objects( Index& old_idx, const account_name_type& start_account, uint32_t max_size, performance_data& pd ) const
 {
@@ -224,6 +219,5 @@ using t_blog = decltype( ((database*)nullptr)->get_index< blog_index >().indices
 template uint32_t performance::delete_old_objects< performance_data::t_creation_type::full_feed >( t_feed& old_idx, const account_name_type& start_account, uint32_t max_size, performance_data& pd ) const;
 template uint32_t performance::delete_old_objects< performance_data::t_creation_type::part_feed >( t_feed& old_idx, const account_name_type& start_account, uint32_t max_size, performance_data& pd ) const;
 template uint32_t performance::delete_old_objects< performance_data::t_creation_type::full_blog >( t_blog& old_idx, const account_name_type& start_account, uint32_t max_size, performance_data& pd ) const;
-#endif
 
 } } } //hive::follow

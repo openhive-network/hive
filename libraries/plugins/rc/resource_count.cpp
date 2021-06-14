@@ -87,6 +87,12 @@ struct count_operation_visitor
     execution_time_count += _e.convert_operation_exec_time;
   }
 
+  void operator()( const collateralized_convert_operation& op ) const
+  {
+    state_bytes_count += _w.collateralized_convert_request_object_base_size;
+    execution_time_count += _e.collateralized_convert_operation_exec_time;
+  }
+
   void operator()( const create_claimed_account_operation& op )const
   {
     state_bytes_count +=
@@ -351,16 +357,16 @@ struct count_operation_visitor
   void operator()( const create_proposal_operation& op ) const
   {
     state_bytes_count += _w.proposal_object_base_size;
-    state_bytes_count += sizeof( op.subject );
-    state_bytes_count += sizeof( op.permlink );
+    state_bytes_count += sizeof( op.subject ) + op.subject.size();// NOLINT(misc-sizeof-container)
+    state_bytes_count += sizeof( op.permlink ) + op.permlink.size();// NOLINT(misc-sizeof-container)
     execution_time_count += _e.create_proposal_operation_exec_time;
   }
 
   void operator()( const update_proposal_operation& op ) const
   {
     state_bytes_count += _w.proposal_object_base_size;
-    state_bytes_count += sizeof( op.subject );
-    state_bytes_count += sizeof( op.permlink );
+    state_bytes_count += sizeof( op.subject ) + op.subject.size();// NOLINT(misc-sizeof-container)
+    state_bytes_count += sizeof( op.permlink ) + op.permlink.size();// NOLINT(misc-sizeof-container)
     execution_time_count += _e.update_proposal_operation_exec_time;
   }
 
@@ -376,6 +382,13 @@ struct count_operation_visitor
     execution_time_count += _e.remove_proposal_operation_exec_time;
   }
 
+  void operator()( const recurrent_transfer_operation& op )const
+  {
+    state_bytes_count += _w.recurrent_transfer_object_base_size;
+    execution_time_count += _e.recurrent_transfer_operation_exec_time * op.executions;
+    market_op_count++;
+  }
+
   void operator()( const recover_account_operation& ) const {}
   void operator()( const pow_operation& ) const {}
   void operator()( const pow2_operation& ) const {}
@@ -385,6 +398,7 @@ struct count_operation_visitor
 
   // Virtual Ops
   void operator()( const fill_convert_request_operation& ) const {}
+  void operator()( const fill_collateralized_convert_request_operation& ) const {}
   void operator()( const author_reward_operation& ) const {}
   void operator()( const curation_reward_operation& ) const {}
   void operator()( const comment_reward_operation& ) const {}
@@ -396,19 +410,28 @@ struct count_operation_visitor
   void operator()( const fill_transfer_from_savings_operation& ) const {}
   void operator()( const hardfork_operation& ) const {}
   void operator()( const comment_payout_update_operation& ) const {}
-  void operator()(const effective_comment_vote_operation&) const {}
-  void operator()(const ineffective_delete_comment_operation&) const {}
+  void operator()( const effective_comment_vote_operation& ) const {}
+  void operator()( const ineffective_delete_comment_operation& ) const {}
   void operator()( const return_vesting_delegation_operation& ) const {}
   void operator()( const comment_benefactor_reward_operation& ) const {}
   void operator()( const producer_reward_operation& ) const {}
   void operator()( const clear_null_account_balance_operation& ) const {}
   void operator()( const consolidate_treasury_balance_operation& ) const {}
   void operator()( const delayed_voting_operation& ) const {}
+  void operator()( const transfer_to_vesting_completed_operation& ) const {}
+  void operator()( const pow_reward_operation& ) const {}
+  void operator()( const vesting_shares_split_operation& ) const {}
+  void operator()( const account_created_operation& ) const {}
   void operator()( const proposal_pay_operation& ) const {}
   void operator()( const sps_fund_operation& ) const {}
   void operator()( const sps_convert_operation& ) const {}
   void operator()( const hardfork_hive_operation& ) const {}
   void operator()( const hardfork_hive_restore_operation& ) const {}
+  void operator()( const expired_account_notification_operation& ) const {}
+  void operator()( const changed_recovery_account_operation& ) const {}
+  void operator()( const system_warning_operation& ) const {}
+  void operator()( const fill_recurrent_transfer_operation& ) const {}
+  void operator()( const failed_recurrent_transfer_operation& ) const {}
 
   // Optional Actions
 #ifdef IS_TEST_NET
@@ -418,7 +441,7 @@ struct count_operation_visitor
 
   // TODO:
   // Should following ops be market ops?
-  // withdraw_vesting, convert, set_withdraw_vesting_route, limit_order_create2
+  // withdraw_vesting, convert, collateralized_convert, set_withdraw_vesting_route, limit_order_create2
   // escrow_transfer, escrow_dispute, escrow_release, escrow_approve,
   // transfer_to_savings, transfer_from_savings, cancel_transfer_from_savings,
   // claim_reward_balance, delegate_vesting_shares, any SMT operations
@@ -428,7 +451,8 @@ typedef count_operation_visitor count_optional_action_visitor;
 
 void count_resources(
   const signed_transaction& tx,
-  count_resources_result& result )
+  count_resources_result& result
+  )
 {
   static const state_object_size_info size_info;
   static const operation_exec_info exec_info;
@@ -457,7 +481,7 @@ void count_resources(
 
 void count_resources(
   const optional_automated_action& action,
-  count_resources_result& result )
+  count_resources_result& result)
 {
   static const state_object_size_info size_info;
   static const operation_exec_info exec_info;

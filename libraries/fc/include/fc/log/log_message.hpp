@@ -8,6 +8,14 @@
 #include <fc/shared_ptr.hpp>
 #include <memory>
 
+#include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/control/if.hpp>
+#include <boost/preprocessor/comparison/equal.hpp>
+#include <boost/preprocessor/facilities/expand.hpp>
+#include <boost/preprocessor/variadic/size.hpp>
+#include <boost/preprocessor/seq/variadic_seq_to_seq.hpp>
+
 namespace fc
 {
    namespace detail 
@@ -157,6 +165,15 @@ FC_REFLECT_TYPENAME( fc::log_message );
  * @param FORMAT A const char* string containing zero or more references to keys as "${key}"
  * @param ...  A set of key/value pairs denoted as ("key",val)("key2",val2)...
  */
-#define FC_LOG_MESSAGE( LOG_LEVEL, FORMAT, ... ) \
-   fc::log_message( FC_LOG_CONTEXT(LOG_LEVEL), FORMAT, fc::mutable_variant_object()__VA_ARGS__ )
+#define FC_LOG_MESSAGE_GENERATE_PARAMETER_NAME(VALUE) BOOST_PP_LPAREN() BOOST_PP_STRINGIZE(VALUE), fc::variant(VALUE) BOOST_PP_RPAREN()
+#define FC_LOG_MESSAGE_DONT_GENERATE_PARAMETER_NAME(NAME, VALUE) BOOST_PP_LPAREN() NAME, fc::variant(VALUE) BOOST_PP_RPAREN()
+#define FC_LOG_MESSAGE_GENERATE_PARAMETER_NAMES_IF_NEEDED(r, data, PARAMETER_AND_MAYBE_NAME) BOOST_PP_IF(BOOST_PP_EQUAL(BOOST_PP_VARIADIC_SIZE PARAMETER_AND_MAYBE_NAME,1),FC_LOG_MESSAGE_GENERATE_PARAMETER_NAME,FC_LOG_MESSAGE_DONT_GENERATE_PARAMETER_NAME)PARAMETER_AND_MAYBE_NAME
 
+#define FC_LOG_MESSAGE_STRING_ONLY(LOG_LEVEL, FORMAT) \
+   fc::log_message(FC_LOG_CONTEXT(LOG_LEVEL), FORMAT, fc::variant_object())
+#define FC_LOG_MESSAGE_WITH_SUBSTITUTIONS(LOG_LEVEL, FORMAT, ...) \
+   fc::log_message(FC_LOG_CONTEXT(LOG_LEVEL), FORMAT, fc::mutable_variant_object() BOOST_PP_SEQ_FOR_EACH(FC_LOG_MESSAGE_GENERATE_PARAMETER_NAMES_IF_NEEDED, _, BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))
+
+
+#define FC_LOG_MESSAGE(LOG_LEVEL, ...) \
+   BOOST_PP_EXPAND(BOOST_PP_IF(BOOST_PP_EQUAL(BOOST_PP_VARIADIC_SIZE(__VA_ARGS__),1),FC_LOG_MESSAGE_STRING_ONLY,FC_LOG_MESSAGE_WITH_SUBSTITUTIONS)(LOG_LEVEL,__VA_ARGS__))

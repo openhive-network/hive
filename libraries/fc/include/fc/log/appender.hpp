@@ -1,6 +1,7 @@
 #pragma once
 #include <fc/shared_ptr.hpp>
 #include <fc/string.hpp>
+#include <fc/reflect/variant.hpp>
 
 namespace fc {
    class appender;
@@ -27,6 +28,14 @@ namespace fc {
 
    class appender : public fc::retainable {
       public:
+         enum class time_format {
+           milliseconds_since_hour,
+           milliseconds_since_epoch,
+           iso_8601_seconds,
+           iso_8601_milliseconds,
+           iso_8601_microseconds
+         };
+
          typedef fc::shared_ptr<appender> ptr;
 
          template<typename T>
@@ -37,7 +46,14 @@ namespace fc {
          static appender::ptr create( const fc::string& name, const fc::string& type, const variant& args  );
          static appender::ptr get( const fc::string& name );
          static bool          register_appender( const fc::string& type, const appender_factory::ptr& f );
+         static std::string format_time_as_string(time_point time, time_format format);
 
          virtual void log( const log_message& m ) = 0;
    };
 }
+FC_REFLECT_ENUM( fc::appender::time_format, 
+                 (milliseconds_since_hour)
+                 (milliseconds_since_epoch)
+                 (iso_8601_seconds)
+                 (iso_8601_milliseconds)
+                 (iso_8601_microseconds) )

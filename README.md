@@ -54,27 +54,15 @@ We **strongly** recommend using one of our pre-built Docker images or using Dock
 
 But if you would still like to build from source, we also have [build instructions](doc/building.md) for Linux (Ubuntu LTS) and macOS.
 
-## Dockerized P2P Node
+## Dockerized Consensus Node
 
-To run a p2p node (ca. 2GB of memory is required at the moment):
-
-    docker run \
-        -d -p 2001:2001 -p 8090:8090 --name hived-default \
-        openhive-network/hive
-
-    docker logs -f hived-default  # follow along
-
-## Dockerized Full Node
-
-To run a node with *all* the data (e.g. for supporting a content website)
-ca. 14GB of memory, and growing, is required:
+To run a Hive node (ca. 16GB of memory is required at the moment):
 
     docker run \
-        --env USE_WAY_TOO_MUCH_RAM=1 --env USE_FULL_WEB_NODE=1 \
-        -d -p 2001:2001 -p 8090:8090 --name hived-full \
-        openhive-network/hive
+        -d -p 2001:2001 -p 8090:8090 --name hived \
+        hiveio/hive
 
-    docker logs -f hived-full
+    docker logs -f hived  # follow along
 
 ## CLI Wallet
 
@@ -89,7 +77,7 @@ on how to use lcov to check code test coverage.
 
 ## Config File
 
-Run `hived` once to generate a data directory and config file. The default location is `witness_node_data_dir`. Kill `hived`. It won't do anything without seed nodes. If you want to modify the config to your liking, we have two example configs used in the docker images. ( [consensus node](contrib/config-for-docker.ini), [full node](contrib/fullnode.config.ini) ) All options will be present in the default config file and there may be more options needing to be changed from the docker configs (some of the options actually used in images are configured via command line).
+Run `hived` once to generate a data directory and config file. The default data directory location is `~/.hived`. Kill `hived`. If you want to modify the config to your liking, we have [example config](contrib/config-for-docker.ini) used in the docker image. All options will be present in the default config file and there may be more options needing to be changed from the docker configs (some of the options actually used in images are configured via command line).
 
 ## Seed Nodes
 
@@ -100,38 +88,9 @@ This same file is baked into the docker images and can be overridden by
 setting `HIVED_SEED_NODES` in the container environment at `docker run`
 time to a whitespace delimited list of seed nodes (with port).
 
-
-## Environment variables
-
-There are quite a few environment variables that can be set to run hived in different ways:
-
-* `USE_WAY_TOO_MUCH_RAM` - if set to true, hived starts a 'full node'
-* `USE_FULL_WEB_NODE` - if set to true, a default config file will be used that enables a full set of API's and associated plugins.
-* `USE_NGINX_FRONTEND` - if set to true, this will enable an NGINX reverse proxy in front of hived that proxies WebSocket requests to hived. This will also enable a custom healthcheck at the path '/health' that lists how many seconds away from current blockchain time your node is. It will return a '200' if it's less than 60 seconds away from being synced.
-* `USE_MULTICORE_READONLY` - if set to true, this will enable hived in multiple reader mode to take advantage of multiple cores (if available). Read requests are handled by the read-only nodes and write requests are forwarded back to the single 'writer' node automatically. NGINX load balances all requests to the reader nodes, 4 per available core. This setting is still considered experimental and may have trouble with some API calls until further development is completed.
-* `HOME` - set this to the path where you want hived to store it's data files (block log, shared memory, config file, etc). By default `/var/lib/hived` is used and exists inside the docker container. If you want to use a different mount point (like a ramdisk, or a different drive) then you may want to set this variable to map the volume to your docker container.
-
-## PaaS mode
-
-Hived now supports a PaaS mode (platform as a service) that currently works with Amazon's Elastic Beanstalk service. It can be launched using the following environment variables:
-
-* `USE_PAAS` - if set to true, hived will launch in a format that works with AWS EB. Containers will exit upon failure so that they can be relaunched automatically by ECS. This mode assumes `USE_WAY_TOO_MUCH_RAM` and `USE_FULL_WEB_NODE`, they do not need to be also set.
-* `S3_BUCKET` - set this to the name of the S3 bucket where you will store shared memory files for hived in Amazon S3. They will be stored compressed in bz2 format with the file name `blockchain-$VERSION-latest.tar.bz2`, where $VERSION is the release number followed by the git short commit hash stored in each docker image at `/etc/hivedversion`.
-* `SYNC_TO_S3` - if set to true, the node will function to only generate shared memory files and upload them to the specified S3 bucket. This makes fast deployments and autoscaling for hived possible.
-
-
 ## System Requirements
 
 [To Be Added]
-
-On Linux use the following Virtual Memory configuration for the initial sync and subsequent replays. It is not needed for normal operation.
-
-```
-echo    75 | sudo tee /proc/sys/vm/dirty_background_ratio
-echo  1000 | sudo tee /proc/sys/vm/dirty_expire_centisecs
-echo    80 | sudo tee /proc/sys/vm/dirty_ratio
-echo 30000 | sudo tee /proc/sys/vm/dirty_writeback_centisecs
-```
 
 # No Support & No Warranty
 

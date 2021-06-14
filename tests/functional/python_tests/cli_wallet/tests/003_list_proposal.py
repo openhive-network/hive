@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from collections      import OrderedDict
+import json
 
 from utils.test_utils import *
 from utils.cmd_args   import args
@@ -8,54 +9,32 @@ from utils.cli_wallet import CliWallet
 from utils.logger     import log, init_logger
 
 if __name__ == "__main__":
-    try:
-        init_logger(__file__)
-        error = False
-        wallet = CliWallet( args.path,
-                            args.server_rpc_endpoint,
-                            args.cert_auth,
-                            args.rpc_tls_endpoint,
-                            args.rpc_tls_cert,
-                            args.rpc_http_endpoint,
-                            args.deamon, 
-                            args.rpc_allowip,
-                            args.wallet_file,
-                            args.chain_id,
-                            args.wif )
-        wallet.set_and_run_wallet()
+    with Test(__file__):
+        with CliWallet( args ) as wallet:
+            active          = [ "all",
+                                "inactive",
+                                "active",
+                                "expired",
+                                "votable"]
+            order_by        = [ "by_creator",
+                                "by_start_date",
+                                "by_end_date",
+                                "by_total_votes"
+                                ]
+            order_type = ["ascending",
+                        "descending"]
 
-        active          = ["active", "inactive", "all"]
-        order_by        = ["creator", "start_date", "end_date", "total_votes"]
-        order_direction = ["asc", "desc"]
-
-        for by in order_by:
-            for direct in  order_direction:
-                for act in active:
-                    if by == "creator":
-                        start = ""
-                    elif by == "start_date" or by == "end_date":
-                        start = "2019-03-01T00:00:00"
-                    else:
-                        start = 0
-                    call_args = OrderedDict()
-                    call_args["start"]=start
-                    call_args["order_by"]=by
-                    call_args["order_direction"]=direct
-                    call_args["limit"]=10
-                    call_args["status"]=act
-                    call_args["last_id"]=""
-                    resp = last_message_as_json(call_and_check(wallet.list_proposals, call_args, "args"))
-                    if not "result" in resp:
-                        raise ArgsCheckException("No `result` in response")
-
-    except Exception as _ex:
-        log.exception(str(_ex))
-        error = True
-    finally:
-        if error:
-            log.error("TEST `{0}` failed".format(__file__))
-            exit(1)
-        else:
-            log.info("TEST `{0}` passed".format(__file__))
-            exit(0)
-
+            for by in order_by:
+                for direct in  order_type:
+                    for act in active:
+                        if by == "by_start_date" or by == "by_end_date":
+                            resp=last_message_as_json(wallet.list_proposals(["2019-03-01T00:00:00"], 10, by, direct, act))
+                        elif by == "by_total_votes":
+                            resp=last_message_as_json(wallet.list_proposals([0], 10, by, direct, act))
+                        else:
+                            resp=last_message_as_json(wallet.list_proposals([args.creator], 10, by, direct, act))
+                        if resp: 
+                            if "error" in resp:
+                                raise ArgsCheckException("Some error occures.")
+                        else:
+                            raise ArgsCheckException("Parse error.")

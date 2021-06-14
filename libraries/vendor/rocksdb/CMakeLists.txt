@@ -32,7 +32,7 @@
 # 3. cmake ..
 # 4. make -j
 
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.6.3)
 project(rocksdb)
 enable_language(CXX)
 enable_language(C)
@@ -186,7 +186,6 @@ else()
   if(MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format")
   endif()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
     include(CheckCXXCompilerFlag)

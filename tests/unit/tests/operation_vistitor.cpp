@@ -38,4 +38,33 @@ BOOST_AUTO_TEST_CASE( visit_performance ) {
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(bad_object) {
+  bool thrown = false;
+  bool verified = false;
+  try {
+    BOOST_TEST_MESSAGE("Start of static_variant type checks");
+
+    hive::protocol::account_create_operation testOp;
+    hive::protocol::operation operation_under_test(testOp);
+    /// Ok
+    operation_under_test.get<hive::protocol::account_create_operation>();
+    verified = true;
+
+    /// Intentially bad
+    operation_under_test.get<hive::protocol::transfer_operation>();
+
+  }
+  catch(const fc::assert_exception& ae)
+  {
+    thrown = true;
+    BOOST_TEST_MESSAGE("Caught assert exception: " + ae.to_string());
+  }
+  FC_LOG_AND_RETHROW()
+
+  BOOST_CHECK(thrown);
+  BOOST_CHECK(verified);
+
+  BOOST_TEST_MESSAGE("End of static_variant type checks");
+}
+
 BOOST_AUTO_TEST_SUITE_END()

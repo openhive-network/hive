@@ -1,7 +1,5 @@
 file(GLOB HEADERS "include/equihash/*.hpp" )
 
-set( CMAKE_C_FLAGS "-std=c99" )
-
 add_library( equihash
              src/pow.cpp
              src/blake2b.c

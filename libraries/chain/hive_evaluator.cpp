@@ -13,33 +13,6 @@
 
 #include <fc/macros.hpp>
 
-#ifndef IS_LOW_MEM
-FC_TODO( "After we vendor fc, also vendor diff_match_patch and fix these warnings" )
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsign-compare"
-#pragma GCC diagnostic push
-#if !defined( __clang__ )
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-#include <diff_match_patch.h>
-#pragma GCC diagnostic pop
-#pragma GCC diagnostic pop
-#include <boost/locale/encoding_utf.hpp>
-
-using boost::locale::conv::utf_to_utf;
-
-std::wstring utf8_to_wstring(const std::string& str)
-{
-  return utf_to_utf<wchar_t>(str.c_str(), str.c_str() + str.size());
-}
-
-std::string wstring_to_utf8(const std::wstring& str)
-{
-  return utf_to_utf<char>(str.c_str(), str.c_str() + str.size());
-}
-
-#endif
-
 #include <fc/uint128.hpp>
 #include <fc/utf8.hpp>
 
@@ -92,7 +65,8 @@ void witness_update_evaluator::do_apply( const witness_update_operation& o )
   else if( !o.props.account_creation_fee.symbol.is_canon() )
   {
     // after HF, above check can be moved to validate() if reindex doesn't show this warning
-    wlog( "Wrong fee symbol in block ${b}", ("b", _db.head_block_num()+1) );
+    _db.push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+      "Wrong fee symbol in block ${b}", ( "b", _db.head_block_num() + 1 ) ).get_message() ) );
   }
 
   FC_TODO( "Check and move this to validate after HF 20" );
@@ -379,10 +353,16 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
     auth.last_owner_update = fc::time_point_sec::min();
   });
 
+  asset initial_vesting_shares;
   if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) && o.fee.amount > 0 )
   {
-    _db.create_vesting( new_account, o.fee );
+    initial_vesting_shares = _db.create_vesting( new_account, o.fee );
   }
+  else
+  {
+    initial_vesting_shares = asset(0, VESTS_SYMBOL);
+  }
+  _db.push_virtual_operation( account_created_operation(o.new_account_name, o.creator, initial_vesting_shares, asset(0, VESTS_SYMBOL) ) );
 }
 
 void account_create_with_delegation_evaluator::do_apply( const account_create_with_delegation_operation& o )
@@ -488,10 +468,16 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
     });
   }
 
+  asset initial_vesting_shares;
   if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) && o.fee.amount > 0 )
   {
-    _db.create_vesting( new_account, o.fee );
+    initial_vesting_shares = _db.create_vesting( new_account, o.fee );
   }
+  else
+  {
+    initial_vesting_shares = asset(0, VESTS_SYMBOL);
+  }
+  _db.push_virtual_operation( account_created_operation( o.new_account_name, o.creator, initial_vesting_shares, o.delegation) );
 }
 
 
@@ -667,28 +653,18 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
     _db.remove(cur_vote);
   }
 
-  /// this loop can be skiped for validate-only nodes as it is merely gathering stats for indicies
+  /// this loop can be skiped for validate-only nodes as it is merely gathering stats for indices
   if( _db.has_hardfork( HIVE_HARDFORK_0_6__80 ) && !comment.is_root() )
   {
-    auto parent = &_db.get_comment( comment.get_parent_id() );
+    const comment_cashout_object* parent = _db.find_comment_cashout( _db.get_comment( comment.get_parent_id() ) );
     auto now = _db.head_block_time();
-    while( parent )
+    if( parent )
     {
-      const comment_cashout_object* _parent = _db.find_comment_cashout( *parent );
-      if( _parent )
+      _db.modify( *parent, [&]( comment_cashout_object& p )
       {
-        _db.modify( *_parent, [&]( comment_cashout_object& p )
-        {
-          p.children--;
-          p.active = now;
-        } );
-      }
-  #ifndef IS_LOW_MEM
-      if( !parent->is_root() )
-        parent = &_db.get_comment( parent->get_parent_id() );
-      else
-  #endif
-        parent = nullptr;
+        p.children--;
+        p.active = now;
+      } );
     }
   }
 
@@ -884,23 +860,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
     _db.create< comment_cashout_object >( new_comment, auth, o.permlink, _now, cashout_time, reward_weight );
 
-  #if !defined(IS_LOW_MEM) && defined(STORE_COMMENT_CONTENT)
-    _db.create< comment_content_object >( [&]( comment_content_object& con )
-    {
-      con.comment = new_comment.get_id();
-
-      from_string( con.title, o.title );
-      if( o.body.size() < 1024*1024*128 )
-      {
-        from_string( con.body, o.body );
-      }
-      from_string( con.json_metadata, o.json_metadata );
-    });
-  #endif
-
-
-/// this loop can be skiped for validate-only nodes as it is merely gathering stats for indicies
-    while( parent )
+    if( parent )
     {
       const comment_cashout_object* _parent = _db.find_comment_cashout( *parent );
       if( _parent )
@@ -910,12 +870,6 @@ void comment_evaluator::do_apply( const comment_operation& o )
           p.active = _now;
         });
       }
-#ifndef IS_LOW_MEM
-      if( !parent->is_root() )
-        parent = &_db.get_comment( parent->get_parent_id() );
-      else
-#endif
-        parent = nullptr;
     }
 
   }
@@ -964,37 +918,6 @@ void comment_evaluator::do_apply( const comment_operation& o )
     {
       a.last_post_edit = _now;
     });
-  #if !defined(IS_LOW_MEM) && defined(STORE_COMMENT_CONTENT)
-    _db.modify( _db.get< comment_content_object, by_comment >( comment.get_id() ), [&]( comment_content_object& con )
-    {
-      if( o.title.size() )
-        from_string( con.title, o.title );
-      if( o.json_metadata.size() )
-        from_string( con.json_metadata, o.json_metadata );
-
-      if( o.body.size() ) {
-        try {
-        diff_match_patch<std::wstring> dmp;
-        auto patch = dmp.patch_fromText( utf8_to_wstring(o.body) );
-        if( patch.size() ) {
-          auto result = dmp.patch_apply( patch, utf8_to_wstring( to_string( con.body ) ) );
-          auto patched_body = wstring_to_utf8(result.first);
-          if( !fc::is_utf8( patched_body ) ) {
-            idump(("invalid utf8")(patched_body));
-            from_string( con.body, fc::prune_invalid_utf8(patched_body) );
-          } else { from_string( con.body, patched_body ); }
-        }
-        else { // replace
-          from_string( con.body, o.body );
-        }
-        } catch ( ... ) {
-          from_string( con.body, o.body );
-        }
-      }
-    });
-  #endif
-
-
 
   } // end EDIT case
 
@@ -1215,6 +1138,8 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
 
   _db.adjust_balance( from_account, -o.amount );
 
+  asset amount_vested;
+
   /*
     Voting immediately when `transfer_to_vesting` is executed is dangerous,
     because malicious accounts would take over whole HIVE network.
@@ -1223,15 +1148,18 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   */
   if( _db.has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
-    asset new_vesting = _db.adjust_account_vesting_balance( to_account, o.amount, false/*to_reward_balance*/, []( asset vests_created ) {} );
+    amount_vested = _db.adjust_account_vesting_balance( to_account, o.amount, false/*to_reward_balance*/, []( asset vests_created ) {} );
 
     delayed_voting dv( _db );
-    dv.add_delayed_value( to_account, _db.head_block_time(), new_vesting.amount.value );
+    dv.add_delayed_value( to_account, _db.head_block_time(), amount_vested.amount.value );
   }
   else
   {
-    _db.create_vesting( to_account, o.amount );   
+    amount_vested = _db.create_vesting( to_account, o.amount );   
   }
+
+  /// Emit this vop unconditionally, since VESTS balance changed immediately, indepdenent to subsequent updates of account voting power done inside `delayed_voting` mechanism.
+  _db.push_virtual_operation(transfer_to_vesting_completed_operation(from_account.name, to_account.name, o.amount, amount_vested));
 }
 
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
@@ -1383,27 +1311,22 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_operation& o )
 {
   const auto& account = _db.get_account( o.account );
-  FC_ASSERT( account.proxy != o.proxy, "Proxy must change." );
-
   FC_ASSERT( account.can_vote, "Account has declined the ability to vote and cannot proxy votes." );
+  _db.modify( account, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
-  /// remove all current votes
-  std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH+1> delta;
-  delta[0] = -account.get_real_vesting_shares();
-  for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-    delta[i+1] = -account.proxied_vsf_votes[i];
-  _db.adjust_proxied_witness_votes( account, delta );
+  _db.nullify_proxied_witness_votes( account );
 
-  if( o.proxy.size() ) {
+  if( !o.is_clearing_proxy() ) {
     const auto& new_proxy = _db.get_account( o.proxy );
+    FC_ASSERT( account.get_proxy() != new_proxy.get_id(), "Proxy must change." );
     flat_set<account_id_type> proxy_chain( { account.get_id(), new_proxy.get_id() } );
     proxy_chain.reserve( HIVE_MAX_PROXY_RECURSION_DEPTH + 1 );
 
     /// check for proxy loops and fail to update the proxy if it would create a loop
     auto cprox = &new_proxy;
-    while( cprox->proxy.size() != 0 )
+    while( cprox->has_proxy() )
     {
-      const auto& next_proxy = _db.get_account( cprox->proxy );
+      const auto& next_proxy = _db.get_account( cprox->get_proxy() );
       FC_ASSERT( proxy_chain.insert( next_proxy.get_id() ).second, "This proxy would create a proxy loop." );
       cprox = &next_proxy;
       FC_ASSERT( proxy_chain.size() <= HIVE_MAX_PROXY_RECURSION_DEPTH, "Proxy chain is too long." );
@@ -1413,16 +1336,19 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     _db.clear_witness_votes( account );
 
     _db.modify( account, [&]( account_object& a ) {
-      a.proxy = o.proxy;
+      a.set_proxy( new_proxy );
     });
 
     /// add all new votes
-    for( int i = 0; i <= HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-      delta[i] = -delta[i];
+    std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
+    delta[0] = account.get_real_vesting_shares();
+    for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
+      delta[i+1] = account.proxied_vsf_votes[i];
     _db.adjust_proxied_witness_votes( account, delta );
   } else { /// we are clearing the proxy which means we simply update the account
+    FC_ASSERT( account.has_proxy(), "Proxy must change." );
     _db.modify( account, [&]( account_object& a ) {
-        a.proxy = o.proxy;
+      a.clear_proxy();
     });
   }
 }
@@ -1431,10 +1357,9 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 void account_witness_vote_evaluator::do_apply( const account_witness_vote_operation& o )
 {
   const auto& voter = _db.get_account( o.account );
-  FC_ASSERT( voter.proxy.size() == 0, "A proxy is currently set, please clear the proxy before voting for a witness." );
-
-  if( o.approve )
-    FC_ASSERT( voter.can_vote, "Account has declined its voting rights." );
+  FC_ASSERT( !voter.has_proxy(), "A proxy is currently set, please clear the proxy before voting for a witness." );
+  FC_ASSERT( voter.can_vote, "Account has declined its voting rights." );
+  _db.modify( voter, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   const auto& witness = _db.get_witness( o.witness );
 
@@ -1511,26 +1436,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   if( !comment_cashout || ( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && _db.calculate_discussion_payout_time( *comment_cashout ) == fc::time_point_sec::maximum() ) )
   {
-#ifndef CLEAR_VOTES
-    const auto& comment_vote_idx = _db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-    auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
-
-    if( itr == comment_vote_idx.end() )
-      _db.create< comment_vote_object >( [&]( comment_vote_object& cvo )
-      {
-        cvo.voter = voter.get_id();
-        cvo.comment = comment.get_id();
-        cvo.vote_percent = o.weight;
-        cvo.last_update = _db.head_block_time();
-      });
-    else
-      _db.modify( *itr, [&]( comment_vote_object& cvo )
-      {
-        cvo.vote_percent = o.weight;
-        cvo.last_update = _db.head_block_time();
-      });
-#endif
-
     return;
   }
 
@@ -1930,37 +1835,17 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   else
   {
-    FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_1_24 ), "Votes evaluating for comment that is paid out is forbidden." );
+    /// Remove this assertion after HF25
+    FC_ASSERT((!_db.has_hardfork( HIVE_HARDFORK_1_24 ) || _db.has_hardfork( HIVE_HARDFORK_1_25 )), "Votes evaluating for comment that is paid out is forbidden." );
   }
 
   if( !comment_cashout || _db.calculate_discussion_payout_time( *comment_cashout ) == fc::time_point_sec::maximum() )
   {
-#ifndef CLEAR_VOTES
-    const auto& comment_vote_idx = _db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-    auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
-
-    if( itr == comment_vote_idx.end() )
-      _db.create< comment_vote_object >( [&]( comment_vote_object& cvo )
-      {
-        cvo.voter = voter.get_id();
-        cvo.comment = comment.get_id();
-        cvo.vote_percent = o.weight;
-        cvo.last_update = _db.head_block_time();
-      });
-    else
-      _db.modify( *itr, [&]( comment_vote_object& cvo )
-      {
-        cvo.vote_percent = o.weight;
-        cvo.last_update = _db.head_block_time();
-      });
-#endif
-
     return;
   }
-  else
-  {
-    FC_ASSERT( _db.head_block_time() < comment_cashout->cashout_time, "Comment is actively being rewarded. Cannot vote on comment." );
-  }
+
+  FC_ASSERT( _db.head_block_time() < comment_cashout->cashout_time, "Comment is actively being rewarded. Cannot vote on comment." );
+
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
   auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
@@ -2162,17 +2047,40 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         }
         else
         {
+          uint64_t _seconds = (cv.last_update - comment_cashout->get_creation_time()).to_seconds();
+
           cv.weight = new_weight - old_weight;
 
-          max_vote_weight = cv.weight;
+          //In HF25 `dgpo.reverse_auction_seconds` is set to zero. It's replaced by `dgpo.early_voting_seconds` and `dgpo.mid_voting_seconds`.
+          if( _seconds < dgpo.reverse_auction_seconds )
+          {
+            max_vote_weight = cv.weight;
 
-          /// discount weight by time
-          uint128_t w(max_vote_weight);
-          uint64_t delta_t = std::min( uint64_t((cv.last_update - comment_cashout->get_creation_time()).to_seconds()), uint64_t( dgpo.reverse_auction_seconds ) );
+            /// discount weight by time
+            uint128_t w(max_vote_weight);
+            uint64_t delta_t = std::min( _seconds, uint64_t( dgpo.reverse_auction_seconds ) );
 
-          w *= delta_t;
-          w /= dgpo.reverse_auction_seconds;
-          cv.weight = w.to_uint64();
+            w *= delta_t;
+            w /= dgpo.reverse_auction_seconds;
+            cv.weight = w.to_uint64();
+          }
+          else if( _seconds >= dgpo.early_voting_seconds && dgpo.early_voting_seconds )
+          {
+            //Following values are chosen empirically
+            const uint32_t phase_1_factor = 2;
+            const uint32_t phase_2_factor = 8;
+
+            if( _seconds < ( dgpo.early_voting_seconds + dgpo.mid_voting_seconds ) )
+              cv.weight /= phase_1_factor;
+            else
+              cv.weight /= phase_2_factor;
+
+            max_vote_weight = cv.weight;
+          }
+          else
+          {
+            max_vote_weight = cv.weight;
+          }
         }
       }
       else
@@ -2488,10 +2396,15 @@ void pow_apply( database& db, Operation o )
 
   /// pay the witness that includes this POW
   const auto& inc_witness = db.get_account( dgp.current_witness );
+  asset actual_reward;
   if( db.head_block_num() < HIVE_START_MINER_VOTING_BLOCK )
+  {
     db.adjust_balance( inc_witness, pow_reward );
+    actual_reward = pow_reward;
+  }
   else
-    db.create_vesting( inc_witness, pow_reward );
+    actual_reward = db.create_vesting( inc_witness, pow_reward );
+  db.push_virtual_operation( pow_reward_operation( dgp.current_witness, actual_reward ) );
 }
 
 void pow_evaluator::do_apply( const pow_operation& o ) {
@@ -2514,7 +2427,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     const auto& work = o.work.get< equihash_pow >();
     FC_ASSERT( work.prev_block == db.head_block_id(), "Equihash pow op not for last block" );
     auto recent_block_num = protocol::block_header::num_from_id( work.input.prev_block );
-    FC_ASSERT( recent_block_num > dgp.last_irreversible_block_num,
+    FC_ASSERT( recent_block_num > db.get_last_irreversible_block_num(),
       "Equihash pow done for block older than last irreversible block num" );
     FC_ASSERT( work.pow_summary < target_pow, "Insufficient work difficulty. Work: ${w}, Target: ${t}", ("w",work.pow_summary)("t", target_pow) );
     worker_account = work.input.worker_account;
@@ -2588,7 +2501,8 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     db.adjust_supply( inc_reward, true );
 
     const auto& inc_witness = db.get_account( dgp.current_witness );
-    db.create_vesting( inc_witness, inc_reward );
+    asset actual_reward = db.create_vesting( inc_witness, inc_reward );
+    db.push_virtual_operation( pow_reward_operation( dgp.current_witness, actual_reward ) );
   }
 }
 
@@ -2608,7 +2522,8 @@ void feed_publish_evaluator::do_apply( const feed_publish_operation& o )
 
 void convert_evaluator::do_apply( const convert_operation& o )
 {
-  _db.adjust_balance( o.owner, -o.amount );
+  const auto& owner = _db.get_account( o.owner );
+  _db.adjust_balance( owner, -o.amount );
 
   const auto& fhistory = _db.get_feed_history();
   FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot convert HBD because there is no price feed." );
@@ -2617,7 +2532,52 @@ void convert_evaluator::do_apply( const convert_operation& o )
   if( _db.has_hardfork( HIVE_HARDFORK_0_16__551) )
     hive_conversion_delay = HIVE_CONVERSION_DELAY;
 
-  _db.create<convert_request_object>( o.owner, o.amount, _db.head_block_time() + hive_conversion_delay, o.requestid );
+  _db.create<convert_request_object>( owner, o.amount, _db.head_block_time() + hive_conversion_delay, o.requestid );
+}
+
+void collateralized_convert_evaluator::do_apply( const collateralized_convert_operation& o )
+{
+  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_25 ), "Operation not available until HF25" );
+
+  const auto& owner = _db.get_account( o.owner );
+  _db.adjust_balance( owner, -o.amount );
+
+  const auto& fhistory = _db.get_feed_history();
+  FC_ASSERT( !fhistory.current_median_history.is_null(), "Cannot convert HIVE because there is no price feed." );
+  const auto& dgpo = _db.get_dynamic_global_properties();
+  FC_ASSERT( dgpo.hbd_print_rate > 0, "Creation of new HBD blocked at this time due to global limit." );
+    //note that feed and therefore print rate is updated once per hour, so without above check there could be
+    //enough room for new HBD, but there is a chance the official price would still be artificial (artificial
+    //price is not used in this conversion, but users might think it is - better to stop them from making mistake)
+
+  //if you change something here take a look at wallet_api::estimate_hive_collateral as well
+
+  //cut amount by collateral ratio
+  uint128_t _amount = ( uint128_t( o.amount.amount.value ) * HIVE_100_PERCENT ) / HIVE_CONVERSION_COLLATERAL_RATIO;
+  asset for_immediate_conversion = asset( _amount.to_uint64(), o.amount.symbol );
+
+  //immediately create HBD - apply fee to current rolling minimum price
+  auto converted_amount = multiply_with_fee( for_immediate_conversion, fhistory.current_min_history,
+    HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
+  FC_ASSERT( converted_amount.amount > 0, "Amount of collateral too low - conversion gives no HBD" );
+  _db.adjust_balance( owner, converted_amount );
+
+  _db.modify( dgpo, [&]( dynamic_global_property_object& p )
+  {
+    //HIVE supply (and virtual supply in part related to HIVE) will be corrected after actual conversion
+    p.current_hbd_supply += converted_amount;
+    p.virtual_supply += converted_amount * fhistory.current_median_history;
+  } );
+  //note that we created new HBD out of thin air and we will burn the related HIVE when actual conversion takes
+  //place; there is alternative approach - we could burn all collateral now and print back excess when we are
+  //to return it to the user; the difference slightly changes calculations below, that is, currently we might
+  //allow slightly more HBD to be printed
+
+  uint16_t percent_hbd = _db.calculate_HBD_percent();
+  FC_ASSERT( percent_hbd <= dgpo.hbd_stop_percent, "Creation of new ${hbd} violates global limit.", ( "hbd", converted_amount ) );
+
+  _db.create<collateralized_convert_request_object>( owner, o.amount, converted_amount,
+    _db.head_block_time() + HIVE_COLLATERALIZED_CONVERSION_DELAY, o.requestid );
 }
 
 void limit_order_create_evaluator::do_apply( const limit_order_create_operation& o )
@@ -2778,16 +2738,16 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
 {
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
 
-  if ( account_to_recover.recovery_account.length() )   // Make sure recovery matches expected recovery account
+  if ( account_to_recover.has_recovery_account() )   // Make sure recovery matches expected recovery account
   {
-    FC_ASSERT( account_to_recover.recovery_account == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
+    FC_ASSERT( account_to_recover.get_recovery_account() == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
     if( o.recovery_account == HIVE_TEMP_ACCOUNT )
       wlog( "Recovery by temp account" );
   }
   else                                                  // Empty string recovery account defaults to top witness
-    FC_ASSERT( _db.get_index< witness_index >().indices().get< by_vote_name >().begin()->owner == o.recovery_account, "Top witness must recover an account with no recovery partner." );
+    FC_ASSERT( (_db.get_index< witness_index, by_vote_name >().begin()->owner == o.recovery_account), "Top witness must recover an account with no recovery partner." );
 
-  const auto& recovery_request_idx = _db.get_index< account_recovery_request_index >().indices().get< by_account >();
+  const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
 
   if( request == recovery_request_idx.end() ) // New Request
@@ -2795,7 +2755,7 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
     FC_ASSERT( !o.new_owner_authority.is_impossible(), "Cannot recover using an impossible authority." );
     FC_ASSERT( o.new_owner_authority.weight_threshold, "Cannot recover using an open authority." );
 
-    if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+    if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     {
       validate_auth_size( o.new_owner_authority );
     }
@@ -2809,7 +2769,7 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
       }
     }
 
-    _db.create< account_recovery_request_object >( o.account_to_recover, o.new_owner_authority,
+    _db.create< account_recovery_request_object >( account_to_recover, o.new_owner_authority,
       _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
   }
   else if( o.new_owner_authority.weight_threshold == 0 ) // Cancel Request if authority is open
@@ -2831,8 +2791,7 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
 
     _db.modify( *request, [&]( account_recovery_request_object& req )
     {
-      req.new_owner_authority = o.new_owner_authority;
-      req.expires = _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD;
+      req.set_new_owner_authority( o.new_owner_authority, _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
     });
   }
 }
@@ -2844,13 +2803,13 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   if( _db.has_hardfork( HIVE_HARDFORK_0_12 ) )
     FC_ASSERT( _db.head_block_time() - account.last_account_recovery > HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
 
-  const auto& recovery_request_idx = _db.get_index< account_recovery_request_index >().indices().get< by_account >();
+  const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
 
   FC_ASSERT( request != recovery_request_idx.end(), "There are no active recovery requests for this account." );
-  FC_ASSERT( request->new_owner_authority == o.new_owner_authority, "New owner authority does not match recovery request." );
+  FC_ASSERT( request->get_new_owner_authority() == o.new_owner_authority, "New owner authority does not match recovery request." );
 
-  const auto& recent_auth_idx = _db.get_index< owner_authority_history_index >().indices().get< by_account >();
+  const auto& recent_auth_idx = _db.get_index< owner_authority_history_index, by_account >();
   auto hist = recent_auth_idx.lower_bound( o.account_to_recover );
   bool found = false;
 
@@ -2873,27 +2832,21 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
 
 void change_recovery_account_evaluator::do_apply( const change_recovery_account_operation& o )
 {
-  _db.get_account( o.new_recovery_account ); // Simply validate account exists
+  const auto& new_recovery_account = _db.get_account( o.new_recovery_account ); // validate account exists
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
 
-  const auto& change_recovery_idx = _db.get_index< change_recovery_account_request_index >().indices().get< by_account >();
+  const auto& change_recovery_idx = _db.get_index< change_recovery_account_request_index, by_account >();
   auto request = change_recovery_idx.find( o.account_to_recover );
 
   if( request == change_recovery_idx.end() ) // New request
   {
-    _db.create< change_recovery_account_request_object >( [&]( change_recovery_account_request_object& req )
-    {
-      req.account_to_recover = o.account_to_recover;
-      req.recovery_account = o.new_recovery_account;
-      req.effective_on = _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD;
-    });
+    _db.create< change_recovery_account_request_object >( account_to_recover, new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
   }
-  else if( account_to_recover.recovery_account != o.new_recovery_account ) // Change existing request
+  else if( account_to_recover.get_recovery_account() != o.new_recovery_account ) // Change existing request
   {
     _db.modify( *request, [&]( change_recovery_account_request_object& req )
     {
-      req.recovery_account = o.new_recovery_account;
-      req.effective_on = _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD;
+      req.set_recovery_account( new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
     });
   }
   else // Request exists and changing back to current recovery account
@@ -2981,6 +2934,9 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
 void reset_account_evaluator::do_apply( const reset_account_operation& op )
 {
   FC_ASSERT( false, "Reset Account Operation is currently disabled." );
+  //ABW: see discussion in https://github.com/steemit/steem/issues/240
+  //apparently the idea was never put in active use and it does not seem it ever will
+  //related member of account_object was removed as it was taking space with no purpose
 /*
   const auto& acnt = _db.get_account( op.account_to_reset );
   auto band = _db.find< account_bandwidth_object, by_account_bandwidth_type >( boost::make_tuple( op.account_to_reset, bandwidth_type::old_forum ) );
@@ -2995,6 +2951,7 @@ void reset_account_evaluator::do_apply( const reset_account_operation& op )
 void set_reset_account_evaluator::do_apply( const set_reset_account_operation& op )
 {
   FC_ASSERT( false, "Set Reset Account Operation is currently disabled." );
+  //related to reset_account_operation
 /*
   const auto& acnt = _db.get_account( op.account );
   _db.get_account( op.reset_account );
@@ -3377,6 +3334,53 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     {
       _db.remove( *delegation );
     }
+  }
+}
+
+
+void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation& op )
+{
+  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_25 ), "Recurrent transfers are not enabled until hardfork ${hf}", ("hf", HIVE_HARDFORK_1_25) );
+
+  const auto& from_account = _db.get_account(op.from );
+  const auto& to_account = _db.get_account( op.to );
+
+  asset available = _db.get_balance( from_account, op.amount.symbol );
+  FC_ASSERT( available >= op.amount, "Account does not have enough tokens for the first transfer, has ${has} needs ${needs}", ("has",  available)("needs", op.amount) );
+
+  const auto& rt_idx = _db.get_index< recurrent_transfer_index, by_from_to_id >();
+  auto itr = rt_idx.find(boost::make_tuple(from_account.get_id(), to_account.get_id()));
+
+  if( itr == rt_idx.end() )
+  {
+    FC_ASSERT( from_account.open_recurrent_transfers < HIVE_MAX_OPEN_RECURRENT_TRANSFERS, "Account can't have more than ${rt} recurrent transfers", ( "rt", HIVE_MAX_OPEN_RECURRENT_TRANSFERS ) );
+    // If the recurrent transfer is not found and the amount is 0 it means the user wants to delete a transfer that doesnt exists
+    FC_ASSERT( op.amount.amount != 0, "Cannot create a recurrent transfer with 0 amount");
+    _db.create< recurrent_transfer_object >(_db.head_block_time(), from_account, to_account, op.amount, op.memo, op.recurrence, op.executions);
+
+    _db.modify(from_account, [](account_object& a )
+    {
+      a.open_recurrent_transfers++;
+    });
+  }
+  else if( op.amount.amount == 0 )
+  {
+    _db.remove( *itr );
+    _db.modify(from_account, [&](account_object& a )
+    {
+      FC_ASSERT( a.open_recurrent_transfers > 0 );
+      a.open_recurrent_transfers--;
+    });
+  }
+  else
+  {
+    _db.modify( *itr, [&]( recurrent_transfer_object& rt )
+    {
+      rt.amount = op.amount;
+      from_string( rt.memo, op.memo );
+      rt.set_recurrence_trigger_date(_db.head_block_time(), op.recurrence);
+      rt.remaining_executions = op.executions;
+    });
   }
 }
 

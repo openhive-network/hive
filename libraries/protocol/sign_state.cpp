@@ -16,7 +16,7 @@ bool sign_state::signed_by( const public_key_type& k )
   return itr->second = true;
 }
 
-bool sign_state::check_authority( string id )
+bool sign_state::check_authority( const string& id )
 {
   if( approved_by.find(id) != approved_by.end() ) return true;
   uint32_t account_auth_count = 1;

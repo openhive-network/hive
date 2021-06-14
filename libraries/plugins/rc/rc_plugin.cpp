@@ -235,7 +235,7 @@ void use_account_rcs(
   rc_plugin_skip_flags skip
 #ifdef IS_TEST_NET
   ,
-  set< account_name_type > whitelist
+  const set< account_name_type >& whitelist
 #endif
   )
 {
@@ -368,7 +368,6 @@ struct block_extensions_count_resources_visitor
   typedef void result_type;
 
   count_resources_result& _r;
-
   block_extensions_count_resources_visitor( count_resources_result& r ) : _r( r ) {}
 
   // Only optional actions need to be counted. We decided in design that
@@ -378,7 +377,7 @@ struct block_extensions_count_resources_visitor
   {
     for( const auto& a : opt_actions )
     {
-      count_resources( a, _r );
+      count_resources( a, _r);
     }
   }
 
@@ -829,7 +828,7 @@ struct post_apply_operation_visitor
     database& db,
     uint32_t t,
     uint32_t b,
-    account_name_type w
+    const account_name_type& w
     ) : _mod_accounts(ma), _db(db), _current_time(t), _current_block_number(b), _current_witness(w)
   {}
 

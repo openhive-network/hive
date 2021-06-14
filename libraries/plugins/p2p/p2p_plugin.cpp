@@ -7,6 +7,8 @@
 
 #include <hive/chain/database_exceptions.hpp>
 
+#include <appbase/shutdown_mgr.hpp>
+
 #include <fc/network/ip.hpp>
 #include <fc/network/resolve.hpp>
 #include <fc/thread/thread.hpp>
@@ -18,12 +20,14 @@
 
 #include <boost/any.hpp>
 
-#include <atomic>
 #include <chrono>
-#include <future>
 
 using std::string;
 using std::vector;
+
+#define HIVE_P2P_NUMBER_THREAD_SENSITIVE_ACTIONS 2
+#define HIVE_P2P_BLOCK_HANDLER 0
+#define HIVE_P2P_TRANSACTION_HANDLER 1
 
 namespace hive { namespace plugins { namespace p2p {
 
@@ -36,7 +40,6 @@ using graphene::net::block_message;
 using graphene::net::trx_message;
 
 using hive::protocol::block_header;
-using hive::protocol::signed_block_header;
 using hive::protocol::signed_block;
 using hive::protocol::block_id_type;
 
@@ -78,16 +81,13 @@ class p2p_plugin_impl : public graphene::net::node_delegate
 public:
 
   p2p_plugin_impl( plugins::chain::chain_plugin& c )
-    : running(true), activeHandleBlock(false), activeHandleTx(false), chain( c )
+    : shutdown_helper( "P2P plugin", HIVE_P2P_NUMBER_THREAD_SENSITIVE_ACTIONS ), chain( c )
   {
-    handleBlockFinished.second = std::shared_future<void>(handleBlockFinished.first.get_future());
-    handleTxFinished.second = std::shared_future<void>(handleTxFinished.first.get_future());
   }
-
   virtual ~p2p_plugin_impl()
   {
-    finish( handleBlockFinished );
-    finish( handleTxFinished );
+    shutdown_helper.prepare_shutdown();
+    shutdown_helper.wait();
   }
 
   bool is_included_block(const block_id_type& block_id);
@@ -119,82 +119,15 @@ public:
   uint32_t max_connections = 0;
   bool force_validate = false;
   bool block_producer = false;
-  std::atomic_bool   running;
-  std::atomic_bool   activeHandleBlock;
-  std::atomic_bool   activeHandleTx;
-  typedef std::pair<std::promise<void>, std::shared_future<void>> handler_state;
 
-  handler_state handleBlockFinished;
-  handler_state handleTxFinished;
+  shutdown_mgr shutdown_helper;
 
   std::unique_ptr<graphene::net::node> node;
 
   plugins::chain::chain_plugin& chain;
 
   fc::thread p2p_thread;
-
-private:
-  class shutdown_helper final
-  {
-  public:
-    shutdown_helper(p2p_plugin_impl& impl, std::atomic_bool& activityFlag,
-      handler_state& barrier) :
-      _impl(impl), _barrier(barrier), _activityFlag(activityFlag)
-    {
-      _activityFlag.store(true);
-    }
-    ~shutdown_helper()
-    {
-      _activityFlag.store(false);
-      if(_impl.running.load() == false && _barrier.second.valid() == false)
-      {
-        ilog("Sending notification to shutdown barrier.");
-        _barrier.first.set_value();
-      }
-    }
-
-  private:
-    p2p_plugin_impl&    _impl;
-    handler_state&      _barrier;
-    std::atomic_bool&   _activityFlag;
-  };
-
-   void finish( handler_state& handler );
-
 };
-
-void p2p_plugin_impl::finish( handler_state& handler )
-{
-  if( handler.second.valid()  )
-  {
-    std::future_status res = handler.second.wait_for( std::chrono::milliseconds( 100 ) );
-
-    if( res != std::future_status::ready )
-    {
-      try
-      {
-        handler.first.set_value();
-      }
-      catch( const std::future_error& e )
-      {
-        ilog("Future error exception when P2P plugin is closing. ( Code: ${c} )( Message: ${m} )", ( "c", e.code().value() )( "m", e.what() ) );
-        return;
-      }
-      catch(...)
-      {
-        ilog("Unknown exception when P2P plugin is closing.");
-        return;
-      }
-    }
-
-    uint32_t cnt = 0;
-    do
-    {
-      res = handler.second.wait_for( std::chrono::milliseconds( 100 ) );
-      FC_ASSERT( ++cnt <= 10, "Closing the P2P plugin is terminated" );
-    }while( res != std::future_status::ready );
-  }
-}
 
 ////////////////////////////// Begin node_delegate Implementation //////////////////////////////
 bool p2p_plugin_impl::has_item( const graphene::net::item_id& id )
@@ -214,9 +147,9 @@ bool p2p_plugin_impl::has_item( const graphene::net::item_id& id )
 
 bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg, bool sync_mode, std::vector<fc::uint160_t>& )
 { try {
-  if( running.load() )
+  if( shutdown_helper.get_running().load() )
   {
-    shutdown_helper helper(*this, activeHandleBlock, handleBlockFinished);
+    action_catcher ac( shutdown_helper.get_running(), shutdown_helper.get_state( HIVE_P2P_BLOCK_HANDLER ) );
 
     uint32_t head_block_num;
     chain.db().with_read_lock( [&]()
@@ -279,9 +212,7 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
   }
   else
   {
-    ilog("Block ignored due to started p2p_plugin shutdown");
-    if(handleBlockFinished.second.valid() == false)
-      handleBlockFinished.first.set_value();
+    ilog("Block ignored due to start p2p_plugin shutdown");
     FC_THROW("Preventing further processing of ignored block...");
   }
   return false;
@@ -289,11 +220,11 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
 
 void p2p_plugin_impl::handle_transaction( const graphene::net::trx_message& trx_msg )
 {
-  if(running.load())
+  if( shutdown_helper.get_running().load() )
   {
     try
     {
-      shutdown_helper helper(*this, activeHandleTx, handleTxFinished);
+      action_catcher ac( shutdown_helper.get_running(), shutdown_helper.get_state( HIVE_P2P_TRANSACTION_HANDLER ) );
 
       chain.accept_transaction( trx_msg.trx );
 
@@ -301,10 +232,7 @@ void p2p_plugin_impl::handle_transaction( const graphene::net::trx_message& trx_
   }
   else
   {
-    ilog("Transaction ignored due to started p2p_plugin shutdown");
-    if(handleTxFinished.second.valid() == false)
-      handleTxFinished.first.set_value();
-
+    ilog("Transaction ignored due to start p2p_plugin shutdown");
     FC_THROW("Preventing further processing of ignored transaction...");
   }
 }
@@ -381,7 +309,7 @@ graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& 
           ("id", id.item_hash)("id2", chain.db().get_block_id_for_num(block_header::num_from_id(id.item_hash))));
       FC_ASSERT( opt_block.valid() );
       // ilog("Serving up block #${num}", ("num", opt_block->block_num()));
-      return block_message(std::move(*opt_block));
+      return block_message(*opt_block);
     });
   }
   return chain.db().with_read_lock( [&]()
@@ -392,12 +320,12 @@ graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& 
 
 hive::protocol::chain_id_type p2p_plugin_impl::get_old_chain_id() const
 {
-  return STEEM_CHAIN_ID;
+  return chain.db().get_old_chain_id();
 }
 
 hive::protocol::chain_id_type p2p_plugin_impl::get_new_chain_id() const
 {
-  return HIVE_CHAIN_ID;
+  return chain.db().get_new_chain_id();
 }
 
 hive::protocol::chain_id_type p2p_plugin_impl::get_chain_id() const
@@ -414,7 +342,7 @@ std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_blockchain_synops
     synopsis.reserve(30);
     uint32_t high_block_num;
     uint32_t non_fork_high_block_num;
-    uint32_t low_block_num = chain.db().last_non_undoable_block_num();
+    uint32_t low_block_num = chain.db().get_last_irreversible_block_num();
     std::vector<block_id_type> fork_history;
 
     if (reference_point != item_hash_t())
@@ -534,9 +462,10 @@ void p2p_plugin_impl::sync_status( uint32_t item_type, uint32_t item_count )
   // any status reports to GUI go here
 }
 
-void p2p_plugin_impl::connection_count_changed( uint32_t c )
+void p2p_plugin_impl::connection_count_changed( uint32_t peer_count )
 {
   // any status reports to GUI go here
+  chain.connection_count_changed(peer_count);
 }
 
 uint32_t p2p_plugin_impl::get_block_number( const graphene::net::item_hash_t& block_id )
@@ -597,6 +526,7 @@ bool p2p_plugin_impl::is_included_block(const block_id_type& block_id)
 
 p2p_plugin::p2p_plugin()
 {
+  set_pre_shutdown_order( p2p_order );
 }
 
 p2p_plugin::~p2p_plugin() {}
@@ -713,7 +643,8 @@ void p2p_plugin::plugin_startup()
       {
         ilog("P2P adding seed node ${s}", ("s", seed));
         my->node->add_node(seed);
-        my->node->connect_to_endpoint(seed);
+        //don't connect to seed nodes until we've started p2p network
+        //my->node->connect_to_endpoint(seed);
       }
       catch( graphene::net::already_connected_to_requested_peer& )
       {
@@ -743,66 +674,15 @@ void p2p_plugin::plugin_startup()
   ilog( "P2P Plugin started" );
 }
 
-const char* fStatus(std::future_status s)
-{
-  switch(s)
-  {
-    case std::future_status::ready:
-    return "ready";
-    case std::future_status::deferred:
-    return "deferred";
-    case std::future_status::timeout:
-    return "timeout";
-    default:
-    return "unknown";
-  }
-}
-
-void p2p_plugin::plugin_shutdown() {
+void p2p_plugin::plugin_pre_shutdown() {
 
   if( !my->chain.is_p2p_enabled() )
     return;
 
   ilog("Shutting down P2P Plugin");
-  my->running.store(false);
 
-  ilog("P2P Plugin: checking handle_block and handle_transaction activity");
-  std::future_status bfState, tfState;
-  do
-  {
-    if(my->activeHandleBlock.load())
-    {
-      bfState = my->handleBlockFinished.second.wait_for(std::chrono::milliseconds(100));
-      if(bfState != std::future_status::ready)
-      {
-        ilog("waiting for handle_block finish: ${s}, future status: ${fs}",
-          ("s", fStatus(bfState))
-          ("fs", std::to_string(my->handleBlockFinished.second.valid()))
-        );
-      }
-    }
-    else
-    {
-      bfState = std::future_status::ready;
-    }
-
-    if(my->activeHandleTx.load())
-    {
-      tfState = my->handleTxFinished.second.wait_for(std::chrono::milliseconds(100));
-      if(tfState != std::future_status::ready)
-      {
-        ilog("waiting for handle_transaction finish: ${s}, future status: ${fs}",
-          ("s", fStatus(tfState))
-          ("fs", std::to_string(my->handleTxFinished.second.valid()))
-        );
-      }
-    }
-    else
-    {
-      tfState = std::future_status::ready;
-    }
-  }
-  while(bfState != std::future_status::ready && tfState != std::future_status::ready);
+  my->shutdown_helper.prepare_shutdown();
+  my->shutdown_helper.wait();
 
   ilog("P2P Plugin: checking handle_block and handle_transaction activity");
   my->node->close();
@@ -812,6 +692,11 @@ void p2p_plugin::plugin_shutdown() {
   quitDone->wait();
   ilog("p2p_thread quit done");
   my->node.reset();
+}
+
+void p2p_plugin::plugin_shutdown()
+{
+  //Nothing to do. Everything is closed/finished during `pre_shutdown` stage,
 }
 
 void p2p_plugin::broadcast_block( const hive::protocol::signed_block& block )
@@ -829,6 +714,33 @@ void p2p_plugin::broadcast_transaction( const hive::protocol::signed_transaction
 void p2p_plugin::set_block_production( bool producing_blocks )
 {
   my->block_producer = producing_blocks;
+}
+
+fc::variant_object p2p_plugin::get_info()
+{
+  fc::mutable_variant_object result = my->node->network_get_info();
+  result["connection_count"] = my->node->get_connection_count();
+  return result;
+}
+
+void p2p_plugin::add_node(const fc::ip::endpoint& endpoint)
+{
+  my->node->add_node(endpoint);
+}
+
+void p2p_plugin::set_allowed_peers(const std::vector<graphene::net::node_id_t>& allowed_peers)
+{
+  my->node->set_allowed_peers(allowed_peers);
+}
+
+std::vector< api_peer_status > p2p_plugin::get_connected_peers()
+{
+  std::vector<graphene::net::peer_status> connected_peers = my->node->get_connected_peers();
+  std::vector<api_peer_status> api_connected_peers;
+  api_connected_peers.reserve( connected_peers.size() );
+  for (const graphene::net::peer_status& peer : connected_peers)
+    api_connected_peers.emplace_back(peer.version, peer.host, peer.info);
+  return api_connected_peers;
 }
 
 } } } // namespace hive::plugins::p2p

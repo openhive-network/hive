@@ -3,6 +3,7 @@
 #include <fc/io/sstream.hpp>
 #include <fc/log/logger.hpp>
 #include <fc/io/json.hpp>
+#include <fc/stacktrace.hpp>
 
 #include <iostream>
 
@@ -250,6 +251,8 @@ namespace fc
       const char* expr
       )
    {
+      last_assert_expression = expr;
+
       fc::mutable_variant_object assert_trip_info =
          fc::mutable_variant_object()
          ("source_file", filename)
@@ -259,9 +262,18 @@ namespace fc
       std::cout
          << "FC_ASSERT triggered:  "
          << fc::json::to_string( assert_trip_info ) << "\n";
-      return;
+
+      if( enable_assert_stacktrace )
+      {
+         std::stringstream out;
+         out << "FC_ASSERT / CHAINBASE_THROW_EXCEPTION!" << std::endl;
+         print_stacktrace( out, 128, nullptr, false );
+         wlog( out.str() );
+      }
    }
 
    bool enable_record_assert_trip = false;
+   bool enable_assert_stacktrace = false;
+   string last_assert_expression;
 
 } // fc

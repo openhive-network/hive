@@ -47,7 +47,7 @@ class account_history_plugin_impl
 
 struct operation_visitor
 {
-  operation_visitor( database& db, const operation_notification& note, const operation_object*& n, account_name_type i, bool prune )
+  operation_visitor( database& db, const operation_notification& note, const operation_object*& n, const account_name_type& i, bool prune )
     :_db(db), _note(note), new_obj(n), item(i), _prune(prune) {}
 
   typedef void result_type;
@@ -123,7 +123,7 @@ struct operation_visitor
 
 struct operation_visitor_filter : operation_visitor
 {
-  operation_visitor_filter( database& db, const operation_notification& note, const operation_object*& n, account_name_type i, const flat_set< string >& filter, bool p, bool blacklist ):
+  operation_visitor_filter( database& db, const operation_notification& note, const operation_object*& n, const account_name_type& i, const flat_set< string >& filter, bool p, bool blacklist ):
     operation_visitor( db, note, n, i, p ), _filter( filter ), _blacklist( blacklist ) {}
 
   const flat_set< string >& _filter;

@@ -44,8 +44,6 @@
 
 #include <boost/scope_exit.hpp>
 
-#include <rocksdb/perf_context.h>
-
 #include <iostream>
 
 #include <cstdint>
@@ -55,36 +53,24 @@
 
 #include <stdlib.h>
 
-long hf24_time()
+long next_hf_time()
 {
-  long hf24Time =
+  // current "next hardfork" is HF25
+  long hfTime =
 #ifdef IS_TEST_NET
-    1588334400; // Friday, 1 May 2020 12:00:00 GMT
+    1622808000; //  Friday, 4 June 2021 12:00:00
 #else
-    1601992800; // Tuesday, 06-Oct-2020 14:00:00 UTC
-
+    1625061600; //  Wednesday, 30 June 2021 14:00:00
 #endif /// IS_TEST_NET
-  const char* value = getenv("HIVE_HF24_TIME");
+
+  const char* value = getenv("HIVE_HF25_TIME");
   if(value != nullptr)
   {
-    hf24Time = atol(value);
-    ilog("HIVE_HF24_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hf24Time));
+    hfTime = atol(value);
+    ilog("HIVE_HF25_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hfTime));
   }
 
-  return hf24Time;
-}
-
-long hf23_time()
-{
-  long hf23Time = 1584712800; // Friday, 20 March 2020 14:00:00 GMT
-  const char* value = getenv("HIVE_HF23_TIME");
-  if(value != nullptr)
-  {
-    hf23Time = atol(value);
-    ilog("HIVE_HF23_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hf23Time));
-  }
-
-  return hf23Time;
+  return hfTime;
 }
 
 namespace hive { namespace chain {
@@ -116,8 +102,6 @@ FC_REFLECT( hive::chain::operation_schema_repr, (id)(type) )
 FC_REFLECT( hive::chain::db_schema, (types)(object_types)(operation_type)(custom_operation_types) )
 
 namespace hive { namespace chain {
-
-using boost::container::flat_set;
 
 struct reward_fund_context
 {
@@ -156,13 +140,14 @@ void database::open( const open_args& args )
 
     helpers::environment_extension_resources environment_extension(
                                                 appbase::app().get_version_string(),
-                                                std::move( appbase::app().get_plugins_names() ),
+                                                appbase::app().get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension );
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
 
     initialize_indexes();
     initialize_evaluators();
+    initialize_irreversible_storage();
 
     if( !find< dynamic_global_property_object >() )
       with_write_lock( [&]()
@@ -177,12 +162,25 @@ void database::open( const open_args& args )
       _block_log.open( args.data_dir / "block_log" );
     });
 
+   auto hb = head_block_num();
+   auto last_irreversible_block = get_last_irreversible_block_num();
+
+   FC_ASSERT(hb >= last_irreversible_block);
+
+   ilog("Opened a blockchain database holding a state specific to head block: ${hb} and last irreversible block: ${lb}", ("hb", hb)("lb", last_irreversible_block));
+
     // Rewind all undo state. This should return us to the state at the last irreversible block.
     with_write_lock( [&]()
     {
-#ifndef ENABLE_MIRA
       undo_all();
-#endif
+
+      auto new_hb = head_block_num();
+
+      FC_ASSERT(new_hb >= last_irreversible_block);
+      
+      FC_ASSERT(this->get_last_irreversible_block_num() == last_irreversible_block, "Undo operation should not touch irreversible block value");
+
+      ilog("Blockchain state database is AT IRREVERSIBLE state specific to head block: ${hb} and LIB: ${lb}", ("hb", head_block_num())("lb", this->get_last_irreversible_block_num()));
 
       if( args.chainbase_flags & chainbase::skip_env_check )
       {
@@ -211,6 +209,9 @@ void database::open( const open_args& args )
       init_hardforks(); // Writes to local state, but reads from db
     });
 
+#ifdef IS_TEST_NET
+  /// Leave the chain-id passed to cmdline option.
+#else
     with_read_lock( [&]()
     {
       const auto& hardforks = get_hardfork_property_object();
@@ -220,7 +221,8 @@ void database::open( const open_args& args )
         set_chain_id(HIVE_CHAIN_ID);
       }
     });
-      
+#endif /// IS_TEST_NET
+
     if (args.benchmark.first)
     {
       args.benchmark.second(0, get_abstract_index_cntr());
@@ -230,7 +232,6 @@ void database::open( const open_args& args )
 
     _shared_file_full_threshold = args.shared_file_full_threshold;
     _shared_file_scale_rate = args.shared_file_scale_rate;
-    _sps_remove_threshold = args.sps_remove_threshold;
 
     auto account = find< account_object, by_name >( "nijeah" );
     if( account != nullptr && account->to_withdraw < 0 )
@@ -246,35 +247,6 @@ void database::open( const open_args& args )
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
-
-#ifdef ENABLE_MIRA
-void reindex_set_index_helper( database& db, mira::index_type type, const boost::filesystem::path& p, const boost::any& cfg, std::vector< std::string > indices )
-{
-  index_delegate_map delegates;
-
-  if ( indices.size() > 0 )
-  {
-    for ( auto& index_name : indices )
-    {
-      if ( db.has_index_delegate( index_name ) )
-        delegates[ index_name ] = db.get_index_delegate( index_name );
-      else
-        wlog( "Encountered an unknown index name '${name}'.", ("name", index_name) );
-    }
-  }
-  else
-  {
-    delegates = db.index_delegates();
-  }
-
-  std::string type_str = type == mira::index_type::mira ? "mira" : "bmic";
-  for ( auto const& delegate : delegates )
-  {
-    ilog( "Converting index '${name}' to ${type} type.", ("name", delegate.first)("type", type_str) );
-    delegate.second.set_index_type( db, type, p, cfg );
-  }
-}
-#endif
 
 uint32_t database::reindex_internal( const open_args& args, signed_block& block )
 {
@@ -298,32 +270,16 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
     args.benchmark.second( 0, get_abstract_index_cntr() );
   }
 
+  bool rat = fc::enable_record_assert_trip;
+  bool as = fc::enable_assert_stacktrace;
+  fc::enable_record_assert_trip = true; //enable detailed backtrace from FC_ASSERT (that should not ever be triggered during replay)
+  fc::enable_assert_stacktrace = true;
+
   while( !appbase::app().is_interrupt_request() && block.block_num() != last_block_num )
   {
     uint32_t cur_block_num = block.block_num();
-    if( cur_block_num % 100000 == 0 )
-    {
-      std::cerr << "   " << double( cur_block_num ) * 100 / last_block_num << "%   " << cur_block_num << " of " << last_block_num << "   (" <<
-#ifdef ENABLE_MIRA
-      get_cache_size()  << " objects cached using " << (get_cache_usage() >> 20) << "M"
-#else
-      (get_free_memory() >> 20) << "M free"
-#endif
-      << ")\n";
 
-      //rocksdb::SetPerfLevel(rocksdb::kEnableCount);
-      //rocksdb::get_perf_context()->Reset();
-    }
     apply_block( block, skip_flags );
-
-    if( cur_block_num % 100000 == 0 )
-    {
-      //std::cout << rocksdb::get_perf_context()->ToString() << std::endl;
-      if( cur_block_num % 1000000 == 0 )
-      {
-        dump_lb_call_counts();
-      }
-    }
 
     if( (args.benchmark.first > 0) && (cur_block_num % args.benchmark.first == 0) )
       args.benchmark.second( cur_block_num, get_abstract_index_cntr() );
@@ -336,6 +292,9 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
       block = std::move(*next_block);
     }
   }
+
+  fc::enable_record_assert_trip = rat; //restore flag
+  fc::enable_assert_stacktrace = as;
 
   if( appbase::app().is_interrupt_request() )
   {
@@ -380,12 +339,6 @@ uint32_t database::reindex( const open_args& args )
   {
     ilog( "Reindexing Blockchain" );
 
-    if( args.force_replay )
-      wipe( args.data_dir, args.shared_mem_dir, false );
-    else
-      close();
-
-    open( args );
 
     if( appbase::app().is_interrupt_request() )
       return 0;
@@ -395,14 +348,6 @@ uint32_t database::reindex( const open_args& args )
     note.force_replay = args.force_replay || _head_block_num == 0;
 
     HIVE_TRY_NOTIFY(_pre_reindex_signal, note);
-
-#ifdef ENABLE_MIRA
-    if( args.replay_in_memory )
-    {
-      ilog( "Configuring replay to use memory..." );
-      reindex_set_index_helper( *this, mira::index_type::bmic, args.shared_mem_dir, args.database_cfg, args.replay_memory_indices );
-    }
-#endif
 
     _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
 
@@ -458,14 +403,6 @@ uint32_t database::reindex( const open_args& args )
     if ( _block_log.head()->block_num() )
       _fork_db.start_block( *_block_log.head() );
 
-#ifdef ENABLE_MIRA
-    if ( args.replay_in_memory )
-    {
-      ilog( "Migrating state to disk..." );
-      reindex_set_index_helper( *this, mira::index_type::mira, args.shared_mem_dir, args.database_cfg, args.replay_memory_indices );
-    }
-#endif
-
     auto end_time = fc::time_point::now();
     ilog("Done reindexing, elapsed time: ${elapsed_time} sec", 
          ("elapsed_time", double((end_time - start_time).count()) / 1000000.0));
@@ -480,7 +417,8 @@ uint32_t database::reindex( const open_args& args )
 
 void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks)
 {
-  close();
+  if( get_is_open() )
+    close();
   chainbase::database::wipe( shared_mem_dir );
   if( include_blocks )
   {
@@ -493,6 +431,9 @@ void database::close(bool rewind)
 {
   try
   {
+    if(get_is_open() == false)
+      wlog("database::close method is MISUSED since it is NOT opened atm...");
+
     ilog( "Closing database" );
 
     // Since pop_block() will move tx's in the popped blocks into pending,
@@ -500,11 +441,12 @@ void database::close(bool rewind)
     // DB state (issue #336).
     clear_pending();
 
-#ifdef ENABLE_MIRA
-    undo_all();
-#endif
-
     chainbase::database::flush();
+
+    auto lib = this->get_last_irreversible_block_num();
+
+    ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
+
     chainbase::database::close();
 
     _block_log.close();
@@ -647,8 +589,8 @@ std::vector<signed_block> database::fetch_block_range_unlocked( const uint32_t s
   if (!result.empty())
     idump((result.front().block_num())(result.back().block_num()));
   result.reserve(result.size() + fork_items.size());
-  for (const fork_item& item : fork_items)
-    result.push_back(std::move(item.data));
+  for (fork_item& item : fork_items)
+    result.emplace_back(std::move(item.data));
 
   return result;
 } FC_LOG_AND_RETHROW() }
@@ -686,6 +628,24 @@ chain_id_type database::get_chain_id() const
   return hive_chain_id;
 }
 
+chain_id_type database::get_old_chain_id() const
+{
+#ifdef IS_TEST_NET
+  return hive_chain_id; /// In testnet always use the chain-id passed as hived option
+#else
+  return STEEM_CHAIN_ID;
+#endif /// IS_TEST_NET
+}
+
+chain_id_type database::get_new_chain_id() const
+{
+#ifdef IS_TEST_NET
+  return hive_chain_id; /// In testnet always use the chain-id passed as hived option
+#else
+  return HIVE_CHAIN_ID;
+#endif /// IS_TEST_NET
+}
+
 void database::set_chain_id( const chain_id_type& chain_id )
 {
   hive_chain_id = chain_id;
@@ -693,7 +653,7 @@ void database::set_chain_id( const chain_id_type& chain_id )
   idump( (hive_chain_id) );
 }
 
-void database::foreach_block(std::function<bool(const signed_block_header&, const signed_block&)> processor) const
+void database::foreach_block(const std::function<bool(const signed_block_header&, const signed_block&)>& processor) const
 {
   if(!_block_log.head())
     return;
@@ -822,7 +782,8 @@ const comment_object* database::find_comment( const account_name_type& author, c
   return find_comment( acc->get_id(), permlink );
 }
 
-#ifndef ENABLE_MIRA
+#ifndef ENABLE_STD_ALLOCATOR
+
 const comment_object& database::get_comment( const account_id_type& author, const string& permlink )const
 { try {
   return get< comment_object, by_permlink >( comment_object::compute_author_and_permlink_hash( author, permlink ) );
@@ -844,6 +805,7 @@ const comment_object* database::find_comment( const account_name_type& author, c
   if(acc == nullptr) return nullptr;
   return find_comment( acc->get_id(), permlink );
 }
+
 #endif
 
 const escrow_object& database::get_escrow( const account_name_type& name, uint32_t escrow_id )const
@@ -1089,6 +1051,7 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
   if( blocks.size() > 1 )
   {
     vector< std::pair< account_name_type, fc::time_point_sec > > witness_time_pairs;
+    witness_time_pairs.reserve( blocks.size() );
     for( const auto& b : blocks )
     {
       witness_time_pairs.push_back( std::make_pair( b->data.witness, b->data.timestamp ) );
@@ -1428,6 +1391,11 @@ void database::notify_load_snapshot_data_supplement(const load_snapshot_suppleme
   HIVE_TRY_NOTIFY(_load_snapshot_supplement_signal, note) 
 }
 
+void database::notify_comment_reward(const comment_reward_notification& note)
+{
+  HIVE_TRY_NOTIFY(_comment_reward_signal, note) 
+}
+
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
 {
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
@@ -1577,6 +1545,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
       else
         adjust_balance( to_account, new_vesting );
       // Update global vesting pool numbers.
+      const auto& smt = get< smt_token_object, by_symbol >( liquid.symbol );
       modify( smt, [&]( smt_token_object& smt_object )
       {
         if( to_reward_balance )
@@ -1647,7 +1616,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
 // we modify the database.
 // This allows us to implement virtual op pre-notifications in the Before function.
 template< typename Before >
-asset create_vesting2( database& db, const account_object& to_account, asset liquid, bool to_reward_balance, Before&& before_vesting_callback )
+asset create_vesting2( database& db, const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
 {
   try
   {
@@ -1666,7 +1635,7 @@ asset create_vesting2( database& db, const account_object& to_account, asset liq
   * @param to_account - the account to receive the new vesting shares
   * @param liquid     - HIVE or liquid SMT to be converted to vesting shares
   */
-asset database::create_vesting( const account_object& to_account, asset liquid, bool to_reward_balance )
+asset database::create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance )
 {
   return create_vesting2( *this, to_account, liquid, to_reward_balance, []( asset vests_created ) {} );
 }
@@ -1699,13 +1668,13 @@ void database::adjust_proxied_witness_votes( const account_object& a,
                         const std::array< share_type, HIVE_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
                         int depth )
 {
-  if( a.proxy != HIVE_PROXY_TO_SELF_ACCOUNT )
+  if( a.has_proxy() )
   {
     /// nested proxies are not supported, vote will not propagate
     if( depth >= HIVE_MAX_PROXY_RECURSION_DEPTH )
       return;
 
-    const auto& proxy = get_account( a.proxy );
+    const auto& proxy = get_account( a.get_proxy() );
 
     modify( proxy, [&]( account_object& a )
     {
@@ -1728,13 +1697,13 @@ void database::adjust_proxied_witness_votes( const account_object& a,
 
 void database::adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth )
 {
-  if( a.proxy != HIVE_PROXY_TO_SELF_ACCOUNT )
+  if( a.has_proxy() )
   {
     /// nested proxies are not supported, vote will not propagate
     if( depth >= HIVE_MAX_PROXY_RECURSION_DEPTH )
       return;
 
-    const auto& proxy = get_account( a.proxy );
+    const auto& proxy = get_account( a.get_proxy() );
 
     modify( proxy, [&]( account_object& a )
     {
@@ -1749,7 +1718,16 @@ void database::adjust_proxied_witness_votes( const account_object& a, share_type
   }
 }
 
-void database::adjust_witness_votes( const account_object& a, share_type delta )
+void database::nullify_proxied_witness_votes( const account_object& a )
+{
+  std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
+  delta[ 0 ] = -a.get_real_vesting_shares();
+  for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
+    delta[ i + 1 ] = -a.proxied_vsf_votes[ i ];
+  adjust_proxied_witness_votes( a, delta );
+}
+
+void database::adjust_witness_votes( const account_object& a, const share_type& delta )
 {
   const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
   auto itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
@@ -2064,7 +2042,8 @@ void database::lock_account( const account_object& account )
 
   modify( account, []( account_object& a )
   {
-    a.recovery_account = a.name;
+    a.set_recovery_account( a );
+    a.memo_key = public_key_type();
   } );
 
   auto rec_req = find< account_recovery_request_object, by_account >( account.name );
@@ -2124,7 +2103,7 @@ void database::gather_balance( const std::string& name, const asset& balance, co
 void database::clear_accounts( const std::set< std::string >& cleared_accounts )
 {
   auto treasury_name = get_treasury_name();
-  for( auto account_name : cleared_accounts )
+  for( const auto& account_name : cleared_accounts )
   {
     const auto* account_ptr = find_account( account_name );
     if( account_ptr == nullptr )
@@ -2270,15 +2249,23 @@ void database::clear_account( const account_object& account,
 
   // Remove pending convert requests (return balance to account)
   const auto& request_idx = get_index< chain::convert_request_index, chain::by_owner >();
-  auto request_itr = request_idx.lower_bound( account_name );
-  while( request_itr != request_idx.end() && request_itr->owner == account_name )
+  auto request_itr = request_idx.lower_bound( account.get_id() );
+  while( request_itr != request_idx.end() && request_itr->get_owner() == account.get_id() )
   {
     auto& request = *request_itr;
     ++request_itr;
 
-    adjust_balance( account, request.amount );
+    adjust_balance( account, request.get_convert_amount() );
     remove( request );
   }
+
+  // Make sure there are no pending collateralized convert requests
+  // (if we decided to handle them anyway, in case we wanted to reuse this routine outsede HF23 code,
+  // we should most likely destroy collateral balance instead of putting it into treasury)
+  const auto& collateralized_request_idx = get_index< chain::collateralized_convert_request_index, chain::by_owner >();
+  auto collateralized_request_itr = collateralized_request_idx.lower_bound( account.get_id() );
+  FC_ASSERT( collateralized_request_itr == collateralized_request_idx.end() || collateralized_request_itr->get_owner() != account.get_id(),
+    "Collateralized convert requests not handled by clear_account" );
 
   // Remove ongoing saving withdrawals (return/pass balance to account)
   const auto& withdraw_from_idx = get_index< savings_withdraw_index, by_from_rid >();
@@ -2387,6 +2374,110 @@ void database::process_delayed_voting( const block_notification& note )
   {
     delayed_voting dv( *this );
     dv.run( note.block.timestamp );
+  }
+}
+
+/**
+  *  Iterates over all recurrent transfers with a due date date before
+  *  the head block time and then executes the transfers
+  */
+void database::process_recurrent_transfers()
+{
+  if( !has_hardfork( HIVE_HARDFORK_1_25 ) )
+    return;
+
+  auto now = head_block_time();
+  const auto& recurrent_transfers_by_date = get_index< recurrent_transfer_index, by_trigger_date >();
+  auto itr = recurrent_transfers_by_date.begin();
+
+  // uint16_t is okay because we stop at 1000, if the limit changes, make sure to check if it fits in the integer.
+  uint16_t processed_transfers = 0;
+
+  while( itr != recurrent_transfers_by_date.end() && itr->get_trigger_date() <= now )
+  {
+    // Since this is an intensive process, we don't want to process too many recurrent transfers in a single block
+    if (processed_transfers >= HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK)
+    {
+      ilog("Reached max processed recurrent transfers this block");
+      return;
+    }
+
+    auto &current_recurrent_transfer = *itr;
+    ++itr;
+
+    const auto &from_account = get_account(current_recurrent_transfer.from_id);
+    const auto &to_account = get_account(current_recurrent_transfer.to_id);
+    asset available = get_balance(from_account, current_recurrent_transfer.amount.symbol);
+    FC_ASSERT(current_recurrent_transfer.remaining_executions > 0);
+    const auto remaining_executions = current_recurrent_transfer.remaining_executions -1;
+    bool remove_recurrent_transfer = false;
+
+    // If we have enough money, we proceed with the transfer
+    if (available >= current_recurrent_transfer.amount)
+    {
+      adjust_balance(from_account, -current_recurrent_transfer.amount);
+      adjust_balance(to_account, current_recurrent_transfer.amount);
+
+      // No need to update the object if we know that we will remove it
+      if (remaining_executions == 0)
+      {
+        remove_recurrent_transfer = true;
+      }
+      else
+      {
+        modify(current_recurrent_transfer, [&](recurrent_transfer_object &rt)
+        {
+          rt.consecutive_failures = 0; // reset the consecutive failures counter
+          rt.update_next_trigger_date();
+          rt.remaining_executions = remaining_executions;
+        });
+      }
+
+      push_virtual_operation(fill_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, to_string(current_recurrent_transfer.memo), remaining_executions));
+    }
+    else
+    {
+      uint8_t consecutive_failures = current_recurrent_transfer.consecutive_failures + 1;
+
+      if (consecutive_failures < HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES)
+      {
+        // No need to update the object if we know that we will remove it
+        if (remaining_executions == 0)
+        {
+          remove_recurrent_transfer = true;
+        }
+        else
+        {
+          modify(current_recurrent_transfer, [&](recurrent_transfer_object &rt)
+          {
+            ++rt.consecutive_failures;
+            rt.update_next_trigger_date();
+            rt.remaining_executions = remaining_executions;
+          });
+        }
+        // false means the recurrent transfer was not deleted
+        push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, false));
+      }
+      else
+      {
+        // if we had too many consecutive failures, remove the recurrent payment object
+        remove_recurrent_transfer = true;
+        // true means the recurrent transfer was deleted
+        push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, true));
+      }
+    }
+
+    if (remove_recurrent_transfer)
+    {
+      remove( current_recurrent_transfer );
+      modify(from_account, [&](account_object& a )
+      {
+        FC_ASSERT( a.open_recurrent_transfers > 0 );
+        a.open_recurrent_transfers--;
+      });
+    }
+
+    processed_transfers++;
   }
 }
 
@@ -2646,7 +2737,7 @@ share_type database::pay_curators( const comment_object& comment, const comment_
         {
           unclaimed_rewards -= claim;
           const auto& voter = get( item->voter );
-          operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.permlink ) );
+          operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.permlink ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
           create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
             [&]( const asset& reward )
             {
@@ -2694,11 +2785,13 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
       const share_type reward = util::get_rshare_reward( ctx );
       uint128_t reward_tokens = uint128_t( reward.value );
+      share_type curation_tokens;
+      share_type author_tokens;
 
       if( reward_tokens > 0 )
       {
-        share_type curation_tokens = ( ( reward_tokens * get_curation_rewards_percent() ) / HIVE_100_PERCENT ).to_uint64();
-        share_type author_tokens = reward_tokens.to_uint64() - curation_tokens;
+        curation_tokens = ( ( reward_tokens * get_curation_rewards_percent() ) / HIVE_100_PERCENT ).to_uint64();
+        author_tokens = reward_tokens.to_uint64() - curation_tokens;
 
         share_type curation_remainder = pay_curators( comment, comment_cashout, curation_tokens );
 
@@ -2759,7 +2852,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         auto curators_vesting_payout = calculate_vesting( *this, asset( curation_tokens, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
         operation vop = author_reward_operation( comment_author, to_string( comment_cashout.permlink ), hbd_payout.first, hbd_payout.second, asset( 0, VESTS_SYMBOL ),
-                                                curators_vesting_payout );
+                                                curators_vesting_payout, has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
         create_vesting2( *this, author, asset( vesting_hive, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
           [&]( const asset& vesting_payout )
@@ -2787,6 +2880,8 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             a.posting_rewards += author_tokens;
           });
       }
+
+      notify_comment_reward( { reward, author_tokens, curation_tokens } );
 
       if( !has_hardfork( HIVE_HARDFORK_0_17__774 ) )
         adjust_rshares2( util::evaluate_reward_curve( comment_cashout.net_rshares.value ), 0 );
@@ -2841,9 +2936,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       }
       else
       {
-#ifdef CLEAR_VOTES
         remove( cur_vote );
-#endif
       }
     }
 
@@ -3035,7 +3128,10 @@ void database::process_funds()
     else if( cwit.schedule == witness_object::elected )
       witness_reward *= wso.elected_weight;
     else
-      wlog( "Encountered unknown witness type for witness: ${w}", ("w", cwit.owner) );
+    {
+      push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+        "Encountered unknown witness type for witness: ${w}", ( "w", cwit.owner ) ).get_message() ) );
+    }
 
     witness_reward /= wso.witness_pay_normalization_factor;
 
@@ -3142,7 +3238,7 @@ asset database::get_liquidity_reward()const
     return asset( 0, HIVE_SYMBOL );
 
   const auto& props = get_dynamic_global_properties();
-  static_assert( HIVE_LIQUIDITY_REWARD_PERIOD_SEC == 60*60, "this code assumes a 1 hour time interval" );
+  static_assert( HIVE_LIQUIDITY_REWARD_PERIOD_SEC == 60*60, "this code assumes a 1 hour time interval" ); // NOLINT(misc-redundant-expression)
   asset percent( protocol::calc_percent_reward_per_hour< HIVE_LIQUIDITY_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL );
   return std::max( percent, HIVE_MIN_LIQUIDITY_REWARD );
 }
@@ -3190,6 +3286,7 @@ asset database::get_producer_reward()
     {
       a.balance += pay;
     } );
+    push_virtual_operation( producer_reward_operation( witness_account.name, pay ) );
   }
 
   return pay;
@@ -3255,7 +3352,7 @@ uint16_t database::get_curation_rewards_percent() const
     return HIVE_1_PERCENT * 50;
 }
 
-share_type database::pay_reward_funds( share_type reward )
+share_type database::pay_reward_funds( const share_type& reward )
 {
   const auto& reward_idx = get_index< reward_fund_index, by_id >();
   share_type used_rewards = 0;
@@ -3280,16 +3377,14 @@ share_type database::pay_reward_funds( share_type reward )
 }
 
 /**
-  *  Iterates over all conversion requests with a conversion date before
+  *  Iterates over all [collateralized] conversion requests with a conversion date before
   *  the head block time and then converts them to/from HIVE/HBD at the
-  *  current median price feed history price times the premium
+  *  current median price feed history price times the premium/fee
+  *  Collateralized requests might also return excess collateral.
   */
 void database::process_conversions()
 {
   auto now = head_block_time();
-  const auto& request_by_date = get_index< convert_request_index >().indices().get< by_conversion_date >();
-  auto itr = request_by_date.begin();
-
   const auto& fhistory = get_feed_history();
   if( fhistory.current_median_history.is_null() )
     return;
@@ -3297,29 +3392,82 @@ void database::process_conversions()
   asset net_hbd( 0, HBD_SYMBOL );
   asset net_hive( 0, HIVE_SYMBOL );
 
-  while( itr != request_by_date.end() && itr->conversion_date <= now )
+  //regular requests
   {
-    auto amount_to_issue = itr->amount * fhistory.current_median_history;
+    const auto& request_by_date = get_index< convert_request_index, by_conversion_date >();
+    auto itr = request_by_date.begin();
 
-    adjust_balance( itr->owner, amount_to_issue );
+    while( itr != request_by_date.end() && itr->get_conversion_date() <= now )
+    {
+      auto amount_to_issue = itr->get_convert_amount() * fhistory.current_median_history;
+      const auto& owner = get_account( itr->get_owner() );
 
-    net_hbd  += itr->amount;
-    net_hive += amount_to_issue;
+      adjust_balance( owner, amount_to_issue );
 
-    push_virtual_operation( fill_convert_request_operation ( itr->owner, itr->requestid, itr->amount, amount_to_issue ) );
+      net_hbd  -= itr->get_convert_amount();
+      net_hive += amount_to_issue;
 
-    remove( *itr );
-    itr = request_by_date.begin();
+      push_virtual_operation( fill_convert_request_operation( owner.get_name(), itr->get_request_id(),
+        itr->get_convert_amount(), amount_to_issue ) );
+
+      remove( *itr );
+      itr = request_by_date.begin();
+    }
   }
 
-  const auto& props = get_dynamic_global_properties();
-  modify( props, [&]( dynamic_global_property_object& p )
+  //collateralized requests
   {
+    const auto& request_by_date = get_index< collateralized_convert_request_index, by_conversion_date >();
+    auto itr = request_by_date.begin();
+
+    while( itr != request_by_date.end() && itr->get_conversion_date() <= now )
+    {
+      const auto& owner = get_account( itr->get_owner() );
+
+      //calculate how much HIVE we'd need for already created HBD at current corrected price
+      //note that we are using market median price instead of minimal as it was during immediate part of this
+      //conversion or current median price as is used in other conversions; the former is by design - we are supposed
+      //to use median price here, minimal during immediate conversion was to prevent gaming; the latter is for rare
+      //case, when this conversion happens when median price does not reflect market conditions when hard limit was
+      //hit - see update_median_feed()
+      auto required_hive = multiply_with_fee( itr->get_converted_amount(), fhistory.market_median_history,
+        HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
+      auto excess_collateral = itr->get_collateral_amount() - required_hive;
+      if( excess_collateral.amount < 0 )
+      {
+        push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+          "Insufficient collateral on conversion ${id} by ${o} - shortfall of ${ec}",
+          ( "id", itr->get_request_id() )( "o", owner.get_name() )( "ec", -excess_collateral ) ).get_message() ) );
+
+        required_hive = itr->get_collateral_amount();
+        excess_collateral.amount = 0;
+      }
+      else
+      {
+        adjust_balance( owner, excess_collateral );
+      }
+
+      net_hive -= required_hive;
+      //note that HBD was created immediately, so we don't need to correct its supply here
+      push_virtual_operation( fill_collateralized_convert_request_operation( owner.get_name(), itr->get_request_id(),
+        required_hive, itr->get_converted_amount(), excess_collateral ) );
+
+      remove( *itr );
+      itr = request_by_date.begin();
+    }
+  }
+
+  //correct global supply (if needed)
+  if( net_hive.amount.value | net_hbd.amount.value )
+  {
+    modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& p )
+    {
       p.current_supply += net_hive;
-      p.current_hbd_supply -= net_hbd;
+      p.current_hbd_supply += net_hbd;
       p.virtual_supply += net_hive;
-      p.virtual_supply -= net_hbd * get_feed_history().current_median_history;
-  } );
+      p.virtual_supply += net_hbd * fhistory.current_median_history;
+    } );
+  }
 }
 
 asset database::to_hbd( const asset& hive )const
@@ -3335,10 +3483,10 @@ asset database::to_hive( const asset& hbd )const
 void database::account_recovery_processing()
 {
   // Clear expired recovery requests
-  const auto& rec_req_idx = get_index< account_recovery_request_index >().indices().get< by_expiration >();
+  const auto& rec_req_idx = get_index< account_recovery_request_index, by_expiration >();
   auto rec_req = rec_req_idx.begin();
 
-  while( rec_req != rec_req_idx.end() && rec_req->expires <= head_block_time() )
+  while( rec_req != rec_req_idx.end() && rec_req->get_expiration_time() <= head_block_time() )
   {
     remove( *rec_req );
     rec_req = rec_req_idx.begin();
@@ -3355,15 +3503,20 @@ void database::account_recovery_processing()
   }
 
   // Apply effective recovery_account changes
-  const auto& change_req_idx = get_index< change_recovery_account_request_index >().indices().get< by_effective_date >();
+  const auto& change_req_idx = get_index< change_recovery_account_request_index, by_effective_date >();
   auto change_req = change_req_idx.begin();
 
-  while( change_req != change_req_idx.end() && change_req->effective_on <= head_block_time() )
+  while( change_req != change_req_idx.end() && change_req->get_execution_time() <= head_block_time() )
   {
-    modify( get_account( change_req->account_to_recover ), [&]( account_object& a )
+    const auto& account = get_account( change_req->get_account_to_recover() );
+    const auto& old_recovery_account_name = account.get_recovery_account();
+    const auto& new_recovery_account = get_account( change_req->get_recovery_account() );
+    modify( account, [&]( account_object& a )
     {
-      a.recovery_account = change_req->recovery_account;
+      a.set_recovery_account( new_recovery_account );
     });
+
+    push_virtual_operation(changed_recovery_account_operation( account.name, old_recovery_account_name, new_recovery_account.name ));
 
     remove( *change_req );
     change_req = change_req_idx.begin();
@@ -3402,19 +3555,13 @@ void database::process_decline_voting_rights()
   {
     const auto& account = get< account_object, by_name >( itr->account );
 
-    /// remove all current votes
-    std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH+1> delta;
-    delta[0] = -account.get_real_vesting_shares();
-    for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-      delta[i+1] = -account.proxied_vsf_votes[i];
-    adjust_proxied_witness_votes( account, delta );
-
+    nullify_proxied_witness_votes( account );
     clear_witness_votes( account );
 
     modify( account, [&]( account_object& a )
     {
       a.can_vote = false;
-      a.proxy = HIVE_PROXY_TO_SELF_ACCOUNT;
+      a.clear_proxy();
     });
 
     remove( *itr );
@@ -3442,9 +3589,21 @@ node_property_object& database::node_properties()
   return _node_property_object;
 }
 
-uint32_t database::last_non_undoable_block_num() const
+uint32_t database::get_last_irreversible_block_num() const
 {
-  return get_dynamic_global_properties().last_irreversible_block_num;
+  //ilog("getting last_irreversible_block_num irreversible is ${l}", ("l", irreversible_object->last_irreversible_block_num));
+  //ilog("getting last_irreversible_block_num head is ${l}", ("l", head_block_num()));
+  return irreversible_object->last_irreversible_block_num;
+}
+
+void database::set_last_irreversible_block_num(uint32_t block_num)
+{
+  //ilog("setting last_irreversible_block_num previous ${l}", ("l", irreversible_object->last_irreversible_block_num));
+  FC_ASSERT(block_num >= irreversible_object->last_irreversible_block_num, "Irreversible block can only move forward. Old: ${o}, new: ${n}",
+    ("o", irreversible_object->last_irreversible_block_num)("n", block_num));
+
+  irreversible_object->last_irreversible_block_num = block_num;
+  //ilog("setting last_irreversible_block_num new ${l}", ("l", irreversible_object->last_irreversible_block_num));
 }
 
 void database::initialize_evaluators()
@@ -3471,6 +3630,7 @@ void database::initialize_evaluators()
   _my->_evaluator_registry.register_evaluator< report_over_production_evaluator         >();
   _my->_evaluator_registry.register_evaluator< feed_publish_evaluator                   >();
   _my->_evaluator_registry.register_evaluator< convert_evaluator                        >();
+  _my->_evaluator_registry.register_evaluator< collateralized_convert_evaluator         >();
   _my->_evaluator_registry.register_evaluator< limit_order_create_evaluator             >();
   _my->_evaluator_registry.register_evaluator< limit_order_create2_evaluator            >();
   _my->_evaluator_registry.register_evaluator< limit_order_cancel_evaluator             >();
@@ -3510,6 +3670,7 @@ void database::initialize_evaluators()
   _my->_evaluator_registry.register_evaluator< update_proposal_evaluator                >();
   _my->_evaluator_registry.register_evaluator< update_proposal_votes_evaluator          >();
   _my->_evaluator_registry.register_evaluator< remove_proposal_evaluator                >();
+  _my->_evaluator_registry.register_evaluator< recurrent_transfer_evaluator             >();
 
 
 #ifdef IS_TEST_NET
@@ -3542,6 +3703,13 @@ void database::initialize_indexes()
 {
   initialize_core_indexes( *this );
   _plugin_index_signal();
+}
+
+void database::initialize_irreversible_storage()
+{
+  auto s = get_segment_manager();
+
+  irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
 }
 
 void database::resetState(const open_args& args)
@@ -3696,6 +3864,9 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
     create< feed_history_object >( [&]( feed_history_object& o )
     {
       o.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
+      o.market_median_history = o.current_median_history;
+      o.current_min_history = o.current_median_history;
+      o.current_max_history = o.current_median_history;
     });
 #else
     // Nothing to do
@@ -3843,7 +4014,6 @@ void database::apply_block( const signed_block& next_block, uint32_t skip )
 
 void database::check_free_memory( bool force_print, uint32_t current_block_num )
 {
-#ifndef ENABLE_MIRA
   uint64_t free_mem = get_free_memory();
   uint64_t max_mem = get_max_memory();
 
@@ -3879,7 +4049,6 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
         elog( "Free memory is now ${n}M. Increase shared file size immediately!" , ("n", free_mb) );
     }
   }
-#endif
 }
 
 void database::_apply_block( const signed_block& next_block )
@@ -4014,22 +4183,17 @@ void database::_apply_block( const signed_block& next_block )
   update_global_dynamic_data(next_block);
   update_signing_witness(signing_witness, next_block);
 
-  update_last_irreversible_block();
+  uint32_t old_last_irreversible = update_last_irreversible_block();
 
   create_block_summary(next_block);
   clear_expired_transactions();
   clear_expired_orders();
   clear_expired_delegations();
 
-  if( next_block.block_num() % 100000 == 0 )
-  {
-
-  }
-
   update_witness_schedule(*this);
 
   update_median_feed();
-  update_virtual_supply();
+  update_virtual_supply(); //accommodate potentially new price
 
   clear_null_account_balance();
   consolidate_treasury_balance();
@@ -4040,13 +4204,16 @@ void database::_apply_block( const signed_block& next_block )
   process_savings_withdraws();
   process_subsidized_accounts();
   pay_liquidity_reward();
-  update_virtual_supply();
+  update_virtual_supply(); //cover changes in HBD supply from above processes
 
   account_recovery_processing();
   expire_escrow_ratification();
   process_decline_voting_rights();
-  process_proposals( note );
+  process_proposals( note ); //new HBD converted here does not count towards limit
   process_delayed_voting( note );
+  remove_expired_governance_votes();
+
+  process_recurrent_transfers();
 
   generate_required_actions();
   generate_optional_actions();
@@ -4065,8 +4232,7 @@ void database::_apply_block( const signed_block& next_block )
   // and commits irreversible state to the database. This should always be the
   // last call of applying a block because it is the only thing that is not
   // reversible.
-  migrate_irreversible_state();
-  trim_cache();
+  migrate_irreversible_state(old_last_irreversible);
 
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (next_block.block_num()) ) }
 
@@ -4141,7 +4307,8 @@ void database::process_header_extensions( const signed_block& next_block, requir
     e.visit( _v );
 }
 
-void database::update_median_feed() {
+void database::update_median_feed()
+{
 try {
   if( (head_block_num() % HIVE_FEED_INTERVAL_BLOCKS) != 0 )
     return;
@@ -4184,15 +4351,12 @@ try {
 
       if( fho.price_history.size() )
       {
-        /// BW-TODO Why deque is used here ? Also why don't make copy of whole container ?
-        std::deque< price > copy;
-        for( const auto& i : fho.price_history )
-        {
-          copy.push_back( i );
-        }
-
-        std::sort( copy.begin(), copy.end() ); /// TODO: use nth_item
+        std::vector< price > copy( fho.price_history.begin(), fho.price_history.end() );
+        std::sort( copy.begin(), copy.end() );
         fho.current_median_history = copy[copy.size()/2];
+        fho.market_median_history = fho.current_median_history;
+        fho.current_min_history = copy.front();
+        fho.current_max_history = copy.back();
 
 #ifdef IS_TEST_NET
         if( skip_price_feed_limit_check )
@@ -4201,21 +4365,34 @@ try {
         if( has_hardfork( HIVE_HARDFORK_0_14__230 ) )
         {
           // This block limits the effective median price to force HBD to remain at or
-          // below 10% of the combined market cap of HIVE and HBD.
+          // below 10% of the combined market cap of HIVE and HBD. The reason is to prevent
+          // individual with a lot of HBD to use sharp decline in HIVE price to make
+          // in-chain-but-out-of-market conversion to HIVE and take over the blockchain
           //
           // For example, if we have 500 HIVE and 100 HBD, the price is limited to
           // 900 HBD / 500 HIVE which works out to be $1.80.  At this price, 500 HIVE
           // would be valued at 500 * $1.80 = $900.  100 HBD is by definition always $100,
           // so the combined market cap is $900 + $100 = $1000.
 
-          const auto& gpo = get_dynamic_global_properties();
-
-          if( gpo.get_current_hbd_supply().amount > 0 )
+          const auto& dgpo = get_dynamic_global_properties();
+          auto hbd_supply = dgpo.get_current_hbd_supply();
+          if( has_hardfork( HIVE_HARDFORK_1_25_HBD_HARD_CAP ) )
+            hbd_supply -= get_treasury().get_hbd_balance();
+          if( hbd_supply.amount > 0 )
           {
-            price min_price( asset( 9 * gpo.get_current_hbd_supply().amount, HBD_SYMBOL ), gpo.current_supply );
+            price min_price( asset( 9 * hbd_supply.amount, HBD_SYMBOL ), dgpo.get_current_supply() );
 
             if( min_price > fho.current_median_history )
+            {
+              push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+                "HIVE price corrected upward due to 10% HBD cutoff rule, from ${actual} to ${corrected}",
+                ( "actual", fho.current_median_history )( "corrected", min_price ) ).get_message() ) );
+
               fho.current_median_history = min_price;
+            }
+            //should we also correct current_min_history? note that we MUST NOT change market_median_history
+            if( min_price > fho.current_max_history )
+              fho.current_max_history = min_price;
           }
         }
       }
@@ -4430,7 +4607,7 @@ void database::process_optional_actions( const optional_automated_actions& actio
   // and it is safe to delete.
   const auto& pending_action_idx = get_index< pending_optional_action_index, by_execution >();
   auto pending_itr = pending_action_idx.begin();
-  auto lib = fetch_block_by_number( get_dynamic_global_properties().last_irreversible_block_num );
+  auto lib = fetch_block_by_number( get_last_irreversible_block_num() );
 
   // This is always valid when running on mainnet because there are irreversible blocks
   // Testnet and unit tests, not so much. Could be ifdeffed with IS_TEST_NET, but seems
@@ -4639,6 +4816,11 @@ boost::signals2::connection database::add_snapshot_supplement_handler(const load
   return connect_impl(_load_snapshot_supplement_signal, func, plugin, group, "->load_snapshot_data_supplement");
 }
 
+boost::signals2::connection database::add_comment_reward_handler(const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
+{
+  return connect_impl(_comment_reward_signal, func, plugin, group, "->comment_reward");
+}
+
 const witness_object& database::validate_block_header( uint32_t skip, const signed_block& next_block )const
 { try {
   FC_ASSERT( head_block_id() == next_block.previous, "", ("head_block_id",head_block_id())("next.prev",next_block.previous) );
@@ -4727,45 +4909,50 @@ FC_TODO( "#ifndef not needed after HF 20 is live" );
 
   if( !(get_node_properties().skip_flags & skip_undo_history_check) )
   {
-    HIVE_ASSERT( _dgp.head_block_number - _dgp.last_irreversible_block_num  < HIVE_MAX_UNDO_HISTORY, undo_database_exception,
+    HIVE_ASSERT( _dgp.head_block_number - get_last_irreversible_block_num() < HIVE_MAX_UNDO_HISTORY, undo_database_exception,
             "The database does not have enough undo history to support a blockchain with so many missed blocks. "
             "Please add a checkpoint if you would like to continue applying blocks beyond this point.",
-            ("last_irreversible_block_num",_dgp.last_irreversible_block_num)("head", _dgp.head_block_number)
+            ("last_irreversible_block_num",get_last_irreversible_block_num())("head", _dgp.head_block_number)
             ("max_undo",HIVE_MAX_UNDO_HISTORY) );
   }
 } FC_CAPTURE_AND_RETHROW() }
+
+uint16_t database::calculate_HBD_percent()
+{
+  auto median_price = get_feed_history().current_median_history;
+  if( median_price.is_null() )
+    return 0;
+
+  const auto& dgpo = get_dynamic_global_properties();
+  auto hbd_supply = dgpo.get_current_hbd_supply();
+  auto virtual_supply = dgpo.virtual_supply;
+  if( has_hardfork( HIVE_HARDFORK_1_24 ) )
+  {
+    // Removing the hbd in the treasury from the debt ratio calculations
+    hbd_supply -= get_treasury().get_hbd_balance();
+    if( hbd_supply.amount < 0 )
+      hbd_supply = asset( 0, HBD_SYMBOL );
+    virtual_supply = hbd_supply * median_price + dgpo.get_current_supply();
+  }
+
+  auto hbd_as_hive = fc::uint128_t( ( hbd_supply * median_price ).amount.value );
+  hbd_as_hive *= HIVE_100_PERCENT;
+  if( has_hardfork( HIVE_HARDFORK_0_21 ) )
+    hbd_as_hive += virtual_supply.amount.value / 2; // added rounding
+  return uint16_t( ( hbd_as_hive / virtual_supply.amount.value ).to_uint64() );
+}
 
 void database::update_virtual_supply()
 { try {
   modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgp )
   {
-    dgp.virtual_supply = dgp.current_supply
-      + ( get_feed_history().current_median_history.is_null() ? asset( 0, HIVE_SYMBOL ) : dgp.get_current_hbd_supply() * get_feed_history().current_median_history );
-
     auto median_price = get_feed_history().current_median_history;
+    dgp.virtual_supply = dgp.current_supply
+      + ( median_price.is_null() ? asset( 0, HIVE_SYMBOL ) : dgp.get_current_hbd_supply() * median_price );
 
     if( !median_price.is_null() && has_hardfork( HIVE_HARDFORK_0_14__230 ) )
     {
-      uint16_t percent_hbd = 0;
-
-      if( has_hardfork( HIVE_HARDFORK_1_24 ) )
-      {
-        // Removing the hbd in the treasury from the debt ratio calculations
-        const auto &treasury_account = get_treasury();
-        const auto hdb_supply_without_treasury = (dgp.get_current_hbd_supply() - treasury_account.hbd_balance).amount < 0 ? asset(0, HBD_SYMBOL) : (dgp.get_current_hbd_supply() - treasury_account.hbd_balance) ;
-        const auto virtual_supply_without_treasury = hdb_supply_without_treasury * get_feed_history().current_median_history + dgp.current_supply;
-        percent_hbd = uint16_t( ( ( fc::uint128_t( ( hdb_supply_without_treasury * get_feed_history().current_median_history ).amount.value ) * HIVE_100_PERCENT + virtual_supply_without_treasury.amount.value/2 )
-                                  / virtual_supply_without_treasury.amount.value ).to_uint64() );
-      } else if( has_hardfork( HIVE_HARDFORK_0_21 ) )
-      {
-        percent_hbd = uint16_t( ( ( fc::uint128_t( ( dgp.get_current_hbd_supply() * get_feed_history().current_median_history ).amount.value ) * HIVE_100_PERCENT + dgp.virtual_supply.amount.value/2 )
-          / dgp.virtual_supply.amount.value ).to_uint64() );
-      }
-      else
-      {
-        percent_hbd = uint16_t( ( ( fc::uint128_t( ( dgp.get_current_hbd_supply() * get_feed_history().current_median_history ).amount.value ) * HIVE_100_PERCENT )
-        / dgp.virtual_supply.amount.value ).to_uint64() );
-      }
+      uint16_t percent_hbd = calculate_HBD_percent();
 
       if( percent_hbd <= dgp.hbd_start_percent )
         dgp.hbd_print_rate = HIVE_100_PERCENT;
@@ -4789,10 +4976,9 @@ void database::update_signing_witness(const witness_object& signing_witness, con
   } );
 } FC_CAPTURE_AND_RETHROW() }
 
-void database::update_last_irreversible_block()
+uint32_t database::update_last_irreversible_block()
 { try {
-  const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-  auto old_last_irreversible = dpo.last_irreversible_block_num;
+  uint32_t old_last_irreversible = get_last_irreversible_block_num();
 
   /**
     * Prior to voting taking over, we must be more conservative...
@@ -4800,11 +4986,12 @@ void database::update_last_irreversible_block()
     */
   if( head_block_num() < HIVE_START_MINER_VOTING_BLOCK )
   {
-    modify( dpo, [&]( dynamic_global_property_object& _dpo )
-    {
-      if ( head_block_num() > HIVE_MAX_WITNESSES )
-        _dpo.last_irreversible_block_num = head_block_num() - HIVE_MAX_WITNESSES;
-    } );
+    if ( head_block_num() > HIVE_MAX_WITNESSES ) {
+      uint32_t new_last_irreversible_block_num = head_block_num() - HIVE_MAX_WITNESSES;
+
+      if( new_last_irreversible_block_num > get_last_irreversible_block_num() )
+        set_last_irreversible_block_num(new_last_irreversible_block_num);
+    }
   }
   else
   {
@@ -4831,22 +5018,16 @@ void database::update_last_irreversible_block()
 
     uint32_t new_last_irreversible_block_num = wit_objs[offset]->last_confirmed_block_num;
 
-    if( new_last_irreversible_block_num > dpo.last_irreversible_block_num )
+    if( new_last_irreversible_block_num > get_last_irreversible_block_num() )
     {
-      modify( dpo, [&]( dynamic_global_property_object& _dpo )
-      {
-        _dpo.last_irreversible_block_num = new_last_irreversible_block_num;
-      } );
+      //ilog("Last irreversible block changed to ${b}. Got from witness: ${w}", ("b", new_last_irreversible_block_num)("w", wit_objs[offset]->owner));
+      set_last_irreversible_block_num(new_last_irreversible_block_num);
     }
   }
-
-  for( uint32_t i = old_last_irreversible; i <= dpo.last_irreversible_block_num; ++i )
-  {
-    notify_irreversible_block( i );
-  }
+  return old_last_irreversible;
 } FC_CAPTURE_AND_RETHROW() }
 
-void database::migrate_irreversible_state()
+void database::migrate_irreversible_state(uint32_t old_last_irreversible)
 {
   // This method should happen atomically. We cannot prevent unclean shutdown in the middle
   // of the call, but all side effects happen at the end to minize the chance that state
@@ -4871,11 +5052,11 @@ void database::migrate_irreversible_state()
       if( tmp_head )
         log_head_num = tmp_head->block_num();
 
-      if( log_head_num < dpo.last_irreversible_block_num )
+      if( log_head_num < get_last_irreversible_block_num() )
       {
         // Check for all blocks that we want to write out to the block log but don't write any
         // unless we are certain they all exist in the fork db
-        while( log_head_num < dpo.last_irreversible_block_num )
+        while( log_head_num < get_last_irreversible_block_num() )
         {
           item_ptr block_ptr = _fork_db.fetch_block_on_main_branch_by_number( log_head_num+1 );
           FC_ASSERT( block_ptr, "Current fork in the fork database does not contain the last_irreversible_block" );
@@ -4893,10 +5074,22 @@ void database::migrate_irreversible_state()
     }
 
     // This deletes blocks from the fork db
-    _fork_db.set_max_size( dpo.head_block_number - dpo.last_irreversible_block_num + 1 );
+    _fork_db.set_max_size( dpo.head_block_number - get_last_irreversible_block_num() + 1 );
 
     // This deletes undo state
-    commit( dpo.last_irreversible_block_num );
+    commit( get_last_irreversible_block_num() );
+
+    if(old_last_irreversible < get_last_irreversible_block_num() )
+    {
+      //ilog("Updating last irreversible block to: ${b}. Old last irreversible was: ${ob}.",
+      //  ("b", get_last_irreversible_block_num())("ob", old_last_irreversible));
+
+      for( uint32_t i = old_last_irreversible + 1; i <= get_last_irreversible_block_num(); ++i )
+      {
+        notify_irreversible_block( i );
+      }
+    }
+
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -5186,7 +5379,7 @@ void database::adjust_smt_balance( const account_object& owner, const asset& del
     bo = &new_balance_object;
   }
 
-  modify( *bo, std::move( modifier ) );
+  modify( *bo, std::forward<modifier_type>( modifier ) );
   if( bo->is_empty() )
   {
     // Zero balance is the same as non object balance at all.
@@ -5210,11 +5403,11 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
         }
         break;
       case HIVE_ASSET_NUM_HBD:
-        if( a.hbd_seconds_last_update != head_block_time() )
+        /// Starting from HF 25 HBD interest will be paid only from saving balance.
+        if( has_hardfork(HIVE_HARDFORK_1_25) == false && a.hbd_seconds_last_update != head_block_time() )
         {
           acnt.hbd_seconds += fc::uint128_t(a.get_hbd_balance().amount.value) * (head_block_time() - a.hbd_seconds_last_update).to_seconds();
           acnt.hbd_seconds_last_update = head_block_time();
-
           if( acnt.hbd_seconds > 0 &&
               (acnt.hbd_seconds_last_update - acnt.hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
           {
@@ -5292,26 +5485,6 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
         FC_ASSERT( false, "invalid symbol" );
     }
   });
-}
-
-void database::set_index_delegate( const std::string& n, index_delegate&& d )
-{
-  _index_delegate_map[ n ] = std::move( d );
-}
-
-const index_delegate& database::get_index_delegate( const std::string& n )
-{
-  return _index_delegate_map.at( n );
-}
-
-bool database::has_index_delegate( const std::string& n )
-{
-  return _index_delegate_map.find( n ) != _index_delegate_map.end();
-}
-
-const index_delegate_map& database::index_delegates()
-{
-  return _index_delegate_map;
 }
 
 void database::adjust_balance( const account_object& a, const asset& delta )
@@ -5625,10 +5798,13 @@ void database::init_hardforks()
   FC_ASSERT( HIVE_HARDFORK_1_24 == 24, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_24 ] = fc::time_point_sec( HIVE_HARDFORK_1_24_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_24 ] = HIVE_HARDFORK_1_24_VERSION;
-#ifdef IS_TEST_NET
   FC_ASSERT( HIVE_HARDFORK_1_25 == 25, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_25 ] = fc::time_point_sec( HIVE_HARDFORK_1_25_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_25 ] = HIVE_HARDFORK_1_25_VERSION;
+#if defined(IS_TEST_NET) && defined(HIVE_ENABLE_SMT)
+  FC_ASSERT( HIVE_HARDFORK_1_26 == 26, "Invalid hardfork configuration" );
+  _hardfork_versions.times[ HIVE_HARDFORK_1_26 ] = fc::time_point_sec( HIVE_HARDFORK_1_26_TIME );
+  _hardfork_versions.versions[ HIVE_HARDFORK_1_26 ] = HIVE_HARDFORK_1_26_VERSION;
 #endif
 
   const auto& hardforks = get_hardfork_property_object();
@@ -6019,7 +6195,26 @@ void database::apply_hardfork( uint32_t hardfork )
     case HIVE_HARDFORK_1_24:
     {
       restore_accounts( hardforkprotect::get_restored_accounts() );
+#ifdef IS_TEST_NET
+      /// Don't change chain_id in testnet build.
+#else
       set_chain_id(HIVE_CHAIN_ID);
+#endif /// IS_TEST_NET
+      break;
+    }
+    case HIVE_HARDFORK_1_25:
+    {
+      modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
+      {
+        rfo.curation_reward_curve = linear;
+        rfo.author_reward_curve   = linear;
+      });
+      modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      {
+        gpo.reverse_auction_seconds = 0;
+        gpo.early_voting_seconds    = HIVE_EARLY_VOTING_SECONDS_HF25;
+        gpo.mid_voting_seconds      = HIVE_MID_VOTING_SECONDS_HF25;
+      });
       break;
     }
     case HIVE_SMT_HARDFORK:
@@ -6087,6 +6282,7 @@ void database::validate_invariants()const
     uint64_t witness_no = 0;
     uint64_t account_no = 0;
     uint64_t convert_no = 0;
+    uint64_t collateralized_convert_no = 0;
     uint64_t order_no = 0;
     uint64_t escrow_no = 0;
     uint64_t withdrawal_no = 0;
@@ -6114,7 +6310,7 @@ void database::validate_invariants()const
       total_vesting += itr->get_vesting();
       total_vesting += itr->get_vest_rewards();
       pending_vesting_hive += itr->get_vest_rewards_as_hive();
-      total_vsf_votes += ( itr->proxy == HIVE_PROXY_TO_SELF_ACCOUNT ?
+      total_vsf_votes += ( !itr->has_proxy() ?
                       itr->witness_vote_weight() :
                       ( HIVE_MAX_PROXY_RECURSION_DEPTH > 0 ?
                           itr->proxied_vsf_votes[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
@@ -6129,16 +6325,18 @@ void database::validate_invariants()const
     }
 
     const auto& convert_request_idx = get_index< convert_request_index >().indices();
-
     for( auto itr = convert_request_idx.begin(); itr != convert_request_idx.end(); ++itr )
     {
-      if( itr->amount.symbol == HIVE_SYMBOL )
-        total_supply += itr->amount;
-      else if( itr->amount.symbol == HBD_SYMBOL )
-        total_hbd += itr->amount;
-      else
-        FC_ASSERT( false, "Encountered illegal symbol in convert_request_object" );
+      total_hbd += itr->get_convert_amount();
       ++convert_no;
+    }
+
+    const auto& collateralized_convert_request_idx = get_index< collateralized_convert_request_index >().indices();
+    for( auto itr = collateralized_convert_request_idx.begin(); itr != collateralized_convert_request_idx.end(); ++itr )
+    {
+      total_supply += itr->get_collateral_amount();
+      // don't collect get_converted_amount() - it is not balance object; that tokens are already on owner's balance
+      ++collateralized_convert_no;
     }
 
     const auto& limit_order_idx = get_index< limit_order_index >().indices();
@@ -6219,8 +6417,8 @@ void database::validate_invariants()const
     }
 
     ilog( "validate_invariants @${b}:", ( "b", head_block_num() ) );
-    ilog( "successful scan of ${p} witnesses, ${a} accounts, ${c} convert requests, ${o} limit orders, ${e} escrow transfers, ${w} saving withdrawals, ${r} reward funds and ${s} SMT contributions.",
-      ( "p", witness_no )( "a", account_no )( "c", convert_no )( "o", order_no )( "e", escrow_no )( "w", withdrawal_no )( "r", reward_fund_no )( "s", contribution_no ) );
+    ilog( "successful scan of ${p} witnesses, ${a} accounts, ${c} convert requests, ${cc} collateralized convert requests, ${o} limit orders, ${e} escrow transfers, ${w} saving withdrawals, ${r} reward funds and ${s} SMT contributions.",
+      ( "p", witness_no )( "a", account_no )( "c", convert_no )( "cc", collateralized_convert_no )( "o", order_no )( "e", escrow_no )( "w", withdrawal_no )( "r", reward_fund_no )( "s", contribution_no ) );
     ilog( "HIVE supply: ${h}", ( "h", gpo.current_supply.amount.value ) );
     ilog( "HBD supply: ${s} ( + ${i} initial )", ( "s", gpo.get_current_hbd_supply().amount.value )( "i", gpo.get_init_hbd_supply().amount.value ) );
     ilog( "virtual supply (HIVE): ${w}", ( "w", gpo.virtual_supply.amount.value ) );
@@ -6363,9 +6561,12 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     // Need to update all VESTS in accounts and the total VESTS in the dgpo
     for( const auto& account : get_index< account_index, by_id >() )
     {
+      asset old_vesting_shares = account.vesting_shares;
+      asset new_vesting_shares = account.vesting_shares;
       modify( account, [&]( account_object& a )
       {
         a.vesting_shares.amount *= magnitude;
+        new_vesting_shares = a.vesting_shares;
         a.withdrawn             *= magnitude;
         a.to_withdraw           *= magnitude;
         a.vesting_withdraw_rate  = asset( a.to_withdraw / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
@@ -6375,6 +6576,8 @@ void database::perform_vesting_share_split( uint32_t magnitude )
         for( uint32_t i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
           a.proxied_vsf_votes[i] *= magnitude;
       } );
+      if (old_vesting_shares != new_vesting_shares)
+        push_virtual_operation( vesting_shares_split_operation(account.name, old_vesting_shares, new_vesting_shares) );
     }
 
     const auto& comments = get_index< comment_cashout_index >().indices();
@@ -6416,8 +6619,6 @@ void database::retally_comment_children()
   {
     if( !itr->is_root() )
     {
-// Low memory nodes only need immediate child count, full nodes track total children
-#ifdef IS_LOW_MEM
       const comment_cashout_object* comment_cashout = find_comment_cashout( itr->get_parent_id() );
       if( comment_cashout )
       {
@@ -6426,26 +6627,6 @@ void database::retally_comment_children()
           c.children++;
         });
       }
-#else
-      const comment_object* parent = &get_comment( itr->get_parent_id() );
-      while( parent )
-      {
-        const comment_cashout_object* comment_cashout = find_comment_cashout( *parent );
-
-        if( comment_cashout )
-        {
-          modify( *comment_cashout, [&]( comment_cashout_object& c )
-          {
-            c.children++;
-          });
-        }
-
-        if( !parent->is_root() )
-          parent = &get_comment( parent->get_parent_id() );
-        else
-          parent = nullptr;
-      }
-#endif
     }
   }
 }
@@ -6469,7 +6650,7 @@ void database::retally_witness_votes()
   // Apply all existing votes by account
   for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
   {
-    if( itr->proxy != HIVE_PROXY_TO_SELF_ACCOUNT ) continue;
+    if( itr->has_proxy() ) continue;
 
     const auto& a = *itr;
 
@@ -6492,7 +6673,7 @@ void database::retally_witness_vote_counts( bool force )
   {
     const auto& a = *itr;
     uint16_t witnesses_voted_for = 0;
-    if( force || (a.proxy != HIVE_PROXY_TO_SELF_ACCOUNT  ) )
+    if( force || a.has_proxy() )
     {
       const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
       auto wit_itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
@@ -6515,6 +6696,47 @@ void database::retally_witness_vote_counts( bool force )
 optional< chainbase::database::session >& database::pending_transaction_session()
 {
   return _pending_tx_session;
+}
+
+void database::remove_expired_governance_votes()
+{
+  if (!has_hardfork(HIVE_HARDFORK_1_25))
+    return;
+
+  const auto& accounts = get_index<account_index, by_governance_vote_expiration_ts>();
+  auto acc_it = accounts.begin();
+  time_point_sec first_expiring = acc_it->get_governance_vote_expiration_ts();
+  time_point_sec now = head_block_time();
+
+  if( first_expiring > now )
+    return;
+
+  const auto& proposal_votes = get_index< proposal_vote_index, by_voter_proposal >();
+  remove_guard obj_perf( get_remove_threshold() );
+
+  while( acc_it != accounts.end() && acc_it->get_governance_vote_expiration_ts() <= now )
+  {
+    const auto& account = *acc_it;
+    ++acc_it;
+
+    if( sps_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
+    {
+      nullify_proxied_witness_votes( account );
+      clear_witness_votes( account );
+      modify( account, [&]( account_object& a )
+      {
+        a.clear_proxy();
+        a.set_governance_vote_expired();
+      } );
+      push_virtual_operation( expired_account_notification_operation( account.name ) );
+    }
+    else
+    {
+      ilog("Threshold exceeded while processing account ${account} with expired governance vote.",
+        ("account", account.name)); // to be continued in next block
+      break;
+    }
+  }
 }
 
 } } //hive::chain

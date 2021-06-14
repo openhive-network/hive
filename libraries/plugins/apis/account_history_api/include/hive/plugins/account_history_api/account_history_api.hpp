@@ -30,13 +30,13 @@ struct api_operation_object
   }
 
   hive::protocol::transaction_id_type trx_id;
-  uint32_t                               block = 0;
-  uint32_t                               trx_in_block = 0;
-  uint32_t                               op_in_trx = 0;
-  uint32_t                               virtual_op = 0;
-  uint64_t                               operation_id = 0;
-  fc::time_point_sec                     timestamp;
-  hive::protocol::operation             op;
+  uint32_t                            block = 0;
+  uint32_t                            trx_in_block = 0;
+  uint32_t                            op_in_trx = 0;
+  uint32_t                            virtual_op = 0;
+  uint64_t                            operation_id = 0;
+  fc::time_point_sec                  timestamp;
+  hive::protocol::operation           op;
 
   bool operator<( const api_operation_object& obj ) const
   {
@@ -91,33 +91,43 @@ struct get_account_history_return
   std::map< uint32_t, api_operation_object > history;
 };
 
-enum enum_vops_filter : uint32_t
+enum enum_vops_filter : uint64_t
 {
-  fill_convert_request_operation          = 0x000001,
-  author_reward_operation                 = 0x000002,
-  curation_reward_operation               = 0x000004,
-  comment_reward_operation                = 0x000008,
-  liquidity_reward_operation              = 0x000010,
-  interest_operation                      = 0x000020,
-  fill_vesting_withdraw_operation         = 0x000040,
-  fill_order_operation                    = 0x000080,
-  shutdown_witness_operation              = 0x000100,
-  fill_transfer_from_savings_operation    = 0x000200,
-  hardfork_operation                      = 0x000400,
-  comment_payout_update_operation         = 0x000800,
-  return_vesting_delegation_operation     = 0x001000,
-  comment_benefactor_reward_operation     = 0x002000,
-  producer_reward_operation               = 0x004000,
-  clear_null_account_balance_operation    = 0x008000,
-  proposal_pay_operation                  = 0x010000,
-  sps_fund_operation                      = 0x020000,
-  hardfork_hive_operation                 = 0x040000,
-  hardfork_hive_restore_operation         = 0x080000,
-  delayed_voting_operation                = 0x100000,
-  consolidate_treasury_balance_operation  = 0x200000,
-  effective_comment_vote_operation        = 0x400000,
-  ineffective_delete_comment_operation    = 0x800000,
-  sps_convert_operation                   = 0x1000000
+  fill_convert_request_operation                = 0x0'00000001ull,
+  author_reward_operation                       = 0x0'00000002ull,
+  curation_reward_operation                     = 0x0'00000004ull,
+  comment_reward_operation                      = 0x0'00000008ull,
+  liquidity_reward_operation                    = 0x0'00000010ull,
+  interest_operation                            = 0x0'00000020ull,
+  fill_vesting_withdraw_operation               = 0x0'00000040ull,
+  fill_order_operation                          = 0x0'00000080ull,
+  shutdown_witness_operation                    = 0x0'00000100ull,
+  fill_transfer_from_savings_operation          = 0x0'00000200ull,
+  hardfork_operation                            = 0x0'00000400ull,
+  comment_payout_update_operation               = 0x0'00000800ull,
+  return_vesting_delegation_operation           = 0x0'00001000ull,
+  comment_benefactor_reward_operation           = 0x0'00002000ull,
+  producer_reward_operation                     = 0x0'00004000ull,
+  clear_null_account_balance_operation          = 0x0'00008000ull,
+  proposal_pay_operation                        = 0x0'00010000ull,
+  sps_fund_operation                            = 0x0'00020000ull,
+  hardfork_hive_operation                       = 0x0'00040000ull,
+  hardfork_hive_restore_operation               = 0x0'00080000ull,
+  delayed_voting_operation                      = 0x0'00100000ull,
+  consolidate_treasury_balance_operation        = 0x0'00200000ull,
+  effective_comment_vote_operation              = 0x0'00400000ull,
+  ineffective_delete_comment_operation          = 0x0'00800000ull,
+  sps_convert_operation                         = 0x0'01000000ull,
+  expired_account_notification_operation        = 0x0'02000000ull,
+  changed_recovery_account_operation            = 0x0'04000000ull,
+  transfer_to_vesting_completed_operation       = 0x0'08000000ull,
+  pow_reward_operation                          = 0x0'10000000ull,
+  vesting_shares_split_operation                = 0x0'20000000ull,
+  account_created_operation                     = 0x0'40000000ull,
+  fill_collateralized_convert_request_operation = 0x0'80000000ull,
+  system_warning_operation                      = 0x1'00000000ull,
+  fill_recurrent_transfer_operation             = 0x2'00000000ull,
+  failed_recurrent_transfer_operation           = 0x4'00000000ull,
 };
 
 /** Allows to specify range of blocks to retrieve virtual operations for.
@@ -125,7 +135,7 @@ enum enum_vops_filter : uint32_t
   *  \param block_range_end   - last block number (exclusive) to search for virtual operations
   *  \param operation_begin   - starting virtual operation in given block (inclusive)
   *  \param limit             - a limit of retrieved operations
-  *  \param block_range_end   - a filter that decides which an operation matches - used bitwise filtering equals to position in `hive::protocol::operation`
+  *  \param filter            - a filter that decides which an operation matches - used bitwise filtering equals to position in `hive::protocol::operation`
   */
 struct enum_virtual_ops_args
 {
@@ -137,7 +147,7 @@ struct enum_virtual_ops_args
   fc::optional<bool> group_by_block;
   fc::optional< uint64_t > operation_begin;
   fc::optional< uint32_t > limit;
-  fc::optional< uint32_t > filter;
+  fc::optional< uint64_t > filter;
 };
 
 struct ops_array_wrapper
@@ -158,7 +168,7 @@ struct ops_array_wrapper
 struct enum_virtual_ops_return
 {
   vector<api_operation_object> ops;
-  std::set<ops_array_wrapper> ops_by_block;
+  std::set<ops_array_wrapper>  ops_by_block;
   uint32_t                     next_block_range_begin = 0;
   uint64_t                     next_operation_begin   = 0;
 };

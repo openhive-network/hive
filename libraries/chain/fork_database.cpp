@@ -43,8 +43,8 @@ shared_ptr<fork_item>  fork_database::push_block(const signed_block& b)
   {
     wlog( "Pushing block to fork database that failed to link: ${id}, ${num}", ("id",b.id())("num",b.block_num()) );
     wlog( "Head: ${num}, ${id}", ("num",_head->data.block_num())("id",_head->data.id()) );
-    throw;
     _unlinked_index.insert( item );
+    throw;
   }
   return _head;
 }
@@ -69,6 +69,8 @@ void  fork_database::_push_block(const item_ptr& item)
 
   _index.insert(item);
   if( !_head || item->num > _head->num ) _head = item;
+
+  _push_next( item ); //check for any unlinked blocks that can now be linked to our fork
 }
 
 /**
@@ -86,7 +88,15 @@ void fork_database::_push_next( const item_ptr& new_item )
     {
       auto tmp = *itr;
       prev_idx.erase( itr );
-      _push_block( tmp );
+      try
+      {
+        _push_block( tmp );
+      }
+      catch(const fc::assert_exception& e)
+      {
+        //swallow invalid block exception so we can process other unlinked blocks
+        wdump((e.to_detail_string()));
+      }
 
       itr = prev_idx.find( new_item->id );
     }
@@ -271,7 +281,7 @@ vector<fork_item> fork_database::fetch_block_range_on_main_branch_by_number( con
 
 void fork_database::set_head(shared_ptr<fork_item> h)
 {
-  _head = h;
+  _head = std::move( h );
 }
 
 void fork_database::remove(block_id_type id)

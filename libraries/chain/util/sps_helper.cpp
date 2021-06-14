@@ -9,13 +9,10 @@ void sps_helper::remove_proposals( database& db, const flat_set<int64_t>& propos
   if( proposal_ids.empty() )
     return;
 
-  auto& proposalIndex = db.get_mutable_index< proposal_index >();
-  auto& byPropIdIdx = proposalIndex.indices().get< by_proposal_id >();
+  auto& byPropIdIdx = db.get_index< proposal_index, by_proposal_id >();
+  auto& byVoterIdx = db.get_index< proposal_vote_index, by_proposal_voter >();
 
-  auto& votesIndex = db.get_mutable_index< proposal_vote_index >();
-  auto& byVoterIdx = votesIndex.indices().get< by_proposal_voter >();
-
-  sps_removing_reducer obj_perf( db.get_sps_remove_threshold() );
+  remove_guard obj_perf( db.get_remove_threshold() );
 
   for(auto pid : proposal_ids)
   {
@@ -26,8 +23,8 @@ void sps_helper::remove_proposals( database& db, const flat_set<int64_t>& propos
 
     FC_ASSERT(foundPosI->creator == proposal_owner, "Only proposal owner can remove it...");
 
-    remove_proposal< by_proposal_id >( foundPosI, proposalIndex, votesIndex, byVoterIdx, obj_perf );
-    if( obj_perf.done )
+    remove_proposal( *foundPosI, byVoterIdx, db, obj_perf );
+    if( obj_perf.done() )
       break;
   }
 
