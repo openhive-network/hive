@@ -254,7 +254,7 @@ namespace detail {
     if( num < last_block_range_start || num >= last_block_range_start + blocks_buffer_size )
       try
       {
-        last_block_range_start = num - ( num % blocks_buffer_size ) + 1;
+        last_block_range_start = blocks_buffer_size == 1 ? num : num - ( num % blocks_buffer_size ) + 1;
         auto reply = input_con.request( "POST", input_url,
             "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_range\",\"params\":{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string(blocks_buffer_size) + "},\"id\":1}"
             /*,{ { "Content-Type", "application/json" } } */
