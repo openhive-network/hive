@@ -22,6 +22,9 @@ namespace converter { namespace plugins {
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) = 0;
 
+    /// If use_private is set to true then private keys of the second authority will be same as the given private key
+    void set_wifs( bool use_private = false, const std::string& _owner = "", const std::string& _active = "", const std::string& _posting = "" );
+    void set_logging( uint32_t log_per_block = 0, uint32_t log_specific = 0 );
     void print_wifs()const;
   };
 
