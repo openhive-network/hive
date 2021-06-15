@@ -3085,7 +3085,7 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
 
 void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_operation& op )
 {
-#pragma message( "TODO: Update get_effective_vesting_shares when modifying this operation to support SMTs." )
+FC_TODO("Update get_effective_vesting_shares when modifying this operation to support SMTs." )
 
   const auto& delegator = _db.get_account( op.delegator );
   const auto& delegatee = _db.get_account( op.delegatee );

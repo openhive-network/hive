@@ -902,6 +902,7 @@ namespace chain {
     bool reindex_success = false;
     uint32_t last_block_number = 0;
     const open_args& args;
+    uint32_t max_block_number = 0;
   };
 
   struct prepare_snapshot_supplement_notification
