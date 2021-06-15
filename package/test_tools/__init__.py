@@ -1,5 +1,5 @@
 def __create_logger():
-    from .logger import Logger
+    from .private.logger import Logger
     return Logger()
 
 logger = __create_logger()
