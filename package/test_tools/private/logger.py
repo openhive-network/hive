@@ -7,10 +7,16 @@ class Logger:
         self.__log_path = Path('logs/run.log')
         self.__stream_handler = logging.NullHandler()
         self.__file_handler = logging.NullHandler()
+        self.__initialized = False
 
-        self.__start_logging()
+    def __ensure_initialization(self):
+        if self.__initialized:
+            return
 
-    def __start_logging(self):
+        self.__initialized = True
+        self.__initialize()
+
+    def __initialize(self):
         self.__remove_old_log_if_exists()
 
         logging.root.setLevel(logging.DEBUG)
@@ -41,26 +47,34 @@ class Logger:
             pass
 
     def show_debug_logs_on_stdout(self):
+        self.__ensure_initialization()
         __stream_handler.setLevel(logging.DEBUG)
 
     # Wrapped functions from logging library
     def debug(self, message):
+        self.__ensure_initialization()
         logging.debug(message)
 
     def info(self, message):
+        self.__ensure_initialization()
         logging.info(message)
 
     def warning(self, message):
+        self.__ensure_initialization()
         logging.warning(message)
 
     def error(self, message):
+        self.__ensure_initialization()
         logging.error(message)
 
     def critical(self, message):
+        self.__ensure_initialization()
         logging.critical(message)
 
     def exception(self, message):
+        self.__ensure_initialization()
         logging.exception(message)
 
     def getLogger(self, name):
+        self.__ensure_initialization()
         return logging.getLogger(name)
