@@ -277,6 +277,10 @@ class Node:
         if remove_unneeded_files:
             self.__remove_unneeded_files()
 
+    def restart(self, wait_for_live=True, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
+        self.close(remove_unneeded_files=False)
+        self.run(wait_for_live=wait_for_live, timeout=timeout)
+
     def __close_process(self):
         if self.__process is None:
             return
