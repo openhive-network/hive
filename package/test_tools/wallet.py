@@ -33,12 +33,12 @@ class Wallet:
 
             self.__transaction_builder = self.__TransactionBuilder()
 
-        def _send_gathered_operations_as_single_transaction(self):
+        def _send_gathered_operations_as_single_transaction(self, *, broadcast):
             transaction = self.__transaction_builder.get_transaction()
             self.__transaction_builder = None
 
             if transaction is not None:
-                return self.sign_transaction(transaction)
+                return self.sign_transaction(transaction, broadcast=broadcast)
 
         def __send(self, method, jsonrpc='2.0', id=0, **params):
             if 'broadcast' in params:
@@ -587,13 +587,14 @@ class Wallet:
 
         return account
 
-    def in_single_transaction(self):
-        return SingleTransactionContext(self)
+    def in_single_transaction(self, *, broadcast=None):
+        return SingleTransactionContext(self, broadcast=broadcast)
 
 
 class SingleTransactionContext:
-    def __init__(self, wallet_: Wallet):
+    def __init__(self, wallet_: Wallet, *, broadcast):
         self.__wallet = wallet_
+        self.__broadcast = broadcast
         self.__response = None
         self.__was_run_as_context_manager = False
 
@@ -612,4 +613,4 @@ class SingleTransactionContext:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.__response = self.__wallet.api._send_gathered_operations_as_single_transaction()
+        self.__response = self.__wallet.api._send_gathered_operations_as_single_transaction(broadcast=self.__broadcast)
