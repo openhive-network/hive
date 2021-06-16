@@ -1,5 +1,6 @@
 import math
 from pathlib import Path
+import shutil
 import subprocess
 import time
 
@@ -269,9 +270,12 @@ class Node:
         if self.config.webserver_ws_endpoint is None:
             self.config.webserver_ws_endpoint = f'0.0.0.0:{Port.allocate()}'
 
-    def close(self):
+    def close(self, remove_unneeded_files=True):
         self.__close_process()
         self.__close_opened_files()
+
+        if remove_unneeded_files:
+            self.__remove_unneeded_files()
 
     def __close_process(self):
         if self.__process is None:
@@ -290,6 +294,21 @@ class Node:
     def __close_opened_files(self):
         for file in [self.__stdout_file, self.__stderr_file]:
             file.close()
+
+    def __remove_unneeded_files(self):
+        unneeded_files_or_directories = [
+            'blockchain/',
+            'p2p/',
+        ]
+
+        def remove(path: Path):
+            try:
+                shutil.rmtree(path) if path.is_dir() else path.unlink()
+            except FileNotFoundError:
+                pass  # It is ok that file to remove was removed earlier or never existed
+
+        for unneeded in unneeded_files_or_directories:
+            remove(self.directory.joinpath(unneeded))
 
     def set_executable_file_path(self, executable_file_path):
         self.__executable_file_path = executable_file_path
