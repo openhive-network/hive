@@ -294,10 +294,18 @@ namespace detail {
   }
 
   void node_based_conversion_plugin::plugin_startup() {
-    my->convert(
-      appbase::app().get_args().at("resume-block").as< uint32_t >(),
-      appbase::app().get_args().at( "stop-block" ).as< uint32_t >()
-    );
+    try
+    {
+      my->convert(
+        appbase::app().get_args().at("resume-block").as< uint32_t >(),
+        appbase::app().get_args().at( "stop-block" ).as< uint32_t >()
+      );
+    }
+    catch( const fc::exception& e )
+    {
+      elog( e.to_detail_string() );
+      appbase::app().generate_interrupt_request();
+    }
   }
   void node_based_conversion_plugin::plugin_shutdown()
   {

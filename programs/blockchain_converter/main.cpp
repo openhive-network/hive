@@ -15,9 +15,6 @@
 #include "node_based_conversion_plugin.hpp"
 
 using namespace hive::converter;
-using namespace hive::protocol;
-using namespace hive::utilities;
-using namespace hive::converter;
 namespace bpo = boost::program_options;
 
 std::string& version_string()
