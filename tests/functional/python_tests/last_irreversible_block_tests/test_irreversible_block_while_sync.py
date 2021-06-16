@@ -15,5 +15,4 @@ def test_irreversible_block_while_sync():
 
         # Test api_node will enter live sync after restart
         logger.info("Restarting api node...")
-        api_node.close()
-        api_node.run(timeout=90)
+        api_node.restart(timeout=90)
