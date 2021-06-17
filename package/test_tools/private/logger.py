@@ -57,7 +57,7 @@ class Logger:
             pass
 
     def __get_log_path(self):
-        return self.__directory / 'run.log'
+        return self.__directory / 'last_run.log'
 
     def show_debug_logs_on_stdout(self):
         self.__ensure_initialization()
