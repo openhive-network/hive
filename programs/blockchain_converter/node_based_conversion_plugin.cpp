@@ -130,14 +130,11 @@ namespace detail {
 
     for( ; ( start_block_num <= stop_block_num || !stop_block_num ) && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
-      try
+      block = receive( start_block_num );
+
+      if( !block.valid() )
       {
-        block = receive( start_block_num );
-        if( !block.valid() ) throw "Invalid block";
-      }
-      catch(const fc::exception& e)
-      {
-        std::cout << "Retrying in 1 second...\n";
+        std::cout << "Could not parse the block with number " << start_block_num << " from the host. Propably the block has not been produced yet. Retrying in 1 second...\n";
         fc::usleep(fc::seconds(1));
         --start_block_num;
         continue;
@@ -208,7 +205,13 @@ namespace detail {
 
   fc::optional< signed_block > node_based_conversion_plugin_impl::receive( uint32_t num )
   {
-    if( num < last_block_range_start || num >= last_block_range_start + blocks_buffer_size )
+    size_t result_offset = num - last_block_range_start;
+
+    if(    num < last_block_range_start // Initial check ( when last_block_range_start is size_t(-1) )
+        || num >= last_block_range_start + blocks_buffer_size // number out of buffered blocks range
+        || ( result_offset + 1 > get_blocks_buffer().size() || result_offset + 1 == 0 ) // Not enough blocks cached (not enough blocks in blockchain)
+                                                                                        // TODO: if so maybe create method like receive_single_block to save memory and time
+      )
       try
       {
         open( input_con, input_url );
@@ -232,11 +235,12 @@ namespace detail {
       } FC_CAPTURE_AND_RETHROW( (num) )
 
     const auto& blocks_cache = get_blocks_buffer();
+    result_offset = num - last_block_range_start;
 
-    if( num - last_block_range_start + 1 > blocks_cache.size() )
+    if( result_offset + 1 > blocks_cache.size() || result_offset + 1 == 0 )
       return fc::optional< signed_block >();
 
-    return blocks_cache.at( num - last_block_range_start ).template as< signed_block >();
+    return blocks_cache.at( result_offset ).template as< signed_block >();
   }
 
 } // detail
