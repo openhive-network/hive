@@ -1,22 +1,15 @@
 #include "converter.hpp"
 
-#include <map>
-#include <unordered_set>
+#include <iostream>
 #include <array>
 #include <string>
-#include <limits>
 
+#include <hive/protocol/types.hpp>
+#include <hive/protocol/authority.hpp>
 #include <hive/protocol/operations.hpp>
 #include <hive/protocol/block.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
-
-#include <hive/wallet/wallet.hpp>
-
-#include <fc/io/raw.hpp>
-#include <fc/io/fstream.hpp>
-
-#include <fc/crypto/aes.hpp>
 
 namespace hive { namespace converter {
 

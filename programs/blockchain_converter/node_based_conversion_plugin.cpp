@@ -2,27 +2,32 @@
 
 #include <appbase/application.hpp>
 
-#include <fc/network/tcp_socket.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/optional.hpp>
 #include <fc/filesystem.hpp>
 #include <fc/io/json.hpp>
+#include <fc/log/logger.hpp>
+#include <fc/thread/thread.hpp>
 #include <fc/network/resolve.hpp>
 #include <fc/network/url.hpp>
-#include <fc/variant.hpp>
-#include <fc/thread/thread.hpp>
 #include <fc/network/http/connection.hpp>
-#include <fc/rpc/http_api.hpp>
-#include <fc/api.hpp>
+#include <fc/network/tcp_socket.hpp>
+#include <fc/variant.hpp>
+#include <fc/variant_object.hpp>
 
-#include <hive/chain/block_log.hpp>
+#include <hive/protocol/config.hpp>
+#include <hive/protocol/types.hpp>
 #include <hive/protocol/block.hpp>
+
 #include <hive/utilities/key_conversion.hpp>
+
 #include <hive/plugins/condenser_api/condenser_api_legacy_objects.hpp>
 
 #include <boost/program_options.hpp>
 
 #include <memory>
+#include <string>
+#include <iostream>
 
 #include "conversion_plugin.hpp"
 
