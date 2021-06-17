@@ -22,23 +22,23 @@
 
 #include "converter.hpp"
 
-namespace bpo = boost::program_options;
+namespace hive {namespace converter { namespace plugins { namespace block_log_conversion {
 
-namespace hive {
+  namespace bpo = boost::program_options;
 
-using namespace chain;
-using namespace utilities;
-using namespace protocol;
+  namespace hp = hive::protocol;
 
-namespace converter { namespace plugins { namespace block_log_conversion {
+  using hive::utilities::wif_to_key;
 
 namespace detail {
+
+  using hive::chain::block_log;
 
   class block_log_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
     block_log log_in, log_out;
 
-    block_log_conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID )
+    block_log_conversion_plugin_impl( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id = HIVE_CHAIN_ID )
       : conversion_plugin_impl( _private_key, chain_id ) {}
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
@@ -71,11 +71,11 @@ namespace detail {
     if( !stop_block_num || stop_block_num > log_in.head()->block_num() )
       stop_block_num = log_in.head()->block_num();
 
-    block_id_type last_block_id;
+    hp::block_id_type last_block_id;
 
     for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
-      fc::optional< signed_block > block = log_in.read_block_by_num( start_block_num );
+      fc::optional< hp::signed_block > block = log_in.read_block_by_num( start_block_num );
       FC_ASSERT( block.valid(), "unable to read block" );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
@@ -120,7 +120,7 @@ namespace detail {
     if( log_out.is_open() )
       log_out.close();
 
-    if( block_header::num_from_id( converter.get_previous_block_id() ) + 1 <= HIVE_HARDFORK_0_17_BLOCK_NUM )
+    if( hp::block_header::num_from_id( converter.get_previous_block_id() ) + 1 <= HIVE_HARDFORK_0_17_BLOCK_NUM )
       std::cerr << "Second authority has not been applied on the accounts yet! Try resuming the conversion process\n";
   }
 
@@ -144,13 +144,13 @@ namespace detail {
     fc::path block_log_in( options["input"].as< std::string >() );
     fc::path block_log_out( out_file );
 
-    chain_id_type _hive_chain_id;
+    hp::chain_id_type _hive_chain_id;
 
     const auto& chain_id_str = options["chain-id"].as< std::string >();
 
     try
     {
-      _hive_chain_id = chain_id_type( chain_id_str );
+      _hive_chain_id = hp::chain_id_type( chain_id_str );
     }
     catch( fc::exception& )
     {
