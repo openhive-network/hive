@@ -2506,6 +2506,12 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   expected_bob0bp_delayed_votes = 0;
 
   DAY_CHECK_DELAYED_VOTES;
+
+/*
+  In every part of this test `GOTO_DAY` is applied. A reason of this is because this test is designed for a withdraw analysing
+  where the withdraw is done every 7 day.
+*/
+
 /*
   Day 5: alice powers up 300 HIVE; she has 1300 vests, including delayed 1000 maturing on day 30 and 300 maturing on day 35, 0 HIVE
 */
