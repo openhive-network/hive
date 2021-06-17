@@ -230,7 +230,7 @@ def test_getters():
         assert 'post_reward_fund' in _result
         _post_reward_fund = _result['post_reward_fund']
 
-        assert 'reward_balance' in _post_reward_fund and _post_reward_fund['reward_balance'] == '1.511 TESTS'
+        assert 'reward_balance' in _post_reward_fund and _post_reward_fund['reward_balance'] != '0.000 TESTS'
 
         #**************************************************************
         logger.info('normalize_brain_key...')
@@ -239,3 +239,18 @@ def test_getters():
 
         assert 'result' in response and response['result'] == 'MANGO APPLE BANANA CHERRY'
 
+        #**************************************************************
+        logger.info('suggest_brain_key...')
+        response = wallet.api.suggest_brain_key()
+        logger.info(response)
+
+        assert 'result' in response
+        _result = response['result']
+
+        assert 'brain_priv_key' in _result
+        _brain_priv_key = _result['brain_priv_key']
+        _items = _brain_priv_key.split(' ')
+        assert len(_items) == 16
+
+        assert 'wif_priv_key' in _result and len(_result['wif_priv_key']) == 51
+        assert 'pub_key' in _result and _result['pub_key'].find('TST') != -1

@@ -43,7 +43,7 @@ def test_update():
         assert _result[0] == 'initminer'
         #**************************************************************
         logger.info('update_witness...')
-        response = wallet.api.update_witness('alice', 'http:\\url.html', 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4', { 'account_creation_fee':{"amount":"2789","precision":3,"nai":"@@000000021"}, 'maximum_block_size' : 131072, 'hbd_interest_rate' : 1000 } )
+        response = wallet.api.update_witness('alice', 'http:\\url.html', 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4', { 'account_creation_fee':'2789.000 TESTS', 'maximum_block_size' : 131072, 'hbd_interest_rate' : 1000 } )
         logger.info(response)
 
         #**************************************************************
@@ -111,3 +111,50 @@ def test_update():
 
         assert 'base' in _exchange_rate and _exchange_rate['base'] == '1.167 TBD'
         assert 'quote' in _exchange_rate and _exchange_rate['quote'] == '1.111 TESTS'
+
+        #**************************************************************
+        logger.info('vote_for_witness...')
+        response = wallet.api.vote_for_witness('initminer', 'alice', True)
+        logger.info(response)
+
+        assert 'result' in response
+        _result = response['result']
+
+        assert 'operations' in _result
+        _ops = _result['operations']
+
+        assert len(_ops) == 1
+        _op = _ops[0]
+
+        assert 'type' in _op
+        _op['type'] == 'account_witness_vote_operation'
+
+        assert 'value' in _op
+        _value = _op['value']
+
+        assert 'account' in _value and _value['account'] == 'initminer'
+        assert 'witness' in _value and _value['witness'] == 'alice'
+        assert 'approve' in _value and _value['approve'] == True
+
+        #**************************************************************
+        logger.info('set_voting_proxy...')
+        response = wallet.api.set_voting_proxy('alice', 'initminer')
+        logger.info(response)
+
+        assert 'result' in response
+        _result = response['result']
+
+        assert 'operations' in _result
+        _ops = _result['operations']
+
+        assert len(_ops) == 1
+        _op = _ops[0]
+
+        assert 'type' in _op
+        _op['type'] == 'account_witness_vote_operation'
+
+        assert 'value' in _op
+        _value = _op['value']
+
+        assert 'account' in _value and _value['account'] == 'alice'
+        assert 'proxy' in _value and _value['proxy'] == 'initminer'

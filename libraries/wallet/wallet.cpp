@@ -1114,7 +1114,7 @@ brain_key_info wallet_api::suggest_brain_key()const
   return result;
 }
 
-string wallet_api::serialize_transaction( const signed_transaction& tx )const
+string wallet_api::serialize_transaction( const serializer_wrapper<signed_transaction>& tx )const
 {
   return fc::to_hex(fc::raw::pack_to_vector(tx));
 }
@@ -1958,7 +1958,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_witness(
   const string& witness_account_name,
   const string& url,
   public_key_type block_signing_key,
-  const legacy_chain_properties& props,
+  const serializer_wrapper<legacy_chain_properties>& props,
   bool broadcast  )
 {
   FC_ASSERT( !is_locked() );
@@ -1980,7 +1980,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_witness(
   }
   op.owner = witness_account_name;
   op.block_signing_key = block_signing_key;
-  op.props = props;
+  op.props = props.value;
 
   signed_transaction tx;
   tx.operations.push_back(op);
