@@ -5,6 +5,7 @@
 #include <boost/program_options.hpp>
 
 #include <memory>
+#include <string>
 
 #define HIVE_BLOCK_LOG_CONVERSION_PLUGIN_NAME "block_log_conversion"
 
