@@ -120,3 +120,27 @@ def test_delegate():
         assert 'title' in _value and _value['title'] == 'TITLE NR 3'
         assert 'body' in _value and _value['body'] == 'BODY NR 3'
 
+        #**************************************************************
+        logger.info('vote...')
+        response = wallet.api.vote('bob', 'bob', 'bob-permlink', 100)
+        logger.info(response)
+
+        assert 'result' in response
+        _result = response['result']
+
+        assert 'operations' in _result
+        _ops = _result['operations']
+
+        assert len(_ops) == 1
+        _op = _ops[0]
+
+        assert 'type' in _op
+        _op['type'] == 'vote_operation'
+
+        assert 'value' in _op
+        _value = _op['value']
+
+        assert 'voter' in _value and _value['voter'] == 'bob'
+        assert 'author' in _value and _value['author'] == 'bob'
+        assert 'permlink' in _value and _value['permlink'] == 'bob-permlink'
+        assert 'weight' in _value and _value['weight'] == 10000

@@ -323,7 +323,7 @@ class wallet_api
       *          this returns a raw string that may have null characters embedded
       *          in it
       */
-    string serialize_transaction( const signed_transaction& tx) const;
+    string serialize_transaction( const serializer_wrapper<signed_transaction>& tx) const;
 
     /** Imports a WIF Private Key into the wallet to be used to sign transactions by an account.
       *
@@ -688,7 +688,7 @@ class wallet_api
       const string& witness_name,
       const string& url,
       public_key_type block_signing_key,
-      const legacy_chain_properties& props,
+      const serializer_wrapper<legacy_chain_properties>& props,
       bool broadcast = false);
 
     /** Set the voting proxy for an account.
