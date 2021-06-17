@@ -5,6 +5,7 @@
 
 #include <string>
 #include <exception>
+#include <iostream>
 
 #include <hive/utilities/git_revision.hpp>
 #include <hive/protocol/config.hpp>
