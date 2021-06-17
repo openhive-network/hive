@@ -10,6 +10,7 @@
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/manabar.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
+#include <hive/plugins/statsd/utility.hpp>
 
 #include <fc/macros.hpp>
 
@@ -3382,6 +3383,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
       rt.remaining_executions = op.executions;
     });
   }
+  // STATSD_GAUGE( "hive", "recurrent_transfers", "count", rt_idx.size(), 1.0f );
 }
 
 } } // hive::chain

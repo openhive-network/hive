@@ -7,6 +7,7 @@
 #include <hive/chain/index.hpp>
 #include <hive/protocol/config.hpp>
 
+#include <hive/plugins/statsd/utility.hpp>
 #include <fc/io/json.hpp>
 
 #define TRANSACTION_STATUS_BLOCK_DEPTH_KEY            "transaction-status-block-depth"
@@ -75,6 +76,10 @@ void transaction_status_impl::on_post_apply_transaction( const transaction_notif
     {
       obj.transaction_id = note.transaction_id;
     } );
+
+	// DEBUG
+  STATSD_GAUGE( "hive", "recurrent_transfers", "count", _db.get_rtidx_size() , 1.0f );
+
 }
 
 void transaction_status_impl::on_post_apply_block( const block_notification& note )
@@ -91,6 +96,9 @@ void transaction_status_impl::on_post_apply_block( const block_notification& not
         obj.block_num = note.block_num;
       } );
     }
+
+    STATSD_GAUGE( "hive", "recurrent_transfers", "count", _db.get_rtidx_size() , 1.0f );
+
 
     // Remove elements from the index that are deemed too old for tracking
     if ( note.block_num > actual_block_depth )

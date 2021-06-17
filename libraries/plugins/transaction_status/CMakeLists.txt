@@ -5,7 +5,7 @@ add_library( transaction_status_plugin
              ${HEADERS}
            )
 
-target_link_libraries( transaction_status_plugin chain_plugin )
+target_link_libraries( transaction_status_plugin chain_plugin statsd_plugin )
 target_include_directories( transaction_status_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 

@@ -623,6 +623,12 @@ std::vector< block_id_type > database::get_block_ids_on_fork( block_id_type head
   return result;
 } FC_CAPTURE_AND_RETHROW() }
 
+size_t database::get_rtidx_size() const
+{
+	return get_index< hive::chain::recurrent_transfer_index, hive::chain::by_from_to_id >().size();
+}
+
+
 chain_id_type database::get_chain_id() const
 {
   return hive_chain_id;
