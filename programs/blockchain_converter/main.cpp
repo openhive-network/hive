@@ -14,10 +14,15 @@
 #include "block_log_conversion_plugin.hpp"
 #include "node_based_conversion_plugin.hpp"
 
-using namespace hive::protocol;
-using namespace hive::utilities;
-using namespace hive::converter;
 namespace bpo = boost::program_options;
+
+using hive::utilities::git_revision_sha;
+using hive::protocol::version;
+
+namespace hcplugins = hive::converter::plugins;
+
+using hcplugins::node_based_conversion::node_based_conversion_plugin;
+using hcplugins::block_log_conversion::block_log_conversion_plugin;
 
 std::string& version_string()
 {
@@ -58,10 +63,10 @@ int main( int argc, char** argv )
 
     bc_converter_app.add_program_options( conversion_opts, cli_options );
 
-    bc_converter_app.register_plugin< plugins::node_based_conversion::node_based_conversion_plugin >();
-    bc_converter_app.register_plugin< plugins::block_log_conversion::block_log_conversion_plugin >();
+    bc_converter_app.register_plugin< node_based_conversion_plugin >();
+    bc_converter_app.register_plugin< block_log_conversion_plugin >();
 
-    bc_converter_app.set_default_plugins< plugins::block_log_conversion::block_log_conversion_plugin >();
+    bc_converter_app.set_default_plugins< block_log_conversion_plugin >();
 
     bc_converter_app.set_version_string( version_string() );
     bc_converter_app.set_app_name( "blockchain_converter" );
