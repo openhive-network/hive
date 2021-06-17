@@ -1,12 +1,15 @@
 #pragma once
 
-#include <memory>
 #include <map>
 #include <array>
 #include <string>
 
-#include <fc/crypto/elliptic.hpp>
+#include <fc/exception/exception.hpp>
+#include <fc/optional.hpp>
 
+#include <hive/protocol/config.hpp>
+#include <hive/protocol/types.hpp>
+#include <hive/protocol/authority.hpp>
 #include <hive/protocol/operations.hpp>
 #include <hive/protocol/block.hpp>
 

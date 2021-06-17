@@ -6,16 +6,21 @@
 #include <fc/optional.hpp>
 #include <fc/filesystem.hpp>
 #include <fc/io/json.hpp>
+#include <fc/log/logger.hpp>
 #include <fc/variant.hpp>
 
 #include <hive/chain/block_log.hpp>
 
+#include <hive/protocol/config.hpp>
+#include <hive/protocol/types.hpp>
 #include <hive/protocol/block.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
 
 #include <boost/program_options.hpp>
 
+#include <string>
+#include <iostream>
 #include <memory>
 
 #include "conversion_plugin.hpp"

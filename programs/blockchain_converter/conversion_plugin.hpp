@@ -1,8 +1,9 @@
 #pragma once
 
-#include <hive/utilities/key_conversion.hpp>
+#include <hive/protocol/config.hpp>
+#include <hive/protocol/types.hpp>
 
-#include <iostream>
+#include <string>
 
 #include "converter.hpp"
 
