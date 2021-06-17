@@ -1,8 +1,14 @@
+#include "conversion_plugin.hpp"
+
+#include <fc/optional.hpp>
+
+#include <hive/protocol/types.hpp>
+#include <hive/protocol/authority.hpp>
+
 #include <hive/utilities/key_conversion.hpp>
 
+#include <string>
 #include <iostream>
-
-#include "conversion_plugin.hpp"
 
 namespace hive { namespace converter { namespace plugins {
 

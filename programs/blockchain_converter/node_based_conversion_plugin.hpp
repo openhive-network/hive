@@ -5,6 +5,7 @@
 #include <boost/program_options.hpp>
 
 #include <memory>
+#include <string>
 
 #define HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME "node_based_conversion"
 
