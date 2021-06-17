@@ -2840,7 +2840,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::remove_proposal(con
 serializer_wrapper<annotated_signed_transaction> wallet_api::recurrent_transfer(
  const account_name_type& from,
  const account_name_type& to,
- const condenser_api::legacy_asset& amount,
+ const hive::protocol::legacy_asset& amount,
  const string& memo,
  uint16_t recurrence,
  uint16_t executions,
