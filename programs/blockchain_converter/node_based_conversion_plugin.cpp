@@ -28,31 +28,32 @@
 
 #include "converter.hpp"
 
-namespace bpo = boost::program_options;
-
 namespace hive { namespace converter { namespace plugins { namespace node_based_conversion {
 
-using namespace hive::chain;
-using namespace hive::utilities;
-using namespace hive::protocol;
-using namespace hive::plugins::condenser_api;
+  namespace bpo = boost::program_options;
+
+  namespace hp = hive::protocol;
+
+  using hive::utilities::wif_to_key;
 
 namespace detail {
+
+  using hive::plugins::condenser_api::legacy_signed_transaction;
 
   class node_based_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
 
     node_based_conversion_plugin_impl( const std::string& input_url, const std::string& output_url,
-      const private_key_type& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID, size_t blocks_buffer_size = 1000 );
+      const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id = HIVE_CHAIN_ID, size_t blocks_buffer_size = 1000 );
 
     void open( fc::http::connection& con, const fc::url& url );
     void close();
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
 
-    void transmit( const signed_transaction& trx );
+    void transmit( const hp::signed_transaction& trx );
 
-    fc::optional< signed_block > receive( uint32_t block_num );
+    fc::optional< hp::signed_block > receive( uint32_t block_num );
 
     const fc::variants& get_blocks_buffer()const;
 
@@ -68,7 +69,7 @@ namespace detail {
   };
 
   node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const std::string& input_url, const std::string& output_url,
-    const private_key_type& _private_key, const chain_id_type& chain_id, size_t blocks_buffer_size )
+    const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t blocks_buffer_size )
     : conversion_plugin_impl( _private_key, chain_id ), input_url( input_url ), output_url( output_url ), blocks_buffer_size( blocks_buffer_size )
   {
     FC_ASSERT( blocks_buffer_size && blocks_buffer_size <= 1000, "Blocks buffer size should be in the range 1-1000", ("blocks_buffer_size",blocks_buffer_size) );
@@ -116,7 +117,7 @@ namespace detail {
     if( output_con.get_socket().is_open() )
       output_con.get_socket().close();
 
-    if( block_header::num_from_id( converter.get_previous_block_id() ) + 1 <= HIVE_HARDFORK_0_17_BLOCK_NUM )
+    if( hp::block_header::num_from_id( converter.get_previous_block_id() ) + 1 <= HIVE_HARDFORK_0_17_BLOCK_NUM )
       std::cerr << "Second authority has not been applied on the accounts yet! Try resuming the conversion process\n";
   }
 
@@ -125,8 +126,8 @@ namespace detail {
     if( !start_block_num )
       start_block_num = 1;
 
-    block_id_type last_block_id;
-    fc::optional< signed_block > block;
+    hp::block_id_type last_block_id;
+    fc::optional< hp::signed_block > block;
 
     for( ; ( start_block_num <= stop_block_num || !stop_block_num ) && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
@@ -179,7 +180,7 @@ namespace detail {
       appbase::app().generate_interrupt_request();
   }
 
-  void node_based_conversion_plugin_impl::transmit( const signed_transaction& trx )
+  void node_based_conversion_plugin_impl::transmit( const hp::signed_transaction& trx )
   {
     try
     {
@@ -203,7 +204,7 @@ namespace detail {
     return blocks_buffer_obj["result"].get_object()["blocks"].get_array();
   }
 
-  fc::optional< signed_block > node_based_conversion_plugin_impl::receive( uint32_t num )
+  fc::optional< hp::signed_block > node_based_conversion_plugin_impl::receive( uint32_t num )
   {
     size_t result_offset = num - last_block_range_start;
 
@@ -218,7 +219,7 @@ namespace detail {
 
         last_block_range_start = blocks_buffer_size == 1 ? num : num - ( num % blocks_buffer_size ) + 1;
         auto reply = input_con.request( "POST", input_url,
-            "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_range\",\"params\":{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string(blocks_buffer_size) + "},\"id\":1}"
+            "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_range\",\"params\":{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string( blocks_buffer_size ) + "},\"id\":1}"
             /*,{ { "Content-Type", "application/json" } } */
         );
         FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("code", reply.status) );
@@ -238,9 +239,9 @@ namespace detail {
     result_offset = num - last_block_range_start;
 
     if( result_offset + 1 > blocks_cache.size() || result_offset + 1 == 0 )
-      return fc::optional< signed_block >();
+      return fc::optional< hp::signed_block >();
 
-    return blocks_cache.at( result_offset ).template as< signed_block >();
+    return blocks_cache.at( result_offset ).template as< hp::signed_block >();
   }
 
 } // detail
@@ -259,13 +260,13 @@ namespace detail {
     FC_ASSERT( options.count("input"), "You have to specify the input source for the " HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " plugin" );
     FC_ASSERT( options.count("output"), "You have to specify the output source for the " HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " plugin" );
 
-    chain_id_type _hive_chain_id;
+    hp::chain_id_type _hive_chain_id;
 
     const auto& chain_id_str = options["chain-id"].as< std::string >();
 
     try
     {
-      _hive_chain_id = chain_id_type( chain_id_str );
+      _hive_chain_id = hp::chain_id_type( chain_id_str );
     }
     catch( fc::exception& )
     {

@@ -6,11 +6,10 @@
 
 #include "converter.hpp"
 
-namespace hive {
+namespace hive { namespace converter { namespace plugins {
 
-using namespace utilities;
-
-namespace converter { namespace plugins {
+  using hive::protocol::chain_id_type;
+  using hive::protocol::private_key_type;
 
   class conversion_plugin_impl {
   public:
