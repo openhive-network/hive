@@ -42,9 +42,10 @@ namespace detail {
   class node_based_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
 
-    node_based_conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID, size_t blocks_buffer_size = 1000 );
+    node_based_conversion_plugin_impl( const std::string& input_url, const std::string& output_url,
+      const private_key_type& _private_key, const chain_id_type& chain_id = HIVE_CHAIN_ID, size_t blocks_buffer_size = 1000 );
 
-    void open( const std::string& input_url, const std::string& output_url );
+    void open( fc::http::connection& con, const fc::url& url );
     void close();
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
@@ -66,52 +67,45 @@ namespace detail {
     fc::variant_object   blocks_buffer_obj; // blocks buffer object containing lookup table
   };
 
-  node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id, size_t blocks_buffer_size )
-    : conversion_plugin_impl( _private_key, chain_id ), blocks_buffer_size( blocks_buffer_size )
+  node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const std::string& input_url, const std::string& output_url,
+    const private_key_type& _private_key, const chain_id_type& chain_id, size_t blocks_buffer_size )
+    : conversion_plugin_impl( _private_key, chain_id ), input_url( input_url ), output_url( output_url ), blocks_buffer_size( blocks_buffer_size )
   {
     FC_ASSERT( blocks_buffer_size && blocks_buffer_size <= 1000, "Blocks buffer size should be in the range 1-1000", ("blocks_buffer_size",blocks_buffer_size) );
-  }
-
-  void node_based_conversion_plugin_impl::open( const std::string& input_url, const std::string& output_url )
-  {
-    this->input_url = fc::url(input_url);
-    this->output_url = fc::url(output_url);
 
     // Validate urls - must be in http://host:port format, where host can be either ipv4 address or domain name
     FC_ASSERT( this->input_url.proto() == "http" && this->output_url.proto() == "http",
       "Currently only http protocol is supported", ("in_proto",this->input_url.proto())("out_proto",this->output_url.proto()) );
     FC_ASSERT( this->input_url.host().valid() && this->output_url.host().valid(), "You have to specify the host in url", ("input_url",input_url)("output_url",output_url) );
     FC_ASSERT( this->input_url.port().valid() && this->output_url.port().valid(), "You have to specify the port in url", ("input_url",input_url)("output_url",output_url) );
+  }
 
-    // TODO: Support HTTP encrypted using TLS or SSL (HTTPS)
-    const auto connect = []( fc::http::connection& con, const fc::url& url ) {
-      while( true )
+  // TODO: Support HTTP encrypted using TLS or SSL (HTTPS)
+  void node_based_conversion_plugin_impl::open( fc::http::connection& con, const fc::url& url )
+  {
+    while( true )
+    {
+      try
+      {
+        con.connect_to( fc::resolve( *url.host(), *url.port() )[0] ); // First try to resolve the domain name
+      }
+      catch( const fc::exception& e )
       {
         try
         {
-          con.connect_to( fc::resolve( *url.host(), *url.port() )[0] ); // First try to resolve the domain name
-        }
-        catch( const fc::exception& e )
-        {
-          try
-          {
-            con.connect_to( fc::ip::endpoint( *url.host(), *url.port() ) );
-          } FC_CAPTURE_AND_RETHROW( (url) )
-        }
-
-        if (con.get_socket().is_open())
-          break;
-
-        else
-        {
-          wlog("Error connecting to server RPC endpoint, retrying in 10 seconds");
-          fc::usleep(fc::seconds(10));
-        }
+          con.connect_to( fc::ip::endpoint( *url.host(), *url.port() ) );
+        } FC_CAPTURE_AND_RETHROW( (url) )
       }
-    };
 
-    connect( input_con, this->input_url );
-    connect( output_con, this->output_url );
+      if (con.get_socket().is_open())
+        break;
+
+      else
+      {
+        wlog("Error connecting to server RPC endpoint, retrying in 1 second");
+        fc::usleep(fc::seconds(1));
+      }
+    }
   }
 
   void node_based_conversion_plugin_impl::close()
@@ -128,9 +122,6 @@ namespace detail {
 
   void node_based_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
-    FC_ASSERT( input_con.get_socket().is_open(), "Input connection socket should be opened before performing the conversion", ("input_url", input_url) );
-    FC_ASSERT( output_con.get_socket().is_open(), "Output connection socket should be opened before performing the conversion", ("output_url", output_url) );
-
     if( !start_block_num )
       start_block_num = 1;
 
@@ -195,22 +186,19 @@ namespace detail {
   {
     try
     {
+      open( output_con, output_url );
+
       fc::variant v;
       fc::to_variant( legacy_signed_transaction( trx ), v );
-
-      std::cout << "{\"jsonrpc\":\"2.0\",\"method\":\"condenser_api.broadcast_transaction\",\"params\":[" + fc::json::to_string( v ) + "],\"id\":1}\n";
 
       auto reply = output_con.request( "POST", output_url,
         "{\"jsonrpc\":\"2.0\",\"method\":\"condenser_api.broadcast_transaction\",\"params\":[" + fc::json::to_string( v ) + "],\"id\":1}"
         /*,{ { "Content-Type", "application/json" } } */
-      ); // FIXME: asio.cpp:24 - Boost asio - Broken pipe error
-      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("id", trx.id().str())("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
-    }
-    catch (const fc::exception& e)
-    {
-      elog("Caught exception while broadcasting tx ${id}:  ${e}", ("id", trx.id().str())("e", e.to_detail_string()) );
-      throw;
-    }
+      ); // FIXME: asio.cpp:24 - Boost asio - Broken pipe error on localhost
+      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
+
+      output_con.get_socket().close();
+    } FC_CAPTURE_AND_RETHROW( (trx.id().str()) )
   }
 
   const fc::variants& node_based_conversion_plugin_impl::get_blocks_buffer()const
@@ -223,26 +211,25 @@ namespace detail {
     if( num < last_block_range_start || num >= last_block_range_start + blocks_buffer_size )
       try
       {
+        open( input_con, input_url );
+
         last_block_range_start = blocks_buffer_size == 1 ? num : num - ( num % blocks_buffer_size ) + 1;
         auto reply = input_con.request( "POST", input_url,
             "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_range\",\"params\":{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string(blocks_buffer_size) + "},\"id\":1}"
             /*,{ { "Content-Type", "application/json" } } */
         );
-        FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("num", num)("code", reply.status) );
+        FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("code", reply.status) );
         // TODO: Move to boost to support chunked transfer encoding in responses
-        FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("num", num)("code", reply.status) );
+        FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
 
         fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
         FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", &*reply.body.begin()) );
         FC_ASSERT( var_obj["result"].get_object().contains("blocks"), "No blocks in JSON response", ("body", &*reply.body.begin()) );
 
         blocks_buffer_obj = var_obj;
-      }
-      catch (const fc::exception& e)
-      {
-        elog("Caught exception while receiving block with number ${num}:  ${e}", ("num", num)("e", e.to_detail_string()) );
-        throw;
-      }
+
+        input_con.get_socket().close();
+      } FC_CAPTURE_AND_RETHROW( (num) )
 
     const auto& blocks_cache = get_blocks_buffer();
 
@@ -284,13 +271,14 @@ namespace detail {
     const auto private_key = wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse the private key" );
 
-    my = std::make_unique< detail::node_based_conversion_plugin_impl >( *private_key, _hive_chain_id, options["blocks-buffer-size"].as< size_t >() );
+    my = std::make_unique< detail::node_based_conversion_plugin_impl >(
+          options.at( "input" ).as< std::string >(), options.at( "output" ).as< std::string >(),
+          *private_key, _hive_chain_id, options["blocks-buffer-size"].as< size_t >()
+        );
 
     my->set_logging( options["log-per-block"].as< uint32_t >(), options["log-specific"].as< uint32_t >() );
 
     my->set_wifs( options.count("use-same-key"), options["owner-key"].as< std::string >(), options["active-key"].as< std::string >(), options["posting-key"].as< std::string >() );
-
-    my->open( options.at( "input" ).as< std::string >(), options.at( "output" ).as< std::string >() );
   }
 
   void node_based_conversion_plugin::plugin_startup() {
