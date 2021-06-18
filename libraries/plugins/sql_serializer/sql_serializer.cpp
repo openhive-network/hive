@@ -226,12 +226,12 @@ namespace hive
         }
 
       private:
-        static data_processing_status flush_data(const data_chunk_ptr& dataPtr, pqxx::work& tx)
+        static data_processing_status flush_data(const data_chunk_ptr& dataPtr, data_processor::transaction& tx)
         {
           const chunk* holder = static_cast<const chunk*>(dataPtr.get());
           data_processing_status processingStatus;
 
-          TupleConverter conv(tx, holder->_mainCache);
+          TupleConverter conv(holder->_mainCache);
 
           const DataContainer& data = holder->_data;
 
@@ -286,7 +286,7 @@ namespace hive
 
           struct data2_sql_tuple_base
           {
-              data2_sql_tuple_base(pqxx::work& tx, const cached_data_t& mainCache) : _tx(tx), _mainCache(mainCache) {}
+          explicit data2_sql_tuple_base(const cached_data_t& mainCache) : _mainCache(mainCache) {}
 
           protected:
               std::string escape(const std::string& source) const
@@ -307,7 +307,6 @@ namespace hive
                   return "NULL";
               }
 
-              pqxx::work& _tx;
               const cached_data_t& _mainCache;
           private:
 
@@ -855,11 +854,12 @@ namespace hive
 
             ilog("${mode} ${objects_name}...", ("objects_name", objects_name )("mode", ( mode ? "Creating" : "Dropping" ) ) );
 
-            std::list< data_processor > processors;
+            std::vector< data_processor > processors;
+            processors.reserve(table_names.size());
 
             for( const auto& table_name : table_names )
             {
-              processors.emplace_back( db_url, "DB processor", [ = ](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
+              processors.emplace_back( db_url, "DB processor", [ = ](const data_chunk_ptr&, data_processor::transaction& tx) -> data_processing_status
                             {
                               std::string query = std::string( "SELECT " ) + function_name + "( '" + table_name + "' );";
                               ilog("The query: `${query}` has been executed...", ("query", query ) );
@@ -976,7 +976,7 @@ namespace hive
             psql_block_number = 0;
 
             data_processor block_loader(db_url, "Block loader",
-              [this](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
+              [this](const data_chunk_ptr&, data_processor::transaction& tx) -> data_processing_status
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT hb.num AS _max_block FROM hive_blocks hb ORDER BY hb.num DESC LIMIT 1;");
@@ -993,7 +993,7 @@ namespace hive
             block_loader.trigger(data_processor::data_chunk_ptr());
 
             data_processor sequence_loader(db_url, "Sequence loader",
-              [this](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
+              [this](const data_chunk_ptr&, data_processor::transaction& tx) -> data_processing_status
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT ho.id AS _max FROM hive_operations ho ORDER BY ho.id DESC LIMIT 1;");
@@ -1010,7 +1010,7 @@ namespace hive
             sequence_loader.trigger(data_processor::data_chunk_ptr());
 
             data_processor account_cache_loader(db_url, "Account cache loader",
-              [&account_cache, &next_account_id](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
+              [&account_cache, &next_account_id](const data_chunk_ptr&, data_processor::transaction& tx) -> data_processing_status
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT ai.name, ai.id, ai.operation_count FROM account_operation_count_info_view ai;");
@@ -1040,7 +1040,7 @@ namespace hive
             int next_permlink_id = 0;
 
             data_processor permlink_cache_loader(db_url, "Permlink cache loader",
-              [&permlink_cache, &next_permlink_id](const data_chunk_ptr&, pqxx::work& tx) -> data_processing_status
+              [&permlink_cache, &next_permlink_id](const data_chunk_ptr&, data_processor::transaction& tx) -> data_processing_status
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT pd.permlink, pd.id FROM hive_permlink_data pd;");
