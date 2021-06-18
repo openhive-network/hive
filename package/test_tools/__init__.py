@@ -4,5 +4,6 @@ def __create_logger():
 
 logger = __create_logger()
 
+from .private.asset import Asset
 from .account import Account
 from .world import World

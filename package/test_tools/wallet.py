@@ -3,6 +3,7 @@ import subprocess
 import time
 
 from test_tools import Account, logger
+from test_tools.private.asset import AssetBase
 
 
 class Wallet:
@@ -576,8 +577,14 @@ class Wallet:
             'params': list(params)
         }
 
+        self.__prepare_message(message)
+
         from . import communication
         return communication.request(endpoint, message)
+
+    @staticmethod
+    def __prepare_message(message: dict):
+        message['params'] = [str(param) if isinstance(param, AssetBase) else param for param in message['params']]
 
     def create_account(self, name, creator='initminer'):
         account = Account(name)
