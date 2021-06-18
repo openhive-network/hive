@@ -6,7 +6,6 @@ from test_tools import World
 def test_sending_transaction_with_multiple_operations():
     with World() as world:
         node = world.create_init_node()
-        node.config.plugin.append('network_broadcast_api')
         node.run()
 
         wallet = node.attach_wallet()
@@ -51,7 +50,6 @@ def test_setting_broadcast_when_building_transaction():
 
     with World() as world:
         node = world.create_init_node()
-        node.config.plugin.append('network_broadcast_api')
         node.run()
 
         wallet = node.attach_wallet()
@@ -64,8 +62,6 @@ def test_setting_broadcast_when_building_transaction():
 def test_getting_response():
     with World() as world:
         node = world.create_init_node()
-        node.config.plugin.append('network_broadcast_api')
-        node.config.plugin.append('database_api')
         node.run()
 
         wallet = node.attach_wallet()
