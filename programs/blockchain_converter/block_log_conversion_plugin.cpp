@@ -70,8 +70,18 @@ namespace detail {
     FC_ASSERT( log_out.is_open(), "Output block log should be opened before the conversion" );
     FC_ASSERT( log_in.head(), "Your input block log is empty" );
 
-    if( !start_block_num )
-      start_block_num = log_out.head() ? log_out.read_head().block_num() : 1;
+    if( !start_block_num ) // Automatically set start_block_num if not set
+      if( log_out.head() ) // If output block log exists than continue
+        start_block_num = log_out.head()->block_num();
+      else // If output block log does not exist start from the beginning
+        start_block_num = 1;
+
+    if( start_block_num > 1 ) // continuing conversion
+    {
+      FC_ASSERT( start_block_num <= log_in.head()->block_num(), "cannot resume conversion from a block that is not in the block_log",
+        ("start_block_num", start_block_num)("log_in_head_block_num", log_in.head()->block_num()) );
+      std::cout << "Continuing conversion from the block with number " << start_block_num << '\n';
+    }
 
     if( !stop_block_num || stop_block_num > log_in.head()->block_num() )
       stop_block_num = log_in.head()->block_num();
