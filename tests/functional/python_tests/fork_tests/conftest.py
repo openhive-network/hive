@@ -1,5 +1,6 @@
 import pytest
-from test_tools import automatic_tests_configuration, logger, Account, World
+
+from test_tools import Account, Asset, automatic_tests_configuration, logger, World
 
 
 @pytest.fixture(scope="package")
@@ -59,13 +60,13 @@ def world_with_witnesses(request):
                 wallet.api.create_account('initminer', name, '')
         with wallet.in_single_transaction():
             for name in all_witness_names:
-                wallet.api.transfer_to_vesting("initminer", name, "1000.000 TESTS")
+                wallet.api.transfer_to_vesting("initminer", name, Asset.Test(1000))
         with wallet.in_single_transaction():
             for name in all_witness_names:
                 wallet.api.update_witness(
                     name, "https://" + name,
                     Account(name).public_key,
-                    {"account_creation_fee": "3.000 TESTS", "maximum_block_size": 65536, "sbd_interest_rate": 0}
+                    {"account_creation_fee": Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
                 )
 
         logger.info('Wait 21 blocks to schedule newly created witnesses')
