@@ -1,4 +1,4 @@
-from test_tools import logger
+from test_tools import Asset, logger
 
 
 def test_enum_virtual_ops(world_with_witnesses):
@@ -16,7 +16,7 @@ def test_enum_virtual_ops(world_with_witnesses):
     for _ in range(10):
         # TRIGGER
         # We broadcast transactions (with non virtual operations).
-        wallet.api.transfer_to_vesting('initminer', account_name, "1.000 TESTS")
+        wallet.api.transfer_to_vesting('initminer', account_name, Asset.Test(1))
 
         head_block = wallet.api.info()["result"]["head_block_number"]
         block_to_check = head_block - 1
