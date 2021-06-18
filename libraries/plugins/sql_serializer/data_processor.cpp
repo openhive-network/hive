@@ -6,6 +6,22 @@
 
 namespace hive { namespace plugins { namespace sql_serializer {
 
+namespace
+{
+  class own_tx_controller : public data_processor::transaction_controller
+  {
+  public:
+    explicit own_tx_controller(const std::string& dbUrl) : _dbUrl(dbUrl) {}
+    void disconnect();
+
+  /// transaction_controller:
+    virtual transaction_ptr openTx() override;
+
+  private:
+    const std::string _dbUrl;
+  };
+}
+
 data_processor::data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor) :
   _description(std::move(description)),
   _cancel(false),
@@ -22,6 +38,12 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
       ilog("${d} data processor is connecting to specified db url: `${url}' ...", ("url", psqlUrl)("d", _description));
       pqxx::connection dbConnection(psqlUrl);
     
+      own_tx_controller tx_controller(psqlUrl);
+
+      FC_ASSERT(_txController == nullptr, "Already filled transaction controller?");
+      own_tx_controller* local_controller = new own_tx_controller(psqlUrl);
+      _txController.reset(local_controller);
+
       ilog("${d} data processor connecting successfully ...", ("d", _description));
 
       while(_continue.load())
@@ -47,17 +69,16 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
         dlog("${d} data processor starts a data processing...", ("d", _description));
 
         {
-          pqxx::work tx(dbConnection);
-
-          dataProcessor(*dataPtr, tx);
-
+          transaction_ptr tx(_txController->openTx());
+          dataProcessor(*dataPtr, *tx);
           tx.commit();
         }
 
         dlog("${d} data processor finished processing a data chunk...", ("d", _description));
       }
 
-      dbConnection.disconnect();
+      local_controller->disconnect();
+      _txController.release();
     }
     catch(const pqxx::pqxx_exception& ex)
     {
@@ -77,9 +98,14 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
 
 data_processor::~data_processor()
 {
-
 }
 
+data_processor::transaction_controller_ptr data_processor::register_transaction_controler(transaction_controller_ptr controller)
+{
+  transaction_controller_ptr txController = std::move(_txController);
+  _txController = std::move(controller);
+  return txController;
+}
 
 void data_processor::trigger(data_chunk_ptr dataPtr)
 {
