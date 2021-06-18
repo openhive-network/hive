@@ -49,7 +49,7 @@ namespace detail {
   public:
 
     node_based_conversion_plugin_impl( const std::string& input_url, const std::string& output_url,
-      const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id = HIVE_CHAIN_ID, size_t blocks_buffer_size = 1000 );
+      const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id = HIVE_CHAIN_ID, size_t block_buffer_size = 1000 );
 
     void open( fc::http::connection& con, const fc::url& url );
     void close();
@@ -60,7 +60,7 @@ namespace detail {
 
     fc::optional< hp::signed_block > receive( uint32_t block_num );
 
-    const fc::variants& get_blocks_buffer()const;
+    const fc::variants& get_block_buffer()const;
 
     fc::http::connection input_con;
     fc::url              input_url;
@@ -69,15 +69,15 @@ namespace detail {
     fc::url              output_url;
 
     size_t               last_block_range_start = -1; // initial value to satisfy the `num < last_block_range_start` check to get new blocks on first call
-    size_t               blocks_buffer_size;
-    fc::variant_object   blocks_buffer_obj; // blocks buffer object containing lookup table
+    size_t               block_buffer_size;
+    fc::variant_object   block_buffer_obj; // blocks buffer object containing lookup table
   };
 
   node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const std::string& input_url, const std::string& output_url,
-    const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t blocks_buffer_size )
-    : conversion_plugin_impl( _private_key, chain_id ), input_url( input_url ), output_url( output_url ), blocks_buffer_size( blocks_buffer_size )
+    const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t block_buffer_size )
+    : conversion_plugin_impl( _private_key, chain_id ), input_url( input_url ), output_url( output_url ), block_buffer_size( block_buffer_size )
   {
-    FC_ASSERT( blocks_buffer_size && blocks_buffer_size <= 1000, "Blocks buffer size should be in the range 1-1000", ("blocks_buffer_size",blocks_buffer_size) );
+    FC_ASSERT( block_buffer_size && block_buffer_size <= 1000, "Blocks buffer size should be in the range 1-1000", ("block_buffer_size",block_buffer_size) );
 
     // Validate urls - must be in http://host:port format, where host can be either ipv4 address or domain name
     FC_ASSERT( this->input_url.proto() == "http" && this->output_url.proto() == "http",
@@ -204,9 +204,9 @@ namespace detail {
     } FC_CAPTURE_AND_RETHROW( (trx.id().str()) )
   }
 
-  const fc::variants& node_based_conversion_plugin_impl::get_blocks_buffer()const
+  const fc::variants& node_based_conversion_plugin_impl::get_block_buffer()const
   {
-    return blocks_buffer_obj["result"].get_object()["blocks"].get_array();
+    return block_buffer_obj["result"].get_object()["blocks"].get_array();
   }
 
   fc::optional< hp::signed_block > node_based_conversion_plugin_impl::receive( uint32_t num )
@@ -214,17 +214,17 @@ namespace detail {
     size_t result_offset = num - last_block_range_start;
 
     if(    num < last_block_range_start // Initial check ( when last_block_range_start is size_t(-1) )
-        || num >= last_block_range_start + blocks_buffer_size // number out of buffered blocks range
-        || ( result_offset + 1 > get_blocks_buffer().size() || result_offset + 1 == 0 ) // Not enough blocks cached (not enough blocks in blockchain)
+        || num >= last_block_range_start + block_buffer_size // number out of buffered blocks range
+        || ( result_offset + 1 > get_block_buffer().size() || result_offset + 1 == 0 ) // Not enough blocks cached (not enough blocks in blockchain)
                                                                                         // TODO: if so maybe create method like receive_single_block to save memory and time
       )
       try
       {
         open( input_con, input_url );
 
-        last_block_range_start = blocks_buffer_size == 1 ? num : num - ( num % blocks_buffer_size ) + 1;
+        last_block_range_start = block_buffer_size == 1 ? num : num - ( num % block_buffer_size == 0 ? block_buffer_size : num % block_buffer_size ) + 1;
         auto reply = input_con.request( "POST", input_url,
-            "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_range\",\"params\":{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string( blocks_buffer_size ) + "},\"id\":1}"
+            "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_range\",\"params\":{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string( block_buffer_size ) + "},\"id\":1}"
             /*,{ { "Content-Type", "application/json" } } */
         );
         FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("code", reply.status) );
@@ -235,18 +235,18 @@ namespace detail {
         FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", &*reply.body.begin()) );
         FC_ASSERT( var_obj["result"].get_object().contains("blocks"), "No blocks in JSON response", ("body", &*reply.body.begin()) );
 
-        blocks_buffer_obj = var_obj;
+        block_buffer_obj = var_obj;
 
         input_con.get_socket().close();
       } FC_CAPTURE_AND_RETHROW( (num) )
 
-    const auto& blocks_cache = get_blocks_buffer();
+    const auto& block_buf = get_block_buffer();
     result_offset = num - last_block_range_start;
 
-    if( result_offset + 1 > blocks_cache.size() || result_offset + 1 == 0 )
+    if( result_offset + 1 > block_buf.size() || result_offset + 1 == 0 )
       return fc::optional< hp::signed_block >();
 
-    return blocks_cache.at( result_offset ).template as< hp::signed_block >();
+    return block_buf.at( result_offset ).template as< hp::signed_block >();
   }
 
 } // detail
@@ -257,7 +257,7 @@ namespace detail {
   void node_based_conversion_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg )
   {
     cfg.add_options()
-      ( "blocks-buffer-size", bpo::value< size_t >()->default_value( 1000 ), "Blocks buffer size" );
+      ( "block-buffer-size", bpo::value< size_t >()->default_value( 1000 ), "Blocks buffer size" );
   }
 
   void node_based_conversion_plugin::plugin_initialize( const bpo::variables_map& options )
@@ -283,7 +283,7 @@ namespace detail {
 
     my = std::make_unique< detail::node_based_conversion_plugin_impl >(
           options.at( "input" ).as< std::string >(), options.at( "output" ).as< std::string >(),
-          *private_key, _hive_chain_id, options["blocks-buffer-size"].as< size_t >()
+          *private_key, _hive_chain_id, options["block-buffer-size"].as< size_t >()
         );
 
     my->set_logging( options["log-per-block"].as< uint32_t >(), options["log-specific"].as< uint32_t >() );
