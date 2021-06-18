@@ -178,7 +178,10 @@ namespace detail {
       }
 
       for( const auto& trx : block->transactions )
-        transmit( trx );
+        if( appbase::app().is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check
+          break;
+        else
+          transmit( trx );
     }
 
     if( !appbase::app().is_interrupt_request() )
