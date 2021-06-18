@@ -58,6 +58,7 @@ namespace detail {
 
     void transmit( const hp::signed_transaction& trx );
 
+    fc::optional< hp::signed_block > receive_uncached( uint32_t num );
     fc::optional< hp::signed_block > receive( uint32_t block_num );
 
     const fc::variants& get_block_buffer()const;
@@ -68,7 +69,7 @@ namespace detail {
     fc::http::connection output_con;
     fc::url              output_url;
 
-    size_t               last_block_range_start = -1; // initial value to satisfy the `num < last_block_range_start` check to get new blocks on first call
+    size_t               last_block_range_start = -1; // initial value to satisfy the `num < last_block_range_start` check to get new blocks on first call // TODO: Maybe initial value should be 0
     size_t               block_buffer_size;
     fc::variant_object   block_buffer_obj; // blocks buffer object containing lookup table
   };
@@ -212,14 +213,45 @@ namespace detail {
     return block_buffer_obj["result"].get_object()["blocks"].get_array();
   }
 
+  fc::optional< hp::signed_block > node_based_conversion_plugin_impl::receive_uncached( uint32_t num )
+  {
+    // std::cout << "Note: using uncached receive to save your computers memory\n";
+    block_buffer_obj = fc::variant_object{}; // Clear block_buffer_obj to free now redundant memory
+
+    try
+    {
+      open( input_con, input_url );
+
+      auto reply = input_con.request( "POST", input_url,
+          "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block\",\"params\":{\"block_num\":" + std::to_string( num ) + "},\"id\":1}"
+          /*,{ { "Content-Type", "application/json" } } */
+      );
+      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("code", reply.status) );
+      // TODO: Move to boost to support chunked transfer encoding in responses
+      FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
+
+      fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
+      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", &*reply.body.begin()) );
+
+      if( !var_obj["result"].get_object().contains("block") )
+        return fc::optional< hp::signed_block >();
+
+      input_con.get_socket().close();
+
+      return var_obj["result"].get_object()["block"].template as< hp::signed_block >();
+    } FC_CAPTURE_AND_RETHROW( (num) )
+  }
+
   fc::optional< hp::signed_block > node_based_conversion_plugin_impl::receive( uint32_t num )
   {
     size_t result_offset = num - last_block_range_start;
 
+    if(    last_block_range_start == size_t(-1) // Initial value of last_block_range_start check (first receive call) - block_buffer_obj not initialized yet
+        || ( result_offset + 1 > get_block_buffer().size() || result_offset + 1 == 0 ) ) // Not enough blocks cached (not enough blocks in blockchain so stop wasting time on caching)
+      return receive_uncached( num );
+
     if(    num < last_block_range_start // Initial check ( when last_block_range_start is size_t(-1) )
         || num >= last_block_range_start + block_buffer_size // number out of buffered blocks range
-        || ( result_offset + 1 > get_block_buffer().size() || result_offset + 1 == 0 ) // Not enough blocks cached (not enough blocks in blockchain)
-                                                                                        // TODO: if so maybe create method like receive_single_block to save memory and time
       )
       try
       {
