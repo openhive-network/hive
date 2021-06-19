@@ -154,7 +154,7 @@ namespace detail {
 
       if( start_block_num % 1000 == 0 ) // Progress
       {
-        std::cout << "[ " << int( float(start_block_num) / log_in.head()->block_num() * 100 ) << "% ]: " << start_block_num << '/' << log_in.head()->block_num() << " blocks rewritten.\r";
+        std::cout << "[ " << int( float(start_block_num) / stop_block_num * 100 ) << "% ]: " << start_block_num << '/' << stop_block_num << " blocks rewritten.\r";
         std::cout.flush();
       }
 
@@ -183,7 +183,7 @@ namespace detail {
       log_out.close();
 
     if( hp::block_header::num_from_id( converter.get_previous_block_id() ) + 1 <= HIVE_HARDFORK_0_17_BLOCK_NUM )
-      std::cerr << "Second authority has not been applied on the accounts yet! Try resuming the conversion process\n";
+      std::cerr << "Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log\n";
   }
 
 } // detail

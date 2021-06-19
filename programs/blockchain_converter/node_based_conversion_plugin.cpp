@@ -124,12 +124,12 @@ namespace detail {
       output_con.get_socket().close();
 
     if( hp::block_header::num_from_id( converter.get_previous_block_id() ) + 1 <= HIVE_HARDFORK_0_17_BLOCK_NUM )
-      std::cerr << "Second authority has not been applied on the accounts yet! Try resuming the conversion process\n";
+      std::cerr << "Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log\n";
   }
 
   void node_based_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
-    // TODO: Check the chain id of the output node using the get_config method of the Database API
+    validate_chain_id( converter.get_chain_id() );
 
     if( !start_block_num )
       start_block_num = 1;
