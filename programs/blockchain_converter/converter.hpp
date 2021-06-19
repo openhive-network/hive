@@ -1,8 +1,9 @@
 #pragma once
 
 #include <map>
-#include <array>
 #include <string>
+#include <queue>
+#include <set>
 
 #include <fc/exception/exception.hpp>
 #include <fc/optional.hpp>
@@ -29,10 +30,12 @@ namespace hive { namespace converter {
     hp::chain_id_type    chain_id;
     hp::block_id_type    previous_block_id;
 
-    std::map< hp::account_name_type, std::array< fc::optional< authority >, 3 > >  pow_auths; // the array contains the following keys: owner, active and posting
-    std::map< authority::classification, hp::private_key_type >                    second_authority;
+    std::map< authority::classification, hp::private_key_type > second_authority;
 
-    void post_convert_transaction( hp::signed_transaction& _transaction );
+    std::queue< authority > pow_keys;
+    std::set< hp::account_name_type > accounts;
+
+    void post_convert_transaction( hp::signed_transaction& trx );
 
   public:
     /// All converted blocks will be signed using given private key
@@ -43,18 +46,19 @@ namespace hive { namespace converter {
 
     void convert_signed_header( hp::signed_block_header& _signed_header );
 
-    void convert_authority( const hp::account_name_type& name, authority& _auth, authority::classification type );
+    void convert_authority( authority& _auth, authority::classification type );
 
     void sign_transaction( hp::signed_transaction& trx )const;
 
     const hp::private_key_type& get_second_authority_key( authority::classification type )const;
     void set_second_authority_key( const hp::private_key_type& key, authority::classification type );
 
+    void add_pow_key( const hp::account_name_type& acc, const hp::public_key_type& key );
+    void add_account( const hp::account_name_type& acc );
+    bool has_account( const hp::account_name_type& acc )const;
+
     const hp::private_key_type& get_witness_key()const;
     const hp::chain_id_type& get_chain_id()const;
-
-    void add_pow_authority( const hp::account_name_type& name, authority auth, authority::classification type );
-    bool has_pow_authority( const hp::account_name_type& name )const;
 
     const hp::block_id_type& get_previous_block_id()const;
   };
