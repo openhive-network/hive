@@ -129,6 +129,8 @@ namespace detail {
 
   void node_based_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
+    // TODO: Check the chain id of the output node using the get_config method of the Database API
+
     if( !start_block_num )
       start_block_num = 1;
 

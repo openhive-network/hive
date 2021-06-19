@@ -128,7 +128,6 @@ namespace hive { namespace converter {
   const hp::recover_account_operation& convert_operations_visitor::operator()( hp::recover_account_operation& op )const
   {
     converter.convert_authority( op.account_to_recover, op.new_owner_authority, authority::owner );
-    converter.convert_authority( op.account_to_recover, op.recent_owner_authority, authority::owner ); // XXX: Check if fixes `Recent authority not found in authority history` FC_ASSERT
 
     return op;
   }
@@ -167,14 +166,12 @@ namespace hive { namespace converter {
     {
       transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this ) );
 
-      // re-sign ops
-      for( auto signature_itr = transaction_itr->signatures.begin(); signature_itr != transaction_itr->signatures.end(); ++signature_itr )
-        *signature_itr = get_second_authority_key( authority::owner ).sign_compact( transaction_itr->sig_digest( chain_id ) ); // XXX: All operations are being signed using the owner key of the 2nd authority
-
       // check for HF17 to add 2nd auth to the pow auths
       post_convert_transaction( *transaction_itr );
 
       transaction_itr->set_reference_block( previous_block_id );
+
+      sign_transaction( *transaction_itr );
 
       // Check for duplicated transaction ids
       while( !txid_checker.emplace( transaction_itr->id() ).second )
@@ -184,6 +181,7 @@ namespace hive { namespace converter {
                   << "\nOld txid: " << transaction_itr->id().operator std::string();
         transaction_itr->expiration += tx_position;
         std::cout << "\nNew txid: " << transaction_itr->id().operator std::string() << '\n';
+        sign_transaction( *transaction_itr ); // re-sign tx after the expiration change
       }
     }
 
@@ -193,6 +191,13 @@ namespace hive { namespace converter {
     convert_signed_header( _signed_block );
 
     return _signed_block.id();
+  }
+
+  void blockchain_converter::sign_transaction( hp::signed_transaction& trx )const
+  {
+    // re-sign transaction
+    for( auto& sig : trx.signatures )
+      sig = get_second_authority_key( authority::owner ).sign_compact( trx.sig_digest( chain_id ) ); // XXX: All operations are being signed using the owner key of the 2nd authority
   }
 
   void blockchain_converter::convert_signed_header( hp::signed_block_header& _signed_header )
@@ -221,6 +226,11 @@ namespace hive { namespace converter {
   const hp::private_key_type& blockchain_converter::get_witness_key()const
   {
     return _private_key;
+  }
+
+  const hp::chain_id_type& blockchain_converter::get_chain_id()const
+  {
+    return chain_id;
   }
 
   void blockchain_converter::add_pow_authority( const hp::account_name_type& name, authority auth, authority::classification type )

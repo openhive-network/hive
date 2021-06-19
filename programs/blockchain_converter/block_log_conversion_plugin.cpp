@@ -11,6 +11,7 @@
 
 #include <hive/chain/block_log.hpp>
 
+#include <hive/protocol/authority.hpp>
 #include <hive/protocol/config.hpp>
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/block.hpp>
@@ -34,6 +35,7 @@ namespace hive {namespace converter { namespace plugins { namespace block_log_co
   namespace hp = hive::protocol;
 
   using hive::utilities::wif_to_key;
+  using hive::utilities::key_to_wif;
 
 namespace detail {
 
@@ -70,28 +72,73 @@ namespace detail {
     FC_ASSERT( log_out.is_open(), "Output block log should be opened before the conversion" );
     FC_ASSERT( log_in.head(), "Your input block log is empty" );
 
-    if( !start_block_num ) // Automatically set start_block_num if not set
-      if( log_out.head() ) // If output block log exists than continue
-        start_block_num = log_out.head()->block_num();
-      else // If output block log does not exist start from the beginning
-        start_block_num = 1;
+    // Automatically set start_block_num if not set
+    if( !log_out.head() ) // If output block log does not exist start from the beginning
+      start_block_num = 1;
+    else if( !start_block_num ) // If output block log exists than continue
+      start_block_num = log_out.head()->block_num() + 1;
+
+    hp::block_id_type last_block_id;
 
     if( start_block_num > 1 ) // continuing conversion
     {
       FC_ASSERT( start_block_num <= log_in.head()->block_num(), "cannot resume conversion from a block that is not in the block_log",
         ("start_block_num", start_block_num)("log_in_head_block_num", log_in.head()->block_num()) );
-      std::cout << "Continuing conversion from the block with number " << start_block_num << '\n';
+      std::cout << "Continuing conversion from the block with number " << start_block_num
+                << "\nValidating the chain id...\n";
+
+      last_block_id = log_out.head()->id(); // Required to resume the conversion
+
+      // Validate the chain id on conversion resume (in the best-case scenario, the complexity of this check is nearly constant - when the last block in the output block log has transactions with signatures)
+      bool chain_id_match = false;
+      uint32_t it_block_num = log_out.head()->block_num();
+
+      while( !chain_id_match && it_block_num >= 1 )
+      {
+        fc::optional< hp::signed_block > block = log_out.read_block_by_num( it_block_num );
+        FC_ASSERT( block.valid(), "unable to read block", ("block_num", it_block_num) );
+
+        if( block->transactions.size() )
+          if( block->transactions.begin()->signatures.size() )
+          {
+            const auto& trx = *block->transactions.begin();
+            const auto& sig = *block->transactions.begin()->signatures.begin();
+
+            std::cout << "Comparing signatures in trx " << trx.id().str() << " in block: " << block->block_num() << ": \n"
+                      << "Previous sig: " << std::hex;
+            // Display the previous sig
+            for( const auto c : sig )
+              std::cout << uint32_t(c);
+            std::cout << "\nCurrent sig:  ";
+
+            const auto sig_other = converter.get_second_authority_key( hp::authority::owner ).sign_compact( trx.sig_digest( /* Current chain id: */ converter.get_chain_id() ) );
+
+            // Display the current sig
+            for( const auto c : sig_other )
+              std::cout << uint32_t(c);
+            std::cout << std::dec << std::endl;
+
+            if( sig == sig_other )
+              chain_id_match = true;
+            else
+              break;
+          }
+
+        if( it_block_num == 1 )
+          chain_id_match = true; // No transactions in the entire block_log, so the chain id matches
+        --it_block_num;
+      }
+      FC_ASSERT( chain_id_match, "Previous output block log chain id does not match the specified one or the owner key of the 2nd authority has changed",
+        ("chain_id", converter.get_chain_id())("owner_key", key_to_wif(converter.get_second_authority_key( hp::authority::owner ))) );
     }
 
     if( !stop_block_num || stop_block_num > log_in.head()->block_num() )
       stop_block_num = log_in.head()->block_num();
 
-    hp::block_id_type last_block_id;
-
     for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
       fc::optional< hp::signed_block > block = log_in.read_block_by_num( start_block_num );
-      FC_ASSERT( block.valid(), "unable to read block" );
+      FC_ASSERT( block.valid(), "unable to read block", ("block_num", start_block_num) );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
       {
