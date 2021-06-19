@@ -45,10 +45,13 @@ namespace hive { namespace converter {
 
     void convert_authority( const hp::account_name_type& name, authority& _auth, authority::classification type );
 
+    void sign_transaction( hp::signed_transaction& trx )const;
+
     const hp::private_key_type& get_second_authority_key( authority::classification type )const;
     void set_second_authority_key( const hp::private_key_type& key, authority::classification type );
 
     const hp::private_key_type& get_witness_key()const;
+    const hp::chain_id_type& get_chain_id()const;
 
     void add_pow_authority( const hp::account_name_type& name, authority auth, authority::classification type );
     bool has_pow_authority( const hp::account_name_type& name )const;
