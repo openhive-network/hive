@@ -129,7 +129,7 @@ def test_getters():
         _value = _op['value']
 
         assert 'vesting_shares' in _value
-        assert _value['vesting_shares'] == '0.043007 VESTS'
+        assert _value['vesting_shares'] != '0.000000 VESTS'
 
         #**************************************************************
         logger.info('get_prototype_operation...')
