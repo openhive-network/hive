@@ -9,9 +9,6 @@ def test_escrow():
 
         wallet = init_node.attach_wallet()
 
-        logger.info('Waiting until initminer will be able to create account...')
-        init_node.wait_number_of_blocks(3)
-
         #**************************************************************
         logger.info('create_account...')
         response = wallet.api.create_account('initminer', 'alice', '{}')
