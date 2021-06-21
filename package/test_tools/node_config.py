@@ -156,8 +156,27 @@ class NodeConfig:
         return file_entries
 
     def write_to_file(self, file_path):
+        self.validate()
+
         with open(file_path, 'w') as file:
             file.write('\n'.join(self.write_to_lines()))
+
+    def validate(self):
+        self.__assert_no_plugins_duplicates()
+
+    def __assert_no_plugins_duplicates(self):
+        plugin_occurences = {plugin: 0 for plugin in self.plugin}
+        for plugin in self.plugin:
+            plugin_occurences[plugin] += 1
+
+        duplicated_plugins = [plugin for plugin, occurences in plugin_occurences.items() if occurences > 1]
+        if duplicated_plugins:
+            raise RuntimeError(
+                f'Following plugins are included more than once:\n'
+                f'{duplicated_plugins}\n'
+                f'\n'
+                f'Remove places from code where you added them manually.'
+            )
 
     def load_from_lines(self, lines):
         assert isinstance(lines, list)
