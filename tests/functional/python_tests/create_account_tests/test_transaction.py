@@ -63,7 +63,7 @@ def test_transfer():
 
         assert 'balance' in _result and _result['balance'] == '500.000 TESTS'
         assert 'hbd_balance' in _result and _result['hbd_balance'] == '50.000 TBD'
-        assert 'vesting_shares' in _result and _result['vesting_shares'] == '21.973069 VESTS'
+        assert 'vesting_shares' in _result and _result['vesting_shares'] != '0.000000 VESTS'
 
         #**************************************************************
         _time = datetime.datetime.utcnow()
