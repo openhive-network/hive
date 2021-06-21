@@ -163,6 +163,7 @@ class NodeConfig:
 
     def validate(self):
         self.__assert_no_plugins_duplicates()
+        self.__assert_valid_plugins_names()
 
     def __assert_no_plugins_duplicates(self):
         plugin_occurences = {plugin: 0 for plugin in self.plugin}
@@ -177,6 +178,10 @@ class NodeConfig:
                 f'\n'
                 f'Remove places from code where you added them manually.'
             )
+
+    def __assert_valid_plugins_names(self):
+        for plugin in self.plugin:
+            Plugin._validate(plugin)
 
     def load_from_lines(self, lines):
         assert isinstance(lines, list)
