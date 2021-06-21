@@ -10,6 +10,7 @@ def test_irreversible_block_while_sync():
         logger.info('Running network, waiting for live sync...')
         net.run()
 
+        # Wait for block number between constants HIVE_MAX_WITNESSES and HIVE_START_MINER_VOTING_BLOCK
         logger.info('Waiting for block number 23...')
         init_node.wait_for_block_with_number(23)
 
