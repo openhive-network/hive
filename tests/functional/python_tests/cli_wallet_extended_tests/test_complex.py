@@ -1,0 +1,218 @@
+from test_tools import Account, logger, World
+
+def check_key( node_name, result, key ):
+    assert node_name in result
+    _node = result[node_name]
+    assert 'key_auths' in _node
+    _key_auths = _node['key_auths']
+    assert len(_key_auths) == 1
+    __key_auths = _key_auths[0]
+    assert len(__key_auths) == 2
+    __key_auths[0] == key
+
+def check_keys( result, key_owner, key_active, key_posting, key_memo ):
+    check_key( 'owner', result, key_owner )
+    check_key( 'active', result, key_active )
+    check_key( 'posting', result, key_posting )
+    assert 'memo_key' in result and result['memo_key'] == key_memo
+
+key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
+key2 = 'TST7QbuPFWyi7Kxtq6i1EaHNHZHEG2JyB61kPY1x7VvjxyHb7btfg'
+
+def test_complex():
+    with World() as world:
+        init_node = world.create_init_node()
+        init_node.config.plugin.append('database_api')
+        init_node.config.plugin.append('network_broadcast_api')
+        init_node.run()
+
+        wallet = init_node.attach_wallet()
+
+        #**************************************************************
+        try:
+            logger.info('create_account...')
+            response = wallet.api.create_account('initminer')
+            logger.info(response)
+        except Exception as e:
+            message = str(e)
+            assert message.find('create_account() missing 2 required positional arguments: \'new_account_name\' and \'json_meta\'') != -1
+
+        #**************************************************************
+        logger.info('create_account...')
+        response = wallet.api.create_account('initminer', 'alice', '{}')
+        logger.info(response)
+
+        #**************************************************************
+        logger.info('create_account...')
+        response = wallet.api.create_account('initminer', 'bob', '{}')
+        logger.info(response)
+
+        #**************************************************************
+        logger.info('create_account...')
+        response = wallet.api.create_account('initminer', 'carol', '{}')
+        logger.info(response)
+
+        #**************************************************************
+        logger.info('create_account...')
+        response = wallet.api.create_account('initminer', 'dan', '{}')
+        logger.info(response)
+
+        #**************************************************************
+        try:
+            logger.info('create_proposal...')
+            response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', '111.000 TBD', 'this is proposal', 'hello-world')
+            logger.info(response)
+        except Exception as e:
+            message = str(e)
+            assert message.find('Proposal permlink must point to the article posted by creator or receiver') != -1
+
+        #**************************************************************
+        try:
+            logger.info('post_comment...')
+            response = wallet.api.post_comment('bob', 'hello-world', '', 'xyz', 'something bout world', 'just nothing', '{}')
+            logger.info(response)
+        except Exception as e:
+            message = str(e)
+            assert message.find('Account: bob has 0 RC') != -1
+
+        #**************************************************************
+        logger.info('transfer_to_vesting...')
+        response = wallet.api.transfer_to_vesting('initminer', 'bob', '100.000 TESTS')
+        logger.info(response)
+
+        #**************************************************************
+        logger.info('post_comment...')
+        response = wallet.api.post_comment('bob', 'hello-world', '', 'xyz', 'something about world', 'just nothing', '{}')
+        logger.info(response)
+
+        #**************************************************************
+        try:
+            logger.info('create_proposal...')
+            response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', '111.000 TBD', 'this is proposal', 'hello-world')
+            logger.info(response)
+        except Exception as e:
+            message = str(e)
+            assert message.find('Account bob does not have sufficient funds for balance adjustment') != -1
+
+        #**************************************************************
+        logger.info('transfer...')
+        response = wallet.api.transfer('initminer', 'bob', '788.543 TBD', 'avocado')
+        logger.info(response)
+
+        #**************************************************************
+        logger.info('create_proposal...')
+        response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', '111.000 TBD', 'this is proposal', 'hello-world')
+        logger.info(response)
+
+        #**************************************************************
+        try:
+            logger.info('vote...')
+            response = wallet.api.vote('alice', 'bob', 'hello-world', 101)
+            logger.info(response)
+        except Exception as e:
+            message = str(e)
+            assert message.find('Weight must be between -100 and 100 and not 0') != -1
+
+        #**************************************************************
+        try:
+            logger.info('vote...')
+            response = wallet.api.vote('alice', 'bob', 'hello-world', 99)
+            logger.info(response)
+        except Exception as e:
+            message = str(e)
+            assert message.find('Account: alice has 0 RC, needs 3 RC') != -1
+
+        #**************************************************************
+        logger.info('some operations - transfer/transfer_to_vesting...')
+        with wallet.in_single_transaction(broadcast=False) as transaction:
+            wallet.api.transfer('bob', 'alice', '199.148 TBD', 'banana')
+            wallet.api.transfer('bob', 'alice', '100.001 TBD', 'cherry')
+            wallet.api.transfer('initminer', 'alice', '1.000 TBD', 'aloes')
+            wallet.api.transfer('initminer', 'carol', '199.001 TBD', 'pumpkin')
+            wallet.api.transfer('initminer', 'dan', '198.002 TBD', 'beetroot')
+            wallet.api.transfer_to_vesting('initminer', 'carol', '100.000 TESTS')
+            wallet.api.transfer_to_vesting('initminer', 'alice', '100.000 TESTS')
+            wallet.api.transfer_to_vesting('initminer', 'dan', '100.000 TESTS')
+
+        trx_response = transaction.get_response()
+        logger.info(trx_response)
+
+        assert 'result' in trx_response
+        _result_trx_response = trx_response['result']
+
+        #**************************************************************
+        logger.info('sign_transaction...')
+        response = wallet.api.sign_transaction(_result_trx_response)
+        logger.info(response)
+
+        assert 'result' in response
+        _result = response['result']
+
+        assert 'operations' in _result and len(_result['operations']) == 8
+
+        #**************************************************************
+        logger.info('some operations - post_comment/vote...')
+        with wallet.in_single_transaction(broadcast=False) as transaction:
+            response = wallet.api.post_comment('alice', 'hello-world2', '', 'xyz2', 'something about world2', 'just nothing2', '{}')
+            response = wallet.api.post_comment('carol', 'hello-world3', '', 'xyz3', 'something about world3', 'just nothing3', '{}')
+            response = wallet.api.post_comment('dan', 'hello-world4', '', 'xyz4', 'something about world4', 'just nothing4', '{}')
+            wallet.api.vote('carol', 'alice', 'hello-world2', 99)
+            wallet.api.vote('dan', 'carol', 'hello-world3', 98)
+            wallet.api.vote('alice', 'dan', 'hello-world4', 97)
+
+        trx_response = transaction.get_response()
+        logger.info(trx_response)
+
+        assert 'result' in trx_response
+        _result_trx_response = trx_response['result']
+
+        #**************************************************************
+        logger.info('sign_transaction...')
+        response = wallet.api.sign_transaction(_result_trx_response)
+        logger.info(response)
+
+        assert 'result' in response
+        _result = response['result']
+
+        assert 'operations' in _result and len(_result['operations']) == 6
+
+        #**************************************************************
+        logger.info('some operations - create_account_with_keys...')
+        with wallet.in_single_transaction() as transaction:
+            for cnt in range(10):
+                wallet.api.create_account_with_keys('initminer', 'account-'+str(cnt), '{}', key, key2, key2, key)
+
+        trx_response = transaction.get_response()
+        logger.info(trx_response)
+
+        assert 'result' in trx_response
+        _result = trx_response['result']
+
+        assert 'operations' in _result and len(_result['operations']) == 10
+
+        #**************************************************************
+        logger.info('some operations - post_comment/vote...')
+        with wallet.in_single_transaction() as transaction:
+            wallet.api.update_account('alice', '{}', key2, key, key, key)
+            wallet.api.update_account('bob', '{}', key, key2, key, key)
+            wallet.api.update_account('carol', '{}', key, key, key2, key)
+            wallet.api.update_account('dan', '{}', key, key, key, key2)
+
+        trx_response = transaction.get_response()
+        logger.info(trx_response)
+
+        assert 'result' in trx_response
+
+        #**************************************************************
+        logger.info('get_accounts...')
+        response = wallet.api.get_accounts(['alice', 'bob', 'carol', 'dan'])
+        logger.info(response)
+
+        assert 'result' in response
+        _result = response['result']
+        assert len(_result) == 4
+
+        check_keys( _result[0], key2, key, key, key )
+        check_keys( _result[1], key, key2, key, key )
+        check_keys( _result[2], key, key, key2, key )
+        check_keys( _result[3], key, key, key, key2 )
