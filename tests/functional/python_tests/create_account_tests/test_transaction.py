@@ -19,9 +19,9 @@ def test_transfer():
         #**************************************************************
         logger.info('transfer_to_vesting/transfer/transfer...')
         with wallet.in_single_transaction(broadcast=False) as transaction:
-          wallet.api.transfer_to_vesting('initminer', 'carol', '100.000 TESTS')
-          wallet.api.transfer('initminer', 'carol', '500.000 TESTS', 'kiwi')
-          wallet.api.transfer('initminer', 'carol', '50.000 TBD', 'orange')
+            wallet.api.transfer_to_vesting('initminer', 'carol', '100.000 TESTS')
+            wallet.api.transfer('initminer', 'carol', '500.000 TESTS', 'kiwi')
+            wallet.api.transfer('initminer', 'carol', '50.000 TBD', 'orange')
 
         trx_response = transaction.get_response()
         logger.info(trx_response)

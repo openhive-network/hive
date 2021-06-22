@@ -93,9 +93,9 @@ def test_getters():
 
         #**************************************************************
         logger.info('create_account x2...')
-        with wallet.in_single_transaction():
-          wallet.api.create_account('initminer', 'bob', '{}')
-          wallet.api.create_account('initminer', 'carol', '{}')
+        with wallet.in_single_transaction() as transaction:
+            wallet.api.create_account('initminer', 'bob', '{}')
+            wallet.api.create_account('initminer', 'carol', '{}')
 
         _response = transaction.get_response()
 

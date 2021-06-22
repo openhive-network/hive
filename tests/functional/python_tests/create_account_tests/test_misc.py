@@ -95,14 +95,14 @@ def test_transfer():
 
         #**************************************************************
         try:
-          logger.info('claim_reward_balance...')
-          response = wallet.api.claim_reward_balance('initminer', '0.000 TESTS', '0.000 TBD', '0.000001 VESTS')
-          logger.info(response)
+            logger.info('claim_reward_balance...')
+            response = wallet.api.claim_reward_balance('initminer', '0.000 TESTS', '0.000 TBD', '0.000001 VESTS')
+            logger.info(response)
         except Exception as e:
-          message = str(e)
-          logger.info(message)
-          found = message.find('Cannot claim that much VESTS')
-          assert found != -1
+            message = str(e)
+            logger.info(message)
+            found = message.find('Cannot claim that much VESTS')
+            assert found != -1
 
         #**************************************************************
         logger.info('decline_voting_rights...')
