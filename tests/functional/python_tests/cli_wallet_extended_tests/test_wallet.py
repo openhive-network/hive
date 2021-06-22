@@ -1,17 +1,16 @@
 from test_tools import Account, logger, World
 import os.path
 
-def test_getters():
+def test_wallet():
     with World() as world:
         init_node = world.create_init_node()
-        init_node.config.plugin.append('database_api')
         init_node.run()
 
         wallet = init_node.attach_wallet()
 
         pswd = 'pear_peach'
 
-        internal_path = 'GeneratedInWorld/InitNodeWallet0/'
+        internal_path = 'generated_during_test_wallet/test_wallet/InitNodeWallet0/'
         wallet_content_file_name = 'test_wallet.json'
 
         #**************************************************************
@@ -207,7 +206,7 @@ def test_getters():
         found = _result.find(val)
         assert found != -1
 
-        val = 'serializer_wrapper<annotated_signed_transaction> convert_hbd(const string & from, const hive::protocol::legacy_asset & amount, bool broadcast)'
+        val = 'serializer_wrapper<annotated_signed_transaction> convert_hbd(const string & from, const serializer_wrapper<hive::protocol::asset> & amount, bool broadcast)'
         found = _result.find(val)
         assert found != -1
 

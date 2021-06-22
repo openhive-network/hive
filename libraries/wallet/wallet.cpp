@@ -290,7 +290,7 @@ public:
   variant info() const
   {
     auto dynamic_props = _remote_wallet_bridge_api->get_dynamic_global_properties({}, LOCK);
-    fc::mutable_variant_object result;
+    fc::mutable_variant_object result(fc::variant(dynamic_props).get_object());
     result["witness_majority_version"]  = fc::string( _remote_wallet_bridge_api->get_witness_schedule({}, LOCK).majority_version);
     result["hardfork_version"]          = fc::string( _remote_wallet_bridge_api->get_hardfork_version({}, LOCK) );
     result["head_block_num"]            = dynamic_props.head_block_number;
@@ -298,7 +298,7 @@ public:
     result["head_block_age"]            = fc::get_approximate_relative_time_string(dynamic_props.time, time_point_sec(time_point::now()), " old");
     result["participation"]             = (100*dynamic_props.recent_slots_filled.popcount()) / 128.0;
     result["median_hbd_price"]          = serializer_wrapper<protocol::price>{ _remote_wallet_bridge_api->get_current_median_history_price({}, LOCK) };
-    result["account_creation_fee"]      = serializer_wrapper<hive::protocol::legacy_asset>{ _remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee };
+    result["account_creation_fee"]      = serializer_wrapper<hive::protocol::asset>{ _remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee };
     result["post_reward_fund"]          = serializer_wrapper<database_api::api_reward_fund_object>{ _remote_wallet_bridge_api->get_reward_fund({HIVE_POST_REWARD_FUND_NAME}, LOCK ) };
     return result;
   }
@@ -550,7 +550,7 @@ public:
   }
 
     /// Common body for claim_account_creation and claim_account_creation_nonblocking
-  serializer_wrapper<annotated_signed_transaction> build_claim_account_creation(const string& creator, const hive::protocol::legacy_asset& fee,
+  serializer_wrapper<annotated_signed_transaction> build_claim_account_creation(const string& creator, const hive::protocol::asset& fee,
     const std::function<annotated_signed_transaction(signed_transaction)>& tx_signer);
 
   void set_transaction_expiration( uint32_t tx_expiration_seconds )
@@ -983,7 +983,7 @@ public:
   const string _wallet_filename_extension = ".wallet";
 };
 
-serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_account_creation(const string& creator, const hive::protocol::legacy_asset& fee,
+serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_account_creation(const string& creator, const hive::protocol::asset& fee,
   const std::function<annotated_signed_transaction(signed_transaction)>& tx_signer)
 {
   try
@@ -1335,10 +1335,10 @@ serializer_wrapper<database_api::api_feed_history_object> wallet_api::get_feed_h
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::claim_account_creation(const string& creator,
-                                                                            const hive::protocol::legacy_asset& fee,
+                                                                            const serializer_wrapper<hive::protocol::asset>& fee,
                                                                             bool broadcast )const
 {
-  return { my->build_claim_account_creation(creator, fee,
+  return { my->build_claim_account_creation(creator, fee.value,
     [this, broadcast](signed_transaction tx) -> annotated_signed_transaction
     {
       return my->sign_transaction(tx, broadcast);
@@ -1347,10 +1347,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::claim_account_creat
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::claim_account_creation_nonblocking(const string& creator,
-                                                                                        const hive::protocol::legacy_asset& fee,
+                                                                                        const serializer_wrapper<hive::protocol::asset>& fee,
                                                                                         bool broadcast )const
 {
-  return { my->build_claim_account_creation(creator, fee,
+  return { my->build_claim_account_creation(creator, fee.value,
     [this, broadcast](signed_transaction tx) ->annotated_signed_transaction
     {
     return my->sign_and_broadcast_transaction(tx, broadcast, false);
@@ -1373,7 +1373,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_with
   public_key_type memo,
   bool broadcast )const
 {
-  hive::protocol::legacy_asset no_funds;
+  serializer_wrapper<hive::protocol::asset> no_funds;
   return { create_funded_account_with_keys(creator, new_account_name, no_funds, "", json_meta, owner,
     active, posting, memo, broadcast) };
 }
@@ -1385,7 +1385,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_with
  */
 serializer_wrapper<annotated_signed_transaction> wallet_api::create_funded_account_with_keys( const string& creator,
                                                                                       const string& new_account_name,
-                                                                                      const hive::protocol::legacy_asset& initial_amount,
+                                                                                      const serializer_wrapper<hive::protocol::asset>& initial_amount,
                                                                                       const string& memo,
                                                                                       const string& json_meta,
                                                                                       public_key_type owner_key,
@@ -1427,12 +1427,12 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_funded_accou
    }
    idump((tx.operations[0]));
 
-   if (initial_amount.amount.value > 0)
+   if (initial_amount.value.amount.value > 0)
    {
       transfer_operation transfer_op;
       transfer_op.from = creator;
       transfer_op.to = new_account_name;
-      transfer_op.amount = initial_amount;
+      transfer_op.amount = initial_amount.value;
 
       if( memo.size() > 0 && memo[0] == '#' )
       {
@@ -1459,8 +1459,8 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_funded_accou
   */
 serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_with_keys_delegated(
   const string& creator,
-  const hive::protocol::legacy_asset& hive_fee,
-  const hive::protocol::legacy_asset& delegated_vests,
+  const serializer_wrapper<hive::protocol::asset>& hive_fee,
+  const serializer_wrapper<hive::protocol::asset>& delegated_vests,
   const string& new_account_name,
   const string& json_meta,
   public_key_type owner,
@@ -1478,8 +1478,8 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_with
   op.posting = authority( 1, posting, 1 );
   op.memo_key = memo;
   op.json_metadata = json_meta;
-  op.fee = hive_fee.to_asset();
-  op.delegation = delegated_vests.to_asset();
+  op.fee = hive_fee.value;
+  op.delegation = delegated_vests.value;
 
   signed_transaction tx;
   tx.operations.push_back(op);
@@ -1825,8 +1825,8 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_memo
 serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares_and_transfer_and_broadcast(
   const string& delegator,
   const string& delegatee,
-  const hive::protocol::legacy_asset& vesting_shares,
-  optional<hive::protocol::legacy_asset> transfer_amount,
+  const hive::protocol::asset& vesting_shares,
+  optional<hive::protocol::asset> transfer_amount,
   optional<string> transfer_memo,
   bool broadcast,
   bool blocking )
@@ -1841,7 +1841,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_sh
   delegate_vesting_shares_operation op;
   op.delegator = delegator;
   op.delegatee = delegatee;
-  op.vesting_shares = vesting_shares.to_asset();
+  op.vesting_shares = vesting_shares;
 
   signed_transaction tx;
   tx.operations.push_back( op );
@@ -1865,45 +1865,45 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_sh
 serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares(
   const string& delegator,
   const string& delegatee,
-  const hive::protocol::legacy_asset& vesting_shares,
+  const serializer_wrapper<hive::protocol::asset>& vesting_shares,
   bool broadcast )
 {
-  return { delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares,
-    optional<hive::protocol::legacy_asset>(), optional<string>(), broadcast, true) };
+  return { delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares.value,
+    optional<hive::protocol::asset>(), optional<string>(), broadcast, true) };
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares_nonblocking(
   const string& delegator,
   const string& delegatee,
-  const hive::protocol::legacy_asset& vesting_shares,
+  const serializer_wrapper<hive::protocol::asset>& vesting_shares,
   bool broadcast )
 {
-  return { delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares,
-    optional<hive::protocol::legacy_asset>(), optional<string>(), broadcast, false) };
+  return { delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares.value,
+    optional<hive::protocol::asset>(), optional<string>(), broadcast, false) };
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares_and_transfer(
   const string& delegator,
   const string& delegatee,
-  const hive::protocol::legacy_asset& vesting_shares,
-  const hive::protocol::legacy_asset& transfer_amount,
+  const serializer_wrapper<hive::protocol::asset>& vesting_shares,
+  const serializer_wrapper<hive::protocol::asset>& transfer_amount,
   optional<string> transfer_memo,
   bool broadcast )
 {
-  return { delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares,
-    transfer_amount, transfer_memo, broadcast, true) };
+  return { delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares.value,
+    transfer_amount.value, transfer_memo, broadcast, true) };
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares_and_transfer_nonblocking(
   const string& delegator,
   const string& delegatee,
-  const hive::protocol::legacy_asset& vesting_shares,
-  const hive::protocol::legacy_asset& transfer_amount,
+  const serializer_wrapper<hive::protocol::asset>& vesting_shares,
+  const serializer_wrapper<hive::protocol::asset>& transfer_amount,
   optional<string> transfer_memo,
   bool broadcast )
 {
-  return { delegate_vesting_shares_and_transfer_and_broadcast( delegator, delegatee, vesting_shares,
-    transfer_amount, transfer_memo, broadcast, false) };
+  return { delegate_vesting_shares_and_transfer_and_broadcast( delegator, delegatee, vesting_shares.value,
+    transfer_amount.value, transfer_memo, broadcast, false) };
 }
 
 
@@ -1935,8 +1935,8 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_account(
   */
 serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_delegated(
   const string& creator,
-  const hive::protocol::legacy_asset& hive_fee,
-  const hive::protocol::legacy_asset& delegated_vests,
+  const serializer_wrapper<hive::protocol::asset>& hive_fee,
+  const serializer_wrapper<hive::protocol::asset>& delegated_vests,
   const string& new_account_name,
   const string& json_meta,
   bool broadcast )
@@ -2103,21 +2103,21 @@ string wallet_api::get_encrypted_memo( const string& from, const string& to, con
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::transfer(const string& from, const string& to,
-  const hive::protocol::legacy_asset& amount, const string& memo, bool broadcast )
+  const serializer_wrapper<hive::protocol::asset>& amount, const string& memo, bool broadcast )
 {
-  return { transfer_and_broadcast(from, to, amount, memo, broadcast, true) };
+  return { transfer_and_broadcast(from, to, amount.value, memo, broadcast, true) };
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_nonblocking(const string& from, const string& to,
-  const hive::protocol::legacy_asset& amount, const string& memo, bool broadcast )
+  const serializer_wrapper<hive::protocol::asset>& amount, const string& memo, bool broadcast )
 {
-  return { transfer_and_broadcast(from, to, amount, memo, broadcast, false) };
+  return { transfer_and_broadcast(from, to, amount.value, memo, broadcast, false) };
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_and_broadcast(
   const string& from,
   const string& to,
-  const hive::protocol::legacy_asset& amount,
+  const hive::protocol::asset& amount,
   const string& memo,
   bool broadcast,
   bool blocking )
@@ -2128,7 +2128,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_and_broadc
   transfer_operation op;
   op.from = from;
   op.to = to;
-  op.amount = amount.to_asset();
+  op.amount = amount;
 
   op.memo = get_encrypted_memo( from, to, memo );
 
@@ -2145,9 +2145,9 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_transfer(
   const string& to,
   const string& agent,
   uint32_t escrow_id,
-  const hive::protocol::legacy_asset& hbd_amount,
-  const hive::protocol::legacy_asset& hive_amount,
-  const hive::protocol::legacy_asset& fee,
+  const serializer_wrapper<hive::protocol::asset>& hbd_amount,
+  const serializer_wrapper<hive::protocol::asset>& hive_amount,
+  const serializer_wrapper<hive::protocol::asset>& fee,
   const time_point_sec& ratification_deadline,
   const time_point_sec& escrow_expiration,
   const string& json_meta,
@@ -2159,9 +2159,9 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_transfer(
   op.to = to;
   op.agent = agent;
   op.escrow_id = escrow_id;
-  op.hbd_amount = hbd_amount.to_asset();
-  op.hive_amount = hive_amount.to_asset();
-  op.fee = fee.to_asset();
+  op.hbd_amount = hbd_amount.value;
+  op.hive_amount = hive_amount.value;
+  op.fee = fee.value;
   op.ratification_deadline = ratification_deadline;
   op.escrow_expiration = escrow_expiration;
   op.json_meta = json_meta;
@@ -2227,8 +2227,8 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_release(
   const string& who,
   const string& receiver,
   uint32_t escrow_id,
-  const hive::protocol::legacy_asset& hbd_amount,
-  const hive::protocol::legacy_asset& hive_amount,
+  const serializer_wrapper<hive::protocol::asset>& hbd_amount,
+  const serializer_wrapper<hive::protocol::asset>& hive_amount,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2239,8 +2239,8 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_release(
   op.who = who;
   op.receiver = receiver;
   op.escrow_id = escrow_id;
-  op.hbd_amount = hbd_amount.to_asset();
-  op.hive_amount = hive_amount.to_asset();
+  op.hbd_amount = hbd_amount.value;
+  op.hive_amount = hive_amount.value;
 
   signed_transaction tx;
   tx.operations.push_back( op );
@@ -2254,7 +2254,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_release(
 serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_savings(
   const string& from,
   const string& to,
-  const hive::protocol::legacy_asset& amount,
+  const serializer_wrapper<hive::protocol::asset>& amount,
   const string& memo,
   bool broadcast )
 {
@@ -2264,7 +2264,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_savings
   op.from = from;
   op.to   = to;
   op.memo = get_encrypted_memo( from, to, memo );
-  op.amount = amount.to_asset();
+  op.amount = amount.value;
 
   signed_transaction tx;
   tx.operations.push_back( op );
@@ -2280,7 +2280,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_from_savin
   const string& from,
   uint32_t request_id,
   const string& to,
-  const hive::protocol::legacy_asset& amount,
+  const serializer_wrapper<hive::protocol::asset>& amount,
   const string& memo,
   bool broadcast )
 {
@@ -2290,7 +2290,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_from_savin
   op.from = from;
   op.request_id = request_id;
   op.to = to;
-  op.amount = amount.to_asset();
+  op.amount = amount.value;
   op.memo = get_encrypted_memo( from, to, memo );
 
   signed_transaction tx;
@@ -2321,25 +2321,25 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::cancel_transfer_fro
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_vesting(
-  const string& from, const string& to, const hive::protocol::legacy_asset& amount, bool broadcast )
+  const string& from, const string& to, const serializer_wrapper<hive::protocol::asset>& amount, bool broadcast )
 {
-  return { transfer_to_vesting_and_broadcast(from, to, amount, broadcast, true) };
+  return { transfer_to_vesting_and_broadcast(from, to, amount.value, broadcast, true) };
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_vesting_nonblocking(
-  const string& from, const string& to, const hive::protocol::legacy_asset& amount, bool broadcast )
+  const string& from, const string& to, const serializer_wrapper<hive::protocol::asset>& amount, bool broadcast )
 {
-  return { transfer_to_vesting_and_broadcast(from, to, amount, broadcast, false) };
+  return { transfer_to_vesting_and_broadcast(from, to, amount.value, broadcast, false) };
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_vesting_and_broadcast(
-  const string& from, const string& to, const hive::protocol::legacy_asset& amount, bool broadcast, bool blocking )
+  const string& from, const string& to, const hive::protocol::asset& amount, bool broadcast, bool blocking )
 {
   FC_ASSERT( !is_locked() );
   transfer_to_vesting_operation op;
   op.from = from;
   op.to = (to == from ? "" : to);
-  op.amount = amount.to_asset();
+  op.amount = amount;
 
   signed_transaction tx;
   tx.operations.push_back( op );
@@ -2352,13 +2352,13 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_vesting
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::withdraw_vesting(
   const string& from,
-  const hive::protocol::legacy_asset& vesting_shares,
+  const serializer_wrapper<hive::protocol::asset>& vesting_shares,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
   withdraw_vesting_operation op;
   op.account = from;
-  op.vesting_shares = vesting_shares.to_asset();
+  op.vesting_shares = vesting_shares.value;
 
   signed_transaction tx;
   tx.operations.push_back( op );
@@ -2390,14 +2390,14 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::set_withdraw_vestin
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::convert_hbd(
   const string& from,
-  const hive::protocol::legacy_asset& amount,
+  const serializer_wrapper<hive::protocol::asset>& amount,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
   convert_operation op;
   op.owner = from;
   op.requestid = fc::time_point::now().sec_since_epoch();
-  op.amount = amount.to_asset();
+  op.amount = amount.value;
 
   signed_transaction tx;
   tx.operations.push_back( op );
@@ -2408,14 +2408,14 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::convert_hbd(
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::convert_hive_with_collateral(
   const string& from,
-  const hive::protocol::legacy_asset& collateral_amount,
+  const serializer_wrapper<hive::protocol::asset>& collateral_amount,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
   collateralized_convert_operation op;
   op.owner = from;
   op.requestid = fc::time_point::now().sec_since_epoch();
-  op.amount = collateral_amount.to_asset();
+  op.amount = collateral_amount.value;
 
   signed_transaction tx;
   tx.operations.push_back( op );
@@ -2424,20 +2424,20 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::convert_hive_with_c
   return { my->sign_transaction( tx, broadcast ) };
 }
 
-hive::protocol::legacy_asset wallet_api::estimate_hive_collateral(
-  const hive::protocol::legacy_asset& hbd_amount_to_get )
+serializer_wrapper<hive::protocol::asset> wallet_api::estimate_hive_collateral(
+  const serializer_wrapper<hive::protocol::asset>& hbd_amount_to_get )
 {
   //must reflect calculations from collateralized_convert_evaluator::do_apply
 
   auto fhistory = get_feed_history().value;
   FC_ASSERT( !static_cast<price>( fhistory.current_median_history ).is_null(), "Cannot estimate conversion collateral because there is no price feed." );
 
-  auto needed_hive = multiply_with_fee( hbd_amount_to_get, fhistory.current_min_history,
+  auto needed_hive = multiply_with_fee( hbd_amount_to_get.value, fhistory.current_min_history,
     HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
   uint128_t _amount = ( uint128_t( needed_hive.amount.value ) * HIVE_CONVERSION_COLLATERAL_RATIO ) / HIVE_100_PERCENT;
   asset required_collateral = asset( _amount.to_uint64(), HIVE_SYMBOL );
 
-  return hive::protocol::legacy_asset::from_asset( required_collateral );
+  return { required_collateral };
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::publish_feed(
@@ -2528,17 +2528,17 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::decline_voting_righ
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::claim_reward_balance(
   const string& account,
-  const hive::protocol::legacy_asset& reward_hive,
-  const hive::protocol::legacy_asset& reward_hbd,
-  const hive::protocol::legacy_asset& reward_vests,
+  const serializer_wrapper<hive::protocol::asset>& reward_hive,
+  const serializer_wrapper<hive::protocol::asset>& reward_hbd,
+  const serializer_wrapper<hive::protocol::asset>& reward_vests,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
   claim_reward_balance_operation op;
   op.account = account;
-  op.reward_hive = reward_hive.to_asset();
-  op.reward_hbd = reward_hbd.to_asset();
-  op.reward_vests = reward_vests.to_asset();
+  op.reward_hive = reward_hive.value;
+  op.reward_hbd = reward_hbd.value;
+  op.reward_vests = reward_vests.value;
 
   signed_transaction tx;
   tx.operations.push_back( op );
@@ -2595,8 +2595,8 @@ serializer_wrapper<vector< database_api::api_limit_order_object >> wallet_api::g
 serializer_wrapper<annotated_signed_transaction> wallet_api::create_order(
   const string& owner,
   uint32_t order_id,
-  const hive::protocol::legacy_asset& amount_to_sell,
-  const hive::protocol::legacy_asset& min_to_receive,
+  const serializer_wrapper<hive::protocol::asset>& amount_to_sell,
+  const serializer_wrapper<hive::protocol::asset>& min_to_receive,
   bool fill_or_kill,
   uint32_t expiration_sec,
   bool broadcast )
@@ -2605,8 +2605,8 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_order(
   limit_order_create_operation op;
   op.owner = owner;
   op.orderid = order_id;
-  op.amount_to_sell = amount_to_sell.to_asset();
-  op.min_to_receive = min_to_receive.to_asset();
+  op.amount_to_sell = amount_to_sell.value;
+  op.min_to_receive = min_to_receive.value;
   op.fill_or_kill = fill_or_kill;
   op.expiration = expiration_sec ? (fc::time_point::now() + fc::seconds(expiration_sec)) : fc::time_point::maximum();
 
@@ -2723,7 +2723,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::follow( const strin
     const account_name_type& receiver,
     time_point_sec start_date,
     time_point_sec end_date,
-    const hive::protocol::legacy_asset& daily_pay,
+    const serializer_wrapper<hive::protocol::asset>& daily_pay,
     string subject,
     string permlink,
     bool broadcast )
@@ -2735,7 +2735,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::follow( const strin
     cp.receiver = receiver;
     cp.start_date = start_date;
     cp.end_date = end_date;
-    cp.daily_pay = daily_pay.to_asset();
+    cp.daily_pay = daily_pay.value;
     cp.subject = std::move( subject );
     cp.permlink = std::move( permlink );
 
@@ -2748,7 +2748,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::follow( const strin
  serializer_wrapper<annotated_signed_transaction> wallet_api::update_proposal(
   int64_t proposal_id,
   const account_name_type& creator,
-  const hive::protocol::legacy_asset& daily_pay,
+  const serializer_wrapper<hive::protocol::asset>& daily_pay,
   string subject,
   string permlink,
   optional<time_point_sec> end_date,
@@ -2760,7 +2760,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::follow( const strin
 
   up.proposal_id = proposal_id;
   up.creator = creator;
-  up.daily_pay = daily_pay;
+  up.daily_pay = daily_pay.value;
   up.subject = std::move(subject);
   up.permlink = std::move(permlink);
   if( end_date )
@@ -2840,7 +2840,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::remove_proposal(con
 serializer_wrapper<annotated_signed_transaction> wallet_api::recurrent_transfer(
  const account_name_type& from,
  const account_name_type& to,
- const hive::protocol::legacy_asset& amount,
+ const serializer_wrapper<hive::protocol::asset>& amount,
  const string& memo,
  uint16_t recurrence,
  uint16_t executions,
@@ -2851,7 +2851,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::recurrent_transfer(
     recurrent_transfer_operation op;
     op.from = from;
     op.to = to;
-    op.amount = amount.to_asset();
+    op.amount = amount.value;
     op.memo = get_encrypted_memo( from, to, memo );
     op.recurrence = recurrence;
     op.executions = executions;

@@ -3,8 +3,6 @@ from test_tools import Account, logger, World
 def test_transfer():
     with World() as world:
         init_node = world.create_init_node()
-        init_node.config.plugin.append('database_api')
-        init_node.config.plugin.append('network_broadcast_api')
         init_node.run()
 
         wallet = init_node.attach_wallet()
@@ -64,70 +62,52 @@ def test_transfer():
         assert 'result' in response
 
         #**************************************************************
-        logger.info('about...')
-        response = wallet.api.about()
+        logger.info('change_recovery_account...')
+        response = wallet.api.change_recovery_account('alice', 'bob')
         logger.info(response)
 
         assert 'result' in response
         _result = response['result']
 
-        assert 'blockchain_version' in _result
-        assert 'client_version' in _result
-        assert 'hive_revision' in _result
-        assert 'hive_revision_age' in _result
-        assert 'fc_revision' in _result
-        assert 'fc_revision_age' in _result
-        assert 'compile_date' in _result
-        assert 'boost_version' in _result
-        assert 'openssl_version' in _result
-        assert 'build' in _result
-        assert 'server_blockchain_version' in _result
-        assert 'server_hive_revision' in _result
-        assert 'server_fc_revision' in _result
+        assert 'operations' in _result
+        _ops = _result['operations']
+
+        assert len(_ops) == 1
+        _op = _ops[0]
+
+        assert 'type' in _op and _op['type'] == 'change_recovery_account_operation'
+
+        assert 'value' in _op
+        _value = _op['value']
+
+        assert 'account_to_recover' in _value and _value['account_to_recover'] == 'alice'
+        assert 'new_recovery_account' in _value and _value['new_recovery_account'] == 'bob'
 
         #**************************************************************
         logger.info('get_account...')
-        response = wallet.api.get_account('initminer')
+        response = wallet.api.get_account('alice')
         logger.info(response)
 
         assert 'result' in response
         _result = response['result']
 
-        #**************************************************************
-        try:
-            logger.info('claim_reward_balance...')
-            response = wallet.api.claim_reward_balance('initminer', '0.000 TESTS', '0.000 TBD', '0.000001 VESTS')
-            logger.info(response)
-        except Exception as e:
-            message = str(e)
-            logger.info(message)
-            found = message.find('Cannot claim that much VESTS')
-            assert found != -1
+        alice_owner_key = get_key( 'owner', _result )
 
         #**************************************************************
-        logger.info('decline_voting_rights...')
-        response = wallet.api.decline_voting_rights('alice', True)
+        logger.info('get_account...')
+        response = wallet.api.get_account('bob')
         logger.info(response)
 
         assert 'result' in response
         _result = response['result']
 
-        assert 'operations' in _result
-        _ops = _result['operations']
-
-        assert len(_ops) == 1
-        _op = _ops[0]
-
-        assert 'type' in _op and _op['type'] == 'decline_voting_rights_operation'
-
-        assert 'value' in _op
-        _value = _op['value']
-
-        assert 'account' in _value and _value['account'] == 'alice'
+        bob_owner_key = get_key( 'owner', _result )
 
         #**************************************************************
-        logger.info('follow...')
-        response = wallet.api.follow('alice', 'bob', ['blog'])
+        logger.info('request_account_recovery...')
+        authority = {"weight_threshold": 1,"account_auths": [], "key_auths": [[alice_owner_key,1]]}
+
+        response = wallet.api.request_account_recovery('alice', 'bob', authority)
         logger.info(response)
 
         assert 'result' in response
@@ -139,9 +119,39 @@ def test_transfer():
         assert len(_ops) == 1
         _op = _ops[0]
 
-        assert 'type' in _op and _op['type'] == 'custom_json_operation'
+        assert 'type' in _op and _op['type'] == 'request_account_recovery_operation'
 
         assert 'value' in _op
         _value = _op['value']
 
-        assert 'json' in _value and _value['json'] == '{"type":"follow_operation","value":{"follower":"alice","following":"@bob","what":["blog"]}}'
+        assert 'recovery_account' in _value and _value['recovery_account'] == 'alice'
+        assert 'account_to_recover' in _value and _value['account_to_recover'] == 'bob'
+
+        #**************************************************************
+        logger.info('update_account_auth_key...')
+        response = wallet.api.update_account_auth_key('bob', 'owner', bob_owner_key, 3)
+        logger.info(response)
+
+        #**************************************************************
+        logger.info('recover_account...')
+        recent_authority = {"weight_threshold": 1,"account_auths": [], "key_auths": [[bob_owner_key,1]]}
+        new_authority = {"weight_threshold": 1,"account_auths": [], "key_auths": [[alice_owner_key,1]]}
+
+        response = wallet.api.recover_account('bob', recent_authority, new_authority)
+        logger.info(response)
+
+        assert 'result' in response
+        _result = response['result']
+
+        assert 'operations' in _result
+        _ops = _result['operations']
+
+        assert len(_ops) == 1
+        _op = _ops[0]
+
+        assert 'type' in _op and _op['type'] == 'recover_account_operation'
+
+        assert 'value' in _op
+        _value = _op['value']
+
+        assert 'account_to_recover' in _value and _value['account_to_recover'] == 'bob'

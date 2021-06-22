@@ -22,8 +22,6 @@ key2 = 'TST7QbuPFWyi7Kxtq6i1EaHNHZHEG2JyB61kPY1x7VvjxyHb7btfg'
 def test_complex():
     with World() as world:
         init_node = world.create_init_node()
-        init_node.config.plugin.append('database_api')
-        init_node.config.plugin.append('network_broadcast_api')
         init_node.run()
 
         wallet = init_node.attach_wallet()
