@@ -14,7 +14,6 @@ class Network(NodesCreator):
 
         self.name = name
         self._directory = Path('.').absolute()
-        self._children_names = ChildrenNames()
         self.__wallets = []
         self.is_running = False
         self.disconnected_networks = []

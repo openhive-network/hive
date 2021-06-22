@@ -12,7 +12,6 @@ class World(NodesCreator):
     def __init__(self):
         super().__init__()
 
-        self._children_names = ChildrenNames()
         self.__networks = []
         self.__wallets = []
         self.__name = 'World'

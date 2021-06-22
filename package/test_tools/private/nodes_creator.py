@@ -8,7 +8,7 @@ from test_tools.private.node import Node
 
 class NodesCreator:
     def __init__(self):
-        self._children_names: ChildrenNames = None  # Should be overriden by derived class
+        self._children_names = ChildrenNames()
         self._directory: Path = None  # Should be overriden by derived class
         self._nodes = []
 
