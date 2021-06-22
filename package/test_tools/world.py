@@ -51,6 +51,16 @@ class World(NodesCreator):
         self.__networks.append(network)
         return network
 
+    def network(self, name: str) -> Network:
+        for network in self.__networks:
+            if network.get_name() == name:
+                return network
+
+        raise RuntimeError(
+            f'There is no network with name "{name}". Available networks are:\n'
+            f'{[node.get_name() for node in self._nodes]}'
+        )
+
     def networks(self):
         return self.__networks
 

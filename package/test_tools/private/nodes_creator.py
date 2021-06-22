@@ -77,6 +77,16 @@ class NodesCreator:
         self._nodes.append(node)
         return node
 
+    def node(self, name: str) -> Node:
+        for node in self._nodes:
+            if node.get_name() == name:
+                return node
+
+        raise RuntimeError(
+            f'There is no node with name "{name}". Available nodes are:\n'
+            f'{[node.get_name() for node in self._nodes]}'
+        )
+
     @staticmethod
     def __register_witness(node, witness_name):
         witness = Account(witness_name)

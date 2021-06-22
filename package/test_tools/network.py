@@ -34,6 +34,9 @@ class Network(NodesCreator):
     def set_wallet_executable_file_path(self, path):
         self.wallet_executable_file_path = Path(path).absolute()
 
+    def get_name(self):
+        return self.name
+
     def get_directory(self):
         return self._directory / self.name
 
