@@ -210,7 +210,10 @@ create_account_tests:
   script:
     - pip3 install pytest
     - cd tests/functional/python_tests/create_account_tests
-    - pytest
+    - pytest --junitxml="./report.xml"
+  artifacts:
+    reports:
+      junit: tests/functional/python_tests/create_account_tests/report.xml
   tags:
     - public-runner-docker
 
@@ -224,7 +227,10 @@ last_irreversible_block_tests:
   script:
     - pip3 install pytest
     - cd tests/functional/python_tests/last_irreversible_block_tests
-    - pytest
+    - pytest --junitxml="./report.xml"
+  artifacts:
+    reports:
+      junit: tests/functional/python_tests/last_irreversible_block_tests/report.xml
   tags:
     - public-runner-docker
 
@@ -238,7 +244,10 @@ test_tools_tests:
   script:
     - pip3 install pytest
     - cd tests/test_tools/tests
-    - pytest
+    - pytest --junitxml="./report.xml"
+  artifacts:
+    reports:
+      junit: tests/test_tools/tests/report.xml
   tags:
     - public-runner-docker
 
