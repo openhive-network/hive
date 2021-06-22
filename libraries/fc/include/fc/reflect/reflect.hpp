@@ -212,29 +212,19 @@ template<> struct reflector<TYPE> {\
     }; \
     FC_REFLECT_DERIVED_IMPL_INLINE( TYPE, INHERITS, MEMBERS ) \
 }; }
-
-#define FC_REFLECT_TEMPLATE_WITHOUT_NAMESPACE( TEMPLATE_ARGS, TYPE, INHERITS, MEMBERS ) \
-template<BOOST_PP_SEQ_ENUM(TEMPLATE_ARGS)> struct reflector<TYPE> { \
+#define FC_REFLECT_DERIVED_TEMPLATE( TEMPLATE_ARGS, TYPE, INHERITS, MEMBERS ) \
+namespace fc {  \
+  template<BOOST_PP_SEQ_ENUM(TEMPLATE_ARGS)> struct get_typename<TYPE>  { static const char* name()  { return BOOST_PP_STRINGIZE(TYPE);  } }; \
+template<BOOST_PP_SEQ_ENUM(TEMPLATE_ARGS)> struct reflector<TYPE> {\
     typedef TYPE type; \
     typedef fc::true_type  is_defined; \
     typedef fc::false_type is_enum; \
     enum  member_count_enum {  \
-      local_member_count = 0  BOOST_PP_SEQ_FOR_EACH( FC_REFLECT_MEMBER_COUNT, +, MEMBERS ), \
-      total_member_count = local_member_count BOOST_PP_SEQ_FOR_EACH( FC_REFLECT_BASE_MEMBER_COUNT, +, INHERITS ) \
+      local_member_count = 0  BOOST_PP_SEQ_FOR_EACH( FC_REFLECT_MEMBER_COUNT, +, MEMBERS ),\
+      total_member_count = local_member_count BOOST_PP_SEQ_FOR_EACH( FC_REFLECT_BASE_MEMBER_COUNT, +, INHERITS )\
     }; \
     FC_REFLECT_DERIVED_IMPL_INLINE( TYPE, INHERITS, MEMBERS ) \
-};
-
-#define FC_REFLECT_DERIVED_TEMPLATE( TEMPLATE_ARGS, TYPE, INHERITS, MEMBERS ) \
-namespace fc {  \
-  template<BOOST_PP_SEQ_ENUM(TEMPLATE_ARGS)> struct get_typename<TYPE>  { static const char* name()  { return BOOST_PP_STRINGIZE(TYPE);  } }; \
-  FC_REFLECT_TEMPLATE_WITHOUT_NAMESPACE( TEMPLATE_ARGS, TYPE, INHERITS, MEMBERS ) \
-}
-
-#define FC_REFLECT_SIMPLE_TEMPLATE( TEMPLATE_ARGS, TYPE, INHERITS, MEMBERS ) \
-namespace fc {  \
-FC_REFLECT_TEMPLATE_WITHOUT_NAMESPACE( TEMPLATE_ARGS, TYPE, INHERITS, MEMBERS ) \
-}
+}; }
 
 //BOOST_PP_SEQ_SIZE(MEMBERS),
 
@@ -254,9 +244,6 @@ FC_REFLECT_TEMPLATE_WITHOUT_NAMESPACE( TEMPLATE_ARGS, TYPE, INHERITS, MEMBERS ) 
 
 #define FC_REFLECT_EMPTY( TYPE ) \
     FC_REFLECT_DERIVED( TYPE, BOOST_PP_SEQ_NIL, BOOST_PP_SEQ_NIL )
-
-#define FC_REFLECT_SIMPLE_TEMPLATE_EMPTY( TEMPLATE_ARGS, TYPE ) \
-    FC_REFLECT_SIMPLE_TEMPLATE( TEMPLATE_ARGS, TYPE, BOOST_PP_SEQ_NIL, BOOST_PP_SEQ_NIL )
 
 #define FC_REFLECT_TYPENAME( TYPE ) \
 namespace fc { \
