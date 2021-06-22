@@ -34,13 +34,13 @@ def test_account_creation():
 
         #**************************************************************
         try:
-          logger.info('create_account_delegated...')
-          response = wallet.api.create_account_delegated('initminer', '2.987 TESTS', '6.123456 VESTS', 'alicex', '{}')
-          logger.info(response)
+            logger.info('create_account_delegated...')
+            response = wallet.api.create_account_delegated('initminer', '2.987 TESTS', '6.123456 VESTS', 'alicex', '{}')
+            logger.info(response)
         except Exception as e:
-          message = str(e)
-          found = message.find('Account creation with delegation is deprecated as of Hardfork 20')
-          assert found != -1
+            message = str(e)
+            found = message.find('Account creation with delegation is deprecated as of Hardfork 20')
+            assert found != -1
 
         #**************************************************************
         logger.info('create_account_with_keys...')
@@ -50,14 +50,14 @@ def test_account_creation():
 
         #**************************************************************
         try:
-          logger.info('create_account_with_keys_delegated...')
-          key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
-          response = wallet.api.create_account_with_keys_delegated('initminer', '2.987 TESTS', '6.123456 VESTS', 'alicey', '{}', key, key, key, key)
-          logger.info(response)
+            logger.info('create_account_with_keys_delegated...')
+            key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
+            response = wallet.api.create_account_with_keys_delegated('initminer', '2.987 TESTS', '6.123456 VESTS', 'alicey', '{}', key, key, key, key)
+            logger.info(response)
         except Exception as e:
-          message = str(e)
-          found = message.find('Account creation with delegation is deprecated as of Hardfork 20')
-          assert found != -1
+            message = str(e)
+            found = message.find('Account creation with delegation is deprecated as of Hardfork 20')
+            assert found != -1
 
         #**************************************************************
         logger.info('create_funded_account_with_keys...')
