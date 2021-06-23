@@ -1,6 +1,16 @@
 from test_tools import Account, logger, World
 
-def test_account_creation():
+def check_key( node_name, result, key ):
+  assert node_name in result
+  _node = result[node_name]
+  assert 'key_auths' in _node
+  _key_auths = _node['key_auths']
+  assert len(_key_auths) == 1
+  __key_auths = _key_auths[0]
+  assert len(__key_auths) == 2
+  __key_auths[0] == key
+
+def test_account_creation2():
     with World() as world:
         init_node = world.create_init_node()
         init_node.run()
@@ -41,6 +51,15 @@ def test_account_creation():
         key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
         response = wallet.api.create_account_with_keys('initminer', 'alice1', '{}', key, key, key, key)
         logger.info(response)
+
+        _operations = response['result']['operations']
+        assert len(_operations) == 1
+        _value = _operations[0]['value']
+
+        check_key( 'owner', _value, key )
+        check_key( 'active', _value, key )
+        check_key( 'posting', _value, key )
+        assert _value['memo_key'] == key
 
         #**************************************************************
         try:
