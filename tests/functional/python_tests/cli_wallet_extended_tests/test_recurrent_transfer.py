@@ -1,6 +1,6 @@
 from test_tools import Account, logger, World
 
-def test_transfer():
+def test_recurrent_transfer():
     with World() as world:
         init_node = world.create_init_node()
         init_node.run()

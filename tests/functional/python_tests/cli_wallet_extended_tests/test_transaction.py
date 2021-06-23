@@ -2,7 +2,7 @@ from test_tools import Account, logger, World
 import dateutil.parser as dp
 import datetime
 
-def test_transfer():
+def test_transaction():
     with World() as world:
         init_node = world.create_init_node()
         init_node.run()
