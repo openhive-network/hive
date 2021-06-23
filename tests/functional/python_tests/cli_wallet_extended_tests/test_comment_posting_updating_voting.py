@@ -125,3 +125,23 @@ def test_comment():
         assert 'author' in _value and _value['author'] == 'bob'
         assert 'permlink' in _value and _value['permlink'] == 'bob-permlink'
         assert 'weight' in _value and _value['weight'] == 10000
+
+        #**************************************************************
+        logger.info('decline_voting_rights...')
+        response = wallet.api.decline_voting_rights('alice', True)
+        logger.info(response)
+
+        _result = response['result']
+
+        assert 'operations' in _result
+        _ops = _result['operations']
+
+        assert len(_ops) == 1
+        _op = _ops[0]
+
+        assert 'type' in _op and _op['type'] == 'decline_voting_rights_operation'
+
+        assert 'value' in _op
+        _value = _op['value']
+
+        assert 'account' in _value and _value['account'] == 'alice'

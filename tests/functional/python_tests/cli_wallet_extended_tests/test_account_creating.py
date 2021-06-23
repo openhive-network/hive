@@ -63,3 +63,36 @@ def test_account_creation():
         #this call has a custom formatter so typical JSON is inaccessible
         assert len(response['result']) == 0
 
+        #**************************************************************
+        logger.info('create_account...')
+        response = wallet.api.create_account('initminer', 'alice', '{}')
+        logger.info(response)
+
+        #**************************************************************
+        logger.info('create_account...')
+        response = wallet.api.create_account('initminer', 'bob', '{}')
+        logger.info(response)
+
+        #**************************************************************
+        logger.info('transfer_to_vesting...')
+        response = wallet.api.transfer_to_vesting('initminer', 'alice', '100.000 TESTS')
+        logger.info(response)
+
+        assert 'result' in response
+
+        #**************************************************************
+        logger.info('follow...')
+        response = wallet.api.follow('alice', 'bob', ['blog'])
+        logger.info(response)
+
+        _ops = response['result']['operations']
+
+        assert len(_ops) == 1
+        _op = _ops[0]
+
+        assert 'type' in _op and _op['type'] == 'custom_json_operation'
+
+        assert 'value' in _op
+        _value = _op['value']
+
+        assert 'json' in _value and _value['json'] == '{"type":"follow_operation","value":{"follower":"alice","following":"@bob","what":["blog"]}}'

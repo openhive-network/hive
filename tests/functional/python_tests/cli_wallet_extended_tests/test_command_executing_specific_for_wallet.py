@@ -10,7 +10,7 @@ def test_wallet():
 
         pswd = 'pear_peach'
 
-        internal_path = 'generated_during_test_wallet/test_wallet/InitNodeWallet0/'
+        internal_path = 'generated_during_test_command_executing_specific_for_wallet/test_wallet/InitNodeWallet0/'
         wallet_content_file_name = 'test_wallet.json'
 
         #**************************************************************
@@ -231,3 +231,24 @@ def test_wallet():
 
         assert 'wif_priv_key' in _result and len(_result['wif_priv_key']) == 51
         assert 'pub_key' in _result and _result['pub_key'].find('TST') != -1
+
+        #**************************************************************
+        logger.info('about...')
+        response = wallet.api.about()
+        logger.info(response)
+
+        _result = response['result']
+
+        assert 'blockchain_version' in _result
+        assert 'client_version' in _result
+        assert 'hive_revision' in _result
+        assert 'hive_revision_age' in _result
+        assert 'fc_revision' in _result
+        assert 'fc_revision_age' in _result
+        assert 'compile_date' in _result
+        assert 'boost_version' in _result
+        assert 'openssl_version' in _result
+        assert 'build' in _result
+        assert 'server_blockchain_version' in _result
+        assert 'server_hive_revision' in _result
+        assert 'server_fc_revision' in _result
