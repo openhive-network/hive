@@ -143,7 +143,6 @@ def test_complex():
         response = wallet.api.sign_transaction(_result_trx_response)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result and len(_result['operations']) == 8
@@ -169,7 +168,6 @@ def test_complex():
         response = wallet.api.sign_transaction(_result_trx_response)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result and len(_result['operations']) == 6
@@ -206,7 +204,6 @@ def test_complex():
         response = wallet.api.get_accounts(['alice', 'bob', 'carol', 'dan'])
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
         assert len(_result) == 4
 

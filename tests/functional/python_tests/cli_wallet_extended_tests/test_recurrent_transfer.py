@@ -34,7 +34,6 @@ def test_transfer():
         logger.info(response)
 
         assert 'result' in response
-        _result = response['result']
 
         #**************************************************************
         logger.info('create_account...')
@@ -42,7 +41,6 @@ def test_transfer():
         logger.info(response)
 
         assert 'result' in response
-        _result = response['result']
 
         #**************************************************************
         logger.info('transfer_to_vesting...')
@@ -50,7 +48,6 @@ def test_transfer():
         logger.info(response)
 
         assert 'result' in response
-        _result = response['result']
 
         #**************************************************************
         logger.info('transfer_to_vesting...')
@@ -58,7 +55,6 @@ def test_transfer():
         logger.info(response)
 
         assert 'result' in response
-        _result = response['result']
 
         #**************************************************************
         logger.info('transfer...')
@@ -66,14 +62,12 @@ def test_transfer():
         logger.info(response)
 
         assert 'result' in response
-        _result = response['result']
 
         #**************************************************************
         logger.info('recurrent_transfer...')
         response = wallet.api.recurrent_transfer('alice', 'bob', '20.000 TESTS', 'banana-cherry', 24, 3 )
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         _value = check_recurrence_transfer_data( _result )
@@ -85,7 +79,6 @@ def test_transfer():
         response = wallet.api.find_recurrent_transfers('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 1
@@ -98,7 +91,6 @@ def test_transfer():
         response = wallet.api.recurrent_transfer('bob', 'alice', '0.900 TESTS', 'banana-lime', 25, 2 )
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         _value = check_recurrence_transfer_data( _result )
@@ -110,7 +102,6 @@ def test_transfer():
         response = wallet.api.find_recurrent_transfers('bob')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 1
@@ -123,7 +114,6 @@ def test_transfer():
         response = wallet.api.recurrent_transfer('bob', 'initminer', '0.800 TESTS', 'banana-lemon', 26, 22 )
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         _value = check_recurrence_transfer_data( _result )
@@ -135,7 +125,6 @@ def test_transfer():
         response = wallet.api.find_recurrent_transfers('bob')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 2

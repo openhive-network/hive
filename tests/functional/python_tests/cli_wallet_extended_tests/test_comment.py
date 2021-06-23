@@ -47,17 +47,14 @@ def test_delegate():
         response = wallet.api.post_comment('alice', 'test-permlink', '', 'xyz', 'śćą', 'DEBUG    test_tools.wallet.World.InitNodeWallet0:wallet.py:462 Closed with 0 return code', '{}')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
-        assert 'operations' in _result
         _ops = _result['operations']
 
         assert len(_ops) == 1
         _op = _ops[0]
 
-        assert 'type' in _op
-        _op['type'] == 'comment_operation'
+        assert 'type' in _op and _op['type'] == 'comment_operation'
 
         assert 'value' in _op
         _value = _op['value']
@@ -71,17 +68,13 @@ def test_delegate():
         response = wallet.api.post_comment('alice', 'test-permlink', '', 'xyz', 'TITLE NR 2', 'BODY NR 2', '{}')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
-
-        assert 'operations' in _result
         _ops = _result['operations']
 
         assert len(_ops) == 1
         _op = _ops[0]
 
-        assert 'type' in _op
-        _op['type'] == 'comment_operation'
+        assert 'type' in _op and _op['type'] == 'comment_operation'
 
         assert 'value' in _op
         _value = _op['value']
@@ -95,17 +88,13 @@ def test_delegate():
         response = wallet.api.post_comment('bob', 'bob-permlink', 'alice', 'test-permlink', 'TITLE NR 3', 'BODY NR 3', '{}')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
-
-        assert 'operations' in _result
         _ops = _result['operations']
 
         assert len(_ops) == 1
         _op = _ops[0]
 
-        assert 'type' in _op
-        _op['type'] == 'comment_operation'
+        assert 'type' in _op and _op['type'] == 'comment_operation'
 
         assert 'value' in _op
         _value = _op['value']
@@ -120,10 +109,7 @@ def test_delegate():
         response = wallet.api.vote('bob', 'bob', 'bob-permlink', 100)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
-
-        assert 'operations' in _result
         _ops = _result['operations']
 
         assert len(_ops) == 1

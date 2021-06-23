@@ -46,7 +46,6 @@ def test_getters():
         logger.info(response)
 
         assert 'result' in response
-        _result = response['result']
 
         #**************************************************************
         logger.info('create_account...')
@@ -54,7 +53,6 @@ def test_getters():
         logger.info(response)
 
         assert 'result' in response
-        _result = response['result']
 
         #**************************************************************
         logger.info('create_account...')
@@ -62,14 +60,12 @@ def test_getters():
         logger.info(response)
 
         assert 'result' in response
-        _result = response['result']
 
         #**************************************************************
         logger.info('transfer_to_vesting...')
         response = wallet.api.transfer_to_vesting('initminer', 'alice', '500.000 TESTS')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'ref_block_num' in _result
@@ -80,7 +76,6 @@ def test_getters():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         check_withdraw_data( _result, '0.000000 VESTS', 0 )
@@ -90,7 +85,6 @@ def test_getters():
         response = wallet.api.get_withdraw_routes('alice', 'by_destination')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 0
@@ -99,7 +93,6 @@ def test_getters():
         response = wallet.api.withdraw_vesting('alice', '4.000000 VESTS')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         #**************************************************************
@@ -107,7 +100,6 @@ def test_getters():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         check_withdraw_data( _result, '0.307693 VESTS', 4000000 )
@@ -117,7 +109,6 @@ def test_getters():
         response = wallet.api.get_withdraw_routes('alice', 'by_destination')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 0
@@ -127,7 +118,6 @@ def test_getters():
         response = wallet.api.set_withdraw_vesting_route('alice', 'bob', 30, True )
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         _value = check_route_data( _result )
@@ -138,7 +128,6 @@ def test_getters():
         response = wallet.api.get_withdraw_routes('alice', 'by_withdraw_route')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 1
@@ -150,7 +139,6 @@ def test_getters():
         response = wallet.api.set_withdraw_vesting_route('alice', 'carol', 25, False )
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         _value = check_route_data( _result )
@@ -161,7 +149,6 @@ def test_getters():
         response = wallet.api.get_withdraw_routes('alice', 'by_withdraw_route')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 2

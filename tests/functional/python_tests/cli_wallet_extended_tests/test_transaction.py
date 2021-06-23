@@ -32,7 +32,6 @@ def test_transfer():
         response = wallet.api.get_account('carol')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'balance' in _result and _result['balance'] == '0.000 TESTS'
@@ -44,7 +43,7 @@ def test_transfer():
         response = wallet.api.serialize_transaction(_result_trx_response)
         logger.info(response)
 
-        assert 'result' in response and response['result'] != '00000000000000000000000000'
+        assert response['result'] != '00000000000000000000000000'
 
         #**************************************************************
         logger.info('sign_transaction...')
@@ -56,7 +55,6 @@ def test_transfer():
         response = wallet.api.get_account('carol')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'balance' in _result and _result['balance'] == '500.000 TESTS'
@@ -72,7 +70,7 @@ def test_transfer():
         response = wallet.api.transfer_to_savings('initminer', 'carol', '0.007 TESTS', 'plum')
         logger.info(response)
 
-        assert 'result' in response and 'expiration' in response['result']
+        assert 'expiration' in response['result']
         _expiration = response['result']['expiration']
 
         parsed_t = dp.parse(_expiration)
@@ -86,8 +84,7 @@ def test_transfer():
         response = wallet.api.set_transaction_expiration(678)
         logger.info(response)
 
-        assert 'result' in response
-        response['result'] = None
+        assert response['result'] == None
 
         #**************************************************************
         _time = datetime.datetime.utcnow()
@@ -98,7 +95,7 @@ def test_transfer():
         response = wallet.api.transfer_to_savings('initminer', 'carol', '0.008 TESTS', 'lemon')
         logger.info(response)
 
-        assert 'result' in response and 'expiration' in response['result']
+        assert 'expiration' in response['result']
         _expiration = response['result']['expiration']
 
         parsed_t = dp.parse(_expiration)
