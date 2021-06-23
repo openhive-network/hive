@@ -63,6 +63,8 @@ namespace detail {
 
     const fc::variants& get_block_buffer()const;
 
+    void validate_chain_id( const hp::chain_id_type& chain_id );
+
     fc::http::connection input_con;
     fc::url              input_url;
 
@@ -284,6 +286,41 @@ namespace detail {
       return fc::optional< hp::signed_block >();
 
     return block_buf.at( result_offset ).template as< hp::signed_block >();
+  }
+
+  void node_based_conversion_plugin_impl::validate_chain_id( const hp::chain_id_type& chain_id )
+  {
+    try
+    {
+      open( output_con, output_url );
+
+      auto reply = output_con.request( "POST", output_url,
+        "{\"jsonrpc\":\"2.0\",\"method\":\"database_api.get_config\",\"id\":1}"
+        /*,{ { "Content-Type", "application/json" } } */
+      );
+      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
+      FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
+
+      fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
+      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", &*reply.body.begin()) );
+      FC_ASSERT( var_obj["result"].get_object().contains("HIVE_CHAIN_ID"), "No HIVE_CHAIN_ID in JSON response", ("body", &*reply.body.begin()) );
+
+      const auto& chain_id_str = var_obj["result"].get_object()["HIVE_CHAIN_ID"].as_string();
+      hp::chain_id_type remote_chain_id;
+
+      try
+      {
+        remote_chain_id = hp::chain_id_type( chain_id_str );
+      }
+      catch( fc::exception& )
+      {
+        FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
+      }
+
+      FC_ASSERT( remote_chain_id == chain_id, "Remote chain id does not match the specified one", ("chain_id",chain_id)("remote_chain_id",remote_chain_id) );
+
+      output_con.get_socket().close();
+    } FC_CAPTURE_AND_RETHROW( (chain_id) )
   }
 
 } // detail
