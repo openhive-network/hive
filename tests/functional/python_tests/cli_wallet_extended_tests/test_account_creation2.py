@@ -11,7 +11,6 @@ def test_account_creation():
         logger.info('list_accounts...')
         response = wallet.api.list_accounts('a', 100)
         logger.info(response)
-        assert 'result' in response
         old_accounts_number = len(response['result'])
 
         logger.info('Waiting...')
@@ -64,5 +63,4 @@ def test_account_creation():
         logger.info('list_accounts...')
         response = wallet.api.list_accounts('a', 100)
         logger.info(response)
-        assert 'result' in response
         old_accounts_number + 2 == len(response['result'])

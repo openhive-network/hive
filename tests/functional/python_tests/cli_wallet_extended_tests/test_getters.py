@@ -12,7 +12,6 @@ def test_getters():
         response = wallet.api.create_account('initminer', 'alice', '{}')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'transaction_id' in _result
@@ -22,7 +21,6 @@ def test_getters():
         response = wallet.api.transfer_to_vesting('initminer', 'alice', '500.000 TESTS')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'ref_block_num' in _result
@@ -33,7 +31,6 @@ def test_getters():
         response = wallet.api.get_block(block_number)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'transactions' in _result
@@ -57,7 +54,6 @@ def test_getters():
         response = wallet.api.get_encrypted_memo('alice', 'initminer', '#this is memo')
         logger.info(response)
 
-        assert 'result' in response
         response['result'] == '#FZNN15uqMGdU1vzeMiHyzo6p8hT4V4WHGLNbTUGprhQFMVDYD4jc35zgSYf3BDL6vpbvNkBo831ttojfstt7bH58PC1etd9qbUHtoA6ZRqqpnzAsPg4rubGd2ANGyHvce'
 
         #**************************************************************
@@ -65,7 +61,6 @@ def test_getters():
         response = wallet.api.decrypt_memo('#FZNN15uqMGdU1vzeMiHyzo6p8hT4V4WHGLNbTUGprhQFMVDYD4jc35zgSYf3BDL6vpbvNkBo831ttojfstt7bH58PC1etd9qbUHtoA6ZRqqpnzAsPg4rubGd2ANGyHvce')
         logger.info(response)
 
-        assert 'result' in response
         response['result'] == 'this is memo'
 
         #**************************************************************
@@ -73,7 +68,6 @@ def test_getters():
         response = wallet.api.get_feed_history()
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'current_median_history' in _result
@@ -110,7 +104,6 @@ def test_getters():
         response = wallet.api.get_ops_in_block( block_number, False )
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 5
@@ -130,7 +123,6 @@ def test_getters():
         response = wallet.api.get_prototype_operation( 'transfer_operation' )
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'value' in _result
@@ -144,7 +136,6 @@ def test_getters():
         response = wallet.api.get_transaction(transaction_id)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result

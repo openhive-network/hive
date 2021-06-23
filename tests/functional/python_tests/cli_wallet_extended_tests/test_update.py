@@ -37,7 +37,6 @@ def test_update():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'posting' in _result
@@ -60,7 +59,6 @@ def test_update():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'posting' in _result
@@ -83,7 +81,6 @@ def test_update():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'posting' in _result
@@ -105,7 +102,6 @@ def test_update():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'memo_key' in _result
@@ -121,7 +117,6 @@ def test_update():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'json_metadata' in _result
@@ -138,7 +133,6 @@ def test_update():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         check_key( 'owner', _result, key )
@@ -151,7 +145,6 @@ def test_update():
         response = wallet.api.get_owner_history('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 1

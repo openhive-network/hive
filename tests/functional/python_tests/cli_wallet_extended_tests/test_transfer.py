@@ -27,7 +27,6 @@ def test_transfer():
         response = wallet.api.get_account('newaccount')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'balance' in _result and _result['balance'] == '0.000 TESTS'
@@ -61,7 +60,6 @@ def test_transfer():
         response = wallet.api.get_account('newaccount')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'balance' in _result and _result['balance'] == '5.432 TESTS'
@@ -84,7 +82,6 @@ def test_transfer():
         response = wallet.api.get_account('newaccount')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'balance' in _result and _result['balance'] == '5.432 TESTS'
@@ -115,7 +112,6 @@ def test_transfer():
         response = wallet.api.get_account('newaccount')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'balance' in _result and _result['balance'] == '5.332 TESTS'
@@ -133,7 +129,6 @@ def test_transfer():
         response = wallet.api.get_account('newaccount')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'savings_balance' in _result and _result['savings_balance'] == '15.432 TESTS'
