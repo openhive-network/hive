@@ -52,7 +52,6 @@ def test_escrow():
         response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
         assert len(_result) == 3
 
@@ -78,7 +77,6 @@ def test_escrow():
         response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
         assert len(_result) == 3
 
@@ -109,7 +107,6 @@ def test_escrow():
         response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
         assert len(_result) == 3
 
@@ -135,7 +132,6 @@ def test_escrow():
         response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
         assert len(_result) == 3
 
@@ -161,7 +157,6 @@ def test_escrow():
         response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
         assert len(_result) == 3
 
@@ -187,7 +182,6 @@ def test_escrow():
         response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
         assert len(_result) == 3
 

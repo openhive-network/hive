@@ -22,7 +22,6 @@ def test_getters():
         response = wallet.api.transfer_to_vesting('initminer', 'alice', '500.000 TESTS')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'ref_block_num' in _result
@@ -33,7 +32,6 @@ def test_getters():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'balance' in _result and _result['balance'] == '200.000 TESTS'
@@ -44,7 +42,6 @@ def test_getters():
         response = wallet.api.convert_hive_with_collateral('alice', '4.000 TESTS')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result
@@ -64,7 +61,6 @@ def test_getters():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'balance' in _result and _result['balance'] == '196.000 TESTS'
@@ -74,7 +70,6 @@ def test_getters():
         response = wallet.api.get_collateralized_conversion_requests('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 1
@@ -91,7 +86,6 @@ def test_getters():
         response = wallet.api.estimate_hive_collateral('4.000 TBD')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert _result == '8.400 TESTS'
@@ -101,7 +95,6 @@ def test_getters():
         response = wallet.api.convert_hbd('alice', '0.500 TBD')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         #**************************************************************
@@ -109,7 +102,6 @@ def test_getters():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         #'balance' is still the same, because request of conversion will be done after 3.5 days
@@ -121,7 +113,6 @@ def test_getters():
         response = wallet.api.get_conversion_requests('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 1

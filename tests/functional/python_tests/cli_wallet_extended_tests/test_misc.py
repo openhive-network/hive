@@ -22,7 +22,6 @@ def test_transfer():
         response = wallet.api.create_account('initminer', 'alice', '{}')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         #**************************************************************
@@ -45,7 +44,6 @@ def test_transfer():
         logger.info(response)
 
         assert 'result' in response
-        _result = response['result']
 
         #**************************************************************
         logger.info('transfer_to_vesting...')
@@ -66,7 +64,6 @@ def test_transfer():
         response = wallet.api.about()
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'blockchain_version' in _result
@@ -89,7 +86,6 @@ def test_transfer():
         logger.info(response)
 
         assert 'result' in response
-        _result = response['result']
 
         #**************************************************************
         try:
@@ -107,7 +103,6 @@ def test_transfer():
         response = wallet.api.decline_voting_rights('alice', True)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result
@@ -128,11 +123,7 @@ def test_transfer():
         response = wallet.api.follow('alice', 'bob', ['blog'])
         logger.info(response)
 
-        assert 'result' in response
-        _result = response['result']
-
-        assert 'operations' in _result
-        _ops = _result['operations']
+        _ops = response['result']['operations']
 
         assert len(_ops) == 1
         _op = _ops[0]

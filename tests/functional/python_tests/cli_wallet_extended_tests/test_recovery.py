@@ -23,7 +23,6 @@ def test_transfer():
         logger.info(response)
 
         assert 'result' in response
-        _result = response['result']
 
         #**************************************************************
         logger.info('transfer_to_vesting...')
@@ -45,7 +44,6 @@ def test_transfer():
         logger.info(response)
 
         assert 'result' in response
-        _result = response['result']
 
         #**************************************************************
         logger.info('transfer_to_vesting...')
@@ -66,7 +64,6 @@ def test_transfer():
         response = wallet.api.change_recovery_account('alice', 'bob')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result
@@ -88,7 +85,6 @@ def test_transfer():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         alice_owner_key = get_key( 'owner', _result )
@@ -98,7 +94,6 @@ def test_transfer():
         response = wallet.api.get_account('bob')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         bob_owner_key = get_key( 'owner', _result )
@@ -110,7 +105,6 @@ def test_transfer():
         response = wallet.api.request_account_recovery('alice', 'bob', authority)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result
@@ -140,7 +134,6 @@ def test_transfer():
         response = wallet.api.recover_account('bob', recent_authority, new_authority)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result
