@@ -159,3 +159,14 @@ def test_delegate():
         assert 'received_vesting_shares' in _result and _result['received_vesting_shares'] == '1.000000 VESTS'
         assert 'balance' in _result and _result['balance'] == '50.000 TESTS'
         assert 'hbd_balance' in _result and _result['hbd_balance'] == '0.111 TBD'
+
+        #**************************************************************
+        try:
+            logger.info('claim_reward_balance...')
+            response = wallet.api.claim_reward_balance('initminer', '0.000 TESTS', '0.000 TBD', '0.000001 VESTS')
+            logger.info(response)
+        except Exception as e:
+            message = str(e)
+            logger.info(message)
+            found = message.find('Cannot claim that much VESTS')
+            assert found != -1
