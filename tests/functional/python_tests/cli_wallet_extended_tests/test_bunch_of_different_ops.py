@@ -19,12 +19,32 @@ def check_keys( result, key_owner, key_active, key_posting, key_memo ):
 key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
 key2 = 'TST7QbuPFWyi7Kxtq6i1EaHNHZHEG2JyB61kPY1x7VvjxyHb7btfg'
 
+'''
+  This test designed for different operations in different order so as to do some operations similar to main-net.
+  These operation should be done one by one.
+
+  Features:
+  a) 1 operation in 1 transaction
+  b) N operations in 1 transaction
+  c) false tests:
+    - an exception is thrown by node
+    - an exception is thrown by cli_wallet
+'''
 def test_complex():
     with World() as world:
         init_node = world.create_init_node()
         init_node.run()
 
         wallet = init_node.attach_wallet()
+
+        #**************************************************************
+        try:
+            logger.info('get_account...')
+            response = wallet.api.get_account('not-exists')
+            logger.info(response)
+        except Exception as e:
+            message = str(e)
+            assert message.find('Unknown account') != -1
 
         #**************************************************************
         try:
@@ -121,6 +141,16 @@ def test_complex():
             assert message.find('Account: alice has 0 RC, needs 3 RC') != -1
 
         #**************************************************************
+        try:
+            logger.info('some operations - transfer/post_comment...')
+            with wallet.in_single_transaction(broadcast=False) as transaction:
+                wallet.api.transfer('bob', 'alice', '199.148 TBD', 'banana')
+                wallet.api.post_comment('alice', 'hello-world2', '', 'xyz2', 'something about world2', 'just nothing2', '{}')
+        except Exception as e:
+            message = str(e)
+            assert message.find('required_active.size()') != -1
+
+        #**************************************************************
         logger.info('some operations - transfer/transfer_to_vesting...')
         with wallet.in_single_transaction(broadcast=False) as transaction:
             wallet.api.transfer('bob', 'alice', '199.148 TBD', 'banana')
@@ -150,9 +180,9 @@ def test_complex():
         #**************************************************************
         logger.info('some operations - post_comment/vote...')
         with wallet.in_single_transaction(broadcast=False) as transaction:
-            response = wallet.api.post_comment('alice', 'hello-world2', '', 'xyz2', 'something about world2', 'just nothing2', '{}')
-            response = wallet.api.post_comment('carol', 'hello-world3', '', 'xyz3', 'something about world3', 'just nothing3', '{}')
-            response = wallet.api.post_comment('dan', 'hello-world4', '', 'xyz4', 'something about world4', 'just nothing4', '{}')
+            wallet.api.post_comment('alice', 'hello-world2', '', 'xyz2', 'something about world2', 'just nothing2', '{}')
+            wallet.api.post_comment('carol', 'hello-world3', '', 'xyz3', 'something about world3', 'just nothing3', '{}')
+            wallet.api.post_comment('dan', 'hello-world4', '', 'xyz4', 'something about world4', 'just nothing4', '{}')
             wallet.api.vote('carol', 'alice', 'hello-world2', 99)
             wallet.api.vote('dan', 'carol', 'hello-world3', 98)
             wallet.api.vote('alice', 'dan', 'hello-world4', 97)
