@@ -23,7 +23,7 @@ def test_wallet():
         assert os.path.isfile(internal_path + wallet_content_file_name)
 
         #**************************************************************
-        logger.info('load_wallet_file...')
+        logger.info('save_wallet_file...')
         response = wallet.api.save_wallet_file(internal_path + wallet_content_file_name)
         logger.info(response)
 

@@ -1,6 +1,6 @@
 from test_tools import Account, logger, World
 
-def test_getters():
+def test_withdraw_vesting():
     with World() as world:
         init_node = world.create_init_node()
         init_node.run()
