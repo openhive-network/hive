@@ -33,7 +33,7 @@ def test_transfer():
         assert 'hbd_balance' in _result and _result['hbd_balance'] == '0.000 TBD'
         assert 'savings_balance' in _result and _result['savings_balance'] == '0.000 TESTS'
         assert 'savings_hbd_balance' in _result and _result['savings_hbd_balance'] == '0.000 TBD'
-        assert 'vesting_shares' in _result and _result['vesting_shares'] == '9.477704 VESTS'
+        assert 'vesting_shares' in _result and _result['vesting_shares'] != '0.000000 VESTS'
 
         #**************************************************************
         logger.info('transfer...')
@@ -117,7 +117,7 @@ def test_transfer():
         assert 'balance' in _result and _result['balance'] == '5.332 TESTS'
         assert 'hbd_balance' in _result and _result['hbd_balance'] == '8.969 TBD'
         assert 'savings_balance' in _result and _result['savings_balance'] == '15.431 TESTS'
-        assert 'vesting_shares' in _result and _result['vesting_shares'] == '18.739279 VESTS'
+        assert 'vesting_shares' in _result and _result['vesting_shares'] != '0.000000 VESTS'
 
         #**************************************************************
         logger.info('cancel_transfer_from_savings...')
