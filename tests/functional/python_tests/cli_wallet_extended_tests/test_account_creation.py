@@ -12,9 +12,6 @@ def test_account_creation():
         response = wallet.api.create_account('initminer', 'newaccount', '{}')
         logger.info(response)
 
-        assert 'result' in response
-        assert 'operations' in response['result']
-
         _operations = response['result']['operations']
         assert len(_operations) == 1
 
@@ -37,7 +34,6 @@ def test_account_creation():
         response = wallet.api.list_my_accounts([owner_key])
         logger.info(response)
 
-        assert 'result' in response
         assert len(response['result']) == 1
         _result = response['result'][0]
         assert 'balance' in _result
@@ -49,7 +45,6 @@ def test_account_creation():
         logger.info('list_accounts...')
         response = wallet.api.list_accounts('na', 1)
         logger.info(response)
-        assert 'result' in response
         assert len(response['result']) == 1
         assert response['result'][0] == 'newaccount'
 
@@ -57,7 +52,6 @@ def test_account_creation():
         logger.info('get_account...')
         response = wallet.api.get_account('newaccount')
         logger.info(response)
-        assert 'result' in response
         _result = response['result']
         assert 'hbd_balance' in _result
         assert _result['hbd_balance'] == '0.000 TBD'
@@ -66,7 +60,6 @@ def test_account_creation():
         logger.info('get_account_history...')
         response = wallet.api.get_account_history('initminer', 2, 2)
         logger.info(response)
-        assert 'result' in response
         #this call has a custom formatter so typical JSON is inaccessible
         assert len(response['result']) == 0
 

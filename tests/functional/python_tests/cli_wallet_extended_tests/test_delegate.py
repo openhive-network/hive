@@ -52,7 +52,6 @@ def test_delegate():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'delegated_vesting_shares' in _result and _result['delegated_vesting_shares'] == '1.123456 VESTS'
@@ -64,7 +63,6 @@ def test_delegate():
         response = wallet.api.get_account('bob')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'received_vesting_shares' in _result and _result['received_vesting_shares'] == '1.123456 VESTS'
@@ -81,7 +79,6 @@ def test_delegate():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'delegated_vesting_shares' in _result and _result['delegated_vesting_shares'] == '1.123456 VESTS'
@@ -93,7 +90,6 @@ def test_delegate():
         response = wallet.api.get_account('bob')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'received_vesting_shares' in _result and _result['received_vesting_shares'] == '1.000000 VESTS'
@@ -113,7 +109,6 @@ def test_delegate():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'delegated_vesting_shares' in _result and _result['delegated_vesting_shares'] == '1.123456 VESTS'
@@ -126,7 +121,6 @@ def test_delegate():
         response = wallet.api.get_account('bob')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'delegated_vesting_shares' in _result and _result['delegated_vesting_shares'] == '0.100000 VESTS'
@@ -147,7 +141,6 @@ def test_delegate():
         response = wallet.api.get_account('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'delegated_vesting_shares' in _result and _result['delegated_vesting_shares'] == '1.123456 VESTS'
@@ -160,7 +153,6 @@ def test_delegate():
         response = wallet.api.get_account('bob')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'delegated_vesting_shares' in _result and _result['delegated_vesting_shares'] == '0.100000 VESTS'

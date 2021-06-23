@@ -22,7 +22,6 @@ def test_order():
         response = wallet.api.transfer_to_vesting('initminer', 'alice', '500.000 TESTS')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'ref_block_num' in _result
@@ -33,7 +32,6 @@ def test_order():
         response = wallet.api.create_order('alice', 666, '7.000 TESTS', '1.000 TBD', False, 3600 )
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result
@@ -56,7 +54,6 @@ def test_order():
         response = wallet.api.create_order('alice', 667, '8.000 TESTS', '2.000 TBD', False, 3600 )
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result
@@ -66,7 +63,6 @@ def test_order():
         response = wallet.api.get_order_book(5)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'asks' in _result
@@ -92,7 +88,6 @@ def test_order():
         response = wallet.api.get_open_orders('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 2
@@ -115,7 +110,6 @@ def test_order():
         response = wallet.api.cancel_order('alice', 667)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result
@@ -126,7 +120,6 @@ def test_order():
         response = wallet.api.get_order_book(5)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'asks' in _result
@@ -139,7 +132,6 @@ def test_order():
         response = wallet.api.get_open_orders('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 1

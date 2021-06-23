@@ -18,8 +18,7 @@ def test_wallet():
         response = wallet.api.save_wallet_file(wallet_content_file_name)
         logger.info(response)
 
-        assert 'result' in response
-        response['result'] = None
+        assert response['result'] == None
 
         assert os.path.isfile(internal_path + wallet_content_file_name)
 
@@ -28,95 +27,83 @@ def test_wallet():
         response = wallet.api.save_wallet_file(internal_path + wallet_content_file_name)
         logger.info(response)
 
-        assert 'result' in response
-        response['result'] = None
+        assert response['result'] == None
 
         #**************************************************************
         logger.info('is_new...')
         response = wallet.api.is_new()
         logger.info(response)
 
-        assert 'result' in response
-        response['result'] = False
+        assert response['result'] == False
 
         #**************************************************************
         logger.info('is_locked...')
         response = wallet.api.is_locked()
         logger.info(response)
 
-        assert 'result' in response
-        response['result'] = False
+        assert response['result'] == False
 
         #**************************************************************
         logger.info('set_password...')
         response = wallet.api.set_password(pswd)
         logger.info(response)
 
-        assert 'result' in response
-        response['result'] = None
+        assert response['result'] == None
 
         #**************************************************************
         logger.info('is_locked...')
         response = wallet.api.is_locked()
         logger.info(response)
 
-        assert 'result' in response
-        response['result'] = True
+        assert response['result'] == True
 
         #**************************************************************
         logger.info('unlock...')
         response = wallet.api.unlock(pswd)
         logger.info(response)
 
-        assert 'result' in response
-        response['result'] = None
+        assert response['result'] == None
 
         #**************************************************************
         logger.info('is_locked...')
         response = wallet.api.is_locked()
         logger.info(response)
 
-        assert 'result' in response
-        response['result'] = False
+        assert response['result'] == False
 
         #**************************************************************
         logger.info('lock...')
         response = wallet.api.lock()
         logger.info(response)
 
-        assert 'result' in response
-        response['result'] = None
+        assert response['result'] == None
 
         #**************************************************************
         logger.info('is_locked...')
         response = wallet.api.is_locked()
         logger.info(response)
 
-        assert 'result' in response
-        response['result'] = True
+        assert response['result'] == True
 
         #**************************************************************
         logger.info('unlock...')
         response = wallet.api.unlock(pswd)
         logger.info(response)
 
-        assert 'result' in response
-        response['result'] = None
+        assert response['result'] == None
 
         #**************************************************************
         logger.info('is_locked...')
         response = wallet.api.is_locked()
         logger.info(response)
 
-        assert 'result' in response
-        response['result'] = False
+        assert response['result'] == False
 
         #**************************************************************
         logger.info('list_keys...')
         response = wallet.api.list_keys()
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 1
@@ -132,14 +119,12 @@ def test_wallet():
         logger.info(response)
 
         assert 'result' in response
-        _result = response['result']
 
         #**************************************************************
         logger.info('list_keys...')
         response = wallet.api.list_keys()
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 2
@@ -154,7 +139,6 @@ def test_wallet():
         response = wallet.api.get_private_key_from_password('hulabula', 'owner', "apricot")
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 2
@@ -167,7 +151,6 @@ def test_wallet():
         response = wallet.api.get_private_key('TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert _result == '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n'
@@ -177,7 +160,6 @@ def test_wallet():
         response = wallet.api.gethelp('find_proposals')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         found = _result.find('Find proposal with given id')
@@ -188,7 +170,6 @@ def test_wallet():
         response = wallet.api.gethelp('create_proposal')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         found = _result.find('Create worker proposal')
@@ -199,7 +180,6 @@ def test_wallet():
         response = wallet.api.help()
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         val = 'serializer_wrapper<annotated_signed_transaction> cancel_transfer_from_savings(const string & from, uint32_t request_id, bool broadcast)'
@@ -215,7 +195,6 @@ def test_wallet():
         response = wallet.api.info()
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'median_hbd_price' in _result
@@ -236,14 +215,13 @@ def test_wallet():
         response = wallet.api.normalize_brain_key('     mango apple banana CHERRY ')
         logger.info(response)
 
-        assert 'result' in response and response['result'] == 'MANGO APPLE BANANA CHERRY'
+        assert response['result'] == 'MANGO APPLE BANANA CHERRY'
 
         #**************************************************************
         logger.info('suggest_brain_key...')
         response = wallet.api.suggest_brain_key()
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'brain_priv_key' in _result

@@ -22,7 +22,6 @@ def test_update():
         response = wallet.api.get_active_witnesses()
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) > 1
@@ -34,7 +33,6 @@ def test_update():
         response = wallet.api.list_witnesses('a', 4)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 1
@@ -49,7 +47,6 @@ def test_update():
         response = wallet.api.get_active_witnesses()
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) > 1
@@ -61,7 +58,6 @@ def test_update():
         response = wallet.api.list_witnesses('a', 4)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert len(_result) == 2
@@ -72,7 +68,6 @@ def test_update():
         response = wallet.api.get_witness('alice')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'owner' in _result
@@ -89,7 +84,6 @@ def test_update():
         response = wallet.api.publish_feed('alice', {"base":"1.167 TBD", "quote":"1.111 TESTS"})
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result
@@ -115,7 +109,6 @@ def test_update():
         response = wallet.api.vote_for_witness('initminer', 'alice', True)
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result
@@ -139,7 +132,6 @@ def test_update():
         response = wallet.api.set_voting_proxy('alice', 'initminer')
         logger.info(response)
 
-        assert 'result' in response
         _result = response['result']
 
         assert 'operations' in _result
