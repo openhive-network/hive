@@ -206,7 +206,7 @@ namespace chain {
       std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
-      chain_id_type hive_chain_id = STEEM_CHAIN_ID;
+      chain_id_type hive_chain_id = OLD_CHAIN_ID;
       /// Returns current chain-id being in use depending on applied HF
       chain_id_type get_chain_id() const;
       /// Returns pre-HF24 chain id (if mainnet is used).
