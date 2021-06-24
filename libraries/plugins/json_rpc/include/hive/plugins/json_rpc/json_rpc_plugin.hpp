@@ -119,12 +119,13 @@ namespace detail {
           _json_rpc_plugin( appbase::app().get_plugin< hive::plugins::json_rpc::json_rpc_plugin >() )
       {}
 
-      template< typename Plugin, typename Method, typename Args, typename Ret >
+      template< typename Plugin, typename Method, typename Args, typename ArgsSignature, typename Ret >
       void operator()(
         Plugin& plugin,
         const std::string& method_name,
         Method method,
         Args* args,
+        ArgsSignature* args_signature,
         Ret* ret )
       {
         _json_rpc_plugin.add_api_method( _api_name, method_name,
@@ -132,7 +133,7 @@ namespace detail {
           {
             return fc::variant( (plugin.*method)( args.as< Args >(), /* lock= */ true ) ); //lock=true means it will lock if not in DEFINE_LOCKLESS_API
           },
-          api_method_signature{ fc::variant( Args() ), fc::variant( Ret() ) } );
+          api_method_signature{ fc::variant( ArgsSignature() ), fc::variant( Ret() ) } );
       }
 
     private:

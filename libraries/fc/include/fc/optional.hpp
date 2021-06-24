@@ -258,6 +258,12 @@ namespace fc {
   bool operator != ( const optional<T>& left, const U& u ) {
     return !left || *left != u;
   }
+  template<typename T>
+  class optional_init : public optional<T>
+  {
+    public:
+      optional_init(): optional<T>( T() ){}
+  };
 
 #ifdef _MSC_VER
 # pragma warning(pop)

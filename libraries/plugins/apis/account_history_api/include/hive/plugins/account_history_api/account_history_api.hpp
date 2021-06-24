@@ -44,37 +44,44 @@ struct api_operation_object
   }
 };
 
-
-struct get_ops_in_block_args
+template<template<typename T> typename optional_type>
+struct get_ops_in_block_args_base
 {
   uint32_t block_num = 0;
   bool     only_virtual = false;
   /// if set to true also operations from reversible block will be included if block_num points to such block.
-  fc::optional<bool> include_reversible;
+  optional_type<bool> include_reversible;
 };
+
+using get_ops_in_block_args_signature = get_ops_in_block_args_base<fc::optional_init>;
+using get_ops_in_block_args = get_ops_in_block_args_base<fc::optional>;
 
 struct get_ops_in_block_return
 {
   std::multiset< api_operation_object > ops;
 };
 
-
-struct get_transaction_args
+template<template<typename T> typename optional_type>
+struct get_transaction_args_base
 {
   hive::protocol::transaction_id_type id;
   /// if set to true transaction from reversible block will be returned if id matches given one.
-  fc::optional<bool> include_reversible;
+  optional_type<bool> include_reversible;
 };
+
+using get_transaction_args_signature = get_transaction_args_base<fc::optional_init>;
+using get_transaction_args = get_transaction_args_base<fc::optional>;
 
 typedef hive::protocol::annotated_signed_transaction get_transaction_return;
 
-struct get_account_history_args
+template<template<typename T> typename optional_type>
+struct get_account_history_args_base
 {
   hive::protocol::account_name_type   account;
   uint64_t                            start = -1;
   uint32_t                            limit = 1000;
   /// if set to true operations from reversible block will be also returned.
-  fc::optional<bool> include_reversible;
+  optional_type<bool> include_reversible;
   /** if either are set, the set of returned operations will include only these 
    * matching bitwise filter.
    * For the first 64 operations (as defined in protocol/operations.hpp), set the 
@@ -82,9 +89,12 @@ struct get_account_history_args
    * set the bit in operation_filter_high (pretending operation_filter is a 
    * 128-bit bitmask composed of {operation_filter_high, operation_filter_low})
    */
-  fc::optional<uint64_t> operation_filter_low;
-  fc::optional<uint64_t> operation_filter_high;
+  optional_type<uint64_t> operation_filter_low;
+  optional_type<uint64_t> operation_filter_high;
 };
+
+using get_account_history_args_signature  = get_account_history_args_base<fc::optional_init>;
+using get_account_history_args            = get_account_history_args_base<fc::optional>;
 
 struct get_account_history_return
 {
@@ -137,18 +147,22 @@ enum enum_vops_filter : uint64_t
   *  \param limit             - a limit of retrieved operations
   *  \param filter            - a filter that decides which an operation matches - used bitwise filtering equals to position in `hive::protocol::operation`
   */
-struct enum_virtual_ops_args
+template<template<typename T> typename optional_type>
+struct enum_virtual_ops_args_base
 {
   uint32_t block_range_begin = 1;
   uint32_t block_range_end = 2;
   /// if set to true operations from reversible block will be also returned.
-  fc::optional<bool> include_reversible;
+  optional_type<bool> include_reversible;
 
-  fc::optional<bool> group_by_block;
-  fc::optional< uint64_t > operation_begin;
-  fc::optional< uint32_t > limit;
-  fc::optional< uint64_t > filter;
+  optional_type<bool> group_by_block;
+  optional_type< uint64_t > operation_begin;
+  optional_type< uint32_t > limit;
+  optional_type< uint64_t > filter;
 };
+
+using enum_virtual_ops_args_signature  = enum_virtual_ops_args_base<fc::optional_init>;
+using enum_virtual_ops_args            = enum_virtual_ops_args_base<fc::optional>;
 
 struct ops_array_wrapper
 {
@@ -180,7 +194,7 @@ class account_history_api
     account_history_api();
     ~account_history_api();
 
-    DECLARE_API(
+    DECLARE_API_SIGNATURE(
       (get_ops_in_block)
       (get_transaction)
       (get_account_history)
@@ -197,13 +211,22 @@ FC_REFLECT( hive::plugins::account_history::api_operation_object,
   (trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(op)(operation_id) )
 
 FC_REFLECT( hive::plugins::account_history::get_ops_in_block_args,
-  (block_num)(only_virtual) )
+  (block_num)(only_virtual)(include_reversible) )
+
+FC_REFLECT( hive::plugins::account_history::get_ops_in_block_args_signature,
+  (block_num)(only_virtual)(include_reversible) )
 
 FC_REFLECT( hive::plugins::account_history::get_ops_in_block_return,
   (ops) )
 
 FC_REFLECT( hive::plugins::account_history::get_transaction_args,
   (id)(include_reversible) )
+
+FC_REFLECT( hive::plugins::account_history::get_transaction_args_signature,
+  (id)(include_reversible) )
+
+FC_REFLECT( hive::plugins::account_history::get_account_history_args_signature,
+  (account)(start)(limit)(include_reversible)(operation_filter_low)(operation_filter_high))
 
 FC_REFLECT( hive::plugins::account_history::get_account_history_args,
   (account)(start)(limit)(include_reversible)(operation_filter_low)(operation_filter_high))
@@ -212,6 +235,9 @@ FC_REFLECT( hive::plugins::account_history::get_account_history_return,
   (history) )
 
 FC_REFLECT( hive::plugins::account_history::enum_virtual_ops_args,
+  (block_range_begin)(block_range_end)(include_reversible)(group_by_block)(operation_begin)(limit)(filter) )
+
+FC_REFLECT( hive::plugins::account_history::enum_virtual_ops_args_signature,
   (block_range_begin)(block_range_end)(include_reversible)(group_by_block)(operation_begin)(limit)(filter) )
 
 FC_REFLECT( hive::plugins::account_history::ops_array_wrapper, (block)(irreversible)(timestamp)(ops) )

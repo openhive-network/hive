@@ -350,6 +350,13 @@ namespace fc
         }
 
         template<typename T>
+        variant( const optional_init<T>& v )
+        {
+           memset( this, 0, sizeof(*this) );
+           if( v.valid() ) *this = variant(*v);
+        }
+
+        template<typename T>
         explicit variant( const T& val );
 
 

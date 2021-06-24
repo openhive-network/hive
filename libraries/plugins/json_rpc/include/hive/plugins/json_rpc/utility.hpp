@@ -20,6 +20,7 @@ BOOST_PP_CAT( method, _return ) method( const BOOST_PP_CAT( method, _args )& arg
     BOOST_PP_STRINGIZE( method ), \
     &this_type::method, \
     static_cast< BOOST_PP_CAT( method, _args )* >(nullptr), \
+    static_cast< BOOST_PP_CAT( method, _args )* >(nullptr), \
     static_cast< BOOST_PP_CAT( method, _return )* >(nullptr) \
   ); \
 }
@@ -31,6 +32,29 @@ BOOST_PP_CAT( method, _return ) method( const BOOST_PP_CAT( method, _args )& arg
   void for_each_api( Lambda&& callback ) \
   { \
     BOOST_PP_SEQ_FOR_EACH( FOR_EACH_API_HELPER, callback, METHODS ) \
+  }
+
+#define FOR_EACH_API_HELPER_SIGNATURE( r, callback, method ) \
+{ \
+  typedef std::remove_pointer<decltype(this)>::type this_type; \
+  \
+  callback( \
+    (*this), \
+    BOOST_PP_STRINGIZE( method ), \
+    &this_type::method, \
+    static_cast< BOOST_PP_CAT( method, _args )* >(nullptr), \
+    static_cast< BOOST_PP_CAT( method, _args_signature )* >(nullptr), \
+    static_cast< BOOST_PP_CAT( method, _return )* >(nullptr) \
+  ); \
+}
+
+#define DECLARE_API_SIGNATURE( METHODS ) \
+  BOOST_PP_SEQ_FOR_EACH( DECLARE_API_METHOD_HELPER, _, METHODS ) \
+  \
+  template< typename Lambda > \
+  void for_each_api( Lambda&& callback ) \
+  { \
+    BOOST_PP_SEQ_FOR_EACH( FOR_EACH_API_HELPER_SIGNATURE, callback, METHODS ) \
   }
 
 #define DECLARE_API_IMPL_HELPER( r, data, method ) \
