@@ -644,7 +644,7 @@ chain_id_type database::get_old_chain_id() const
 #ifdef IS_TEST_NET
   return hive_chain_id; /// In testnet always use the chain-id passed as hived option
 #else
-  return STEEM_CHAIN_ID;
+  return OLD_CHAIN_ID;
 #endif /// IS_TEST_NET
 }
 
