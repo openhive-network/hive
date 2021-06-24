@@ -7,12 +7,14 @@ find_library(PQ_LIB pq)
 add_library( sql_serializer_plugin
              sql_serializer.cpp
              data_processor.cpp
+             transaction_controllers.cpp
              ${HEADERS}
             )
 
 target_link_libraries( sql_serializer_plugin chain_plugin hive_chain hive_protocol condenser_api_plugin ${PQXX_LIB} ${PQ_LIB} )
 target_include_directories( sql_serializer_plugin
-                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
+                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                          )
 
 if( CLANG_TIDY_EXE )
    set_target_properties(

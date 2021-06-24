@@ -16,11 +16,12 @@
 #include <boost/filesystem.hpp>
 #include <condition_variable>
 
+#include <list>
 #include <map>
 #include <set>
-
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <pqxx/pqxx>
 
@@ -220,13 +221,26 @@ namespace hive
           FC_ASSERT(data.empty());
         }
 
+        void register_transaction_controler(transaction_controller_ptr tx_controller)
+        {
+          FC_ASSERT(_prev_tx_controller == nullptr);
+          _prev_tx_controller = _processor->register_transaction_controler(std::move(tx_controller));
+        }
+
+        void restore_transaction_controller()
+        {
+          FC_ASSERT(_prev_tx_controller != nullptr);
+          _processor->register_transaction_controler(std::move(_prev_tx_controller));
+
+        }
+
         void join()
         {
           _processor->join();
         }
 
       private:
-        static data_processing_status flush_data(const data_chunk_ptr& dataPtr, data_processor::transaction& tx)
+        static data_processing_status flush_data(const data_chunk_ptr& dataPtr, transaction& tx)
         {
           const chunk* holder = static_cast<const chunk*>(dataPtr.get());
           data_processing_status processingStatus;
@@ -276,8 +290,9 @@ namespace hive
           };
 
       private:
-        const cached_data_t& _mainCache;
+        const cached_data_t&            _mainCache;
         std::unique_ptr<data_processor> _processor;
+        transaction_controller_ptr      _prev_tx_controller;
       };
 
       template <typename TableDescriptor>
@@ -854,12 +869,11 @@ namespace hive
 
             ilog("${mode} ${objects_name}...", ("objects_name", objects_name )("mode", ( mode ? "Creating" : "Dropping" ) ) );
 
-            std::vector< data_processor > processors;
-            processors.reserve(table_names.size());
+            std::list< data_processor > processors;
 
             for( const auto& table_name : table_names )
             {
-              processors.emplace_back( db_url, "DB processor", [ = ](const data_chunk_ptr&, data_processor::transaction& tx) -> data_processing_status
+              processors.emplace_back( db_url, "DB processor", [&function_name, &table_name, &objects_name, mode](const data_chunk_ptr&, transaction& tx) -> data_processing_status
                             {
                               std::string query = std::string( "SELECT " ) + function_name + "( '" + table_name + "' );";
                               ilog("The query: `${query}` has been executed...", ("query", query ) );
@@ -976,7 +990,7 @@ namespace hive
             psql_block_number = 0;
 
             data_processor block_loader(db_url, "Block loader",
-              [this](const data_chunk_ptr&, data_processor::transaction& tx) -> data_processing_status
+              [this](const data_chunk_ptr&, transaction& tx) -> data_processing_status
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT hb.num AS _max_block FROM hive_blocks hb ORDER BY hb.num DESC LIMIT 1;");
@@ -993,7 +1007,7 @@ namespace hive
             block_loader.trigger(data_processor::data_chunk_ptr());
 
             data_processor sequence_loader(db_url, "Sequence loader",
-              [this](const data_chunk_ptr&, data_processor::transaction& tx) -> data_processing_status
+              [this](const data_chunk_ptr&, transaction& tx) -> data_processing_status
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT ho.id AS _max FROM hive_operations ho ORDER BY ho.id DESC LIMIT 1;");
@@ -1010,7 +1024,7 @@ namespace hive
             sequence_loader.trigger(data_processor::data_chunk_ptr());
 
             data_processor account_cache_loader(db_url, "Account cache loader",
-              [&account_cache, &next_account_id](const data_chunk_ptr&, data_processor::transaction& tx) -> data_processing_status
+              [&account_cache, &next_account_id](const data_chunk_ptr&, transaction& tx) -> data_processing_status
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT ai.name, ai.id, ai.operation_count FROM account_operation_count_info_view ai;");
@@ -1040,7 +1054,7 @@ namespace hive
             int next_permlink_id = 0;
 
             data_processor permlink_cache_loader(db_url, "Permlink cache loader",
-              [&permlink_cache, &next_permlink_id](const data_chunk_ptr&, data_processor::transaction& tx) -> data_processing_status
+              [&permlink_cache, &next_permlink_id](const data_chunk_ptr&, transaction& tx) -> data_processing_status
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT pd.permlink, pd.id FROM hive_permlink_data pd;");

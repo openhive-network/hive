@@ -1,26 +1,14 @@
 #include <hive/plugins/sql_serializer/data_processor.hpp>
 
+#include <fc/exception/exception.hpp>
 #include <fc/log/logger.hpp>
+
+// C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
+#include <pqxx/pqxx>
 
 #include <exception>
 
 namespace hive { namespace plugins { namespace sql_serializer {
-
-namespace
-{
-  class own_tx_controller : public data_processor::transaction_controller
-  {
-  public:
-    explicit own_tx_controller(const std::string& dbUrl) : _dbUrl(dbUrl) {}
-    void disconnect();
-
-  /// transaction_controller:
-    virtual transaction_ptr openTx() override;
-
-  private:
-    const std::string _dbUrl;
-  };
-}
 
 data_processor::data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor) :
   _description(std::move(description)),
@@ -36,13 +24,10 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
     try
     {
       ilog("${d} data processor is connecting to specified db url: `${url}' ...", ("url", psqlUrl)("d", _description));
-      pqxx::connection dbConnection(psqlUrl);
     
-      own_tx_controller tx_controller(psqlUrl);
-
       FC_ASSERT(_txController == nullptr, "Already filled transaction controller?");
-      own_tx_controller* local_controller = new own_tx_controller(psqlUrl);
-      _txController.reset(local_controller);
+      auto local_controller = build_own_transaction_controller(psqlUrl);
+      _txController = local_controller;
 
       ilog("${d} data processor connecting successfully ...", ("d", _description));
 
@@ -71,14 +56,14 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
         {
           transaction_ptr tx(_txController->openTx());
           dataProcessor(*dataPtr, *tx);
-          tx.commit();
+          tx->commit();
         }
 
         dlog("${d} data processor finished processing a data chunk...", ("d", _description));
       }
 
       local_controller->disconnect();
-      _txController.release();
+      _txController.reset();
     }
     catch(const pqxx::pqxx_exception& ex)
     {
@@ -100,7 +85,7 @@ data_processor::~data_processor()
 {
 }
 
-data_processor::transaction_controller_ptr data_processor::register_transaction_controler(transaction_controller_ptr controller)
+transaction_controller_ptr data_processor::register_transaction_controler(transaction_controller_ptr controller)
 {
   transaction_controller_ptr txController = std::move(_txController);
   _txController = std::move(controller);
