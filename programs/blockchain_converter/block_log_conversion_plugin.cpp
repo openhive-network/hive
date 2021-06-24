@@ -77,6 +77,9 @@ namespace detail {
       start_block_num = 1;
     else if( !start_block_num ) // If output block log exists than continue
       start_block_num = log_out.head()->block_num() + 1;
+    else
+      FC_ASSERT( start_block_num == log_out.head()->block_num() + 1,
+        "Resume block should be equal to the head block number of the output block log + 1", ("out_head_block",log_out.head()->block_num())("start_block_num",start_block_num) );
 
     hp::block_id_type last_block_id;
 

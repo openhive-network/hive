@@ -208,6 +208,12 @@ namespace detail {
       ); // FIXME: asio.cpp:24 - Boost asio - Broken pipe error on localhost
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
 
+#define HIVE_CONVERTER_DEBUG_TRANSMIT
+#ifdef HIVE_CONVERTER_DEBUG_TRANSMIT
+      fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
+      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", &*reply.body.begin()) );
+#endif
+
       output_con.get_socket().close();
     } FC_CAPTURE_AND_RETHROW( (trx.id().str()) )
   }
@@ -219,7 +225,7 @@ namespace detail {
 
   fc::optional< hp::signed_block > node_based_conversion_plugin_impl::receive_uncached( uint32_t num )
   {
-    // std::cout << "Note: using uncached receive to save your computers memory\n";
+    std::cout << "Note: using uncached receive to save your computers memory on block " << num << '\r';
     block_buffer_obj = fc::variant_object{}; // Clear block_buffer_obj to free now redundant memory
 
     try
@@ -231,7 +237,6 @@ namespace detail {
           /*,{ { "Content-Type", "application/json" } } */
       );
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("code", reply.status) );
-      // TODO: Move to boost to support chunked transfer encoding in responses
       FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
 
       fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
@@ -250,8 +255,8 @@ namespace detail {
   {
     size_t result_offset = num - last_block_range_start;
 
-    if(    last_block_range_start == size_t(-1) // Initial value of last_block_range_start check (first receive call) - block_buffer_obj not initialized yet
-        || ( result_offset + 1 > get_block_buffer().size() || result_offset + 1 == 0 ) ) // Not enough blocks cached (not enough blocks in blockchain so stop wasting time on caching)
+    if(    last_block_range_start != size_t(-1) // Initial value of last_block_range_start check (first receive call) - block_buffer_obj not initialized yet
+        && ( result_offset + 1 > get_block_buffer().size() || result_offset + 1 == 0 ) ) // Not enough blocks cached (not enough blocks in blockchain so stop wasting time on caching)
       return receive_uncached( num );
 
     if(    num < last_block_range_start // Initial check ( when last_block_range_start is size_t(-1) )
