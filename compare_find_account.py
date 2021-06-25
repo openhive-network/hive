@@ -11,11 +11,13 @@ for additional info
 from argparse import ArgumentParser
 from sys import argv as incoming_arguments
 from sys import stdout as STDOUT
-from jsondiff import JsonDiffer, diff as json_diff
+from jsondiff import diff as json_diff
 from json import dumps as json_dump
+from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
 
-ACCOUNTS = []
 KEYS = set()
+KEYS_LOCK = Lock()
 
 OUTPUT_FILENAME = 'results.out'
 with open(OUTPUT_FILENAME, 'w') as file:
@@ -26,10 +28,13 @@ parser.add_argument('-r', '--reference', type=str, dest='ref',
 										help='http address of reference node (Ex: http://127.0.0.1:8080)', default='https://api.hive.blog')
 parser.add_argument('-c', '--compare', type=str, dest='comp',
 										help='http address of node to compare with')
+parser.add_argument('-j', '--threads', type=int, dest='thcount', default=4, help='number of threads, that should compare data')
 # parser.add_argument('-a', '--accounts', nargs='+', type=str)
 # parser.add_argument('-k', '--keys', nargs='+', type=str)
 parser.add_argument('-o', '--output', type=str, dest='out', choices=['STDOUT', 'FILE'], default='FILE', help=f"if file is choosen (default) output is written to: `{OUTPUT_FILENAME}`")
 args = parser.parse_args(list(incoming_arguments[1:]))
+THREAD_COUNT = args.thcount
+print(f'processing with {THREAD_COUNT} threads')
 
 def request(address : str, body : str) -> dict:
 	from requests import post, get
@@ -57,6 +62,8 @@ def find_account(account: str, addres: str) -> dict:
 
 def find_account_and_extract_keys(account : str, address : str) -> dict:
 	global KEYS
+	global KEYS_LOCK
+	keys = set()
 	res = find_account(account, address)
 	if isinstance(res, dict) and 'result' in res.keys():
 		for item in res['result']['accounts']:
@@ -64,9 +71,11 @@ def find_account_and_extract_keys(account : str, address : str) -> dict:
 				if key in ['owner', 'active', 'posting']:
 					for x in value['key_auths']:
 						if isinstance(x, str) and x.startswith('STM'):
-							KEYS.add(x)
+							keys.add(x)
 				elif key == 'memo_key':
-					KEYS.add(value)
+					keys.add(value)
+	with KEYS_LOCK:
+		KEYS.update(keys)
 	return res
 
 def get_key_references(key: str, addres: str) -> dict:
@@ -127,12 +136,8 @@ def test_collection_varaidic(fn, coll):
 			compare(fn, list(coll[j:j+i]))
 
 def test_collection(fn, coll):
-	coll_len = len(coll)
-	i = 0
 	for item in coll:
 		assert compare(fn, item), f'missmatch on: {item}'
-		print(f' {i} / {coll_len}\r', end='')
-		i += 1
 
 def get_all_account_names() -> list:
 	def extract(data : dict):
@@ -148,11 +153,28 @@ def get_all_account_names() -> list:
 
 	return total
 
+
+def test_collection_parallel(collection : list, fn):
+	length = len(collection)
+	ITEMS_PER_THREAD = int(length / THREAD_COUNT)
+	futures = []
+	exception = None
+	with ThreadPoolExecutor(max_workers=THREAD_COUNT) as executor:
+		for i in range(0, length, ITEMS_PER_THREAD):
+			futures.append(
+				executor.submit(
+					test_collection, fn,
+					list(collection[i:i+ITEMS_PER_THREAD])
+				)
+			)
+
+		for fut in futures:
+			exception = fut.exception()
+
+	assert exception is None, f"exception was not `None`: {exception}"
+
 ACCOUNTS = get_all_account_names()
-test_collection(find_account_and_extract_keys, ACCOUNTS)
-test_collection(get_key_references, KEYS)
-
-
-# print(f"comparing results on endpoint `database_api.find_accounts`")
-# test_collection(find_account, args.accounts)
-# test_collection(get_key_references, args.keys)
+print('started processing accounts')
+test_collection_parallel( ACCOUNTS, find_account_and_extract_keys )
+print('started processing keys')
+test_collection_parallel( list(KEYS), get_key_references )
