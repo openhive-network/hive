@@ -3,9 +3,6 @@
 #include <fc/exception/exception.hpp>
 #include <fc/log/logger.hpp>
 
-// C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
-#include <pqxx/pqxx>
-
 #include <exception>
 
 namespace hive { namespace plugins { namespace sql_serializer {

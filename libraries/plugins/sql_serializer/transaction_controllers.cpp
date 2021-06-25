@@ -2,9 +2,6 @@
 
 #include <fc/exception/exception.hpp>
 
-// C++ connector library for PostgreSQL (http://pqxx.org/development/libpqxx/)
-#include <pqxx/pqxx>
-
 #include <string>
 
 namespace hive { namespace plugins { namespace sql_serializer {
