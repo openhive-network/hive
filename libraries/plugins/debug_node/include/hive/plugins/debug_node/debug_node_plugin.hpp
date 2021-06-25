@@ -34,10 +34,14 @@ struct debug_generate_blocks_args
   bool                                      edit_if_needed = true;
 };
 
+using debug_generate_blocks_args_signature = debug_generate_blocks_args;
+
 struct debug_generate_blocks_return
 {
   uint32_t                                  blocks = 0;
 };
+
+using debug_generate_blocks_return_signature = debug_generate_blocks_return;
 
 class debug_node_plugin : public plugin< debug_node_plugin >
 {

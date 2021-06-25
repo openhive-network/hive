@@ -13,7 +13,7 @@ public:
   transaction_status_api();
   ~transaction_status_api();
 
-  DECLARE_API( (find_transaction) )
+  DECLARE_API_SIGNATURE( (find_transaction) )
 private:
   std::unique_ptr< detail::transaction_status_api_impl > my;
 };

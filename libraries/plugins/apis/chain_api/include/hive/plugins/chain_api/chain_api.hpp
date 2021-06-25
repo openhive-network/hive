@@ -15,21 +15,30 @@ struct push_block_args
   bool                         currently_syncing = false;
 };
 
+using push_block_args_signature = push_block_args;
 
-struct push_block_return
+template<template<typename T> typename optional_type>
+struct push_block_return_base
 {
   bool              success;
-  optional<string>  error;
+  optional_type<string>  error;
 };
+
+using push_block_return = push_block_return_base<fc::optional>;
+using push_block_return_signature = push_block_return_base<fc::optional_init>;
 
 typedef hive::chain::signed_transaction push_transaction_args;
+using push_transaction_args_signature = push_transaction_args;
 
-struct push_transaction_return
+template<template<typename T> typename optional_type>
+struct push_transaction_return_base
 {
   bool              success;
-  optional<string>  error;
+  optional_type<string>  error;
 };
 
+using push_transaction_return = push_transaction_return_base<fc::optional>;
+using push_transaction_return_signature = push_transaction_return_base<fc::optional_init>;
 
 class chain_api
 {
@@ -37,7 +46,7 @@ class chain_api
     chain_api();
     ~chain_api();
 
-    DECLARE_API(
+    DECLARE_API_SIGNATURE(
       (push_block)
       (push_transaction) )
     
@@ -48,5 +57,9 @@ class chain_api
 } } } // hive::plugins::chain
 
 FC_REFLECT( hive::plugins::chain::push_block_args, (block)(currently_syncing) )
+
 FC_REFLECT( hive::plugins::chain::push_block_return, (success)(error) )
+FC_REFLECT( hive::plugins::chain::push_block_return_signature, (success)(error) )
+
 FC_REFLECT( hive::plugins::chain::push_transaction_return, (success)(error) )
+FC_REFLECT( hive::plugins::chain::push_transaction_return_signature, (success)(error) )

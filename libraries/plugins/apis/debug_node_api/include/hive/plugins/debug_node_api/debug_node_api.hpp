@@ -22,10 +22,14 @@ struct debug_push_blocks_args
   bool                                      skip_validate_invariants = false;
 };
 
+using debug_push_blocks_args_signature = debug_push_blocks_args;
+
 struct debug_push_blocks_return
 {
   uint32_t                                  blocks;
 };
+
+using debug_push_blocks_return_signature = debug_push_blocks_return;
 
 struct debug_generate_blocks_until_args
 {
@@ -34,42 +38,64 @@ struct debug_generate_blocks_until_args
   bool                                      generate_sparsely = true;
 };
 
+using debug_generate_blocks_until_args_signature = debug_generate_blocks_until_args;
+
 typedef debug_push_blocks_return debug_generate_blocks_until_return;
+using debug_generate_blocks_until_return_signature = debug_generate_blocks_until_return;
 
 typedef void_type debug_pop_block_args;
+using debug_pop_block_args_signature = debug_pop_block_args;
 
-struct debug_pop_block_return
+template<template<typename T> typename optional_type>
+struct debug_pop_block_return_base
 {
-  fc::optional< protocol::signed_block > block;
+  optional_type< protocol::signed_block > block;
 };
 
+using debug_pop_block_return = debug_pop_block_return_base<fc::optional>;
+using debug_pop_block_return_signature = debug_pop_block_return_base<fc::optional_init>;
+
 typedef void_type debug_get_witness_schedule_args;
+using debug_get_witness_schedule_args_signature = debug_get_witness_schedule_args;
+
 typedef database_api::api_witness_schedule_object debug_get_witness_schedule_return;
+using debug_get_witness_schedule_return_signature = debug_get_witness_schedule_return;
 
 typedef void_type debug_get_hardfork_property_object_args;
+using debug_get_hardfork_property_object_args_signature = debug_get_hardfork_property_object_args;
+
 typedef database_api::api_hardfork_property_object debug_get_hardfork_property_object_return;
+using debug_get_hardfork_property_object_return_signature = debug_get_hardfork_property_object_return;
 
 struct debug_set_hardfork_args
 {
   uint32_t hardfork_id;
 };
 
+using debug_set_hardfork_args_signature = debug_set_hardfork_args;
+
 typedef void_type debug_set_hardfork_return;
+using debug_set_hardfork_return_signature = debug_set_hardfork_return;
 
 typedef debug_set_hardfork_args debug_has_hardfork_args;
+using debug_has_hardfork_args_signature = debug_has_hardfork_args;
 
 struct debug_has_hardfork_return
 {
   bool has_hardfork;
 };
 
+using debug_has_hardfork_return_signature = debug_has_hardfork_return;
+
 typedef void_type debug_get_json_schema_args;
+using debug_get_json_schema_args_signature = debug_get_json_schema_args;
 
 struct debug_get_json_schema_return
 {
   std::string schema;
 };
 
+using debug_get_json_schema_return_signature = debug_get_json_schema_return;
 
 class debug_node_api
 {
@@ -77,7 +103,7 @@ class debug_node_api
     debug_node_api();
     ~debug_node_api();
 
-    DECLARE_API(
+    DECLARE_API_SIGNATURE(
       /**
       * Push blocks from existing database.
       */
@@ -121,6 +147,9 @@ FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_until_args,
         (debug_key)(head_block_time)(generate_sparsely) )
 
 FC_REFLECT( hive::plugins::debug_node::debug_pop_block_return,
+        (block) )
+
+FC_REFLECT( hive::plugins::debug_node::debug_pop_block_return_signature,
         (block) )
 
 FC_REFLECT( hive::plugins::debug_node::debug_set_hardfork_args,

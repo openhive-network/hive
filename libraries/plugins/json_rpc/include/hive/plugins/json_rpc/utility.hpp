@@ -44,7 +44,7 @@ BOOST_PP_CAT( method, _return ) method( const BOOST_PP_CAT( method, _args )& arg
     &this_type::method, \
     static_cast< BOOST_PP_CAT( method, _args )* >(nullptr), \
     static_cast< BOOST_PP_CAT( method, _args_signature )* >(nullptr), \
-    static_cast< BOOST_PP_CAT( method, _return )* >(nullptr) \
+    static_cast< BOOST_PP_CAT( method, _return_signature )* >(nullptr) \
   ); \
 }
 

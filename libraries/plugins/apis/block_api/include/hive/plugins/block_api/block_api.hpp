@@ -16,7 +16,7 @@ class block_api
     block_api();
     ~block_api();
 
-    DECLARE_API(
+    DECLARE_API_SIGNATURE(
 
       /////////////////////////////
       // Blocks and transactions //

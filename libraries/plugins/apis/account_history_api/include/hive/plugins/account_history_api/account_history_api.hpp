@@ -53,13 +53,15 @@ struct get_ops_in_block_args_base
   optional_type<bool> include_reversible;
 };
 
-using get_ops_in_block_args_signature = get_ops_in_block_args_base<fc::optional_init>;
 using get_ops_in_block_args = get_ops_in_block_args_base<fc::optional>;
+using get_ops_in_block_args_signature = get_ops_in_block_args_base<fc::optional_init>;
 
 struct get_ops_in_block_return
 {
   std::multiset< api_operation_object > ops;
 };
+
+using get_ops_in_block_return_signature = get_ops_in_block_return;
 
 template<template<typename T> typename optional_type>
 struct get_transaction_args_base
@@ -69,10 +71,11 @@ struct get_transaction_args_base
   optional_type<bool> include_reversible;
 };
 
-using get_transaction_args_signature = get_transaction_args_base<fc::optional_init>;
 using get_transaction_args = get_transaction_args_base<fc::optional>;
+using get_transaction_args_signature = get_transaction_args_base<fc::optional_init>;
 
 typedef hive::protocol::annotated_signed_transaction get_transaction_return;
+using get_transaction_return_signature = get_transaction_return;
 
 template<template<typename T> typename optional_type>
 struct get_account_history_args_base
@@ -93,13 +96,15 @@ struct get_account_history_args_base
   optional_type<uint64_t> operation_filter_high;
 };
 
-using get_account_history_args_signature  = get_account_history_args_base<fc::optional_init>;
 using get_account_history_args            = get_account_history_args_base<fc::optional>;
+using get_account_history_args_signature  = get_account_history_args_base<fc::optional_init>;
 
 struct get_account_history_return
 {
   std::map< uint32_t, api_operation_object > history;
 };
+
+using get_account_history_return_signature = get_account_history_return;
 
 enum enum_vops_filter : uint64_t
 {
@@ -161,8 +166,8 @@ struct enum_virtual_ops_args_base
   optional_type< uint64_t > filter;
 };
 
-using enum_virtual_ops_args_signature  = enum_virtual_ops_args_base<fc::optional_init>;
 using enum_virtual_ops_args            = enum_virtual_ops_args_base<fc::optional>;
+using enum_virtual_ops_args_signature  = enum_virtual_ops_args_base<fc::optional_init>;
 
 struct ops_array_wrapper
 {
@@ -187,6 +192,7 @@ struct enum_virtual_ops_return
   uint64_t                     next_operation_begin   = 0;
 };
 
+using enum_virtual_ops_return_signature = enum_virtual_ops_return;
 
 class account_history_api
 {
