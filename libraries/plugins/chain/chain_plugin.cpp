@@ -8,6 +8,8 @@
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/utilities/database_configuration.hpp>
 
+#include <hive/chain/account_object.hpp>
+
 #include <fc/string.hpp>
 #include <fc/io/json.hpp>
 #include <fc/io/fstream.hpp>
@@ -92,6 +94,40 @@ class chain_plugin_impl
     void work( synchronization_type& on_sync );
 
     void write_default_database_config( bfs::path& p );
+    
+    void store_any_shared_memory_dir(const variables_map& options, const string& key_name, const string& default_dir, bfs::path& dir );
+
+    template< typename object_type >
+    using cmp_func_type = std::function< bool( const object_type&, const object_type&) >;
+
+    template<typename index, typename object_type>
+    void try_cmp_index( const database& db1, const database& db2, cmp_func_type<object_type> cmp_func )
+    {
+      const auto& idx1 = db1.get_index< index >().indices(). template get< by_id >();
+
+      const auto& idx2 = db2.get_index< index >().indices(). template get< by_id >();
+
+      auto itr1 = idx1.begin();
+      auto itr2 = idx2.begin();
+
+      uint32_t cnt = 0;
+
+      while( itr1 != idx1.end() )
+      {
+        const auto& obj1 = *itr1;
+        const auto& obj2 = *itr2;
+        FC_ASSERT( cmp_func( obj1, obj2 ), "Objects must be the same" );
+
+        ++itr1;
+        ++itr2;
+        ++cnt;
+      }
+      ilog( "ct: ${val}", ("val", cnt) );
+      ilog( "itr1 == idx1.end(): ${val}", ("val", itr1 == idx1.end()) );
+      ilog( "itr2 == idx2.end(): ${val}", ("val", itr2 == idx2.end()) );
+    }
+
+    void try_cmp_data();
 
     uint64_t                         shared_memory_size = 0;
     uint16_t                         shared_file_full_threshold = 0;
@@ -128,6 +164,11 @@ class chain_plugin_impl
     bfs::path                        database_cfg;
 
     database  db;
+
+    bfs::path                         shared_memory_dir2;
+    database                          db2;
+    bool                              cmp_data = false;
+
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
 
@@ -417,6 +458,7 @@ void chain_plugin_impl::initial_settings()
   {
     wlog("resync requested: deleting block log and shared memory");
     db.wipe( app().data_dir() / "blockchain", shared_memory_dir, true );
+    db2.wipe( app().data_dir() / "blockchain2", shared_memory_dir2, true );
   }
 
   db.set_flush_interval( flush_interval );
@@ -527,9 +569,21 @@ void chain_plugin_impl::open()
 {
   try
   {
-    ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
+    ilog("Opening shared memory from ${path}", ("path", db_open_args.shared_mem_dir.generic_string()));
 
     db.open( db_open_args );
+
+    auto _old_data_dir = db_open_args.data_dir;
+    auto _shared_mem_dir = db_open_args.shared_mem_dir;
+
+    db_open_args.data_dir = app().data_dir() / "blockchain2";
+    db_open_args.shared_mem_dir = shared_memory_dir2;
+    ilog("Opening shared memory from ${path}", ("path", db_open_args.shared_mem_dir.generic_string()));
+
+    db2.open( db_open_args );
+
+    db_open_args.data_dir = _old_data_dir;
+    db_open_args.shared_mem_dir = _shared_mem_dir;
 
     if( dump_memory_details )
       dumper.dump( true, get_indexes_memory_details );
@@ -603,6 +657,48 @@ void chain_plugin_impl::write_default_database_config( bfs::path &p )
   fc::json::save_to_file( hive::utilities::default_database_configuration(), p );
 }
 
+void chain_plugin_impl::store_any_shared_memory_dir(const variables_map& options, const string& key_name, const string& default_dir, bfs::path& dir )
+{
+  dir = app().data_dir() / default_dir;
+
+  if( options.count( key_name ) )
+  {
+    auto sfd = options.at( key_name ).as<bfs::path>();
+    if(sfd.is_relative())
+      dir = app().data_dir() / sfd;
+    else
+      dir = sfd;
+  }
+}
+
+void chain_plugin_impl::try_cmp_data()
+{
+  try
+  {
+    ilog( "*************************try_cmp_data - begin*************************");
+
+    ilog( "***cmp: account_index***");
+    auto _cmp00 = []( const account_object& obj1, const account_object& obj2 )
+    {
+      return obj1.name == obj2.name && obj1.memo_key == obj2.memo_key;
+    };
+    try_cmp_index<account_index, account_object>( db, db2, _cmp00 );
+
+    ilog( "***cmp: account_authority_index***");
+    auto _cmp01 = []( const account_authority_object& obj1, const account_authority_object& obj2 )
+    {
+      return  obj1.account == obj2.account &&
+              obj1.owner == obj2.owner &&
+              obj1.active == obj2.active &&
+              obj1.posting == obj2.posting &&
+              obj1.last_owner_update == obj2.last_owner_update;
+    };
+    try_cmp_index<account_authority_index, account_authority_object>( db, db2, _cmp01 );
+
+    ilog( "*************************try_cmp_data - end*************************");
+  } FC_CAPTURE_AND_RETHROW()
+}
+
 } // detail
 
 
@@ -620,8 +716,10 @@ bfs::path chain_plugin::state_storage_dir() const
 void chain_plugin::set_program_options(options_description& cli, options_description& cfg)
 {
   cfg.add_options()
+      ("cmp-data", bpo::bool_switch()->default_value(false), "COMPARING DATA" )
       ("shared-file-dir", bpo::value<bfs::path>()->default_value("blockchain"), // NOLINT(clang-analyzer-optin.cplusplus.VirtualCall)
         "the location of the chain shared memory files (absolute path or relative to application data dir)")
+      ("shared-file-dir2", bpo::value<bfs::path>()->default_value("blockchain2"), "the location of the second chain shared memory files (absolute path or relative to application data dir)")
       ("shared-file-size", bpo::value<string>()->default_value("54G"), "Size of the shared memory file. Default: 54G. If running a full node, increase this value to 200G.")
       ("shared-file-full-threshold", bpo::value<uint16_t>()->default_value(0),
         "A 2 precision percentage (0-10000) that defines the threshold for when to autoscale the shared memory file. Setting this to 0 disables autoscaling. Recommended value for consensus node is 9500 (95%). Full node is 9900 (99%)" )
@@ -651,16 +749,9 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 }
 
 void chain_plugin::plugin_initialize(const variables_map& options) {
-  my->shared_memory_dir = app().data_dir() / "blockchain";
 
-  if( options.count("shared-file-dir") )
-  {
-    auto sfd = options.at("shared-file-dir").as<bfs::path>();
-    if(sfd.is_relative())
-      my->shared_memory_dir = app().data_dir() / sfd;
-    else
-      my->shared_memory_dir = sfd;
-  }
+  my->store_any_shared_memory_dir(options, "shared-file-dir", "blockchain", my->shared_memory_dir );
+  my->store_any_shared_memory_dir(options, "shared-file-dir2", "blockchain2", my->shared_memory_dir2 );
 
   my->shared_memory_size = fc::parse_size( options.at( "shared-file-size" ).as< string >() );
 
@@ -726,6 +817,8 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     }
   }
 #endif
+  if(options.count("cmp-data"))
+    my->cmp_data = options.at("cmp-data").as< bool >();
 }
 
 void chain_plugin::plugin_startup()
@@ -740,6 +833,10 @@ void chain_plugin::plugin_startup()
   ilog("Snapshot processing...");
   my->process_snapshot();
 
+  if( my->cmp_data )
+  {
+    my->try_cmp_data();
+  }
 
   if( my->replay )
   {
@@ -781,6 +878,10 @@ void chain_plugin::plugin_shutdown()
   ilog("closing chain database");
   my->stop_write_processing();
   my->db.close();
+  ilog("database closed successfully");
+
+  ilog("closing second chain database");
+  my->db2.close();
   ilog("database closed successfully");
 }
 
