@@ -8,163 +8,126 @@ def test_delegate():
         wallet = init_node.attach_wallet()
 
         #**************************************************************
-        logger.info('create_account...')
         response = wallet.api.create_account('initminer', 'alice', '{}')
-        logger.info(response)
+        assert 'result' in response
 
         #**************************************************************
-        logger.info('transfer...')
         response = wallet.api.transfer('initminer', 'alice', '200.000 TESTS', 'avocado')
-        logger.info(response)
+        assert 'result' in response
 
         #**************************************************************
-        logger.info('transfer...')
         response = wallet.api.transfer('initminer', 'alice', '100.000 TBD', 'banana')
-        logger.info(response)
+        assert 'result' in response
 
         #**************************************************************
-        logger.info('transfer_to_vesting...')
         response = wallet.api.transfer_to_vesting('initminer', 'alice', '50.000 TESTS')
-        logger.info(response)
+        assert 'result' in response
 
         #**************************************************************
-        logger.info('create_account...')
         response = wallet.api.create_account('alice', 'bob', '{}')
-        logger.info(response)
+        assert 'result' in response
 
         #**************************************************************
-        logger.info('transfer...')
         response = wallet.api.transfer('alice', 'bob', '50.000 TESTS', 'lemon')
-        logger.info(response)
+        assert 'result' in response
 
         #**************************************************************
-        logger.info('transfer_to_vesting...')
         response = wallet.api.transfer_to_vesting('alice', 'bob', '25.000 TESTS')
-        logger.info(response)
+        assert 'result' in response
 
         #**************************************************************
-        logger.info('delegate_vesting_shares...')
         response = wallet.api.delegate_vesting_shares('alice', 'bob', '1.123456 VESTS')
-        logger.info(response)
+        assert 'result' in response
 
         #**************************************************************
-        logger.info('get_account...')
         response = wallet.api.get_account('alice')
-        logger.info(response)
-
         _result = response['result']
 
-        assert 'delegated_vesting_shares' in _result and _result['delegated_vesting_shares'] == '1.123456 VESTS'
-        assert 'balance' in _result and _result['balance'] == '125.000 TESTS'
-        assert 'hbd_balance' in _result and _result['hbd_balance'] == '100.000 TBD'
+        assert _result['delegated_vesting_shares'] == '1.123456 VESTS'
+        assert _result['balance'] == '125.000 TESTS'
+        assert _result['hbd_balance'] == '100.000 TBD'
 
         #**************************************************************
-        logger.info('get_account...')
         response = wallet.api.get_account('bob')
-        logger.info(response)
-
         _result = response['result']
 
-        assert 'received_vesting_shares' in _result and _result['received_vesting_shares'] == '1.123456 VESTS'
-        assert 'balance' in _result and _result['balance'] == '50.000 TESTS'
-        assert 'hbd_balance' in _result and _result['hbd_balance'] == '0.000 TBD'
+        assert _result['received_vesting_shares'] == '1.123456 VESTS'
+        assert _result['balance'] == '50.000 TESTS'
+        assert _result['hbd_balance'] == '0.000 TBD'
 
         #**************************************************************
-        logger.info('delegate_vesting_shares_and_transfer...')
         response = wallet.api.delegate_vesting_shares_and_transfer('alice', 'bob', '1.000000 VESTS', '6.666 TBD', 'watermelon')
-        logger.info(response)
+        assert 'result' in response
 
         #**************************************************************
-        logger.info('get_account...')
         response = wallet.api.get_account('alice')
-        logger.info(response)
-
         _result = response['result']
 
-        assert 'delegated_vesting_shares' in _result and _result['delegated_vesting_shares'] == '1.123456 VESTS'
-        assert 'balance' in _result and _result['balance'] == '125.000 TESTS'
-        assert 'hbd_balance' in _result and _result['hbd_balance'] == '93.334 TBD'
+        assert _result['delegated_vesting_shares'] == '1.123456 VESTS'
+        assert _result['balance'] == '125.000 TESTS'
+        assert _result['hbd_balance'] == '93.334 TBD'
 
         #**************************************************************
-        logger.info('get_account...')
         response = wallet.api.get_account('bob')
-        logger.info(response)
-
         _result = response['result']
 
-        assert 'received_vesting_shares' in _result and _result['received_vesting_shares'] == '1.000000 VESTS'
-        assert 'balance' in _result and _result['balance'] == '50.000 TESTS'
-        assert 'hbd_balance' in _result and _result['hbd_balance'] == '6.666 TBD'
+        assert _result['received_vesting_shares'] == '1.000000 VESTS'
+        assert _result['balance'] == '50.000 TESTS'
+        assert _result['hbd_balance'] == '6.666 TBD'
 
         #**************************************************************
-        logger.info('delegate_vesting_shares_nonblocking...')
         response = wallet.api.delegate_vesting_shares_nonblocking('bob', 'alice', '0.100000 VESTS')
-        logger.info(response)
+        assert 'result' in response
 
         logger.info('Waiting...')
         init_node.wait_number_of_blocks(1)
 
         #**************************************************************
-        logger.info('get_account...')
         response = wallet.api.get_account('alice')
-        logger.info(response)
-
         _result = response['result']
 
-        assert 'delegated_vesting_shares' in _result and _result['delegated_vesting_shares'] == '1.123456 VESTS'
-        assert 'received_vesting_shares' in _result and _result['received_vesting_shares'] == '0.100000 VESTS'
-        assert 'balance' in _result and _result['balance'] == '125.000 TESTS'
-        assert 'hbd_balance' in _result and _result['hbd_balance'] == '93.334 TBD'
+        assert _result['delegated_vesting_shares'] == '1.123456 VESTS'
+        assert _result['received_vesting_shares'] == '0.100000 VESTS'
+        assert _result['balance'] == '125.000 TESTS'
+        assert _result['hbd_balance'] == '93.334 TBD'
 
         #**************************************************************
-        logger.info('get_account...')
         response = wallet.api.get_account('bob')
-        logger.info(response)
-
         _result = response['result']
 
-        assert 'delegated_vesting_shares' in _result and _result['delegated_vesting_shares'] == '0.100000 VESTS'
-        assert 'received_vesting_shares' in _result and _result['received_vesting_shares'] == '1.000000 VESTS'
-        assert 'balance' in _result and _result['balance'] == '50.000 TESTS'
-        assert 'hbd_balance' in _result and _result['hbd_balance'] == '6.666 TBD'
+        assert _result['delegated_vesting_shares'] == '0.100000 VESTS'
+        assert _result['received_vesting_shares'] == '1.000000 VESTS'
+        assert _result['balance'] == '50.000 TESTS'
+        assert _result['hbd_balance'] == '6.666 TBD'
 
         #**************************************************************
-        logger.info('delegate_vesting_shares_and_transfer_nonblocking...')
         response = wallet.api.delegate_vesting_shares_and_transfer_nonblocking('bob', 'alice', '0.100000 VESTS', '6.555 TBD', 'pear')
-        logger.info(response)
+        assert 'result' in response
 
         logger.info('Waiting...')
         init_node.wait_number_of_blocks(1)
 
         #**************************************************************
-        logger.info('get_account...')
         response = wallet.api.get_account('alice')
-        logger.info(response)
-
         _result = response['result']
 
-        assert 'delegated_vesting_shares' in _result and _result['delegated_vesting_shares'] == '1.123456 VESTS'
-        assert 'received_vesting_shares' in _result and _result['received_vesting_shares'] == '0.100000 VESTS'
-        assert 'balance' in _result and _result['balance'] == '125.000 TESTS'
-        assert 'hbd_balance' in _result and _result['hbd_balance'] == '99.889 TBD'
+        assert _result['delegated_vesting_shares'] == '1.123456 VESTS'
+        assert _result['received_vesting_shares'] == '0.100000 VESTS'
+        assert _result['balance'] == '125.000 TESTS'
+        assert _result['hbd_balance'] == '99.889 TBD'
 
         #**************************************************************
-        logger.info('get_account...')
         response = wallet.api.get_account('bob')
-        logger.info(response)
-
         _result = response['result']
 
-        assert 'delegated_vesting_shares' in _result and _result['delegated_vesting_shares'] == '0.100000 VESTS'
-        assert 'received_vesting_shares' in _result and _result['received_vesting_shares'] == '1.000000 VESTS'
-        assert 'balance' in _result and _result['balance'] == '50.000 TESTS'
-        assert 'hbd_balance' in _result and _result['hbd_balance'] == '0.111 TBD'
+        assert _result['delegated_vesting_shares'] == '0.100000 VESTS'
+        assert _result['received_vesting_shares'] == '1.000000 VESTS'
+        assert _result['balance'] == '50.000 TESTS'
+        assert _result['hbd_balance'] == '0.111 TBD'
 
         #**************************************************************
         try:
-            logger.info('claim_reward_balance...')
             response = wallet.api.claim_reward_balance('initminer', '0.000 TESTS', '0.000 TBD', '0.000001 VESTS')
-            logger.info(response)
         except Exception as e:
             message = str(e)
             logger.info(message)
