@@ -108,6 +108,7 @@ namespace hive { namespace chain {
       account_name_type name;
     private:
       account_name_type recovery_account; //cannot be changed to id because there are plenty of accounts with "steem" recovery created before it was created in b.1097
+                                          //ABW: actually we could create "steem" account at genesis, just fake some of its properties to keep history intact
 
     public:
       uint128_t         hbd_seconds; ///< total HBD * how long it has been held

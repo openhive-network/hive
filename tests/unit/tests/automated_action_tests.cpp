@@ -256,7 +256,7 @@ BOOST_AUTO_TEST_CASE( optional_action_expiration )
     generate_block();
   }
 
-  auto next_lib_time = db->fetch_block_by_number( db->get_dynamic_global_properties().last_irreversible_block_num + 1 )->timestamp;
+  auto next_lib_time = db->fetch_block_by_number( db->get_last_irreversible_block_num() + 1 )->timestamp;
 
   db_plugin->debug_update( [=]( database& db )
   {
