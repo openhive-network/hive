@@ -3,14 +3,18 @@ from test_tools import automatic_tests_configuration, logger, Account, World
 
 
 @pytest.fixture(scope="package")
-def world_with_witnesses():
+def world_with_witnesses(request):
     """
     Fixture consists of world with 1 init node, 8 witness nodes and 2 api nodes.
     After fixture creation there are 21 active witnesses, and last irreversible block
     is behind head block like in real network.
     """
+
+    automatic_tests_configuration.configure_test_tools_paths(request)
+
     logger.info('Preparing fixture world_with_witnesses')
-    with World() as world:
+    directory = automatic_tests_configuration.get_preferred_directory(request)
+    with World(directory=directory) as world:
         alpha_witness_names = [f'witness{i}-alpha' for i in range(10)]
         beta_witness_names = [f'witness{i}-beta' for i in range(10)]
         all_witness_names = alpha_witness_names + beta_witness_names
