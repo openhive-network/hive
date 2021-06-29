@@ -7,19 +7,17 @@ from .private.nodes_creator import NodesCreator
 
 
 class World(NodesCreator):
-    __default_directory = None
-
-    def __init__(self):
+    def __init__(self, directory=None):
         super().__init__()
 
         self.__networks = []
         self.__wallets = []
         self.__name = 'World'
 
-        if self.__default_directory is None:
+        if directory is None:
             self._directory = Path() / f'GeneratedIn{self}'
         else:
-            self._directory = self.__default_directory
+            self._directory = directory
 
     def __str__(self):
         return self.__name
@@ -82,10 +80,6 @@ class World(NodesCreator):
         for network in self.__networks:
             nodes += network.nodes()
         return nodes
-
-    @classmethod
-    def set_default_directory(cls, directory):
-        cls.__default_directory = Path(directory)
 
     def set_directory(self, directory):
         self._directory = Path(directory)

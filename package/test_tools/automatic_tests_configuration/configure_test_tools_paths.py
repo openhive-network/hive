@@ -18,4 +18,3 @@ def configure_test_tools_paths(request):
     default_directory = get_preferred_directory(request)
 
     logger.set_directory(default_directory)
-    World.set_default_directory(default_directory)
