@@ -13,6 +13,7 @@ class World(NodesCreator):
         self.__networks = []
         self.__wallets = []
         self.__name = 'World'
+        self.__is_monitoring_resources = False
 
         if directory is None:
             self._directory = Path() / f'GeneratedIn{self}'
@@ -23,12 +24,20 @@ class World(NodesCreator):
         return self.__name
 
     def __enter__(self):
+        if self.__is_monitoring_resources:
+            raise RuntimeError('You already have activated context manager (`with World(): ...`)')
+
+        self.__is_monitoring_resources = True
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
+        if self.__is_monitoring_resources:
+            self.close()
 
     def close(self):
+        if not self.__is_monitoring_resources:
+            raise RuntimeError('World was already closed. Can be closed only once.')
+
         for wallet in self.__wallets:
             if wallet.is_running():
                 wallet.close()
