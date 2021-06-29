@@ -36,19 +36,22 @@ def test_signing_with_authority():
 
         # TRIGGER and VERIFY
         wallet.api.transfer(Alice.name, 'initminer', "0.001 TESTS", "this will work")
+        logger.info(f"Transaction signed with default key")
 
         wallet.api.update_account_auth_account(Alice.name, 'active', Auth1.name, 1)
-        # create cirtular authority dependency and test wallet behaves correctly
-        wallet1.api.update_account_auth_account(Auth1.name, 'active', Auth2.name, 1)
+        # create cirtular authority dependency and test wallet behaves correctly, i.e. no duplicate signatures
         wallet1.api.update_account_auth_account(Auth1.name, 'active', Alice.name, 1)
+        wallet1.api.update_account_auth_account(Auth1.name, 'active', Auth2.name, 1)
         wallet2.api.update_account_auth_account(Auth2.name, 'active', Auth3.name, 1)
 
         wallet.api.transfer(Alice.name, 'initminer', "0.001 TESTS", "this will work and does not print warnings")
+        logger.info(f"Transaction signed with default key")
 
         # wallet1 and wallet2 can sign only with account authority
-        wallet1.api.transfer(Alice.name, 'initminer', "0.001 TESTS", "this will work after fix")
-        wallet2.api.transfer(Alice.name, 'initminer', "0.001 TESTS", "this will also work after fix")
-        logger.info("successfully signed and broadcasted transaction with account authority")
+        wallet1.api.transfer(Alice.name, 'initminer', "0.001 TESTS", "this will work after enhancement")
+        logger.info(f"Transaction signed with foreign authority")
+        wallet2.api.transfer(Alice.name, 'initminer', "0.001 TESTS", "this will also work after enhancement")
+        logger.info(f"Transaction signed with foreign authority")
 
         # assert siging with authodity does not work when dependency is to deep
         try:
@@ -56,4 +59,4 @@ def test_signing_with_authority():
             assert False
         except Exception as e:
             assert 'Missing Active Authority' in str(e)
-            logger.info(e)
+            logger.info(f"Transaction cannot be signed with {Auth3.name} authority")

@@ -47,7 +47,13 @@ struct memo_data {
   }
 };
 
-
+struct authority_data
+{
+  vector<account_name_type>    owner;
+  vector<account_name_type>    active;
+  vector<account_name_type>    posting;
+  bool available = false;
+};
 
 struct brain_key_info
 {
@@ -210,6 +216,14 @@ class wallet_api
       */
     condenser_api::legacy_signed_transaction get_transaction( transaction_id_type trx_id )const;
 
+    /**
+      * Sign next transaction with specified authority.
+      *
+      * example: set_authorities {"active": ["tst-bob"]}
+      *          set_authorities null
+      * @param authorities authirities used to sign next transaction
+      */
+    void    set_authorities( optional<authority_data> authorities );
     /** Checks whether the wallet has just been created and has not yet had a password set.
       *
       * Calling \c set_password will transition the wallet to the locked state.
@@ -1451,6 +1465,7 @@ FC_API( hive::wallet::wallet_api,
 
       (get_active_witnesses)
       (get_transaction)
+      (set_authorities)
 
       ///worker proposal api
       (create_proposal)
@@ -1463,3 +1478,4 @@ FC_API( hive::wallet::wallet_api,
     )
 
 FC_REFLECT( hive::wallet::memo_data, (from)(to)(nonce)(check)(encrypted) )
+FC_REFLECT( hive::wallet::authority_data, (owner)(active)(posting) )

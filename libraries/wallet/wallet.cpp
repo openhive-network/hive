@@ -556,6 +556,18 @@ public:
     _tx_expiration_seconds = tx_expiration_seconds;
   }
 
+void set_authorities( optional<authority_data> authorities )
+  {
+    if( authorities.valid() ){
+      elog("optional VALID");
+      cached_authorities = *authorities;
+      cached_authorities.available = true;
+    } else {
+      elog("optional INVALID");
+      cached_authorities.available = false;
+    }
+  }
+
   // sets the expiration time and reference block
   void initialize_transaction_header(transaction& tx)
   {
@@ -603,7 +615,16 @@ public:
     flat_set< account_name_type >   req_posting_approvals;
     vector< authority >  other_auths;
 
-    tx.get_required_authorities( req_active_approvals, req_owner_approvals, req_posting_approvals, other_auths );
+    if( cached_authorities.available == false )
+    {
+      tx.get_required_authorities( req_active_approvals, req_owner_approvals, req_posting_approvals, other_auths );
+    }
+    else
+    {
+      req_active_approvals.insert(cached_authorities.active.begin(), cached_authorities.active.end());
+      req_owner_approvals.insert(cached_authorities.owner.begin(), cached_authorities.owner.end());
+      req_posting_approvals.insert(cached_authorities.posting.begin(), cached_authorities.posting.end());
+    }
 
     for( const auto& auth : other_auths )
       for( const auto& a : auth.account_auths )
@@ -668,9 +689,12 @@ public:
           authorities_names.insert(name);
       };
 
-    recursively_get_authorities(req_active_approvals, "active", 1);
-    recursively_get_authorities(req_owner_approvals, "owner", 1);
-    recursively_get_authorities(req_posting_approvals, "posting", 1);
+    if( cached_authorities.available == false )
+    {
+      recursively_get_authorities(req_active_approvals, "active", 1);
+      recursively_get_authorities(req_owner_approvals, "owner", 1);
+      recursively_get_authorities(req_posting_approvals, "posting", 1);
+    }
 
     auto get_account_from_lut = [&]( const std::string& name ) -> fc::optional< const condenser_api::api_account_object* >
     {
@@ -761,44 +785,56 @@ public:
       }
     }
 
-    auto minimal_signing_keys = tx.minimize_required_signatures(
-      hive_chain_id,
-      available_keys,
-      [&]( const string& account_name ) -> const authority&
-      {
-        auto maybe_account = get_account_from_lut( account_name );
-        if( maybe_account.valid() )
-          return (*maybe_account)->active;
-
-        return null_auth;
-      },
-      [&]( const string& account_name ) -> const authority&
-      {
-        auto maybe_account = get_account_from_lut( account_name );
-        if( maybe_account.valid() )
-          return (*maybe_account)->owner;
-
-        return null_auth;
-      },
-      [&]( const string& account_name ) -> const authority&
-      {
-        auto maybe_account = get_account_from_lut( account_name );
-        if( maybe_account.valid() )
-          return (*maybe_account)->posting;
-
-        return null_auth;
-      },
-      HIVE_MAX_SIG_CHECK_DEPTH,
-      HIVE_MAX_AUTHORITY_MEMBERSHIP,
-      HIVE_MAX_SIG_CHECK_ACCOUNTS,
-      fc::ecc::fc_canonical
-      );
-
-    for( const public_key_type& k : minimal_signing_keys )
+    if( cached_authorities.available == false )
     {
-      auto it = available_private_keys.find(k);
-      FC_ASSERT( it != available_private_keys.end() );
-      tx.sign( it->second, hive_chain_id, fc::ecc::fc_canonical );
+      auto minimal_signing_keys = tx.minimize_required_signatures(
+        hive_chain_id,
+        available_keys,
+        [&]( const string& account_name ) -> const authority&
+        {
+          auto maybe_account = get_account_from_lut( account_name );
+          if( maybe_account.valid() )
+            return (*maybe_account)->active;
+
+          return null_auth;
+        },
+        [&]( const string& account_name ) -> const authority&
+        {
+          auto maybe_account = get_account_from_lut( account_name );
+          if( maybe_account.valid() )
+            return (*maybe_account)->owner;
+
+          return null_auth;
+        },
+        [&]( const string& account_name ) -> const authority&
+        {
+          auto maybe_account = get_account_from_lut( account_name );
+          if( maybe_account.valid() )
+            return (*maybe_account)->posting;
+
+          return null_auth;
+        },
+        HIVE_MAX_SIG_CHECK_DEPTH,
+        HIVE_MAX_AUTHORITY_MEMBERSHIP,
+        HIVE_MAX_SIG_CHECK_ACCOUNTS,
+        fc::ecc::fc_canonical
+        );
+
+      for( const public_key_type& k : minimal_signing_keys )
+      {
+        auto it = available_private_keys.find(k);
+        FC_ASSERT( it != available_private_keys.end() );
+        tx.sign( it->second, hive_chain_id, fc::ecc::fc_canonical );
+      }
+    }
+    else
+    {
+      for( const public_key_type& k : available_keys )
+      {
+        auto it = available_private_keys.find(k);
+        FC_ASSERT( it != available_private_keys.end() );
+        tx.sign( it->second, hive_chain_id, fc::ecc::fc_canonical );
+      }
     }
 
     if( broadcast )
@@ -1012,6 +1048,8 @@ public:
   flat_map<string, operation>             _prototype_ops;
 
   static_variant_map _operation_which_map = create_static_variant_map< operation >();
+
+  authority_data cached_authorities;
 
 #ifdef __unix__
   mode_t                  _old_umask;
@@ -2695,6 +2733,11 @@ void wallet_api::set_transaction_expiration(uint32_t seconds)
 condenser_api::legacy_signed_transaction wallet_api::get_transaction( transaction_id_type id )const
 {
   return my->_remote_api->get_transaction( id );
+}
+
+void wallet_api::set_authorities( optional<authority_data> authorities )
+{
+  my->set_authorities( authorities );
 }
 
 condenser_api::legacy_signed_transaction wallet_api::follow( const string& follower, const string& following, set<string> what, bool broadcast )
