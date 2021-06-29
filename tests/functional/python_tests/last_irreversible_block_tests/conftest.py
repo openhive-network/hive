@@ -2,11 +2,6 @@ import pytest
 from test_tools import automatic_tests_configuration, logger, Account, World
 
 
-@pytest.fixture(autouse=True)
-def configure_test_tools_paths(request):
-    automatic_tests_configuration.configure_test_tools_paths(request)
-
-
 @pytest.fixture(scope="package")
 def world_with_witnesses():
     """
