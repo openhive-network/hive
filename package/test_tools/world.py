@@ -26,6 +26,9 @@ class World(NodesCreator):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def close(self):
         for wallet in self.__wallets:
             if wallet.is_running():
                 wallet.close()
