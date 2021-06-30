@@ -5,7 +5,7 @@ import subprocess
 import time
 
 from test_tools import Account, logger
-from test_tools.exceptions import NodeIsNotRunning
+from test_tools.exceptions import CommunicationError, NodeIsNotRunning
 from test_tools.node_api.node_apis import Apis
 from test_tools.wallet import Wallet
 
@@ -172,7 +172,12 @@ class Node:
         self.__wait_for_http_listening()
 
         from test_tools import communication
-        return communication.request(endpoint, message)
+        response = communication.request(endpoint, message)
+
+        if 'error' in response:
+            raise CommunicationError(f'Error detected in response from node {self}', message, response)
+
+        return response
 
     def __wait_for_http_listening(self, timeout=10):
         from test_tools.private.wait_for import wait_for
