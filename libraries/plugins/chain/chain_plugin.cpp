@@ -589,6 +589,7 @@ void chain_plugin_impl::work( synchronization_type& on_sync )
   if(this->exit_before_sync)
   {
     ilog("Shutting down node without performing any action on user request");
+    appbase::app().generate_interrupt_request();
     return;
   }else ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
 
