@@ -293,7 +293,7 @@ class Node:
         except subprocess.TimeoutExpired:
             self.__process.kill()
             self.__process.wait()
-            self.__logger.warning(f"Send SIGKILL because process didn't close before timeout")
+            self.__logger.warning(f'Process was force-closed with SIGKILL, because didn\'t close before timeout')
 
     def __close_opened_files(self):
         for file in [self.__stdout_file, self.__stderr_file]:

@@ -556,7 +556,7 @@ class Wallet:
         except subprocess.TimeoutExpired:
             self.process.kill()
             self.process.wait()
-            self.logger.warning(f"Send SIGKILL because process didn't close before timeout")
+            self.logger.warning(f'Process was force-closed with SIGKILL, because didn\'t close before timeout')
 
     def __close_opened_files(self):
         for file in [self.stdout_file, self.stderr_file]:
