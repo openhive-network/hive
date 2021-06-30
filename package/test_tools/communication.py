@@ -4,7 +4,7 @@ import json
 
 class CommunicationError(Exception):
     def __init__(self, description, request, response):
-        super().__init__(description)
+        super().__init__(f'{description}.\nSent: {request}.\nReceived: {response}')
         self.request = request
         self.response = response
 
@@ -27,7 +27,7 @@ def request(url: str, message: dict, max_attempts=3, seconds_between_attempts=0.
         return json.loads(result.text)
 
     raise CommunicationError(
-        f'Problem occurred during communication with {url}.\nSent: {message}.\nReceived: {result.text}',
+        f'Problem occurred during communication with {url}',
         message,
         result.text
     )
