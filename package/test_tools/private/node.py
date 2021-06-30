@@ -5,12 +5,9 @@ import subprocess
 import time
 
 from test_tools import Account, logger
+from test_tools.exceptions import NodeIsNotRunning
 from test_tools.node_api.node_apis import Apis
 from test_tools.wallet import Wallet
-
-
-class NodeIsNotRunning(Exception):
-    pass
 
 
 class Node:

@@ -1,8 +1,6 @@
+from test_tools.exceptions import NotSupported
+
 from .config_entry import ConfigEntry
-
-
-class NotSupported(Exception):
-    pass
 
 
 class List(ConfigEntry):

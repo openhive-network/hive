@@ -2,12 +2,7 @@ from os import getenv, path
 from pathlib import Path
 
 
-class NotSupported(Exception):
-    pass
-
-
-class MissingPathToExecutable(Exception):
-    pass
+from test_tools.exceptions import MissingPathToExecutable, NotSupported
 
 
 class _PathsToExecutables:
