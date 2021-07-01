@@ -1,4 +1,4 @@
-from ..untouched_entry import Untouched
+from test_tools.private.node_config_entry_types import Untouched
 
 
 class Plugin(Untouched):

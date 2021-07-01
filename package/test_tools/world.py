@@ -1,9 +1,10 @@
 from pathlib import Path
 
-from .network import Network
-from .private.children_names import ChildrenNames
-from .private.node import Node
-from .private.nodes_creator import NodesCreator
+from test_tools.network import Network
+from test_tools.wallet import Wallet
+from test_tools.private.children_names import ChildrenNames
+from test_tools.private.node import Node
+from test_tools.private.nodes_creator import NodesCreator
 
 
 class World(NodesCreator):
@@ -77,7 +78,6 @@ class World(NodesCreator):
     def attach_wallet_to(self, node, timeout):
         name = self._children_names.create_name(f'{node}Wallet')
 
-        from .wallet import Wallet
         wallet = Wallet(name, self, node.directory.parent)
         wallet.connect_to(node)
         wallet.run(timeout)

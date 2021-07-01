@@ -1,9 +1,9 @@
 def __create_logger():
-    from .private.logger import Logger
+    from test_tools.private.logger import Logger
     return Logger()
 
 logger = __create_logger()
 
-from .private.asset import Asset
-from .account import Account
-from .world import World
+from test_tools.private.asset import Asset
+from test_tools.account import Account
+from test_tools.world import World

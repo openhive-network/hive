@@ -1,11 +1,12 @@
 from pathlib import Path
 from shutil import rmtree
 
-from .wallet import Wallet
-from .private.children_names import ChildrenNames
-from .private.node import Node
-from .private.nodes_creator import NodesCreator
-from . import logger
+from test_tools import logger
+from test_tools.port import Port
+from test_tools.wallet import Wallet
+from test_tools.private.children_names import ChildrenNames
+from test_tools.private.node import Node
+from test_tools.private.nodes_creator import NodesCreator
 
 
 class Network(NodesCreator):
@@ -44,7 +45,6 @@ class Network(NodesCreator):
         if len(self._nodes) < 2:
             return
 
-        from .port import Port
         seed_node = self._nodes[0]
         if seed_node.config.p2p_endpoint is None:
             seed_node.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'

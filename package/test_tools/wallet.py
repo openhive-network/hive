@@ -2,8 +2,11 @@ from pathlib import Path
 import subprocess
 import time
 
-from test_tools import Account, logger
+from test_tools import Account, communication, logger, paths_to_executables
+from test_tools.exceptions import CommunicationError
+from test_tools.port import Port
 from test_tools.private.asset import AssetBase
+from test_tools.private.wait_for import wait_for
 
 
 class Wallet:
@@ -465,17 +468,13 @@ class Wallet:
         return False
 
     def run(self, timeout):
-        from .private.wait_for import wait_for
-
         if not self.executable_file_path:
-            from . import paths_to_executables
             self.executable_file_path = paths_to_executables.get_path_of('cli_wallet')
 
         if not self.connected_node:
             raise Exception('Server websocket RPC endpoint not set, use Wallet.connect_to method')
 
         if not self.http_server_port:
-            from .port import Port
             self.http_server_port = Port.allocate()
 
         import shutil
@@ -529,7 +528,6 @@ class Wallet:
         self.logger.info(f'Started, listening on port {self.http_server_port}')
 
     def __is_communication_established(self):
-        from .communication import CommunicationError
         try:
             self.api.info()
         except CommunicationError:
@@ -578,7 +576,6 @@ class Wallet:
 
         self.__prepare_message(message)
 
-        from . import communication
         return communication.request(endpoint, message)
 
     @staticmethod

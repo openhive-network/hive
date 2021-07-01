@@ -1,6 +1,5 @@
 from test_tools.exceptions import NotSupported
-
-from .config_entry import ConfigEntry
+from test_tools.private.node_config_entry_types.config_entry import ConfigEntry
 
 
 class List(ConfigEntry):

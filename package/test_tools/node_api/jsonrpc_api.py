@@ -1,4 +1,4 @@
-from .api_base import ApiBase
+from test_tools.node_api.api_base import ApiBase
 
 
 class JsonrpcApi(ApiBase):

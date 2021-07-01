@@ -1,4 +1,4 @@
-from .config_entry import ConfigEntry
+from test_tools.private.node_config_entry_types.config_entry import ConfigEntry
 
 
 class String(ConfigEntry):
