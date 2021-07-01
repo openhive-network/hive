@@ -244,6 +244,9 @@ class Node:
         if wait_for_live:
             self._wait_for_live(timeout)
 
+        self.__log_run_summary()
+
+    def __log_run_summary(self):
         message = f'Run with pid {self.__process.pid}, '
         if self.config.webserver_http_endpoint:
             message += f'with http server {self.config.webserver_http_endpoint}'
