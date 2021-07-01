@@ -97,7 +97,7 @@ class NodesCreator:
     def __enable_all_api_plugins(node):
         node.config.plugin.append('account_history_rocksdb')  # Required by account_history_api
 
-        from test_tools.node_config_entry_types import Plugin
+        from test_tools.private.node_config_entry_types import Plugin
         all_api_plugins = [plugin for plugin in Plugin.SUPPORTED_PLUGINS if plugin.endswith('_api')]
         node.config.plugin.extend([plugin for plugin in all_api_plugins if plugin not in node.config.plugin])
 

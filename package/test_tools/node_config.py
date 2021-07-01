@@ -1,4 +1,4 @@
-from .node_config_entry_types import *
+from test_tools.private.node_config_entry_types import *
 
 
 class NodeConfig:

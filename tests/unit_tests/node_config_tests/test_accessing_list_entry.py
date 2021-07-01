@@ -1,5 +1,6 @@
 import pytest
 
+from test_tools.exceptions import NotSupported
 from test_tools.node_config import NodeConfig
 
 
@@ -9,8 +10,6 @@ def config():
 
 
 def test_addition_operator_is_removed(config):
-    from test_tools.node_config_entry_types.list_entry import NotSupported
-
     with pytest.raises(NotSupported):
         config.witness += ['initminer']
 
