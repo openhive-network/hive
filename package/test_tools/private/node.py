@@ -4,7 +4,7 @@ import shutil
 import subprocess
 import time
 
-from test_tools import Account, logger
+from test_tools import Account, logger, paths_to_executables
 from test_tools.exceptions import CommunicationError, NodeIsNotRunning
 from test_tools.node_api.node_apis import Apis
 from test_tools.wallet import Wallet
@@ -51,13 +51,12 @@ class Node:
         return error_message == 'Error parsing command line: unrecognised option \'--chain-id\''
 
     def __run_hived_with_chain_id_argument(self):
-        hived_path = self.__executable_file_path
-        if hived_path is None:
-            from test_tools import paths_to_executables
-            hived_path = paths_to_executables.get_path_of('hived')
-
-        result = subprocess.check_output([str(hived_path), '--chain-id'], stderr=subprocess.STDOUT)
+        result = subprocess.check_output([str(self.__get_path_of_executable()), '--chain-id'], stderr=subprocess.STDOUT)
         return result.decode('utf-8').strip()
+
+    def __get_path_of_executable(self):
+        default_path = paths_to_executables.get_path_of('hived')
+        return default_path if self.__executable_file_path is None else self.__executable_file_path
 
     def set_directory(self, directory):
         self.directory = Path(directory).absolute() / self.__name
@@ -200,10 +199,6 @@ class Node:
                                     current config values will be ignored and overridden by values from file.
                                     When config file is missing hived generates default config.
         """
-        if not self.__executable_file_path:
-            from test_tools import paths_to_executables
-            self.__executable_file_path = paths_to_executables.get_path_of('hived')
-
         if not self.__is_test_net_build():
             from test_tools import paths_to_executables
             raise NotImplementedError(
@@ -229,7 +224,7 @@ class Node:
         self.__stderr_file = open(self.directory/'stderr.txt', 'w')
 
         self.__process = subprocess.Popen(
-            [str(self.__executable_file_path), '-d', '.'],
+            [str(self.__get_path_of_executable()), '-d', '.'],
             cwd=self.directory,
             stdout=self.__stdout_file,
             stderr=self.__stderr_file,
