@@ -1,4 +1,5 @@
 import math
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -249,6 +250,7 @@ class Node:
         else:
             message += 'without http server'
         message += f', {self.__get_executable_build_version()} build'
+        message += f' commit={self.__get_commit_hash_of_executable()[:8]}'
         self.__logger.info(message)
 
     def __set_unset_endpoints(self):
@@ -262,6 +264,11 @@ class Node:
 
         if self.config.webserver_ws_endpoint is None:
             self.config.webserver_ws_endpoint = f'0.0.0.0:{Port.allocate()}'
+
+    def __get_commit_hash_of_executable(self):
+        output = subprocess.check_output([str(self.__get_path_of_executable()), '--version'], stderr=subprocess.STDOUT)
+        output = json.loads(f'{{{output.decode("utf-8")}}}')
+        return output['version']['hive_git_revision']
 
     def close(self, remove_unneeded_files=True):
         self.__close_process()
