@@ -26,7 +26,7 @@ class Node:
         self.__process = None
         self.__stdout_file = None
         self.__stderr_file = None
-        self.__logger = logger.getLogger(f'{__name__}.{self.__creator}.{self.__name}')
+        self.__logger = logger.getLogger(f'{self.__creator}.{self.__name}')
 
         from test_tools.node_configs.default import create_default_config
         self.config = create_default_config()
