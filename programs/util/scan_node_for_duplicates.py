@@ -1,10 +1,19 @@
+"""
+    python3 scan_node_for_duplicates.py scheme://host:port
+
+    Utility to check if there are no duplicates in account_history_api of given as argment node, scheme://host:port should be account_history_api address,
+    can be used during manual testing, not used on gitlab CI. Example usage:
+    python3 scan_node_for_duplicates.py https://api.hive.blog
+    python3 scan_node_for_duplicates.py http://127.0.0.1:8091
+"""
+
 import argparse
 import requests
 import json
 import time
 
 
-def get_lib(url):
+def get_last_irreversible_block(url):
     properties_query_data = {
         "jsonrpc": "2.0",
         "method": "call",
@@ -52,13 +61,13 @@ if __name__ == "__main__":
     url = args.url[0]
     print('url: ', url)
 
-    start_lib = get_lib(url)
-    scanned_until = start_lib
-    last_irreversible_block = start_lib
+    start_last_irreversible_block = get_last_irreversible_block(url)
+    scanned_until = start_last_irreversible_block
+    last_irreversible_block = start_last_irreversible_block
     
     while True:
         while True:
-            last_irreversible_block = get_lib(url)
+            last_irreversible_block = get_last_irreversible_block(url)
             print("last_irreversible_block: " + str(last_irreversible_block))
 
             if last_irreversible_block == scanned_until:
