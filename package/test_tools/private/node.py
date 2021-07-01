@@ -248,13 +248,25 @@ class Node:
 
     def __log_run_summary(self):
         message = f'Run with pid {self.__process.pid}, '
-        if self.config.webserver_http_endpoint:
-            message += f'with http server {self.config.webserver_http_endpoint}'
+
+        endpoints = self.__get_opened_endpoints()
+        if endpoints:
+            message += f'with servers: {", ".join([f"{endpoint[1]}://{endpoint[0]}" for endpoint in endpoints])}'
         else:
-            message += 'without http server'
+            message += 'without any server'
+
         message += f', {self.__get_executable_build_version()} build'
         message += f' commit={self.__get_commit_hash_of_executable()[:8]}'
         self.__logger.info(message)
+
+    def __get_opened_endpoints(self):
+        endpoints = [
+            (self.config.webserver_http_endpoint, 'http'),
+            (self.config.webserver_ws_endpoint, 'ws'),
+            (self.config.webserver_unix_endpoint, 'unix'),
+        ]
+
+        return [endpoint for endpoint in endpoints if endpoint[0] is not None]
 
     def __set_unset_endpoints(self):
         from test_tools.port import Port
