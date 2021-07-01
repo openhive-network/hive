@@ -215,7 +215,7 @@ create_account_tests:
   tags:
     - public-runner-docker
 
-last_irreversible_block_tests:
+fork_tests:
   stage: test
   extends: .test_tools_based
   needs:
@@ -224,8 +224,22 @@ last_irreversible_block_tests:
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
     - pip3 install pytest
-    - cd tests/functional/python_tests/last_irreversible_block_tests
-    - pytest -s
+    - cd tests/functional/python_tests/fork_tests
+    - pytest
+  tags:
+    - public-runner-docker
+
+synchronization_tests:
+  stage: test
+  extends: .test_tools_based
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  script:
+    - pip3 install pytest
+    - cd tests/functional/python_tests/synchronization_tests
+    - pytest
   tags:
     - public-runner-docker
 

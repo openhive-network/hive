@@ -23,10 +23,14 @@ def test_enum_virtual_ops(world_with_witnesses):
 
         # VERIFY
         # We check that query account_history_api.enum_virtual_ops returns only virtual operations (issue #139).
-        response = api_node.api.account_history.enum_virtual_ops(block_range_begin=block_to_check, block_range_end=block_to_check+1, include_reversible=True)
-        ops = response["result"]["ops"]
-        logger.info(str([op["op"]["type"] for op in ops]) + f" in block  {block_to_check}")
+        assert_only_virtual_operations(api_node, block_to_check)
 
-        for op in ops:
-            virtual_op = op["virtual_op"]
-            assert virtual_op>0
+
+def assert_only_virtual_operations(node, block_to_check):
+    response = node.api.account_history.enum_virtual_ops(block_range_begin=block_to_check, block_range_end=block_to_check+1, include_reversible=True)
+    ops = response["result"]["ops"]
+    logger.info(str([op["op"]["type"] for op in ops]) + f" in block  {block_to_check}")
+
+    for op in ops:
+        virtual_op = op["virtual_op"]
+        assert virtual_op>0
