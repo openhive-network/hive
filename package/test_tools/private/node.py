@@ -208,7 +208,7 @@ class Node:
                 f'Your current hived path is: {paths_to_executables.get_path_of("hived")}\n'
                 f'\n'
                 f'Please check following page if you need help with paths configuration:\n'
-                f'https://gitlab.syncad.com/hive/test-tools/-/blob/develop/documentation/paths_to_executables.md'
+                f'https://gitlab.syncad.com/hive/test-tools/-/blob/master/documentation/paths_to_executables.md'
             )
 
         if not self.__produced_files and self.directory.exists():

@@ -21,7 +21,7 @@ class NodesCreator:
             f'- {self.create_raw_node.__name__}\n'
             f'\n'
             f'Read following documentation page if you don\'t know which one you need:\n'
-            f'https://gitlab.syncad.com/hive/test-tools/-/blob/develop/documentation/node_types.md'
+            f'https://gitlab.syncad.com/hive/test-tools/-/blob/master/documentation/node_types.md'
         )
 
         return self.create_raw_node(name)
