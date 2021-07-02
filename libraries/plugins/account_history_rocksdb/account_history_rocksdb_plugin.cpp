@@ -1594,6 +1594,10 @@ void account_history_rocksdb_plugin::impl::load_additional_data_from_snapshot(co
   ::rocksdb::Options destroyOpts;
   ::rocksdb::DestroyDB(_storagePath.string(), destroyOpts);
 
+  ilog("AccountHistoryRocksDB has been destroyed at location: ${p}.", ("p", _storagePath.string()));
+
+  ilog("Starting restore of AccountHistoryRocksDB backup into storage location: ${p}.", ("p", _storagePath.string()));
+
   bfs::path walDir(_storagePath);
   walDir /= "WAL";
   status = backupEngine->RestoreDBFromLatestBackup(_storagePath.string(), walDir.string());

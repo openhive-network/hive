@@ -145,77 +145,112 @@ void database::open( const open_args& args )
                                               );
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
 
-    initialize_indexes();
-    initialize_evaluators();
-    initialize_irreversible_storage();
+    initialize_state_independent_data(args);
+    load_state_initial_data(args);
 
-    if( !find< dynamic_global_property_object >() )
-      with_write_lock( [&]()
-      {
-        init_genesis( args.initial_supply, args.hbd_initial_supply );
-      });
+  }
+  FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
+}
 
-    _benchmark_dumper.set_enabled( args.benchmark_is_enabled );
+void database::initialize_state_independent_data(const open_args& args)
+{
+  initialize_indexes();
+  initialize_evaluators();
+  initialize_irreversible_storage();
 
-    with_write_lock( [&]()
+  if(!find< dynamic_global_property_object >())
+  {
+    with_write_lock([&]()
     {
-      _block_log.open( args.data_dir / "block_log" );
+      init_genesis(args.initial_supply, args.hbd_initial_supply);
     });
+  }
 
-   auto hb = head_block_num();
-   auto last_irreversible_block = get_last_irreversible_block_num();
+  _benchmark_dumper.set_enabled(args.benchmark_is_enabled);
 
-   FC_ASSERT(hb >= last_irreversible_block);
+  with_write_lock([&]()
+  {
+    _block_log.open(args.data_dir / "block_log");
+  });
 
-   ilog("Opened a blockchain database holding a state specific to head block: ${hb} and last irreversible block: ${lb}", ("hb", hb)("lb", last_irreversible_block));
+  if(args.benchmark.first)
+  {
+    args.benchmark.second(0, get_abstract_index_cntr());
+    auto last_block_num = _block_log.head()->block_num();
+    args.benchmark.second(last_block_num, get_abstract_index_cntr());
+  }
 
-    // Rewind all undo state. This should return us to the state at the last irreversible block.
-    with_write_lock( [&]()
+  _shared_file_full_threshold = args.shared_file_full_threshold;
+  _shared_file_scale_rate = args.shared_file_scale_rate;
+
+  /// Initialize all static (state independent) specific to hardforks
+  init_hardforks(); 
+}
+
+void database::load_state_initial_data(const open_args& args)
+{
+  auto hb = head_block_num();
+  auto last_irreversible_block = get_last_irreversible_block_num();
+
+  FC_ASSERT(hb >= last_irreversible_block);
+
+  ilog("Loaded a blockchain database holding a state specific to head block: ${hb} and last irreversible block: ${lb}", ("hb", hb)("lb", last_irreversible_block));
+
+   // Rewind all undo state. This should return us to the state at the last irreversible block.
+  with_write_lock([&]()
     {
+      ilog("Attempting to rewind all undo state...");
+
       undo_all();
+
+      ilog("Rewind undo state done.");
 
       auto new_hb = head_block_num();
 
       FC_ASSERT(new_hb >= last_irreversible_block);
-      
+
       FC_ASSERT(this->get_last_irreversible_block_num() == last_irreversible_block, "Undo operation should not touch irreversible block value");
 
       ilog("Blockchain state database is AT IRREVERSIBLE state specific to head block: ${hb} and LIB: ${lb}", ("hb", head_block_num())("lb", this->get_last_irreversible_block_num()));
 
-      if( args.chainbase_flags & chainbase::skip_env_check )
+      if(args.chainbase_flags & chainbase::skip_env_check)
       {
-        set_revision( head_block_num() );
+        set_revision(head_block_num());
       }
       else
       {
-        FC_ASSERT( revision() == head_block_num(), "Chainbase revision does not match head block num.",
-          ("rev", revision())("head_block", head_block_num()) );
-        if (args.do_validate_invariants)
+        FC_ASSERT(revision() == head_block_num(), "Chainbase revision does not match head block num.",
+          ("rev", revision())("head_block", head_block_num()));
+        if(args.do_validate_invariants)
           validate_invariants();
       }
     });
 
-    if( head_block_num() )
-    {
-      optional<signed_block> head_block = _block_log.read_block_by_num( head_block_num() );
-      // This assertion should be caught and a reindex should occur
-      FC_ASSERT( head_block && head_block->id() == head_block_id(), "Chain state does not match block log. Please reindex blockchain." );
+  if(head_block_num())
+  {
+    optional<signed_block> head_block = _block_log.read_block_by_num(head_block_num());
+    // This assertion should be caught and a reindex should occur
+    FC_ASSERT(head_block && head_block->id() == head_block_id(), "Chain state does not match block log. Please reindex blockchain.");
 
-      _fork_db.start_block( *head_block );
-    }
+    _fork_db.start_block(*head_block);
+  }
 
-    with_read_lock( [&]()
+  with_read_lock([&]()
     {
-      init_hardforks(); // Writes to local state, but reads from db
+      const auto& hardforks = get_hardfork_property_object();
+      FC_ASSERT(hardforks.last_hardfork <= HIVE_NUM_HARDFORKS, "Chain knows of more hardforks than configuration", ("hardforks.last_hardfork", hardforks.last_hardfork)("HIVE_NUM_HARDFORKS", HIVE_NUM_HARDFORKS));
+      FC_ASSERT(_hardfork_versions.versions[hardforks.last_hardfork] <= HIVE_BLOCKCHAIN_VERSION, "Blockchain version is older than last applied hardfork");
+      FC_ASSERT(HIVE_BLOCKCHAIN_HARDFORK_VERSION >= HIVE_BLOCKCHAIN_VERSION);
+      FC_ASSERT(HIVE_BLOCKCHAIN_HARDFORK_VERSION == _hardfork_versions.versions[HIVE_NUM_HARDFORKS]);
     });
 
 #ifdef IS_TEST_NET
   /// Leave the chain-id passed to cmdline option.
 #else
-    with_read_lock( [&]()
+  with_read_lock([&]()
     {
       const auto& hardforks = get_hardfork_property_object();
-      if (hardforks.last_hardfork >= HIVE_HARDFORK_1_24)
+      if(hardforks.last_hardfork >= HIVE_HARDFORK_1_24)
       {
         ilog("Loaded blockchain which had already processed hardfork 24, setting Hive chain id");
         set_chain_id(HIVE_CHAIN_ID);
@@ -223,30 +258,21 @@ void database::open( const open_args& args )
     });
 #endif /// IS_TEST_NET
 
-    if (args.benchmark.first)
-    {
-      args.benchmark.second(0, get_abstract_index_cntr());
-      auto last_block_num = _block_log.head()->block_num();
-      args.benchmark.second(last_block_num, get_abstract_index_cntr());
-    }
 
-    _shared_file_full_threshold = args.shared_file_full_threshold;
-    _shared_file_scale_rate = args.shared_file_scale_rate;
-
-    auto account = find< account_object, by_name >( "nijeah" );
-    if( account != nullptr && account->to_withdraw < 0 )
-    {
-      auto session = start_undo_session();
-      modify( *account, []( account_object& a )
+  auto account = find< account_object, by_name >("nijeah");
+  if(account != nullptr && account->to_withdraw < 0)
+  {
+    auto session = start_undo_session();
+    modify(*account, [](account_object& a)
       {
         a.to_withdraw = 0;
         a.next_vesting_withdrawal = fc::time_point_sec::maximum();
       });
-      session.squash();
-    }
+    session.squash();
   }
-  FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
+
 }
+
 
 uint32_t database::reindex_internal( const open_args& args, signed_block& block )
 {
@@ -5817,12 +5843,6 @@ void database::init_hardforks()
   _hardfork_versions.times[ HIVE_HARDFORK_1_26 ] = fc::time_point_sec( HIVE_HARDFORK_1_26_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_26 ] = HIVE_HARDFORK_1_26_VERSION;
 #endif
-
-  const auto& hardforks = get_hardfork_property_object();
-  FC_ASSERT( hardforks.last_hardfork <= HIVE_NUM_HARDFORKS, "Chain knows of more hardforks than configuration", ("hardforks.last_hardfork",hardforks.last_hardfork)("HIVE_NUM_HARDFORKS",HIVE_NUM_HARDFORKS) );
-  FC_ASSERT( _hardfork_versions.versions[ hardforks.last_hardfork ] <= HIVE_BLOCKCHAIN_VERSION, "Blockchain version is older than last applied hardfork" );
-  FC_ASSERT( HIVE_BLOCKCHAIN_HARDFORK_VERSION >= HIVE_BLOCKCHAIN_VERSION );
-  FC_ASSERT( HIVE_BLOCKCHAIN_HARDFORK_VERSION == _hardfork_versions.versions[ HIVE_NUM_HARDFORKS ] );
 }
 
 void database::process_hardforks()
