@@ -153,7 +153,13 @@ namespace chain {
       uint32_t reindex_internal( const open_args& args, signed_block& block );
       void remove_expired_governance_votes();
 
+      /// Allows to load all data being independent to the persistent storage held in shared memory file.
+      void initialize_state_independent_data(const open_args& args);
+
     public:
+
+      /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
+      void load_state_initial_data(const open_args& args);
 
       /**
         * @brief Check if replaying was finished and all blocks from `block_log` were processed.

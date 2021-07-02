@@ -738,7 +738,7 @@ void chain_plugin::plugin_startup()
   ilog("Database opening...");
   my->open();
 
-  ilog("Snapshot processing...");
+  ilog("Looking for snapshot processing requests...");
   my->process_snapshot();
 
 
