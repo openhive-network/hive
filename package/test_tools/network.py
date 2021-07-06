@@ -20,20 +20,11 @@ class Network(NodesCreator):
         self.disconnected_networks = []
         self.logger = logger.getLogger(f'{__name__}.{self}')
 
-        self.hived_executable_file_path = None
-        self.wallet_executable_file_path = None
-
     def __str__(self):
         return self.name
 
     def set_directory(self, directory):
         self._directory = Path(directory).absolute()
-
-    def set_hived_executable_file_path(self, path):
-        self.hived_executable_file_path = Path(path).absolute()
-
-    def set_wallet_executable_file_path(self, path):
-        self.wallet_executable_file_path = Path(path).absolute()
 
     def get_name(self):
         return self.name
@@ -62,7 +53,6 @@ class Network(NodesCreator):
         self.connect_nodes()
         for node in self._nodes:
             node.set_directory(self.get_directory())
-            node.set_executable_file_path(self.hived_executable_file_path)
             node.run(wait_for_live=False)
             node._wait_for_p2p_plugin_start()
 
