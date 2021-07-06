@@ -14,13 +14,13 @@ from test_tools.wallet import Wallet
 class Node:
     __DEFAULT_WAIT_FOR_LIVE_TIMEOUT = 20
 
-    def __init__(self, creator, name, directory=None):
+    def __init__(self, creator, name, directory):
         self.api = Apis(self)
 
         import weakref
         self.__creator = weakref.proxy(creator)
         self.__name = name
-        self.directory = Path(directory) if directory is not None else Path(f'./{self.__name}')
+        self.directory = Path(directory).joinpath(self.__name).absolute()
         self.__produced_files = False
         self.__executable_file_path = None
         self.__process = None
@@ -58,9 +58,6 @@ class Node:
     def __get_path_of_executable(self):
         default_path = paths_to_executables.get_path_of('hived')
         return default_path if self.__executable_file_path is None else self.__executable_file_path
-
-    def set_directory(self, directory):
-        self.directory = Path(directory).absolute() / self.__name
 
     def is_running(self):
         if not self.__process:

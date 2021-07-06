@@ -1,7 +1,6 @@
 import pytest
 
 from test_tools import World
-from test_tools.network import Network
 
 
 @pytest.fixture
@@ -11,7 +10,7 @@ def world():
 
 @pytest.fixture
 def creators(world):
-    return [world, Network('Alpha')]
+    return [world, world.create_network('Alpha')]
 
 
 def test_node_direct_access(creators):

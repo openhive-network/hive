@@ -10,11 +10,11 @@ from test_tools.private.nodes_creator import NodesCreator
 
 
 class Network(NodesCreator):
-    def __init__(self, name):
+    def __init__(self, name, directory):
         super().__init__()
 
         self.name = name
-        self._directory = Path('.').absolute()
+        self._directory = Path(directory).joinpath(self.name).absolute()
         self.__wallets = []
         self.is_running = False
         self.disconnected_networks = []
@@ -23,14 +23,8 @@ class Network(NodesCreator):
     def __str__(self):
         return self.name
 
-    def set_directory(self, directory):
-        self._directory = Path(directory).absolute()
-
     def get_name(self):
         return self.name
-
-    def get_directory(self):
-        return self._directory / self.name
 
     def connect_nodes(self):
         if len(self._nodes) < 2:
@@ -44,15 +38,13 @@ class Network(NodesCreator):
             node.add_seed_node(seed_node)
 
     def run(self, wait_for_live=True):
-        directory = self.get_directory()
-        if directory.exists():
-            rmtree(directory)
+        if self._directory.exists():
+            rmtree(self._directory)
 
-        directory.mkdir(parents=True)
+        self._directory.mkdir(parents=True)
 
         self.connect_nodes()
         for node in self._nodes:
-            node.set_directory(self.get_directory())
             node.run(wait_for_live=False)
             node._wait_for_p2p_plugin_start()
 
@@ -73,7 +65,7 @@ class Network(NodesCreator):
     def attach_wallet_to(self, node, timeout):
         name = self._children_names.create_name(f'{node.get_name()}Wallet')
 
-        wallet = Wallet(name, self, self.get_directory())
+        wallet = Wallet(name, self, self._directory)
         wallet.connect_to(node)
         wallet.run(timeout)
 

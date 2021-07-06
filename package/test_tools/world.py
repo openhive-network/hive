@@ -57,8 +57,7 @@ class World(NodesCreator):
         else:
             name = self._children_names.create_name('Network')
 
-        network = Network(name)
-        network.set_directory(self._directory)
+        network = Network(name, self._directory)
         self.__networks.append(network)
         return network
 
