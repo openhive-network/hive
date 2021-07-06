@@ -198,7 +198,6 @@ class Node:
                                     When config file is missing hived generates default config.
         """
         if not self.__is_test_net_build():
-            from test_tools import paths_to_executables
             raise NotImplementedError(
                 f'You have configured path to non-testnet hived build.\n'
                 f'At the moment only testnet build is supported.\n'
@@ -209,8 +208,7 @@ class Node:
             )
 
         if not self.__produced_files and self.directory.exists():
-            from shutil import rmtree
-            rmtree(self.directory)
+            shutil.rmtree(self.directory)
         self.directory.mkdir(parents=True, exist_ok=True)
 
         config_file_path = self.directory.joinpath('config.ini')
