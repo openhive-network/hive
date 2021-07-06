@@ -95,6 +95,10 @@ namespace hive { namespace converter {
 
     const hp::recover_account_operation& operator()( hp::recover_account_operation& op )const;
 
+    const hp::witness_update_operation& operator()( hp::witness_update_operation& op )const;
+
+    const hp::witness_set_properties_operation& operator()( hp::witness_set_properties_operation& op )const;
+
     // No signatures modification ops
     template< typename T >
     const T& operator()( const T& op )const
