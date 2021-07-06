@@ -131,6 +131,20 @@ namespace hive { namespace converter {
     return op;
   }
 
+  const hp::witness_update_operation& convert_operations_visitor::operator()( hp::witness_update_operation& op )const
+  {
+    op.props.maximum_block_size = HIVE_SOFT_MAX_BLOCK_SIZE;
+
+    return op;
+  }
+
+  const hp::witness_set_properties_operation& convert_operations_visitor::operator()( hp::witness_set_properties_operation& op )const
+  {
+    op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_SOFT_MAX_BLOCK_SIZE );
+
+    return op;
+  }
+
 
   blockchain_converter::blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id )
     : _private_key( _private_key ), chain_id( chain_id ) {}
