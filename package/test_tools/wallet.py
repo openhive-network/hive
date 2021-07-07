@@ -447,6 +447,12 @@ class Wallet:
         self.process = None
         self.logger = logger.getLogger(f'{__name__}.{self.creator}.{self.name}')
 
+    def __str__(self):
+        return f'{self.creator}::{self.name}'
+
+    def __repr__(self):
+        return str(self)
+
     def get_stdout_file_path(self):
         return self.directory / 'stdout.txt'
 
