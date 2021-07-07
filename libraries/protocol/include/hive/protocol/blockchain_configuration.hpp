@@ -133,9 +133,9 @@ namespace hive
         member_int_t hive_one_day_seconds{60 * 60 * 24};
 #ifdef IS_TEST_NET
         member_version_t hive_blockchain_version{version(
-#ifdef HIVE_ENABLE_SMT
-            1, 26, 0
-#else
+  #ifdef HIVE_ENABLE_SMT
+              1, 26, 0
+  #else
             1, 25, 0
 #endif
         )};
@@ -166,6 +166,7 @@ namespace hive
         member_int_t hive_daily_proposal_maintenance_period{60 * 60};
         member_time_t hive_governance_vote_expiration_period{fc::days(20)};
         member_int_t hive_global_remove_threshold{20};
+        member_int_t hive_delayed_voting_total_interval_seconds{60*60*24*1};
 #else
         member_version_t hive_blockchain_version{version(1, 25, 8)};
         member_hash_t old_chain_id{fc::sha256()};
@@ -193,7 +194,9 @@ namespace hive
         member_int_t hive_daily_proposal_maintenance_period;
         member_time_t hive_governance_vote_expiration_period{fc::days(365)};
         member_int_t hive_global_remove_threshold{200};
+        member_int_t hive_delayed_voting_total_interval_seconds{60 * 60 * 24 * 30};
 #endif
+        member_int_t hive_delayed_voting_interval_seconds;
         member_asset_symbol_t vests_symbol{hive::protocol::asset_symbol_type::from_asset_num(HIVE_ASSET_NUM_VESTS)};
         member_asset_symbol_t hive_symbol{hive::protocol::asset_symbol_type::from_asset_num(HIVE_ASSET_NUM_HIVE)};
         member_asset_symbol_t hbd_symbol{hive::protocol::asset_symbol_type::from_asset_num(HIVE_ASSET_NUM_HBD)};
@@ -221,8 +224,6 @@ namespace hive
         member_int_t hive_min_vote_interval_sec{3};
         member_int_t hive_vote_dust_threshold{50000000};
         member_uint_t hive_downvote_pool_percent_hf21{25 * hive_1_percent};
-        member_int_t hive_delayed_voting_total_interval_seconds{60 * 60 * 24 * 30};
-        member_int_t hive_delayed_voting_interval_seconds{60 * 60 * 24 * 1};
         member_time_t hive_min_root_comment_interval{fc::seconds(60 * 5)};
         member_time_t hive_min_reply_interval{fc::seconds(20)};
         member_time_t hive_min_reply_interval_hf20{fc::seconds(3)};

@@ -14,8 +14,10 @@ namespace hive
 #ifdef IS_TEST_NET
         hive_cashout_window_seconds_pre_hf12{hive_cashout_window_seconds.get()},
         hive_cashout_window_seconds_pre_hf17{hive_cashout_window_seconds.get()},
+        hive_delayed_voting_interval_seconds{hive_delayed_voting_total_interval_seconds.get() / 30},
 #else
         hive_daily_proposal_maintenance_period{hive_one_day_seconds.get()},
+        hive_delayed_voting_interval_seconds{60 * 60 * 24 * 1},
 #endif
 
         hive_blockchain_hardfork_version{hive_blockchain_version.get()},
