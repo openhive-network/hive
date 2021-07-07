@@ -53,10 +53,9 @@ class Network(NodesCreator):
         if wait_for_live:
             self.wait_for_live_on_all_nodes()
 
-    def close(self):
+    def handle_final_cleanup(self):
         for node in self._nodes:
-            if node.is_running():
-                node.close()
+            node.handle_final_cleanup()
 
         for wallet in self.__wallets:
             if wallet.is_running():

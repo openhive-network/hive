@@ -2,6 +2,7 @@ import math
 import json
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import time
 
@@ -14,6 +15,99 @@ from test_tools.wallet import Wallet
 class Node:
     __DEFAULT_WAIT_FOR_LIVE_TIMEOUT = 20
 
+    class __Executable:
+        def get_path(self):
+            return paths_to_executables.get_path_of('hived')
+
+        def get_build_version(self):
+            if self.is_test_net_build():
+                return 'testnet'
+            elif self.is_main_net_build():
+                return 'mainnet'
+            else:
+                return 'unrecognised'
+
+        def is_test_net_build(self):
+            error_message = self.__run_and_get_output('--chain-id')
+            return error_message == 'Error parsing command line: the required argument for option \'--chain-id\' is missing'
+
+        def is_main_net_build(self):
+            error_message = self.__run_and_get_output('--chain-id')
+            return error_message == 'Error parsing command line: unrecognised option \'--chain-id\''
+
+        def __run_and_get_output(self, *arguments):
+            result = subprocess.check_output(
+                [str(self.get_path()), *arguments],
+                stderr=subprocess.STDOUT,
+            )
+
+            return result.decode('utf-8').strip()
+
+        def get_build_commit_hash(self):
+            output = self.__run_and_get_output('--version')
+            return json.loads(f'{{{output}}}')['version']['hive_git_revision']
+
+    class __Process:
+        def __init__(self, owner, directory, executable, logger):
+            self.__owner = owner
+            self.__process = None
+            self.__directory = Path(directory).absolute()
+            self.__executable = executable
+            self.__logger = logger
+            self.__files = {
+                'stdout': None,
+                'stderr': None,
+            }
+
+        def run(self, *, blocking):
+            self.__prepare_files_for_streams()
+
+            if blocking:
+                pass
+            else:
+                self.__process = subprocess.Popen(
+                    [str(self.__executable.get_path()), '-d', '.'],
+                    cwd=self.__directory,
+                    **self.__files,
+                )
+
+        def get_id(self):
+            return self.__process.pid
+
+        def __prepare_files_for_streams(self):
+            for name in self.__files:
+                if self.__files[name] is None:
+                    self.__files[name] = open(self.__directory.joinpath(f'{name}.txt'), 'w')
+
+        def close(self):
+            if self.__process is None:
+                return
+
+            self.__process.send_signal(signal.SIGINT)
+            try:
+                return_code = self.__process.wait(timeout=10)
+                self.__logger.debug(f'Closed with {return_code} return code')
+            except subprocess.TimeoutExpired:
+                self.__process.kill()
+                self.__process.wait()
+                self.__logger.warning(f'Process was force-closed with SIGKILL, because didn\'t close before timeout')
+
+        def close_opened_files(self):
+            for name, file in self.__files.items():
+                if file is not None:
+                    file.close()
+                    self.__files[name] = None
+
+        def is_running(self):
+            if not self.__process:
+                return False
+
+            return self.__process.poll() is None
+
+        def get_stderr_file_path(self):
+            stderr_file = self.__files['stderr']
+            return Path(stderr_file.name) if stderr_file is not None else None
+
     def __init__(self, creator, name, directory):
         self.api = Apis(self)
 
@@ -22,11 +116,10 @@ class Node:
         self.__name = name
         self.directory = Path(directory).joinpath(self.__name).absolute()
         self.__produced_files = False
-        self.__executable_file_path = None
-        self.__process = None
-        self.__stdout_file = None
-        self.__stderr_file = None
         self.__logger = logger.getLogger(f'{self.__creator}.{self.__name}')
+
+        self.__executable = self.__Executable()
+        self.__process = self.__Process(self, self.directory, self.__executable, self.__logger)
 
         from test_tools.node_configs.default import create_default_config
         self.config = create_default_config()
@@ -35,35 +128,8 @@ class Node:
         from test_tools.network import Network
         return f'{self.__creator}::{self.__name}' if isinstance(self.__creator, Network) else self.__name
 
-    def __get_executable_build_version(self):
-        if self.__is_test_net_build():
-            return 'testnet'
-        elif self.__is_main_net_build():
-            return 'mainnet'
-        else:
-            return 'unrecognised'
-
-    def __is_test_net_build(self):
-        error_message = self.__run_hived_with_chain_id_argument()
-        return error_message == 'Error parsing command line: the required argument for option \'--chain-id\' is missing'
-
-    def __is_main_net_build(self):
-        error_message = self.__run_hived_with_chain_id_argument()
-        return error_message == 'Error parsing command line: unrecognised option \'--chain-id\''
-
-    def __run_hived_with_chain_id_argument(self):
-        result = subprocess.check_output([str(self.__get_path_of_executable()), '--chain-id'], stderr=subprocess.STDOUT)
-        return result.decode('utf-8').strip()
-
-    def __get_path_of_executable(self):
-        default_path = paths_to_executables.get_path_of('hived')
-        return default_path if self.__executable_file_path is None else self.__executable_file_path
-
     def is_running(self):
-        if not self.__process:
-            return False
-
-        return self.__process.poll() is None
+        return self.__process.is_running()
 
     def is_able_to_produce_blocks(self):
         conditions = [
@@ -109,7 +175,7 @@ class Node:
         )
 
     def __any_line_in_stderr(self, predicate):
-        with open(self.directory / 'stderr.txt') as output:
+        with open(self.__process.get_stderr_file_path()) as output:
             for line in output:
                 if predicate(line):
                     return True
@@ -197,7 +263,7 @@ class Node:
                                     current config values will be ignored and overridden by values from file.
                                     When config file is missing hived generates default config.
         """
-        if not self.__is_test_net_build():
+        if not self.__executable.is_test_net_build():
             raise NotImplementedError(
                 f'You have configured path to non-testnet hived build.\n'
                 f'At the moment only testnet build is supported.\n'
@@ -216,15 +282,7 @@ class Node:
             self.__set_unset_endpoints()
             self.config.write_to_file(config_file_path)
 
-        self.__stdout_file = open(self.directory/'stdout.txt', 'w')
-        self.__stderr_file = open(self.directory/'stderr.txt', 'w')
-
-        self.__process = subprocess.Popen(
-            [str(self.__get_path_of_executable()), '-d', '.'],
-            cwd=self.directory,
-            stdout=self.__stdout_file,
-            stderr=self.__stderr_file,
-        )
+        self.__process.run(blocking=False)
 
         if use_existing_config:
             # Wait for config generation
@@ -242,7 +300,7 @@ class Node:
         self.__log_run_summary()
 
     def __log_run_summary(self):
-        message = f'Run with pid {self.__process.pid}, '
+        message = f'Run with pid {self.__process.get_id()}, '
 
         endpoints = self.__get_opened_endpoints()
         if endpoints:
@@ -250,8 +308,8 @@ class Node:
         else:
             message += 'without any server'
 
-        message += f', {self.__get_executable_build_version()} build'
-        message += f' commit={self.__get_commit_hash_of_executable()[:8]}'
+        message += f', {self.__executable.get_build_version()} build'
+        message += f' commit={self.__executable.get_build_commit_hash()[:8]}'
         self.__logger.info(message)
 
     def __get_opened_endpoints(self):
@@ -275,39 +333,17 @@ class Node:
         if self.config.webserver_ws_endpoint is None:
             self.config.webserver_ws_endpoint = f'0.0.0.0:{Port.allocate()}'
 
-    def __get_commit_hash_of_executable(self):
-        output = subprocess.check_output([str(self.__get_path_of_executable()), '--version'], stderr=subprocess.STDOUT)
-        output = json.loads(f'{{{output.decode("utf-8")}}}')
-        return output['version']['hive_git_revision']
+    def close(self):
+        self.__process.close()
 
-    def close(self, remove_unneeded_files=True):
-        self.__close_process()
-        self.__close_opened_files()
-
-        if remove_unneeded_files:
-            self.__remove_unneeded_files()
+    def handle_final_cleanup(self):
+        self.__process.close()
+        self.__process.close_opened_files()
+        self.__remove_unneeded_files()
 
     def restart(self, wait_for_live=True, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
-        self.close(remove_unneeded_files=False)
+        self.close()
         self.run(wait_for_live=wait_for_live, timeout=timeout)
-
-    def __close_process(self):
-        if self.__process is None:
-            return
-
-        import signal
-        self.__process.send_signal(signal.SIGINT)
-        try:
-            return_code = self.__process.wait(timeout=10)
-            self.__logger.debug(f'Closed with {return_code} return code')
-        except subprocess.TimeoutExpired:
-            self.__process.kill()
-            self.__process.wait()
-            self.__logger.warning(f'Process was force-closed with SIGKILL, because didn\'t close before timeout')
-
-    def __close_opened_files(self):
-        for file in [self.__stdout_file, self.__stderr_file]:
-            file.close()
 
     def __remove_unneeded_files(self):
         unneeded_files_or_directories = [

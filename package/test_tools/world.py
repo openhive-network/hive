@@ -44,12 +44,10 @@ class World(NodesCreator):
                 wallet.close()
 
         for node in self._nodes:
-            if node.is_running():
-                node.close()
+            node.handle_final_cleanup()
 
         for network in self.__networks:
-            if network.is_running:
-                network.close()
+            network.handle_final_cleanup()
 
     def create_network(self, name=None):
         if name is not None:
