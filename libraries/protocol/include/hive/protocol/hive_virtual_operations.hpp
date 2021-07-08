@@ -214,10 +214,16 @@ namespace hive { namespace protocol {
   struct comment_payout_update_operation : public virtual_operation
   {
     comment_payout_update_operation() {}
-    comment_payout_update_operation( const account_name_type& a, const string& p ) : author( a ), permlink( p ) {}
+    comment_payout_update_operation( const account_name_type& a, const string& p, uint32_t tv, int32_t nv, int64_t absr, int64_t netr, time_point_sec newc )
+      : author( a ), permlink( p ), total_votes( tv ), net_votes( nv ), abs_rshares( absr ), net_rshares( netr ), new_cashout( newc ) {}
 
     account_name_type author;
     string            permlink;
+    uint32_t          total_votes;
+    int32_t           net_votes;
+    int64_t           abs_rshares;
+    int64_t           net_rshares;
+    time_point_sec    new_cashout;
   };
 
   struct effective_comment_vote_operation : public virtual_operation
@@ -421,7 +427,7 @@ FC_REFLECT( hive::protocol::shutdown_witness_operation, (owner) )
 FC_REFLECT( hive::protocol::fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
 FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
 FC_REFLECT( hive::protocol::hardfork_operation, (hardfork_id) )
-FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink) )
+FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink)(total_votes)(net_votes)(abs_rshares)(net_rshares)(new_cashout) )
 FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout))
 FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink))
 FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesting_shares) )

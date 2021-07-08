@@ -2870,15 +2870,10 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         pre_push_virtual_operation( vop );
         post_push_virtual_operation( vop );
 
-          modify( comment_cashout, [&]( comment_cashout_object& c )
-          {
-            c.author_rewards += author_tokens;
-          });
-
-          modify( author, [&]( account_object& a )
-          {
-            a.posting_rewards += author_tokens;
-          });
+        modify( author, [&]( account_object& a )
+        {
+          a.posting_rewards += author_tokens;
+        });
       }
 
       notify_comment_reward( { reward, author_tokens, curation_tokens } );
@@ -2887,6 +2882,8 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         adjust_rshares2( util::evaluate_reward_curve( comment_cashout.net_rshares.value ), 0 );
     }
 
+    int64_t net_rshares = comment_cashout.net_rshares.value;
+    int64_t abs_rshares = comment_cashout.accurate_abs_rshares.value;
     modify( comment_cashout, [&]( comment_cashout_object& c )
     {
       /**
@@ -2897,6 +2894,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         c.net_rshares = 0;
       c.children_abs_rshares = 0;
       c.abs_rshares  = 0;
+      c.accurate_abs_rshares = 0;
       c.vote_rshares = 0;
       c.total_vote_weight = 0;
       c.max_cashout_time = fc::time_point_sec::maximum();
@@ -2916,10 +2914,8 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       c.last_payout = head_block_time();
     } );
 
-    if( calculate_discussion_payout_time( comment_cashout ) == fc::time_point_sec::maximum() )
-    {
-      push_virtual_operation( comment_payout_update_operation( get_account(comment_cashout.author_id).name, to_string( comment_cashout.permlink ) ) );
-    }
+    push_virtual_operation( comment_payout_update_operation( get_account( comment_cashout.author_id ).name, to_string( comment_cashout.permlink ),
+      comment_cashout.total_votes, comment_cashout.net_votes, abs_rshares, net_rshares, calculate_discussion_payout_time( comment_cashout ) ) );
 
     const auto& vote_idx = get_index< comment_vote_index >().indices().get< by_comment_voter >();
     auto vote_itr = vote_idx.lower_bound( comment.get_id() );
@@ -6585,9 +6581,10 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     {
       modify( comment, [&]( comment_cashout_object& c )
       {
-        c.net_rshares       *= magnitude;
-        c.abs_rshares       *= magnitude;
-        c.vote_rshares      *= magnitude;
+        c.net_rshares          *= magnitude;
+        c.abs_rshares          *= magnitude;
+        c.accurate_abs_rshares *= magnitude;
+        c.vote_rshares         *= magnitude;
       } );
     }
 
