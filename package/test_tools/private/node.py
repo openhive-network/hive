@@ -59,14 +59,14 @@ class Node:
                 'stderr': None,
             }
 
-        def run(self, *, blocking):
+        def run(self, *, blocking, with_arguments=()):
             self.__prepare_files_for_streams()
 
             if blocking:
                 pass
             else:
                 self.__process = subprocess.Popen(
-                    [str(self.__executable.get_path()), '-d', '.'],
+                    [str(self.__executable.get_path()), '-d', '.', *with_arguments],
                     cwd=self.__directory,
                     **self.__files,
                 )
