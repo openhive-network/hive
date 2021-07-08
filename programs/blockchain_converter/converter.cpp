@@ -209,9 +209,12 @@ namespace hive { namespace converter {
 
   void blockchain_converter::sign_transaction( hp::signed_transaction& trx )const
   {
-    // re-sign transaction
-    for( auto& sig : trx.signatures )
-      sig = get_second_authority_key( authority::owner ).sign_compact( trx.sig_digest( chain_id ) ); // XXX: All operations are being signed using the owner key of the 2nd authority
+    if( trx.signatures.size() )
+    {
+      if( trx.signatures.size() > 1 )
+        trx.signatures.clear();
+      trx.signatures.at( 0 ) = get_second_authority_key( authority::owner ).sign_compact( trx.sig_digest( chain_id ) ); // XXX: All operations are being signed using the owner key of the 2nd authority
+    }
   }
 
   void blockchain_converter::convert_signed_header( hp::signed_block_header& _signed_header )
