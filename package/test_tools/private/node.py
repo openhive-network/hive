@@ -9,6 +9,7 @@ import time
 from test_tools import Account, logger, paths_to_executables
 from test_tools.exceptions import CommunicationError, NodeIsNotRunning
 from test_tools.node_api.node_apis import Apis
+from test_tools.private.snapshot import Snapshot
 from test_tools.wallet import Wallet
 
 
@@ -182,6 +183,9 @@ class Node:
             lambda line: 'transactions on block' in line or 'Generated block #' in line
         )
 
+    def __is_snapshot_dumped(self):
+        return self.__any_line_in_stderr(lambda line: 'Snapshot generation finished' in line)
+
     def __any_line_in_stderr(self, predicate):
         with open(self.__process.get_stderr_file_path()) as output:
             for line in output:
@@ -261,6 +265,34 @@ class Node:
 
     def set_allowed_nodes(self, nodes):
         return self.api.network_node.set_allowed_peers(allowed_peers=[node.get_id() for node in nodes])
+
+    def dump_snapshot(self, *, close=False):
+        self.close()
+
+        snapshot_path = Path('.')
+        self.__process.run(
+            blocking=close,
+            with_arguments=[
+                f'--dump-snapshot={snapshot_path}',
+                '--plugin=state_snapshot',
+                *(['--exit-before-sync'] if close else []),
+            ]
+        )
+
+        if not close:
+            self.__wait_for_dumping_snapshot_finish()
+
+        return Snapshot(
+            self.directory / 'snapshot' / snapshot_path,
+            self.directory / 'blockchain/block_log',
+            self.directory / 'blockchain/block_log.index',
+            self,
+        )
+
+    def __wait_for_dumping_snapshot_finish(self, timeout=15):
+        from test_tools.private.wait_for import wait_for
+        wait_for(self.__is_snapshot_dumped, timeout=timeout,
+                 timeout_error_message=f'Waiting too long for {self} to dump snapshot')
 
     def run(self, wait_for_live=True, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT, use_existing_config=False):
         """
