@@ -62,14 +62,14 @@ class Node:
         def run(self, *, blocking, with_arguments=()):
             self.__prepare_files_for_streams()
 
-            if blocking:
-                pass
-            else:
-                self.__process = subprocess.Popen(
-                    [str(self.__executable.get_path()), '-d', '.', *with_arguments],
-                    cwd=self.__directory,
-                    **self.__files,
-                )
+            run_subprocess = subprocess.run if blocking else subprocess.Popen
+            process_handle = run_subprocess(
+                [str(self.__executable.get_path()), '-d', '.', *with_arguments],
+                cwd=self.__directory,
+                **self.__files,
+            )
+
+            self.__process = process_handle if not blocking else None
 
         def get_id(self):
             return self.__process.pid
