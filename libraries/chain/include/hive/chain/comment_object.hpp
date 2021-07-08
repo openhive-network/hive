@@ -119,6 +119,9 @@ namespace hive { namespace chain {
       //returns creation time
       const time_point_sec& get_creation_time() const { return created; }
 
+      //tells if comment has meaningful votes (dust votes with rshares rounded to 0 don't count)
+      bool has_votes() const { return abs_rshares > 0; }
+
       account_id_type   author_id;
       shared_string     permlink;
 
@@ -130,6 +133,7 @@ namespace hive { namespace chain {
       share_type        net_rshares; // reward is proportional to rshares^2, this is the sum of all votes (positive and negative)
       share_type        abs_rshares; /// this is used to track the total abs(weight) of votes for the purpose of calculating cashout_time
       share_type        vote_rshares; /// Total positive rshares from all votes. Used to calculate delta weights. Needed to handle vote changing and removal.
+      share_type        accurate_abs_rshares; /// (not used by consensus) Unlike abs_rshares this one is corrected when vote is edited
 
       share_type        children_abs_rshares; /// this is used to calculate cashout time of a discussion.
 
@@ -149,9 +153,8 @@ namespace hive { namespace chain {
       HBD_asset         curator_payout_value = asset(0, HBD_SYMBOL);
       HBD_asset         beneficiary_payout_value = asset( 0, HBD_SYMBOL );
 
-      share_type        author_rewards = 0;
-
-      int32_t           net_votes = 0;
+      uint32_t          total_votes = 0; // (not used by consensus)
+      int32_t           net_votes = 0; // (not used by consensus)
 
       HBD_asset         max_accepted_payout = asset( 1000000000, HBD_SYMBOL );       /// HBD value of the maximum payout this post will receive
       uint16_t          percent_hbd = HIVE_100_PERCENT; /// the percent of HBD to key, unkept amounts will be received as VESTS
@@ -269,10 +272,10 @@ CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_object, hive::chain::comment_inde
 FC_REFLECT( hive::chain::comment_cashout_object,
           (id)(author_id)(permlink)
           (active)(last_payout)
-          (net_rshares)(abs_rshares)(vote_rshares)(children_abs_rshares)
+          (net_rshares)(abs_rshares)(vote_rshares)(accurate_abs_rshares)(children_abs_rshares)
           (children)(created)(cashout_time)(max_cashout_time)
           (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(beneficiary_payout_value)
-          (author_rewards)(net_votes)
+          (total_votes)(net_votes)
           (max_accepted_payout)(percent_hbd)(allow_votes)(allow_curation_rewards)
           (beneficiaries)
 #ifdef HIVE_ENABLE_SMT

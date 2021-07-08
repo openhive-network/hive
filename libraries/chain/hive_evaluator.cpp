@@ -685,7 +685,7 @@ struct comment_options_extension_visitor
 #ifdef HIVE_ENABLE_SMT
   void operator()( const allowed_vote_assets& va) const
   {
-    FC_ASSERT( _c.abs_rshares == 0, "Comment must not have been voted on before specifying allowed vote assets." );
+    FC_ASSERT( !_c.has_votes(), "Comment must not have been voted on before specifying allowed vote assets." );
     auto remaining_asset_number = SMT_MAX_VOTABLE_ASSETS;
     FC_ASSERT( remaining_asset_number > 0 );
     _db.modify( _c, [&]( comment_cashout_object& c )
@@ -707,7 +707,7 @@ struct comment_options_extension_visitor
   void operator()( const comment_payout_beneficiaries& cpb ) const
   {
     FC_ASSERT( _c.beneficiaries.size() == 0, "Comment already has beneficiaries specified." );
-    FC_ASSERT( _c.abs_rshares == 0, "Comment must not have been voted on before specifying beneficiaries." );
+    FC_ASSERT( !_c.has_votes(), "Comment must not have been voted on before specifying beneficiaries." );
 
     _db.modify( _c, [&]( comment_cashout_object& c )
     {
@@ -738,7 +738,7 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
   }
 
   if( !o.allow_curation_rewards || !o.allow_votes || o.max_accepted_payout < comment_cashout->max_accepted_payout )
-    FC_ASSERT( comment_cashout->abs_rshares == 0, "One of the included comment options requires the comment to have no rshares allocated to it." );
+    FC_ASSERT( !comment_cashout->has_votes(), "One of the included comment options requires the comment to have no rshares allocated to it." );
 
   FC_ASSERT( comment_cashout->allow_curation_rewards >= o.allow_curation_rewards, "Curation rewards cannot be re-enabled." );
   FC_ASSERT( comment_cashout->allow_votes >= o.allow_votes, "Voting cannot be re-enabled." );
@@ -1491,7 +1491,9 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
 
 
-  // Lazily delete vote
+  // Lazily delete vote (votes are marked with -1 when they were already "used" in cashout, just the cashout was not final yet;
+  // they should be treated as nonexisting though when user decides to vote again in different cashout window;
+  // ABW: they were not immediately removed so they remain available for APIs? seems like we could just remove them now at cashout)
   if( itr != comment_vote_idx.end() && itr->num_changes == -1 )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) )
@@ -1552,14 +1554,14 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c ){
       c.net_rshares += rshares;
       c.abs_rshares += abs_rshares;
+      c.accurate_abs_rshares += abs_rshares;
       if( rshares > 0 )
         c.vote_rshares += rshares;
-      if( rshares > 0 )
+      if( o.weight > 0 )
         c.net_votes++;
-      else
+      else //weight of new vote cannot be 0 so it is a downvote
         c.net_votes--;
-      if( !_db.has_hardfork( HIVE_HARDFORK_0_6__114 ) && c.net_rshares == -c.abs_rshares )
-        FC_ASSERT( c.net_votes < 0, "Comment has negative net votes?" );
+      c.total_votes++;
     });
 
     if( root_cashout )
@@ -1750,22 +1752,29 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
     {
       c.net_rshares -= itr->rshares;
+      if( itr->rshares > 0 )
+        c.accurate_abs_rshares -= itr->rshares;
+      else
+        c.accurate_abs_rshares += itr->rshares;
       c.net_rshares += rshares;
       c.abs_rshares += abs_rshares;
+      c.accurate_abs_rshares += abs_rshares;
 
-      /// TODO: figure out how to handle remove a vote (rshares == 0 )
-      if( rshares > 0 && itr->rshares < 0 )
+      /// TODO: figure out how to handle remove a vote (rshares == 0); ABW: the problem is, prior to HF14 for o.weight == 0
+      /// we still might get rshares > 0 due to how used_power is calculated
+      if( o.weight > 0 && itr->vote_percent < 0 )
         c.net_votes += 2;
-      else if( rshares > 0 && itr->rshares == 0 )
+      else if( o.weight > 0 && itr->vote_percent == 0 )
         c.net_votes += 1;
-      else if( rshares == 0 && itr->rshares < 0 )
+      else if( o.weight == 0 && itr->vote_percent < 0 )
         c.net_votes += 1;
-      else if( rshares == 0 && itr->rshares > 0 )
+      else if( o.weight == 0 && itr->vote_percent > 0 )
         c.net_votes -= 1;
-      else if( rshares < 0 && itr->rshares == 0 )
+      else if( o.weight < 0 && itr->vote_percent == 0 )
         c.net_votes -= 1;
-      else if( rshares < 0 && itr->rshares > 0 )
+      else if( o.weight < 0 && itr->vote_percent > 0 )
         c.net_votes -= 2;
+      //c.total_votes unchanged by vote edit
     });
 
     if( root_cashout )
@@ -1854,8 +1863,9 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   if( itr != comment_vote_idx.end() && itr->num_changes == -1 )
   {
     FC_TODO( "This looks suspicious. We might not be deleting vote objects that we should be on nodes that are configured to clear votes" );
+    //ABW: it is not possible after HF12 and in fact we could change it to never mark votes with -1 and just remove them immediately on any cashout
     FC_ASSERT( false, "Cannot vote again on a comment after payout." );
-
+ 
     _db.remove( *itr );
     itr = comment_vote_idx.end();
   }
@@ -1976,12 +1986,14 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     {
       c.net_rshares += rshares;
       c.abs_rshares += abs_rshares;
+      c.accurate_abs_rshares += abs_rshares;
       if( rshares > 0 )
         c.vote_rshares += rshares;
-      if( rshares > 0 )
+      if( o.weight > 0 )
         c.net_votes++;
-      else
+      else //weight of new vote cannot be 0 so it is a downvote
         c.net_votes--;
+      c.total_votes++;
     });
 
     if( root_cashout )
@@ -2149,22 +2161,29 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
     {
       c.net_rshares -= itr->rshares;
+      if( itr->rshares > 0 )
+        c.accurate_abs_rshares -= itr->rshares;
+      else
+        c.accurate_abs_rshares += itr->rshares;
       c.net_rshares += rshares;
       c.abs_rshares += abs_rshares;
+      c.accurate_abs_rshares += abs_rshares;
 
-      /// TODO: figure out how to handle remove a vote (rshares == 0 )
-      if( rshares > 0 && itr->rshares < 0 )
+      /// TODO: figure out how to handle remove a vote (rshares == 0) - ABW: this is not necessarily removed vote!
+      /// (dust votes can have o.weight > 0 and still give rshares == 0)
+      if( o.weight > 0 && itr->vote_percent < 0 )
         c.net_votes += 2;
-      else if( rshares > 0 && itr->rshares == 0 )
+      else if( o.weight > 0 && itr->vote_percent == 0 )
         c.net_votes += 1;
-      else if( rshares == 0 && itr->rshares < 0 )
+      else if( o.weight == 0 && itr->vote_percent < 0 )
         c.net_votes += 1;
-      else if( rshares == 0 && itr->rshares > 0 )
+      else if( o.weight == 0 && itr->vote_percent > 0 )
         c.net_votes -= 1;
-      else if( rshares < 0 && itr->rshares == 0 )
+      else if( o.weight < 0 && itr->vote_percent == 0 )
         c.net_votes -= 1;
-      else if( rshares < 0 && itr->rshares > 0 )
+      else if( o.weight < 0 && itr->vote_percent > 0 )
         c.net_votes -= 2;
+      //c.total_votes unchanged by vote edit
     });
 
     if( root_cashout )
