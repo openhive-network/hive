@@ -79,6 +79,14 @@ class Node:
                 if self.__files[name] is None:
                     self.__files[name] = open(self.__directory.joinpath(f'{name}.txt'), 'w')
 
+        def workaround_stderr_parsing_problem(self):
+            file = self.__files['stderr']
+            if file is None:
+                return
+
+            file.close()
+            self.__files['stderr'] = open(self.__directory.joinpath('stderr.txt'), 'w')
+
         def close(self):
             if self.__process is None:
                 return
@@ -281,6 +289,14 @@ class Node:
         if not use_existing_config:
             self.__set_unset_endpoints()
             self.config.write_to_file(config_file_path)
+
+        # TODO: Remove below code when statsd support will be implemented.
+        #       This is temporary workaround, for stderr parsing solution.
+        #       When node is restarted, old stderr is parsed first, because
+        #       new logs are at the bottom. Parser reads wrong informations.
+        #       This workaround removes old logs.
+        self.__process.workaround_stderr_parsing_problem()
+        # ------------------------- End of workaround -------------------------
 
         self.__process.run(blocking=False)
 
