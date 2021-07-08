@@ -112,7 +112,7 @@ namespace hive
 
         /**
          * @brief this allows to chain configuration properties
-         * @example usage of blockchain_configuration_t::operator() 
+         * @example usage of blockchain_configuration_t::operator()
          * ```
          * using bconf = blockchain_configuration_t;
          * const auto new_conf = get_current_blockchain_config()
@@ -130,47 +130,25 @@ namespace hive
           return result;
         }
 
-        member_int_t hive_one_day_seconds{60 * 60 * 24};
+
+// ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
+// ### ###              MEMBERS DECLARATIONS           ### ###
+// ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
+
+
 #ifdef IS_TEST_NET
-        member_version_t hive_blockchain_version{version(
-  #ifdef HIVE_ENABLE_SMT
-              1, 26, 0
-  #else
-            1, 25, 0
-#endif
-        )};
+
+        /* ###  TESTNET ONLY MEMBERS  ### */
+
         member_pv_key_t hive_init_private_key{fc::ecc::private_key::regenerate(fc::sha256::hash(std::string("init_key")))};
-        member_hash_t old_chain_id{fc::sha256::hash("testnet")};
-        member_hash_t hive_chain_id{fc::sha256::hash("testnet")};
-        member_timepoint_t hive_genesis_time{fc::time_point_sec(1451606400)};
-        member_timepoint_t hive_mining_time{fc::time_point_sec(1451606400)};
-        member_int_t hive_cashout_window_seconds{60 * 60};
-        member_int_t hive_cashout_window_seconds_pre_hf12;
-        member_int_t hive_cashout_window_seconds_pre_hf17;
-        member_int_t hive_second_cashout_window{60 * 60};
-        member_int_t hive_max_cashout_window_seconds{60 * 60 * 24};
-        member_time_t hive_upvote_lockout_hf7{fc::minutes(1)};
-        member_uint_t hive_upvote_lockout_seconds{60u * 5};
-        member_time_t hive_upvote_lockout_hf17{fc::minutes(5)};
-        member_int_t hive_min_account_creation_fee{0};
-        member_bigint_t hive_max_account_creation_fee{int64_t(1000000000)};
-        member_time_t hive_owner_auth_recovery_period{fc::seconds(60)};
-        member_time_t hive_account_recovery_request_expiration_period{fc::seconds(12)};
-        member_time_t hive_owner_update_limit{fc::seconds(0)};
-        member_uint_t hive_owner_auth_history_tracking_start_block_num{1u};
-        member_bigint_t hive_init_supply{int64_t(250) * int64_t(1000000) * int64_t(1000)};
-        member_bigint_t hive_hbd_init_supply{int64_t(7) * int64_t(1000000) * int64_t(1000)};
         member_uint_t testnet_block_limit{3000000u};
-        member_int_t hive_proposal_maintenance_period{3600};
-        member_int_t hive_proposal_maintenance_cleanup{60 * 60 * 24 * 1};
-        member_int_t hive_daily_proposal_maintenance_period{60 * 60};
-        member_time_t hive_governance_vote_expiration_period{fc::days(20)};
-        member_int_t hive_global_remove_threshold{20};
-        member_int_t hive_delayed_voting_total_interval_seconds{60*60*24*1};
-#else
-        member_version_t hive_blockchain_version{version(1, 25, 8)};
+
+#endif
+
+        member_version_t hive_blockchain_version{version(1, 25, 0)};
         member_hash_t old_chain_id{fc::sha256()};
         member_hash_t hive_chain_id{fc::sha256::hash("beeab0de00000000000000000000000000000000000000000000000000000000")};
+        member_int_t hive_one_day_seconds{60 * 60 * 24};
         member_timepoint_t hive_genesis_time{fc::time_point_sec(1458835200)};
         member_timepoint_t hive_mining_time{fc::time_point_sec(1458838800)};
         member_int_t hive_cashout_window_seconds_pre_hf12{60 * 60 * 24};
@@ -195,14 +173,13 @@ namespace hive
         member_time_t hive_governance_vote_expiration_period{fc::days(365)};
         member_int_t hive_global_remove_threshold{200};
         member_int_t hive_delayed_voting_total_interval_seconds{60 * 60 * 24 * 30};
-#endif
-        member_int_t hive_delayed_voting_interval_seconds;
+        member_uint_t hive_start_miner_voting_block{hive_blocks_per_day * 30u};
+        member_int_t hive_delayed_voting_interval_seconds{60 * 60 * 24 * 1};
         member_asset_symbol_t vests_symbol{hive::protocol::asset_symbol_type::from_asset_num(HIVE_ASSET_NUM_VESTS)};
         member_asset_symbol_t hive_symbol{hive::protocol::asset_symbol_type::from_asset_num(HIVE_ASSET_NUM_HIVE)};
         member_asset_symbol_t hbd_symbol{hive::protocol::asset_symbol_type::from_asset_num(HIVE_ASSET_NUM_HBD)};
         member_hardfork_version_t hive_blockchain_hardfork_version;
         member_uint_t hive_start_vesting_block{hive_blocks_per_day * 7u};
-        member_uint_t hive_start_miner_voting_block{hive_blocks_per_day * 30u};
         member_int_t hive_num_init_miners{1};
         member_timepoint_t hive_init_time{fc::time_point_sec()};
         member_int_t hive_hardfork_required_witnesses{17};

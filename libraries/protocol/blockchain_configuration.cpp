@@ -9,17 +9,10 @@ namespace hive
   {
     namespace blockchain_configuration
     {
-      blockchain_configuration_t::blockchain_configuration_t() 
-        :
-#ifdef IS_TEST_NET
-        hive_cashout_window_seconds_pre_hf12{hive_cashout_window_seconds.get()},
-        hive_cashout_window_seconds_pre_hf17{hive_cashout_window_seconds.get()},
-        hive_delayed_voting_interval_seconds{hive_delayed_voting_total_interval_seconds.get() / 30},
-#else
-        hive_daily_proposal_maintenance_period{hive_one_day_seconds.get()},
-        hive_delayed_voting_interval_seconds{60 * 60 * 24 * 1},
-#endif
 
+      /* Theese values are initialized here because of dependency on other values */
+      blockchain_configuration_t::blockchain_configuration_t() :
+        hive_daily_proposal_maintenance_period{hive_one_day_seconds.get()},
         hive_blockchain_hardfork_version{hive_blockchain_version.get()},
         hive_mining_reward{1000, this->hive_symbol.get()},
         hive_min_liquidity_reward{1000 * hive_liquidity_reward_blocks.get(), hive_symbol.get()},
@@ -45,7 +38,50 @@ namespace hive
 #ifdef HIVE_ENABLE_SMT
       , smt_max_votes_per_regeneration {(smt_max_nominal_votes_per_day.get() * smt_vesting_withdraw_interval_seconds.get()) / 86400 }
 #endif
+
       {
+#ifdef IS_TEST_NET
+
+        /*  ### OVERRIDE TESTNET VALUES HERE  ###  */
+
+  #ifdef HIVE_ENABLE_SMT
+        hive_blockchain_version.set(version(
+          hive_blockchain_version.get().major_v(),
+          hive_blockchain_version.get().minor_v() + 1u,
+          0u
+        ));
+  #endif
+
+        old_chain_id.set(fc::sha256::hash("testnet"));
+        hive_chain_id.set(fc::sha256::hash("testnet"));
+        hive_genesis_time.set(fc::time_point_sec(1451606400));
+        hive_mining_time.set(fc::time_point_sec(1451606400));
+        hive_cashout_window_seconds.set(60 * 60);
+        hive_delegation_return_period_hf0.set(hive_cashout_window_seconds.get());
+        hive_cashout_window_seconds_pre_hf12.set(hive_cashout_window_seconds.get());
+        hive_cashout_window_seconds_pre_hf17.set(hive_cashout_window_seconds.get());
+        hive_second_cashout_window.set(60 * 60 * 24 * 3);
+        hive_max_cashout_window_seconds.set(60 * 60 * 24);
+        hive_upvote_lockout_hf7.set(fc::minutes(1));
+        hive_upvote_lockout_seconds.set(60u * 5);
+        hive_upvote_lockout_hf17.set(fc::minutes(5));
+        hive_min_account_creation_fee.set(0);
+        hive_max_account_creation_fee.set(int64_t(1000000000));
+        hive_owner_auth_recovery_period.set(fc::seconds(60));
+        hive_account_recovery_request_expiration_period.set(fc::seconds(12));
+        hive_owner_update_limit.set(fc::seconds(0));
+        hive_owner_auth_history_tracking_start_block_num.set(1u);
+        hive_init_supply.set(int64_t(250) * int64_t(1000000) * int64_t(1000));
+        hive_hbd_init_supply.set(int64_t(7) * int64_t(1000000) * int64_t(1000));
+        hive_proposal_maintenance_period.set(3600);
+        hive_proposal_maintenance_cleanup.set(60 * 60 * 24 * 1);
+        hive_daily_proposal_maintenance_period.set(60 * 60);
+        hive_governance_vote_expiration_period.set(fc::days(5));
+        hive_global_remove_threshold.set(20);
+        hive_delayed_voting_total_interval_seconds.set(60*60*24*1);
+        hive_start_miner_voting_block.set(30);
+        hive_delayed_voting_interval_seconds.set( hive_delayed_voting_total_interval_seconds.get() / 30 );
+#endif
       }
 
 #ifndef IS_TEST_NET
