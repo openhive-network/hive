@@ -51,31 +51,42 @@ block_api_impl::~block_api_impl() {}
 DEFINE_API_IMPL( block_api_impl, get_block_header )
 {
   get_block_header_return result;
-  optional<signed_block> block = _db.fetch_block_by_number_unlocked( args.block_num );
-
-  if( block )
-    result.header = *block;
-
+  if( args.block_num <= _db.head_block_num() )
+  {
+    optional<signed_block> block = _db.fetch_block_by_number_unlocked( args.block_num );
+    if( block )
+      result.header = *block;
+  }
   return result;
 }
 
 DEFINE_API_IMPL( block_api_impl, get_block )
 {
   get_block_return result;
-  optional<signed_block> block = _db.fetch_block_by_number_unlocked( args.block_num );
-
-  if( block )
-    result.block = *block;
-
+  if( args.block_num <= _db.head_block_num() )
+  {
+    optional<signed_block> block = _db.fetch_block_by_number_unlocked( args.block_num );
+    if( block )
+      result.block = *block;
+  }
   return result;
 }
 
 DEFINE_API_IMPL( block_api_impl, get_block_range )
 {
   get_block_range_return result;
-  vector<signed_block> blocks = _db.fetch_block_range_unlocked( args.starting_block_num, args.count );
-  for (const signed_block& block : blocks)
-    result.blocks.push_back(block);
+  auto count = args.count;
+  auto head = _db.head_block_num();
+  if( args.starting_block_num > head )
+    count = 0;
+  else if( args.starting_block_num + count - 1 > head )
+    count = head - args.starting_block_num + 1;
+  if( count )
+  {
+    vector<signed_block> blocks = _db.fetch_block_range_unlocked( args.starting_block_num, count );
+    for (const signed_block& block : blocks)
+      result.blocks.push_back(block);
+  }
   return result;
 }
 
