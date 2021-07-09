@@ -1175,7 +1175,11 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
 
   *collectedIrreversibleBlock = _cached_irreversible_block;
   if( *collectedIrreversibleBlock < _cached_reindex_point )
+  {
+    wlog( "Dynamic correction of last irreversible block from ${a} to ${b} due to reindex point value",
+      ( "a", *collectedIrreversibleBlock )( "b", _cached_reindex_point ) );
     *collectedIrreversibleBlock = _cached_reindex_point;
+  }
 
   if( *blockRangeEnd < *collectedIrreversibleBlock )
     return std::vector<rocksdb_operation_object>();
@@ -1621,8 +1625,7 @@ uint32_t account_history_rocksdb_plugin::impl::get_lib(const uint32_t* fallbackI
 
   FC_ASSERT( s.ok(), "Could not find last irreversible block. Error msg: `${e}'", ("e", s.ToString()) );
 
-  uint32_t lib = 0;
-  load( lib, data.data(), data.size() );
+  uint32_t lib = lib_slice_t::unpackSlice(data);
 
   FC_ASSERT( lib >= _cached_irreversible_block,
     "Inconsistency in last irreversible block - cached ${c}, stored ${s}",
@@ -1647,8 +1650,7 @@ uint32_t account_history_rocksdb_plugin::impl::get_reindex_point() const
 
   FC_ASSERT( s.ok(), "Could not find last reindex point. Error msg: `${e}'", ( "e", s.ToString() ) );
 
-  uint32_t rp = 0;
-  load( rp, data.data(), data.size() );
+  uint32_t rp = lib_slice_t::unpackSlice(data);
 
   FC_ASSERT( rp >= _cached_reindex_point,
     "Inconsistency in reindex point - cached ${c}, stored ${s}",
@@ -1724,7 +1726,7 @@ bool account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
     s = db->CreateColumnFamilies(columnDefs, &_columnHandles);
     if(s.ok())
     {
-      ilog("RockDB column definitions created successfully.");
+      ilog("RocksDB column definitions created successfully.");
       saveStoreVersion();
       /// Store initial values of Seq-IDs for held objects.
       flushWriteBuffer(db);
@@ -1772,7 +1774,7 @@ void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const acco
       }
 
     auto nextEntryId = ++ahInfo.newestEntryId;
-      _writeBuffer.putAHInfo(name, ahInfo);
+    _writeBuffer.putAHInfo(name, ahInfo);
 
     ah_op_by_id_slice_t ahInfoOpSlice(std::make_pair(ahInfo.id, nextEntryId));
     id_slice_t valueSlice(obj.id);
@@ -2089,11 +2091,19 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
 
   auto stored_lib = get_lib(&fallbackIrreversibleBlock);
   
-  // during reindex all data is pushed directly to storage, however the LIB reflects
-  // state in dgpo; this means there is a small window of inconsistency when data is stored
-  // in permanent storage but LIB would indicate it should be in volatile index
-  FC_ASSERT( block_num <= _cached_reindex_point || block_num > stored_lib,
-    "New irreversible block: ${nb} can't be less than already stored one: ${ob}", ("nb", block_num)("ob", stored_lib));
+  if( block_num <= _cached_reindex_point )
+  {
+    // during reindex all data is pushed directly to storage, however the LIB reflects
+    // state in dgpo; this means there is a small window of inconsistency when data is stored
+    // in permanent storage but LIB would indicate it should be in volatile index
+    wlog( "Incoming LIB value ${l} within reindex range ${r} - that block is already effectively irreversible",
+      ( "l", block_num )( "r", _cached_reindex_point ) );
+  }
+  else
+  {
+    FC_ASSERT( block_num > stored_lib, "New irreversible block: ${nb} can't be less than already stored one: ${ob}",
+      ( "nb", block_num )( "ob", stored_lib ) );
+  }
 
   auto& volatileOpsGenericIndex = _mainDb.get_mutable_index<volatile_operation_index>();
 
@@ -2156,6 +2166,7 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
     );
 
     update_lib(block_num);
+    flushStorage();
   }
 
   _currently_persisted_irreversible_block.store(0);
