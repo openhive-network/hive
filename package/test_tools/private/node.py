@@ -294,7 +294,12 @@ class Node:
         wait_for(self.__is_snapshot_dumped, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} to dump snapshot')
 
-    def run(self, wait_for_live=True, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT, use_existing_config=False):
+    def run(
+            self,
+            wait_for_live=True,
+            timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
+            use_existing_config=False,
+    ):
         """
         :param wait_for_live: Stops execution until node will generate or receive blocks.
         :param timeout: If wait_for_live is set to True, this parameter sets how long waiting can take. When
