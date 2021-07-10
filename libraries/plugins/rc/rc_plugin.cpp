@@ -1282,13 +1282,18 @@ void exp_rc_data::to_variant( fc::variant& v )const
   fc::to_variant( *this, v );
 }
 
-int64_t get_maximum_rc( const account_object& account, const rc_account_object& rc_account )
+int64_t get_maximum_rc( const account_object& account, const rc_account_object& rc_account, bool remove_received_delegated_rc )
 {
   int64_t result = account.vesting_shares.amount.value;
   result = fc::signed_sat_sub( result, account.delegated_vesting_shares.amount.value );
   result = fc::signed_sat_add( result, account.received_vesting_shares.amount.value );
   result = fc::signed_sat_add( result, rc_account.max_rc_creation_adjustment.amount.value );
   result = fc::signed_sat_sub( result, detail::get_next_vesting_withdrawal( account ) );
+  result = fc::signed_sat_sub( result, (int64_t) rc_account.delegated_rc );
+  // Used if we want to get the actual amount of RC and not real rc + received rc
+  if (remove_received_delegated_rc) {
+    result = fc::signed_sat_add(result, (int64_t) rc_account.received_delegated_rc);
+  }
   return result;
 }
 
