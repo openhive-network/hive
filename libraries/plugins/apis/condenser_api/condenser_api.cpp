@@ -10,6 +10,7 @@
 #include <hive/plugins/follow_api/follow_api_plugin.hpp>
 #include <hive/plugins/reputation_api/reputation_api_plugin.hpp>
 #include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
+#include <hive/plugins/rc_api/rc_api_plugin.hpp>
 
 
 #include <hive/utilities/git_revision.hpp>
@@ -1378,6 +1379,12 @@ void condenser_api::api_startup()
   if( market_history != nullptr )
   {
     my->_market_history_api = market_history->api;
+  }
+
+  auto rc = appbase::app().find_plugin< rc::rc_api_plugin >();
+  if( rc != nullptr )
+  {
+    my->_rc_api = rc->api;
   }
 }
 

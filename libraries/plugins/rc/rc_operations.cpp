@@ -20,7 +20,9 @@ void delegate_rc_operation::validate()const
 {
   validate_account_name( from );
   validate_account_name( to );
+
   FC_ASSERT( max_rc >= 0, "amount of rc delegated cannot be negative" );
+  FC_ASSERT( to != from, "cannot delegate rc to yourself" );
 }
 
 void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )

@@ -2859,7 +2859,7 @@ condenser_api::legacy_signed_transaction wallet_api::delegate_rc(
 
   flat_set< account_name_type > required_auths;
   dro.get_required_posting_authorities( required_auths );
-  op.required_auths = required_auths;
+  op.required_posting_auths = required_auths;
 
   signed_transaction trx;
   trx.operations.push_back( op );

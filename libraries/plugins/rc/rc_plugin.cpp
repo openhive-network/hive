@@ -7,10 +7,12 @@
 #include <hive/plugins/rc/rc_export_objects.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
 #include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/rc_operations.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/generic_custom_operation_interpreter.hpp>
 #include <hive/chain/index.hpp>
 
 #include <hive/jsonball/jsonball.hpp>
@@ -76,6 +78,8 @@ class rc_plugin_impl
     rc_plugin_skip_flags          _skip;
     std::map< account_name_type, int64_t > _account_to_max_rc;
     uint32_t                      _enable_at_block = 1;
+
+  std::shared_ptr< generic_custom_operation_interpreter< hive::plugins::rc::rc_plugin_operation > > _custom_operation_interpreter;
 
 #ifdef IS_TEST_NET
     std::set< account_name_type > _whitelist;
@@ -1205,6 +1209,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     HIVE_ADD_PLUGIN_INDEX(db, rc_resource_param_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_pool_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_account_index);
+    HIVE_ADD_PLUGIN_INDEX(db, rc_direct_delegation_object_index);
 
     fc::mutable_variant_object state_opts;
 
@@ -1238,6 +1243,16 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 #endif
 
     appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
+
+    // Each plugin needs its own evaluator registry.
+    my->_custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< hive::plugins::rc::rc_plugin_operation > >( my->_db, name() );
+
+    // Add each operation evaluator to the registry
+    my->_custom_operation_interpreter->register_evaluator< delegate_rc_evaluator >( this );
+
+    // Add the registry to the database so the database can delegate custom ops to the plugin
+    my->_db.register_custom_operation_interpreter( my->_custom_operation_interpreter );
+
 
     ilog( "RC's will be computed starting at block ${b}", ("b", my->_enable_at_block) );
   }

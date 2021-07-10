@@ -87,7 +87,7 @@ class rc_direct_delegation_object : public object< rc_direct_delegation_object_t
     account_name_type from;
     account_name_type to;
     uint64_t        delegated_rc = 0;
-  // maybe unpack constructor here ?
+  CHAINBASE_UNPACK_CONSTRUCTOR(rc_direct_delegation_object);
 };
 
 int64_t get_maximum_rc( const hive::chain::account_object& account, const rc_account_object& rc_account, bool remove_received_delegated_rc = false );
