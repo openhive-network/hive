@@ -5,7 +5,12 @@
 
 namespace hive { namespace plugins { namespace rc {
 
+using hive::protocol::account_name_type;
+using hive::protocol::asset;
+using hive::protocol::base_operation;
+using hive::protocol::asset_symbol_type;
 using hive::protocol::extensions_type;
+using hive::protocol::account_name_type;
 
 class rc_plugin;
 
@@ -17,7 +22,7 @@ struct delegate_rc_operation : base_operation
   extensions_type       extensions;
 
   void validate()const;
-  void get_required_posting_authorities( flat_set<account_name_type>& a )const { a.insert( from ); }
+  void get_required_active_authorities( flat_set<account_name_type>& a )const { a.insert( from ); }
 };
 
 typedef fc::static_variant<

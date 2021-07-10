@@ -16,6 +16,7 @@ namespace hive { namespace plugins { namespace rc {
 
 using namespace std;
 using namespace hive::chain;
+using hive::protocol::asset;
 
 #ifndef HIVE_RC_SPACE_ID
 #define HIVE_RC_SPACE_ID 16
