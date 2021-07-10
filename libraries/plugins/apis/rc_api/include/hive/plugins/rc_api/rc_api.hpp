@@ -17,6 +17,18 @@ namespace detail
   class rc_api_impl;
 }
 
+enum class sort_order_type
+{
+  by_name,
+};
+
+struct list_object_args_type
+{
+  fc::variant       start;
+  uint32_t          limit;
+  sort_order_type   order;
+};
+
 using plugins::json_rpc::void_type;
 
 typedef void_type get_resource_params_args;
@@ -42,6 +54,16 @@ struct get_resource_pool_return
 
 struct rc_account_api_object
 {
+  rc_account_api_object(){}
+
+  rc_account_api_object( const rc_account_object& rca, const database& db ) :
+          account( rca.account ),
+          rc_manabar( rca.rc_manabar ),
+          max_rc_creation_adjustment( rca.max_rc_creation_adjustment )
+  {
+    max_rc = get_maximum_rc( db.get_account( account ), rca );
+  }
+
   account_name_type     account;
   hive::chain::util::manabar   rc_manabar;
   asset                 max_rc_creation_adjustment = asset( 0, VESTS_SYMBOL );
@@ -57,6 +79,7 @@ struct rc_account_api_object
   // If it's needed it for debugging, we might think about un-commenting it
   //
   // asset                 last_vesting_shares = asset( 0, VESTS_SYMBOL );
+  // TODO: add the new fields here
 };
 
 struct find_rc_accounts_args
@@ -69,6 +92,11 @@ struct find_rc_accounts_return
   std::vector< rc_account_api_object >                     rc_accounts;
 };
 
+typedef list_object_args_type list_rc_accounts_args;
+
+typedef find_rc_accounts_return list_rc_accounts_return;
+
+
 class rc_api
 {
   public:
@@ -79,6 +107,7 @@ class rc_api
       (get_resource_params)
       (get_resource_pool)
       (find_rc_accounts)
+      (list_rc_accounts)
       )
 
   private:
@@ -86,6 +115,16 @@ class rc_api
 };
 
 } } } // hive::plugins::rc
+
+FC_REFLECT_ENUM( hive::plugins::rc::sort_order_type,
+                 (by_name)
+                 )
+
+FC_REFLECT( hive::plugins::rc::list_object_args_type,
+            (start)
+            (limit)
+            (order)
+            )
 
 FC_REFLECT( hive::plugins::rc::get_resource_params_return,
   (resource_names)
@@ -115,3 +154,4 @@ FC_REFLECT( hive::plugins::rc::find_rc_accounts_args,
 FC_REFLECT( hive::plugins::rc::find_rc_accounts_return,
   (rc_accounts)
   )
+

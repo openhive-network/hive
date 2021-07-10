@@ -140,6 +140,8 @@ namespace detail
         (find_proposals)
         (list_proposal_votes)
         (find_recurrent_transfers)
+        (find_rc_accounts)
+        (list_rc_accounts)
       )
 
       void on_post_apply_block( const signed_block& b );
@@ -158,6 +160,7 @@ namespace detail
       std::shared_ptr< follow::follow_api >                             _follow_api;
       std::shared_ptr< reputation::reputation_api >                     _reputation_api;
       std::shared_ptr< market_history::market_history_api >             _market_history_api;
+      std::shared_ptr< rc::rc_api >                                     _rc_api;
       map< transaction_id_type, confirmation_callback >                 _callbacks;
       map< time_point_sec, vector< transaction_id_type > >              _callback_expirations;
       boost::signals2::connection                                       _on_post_apply_block_conn;
@@ -1252,6 +1255,24 @@ namespace detail
     }
   } FC_LOG_AND_RETHROW() }
 
+  DEFINE_API_IMPL( condenser_api_impl, find_rc_accounts )
+  {
+    CHECK_ARG_SIZE( 1 )
+    FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+    return _rc_api->find_rc_accounts( { args[0].as< vector< account_name_type > >() } ).rc_accounts;
+  }
+
+  DEFINE_API_IMPL( condenser_api_impl, list_rc_accounts )
+  {
+    FC_ASSERT( args.size() == 3, "Expected 3 arguments, was ${n}", ("n", args.size()) );
+    FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+    rc::list_rc_accounts_args a;
+    a.start = args[0].as< account_name_type >();
+    a.limit = args[1].as< uint32_t >();
+    a.order = args[2].as< rc::sort_order_type >();
+    return _rc_api->list_rc_accounts( a ).rc_accounts;
+  }
+
 } // detail
 
 uint16_t api_account_object::_compute_voting_power( const database_api::api_account_object& a )
@@ -1454,6 +1475,8 @@ DEFINE_READ_APIS( condenser_api,
   (list_proposal_votes)
   (find_proposals)
   (find_recurrent_transfers)
+  (find_rc_accounts)
+  (list_rc_accounts)
 )
 
 } } } // hive::plugins::condenser_api

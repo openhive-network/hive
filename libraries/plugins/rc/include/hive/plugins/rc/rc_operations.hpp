@@ -22,7 +22,7 @@ struct delegate_rc_operation : base_operation
   extensions_type       extensions;
 
   void validate()const;
-  void get_required_active_authorities( flat_set<account_name_type>& a )const { a.insert( from ); }
+  void get_required_posting_authorities( flat_set<account_name_type>& a )const { a.insert( from ); }
 };
 
 typedef fc::static_variant<

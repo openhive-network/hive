@@ -1335,6 +1335,41 @@ class wallet_api
           const account_name_type& from );
 
 
+  /**
+  *  Delegate Rc
+  *
+  *  @param from The source account
+  *  @param to The destination account
+  *  @param max_rc The amount to delegate
+  *  @param broadcast To broadcast this transaction or not
+  */
+  condenser_api::legacy_signed_transaction delegate_rc(
+          account_name_type from,
+          account_name_type to,
+          uint64_t max_rc,
+          bool broadcast );
+
+
+  /**
+   *  Retrieve RC information for the given accounts.
+   *
+   *  @param accounts The vector of accounts
+   */
+  vector< rc::rc_account_api_object > find_rc_accounts( vector< account_name_type > accounts );
+
+  /**
+   *  List RC accounts.
+   *
+   *  @param account The starting account
+   *  @param limit   The limit of returned results
+   *  @param order   The sort order
+   */
+  vector< rc::rc_account_api_object > list_rc_accounts(
+          account_name_type account,
+          uint32_t limit,
+          rc::sort_order_type order );
+
+
 };
 
 struct plain_keys {
@@ -1452,7 +1487,7 @@ FC_API( hive::wallet::wallet_api,
       (get_active_witnesses)
       (get_transaction)
 
-      ///worker proposal api
+      /// worker proposal api
       (create_proposal)
       (update_proposal)
       (update_proposal_votes)
@@ -1460,6 +1495,11 @@ FC_API( hive::wallet::wallet_api,
       (find_proposals)
       (list_proposal_votes)
       (remove_proposal)
+
+      /// rc api
+      (delegate_rc)
+      (find_rc_accounts)
+      (list_rc_accounts)
     )
 
 FC_REFLECT( hive::wallet::memo_data, (from)(to)(nonce)(check)(encrypted) )

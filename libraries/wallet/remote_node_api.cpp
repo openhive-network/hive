@@ -437,4 +437,16 @@ vector< database_api::api_recurrent_transfer_object > remote_node_api::find_recu
   FC_ASSERT( false );
 }
 
+
+vector< rc::rc_account_api_object > remote_node_api::find_rc_accounts( vector< account_name_type >)
+{
+  FC_ASSERT( false );
+}
+
+vector< rc::rc_account_api_object > remote_node_api::list_rc_accounts( account_name_type, uint32_t, rc::sort_order_type )
+{
+  FC_ASSERT( false );
+}
+
+
 } }

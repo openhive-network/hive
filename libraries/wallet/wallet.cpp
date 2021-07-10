@@ -12,6 +12,9 @@
 #include <hive/wallet/remote_node_api.hpp>
 
 #include <hive/plugins/follow/follow_operations.hpp>
+#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/rc_operations.hpp>
+#include <hive/plugins/rc/rc_plugin.hpp>
 
 #include <algorithm>
 #include <cctype>
@@ -2834,5 +2837,49 @@ vector< database_api::api_recurrent_transfer_object > wallet_api::find_recurrent
 {
   return my->_remote_api->find_recurrent_transfers( from );
 }
+
+
+condenser_api::legacy_signed_transaction wallet_api::delegate_rc(
+            account_name_type from,
+            account_name_type to,
+            uint64_t max_rc,
+            bool broadcast )
+{
+  using namespace plugins::rc;
+  FC_ASSERT( !is_locked() );
+
+  delegate_rc_operation dro;
+  dro.from    = from;
+  dro.to      = to;
+  dro.max_rc  = max_rc;
+
+  custom_json_operation op;
+  op.json = fc::json::to_string( rc_plugin_operation( dro ) );
+  op.id = HIVE_RC_PLUGIN_NAME;
+
+  flat_set< account_name_type > required_auths;
+  dro.get_required_posting_authorities( required_auths );
+  op.required_auths = required_auths;
+
+  signed_transaction trx;
+  trx.operations.push_back( op );
+  trx.validate();
+  return my->sign_transaction( trx, broadcast );
+}
+
+
+vector< rc::rc_account_api_object > wallet_api::find_rc_accounts( vector< account_name_type > accounts )
+{
+  return my->_remote_api->find_rc_accounts( accounts );
+}
+
+vector< rc::rc_account_api_object > wallet_api::list_rc_accounts(
+            account_name_type account,
+            uint32_t limit,
+            rc::sort_order_type order )
+{
+  return my->_remote_api->list_rc_accounts( account, limit, order );
+}
+
 
 } } // hive::wallet
