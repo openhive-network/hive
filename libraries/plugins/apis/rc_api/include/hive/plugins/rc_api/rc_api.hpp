@@ -59,7 +59,9 @@ struct rc_account_api_object
   rc_account_api_object( const rc_account_object& rca, const database& db ) :
           account( rca.account ),
           rc_manabar( rca.rc_manabar ),
-          max_rc_creation_adjustment( rca.max_rc_creation_adjustment )
+          max_rc_creation_adjustment( rca.max_rc_creation_adjustment ),
+          delegated_rc( rca.delegated_rc ),
+          received_delegated_rc( rca.received_delegated_rc )
   {
     max_rc = get_maximum_rc( db.get_account( account ), rca );
   }
@@ -68,6 +70,8 @@ struct rc_account_api_object
   hive::chain::util::manabar   rc_manabar;
   asset                 max_rc_creation_adjustment = asset( 0, VESTS_SYMBOL );
   int64_t               max_rc = 0;
+  uint64_t              delegated_rc = 0;
+  uint64_t              received_delegated_rc = 0;
 
   //
   // This is used for bug-catching, to match that the vesting shares in a
@@ -79,7 +83,6 @@ struct rc_account_api_object
   // If it's needed it for debugging, we might think about un-commenting it
   //
   // asset                 last_vesting_shares = asset( 0, VESTS_SYMBOL );
-  // TODO: add the new fields here
 };
 
 struct find_rc_accounts_args
@@ -145,6 +148,8 @@ FC_REFLECT( hive::plugins::rc::rc_account_api_object,
   (rc_manabar)
   (max_rc_creation_adjustment)
   (max_rc)
+  (delegated_rc)
+  (received_delegated_rc)
   )
 
 FC_REFLECT( hive::plugins::rc::find_rc_accounts_args,
