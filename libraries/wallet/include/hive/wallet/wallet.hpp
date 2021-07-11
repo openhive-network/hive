@@ -1370,6 +1370,17 @@ class wallet_api
           rc::sort_order_type order );
 
 
+  /**
+   *  List direct RC delegations.
+   *
+   *  @param start    Starting value for querying results,
+   *  @param limit   The limit of returned results
+   *  @param order   The sort order
+   */
+  vector< rc::rc_direct_delegation_api_object > list_rc_direct_delegations(
+          fc::variant start,
+          uint32_t limit,
+          rc::sort_order_type order );
 };
 
 struct plain_keys {
@@ -1500,6 +1511,7 @@ FC_API( hive::wallet::wallet_api,
       (delegate_rc)
       (find_rc_accounts)
       (list_rc_accounts)
+      (list_rc_direct_delegations)
     )
 
 FC_REFLECT( hive::wallet::memo_data, (from)(to)(nonce)(check)(encrypted) )

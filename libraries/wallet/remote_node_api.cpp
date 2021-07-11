@@ -448,5 +448,10 @@ vector< rc::rc_account_api_object > remote_node_api::list_rc_accounts( account_n
   FC_ASSERT( false );
 }
 
+vector< rc::rc_direct_delegation_api_object > remote_node_api::list_rc_direct_delegations( fc::variant, uint32_t, rc::sort_order_type )
+{
+  FC_ASSERT( false );
+}
+
 
 } }

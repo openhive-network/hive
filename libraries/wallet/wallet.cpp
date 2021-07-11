@@ -2838,7 +2838,6 @@ vector< database_api::api_recurrent_transfer_object > wallet_api::find_recurrent
   return my->_remote_api->find_recurrent_transfers( from );
 }
 
-
 condenser_api::legacy_signed_transaction wallet_api::delegate_rc(
             account_name_type from,
             account_name_type to,
@@ -2867,7 +2866,6 @@ condenser_api::legacy_signed_transaction wallet_api::delegate_rc(
   return my->sign_transaction( trx, broadcast );
 }
 
-
 vector< rc::rc_account_api_object > wallet_api::find_rc_accounts( vector< account_name_type > accounts )
 {
   return my->_remote_api->find_rc_accounts( accounts );
@@ -2881,5 +2879,12 @@ vector< rc::rc_account_api_object > wallet_api::list_rc_accounts(
   return my->_remote_api->list_rc_accounts( account, limit, order );
 }
 
+vector< rc::rc_direct_delegation_api_object > wallet_api::list_rc_direct_delegations(
+            fc::variant start,
+            uint32_t limit,
+            rc::sort_order_type order )
+{
+  return my->_remote_api->list_rc_direct_delegations( start, limit, order );
+}
 
 } } // hive::wallet
