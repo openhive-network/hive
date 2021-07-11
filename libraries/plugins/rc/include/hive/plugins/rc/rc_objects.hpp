@@ -82,7 +82,7 @@ class rc_direct_delegation_object : public object< rc_direct_delegation_object_t
     template< typename Allocator >
     rc_direct_delegation_object( allocator< Allocator > a, uint64_t _id,
     const account_name_type& _from, const account_name_type& _to, const uint64_t& _delegated_rc)
-    : id( _id ), from(_from), to(_to) {}
+    : id( _id ), from(_from), to(_to), delegated_rc(_delegated_rc) {}
 
     account_name_type from;
     account_name_type to;
@@ -90,7 +90,7 @@ class rc_direct_delegation_object : public object< rc_direct_delegation_object_t
   CHAINBASE_UNPACK_CONSTRUCTOR(rc_direct_delegation_object);
 };
 
-int64_t get_maximum_rc( const hive::chain::account_object& account, const rc_account_object& rc_account, bool remove_received_delegated_rc = false );
+int64_t get_maximum_rc( const hive::chain::account_object& account, const rc_account_object& rc_account, bool add_received_delegated_rc = true );
 
 typedef multi_index_container<
   rc_resource_param_object,
