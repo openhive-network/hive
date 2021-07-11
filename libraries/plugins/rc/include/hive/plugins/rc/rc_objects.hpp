@@ -122,6 +122,8 @@ typedef multi_index_container<
 > rc_account_index;
 
 struct by_from_to;
+struct by_from;
+struct by_to;
 
 typedef multi_index_container<
   rc_direct_delegation_object,
@@ -133,7 +135,11 @@ typedef multi_index_container<
         member< rc_direct_delegation_object, account_name_type, &rc_direct_delegation_object::from >,
         member< rc_direct_delegation_object, account_name_type, &rc_direct_delegation_object::to >
       >
-    >
+    >,
+    ordered_unique< tag< by_from >,
+      member< rc_direct_delegation_object, account_name_type, &rc_direct_delegation_object::from > >,
+    ordered_unique< tag< by_to >,
+      member< rc_direct_delegation_object, account_name_type, &rc_direct_delegation_object::to > >
   >,
   allocator< rc_direct_delegation_object >
 > rc_direct_delegation_object_index;

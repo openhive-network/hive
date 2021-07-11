@@ -20,6 +20,9 @@ namespace detail
 enum class sort_order_type
 {
   by_name,
+  by_from,
+  by_to,
+  by_from_to
 };
 
 struct list_object_args_type
@@ -85,6 +88,20 @@ struct rc_account_api_object
   // asset                 last_vesting_shares = asset( 0, VESTS_SYMBOL );
 };
 
+struct rc_direct_delegation_api_object
+{
+  rc_direct_delegation_api_object(){}
+
+  rc_direct_delegation_api_object( const rc_direct_delegation_object& rcdd ) :
+          from( rcdd.from ),
+          to( rcdd.to ),
+          delegated_rc( rcdd.delegated_rc ) {}
+
+  account_name_type from;
+  account_name_type to;
+  uint64_t        delegated_rc = 0;
+};
+
 struct find_rc_accounts_args
 {
   std::vector< account_name_type >                         accounts;
@@ -99,6 +116,12 @@ typedef list_object_args_type list_rc_accounts_args;
 
 typedef find_rc_accounts_return list_rc_accounts_return;
 
+typedef list_object_args_type list_rc_direct_delegations_args;
+
+struct list_rc_direct_delegations_return
+{
+  std::vector< rc_direct_delegation_api_object > rc_direct_delegations;
+};
 
 class rc_api
 {
@@ -111,6 +134,7 @@ class rc_api
       (get_resource_pool)
       (find_rc_accounts)
       (list_rc_accounts)
+      (list_rc_direct_delegations)
       )
 
   private:
@@ -121,6 +145,9 @@ class rc_api
 
 FC_REFLECT_ENUM( hive::plugins::rc::sort_order_type,
                  (by_name)
+                 (by_from)
+                 (by_to)
+                 (by_from_to)
                  )
 
 FC_REFLECT( hive::plugins::rc::list_object_args_type,
@@ -152,11 +179,22 @@ FC_REFLECT( hive::plugins::rc::rc_account_api_object,
   (received_delegated_rc)
   )
 
+FC_REFLECT( hive::plugins::rc::rc_direct_delegation_api_object,
+  (from)
+  (to)
+  (delegated_rc)
+  )
+
 FC_REFLECT( hive::plugins::rc::find_rc_accounts_args,
   (accounts)
   )
 
 FC_REFLECT( hive::plugins::rc::find_rc_accounts_return,
   (rc_accounts)
+  )
+
+
+FC_REFLECT( hive::plugins::rc::list_rc_direct_delegations_return,
+  (rc_direct_delegations)
   )
 

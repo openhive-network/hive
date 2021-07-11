@@ -27,6 +27,7 @@ class rc_api_impl
       (get_resource_pool)
       (find_rc_accounts)
       (list_rc_accounts)
+      (list_rc_direct_delegations)
     )
 
     chain::database& _db;
@@ -134,6 +135,79 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
   return result;
 }
 
+
+DEFINE_API_IMPL( rc_api_impl, list_rc_direct_delegations )
+{
+  FC_ASSERT( args.limit <= RC_API_SINGLE_QUERY_LIMIT );
+  list_rc_direct_delegations_return result;
+  result.rc_direct_delegations.reserve( args.limit );
+
+  switch( args.order )
+  {
+    case( sort_order_type::by_from ):
+    {
+      auto key = args.start.as< vector< fc::variant > >();
+      FC_ASSERT( key.size() == 1, "by_from start requires 1 value. (from)" );
+
+      auto& idx  = _db.get_index< rc_direct_delegation_object_index, by_from >();
+      auto itr = idx.lower_bound( key[0].as< account_name_type >());
+      auto filter = &filter_default< rc_direct_delegation_object >;
+      auto end = idx.end();
+
+      while( result.rc_direct_delegations.size() < args.limit && itr != end )
+      {
+        if( filter( *itr ) )
+          result.rc_direct_delegations.emplace_back( *itr );
+        ++itr;
+      }
+
+      break;
+    }
+    case( sort_order_type::by_to ):
+    {
+      auto key = args.start.as< vector< fc::variant > >();
+      FC_ASSERT( key.size() == 1, "by_from start requires 1 value. (to)" );
+
+      auto& idx  = _db.get_index< rc_direct_delegation_object_index, by_to >();
+      auto itr = idx.lower_bound( key[0].as< account_name_type >());
+      auto filter = &filter_default< rc_direct_delegation_object >;
+      auto end = idx.end();
+
+      while( result.rc_direct_delegations.size() < args.limit && itr != end )
+      {
+        if( filter( *itr ) )
+          result.rc_direct_delegations.emplace_back( *itr );
+        ++itr;
+      }
+
+      break;
+    }
+    case( sort_order_type::by_from_to ):
+    {
+      auto key = args.start.as< vector< fc::variant > >();
+      FC_ASSERT( key.size() == 2, "by_from start requires 2 value. (from, to)" );
+
+      auto& idx  = _db.get_index< rc_direct_delegation_object_index, by_from_to >();
+      auto itr = idx.lower_bound( boost::make_tuple( key[0].as< account_name_type >(), key[1].as< account_name_type >()));
+      auto filter = &filter_default< rc_direct_delegation_object >;
+      auto end = idx.end();
+
+      while( result.rc_direct_delegations.size() < args.limit && itr != end )
+      {
+        if( filter( *itr ) )
+          result.rc_direct_delegations.emplace_back( *itr );
+        ++itr;
+      }
+
+      break;
+    }
+    default:
+      FC_ASSERT( false, "Unknown or unsupported sort order" );
+  }
+
+  return result;
+}
+
 } // detail
 
 rc_api::rc_api(): my( new detail::rc_api_impl() )
@@ -148,6 +222,7 @@ DEFINE_READ_APIS( rc_api,
   (get_resource_pool)
   (find_rc_accounts)
   (list_rc_accounts)
+  (list_rc_direct_delegations)
   )
 
 } } } // hive::plugins::rc

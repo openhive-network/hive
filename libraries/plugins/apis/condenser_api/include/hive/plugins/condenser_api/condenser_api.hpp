@@ -963,6 +963,7 @@ DEFINE_API_ARGS( list_proposal_votes,                    vector< variant >,   ve
 DEFINE_API_ARGS( find_recurrent_transfers,               vector< variant >,   vector< database_api::api_recurrent_transfer_object > )
 DEFINE_API_ARGS( find_rc_accounts,                       vector< variant >,   vector< rc::rc_account_api_object > )
 DEFINE_API_ARGS( list_rc_accounts,                       vector< variant >,   vector< rc::rc_account_api_object > )
+DEFINE_API_ARGS( list_rc_direct_delegations,             vector< variant >,   vector< rc::rc_direct_delegation_api_object > )
 
 #undef DEFINE_API_ARGS
 
@@ -1065,6 +1066,7 @@ public:
     (find_recurrent_transfers)
     (find_rc_accounts)
     (list_rc_accounts)
+    (list_rc_direct_delegations)
   )
 
   private:
