@@ -1,6 +1,5 @@
-SET ( cli_wallet_tests_args --hive-path ${hived_path} --hive-working-dir ${CMAKE_BINARY_DIR}/tests/hive-node-data --path-to-cli ${cli_wallet_path} --creator initminer --wif ${initminer_key} --junit-output=cli_wallet_tests.xml)
 IF ( BUILD_HIVE_TESTNET )
-    ADD_PYTHON_FUNCTIONAL_TEST( run ${cli_wallet_tests_args} )
+  ADD_PYTEST_TEST_GROUP( )
 ELSE ( BUILD_HIVE_TESTNET )
     MESSAGE ( STATUS "cli_wallet functional tests skipped: BUILD_HIVE_TESTNET is required" )
 ENDIF ( BUILD_HIVE_TESTNET )
