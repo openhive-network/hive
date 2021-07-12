@@ -200,7 +200,7 @@ class Node:
 
     def wait_number_of_blocks(self, blocks_to_wait, *, timeout=math.inf):
         assert blocks_to_wait > 0
-        self.wait_for_block_with_number(self.__get_last_block_number() + blocks_to_wait, timeout=timeout)
+        self.wait_for_block_with_number(self.get_last_block_number() + blocks_to_wait, timeout=timeout)
 
     def wait_for_block_with_number(self, number, *, timeout=math.inf):
         from test_tools.private.wait_for import wait_for
@@ -212,10 +212,10 @@ class Node:
         )
 
     def __is_block_with_number_reached(self, number):
-        last = self.__get_last_block_number()
+        last = self.get_last_block_number()
         return last >= number
 
-    def __get_last_block_number(self):
+    def get_last_block_number(self):
         response = self.api.database.get_dynamic_global_properties()
         return response['result']['head_block_number']
 
