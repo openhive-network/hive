@@ -28,6 +28,17 @@ def test_replay_from_other_node_block_log(world):
     assert_that_transaction_for_test_has_effect(replaying_node)
 
 
+def test_replay_until_specified_block(world):
+    init_node = world.create_init_node()
+    init_node.run()
+    generate_blocks(init_node, 100)
+    init_node.close()
+
+    replaying_node = world.create_api_node()
+    replaying_node.run(replay_from=init_node.get_block_log(), stop_at_block=50, wait_for_live=False)
+    assert replaying_node.get_last_block_number() == 50
+
+
 def make_transaction_for_test(node):
     wallet = node.attach_wallet()
     wallet.api.create_account('initminer', 'alice', '{}')

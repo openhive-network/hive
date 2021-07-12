@@ -302,6 +302,7 @@ class Node:
             self,
             *,
             replay_from=None,
+            stop_at_block=None,
             wait_for_live=True,
             timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
             use_existing_config=False,
@@ -343,7 +344,7 @@ class Node:
 
         additional_arguments = []
         if replay_from is not None:
-            self.__handle_replay(replay_from, additional_arguments)
+            self.__handle_replay(replay_from, stop_at_block, additional_arguments)
 
         self.__process.run(blocking=False, with_arguments=additional_arguments)
 
@@ -362,8 +363,10 @@ class Node:
 
         self.__log_run_summary()
 
-    def __handle_replay(self, replay_source: BlockLog, additional_arguments: list):
+    def __handle_replay(self, replay_source: BlockLog, stop_at_block: int, additional_arguments: list):
         additional_arguments.append('--force-replay')
+        if stop_at_block is not None:
+            additional_arguments.append(f'--stop-replay-at-block={stop_at_block}')
 
         blocklog_directory = self.directory.joinpath('blockchain')
         blocklog_directory.mkdir()
