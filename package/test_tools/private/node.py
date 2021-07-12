@@ -300,6 +300,7 @@ class Node:
 
     def run(
             self,
+            replay_from=None,
             wait_for_live=True,
             timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
             use_existing_config=False,
@@ -339,7 +340,11 @@ class Node:
         self.__process.workaround_stderr_parsing_problem()
         # ------------------------- End of workaround -------------------------
 
-        self.__process.run(blocking=False)
+        additional_arguments = []
+        if replay_from is not None:
+            self.__handle_replay(replay_from, additional_arguments)
+
+        self.__process.run(blocking=False, with_arguments=additional_arguments)
 
         if use_existing_config:
             # Wait for config generation
@@ -355,6 +360,13 @@ class Node:
             self._wait_for_live(timeout)
 
         self.__log_run_summary()
+
+    def __handle_replay(self, replay_source: BlockLog, additional_arguments: list):
+        additional_arguments.append('--force-replay')
+
+        blocklog_directory = self.directory.joinpath('blockchain')
+        blocklog_directory.mkdir()
+        replay_source.copy_to(blocklog_directory)
 
     def __log_run_summary(self):
         message = f'Run with pid {self.__process.get_id()}, '
