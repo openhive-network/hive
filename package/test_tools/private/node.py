@@ -9,6 +9,7 @@ import time
 from test_tools import Account, logger, paths_to_executables
 from test_tools.exceptions import CommunicationError, NodeIsNotRunning
 from test_tools.node_api.node_apis import Apis
+from test_tools.private.block_log import BlockLog
 from test_tools.private.snapshot import Snapshot
 from test_tools.wallet import Wallet
 
@@ -168,6 +169,9 @@ class Node:
         port = endpoint.split(':')[1]
 
         self.config.p2p_seed_node.append(f'127.0.0.1:{port}')
+
+    def get_block_log(self):
+        return BlockLog(self, self.directory.joinpath('blockchain/block_log'))
 
     def __is_p2p_plugin_started(self):
         return self.__any_line_in_stderr(lambda line: 'P2P Plugin started' in line)
