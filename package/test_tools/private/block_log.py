@@ -10,5 +10,8 @@ class BlockLog:
     def __repr__(self):
         return f'<BlockLog: path={self.__path}>'
 
+    def get_path(self):
+        return self.__path
+
     def copy_to(self, destination):
         shutil.copy(self.__path, destination)
