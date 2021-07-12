@@ -39,6 +39,19 @@ def test_replay_until_specified_block(world):
     assert replaying_node.get_last_block_number() == 50
 
 
+def test_replay_from_external_block_log(world):
+    init_node = world.create_init_node()
+    init_node.run()
+    generate_blocks(init_node, 100)
+    init_node.close()
+
+    external_block_log_path = init_node.get_block_log().get_path()
+
+    replaying_node = world.create_api_node()
+    replaying_node.run(replay_from=external_block_log_path, stop_at_block=50, wait_for_live=False)
+    assert replaying_node.get_last_block_number() == 50
+
+
 def make_transaction_for_test(node):
     wallet = node.attach_wallet()
     wallet.api.create_account('initminer', 'alice', '{}')

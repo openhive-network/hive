@@ -364,6 +364,9 @@ class Node:
         self.__log_run_summary()
 
     def __handle_replay(self, replay_source: BlockLog, stop_at_block: int, additional_arguments: list):
+        if not isinstance(replay_source, BlockLog):
+            replay_source = BlockLog(None, replay_source)
+
         additional_arguments.append('--force-replay')
         if stop_at_block is not None:
             additional_arguments.append(f'--stop-replay-at-block={stop_at_block}')
