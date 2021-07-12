@@ -300,6 +300,7 @@ class Node:
 
     def run(
             self,
+            *,
             replay_from=None,
             wait_for_live=True,
             timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
