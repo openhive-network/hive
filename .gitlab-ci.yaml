@@ -148,23 +148,14 @@ list_proposals_tests:
 
 cli_wallet_tests:
   stage: test
+  extends: .test_tools_based
   needs:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
-  variables:
-    PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
-    - *beem_setup
     - cd tests/functional/python_tests/cli_wallet
-    - "python3 run.py --hive-path $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --hive-working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --path-to-cli $CI_PROJECT_DIR/testnet_node_build/install-root/bin --creator initminer --wif 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --junit-output=cli_wallet_tests.xml"
-  artifacts:
-    paths:
-    - tests/functional/python_tests/cli_wallet/tests/logs/cli_wallet.log
-    reports:
-      junit: tests/functional/python_tests/cli_wallet/cli_wallet_tests.xml
-    when: always
-    expire_in: 6 months
+    - pytest
   tags:
     - public-runner-docker
 
@@ -193,7 +184,7 @@ hived_options_tests:
   before_script:
     - apt-get update -y && apt-get install -y python3 python3-pip python3-dev
     - export NUMBER_OF_PROCESSES=$(nproc)
-    - pip3 install requests
+    - pip3 install requests pytest pytest-xdist
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     paths:
@@ -210,12 +201,13 @@ cli_wallet_extended_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
-    - pip3 install pytest pytest-xdist
     - cd tests/functional/python_tests/cli_wallet_extended_tests
     - pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
   artifacts:
     reports:
       junit: tests/functional/python_tests/cli_wallet_extended_tests/report.xml
+    - cd tests/functional/python_tests/create_account_tests
+    - pytest
   tags:
     - public-runner-docker
 
@@ -227,7 +219,6 @@ fork_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
-    - pip3 install pytest
     - cd tests/functional/python_tests/fork_tests
     - pytest --junitxml="./report.xml"
   artifacts:
@@ -244,7 +235,6 @@ synchronization_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
-    - pip3 install pytest
     - cd tests/functional/python_tests/synchronization_tests
     - pytest --junitxml="./report.xml"
   artifacts:
@@ -261,7 +251,6 @@ test_tools_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
-    - pip3 install pytest pytest-xdist
     - cd tests/test_tools/tests
     - pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
   artifacts:
