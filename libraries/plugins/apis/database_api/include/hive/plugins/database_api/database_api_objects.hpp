@@ -340,12 +340,12 @@ struct api_commment_cashout_info
   asset          curator_payout_value;
   asset          max_accepted_payout;
 
-  share_type     author_rewards = 0;
   share_type     children_abs_rshares = 0;
   share_type     net_rshares = 0;
   share_type     abs_rshares = 0;
   share_type     vote_rshares = 0;
 
+  uint32_t       total_votes = 0;
   int32_t        net_votes = 0;
 
   time_point_sec active;
@@ -373,7 +373,7 @@ struct api_comment_object
       reward_weight           = cc->reward_weight;
       total_payout_value      = cc->total_payout_value;
       curator_payout_value    = cc->curator_payout_value;
-      author_rewards          = cc->author_rewards;
+      total_votes             = cc->total_votes;
       net_votes               = cc->net_votes;
       active                  = cc->active;
       last_payout             = cc->last_payout;
@@ -434,8 +434,7 @@ struct api_comment_object
   asset             total_payout_value;
   asset             curator_payout_value;
 
-  share_type        author_rewards;
-
+  uint32_t          total_votes = 0;
   int32_t           net_votes = 0;
 
   account_name_type root_author;
@@ -1063,12 +1062,12 @@ FC_REFLECT(hive::plugins::database_api::api_commment_cashout_info,
   (curator_payout_value)
   (max_accepted_payout)
 
-  (author_rewards)
   (children_abs_rshares)
   (net_rshares)
   (abs_rshares)
   (vote_rshares)
 
+  (total_votes)
   (net_votes)
 
   (active)
@@ -1155,7 +1154,7 @@ FC_REFLECT( hive::plugins::database_api::api_comment_object,
           (depth)(children)
           (net_rshares)(abs_rshares)(vote_rshares)
           (children_abs_rshares)(cashout_time)(max_cashout_time)
-          (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(author_rewards)(net_votes)
+          (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(total_votes)(net_votes)
           (root_author)(root_permlink)
           (max_accepted_payout)(percent_hbd)(allow_replies)(allow_votes)(allow_curation_rewards)
           (beneficiaries)
