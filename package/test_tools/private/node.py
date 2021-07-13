@@ -301,6 +301,7 @@ class Node:
     def run(
             self,
             *,
+            load_snapshot_from=None,
             replay_from=None,
             stop_at_block=None,
             wait_for_live=True,
@@ -343,6 +344,9 @@ class Node:
         # ------------------------- End of workaround -------------------------
 
         additional_arguments = []
+        if load_snapshot_from is not None:
+            self.__handle_loading_snapshot(load_snapshot_from, additional_arguments)
+
         if replay_from is not None:
             self.__handle_replay(replay_from, stop_at_block, additional_arguments)
 
@@ -362,6 +366,10 @@ class Node:
             self._wait_for_live(timeout)
 
         self.__log_run_summary()
+
+    def __handle_loading_snapshot(self, load_snapshot_from: Snapshot, additional_arguments: list):
+        additional_arguments.extend(['--load-snapshot=.', '--plugin=state_snapshot'])
+        load_snapshot_from.copy_to(self.directory)
 
     def __handle_replay(self, replay_source: BlockLog, stop_at_block: int, additional_arguments: list):
         if not isinstance(replay_source, BlockLog):

@@ -15,6 +15,33 @@ def test_startup_timeout(world):
         node.run(timeout=2)
 
 
+def test_loading_own_snapshot(world):
+    init_node = world.create_init_node()
+    init_node.run()
+
+    make_transaction_for_test(init_node)
+    generate_blocks(init_node, 100)  # To make sure, that block with test operation will be stored in block log
+    snapshot = init_node.dump_snapshot(close=True)
+
+    # Node is not waiting for live here, because of blocks generation behavior.
+    # After N blocks generation, node will stop blocks production for N * 3s.
+    init_node.run(load_snapshot_from=snapshot, wait_for_live=False)
+    assert_that_transaction_for_test_has_effect(init_node)
+
+
+def test_loading_snapshot_from_other_node(world):
+    init_node = world.create_init_node()
+    init_node.run()
+
+    make_transaction_for_test(init_node)
+    generate_blocks(init_node, 100)  # To make sure, that block with test operation will be stored in block log
+    snapshot = init_node.dump_snapshot()
+
+    loading_node = world.create_api_node()
+    loading_node.run(load_snapshot_from=snapshot, wait_for_live=False)
+    assert_that_transaction_for_test_has_effect(loading_node)
+
+
 def test_replay_from_other_node_block_log(world):
     init_node = world.create_init_node()
     init_node.run()

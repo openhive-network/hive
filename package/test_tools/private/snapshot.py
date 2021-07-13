@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import shutil
 
 
 class Snapshot:
@@ -13,6 +14,20 @@ class Snapshot:
         if node is not None:
             with open(node.directory / 'state_snapshot_dump.json') as state_file:
                 self.state = json.load(state_file)
+
+    def copy_to(self, node_directory: Path):
+        blocklog_directory = node_directory / 'blockchain'
+        blocklog_directory.mkdir(exist_ok=True)
+
+        if self.__block_log_path.parent != blocklog_directory:
+            shutil.copy(self.__block_log_path, blocklog_directory)
+
+        if self.__block_log_index_path.parent != blocklog_directory:
+            shutil.copy(self.__block_log_index_path, blocklog_directory)
+
+        destination_snapshot_path = node_directory / 'snapshot'
+        if self.__snapshot_path != destination_snapshot_path:
+            shutil.copytree(self.__snapshot_path, destination_snapshot_path)
 
     def __repr__(self):
         return f'Snapshot from {self.__creator}'
