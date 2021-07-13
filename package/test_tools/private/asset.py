@@ -1,3 +1,6 @@
+from copy import deepcopy
+
+
 class AssetBase:
     def __init__(self, amount, *, token=None, precision: int, nai: str):
         self.amount = amount * (10 ** precision)
@@ -12,9 +15,40 @@ class AssetBase:
             'nai': self.nai,
         }
 
+    def __add__(self, other):
+        self.__assert_same_operands_type(other, 'Can\'t add assets with different tokens or nai')
+        result = deepcopy(self)
+        result.amount += other.amount
+        return result
+
+    def __neg__(self):
+        result = deepcopy(self)
+        result.amount = -self.amount
+        return result
+
+    def __sub__(self, other):
+        self.__assert_same_operands_type(other, 'Can\'t subtract assets with different tokens or nai')
+        return self + -other
+
+    def __iadd__(self, other):
+        self.__assert_same_operands_type(other, 'Can\'t add assets with different tokens or nai')
+        self.amount += other.amount
+        return self
+
+    def __isub__(self, other):
+        self.__assert_same_operands_type(other, 'Can\'t subtract assets with different tokens or nai')
+        self.amount -= other.amount
+        return self
+
+    def __assert_same_operands_type(self, other, error):
+        if type(self) != type(other):
+            raise RuntimeError(error)
+
     def __eq__(self, other):
         if isinstance(other, str):
             return str(self) == other
+        elif type(self) == type(other):
+            return self.amount == other.amount
 
         raise TypeError(f'Assets can\'t be compared with objects of type {type(other)}')
 
