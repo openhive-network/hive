@@ -121,12 +121,14 @@ def test_update_proposal(wallet : Wallet, funded_account : funded_account_info):
     return extensions[0] == 1 and extensions[1]['end_date'] == end_date
 
   author = funded_account.account
+  current_daily_pay = Asset.Tbd(10)
 
   # creates proposal
   prepared_proposal = prepare_proposal(input=funded_account, author_is_creator=False)
   wallet.api.post_comment( **prepared_proposal.post_comment_arguments )
 
-  prepared_proposal.create_proposal_arguments['daily_pay'] = Asset.Tbd(10)
+
+  prepared_proposal.create_proposal_arguments['daily_pay'] = current_daily_pay
   wallet.api.create_proposal( **prepared_proposal.create_proposal_arguments)
 
   # get proposal id
@@ -135,11 +137,11 @@ def test_update_proposal(wallet : Wallet, funded_account : funded_account_info):
   proposal_id = proposals[0]['id']
 
   # updating proposal
-  creation_args : dict = prepared_proposal.create_proposal_arguments
+  current_daily_pay -= Asset.Tbd(1)
   update_args = {
     "proposal_id": proposal_id,
     "creator": author.name,
-    "daily_pay": Asset.add( creation_args["daily_pay"], Asset.Tbd(-1) ),
+    "daily_pay": str(current_daily_pay),
     "subject": "updated subject",
     "permlink": prepared_proposal.permlink,
     "end_date": format_datetime(prepared_proposal.end_date - timedelta(days=2))
@@ -149,7 +151,7 @@ def test_update_proposal(wallet : Wallet, funded_account : funded_account_info):
 
   proposal = wallet.api.find_proposals([proposal_id])['result'][0]
 
-  assert(proposal['daily_pay'] == Asset.Tbd(9))
+  assert(proposal['daily_pay'] == current_daily_pay)
   assert(proposal['subject'] == update_args['subject'])
   assert(proposal['permlink'] == prepared_proposal.permlink)
   assert(proposal['end_date'] == update_args['end_date'])
@@ -158,14 +160,16 @@ def test_update_proposal(wallet : Wallet, funded_account : funded_account_info):
   from copy import deepcopy
   last_date = deepcopy(update_args['end_date'])
   
-  update_args['daily_pay'] = Asset.add( update_args['daily_pay'], Asset.Tbd(-1) )
+  current_daily_pay -= Asset.Tbd(1)
+  logger.info(current_daily_pay)
+  update_args['daily_pay'] = str(current_daily_pay)
   update_args['subject'] = "updated subject again"
   update_args['end_date'] = None
 
   wallet.api.update_proposal(**update_args)
   proposal = wallet.api.find_proposals([proposal_id])['result'][0]
 
-  assert(proposal['daily_pay'] == Asset.Tbd(8))
+  assert(proposal['daily_pay'] == current_daily_pay)
   assert(proposal['subject'] == update_args['subject'])
   assert(proposal['permlink'] == prepared_proposal.permlink)
   assert(proposal['end_date'] == last_date)
