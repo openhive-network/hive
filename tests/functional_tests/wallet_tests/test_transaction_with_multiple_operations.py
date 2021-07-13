@@ -1,5 +1,7 @@
 import pytest
 
+from test_tools import Asset
+
 
 def test_sending_transaction_with_multiple_operations(world):
     node = world.create_init_node()
@@ -8,9 +10,9 @@ def test_sending_transaction_with_multiple_operations(world):
     wallet = node.attach_wallet()
 
     accounts_and_balances = {
-        'first': '100.000 TESTS',
-        'second': '200.000 TESTS',
-        'third': '300.000 TESTS',
+        'first': Asset.Test(100),
+        'second': Asset.Test(200),
+        'third': Asset.Test(300),
     }
 
     with wallet.in_single_transaction():
@@ -62,6 +64,6 @@ def test_getting_response(world):
 
     with wallet.in_single_transaction() as transaction:
         wallet.api.create_account('initminer', 'alice', '{}')
-        wallet.api.transfer('initminer', 'alice', '100.000 TESTS', 'memo')
+        wallet.api.transfer('initminer', 'alice', Asset.Test(100), 'memo')
 
     assert transaction.get_response() is not None
