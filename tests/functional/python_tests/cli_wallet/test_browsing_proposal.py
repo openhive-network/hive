@@ -3,12 +3,8 @@
 from test_tools import *
 from test_tools.wallet import Wallet
 from .shared_utilites import *
+from .shared_utilites import prepared_proposal_data_with_id as proposal_data_t
 from .conftest import create_funded_account
-
-# aliasing so pytest won't execute theese tests
-from .proposal_test import test_create_proposal as create_proposal
-from .proposal_test import test_update_proposal_votes as create_proposal_with_votes
-
 from datetime import datetime as dt
 
 active_values = ["all", "inactive", "active", "expired", "votable"]
@@ -16,11 +12,8 @@ proposals_order_by_values = ["by_creator", "by_start_date", "by_end_date", "by_t
 votes_order_by_values = ["by_voter_proposal"]
 order_type_values = ["ascending", "descending"]
 
-def test_list_proposals(wallet: Wallet, funded_account : funded_account_info):
+def test_list_proposals(wallet: Wallet, creator_proposal_id : proposal_data_t, creator : Account):
   start_point_before_test = format_datetime(dt.now())
-
-  # create at least one proposal, so results aren't empty
-  create_proposal(wallet=wallet, funded_account=funded_account, creator=funded_account.creator)
 
   name_order_by = [proposals_order_by_values[0]]
   date_order_by = [proposals_order_by_values[1], proposals_order_by_values[2]]
@@ -31,7 +24,7 @@ def test_list_proposals(wallet: Wallet, funded_account : funded_account_info):
       for order_by in proposals_order_by_values:
         if order_by in date_order_by: start = [start_point_before_test]
         elif order_by in value_order_by: start = [0]
-        else: start = [funded_account.creator.name]
+        else: start = [creator.name]
 
         wallet.api.list_proposals(
           **get_list_proposal_args(
@@ -43,8 +36,8 @@ def test_list_proposals(wallet: Wallet, funded_account : funded_account_info):
         )
 
 
-def test_list_voter_proposal(wallet : Wallet, funded_account : funded_account_info, creator : Account):
-  create_proposal_with_votes(wallet=wallet, funded_account=funded_account, creator=creator)
+def test_list_voter_proposal(wallet : Wallet, creator_proposal_id : proposal_data_t, creator : Account):
+  wallet.api.update_proposal_votes(voter=creator.name, proposals=[creator_proposal_id.id], approve=True)
 
   for active in active_values:
     for order_by in votes_order_by_values:
