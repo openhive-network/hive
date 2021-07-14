@@ -304,7 +304,8 @@ class Node:
             load_snapshot_from=None,
             replay_from=None,
             stop_at_block=None,
-            wait_for_live=True,
+            exit_before_synchronization=False,
+            wait_for_live=None,
             timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
             use_existing_config=False,
     ):
@@ -350,7 +351,16 @@ class Node:
         if replay_from is not None:
             self.__handle_replay(replay_from, stop_at_block, additional_arguments)
 
-        self.__process.run(blocking=False, with_arguments=additional_arguments)
+        if exit_before_synchronization:
+            if wait_for_live is not None:
+                raise RuntimeError('wait_for_live can\'t be used with exit_before_synchronization')
+
+            wait_for_live = False
+            additional_arguments.append('--exit-before-sync')
+        elif wait_for_live is None:
+            wait_for_live = True
+
+        self.__process.run(blocking=exit_before_synchronization, with_arguments=additional_arguments)
 
         if use_existing_config:
             # Wait for config generation
@@ -365,7 +375,8 @@ class Node:
         if wait_for_live:
             self._wait_for_live(timeout)
 
-        self.__log_run_summary()
+        if self.is_running():
+            self.__log_run_summary()
 
     def __handle_loading_snapshot(self, load_snapshot_from: Snapshot, additional_arguments: list):
         additional_arguments.extend(['--load-snapshot=.', '--plugin=state_snapshot'])

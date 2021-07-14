@@ -79,6 +79,12 @@ def test_replay_from_external_block_log(world):
     assert replaying_node.get_last_block_number() == 50
 
 
+def test_exit_before_synchronization(world):
+    init_node = world.create_init_node()
+    init_node.run(exit_before_synchronization=True)
+    assert not init_node.is_running()
+
+
 def make_transaction_for_test(node):
     wallet = node.attach_wallet()
     wallet.api.create_account('initminer', 'alice', '{}')
