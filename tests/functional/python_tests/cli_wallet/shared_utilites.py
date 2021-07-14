@@ -40,6 +40,16 @@ class prepared_proposal_data:
         self.start_date : datetime = None
         self.end_date : datetime = None
 
+class prepared_proposal_data_with_id(prepared_proposal_data):
+  def __init__(self, base : prepared_proposal_data, id : int = None):
+      super().__init__()
+      self.id : int = id
+      self.permlink = base.permlink
+      self.create_proposal_arguments = base.create_proposal_arguments
+      self.post_comment_arguments = base.post_comment_arguments
+      self.start_date = base.start_date
+      self.end_date = base.end_date
+
 def argument_as_list( item ) -> list:
     return item if isinstance(item, list) else [item]
 
@@ -69,10 +79,10 @@ def get_list_proposal_votes_args(start: list, **kwargs):
 def prepare_proposal(input: funded_account_info, prefix: str = "test-", author_is_creator : bool = True) -> prepared_proposal_data:
     from hashlib import md5
 
-    hash_input = f'{randint(0, 9999)}{prefix}{input.account.private_key}{input.account.public_key}'
+    creator : Account = input.creator if author_is_creator else input.account
+    hash_input = f'{randint(0, 9999)}{prefix}{creator.private_key}{creator.public_key}{creator.name}'
     PERMLINK = md5(hash_input.encode('utf-8')).hexdigest()
     result = prepared_proposal_data()
-    creator : Account = input.creator if author_is_creator else input.account
 
     result.post_comment_arguments = {
         "author": creator.name,

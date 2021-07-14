@@ -5,6 +5,7 @@ from test_tools.communication import CommunicationError
 from test_tools.wallet import Wallet
 from test_tools.private.node import Node
 from .shared_utilites import *
+from .shared_utilites import prepared_proposal_data_with_id as proposal_data_t
 
 def list_proposals_by_creator(wallet : Wallet, creator_name : str) -> list:
   all_proposals = wallet.api.list_proposals(**get_list_proposal_args(creator_name))
@@ -14,63 +15,25 @@ def list_proposal_votes_by_voter(wallet : Wallet, voter_name : str):
   all_proposal_votes = wallet.api.list_proposal_votes(**get_list_proposal_votes_args(start=[voter_name]))
   return find_proposals_by_voter_name( voter_name, all_proposal_votes )
 
-def test_create_proposal(wallet : Wallet, funded_account : funded_account_info, creator : Account):
-  # check is input state empty
-  creator_proposals_before_count = len(list_proposals_by_creator(wallet, creator.name))
-  assert creator_proposals_before_count == 0
-
-  # creates proposal
-  prepared_proposal = prepare_proposal(funded_account)
-  wallet.api.post_comment( **prepared_proposal.post_comment_arguments )
-  wallet.api.create_proposal( **prepared_proposal.create_proposal_arguments )
-
-  # final checks
+def test_create_proposal(wallet : Wallet, creator : Account, creator_proposal_id):
   creator_proposals_after_count = len(list_proposals_by_creator(wallet, creator.name))
-  assert creator_proposals_before_count + 1 == creator_proposals_after_count
+  assert creator_proposals_after_count == 1
 
-def test_remove_proposal(node : Node, wallet : Wallet, funded_account : funded_account_info, creator : Account):
-  # re-running previous test to get same enviroment
-  test_create_proposal(wallet, funded_account, creator)
+def test_remove_proposal(wallet : Wallet, funded_account : funded_account_info, creator_proposal_id : proposal_data_t, account_proposal_id : proposal_data_t):
+  wallet.api.remove_proposal(deleter=funded_account.creator.name, ids=[creator_proposal_id.id])
 
-  # gathering id
-  proposals_before = list_proposals_by_creator(wallet, creator.name)
-  assert len(proposals_before) > 0
-  first_proposal_id = proposals_before[0]['id']
+  proposals_after_creator = list_proposals_by_creator(wallet, creator_name=funded_account.creator.name)
+  proposals_after_account = list_proposals_by_creator(wallet, creator_name=funded_account.account.name)
+  assert len(proposals_after_creator) == 0
+  assert len(proposals_after_account) == 1
+  assert len([x for x in proposals_after_creator if x['id'] == creator_proposal_id.id]) == 0, "removed invalid proposal"
+  assert len([x for x in proposals_after_account if x['id'] == creator_proposal_id.id]) == 0, "removed invalid proposal"
 
-  # adding one more proposal to check is proper one being deleted
-  prepared_proposal = prepare_proposal(funded_account, prefix='dummy-', author_is_creator=False)
-  wallet.api.post_comment( **prepared_proposal.post_comment_arguments )
-  wallet.api.create_proposal( **prepared_proposal.create_proposal_arguments )
-
-  # removing proposal from previous test
-  wallet.api.remove_proposal(deleter=creator.name, ids=[first_proposal_id])
-
-  # final checks
-  proposals_after = list_proposals_by_creator(wallet, creator.name)
-  assert len(proposals_after) + 1 == len(proposals_before)
-  assert len([x for x in proposals_after if x['id'] == first_proposal_id]) == 0, "removed invalid proposal"
-
-def test_update_proposal_votes(wallet : Wallet, funded_account : funded_account_info, creator : Account):
-  # check is input state empty
+def test_update_proposal_votes(wallet : Wallet, creator_proposal_id : proposal_data_t, creator : Account):
   voter_proposals_before_count = len(list_proposal_votes_by_voter(wallet, creator.name))
-  assert voter_proposals_before_count == 0
 
-  # re-running first test to get same enviroment
-  test_create_proposal(wallet, funded_account, creator)
+  wallet.api.update_proposal_votes(voter=creator.name, proposals=[creator_proposal_id.id], approve=True)
 
-  # gathering id from re-runned test
-  proposals_before = list_proposals_by_creator(wallet, creator.name)
-  assert len(proposals_before) > 0
-  first_proposal_id = proposals_before[0]['id']
-
-  # checking is created proposal is not already voted
-  voter_proposals_inter_count = len(list_proposal_votes_by_voter(wallet, creator.name))
-  assert voter_proposals_before_count == voter_proposals_inter_count
-
-  # performs actual vote
-  wallet.api.update_proposal_votes(voter=creator.name, proposals=[first_proposal_id], approve=True)
-
-  # checks votes
   voter_proposals_after_count = len(list_proposal_votes_by_voter(wallet, creator.name))
   assert voter_proposals_before_count + 1 == voter_proposals_after_count
 
@@ -123,20 +86,16 @@ def test_update_proposal(wallet : Wallet, funded_account : funded_account_info):
   author = funded_account.account
   current_daily_pay = Asset.Tbd(10)
 
-  # creates proposal
   prepared_proposal = prepare_proposal(input=funded_account, author_is_creator=False)
   wallet.api.post_comment( **prepared_proposal.post_comment_arguments )
-
 
   prepared_proposal.create_proposal_arguments['daily_pay'] = current_daily_pay
   wallet.api.create_proposal( **prepared_proposal.create_proposal_arguments)
 
-  # get proposal id
   proposals = list_proposals_by_creator(wallet=wallet, creator_name=author.name)
   assert len(proposals) > 0
   proposal_id = proposals[0]['id']
 
-  # updating proposal
   current_daily_pay -= Asset.Tbd(1)
   update_args = {
     "proposal_id": proposal_id,
@@ -151,10 +110,10 @@ def test_update_proposal(wallet : Wallet, funded_account : funded_account_info):
 
   proposal = wallet.api.find_proposals([proposal_id])['result'][0]
 
-  assert(proposal['daily_pay'] == current_daily_pay)
-  assert(proposal['subject'] == update_args['subject'])
-  assert(proposal['permlink'] == prepared_proposal.permlink)
-  assert(proposal['end_date'] == update_args['end_date'])
+  assert proposal['daily_pay'] == current_daily_pay
+  assert proposal['subject'] == update_args['subject']
+  assert proposal['permlink'] == prepared_proposal.permlink
+  assert proposal['end_date'] == update_args['end_date']
 
   logger.info("testing updating the proposal without the end date")
   from copy import deepcopy
@@ -169,8 +128,8 @@ def test_update_proposal(wallet : Wallet, funded_account : funded_account_info):
   wallet.api.update_proposal(**update_args)
   proposal = wallet.api.find_proposals([proposal_id])['result'][0]
 
-  assert(proposal['daily_pay'] == current_daily_pay)
-  assert(proposal['subject'] == update_args['subject'])
-  assert(proposal['permlink'] == prepared_proposal.permlink)
-  assert(proposal['end_date'] == last_date)
+  assert proposal['daily_pay'] == current_daily_pay
+  assert proposal['subject'] == update_args['subject']
+  assert proposal['permlink'] == prepared_proposal.permlink
+  assert proposal['end_date'] == last_date
 
