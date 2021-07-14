@@ -25,7 +25,7 @@ def test_get_open_orders(wallet : Wallet, funded_account : funded_account_info):
   MIN_TO_RECEIVE_2 = Asset.Test(1000)
 
   result_before = wallet.api.get_open_orders(accountname=user.name)['result']
-  assert(len(result_before) == 0)
+  assert len(result_before) == 0
 
   logger.info( f"testing buy order: {AMOUNT_TO_SELL_1} for {MIN_TO_RECEIVE_1} created by user {user.name}" )
   wallet.api.create_order(
@@ -37,14 +37,14 @@ def test_get_open_orders(wallet : Wallet, funded_account : funded_account_info):
     expiration=9999
   )
   result_sell = wallet.api.get_open_orders(accountname=user.name)['result']
-  assert(len(result_sell) == 1)
-  assert(result_sell[0]['orderid'] == 1)
-  assert(result_sell[0]['seller'] == user.name)
-  assert(result_sell[0]['for_sale'] == AMOUNT_TO_SELL_1.amount)
-  assert(result_sell[0]['real_price'] == '100.00000000000000000')
-  assert(result_sell[0]['sell_price']['base'] == AMOUNT_TO_SELL_1)
-  assert(result_sell[0]['sell_price']['quote'] == MIN_TO_RECEIVE_1)
-  assert(not result_sell[0]['rewarded'])
+  assert len(result_sell) == 1
+  assert result_sell[0]['orderid'] == 1
+  assert result_sell[0]['seller'] == user.name
+  assert result_sell[0]['for_sale'] == AMOUNT_TO_SELL_1.amount
+  assert result_sell[0]['real_price'] == '100.00000000000000000'
+  assert result_sell[0]['sell_price']['base'] == AMOUNT_TO_SELL_1
+  assert result_sell[0]['sell_price']['quote'] == MIN_TO_RECEIVE_1
+  assert not result_sell[0]['rewarded']
 
 
 
@@ -58,14 +58,14 @@ def test_get_open_orders(wallet : Wallet, funded_account : funded_account_info):
     expiration=9999
   )
   result_buy = wallet.api.get_open_orders(accountname=user.name)['result']
-  assert(len(result_buy) == 2)
-  assert(result_buy[1]['orderid'] == 2)
-  assert(result_buy[1]['seller'] == user.name)
-  assert(result_buy[1]['for_sale'] == AMOUNT_TO_SELL_2.amount)
-  assert(result_buy[1]['real_price'] == '0.01000000000000000')
-  assert(result_buy[1]['sell_price']['base'] == AMOUNT_TO_SELL_2)
-  assert(result_buy[1]['sell_price']['quote'] == MIN_TO_RECEIVE_2)
-  assert(not result_buy[1]['rewarded'])
+  assert len(result_buy) == 2
+  assert result_buy[1]['orderid'] == 2
+  assert result_buy[1]['seller'] == user.name
+  assert result_buy[1]['for_sale'] == AMOUNT_TO_SELL_2.amount
+  assert result_buy[1]['real_price'] == '0.01000000000000000'
+  assert result_buy[1]['sell_price']['base'] == AMOUNT_TO_SELL_2
+  assert result_buy[1]['sell_price']['quote'] == MIN_TO_RECEIVE_2
+  assert not result_buy[1]['rewarded']
 
 def test_create_recurent_transfer(wallet : Wallet, funded_account : funded_account_info, creator : Account):
   receiver = funded_account.account
