@@ -586,14 +586,6 @@ class Wallet:
     def __prepare_message(message: dict):
         message['params'] = [str(param) if isinstance(param, AssetBase) else param for param in message['params']]
 
-    def create_account(self, name, creator='initminer'):
-        account = Account(name)
-
-        self.api.create_account_with_keys(creator, account.name)
-        self.api.import_key(account.private_key)
-
-        return account
-
     def in_single_transaction(self, *, broadcast=None):
         return SingleTransactionContext(self, broadcast=broadcast)
 
