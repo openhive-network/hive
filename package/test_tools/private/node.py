@@ -62,6 +62,7 @@ class Node:
             }
 
         def run(self, *, blocking, with_arguments=()):
+            self.__directory.mkdir(exist_ok=True)
             self.__prepare_files_for_streams()
 
             run_subprocess = subprocess.run if blocking else subprocess.Popen
