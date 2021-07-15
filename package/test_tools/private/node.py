@@ -9,6 +9,7 @@ import time
 from test_tools import Account, logger, paths_to_executables
 from test_tools.exceptions import CommunicationError, NodeIsNotRunning
 from test_tools.node_api.node_apis import Apis
+from test_tools.node_configs.default import create_default_config
 from test_tools.private.block_log import BlockLog
 from test_tools.private.snapshot import Snapshot
 from test_tools.wallet import Wallet
@@ -132,12 +133,14 @@ class Node:
         self.__executable = self.__Executable()
         self.__process = self.__Process(self, self.directory, self.__executable, self.__logger)
 
-        from test_tools.node_configs.default import create_default_config
         self.config = create_default_config()
 
     def __str__(self):
         from test_tools.network import Network
         return f'{self.__creator}::{self.__name}' if isinstance(self.__creator, Network) else self.__name
+
+    def __get_config_file_path(self):
+        return self.directory / 'config.ini'
 
     def is_running(self):
         return self.__process.is_running()
@@ -271,6 +274,16 @@ class Node:
     def set_allowed_nodes(self, nodes):
         return self.api.network_node.set_allowed_peers(allowed_peers=[node.get_id() for node in nodes])
 
+    def dump_config(self):
+        assert not self.is_running()
+
+        if self.config != create_default_config():
+            self.config.write_to_file(self.__get_config_file_path())
+
+        self.__process.run(blocking=True, with_arguments=['--dump-config'])
+
+        self.config.load_from_file(self.__get_config_file_path())
+
     def dump_snapshot(self, *, close=False):
         self.close()
 
@@ -332,10 +345,9 @@ class Node:
             shutil.rmtree(self.directory)
         self.directory.mkdir(parents=True, exist_ok=True)
 
-        config_file_path = self.directory.joinpath('config.ini')
         if not use_existing_config:
             self.__set_unset_endpoints()
-            self.config.write_to_file(config_file_path)
+            self.config.write_to_file(self.__get_config_file_path())
 
         # TODO: Remove below code when statsd support will be implemented.
         #       This is temporary workaround, for stderr parsing solution.
@@ -365,12 +377,12 @@ class Node:
 
         if use_existing_config:
             # Wait for config generation
-            while not config_file_path.exists():
+            while not self.__get_config_file_path().exists():
                 time.sleep(0.01)
 
             from test_tools.node_config import NodeConfig
             self.config = NodeConfig()
-            self.config.load_from_file(config_file_path)
+            self.config.load_from_file(self.__get_config_file_path())
 
         self.__produced_files = True
         if wait_for_live:
