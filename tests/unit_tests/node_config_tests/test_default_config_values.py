@@ -8,8 +8,7 @@ from test_tools.node_configs.default import create_default_config
 @pytest.fixture
 def generated_config(world):
     node = world.create_raw_node()
-    node.run(use_existing_config=True, wait_for_live=False)
-    world.close()
+    node.dump_config()
 
     from shutil import rmtree
     rmtree(node.directory)
