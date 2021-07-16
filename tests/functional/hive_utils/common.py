@@ -355,38 +355,3 @@ def junit_test_case(method):
             junit_test_cases.append(test_case)
     return log_test_case
 
-# calculating md5 checsums for all files
-def get_index_checksums(path : str):
-  from subprocess import run, PIPE
-  import os
-
-  # gather files and paths for md5sum
-  files = run(["find", path, "-type", "f" ], stdout=PIPE).stdout.decode('utf-8').splitlines()
-  temp_files = []
-  for file in files:
-    if file.find('snapshot-manifest') < 0:
-      temp_files.append(file)
-  files = temp_files
-  
-  # calculate md5sum
-  files_with_md5 = dict()
-  for file in files:
-    md5, _, output = run(["md5sum", file ], stdout=PIPE).stdout.decode('utf-8').strip().split(' ')
-    output = os.path.split(os.path.split(output)[0])[1]
-    files_with_md5[output] = md5
-
-  return files_with_md5
-
-# return list of missmatched indexes
-def compare_snapshots(path_to_first_snapshot : str, path_to_second_snapshot : str) -> list:
-  first_ret = get_index_checksums(path_to_first_snapshot)
-  second_ret = get_index_checksums(path_to_second_snapshot)
-
-  keys = first_ret.keys()
-  ret = []
-  for key in keys:
-    first_md5 = first_ret[key]
-    second_md5 = second_ret[key]
-    if first_md5 != second_md5:
-      ret.append(key)
-  return ret
