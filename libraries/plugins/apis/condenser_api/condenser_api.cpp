@@ -328,7 +328,7 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_key_references )
   {
     CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _account_by_key_api, "account_history_api_plugin not enabled." );
+    FC_ASSERT( _account_by_key_api, "account_by_key_api_plugin not enabled." );
 
     return _account_by_key_api->get_key_references( { args[0].as< vector< public_key_type > >() } ).accounts;
   }
