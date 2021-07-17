@@ -32,7 +32,7 @@ The technical development of the Hive blockchain itself is carried out by the fo
 ## Technical Details
 
 * Currency symbol HIVE
-* HBD - Hive's very own stable coin with a one-way peg
+* HBD - Hive's very own stable coin with a two-way peg
 * Delegated Proof-of-Stake Consensus (DPoS)
 * 10% APR inflation narrowing to 1% APR over 20 years
     * 65% of inflation to authors/curators.
