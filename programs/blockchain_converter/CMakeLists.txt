@@ -6,6 +6,8 @@ else()
 
   add_executable( blockchain_converter main.cpp converter.cpp conversion_plugin.cpp block_log_conversion_plugin.cpp node_based_conversion_plugin.cpp )
 
+  FIND_PACKAGE(Boost 1.58 REQUIRED COMPONENTS atomic )
+
   if( HIVE_STATIC_BUILD )
     target_link_libraries( blockchain_converter PRIVATE
                           "-static-libstdc++ -static-libgcc"
