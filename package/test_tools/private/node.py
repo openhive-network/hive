@@ -6,7 +6,7 @@ import signal
 import subprocess
 import time
 
-from test_tools import Account, logger, paths_to_executables
+from test_tools import Account, constants, logger, paths_to_executables
 from test_tools.exceptions import CommunicationError, NodeIsNotRunning
 from test_tools.node_api.node_apis import Apis
 from test_tools.node_configs.default import create_default_config
@@ -132,6 +132,7 @@ class Node:
 
         self.__executable = self.__Executable()
         self.__process = self.__Process(self, self.directory, self.__executable, self.__logger)
+        self.__clean_up_policy = None
 
         self.config = create_default_config()
 
@@ -444,14 +445,31 @@ class Node:
     def close(self):
         self.__process.close()
 
-    def handle_final_cleanup(self):
+    def handle_final_cleanup(self, *, default_policy: constants.NodeCleanUpPolicy):
         self.__process.close()
         self.__process.close_opened_files()
-        self.__remove_unneeded_files()
+        self.__remove_files(default_policy=default_policy)
 
     def restart(self, wait_for_live=True, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
         self.close()
         self.run(wait_for_live=wait_for_live, timeout=timeout)
+
+    def __remove_files(self, *, default_policy: constants.NodeCleanUpPolicy):
+        policy = default_policy if self.__clean_up_policy is None else self.__clean_up_policy
+
+        if policy == constants.NodeCleanUpPolicy.DO_NOT_REMOVE_FILES:
+            pass
+        elif policy == constants.NodeCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES:
+            self.__remove_unneeded_files()
+        elif policy == constants.NodeCleanUpPolicy.REMOVE_EVERYTHING:
+            self.__remove_all_files()
+
+    @staticmethod
+    def __remove(path: Path):
+        try:
+            shutil.rmtree(path) if path.is_dir() else path.unlink()
+        except FileNotFoundError:
+            pass  # It is ok that file to remove was removed earlier or never existed
 
     def __remove_unneeded_files(self):
         unneeded_files_or_directories = [
@@ -459,14 +477,14 @@ class Node:
             'p2p/',
         ]
 
-        def remove(path: Path):
-            try:
-                shutil.rmtree(path) if path.is_dir() else path.unlink()
-            except FileNotFoundError:
-                pass  # It is ok that file to remove was removed earlier or never existed
-
         for unneeded in unneeded_files_or_directories:
-            remove(self.directory.joinpath(unneeded))
+            self.__remove(self.directory.joinpath(unneeded))
+
+    def __remove_all_files(self):
+        self.__remove(self.directory)
 
     def set_executable_file_path(self, executable_file_path):
         self.__executable_file_path = executable_file_path
+
+    def set_clean_up_policy(self, policy: constants.NodeCleanUpPolicy):
+        self.__clean_up_policy = policy

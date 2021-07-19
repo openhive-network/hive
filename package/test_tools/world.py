@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from test_tools import constants
 from test_tools.network import Network
 from test_tools.wallet import Wallet
 from test_tools.private.children_names import ChildrenNames
@@ -44,7 +45,7 @@ class World(NodesCreator):
                 wallet.close()
 
         for node in self._nodes:
-            node.handle_final_cleanup()
+            node.handle_final_cleanup(default_policy=constants.NodeCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
 
         for network in self.__networks:
             network.handle_final_cleanup()

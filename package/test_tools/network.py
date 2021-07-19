@@ -1,7 +1,7 @@
 from pathlib import Path
 from shutil import rmtree
 
-from test_tools import logger
+from test_tools import constants, logger
 from test_tools.port import Port
 from test_tools.wallet import Wallet
 from test_tools.private.children_names import ChildrenNames
@@ -55,7 +55,7 @@ class Network(NodesCreator):
 
     def handle_final_cleanup(self):
         for node in self._nodes:
-            node.handle_final_cleanup()
+            node.handle_final_cleanup(default_policy=constants.NodeCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
 
         for wallet in self.__wallets:
             if wallet.is_running():
