@@ -3,6 +3,10 @@
 #include <iostream>
 #include <array>
 #include <string>
+#include <thread>
+#include <mutex>
+#include <vector>
+#include <functional>
 
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/authority.hpp>
@@ -146,8 +150,31 @@ namespace hive { namespace converter {
   }
 
 
-  blockchain_converter::blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id )
-    : _private_key( _private_key ), chain_id( chain_id ) {}
+  blockchain_converter::blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size )
+    : _private_key( _private_key ), chain_id( chain_id ), signers_exit( false )
+  {
+    FC_ASSERT( signers_size > 0, "There must be at least 1 signer thread!" );
+    for( size_t i = 0; i < signers_size; ++i )
+      signers.emplace( signers.end(), std::bind( [&]( size_t worker_index ) {
+        sig_stack_in_type local_trx;
+        while( !signers_exit.load() )
+          if( shared_signatures_stack_in.pop( local_trx ) )
+          {
+            // std::cout << "Worker: " << worker_index << " just got a new job. Trx index: " << local_trx.first << ". Signing... ";
+            while( ! shared_signatures_stack_out.push( std::make_pair( local_trx.first,
+              get_second_authority_key( authority::owner ).sign_compact( local_trx.second->sig_digest( get_chain_id() ) )
+              ) ) ) continue;
+            // std::cout << "Done.\n";
+          }
+      }, i ) );
+  }
+
+  blockchain_converter::~blockchain_converter()
+  {
+    signers_exit = true;
+    for( size_t i = 0; i < signers.size(); ++i )
+      signers.at( i ).join(); // Wait for all the signer threads to end their work
+  }
 
   void blockchain_converter::post_convert_transaction( hp::signed_transaction& trx )
   {
@@ -175,7 +202,7 @@ namespace hive { namespace converter {
 
     _signed_block.previous = previous_block_id;
 
-    std::unordered_set< hp::transaction_id_type > txid_checker; // Keeps the track of trx ids to change them if duplicated
+    fc::time_point_sec trx_now_time = _signed_block.timestamp; // Apply min expiration time and then increase this value to avoid trx id duplication
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
@@ -183,26 +210,42 @@ namespace hive { namespace converter {
 
       transaction_itr->set_reference_block( previous_block_id );
 
-      sign_transaction( *transaction_itr );
-
       post_convert_transaction( *transaction_itr );
 
-      // Check for duplicated transaction ids
-      while( !txid_checker.emplace( transaction_itr->id() ).second )
+      transaction_itr->expiration = trx_now_time;
+      trx_now_time += 1;
+    }
+
+    size_t trx_applied_count = 0;
+
+    for( size_t i = 0; i < _signed_block.transactions.size(); ++i )
+      if( _signed_block.transactions.at( i ).signatures.size() )
+        shared_signatures_stack_in.push( std::make_pair( i, &_signed_block.transactions.at( i ) ) );
+      else
+        ++trx_applied_count; // We do not have to replace any signature(s) so skip this transaction
+
+    // Sign header (using given witness' private key)
+    convert_signed_header( _signed_block );
+
+    sig_stack_out_type current_sig;
+
+    while( trx_applied_count < _signed_block.transactions.size() ) // Replace the signatures
+    {
+      if( shared_signatures_stack_out.pop( current_sig ) )
       {
-        uint32_t tx_position = transaction_itr - _signed_block.transactions.begin();
-        std::cout << "Duplicate transaction [" << tx_position << "] in block with num: "  << _signed_block.block_num() << " detected."
-                  << "\nOld txid: " << transaction_itr->id().operator std::string();
-        transaction_itr->expiration += tx_position;
-        std::cout << "\nNew txid: " << transaction_itr->id().operator std::string() << '\n';
-        sign_transaction( *transaction_itr ); // re-sign tx after the expiration change
+        if( _signed_block.transactions.at( current_sig.first ).signatures.size() > 1 ) // Remove redundant signatures
+        {
+          auto& sigs = _signed_block.transactions.at( current_sig.first ).signatures;
+          sigs.erase( sigs.begin() + 1, sigs.end() );
+        }
+
+        _signed_block.transactions.at( current_sig.first ).signatures.at( 0 ) = current_sig.second;
+
+        ++trx_applied_count;
       }
     }
 
     _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
-
-    // Sign header (using given witness' private key)
-    convert_signed_header( _signed_block );
 
     return _signed_block.id();
   }
@@ -227,6 +270,7 @@ namespace hive { namespace converter {
     _auth.add_authority( second_authority.at( type ).get_public_key(), 1 );
   }
 
+  // TODO: Make 2nd auth methods thread-safe
   const hp::private_key_type& blockchain_converter::get_second_authority_key( authority::classification type )const
   {
     return second_authority.at( type );

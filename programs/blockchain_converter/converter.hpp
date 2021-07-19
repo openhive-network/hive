@@ -4,6 +4,9 @@
 #include <string>
 #include <queue>
 #include <set>
+#include <thread>
+#include <vector>
+#include <utility>
 
 #include <fc/exception/exception.hpp>
 #include <fc/optional.hpp>
@@ -14,6 +17,7 @@
 #include <hive/protocol/operations.hpp>
 #include <hive/protocol/block.hpp>
 
+#include <boost/lockfree/stack.hpp>
 
 #define HIVE_HARDFORK_0_17_BLOCK_NUM 10629455 // for pow operations
 
@@ -37,9 +41,20 @@ namespace hive { namespace converter {
 
     void post_convert_transaction( hp::signed_transaction& trx );
 
+    std::vector< std::thread > signers; // Transactions signers (defualt number is 1)
+
+    typedef std::pair< size_t, const hp::signed_transaction* > sig_stack_in_type;
+    typedef std::pair< size_t, hp::signature_type >            sig_stack_out_type;
+
+    boost::lockfree::stack< sig_stack_in_type >  shared_signatures_stack_in;  // pair< trx index in block, signed transaction ptr to convert >
+    boost::lockfree::stack< sig_stack_out_type > shared_signatures_stack_out; // pair< trx index in block, converted signature >
+
+    std::atomic_bool signers_exit;
+
   public:
     /// All converted blocks will be signed using given private key
-    blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id = HIVE_CHAIN_ID );
+    blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id = HIVE_CHAIN_ID, size_t signers_size = 1 );
+    ~blockchain_converter();
 
     /// Sets previous id of the block to the given value and re-signs content of the block. Converts transactions. Returns current block id
     hp::block_id_type convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id );
@@ -48,6 +63,7 @@ namespace hive { namespace converter {
 
     void convert_authority( authority& _auth, authority::classification type );
 
+    /// Deprecated
     void sign_transaction( hp::signed_transaction& trx )const;
 
     const hp::private_key_type& get_second_authority_key( authority::classification type )const;
