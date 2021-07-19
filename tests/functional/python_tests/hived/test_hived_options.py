@@ -1,10 +1,17 @@
-from pathlib import Path
 from test_tools import *
+from pathlib import Path
 from .conftest import BLOCK_COUNT
-from shutil import rmtree
-from os import remove
-from os.path import join
 
+def test_dump_config(world : World):
+  node = world.create_init_node('init_0')
+  old_config = dict()
+  for key, value in node.config.__dict__.items(): old_config[key] = value
+  node.run()
+  node.wait_number_of_blocks(2)
+  node.close()
+  node.dump_config()
+
+  assert node.config.__dict__ == old_config
 
 def test_exit_before_sync(world : World, block_log : Path):
   '''
@@ -15,6 +22,10 @@ def test_exit_before_sync(world : World, block_log : Path):
     2. check exiting after dumping snapshot
     3. check exiting after loading snapshot
   '''
+
+  from shutil import rmtree
+  from os import remove
+  from os.path import join
 
   init = world.create_api_node(name='node_1')
   half_way = int(BLOCK_COUNT / 2.0)
