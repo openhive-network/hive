@@ -12,20 +12,6 @@ class NodesCreator:
         self._directory: Path = None  # Should be overriden by derived class
         self._nodes = []
 
-    def create_node(self, name=None):
-        warnings.warn(
-            f'Method {self.create_node.__name__} is deprecated. Use one of following methods instead:\n'
-            f'- {self.create_init_node.__name__}\n'
-            f'- {self.create_witness_node.__name__}\n'
-            f'- {self.create_api_node.__name__}\n'
-            f'- {self.create_raw_node.__name__}\n'
-            f'\n'
-            f'Read following documentation page if you don\'t know which one you need:\n'
-            f'https://gitlab.syncad.com/hive/test-tools/-/blob/master/documentation/node_types.md'
-        )
-
-        return self.create_raw_node(name)
-
     def create_init_node(self, name='InitNode'):
         """Creates node which is ready to produce blocks"""
         node = self.create_witness_node(name, witnesses=['initminer'])
