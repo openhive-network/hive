@@ -54,7 +54,7 @@ class Network(NodesCreator):
             self.wait_for_live_on_all_nodes()
 
     def handle_final_cleanup(self):
-        super().handle_final_cleanup()
+        super().handle_final_cleanup(default_policy=super().CleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
 
         for wallet in self.__wallets:
             if wallet.is_running():

@@ -43,7 +43,7 @@ class World(NodesCreator):
         if not self.__is_monitoring_resources:
             raise RuntimeError('World was already closed. Can be closed only once.')
 
-        super().handle_final_cleanup()
+        super().handle_final_cleanup(default_policy=NodesCreator.CleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
 
         for wallet in self.__wallets:
             if wallet.is_running():

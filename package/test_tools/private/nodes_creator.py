@@ -1,3 +1,4 @@
+from enum import auto, Enum
 from pathlib import Path
 import warnings
 
@@ -7,6 +8,11 @@ from test_tools.private.node import Node
 
 
 class NodesCreator:
+    class CleanUpPolicy(Enum):
+        REMOVE_EVERYTHING = auto()
+        REMOVE_ONLY_UNNEEDED_FILES = auto()
+        DO_NOT_REMOVE_FILES = auto()
+
     def __init__(self):
         self._children_names = ChildrenNames()
         self._directory: Path = None  # Should be overriden by derived class
@@ -89,6 +95,17 @@ class NodesCreator:
     def nodes(self):
         return self._nodes.copy()
 
-    def handle_final_cleanup(self):
+    def handle_final_cleanup(self, *, default_policy: CleanUpPolicy):
         for node in self._nodes:
-            node.handle_final_cleanup(default_policy=constants.NodeCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
+            node.handle_final_cleanup(default_policy=self.__get_corresponding_node_policy(default_policy))
+
+    @staticmethod
+    def __get_corresponding_node_policy(policy: CleanUpPolicy):
+        NodePolicy = constants.NodeCleanUpPolicy
+        NodesCreatorPolicy = NodesCreator.CleanUpPolicy
+
+        return {
+            NodesCreatorPolicy.REMOVE_EVERYTHING:          NodePolicy.REMOVE_EVERYTHING,
+            NodesCreatorPolicy.REMOVE_ONLY_UNNEEDED_FILES: NodePolicy.REMOVE_ONLY_UNNEEDED_FILES,
+            NodesCreatorPolicy.DO_NOT_REMOVE_FILES:        NodePolicy.DO_NOT_REMOVE_FILES,
+        }[policy]
