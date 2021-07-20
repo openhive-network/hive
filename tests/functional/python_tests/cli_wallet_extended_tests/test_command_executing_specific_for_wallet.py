@@ -10,7 +10,7 @@ def test_wallet():
 
         pswd = 'pear_peach'
 
-        internal_path = 'generated_during_test_command_executing_specific_for_wallet/test_wallet/InitNodeWallet0/'
+        internal_path = 'GeneratedInWorld/InitNodeWallet0/'
         wallet_content_file_name = 'test_wallet.json'
 
         #**************************************************************
