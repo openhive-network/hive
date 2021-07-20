@@ -1,7 +1,7 @@
 from pathlib import Path
 import warnings
 
-from test_tools import Account
+from test_tools import Account, constants
 from test_tools.private.children_names import ChildrenNames
 from test_tools.private.node import Node
 
@@ -88,3 +88,7 @@ class NodesCreator:
 
     def nodes(self):
         return self._nodes.copy()
+
+    def handle_final_cleanup(self):
+        for node in self._nodes:
+            node.handle_final_cleanup(default_policy=constants.NodeCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
