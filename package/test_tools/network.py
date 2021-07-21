@@ -24,9 +24,6 @@ class Network(NodesCreator):
     def __str__(self):
         return self.name
 
-    def get_name(self):
-        return self.name
-
     def connect_nodes(self):
         if len(self._nodes) < 2:
             return

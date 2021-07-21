@@ -88,7 +88,7 @@ class World(NodesCreator):
 
     def network(self, name: str) -> Network:
         for network in self.__networks:
-            if network.get_name() == name:
+            if str(network) == name:
                 return network
 
         raise RuntimeError(
