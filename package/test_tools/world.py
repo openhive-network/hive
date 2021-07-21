@@ -16,6 +16,7 @@ class World(NodesCreator):
         self.__wallets = []
         self.__name = 'World'
         self.__is_monitoring_resources = False
+        self.__clean_up_policy = constants.WorldCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES
 
         if directory is None:
             self._directory = Path() / f'GeneratedIn{self}'
@@ -43,14 +44,37 @@ class World(NodesCreator):
         if not self.__is_monitoring_resources:
             raise RuntimeError('World was already closed. Can be closed only once.')
 
-        super().handle_final_cleanup(default_policy=NodesCreator.CleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
+        nodes_creator_policy = self.__get_corresponding_nodes_creator_policy(self.__clean_up_policy)
+        super().handle_final_cleanup(default_policy=nodes_creator_policy)
 
         for wallet in self.__wallets:
             if wallet.is_running():
                 wallet.close()
 
         for network in self.__networks:
-            network.handle_final_cleanup(default_policy=constants.NetworkCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
+            network.handle_final_cleanup(default_policy=self.__get_corresponding_network_policy(self.__clean_up_policy))
+
+    @staticmethod
+    def __get_corresponding_nodes_creator_policy(policy: constants.WorldCleanUpPolicy) -> NodesCreator.CleanUpPolicy:
+        WorldPolicy = constants.WorldCleanUpPolicy
+        NodesCreatorPolicy = NodesCreator.CleanUpPolicy
+
+        return {
+            WorldPolicy.REMOVE_EVERYTHING:          NodesCreatorPolicy.REMOVE_EVERYTHING,
+            WorldPolicy.REMOVE_ONLY_UNNEEDED_FILES: NodesCreatorPolicy.REMOVE_ONLY_UNNEEDED_FILES,
+            WorldPolicy.DO_NOT_REMOVE_FILES:        NodesCreatorPolicy.DO_NOT_REMOVE_FILES,
+        }[policy]
+
+    @staticmethod
+    def __get_corresponding_network_policy(policy: constants.WorldCleanUpPolicy) -> constants.NetworkCleanUpPolicy:
+        WorldPolicy = constants.WorldCleanUpPolicy
+        NetworkPolicy = constants.NetworkCleanUpPolicy
+
+        return {
+            WorldPolicy.REMOVE_EVERYTHING:          NetworkPolicy.REMOVE_EVERYTHING,
+            WorldPolicy.REMOVE_ONLY_UNNEEDED_FILES: NetworkPolicy.REMOVE_ONLY_UNNEEDED_FILES,
+            WorldPolicy.DO_NOT_REMOVE_FILES:        NetworkPolicy.DO_NOT_REMOVE_FILES,
+        }[policy]
 
     def create_network(self, name=None):
         if name is not None:
@@ -95,3 +119,6 @@ class World(NodesCreator):
 
     def set_directory(self, directory):
         self._directory = Path(directory)
+
+    def set_clean_up_policy(self, policy: constants.WorldCleanUpPolicy):
+        self.__clean_up_policy = policy
