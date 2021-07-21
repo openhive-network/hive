@@ -2,16 +2,15 @@
 
 import pytest
 
+from test_tools import constants
 from test_tools.node_configs.default import create_default_config
 
 
 @pytest.fixture
 def generated_config(world):
     node = world.create_raw_node()
+    node.set_clean_up_policy(constants.NodeCleanUpPolicy.REMOVE_EVERYTHING)
     node.dump_config()
-
-    from shutil import rmtree
-    rmtree(node.directory)
 
     return node.config
 
