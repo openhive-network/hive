@@ -50,7 +50,7 @@ class World(NodesCreator):
                 wallet.close()
 
         for network in self.__networks:
-            network.handle_final_cleanup()
+            network.handle_final_cleanup(default_policy=constants.NetworkCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
 
     def create_network(self, name=None):
         if name is not None:

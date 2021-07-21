@@ -18,6 +18,7 @@ class Network(NodesCreator):
         self.__wallets = []
         self.is_running = False
         self.disconnected_networks = []
+        self.__clean_up_policy: constants.NetworkCleanUpPolicy = None
         self.logger = logger.getLogger(f'{__name__}.{self}')
 
     def __str__(self):
@@ -53,8 +54,16 @@ class Network(NodesCreator):
         if wait_for_live:
             self.wait_for_live_on_all_nodes()
 
-    def handle_final_cleanup(self):
-        super().handle_final_cleanup(default_policy=super().CleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
+    def handle_final_cleanup(self, *, default_policy: constants.NetworkCleanUpPolicy):
+        policy = default_policy if self.__clean_up_policy is None else self.__clean_up_policy
+
+        corresponding_nodes_creator_policy = {
+            constants.NetworkCleanUpPolicy.REMOVE_EVERYTHING:          super().CleanUpPolicy.REMOVE_EVERYTHING,
+            constants.NetworkCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES: super().CleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES,
+            constants.NetworkCleanUpPolicy.DO_NOT_REMOVE_FILES:        super().CleanUpPolicy.DO_NOT_REMOVE_FILES,
+        }
+
+        super().handle_final_cleanup(default_policy=corresponding_nodes_creator_policy[policy])
 
         for wallet in self.__wallets:
             if wallet.is_running():
@@ -113,3 +122,6 @@ class Network(NodesCreator):
     def wait_for_live_on_all_nodes(self):
         for node in self._nodes:
             node._wait_for_live()
+
+    def set_clean_up_policy(self, policy: constants.NetworkCleanUpPolicy):
+        self.__clean_up_policy = policy
