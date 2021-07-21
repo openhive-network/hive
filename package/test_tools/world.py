@@ -16,7 +16,7 @@ class World(NodesCreator):
         self.__wallets = []
         self.__name = 'World'
         self.__is_monitoring_resources = False
-        self.__clean_up_policy = constants.WorldCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES
+        self.__clean_up_policy = constants.WorldCleanUpPolicy.DO_NOT_REMOVE_FILES
 
         if directory is None:
             self._directory = Path() / f'GeneratedIn{self}'
