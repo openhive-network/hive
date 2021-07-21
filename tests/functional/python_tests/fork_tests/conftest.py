@@ -93,3 +93,5 @@ def world_with_witnesses(request):
         assert irreversible + 10 < head
 
         yield world
+
+        init_node.get_block_log(include_index=False).copy_to('block_log')
