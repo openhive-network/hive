@@ -14,14 +14,6 @@ enum curve_id
   convergent_square_root
 };
 
-struct dynamic_serializer
-{
-  /*
-    This switch is used for switching of serialization.
-  */
-  static bool legacy_enabled;
-};
-
 } } // hive::protocol
 
 

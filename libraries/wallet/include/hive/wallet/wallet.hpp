@@ -1474,24 +1474,24 @@ namespace fc {
   inline void to_variant( const hive::wallet::serializer_wrapper<T>& a, fc::variant& var )
   {
     //Compatibility with older shape of asset
-    bool old_legacy_enabled = hive::protocol::dynamic_serializer::legacy_enabled;
-    hive::protocol::dynamic_serializer::legacy_enabled = true;
+    bool old_legacy_enabled = fc::dynamic_serializer::legacy_enabled;
+    fc::dynamic_serializer::legacy_enabled = true;
 
     to_variant( a.value, var );
 
-    hive::protocol::dynamic_serializer::legacy_enabled = old_legacy_enabled;
+    fc::dynamic_serializer::legacy_enabled = old_legacy_enabled;
   }
 
   template<typename T>
   inline void from_variant( const fc::variant& var, hive::wallet::serializer_wrapper<T>& a )
   {
     //Compatibility with older shape of asset
-    bool old_legacy_enabled = hive::protocol::dynamic_serializer::legacy_enabled;
-    hive::protocol::dynamic_serializer::legacy_enabled = true;
+    bool old_legacy_enabled = fc::dynamic_serializer::legacy_enabled;
+    fc::dynamic_serializer::legacy_enabled = true;
 
     from_variant( var, a.value );
 
-    hive::protocol::dynamic_serializer::legacy_enabled = old_legacy_enabled;
+    fc::dynamic_serializer::legacy_enabled = old_legacy_enabled;
   }
 
 } // fc
