@@ -45,7 +45,6 @@ add_library( hive_protocol
              block.cpp
              asset.cpp
              version.cpp
-             misc_utilities.cpp
 
              ${GET_CONFIG_CPP}
 

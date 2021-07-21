@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <fc/exception/exception.hpp>
+#include <fc/misc_utilities.hpp>
 
 namespace fc {
 
@@ -379,8 +380,17 @@ struct visitor {
       typedef void result_type;
       template<typename T> void operator()( const T& v )const
       {
-         auto name = trim_typename_namespace( fc::get_typename< T >::name() );
-         var = mutable_variant_object( "type", name )( "value", v );
+        auto name = trim_typename_namespace( fc::get_typename< T >::name() );
+
+        if( dynamic_serializer::legacy_enabled )
+        {
+          name = trim_operation( name );
+          var = variants( { variant( name ), variant( v ) } );
+        }
+        else
+        {
+          var = mutable_variant_object( "type", name )( "value", v );
+        }
       }
    };
 
