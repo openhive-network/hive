@@ -281,7 +281,7 @@ class Node:
         if self.config != create_default_config():
             self.config.write_to_file(self.__get_config_file_path())
 
-        self.__process.run(blocking=True, with_arguments=['--dump-config'])
+        self.__run_process(blocking=True, with_arguments=['--dump-config'])
 
         self.config.load_from_file(self.__get_config_file_path())
 
@@ -289,7 +289,7 @@ class Node:
         self.close()
 
         snapshot_path = Path('.')
-        self.__process.run(
+        self.__run_process(
             blocking=close,
             with_arguments=[
                 f'--dump-snapshot={snapshot_path}',
@@ -312,6 +312,9 @@ class Node:
         from test_tools.private.wait_for import wait_for
         wait_for(self.__is_snapshot_dumped, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} to dump snapshot')
+
+    def __run_process(self, *, blocking, with_arguments=()):
+        self.__process.run(blocking=blocking, with_arguments=with_arguments)
 
     def run(
             self,
@@ -369,7 +372,7 @@ class Node:
         elif wait_for_live is None:
             wait_for_live = True
 
-        self.__process.run(blocking=exit_before_synchronization, with_arguments=additional_arguments)
+        self.__run_process(blocking=exit_before_synchronization, with_arguments=additional_arguments)
 
         self.__produced_files = True
         if wait_for_live:
