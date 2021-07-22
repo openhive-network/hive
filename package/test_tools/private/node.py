@@ -322,15 +322,11 @@ class Node:
             exit_before_synchronization=False,
             wait_for_live=None,
             timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
-            use_existing_config=False,
     ):
         """
         :param wait_for_live: Stops execution until node will generate or receive blocks.
         :param timeout: If wait_for_live is set to True, this parameter sets how long waiting can take. When
                         timeout is reached, TimeoutError exception is thrown.
-        :param use_existing_config: Skip generation of config file and use already existing. It means that all
-                                    current config values will be ignored and overridden by values from file.
-                                    When config file is missing hived generates default config.
         """
         if not self.__executable.is_test_net_build():
             raise NotImplementedError(
@@ -346,9 +342,8 @@ class Node:
             shutil.rmtree(self.directory)
         self.directory.mkdir(parents=True, exist_ok=True)
 
-        if not use_existing_config:
-            self.__set_unset_endpoints()
-            self.config.write_to_file(self.__get_config_file_path())
+        self.__set_unset_endpoints()
+        self.config.write_to_file(self.__get_config_file_path())
 
         # TODO: Remove below code when statsd support will be implemented.
         #       This is temporary workaround, for stderr parsing solution.
@@ -375,15 +370,6 @@ class Node:
             wait_for_live = True
 
         self.__process.run(blocking=exit_before_synchronization, with_arguments=additional_arguments)
-
-        if use_existing_config:
-            # Wait for config generation
-            while not self.__get_config_file_path().exists():
-                time.sleep(0.01)
-
-            from test_tools.node_config import NodeConfig
-            self.config = NodeConfig()
-            self.config.load_from_file(self.__get_config_file_path())
 
         self.__produced_files = True
         if wait_for_live:
