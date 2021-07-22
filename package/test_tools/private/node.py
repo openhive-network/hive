@@ -175,8 +175,8 @@ class Node:
 
         self.config.p2p_seed_node.append(f'127.0.0.1:{port}')
 
-    def get_block_log(self):
-        return BlockLog(self, self.directory.joinpath('blockchain/block_log'))
+    def get_block_log(self, include_index=True):
+        return BlockLog(self, self.directory.joinpath('blockchain/block_log'), include_index=include_index)
 
     def __is_p2p_plugin_started(self):
         return self.__any_line_in_stderr(lambda line: 'P2P Plugin started' in line)
