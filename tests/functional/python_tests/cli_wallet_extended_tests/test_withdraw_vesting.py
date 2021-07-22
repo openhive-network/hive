@@ -15,9 +15,9 @@ def test_withdraw_vesting():
           _ops = node['operations']
           _op = _ops[0]
 
-          _op['type'] == 'set_withdraw_vesting_route_operation'
+          _op[0] == 'set_withdraw_vesting_route'
 
-          return _op['value']
+          return _op[1]
 
         def check_route( node, from_account, to_account, percent, auto_vest ):
           assert node['from_account'] == from_account

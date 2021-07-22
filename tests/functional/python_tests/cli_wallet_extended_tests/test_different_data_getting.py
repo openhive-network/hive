@@ -27,7 +27,7 @@ def test_getters():
         _ops = _trx['operations']
         _op = _ops[0]
 
-        _value = _op['value']
+        _value = _op[1]
         assert _value['amount'] == '500.000 TESTS'
 
         #**************************************************************
@@ -70,7 +70,7 @@ def test_getters():
         trx = _result[4]
 
         _op = trx['op']
-        _value = _op['value']
+        _value = _op[1]
 
         assert 'vesting_shares' in _value
         assert _value['vesting_shares'] != '0.000000 VESTS'
@@ -79,7 +79,7 @@ def test_getters():
         response = wallet.api.get_prototype_operation( 'transfer_operation' )
         _result = response['result']
 
-        _value = _result['value']
+        _value = _result[1]
         assert _value['amount'] == '0.000 TESTS'
 
         #**************************************************************
@@ -89,9 +89,9 @@ def test_getters():
         _ops = _result['operations']
         _op = _ops[0]
 
-        assert _op['type'] == 'account_create_operation'
+        assert _op[0] == 'account_create'
 
-        _value = _op['value']
+        _value = _op[1]
 
         assert 'fee' in _value
         assert _value['fee'] == '0.000 TESTS'

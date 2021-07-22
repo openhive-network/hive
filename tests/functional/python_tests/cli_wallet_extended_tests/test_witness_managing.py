@@ -64,9 +64,9 @@ def test_witness():
         _ops = _result['operations']
         _op = _ops[0]
 
-        assert _op['type'] == 'feed_publish_operation'
+        assert _op[0] == 'feed_publish'
 
-        _value = _op['value']
+        _value = _op[1]
         _exchange_rate = _value['exchange_rate']
 
         assert _exchange_rate['base'] == '1.167 TBD'
@@ -79,9 +79,9 @@ def test_witness():
         _ops = _result['operations']
         _op = _ops[0]
 
-        assert _op['type'] == 'account_witness_vote_operation'
+        assert _op[0] == 'account_witness_vote'
 
-        _value = _op['value']
+        _value = _op[1]
         assert _value['account'] == 'initminer'
         assert _value['witness'] == 'alice'
         assert _value['approve'] == True
@@ -93,8 +93,8 @@ def test_witness():
         _ops = _result['operations']
         _op = _ops[0]
 
-        assert _op['type'] == 'account_witness_proxy_operation'
+        assert _op[0] == 'account_witness_proxy'
 
-        _value = _op['value']
+        _value = _op[1]
         assert _value['account'] == 'alice'
         assert _value['proxy'] == 'initminer'

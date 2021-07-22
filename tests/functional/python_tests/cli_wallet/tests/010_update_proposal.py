@@ -22,7 +22,7 @@ def proposal_exists( block_number, end_date ):
       if 'op' in _result[0]:
         _op = _result[0]['op']
         if 'value' in _op:
-          _value = _op['value']
+          _value = _op[1]
           if 'extensions' in _value:
             _extensions = _value['extensions']
             if len(_extensions) == 1:
