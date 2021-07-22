@@ -287,11 +287,11 @@ class Node:
         self.close()
 
         snapshot_path = Path('.')
+        self.__ensure_that_plugin_required_for_snapshot_is_included()
         self.__run_process(
             blocking=close,
             with_arguments=[
                 f'--dump-snapshot={snapshot_path}',
-                '--plugin=state_snapshot',
                 *(['--exit-before-sync'] if close else []),
             ]
         )
@@ -305,6 +305,11 @@ class Node:
             self.directory / 'blockchain/block_log.index',
             self,
         )
+
+    def __ensure_that_plugin_required_for_snapshot_is_included(self):
+        plugin_required_for_snapshots = 'state_snapshot'
+        if plugin_required_for_snapshots not in self.config.plugin:
+            self.config.plugin.append(plugin_required_for_snapshots)
 
     def __wait_for_dumping_snapshot_finish(self, timeout=15):
         from test_tools.private.wait_for import wait_for
@@ -382,7 +387,8 @@ class Node:
             self.__log_run_summary()
 
     def __handle_loading_snapshot(self, load_snapshot_from: Snapshot, additional_arguments: list):
-        additional_arguments.extend(['--load-snapshot=.', '--plugin=state_snapshot'])
+        self.__ensure_that_plugin_required_for_snapshot_is_included()
+        additional_arguments.append('--load-snapshot=.')
         load_snapshot_from.copy_to(self.directory)
 
     def __handle_replay(self, replay_source: BlockLog, stop_at_block: int, additional_arguments: list):
