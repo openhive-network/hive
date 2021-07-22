@@ -369,6 +369,9 @@ struct api_comment_object
     const comment_cashout_object* cc = db.find_comment_cashout( o );
     if( cc )
     {
+      if(const account_object* i_author = db.find_account(cc->author_id))
+        author = i_author->name;
+      permlink                = to_string(cc->permlink);
       total_vote_weight       = cc->total_vote_weight;
       reward_weight           = cc->reward_weight;
       total_payout_value      = cc->total_payout_value;
