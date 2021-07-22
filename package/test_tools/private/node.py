@@ -278,10 +278,8 @@ class Node:
     def dump_config(self):
         assert not self.is_running()
 
-        if self.config != create_default_config():
-            self.config.write_to_file(self.__get_config_file_path())
-
-        self.__run_process(blocking=True, with_arguments=['--dump-config'])
+        config_was_modified = self.config != create_default_config()
+        self.__run_process(blocking=True, with_arguments=['--dump-config'], write_config_before_run=config_was_modified)
 
         self.config.load_from_file(self.__get_config_file_path())
 
@@ -313,7 +311,10 @@ class Node:
         wait_for(self.__is_snapshot_dumped, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} to dump snapshot')
 
-    def __run_process(self, *, blocking, with_arguments=()):
+    def __run_process(self, *, blocking, write_config_before_run=True, with_arguments=()):
+        if write_config_before_run:
+            self.config.write_to_file(self.__get_config_file_path())
+
         self.__process.run(blocking=blocking, with_arguments=with_arguments)
 
     def run(
@@ -346,7 +347,6 @@ class Node:
         self.directory.mkdir(parents=True, exist_ok=True)
 
         self.__set_unset_endpoints()
-        self.config.write_to_file(self.__get_config_file_path())
 
         # TODO: Remove below code when statsd support will be implemented.
         #       This is temporary workaround, for stderr parsing solution.
