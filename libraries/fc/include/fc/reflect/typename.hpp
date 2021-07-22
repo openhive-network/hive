@@ -149,5 +149,4 @@ namespace fc {
 
    std::string trim_legacy_typename_namespace( const std::string& n );
    std::string trim_typename_namespace( const std::string& n );
-   std::string trim_operation( const std::string& n );
 }

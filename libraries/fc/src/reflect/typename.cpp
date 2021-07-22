@@ -18,13 +18,4 @@ std::string trim_typename_namespace( const std::string& name )
   return name.substr( start );
 }
 
-std::string trim_operation( const std::string& name )
-{
-  auto pos = name.find_last_of( '_' );
-  if( pos == std::string::npos )
-    pos = name.size();
-
-  return name.substr( 0, pos );
-}
-
 }
