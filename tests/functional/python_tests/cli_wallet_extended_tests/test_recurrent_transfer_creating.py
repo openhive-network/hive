@@ -12,9 +12,9 @@ def test_recurrent_transfer():
 
           _op = _ops[0]
 
-          assert _op['type'] == 'recurrent_transfer_operation'
+          assert _op[0] == 'recurrent_transfer'
 
-          return _op['value']
+          return _op[1]
 
         def check_recurrence_transfer( node, _from, to, amount, memo, recurrence, executions_key, executions_number ):
           assert node['from'] == _from

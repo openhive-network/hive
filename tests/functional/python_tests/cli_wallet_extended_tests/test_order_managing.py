@@ -26,7 +26,7 @@ def test_order():
         _ops = _result['operations']
         _op = _ops[0]
 
-        _value = _op['value']
+        _value = _op[1]
         assert _value['amount_to_sell'] == '7.000 TESTS'
         assert _value['min_to_receive'] == '1.000 TBD'
 

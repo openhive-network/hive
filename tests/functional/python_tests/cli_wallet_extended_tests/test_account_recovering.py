@@ -48,8 +48,8 @@ def test_recovery():
         assert len(_ops) == 1
         _op = _ops[0]
 
-        assert _op['type'] == 'change_recovery_account_operation'
-        _value = _op['value']
+        assert _op[0] == 'change_recovery_account'
+        _value = _op[1]
 
         assert _value['account_to_recover'] == 'alice'
         assert _value['new_recovery_account'] == 'bob'
@@ -75,9 +75,9 @@ def test_recovery():
 
         _op = _ops[0]
 
-        assert _op['type'] == 'request_account_recovery_operation'
+        assert _op[0] == 'request_account_recovery'
 
-        _value = _op['value']
+        _value = _op[1]
 
         assert _value['recovery_account'] == 'alice'
         assert _value['account_to_recover'] == 'bob'
@@ -98,8 +98,8 @@ def test_recovery():
 
         _op = _ops[0]
 
-        assert _op['type'] == 'recover_account_operation'
+        assert _op[0] == 'recover_account'
 
-        _value = _op['value']
+        _value = _op[1]
         assert _value['account_to_recover'] == 'bob'
 

@@ -33,7 +33,7 @@ def test_conversion():
         _ops = _result['operations']
         _op = _ops[0]
 
-        _value = _op['value']
+        _value = _op[1]
         assert _value['amount'] == '4.000 TESTS'
 
         #**************************************************************

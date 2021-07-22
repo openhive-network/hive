@@ -42,9 +42,9 @@ def test_comment():
         _ops = _result['operations']
         _op = _ops[0]
 
-        assert _op['type'] == 'comment_operation'
+        assert _op[0] == 'comment'
 
-        _value = _op['value']
+        _value = _op[1]
 
         assert _value['author'] == 'alice'
         assert _value['title'] == 'u015bu0107u0105'
@@ -57,9 +57,9 @@ def test_comment():
         _ops = _result['operations']
         _op = _ops[0]
 
-        assert _op['type'] == 'comment_operation'
+        assert _op[0] == 'comment'
 
-        _value = _op['value']
+        _value = _op[1]
 
         assert _value['author'] == 'alice'
         assert _value['title'] == 'TITLE NR 2'
@@ -72,9 +72,9 @@ def test_comment():
         _ops = _result['operations']
         _op = _ops[0]
 
-        assert _op['type'] == 'comment_operation'
+        assert _op[0] == 'comment'
 
-        _value = _op['value']
+        _value = _op[1]
 
         assert _value['author'] == 'bob'
         assert _value['parent_author'] == 'alice'
@@ -88,9 +88,9 @@ def test_comment():
         _ops = _result['operations']
         _op = _ops[0]
 
-        _op['type'] == 'vote_operation'
+        _op[0] == 'vote'
 
-        _value = _op['value']
+        _value = _op[1]
 
         assert _value['voter'] == 'bob'
         assert _value['author'] == 'bob'
@@ -104,8 +104,8 @@ def test_comment():
         _ops = _result['operations']
         _op = _ops[0]
 
-        assert _op['type'] == 'decline_voting_rights_operation'
+        assert _op[0] == 'decline_voting_rights'
 
-        _value = _op['value']
+        _value = _op[1]
 
         assert _value['account'] == 'alice'

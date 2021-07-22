@@ -147,6 +147,7 @@ namespace fc {
   template<> struct get_typename<signed_int>   { static const char* name()   { return "signed_int";   } };
   template<> struct get_typename<unsigned_int>   { static const char* name()   { return "unsigned_int";   } };
 
+   std::string trim_legacy_typename_namespace( const std::string& n );
    std::string trim_typename_namespace( const std::string& n );
    std::string trim_operation( const std::string& n );
 }

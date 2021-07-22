@@ -123,6 +123,9 @@ def test_complex():
                 wallet.api.post_comment('alice', 'hello-world2', '', 'xyz2', 'something about world2', 'just nothing2', '{}')
         except Exception as e:
             message = str(e)
+            wallet.logger.info("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^2")
+            wallet.logger.info(message)
+            wallet.logger.info("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^2")
             assert message.find('required_active.size()') != -1
 
         #**************************************************************
