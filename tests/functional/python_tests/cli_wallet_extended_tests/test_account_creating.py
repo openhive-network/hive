@@ -12,9 +12,9 @@ def test_account_creation():
 
         _operations = response['result']['operations']
         _operation = _operations[0]
-        assert _operation['value']['fee'] == '0.000 TESTS'
+        assert _operation[1]['fee'] == '0.000 TESTS'
 
-        _owner = _operation['value']['owner']
+        _owner = _operation[1]['owner']
         _key_auths = _owner['key_auths']
         __key_auths = _key_auths[0]
         assert len(__key_auths) == 2
@@ -63,7 +63,7 @@ def test_account_creation():
         _ops = _result['operations']
         _op = _ops[0]
 
-        assert _op['type'] == 'custom_json_operation'
+        assert _op[0] == 'custom_json'
 
-        _value = _op['value']
+        _value = _op[1]
         assert _value['json'] == '{"type":"follow_operation","value":{"follower":"alice","following":"@bob","what":["blog"]}}'

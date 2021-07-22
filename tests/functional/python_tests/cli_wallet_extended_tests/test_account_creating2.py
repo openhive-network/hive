@@ -46,7 +46,7 @@ def test_account_creation2():
         _result = response['result']
 
         _operations = _result['operations']
-        _value = _operations[0]['value']
+        _value = _operations[0][1]
 
         check_key( 'owner', _value, key )
         check_key( 'active', _value, key )
