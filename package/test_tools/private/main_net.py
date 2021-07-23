@@ -17,3 +17,6 @@ class MainNet:
             message['params'] = params
 
         return communication.request('https://api.hive.blog:443', message)
+
+
+main_net_singleton = MainNet()
