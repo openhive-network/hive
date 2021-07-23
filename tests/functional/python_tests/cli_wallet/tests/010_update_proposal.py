@@ -33,7 +33,7 @@ def proposal_exists( block_number, end_date ):
                 _extension_value = __extensions[1]
                 if 'end_date' in _extension_value:
                   _end_date = _extension_value['end_date']
-                if _extension_type == 1 and _end_date == end_date:
+                if _extension_type == 'update_proposal_end_date' and _end_date == end_date:
                   return True
   return False
 
