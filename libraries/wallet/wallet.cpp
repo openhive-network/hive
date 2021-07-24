@@ -838,7 +838,7 @@ public:
       ss << std::left << std::setw( 50 ) << "TRX ID" << " ";
       ss << std::left << std::setw( 20 ) << "OPERATION" << " ";
       ss << std::left << std::setw( 50 ) << "DETAILS" << "\n";
-      ss << "-------------------------------------------------------------------------------------\n";
+      ss << "---------------------------------------------------------------------------------------------------\n";
       const auto& results = result.get_array();
       for( const auto& item : results )
       {
