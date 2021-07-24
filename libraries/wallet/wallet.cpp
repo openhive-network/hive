@@ -818,13 +818,13 @@ public:
         total_hive += a.balance.to_asset();
         total_vest  += a.vesting_shares.to_asset();
         total_hbd  += a.hbd_balance.to_asset();
-        out << std::left << std::setw( 17 ) << std::string(a.name)
+        out << std::left << std::setw(17) << std::string(a.name)
             << std::right << std::setw(18) << fc::variant(a.balance).as_string() <<" "
             << std::right << std::setw(26) << fc::variant(a.vesting_shares).as_string() <<" "
             << std::right << std::setw(16) << fc::variant(a.hbd_balance).as_string() <<"\n";
       }
       out << "-------------------------------------------------------------------------------\n";
-        out << std::left << std::setw( 17 ) << "TOTAL"
+        out << std::left << std::setw(17) << "TOTAL"
             << std::right << std::setw(18) << legacy_asset::from_asset(total_hive).to_string() <<" "
             << std::right << std::setw(26) << legacy_asset::from_asset(total_vest).to_string() <<" "
             << std::right << std::setw(16) << legacy_asset::from_asset(total_hbd).to_string() <<"\n";
@@ -842,10 +842,10 @@ public:
       const auto& results = result.get_array();
       for( const auto& item : results )
       {
-        ss << std::left << std::setw(5) << item.get_array()[0].as_string() << " ";
+        ss << std::left << std::setw(8) << item.get_array()[0].as_string() << " ";
         const auto& op = item.get_array()[1].get_object();
         ss << std::left << std::setw(10) << op["block"].as_string() << " ";
-        ss << std::left << std::setw(15) << op["trx_id"].as_string() << " ";
+        ss << std::left << std::setw(50) << op["trx_id"].as_string() << " ";
         const auto& opop = op["op"].get_array();
         ss << std::left << std::setw(20) << opop[0].as_string() << " ";
         ss << std::left << std::setw(50) << fc::json::to_string(opop[1]) << "\n";
@@ -944,8 +944,8 @@ public:
 
       for( auto& r : routes )
       {
-        ss << ' ' << std::left << std::setw( 20 ) << std::string( r.from_account );
-        ss << ' ' << std::left << std::setw( 20 ) << std::string( r.to_account );
+        ss << ' ' << std::left << std::setw( 18 ) << std::string( r.from_account );
+        ss << ' ' << std::left << std::setw( 18 ) << std::string( r.to_account );
         ss << ' ' << std::right << std::setw( 8 ) << std::setprecision( 2 ) << std::fixed << double( r.percent ) / 100;
         ss << ' ' << std::right << std::setw( 9 ) << ( r.auto_vest ? "true" : "false" ) << std::endl;
       }
