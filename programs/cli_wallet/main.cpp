@@ -86,8 +86,8 @@ int main( int argc, char** argv )
                                                                                          "or use HIVE_WALLET_PASSWORD environment variable if no password is supplied")
       ("daemon,d", "Run the wallet in daemon mode" )
       ("rpc-http-allowip", bpo::value<vector<string>>()->multitoken(), "Allows only specified IPs to connect to the HTTP endpoint" )
-      ("wallet-file,w", bpo::value<string>()->implicit_value("wallet.json"), "wallet to load")
-      ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
+      ("wallet-file,w", bpo::value<string>()->implicit_value("wallet.json"), "Wallet to load")
+      ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "Chain ID to connect to")
       ;
     vector<string> allowed_ips;
 
@@ -271,7 +271,7 @@ int main( int argc, char** argv )
         {
           if( allowed_ip_set.find( fc::ip::endpoint::from_string(req.remote_endpoint).get_address() ) == allowed_ip_set.end() &&
               allowed_ip_set.find( fc::ip::address() ) == allowed_ip_set.end() ) {
-            elog("rejected connection from ${ip} because it isn't in allowed set ${s}", ("ip",req.remote_endpoint)("s",allowed_ip_set) );
+            elog("Rejected connection from ${ip} because it isn't in allowed set ${s}", ("ip",req.remote_endpoint)("s",allowed_ip_set) );
             resp.set_status( fc::http::reply::NotAuthorized );
             return;
           }
