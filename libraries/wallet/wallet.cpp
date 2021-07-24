@@ -833,9 +833,9 @@ public:
     m["get_account_history"] = []( variant result, const fc::variants& a )
     {
       std::stringstream ss;
-      ss << std::left << std::setw( 5 )  << "#" << " ";
+      ss << std::left << std::setw( 8 )  << "#" << " ";
       ss << std::left << std::setw( 10 ) << "BLOCK #" << " ";
-      ss << std::left << std::setw( 15 ) << "TRX ID" << " ";
+      ss << std::left << std::setw( 50 ) << "TRX ID" << " ";
       ss << std::left << std::setw( 20 ) << "OPERATION" << " ";
       ss << std::left << std::setw( 50 ) << "DETAILS" << "\n";
       ss << "-------------------------------------------------------------------------------------\n";
@@ -848,7 +848,7 @@ public:
         ss << std::left << std::setw(15) << op["trx_id"].as_string() << " ";
         const auto& opop = op["op"].get_array();
         ss << std::left << std::setw(20) << opop[0].as_string() << " ";
-        ss << std::left << std::setw(50) << fc::json::to_string(opop[1]) << "\n ";
+        ss << std::left << std::setw(50) << fc::json::to_string(opop[1]) << "\n";
       }
       return ss.str();
     };
@@ -859,15 +859,15 @@ public:
 
         ss << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
         ss << ' ' << setw( 10 ) << "Order #";
-        ss << ' ' << setw( 10 ) << "Price";
-        ss << ' ' << setw( 10 ) << "Quantity";
+        ss << ' ' << setw( 12 ) << "Price";
+        ss << ' ' << setw( 14 ) << "Quantity";
         ss << ' ' << setw( 10 ) << "Type";
-        ss << "\n=====================================================================================================\n";
+        ss << "\n===============================================================================\n";
         for( const auto& o : orders )
         {
           ss << ' ' << setw( 10 ) << o.orderid;
-          ss << ' ' << setw( 10 ) << o.real_price;
-          ss << ' ' << setw( 10 ) << legacy_asset::from_asset( asset( o.for_sale, o.sell_price.base.symbol ) ).to_string();
+          ss << ' ' << setw( 12 ) << o.real_price;
+          ss << ' ' << setw( 14 ) << legacy_asset::from_asset( asset( o.for_sale, o.sell_price.base.symbol ) ).to_string();
           ss << ' ' << setw( 10 ) << (o.sell_price.base.symbol == HIVE_SYMBOL ? "SELL" : "BUY");
           ss << "\n";
         }
@@ -879,21 +879,21 @@ public:
       std::stringstream ss;
       asset bid_sum = asset( 0, HBD_SYMBOL );
       asset ask_sum = asset( 0, HBD_SYMBOL );
-      int spacing = 24;
+      int spacing = 16;
 
       ss << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
 
       ss << ' ' << setw( ( spacing * 4 ) + 6 ) << "Bids" << "Asks\n"
         << ' '
         << setw( spacing + 3 ) << "Sum(HBD)"
-        << setw( spacing + 1) << "HBD"
+        << setw( spacing + 1 ) << "HBD"
         << setw( spacing + 1 ) << "HIVE"
         << setw( spacing + 1 ) << "Price"
         << setw( spacing + 1 ) << "Price"
         << setw( spacing + 1 ) << "HIVE "
         << setw( spacing + 1 ) << "HBD " << "Sum(HBD)"
-        << "\n====================================================================================================="
-        << "|=====================================================================================================\n";
+        << "\n====================================================================="
+        << "|=====================================================================\n";
 
       for( size_t i = 0; i < orders.bids.size() || i < orders.asks.size(); i++ )
       {
@@ -936,11 +936,11 @@ public:
       auto routes = result.as< vector< database_api::api_withdraw_vesting_route_object > >();
       std::stringstream ss;
 
-      ss << ' ' << std::left << std::setw( 20 ) << "From";
-      ss << ' ' << std::left << std::setw( 20 ) << "To";
+      ss << ' ' << std::left << std::setw( 18 ) << "From";
+      ss << ' ' << std::left << std::setw( 18 ) << "To";
       ss << ' ' << std::right << std::setw( 8 ) << "Percent";
       ss << ' ' << std::right << std::setw( 9 ) << "Auto-Vest";
-      ss << "\n==============================================================\n";
+      ss << "\n=========================================================\n";
 
       for( auto& r : routes )
       {
