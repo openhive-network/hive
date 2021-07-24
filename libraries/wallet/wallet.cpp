@@ -261,7 +261,7 @@ public:
       ++suffix;
       dest_path = destination_filename + "-" + std::to_string( suffix ) + _wallet_filename_extension;
     }
-    wlog( "backing up wallet ${src} to ${dest}",
+    wlog( "Backing up wallet ${src} to ${dest}",
         ("src", src_path)
         ("dest", dest_path) );
 
@@ -344,7 +344,7 @@ public:
     }
     catch( fc::exception& )
     {
-      result["server"] = "could not retrieve server version information";
+      result["server"] = "Could not retrieve server version information";
     }
 
     return result;
@@ -427,7 +427,7 @@ public:
     if( wallet_filename == "" )
       wallet_filename = _wallet_filename;
 
-    wlog( "saving wallet to file ${fn}", ("fn", wallet_filename) );
+    wlog( "Saving wallet to file ${fn}", ("fn", wallet_filename) );
 
     string data = fc::json::to_pretty_string( _wallet );
     try
@@ -785,7 +785,7 @@ public:
       }
       catch (const fc::exception& e)
       {
-        elog("Caught exception while broadcasting tx ${id}:  ${e}", ("id", tx.id().str())("e", e.to_detail_string()) );
+        elog("Caught exception while broadcasting tx ${id}: ${e}", ("id", tx.id().str())("e", e.to_detail_string()) );
         throw;
       }
     }
@@ -823,7 +823,7 @@ public:
             << std::right << std::setw(26) << fc::variant(a.vesting_shares).as_string() <<" "
             << std::right << std::setw(16) << fc::variant(a.hbd_balance).as_string() <<"\n";
       }
-      out << "-------------------------------------------------------------------------\n";
+      out << "-------------------------------------------------------------------------------\n";
         out << std::left << std::setw( 17 ) << "TOTAL"
             << std::right << std::setw(18) << legacy_asset::from_asset(total_hive).to_string() <<" "
             << std::right << std::setw(26) << legacy_asset::from_asset(total_vest).to_string() <<" "
@@ -838,7 +838,7 @@ public:
       ss << std::left << std::setw( 15 ) << "TRX ID" << " ";
       ss << std::left << std::setw( 20 ) << "OPERATION" << " ";
       ss << std::left << std::setw( 50 ) << "DETAILS" << "\n";
-      ss << "-------------------------------------------------------------------------------\n";
+      ss << "-------------------------------------------------------------------------------------\n";
       const auto& results = result.get_array();
       for( const auto& item : results )
       {
