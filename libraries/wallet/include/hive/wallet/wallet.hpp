@@ -145,7 +145,7 @@ class wallet_api
       * @param account Account to query routes
       * @param type Withdraw type type [incoming, outgoing, all]
       */
-    vector< database_api::api_withdraw_vesting_route_object > get_withdraw_routes( const string& account, database_api::sort_order_type sort_type = database_api::by_withdraw_route )const;
+    vector< database_api::api_withdraw_vesting_route_object > get_withdraw_routes( const string& account, database_api::withdraw_route_type type = database_api::withdraw_route_type::all )const;
 
     /**
       *  Gets the account information for all accounts for which this wallet has a private key
@@ -1317,7 +1317,7 @@ class wallet_api
       * @param executions how many times should the recurrent transfer be executed
       * @param broadcast true if you wish to broadcast the transaction
       */
-    serializer_wrapper<annotated_signed_transaction> recurrent_transfer(
+    annotated_signed_transaction recurrent_transfer(
             const account_name_type& from,
             const account_name_type& to,
             const serializer_wrapper<hive::protocol::asset>& amount,
@@ -1331,7 +1331,7 @@ class wallet_api
 
       * @param from The account from which the funds are coming from
       */
-  serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> find_recurrent_transfers(
+  vector< database_api::api_recurrent_transfer_object > find_recurrent_transfers(
           const account_name_type& from );
 
     std::map<string,std::function<string(fc::variant,const fc::variants&)>> get_result_formatters() const;

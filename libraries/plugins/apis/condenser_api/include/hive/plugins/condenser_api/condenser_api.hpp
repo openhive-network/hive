@@ -757,13 +757,6 @@ struct account_vote
   time_point_sec time;
 };
 
-enum withdraw_route_type
-{
-  incoming,
-  outgoing,
-  all
-};
-
 typedef vector< variant > get_version_args;
 
 typedef database_api::get_version_return get_version_return;
@@ -1220,8 +1213,6 @@ FC_REFLECT( hive::plugins::condenser_api::account_vote,
         (authorperm)(weight)(rshares)(percent)(time) )
 
 FC_REFLECT( hive::plugins::condenser_api::tag_index, (trending) )
-
-FC_REFLECT_ENUM( hive::plugins::condenser_api::withdraw_route_type, (incoming)(outgoing)(all) )
 
 FC_REFLECT( hive::plugins::condenser_api::broadcast_transaction_synchronous_return,
         (id)(block_num)(trx_num)(expired) )
