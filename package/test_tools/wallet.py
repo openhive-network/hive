@@ -213,6 +213,9 @@ class Wallet:
         def get_account(self, account_name):
             return self.__send('get_account', account_name=account_name)
 
+        def get_accounts(self, account_names):
+            return self.__send('get_accounts', account_names=account_names)
+
         def get_account_history(self, account, from_, limit):
             return self.__send('get_account_history', account=account, from_=from_, limit=limit)
 
@@ -267,8 +270,8 @@ class Wallet:
         def get_witness(self, owner_account):
             return self.__send('get_witness', owner_account=owner_account)
 
-        def gethelp(self, method):
-            return self.__send('gethelp', method=method)
+        def gethelp(self, method_name):
+            return self.__send('gethelp', method_name=method_name)
 
         def help(self):
             return self.__send('help')
@@ -291,8 +294,8 @@ class Wallet:
         def list_keys(self):
             return self.__send('list_keys')
 
-        def list_my_accounts(self):
-            return self.__send('list_my_accounts')
+        def list_my_accounts(self, keys):
+            return self.__send('list_my_accounts', keys=keys)
 
         def list_proposal_votes(self, start, limit, order_by, order_type, status):
             return self.__send('list_proposal_votes', start=start, limit=limit, order_by=order_by,
