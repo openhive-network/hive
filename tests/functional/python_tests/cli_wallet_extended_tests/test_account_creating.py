@@ -1,4 +1,11 @@
 def test_account_creation(wallet):
+    wallet.api.create_account('initminer', 'alice', '{}')
+
+    response = wallet.api.list_accounts('a', 1)
+    assert response['result'] == ['alice']
+
+
+def test_account_creation_and_much_more(wallet):
     #**************************************************************
     response = wallet.api.create_account('initminer', 'newaccount', '{}')
 
@@ -18,12 +25,6 @@ def test_account_creation(wallet):
 
     assert _result[0]['balance'] == '0.000 TESTS'
     assert _result[0]['savings_balance'] == '0.000 TESTS'
-
-    #**************************************************************
-    response = wallet.api.list_accounts('na', 1)
-    _result = response['result']
-
-    assert _result[0] == 'newaccount'
 
     #**************************************************************
     response = wallet.api.get_account('newaccount')
