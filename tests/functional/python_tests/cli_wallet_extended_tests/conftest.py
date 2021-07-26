@@ -2,8 +2,12 @@ import pytest
 
 
 @pytest.fixture
-def wallet(world):
+def node(world):
     init_node = world.create_init_node()
     init_node.run()
+    return node
 
-    return init_node.attach_wallet()
+
+@pytest.fixture
+def wallet(node):
+    return node.attach_wallet()
