@@ -159,7 +159,6 @@ class wallet_api
     vector< condenser_api::api_account_object > list_my_accounts();
 
     /** Lists all accounts registered in the blockchain.
-      * This returns a list of all account names and their account ids, sorted by account name.
       *
       * Use the \c lowerbound and limit parameters to page through the list.  To retrieve all accounts,
       * start by setting \c lowerbound to the empty string \c "", and then each iteration, pass
@@ -168,14 +167,18 @@ class wallet_api
       * @param lowerbound the name of the first account to return.  If the named account does not exist,
       *                   the list will start at the account that comes after \c lowerbound
       * @param limit the maximum number of accounts to return (max: 1000)
-      * @returns a list of accounts mapping account names to account ids
+      *
+      * @returns a sorted list of account names
       */
     vector< account_name_type > list_accounts(const string& lowerbound, uint32_t limit);
 
-    /** Returns the block chain's rapidly-changing properties.
+    /** Returns the blockchain's rapidly-changing properties.
+      *
       * The returned object contains information that changes every block interval
-      * such as the head block number, the next witness, etc.
+      * such as the head block number, current witness, etc.
+      *
       * @see \c get_global_properties() for less-frequently changing properties
+      *
       * @returns the dynamic global properties
       */
     condenser_api::extended_dynamic_global_properties get_dynamic_global_properties() const;
@@ -183,6 +186,7 @@ class wallet_api
     /** Returns information about the given account.
       *
       * @param account_name the name of the account to provide information about
+      *
       * @returns the public account data stored in the blockchain
       */
     condenser_api::api_account_object get_account( const string& account_name ) const;
@@ -192,24 +196,29 @@ class wallet_api
       * This is the filename that will be used when automatically saving the wallet.
       *
       * @see set_wallet_filename()
+      *
       * @return the wallet filename
       */
     string                            get_wallet_filename() const;
 
-    /**
-      * Get the WIF private key corresponding to a public key.  The
-      * private key must already be in the wallet.
+    /** Get the WIF private key corresponding to a public key.
+      * The private key must already be in the wallet.
+      *
+      * @param pubkey public key      
+      *
+      * @return private key
       */
     string                            get_private_key( public_key_type pubkey )const;
 
-    /**
+    /** Derives private key for a gien role from so-called Master Password
+      *
       *  @param account  - the name of the account to retrieve key for
       *  @param role     - active | owner | posting | memo
-      *  @param password - the password to be used at key generation
+      *  @param password - the Master Password to derive key from
+      *
       *  @return public key corresponding to generated private key, and private key in WIF format.
       */
     pair<public_key_type,string>  get_private_key_from_password( const string& account, const string& role, const string& password )const;
-
 
     /**
       * Returns transaction by ID.
