@@ -47,7 +47,7 @@ def test_withdraw_vesting(world):
     check_withdraw_data( _result, '0.000000 VESTS', 0 )
 
     #**************************************************************
-    response = wallet.api.get_withdraw_routes('alice', 'by_destination')
+    response = wallet.api.get_withdraw_routes('alice', 'incoming')
     _result = response['result']
 
     assert len(_result) == 0
@@ -62,7 +62,7 @@ def test_withdraw_vesting(world):
     check_withdraw_data( _result, '0.307693 VESTS', 4000000 )
 
     #**************************************************************
-    response = wallet.api.get_withdraw_routes('alice', 'by_destination')
+    response = wallet.api.get_withdraw_routes('alice', 'incoming')
     _result = response['result']
 
     assert len(_result) == 0
@@ -75,7 +75,7 @@ def test_withdraw_vesting(world):
     check_route( _value, 'alice', 'bob', 30, True )
 
     #**************************************************************
-    response = wallet.api.get_withdraw_routes('alice', 'by_withdraw_route')
+    response = wallet.api.get_withdraw_routes('alice', 'outgoing')
     _result = response['result']
 
     assert len(_result) == 1
@@ -90,7 +90,7 @@ def test_withdraw_vesting(world):
     check_route( _value, 'alice', 'carol', 25, False )
 
     #**************************************************************
-    response = wallet.api.get_withdraw_routes('alice', 'by_withdraw_route')
+    response = wallet.api.get_withdraw_routes('alice', 'outgoing')
     _result = response['result']
 
     assert len(_result) == 2

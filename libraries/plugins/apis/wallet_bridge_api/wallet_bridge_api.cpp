@@ -256,7 +256,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_ops_in_block )
   const bool only_virtual = arguments.get_array()[1].as_bool();
 
   get_ops_in_block_return result;
-  result.ops = _account_history_api->get_ops_in_block( { block_num, only_virtual} ).ops;
+  result.ops = _account_history_api->get_ops_in_block( { block_num, only_virtual } ).ops;
   return result;
 }
 
@@ -280,11 +280,23 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_withdraw_routes )
   FC_ASSERT( args.get_array()[0].is_array(), "get_withdraw_routes needs at least one argument" );
   const auto arguments = args.get_array()[0];
   FC_ASSERT( arguments.get_array()[0].is_string(), "Account name is required as first argument" );
-  FC_ASSERT( arguments.get_array()[1].is_numeric(), "Sort order type is required as second argument" );
+  FC_ASSERT( arguments.get_array()[1].is_string(), "Withdraw route type is required as second argument" );
 
   const protocol::account_name_type account = arguments.get_array()[0].get_string();
-  const database_api::sort_order_type order = arguments.get_array()[1].as<database_api::sort_order_type>();
-  return _database_api->find_withdraw_vesting_routes({account, order});
+  const auto route = arguments.get_array()[1].as<database_api::withdraw_route_type>();
+
+  get_withdraw_routes_return result;
+
+  if( route == database_api::withdraw_route_type::outgoing || route == database_api::withdraw_route_type::all )
+    result = _database_api->find_withdraw_vesting_routes({ account, database_api::by_withdraw_route });
+
+  if( route == database_api::withdraw_route_type::incoming || route == database_api::withdraw_route_type::all )
+  {
+    get_withdraw_routes_return _result = _database_api->find_withdraw_vesting_routes({ account, database_api::by_destination });
+    std::move( _result.routes.begin(), _result.routes.end(), std::back_inserter( result.routes ) );
+  }
+
+  return result;
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )

@@ -471,18 +471,18 @@ namespace detail
     FC_ASSERT( args.size() == 1 || args.size() == 2, "Expected 1-2 arguments, was ${n}", ("n", args.size()) );
 
     auto account = args[0].as< string >();
-    auto destination = args.size() == 2 ? args[1].as< withdraw_route_type >() : outgoing;
+    auto destination = args.size() == 2 ? args[1].as< database_api::withdraw_route_type >() : database_api::withdraw_route_type::outgoing;
 
     get_withdraw_routes_return result;
 
-    if( destination == outgoing || destination == all )
+    if( destination == database_api::withdraw_route_type::outgoing || destination == database_api::withdraw_route_type::all )
     {
       auto routes = _database_api->find_withdraw_vesting_routes( { account, database_api::by_withdraw_route } ).routes;
       for( auto& route : routes )
         result.emplace_back( route );
     }
 
-    if( destination == incoming || destination == all )
+    if( destination == database_api::withdraw_route_type::incoming || destination == database_api::withdraw_route_type::all )
     {
       auto routes = _database_api->find_withdraw_vesting_routes( { account, database_api::by_destination } ).routes;
       for( auto& route : routes )

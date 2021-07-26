@@ -2575,9 +2575,9 @@ serializer_wrapper<map< uint32_t, account_history::api_operation_object >> walle
   return { result };
 }
 
-vector< database_api::api_withdraw_vesting_route_object > wallet_api::get_withdraw_routes( const string& account, database_api::sort_order_type sort_type )const
+vector< database_api::api_withdraw_vesting_route_object > wallet_api::get_withdraw_routes( const string& account, database_api::withdraw_route_type type )const
 {
-  vector<variant> args{account, sort_type};
+  vector<variant> args{ account, variant{ type } };
   return my->_remote_wallet_bridge_api->get_withdraw_routes( {args} , LOCK ).routes;
 }
 
@@ -2837,7 +2837,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::remove_proposal(con
   return { my->sign_transaction( trx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::recurrent_transfer(
+annotated_signed_transaction wallet_api::recurrent_transfer(
  const account_name_type& from,
  const account_name_type& to,
  const serializer_wrapper<hive::protocol::asset>& amount,
@@ -2860,13 +2860,13 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::recurrent_transfer(
     tx.operations.push_back( op );
     tx.validate();
 
-    return { my->sign_transaction( tx, broadcast ) };
+    return my->sign_transaction( tx, broadcast );
   } FC_CAPTURE_AND_RETHROW( (from)(to)(amount)(memo)(recurrence)(executions)(broadcast) )
 }
 
-serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> wallet_api::find_recurrent_transfers(const account_name_type& from)
+vector< database_api::api_recurrent_transfer_object > wallet_api::find_recurrent_transfers(const account_name_type& from)
 {
-  return { my->_remote_wallet_bridge_api->find_recurrent_transfers( variant{from}, LOCK ) };
+  return my->_remote_wallet_bridge_api->find_recurrent_transfers( variant{from}, LOCK );
 }
 
 } } // hive::wallet
