@@ -98,21 +98,23 @@ class wallet_api
       */
     string                              help()const;
 
-    /**
-      * Returns info about the current state of the blockchain
+    /** Returns info about the current state of the blockchain
+      *
+      * @returns dynamic global properties, etc.
       */
     variant                             info();
 
     /** Returns info such as client version, git version of graphene/fc, version of boost, openssl.
+      *
       * @returns compile time info and client and dependencies versions
       */
     variant_object                      about() const;
 
-    /** Returns the information about a block
+    /** Returns the information about a block including its content
       *
-      * @param num Block num
+      * @param num Block number
       *
-      * @returns Public block data on the blockchain
+      * @returns block data stored on the blockchain
       */
     optional< condenser_api::legacy_signed_block > get_block( uint32_t num );
 
@@ -120,35 +122,39 @@ class wallet_api
       *
       * @param block_num Block height of specified block
       * @param only_virtual Whether to only return virtual operations
+      *
+      * @returns JSON array with operations included/generated in a specified block
       */
     vector< condenser_api::api_operation_object > get_ops_in_block( uint32_t block_num, bool only_virtual = true );
 
     /** Return the current price feed history
       *
-      * @returns Price feed history data on the blockchain
+      * @returns \c current_median_history \c market_median_history \c current_min_history \c current_max_history and \c price_history
       */
     condenser_api::api_feed_history_object get_feed_history()const;
 
-    /**
-      * Returns the list of witnesses producing blocks in the current round (21 Blocks)
+    /** Returns the list of witnesses producing blocks in the current round (21 Blocks)
+      *
       */
     vector< account_name_type > get_active_witnesses()const;
 
-    /**
-      * Returns the state info associated with the URL
+    /** Returns the state info associated with the URL (obsolete)
+      * 
       */
     condenser_api::state get_state( string url );
 
-    /**
-      * Returns vesting withdraw routes for an account.
+    /** Returns vesting withdraw routes for an account.
       *
       * @param account Account to query routes
       * @param type Withdraw type type [incoming, outgoing, all]
+      *
+      * @returns table with vesting withdraw routes for an account
       */
     vector< database_api::api_withdraw_vesting_route_object > get_withdraw_routes( const string& account, condenser_api::withdraw_route_type type = condenser_api::all )const;
 
-    /**
-      *  Gets the account information for all accounts for which this wallet has a private key
+    /** Gets the account balance information for all accounts for which this wallet has a private key
+      *
+      * @returns table with HIVE, VESTS and HBD balances for all accounts for which this wallet has a private key
       */
     vector< condenser_api::api_account_object > list_my_accounts();
 
