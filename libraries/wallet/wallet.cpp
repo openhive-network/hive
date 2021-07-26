@@ -287,16 +287,25 @@ public:
     return _checksum == fc::sha512();
   }
 
+  serializer_wrapper<database_api::api_dynamic_global_property_object> get_dynamic_global_properties() const
+  {
+    return { _remote_wallet_bridge_api->get_dynamic_global_properties({}, LOCK) };
+  }
+
   variant info() const
   {
-    auto dynamic_props = _remote_wallet_bridge_api->get_dynamic_global_properties({}, LOCK);
-    fc::mutable_variant_object result(fc::variant(dynamic_props).get_object());
+    auto dynamic_props = get_dynamic_global_properties();
+
+    fc::variant var;
+    to_variant( dynamic_props, var );
+    fc::mutable_variant_object result( var.get_object() );
+
     result["witness_majority_version"]  = fc::string( _remote_wallet_bridge_api->get_witness_schedule({}, LOCK).majority_version);
     result["hardfork_version"]          = fc::string( _remote_wallet_bridge_api->get_hardfork_version({}, LOCK) );
-    result["head_block_num"]            = dynamic_props.head_block_number;
-    result["head_block_id"]             = dynamic_props.head_block_id;
-    result["head_block_age"]            = fc::get_approximate_relative_time_string(dynamic_props.time, time_point_sec(time_point::now()), " old");
-    result["participation"]             = (100*dynamic_props.recent_slots_filled.popcount()) / 128.0;
+    result["head_block_num"]            = dynamic_props.value.head_block_number;
+    result["head_block_id"]             = dynamic_props.value.head_block_id;
+    result["head_block_age"]            = fc::get_approximate_relative_time_string(dynamic_props.value.time, time_point_sec(time_point::now()), " old");
+    result["participation"]             = (100*dynamic_props.value.recent_slots_filled.popcount()) / 128.0;
     result["median_hbd_price"]          = serializer_wrapper<protocol::price>{ _remote_wallet_bridge_api->get_current_median_history_price({}, LOCK) };
     result["account_creation_fee"]      = serializer_wrapper<hive::protocol::asset>{ _remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee };
     result["post_reward_fund"]          = serializer_wrapper<database_api::api_reward_fund_object>{ _remote_wallet_bridge_api->get_reward_fund({HIVE_POST_REWARD_FUND_NAME}, LOCK ) };
@@ -562,9 +571,9 @@ public:
   // sets the expiration time and reference block
   void initialize_transaction_header(transaction& tx)
   {
-    auto dyn_props = _remote_wallet_bridge_api->get_dynamic_global_properties({},LOCK);
-    tx.set_reference_block( dyn_props.head_block_id );
-    tx.set_expiration( dyn_props.time + fc::seconds(_tx_expiration_seconds) );
+    auto dyn_props = get_dynamic_global_properties();
+    tx.set_reference_block( dyn_props.value.head_block_id );
+    tx.set_expiration( dyn_props.value.time + fc::seconds(_tx_expiration_seconds) );
   }
 
   // if the user rapidly sends two identical transactions (within the same block),
@@ -712,9 +721,9 @@ public:
       }
     }
 
-    auto dyn_props = _remote_wallet_bridge_api->get_dynamic_global_properties({},LOCK);
-    tx.set_reference_block( dyn_props.head_block_id );
-    tx.set_expiration( dyn_props.time + fc::seconds(_tx_expiration_seconds) );
+    auto dyn_props = get_dynamic_global_properties();
+    tx.set_reference_block( dyn_props.value.head_block_id );
+    tx.set_expiration( dyn_props.value.time + fc::seconds(_tx_expiration_seconds) );
     tx.signatures.clear();
 
     //idump((_keys));
