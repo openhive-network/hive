@@ -166,14 +166,6 @@ class wallet_api
       */
     vector< account_name_type > list_accounts(const string& lowerbound, uint32_t limit);
 
-    /** Returns the block chain's rapidly-changing properties.
-      * The returned object contains information that changes every block interval
-      * such as the head block number, the next witness, etc.
-      * @see \c get_global_properties() for less-frequently changing properties
-      * @returns the dynamic global properties
-      */
-    database_api::api_dynamic_global_property_object get_dynamic_global_properties() const;
-
     /** Returns information about the given account.
       *
       * @param account_name the name of the account to provide information about
