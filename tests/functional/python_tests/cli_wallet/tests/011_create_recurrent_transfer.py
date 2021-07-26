@@ -26,7 +26,7 @@ if __name__ == "__main__":
             assert recurrent_transfers_before_count + 1 == recurrent_transfers_after_count, "recurrent_transfers_before_count +1 should be equal to recurrent_transfers_after_count."
             assert recurrent_transfer['from'] == creator
             assert recurrent_transfer['to'] == receiver
-            assert recurrent_transfer['amount'] == '10.000 TBD'
+            assert recurrent_transfer['amount']['amount'] == '10000'
             assert recurrent_transfer['memo'] == 'This is a memo'
             assert recurrent_transfer['recurrence'] == 24
             assert recurrent_transfer['consecutive_failures'] == 0
