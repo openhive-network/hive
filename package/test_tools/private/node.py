@@ -66,14 +66,18 @@ class Node:
             self.__directory.mkdir(exist_ok=True)
             self.__prepare_files_for_streams()
 
+            command = [str(self.__executable.get_path()), '-d', '.', *with_arguments]
+            self.__logger.debug(' '.join(item for item in command))
+
             run_subprocess = subprocess.run if blocking else subprocess.Popen
             process_handle = run_subprocess(
-                [str(self.__executable.get_path()), '-d', '.', *with_arguments],
+                command,
                 cwd=self.__directory,
                 **self.__files,
             )
 
             self.__process = process_handle if not blocking else None
+            return process_handle.returncode if blocking else None
 
         def get_id(self):
             return self.__process.pid
@@ -278,13 +282,19 @@ class Node:
     def dump_config(self):
         assert not self.is_running()
 
+        self.__logger.info('Config dumping started...')
+
         config_was_modified = self.config != create_default_config()
         self.__run_process(blocking=True, with_arguments=['--dump-config'], write_config_before_run=config_was_modified)
 
         self.config.load_from_file(self.__get_config_file_path())
 
+        self.__logger.info('Config dumped')
+
     def dump_snapshot(self, *, close=False):
         self.close()
+
+        self.__logger.info('Snapshot dumping started...')
 
         snapshot_path = Path('.')
         self.__ensure_that_plugin_required_for_snapshot_is_included()
@@ -298,6 +308,8 @@ class Node:
 
         if not close:
             self.__wait_for_dumping_snapshot_finish()
+
+        self.__logger.info('Snapshot dumped')
 
         return Snapshot(
             self.directory / 'snapshot' / snapshot_path,
@@ -320,7 +332,7 @@ class Node:
         if write_config_before_run:
             self.config.write_to_file(self.__get_config_file_path())
 
-        self.__process.run(blocking=blocking, with_arguments=with_arguments)
+        return self.__process.run(blocking=blocking, with_arguments=with_arguments)
 
     def run(
             self,
@@ -361,12 +373,15 @@ class Node:
         self.__process.workaround_stderr_parsing_problem()
         # ------------------------- End of workaround -------------------------
 
+        log_message = f'Running {self}'
         additional_arguments = []
         if load_snapshot_from is not None:
             self.__handle_loading_snapshot(load_snapshot_from, additional_arguments)
+            log_message += ', loading snapshot'
 
         if replay_from is not None:
             self.__handle_replay(replay_from, stop_at_block, additional_arguments)
+            log_message += ', replaying'
 
         if exit_before_synchronization:
             if wait_for_live is not None:
@@ -374,17 +389,21 @@ class Node:
 
             wait_for_live = False
             additional_arguments.append('--exit-before-sync')
+
+            self.__logger.info(f'{log_message} and waiting for close...')
         elif wait_for_live is None:
             wait_for_live = True
+            self.__logger.info(f'{log_message} and waiting for live...')
+        else:
+            self.__logger.info(f'{log_message} and NOT waiting for live...')
 
-        self.__run_process(blocking=exit_before_synchronization, with_arguments=additional_arguments)
+        return_code = self.__run_process(blocking=exit_before_synchronization, with_arguments=additional_arguments)
 
         self.__produced_files = True
         if wait_for_live:
             self._wait_for_live(timeout)
 
-        if self.is_running():
-            self.__log_run_summary()
+        self.__log_run_summary(return_code)
 
     def __handle_loading_snapshot(self, load_snapshot_from: Snapshot, additional_arguments: list):
         self.__ensure_that_plugin_required_for_snapshot_is_included()
@@ -403,14 +422,17 @@ class Node:
         blocklog_directory.mkdir()
         replay_source.copy_to(blocklog_directory)
 
-    def __log_run_summary(self):
-        message = f'Run with pid {self.__process.get_id()}, '
+    def __log_run_summary(self, return_code):
+        if self.is_running():
+            message = f'Run with pid {self.__process.get_id()}, '
 
-        endpoints = self.__get_opened_endpoints()
-        if endpoints:
-            message += f'with servers: {", ".join([f"{endpoint[1]}://{endpoint[0]}" for endpoint in endpoints])}'
+            endpoints = self.__get_opened_endpoints()
+            if endpoints:
+                message += f'with servers: {", ".join([f"{endpoint[1]}://{endpoint[0]}" for endpoint in endpoints])}'
+            else:
+                message += 'without any server'
         else:
-            message += 'without any server'
+            message = f'Run completed with return code {return_code}'
 
         message += f', {self.__executable.get_build_version()} build'
         message += f' commit={self.__executable.get_build_commit_hash()[:8]}'
