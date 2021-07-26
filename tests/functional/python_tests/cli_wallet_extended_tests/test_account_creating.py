@@ -1,9 +1,15 @@
-def test_account_creation(world):
+import pytest
+
+
+@pytest.fixture
+def wallet(world):
     init_node = world.create_init_node()
     init_node.run()
 
-    wallet = init_node.attach_wallet()
+    return init_node.attach_wallet()
 
+
+def test_account_creation(wallet):
     #**************************************************************
     response = wallet.api.create_account('initminer', 'newaccount', '{}')
 
