@@ -1,8 +1,7 @@
 from test_tools import Account, logger, World, Asset
 
 def check_key( node_name, result, key ):
-  _node = result[node_name]
-  _key_auths = _node['key_auths']
+  _key_auths = result[node_name]['key_auths']
   assert len(_key_auths) == 1
   __key_auths = _key_auths[0]
   assert len(__key_auths) == 2
@@ -16,9 +15,8 @@ def test_account_creation2(world):
 
     #**************************************************************
     response = wallet.api.list_accounts('a', 100)
-    _result = response['result']
 
-    old_accounts_number = len(_result)
+    old_accounts_number = len(response['result'])
 
     logger.info('Waiting...')
     init_node.wait_number_of_blocks(18)
@@ -40,9 +38,8 @@ def test_account_creation2(world):
     #**************************************************************
     key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
     response = wallet.api.create_account_with_keys('initminer', 'alice1', '{}', key, key, key, key)
-    _result = response['result']
 
-    _operations = _result['operations']
+    _operations = response['result']['operations']
     _value = _operations[0][1]
 
     check_key( 'owner', _value, key )
@@ -52,7 +49,6 @@ def test_account_creation2(world):
 
     #**************************************************************
     response = wallet.api.get_account('alice1')
-    _result = response['result']
 
     #**************************************************************
     try:
@@ -69,5 +65,4 @@ def test_account_creation2(world):
 
     #**************************************************************
     response = wallet.api.list_accounts('a', 100)
-    _result = response['result']
-    assert old_accounts_number + 2 == len(_result)
+    assert old_accounts_number + 2 == len(response['result'])

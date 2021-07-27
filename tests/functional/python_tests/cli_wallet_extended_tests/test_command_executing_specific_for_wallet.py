@@ -64,9 +64,8 @@ def test_wallet(world):
 
     #**************************************************************
     response = wallet.api.list_keys()
-    _result = response['result']
 
-    _keys = _result[0]
+    _keys = response['result'][0]
 
     assert len(_keys) == 2
     assert _keys[0] == 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4'
@@ -97,22 +96,19 @@ def test_wallet(world):
 
     #**************************************************************
     response = wallet.api.get_private_key('TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4')
-    _result = response['result']
 
-    assert _result == '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n'
+    assert response['result'] == '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n'
 
     #**************************************************************
     response = wallet.api.gethelp('find_proposals')
-    _result = response['result']
 
-    found = _result.find('Find proposal with given id')
+    found = response['result'].find('Find proposal with given id')
     assert found != -1
 
     #**************************************************************
     response = wallet.api.gethelp('create_proposal')
-    _result = response['result']
 
-    found = _result.find('Create worker proposal')
+    found = response['result'].find('Create worker proposal')
     assert found != -1
 
     #**************************************************************

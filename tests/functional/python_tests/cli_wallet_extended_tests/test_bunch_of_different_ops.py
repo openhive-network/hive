@@ -136,9 +136,8 @@ def test_complex(world):
 
     #**************************************************************
     response = wallet.api.sign_transaction(_result_trx_response)
-    _result = response['result']
 
-    assert len(_result['operations']) == 8
+    assert len(response['result']['operations']) == 8
 
     #**************************************************************
     with wallet.in_single_transaction(broadcast=False) as transaction:
@@ -155,9 +154,7 @@ def test_complex(world):
     #**************************************************************
     response = wallet.api.sign_transaction(_result_trx_response)
 
-    _result = response['result']
-
-    assert len(_result['operations']) == 6
+    assert len(response['result']['operations']) == 6
 
     #**************************************************************
     with wallet.in_single_transaction() as transaction:
@@ -166,9 +163,7 @@ def test_complex(world):
 
     trx_response = transaction.get_response()
 
-    _result = trx_response['result']
-
-    assert len(_result['operations']) == 10
+    assert len(trx_response['result']['operations']) == 10
 
     #**************************************************************
     with wallet.in_single_transaction() as transaction:
