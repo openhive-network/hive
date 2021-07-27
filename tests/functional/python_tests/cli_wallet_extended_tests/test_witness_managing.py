@@ -1,4 +1,4 @@
-from test_tools import Account, logger, World
+from test_tools import Account, logger, World, Asset
 
 def test_witness(world):
     init_node = world.create_init_node()
@@ -11,7 +11,7 @@ def test_witness(world):
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', '500.000 TESTS')
+    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
     assert 'result' in response
 
     #**************************************************************

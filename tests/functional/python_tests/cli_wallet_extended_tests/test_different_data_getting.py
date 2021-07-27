@@ -1,4 +1,4 @@
-from test_tools import Account, logger, World
+from test_tools import Account, logger, World, Asset
 
 def test_getters(world):
     init_node = world.create_init_node()
@@ -12,7 +12,7 @@ def test_getters(world):
 
     transaction_id = _result['transaction_id']
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', '500.000 TESTS')
+    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
     _result = response['result']
 
     block_number = _result['ref_block_num'] + 1
@@ -27,7 +27,7 @@ def test_getters(world):
     _op = _ops[0]
 
     _value = _op[1]
-    assert _value['amount'] == '500.000 TESTS'
+    assert _value['amount'] == Asset.Test(500)
 
     #**************************************************************
     response = wallet.api.get_encrypted_memo('alice', 'initminer', '#this is memo')
@@ -79,7 +79,7 @@ def test_getters(world):
     _result = response['result']
 
     _value = _result[1]
-    assert _value['amount'] == '0.000 TESTS'
+    assert _value['amount'] == Asset.Test(0)
 
     #**************************************************************
     response = wallet.api.get_transaction(transaction_id)
@@ -93,4 +93,4 @@ def test_getters(world):
     _value = _op[1]
 
     assert 'fee' in _value
-    assert _value['fee'] == '0.000 TESTS'
+    assert _value['fee'] == Asset.Test(0)

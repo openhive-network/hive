@@ -1,4 +1,4 @@
-from test_tools import Account, logger, World
+from test_tools import Account, logger, World, Asset
 
 def test_recurrent_transfer(world):
     init_node = world.create_init_node()
@@ -32,24 +32,24 @@ def test_recurrent_transfer(world):
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', '100.000 TESTS')
+    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(100))
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'bob', '100.000 TESTS')
+    response = wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(100))
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'alice', '500.000 TESTS', 'banana')
+    response = wallet.api.transfer('initminer', 'alice', Asset.Test(500), 'banana')
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.recurrent_transfer('alice', 'bob', '20.000 TESTS', 'banana-cherry', 24, 3 )
+    response = wallet.api.recurrent_transfer('alice', 'bob', Asset.Test(20), 'banana-cherry', 24, 3 )
     _result = response['result']
 
     _value = check_recurrence_transfer_data( _result )
 
-    check_recurrence_transfer( _value, 'alice', 'bob', '20.000 TESTS', 'banana-cherry', 24, 'executions', 3 )
+    check_recurrence_transfer( _value, 'alice', 'bob', Asset.Test(20), 'banana-cherry', 24, 'executions', 3 )
 
     #**************************************************************
     response = wallet.api.find_recurrent_transfers('alice')
@@ -57,7 +57,7 @@ def test_recurrent_transfer(world):
 
     assert len(_result) == 1
 
-    check_recurrence_transfer( _result[0], 'alice', 'bob', '20.000 TESTS', 'banana-cherry', 24, 'remaining_executions', 2 )
+    check_recurrence_transfer( _result[0], 'alice', 'bob', Asset.Test(20), 'banana-cherry', 24, 'remaining_executions', 2 )
 
     #**************************************************************
     response = wallet.api.recurrent_transfer('bob', 'alice', '0.900 TESTS', 'banana-lime', 25, 2 )

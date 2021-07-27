@@ -1,4 +1,4 @@
-from test_tools import Account, logger, World
+from test_tools import Account, logger, World, Asset
 
 def test_recovery(world):
     init_node = world.create_init_node()
@@ -19,11 +19,11 @@ def test_recovery(world):
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', '100.000 TESTS')
+    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(100))
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'alice', '500.000 TESTS', 'banana')
+    response = wallet.api.transfer('initminer', 'alice', Asset.Test(500), 'banana')
     assert 'result' in response
 
     #**************************************************************
@@ -31,11 +31,11 @@ def test_recovery(world):
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('alice', 'bob', '40.000 TESTS')
+    response = wallet.api.transfer_to_vesting('alice', 'bob', Asset.Test(40))
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'bob', '333.000 TESTS', 'kiwi-banana')
+    response = wallet.api.transfer('initminer', 'bob', Asset.Test(333), 'kiwi-banana')
     assert 'result' in response
 
     #**************************************************************

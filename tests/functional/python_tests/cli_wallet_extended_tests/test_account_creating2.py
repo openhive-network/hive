@@ -1,4 +1,4 @@
-from test_tools import Account, logger, World
+from test_tools import Account, logger, World, Asset
 
 def check_key( node_name, result, key ):
   _node = result[node_name]
@@ -24,16 +24,16 @@ def test_account_creation2(world):
     init_node.wait_number_of_blocks(18)
     
     #**************************************************************
-    response = wallet.api.claim_account_creation('initminer', '0.000 TESTS')
+    response = wallet.api.claim_account_creation('initminer', Asset.Test(0))
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.claim_account_creation_nonblocking('initminer', '0.000 TESTS')
+    response = wallet.api.claim_account_creation_nonblocking('initminer', Asset.Test(0))
     assert 'result' in response
 
     #**************************************************************
     try:
-        response = wallet.api.create_account_delegated('initminer', '2.987 TESTS', '6.123456 VESTS', 'alicex', '{}')
+        response = wallet.api.create_account_delegated('initminer', Asset.Test(3), '6.123456 VESTS', 'alicex', '{}')
     except Exception as e:
         message = str(e)
         found = message.find('Account creation with delegation is deprecated as of Hardfork 20')
@@ -59,7 +59,7 @@ def test_account_creation2(world):
     #**************************************************************
     try:
         key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
-        response = wallet.api.create_account_with_keys_delegated('initminer', '2.987 TESTS', '6.123456 VESTS', 'alicey', '{}', key, key, key, key)
+        response = wallet.api.create_account_with_keys_delegated('initminer', Asset.Test(4), '6.123456 VESTS', 'alicey', '{}', key, key, key, key)
     except Exception as e:
         message = str(e)
         found = message.find('Account creation with delegation is deprecated as of Hardfork 20')
@@ -67,7 +67,7 @@ def test_account_creation2(world):
 
     #**************************************************************
     key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
-    response = wallet.api.create_funded_account_with_keys('initminer', 'alice2', '2.456 TESTS', 'banana', '{}', key, key, key, key)
+    response = wallet.api.create_funded_account_with_keys('initminer', 'alice2', Asset.Test(2), 'banana', '{}', key, key, key, key)
     assert 'result' in response
 
     #**************************************************************

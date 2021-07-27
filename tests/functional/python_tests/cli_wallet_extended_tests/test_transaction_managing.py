@@ -1,4 +1,4 @@
-from test_tools import Account, logger, World
+from test_tools import Account, logger, World, Asset
 import dateutil.parser as dp
 import datetime
 
@@ -14,9 +14,9 @@ def test_transaction(world):
 
     #**************************************************************
     with wallet.in_single_transaction(broadcast=False) as transaction:
-        wallet.api.transfer_to_vesting('initminer', 'carol', '100.000 TESTS')
-        wallet.api.transfer('initminer', 'carol', '500.000 TESTS', 'kiwi')
-        wallet.api.transfer('initminer', 'carol', '50.000 TBD', 'orange')
+        wallet.api.transfer_to_vesting('initminer', 'carol', Asset.Test(100))
+        wallet.api.transfer('initminer', 'carol', Asset.Test(500), 'kiwi')
+        wallet.api.transfer('initminer', 'carol', Asset.Tbd(50), 'orange')
 
     trx_response = transaction.get_response()
 
@@ -26,8 +26,8 @@ def test_transaction(world):
     response = wallet.api.get_account('carol')
     _result = response['result']
 
-    assert _result['balance'] == '0.000 TESTS'
-    assert _result['hbd_balance'] == '0.000 TBD'
+    assert _result['balance'] == Asset.Test(0)
+    assert _result['hbd_balance'] == Asset.Tbd(0)
     assert _result['vesting_shares'] == '0.000000 VESTS'
 
     #**************************************************************
@@ -42,8 +42,8 @@ def test_transaction(world):
     response = wallet.api.get_account('carol')
     _result = response['result']
 
-    assert _result['balance'] == '500.000 TESTS'
-    assert _result['hbd_balance'] == '50.000 TBD'
+    assert _result['balance'] == Asset.Test(500)
+    assert _result['hbd_balance'] == Asset.Tbd(50)
     assert _result['vesting_shares'] != '0.000000 VESTS'
 
     #**************************************************************
