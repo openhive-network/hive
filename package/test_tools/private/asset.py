@@ -1,4 +1,5 @@
 from copy import deepcopy
+import warnings
 from typing import Union
 
 
@@ -11,7 +12,21 @@ class AssetBase:
 
     @staticmethod
     def __convert_amount_to_internal_representation(amount: Union[int, float], precision: int) -> int:
+        AssetBase.__warn_if_precision_might_be_lost(amount, precision)
         return int(round(amount, precision) * pow(10, precision))
+
+    @staticmethod
+    def __warn_if_precision_might_be_lost(amount: Union[int, float], precision: int):
+        rounded_value = round(amount, precision)
+        acceptable_error = 0.1 ** 10
+
+        if abs(amount - rounded_value) > acceptable_error:
+            warnings.warn(
+                f'Precision lost during asset creation.\n'
+                f'\n'
+                f'Asset with amount {amount} was requested, but this value was rounded to {rounded_value},\n'
+                f'because precision of this asset is {precision} ({pow(0.1, precision):.3f}).'
+            )
 
     def as_nai(self):
         return {
