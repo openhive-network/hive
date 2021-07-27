@@ -24,12 +24,10 @@ def test_account_creation2(world):
     init_node.wait_number_of_blocks(18)
     
     #**************************************************************
-    response = wallet.api.claim_account_creation('initminer', Asset.Test(0))
-    assert 'result' in response
+    wallet.api.claim_account_creation('initminer', Asset.Test(0))
 
     #**************************************************************
-    response = wallet.api.claim_account_creation_nonblocking('initminer', Asset.Test(0))
-    assert 'result' in response
+    wallet.api.claim_account_creation_nonblocking('initminer', Asset.Test(0))
 
     #**************************************************************
     try:
@@ -67,8 +65,7 @@ def test_account_creation2(world):
 
     #**************************************************************
     key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
-    response = wallet.api.create_funded_account_with_keys('initminer', 'alice2', Asset.Test(2), 'banana', '{}', key, key, key, key)
-    assert 'result' in response
+    wallet.api.create_funded_account_with_keys('initminer', 'alice2', Asset.Test(2), 'banana', '{}', key, key, key, key)
 
     #**************************************************************
     response = wallet.api.list_accounts('a', 100)

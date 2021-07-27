@@ -7,16 +7,13 @@ def test_transfer(world):
     wallet = init_node.attach_wallet()
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'newaccount', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'newaccount', '{}')
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'newaccount2', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'newaccount2', '{}')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'newaccount', Asset.Test(100))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('initminer', 'newaccount', Asset.Test(100))
 
     #**************************************************************
     response = wallet.api.get_account('newaccount')
@@ -29,20 +26,16 @@ def test_transfer(world):
     assert _result['vesting_shares'] != '0.000000 VESTS'
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'newaccount', '5.432 TESTS', 'banana')
-    assert 'result' in response
+    wallet.api.transfer('initminer', 'newaccount', '5.432 TESTS', 'banana')
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'newaccount', '9.169 TBD', 'banana2')
-    assert 'result' in response
+    wallet.api.transfer('initminer', 'newaccount', '9.169 TBD', 'banana2')
 
     #**************************************************************
-    response = wallet.api.transfer_to_savings('initminer', 'newaccount', '15.432 TESTS', 'pomelo')
-    assert 'result' in response
+    wallet.api.transfer_to_savings('initminer', 'newaccount', '15.432 TESTS', 'pomelo')
 
     #**************************************************************
-    response = wallet.api.transfer_to_savings('initminer', 'newaccount', '19.169 TBD', 'pomelo2')
-    assert 'result' in response
+    wallet.api.transfer_to_savings('initminer', 'newaccount', '19.169 TBD', 'pomelo2')
 
     #**************************************************************
     response = wallet.api.get_account('newaccount')
@@ -54,12 +47,10 @@ def test_transfer(world):
     assert _result['savings_hbd_balance'] == '19.169 TBD'
 
     #**************************************************************
-    response = wallet.api.transfer_from_savings('newaccount', 7, 'newaccount2', '0.001 TESTS', 'kiwi')
-    assert 'result' in response
+    wallet.api.transfer_from_savings('newaccount', 7, 'newaccount2', '0.001 TESTS', 'kiwi')
 
     #**************************************************************
-    response = wallet.api.transfer_from_savings('newaccount', 8, 'newaccount2', '0.001 TBD', 'kiwi2')
-    assert 'result' in response
+    wallet.api.transfer_from_savings('newaccount', 8, 'newaccount2', '0.001 TBD', 'kiwi2')
 
     #**************************************************************
     response = wallet.api.get_account('newaccount')
@@ -74,12 +65,10 @@ def test_transfer(world):
     response = wallet.api.transfer_nonblocking('newaccount', 'newaccount2', '0.100 TESTS', 'mango')
 
     #**************************************************************
-    response = wallet.api.transfer_nonblocking('newaccount', 'newaccount2', '0.200 TBD', 'mango2')
-    assert 'result' in response
+    wallet.api.transfer_nonblocking('newaccount', 'newaccount2', '0.200 TBD', 'mango2')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting_nonblocking('initminer', 'newaccount', Asset.Test(100))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting_nonblocking('initminer', 'newaccount', Asset.Test(100))
 
     logger.info('Waiting...')
     init_node.wait_number_of_blocks(1)
@@ -94,8 +83,7 @@ def test_transfer(world):
     assert _result['vesting_shares'] != '0.000000 VESTS'
 
     #**************************************************************
-    response = wallet.api.cancel_transfer_from_savings('newaccount', 7)
-    assert 'result' in response
+    wallet.api.cancel_transfer_from_savings('newaccount', 7)
 
     #**************************************************************
     response = wallet.api.get_account('newaccount')
