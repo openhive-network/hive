@@ -1,4 +1,4 @@
-from test_tools import Account, logger, World
+from test_tools import Account, logger, World, Asset
 import os.path
 
 def test_wallet(world):
@@ -138,11 +138,11 @@ def test_wallet(world):
     assert _median_hbd_price['base'] == '0.001 TBD'
     assert _median_hbd_price['quote'] == '0.001 TESTS'
 
-    assert _result['account_creation_fee'] == '0.000 TESTS'
+    assert _result['account_creation_fee'] == Asset.Test(0)
 
     _post_reward_fund = _result['post_reward_fund']
 
-    assert _post_reward_fund['reward_balance'] != '0.000 TESTS'
+    assert _post_reward_fund['reward_balance'] != Asset.Test(0)
 
     #**************************************************************
     response = wallet.api.normalize_brain_key('     mango apple banana CHERRY ')

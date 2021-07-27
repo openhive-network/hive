@@ -1,7 +1,7 @@
 # This is a regression test for problem described in following issue:
 # https://gitlab.syncad.com/hive/hive/-/issues/113
 
-from test_tools import Account, Asset, logger
+from test_tools import Account, logger, Asset
 
 
 def test_getting_key_references_of_claimed_created_account(world):

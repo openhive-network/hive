@@ -1,4 +1,4 @@
-from test_tools import Account, logger, World
+from test_tools import Account, logger, World, Asset
 
 def test_order(world):
     init_node = world.create_init_node()
@@ -11,26 +11,26 @@ def test_order(world):
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'alice', '77.000 TESTS', 'lime')
+    response = wallet.api.transfer('initminer', 'alice', Asset.Test(77), 'lime')
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', '500.000 TESTS')
+    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.create_order('alice', 666, '7.000 TESTS', '1.000 TBD', False, 3600 )
+    response = wallet.api.create_order('alice', 666, Asset.Test(7), Asset.Tbd(1), False, 3600 )
     _result = response['result']
 
     _ops = _result['operations']
     _op = _ops[0]
 
     _value = _op[1]
-    assert _value['amount_to_sell'] == '7.000 TESTS'
-    assert _value['min_to_receive'] == '1.000 TBD'
+    assert _value['amount_to_sell'] == Asset.Test(7)
+    assert _value['min_to_receive'] == Asset.Tbd(1)
 
     #**************************************************************
-    response = wallet.api.create_order('alice', 667, '8.000 TESTS', '2.000 TBD', False, 3600 )
+    response = wallet.api.create_order('alice', 667, Asset.Test(8), Asset.Tbd(2), False, 3600 )
     _result = response['result']
     assert 'operations' in _result
 
@@ -52,8 +52,8 @@ def test_order(world):
       assert 'quote' in _order_price
       _order_price['quote'] == quote
 
-    check_ask( _asks[0], '7.000 TESTS', '1.000 TBD' )
-    check_ask( _asks[1], '8.000 TESTS', '2.000 TBD' )
+    check_ask( _asks[0], Asset.Test(7), Asset.Tbd(1) )
+    check_ask( _asks[1], Asset.Test(8), Asset.Tbd(2) )
 
     #**************************************************************
     response = wallet.api.get_open_orders('alice')
@@ -71,8 +71,8 @@ def test_order(world):
       assert 'quote' in _sell_price
       _sell_price['quote'] == quote
 
-    check_sell_price( _result[0], '7.000 TESTS', '1.000 TBD' )
-    check_sell_price( _result[1], '8.000 TESTS', '2.000 TBD' )
+    check_sell_price( _result[0], Asset.Test(7), Asset.Tbd(1) )
+    check_sell_price( _result[1], Asset.Test(8), Asset.Tbd(2) )
 
     #**************************************************************
     response = wallet.api.cancel_order('alice', 667)
@@ -94,4 +94,4 @@ def test_order(world):
 
     assert len(_result) == 1
 
-    check_sell_price( _result[0], '7.000 TESTS', '1.000 TBD' )
+    check_sell_price( _result[0], Asset.Test(7), Asset.Tbd(1) )

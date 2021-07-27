@@ -1,4 +1,4 @@
-from test_tools import Account, logger, World
+from test_tools import Account, logger, World, Asset
 
 def test_comment(world):
     init_node = world.create_init_node()
@@ -11,15 +11,15 @@ def test_comment(world):
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'alice', '200.000 TESTS', 'avocado')
+    response = wallet.api.transfer('initminer', 'alice', Asset.Test(200), 'avocado')
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'alice', '100.000 TBD', 'banana')
+    response = wallet.api.transfer('initminer', 'alice', Asset.Tbd(100), 'banana')
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', '50.000 TESTS')
+    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(50))
     assert 'result' in response
 
     #**************************************************************
@@ -27,11 +27,11 @@ def test_comment(world):
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer('alice', 'bob', '50.000 TESTS', 'lemon')
+    response = wallet.api.transfer('alice', 'bob', Asset.Test(50), 'lemon')
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('alice', 'bob', '25.000 TESTS')
+    response = wallet.api.transfer_to_vesting('alice', 'bob', Asset.Test(25))
     assert 'result' in response
 
     #**************************************************************

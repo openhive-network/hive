@@ -1,4 +1,4 @@
-from test_tools import Account, logger, World
+from test_tools import Account, logger, World, Asset
 
 def check_key( node_name, result, key ):
     _node = result[node_name]
@@ -66,7 +66,7 @@ def test_complex(world):
 
     #**************************************************************
     try:
-        response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', '111.000 TBD', 'this is proposal', 'hello-world')
+        response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', Asset.Tbd(111), 'this is proposal', 'hello-world')
     except Exception as e:
         message = str(e)
         assert message.find('Proposal permlink must point to the article posted by creator or receiver') != -1
@@ -79,7 +79,7 @@ def test_complex(world):
         assert message.find('Account: bob has 0 RC') != -1
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'bob', '100.000 TESTS')
+    response = wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(100))
     assert 'result' in response
 
     #**************************************************************
@@ -88,7 +88,7 @@ def test_complex(world):
 
     #**************************************************************
     try:
-        response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', '111.000 TBD', 'this is proposal', 'hello-world')
+        response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', Asset.Tbd(111), 'this is proposal', 'hello-world')
     except Exception as e:
         message = str(e)
         assert message.find('Account bob does not have sufficient funds for balance adjustment') != -1
@@ -98,7 +98,7 @@ def test_complex(world):
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', '111.000 TBD', 'this is proposal', 'hello-world')
+    response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', Asset.Tbd(111), 'this is proposal', 'hello-world')
     assert 'result' in response
 
     #**************************************************************
@@ -131,12 +131,12 @@ def test_complex(world):
     with wallet.in_single_transaction(broadcast=False) as transaction:
         wallet.api.transfer('bob', 'alice', '199.148 TBD', 'banana')
         wallet.api.transfer('bob', 'alice', '100.001 TBD', 'cherry')
-        wallet.api.transfer('initminer', 'alice', '1.000 TBD', 'aloes')
+        wallet.api.transfer('initminer', 'alice', Asset.Tbd(1), 'aloes')
         wallet.api.transfer('initminer', 'carol', '199.001 TBD', 'pumpkin')
         wallet.api.transfer('initminer', 'dan', '198.002 TBD', 'beetroot')
-        wallet.api.transfer_to_vesting('initminer', 'carol', '100.000 TESTS')
-        wallet.api.transfer_to_vesting('initminer', 'alice', '100.000 TESTS')
-        wallet.api.transfer_to_vesting('initminer', 'dan', '100.000 TESTS')
+        wallet.api.transfer_to_vesting('initminer', 'carol', Asset.Test(100))
+        wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(100))
+        wallet.api.transfer_to_vesting('initminer', 'dan', Asset.Test(100))
 
     trx_response = transaction.get_response()
 

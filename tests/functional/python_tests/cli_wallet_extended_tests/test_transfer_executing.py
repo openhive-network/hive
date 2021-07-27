@@ -1,4 +1,4 @@
-from test_tools import Account, logger, World
+from test_tools import Account, logger, World, Asset
 
 def test_transfer(world):
     init_node = world.create_init_node()
@@ -15,17 +15,17 @@ def test_transfer(world):
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'newaccount', '100.000 TESTS')
+    response = wallet.api.transfer_to_vesting('initminer', 'newaccount', Asset.Test(100))
     assert 'result' in response
 
     #**************************************************************
     response = wallet.api.get_account('newaccount')
     _result = response['result']
 
-    assert _result['balance'] == '0.000 TESTS'
-    assert _result['hbd_balance'] == '0.000 TBD'
-    assert _result['savings_balance'] == '0.000 TESTS'
-    assert _result['savings_hbd_balance'] == '0.000 TBD'
+    assert _result['balance'] == Asset.Test(0)
+    assert _result['hbd_balance'] == Asset.Tbd(0)
+    assert _result['savings_balance'] == Asset.Test(0)
+    assert _result['savings_hbd_balance'] == Asset.Tbd(0)
     assert _result['vesting_shares'] != '0.000000 VESTS'
 
     #**************************************************************
@@ -78,7 +78,7 @@ def test_transfer(world):
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting_nonblocking('initminer', 'newaccount', '100.000 TESTS')
+    response = wallet.api.transfer_to_vesting_nonblocking('initminer', 'newaccount', Asset.Test(100))
     assert 'result' in response
 
     logger.info('Waiting...')
