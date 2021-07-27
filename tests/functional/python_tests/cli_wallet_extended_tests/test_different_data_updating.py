@@ -15,16 +15,13 @@ def test_update(world):
     wallet = init_node.attach_wallet()
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'alice', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'alice', '{}')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
 
     #**************************************************************
-    response = wallet.api.update_account_auth_account('alice', 'posting', 'initminer', 2)
-    assert 'result' in response
+    wallet.api.update_account_auth_account('alice', 'posting', 'initminer', 2)
 
     #**************************************************************
     response = wallet.api.get_account('alice')
@@ -39,8 +36,7 @@ def test_update(world):
     assert __account_auths[1] == 2
 
     #**************************************************************
-    response = wallet.api.update_account_auth_key('alice', 'posting', 'TST8ViK3T9FHbbtQs9Mo5odBM6tSmtFEVCvjEDKNPqKe9U1bJs53f', 3)
-    assert 'result' in response
+    wallet.api.update_account_auth_key('alice', 'posting', 'TST8ViK3T9FHbbtQs9Mo5odBM6tSmtFEVCvjEDKNPqKe9U1bJs53f', 3)
 
     #**************************************************************
     response = wallet.api.get_account('alice')
@@ -55,8 +51,7 @@ def test_update(world):
     __account_auths[1] == 3
 
     #**************************************************************
-    response = wallet.api.update_account_auth_threshold('alice', 'posting', 4)
-    assert 'result' in response
+    wallet.api.update_account_auth_threshold('alice', 'posting', 4)
 
     #**************************************************************
     response = wallet.api.get_account('alice')
@@ -70,8 +65,7 @@ def test_update(world):
     __account_auths[1] == 4
 
     #**************************************************************
-    response = wallet.api.update_account_memo_key('alice', 'TST84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ')
-    assert 'result' in response
+    wallet.api.update_account_memo_key('alice', 'TST84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ')
 
     #**************************************************************
     response = wallet.api.get_account('alice')
@@ -91,8 +85,7 @@ def test_update(world):
 
     #**************************************************************
     key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
-    response = wallet.api.update_account('alice', '{}', key, key, key, key)
-    assert 'result' in response
+    wallet.api.update_account('alice', '{}', key, key, key, key)
 
     #**************************************************************
     response = wallet.api.get_account('alice')

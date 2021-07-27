@@ -7,16 +7,13 @@ def test_order(world):
     wallet = init_node.attach_wallet()
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'alice', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'alice', '{}')
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'alice', Asset.Test(77), 'lime')
-    assert 'result' in response
+    wallet.api.transfer('initminer', 'alice', Asset.Test(77), 'lime')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
 
     #**************************************************************
     response = wallet.api.create_order('alice', 666, Asset.Test(7), Asset.Tbd(1), False, 3600 )

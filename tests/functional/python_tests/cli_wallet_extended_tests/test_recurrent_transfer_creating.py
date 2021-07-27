@@ -24,24 +24,19 @@ def test_recurrent_transfer(world):
       assert node[executions_key] == executions_number
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'alice', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'alice', '{}')
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'bob', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'bob', '{}')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(100))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(100))
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(100))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(100))
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'alice', Asset.Test(500), 'banana')
-    assert 'result' in response
+    wallet.api.transfer('initminer', 'alice', Asset.Test(500), 'banana')
 
     #**************************************************************
     response = wallet.api.recurrent_transfer('alice', 'bob', Asset.Test(20), 'banana-cherry', 24, 3 )

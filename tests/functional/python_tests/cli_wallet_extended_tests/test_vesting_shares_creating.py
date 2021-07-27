@@ -7,36 +7,28 @@ def test_delegate(world):
     wallet = init_node.attach_wallet()
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'alice', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'alice', '{}')
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'alice', Asset.Test(200), 'avocado')
-    assert 'result' in response
+    wallet.api.transfer('initminer', 'alice', Asset.Test(200), 'avocado')
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'alice', Asset.Tbd(100), 'banana')
-    assert 'result' in response
+    wallet.api.transfer('initminer', 'alice', Asset.Tbd(100), 'banana')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(50))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(50))
 
     #**************************************************************
-    response = wallet.api.create_account('alice', 'bob', '{}')
-    assert 'result' in response
+    wallet.api.create_account('alice', 'bob', '{}')
 
     #**************************************************************
-    response = wallet.api.transfer('alice', 'bob', Asset.Test(50), 'lemon')
-    assert 'result' in response
+    wallet.api.transfer('alice', 'bob', Asset.Test(50), 'lemon')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('alice', 'bob', Asset.Test(25))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('alice', 'bob', Asset.Test(25))
 
     #**************************************************************
-    response = wallet.api.delegate_vesting_shares('alice', 'bob', '1.123456 VESTS')
-    assert 'result' in response
+    wallet.api.delegate_vesting_shares('alice', 'bob', '1.123456 VESTS')
 
     #**************************************************************
     response = wallet.api.get_account('alice')
@@ -55,8 +47,7 @@ def test_delegate(world):
     assert _result['hbd_balance'] == Asset.Tbd(0)
 
     #**************************************************************
-    response = wallet.api.delegate_vesting_shares_and_transfer('alice', 'bob', '1.000000 VESTS', '6.666 TBD', 'watermelon')
-    assert 'result' in response
+    wallet.api.delegate_vesting_shares_and_transfer('alice', 'bob', '1.000000 VESTS', '6.666 TBD', 'watermelon')
 
     #**************************************************************
     response = wallet.api.get_account('alice')
@@ -75,8 +66,7 @@ def test_delegate(world):
     assert _result['hbd_balance'] == '6.666 TBD'
 
     #**************************************************************
-    response = wallet.api.delegate_vesting_shares_nonblocking('bob', 'alice', '0.100000 VESTS')
-    assert 'result' in response
+    wallet.api.delegate_vesting_shares_nonblocking('bob', 'alice', '0.100000 VESTS')
 
     logger.info('Waiting...')
     init_node.wait_number_of_blocks(1)
@@ -100,8 +90,7 @@ def test_delegate(world):
     assert _result['hbd_balance'] == '6.666 TBD'
 
     #**************************************************************
-    response = wallet.api.delegate_vesting_shares_and_transfer_nonblocking('bob', 'alice', '0.100000 VESTS', '6.555 TBD', 'pear')
-    assert 'result' in response
+    wallet.api.delegate_vesting_shares_and_transfer_nonblocking('bob', 'alice', '0.100000 VESTS', '6.555 TBD', 'pear')
 
     logger.info('Waiting...')
     init_node.wait_number_of_blocks(1)
