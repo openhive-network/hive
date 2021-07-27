@@ -10,9 +10,13 @@ class Snapshot:
         self.__block_log_index_path = block_log_index_path
         self.__creator = node
 
-        self.state = None
         if node is not None:
-            with open(node.directory / 'state_snapshot_dump.json') as state_file:
+            snapshot_state_path = node.directory / 'state_snapshot_dump.json'
+            if not snapshot_state_path.exists():
+                self.state = None
+                return
+
+            with open(snapshot_state_path) as state_file:
                 self.state = json.load(state_file)
 
     def copy_to(self, node_directory: Path):
