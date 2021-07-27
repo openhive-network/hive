@@ -5,7 +5,7 @@ import pytest
 def node(world):
     init_node = world.create_init_node()
     init_node.run()
-    return node
+    return init_node
 
 
 @pytest.fixture
