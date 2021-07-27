@@ -25,20 +25,16 @@ def test_withdraw_vesting(world):
       assert node['auto_vest'] == auto_vest
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'alice', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'alice', '{}')
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'bob', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'bob', '{}')
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'carol', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'carol', '{}')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
 
     #**************************************************************
     response = wallet.api.get_account('alice')

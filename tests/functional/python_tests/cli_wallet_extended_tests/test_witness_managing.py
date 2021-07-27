@@ -7,12 +7,10 @@ def test_witness(world):
     wallet = init_node.attach_wallet()
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'alice', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'alice', '{}')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
 
     #**************************************************************
     response = wallet.api.get_active_witnesses()
@@ -29,8 +27,7 @@ def test_witness(world):
     assert len(_result) == 1
     assert _result[0] == 'initminer'
     #**************************************************************
-    response = wallet.api.update_witness('alice', 'http:\\url.html', 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4', { 'account_creation_fee':'2789.030 TESTS', 'maximum_block_size' : 131072, 'hbd_interest_rate' : 1000 } )
-    assert 'result' in response
+    wallet.api.update_witness('alice', 'http:\\url.html', 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4', { 'account_creation_fee':'2789.030 TESTS', 'maximum_block_size' : 131072, 'hbd_interest_rate' : 1000 } )
 
     #**************************************************************
     response = wallet.api.get_active_witnesses()

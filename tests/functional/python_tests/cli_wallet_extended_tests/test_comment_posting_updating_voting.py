@@ -7,32 +7,25 @@ def test_comment(world):
     wallet = init_node.attach_wallet()
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'alice', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'alice', '{}')
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'alice', Asset.Test(200), 'avocado')
-    assert 'result' in response
+    wallet.api.transfer('initminer', 'alice', Asset.Test(200), 'avocado')
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'alice', Asset.Tbd(100), 'banana')
-    assert 'result' in response
+    wallet.api.transfer('initminer', 'alice', Asset.Tbd(100), 'banana')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(50))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(50))
 
     #**************************************************************
-    response = wallet.api.create_account('alice', 'bob', '{}')
-    assert 'result' in response
+    wallet.api.create_account('alice', 'bob', '{}')
 
     #**************************************************************
-    response = wallet.api.transfer('alice', 'bob', Asset.Test(50), 'lemon')
-    assert 'result' in response
+    wallet.api.transfer('alice', 'bob', Asset.Test(50), 'lemon')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('alice', 'bob', Asset.Test(25))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('alice', 'bob', Asset.Test(25))
 
     #**************************************************************
     response = wallet.api.post_comment('alice', 'test-permlink', '', 'xyz', 'śćą', 'DEBUG    test_tools.wallet.World.InitNodeWallet0:wallet.py:462 Closed with 0 return code', '{}')

@@ -73,8 +73,7 @@ def test_wallet(world):
     assert _keys[1] == '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n'
 
     #**************************************************************
-    response = wallet.api.import_key('5JE4eBgPiRiVcdcpJ8tQpMpm6dgm1uAuq9Kn2nn1M9xK94EE5nU')
-    assert 'result' in response
+    wallet.api.import_key('5JE4eBgPiRiVcdcpJ8tQpMpm6dgm1uAuq9Kn2nn1M9xK94EE5nU')
 
     #**************************************************************
     response = wallet.api.list_keys()

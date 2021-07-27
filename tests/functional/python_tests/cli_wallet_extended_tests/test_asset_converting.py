@@ -13,8 +13,7 @@ def test_conversion(world):
     response = wallet.api.transfer('initminer', 'alice', Asset.Test(200), 'avocado')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
 
     #**************************************************************
     response = wallet.api.get_account('alice')

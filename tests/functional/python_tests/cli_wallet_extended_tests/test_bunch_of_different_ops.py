@@ -49,20 +49,16 @@ def test_complex(world):
         assert message.find('create_account() missing 2 required positional arguments: \'new_account_name\' and \'json_meta\'') != -1
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'alice', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'alice', '{}')
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'bob', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'bob', '{}')
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'carol', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'carol', '{}')
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'dan', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'dan', '{}')
 
     #**************************************************************
     try:
@@ -79,12 +75,10 @@ def test_complex(world):
         assert message.find('Account: bob has 0 RC') != -1
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(100))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(100))
 
     #**************************************************************
-    response = wallet.api.post_comment('bob', 'hello-world', '', 'xyz', 'something about world', 'just nothing', '{}')
-    assert 'result' in response
+    wallet.api.post_comment('bob', 'hello-world', '', 'xyz', 'something about world', 'just nothing', '{}')
 
     #**************************************************************
     try:
@@ -94,12 +88,10 @@ def test_complex(world):
         assert message.find('Account bob does not have sufficient funds for balance adjustment') != -1
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'bob', '788.543 TBD', 'avocado')
-    assert 'result' in response
+    wallet.api.transfer('initminer', 'bob', '788.543 TBD', 'avocado')
 
     #**************************************************************
-    response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', Asset.Tbd(111), 'this is proposal', 'hello-world')
-    assert 'result' in response
+    wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', Asset.Tbd(111), 'this is proposal', 'hello-world')
 
     #**************************************************************
     try:

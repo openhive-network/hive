@@ -15,28 +15,22 @@ def test_recovery(world):
       return __key_auths[0]
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'alice', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'alice', '{}')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(100))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(100))
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'alice', Asset.Test(500), 'banana')
-    assert 'result' in response
+    wallet.api.transfer('initminer', 'alice', Asset.Test(500), 'banana')
 
     #**************************************************************
-    response = wallet.api.create_account('alice', 'bob', '{}')
-    assert 'result' in response
+    wallet.api.create_account('alice', 'bob', '{}')
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('alice', 'bob', Asset.Test(40))
-    assert 'result' in response
+    wallet.api.transfer_to_vesting('alice', 'bob', Asset.Test(40))
 
     #**************************************************************
-    response = wallet.api.transfer('initminer', 'bob', Asset.Test(333), 'kiwi-banana')
-    assert 'result' in response
+    wallet.api.transfer('initminer', 'bob', Asset.Test(333), 'kiwi-banana')
 
     #**************************************************************
     response = wallet.api.change_recovery_account('alice', 'bob')
@@ -82,8 +76,7 @@ def test_recovery(world):
     assert _value['account_to_recover'] == 'bob'
 
     #**************************************************************
-    response = wallet.api.update_account_auth_key('bob', 'owner', bob_owner_key, 3)
-    assert 'result' in response
+    wallet.api.update_account_auth_key('bob', 'owner', bob_owner_key, 3)
 
     #**************************************************************
     recent_authority = {"weight_threshold": 1,"account_auths": [], "key_auths": [[bob_owner_key,1]]}

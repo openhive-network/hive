@@ -9,8 +9,7 @@ def test_transaction(world):
     wallet = init_node.attach_wallet()
 
     #**************************************************************
-    response = wallet.api.create_account('initminer', 'carol', '{}')
-    assert 'result' in response
+    wallet.api.create_account('initminer', 'carol', '{}')
 
     #**************************************************************
     with wallet.in_single_transaction(broadcast=False) as transaction:
@@ -35,8 +34,7 @@ def test_transaction(world):
     assert response['result'] != '00000000000000000000000000'
 
     #**************************************************************
-    response = wallet.api.sign_transaction(_result_trx_response)
-    assert 'result' in response
+    wallet.api.sign_transaction(_result_trx_response)
 
     #**************************************************************
     response = wallet.api.get_account('carol')
