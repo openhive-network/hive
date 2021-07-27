@@ -7,7 +7,7 @@ import subprocess
 import time
 
 from test_tools import Account, constants, logger, paths_to_executables
-from test_tools.exceptions import CommunicationError, NodeIsNotRunning
+from test_tools.exceptions import CommunicationError, NodeIsNotRunning, NodeProcessRunFailedError
 from test_tools.node_api.node_apis import Apis
 from test_tools.node_configs.default import create_default_config
 from test_tools.private.block_log import BlockLog
@@ -332,7 +332,12 @@ class Node:
         if write_config_before_run:
             self.config.write_to_file(self.__get_config_file_path())
 
-        return self.__process.run(blocking=blocking, with_arguments=with_arguments)
+        return_code = self.__process.run(blocking=blocking, with_arguments=with_arguments)
+
+        if return_code is not None and return_code != 0:
+            raise NodeProcessRunFailedError(f'Process closed with error code {return_code}', return_code)
+
+        return return_code
 
     def run(
             self,

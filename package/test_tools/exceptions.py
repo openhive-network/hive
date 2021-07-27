@@ -10,5 +10,10 @@ class MissingPathToExecutable(Exception):
 class NodeIsNotRunning(Exception):
     pass
 
+class NodeProcessRunFailedError(Exception):
+    def __init__(self, description, return_code):
+        super().__init__(description)
+        self.return_code = return_code
+
 class NotSupported(Exception):
     pass
