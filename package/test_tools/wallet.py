@@ -580,13 +580,7 @@ class Wallet:
             'params': list(params)
         }
 
-        self.__prepare_message(message)
-
         return communication.request(endpoint, message)
-
-    @staticmethod
-    def __prepare_message(message: dict):
-        message['params'] = [str(param) if isinstance(param, AssetBase) else param for param in message['params']]
 
     def in_single_transaction(self, *, broadcast=None):
         return SingleTransactionContext(self, broadcast=broadcast)
