@@ -17,9 +17,8 @@ def test_order(world):
 
     #**************************************************************
     response = wallet.api.create_order('alice', 666, Asset.Test(7), Asset.Tbd(1), False, 3600 )
-    _result = response['result']
 
-    _ops = _result['operations']
+    _ops = response['result']['operations']
     _op = _ops[0]
 
     _value = _op[1]
@@ -28,14 +27,12 @@ def test_order(world):
 
     #**************************************************************
     response = wallet.api.create_order('alice', 667, Asset.Test(8), Asset.Tbd(2), False, 3600 )
-    _result = response['result']
-    assert 'operations' in _result
+    assert 'operations' in response['result']
 
     #**************************************************************
     response = wallet.api.get_order_book(5)
-    _result = response['result']
 
-    _asks = _result['asks']
+    _asks = response['result']['asks']
 
     assert len(_asks) == 2
 
@@ -54,6 +51,7 @@ def test_order(world):
 
     #**************************************************************
     response = wallet.api.get_open_orders('alice')
+
     _result = response['result']
 
     assert len(_result) == 2
@@ -73,20 +71,18 @@ def test_order(world):
 
     #**************************************************************
     response = wallet.api.cancel_order('alice', 667)
-    _result = response['result']
 
-    assert 'operations' in _result
-    assert len(_result['operations']) == 1
+    assert len(response['result']['operations']) == 1
 
     #**************************************************************
     response = wallet.api.get_order_book(5)
-    _result = response['result']
 
-    _asks = _result['asks']
+    _asks = response['result']['asks']
     assert len(_asks) == 1
 
     #**************************************************************
     response = wallet.api.get_open_orders('alice')
+
     _result = response['result']
 
     assert len(_result) == 1

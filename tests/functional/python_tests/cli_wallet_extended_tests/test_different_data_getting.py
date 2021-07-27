@@ -8,20 +8,17 @@ def test_getters(world):
 
     #**************************************************************
     response = wallet.api.create_account('initminer', 'alice', '{}')
-    _result = response['result']
 
-    transaction_id = _result['transaction_id']
+    transaction_id = response['result']['transaction_id']
     #**************************************************************
     response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
-    _result = response['result']
 
-    block_number = _result['ref_block_num'] + 1
+    block_number = response['result']['ref_block_num'] + 1
 
     #**************************************************************
     response = wallet.api.get_block(block_number)
-    _result = response['result']
 
-    _trx = _result['transactions'][0]
+    _trx = response['result']['transactions'][0]
 
     _ops = _trx['operations']
     _op = _ops[0]
@@ -39,9 +36,8 @@ def test_getters(world):
 
     #**************************************************************
     response = wallet.api.get_feed_history()
-    _result = response['result']
 
-    _current_median_history = _result['current_median_history']
+    _current_median_history = response['result']['current_median_history']
 
     assert _current_median_history['base'] == '0.001 TBD'
     assert _current_median_history['quote'] == '0.001 TESTS'
@@ -53,9 +49,7 @@ def test_getters(world):
 
     _response = transaction.get_response()
 
-    _result = _response['result']
-
-    block_number = _result['ref_block_num'] + 1
+    block_number = _response['result']['ref_block_num'] + 1
 
     #**************************************************************
     logger.info('Waiting...')
@@ -76,16 +70,14 @@ def test_getters(world):
 
     #**************************************************************
     response = wallet.api.get_prototype_operation( 'transfer_operation' )
-    _result = response['result']
 
-    _value = _result[1]
+    _value = response['result'][1]
     assert _value['amount'] == Asset.Test(0)
 
     #**************************************************************
     response = wallet.api.get_transaction(transaction_id)
-    _result = response['result']
 
-    _ops = _result['operations']
+    _ops = response['result']['operations']
     _op = _ops[0]
 
     assert _op[0] == 'account_create'
