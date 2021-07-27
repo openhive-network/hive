@@ -1,4 +1,4 @@
-from test_tools import Account, logger, World
+from test_tools import Account, logger, World, Asset
 
 def check_key( node_name, result, key ):
   _node = result[node_name]
@@ -19,7 +19,7 @@ def test_update(world):
     assert 'result' in response
 
     #**************************************************************
-    response = wallet.api.transfer_to_vesting('initminer', 'alice', '500.000 TESTS')
+    response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
     assert 'result' in response
 
     #**************************************************************
