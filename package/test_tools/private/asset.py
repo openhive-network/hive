@@ -1,12 +1,17 @@
 from copy import deepcopy
+from typing import Union
 
 
 class AssetBase:
     def __init__(self, amount, *, token=None, precision: int, nai: str):
-        self.amount = amount * (10 ** precision)
+        self.amount = self.__convert_amount_to_internal_representation(amount, precision)
         self.token = token
         self.precision = precision
         self.nai = nai
+
+    @staticmethod
+    def __convert_amount_to_internal_representation(amount: Union[int, float], precision: int) -> int:
+        return int(round(amount, precision) * pow(10, precision))
 
     def as_nai(self):
         return {
