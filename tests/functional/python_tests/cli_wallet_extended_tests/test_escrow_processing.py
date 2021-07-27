@@ -53,6 +53,7 @@ def test_escrow(world):
 
     #**************************************************************
     response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
+
     _result = response['result']
 
     assert len(_result) == 3
@@ -77,6 +78,7 @@ def test_escrow(world):
 
     #**************************************************************
     response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
+
     _result = response['result']
 
     assert len(_result) == 3
@@ -98,6 +100,7 @@ def test_escrow(world):
 
     #**************************************************************
     response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
+
     _result = response['result']
 
     assert len(_result) == 3
@@ -121,6 +124,7 @@ def test_escrow(world):
     response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
 
     _result = response['result']
+
     assert len(_result) == 3
 
     _alice = _result[0]
@@ -140,6 +144,7 @@ def test_escrow(world):
 
     #**************************************************************
     response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
+
     _result = response['result']
 
     assert len(_result) == 3

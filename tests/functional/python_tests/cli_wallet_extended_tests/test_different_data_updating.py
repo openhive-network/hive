@@ -25,9 +25,8 @@ def test_update(world):
 
     #**************************************************************
     response = wallet.api.get_account('alice')
-    _result = response['result']
 
-    _posting = _result['posting']
+    _posting = response['result']['posting']
     _account_auths = _posting['account_auths']
     assert len(_account_auths) == 1
     __account_auths = _account_auths[0]
@@ -40,9 +39,8 @@ def test_update(world):
 
     #**************************************************************
     response = wallet.api.get_account('alice')
-    _result = response['result']
 
-    _posting = _result['posting']
+    _posting = response['result']['posting']
     _key_auths = _posting['key_auths']
     assert len(_key_auths) == 2
     __key_auths = _key_auths[1]
@@ -55,9 +53,8 @@ def test_update(world):
 
     #**************************************************************
     response = wallet.api.get_account('alice')
-    _result = response['result']
 
-    _posting = _result['posting']
+    _posting = response['result']['posting']
     _key_auths = _posting['key_auths']
     assert len(_key_auths) == 2
     __key_auths = _key_auths[1]
@@ -69,19 +66,17 @@ def test_update(world):
 
     #**************************************************************
     response = wallet.api.get_account('alice')
-    _result = response['result']
 
-    assert _result['memo_key'] == 'TST84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ'
+    assert response['result']['memo_key'] == 'TST84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ'
 
     #**************************************************************
-    response = wallet.api.update_account_meta('alice', '{ "test" : 4 }')
-    _result = response['result']
+    wallet.api.update_account_meta('alice', '{ "test" : 4 }')
 
     #**************************************************************
     response = wallet.api.get_account('alice')
     _result = response['result']
 
-    assert _result['json_metadata'] == '{ "test" : 4 }'
+    assert response['result']['json_metadata'] == '{ "test" : 4 }'
 
     #**************************************************************
     key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'

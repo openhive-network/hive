@@ -23,6 +23,7 @@ def test_transaction(world):
 
     #**************************************************************
     response = wallet.api.get_account('carol')
+
     _result = response['result']
 
     assert _result['balance'] == Asset.Test(0)
@@ -38,6 +39,7 @@ def test_transaction(world):
 
     #**************************************************************
     response = wallet.api.get_account('carol')
+
     _result = response['result']
 
     assert _result['balance'] == Asset.Test(500)

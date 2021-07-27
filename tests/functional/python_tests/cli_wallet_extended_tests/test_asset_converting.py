@@ -26,9 +26,7 @@ def test_conversion(world):
     #**************************************************************
     response = wallet.api.convert_hive_with_collateral('alice', Asset.Test(4))
 
-    _result = response['result']
-
-    _ops = _result['operations']
+    _ops = response['result']['operations']
     _op = _ops[0]
 
     _value = _op[1]
@@ -45,9 +43,7 @@ def test_conversion(world):
     #**************************************************************
     response = wallet.api.get_collateralized_conversion_requests('alice')
 
-    _result = response['result']
-
-    _request = _result[0]
+    _request = response['result'][0]
 
     assert _request['collateral_amount'] == Asset.Test(4)
     assert _request['converted_amount'] == '1.904 TBD'
@@ -55,13 +51,10 @@ def test_conversion(world):
     #**************************************************************
     response = wallet.api.estimate_hive_collateral(Asset.Tbd(4))
 
-    _result = response['result']
-    assert _result == '8.400 TESTS'
+    assert response['result'] == '8.400 TESTS'
 
     #**************************************************************
-    response = wallet.api.convert_hbd('alice', '0.500 TBD')
-
-    _result = response['result']
+    wallet.api.convert_hbd('alice', '0.500 TBD')
 
     #**************************************************************
     response = wallet.api.get_account('alice')
@@ -75,8 +68,4 @@ def test_conversion(world):
     #**************************************************************
     response = wallet.api.get_conversion_requests('alice')
 
-    _result = response['result']
-
-    __result = _result[0]
-
-    assert __result['amount'] == '0.500 TBD'
+    assert response['result'][0]['amount'] == '0.500 TBD'

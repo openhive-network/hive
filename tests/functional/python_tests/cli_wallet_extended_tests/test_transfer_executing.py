@@ -17,6 +17,7 @@ def test_transfer(world):
 
     #**************************************************************
     response = wallet.api.get_account('newaccount')
+
     _result = response['result']
 
     assert _result['balance'] == Asset.Test(0)
@@ -87,6 +88,5 @@ def test_transfer(world):
 
     #**************************************************************
     response = wallet.api.get_account('newaccount')
-    _result = response['result']
 
-    assert _result['savings_balance'] == '15.432 TESTS'
+    assert response['result']['savings_balance'] == '15.432 TESTS'

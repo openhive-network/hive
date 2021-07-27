@@ -32,6 +32,7 @@ def test_delegate(world):
 
     #**************************************************************
     response = wallet.api.get_account('alice')
+
     _result = response['result']
 
     assert _result['delegated_vesting_shares'] == '1.123456 VESTS'
@@ -40,6 +41,7 @@ def test_delegate(world):
 
     #**************************************************************
     response = wallet.api.get_account('bob')
+
     _result = response['result']
 
     assert _result['received_vesting_shares'] == '1.123456 VESTS'
@@ -51,6 +53,7 @@ def test_delegate(world):
 
     #**************************************************************
     response = wallet.api.get_account('alice')
+
     _result = response['result']
 
     assert _result['delegated_vesting_shares'] == '1.123456 VESTS'
@@ -59,6 +62,7 @@ def test_delegate(world):
 
     #**************************************************************
     response = wallet.api.get_account('bob')
+
     _result = response['result']
 
     assert _result['received_vesting_shares'] == '1.000000 VESTS'
@@ -73,6 +77,7 @@ def test_delegate(world):
 
     #**************************************************************
     response = wallet.api.get_account('alice')
+
     _result = response['result']
 
     assert _result['delegated_vesting_shares'] == '1.123456 VESTS'
@@ -82,6 +87,7 @@ def test_delegate(world):
 
     #**************************************************************
     response = wallet.api.get_account('bob')
+
     _result = response['result']
 
     assert _result['delegated_vesting_shares'] == '0.100000 VESTS'
@@ -97,6 +103,7 @@ def test_delegate(world):
 
     #**************************************************************
     response = wallet.api.get_account('alice')
+
     _result = response['result']
 
     assert _result['delegated_vesting_shares'] == '1.123456 VESTS'
@@ -106,6 +113,7 @@ def test_delegate(world):
 
     #**************************************************************
     response = wallet.api.get_account('bob')
+
     _result = response['result']
 
     assert _result['delegated_vesting_shares'] == '0.100000 VESTS'

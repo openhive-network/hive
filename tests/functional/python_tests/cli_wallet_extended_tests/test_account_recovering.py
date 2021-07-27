@@ -35,8 +35,7 @@ def test_recovery(world):
     #**************************************************************
     response = wallet.api.change_recovery_account('alice', 'bob')
 
-    _result = response['result']
-    _ops = _result['operations']
+    _ops = response['result']['operations']
 
     assert len(_ops) == 1
     _op = _ops[0]
@@ -49,22 +48,18 @@ def test_recovery(world):
 
     #**************************************************************
     response = wallet.api.get_account('alice')
-    _result = response['result']
-    alice_owner_key = get_key( 'owner', _result )
+    alice_owner_key = get_key( 'owner', response['result'] )
 
     #**************************************************************
     response = wallet.api.get_account('bob')
-    _result = response['result']
-    bob_owner_key = get_key( 'owner', _result )
+    bob_owner_key = get_key( 'owner', response['result'] )
 
     #**************************************************************
     authority = {"weight_threshold": 1,"account_auths": [], "key_auths": [[alice_owner_key,1]]}
 
     response = wallet.api.request_account_recovery('alice', 'bob', authority)
 
-    _result = response['result']
-
-    _ops = _result['operations']
+    _ops = response['result']['operations']
 
     _op = _ops[0]
 
@@ -84,9 +79,7 @@ def test_recovery(world):
 
     response = wallet.api.recover_account('bob', recent_authority, new_authority)
 
-    _result = response['result']
-
-    _ops = _result['operations']
+    _ops = response['result']['operations']
 
     _op = _ops[0]
 

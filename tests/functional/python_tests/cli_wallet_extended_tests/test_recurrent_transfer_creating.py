@@ -40,14 +40,14 @@ def test_recurrent_transfer(world):
 
     #**************************************************************
     response = wallet.api.recurrent_transfer('alice', 'bob', Asset.Test(20), 'banana-cherry', 24, 3 )
-    _result = response['result']
 
-    _value = check_recurrence_transfer_data( _result )
+    _value = check_recurrence_transfer_data( response['result'] )
 
     check_recurrence_transfer( _value, 'alice', 'bob', Asset.Test(20), 'banana-cherry', 24, 'executions', 3 )
 
     #**************************************************************
     response = wallet.api.find_recurrent_transfers('alice')
+
     _result = response['result']
 
     assert len(_result) == 1
@@ -56,14 +56,14 @@ def test_recurrent_transfer(world):
 
     #**************************************************************
     response = wallet.api.recurrent_transfer('bob', 'alice', '0.900 TESTS', 'banana-lime', 25, 2 )
-    _result = response['result']
 
-    _value = check_recurrence_transfer_data( _result )
+    _value = check_recurrence_transfer_data( response['result'] )
 
     check_recurrence_transfer( _value, 'bob', 'alice', '0.900 TESTS', 'banana-lime', 25, 'executions', 2 )
 
     #**************************************************************
     response = wallet.api.find_recurrent_transfers('bob')
+
     _result = response['result']
 
     assert len(_result) == 1
@@ -72,14 +72,14 @@ def test_recurrent_transfer(world):
 
     #**************************************************************
     response = wallet.api.recurrent_transfer('bob', 'initminer', '0.800 TESTS', 'banana-lemon', 26, 22 )
-    _result = response['result']
 
-    _value = check_recurrence_transfer_data( _result )
+    _value = check_recurrence_transfer_data( response['result'] )
 
     check_recurrence_transfer( _value, 'bob', 'initminer', '0.800 TESTS', 'banana-lemon', 26, 'executions', 22 )
 
     #**************************************************************
     response = wallet.api.find_recurrent_transfers('bob')
+
     _result = response['result']
 
     assert len(_result) == 2
