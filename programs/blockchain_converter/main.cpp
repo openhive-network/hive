@@ -43,23 +43,24 @@ int main( int argc, char** argv )
     // Setup converter options
     bpo::options_description logging_opts{"Logging options"};
       logging_opts.add_options()
-      ("log-per-block,l", bpo::value< uint32_t >()->default_value( 0 ), "displays blocks in JSON format every n blocks")
-      ("log-specific,s", bpo::value< uint32_t >()->default_value( 0 ), "displays only block with specified number");
+      ("log-per-block,l", bpo::value< uint32_t >()->default_value( 0 ), "Displays blocks in JSON format every n blocks")
+      ("log-specific,s", bpo::value< uint32_t >()->default_value( 0 ), "Displays only block with specified number");
     bpo::options_description conversion_opts{"Conversion Options"};
       conversion_opts.add_options()
-      ("chain-id,C", bpo::value< std::string >()->required(), "new chain ID")
-      ("private-key,K", bpo::value< std::string >()->required(), "private key with which all transactions and blocks will be signed ")
-      ("owner-key,O", bpo::value< std::string >()->default_value( "" ), "owner key of the second authority")
-      ("active-key,A", bpo::value< std::string >()->default_value( "" ), "active key of the second authority")
-      ("posting-key,P", bpo::value< std::string >()->default_value( "" ), "posting key of the second authority")
-      ("use-same-key,U", "use given private key as the owner, active and posting keys if not specified")
-      ("resume-block,R", bpo::value< uint32_t >()->default_value( 0 ), "resume conversion from the given block number")
-      ("stop-block,S", bpo::value< uint32_t >()->default_value( 0 ), "stop conversion at the given block number")
+      ("chain-id,C", bpo::value< std::string >()->required(), "New chain ID")
+      ("private-key,K", bpo::value< std::string >()->required(), "Private key with which all transactions and blocks will be signed ")
+      ("owner-key,O", bpo::value< std::string >()->default_value( "" ), "Owner key of the second authority")
+      ("active-key,A", bpo::value< std::string >()->default_value( "" ), "Active key of the second authority")
+      ("posting-key,P", bpo::value< std::string >()->default_value( "" ), "Posting key of the second authority")
+      ("use-same-key,U", "Use given private key as the owner, active and posting keys if not specified")
+      ("resume-block,R", bpo::value< uint32_t >()->default_value( 0 ), "Resume conversion from the given block number (works only with the node_based_conversion plugin)")
+      ("stop-block,S", bpo::value< uint32_t >()->default_value( 0 ), "Stop conversion at the given block number")
+      ("use-now-time,T", bpo::bool_switch()->default_value( false ), "Set expiration time of the transactions to the current system time (works only with the node_based_conversion plugin)")
       ("jobs,j", bpo::value< size_t >()->default_value( 1 ), "Allow N jobs at once to sign transactions");
       bpo::options_description source_opts{"Source options"};
         source_opts.add_options()
-      ("input,i", bpo::value< std::string >(), "input source (depending on plugin enabled - block log path or hive API endpoint)")
-      ("output,o", bpo::value< std::string >(), "output source (depending on plugin enabled - block log path or hive API endpoint)" );
+      ("input,i", bpo::value< std::string >(), "Input source (depending on plugin enabled - block log path or hive API endpoint)")
+      ("output,o", bpo::value< std::string >(), "Output source (depending on plugin enabled - block log path or hive API endpoint)" );
       bpo::options_description cli_options{};
         cli_options.add( source_opts ).add( logging_opts );
 

@@ -196,13 +196,20 @@ namespace hive { namespace converter {
     }
   }
 
-  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id )
+  const fc::time_point_sec blockchain_converter::auto_trx_time = fc::time_point::min();
+
+  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time )
   {
     this->previous_block_id = previous_block_id;
 
     _signed_block.previous = previous_block_id;
 
-    fc::time_point_sec trx_now_time = _signed_block.timestamp; // Apply min expiration time and then increase this value to avoid trx id duplication
+    auto trx_time = trx_now_time;
+
+    if( trx_now_time == auto_trx_time )
+      trx_time = _signed_block.timestamp; // Deduce time from the signed block
+    else
+      trx_time += HIVE_BLOCK_INTERVAL; // Apply min expiration time and then increase this value to avoid trx id duplication
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
@@ -212,8 +219,8 @@ namespace hive { namespace converter {
 
       post_convert_transaction( *transaction_itr );
 
-      transaction_itr->expiration = trx_now_time;
-      trx_now_time += 1;
+      transaction_itr->expiration = trx_time;
+      trx_time += 1;
     }
 
     size_t trx_applied_count = 0;
@@ -223,9 +230,6 @@ namespace hive { namespace converter {
         shared_signatures_stack_in.push( std::make_pair( i, &_signed_block.transactions.at( i ) ) );
       else
         ++trx_applied_count; // We do not have to replace any signature(s) so skip this transaction
-
-    // Sign header (using given witness' private key)
-    convert_signed_header( _signed_block );
 
     sig_stack_out_type current_sig;
 
@@ -246,6 +250,9 @@ namespace hive { namespace converter {
     }
 
     _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
+
+    // Sign header (using given witness' private key)
+    convert_signed_header( _signed_block );
 
     return _signed_block.id();
   }
