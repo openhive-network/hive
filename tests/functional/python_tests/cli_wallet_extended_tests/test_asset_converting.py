@@ -1,11 +1,6 @@
 from test_tools import Account, logger, World, Asset
 
-def test_conversion(world):
-    init_node = world.create_init_node()
-    init_node.run()
-
-    wallet = init_node.attach_wallet()
-
+def test_conversion(wallet):
     #**************************************************************
     response = wallet.api.create_account('initminer', 'alice', '{}')
 

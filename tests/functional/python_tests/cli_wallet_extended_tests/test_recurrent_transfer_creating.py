@@ -1,11 +1,6 @@
 from test_tools import Account, logger, World, Asset
 
-def test_recurrent_transfer(world):
-    init_node = world.create_init_node()
-    init_node.run()
-
-    wallet = init_node.attach_wallet()
-
+def test_recurrent_transfer(wallet):
     def check_recurrence_transfer_data( node ):
       _ops = node['operations']
 
