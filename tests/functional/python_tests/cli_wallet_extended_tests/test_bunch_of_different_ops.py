@@ -28,12 +28,7 @@ key2 = 'TST7QbuPFWyi7Kxtq6i1EaHNHZHEG2JyB61kPY1x7VvjxyHb7btfg'
     - an exception is thrown by node
     - an exception is thrown by cli_wallet
 '''
-def test_complex(world):
-    init_node = world.create_init_node()
-    init_node.run()
-
-    wallet = init_node.attach_wallet()
-
+def test_complex(wallet):
     #**************************************************************
     try:
         response = wallet.api.get_account('not-exists')

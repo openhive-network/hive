@@ -1,10 +1,6 @@
 from test_tools import Account, logger, World, Asset
 
-def test_recovery(world):
-    init_node = world.create_init_node()
-    init_node.run()
-
-    wallet = init_node.attach_wallet()
+def test_recovery(wallet):
 
     def get_key( node_name, result):
       _node = result[node_name]

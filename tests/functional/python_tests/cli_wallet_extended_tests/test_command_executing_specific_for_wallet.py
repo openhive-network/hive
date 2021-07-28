@@ -1,11 +1,7 @@
 from test_tools import Account, logger, World, Asset
 import os.path
 
-def test_wallet(world):
-    init_node = world.create_init_node()
-    init_node.run()
-
-    wallet = init_node.attach_wallet()
+def test_wallet(wallet):
 
     pswd = 'pear_peach'
 

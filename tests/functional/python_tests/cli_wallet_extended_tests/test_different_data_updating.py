@@ -8,12 +8,7 @@ def check_key( node_name, result, key ):
   assert len(__key_auths) == 2
   __key_auths[0] == key
 
-def test_update(world):
-    init_node = world.create_init_node()
-    init_node.run()
-
-    wallet = init_node.attach_wallet()
-
+def test_update(wallet):
     #**************************************************************
     wallet.api.create_account('initminer', 'alice', '{}')
 

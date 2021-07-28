@@ -1,11 +1,6 @@
 from test_tools import Account, logger, World, Asset
 
-def test_comment(world):
-    init_node = world.create_init_node()
-    init_node.run()
-
-    wallet = init_node.attach_wallet()
-
+def test_comment(wallet):
     #**************************************************************
     wallet.api.create_account('initminer', 'alice', '{}')
 
