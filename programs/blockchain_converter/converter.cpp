@@ -223,30 +223,38 @@ namespace hive { namespace converter {
       trx_time += 1;
     }
 
-    size_t trx_applied_count = 0;
-
-    for( size_t i = 0; i < _signed_block.transactions.size(); ++i )
-      if( _signed_block.transactions.at( i ).signatures.size() )
-        shared_signatures_stack_in.push( std::make_pair( i, &_signed_block.transactions.at( i ) ) );
-      else
-        ++trx_applied_count; // We do not have to replace any signature(s) so skip this transaction
-
-    sig_stack_out_type current_sig;
-
-    while( trx_applied_count < _signed_block.transactions.size() ) // Replace the signatures
+    if( _signed_block.transactions.size() > 1 )
     {
-      if( shared_signatures_stack_out.pop( current_sig ) )
+
+      size_t trx_applied_count = 0;
+
+      for( size_t i = 0; i < _signed_block.transactions.size(); ++i )
+        if( _signed_block.transactions.at( i ).signatures.size() )
+          shared_signatures_stack_in.push( std::make_pair( i, &_signed_block.transactions.at( i ) ) );
+        else
+          ++trx_applied_count; // We do not have to replace any signature(s) so skip this transaction
+
+      sig_stack_out_type current_sig;
+
+      while( trx_applied_count < _signed_block.transactions.size() ) // Replace the signatures
       {
-        if( _signed_block.transactions.at( current_sig.first ).signatures.size() > 1 ) // Remove redundant signatures
+        if( shared_signatures_stack_out.pop( current_sig ) )
         {
-          auto& sigs = _signed_block.transactions.at( current_sig.first ).signatures;
-          sigs.erase( sigs.begin() + 1, sigs.end() );
+          if( _signed_block.transactions.at( current_sig.first ).signatures.size() > 1 ) // Remove redundant signatures
+          {
+            auto& sigs = _signed_block.transactions.at( current_sig.first ).signatures;
+            sigs.erase( sigs.begin() + 1, sigs.end() );
+          }
+
+          _signed_block.transactions.at( current_sig.first ).signatures.at( 0 ) = current_sig.second;
+
+          ++trx_applied_count;
         }
-
-        _signed_block.transactions.at( current_sig.first ).signatures.at( 0 ) = current_sig.second;
-
-        ++trx_applied_count;
       }
+    }
+    else // Optimize signing when there is only 1 trx in block
+    {
+      sign_transaction( _signed_block.transactions.at( 0 ) );
     }
 
     _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
