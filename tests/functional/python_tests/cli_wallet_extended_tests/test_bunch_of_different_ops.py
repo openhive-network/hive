@@ -1,18 +1,5 @@
 from test_tools import Account, logger, World, Asset
-
-def check_key( node_name, result, key ):
-    _node = result[node_name]
-    _key_auths = _node['key_auths']
-    assert len(_key_auths) == 1
-    __key_auths = _key_auths[0]
-    assert len(__key_auths) == 2
-    __key_auths[0] == key
-
-def check_keys( result, key_owner, key_active, key_posting, key_memo ):
-    check_key( 'owner', result, key_owner )
-    check_key( 'active', result, key_active )
-    check_key( 'posting', result, key_posting )
-    assert 'memo_key' in result and result['memo_key'] == key_memo
+from utilities import check_keys
 
 key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
 key2 = 'TST7QbuPFWyi7Kxtq6i1EaHNHZHEG2JyB61kPY1x7VvjxyHb7btfg'

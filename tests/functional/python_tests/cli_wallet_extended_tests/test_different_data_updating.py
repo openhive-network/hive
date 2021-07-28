@@ -1,12 +1,5 @@
 from test_tools import Account, logger, World, Asset
-
-def check_key( node_name, result, key ):
-  _node = result[node_name]
-  _key_auths = _node['key_auths']
-  assert len(_key_auths) == 1
-  __key_auths = _key_auths[0]
-  assert len(__key_auths) == 2
-  __key_auths[0] == key
+from utilities import check_keys
 
 def test_update(wallet):
     #**************************************************************
@@ -81,10 +74,7 @@ def test_update(wallet):
     response = wallet.api.get_account('alice')
     _result = response['result']
 
-    check_key( 'owner', _result, key )
-    check_key( 'active', _result, key )
-    check_key( 'posting', _result, key )
-    assert _result['memo_key'] == key
+    check_keys( _result, key, key, key, key )
 
     #**************************************************************
     response = wallet.api.get_owner_history('alice')
