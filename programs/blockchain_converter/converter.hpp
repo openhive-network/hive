@@ -66,7 +66,6 @@ namespace hive { namespace converter {
 
     void convert_authority( authority& _auth, authority::classification type );
 
-    /// Deprecated
     void sign_transaction( hp::signed_transaction& trx )const;
 
     const hp::private_key_type& get_second_authority_key( authority::classification type )const;
