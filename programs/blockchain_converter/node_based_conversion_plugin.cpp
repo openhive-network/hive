@@ -49,7 +49,8 @@ namespace detail {
   public:
 
     node_based_conversion_plugin_impl( const std::string& input_url, const std::string& output_url,
-      const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id = HIVE_CHAIN_ID, size_t signers_size = 1, size_t block_buffer_size = 1000 );
+      const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id = HIVE_CHAIN_ID,
+      size_t signers_size = 1, size_t block_buffer_size = 1000, bool use_now_time = false );
 
     void open( fc::http::connection& con, const fc::url& url );
     void close();
@@ -74,11 +75,13 @@ namespace detail {
     size_t               last_block_range_start = -1; // initial value to satisfy the `num < last_block_range_start` check to get new blocks on first call // TODO: Maybe initial value should be 0
     size_t               block_buffer_size;
     fc::variant_object   block_buffer_obj; // blocks buffer object containing lookup table
+
+    bool use_now_time;
   };
 
   node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const std::string& input_url, const std::string& output_url,
-    const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, size_t block_buffer_size )
-    : conversion_plugin_impl( _private_key, chain_id, signers_size ), input_url( input_url ), output_url( output_url ), block_buffer_size( block_buffer_size )
+    const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, size_t block_buffer_size, bool use_now_time )
+    : conversion_plugin_impl( _private_key, chain_id, signers_size ), input_url( input_url ), output_url( output_url ), block_buffer_size( block_buffer_size ), use_now_time( use_now_time )
   {
     FC_ASSERT( block_buffer_size && block_buffer_size <= 1000, "Blocks buffer size should be in the range 1-1000", ("block_buffer_size",block_buffer_size) );
 
@@ -136,8 +139,22 @@ namespace detail {
     if( !start_block_num )
       start_block_num = 1;
 
-    hp::block_id_type last_block_id;
     fc::optional< hp::signed_block > block;
+
+    hp::block_id_type last_block_id;
+    while( start_block_num > 1 && !block.valid() ) // Get last block id from the remote if start_block_num is not a genesis block
+    {
+      block = receive_uncached( start_block_num - 1 );
+      if( block.valid() )
+      {
+        last_block_id = converter.convert_signed_block( *block, last_block_id );
+      }
+      else
+      {
+        std::cout << "Could not parse the block with number " << start_block_num << " from the host. Propably the block has not been produced yet. Retrying in 1 second...\n";
+        fc::usleep(fc::seconds(1));
+      }
+    }
 
     for( ; ( start_block_num <= stop_block_num || !stop_block_num ) && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
@@ -172,7 +189,7 @@ namespace detail {
       if( block->transactions.size() == 0 )
         continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
-      last_block_id = converter.convert_signed_block( *block, last_block_id );
+      last_block_id = converter.convert_signed_block( *block, last_block_id, use_now_time ? time_point_sec{ fc::time_point::now() } : blockchain_converter::auto_trx_time );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
       {
@@ -208,7 +225,7 @@ namespace detail {
       ); // FIXME: asio.cpp:24 - Boost asio - Broken pipe error on localhost
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
 
-#define HIVE_CONVERTER_DEBUG_TRANSMIT
+#define HIVE_CONVERTER_DEBUG_TRANSMIT // TODO: Remove before merge
 #ifdef HIVE_CONVERTER_DEBUG_TRANSMIT
       fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
       FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", &*reply.body.begin()) );
@@ -336,7 +353,7 @@ namespace detail {
   void node_based_conversion_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg )
   {
     cfg.add_options()
-      ( "block-buffer-size", bpo::value< size_t >()->default_value( 1000 ), "Blocks buffer size" );
+      ( "block-buffer-size", bpo::value< size_t >()->default_value( 1000 ), "Block buffer size" );
   }
 
   void node_based_conversion_plugin::plugin_initialize( const bpo::variables_map& options )

@@ -52,12 +52,15 @@ namespace hive { namespace converter {
     std::atomic_bool signers_exit;
 
   public:
+    /// Used in convert_signed_block to specify that expiration time of the transaction should not be altered (automatically deduct expiration time of the transaction using timestamp of the signed block)
+    static const fc::time_point_sec auto_trx_time;
+
     /// All converted blocks will be signed using given private key
     blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id = HIVE_CHAIN_ID, size_t signers_size = 1 );
     ~blockchain_converter();
 
     /// Sets previous id of the block to the given value and re-signs content of the block. Converts transactions. Returns current block id
-    hp::block_id_type convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id );
+    hp::block_id_type convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time = auto_trx_time );
 
     void convert_signed_header( hp::signed_block_header& _signed_header );
 
