@@ -1,20 +1,10 @@
 #!/usr/bin/python3
 
 from pathlib import Path
-from pytest import fixture
-from test_tools import *
+from test_tools import World
 from .conftest import BLOCK_COUNT
 
-def test_snapshots(world : World, block_log : Path):
-  '''
-  3 nodes:
-  0: produces 20 blocks and stops (just to create block log)
-  1: replays and create snapshot
-  2: load from prev. snap.
-  2: dump new snapshot
-  - check are both snapshots same (recursively compare file checksums)
-  '''
-
+def test_snapshots_content_binary(world : World, block_log : Path):
   node = [None]
   snap = [None]
 
@@ -33,17 +23,7 @@ def test_snapshots(world : World, block_log : Path):
   assert snap[1] == snap[2]
 
 
-def test_snapshots_dir(world : World, block_log : Path):
-  '''
-  2 nodes:
-  0: produces 20 blocks and stops (just to create block log)
-  1: replay to 20
-  1: dump snapshot to folder, that does not exists
-  1: load snapshot, and check is running propoerly
-  1: dump new snapshot to same folder, expect fail
-  1: load same snapshot to check is old one not corrupted
-  1: run for X blocks to check is everythink propoerly loaded
-  '''
+def test_snapshots_existing_dir(world : World, block_log : Path):
   def clear_state(node):
     from shutil import rmtree
     from os.path import join as join_paths
