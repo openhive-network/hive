@@ -10,8 +10,6 @@ from os import getenv
 REMOTE_NODE_URL = getenv('HIVED_MAINNET_ADDRESS')
 assert REMOTE_NODE_URL is not None
 
-# REMOTE_NODE_URL_ENV_NAME = 'http://192.168.6.136:8091'
-
 # class that compressing vop
 class compressed_vop:
   def __init__(self, vop):
