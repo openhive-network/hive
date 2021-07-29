@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from test_tools import *
+from test_tools import logger
 from .shared_utilites import *
 from test_tools.wallet import Wallet
 

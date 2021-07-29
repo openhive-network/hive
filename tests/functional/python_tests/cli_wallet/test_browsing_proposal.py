@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from test_tools import *
+from test_tools import Account
 from test_tools.wallet import Wallet
 from .shared_utilites import *
 from .shared_utilites import prepared_proposal_data_with_id as proposal_data_t
