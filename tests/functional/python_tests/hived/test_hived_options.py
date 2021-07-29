@@ -1,4 +1,4 @@
-from test_tools import *
+from test_tools import World
 from pathlib import Path
 from .conftest import BLOCK_COUNT
 
