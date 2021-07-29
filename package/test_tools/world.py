@@ -6,6 +6,7 @@ from test_tools.wallet import Wallet
 from test_tools.private.children_names import ChildrenNames
 from test_tools.private.node import Node
 from test_tools.private.nodes_creator import NodesCreator
+from test_tools.private.remote_node import RemoteNode
 
 
 class World(NodesCreator):
@@ -85,6 +86,9 @@ class World(NodesCreator):
         network = Network(name, self._directory)
         self.__networks.append(network)
         return network
+
+    def create_remote_node(self, endpoint):
+        return RemoteNode(endpoint)
 
     def network(self, name: str) -> Network:
         for network in self.__networks:
