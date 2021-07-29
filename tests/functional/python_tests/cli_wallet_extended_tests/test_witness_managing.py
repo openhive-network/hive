@@ -40,7 +40,7 @@ def test_witness(wallet):
     assert _result['owner'] == 'alice'
 
     _props = _result['props']
-    assert _props['account_creation_fee'] == '2789.030 TESTS'
+    assert _props['account_creation_fee'] == Asset.Test(2789.03)
 
     response = wallet.api.publish_feed('alice', {"base":"1.167 TBD", "quote":"1.111 TESTS"})
 
@@ -49,8 +49,8 @@ def test_witness(wallet):
     assert _ops[0][0] == 'feed_publish'
 
     _exchange_rate = _ops[0][1]['exchange_rate']
-    assert _exchange_rate['base'] == '1.167 TBD'
-    assert _exchange_rate['quote'] == '1.111 TESTS'
+    assert _exchange_rate['base'] == Asset.Tbd(1.167)
+    assert _exchange_rate['quote'] == Asset.Test(1.111)
 
     response = wallet.api.vote_for_witness('initminer', 'alice', True)
 

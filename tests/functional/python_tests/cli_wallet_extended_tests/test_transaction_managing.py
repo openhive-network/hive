@@ -37,7 +37,7 @@ def test_transaction(wallet):
     _before_seconds = (int)(_time.timestamp())
     logger.info('_time: {} seconds:{}...'.format(_time, _before_seconds))
 
-    response = wallet.api.transfer_to_savings('initminer', 'carol', '0.007 TESTS', 'plum')
+    response = wallet.api.transfer_to_savings('initminer', 'carol', Asset.Test(0.007), 'plum')
 
     _expiration = response['result']['expiration']
 
@@ -56,7 +56,7 @@ def test_transaction(wallet):
     _before_seconds = (int)(_time.timestamp())
     logger.info('_time: {} seconds:{}...'.format(_time, _before_seconds))
 
-    response = wallet.api.transfer_to_savings('initminer', 'carol', '0.008 TESTS', 'lemon')
+    response = wallet.api.transfer_to_savings('initminer', 'carol', Asset.Test(0.008), 'lemon')
 
     _expiration = response['result']['expiration']
 
