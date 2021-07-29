@@ -162,22 +162,21 @@ cli_wallet_tests:
     reports:
       junit: tests/functional/python_tests/cli_wallet/report.xml
 
-
-hived_options_tests:
+hived_tests:
   stage: test
+  extends: .test_tools_based
   needs:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
-  variables:
-    PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
     - cd tests/functional/python_tests/hived
-    - apt-get update -y && apt-get install -y python3 python3-pip python3-dev
-    - pip3 install -U psutil
-    - "python3 hived_options_tests.py --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
+    - pytest
   tags:
     - public-runner-docker
+  artifacts:
+    reports:
+      junit: tests/functional/python_tests/hived/report.xml
 
 .test_tools_based:
   variables:

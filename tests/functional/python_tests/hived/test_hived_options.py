@@ -14,15 +14,6 @@ def test_dump_config(world : World):
   assert node.config.__dict__ == old_config
 
 def test_exit_before_sync(world : World, block_log : Path):
-  '''
-  with specified '--exit-before-sync' flag:
-    1. check after replaying
-      - in the middle
-      - full
-    2. check exiting after dumping snapshot
-    3. check exiting after loading snapshot
-  '''
-
   from shutil import rmtree
   from os import remove
   from os.path import join
