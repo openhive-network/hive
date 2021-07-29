@@ -54,7 +54,7 @@ def test_getters(world):
     trx = _result[4]
 
     assert 'vesting_shares' in trx['op'][1]
-    assert trx['op'][1]['vesting_shares'] != '0.000000 VESTS'
+    assert trx['op'][1]['vesting_shares'] != Asset.Vest(0)
 
     response = wallet.api.get_prototype_operation( 'transfer_operation' )
 
