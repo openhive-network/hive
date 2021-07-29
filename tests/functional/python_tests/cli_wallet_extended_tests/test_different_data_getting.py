@@ -6,43 +6,36 @@ def test_getters(world):
 
     wallet = init_node.attach_wallet()
 
-    #**************************************************************
     response = wallet.api.create_account('initminer', 'alice', '{}')
 
     transaction_id = response['result']['transaction_id']
-    #**************************************************************
+
     response = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
 
     block_number = response['result']['ref_block_num'] + 1
 
-    #**************************************************************
     response = wallet.api.get_block(block_number)
 
     _trx = response['result']['transactions'][0]
-
     _ops = _trx['operations']
-    _op = _ops[0]
 
-    _value = _op[1]
+    _value = _ops[0][1]
     assert _value['amount'] == Asset.Test(500)
 
-    #**************************************************************
     response = wallet.api.get_encrypted_memo('alice', 'initminer', '#this is memo')
+
     _encrypted = response['result']
 
-    #**************************************************************
     response = wallet.api.decrypt_memo(_encrypted)
+
     assert response['result'] == 'this is memo'
 
-    #**************************************************************
     response = wallet.api.get_feed_history()
 
     _current_median_history = response['result']['current_median_history']
-
     assert _current_median_history['base'] == '0.001 TBD'
     assert _current_median_history['quote'] == '0.001 TESTS'
 
-    #**************************************************************
     with wallet.in_single_transaction() as transaction:
         wallet.api.create_account('initminer', 'bob', '{}')
         wallet.api.create_account('initminer', 'carol', '{}')
@@ -51,38 +44,27 @@ def test_getters(world):
 
     block_number = _response['result']['ref_block_num'] + 1
 
-    #**************************************************************
     logger.info('Waiting...')
     init_node.wait_number_of_blocks(22)
 
-    #**************************************************************
     response = wallet.api.get_ops_in_block( block_number, False )
     _result = response['result']
 
     assert len(_result) == 5
     trx = _result[4]
 
-    _op = trx['op']
-    _value = _op[1]
+    assert 'vesting_shares' in trx['op'][1]
+    assert trx['op'][1]['vesting_shares'] != '0.000000 VESTS'
 
-    assert 'vesting_shares' in _value
-    assert _value['vesting_shares'] != '0.000000 VESTS'
-
-    #**************************************************************
     response = wallet.api.get_prototype_operation( 'transfer_operation' )
 
     _value = response['result'][1]
     assert _value['amount'] == Asset.Test(0)
 
-    #**************************************************************
     response = wallet.api.get_transaction(transaction_id)
 
     _ops = response['result']['operations']
-    _op = _ops[0]
+    assert _ops[0][0] == 'account_create'
 
-    assert _op[0] == 'account_create'
-
-    _value = _op[1]
-
-    assert 'fee' in _value
-    assert _value['fee'] == Asset.Test(0)
+    assert 'fee' in _ops[0][1]
+    assert _ops[0][1]['fee'] == Asset.Test(0)

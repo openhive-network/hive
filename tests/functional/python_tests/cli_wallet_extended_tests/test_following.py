@@ -1,11 +1,12 @@
 import json
 
 from test_tools import Asset
+from utilities import create_accounts
 
 
 def test_following(wallet):
-    wallet.api.create_account('initminer', 'alice', '{}')
-    wallet.api.create_account('initminer', 'bob', '{}')
+    create_accounts( wallet, 'initminer', ['alice', 'bob'] )
+
     wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(100))
 
     response = wallet.api.follow('alice', 'bob', ['blog'])
