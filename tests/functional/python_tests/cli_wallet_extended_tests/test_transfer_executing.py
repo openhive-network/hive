@@ -18,7 +18,7 @@ def test_transfer(world):
     assert _result['hbd_balance'] == Asset.Tbd(0)
     assert _result['savings_balance'] == Asset.Test(0)
     assert _result['savings_hbd_balance'] == Asset.Tbd(0)
-    assert _result['vesting_shares'] != '0.000000 VESTS'
+    assert _result['vesting_shares'] != Asset.Vest(0)
 
     wallet.api.transfer('initminer', 'newaccount', Asset.Test(5.432), 'banana')
 
@@ -38,7 +38,7 @@ def test_transfer(world):
 
     wallet.api.transfer_from_savings('newaccount', 7, 'newaccount2', Asset.Test(0.001), 'kiwi')
 
-    wallet.api.transfer_from_savings('newaccount', 8, 'newaccount2', Asset.Tbd(0.01), 'kiwi2')
+    wallet.api.transfer_from_savings('newaccount', 8, 'newaccount2', Asset.Tbd(0.001), 'kiwi2')
 
     response = wallet.api.get_account('newaccount')
 
@@ -63,7 +63,7 @@ def test_transfer(world):
     assert _result['balance'] == Asset.Test(5.332)
     assert _result['hbd_balance'] == Asset.Tbd(8.969)
     assert _result['savings_balance'] == Asset.Test(15.431)
-    assert _result['vesting_shares'] != '0.000000 VESTS'
+    assert _result['vesting_shares'] != Asset.Vest(0)
 
     wallet.api.cancel_transfer_from_savings('newaccount', 7)
 
