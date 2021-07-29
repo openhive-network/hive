@@ -1,10 +1,9 @@
 #!/usr/bin/python3
 
-from test_tools import *
-from test_tools.communication import CommunicationError
-from test_tools.wallet import Wallet
-from test_tools.private.node import Node
+from test_tools import logger
 from .shared_utilites import *
+from test_tools.wallet import Wallet
+from test_tools.communication import CommunicationError
 from .shared_utilites import prepared_proposal_data_with_id as proposal_data_t
 
 def list_proposals_by_creator(wallet : Wallet, creator_name : str) -> list:
