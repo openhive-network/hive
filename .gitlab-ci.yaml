@@ -158,6 +158,10 @@ cli_wallet_tests:
     - pytest
   tags:
     - public-runner-docker
+  artifacts:
+    reports:
+      junit: tests/functional/python_tests/cli_wallet/report.xml
+
 
 hived_options_tests:
   stage: test
