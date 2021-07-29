@@ -115,8 +115,8 @@ def test_wallet(wallet):
     assert 'median_hbd_price' in _result
     _median_hbd_price = _result['median_hbd_price']
 
-    assert _median_hbd_price['base'] == '0.001 TBD'
-    assert _median_hbd_price['quote'] == '0.001 TESTS'
+    assert _median_hbd_price['base'] == Asset.Tbd(0.001)
+    assert _median_hbd_price['quote'] == Asset.Test(0.001)
 
     assert _result['account_creation_fee'] == Asset.Test(0)
 
