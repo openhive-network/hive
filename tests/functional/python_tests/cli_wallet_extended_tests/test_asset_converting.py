@@ -20,27 +20,27 @@ def test_conversion(wallet):
     response = wallet.api.get_account('alice')
 
     assert response['result']['balance'] == Asset.Test(196)
-    assert response['result']['hbd_balance'] == '1.904 TBD'
+    assert response['result']['hbd_balance'] == Asset.Tbd(1.904)
 
     response = wallet.api.get_collateralized_conversion_requests('alice')
 
     _request = response['result'][0]
     assert _request['collateral_amount'] == Asset.Test(4)
-    assert _request['converted_amount'] == '1.904 TBD'
+    assert _request['converted_amount'] == Asset.Tbd(1.904)
 
     response = wallet.api.estimate_hive_collateral(Asset.Tbd(4))
 
-    assert response['result'] == '8.400 TESTS'
+    assert response['result'] == Asset.Test(8.4)
 
-    wallet.api.convert_hbd('alice', '0.500 TBD')
+    wallet.api.convert_hbd('alice', Asset.Tbd(0.5))
 
     response = wallet.api.get_account('alice')
 
     _result = response['result']
     #'balance' is still the same, because request of conversion will be done after 3.5 days
     assert _result['balance'] == Asset.Test(196)
-    assert _result['hbd_balance'] == '1.404 TBD'
+    assert _result['hbd_balance'] == Asset.Tbd(1.404)
 
     response = wallet.api.get_conversion_requests('alice')
 
-    assert response['result'][0]['amount'] == '0.500 TBD'
+    assert response['result'][0]['amount'] == Asset.Tbd(0.5)

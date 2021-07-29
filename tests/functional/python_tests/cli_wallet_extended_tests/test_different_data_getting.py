@@ -33,8 +33,8 @@ def test_getters(world):
     response = wallet.api.get_feed_history()
 
     _current_median_history = response['result']['current_median_history']
-    assert _current_median_history['base'] == '0.001 TBD'
-    assert _current_median_history['quote'] == '0.001 TESTS'
+    assert _current_median_history['base'] == Asset.Tbd(0.001)
+    assert _current_median_history['quote'] == Asset.Test(0.001)
 
     with wallet.in_single_transaction() as transaction:
         wallet.api.create_account('initminer', 'bob', '{}')
