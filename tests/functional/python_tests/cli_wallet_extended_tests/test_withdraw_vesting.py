@@ -26,17 +26,17 @@ def test_withdraw_vesting(wallet):
 
     response = wallet.api.get_account('alice')
 
-    check_withdraw_data( response['result'], '0.000000 VESTS', 0 )
+    check_withdraw_data( response['result'], Asset.Vest(0), 0 )
 
     response = wallet.api.get_withdraw_routes('alice', 'incoming')
 
     assert len(response['result']) == 0
 
-    wallet.api.withdraw_vesting('alice', '4.000000 VESTS')
+    wallet.api.withdraw_vesting('alice', Asset.Vest(4))
 
     response = wallet.api.get_account('alice')
 
-    check_withdraw_data( response['result'], '0.307693 VESTS', 4000000 )
+    check_withdraw_data( response['result'], Asset.Vest(0.307693), 4000000 )
 
     response = wallet.api.get_withdraw_routes('alice', 'incoming')
 

@@ -18,7 +18,7 @@ def test_transaction(wallet):
     _result = response['result']
     assert _result['balance'] == Asset.Test(0)
     assert _result['hbd_balance'] == Asset.Tbd(0)
-    assert _result['vesting_shares'] == '0.000000 VESTS'
+    assert _result['vesting_shares'] == Asset.Vest(0)
 
     response = wallet.api.serialize_transaction(_result_trx_response)
 
@@ -31,7 +31,7 @@ def test_transaction(wallet):
     _result = response['result']
     assert _result['balance'] == Asset.Test(500)
     assert _result['hbd_balance'] == Asset.Tbd(50)
-    assert _result['vesting_shares'] != '0.000000 VESTS'
+    assert _result['vesting_shares'] != Asset.Vest(0)
 
     _time = datetime.datetime.utcnow()
     _before_seconds = (int)(_time.timestamp())
