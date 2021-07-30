@@ -12,6 +12,7 @@
 #include <boost/optional.hpp>
 #include <boost/bind.hpp>
 #include <boost/preprocessor/stringize.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <websocketpp/config/asio_client.hpp>
 #include <websocketpp/config/asio.hpp>
@@ -179,6 +180,8 @@ void webserver_plugin_impl::prepare_threads()
 
 void webserver_plugin_impl::start_webserver()
 {
+  const bool ws_and_http_uses_same_endpoint = http_endpoint && http_endpoint == ws_endpoint && ws_endpoint->port() != 0;
+
   if( ws_endpoint )
   {
     ws_thread = std::make_shared<std::thread>( [&]()
@@ -193,14 +196,40 @@ void webserver_plugin_impl::start_webserver()
 
         ws_server.set_message_handler( boost::bind( &webserver_plugin_impl::handle_ws_message, this, &ws_server, _1, _2 ) );
 
-        if( http_endpoint && http_endpoint == ws_endpoint )
+        if( ws_and_http_uses_same_endpoint )
         {
           ws_server.set_http_handler( boost::bind( &webserver_plugin_impl::handle_http_message, this, &ws_server, _1 ) );
-          ilog( "start listening for http requests" );
         }
 
-        ilog( "start listening for ws requests" );
         ws_server.listen( *ws_endpoint );
+
+        // Update endpoint with port get from OS
+        if ( ws_endpoint->port() == 0 )
+        {
+          boost::system::error_code error;
+          auto ws_server_port = ws_server.get_local_endpoint( error ).port();
+          if ( error )
+          {
+            throw std::runtime_error( "Unknown error occurred during getting endpoint from http server" );
+          }
+          ws_endpoint->port( ws_server_port );
+        }
+
+        if( ws_and_http_uses_same_endpoint )
+        {
+          ilog(
+            "start listening for http requests on ${address}:${port}",
+            ( "address", http_endpoint->address().to_string() )
+            ( "port", http_endpoint->port() )
+          );
+        }
+
+        ilog(
+          "start listening for ws requests on ${address}:${port}",
+          ( "address", ws_endpoint->address().to_string() )
+          ( "port", ws_endpoint->port() )
+        );
+
         ws_server.start_accept();
 
         ws_ios.run();
@@ -213,7 +242,7 @@ void webserver_plugin_impl::start_webserver()
     });
   }
 
-  if( http_endpoint && ( ( ws_endpoint && ws_endpoint != http_endpoint ) || !ws_endpoint ) )
+  if( http_endpoint && ( !ws_and_http_uses_same_endpoint || !ws_endpoint ) )
   {
     http_thread = std::make_shared<std::thread>( [&]()
     {
@@ -227,9 +256,27 @@ void webserver_plugin_impl::start_webserver()
 
         http_server.set_http_handler( boost::bind( &webserver_plugin_impl::handle_http_message, this, &http_server, _1 ) );
 
-        ilog( "start listening for http requests" );
         http_server.listen( *http_endpoint );
         http_server.start_accept();
+
+        // Update endpoint with port get from OS
+        if (http_endpoint->port() == 0)
+        {
+          boost::system::error_code error;
+          auto http_server_port = http_server.get_local_endpoint(error).port();
+          if (error)
+          {
+            throw std::runtime_error("Unknown error occurred during getting endpoint from http server");
+          }
+          http_endpoint->port(http_server_port);
+        }
+
+        // Log
+        ilog(
+            "start listening for http requests on ${address}:${port}",
+            ("address", http_endpoint->address().to_string())
+            ("port", http_endpoint->port())
+        );
 
         http_ios.run();
         ilog( "http io service exit" );
