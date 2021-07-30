@@ -1,18 +1,13 @@
 from test_tools import Account, logger, World, Asset
 from utilities import check_keys
 
-def test_account_creation_in_different_ways(world):
-    init_node = world.create_init_node()
-    init_node.run()
-
-    wallet = init_node.attach_wallet()
-
+def test_account_creation_in_different_ways(node, wallet):
     response = wallet.api.list_accounts('a', 100)
 
     old_accounts_number = len(response['result'])
 
     logger.info('Waiting...')
-    init_node.wait_number_of_blocks(18)
+    node.wait_number_of_blocks(18)
     
     wallet.api.claim_account_creation('initminer', Asset.Test(0))
 

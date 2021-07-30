@@ -1,11 +1,6 @@
 from test_tools import Account, logger, World, Asset
 
-def test_delegate(world):
-    init_node = world.create_init_node()
-    init_node.run()
-
-    wallet = init_node.attach_wallet()
-
+def test_delegate(node, wallet):
     wallet.api.create_account('initminer', 'alice', '{}')
 
     wallet.api.transfer('initminer', 'alice', Asset.Test(200), 'avocado')
@@ -55,7 +50,7 @@ def test_delegate(world):
     wallet.api.delegate_vesting_shares_nonblocking('bob', 'alice', Asset.Vest(0.1))
 
     logger.info('Waiting...')
-    init_node.wait_number_of_blocks(1)
+    node.wait_number_of_blocks(1)
 
     response = wallet.api.get_account('alice')
 
