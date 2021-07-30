@@ -1,5 +1,8 @@
 #include <hive/plugins/sql_serializer/sql_serializer_plugin.hpp>
+
 #include <hive/plugins/sql_serializer/data_processor.hpp>
+
+#include <hive/plugins/sql_serializer/sql_serializer_objects.hpp>
 
 #include <hive/chain/util/impacted.hpp>
 
@@ -14,20 +17,21 @@
 #include <fc/utf8.hpp>
 
 #include <boost/filesystem.hpp>
-#include <condition_variable>
 
-#include <list>
+#include <condition_variable>
 #include <map>
-#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
 
-#include <pqxx/pqxx>
-
 
 namespace hive
 {
+using chain::block_notification;
+using chain::transaction_notification;
+using chain::operation_notification;
+using chain::reindex_notification;
+
   namespace plugins
   {
     namespace sql_serializer
@@ -816,10 +820,11 @@ namespace hive
         class sql_serializer_plugin_impl final
         {
         public:
-          sql_serializer_plugin_impl(const std::string &url, hive::chain::database& _chain_db) 
+          sql_serializer_plugin_impl(const std::string &url, hive::chain::database& _chain_db, const sql_serializer_plugin& _main_plugin) 
             : connection{url},
               db_url{url},
-              chain_db{_chain_db}
+              chain_db{_chain_db},
+              main_plugin{_main_plugin}
           {
 
             init_data_processors();
@@ -840,6 +845,18 @@ namespace hive
             ilog("Serializer plugin has been closed");
           }
 
+          void connect_signals();
+          void disconnect_signals();
+
+          void on_pre_reindex(const reindex_notification& note);
+          void on_post_reindex(const reindex_notification& note);
+
+          void on_pre_apply_operation(const operation_notification& note);
+          void on_pre_apply_block(const block_notification& note);
+          void on_post_apply_block(const block_notification& note);
+
+          void handle_transactions(const vector<hive::protocol::signed_transaction>& transactions, const int64_t block_num);
+
           boost::signals2::connection _on_pre_apply_operation_con;
           boost::signals2::connection _on_pre_apply_block_con;
           boost::signals2::connection _on_post_apply_block_con;
@@ -857,6 +874,8 @@ namespace hive
           postgress_connection_holder connection;
           std::string db_url;
           hive::chain::database& chain_db;
+          const sql_serializer_plugin& main_plugin;
+
           fc::optional<fc::string> path_to_schema;
 
           uint32_t last_skipped_block = 0;
@@ -1199,6 +1218,177 @@ void sql_serializer_plugin_impl::wait_for_data_processing_finish()
   _account_operation_writer->complete_data_processing();
 }
 
+void sql_serializer_plugin_impl::connect_signals()
+{
+  _on_pre_apply_operation_con = chain_db.add_pre_apply_operation_handler([&](const operation_notification& note) { on_pre_apply_operation(note); }, main_plugin);
+  _on_pre_apply_block_con = chain_db.add_pre_apply_block_handler([&](const block_notification& note) { on_pre_apply_block(note); }, main_plugin);
+  _on_post_apply_block_con = chain_db.add_post_apply_block_handler([&](const block_notification& note) { on_post_apply_block(note); }, main_plugin);
+  _on_finished_reindex = chain_db.add_post_reindex_handler([&](const reindex_notification& note) { on_post_reindex(note); }, main_plugin);
+  _on_starting_reindex = chain_db.add_pre_reindex_handler([&](const reindex_notification& note) { on_pre_reindex(note); }, main_plugin);
+}
+
+void sql_serializer_plugin_impl::disconnect_signals()
+{
+  if(_on_pre_apply_block_con.connected())
+    chain::util::disconnect_signal(_on_pre_apply_block_con);
+
+  if(_on_post_apply_block_con.connected())
+    chain::util::disconnect_signal(_on_post_apply_block_con);
+  if(_on_pre_apply_operation_con.connected())
+    chain::util::disconnect_signal(_on_pre_apply_operation_con);
+  if(_on_starting_reindex.connected())
+    chain::util::disconnect_signal(_on_starting_reindex);
+  if(_on_finished_reindex.connected())
+    chain::util::disconnect_signal(_on_finished_reindex);
+
+}
+
+void sql_serializer_plugin_impl::on_pre_apply_block(const block_notification& note)
+{
+  ilog("Entering a resync data init for block: ${b}...", ("b", note.block_num));
+
+  /// Let's init our database before applying first block (resync case)...
+  init_database(note.block_num == 1, note.block_num);
+
+  /// And disconnect to avoid subsequent inits
+  if(_on_pre_apply_block_con.connected())
+    chain::util::disconnect_signal(_on_pre_apply_block_con);
+  ilog("Leaving a resync data init...");
+}
+
+void sql_serializer_plugin_impl::on_pre_apply_operation(const operation_notification& note)
+{
+  if(chain_db.is_producing())
+  {
+    ilog("Skipping operation processing coming from incoming transaction - waiting for already produced incoming block...");
+    return;
+  }
+
+  if(skip_reversible_block(note.block))
+    return;
+
+  const bool is_virtual = hive::protocol::is_virtual_operation(note.op);
+
+  detail::cached_containter_t& cdtf = currently_caching_data; // alias
+
+  ++op_sequence_id;
+
+  if(is_virtual == false)
+    collect_new_ids(note.op);
+
+  cdtf->operations.emplace_back(
+    op_sequence_id,
+    note.block,
+    note.trx_in_block,
+    is_virtual && note.trx_in_block < 0 ? block_vops++ : note.op_in_trx,
+    note.op
+  );
+
+  collect_impacted_accounts(op_sequence_id, note.op);
+
+}
+
+void sql_serializer_plugin_impl::on_post_apply_block(const block_notification& note)
+{
+  FC_ASSERT(chain_db.is_producing() == false);
+
+  if(skip_reversible_block(note.block_num))
+    return;
+
+  handle_transactions(note.block.transactions, note.block_num);
+
+  currently_caching_data->total_size += note.block_id.data_size() + sizeof(note.block_num);
+  currently_caching_data->blocks.emplace_back(
+    note.block_id,
+    note.block_num,
+    note.block.timestamp,
+    note.prev_block_id);
+  block_vops = 0;
+
+  if(note.block_num % blocks_per_commit == 0)
+  {
+    process_cached_data();
+  }
+
+  if(note.block_num % 100'000 == 0)
+  {
+    log_statistics();
+  }
+}
+
+void sql_serializer_plugin_impl::handle_transactions(const vector<hive::protocol::signed_transaction>& transactions, const int64_t block_num)
+{
+  uint trx_in_block = 0;
+
+  for(auto& trx : transactions)
+  {
+    auto hash = trx.id();
+    size_t sig_size = trx.signatures.size();
+
+    currently_caching_data->total_size += sizeof(hash) + sizeof(block_num) + sizeof(trx_in_block) +
+      sizeof(trx.ref_block_num) + sizeof(trx.ref_block_prefix) + sizeof(trx.expiration) + sizeof(trx.signatures[0]);
+
+    currently_caching_data->transactions.emplace_back(
+      hash,
+      block_num,
+      trx_in_block,
+      trx.ref_block_num,
+      trx.ref_block_prefix,
+      trx.expiration,
+      (sig_size == 0) ? fc::optional<signature_type>() : fc::optional<signature_type>(trx.signatures[0])
+    );
+
+    if(sig_size > 1)
+    {
+      auto itr = trx.signatures.begin() + 1;
+      while(itr != trx.signatures.end())
+      {
+        currently_caching_data->transactions_multisig.emplace_back(
+          hash,
+          *itr
+        );
+        ++itr;
+      }
+    }
+
+    trx_in_block++;
+  }
+}
+
+void sql_serializer_plugin_impl::on_pre_reindex(const reindex_notification& note)
+{
+  ilog("Entering a reindex init...");
+  /// Let's init our database before applying first block...
+  init_database(note.force_replay, note.max_block_number);
+
+  /// Disconnect pre-apply-block handler to avoid another initialization (for resync case).
+  if(_on_pre_apply_block_con.connected())
+    chain::util::disconnect_signal(_on_pre_apply_block_con);
+
+  blocks_per_commit = 1'000;
+  massive_sync = true;
+
+  switch_to_concurrent_transaction_controller();
+
+  ilog("Leaving a reindex init...");
+}
+
+void sql_serializer_plugin_impl::on_post_reindex(const reindex_notification& note)
+{
+  ilog("finishing from post reindex");
+
+  process_cached_data();
+  wait_for_data_processing_finish();
+
+  if(note.last_block_number >= note.max_block_number)
+    switch_db_items(true/*mode*/);
+
+  switch_to_single_transaction_controller();
+
+  blocks_per_commit = 1;
+  massive_sync = false;
+}
+
 void sql_serializer_plugin_impl::trigger_data_flush(account_data_container_t& data)
 {
   _account_writer->trigger(std::move(data), massive_sync == false);
@@ -1320,7 +1510,7 @@ bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
 
         auto& db = appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db();
 
-        my = std::make_unique<detail::sql_serializer_plugin_impl>(options["psql-url"].as<fc::string>(), db);
+        my = std::make_unique<detail::sql_serializer_plugin_impl>(options["psql-url"].as<fc::string>(), db, *this);
 
         // settings
         if (options.count("psql-path-to-schema"))
@@ -1331,11 +1521,7 @@ bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
         my->currently_caching_data = std::make_unique<detail::cached_data_t>( default_reservation_size );
 
         // signals
-        my->_on_pre_apply_operation_con = db.add_pre_apply_operation_handler([&](const operation_notification &note) { on_pre_apply_operation(note); }, *this);
-        my->_on_pre_apply_block_con = db.add_pre_apply_block_handler([&](const block_notification& note) { on_pre_apply_block(note); }, *this);
-        my->_on_post_apply_block_con = db.add_post_apply_block_handler([&](const block_notification &note) { on_post_apply_block(note); }, *this);
-        my->_on_finished_reindex = db.add_post_reindex_handler([&](const reindex_notification &note) { on_post_reindex(note); }, *this);
-        my->_on_starting_reindex = db.add_pre_reindex_handler([&](const reindex_notification &note) { on_pre_reindex(note); }, *this);
+        my->connect_signals();
       }
 
       void sql_serializer_plugin::plugin_startup()
@@ -1348,166 +1534,11 @@ bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
         ilog("Flushing left data...");
         my->join_data_processors();
 
-        if(my->_on_pre_apply_block_con.connected())
-          chain::util::disconnect_signal(my->_on_pre_apply_block_con);
-
-        if (my->_on_post_apply_block_con.connected())
-          chain::util::disconnect_signal(my->_on_post_apply_block_con);
-        if (my->_on_pre_apply_operation_con.connected())
-          chain::util::disconnect_signal(my->_on_pre_apply_operation_con);
-        if (my->_on_starting_reindex.connected())
-          chain::util::disconnect_signal(my->_on_starting_reindex);
-        if (my->_on_finished_reindex.connected())
-          chain::util::disconnect_signal(my->_on_finished_reindex);
+        my->disconnect_signals();
 
         ilog("Done. Connection closed");
       }
 
-      void sql_serializer_plugin::on_pre_apply_block(const block_notification& note)
-      {
-        ilog("Entering a resync data init for block: ${b}...", ("b", note.block_num));
-
-        /// Let's init our database before applying first block (resync case)...
-        my->init_database(note.block_num == 1, note.block_num);
-
-        /// And disconnect to avoid subsequent inits
-        if(my->_on_pre_apply_block_con.connected())
-          chain::util::disconnect_signal(my->_on_pre_apply_block_con);
-        ilog("Leaving a resync data init...");
-      }
-
-      void sql_serializer_plugin::on_pre_apply_operation(const operation_notification &note)
-      {
-        if(my->chain_db.is_producing())
-        {
-          ilog("Skipping operation processing coming from incoming transaction - waiting for already produced incoming block...");
-          return;
-        }
-
-        if(my->skip_reversible_block(note.block))
-          return;
-
-        const bool is_virtual = hive::protocol::is_virtual_operation(note.op);
-
-        detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
-        
-        ++my->op_sequence_id;
-
-        if(is_virtual == false)
-          my->collect_new_ids(note.op);
-
-        cdtf->operations.emplace_back(
-            my->op_sequence_id,
-            note.block,
-            note.trx_in_block,
-            is_virtual && note.trx_in_block < 0 ? my->block_vops++ : note.op_in_trx,
-            note.op
-          );
-
-        my->collect_impacted_accounts(my->op_sequence_id, note.op);
-
-      }
-
-      void sql_serializer_plugin::on_post_apply_block(const block_notification &note)
-      {
-        FC_ASSERT(my->chain_db.is_producing() == false);
-
-        if(my->skip_reversible_block(note.block_num))
-          return;
-
-        handle_transactions( note.block.transactions, note.block_num );
-
-        my->currently_caching_data->total_size += note.block_id.data_size() + sizeof(note.block_num);
-        my->currently_caching_data->blocks.emplace_back(
-            note.block_id,
-            note.block_num,
-            note.block.timestamp,
-            note.prev_block_id);
-        my->block_vops = 0;
-
-        if( note.block_num % my->blocks_per_commit == 0 )
-        {
-          my->process_cached_data();
-        }
-
-        if( note.block_num % 100'000 == 0 )
-        {
-          my->log_statistics();
-        }
-      }
-
-      void sql_serializer_plugin::handle_transactions(const vector<hive::protocol::signed_transaction>& transactions, const int64_t block_num )
-      {
-        uint trx_in_block = 0;
-
-        for( auto& trx : transactions )
-        {
-          auto hash = trx.id();
-          size_t sig_size = trx.signatures.size();
-
-          my->currently_caching_data->total_size += sizeof(hash) + sizeof(block_num) + sizeof(trx_in_block) +
-                                                    sizeof(trx.ref_block_num) + sizeof(trx.ref_block_prefix) + sizeof(trx.expiration) + sizeof(trx.signatures[0]);
-
-          my->currently_caching_data->transactions.emplace_back(
-            hash,
-            block_num,
-            trx_in_block,
-            trx.ref_block_num,
-            trx.ref_block_prefix,
-            trx.expiration,
-            ( sig_size == 0 ) ? fc::optional<signature_type>() : fc::optional<signature_type>( trx.signatures[0] )
-          );
-
-          if( sig_size > 1 )
-          {
-            auto itr = trx.signatures.begin() + 1;
-            while( itr != trx.signatures.end() )
-            {
-              my->currently_caching_data->transactions_multisig.emplace_back(
-                hash,
-                *itr
-              );
-              ++itr;
-            }
-          }
-
-          trx_in_block++;
-        }
-      }
-
-      void sql_serializer_plugin::on_pre_reindex(const reindex_notification &note)
-      {
-        ilog("Entering a reindex init...");
-        /// Let's init our database before applying first block...
-        my->init_database(note.force_replay, note.max_block_number);
-
-        /// Disconnect pre-apply-block handler to avoid another initialization (for resync case).
-        if(my->_on_pre_apply_block_con.connected())
-          chain::util::disconnect_signal(my->_on_pre_apply_block_con);
-
-        my->blocks_per_commit = 1'000;
-        my->massive_sync = true;
-
-        my->switch_to_concurrent_transaction_controller();
-
-        ilog("Leaving a reindex init...");
-      }
-
-      void sql_serializer_plugin::on_post_reindex(const reindex_notification& note)
-      {
-        ilog("finishing from post reindex");
-        
-        my->process_cached_data();
-        my->wait_for_data_processing_finish();
-
-        if( note.last_block_number >= note.max_block_number )
-          my->switch_db_items( true/*mode*/ );
-
-        my->switch_to_single_transaction_controller();
-
-        my->blocks_per_commit = 1;
-        my->massive_sync = false;
-      }
       
     } // namespace sql_serializer
   }    // namespace plugins
