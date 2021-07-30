@@ -71,7 +71,7 @@ def test_delegate(node, wallet):
     wallet.api.delegate_vesting_shares_and_transfer_nonblocking('bob', 'alice', Asset.Vest(0.1), Asset.Tbd(6.555), 'pear')
 
     logger.info('Waiting...')
-    init_node.wait_number_of_blocks(1)
+    node.wait_number_of_blocks(1)
 
     response = wallet.api.get_account('alice')
 
