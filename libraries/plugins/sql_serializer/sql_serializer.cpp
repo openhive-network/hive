@@ -1496,11 +1496,12 @@ bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
       sql_serializer_plugin::sql_serializer_plugin() {}
       sql_serializer_plugin::~sql_serializer_plugin() {}
 
-      void sql_serializer_plugin::set_program_options(options_description &cli, options_description &cfg)
+
+      void sql_serializer_plugin::set_program_options(appbase::options_description &cli, appbase::options_description &cfg)
       {
         cfg.add_options()("psql-url", boost::program_options::value<string>(), "postgres connection string")
                          ("psql-path-to-schema", "if set and replay starts from 0 block, executes script")
-                         ("psql-index-threshold", bpo::value<uint32_t>()->default_value( 1'000'000 ), "indexes/constraints will be recreated if `psql_block_number + psql_index_threshold >= head_block_number`");
+                         ("psql-index-threshold", appbase::bpo::value<uint32_t>()->default_value( 1'000'000 ), "indexes/constraints will be recreated if `psql_block_number + psql_index_threshold >= head_block_number`");
       }
 
       void sql_serializer_plugin::plugin_initialize(const boost::program_options::variables_map &options)
