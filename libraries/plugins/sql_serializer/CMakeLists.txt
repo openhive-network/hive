@@ -1,19 +1,32 @@
 file(GLOB HEADERS "include/hive/plugins/sql_serializer/*.hpp")
 
-set(PQXX /usr/local/include/pqxx)
-find_library(PQXX_LIB pqxx)
-find_library(PQ_LIB pq)
+find_package(PostgreSQL 10.0)
 
-add_library( sql_serializer_plugin
-             sql_serializer.cpp
-             data_processor.cpp
-             transaction_controllers.cpp
-             ${HEADERS}
-            )
+IF (PostgreSQL_FOUND)
+  MESSAGE (STATUS "Found PostgreSQL installation.")
 
-target_link_libraries( sql_serializer_plugin chain_plugin hive_chain hive_protocol condenser_api_plugin ${PQXX_LIB} ${PQ_LIB} )
+  FIND_LIBRARY(PQXX_LIB pqxx)
+  FIND_LIBRARY(PQ_LIB pq)
+
+  ADD_LIBRARY( sql_serializer_plugin
+               sql_serializer.cpp
+               data_processor.cpp
+               transaction_controllers.cpp
+               ${HEADERS}
+              )
+ELSE()
+  MESSAGE (WARNING "No PostgreSQL installation found. sql_serializer plugin functionality WILL BE UNAVAILABLE.")
+  ADD_LIBRARY( sql_serializer_plugin
+               fake_sql_serializer.cpp
+               ${HEADERS}
+              )
+ENDIF()
+
+target_link_libraries( sql_serializer_plugin chain_plugin hive_chain hive_protocol  ${PQXX_LIB} ${PostgreSQL_LIBRARIES} )
+
 target_include_directories( sql_serializer_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                            PRIVATE "${PostgreSQL_INCLUDE_DIRS}"
                           )
 
 if( CLANG_TIDY_EXE )

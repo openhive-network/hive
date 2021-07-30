@@ -8,11 +8,9 @@ namespace hive { namespace plugins { namespace sql_serializer {
 
 namespace detail { class sql_serializer_plugin_impl; }
 
-using namespace appbase;
-
 constexpr size_t prereservation_size = 16'000u;
 
-class sql_serializer_plugin final : public plugin<sql_serializer_plugin>
+class sql_serializer_plugin final : public appbase::plugin<sql_serializer_plugin>
 {
   public:
       sql_serializer_plugin();
@@ -26,14 +24,13 @@ class sql_serializer_plugin final : public plugin<sql_serializer_plugin>
         return name; 
       }
 
-      virtual void set_program_options(options_description& cli, options_description& cfg ) override;
-      virtual void plugin_initialize(const variables_map& options) override;
+      virtual void set_program_options(appbase::options_description& cli, appbase::options_description& cfg ) override;
+      virtual void plugin_initialize(const appbase::variables_map& options) override;
       virtual void plugin_startup() override;
       virtual void plugin_shutdown() override;
 
   private:
-
-      std::unique_ptr<detail::sql_serializer_plugin_impl> my;
+     std::unique_ptr<detail::sql_serializer_plugin_impl> my;
 };
 
 } } } //hive::plugins::sql_serializer
