@@ -1,11 +1,6 @@
 from test_tools import Account, logger, World, Asset
 
-def test_getters(world):
-    init_node = world.create_init_node()
-    init_node.run()
-
-    wallet = init_node.attach_wallet()
-
+def test_getters(node, wallet):
     response = wallet.api.create_account('initminer', 'alice', '{}')
 
     transaction_id = response['result']['transaction_id']
@@ -45,7 +40,7 @@ def test_getters(world):
     block_number = _response['result']['ref_block_num'] + 1
 
     logger.info('Waiting...')
-    init_node.wait_number_of_blocks(22)
+    node.wait_number_of_blocks(22)
 
     response = wallet.api.get_ops_in_block( block_number, False )
     _result = response['result']

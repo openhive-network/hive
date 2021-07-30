@@ -1,12 +1,7 @@
 from test_tools import Account, logger, World, Asset
 from utilities import create_accounts
 
-def test_transfer(world):
-    init_node = world.create_init_node()
-    init_node.run()
-
-    wallet = init_node.attach_wallet()
-
+def test_transfer(node, wallet):
     create_accounts( wallet, 'initminer', ['newaccount', 'newaccount2'] )
 
     wallet.api.transfer_to_vesting('initminer', 'newaccount', Asset.Test(100))
@@ -55,7 +50,7 @@ def test_transfer(world):
     wallet.api.transfer_to_vesting_nonblocking('initminer', 'newaccount', Asset.Test(100))
 
     logger.info('Waiting...')
-    init_node.wait_number_of_blocks(1)
+    node.wait_number_of_blocks(1)
 
     response = wallet.api.get_account('newaccount')
 
