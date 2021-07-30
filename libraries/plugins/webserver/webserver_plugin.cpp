@@ -9,9 +9,11 @@
 #include <fc/network/resolve.hpp>
 
 #include <boost/asio.hpp>
-#include <boost/optional.hpp>
 #include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/optional.hpp>
 #include <boost/preprocessor/stringize.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <websocketpp/config/asio_client.hpp>
 #include <websocketpp/config/asio.hpp>
@@ -178,6 +180,10 @@ class webserver_plugin_impl
     boost::signals2::connection         chain_sync_con;
 
     plugins::chain::chain_plugin& chain;
+
+  private:
+    void update_http_endpoint();
+    void update_ws_endpoint();
 };
 
 void webserver_plugin_impl::prepare_threads()
@@ -190,9 +196,11 @@ void webserver_plugin_impl::prepare_threads()
 
 void webserver_plugin_impl::start_webserver()
 {
+  const bool ws_and_http_uses_same_endpoint = http_endpoint && http_endpoint == ws_endpoint && http_endpoint->port() != 0;
+
   if( ws_endpoint )
   {
-    ws_thread = std::make_shared<std::thread>( [&]()
+    ws_thread = std::make_shared<std::thread>( [&, ws_and_http_uses_same_endpoint]()
     {
       ilog( "start processing ws thread" );
       try
@@ -204,14 +212,19 @@ void webserver_plugin_impl::start_webserver()
 
         ws_server.set_message_handler( boost::bind( &webserver_plugin_impl::handle_ws_message, this, &ws_server, _1, _2 ) );
 
-        if( http_endpoint && http_endpoint == ws_endpoint )
+        if( ws_and_http_uses_same_endpoint )
         {
           ws_server.set_http_handler( boost::bind( &webserver_plugin_impl::handle_http_message, this, &ws_server, _1 ) );
-          ilog( "start listening for http requests" );
         }
 
-        ilog( "start listening for ws requests" );
         ws_server.listen( *ws_endpoint );
+        update_ws_endpoint();
+        if( ws_and_http_uses_same_endpoint )
+        {
+          ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
+        }
+        ilog( "start listening for ws requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *ws_endpoint ) ) );
+
         ws_server.start_accept();
 
         ws_ios.run();
@@ -224,7 +237,7 @@ void webserver_plugin_impl::start_webserver()
     });
   }
 
-  if( http_endpoint && ( ( ws_endpoint && ws_endpoint != http_endpoint ) || !ws_endpoint ) )
+  if( http_endpoint && ( !ws_and_http_uses_same_endpoint || !ws_endpoint ) )
   {
     http_thread = std::make_shared<std::thread>( [&]()
     {
@@ -238,9 +251,10 @@ void webserver_plugin_impl::start_webserver()
 
         http_server.set_http_handler( boost::bind( &webserver_plugin_impl::handle_http_message, this, &http_server, _1 ) );
 
-        ilog( "start listening for http requests" );
         http_server.listen( *http_endpoint );
         http_server.start_accept();
+        update_http_endpoint();
+        ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
 
         http_ios.run();
         ilog( "http io service exit" );
@@ -278,6 +292,27 @@ void webserver_plugin_impl::start_webserver()
       }
     });
   }
+}
+
+void update_endpoint(websocket_server_type& server, optional< tcp::endpoint >& endpoint)
+{
+  if (endpoint->port() == 0)
+  {
+    boost::system::error_code error;
+    auto server_port = server.get_local_endpoint(error).port();
+    FC_ASSERT(!error);
+    endpoint->port(server_port);
+  }
+}
+
+void webserver_plugin_impl::update_http_endpoint()
+{
+  update_endpoint(http_server, http_endpoint);
+}
+
+void webserver_plugin_impl::update_ws_endpoint()
+{
+  update_endpoint(ws_server, ws_endpoint);
 }
 
 void webserver_plugin_impl::stop_webserver()

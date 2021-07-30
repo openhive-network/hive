@@ -258,11 +258,12 @@ int main( int argc, char** argv )
     auto _http_server = std::make_shared<fc::http::server>();
     if( options.count("rpc-http-endpoint" ) )
     {
-      ilog( "Listening for incoming HTTP RPC requests on ${p}", ("p", options.at("rpc-http-endpoint").as<string>() ) );
       for( const auto& ip : allowed_ips )
         allowed_ip_set.insert(fc::ip::address(ip));
 
       _http_server->listen( fc::ip::endpoint::from_string( options.at( "rpc-http-endpoint" ).as<string>() ) );
+      ilog( "Listening for incoming HTTP RPC requests on ${endpoint}", ( "endpoint", _http_server->get_local_endpoint() ) );
+
       //
       // due to implementation, on_request() must come AFTER listen()
       //
