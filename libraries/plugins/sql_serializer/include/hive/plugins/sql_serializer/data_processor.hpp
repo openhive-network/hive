@@ -48,6 +48,8 @@ public:
   transaction_controller_ptr register_transaction_controler(transaction_controller_ptr controller);
 
   void trigger(data_chunk_ptr dataPtr);
+  /// Allows to hold execution of calling thread, until data processing thread will consume data and starts awaiting for another trigger call.
+  void complete_data_processing();
   void cancel();
   void join();
 
@@ -55,11 +57,15 @@ public:
     std::string _description;
     std::atomic_bool _cancel;
     std::atomic_bool _continue;
+    std::atomic_bool _initialized;
     std::atomic_bool _finished;
+    std::atomic_bool _is_processing_data;
 
     std::thread _worker;
     std::mutex _mtx;
+    std::mutex _data_processing_mtx;
     std::condition_variable _cv;
+    std::condition_variable _data_processing_finished_cv;
     fc::optional<data_chunk_ptr> _dataPtr;
     transaction_controller_ptr _txController;
 

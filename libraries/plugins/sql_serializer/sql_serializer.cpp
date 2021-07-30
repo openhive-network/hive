@@ -213,10 +213,14 @@ namespace hive
           _processor = std::make_unique<data_processor>(psqlUrl, description, flush_data);
         }
 
-        void trigger(DataContainer&& data)
+        void trigger(DataContainer&& data, bool wait_for_data_completion)
         {
           if(data.empty() == false)
+          {
             _processor->trigger(std::make_unique<chunk>(_mainCache, std::move(data)));
+            if(wait_for_data_completion)
+              _processor->complete_data_processing();
+          }
 
           FC_ASSERT(data.empty());
         }
@@ -225,6 +229,7 @@ namespace hive
         {
           FC_ASSERT(_prev_tx_controller == nullptr);
           _prev_tx_controller = _processor->register_transaction_controler(std::move(tx_controller));
+          FC_ASSERT(_prev_tx_controller != nullptr);
         }
 
         void restore_transaction_controller()
@@ -232,6 +237,11 @@ namespace hive
           FC_ASSERT(_prev_tx_controller != nullptr);
           _processor->register_transaction_controler(std::move(_prev_tx_controller));
 
+        }
+
+        void complete_data_processing()
+        {
+          _processor->complete_data_processing();
         }
 
         void join()
@@ -813,6 +823,12 @@ namespace hive
           {
 
             init_data_processors();
+
+            /** By default the data_writer class builds a concurrent (owned by given thread) transaction controller.
+                Since after starting up, we don't know which mode should be used, lets switch into LIVE-SYNC (single transaction) mode.
+                Once reindex-start notification will be received, working mode will be switched back to the concurrent transaction controller.
+            */
+            switch_to_single_transaction_controller();
           }
 
           ~sql_serializer_plugin_impl()
@@ -843,6 +859,7 @@ namespace hive
           hive::chain::database& chain_db;
           fc::optional<fc::string> path_to_schema;
 
+          uint32_t last_skipped_block = 0;
           uint32_t psql_block_number = 0;
           uint32_t psql_index_threshold = 0;
           uint32_t head_block_number = 0;
@@ -853,6 +870,8 @@ namespace hive
 
           cached_containter_t currently_caching_data;
           stats_group current_stats;
+
+          bool massive_sync = false;
 
           void log_statistics()
           {
@@ -873,10 +892,11 @@ namespace hive
 
             for( const auto& table_name : table_names )
             {
-              processors.emplace_back( db_url, "DB processor", [&function_name, &table_name, &objects_name, mode](const data_chunk_ptr&, transaction& tx) -> data_processing_status
+              std::string query = std::string("SELECT ") + function_name + "( '" + table_name + "' );";
+              std::string description = "Query processor: `" + query + "'";
+              processors.emplace_back( db_url, description, [query, &table_name , &objects_name, mode](const data_chunk_ptr&, transaction& tx) -> data_processing_status
                             {
-                              std::string query = std::string( "SELECT " ) + function_name + "( '" + table_name + "' );";
-                              ilog("The query: `${query}` has been executed...", ("query", query ) );
+                              ilog("Attempting to execute query: `${query}`...", ("query", query ) );
                               const auto start_time = fc::time_point::now();
                               tx.exec( query );
                               ilog(
@@ -1111,9 +1131,15 @@ namespace hive
             _account_operation_writer->join();
           }
 
+          void switch_to_single_transaction_controller();
+          void switch_to_concurrent_transaction_controller();
+          void wait_for_data_processing_finish();
+
           void process_cached_data();
           void collect_new_ids(const hive::protocol::operation& op);
           void collect_impacted_accounts(int64_t operation_id, const hive::protocol::operation& op);
+
+          bool skip_reversible_block(uint32_t block);
 
           void cleanup_sequence()
           {
@@ -1138,39 +1164,74 @@ void sql_serializer_plugin_impl::init_data_processors()
   _account_operation_writer = std::make_unique<account_operation_data_container_t_writer>(db_url, mainCache, "Account operation data writer");
 }
 
+void sql_serializer_plugin_impl::switch_to_single_transaction_controller()
+{
+  auto single_tx_controler = build_single_transaction_controller(db_url);
+  
+  _account_writer->register_transaction_controler(single_tx_controler);
+  _permlink_writer->register_transaction_controler(single_tx_controler);
+  _block_writer->register_transaction_controler(single_tx_controler);
+  _transaction_writer->register_transaction_controler(single_tx_controler);
+  _transaction_multisig_writer->register_transaction_controler(single_tx_controler);
+  _operation_writer->register_transaction_controler(single_tx_controler);
+  _account_operation_writer->register_transaction_controler(single_tx_controler);
+}
+
+void sql_serializer_plugin_impl::switch_to_concurrent_transaction_controller()
+{
+  _account_writer->restore_transaction_controller();
+  _permlink_writer->restore_transaction_controller();
+  _block_writer->restore_transaction_controller();
+  _transaction_writer->restore_transaction_controller();
+  _transaction_multisig_writer->restore_transaction_controller();
+  _operation_writer->restore_transaction_controller();
+  _account_operation_writer->restore_transaction_controller();
+}
+
+void sql_serializer_plugin_impl::wait_for_data_processing_finish()
+{
+  _account_writer->complete_data_processing();
+  _permlink_writer->complete_data_processing();
+  _block_writer->complete_data_processing();
+  _transaction_writer->complete_data_processing();
+  _transaction_multisig_writer->complete_data_processing();
+  _operation_writer->complete_data_processing();
+  _account_operation_writer->complete_data_processing();
+}
+
 void sql_serializer_plugin_impl::trigger_data_flush(account_data_container_t& data)
 {
-  _account_writer->trigger(std::move(data));
+  _account_writer->trigger(std::move(data), massive_sync == false);
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(permlink_data_container_t& data)
 {
-  _permlink_writer->trigger(std::move(data));
+  _permlink_writer->trigger(std::move(data), massive_sync == false);
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(block_data_container_t& data)
 {
-  _block_writer->trigger(std::move(data));
+  _block_writer->trigger(std::move(data), massive_sync == false);
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(transaction_data_container_t& data)
 {
-  _transaction_writer->trigger(std::move(data));
+  _transaction_writer->trigger(std::move(data), massive_sync == false);
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(transaction_multisig_data_container_t& data)
 {
-  _transaction_multisig_writer->trigger(std::move(data));
+  _transaction_multisig_writer->trigger(std::move(data), massive_sync == false);
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(operation_data_container_t& data)
 {
-  _operation_writer->trigger(std::move(data));
+  _operation_writer->trigger(std::move(data), massive_sync == false);
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(account_operation_data_container_t& data)
 {
-  _account_operation_writer->trigger(std::move(data));
+  _account_operation_writer->trigger(std::move(data), massive_sync == false);
 }
 
 void sql_serializer_plugin_impl::process_cached_data()
@@ -1180,9 +1241,10 @@ void sql_serializer_plugin_impl::process_cached_data()
   trigger_data_flush(data->accounts);
   trigger_data_flush(data->permlinks);
   trigger_data_flush(data->blocks);
+  trigger_data_flush(data->operations);
+
   trigger_data_flush(data->transactions);
   trigger_data_flush(data->transactions_multisig);
-  trigger_data_flush(data->operations);
   trigger_data_flush(data->account_operations);
 }
 
@@ -1219,6 +1281,24 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
 
     ++aInfo._operation_count;
   }
+}
+
+bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
+{
+  if(block_no <= psql_block_number)
+  {
+    FC_ASSERT(block_no > chain_db.get_last_irreversible_block_num());
+
+    if(last_skipped_block < block_no)
+    {
+      ilog("Skipping data provided by already processed reversible block: ${block_no}", ("block_no", block_no));
+      last_skipped_block = block_no;
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
       } // namespace detail
@@ -1304,6 +1384,9 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
           return;
         }
 
+        if(my->skip_reversible_block(note.block))
+          return;
+
         const bool is_virtual = hive::protocol::is_virtual_operation(note.op);
 
         detail::cached_containter_t &cdtf = my->currently_caching_data; // alias
@@ -1328,6 +1411,9 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
       void sql_serializer_plugin::on_post_apply_block(const block_notification &note)
       {
         FC_ASSERT(my->chain_db.is_producing() == false);
+
+        if(my->skip_reversible_block(note.block_num))
+          return;
 
         handle_transactions( note.block.transactions, note.block_num );
 
@@ -1400,18 +1486,27 @@ void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id,
           chain::util::disconnect_signal(my->_on_pre_apply_block_con);
 
         my->blocks_per_commit = 1'000;
+        my->massive_sync = true;
+
+        my->switch_to_concurrent_transaction_controller();
+
         ilog("Leaving a reindex init...");
       }
 
       void sql_serializer_plugin::on_post_reindex(const reindex_notification& note)
       {
         ilog("finishing from post reindex");
-        my->cleanup_sequence();
+        
+        my->process_cached_data();
+        my->wait_for_data_processing_finish();
 
         if( note.last_block_number >= note.max_block_number )
           my->switch_db_items( true/*mode*/ );
 
+        my->switch_to_single_transaction_controller();
+
         my->blocks_per_commit = 1;
+        my->massive_sync = false;
       }
       
     } // namespace sql_serializer
