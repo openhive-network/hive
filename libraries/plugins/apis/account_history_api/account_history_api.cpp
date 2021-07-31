@@ -279,7 +279,7 @@ struct filtering_visitor
   (comment_reward_operation)(liquidity_reward_operation)(interest_operation)
   (fill_vesting_withdraw_operation)(fill_order_operation)(shutdown_witness_operation)
   (fill_transfer_from_savings_operation)(hardfork_operation)(comment_payout_update_operation)
-  (return_vesting_delegation_operation)(comment_benefactor_reward_operation)(producer_reward_operation)
+  (return_vesting_delegation_operation)(comment_benefactor_reward_operation)(producer_reward_operation)(producer_missed_block_operation)
   (clear_null_account_balance_operation)(proposal_pay_operation)(sps_fund_operation)
   (hardfork_hive_operation)(hardfork_hive_restore_operation)(delayed_voting_operation)
   (consolidate_treasury_balance_operation)(effective_comment_vote_operation)(ineffective_delete_comment_operation)

@@ -307,6 +307,11 @@ struct get_impacted_account_visitor
     _impacted.insert( op.producer );
   }
 
+  void operator()( const producer_missed_block_operation& op )
+  {
+    _impacted.insert( op.producer );
+  }
+
   void operator()(const proposal_pay_operation& op)
   {
     _impacted.insert(op.receiver);

@@ -86,6 +86,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef ineffective_delete_comment_operation   legacy_ineffective_delete_comment_operation;
   typedef fill_recurrent_transfer_operation      legacy_fill_recurrent_transfer_operation;
   typedef failed_recurrent_transfer_operation    legacy_failed_recurrent_transfer_operation;
+  typedef producer_missed_block_operation        legacy_producer_missed_block_operation;
 
   struct legacy_price
   {
@@ -1170,6 +1171,23 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      vesting_shares;
   };
 
+  struct legacy_producer_missed_block_operation
+  {
+    legacy_producer_missed_block_operation() {}
+    legacy_producer_missed_block_operation( const producer_missed_block_operation& op ) :
+      producer( op.producer )
+    {}
+
+    operator producer_missed_block_operation()const
+    {
+      producer_missed_block_operation op;
+      op.producer = producer;
+      return op;
+    }
+
+    account_name_type producer;
+  };
+
   struct legacy_claim_account_operation
   {
     legacy_claim_account_operation() {}
@@ -1472,6 +1490,7 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_return_vesting_delegation_operation,
         legacy_comment_benefactor_reward_operation,
         legacy_producer_reward_operation,
+        legacy_producer_missed_block_operation,
         legacy_clear_null_account_balance_operation,
         legacy_proposal_pay_operation,
         legacy_sps_fund_operation,
@@ -1542,6 +1561,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const ineffective_delete_comment_operation& op )const     { l_op = op; return true; }
     bool operator()( const fill_recurrent_transfer_operation& op )const        { l_op = op; return true; }
     bool operator()( const failed_recurrent_transfer_operation& op )const      { l_op = op; return true; }
+    bool operator()( const producer_missed_block_operation& op )const          { l_op = op; return true; }
 
     bool operator()( const transfer_operation& op )const
     {
@@ -1744,6 +1764,12 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const producer_reward_operation& op )const
     {
       l_op = legacy_producer_reward_operation( op );
+      return true;
+    }
+
+    bool operator()( const producer_missed_block_operation& op )const
+    {
+      l_op = legacy_producer_missed_block_operation( op );
       return true;
     }
 
@@ -1992,6 +2018,11 @@ struct convert_from_legacy_operation_visitor
   operation operator()( const legacy_producer_reward_operation& op )const
   {
     return operation( producer_reward_operation( op ) );
+  }
+
+  operation operator()( const legacy_producer_missed_block_operation& op )const
+  {
+    return operation( producer_missed_block_operation( op ) );
   }
 
   operation operator()( const legacy_claim_account_operation& op )const
@@ -2254,6 +2285,7 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_fill_transfer_from_savings_oper
 FC_REFLECT( hive::plugins::condenser_api::legacy_return_vesting_delegation_operation, (account)(vesting_shares) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_producer_reward_operation, (producer)(vesting_shares) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_producer_missed_block_operation, (producer) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_claim_account_operation, (creator)(fee)(extensions) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_pow_reward_operation, (worker)(reward) )

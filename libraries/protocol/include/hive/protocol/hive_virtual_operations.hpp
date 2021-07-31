@@ -276,7 +276,14 @@ namespace hive { namespace protocol {
 
     account_name_type producer;
     asset             vesting_shares;
+  };
 
+  struct producer_missed_block_operation : public virtual_operation
+  {
+    producer_missed_block_operation(){}
+    producer_missed_block_operation( const string& p ) : producer( p ) {}
+
+    account_name_type producer;
   };
 
   struct clear_null_account_balance_operation : public virtual_operation
@@ -427,6 +434,7 @@ FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(perml
 FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesting_shares) )
 FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
 FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares) )
+FC_REFLECT( hive::protocol::producer_missed_block_operation, (producer) )
 FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared) )
 FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
 FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )

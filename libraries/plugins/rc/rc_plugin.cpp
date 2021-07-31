@@ -753,6 +753,11 @@ struct pre_apply_operation_visitor
     regenerate( op.producer );
   }
 
+  void operator()( const producer_missed_block_operation& op )const
+  {
+    regenerate( op.producer );
+  }
+
   void operator()( const clear_null_account_balance_operation& op )const
   {
     regenerate( HIVE_NULL_ACCOUNT );
@@ -953,6 +958,11 @@ struct post_apply_operation_visitor
   }
 
   void operator()( const producer_reward_operation& op )const
+  {
+    _mod_accounts.emplace_back( op.producer );
+  }
+
+  void operator()( const producer_missed_block_operation& op )const
   {
     _mod_accounts.emplace_back( op.producer );
   }

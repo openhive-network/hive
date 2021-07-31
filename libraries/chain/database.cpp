@@ -4898,6 +4898,8 @@ void database::update_global_dynamic_data( const signed_block& b )
         modify( witness_missed, [&]( witness_object& w )
         {
           w.total_missed++;
+          push_virtual_operation( producer_missed_block_operation( w.owner ) );
+
 FC_TODO( "#ifndef not needed after HF 20 is live" );
 #ifndef IS_TEST_NET
           if( has_hardfork( HIVE_HARDFORK_0_14__278 ) && !has_hardfork( HIVE_HARDFORK_0_20__SP190 ) )
