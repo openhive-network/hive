@@ -19,6 +19,12 @@ const char* log_context::get_current_task_desc()const
   return nullptr;
 }
 
+const std::string& log_context::get_current_thread_name()const
+{
+  static std::string unknown{"?unknown?"};
+  return unknown;
+}
+
 void console_appender::log_impl(const std::string& line, color::type color)
 {
   print( line, color );

@@ -242,6 +242,7 @@ if(NOT HIVE_BUILD_ON_MINIMAL_FC)
      src/log/file_appender.cpp
      src/log/gelf_appender.cpp
      src/crypto/openssl_thread_config.cpp
+     src/log/json_file_appender.cpp
      src/crypto/base32.cpp
      src/crypto/base36.cpp
      src/crypto/sha1.cpp

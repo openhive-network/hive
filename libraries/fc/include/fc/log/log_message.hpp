@@ -64,6 +64,7 @@ namespace fc
    {
    private:
       const char* get_current_task_desc()const;
+      const std::string& get_current_thread_name()const;
 
       public:
         log_context();
