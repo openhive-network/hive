@@ -202,6 +202,7 @@ set( fc_sources
      src/log/file_appender.cpp
      src/log/gelf_appender.cpp
      src/log/logger_config.cpp
+     src/log/tracing.cpp
      src/crypto/_digest_common.cpp
      src/crypto/openssl.cpp
      src/crypto/aes.cpp
@@ -337,6 +338,18 @@ else()
    set( BZIP2_LIBRARIES "" )
 endif( BZIP2_FOUND )
 
+SET( FC_DISABLE_TRACING FALSE CACHE BOOL "TRUE to completely disable opentracing code" )
+if( FC_DISABLE_TRACING )
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DFC_DISABLE_TRACING")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DFC_DISABLE_TRACING")
+else()
+  SET(OPENTRACING_STATIC_LIBRARY opentracing-static)
+  SET(OPENTRACING_INCLUDES
+    "${CMAKE_CURRENT_SOURCE_DIR}/vendor/opentracing-cpp/include"
+    "${CMAKE_CURRENT_BINARY_DIR}/vendor/opentracing-cpp/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/vendor/opentracing-cpp/3rd_party/include")
+endif()
+
 # This will become unnecessary once we update to websocketpp which fixes upstream issue #395
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWEBSOCKETPP_STRICT_MASKING")
 
@@ -361,6 +374,7 @@ target_include_directories(fc
     ${Boost_INCLUDE_DIR}
     ${OPENSSL_INCLUDE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
+    ${OPENTRACING_INCLUDES}
     "${readline_includes}"
 
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -375,7 +389,7 @@ IF(NOT WIN32)
   set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
 ENDIF()
 
-target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
+target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} ${OPENTRACING_STATIC_LIBRARY})
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
@@ -392,6 +406,9 @@ ENDIF()
 
 include_directories( vendor/websocketpp )
 include_directories( vendor/equihash )
+if( NOT FC_DISABLE_TRACING )
+  add_subdirectory(vendor/opentracing-cpp)
+endif()
 
 add_subdirectory(tests)
 

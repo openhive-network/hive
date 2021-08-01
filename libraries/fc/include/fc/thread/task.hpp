@@ -4,9 +4,23 @@
 #include <fc/aligned.hpp>
 #include <fc/fwd.hpp>
 
+namespace opentracing
+{
+  inline namespace v3_unstable
+  {
+    class SpanContext;
+    class Span;
+  }
+}
+
 namespace fc {
-  struct context;
-  class spin_lock;
+   struct context;
+   class spin_lock;
+
+   enum task_tracing_flags {
+     dont_propagate_span_context,
+     propagate_span_context
+   };
 
    namespace detail
    {
@@ -48,7 +62,7 @@ namespace fc {
       friend void* detail::get_task_specific_data(unsigned slot);
       friend void detail::set_task_specific_data(unsigned slot, void* new_value, void(*cleanup)(void*));
 
-      task_base(void* func);
+      task_base(void* func, task_tracing_flags tracing_flags);
       // opaque internal / private data used by
       // thread/thread_private
       friend class thread;
@@ -60,6 +74,12 @@ namespace fc {
       void*         _functor;
       void          (*_destroy_functor)(void*);
       void          (*_run_functor)(void*, void* );
+
+#ifndef FC_DISABLE_TRACING
+      std::unique_ptr<opentracing::SpanContext> _parent_span_context;
+      friend opentracing::SpanContext* get_task_parent_span_context();
+      friend std::unique_ptr<opentracing::SpanContext> set_task_parent_span_context(std::unique_ptr<opentracing::SpanContext> parent_context);
+#endif
 
       void          run_impl(); 
 
@@ -90,7 +110,7 @@ namespace fc {
   class task : virtual public task_base, virtual public promise<R> {
     public:
       template<typename Functor>
-      task( Functor&& f, const char* desc ):promise_base(desc), task_base(&_functor), promise<R>(desc) {
+      task( Functor&& f, const char* desc, task_tracing_flags tracing_flags  ):promise_base(desc), task_base(&_functor, tracing_flags), promise<R>(desc) {
         typedef typename fc::deduce<Functor>::type FunctorType;
         static_assert( sizeof(f) <= sizeof(_functor), "sizeof(Functor) is larger than FunctorSize" );
         new ((char*)&_functor) FunctorType( fc::forward<Functor>(f) );
@@ -110,7 +130,7 @@ namespace fc {
   class task<void,FunctorSize> : virtual public task_base, virtual public promise<void> {
     public:
       template<typename Functor>
-      task( Functor&& f, const char* desc ):promise_base(desc), task_base(&_functor), promise<void>(desc) {
+      task( Functor&& f, const char* desc, task_tracing_flags tracing_flags  ):promise_base(desc), task_base(&_functor, tracing_flags), promise<void>(desc) {
         typedef typename fc::deduce<Functor>::type FunctorType;
         static_assert( sizeof(f) <= sizeof(_functor), "sizeof(Functor) is larger than FunctorSize"  );
         new ((char*)&_functor) FunctorType( fc::forward<Functor>(f) );

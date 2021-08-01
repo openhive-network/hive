@@ -21,6 +21,7 @@
 #include <fc/interprocess/signals.hpp>
 #include <fc/git_revision.hpp>
 #include <fc/stacktrace.hpp>
+#include <fc/log/tracing.hpp>
 
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/program_options.hpp>
@@ -90,7 +91,11 @@ int main( int argc, char** argv )
 
     hive::utilities::set_logging_program_options( options );
     options.add_options()
-      ("backtrace", bpo::value< string >()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" );
+      ("backtrace", bpo::value< string >()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" )
+      ("jaeger-plugin-path", boost::program_options::value< std::string >(), 
+       "Full path to the Jaeger OpenTracing plugin shared library")
+      ("jaeger-config-path", boost::program_options::value< std::string >(), 
+       "Path to the Jaeger config file");
 
     auto& theApp = appbase::app();
 
@@ -139,6 +144,17 @@ int main( int argc, char** argv )
     {
       fc::print_stacktrace_on_segfault();
       ilog( "Backtrace on segfault is enabled." );
+    }
+
+    std::unique_ptr<fc::dynamically_loaded_tracer> tracer;
+    if( args.count( "jaeger-plugin-path" ) && args.count("jaeger-config-path") )
+    {
+      tracer.reset(new fc::dynamically_loaded_tracer(args.at("jaeger-plugin-path").as<std::string>(),args.at("jaeger-config-path").as<std::string>()));
+      ilog( "Tracing enabled" );
+    }
+    else if (args.count( "jaeger-plugin-path" ) || args.count("jaeger-config-path"))
+    {
+      wlog("Tracing not enabled.  To enable tracing, you must specify both jaeger-plugin-path and jaeger-config-path");
     }
 
     theApp.startup();

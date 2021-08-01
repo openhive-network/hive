@@ -11,3 +11,6 @@
 [submodule "tests/test_tools"]
 	path = tests/test_tools
 	url = https://gitlab.syncad.com/hive/test-tools.git
+[submodule "libraries/fc/vendor/opentracing-cpp"]
+	path = libraries/fc/vendor/opentracing-cpp
+	url = git@gitlab.syncad.com:blocktrades/opentracing-cpp.git

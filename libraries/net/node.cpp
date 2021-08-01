@@ -756,17 +756,17 @@ namespace graphene { namespace net {
 #endif
 
       template<typename Functor>
-      auto async_task( Functor&& f, const char* desc FC_TASK_NAME_DEFAULT_ARG, fc::priority prio = fc::priority()) -> fc::future<decltype(f())> {
+      auto async_task( Functor&& f, const char* desc FC_TASK_NAME_DEFAULT_ARG, fc::task_tracing_flags tracing_flags = fc::dont_propagate_span_context, fc::priority prio = fc::priority()) -> fc::future<decltype(f())> {
          auto wrapper = [this, desc, f]() -> decltype(f())
          {
             VERIFY_CORRECT_THREAD();
             activity_tracer aTracer(desc, *this);
             return f();
          };
-         return fc::async( wrapper, desc, prio );
+         return fc::async( wrapper, desc, tracing_flags, prio );
       }
       template<typename Functor>
-      auto schedule_task( Functor&& f, const fc::time_point& t, const char* desc FC_TASK_NAME_DEFAULT_ARG, fc::priority prio = fc::priority()) -> fc::future<decltype(f())>
+      auto schedule_task( Functor&& f, const fc::time_point& t, const char* desc FC_TASK_NAME_DEFAULT_ARG, fc::task_tracing_flags tracing_flags = fc::dont_propagate_span_context, fc::priority prio = fc::priority()) -> fc::future<decltype(f())>
       {
          auto wrapper = [this, desc, f]() -> decltype(f())
          {
@@ -775,7 +775,7 @@ namespace graphene { namespace net {
             return f();
          };
 
-         return fc::schedule( wrapper, t, desc, prio );
+         return fc::schedule( wrapper, t, desc, tracing_flags, prio );
       }
 
       void send_message_timing_to_statsd(peer_connection* originating_peer, const message& received_message, const message_hash_type& message_hash);

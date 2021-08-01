@@ -3,10 +3,15 @@
 #include <fc/thread/unique_lock.hpp>
 #include <fc/thread/spin_lock.hpp>
 #include <fc/fwd_impl.hpp>
+#include <fc/log/tracing.hpp>
 #include "context.hpp"
 
 #include <fc/log/logger.hpp>
 #include <boost/exception/all.hpp>
+
+#ifndef FC_DISABLE_TRACING
+# include <opentracing/span.h>
+#endif
 
 #ifdef _MSC_VER
 # include <fc/thread/thread.hpp>
@@ -14,7 +19,7 @@
 #endif
 
 namespace fc {
-  task_base::task_base(void* func)
+  task_base::task_base(void* func, task_tracing_flags tracing_flags)
   :
   promise_base("task_base"),
   _posted_num(0),

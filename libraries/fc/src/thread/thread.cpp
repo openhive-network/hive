@@ -430,7 +430,7 @@ namespace fc {
       BOOST_ASSERT(p->ready());
       if( !is_current() )
       {
-        this->async( [=](){ notify(p); }, "notify", priority::max() );
+	this->async( [=](){ notify(p);  }, "notify", dont_propagate_span_context, priority::max()  );
         return;
       }
       // TODO: store a list of blocked contexts with the promise
@@ -489,7 +489,7 @@ namespace fc {
 
     void thread::notify_task_has_been_canceled()
     {
-      async( [=](){ my->notify_task_has_been_canceled(); }, "notify_task_has_been_canceled", priority::max() );
+      async( [=](){ my->notify_task_has_been_canceled(); }, "notify_task_has_been_canceled", dont_propagate_span_context, priority::max() );
     }
 
     void thread::unblock(fc::context* c)

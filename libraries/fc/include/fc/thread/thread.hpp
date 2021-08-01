@@ -66,11 +66,14 @@ namespace fc {
        *  @param prio the priority relative to other tasks
        */
       template<typename Functor>
-      auto async( Functor&& f, const char* desc FC_TASK_NAME_DEFAULT_ARG, priority prio = priority()) -> fc::future<decltype(f())> {
+      auto async( Functor&& f, const char* desc FC_TASK_NAME_DEFAULT_ARG,
+                  task_tracing_flags tracing_flags = dont_propagate_span_context,
+                  priority prio = priority()) -> fc::future<decltype(f())> {
+
          typedef decltype(f()) Result;
          typedef typename fc::deduce<Functor>::type FunctorType;
          fc::task<Result,sizeof(FunctorType)>* tsk = 
-              new fc::task<Result,sizeof(FunctorType)>( fc::forward<Functor>(f), desc );
+              new fc::task<Result,sizeof(FunctorType)>( fc::forward<Functor>(f), desc, tracing_flags );
          fc::future<Result> r(fc::shared_ptr< fc::promise<Result> >(tsk,true) );
          async_task(tsk,prio);
          return r;
@@ -89,10 +92,13 @@ namespace fc {
        */
       template<typename Functor>
       auto schedule( Functor&& f, const fc::time_point& when, 
-                     const char* desc FC_TASK_NAME_DEFAULT_ARG, priority prio = priority()) -> fc::future<decltype(f())> {
+                     const char* desc FC_TASK_NAME_DEFAULT_ARG, 
+                     task_tracing_flags tracing_flags = dont_propagate_span_context,
+                     priority prio = priority()) -> fc::future<decltype(f())> {
+
          typedef decltype(f()) Result;
          fc::task<Result,sizeof(Functor)>* tsk = 
-              new fc::task<Result,sizeof(Functor)>( fc::forward<Functor>(f), desc );
+              new fc::task<Result,sizeof(Functor)>( fc::forward<Functor>(f), desc, tracing_flags );
          fc::future<Result> r(fc::shared_ptr< fc::promise<Result> >(tsk,true) );
          async_task(tsk,prio,when);
          return r;
@@ -139,6 +145,8 @@ namespace fc {
       friend unsigned detail::get_next_unused_task_storage_slot();
       friend void* detail::get_task_specific_data(unsigned slot);
       friend void detail::set_task_specific_data(unsigned slot, void* new_value, void(*cleanup)(void*));
+      friend opentracing::SpanContext* get_task_parent_span_context();
+      friend std::unique_ptr<opentracing::SpanContext> set_task_parent_span_context(std::unique_ptr<opentracing::SpanContext> parent_context);
 #ifndef NDEBUG
       friend class non_preemptable_scope_check;
 #endif
@@ -198,12 +206,16 @@ namespace fc {
    int wait_any_until( std::vector<promise_base::ptr>&& v, const time_point& tp );
 
    template<typename Functor>
-   auto async( Functor&& f, const char* desc FC_TASK_NAME_DEFAULT_ARG, priority prio = priority()) -> fc::future<decltype(f())> {
-      return fc::thread::current().async( fc::forward<Functor>(f), desc, prio );
+   auto async( Functor&& f, const char* desc FC_TASK_NAME_DEFAULT_ARG, 
+               task_tracing_flags tracing_flags = dont_propagate_span_context,
+               priority prio = priority()) -> fc::future<decltype(f())> {
+      return fc::thread::current().async( fc::forward<Functor>(f), desc, tracing_flags, prio );
    }
    template<typename Functor>
-   auto schedule( Functor&& f, const fc::time_point& t, const char* desc FC_TASK_NAME_DEFAULT_ARG, priority prio = priority()) -> fc::future<decltype(f())> {
-      return fc::thread::current().schedule( fc::forward<Functor>(f), t, desc, prio );
+   auto schedule( Functor&& f, const fc::time_point& t, const char* desc FC_TASK_NAME_DEFAULT_ARG, 
+                  task_tracing_flags tracing_flags = dont_propagate_span_context,
+                  priority prio = priority()) -> fc::future<decltype(f())> {
+      return fc::thread::current().schedule( fc::forward<Functor>(f), t, desc, tracing_flags, prio );
    }
 
   /**

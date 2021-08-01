@@ -7,6 +7,9 @@
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
 #include <vector>
+#ifndef FC_DISABLE_TRACING
+# include <opentracing/span.h>
+#endif
 //#include <fc/logger.hpp>
 
 namespace fc {
@@ -97,6 +100,10 @@ namespace fc {
            // thread in a process)
            std::vector<detail::specific_data_info> non_task_specific_data;
            unsigned next_unused_task_storage_slot;
+
+#ifndef FC_DISABLE_TRACING
+           std::unique_ptr<opentracing::SpanContext> non_task_parent_span_context;
+#endif
 
 #ifndef NDEBUG
            unsigned                 non_preemptable_scope_count;
