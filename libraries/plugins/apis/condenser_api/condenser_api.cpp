@@ -30,6 +30,15 @@
 
 #define ASSET_TO_REAL( asset ) (double)( asset.amount.value )
 
+#define LOG_DELAY(start_time, log_threshold, msg, e) \
+  { fc::time_point current_time = fc::time_point::now(); \
+    fc::microseconds delay = current_time - start_time; \
+    if (delay > log_threshold) { \
+      double delay_seconds = (delay.count() / 1000) / 1000.0; \
+      ulog(msg ": ${delay_seconds} s",(delay_seconds)e); \
+      } \
+  }
+
 namespace hive { namespace plugins { namespace condenser_api {
 
 namespace detail
@@ -935,6 +944,7 @@ namespace detail
     FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
     FC_ASSERT( _p2p != nullptr, "p2p_plugin not enabled." );
 
+    fc::time_point api_start_time = fc::time_point::now();
     signed_transaction trx = args[0].as< legacy_signed_transaction >();
     auto txid = trx.id();
     boost::promise< broadcast_transaction_synchronous_return > p;
@@ -948,6 +958,9 @@ namespace detail
       };
       _callback_expirations[ trx.expiration ].push_back( txid );
     }
+
+    LOG_DELAY(api_start_time, fc::seconds(1), "Excessive delay to setup callback",);
+    fc::time_point callback_setup_time = fc::time_point::now();
 
     try
     {
@@ -963,29 +976,29 @@ namespace detail
     }
     catch( fc::exception& e )
     {
-      boost::lock_guard< boost::mutex > guard( _mtx );
+      LOG_DELAY(callback_setup_time, fc::seconds(1), "Exccesive delay to validate & broadcast trx ${e}", (e) );
 
+      boost::lock_guard< boost::mutex > guard( _mtx );
       // The callback may have been cleared in the meantine, so we need to check for existence.
       auto c_itr = _callbacks.find( txid );
       if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
-
       // We do not need to clean up _callback_expirations because on_post_apply_block handles this case.
-
       throw e;
     }
     catch( ... )
     {
-      boost::lock_guard< boost::mutex > guard( _mtx );
+      LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx",);
 
+      boost::lock_guard< boost::mutex > guard( _mtx );
       // The callback may have been cleared in the meantine, so we need to check for existence.
       auto c_itr = _callbacks.find( txid );
       if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
-
       throw fc::unhandled_exception(
         FC_LOG_MESSAGE( warn, "Unknown error occured when pushing transaction" ),
         std::current_exception() );
     }
 
+    LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx",);
     return p.get_future().get();
   }
 

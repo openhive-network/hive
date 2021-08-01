@@ -309,18 +309,37 @@ void webserver_plugin_impl::handle_ws_message( websocket_server_type* server, co
 {
   auto con = server->get_con_from_hdl( std::move( hdl ) );
 
-  thread_pool_ios.post( [con, msg, this]()
+  fc::time_point arrival_time = fc::time_point::now();
+  thread_pool_ios.post( [con, msg, this, arrival_time]()
   {
+    fc::microseconds start_delay = fc::time_point::now() - arrival_time;
+    if (start_delay > fc::seconds(2))
+      ulog("Excessive delay to begin processing ws API call: ${start_delay}",(start_delay));
+
     try
     {
       if( msg->get_opcode() == websocketpp::frame::opcode::text )
-        con->send( api->call( msg->get_payload() ) );
+      {
+        auto body = msg->get_payload();
+        fc::microseconds get_request_body_delay = fc::time_point::now() - arrival_time;
+        if (get_request_body_delay > fc::seconds(4))
+          ulog("Excessive delay to get ws payload body: ${get_request_body_delay}",(get_request_body_delay));
+
+        auto response =  api->call( body );
+
+        fc::microseconds end_delay = fc::time_point::now() - arrival_time;
+        if (end_delay > fc::seconds(10))
+          ulog("Excessive delay to process ws API call: ${end_delay}, body:${body}",(end_delay)(body));
+
+        con->send( response );
+      }
       else
         con->send( "error: string payload expected" );
     }
     catch( fc::exception& e )
     {
       con->send( "error calling API " + e.to_string() );
+      ulog("${e}",("e",e.to_string()));
     }
     catch( ... )
     {
@@ -348,9 +367,18 @@ void webserver_plugin_impl::handle_http_message( websocket_server_type* server, 
   auto con = server->get_con_from_hdl( std::move( hdl ) );
   con->defer_http_response();
 
-  thread_pool_ios.post( [con, this]()
+  fc::time_point arrival_time = fc::time_point::now();
+  thread_pool_ios.post( [con, this, arrival_time]()
   {
+    fc::microseconds start_delay = fc::time_point::now() - arrival_time;
+    bool excessive_start_delay = start_delay > fc::seconds(2);
+    if (excessive_start_delay)
+      ulog("Excessive delay to begin processing API call: ${start_delay}",(start_delay));
+
     auto body = con->get_request_body();
+    fc::microseconds get_request_body_delay = fc::time_point::now() - arrival_time;
+    if (get_request_body_delay > fc::seconds(4))
+      ulog("Excessive delay to get request_body: ${get_request_body_delay}",(get_request_body_delay));
 
     try
     {
@@ -361,6 +389,7 @@ void webserver_plugin_impl::handle_http_message( websocket_server_type* server, 
     catch( fc::exception& e )
     {
       edump( (e) );
+      ulog("${e}", (e) );
       con->set_body( "Could not call API" );
       con->set_status( websocketpp::http::status_code::not_found );
     }
@@ -372,7 +401,7 @@ void webserver_plugin_impl::handle_http_message( websocket_server_type* server, 
       {
         if( eptr )
           std::rethrow_exception( eptr );
-
+        ulog("unknown error trying to process API call");
         con->set_body( "unknown error occurred" );
         con->set_status( websocketpp::http::status_code::internal_server_error );
       }
@@ -382,9 +411,13 @@ void webserver_plugin_impl::handle_http_message( websocket_server_type* server, 
         s << "unknown exception: " << e.what();
         con->set_body( s.str() );
         con->set_status( websocketpp::http::status_code::internal_server_error );
+	ulog("${e}", ("e", s.str()) );
       }
     }
 
+    fc::microseconds end_delay = fc::time_point::now() - arrival_time;
+    if (end_delay > fc::seconds(10))
+      ulog("Excessive delay to process API call: ${end_delay}, body:${body}",(end_delay)(body));
     con->send_http_response();
   });
 }
