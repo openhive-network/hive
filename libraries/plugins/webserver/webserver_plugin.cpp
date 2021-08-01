@@ -28,6 +28,15 @@
 #include <memory>
 #include <iostream>
 
+#define LOG_DELAY(start_time, log_threshold, msg) \
+  { fc::time_point current_time = fc::time_point::now(); \
+    fc::microseconds delay = current_time - start_time; \
+    if (delay > log_threshold) { \
+      double delay_seconds = (delay.count() / 1000) / 1000.0; \
+      ulog(msg ": ${delay_seconds} s",(delay_seconds)); \
+      } \
+  }
+
 namespace hive { namespace plugins { namespace webserver {
 
 namespace asio = boost::asio;
@@ -347,24 +356,17 @@ void webserver_plugin_impl::handle_ws_message( websocket_server_type* server, co
   fc::time_point arrival_time = fc::time_point::now();
   thread_pool_ios.post( [con, msg, this, arrival_time]()
   {
-    fc::microseconds start_delay = fc::time_point::now() - arrival_time;
-    if (start_delay > fc::seconds(2))
-      ulog("Excessive delay to begin processing ws API call: ${start_delay}",(start_delay));
+    LOG_DELAY(arrival_time, fc::seconds(2), "Excessive delay to begin processing ws API call");
 
     try
     {
       if( msg->get_opcode() == websocketpp::frame::opcode::text )
       {
         auto body = msg->get_payload();
-        fc::microseconds get_request_body_delay = fc::time_point::now() - arrival_time;
-        if (get_request_body_delay > fc::seconds(4))
-          ulog("Excessive delay to get ws payload body: ${get_request_body_delay}",(get_request_body_delay));
+        LOG_DELAY(arrival_time, fc::seconds(4), "Excessive delay to get ws payload");
 
         auto response =  api->call( body );
-
-        fc::microseconds end_delay = fc::time_point::now() - arrival_time;
-        if (end_delay > fc::seconds(10))
-          ulog("Excessive delay to process ws API call: ${end_delay}, body:${body}",(end_delay)(body));
+        LOG_DELAY(arrival_time, fc::seconds(10), "Excessive delay to process ws API call");
 
         con->send( response );
       }
@@ -392,6 +394,7 @@ void webserver_plugin_impl::handle_ws_message( websocket_server_type* server, co
         std::stringstream s;
         s << "unknown exception: " << e.what();
         con->send( s.str() );
+	ulog("${e}", ("e", s.str()) );
       }
     }
   });
@@ -405,15 +408,10 @@ void webserver_plugin_impl::handle_http_message( websocket_server_type* server, 
   fc::time_point arrival_time = fc::time_point::now();
   thread_pool_ios.post( [con, this, arrival_time]()
   {
-    fc::microseconds start_delay = fc::time_point::now() - arrival_time;
-    bool excessive_start_delay = start_delay > fc::seconds(2);
-    if (excessive_start_delay)
-      ulog("Excessive delay to begin processing API call: ${start_delay}",(start_delay));
+    LOG_DELAY(arrival_time, fc::seconds(2), "Excessive delay to begin processing API call");
 
     auto body = con->get_request_body();
-    fc::microseconds get_request_body_delay = fc::time_point::now() - arrival_time;
-    if (get_request_body_delay > fc::seconds(4))
-      ulog("Excessive delay to get request_body: ${get_request_body_delay}",(get_request_body_delay));
+    LOG_DELAY(arrival_time, fc::seconds(4), "Excessive delay to get request_body");
 
     try
     {
@@ -450,9 +448,7 @@ void webserver_plugin_impl::handle_http_message( websocket_server_type* server, 
       }
     }
 
-    fc::microseconds end_delay = fc::time_point::now() - arrival_time;
-    if (end_delay > fc::seconds(10))
-      ulog("Excessive delay to process API call: ${end_delay}, body:${body}",(end_delay)(body));
+    LOG_DELAY(arrival_time, fc::seconds(10), "Excessive delay to process API call");
     con->send_http_response();
   });
 }
