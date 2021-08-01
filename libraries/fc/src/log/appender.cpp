@@ -78,5 +78,4 @@ namespace fc {
    {
       return appender::register_appender<console_appender>( "console" );
    }( &reg_console_appender );
-
 } // namespace fc
