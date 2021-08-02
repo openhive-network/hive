@@ -223,8 +223,11 @@ namespace hive { namespace converter {
       trx_time += 1;
     }
 
-    if( _signed_block.transactions.size() > 1 )
+    switch( _signed_block.transactions.size() )
     {
+      case 0: break; // Skip signatures generation when block does not contain any trxs
+      case 1: sign_transaction( _signed_block.transactions.at( 0 ) ); break; // Optimize signing when block contains only 1 trx
+      default: // There are multiple trxs in block. Enable multithreading
 
       size_t trx_applied_count = 0;
 
@@ -251,10 +254,6 @@ namespace hive { namespace converter {
           ++trx_applied_count;
         }
       }
-    }
-    else // Optimize signing when there is only 1 trx in block
-    {
-      sign_transaction( _signed_block.transactions.at( 0 ) );
     }
 
     _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
