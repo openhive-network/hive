@@ -108,3 +108,4 @@ build_*/
 advanced_benchmark.json
 r_advanced_benchmark.json
 *.log
+*.norm
