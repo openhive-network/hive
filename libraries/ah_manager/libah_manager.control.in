@@ -1,0 +1,5 @@
+# ah_manager psql extension
+comment = 'An extension to call `get_impacted_accounts` method'
+default_version = '@HIVE_GIT_REVISION_SHA@'
+relocatable = false
+schema = public

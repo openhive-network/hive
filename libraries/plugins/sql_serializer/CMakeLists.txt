@@ -2,16 +2,12 @@ file(GLOB HEADERS "include/hive/plugins/sql_serializer/*.hpp")
 
 find_package(PostgreSQL 10.0)
 
-FIND_LIBRARY(PQXX_LIB pqxx)
-FIND_LIBRARY(PQ_LIB pq)
-
 IF (PostgreSQL_FOUND AND PQXX_LIB AND PQ_LIB)
   MESSAGE (STATUS "Found PostgreSQL installation.")
 
   ADD_LIBRARY( sql_serializer_plugin
                sql_serializer.cpp
                data_processor.cpp
-               transaction_controllers.cpp
                end_massive_sync_processor.cpp
                block_num_rendezvous_trigger.cpp
                data_2_sql_tuple_base.cpp
@@ -32,11 +28,10 @@ ELSE()
   set (PostgreSQL_LIBRARIES "")
 ENDIF()
 
-target_link_libraries( sql_serializer_plugin chain_plugin hive_chain hive_protocol  ${PQXX_LIB} ${PostgreSQL_LIBRARIES} )
+target_link_libraries( sql_serializer_plugin chain_plugin hive_chain hive_protocol sql_hive_utilities )
 
 target_include_directories( sql_serializer_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                            PRIVATE "${PostgreSQL_INCLUDE_DIRS}"
                           )
 
 if( CLANG_TIDY_EXE )

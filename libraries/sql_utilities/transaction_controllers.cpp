@@ -1,4 +1,4 @@
-#include <hive/plugins/sql_serializer/transaction_controllers.hpp>
+#include <hive/sql_utilities/transaction_controllers.hpp>
 
 #include <fc/exception/exception.hpp>
 
@@ -8,7 +8,7 @@
 #include <string>
 #include <thread>
 
-namespace hive { namespace plugins { namespace sql_serializer {
+namespace hive { namespace utilities {
 
 namespace {
 
@@ -206,7 +206,7 @@ class single_transaction_controller : public transaction_controller
 public:
   explicit single_transaction_controller(const std::string& dbUrl) : _clientCount(0)
   {
-    _own_contoller = build_own_transaction_controller(dbUrl, "single_transaction_controller");
+    _own_contoller = hive::utilities::build_own_transaction_controller(dbUrl, "single_transaction_controller");
   }
 
 /// transaction_controller:
@@ -340,5 +340,5 @@ transaction_controller_ptr build_single_transaction_controller(const std::string
   return std::make_shared<single_transaction_controller>(dbUrl);
 }
 
-} } } /// hive::plugins::sql_serializer
+} } /// hive::plugins::sql_serializer
 

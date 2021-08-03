@@ -1,0 +1,25 @@
+# Sets:
+# POSTGRES_LIBDIR - libdir
+MACRO( GET_RUNTIME_POSTGRES_VARIABLES )
+    SET( POSTGRES_LIBDIR "unknown" )
+    SET( POSTGRES_SHAREDIR "unknown" )
+
+    EXECUTE_PROCESS(
+            COMMAND pg_config --pkglibdir
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+            OUTPUT_VARIABLE POSTGRES_LIBDIR
+            ERROR_QUIET
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    EXECUTE_PROCESS(
+            COMMAND pg_config --sharedir
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+            OUTPUT_VARIABLE POSTGRES_SHAREDIR
+            ERROR_QUIET
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    MESSAGE( STATUS "Postgres libdir: ${POSTGRES_LIBDIR}" )
+    MESSAGE( STATUS "Postgres sharedir: ${POSTGRES_SHAREDIR}" )
+ENDMACRO()

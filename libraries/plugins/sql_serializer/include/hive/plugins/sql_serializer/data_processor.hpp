@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/plugins/sql_serializer/transaction_controllers.hpp>
+#include <hive/sql_utilities/transaction_controllers.hpp>
 #include <hive/plugins/sql_serializer/block_num_rendezvous_trigger.hpp>
 
 #include <fc/optional.hpp>
@@ -17,6 +17,10 @@
 
 
 namespace hive { namespace plugins { namespace sql_serializer {
+
+using hive::utilities::transaction_controller;
+using hive::utilities::transaction;
+using hive::utilities::transaction_controller_ptr;
 
 class data_processor 
 {
