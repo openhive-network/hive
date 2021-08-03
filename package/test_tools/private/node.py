@@ -450,16 +450,22 @@ class Node:
         return [endpoint for endpoint in endpoints if endpoint[0] is not None]
 
     def __set_unset_endpoints(self):
-        from test_tools.port import Port
-
         if self.config.p2p_endpoint is None:
-            self.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
+            self.config.p2p_endpoint = f'0.0.0.0:0'
 
         if self.config.webserver_http_endpoint is None:
             self.config.webserver_http_endpoint = f'0.0.0.0:0'
 
         if self.config.webserver_ws_endpoint is None:
             self.config.webserver_ws_endpoint = f'0.0.0.0:0'
+
+    def _get_p2p_endpoint(self):
+        self._wait_for_p2p_plugin_start()
+        with open(self.__process.get_stderr_file_path()) as output:
+            for line in output:
+                if 'P2P node listening at ' in line:
+                    endpoint = re.match(r'^.*P2P node listening at ([\d\.]+\:\d+)\s*$', line)[1]
+                    return endpoint.replace('0.0.0.0', '127.0.0.1')
 
     def _get_http_endpoint(self):
         self.__wait_for_http_listening()
