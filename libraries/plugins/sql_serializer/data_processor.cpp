@@ -45,7 +45,7 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
     try
     {
       FC_ASSERT(_txController == nullptr, "Already filled transaction controller?");
-      auto local_controller = build_own_transaction_controller(psqlUrl);
+      auto local_controller = hive::utilities::build_own_transaction_controller(psqlUrl);
 
       {
         ilog("${d} data processor is connecting to specified db url: `${url}' ...", ("url", psqlUrl)("d", _description));

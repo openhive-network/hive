@@ -1185,7 +1185,7 @@ void sql_serializer_plugin_impl::init_data_processors()
 
 void sql_serializer_plugin_impl::switch_to_single_transaction_controller()
 {
-  auto single_tx_controler = build_single_transaction_controller(db_url);
+  auto single_tx_controler = hive::utilities::build_single_transaction_controller(db_url);
   
   _account_writer->register_transaction_controler(single_tx_controler);
   _permlink_writer->register_transaction_controler(single_tx_controler);
