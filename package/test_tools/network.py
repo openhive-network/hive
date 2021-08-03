@@ -2,7 +2,6 @@ from pathlib import Path
 from shutil import rmtree
 
 from test_tools import constants, logger
-from test_tools.port import Port
 from test_tools.wallet import Wallet
 from test_tools.private.children_names import ChildrenNames
 from test_tools.private.node import Node
@@ -17,6 +16,7 @@ class Network(NodesCreator):
         self._directory = Path(directory).joinpath(self.name).absolute()
         self.__wallets = []
         self.is_running = False
+        self.__connect_with_network = None
         self.disconnected_networks = []
         self.__clean_up_policy: constants.NetworkCleanUpPolicy = None
         self.logger = logger.getLogger(f'{__name__}.{self}')
@@ -41,15 +41,22 @@ class Network(NodesCreator):
 
         self._directory.mkdir(parents=True)
 
-        self.connect_nodes()
-        for node in self._nodes:
-            node.run(wait_for_live=False)
-            node._wait_for_p2p_plugin_start()
+        if self.__connect_with_network is None:
+            seed_node = self._nodes[0]
+            seed_node.run(wait_for_live=wait_for_live)
+            nodes_connecting_to_seed = self._nodes[1:]
+        else:
+            seed_node = self.__connect_with_network._nodes[0]
+            self.__connect_with_network = None
+            nodes_connecting_to_seed = self._nodes
+
+        endpoint = seed_node._get_p2p_endpoint()
+
+        for node in nodes_connecting_to_seed:
+            node.config.p2p_seed_node.append(endpoint)
+            node.run(wait_for_live=wait_for_live)
 
         self.is_running = True
-
-        if wait_for_live:
-            self.wait_for_live_on_all_nodes()
 
     def handle_final_cleanup(self, *, default_policy: constants.NetworkCleanUpPolicy):
         policy = default_policy if self.__clean_up_policy is None else self.__clean_up_policy
@@ -82,9 +89,9 @@ class Network(NodesCreator):
 
         if not self.is_running:
             if any([node.is_able_to_produce_blocks() for node in self._nodes]):
-                network._nodes[0].add_seed_node(self._nodes[0])
+                network.__connect_with_network = self
             else:
-                self._nodes[0].add_seed_node(network._nodes[0])
+                self.__connect_with_network = network
             return
 
         if network not in self.disconnected_networks:
