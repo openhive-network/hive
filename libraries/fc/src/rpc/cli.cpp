@@ -97,7 +97,7 @@ void cli::run()
    {
       try
       {
-         std::string line;
+         std::shared_ptr<std::string> line = std::make_shared<std::string>();
          try
          {
             getline( _prompt.c_str(), line );
@@ -106,9 +106,9 @@ void cli::run()
          {
             break;
          }
-         std::cout << line << "\n";
-         line += char(EOF);
-         fc::variants args = fc::json::variants_from_string(line);;
+         std::cout << *line << "\n";
+         *line += char(EOF);
+         fc::variants args = fc::json::variants_from_string(*line);;
          if( args.size() == 0 )
             continue;
 
@@ -180,7 +180,7 @@ static char** cli_completion( const char * text , int start, int end)
 #endif
 
 
-void cli::getline( const fc::string& prompt, fc::string& line)
+void cli::getline( const fc::string prompt, std::shared_ptr<std::string> line)
 {
    // getting file descriptor for C++ streams is near impossible
    // so we just assume it's the same as the C stream...
@@ -199,7 +199,7 @@ void cli::getline( const fc::string& prompt, fc::string& line)
       rl_attempted_completion_function = cli_completion;
 
       static fc::thread getline_thread("getline");
-      getline_thread.async( [&](){
+      getline_thread.async( [prompt, line](){
          char* line_read = nullptr;
          std::cout.flush(); //readline doesn't use cin, so we must manually flush _out
          line_read = readline(prompt.c_str());
@@ -208,7 +208,7 @@ void cli::getline( const fc::string& prompt, fc::string& line)
          rl_bind_key( '\t', rl_complete );
          if( *line_read )
             add_history(line_read);
-         line = line_read;
+         *line = line_read;
          free(line_read);
       }).wait();
    }
@@ -217,7 +217,7 @@ void cli::getline( const fc::string& prompt, fc::string& line)
    {
       std::cout << prompt;
       // sync_call( cin_thread, [&](){ std::getline( *input_stream, line ); }, "getline");
-      fc::getline( fc::cin, line );
+      fc::getline( fc::cin, *line );
       return;
    }
 }
