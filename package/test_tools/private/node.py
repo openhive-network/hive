@@ -170,16 +170,6 @@ class Node:
     def get_name(self):
         return self.__name
 
-    def add_seed_node(self, seed_node):
-        if seed_node.config.p2p_endpoint is None:
-            from test_tools.port import Port
-            seed_node.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
-
-        endpoint = seed_node.config.p2p_endpoint
-        port = endpoint.split(':')[1]
-
-        self.config.p2p_seed_node.append(f'127.0.0.1:{port}')
-
     def get_block_log(self, include_index=True):
         return BlockLog(self, self.directory.joinpath('blockchain/block_log'), include_index=include_index)
 

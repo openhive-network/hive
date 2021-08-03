@@ -24,17 +24,6 @@ class Network(NodesCreator):
     def __str__(self):
         return self.name
 
-    def connect_nodes(self):
-        if len(self._nodes) < 2:
-            return
-
-        seed_node = self._nodes[0]
-        if seed_node.config.p2p_endpoint is None:
-            seed_node.config.p2p_endpoint = f'0.0.0.0:{Port.allocate()}'
-
-        for node in self._nodes[1:]:
-            node.add_seed_node(seed_node)
-
     def run(self, wait_for_live=True):
         if self._directory.exists():
             rmtree(self._directory)
