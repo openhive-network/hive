@@ -1,10 +1,10 @@
 from pathlib import Path
+import re
 import subprocess
 import time
 
 from test_tools import Account, communication, logger, paths_to_executables
 from test_tools.exceptions import CommunicationError
-from test_tools.port import Port
 from test_tools.private.asset import AssetBase
 from test_tools.private.wait_for import wait_for
 
@@ -481,7 +481,7 @@ class Wallet:
             raise Exception('Server websocket RPC endpoint not set, use Wallet.connect_to method')
 
         if not self.http_server_port:
-            self.http_server_port = Port.allocate()
+            self.http_server_port = 0
 
         import shutil
         shutil.rmtree(self.directory, ignore_errors=True)
@@ -502,7 +502,7 @@ class Wallet:
         self.process = subprocess.Popen(
             [
                 str(self.executable_file_path),
-                '-s', f'ws://{self.connected_node.config.webserver_ws_endpoint}',
+                '-s', f'ws://{self.connected_node._get_ws_endpoint()}',
                 '-d',
                 '-H', f'0.0.0.0:{self.http_server_port}',
                 '--rpc-http-allowip', '192.168.10.10',
@@ -520,6 +520,9 @@ class Wallet:
             poll_time=0.1
         )
 
+        endpoint = self.__get_http_server_endpoint()
+        self.http_server_port = endpoint.split(':')[1]
+
         timeout -= wait_for(
             self.__is_communication_established,
             timeout=timeout,
@@ -531,7 +534,7 @@ class Wallet:
         self.api.unlock(password)
         self.api.import_key(Account('initminer').private_key)
 
-        self.logger.info(f'Started, listening on port {self.http_server_port}')
+        self.logger.info(f'Started, listening on {endpoint}')
 
     def __is_communication_established(self):
         try:
@@ -539,6 +542,13 @@ class Wallet:
         except CommunicationError:
             return False
         return True
+
+    def __get_http_server_endpoint(self):
+        with open(self.directory / 'stderr.txt') as output:
+            for line in output:
+                if 'Listening for incoming HTTP RPC requests on' in line:
+                    endpoint = re.match(r'^.*Listening for incoming HTTP RPC requests on ([\d\.]+\:\d+)\s*$', line)[1]
+                    return endpoint.replace('0.0.0.0', '127.0.0.1')
 
     def connect_to(self, node):
         self.connected_node = node
