@@ -459,7 +459,7 @@ class Node:
             self.config.webserver_http_endpoint = f'0.0.0.0:0'
 
         if self.config.webserver_ws_endpoint is None:
-            self.config.webserver_ws_endpoint = f'0.0.0.0:{Port.allocate()}'
+            self.config.webserver_ws_endpoint = f'0.0.0.0:0'
 
     def _get_http_endpoint(self):
         self.__wait_for_http_listening()
@@ -467,6 +467,14 @@ class Node:
             for line in output:
                 if 'start listening for http requests' in line:
                     endpoint = re.match(r'^.*start listening for http requests on ([\d\.]+\:\d+)\s*$', line)[1]
+                    return endpoint.replace('0.0.0.0', '127.0.0.1')
+
+    def _get_ws_endpoint(self):
+        self.__wait_for_http_listening()
+        with open(self.__process.get_stderr_file_path()) as output:
+            for line in output:
+                if 'start listening for ws requests' in line:
+                    endpoint = re.match(r'^.*start listening for ws requests on ([\d\.]+\:\d+)\s*$', line)[1]
                     return endpoint.replace('0.0.0.0', '127.0.0.1')
 
     def close(self):
