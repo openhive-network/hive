@@ -11,7 +11,6 @@ IF (PostgreSQL_FOUND)
   ADD_LIBRARY( sql_serializer_plugin
                sql_serializer.cpp
                data_processor.cpp
-               transaction_controllers.cpp
                ${HEADERS}
               )
 ELSE()
