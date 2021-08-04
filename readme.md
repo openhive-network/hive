@@ -21,6 +21,10 @@ Run selected script:
 PYTHONPATH="${PYTHONPATH}:/home/dev/hive/tests/test_tools/package" HIVE_BUILD_ROOT_PATH="/home/dev/hive/build" python3 your_script.py
 ```
 
+## Tutorials
+
+- [Snapshot](documentation/tutorials/snapshot.md) -- What is snapshot? How to create and use it?
+
 ## Features
 
 ### Easy testnet creation
