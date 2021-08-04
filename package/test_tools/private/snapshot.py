@@ -3,13 +3,14 @@ from glob import glob as get_files_matching_pattern
 import json
 from pathlib import Path
 import shutil
+from typing import Optional
 
 
 class Snapshot:
     def __init__(self, snapshot_path: Path, block_log_path: Path, block_log_index_path: Path, node=None):
         self.__snapshot_path: Path = snapshot_path
         self.__block_log_path: Path = block_log_path
-        self.__block_log_index_path: Path = block_log_index_path
+        self.__block_log_index_path: Optional[Path] = block_log_index_path if block_log_index_path.exists() else None
         self.__creator = node
 
         if node is not None:
@@ -28,7 +29,7 @@ class Snapshot:
         if self.__block_log_path.parent != blocklog_directory:
             shutil.copy(self.__block_log_path, blocklog_directory)
 
-        if self.__block_log_index_path.parent != blocklog_directory:
+        if self.__block_log_index_path is not None and self.__block_log_index_path.parent != blocklog_directory:
             shutil.copy(self.__block_log_index_path, blocklog_directory)
 
         destination_snapshot_path = node_directory / 'snapshot'
