@@ -226,6 +226,20 @@ class wallet_api
       */
     serializer_wrapper<annotated_signed_transaction> get_transaction( fc::variant trx_id )const;
 
+    /** Explicitly specify account authorities to use for signing transactions.
+      *
+      * example: use_authority active tst-bob
+      * @param type The authority type. e.g. owner, active, or posting
+      * @param account_name The name of the account whose authority you wish to use
+      */
+    void    use_authority( authority_type type, const account_name_type& account_name );
+
+    /** Try to automatically pick required authorities, basing on imported private keys.
+      *
+      * This is default behaviour at wallet startup. Used to come back to default behaviour after command use_authority.
+      */
+    void    use_automatic_authority();
+
     /** Checks whether the wallet has just been created and has not yet had a password set.
       *
       * Calling \c set_password will transition the wallet to the locked state.
@@ -1562,6 +1576,8 @@ FC_API( hive::wallet::wallet_api,
 
       (get_active_witnesses)
       (get_transaction)
+      (use_authority)
+      (use_automatic_authority)
 
       ///worker proposal api
       (create_proposal)
