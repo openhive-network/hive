@@ -513,6 +513,7 @@ class Node:
         unneeded_files_or_directories = [
             'blockchain/',
             'p2p/',
+            'snapshot/',
         ]
 
         for unneeded in unneeded_files_or_directories:
