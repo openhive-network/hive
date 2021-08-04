@@ -1,3 +1,5 @@
+import filecmp
+from glob import glob as get_files_matching_pattern
 import json
 from pathlib import Path
 import shutil
@@ -36,3 +38,16 @@ class Snapshot:
     def __repr__(self):
         optional_creator_info = '' if self.__creator is None else f' from {self.__creator}'
         return f'<Snapshot{optional_creator_info}: path={self.__snapshot_path}>'
+
+    def __eq__(self, other) -> bool:
+        my_files = sorted(get_files_matching_pattern(f'{self.__snapshot_path}/**/*.sst', recursive=True))
+        others_files = sorted(get_files_matching_pattern(f'{other.__snapshot_path}/**/*.sst', recursive=True))
+
+        if len(my_files) != len(others_files):
+            return False
+
+        for mine, others in zip(my_files, others_files):
+            if filecmp.cmp(mine, others, shallow=False) == False:
+                return False
+
+        return True
