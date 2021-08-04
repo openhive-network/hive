@@ -6,10 +6,10 @@ import shutil
 
 
 class Snapshot:
-    def __init__(self, snapshot_path, block_log_path, block_log_index_path, node=None):
-        self.__snapshot_path = snapshot_path
-        self.__block_log_path = block_log_path
-        self.__block_log_index_path = block_log_index_path
+    def __init__(self, snapshot_path: Path, block_log_path: Path, block_log_index_path: Path, node=None):
+        self.__snapshot_path: Path = snapshot_path
+        self.__block_log_path: Path = block_log_path
+        self.__block_log_index_path: Path = block_log_index_path
         self.__creator = node
 
         if node is not None:
@@ -35,7 +35,7 @@ class Snapshot:
         if self.__snapshot_path != destination_snapshot_path:
             shutil.copytree(self.__snapshot_path, destination_snapshot_path)
 
-    def get_path(self):
+    def get_path(self) -> Path:
         return self.__snapshot_path
 
     def __repr__(self):
