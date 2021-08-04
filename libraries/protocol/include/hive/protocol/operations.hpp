@@ -138,6 +138,19 @@ namespace hive { namespace protocol {
 
 } } // hive::protocol
 
+namespace fc
+{
+  using hive::protocol::operation;
+  template<>
+  struct serialization_functor< operation >
+  {
+    bool operator()( const fc::variant& v, operation& s ) const
+    {
+      return extended_serialization_functor< operation >().serialize( v, s );
+    }
+  };
+
+}
 /*namespace fc {
     void to_variant( const hive::protocol::operation& var,  fc::variant& vo );
     void from_variant( const fc::variant& var,  hive::protocol::operation& vo );

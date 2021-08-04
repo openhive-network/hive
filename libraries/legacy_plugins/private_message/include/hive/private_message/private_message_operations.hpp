@@ -3,6 +3,7 @@
 
 #include <hive/protocol/base.hpp>
 #include <hive/protocol/types.hpp>
+#include <hive/protocol/operation_util.hpp>
 
 #include <fc/reflect/reflect.hpp>
 
@@ -26,6 +27,19 @@ struct private_message_operation : public hive::protocol::base_operation
 typedef fc::static_variant< private_message_operation > private_message_plugin_operation;
 
 } }
+
+namespace fc
+{
+  using hive::private_message::private_message_plugin_operation;
+  template<>
+  struct serialization_functor< private_message_plugin_operation >
+  {
+    bool operator()( const fc::variant& v, private_message_plugin_operation& s ) const
+    {
+      return extended_serialization_functor< private_message_plugin_operation >().serialize( v, s );
+    }
+  };
+}
 
 FC_REFLECT( hive::private_message::private_message_operation, (from)(to)(from_memo_key)(to_memo_key)(sent_time)(checksum)(encrypted_message) )
 
