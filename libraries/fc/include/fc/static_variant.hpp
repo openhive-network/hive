@@ -17,6 +17,15 @@
 
 namespace fc {
 
+template< typename static_variant >
+struct serialization_functor
+{
+  bool operator()( const fc::variant& v, static_variant& s ) const
+  {
+    return false;
+  }
+};
+
 // Implementation details, the user should not import this:
 namespace impl {
 
@@ -410,19 +419,6 @@ struct visitor {
       s.visit( from_static_variant( v ) );
    }
 
-    struct get_legacy_static_variant_name
-    {
-      string& name;
-      get_legacy_static_variant_name( string& dv )
-        : name( dv ) {}
-
-      typedef void result_type;
-      template< typename T > void operator()( const T& v )const
-      {
-        name = trim_legacy_typename_namespace( fc::get_typename< T >::name() );
-      }
-    };
-
    struct get_static_variant_name
    {
       string& name;
@@ -439,20 +435,6 @@ struct visitor {
 
    template<typename... T> void from_variant( const fc::variant& v, fc::static_variant<T...>& s )
    {
-      static std::map< string, int64_t > to_legacy_tag = []()
-      {
-         std::map< string, int64_t > name_map;
-         for( int i = 0; i < fc::static_variant<T...>::count(); ++i )
-         {
-            fc::static_variant<T...> tmp;
-            tmp.set_which(i);
-            string n;
-            tmp.visit( get_legacy_static_variant_name( n ) );
-            name_map[n] = i;
-         }
-         return name_map;
-      }();
-
       static std::map< string, int64_t > to_tag = []()
       {
          std::map< string, int64_t > name_map;
@@ -467,44 +449,30 @@ struct visitor {
          return name_map;
       }();
 
-      if( v.is_array() ) // legacy serialization
+      if( serialization_functor< fc::static_variant<T...> >()( v, s ) )
+        return;
+
+      FC_ASSERT( v.is_object(), "Input data have to treated as object." );
+      auto v_object = v.get_object();
+
+      FC_ASSERT( v_object.contains( "type" ), "Type field doesn't exist." );
+      FC_ASSERT( v_object.contains( "value" ), "Value field doesn't exist." );
+
+      int64_t which = -1;
+
+      if( v_object[ "type" ].is_integer() )
       {
-        auto ar = v.get_array();
-        if( ar.size() < 2 ) return;
-        if( ar[0].is_uint64() )
-          s.set_which( ar[0].as_uint64() );
-        else
-        {
-          auto itr = to_legacy_tag.find(ar[0].as_string());
-          FC_ASSERT( itr != to_legacy_tag.end(), "Invalid operation name: ${n}", ("n", ar[0]) );
-          s.set_which( itr->second );
-        }
-        s.visit( fc::to_static_variant( ar[1] ) );
+         which = v_object[ "type" ].as_int64();
       }
-      else // new serialization
+      else
       {
-        FC_ASSERT( v.is_object(), "Input data have to treated as object." );
-        auto v_object = v.get_object();
-
-        FC_ASSERT( v_object.contains( "type" ), "Type field doesn't exist." );
-        FC_ASSERT( v_object.contains( "value" ), "Value field doesn't exist." );
-
-        int64_t which = -1;
-
-        if( v_object[ "type" ].is_integer() )
-        {
-          which = v_object[ "type" ].as_int64();
-        }
-        else
-        {
-          auto itr = to_tag.find( v_object[ "type" ].as_string() );
-          FC_ASSERT( itr != to_tag.end(), "Invalid object name: ${n}", ("n", v_object[ "type" ]) );
-          which = itr->second;
-        }
-
-        s.set_which( which );
-        s.visit( fc::to_static_variant( v_object[ "value" ] ) );
+         auto itr = to_tag.find( v_object[ "type" ].as_string() );
+         FC_ASSERT( itr != to_tag.end(), "Invalid object name: ${n}", ("n", v_object[ "type" ]) );
+         which = itr->second;
       }
+
+      s.set_which( which );
+      s.visit( fc::to_static_variant( v_object[ "value" ] ) );
    }
 
    template< typename... T > struct get_comma_separated_typenames;
