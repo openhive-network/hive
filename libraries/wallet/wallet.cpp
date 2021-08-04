@@ -581,6 +581,20 @@ public:
     _tx_expiration_seconds = tx_expiration_seconds;
   }
 
+  void use_authority( authority_type type, const account_name_type& account_name )
+  {
+    _authorities_to_use[type].push_back(account_name);
+    _use_automatic_authority = false;
+  }
+
+  void use_automatic_authority()
+  {
+    _use_automatic_authority = true;
+    _authorities_to_use[active].clear();
+    _authorities_to_use[owner].clear();
+    _authorities_to_use[posting].clear();
+  }
+
   // sets the expiration time and reference block
   void initialize_transaction_header(transaction& tx)
   {
@@ -631,7 +645,16 @@ public:
     flat_set< account_name_type >   req_posting_approvals;
     vector< authority >  other_auths;
 
-    tx.get_required_authorities( req_active_approvals, req_owner_approvals, req_posting_approvals, other_auths );
+    if( _use_automatic_authority == true )
+    {
+      tx.get_required_authorities( req_active_approvals, req_owner_approvals, req_posting_approvals, other_auths );
+    }
+    else
+    {
+      req_active_approvals.insert(_authorities_to_use[active].begin(), _authorities_to_use[active].end());
+      req_owner_approvals.insert(_authorities_to_use[owner].begin(), _authorities_to_use[owner].end());
+      req_posting_approvals.insert(_authorities_to_use[posting].begin(), _authorities_to_use[posting].end());
+    }
 
     for( const auto& auth : other_auths )
       for( const auto& a : auth.account_auths )
@@ -652,16 +675,55 @@ public:
 
     auto approving_account_objects = get_accounts( variant(v_approving_account_names) );
 
-    /// TODO: recursively check one layer deeper in the authority tree for keys
-
     FC_ASSERT( approving_account_objects.size() == v_approving_account_names.size(), "", ("aco.size:", approving_account_objects.size())("acn",v_approving_account_names.size()) );
 
     flat_map< string, database_api::api_account_object > approving_account_lut;
-    size_t i = 0;
     for( const auto& approving_acct : approving_account_objects )
-    {
       approving_account_lut[ approving_acct.name ] =  approving_acct;
-      i++;
+
+    /// recursively check one layer deeper in the authority tree for keys
+    std::function< void(flat_set< account_name_type > &, authority_type, uint32_t) > recursively_get_authorities =
+      [&](flat_set< account_name_type > &authorities_names, authority_type type, uint32_t depth)
+      {
+        if(depth > HIVE_MAX_SIG_CHECK_DEPTH)
+          return;
+
+        flat_set< account_name_type > authorities_names_next_level;
+        for(account_name_type& acct_name : authorities_names)
+        {
+          const auto it = approving_account_lut.find( acct_name );
+          if( it == approving_account_lut.end() )
+            continue;
+          const database_api::api_account_object& acct = it->second;
+          flat_map< account_name_type, weight_type > account_auths;
+          if( type == active )
+            account_auths = acct.active.account_auths;
+          else if( type == owner )
+            account_auths = acct.owner.account_auths;
+          else
+            account_auths = acct.posting.account_auths;
+          for(const auto& kv : account_auths)
+            authorities_names_next_level.insert(kv.first);
+        }
+
+        vector< account_name_type > v_authorities_names_next_level;
+        for(const auto& name : authorities_names_next_level)
+          v_authorities_names_next_level.push_back(name);
+
+        auto approving_account_objects = get_accounts( variant(v_authorities_names_next_level) );
+        for( const auto& approving_acct : approving_account_objects )
+          approving_account_lut[ approving_acct.name ] =  approving_acct;
+
+        recursively_get_authorities(authorities_names_next_level, type, depth+1);
+        for(const auto& name : authorities_names_next_level)
+          authorities_names.insert(name);
+      };
+
+    if( _use_automatic_authority == true )
+    {
+      recursively_get_authorities(req_active_approvals, active, 1);
+      recursively_get_authorities(req_owner_approvals, owner, 1);
+      recursively_get_authorities(req_posting_approvals, posting, 1);
     }
 
     auto get_account_from_lut = [&]( const std::string& name ) -> fc::optional< const database_api::api_account_object* >
@@ -674,8 +736,7 @@ public:
       }
       else
       {
-        elog( "Tried to access authority for account ${a}.", ("a", name) );
-        elog( "Is it possible you are using an account authority? Signing with an account authority is currently not supported." );
+        elog( "Tried to access authority for account ${a} but not cached.", ("a", name) );
       }
 
       return result;
@@ -757,44 +818,56 @@ public:
       }
     }
 
-    auto minimal_signing_keys = tx.minimize_required_signatures(
-      _hive_chain_id,
-      available_keys,
-      [&]( const string& account_name ) -> const authority&
-      {
-        auto maybe_account = get_account_from_lut( account_name );
-        if( maybe_account.valid() )
-          return (*maybe_account)->active;
-
-        return null_auth;
-      },
-      [&]( const string& account_name ) -> const authority&
-      {
-        auto maybe_account = get_account_from_lut( account_name );
-        if( maybe_account.valid() )
-          return (*maybe_account)->owner;
-
-        return null_auth;
-      },
-      [&]( const string& account_name ) -> const authority&
-      {
-        auto maybe_account = get_account_from_lut( account_name );
-        if( maybe_account.valid() )
-          return (*maybe_account)->posting;
-
-        return null_auth;
-      },
-      HIVE_MAX_SIG_CHECK_DEPTH,
-      HIVE_MAX_AUTHORITY_MEMBERSHIP,
-      HIVE_MAX_SIG_CHECK_ACCOUNTS,
-      fc::ecc::fc_canonical
-      );
-
-    for( const public_key_type& k : minimal_signing_keys )
+    if( _use_automatic_authority == true )
     {
-      auto it = available_private_keys.find(k);
-      FC_ASSERT( it != available_private_keys.end() );
-      tx.sign( it->second, _hive_chain_id, fc::ecc::fc_canonical );
+      auto minimal_signing_keys = tx.minimize_required_signatures(
+        _hive_chain_id,
+        available_keys,
+        [&]( const string& account_name ) -> const authority&
+        {
+          auto maybe_account = get_account_from_lut( account_name );
+          if( maybe_account.valid() )
+            return (*maybe_account)->active;
+
+          return null_auth;
+        },
+        [&]( const string& account_name ) -> const authority&
+        {
+          auto maybe_account = get_account_from_lut( account_name );
+          if( maybe_account.valid() )
+            return (*maybe_account)->owner;
+
+          return null_auth;
+        },
+        [&]( const string& account_name ) -> const authority&
+        {
+          auto maybe_account = get_account_from_lut( account_name );
+          if( maybe_account.valid() )
+            return (*maybe_account)->posting;
+
+          return null_auth;
+        },
+        HIVE_MAX_SIG_CHECK_DEPTH,
+        HIVE_MAX_AUTHORITY_MEMBERSHIP,
+        HIVE_MAX_SIG_CHECK_ACCOUNTS,
+        fc::ecc::fc_canonical
+        );
+
+      for( const public_key_type& k : minimal_signing_keys )
+      {
+        auto it = available_private_keys.find(k);
+        FC_ASSERT( it != available_private_keys.end() );
+        tx.sign( it->second, _hive_chain_id, fc::ecc::fc_canonical );
+      }
+    }
+    else
+    {
+      for( const public_key_type& k : available_keys )
+      {
+        auto it = available_private_keys.find(k);
+        FC_ASSERT( it != available_private_keys.end() );
+        tx.sign( it->second, _hive_chain_id, fc::ecc::fc_canonical );
+      }
     }
 
     if( broadcast ) {
@@ -842,6 +915,10 @@ public:
   flat_map<string, operation>                               _prototype_ops;
 
   static_variant_map _operation_which_map = create_static_variant_map< operation >();
+
+  typedef map <authority_type, vector<account_name_type> > authorities_type;
+  authorities_type                        _authorities_to_use;
+  bool                                    _use_automatic_authority = true;
 
 #ifdef __unix__
   mode_t                  _old_umask;
@@ -2599,6 +2676,16 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::get_transaction( fc
   my->require_online();
   vector<variant> args{std::move(id)};
   return { my->_remote_wallet_bridge_api->get_transaction( {args}, LOCK ) };
+}
+
+void wallet_api::use_authority( authority_type type, const account_name_type& account_name )
+{
+  my->use_authority( type, account_name );
+}
+
+void wallet_api::use_automatic_authority()
+{
+  my->use_automatic_authority();
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::follow( const string& follower, const string& following, set<string> what, bool broadcast )
