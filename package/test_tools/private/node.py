@@ -397,10 +397,10 @@ class Node:
 
         self.__log_run_summary(return_code)
 
-    def __handle_loading_snapshot(self, load_snapshot_from: Snapshot, additional_arguments: list):
+    def __handle_loading_snapshot(self, snapshot_source: Snapshot, additional_arguments: list):
         self.__ensure_that_plugin_required_for_snapshot_is_included()
         additional_arguments.append('--load-snapshot=.')
-        load_snapshot_from.copy_to(self.directory)
+        snapshot_source.copy_to(self.directory)
 
     def __handle_replay(self, replay_source: BlockLog, stop_at_block: int, additional_arguments: list):
         if not isinstance(replay_source, BlockLog):
