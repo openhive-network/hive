@@ -35,6 +35,9 @@ class Snapshot:
         if self.__snapshot_path != destination_snapshot_path:
             shutil.copytree(self.__snapshot_path, destination_snapshot_path)
 
+    def get_path(self):
+        return self.__snapshot_path
+
     def __repr__(self):
         optional_creator_info = '' if self.__creator is None else f' from {self.__creator}'
         return f'<Snapshot{optional_creator_info}: path={self.__snapshot_path}>'

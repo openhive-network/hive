@@ -398,6 +398,13 @@ class Node:
         self.__log_run_summary(return_code)
 
     def __handle_loading_snapshot(self, snapshot_source: Snapshot, additional_arguments: list):
+        if not isinstance(snapshot_source, Snapshot):
+            snapshot_source = Snapshot(
+                snapshot_source,
+                Path(snapshot_source).joinpath('../blockchain/block_log'),
+                Path(snapshot_source).joinpath('../blockchain/block_log.index')
+            )
+
         self.__ensure_that_plugin_required_for_snapshot_is_included()
         additional_arguments.append('--load-snapshot=.')
         snapshot_source.copy_to(self.directory)

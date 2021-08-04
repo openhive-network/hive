@@ -42,6 +42,19 @@ def test_loading_snapshot_from_other_node(world):
     assert_that_transaction_for_test_has_effect(loading_node)
 
 
+def test_loading_snapshot_from_custom_path(world):
+    init_node = world.create_init_node()
+    init_node.run()
+
+    make_transaction_for_test(init_node)
+    generate_blocks(init_node, 100)  # To make sure, that block with test operation will be stored in block log
+    snapshot = init_node.dump_snapshot()
+
+    loading_node = world.create_api_node()
+    loading_node.run(load_snapshot_from=snapshot.get_path(), wait_for_live=False)
+    assert_that_transaction_for_test_has_effect(loading_node)
+
+
 def test_replay_from_other_node_block_log(world):
     init_node = world.create_init_node()
     init_node.run()
