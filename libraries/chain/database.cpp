@@ -2525,7 +2525,6 @@ void database::process_recurrent_transfers()
   */
 void database::adjust_rshares2( fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 )
 {
-
   const auto& dgpo = get_dynamic_global_properties();
   modify( dgpo, [&]( dynamic_global_property_object& p )
   {
