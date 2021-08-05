@@ -2923,36 +2923,39 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         adjust_rshares2( util::evaluate_reward_curve( comment_cashout.net_rshares.value ), 0 );
     }
 
-    modify( comment_cashout, [&]( comment_cashout_object& c )
+    if( !has_hardfork( HIVE_HARDFORK_0_19 ) ) // paid comment is removed after HF19, so no point in modification
     {
-      /**
-      * A payout is only made for positive rshares, negative rshares hang around
-      * for the next time this post might get an upvote.
-      */
-      if( c.net_rshares > 0 )
-        c.net_rshares = 0;
-      c.children_abs_rshares = 0;
-      c.abs_rshares  = 0;
-      c.vote_rshares = 0;
-      c.total_vote_weight = 0;
-      c.max_cashout_time = fc::time_point_sec::maximum();
+      modify( comment_cashout, [&]( comment_cashout_object& c )
+      {
+        /**
+        * A payout is only made for positive rshares, negative rshares hang around
+        * for the next time this post might get an upvote.
+        */
+        if( c.net_rshares > 0 )
+          c.net_rshares = 0;
+        c.children_abs_rshares = 0;
+        c.abs_rshares = 0;
+        c.vote_rshares = 0;
+        c.total_vote_weight = 0;
+        c.max_cashout_time = fc::time_point_sec::maximum();
 
-      if( has_hardfork( HIVE_HARDFORK_0_17__769 ) )
-      {
-        c.cashout_time = fc::time_point_sec::maximum();
-      }
-      else if( comment.is_root() )
-      {
-        if( has_hardfork( HIVE_HARDFORK_0_12__177 ) && c.last_payout == fc::time_point_sec::min() )
-          c.cashout_time = head_block_time() + HIVE_SECOND_CASHOUT_WINDOW;
-        else
+        if( has_hardfork( HIVE_HARDFORK_0_17__769 ) )
+        {
           c.cashout_time = fc::time_point_sec::maximum();
-      }
+        }
+        else if( comment.is_root() )
+        {
+          if( has_hardfork( HIVE_HARDFORK_0_12__177 ) && c.last_payout == fc::time_point_sec::min() )
+            c.cashout_time = head_block_time() + HIVE_SECOND_CASHOUT_WINDOW;
+          else
+            c.cashout_time = fc::time_point_sec::maximum();
+        }
 
-      c.last_payout = head_block_time();
-    } );
+        c.last_payout = head_block_time();
+      } );
+    }
 
-    if( calculate_discussion_payout_time( comment_cashout ) == fc::time_point_sec::maximum() )
+    if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || calculate_discussion_payout_time( comment_cashout ) == fc::time_point_sec::maximum() )
     {
       push_virtual_operation( comment_payout_update_operation( get_account(comment_cashout.author_id).name, to_string( comment_cashout.permlink ) ) );
     }
