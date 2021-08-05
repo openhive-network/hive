@@ -49,12 +49,15 @@ namespace hive { namespace chain {
       uint16_t get_depth() const { return depth; }
 
     private:
-      comment_id_type root_comment;
+      comment_id_type root_comment; //ABW: we should move it to cashout since it is only needed up to HF17;
+                                    //it could also be made separate concurrent object to eliminate index after HF17
       comment_id_type parent_comment;
 
-      author_and_permlink_hash_type author_and_permlink_hash;
+      author_and_permlink_hash_type author_and_permlink_hash; //ABW: splitting it to author_id + 128 bit author+permlink hash would allow for
+        //moving it to DB and the DB would only need to keep it cached for active authors; now most likely whole index would land in mem anyway
 
       uint16_t        depth = 0; //looks like a candidate for removal (see https://github.com/steemit/steem/issues/767 )
+        //currently soft limited to HIVE_SOFT_MAX_COMMENT_DEPTH in witness plugin; consensus doesn't need limit, but HiveMind might
 
       CHAINBASE_UNPACK_CONSTRUCTOR(comment_object);
   };
@@ -131,7 +134,7 @@ namespace hive { namespace chain {
       share_type        abs_rshares; /// this is used to track the total abs(weight) of votes for the purpose of calculating cashout_time
       share_type        vote_rshares; /// Total positive rshares from all votes. Used to calculate delta weights. Needed to handle vote changing and removal.
 
-      share_type        children_abs_rshares; /// this is used to calculate cashout time of a discussion.
+      share_type        children_abs_rshares; /// this is used to calculate cashout time of a discussion (not used after HF17).
 
       uint32_t          children = 0; ///< used to track the total number of children, grandchildren, etc...
 

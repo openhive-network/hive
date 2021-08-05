@@ -1507,29 +1507,48 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   /// if the current net_rshares is less than 0, the post is getting 0 rewards so it is not factored into total rshares^2
   fc::uint128_t old_rshares = std::max( comment_cashout->net_rshares.value, int64_t( 0 ) );
 
-  if( itr == comment_vote_idx.end() )
+  if( !_db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
   {
-    FC_ASSERT( o.weight != 0, "Vote weight cannot be 0." );
-
     const auto& root = _db.get( comment.get_root_id() );
     const comment_cashout_object* root_cashout = _db.find_comment_cashout( root );
-    auto old_root_abs_rshares = root_cashout ? root_cashout->children_abs_rshares.value : 0;
-
-    fc::uint128_t avg_cashout_sec;
-
-    if( !_db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
+    FC_ASSERT( root_cashout );
+    _db.modify( *root_cashout, [&]( comment_cashout_object& c )
     {
-      fc::uint128_t cur_cashout_time_sec = _db.calculate_discussion_payout_time( *comment_cashout ).sec_since_epoch();
-      fc::uint128_t new_cashout_time_sec;
+      auto old_root_abs_rshares = c.children_abs_rshares.value;
+      c.children_abs_rshares += abs_rshares;
 
-      if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && !_db.has_hardfork( HIVE_HARDFORK_0_13__257)  )
-        new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
+      if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && c.last_payout > fc::time_point_sec::min() )
+      {
+        c.cashout_time = c.last_payout + HIVE_SECOND_CASHOUT_WINDOW;
+      }
       else
-        new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
+      {
+        fc::uint128_t cur_cashout_time_sec = _db.calculate_discussion_payout_time( *comment_cashout ).sec_since_epoch();
+        fc::uint128_t avg_cashout_sec;
+        if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 )
+        {
+          avg_cashout_sec = cur_cashout_time_sec;
+        }
+        else
+        {
+          fc::uint128_t new_cashout_time_sec;
+          if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && !_db.has_hardfork( HIVE_HARDFORK_0_13__257 ) )
+            new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
+          else
+            new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
+          avg_cashout_sec = ( cur_cashout_time_sec * old_root_abs_rshares + new_cashout_time_sec * abs_rshares ) / c.children_abs_rshares.value;
+        }
+        c.cashout_time = fc::time_point_sec( std::min( uint32_t( avg_cashout_sec.to_uint64() ), c.max_cashout_time.sec_since_epoch() ) );
+      }
 
-      avg_cashout_sec = ( cur_cashout_time_sec * old_root_abs_rshares + new_cashout_time_sec * abs_rshares ) / ( old_root_abs_rshares + abs_rshares );
-    }
+      if( c.max_cashout_time == fc::time_point_sec::maximum() )
+        c.max_cashout_time = _now + fc::seconds( HIVE_MAX_CASHOUT_WINDOW_SECONDS );
+    } );
+  }
 
+  if( itr == comment_vote_idx.end() ) // new vote
+  {
+    FC_ASSERT( o.weight != 0, "Vote weight cannot be 0." );
     FC_ASSERT( abs_rshares > 0, "Cannot vote with 0 rshares." );
 
     auto old_vote_rshares = comment_cashout->vote_rshares;
@@ -1545,25 +1564,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       else
         c.net_votes--;
     });
-
-    if( root_cashout )
-    {
-      _db.modify( *root_cashout, [&]( comment_cashout_object& c )
-      {
-        c.children_abs_rshares += abs_rshares;
-
-        if( !_db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
-        {
-          if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && c.last_payout > fc::time_point_sec::min() )
-            c.cashout_time = c.last_payout + HIVE_SECOND_CASHOUT_WINDOW;
-          else
-            c.cashout_time = fc::time_point_sec( std::min( uint32_t( avg_cashout_sec.to_uint64() ), c.max_cashout_time.sec_since_epoch() ) );
-
-          if( c.max_cashout_time == fc::time_point_sec::maximum() )
-            c.max_cashout_time = _now + fc::seconds( HIVE_MAX_CASHOUT_WINDOW_SECONDS );
-        }
-      });
-    }
 
     fc::uint128_t new_rshares = std::max( comment_cashout->net_rshares.value, int64_t(0));
 
@@ -1676,28 +1676,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     if( _db.has_hardfork( HIVE_HARDFORK_0_6__112 ) )
       FC_ASSERT( itr->get_vote_percent() != o.weight, "You have already voted in a similar way." );
 
-    const auto& root = _db.get( comment.get_root_id() );
-    const comment_cashout_object* root_cashout = _db.find_comment_cashout( root );
-    auto old_root_abs_rshares = root_cashout ? root_cashout->children_abs_rshares.value : 0;
-
-    fc::uint128_t avg_cashout_sec;
-
-    if( !_db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
-    {
-      fc::uint128_t cur_cashout_time_sec = _db.calculate_discussion_payout_time( *comment_cashout ).sec_since_epoch();
-      fc::uint128_t new_cashout_time_sec;
-
-      if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && ! _db.has_hardfork( HIVE_HARDFORK_0_13__257 )  )
-        new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
-      else
-        new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
-
-      if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 )
-        avg_cashout_sec = cur_cashout_time_sec;
-      else
-        avg_cashout_sec = ( cur_cashout_time_sec * old_root_abs_rshares + new_cashout_time_sec * abs_rshares ) / ( old_root_abs_rshares + abs_rshares );
-    }
-
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
     {
       c.net_rshares -= itr->get_rshares();
@@ -1720,25 +1698,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
       c.total_vote_weight -= itr->get_weight();
     } );
-
-    if( root_cashout )
-    {
-      _db.modify( *root_cashout, [&]( comment_cashout_object& c )
-      {
-        c.children_abs_rshares += abs_rshares;
-
-        if( !_db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
-        {
-          if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && c.last_payout > fc::time_point_sec::min() )
-            c.cashout_time = c.last_payout + HIVE_SECOND_CASHOUT_WINDOW;
-          else
-            c.cashout_time = fc::time_point_sec( std::min( uint32_t( avg_cashout_sec.to_uint64() ), c.max_cashout_time.sec_since_epoch() ) );
-
-          if( c.max_cashout_time == fc::time_point_sec::maximum() )
-            c.max_cashout_time = _now + fc::seconds( HIVE_MAX_CASHOUT_WINDOW_SECONDS );
-        }
-      });
-    }
 
     fc::uint128_t new_rshares = std::max( comment_cashout->net_rshares.value, int64_t( 0 ) );
 
@@ -1886,9 +1845,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   if( itr == comment_vote_idx.end() ) // new vote
   {
     FC_ASSERT( o.weight != 0, "Vote weight cannot be 0." );
-    const auto& root = _db.get( comment.get_root_id() );
-    const comment_cashout_object* root_cashout = _db.find_comment_cashout( root );
-
     auto old_vote_rshares = comment_cashout->vote_rshares;
 
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
@@ -1902,14 +1858,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
       else
         c.net_votes--;
     });
-
-    if( root_cashout )
-    {
-      _db.modify( *root_cashout, [&]( comment_cashout_object& c )
-      {
-        c.children_abs_rshares += abs_rshares;
-      });
-    }
 
     uint64_t max_vote_weight = 0;
 
@@ -2001,9 +1949,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     FC_ASSERT( itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES, "Voter has used the maximum number of vote changes on this comment." );
     FC_ASSERT( itr->get_vote_percent() != o.weight, "Your current vote on this comment is identical to this vote." );
 
-    const auto& root = _db.get( comment.get_root_id() );
-    const comment_cashout_object* root_cashout = _db.find_comment_cashout( root );
-
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
     {
       c.net_rshares -= itr->get_rshares();
@@ -2026,14 +1971,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
       c.total_vote_weight -= itr->get_weight();
     });
-
-    if( root_cashout )
-    {
-      _db.modify( *root_cashout, [&]( comment_cashout_object& c )
-      {
-        c.children_abs_rshares += abs_rshares;
-      });
-    }
 
     _db.modify( *itr, [&]( comment_vote_object& cv )
     {
