@@ -18,7 +18,6 @@
 
 // Internal
 #include <hive/chain/util/extractors.hpp>
-#include <hive/chain/account_object.hpp>
 #include "type_extractor_processor.hpp"
 
 namespace hive
@@ -123,15 +122,6 @@ namespace hive
               op_in_trx{_op_in_trx}, op{_op} {}
           };
 
-          /// Holds account information to be put into database
-          struct account_data_t
-          {
-            account_data_t(int _id, std::string _n) : id{_id}, name {_n} {}
-
-            int32_t id;
-            std::string name;
-          };
-
           /// Holds permlink information to be put into database
           struct permlink_data_t
           {
@@ -139,17 +129,6 @@ namespace hive
 
             int32_t id;
             std::string permlink;
-          };
-
-          /// Holds association between account and its operations.
-          struct account_operation_data_t
-          {
-            int64_t operation_id;
-            int32_t account_id;
-            int32_t operation_seq_no;
-
-            account_operation_data_t(int64_t _operation_id, int32_t _account_id, int32_t _operation_seq_no) : operation_id{ _operation_id },
-              account_id{ _account_id }, operation_seq_no{ _operation_seq_no } {}
           };
 
         }; // namespace processing_objects
