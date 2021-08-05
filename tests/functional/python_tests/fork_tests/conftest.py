@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import Account, Asset, automatic_tests_configuration, logger, World
+from test_tools import Account, Asset, automatic_tests_configuration, constants, logger, World
 
 
 @pytest.fixture(scope="package")
@@ -16,6 +16,8 @@ def world_with_witnesses(request):
     logger.info('Preparing fixture world_with_witnesses')
     directory = automatic_tests_configuration.get_preferred_directory(request)
     with World(directory=directory) as world:
+        world.set_clean_up_policy(constants.WorldCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
+
         alpha_witness_names = [f'witness{i}-alpha' for i in range(10)]
         beta_witness_names = [f'witness{i}-beta' for i in range(10)]
         all_witness_names = alpha_witness_names + beta_witness_names
