@@ -43,10 +43,6 @@ using chain::reindex_notification;
       return op.visit(v);
     }
 
-    typedef std::map<std::string, int> permlink_cache_t;
-
-    typedef std::vector<PSQL::processing_objects::permlink_data_t> permlink_data_container_t;
-
     typedef std::vector<PSQL::processing_objects::process_block_t> block_data_container_t;
     typedef std::vector<PSQL::processing_objects::process_transaction_t> transaction_data_container_t;
     typedef std::vector<PSQL::processing_objects::process_transaction_multisig_t> transaction_multisig_data_container_t;
@@ -118,7 +114,6 @@ using chain::reindex_notification;
         return os
           << "threads created since last info: " << obj.all_created_workers << std::endl
           << "currently working threads: " << obj.workers_count << std::endl
-          << "sending permlinks took: " << obj.sending_cache_time.load().count() << " us"<< std::endl
           __shortcut(blocks)
           __shortcut(transactions)
           __shortcut(operations)
@@ -139,10 +134,6 @@ using chain::reindex_notification;
 
       struct cached_data_t
       {
-        permlink_cache_t _permlink_cache;
-        int             _next_permlink_id;
-
-        permlink_data_container_t permlinks;
 
         block_data_container_t blocks;
         transaction_data_container_t transactions;
@@ -151,9 +142,8 @@ using chain::reindex_notification;
 
         size_t total_size;
 
-        explicit cached_data_t(const size_t reservation_size) : _next_permlink_id{ 0 }, total_size{ 0ul }
+        explicit cached_data_t(const size_t reservation_size) : total_size{ 0ul }
         {
-          permlinks.reserve(reservation_size);
           blocks.reserve(reservation_size);
           transactions.reserve(reservation_size);
           transactions_multisig.reserve(reservation_size);
@@ -163,8 +153,7 @@ using chain::reindex_notification;
         ~cached_data_t()
         {
           ilog(
-          "permlinks: ${p} blocks: ${b} trx: ${t} operations: ${o} total size: ${ts}...",
-          ("p", permlinks.size() )
+          "blocks: ${b} trx: ${t} operations: ${o} total size: ${ts}...",
           ("b", blocks.size() )
           ("t", transactions.size() )
           ("o", operations.size() )
@@ -381,27 +370,6 @@ using chain::reindex_notification;
               }
           };
 
-      struct hive_permlink_data
-      {
-        typedef permlink_data_container_t container_t;
-
-        static const char TABLE[];
-        static const char COLS[];
-
-        struct data2sql_tuple : public data2_sql_tuple_base
-        {
-          using data2_sql_tuple_base::data2_sql_tuple_base;
-
-          std::string operator()(typename container_t::const_reference data) const
-          {
-            return std::to_string(data.id) + ',' + escape(data.permlink);
-          }
-        };
-      };
-
-      const char hive_permlink_data::TABLE[] = "hive_permlink_data";
-      const char hive_permlink_data::COLS[] = "id, permlink";
-
       struct hive_blocks
       {
         typedef block_data_container_t container_t;
@@ -485,96 +453,20 @@ using chain::reindex_notification;
             fc::to_variant(data.op, opVariant);
             fc::string deserialized_op = fc::json::to_string(opVariant);
 
-            std::vector<fc::string> permlinks;
-            hive::app::operation_get_permlinks(data.op, permlinks);
-
-            std::string permlink_id_array = "'{";
-            /*bool first = true;
-            for(const auto& p : permlinks)
-            {
-              auto permlinkI = _mainCache._permlink_cache.find(p);
-              FC_ASSERT(permlinkI != _mainCache._permlink_cache.cend());
-              if(first == false)
-                permlink_id_array += ',';
-
-              permlink_id_array += std::to_string(permlinkI->second);
-              first = false;
-            }
-            */
-            permlink_id_array += "}'";
-
-            permlink_id_array = "NULL::int[]";
-
             return std::to_string(data.operation_id) + ',' + std::to_string(data.block_number) + ',' +
               std::to_string(data.trx_in_block) + ',' + std::to_string(data.op_in_trx) + ',' +
-              std::to_string(data.op.which()) + ',' + escape(deserialized_op); // + ',' + permlink_id_array;
+              std::to_string(data.op.which()) + ',' + escape(deserialized_op);
           }
         };
       };
 
       const char hive_operations::TABLE[] = "hive_operations";
-      const char hive_operations::COLS[] = "id, block_num, trx_in_block, op_pos, op_type_id, body"; //, permlink_ids";
+      const char hive_operations::COLS[] = "id, block_num, trx_in_block, op_pos, op_type_id, body";
 
-      using permlink_data_container_t_writer = table_data_writer<hive_permlink_data>;
       using block_data_container_t_writer = table_data_writer<hive_blocks>;
       using transaction_data_container_t_writer = table_data_writer<hive_transactions>;
       using transaction_multisig_data_container_t_writer = table_data_writer<hive_transactions_multisig>;
       using operation_data_container_t_writer = table_data_writer<hive_operations>;
-
-      /**
-       * @brief Collects new identifiers (permlinks) defined by given operation.
-       * 
-      */
-      struct new_ids_collector
-      {
-        typedef void result_type;
-
-        new_ids_collector(
-          permlink_cache_t* permlink_cache, int* next_permlink_id,
-          permlink_data_container_t* newPermlinks) :
-          _known_permlinks(permlink_cache),
-          _next_permlink_id(*next_permlink_id),
-          _new_permlinks(newPermlinks),
-          _processed_operation(nullptr)
-        {
-        }
-
-        void collect(const hive::protocol::operation& op)
-        {
-          _processed_operation = &op;
-
-          _processed_operation->visit(*this);
-
-          _processed_operation = nullptr;
-        }
-
-      private:
-        template<int64_t N, typename T, typename... Ts>
-        friend struct fc::impl::storage_ops;
-
-        template< typename T >
-        void operator()(const T& v) { }
-
-        void operator()(const hive::protocol::comment_operation& op)
-        {
-          auto ii = _known_permlinks->emplace(op.permlink, _next_permlink_id + 1);
-          /// warning comment_operation in edit case uses the same permlink.
-          if(ii.second)
-          {
-            ++_next_permlink_id;
-            _new_permlinks->emplace_back(_next_permlink_id, op.permlink);
-          }
-        }
-
-      private:
-        permlink_cache_t* _known_permlinks;
-
-        int& _next_permlink_id;
-
-        permlink_data_container_t* _new_permlinks;
-
-        const hive::protocol::operation* _processed_operation;
-      };
 
 
 
@@ -744,7 +636,6 @@ using chain::reindex_notification;
           boost::signals2::connection _on_starting_reindex;
           boost::signals2::connection _on_finished_reindex;
 
-          std::unique_ptr<permlink_data_container_t_writer> _permlink_writer;
           std::unique_ptr<block_data_container_t_writer> _block_writer;
           std::unique_ptr<transaction_data_container_t_writer> _transaction_writer;
           std::unique_ptr<transaction_multisig_data_container_t_writer> _transaction_multisig_writer;
@@ -781,8 +672,7 @@ using chain::reindex_notification;
           {
             /// Since hive_operation_types table is actually immutable after initial fill (writing very limited amount of data), don't mess with its indexes
             /// to let working ON CONFLICT DO NOTHING clause during subsequent init tries.
-            std::vector<std::string> table_names = { "hive_blocks", "hive_transactions", "hive_transactions_multisig",
-                                                     "hive_permlink_data", "hive_operations" };
+            std::vector<std::string> table_names = { "hive_blocks", "hive_transactions", "hive_transactions_multisig", "hive_operations" };
 
             ilog("${mode} ${objects_name}...", ("objects_name", objects_name )("mode", ( mode ? "Creating" : "Dropping" ) ) );
 
@@ -871,9 +761,7 @@ using chain::reindex_notification;
 
           void load_initial_db_data()
           {
-            ilog("Loading operation's last id and permlink caches...");
-
-            auto* data = currently_caching_data.get();
+            ilog("Loading operation's last id ...");
 
             op_sequence_id = 0;
             psql_block_number = 0;
@@ -912,46 +800,13 @@ using chain::reindex_notification;
 
             sequence_loader.trigger(data_processor::data_chunk_ptr());
 
-            auto& permlink_cache = data->_permlink_cache;
-            int next_permlink_id = 0;
-
-            data_processor permlink_cache_loader(db_url, "Permlink cache loader",
-              [&permlink_cache, &next_permlink_id](const data_chunk_ptr&, transaction& tx) -> data_processing_status
-              {
-                data_processing_status processingStatus;
-                pqxx::result data = tx.exec("SELECT pd.permlink, pd.id FROM hive_permlink_data pd;");
-                for(auto recordI = data.begin(); recordI != data.end(); ++recordI)
-                {
-                  const auto& record = *recordI;
-
-                  const char* permlink = record["permlink"].c_str();
-                  int permlink_id = record["id"].as<int>();
-
-                  if(permlink_id > next_permlink_id)
-                    next_permlink_id = permlink_id;
-
-                  permlink_cache.emplace(std::string(permlink), permlink_id);
-                  ++processingStatus.first;
-                }
-
-                return processingStatus;
-              }
-            );
-
-            permlink_cache_loader.trigger(data_chunk_ptr());
-
-            permlink_cache_loader.join();
             sequence_loader.join();
             block_loader.join();
 
-            data->_next_permlink_id = next_permlink_id + 1;
-
-            ilog("Loaded ${p} cached permlink data", ("p", permlink_cache.size()));
-            ilog("Next permlink id: ${p}, next operation id: ${s} psql block number: ${pbn}.",
-             ("p", data->_next_permlink_id)("s", op_sequence_id + 1)("pbn", psql_block_number));
+            ilog("Next operation id: ${s} psql block number: ${pbn}.",
+              ("s", op_sequence_id + 1)("pbn", psql_block_number));
           }
 
-          void trigger_data_flush(permlink_data_container_t& data);
           void trigger_data_flush(block_data_container_t& data);
           void trigger_data_flush(transaction_data_container_t& data);
           void trigger_data_flush(transaction_multisig_data_container_t& data);
@@ -960,7 +815,6 @@ using chain::reindex_notification;
           void init_data_processors();
           void join_data_processors()
           {
-            _permlink_writer->join();
             _block_writer->join();
             _transaction_writer->join();
             _transaction_multisig_writer->join();
@@ -972,7 +826,6 @@ using chain::reindex_notification;
           void wait_for_data_processing_finish();
 
           void process_cached_data();
-          void collect_new_ids(const hive::protocol::operation& op);
 
           bool skip_reversible_block(uint32_t block);
 
@@ -990,7 +843,6 @@ using chain::reindex_notification;
 void sql_serializer_plugin_impl::init_data_processors()
 {
   const auto& mainCache = *currently_caching_data.get();
-  _permlink_writer = std::make_unique<permlink_data_container_t_writer>(db_url, mainCache, "Permlink data writer");
   _block_writer = std::make_unique<block_data_container_t_writer>(db_url, mainCache, "Block data writer");
   _transaction_writer = std::make_unique<transaction_data_container_t_writer>(db_url, mainCache, "Transaction data writer");
   _transaction_multisig_writer = std::make_unique<transaction_multisig_data_container_t_writer>(db_url, mainCache, "Transaction multisig data writer");
@@ -1001,7 +853,6 @@ void sql_serializer_plugin_impl::switch_to_single_transaction_controller()
 {
   auto single_tx_controler = build_single_transaction_controller(db_url);
 
-  _permlink_writer->register_transaction_controler(single_tx_controler);
   _block_writer->register_transaction_controler(single_tx_controler);
   _transaction_writer->register_transaction_controler(single_tx_controler);
   _transaction_multisig_writer->register_transaction_controler(single_tx_controler);
@@ -1010,7 +861,6 @@ void sql_serializer_plugin_impl::switch_to_single_transaction_controller()
 
 void sql_serializer_plugin_impl::switch_to_concurrent_transaction_controller()
 {
-  _permlink_writer->restore_transaction_controller();
   _block_writer->restore_transaction_controller();
   _transaction_writer->restore_transaction_controller();
   _transaction_multisig_writer->restore_transaction_controller();
@@ -1019,7 +869,6 @@ void sql_serializer_plugin_impl::switch_to_concurrent_transaction_controller()
 
 void sql_serializer_plugin_impl::wait_for_data_processing_finish()
 {
-  _permlink_writer->complete_data_processing();
   _block_writer->complete_data_processing();
   _transaction_writer->complete_data_processing();
   _transaction_multisig_writer->complete_data_processing();
@@ -1080,9 +929,6 @@ void sql_serializer_plugin_impl::on_pre_apply_operation(const operation_notifica
   detail::cached_containter_t& cdtf = currently_caching_data; // alias
 
   ++op_sequence_id;
-
-  if(is_virtual == false)
-    collect_new_ids(note.op);
 
   cdtf->operations.emplace_back(
     op_sequence_id,
@@ -1195,10 +1041,6 @@ void sql_serializer_plugin_impl::on_post_reindex(const reindex_notification& not
   massive_sync = false;
 }
 
-void sql_serializer_plugin_impl::trigger_data_flush(permlink_data_container_t& data)
-{
-  _permlink_writer->trigger(std::move(data), massive_sync == false);
-}
 
 void sql_serializer_plugin_impl::trigger_data_flush(block_data_container_t& data)
 {
@@ -1224,21 +1066,11 @@ void sql_serializer_plugin_impl::process_cached_data()
 {  
   auto* data = currently_caching_data.get();
 
-  trigger_data_flush(data->permlinks);
   trigger_data_flush(data->blocks);
   trigger_data_flush(data->operations);
 
   trigger_data_flush(data->transactions);
   trigger_data_flush(data->transactions_multisig);
-}
-
-void sql_serializer_plugin_impl::collect_new_ids(const hive::protocol::operation& op)
-{
-  auto* data = currently_caching_data.get();
-  auto* permlink_cache = &data->_permlink_cache;
-
-  new_ids_collector collector(permlink_cache, &data->_next_permlink_id, &data->permlinks);
-  op.visit(collector);
 }
 
 bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)

@@ -122,15 +122,6 @@ namespace hive
               op_in_trx{_op_in_trx}, op{_op} {}
           };
 
-          /// Holds permlink information to be put into database
-          struct permlink_data_t
-          {
-            permlink_data_t(int _id, std::string _p) : id{_id}, permlink{_p} {}
-
-            int32_t id;
-            std::string permlink;
-          };
-
         }; // namespace processing_objects
 
         inline fc::string generate(std::function<void(fc::string &)> fun)
