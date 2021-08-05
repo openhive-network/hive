@@ -1439,15 +1439,15 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   auto _now = _db.head_block_time();
 
-  int64_t elapsed_seconds = _now.sec_since_epoch() - voter.voting_manabar.last_update_time;
-
-  if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
-    FC_ASSERT( elapsed_seconds >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
-
-  int64_t regenerated_power = (HIVE_100_PERCENT * elapsed_seconds) / HIVE_VOTING_MANA_REGENERATION_SECONDS;
-  int64_t current_power     = std::min( int64_t(voter.voting_manabar.current_mana) + regenerated_power, int64_t(HIVE_100_PERCENT) );
-  FC_ASSERT( current_power > 0, "Account currently does not have voting power." );
-
+  int64_t current_power = 0;
+  {
+    int64_t elapsed_seconds = _now.sec_since_epoch() - voter.voting_manabar.last_update_time;
+    if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
+      FC_ASSERT( elapsed_seconds >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
+    int64_t regenerated_power = (HIVE_100_PERCENT * elapsed_seconds) / HIVE_VOTING_MANA_REGENERATION_SECONDS;
+    current_power = std::min( int64_t(voter.voting_manabar.current_mana) + regenerated_power, int64_t(HIVE_100_PERCENT) );
+    FC_ASSERT( current_power > 0, "Account currently does not have voting power." );
+  }
   int64_t abs_weight = abs(o.weight);
   // Less rounding error would occur if we did the division last, but we need to maintain backward
   // compatibility with the previous implementation which was replaced in #1285
@@ -1484,19 +1484,23 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
   auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
 
-  if( itr == comment_vote_idx.end() )
+  /// this is the rshares voting for or against the post
+  int64_t rshares = o.weight < 0 ? -abs_rshares : abs_rshares;
   {
-    FC_ASSERT( o.weight != 0, "Vote weight cannot be 0." );
-    /// this is the rshares voting for or against the post
-    int64_t rshares        = o.weight < 0 ? -abs_rshares : abs_rshares;
-
-    if( rshares > 0 )
+    auto previous_vote_rshares = ( itr == comment_vote_idx.end() ? 0 : itr->get_rshares() );
+    if( rshares > previous_vote_rshares )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_17__900 ) )
         FC_ASSERT( _now < comment_cashout->cashout_time - HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
       else if( _db.has_hardfork( HIVE_HARDFORK_0_7 ) )
         FC_ASSERT( _now < _db.calculate_discussion_payout_time( *comment_cashout ) - HIVE_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
     }
+  }
+
+  if( itr == comment_vote_idx.end() )
+  {
+    FC_ASSERT( o.weight != 0, "Vote weight cannot be 0." );
+
 
     _db.modify( voter, [&]( account_object& a )
     {
@@ -1671,17 +1675,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_6__112 ) )
       FC_ASSERT( itr->get_vote_percent() != o.weight, "You have already voted in a similar way." );
-
-    /// this is the rshares voting for or against the post
-    int64_t rshares        = o.weight < 0 ? -abs_rshares : abs_rshares;
-
-    if( itr->get_rshares() < rshares )
-    {
-      if( _db.has_hardfork( HIVE_HARDFORK_0_17__900 ) )
-        FC_ASSERT( _now < comment_cashout->cashout_time - HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
-      else if( _db.has_hardfork( HIVE_HARDFORK_0_7 ) )
-        FC_ASSERT( _now < _db.calculate_discussion_payout_time( *comment_cashout ) - HIVE_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
-    }
 
     _db.modify( voter, [&]( account_object& a ){
       a.voting_manabar.current_mana = current_power - used_power;
