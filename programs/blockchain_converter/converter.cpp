@@ -284,14 +284,15 @@ namespace hive { namespace converter {
     _auth.add_authority( second_authority.at( type ).get_public_key(), 1 );
   }
 
-  // TODO: Make 2nd auth methods thread-safe
   const hp::private_key_type& blockchain_converter::get_second_authority_key( authority::classification type )const
   {
+    std::lock_guard< std::mutex > _guard( second_auth_mutex );
     return second_authority.at( type );
   }
 
   void blockchain_converter::set_second_authority_key( const hp::private_key_type& key, authority::classification type )
   {
+    std::lock_guard< std::mutex > _guard( second_auth_mutex );
     second_authority[ type ] = key;
   }
 
