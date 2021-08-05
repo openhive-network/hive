@@ -24,6 +24,7 @@ PYTHONPATH="${PYTHONPATH}:/home/dev/hive/tests/test_tools/package" HIVE_BUILD_RO
 ## Tutorials
 
 - [Snapshot](documentation/tutorials/snapshot.md) -- What is snapshot? How to create and use it?
+- [Replay](documentation/tutorials/replay.md) -- What is replay? How to do it?
 
 ## Features
 
