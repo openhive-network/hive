@@ -55,47 +55,14 @@ CREATE TABLE IF NOT EXISTS hive_operations (
 ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_pkey PRIMARY KEY ( id );
 CREATE INDEX IF NOT EXISTS hive_operations_block_num_type_trx_in_block_idx ON hive_operations ( block_num, op_type_id, trx_in_block );
 
-CREATE TABLE IF NOT EXISTS hive_accounts (
-  id INTEGER NOT NULL,
-  name VARCHAR(16) NOT NULL
-);
-ALTER TABLE hive_accounts ADD CONSTRAINT hive_accounts_pkey PRIMARY KEY ( id );
-ALTER TABLE hive_accounts ADD CONSTRAINT hive_accounts_uniq UNIQUE ( name );
 
-CREATE TABLE IF NOT EXISTS hive_account_operations
-(
-  --- Identifier of account involved in given operation.
-  account_id integer not null,
-  --- Operation sequence number specific to given account. 
-  account_op_seq_no integer not null,
-  --- Id of operation held in hive_opreations table.
-  operation_id bigint not null
-);
-CREATE INDEX IF NOT EXISTS hive_account_operations_account_op_seq_no_id_idx ON hive_account_operations(account_id, account_op_seq_no, operation_id);
-CREATE INDEX IF NOT EXISTS hive_account_operations_operation_id_idx ON hive_account_operations (operation_id);
-
-ALTER TABLE hive_account_operations ADD CONSTRAINT hive_account_operations_fk_1 FOREIGN KEY (account_id) REFERENCES hive_accounts (id);
-ALTER TABLE hive_account_operations ADD CONSTRAINT hive_account_operations_fk_2 FOREIGN KEY (operation_id) REFERENCES hive_operations (id);
 ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);
 ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_2 FOREIGN KEY (op_type_id) REFERENCES hive_operation_types (id);
 ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);
 ALTER TABLE hive_transactions_multisig ADD CONSTRAINT hive_transactions_multisig_fk_1 FOREIGN KEY (trx_hash) REFERENCES hive_transactions (trx_hash);
 
-DROP VIEW IF EXISTS account_operation_count_info_view CASCADE;
-CREATE OR REPLACE VIEW account_operation_count_info_view
-AS
-SELECT ha.id, ha.name, COALESCE( T.operation_count, 0 ) operation_count
-FROM hive_accounts ha
-LEFT JOIN
-(
-SELECT ao.account_id account_id, COUNT(ao.account_op_seq_no) operation_count
-FROM hive_account_operations ao
-GROUP BY ao.account_id
-)T ON ha.id = T.account_id
-;
 
 INSERT INTO hive_permlink_data VALUES(0, '');
-INSERT INTO hive_accounts VALUES(0, '');
 
 DROP TYPE IF EXISTS hive_api_operation CASCADE;
 CREATE TYPE hive_api_operation AS (
