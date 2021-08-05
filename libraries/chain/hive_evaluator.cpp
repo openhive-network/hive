@@ -1933,12 +1933,8 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     **/
     uint64_t vote_weight = 0;
     {
-      bool curation_reward_eligible = rshares > 0 && (comment_cashout->last_payout == fc::time_point_sec()) && comment_cashout->allow_curation_rewards;
-
-      if( curation_reward_eligible )
-      {
-        curation_reward_eligible = _db.get_curation_rewards_percent() > 0;
-      }
+      bool curation_reward_eligible = rshares > 0 && comment_cashout->allow_curation_rewards &&
+                                      ( _db.get_curation_rewards_percent() > 0 );
 
       if( curation_reward_eligible )
       {
