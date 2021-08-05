@@ -53,6 +53,14 @@
 
 #include <stdlib.h>
 
+#include <atomic>
+
+namespace
+{
+  std::atomic< int64_t > op_debug_context;
+  std::atomic< uint32_t > block_num_debug_context;
+}
+
 long next_hf_time()
 {
   // current "next hardfork" is HF25
@@ -1504,7 +1512,9 @@ std::pair< asset, asset > database::create_hbd( const account_object& to_account
       }
       else
       {
+        op_debug_context = -1;
         adjust_balance( to_account, hbd );
+        op_debug_context = -2;
         adjust_balance( to_account, asset( to_hive, HIVE_SYMBOL ) );
       }
 
@@ -1515,6 +1525,7 @@ std::pair< asset, asset > database::create_hbd( const account_object& to_account
     }
     else
     {
+        op_debug_context = -3;
       adjust_balance( to_account, hive );
       assets.second = hive;
     }
@@ -1580,7 +1591,10 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
       if( to_reward_balance )
         adjust_reward_balance( to_account, liquid, new_vesting );
       else
+      {
+        op_debug_context = -4;
         adjust_balance( to_account, new_vesting );
+      }
       // Update global vesting pool numbers.
       const auto& smt = get< smt_token_object, by_symbol >( liquid.symbol );
       modify( smt, [&]( smt_token_object& smt_object )
@@ -1627,6 +1641,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
         });
       }
 
+      op_debug_context = -5;
       adjust_balance( to_account, new_vesting );
     }
     // Update global vesting pool numbers.
@@ -1865,6 +1880,7 @@ void database::clear_null_account_balance()
 
   if( null_account.get_balance().amount > 0 )
   {
+        op_debug_context = -6;
     adjust_balance( null_account, -null_account.get_balance() );
   }
 
@@ -1875,6 +1891,7 @@ void database::clear_null_account_balance()
 
   if( null_account.get_hbd_balance().amount > 0 )
   {
+        op_debug_context = -7;
     adjust_balance( null_account, -null_account.get_hbd_balance() );
   }
 
@@ -1970,7 +1987,9 @@ void database::consolidate_treasury_balance()
 
   if( old_treasury_account.get_balance().amount > 0 )
   {
+        op_debug_context = -8;
     adjust_balance( treasury_account, old_treasury_account.get_balance() );
+        op_debug_context = -9;
     adjust_balance( old_treasury_account, -old_treasury_account.get_balance() );
   }
 
@@ -1982,7 +2001,9 @@ void database::consolidate_treasury_balance()
 
   if( old_treasury_account.get_hbd_balance().amount > 0 )
   {
+        op_debug_context = -10;
     adjust_balance( treasury_account, old_treasury_account.get_hbd_balance() );
+        op_debug_context = -11;
     adjust_balance( old_treasury_account, -old_treasury_account.get_hbd_balance() );
   }
 
@@ -1996,6 +2017,7 @@ void database::consolidate_treasury_balance()
   {
     //note that if we wanted to move vests in vested form it would complicate delayed_votes part;
     //not that treasury could gain anything from vests anyway, so it is better to liquify them
+        op_debug_context = -12;
     adjust_balance( treasury_account, vesting_shares_hive_value );
 
     const auto& gpo = get_dynamic_global_properties();
@@ -2028,6 +2050,7 @@ void database::consolidate_treasury_balance()
   if( old_treasury_account.get_vest_rewards().amount > 0 )
   {
     //see above handling of regular vests
+        op_debug_context = -13;
     adjust_balance( treasury_account, old_treasury_account.get_vest_rewards_as_hive() );
 
     const auto& gpo = get_dynamic_global_properties();
@@ -2116,10 +2139,14 @@ void database::restore_accounts( const std::set< std::string >& restored_account
       continue;
     }
 
+        op_debug_context = -14;
     adjust_balance( treasury_account, -found->second.hbd_balance );
+        op_debug_context = -15;
     adjust_balance( treasury_account, -found->second.balance );
 
+        op_debug_context = -16;
     adjust_balance( *account_ptr, found->second.hbd_balance );
+        op_debug_context = -17;
     adjust_balance( *account_ptr, found->second.balance );
 
     operation vop = hardfork_hive_restore_operation( name, treasury_name, found->second.hbd_balance, found->second.balance );
@@ -2245,6 +2272,7 @@ void database::clear_account( const account_object& account,
       }
     } );
 
+        op_debug_context = -18;
     adjust_balance( treasury_account, asset( converted_hive, HIVE_SYMBOL ) );
     modify( cprops, [&]( dynamic_global_property_object& o )
     {
@@ -2261,8 +2289,11 @@ void database::clear_account( const account_object& account,
     auto& escrow = *escrow_itr;
     ++escrow_itr;
 
+        op_debug_context = -19;
     adjust_balance( account, escrow.get_hive_balance() );
+        op_debug_context = -20;
     adjust_balance( account, escrow.get_hbd_balance() );
+        op_debug_context = -21;
     adjust_balance( account, escrow.get_fee() );
 
     modify( account, []( account_object& a )
@@ -2292,6 +2323,7 @@ void database::clear_account( const account_object& account,
     auto& request = *request_itr;
     ++request_itr;
 
+        op_debug_context = -22;
     adjust_balance( account, request.get_convert_amount() );
     remove( request );
   }
@@ -2312,6 +2344,7 @@ void database::clear_account( const account_object& account,
     auto& withdrawal = *withdraw_from_itr;
     ++withdraw_from_itr;
 
+        op_debug_context = -23;
     adjust_balance( account, withdrawal.amount );
     modify( account, []( account_object& a )
     {
@@ -2328,6 +2361,7 @@ void database::clear_account( const account_object& account,
     auto& withdrawal = *withdraw_to_itr;
     ++withdraw_to_itr;
 
+        op_debug_context = -24;
     adjust_balance( account, withdrawal.amount );
     modify( get_account( withdrawal.from ), []( account_object& a )
     {
@@ -2340,6 +2374,7 @@ void database::clear_account( const account_object& account,
   // Touch SDB balances (to be sure all interests are added to balances)
   if( has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
+        op_debug_context = -25;
     adjust_balance( account, asset( 0, HBD_SYMBOL ) );
     adjust_savings_balance( account, asset( 0, HBD_SYMBOL ) );
     adjust_reward_balance( account, asset( 0, HBD_SYMBOL ) );
@@ -2348,28 +2383,37 @@ void database::clear_account( const account_object& account,
   // Remove remaining savings balances
   total_transferred_hive += account.get_savings();
   total_transferred_hbd += account.get_hbd_savings();
+        op_debug_context = -26;
   adjust_balance( treasury_account, account.get_savings() );
   adjust_savings_balance( account, -account.get_savings() );
+        op_debug_context = -27;
   adjust_balance( treasury_account, account.get_hbd_savings() );
   adjust_savings_balance( account, -account.get_hbd_savings() );
 
   // Remove HBD and HIVE balances
   total_transferred_hive += account.get_balance();
   total_transferred_hbd += account.get_hbd_balance();
+        op_debug_context = -28;
   adjust_balance( treasury_account, account.get_balance() );
+        op_debug_context = -29;
   adjust_balance( account, -account.get_balance() );
+        op_debug_context = -30;
   adjust_balance( treasury_account, account.get_hbd_balance() );
+        op_debug_context = -31;
   adjust_balance( account, -account.get_hbd_balance() );
 
   // Transfer reward balances
   total_transferred_hive += account.get_rewards();
   total_transferred_hbd += account.get_hbd_rewards();
+        op_debug_context = -32;
   adjust_balance( treasury_account, account.get_rewards() );
   adjust_reward_balance( account, -account.get_rewards() );
+        op_debug_context = -33;
   adjust_balance( treasury_account, account.get_hbd_rewards() );
   adjust_reward_balance( account, -account.get_hbd_rewards() );
 
   // Convert and transfer vesting rewards
+        op_debug_context = -34;
   adjust_balance( treasury_account, account.get_vest_rewards_as_hive() );
   total_converted_vests += account.get_vest_rewards();
   total_hive_from_vests += account.get_vest_rewards_as_hive();
@@ -2452,7 +2496,9 @@ void database::process_recurrent_transfers()
     // If we have enough money, we proceed with the transfer
     if (available >= current_recurrent_transfer.amount)
     {
+        op_debug_context = -35;
       adjust_balance(from_account, -current_recurrent_transfer.amount);
+        op_debug_context = -36;
       adjust_balance(to_account, current_recurrent_transfer.amount);
 
       // No need to update the object if we know that we will remove it
@@ -2850,6 +2896,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           {
             benefactor_vesting_hive = 0;
             vop.hbd_payout = asset( benefactor_tokens, HIVE_SYMBOL ) * get_feed_history().current_median_history;
+        op_debug_context = -37;
             adjust_balance( get_treasury(), vop.hbd_payout );
             adjust_supply( asset( -benefactor_tokens, HIVE_SYMBOL ) );
             adjust_supply( vop.hbd_payout );
@@ -3177,6 +3224,7 @@ void database::process_funds()
     if( sps_fund.value )
     {
       new_hbd = asset( sps_fund, HIVE_SYMBOL ) * feed.current_median_history;
+        op_debug_context = -38;
       adjust_balance( get_treasury_name(), new_hbd );
     }
 
@@ -3233,6 +3281,7 @@ void database::process_savings_withdraws()
   while( itr != idx.end() ) {
     if( itr->complete > head_block_time() )
       break;
+        op_debug_context = -39;
     adjust_balance( get_account( itr->to ), itr->amount );
 
     modify( get_account( itr->from ), [&]( account_object& a )
@@ -3365,6 +3414,7 @@ void database::pay_liquidity_reward()
     if( itr != ridx.end() && itr->volume_weight() > 0 )
     {
       adjust_supply( reward, true );
+        op_debug_context = -40;
       adjust_balance( get(itr->owner), reward );
       modify( *itr, [&]( liquidity_reward_balance_object& obj )
       {
@@ -3439,6 +3489,7 @@ void database::process_conversions()
       auto amount_to_issue = itr->get_convert_amount() * fhistory.current_median_history;
       const auto& owner = get_account( itr->get_owner() );
 
+        op_debug_context = -41;
       adjust_balance( owner, amount_to_issue );
 
       net_hbd  -= itr->get_convert_amount();
@@ -3481,6 +3532,7 @@ void database::process_conversions()
       }
       else
       {
+        op_debug_context = -42;
         adjust_balance( owner, excess_collateral );
       }
 
@@ -3570,8 +3622,11 @@ void database::expire_escrow_ratification()
     const auto& old_escrow = *escrow_itr;
     ++escrow_itr;
 
+        op_debug_context = -43;
     adjust_balance( old_escrow.from, old_escrow.get_hive_balance() );
+        op_debug_context = -44;
     adjust_balance( old_escrow.from, old_escrow.get_hbd_balance() );
+        op_debug_context = -45;
     adjust_balance( old_escrow.from, old_escrow.get_fee() );
 
     modify( get_account( old_escrow.from ), []( account_object& a )
@@ -4002,6 +4057,8 @@ void database::set_flush_interval( uint32_t flush_blocks )
 void database::apply_block( const signed_block& next_block, uint32_t skip )
 { try {
   //fc::time_point begin_time = fc::time_point::now();
+
+  block_num_debug_context = next_block.block_num();
 
   detail::with_skip_flags( *this, skip, [&]()
   {
@@ -4532,6 +4589,8 @@ void database::_apply_transaction(const signed_transaction& trx)
 
 void database::apply_operation(const operation& op)
 {
+  op_debug_context = op.which();
+
   operation_notification note = create_operation_notification( op );
   notify_pre_apply_operation( note );
 
@@ -5296,6 +5355,7 @@ bool database::fill_order( const limit_order_object& order, const asset& pays, c
       order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
       ("order", order)("pays", pays)("receives", receives) );
 
+        op_debug_context = -46;
     adjust_balance( order.seller, receives );
 
     if( pays == order.amount_for_sale() )
@@ -5336,6 +5396,7 @@ FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
 
 void database::cancel_order( const limit_order_object& order )
 {
+        op_debug_context = -47;
   adjust_balance( order.seller, order.amount_for_sale() );
   remove(order);
 }
@@ -5526,6 +5587,12 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
 
 void database::adjust_balance( const account_object& a, const asset& delta )
 {
+  if( a.get_name() == "jonbit" )
+  {
+    std::cout << "jonbit adjust_balance in block [" << block_num_debug_context.load() << "] in op [" << op_debug_context.load()
+              << "]: \tBEFORE:balance(" << a.get_balance().amount.value / (1000.0)
+              << " HIVE), \thbd_balance(" << a.get_hbd_balance().amount.value / (1000.0) << " HBD) \t";
+  }
   if ( delta.amount < 0 )
   {
     asset available = get_balance( a, delta.symbol );
@@ -5561,6 +5628,11 @@ void database::adjust_balance( const account_object& a, const asset& delta )
 #endif
   {
     modify_balance( a, delta, check_balance );
+  }
+  if( a.get_name() == "jonbit" )
+  {
+    std::cout << "AFTER: \tbalance(" << a.get_balance().amount.value / (1000.0)
+              << " HIVE), \thbd_balance(" << a.get_hbd_balance().amount.value / (1000.0) << " HBD)" << std::endl;
   }
 }
 
