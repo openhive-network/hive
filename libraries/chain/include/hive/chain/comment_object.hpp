@@ -177,6 +177,23 @@ namespace hive { namespace chain {
     public:
       CHAINBASE_DEFAULT_CONSTRUCTOR( comment_vote_object )
 
+      template< typename Allocator >
+      comment_vote_object( allocator< Allocator > a, uint64_t _id,
+        const account_object& _voter, const comment_object& _comment,
+        const time_point_sec& _creation_time, int16_t _vote_percent, uint64_t _weight, int64_t _rshares )
+        : id( _id ), voter( _voter.get_id() ), comment( _comment.get_id() ), weight( _weight ),
+        rshares( _rshares ), vote_percent( _vote_percent ), last_update( _creation_time )
+      {}
+
+      void set( const time_point_sec& _edit_time, int16_t _vote_percent, uint64_t _weight, int64_t _rshares )
+      {
+        last_update = _edit_time;
+        vote_percent = _vote_percent;
+        weight = _weight;
+        rshares = _rshares;
+        ++num_changes;
+      }
+
       account_id_type get_voter() const { return voter; }
       comment_id_type get_comment() const { return comment; }
       uint64_t        get_weight() const { return weight; }
@@ -185,6 +202,7 @@ namespace hive { namespace chain {
       time_point_sec  get_last_update() const { return last_update; }
       int8_t          get_number_of_changes() const { return num_changes; }
 
+    private:
       account_id_type   voter;
       comment_id_type   comment;
       uint64_t          weight = 0; ///< defines the score this vote receives, used by vote payout calc. 0 if a negative vote or changed votes.
