@@ -56,7 +56,7 @@ void witness_update_evaluator::do_apply( const witness_update_operation& o )
   if ( _db.has_hardfork( HIVE_HARDFORK_0_14__410 ) )
   {
     FC_ASSERT( o.props.account_creation_fee.symbol.is_canon() );
-    if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) || _db.is_producing() )
+    if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) )
     {
       FC_TODO( "Move to validate() after HF20" );
       FC_ASSERT( o.props.account_creation_fee.amount <= HIVE_MAX_ACCOUNT_CREATION_FEE, "account_creation_fee greater than maximum account creation fee" );
@@ -70,7 +70,7 @@ void witness_update_evaluator::do_apply( const witness_update_operation& o )
   }
 
   FC_TODO( "Check and move this to validate after HF 20" );
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_20__2642 ))
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20__2642 ) )
   {
     FC_ASSERT( o.props.maximum_block_size <= HIVE_SOFT_MAX_BLOCK_SIZE, "Max block size cannot be more than 2MiB" );
   }
@@ -136,7 +136,7 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
   if( flags.account_creation_changed )
   {
     fc::raw::unpack_from_vector( itr->second, props.account_creation_fee );
-    if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) || _db.is_producing() )
+    if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) )
     {
       FC_TODO( "Move to validate() after HF20" );
       FC_ASSERT( props.account_creation_fee.amount <= HIVE_MAX_ACCOUNT_CREATION_FEE, "account_creation_fee greater than maximum account creation fee" );
@@ -285,7 +285,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 
   const witness_schedule_object& wso = _db.get_witness_schedule_object();
 
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) || _db.is_producing() )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) )
   {
     FC_TODO( "Move to validate() after HF20" );
     FC_ASSERT( o.fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ), "Account creation fee cannot be too large" );
@@ -311,7 +311,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   }
 
   FC_TODO( "Check and move to validate post HF20" );
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
     validate_auth_size( o.owner );
     validate_auth_size( o.active );
@@ -369,7 +369,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 {
   FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_20__1760 ), "Account creation with delegation is deprecated as of Hardfork 20" );
 
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) || _db.is_producing() )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) )
   {
     FC_TODO( "Move to validate() after HF20" );
     FC_ASSERT( o.fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ), "Account creation fee cannot be too large" );
@@ -403,7 +403,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
           ("p", o.fee) );
 
   FC_TODO( "Check and move to validate post HF20" );
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
     validate_auth_size( o.owner );
     validate_auth_size( o.active );
@@ -491,7 +491,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
   const auto& account = _db.get_account( o.account );
   const auto& account_auth = _db.get< account_authority_object, by_account >( o.account );
 
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
     if( o.owner )
       validate_auth_size( *o.owner );
@@ -878,7 +878,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
     const auto& comment = *itr;
     const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
 
-    if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_21__3313 ) )
+    if( _db.has_hardfork( HIVE_HARDFORK_0_21__3313 ) )
     {
       FC_ASSERT( _now - auth.last_post_edit >= HIVE_MIN_COMMENT_EDIT_INTERVAL, "Can only perform one comment edit per block." );
     }
@@ -1129,8 +1129,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   const auto& from_account = _db.get_account(o.from);
   const auto& to_account = o.to.size() ? _db.get_account(o.to) : from_account;
 
-  FC_TODO( "Remove is producing after HF 21" );
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
     FC_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ),
       "Can only transfer HBD to ${s}", ("s", o.to ) );
@@ -1250,8 +1249,7 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
   const auto& wd_idx = _db.get_index< withdraw_vesting_route_index >().indices().get< by_withdraw_route >();
   auto itr = wd_idx.find( boost::make_tuple( from_account.name, to_account.name ) );
 
-  FC_TODO( "Remove is producing after HF 21" );
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
     FC_ASSERT( !_db.is_treasury( o.to_account ), "Cannot withdraw vesting to ${s}", ("s", o.to_account ) );
   }
@@ -1439,10 +1437,12 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     return; // comment already paid
   }
 
+  auto _now = _db.head_block_time();
+
   const auto& comment_vote_idx = _db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
   auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
 
-  int64_t elapsed_seconds = _db.head_block_time().sec_since_epoch() - voter.voting_manabar.last_update_time;
+  int64_t elapsed_seconds = _now.sec_since_epoch() - voter.voting_manabar.last_update_time;
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
     FC_ASSERT( elapsed_seconds >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
@@ -1495,17 +1495,18 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     if( rshares > 0 )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_17__900 ) )
-        FC_ASSERT( _db.head_block_time() < comment_cashout->cashout_time - HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
+        FC_ASSERT( _now < comment_cashout->cashout_time - HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
       else if( _db.has_hardfork( HIVE_HARDFORK_0_7 ) )
-        FC_ASSERT( _db.head_block_time() < _db.calculate_discussion_payout_time( *comment_cashout ) - HIVE_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
+        FC_ASSERT( _now < _db.calculate_discussion_payout_time( *comment_cashout ) - HIVE_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
     }
 
     //used_power /= (50*7); /// a 100% vote means use .28% of voting power which should force users to spread their votes around over 50+ posts day for a week
     //if( used_power == 0 ) used_power = 1;
 
-    _db.modify( voter, [&]( account_object& a ){
+    _db.modify( voter, [&]( account_object& a )
+    {
       a.voting_manabar.current_mana = current_power - used_power;
-      a.last_vote_time = _db.head_block_time();
+      a.last_vote_time = _now;
       a.voting_manabar.last_update_time = a.last_vote_time.sec_since_epoch();
     });
 
@@ -1523,9 +1524,9 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       fc::uint128_t new_cashout_time_sec;
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && !_db.has_hardfork( HIVE_HARDFORK_0_13__257)  )
-        new_cashout_time_sec = _db.head_block_time().sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
+        new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
       else
-        new_cashout_time_sec = _db.head_block_time().sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
+        new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
 
       avg_cashout_sec = ( cur_cashout_time_sec * old_root_abs_rshares + new_cashout_time_sec * abs_rshares ) / ( old_root_abs_rshares + abs_rshares );
     }
@@ -1560,7 +1561,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
             c.cashout_time = fc::time_point_sec( std::min( uint32_t( avg_cashout_sec.to_uint64() ), c.max_cashout_time.sec_since_epoch() ) );
 
           if( c.max_cashout_time == fc::time_point_sec::maximum() )
-            c.max_cashout_time = _db.head_block_time() + fc::seconds( HIVE_MAX_CASHOUT_WINDOW_SECONDS );
+            c.max_cashout_time = _now + fc::seconds( HIVE_MAX_CASHOUT_WINDOW_SECONDS );
         }
       });
     }
@@ -1597,7 +1598,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       cv.comment = comment.get_id();
       cv.rshares = rshares;
       cv.vote_percent = o.weight;
-      cv.last_update = _db.head_block_time();
+      cv.last_update = _now;
 
       bool curation_reward_eligible = rshares > 0 && (comment_cashout->last_payout == fc::time_point_sec()) && comment_cashout->allow_curation_rewards;
 
@@ -1648,7 +1649,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
         max_vote_weight = cv.weight;
 
-        if( _db.head_block_time() > fc::time_point_sec(HIVE_HARDFORK_0_6_REVERSE_AUCTION_TIME) )  /// start enforcing this prior to the hardfork
+        if( _now > fc::time_point_sec(HIVE_HARDFORK_0_6_REVERSE_AUCTION_TIME) )  /// start enforcing this prior to the hardfork
         {
           /// discount weight by time
           uint128_t w(max_vote_weight);
@@ -1696,14 +1697,14 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     if( itr->rshares < rshares )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_17__900 ) )
-        FC_ASSERT( _db.head_block_time() < comment_cashout->cashout_time - HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
+        FC_ASSERT( _now < comment_cashout->cashout_time - HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
       else if( _db.has_hardfork( HIVE_HARDFORK_0_7 ) )
-        FC_ASSERT( _db.head_block_time() < _db.calculate_discussion_payout_time( *comment_cashout ) - HIVE_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
+        FC_ASSERT( _now < _db.calculate_discussion_payout_time( *comment_cashout ) - HIVE_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
     }
 
     _db.modify( voter, [&]( account_object& a ){
       a.voting_manabar.current_mana = current_power - used_power;
-      a.last_vote_time = _db.head_block_time();
+      a.last_vote_time = _now;
       a.voting_manabar.last_update_time = a.last_vote_time.sec_since_epoch();
     });
 
@@ -1721,9 +1722,9 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       fc::uint128_t new_cashout_time_sec;
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && ! _db.has_hardfork( HIVE_HARDFORK_0_13__257 )  )
-        new_cashout_time_sec = _db.head_block_time().sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
+        new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
       else
-        new_cashout_time_sec = _db.head_block_time().sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
+        new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 )
         avg_cashout_sec = cur_cashout_time_sec;
@@ -1766,7 +1767,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
             c.cashout_time = fc::time_point_sec( std::min( uint32_t( avg_cashout_sec.to_uint64() ), c.max_cashout_time.sec_since_epoch() ) );
 
           if( c.max_cashout_time == fc::time_point_sec::maximum() )
-            c.max_cashout_time = _db.head_block_time() + fc::seconds( HIVE_MAX_CASHOUT_WINDOW_SECONDS );
+            c.max_cashout_time = _now + fc::seconds( HIVE_MAX_CASHOUT_WINDOW_SECONDS );
         }
       });
     }
@@ -1790,7 +1791,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       cv.rshares = rshares;
       vop.rshares = rshares;
       cv.vote_percent = o.weight;
-      cv.last_update = _db.head_block_time();
+      cv.last_update = _now;
       cv.weight = 0;
       vop.weight = 0;
       cv.num_changes += 1;
@@ -1817,29 +1818,24 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   {
     if( o.weight > 0 ) FC_ASSERT( comment_cashout->allow_votes, "Votes are not allowed on the comment." );
   }
-  else
-  {
-    /// Remove this assertion after HF25
-    FC_ASSERT((!_db.has_hardfork( HIVE_HARDFORK_1_24 ) || _db.has_hardfork( HIVE_HARDFORK_1_25 )), "Votes evaluating for comment that is paid out is forbidden." );
-  }
 
   if( !comment_cashout || _db.calculate_discussion_payout_time( *comment_cashout ) == fc::time_point_sec::maximum() )
   {
     return;
   }
 
-  FC_ASSERT( _db.head_block_time() < comment_cashout->cashout_time, "Comment is actively being rewarded. Cannot vote on comment." );
+  auto _now = _db.head_block_time();
+  FC_ASSERT( _now < comment_cashout->cashout_time, "Comment is actively being rewarded. Cannot vote on comment." );
 
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
   auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
 
-  auto now = _db.head_block_time();
-  FC_ASSERT( ( now - voter.last_vote_time ).to_seconds() >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
+  FC_ASSERT( ( _now - voter.last_vote_time ).to_seconds() >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
 
   _db.modify( voter, [&]( account_object& a )
   {
-    util::update_manabar( _db.get_dynamic_global_properties(), a, _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ), _db.head_block_num() > HIVE_HF_21_STALL_BLOCK );
+    util::update_manabar( dgpo, a, _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ), _db.head_block_num() > HIVE_HF_21_STALL_BLOCK );
   });
 
   if ( _db.has_hardfork( HIVE_HARDFORK_0_21__3004 ) )
@@ -1896,7 +1892,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   abs_rshares -= HIVE_VOTE_DUST_THRESHOLD;
   abs_rshares = std::max( int64_t(0), abs_rshares );
 
-  uint32_t cashout_delta = ( comment_cashout->cashout_time - _db.head_block_time() ).to_seconds();
+  uint32_t cashout_delta = ( comment_cashout->cashout_time - _now ).to_seconds();
 
   if( cashout_delta < HIVE_UPVOTE_LOCKOUT_SECONDS )
   {
@@ -1936,7 +1932,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         a.voting_manabar.use_mana( used_mana.to_int64() );
       }
 
-      a.last_vote_time = _db.head_block_time();
+      a.last_vote_time = _now;
     });
 
     /// if the current net_rshares is less than 0, the post is getting 0 rewards so it is not factored into total rshares^2
@@ -1998,7 +1994,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
       cv.comment = comment.get_id();
       cv.rshares = rshares;
       cv.vote_percent = o.weight;
-      cv.last_update = _db.head_block_time();
+      cv.last_update = _now;
 
       bool curation_reward_eligible = rshares > 0 && (comment_cashout->last_payout == fc::time_point_sec()) && comment_cashout->allow_curation_rewards;
 
@@ -2112,7 +2108,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         a.voting_manabar.use_mana( used_mana.to_int64() );
       }
 
-      a.last_vote_time = _db.head_block_time();
+      a.last_vote_time = _now;
     });
 
     /// if the current net_rshares is less than 0, the post is getting 0 rewards so it is not factored into total rshares^2
@@ -2166,7 +2162,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     {
       cv.rshares = rshares;
       cv.vote_percent = o.weight;
-      cv.last_update = _db.head_block_time();
+      cv.last_update = _now;
       cv.weight = 0;
       cv.num_changes += 1;
     });
@@ -2193,12 +2189,14 @@ void vote_evaluator::do_apply( const vote_operation& o )
 
 void custom_evaluator::do_apply( const custom_operation& o )
 {
-  database& d = db();
-  if( d.is_producing() )
+  FC_TODO( "Check when this soft-fork was added and change to appropriate hardfork" );
+  if( _db.is_producing() )
+  {
     FC_ASSERT( o.data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH,
       "Operation data must be less than ${bytes} bytes.", ("bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH) );
+  }
 
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
     FC_ASSERT( o.required_auths.size() <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
       "Authority membership exceeded. Max: ${max} Current: ${n}", ("max", HIVE_MAX_AUTHORITY_MEMBERSHIP)("n", o.required_auths.size()) );
@@ -2207,20 +2205,21 @@ void custom_evaluator::do_apply( const custom_operation& o )
 
 void custom_json_evaluator::do_apply( const custom_json_operation& o )
 {
-  database& d = db();
-
-  if( d.is_producing() )
+  FC_TODO( "Check when this soft-fork was added and change to appropriate hardfork" );
+  if( _db.is_producing() )
+  {
     FC_ASSERT( o.json.length() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH,
       "Operation JSON must be less than ${bytes} bytes.", ("bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH) );
+  }
 
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
     size_t num_auths = o.required_auths.size() + o.required_posting_auths.size();
     FC_ASSERT( num_auths <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
       "Authority membership exceeded. Max: ${max} Current: ${n}", ("max", HIVE_MAX_AUTHORITY_MEMBERSHIP)("n", num_auths) );
   }
 
-  std::shared_ptr< custom_operation_interpreter > eval = d.get_custom_json_evaluator( o.id );
+  std::shared_ptr< custom_operation_interpreter > eval = _db.get_custom_json_evaluator( o.id );
   if( !eval )
     return;
 
@@ -2230,7 +2229,7 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
   }
   catch( const fc::exception& e )
   {
-    if( d.is_producing() )
+    if( _db.is_producing() )
       throw e;
   }
   catch(...)
@@ -2242,16 +2241,16 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
 
 void custom_binary_evaluator::do_apply( const custom_binary_operation& o )
 {
-  database& d = db();
-  if( d.is_producing() )
+  FC_TODO( "Check when this soft-fork was added and change to appropriate hardfork" );
+  if( _db.is_producing() )
   {
+    FC_ASSERT( false, "custom_binary_operation is deprecated" );
     FC_ASSERT( o.data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH,
       "Operation data must be less than ${bytes} bytes.", ("bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH) );
-    FC_ASSERT( false, "custom_binary_operation is deprecated" );
   }
-  FC_ASSERT( d.has_hardfork( HIVE_HARDFORK_0_14__317 ) );
+  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_14__317 ) );
 
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
     size_t num_auths = o.required_owner_auths.size() + o.required_active_auths.size() + o.required_posting_auths.size();
     for( const auto& auth : o.required_auths )
@@ -2263,7 +2262,7 @@ void custom_binary_evaluator::do_apply( const custom_binary_operation& o )
       "Authority membership exceeded. Max: ${max} Current: ${n}", ("max", HIVE_MAX_AUTHORITY_MEMBERSHIP)("n", num_auths) );
   }
 
-  std::shared_ptr< custom_operation_interpreter > eval = d.get_custom_json_evaluator( o.id );
+  std::shared_ptr< custom_operation_interpreter > eval = _db.get_custom_json_evaluator( o.id );
   if( !eval )
     return;
 
@@ -2273,7 +2272,7 @@ void custom_binary_evaluator::do_apply( const custom_binary_operation& o )
   }
   catch( const fc::exception& e )
   {
-    if( d.is_producing() )
+    if( _db.is_producing() )
       throw e;
   }
   catch(...)
@@ -2834,8 +2833,7 @@ void transfer_to_savings_evaluator::do_apply( const transfer_to_savings_operatio
   const auto& from = _db.get_account( op.from );
   const auto& to   = _db.get_account(op.to);
 
-  FC_TODO( "Remove is producing after HF 21" );
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
     FC_ASSERT( !_db.is_treasury( op.to ), "Cannot transfer savings to ${s}", ("s", op.to ) );
   }
@@ -2851,8 +2849,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
 
   FC_ASSERT( from.savings_withdraw_requests < HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT, "Account has reached limit for pending withdraw requests." );
 
-  FC_TODO( "Remove is producing after HF 21" );
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
     FC_ASSERT( op.amount.symbol == HBD_SYMBOL || !_db.is_treasury( op.to ), "Can only transfer HBD to ${s}", ("s", op.to ) );
   }
