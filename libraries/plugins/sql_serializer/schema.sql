@@ -37,13 +37,6 @@ CREATE TABLE IF NOT EXISTS hive_operation_types (
   CONSTRAINT hive_operation_types_uniq UNIQUE (name)
 );
 
-CREATE TABLE IF NOT EXISTS hive_permlink_data (
-  id INTEGER NOT NULL,
-  permlink varchar(255) NOT NULL
-);
-ALTER TABLE hive_permlink_data ADD CONSTRAINT hive_permlink_data_pkey PRIMARY KEY ( id );
-ALTER TABLE hive_permlink_data ADD CONSTRAINT hive_permlink_data_uniq UNIQUE ( permlink );
-
 CREATE TABLE IF NOT EXISTS hive_operations (
   id bigint not null,
   block_num integer NOT NULL,
@@ -61,8 +54,6 @@ ALTER TABLE hive_operations ADD CONSTRAINT hive_operations_fk_2 FOREIGN KEY (op_
 ALTER TABLE hive_transactions ADD CONSTRAINT hive_transactions_fk_1 FOREIGN KEY (block_num) REFERENCES hive_blocks (num);
 ALTER TABLE hive_transactions_multisig ADD CONSTRAINT hive_transactions_multisig_fk_1 FOREIGN KEY (trx_hash) REFERENCES hive_transactions (trx_hash);
 
-
-INSERT INTO hive_permlink_data VALUES(0, '');
 
 DROP TYPE IF EXISTS hive_api_operation CASCADE;
 CREATE TYPE hive_api_operation AS (
