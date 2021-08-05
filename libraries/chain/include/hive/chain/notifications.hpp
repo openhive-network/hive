@@ -35,10 +35,10 @@ struct operation_notification
   operation_notification( const hive::protocol::operation& o ) : op(o) {}
 
   transaction_id_type trx_id;
-  int64_t            block = 0;
-  int64_t            trx_in_block = 0;
-  int64_t            op_in_trx = 0;
-  int64_t            virtual_op = 0;
+  int64_t             block = 0;
+  int64_t             trx_in_block = 0;
+  int64_t             op_in_trx = 0;
+  int64_t             virtual_op = 0;
   const hive::protocol::operation&    op;
 };
 
