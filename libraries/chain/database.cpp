@@ -2906,15 +2906,10 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         pre_push_virtual_operation( vop );
         post_push_virtual_operation( vop );
 
-          modify( comment_cashout, [&]( comment_cashout_object& c )
-          {
-            c.author_rewards += author_tokens;
-          });
-
-          modify( author, [&]( account_object& a )
-          {
-            a.posting_rewards += author_tokens;
-          });
+        modify( author, [&]( account_object& a )
+        {
+          a.posting_rewards += author_tokens;
+        });
       }
 
       notify_comment_reward( { reward, author_tokens, curation_tokens } );
