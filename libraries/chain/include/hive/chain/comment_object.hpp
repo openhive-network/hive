@@ -180,6 +180,14 @@ namespace hive { namespace chain {
     public:
       CHAINBASE_DEFAULT_CONSTRUCTOR( comment_vote_object )
 
+      account_id_type get_voter() const { return voter; }
+      comment_id_type get_comment() const { return comment; }
+      uint64_t        get_weight() const { return weight; }
+      int64_t         get_rshares() const { return rshares; }
+      int16_t         get_vote_percent() const { return vote_percent; }
+      time_point_sec  get_last_update() const { return last_update; }
+      int8_t          get_number_of_changes() const { return num_changes; }
+
       account_id_type   voter;
       comment_id_type   comment;
       uint64_t          weight = 0; ///< defines the score this vote receives, used by vote payout calc. 0 if a negative vote or changed votes.
@@ -200,14 +208,14 @@ namespace hive { namespace chain {
         const_mem_fun< comment_vote_object, comment_vote_object::id_type, &comment_vote_object::get_id > >,
       ordered_unique< tag< by_comment_voter >,
         composite_key< comment_vote_object,
-          member< comment_vote_object, comment_id_type, &comment_vote_object::comment>,
-          member< comment_vote_object, account_id_type, &comment_vote_object::voter>
+          const_mem_fun< comment_vote_object, comment_id_type, &comment_vote_object::get_comment>,
+          const_mem_fun< comment_vote_object, account_id_type, &comment_vote_object::get_voter>
         >
       >,
       ordered_unique< tag< by_voter_comment >,
         composite_key< comment_vote_object,
-          member< comment_vote_object, account_id_type, &comment_vote_object::voter>,
-          member< comment_vote_object, comment_id_type, &comment_vote_object::comment>
+          const_mem_fun< comment_vote_object, account_id_type, &comment_vote_object::get_voter>,
+          const_mem_fun< comment_vote_object, comment_id_type, &comment_vote_object::get_comment>
         >
       >
     >,

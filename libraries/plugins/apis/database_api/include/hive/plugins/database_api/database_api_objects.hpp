@@ -453,14 +453,14 @@ struct api_comment_vote_object
 {
   api_comment_vote_object( const comment_vote_object& cv, const database& db ) :
     id( cv.get_id() ),
-    weight( cv.weight ),
-    rshares( cv.rshares),
-    vote_percent( cv.vote_percent ),
-    last_update( cv.last_update ),
-    num_changes( cv.num_changes )
+    weight( cv.get_weight() ),
+    rshares( cv.get_rshares() ),
+    vote_percent( cv.get_vote_percent() ),
+    last_update( cv.get_last_update() ),
+    num_changes( cv.get_number_of_changes() )
   {
-    voter = db.get( cv.voter ).name;
-    const comment_cashout_object* cc = db.find_comment_cashout( cv.comment );
+    voter = db.get( cv.get_voter() ).name;
+    const comment_cashout_object* cc = db.find_comment_cashout( cv.get_comment() );
     assert( cc != nullptr ); //votes should not exist after cashout
     author = db.get_account( cc->author_id ).name;
     permlink = to_string( cc->permlink );
