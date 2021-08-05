@@ -36,7 +36,7 @@ public:
   typedef std::pair<size_t, bool> data_processing_status;
   typedef std::function<data_processing_status(const data_chunk_ptr& dataPtr, transaction& openedTx)> data_processing_fn;
 
-  data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor);
+  data_processor(const std::string& psqlUrl, const std::string& description, const data_processing_fn& dataProcessor);
   ~data_processor();
 
   data_processor(data_processor&&) = delete;

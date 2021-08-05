@@ -15,7 +15,7 @@ IF (PostgreSQL_FOUND)
                ${HEADERS}
               )
 ELSE()
-  MESSAGE (WARNING "No PostgreSQL installation found. sql_serializer plugin functionality WILL BE UNAVAILABLE.")
+  MESSAGE (WARNING "No PostgreSQL installation found. sql_serializer plugin functionality WILL BE UNAVAILABLE. Check installation of ubuntu package: postgresql-server-dev-all")
   ADD_LIBRARY( sql_serializer_plugin
                fake_sql_serializer.cpp
                ${HEADERS}

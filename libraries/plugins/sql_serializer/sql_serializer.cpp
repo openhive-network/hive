@@ -28,7 +28,6 @@
 namespace hive
 {
 using chain::block_notification;
-using chain::transaction_notification;
 using chain::operation_notification;
 using chain::reindex_notification;
 
@@ -142,8 +141,6 @@ using chain::reindex_notification;
       using namespace hive::plugins::sql_serializer::PSQL;
 
       constexpr size_t default_reservation_size{ 16'000u };
-      constexpr size_t max_tuples_count{ 1'000 };
-      constexpr size_t max_data_length{ 16*1024*1024 }; 
 
       namespace detail
       {
@@ -225,8 +222,6 @@ using chain::reindex_notification;
             if(wait_for_data_completion)
               _processor->complete_data_processing();
           }
-
-          FC_ASSERT(data.empty());
         }
 
         void register_transaction_controler(transaction_controller_ptr tx_controller)
@@ -621,7 +616,7 @@ using chain::reindex_notification;
         }
 
       private:
-        template<int64_t N, typename T, typename... Ts>
+        template<int64_t N, typename... Ts>
         friend struct fc::impl::storage_ops;
 
         template< typename T >
@@ -704,19 +699,6 @@ using chain::reindex_notification;
 
           transaction_repr_t() = default;
           transaction_repr_t(pqxx::connection* _conn, pqxx::work* _trx) : _connection{_conn}, _transaction{_trx} {}
-
-          auto get_escaping_charachter_methode() const
-          {
-            return [this](const char *val) -> fc::string { return std::move( this->_connection->esc(val) ); };
-          }
-
-          auto get_raw_escaping_charachter_methode() const
-          {
-            return [this](const char *val, const size_t s) -> fc::string { 
-              pqxx::binarystring __tmp(val, s); 
-              return std::move( this->_transaction->esc_raw( __tmp.str() ) ); 
-            };
-          }
         };
         using transaction_t = std::unique_ptr<transaction_repr_t>;
 
@@ -911,7 +893,7 @@ using chain::reindex_notification;
 
             for( const auto& table_name : table_names )
             {
-              std::string query = std::string("SELECT ") + function_name + "( '" + table_name + "' );";
+              std::string query = std::string("SELECT ").append(function_name).append("( '").append(table_name).append("' );");
               std::string description = "Query processor: `" + query + "'";
               processors.emplace_back( db_url, description, [query, &table_name , &objects_name, mode](const data_chunk_ptr&, transaction& tx) -> data_processing_status
                             {
@@ -1031,7 +1013,6 @@ using chain::reindex_notification;
             data_processor block_loader(db_url, "Block loader",
               [this](const data_chunk_ptr&, transaction& tx) -> data_processing_status
               {
-                data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT hb.num AS _max_block FROM hive_blocks hb ORDER BY hb.num DESC LIMIT 1;");
                 if( !data.empty() )
                 {
@@ -1048,7 +1029,6 @@ using chain::reindex_notification;
             data_processor sequence_loader(db_url, "Sequence loader",
               [this](const data_chunk_ptr&, transaction& tx) -> data_processing_status
               {
-                data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT ho.id AS _max FROM hive_operations ho ORDER BY ho.id DESC LIMIT 1;");
                 if( !data.empty() )
                 {
