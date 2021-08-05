@@ -129,9 +129,9 @@ In above example operations `create_account` and `transfer` are sent in single t
 Implementation is very flexible and allows for using python control statements (ifs, loops), functions which sends wallet api calls and so on. See example below showing for-loop use case during transaction preparation.
 ```python
 accounts_and_balances = {
-    'first': '100.000 TESTS',
-    'second': '200.000 TESTS',
-    'third': '300.000 TESTS',
+    'first': Asset.Test(100),
+    'second': Asset.Test(200),
+    'third': Asset.Test(300),
 }
 
 with wallet.in_single_transaction():
