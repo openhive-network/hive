@@ -93,6 +93,9 @@ because type of `node.config.enable_stale_production` is `bool` and type of `nod
 ### Select which executables should library use
 You can select them in python script, via command line arguments, environment variables or by executables installation ([read more](documentation/paths_to_executables.md)).
 
+### Configure which files should be removed after test
+During tests nodes generates a lot of files. In most cases some of these files are unneeded and are automatically removed by library. You can configure this behavior for your needs ([read more](documentation/clean_up_policies.md)).
+
 ### Generate public and private keys
 Some tests requires multiple accounts creation. To perform operations on them keys are required. TestTools provides support for key generation with `Account` class. You only need to provide account name. Generated account contains member variables `private_key` and `public_key`, which can be used in tests. Optionally you can specify `secret` parameter, which affects generated keys.
 ```python
