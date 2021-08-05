@@ -43,28 +43,14 @@ using chain::reindex_notification;
       return op.visit(v);
     }
 
-    
-    struct account_info
-    {
-      account_info(int id, unsigned int operation_count) : _id(id), _operation_count(operation_count) {}
-
-      /// Account id
-      int _id; 
-      unsigned int _operation_count;
-    };
-
-    typedef std::map<std::string, account_info> account_cache_t;
-
     typedef std::map<std::string, int> permlink_cache_t;
 
-    typedef std::vector<PSQL::processing_objects::account_data_t> account_data_container_t;
     typedef std::vector<PSQL::processing_objects::permlink_data_t> permlink_data_container_t;
 
     typedef std::vector<PSQL::processing_objects::process_block_t> block_data_container_t;
     typedef std::vector<PSQL::processing_objects::process_transaction_t> transaction_data_container_t;
     typedef std::vector<PSQL::processing_objects::process_transaction_multisig_t> transaction_multisig_data_container_t;
     typedef std::vector<PSQL::processing_objects::process_operation_t> operation_data_container_t;
-    typedef std::vector<PSQL::processing_objects::account_operation_data_t> account_operation_data_container_t;
 
 
       using num_t = std::atomic<uint64_t>;
@@ -132,7 +118,7 @@ using chain::reindex_notification;
         return os
           << "threads created since last info: " << obj.all_created_workers << std::endl
           << "currently working threads: " << obj.workers_count << std::endl
-          << "sending accounts and permlinks took: " << obj.sending_cache_time.load().count() << " us"<< std::endl
+          << "sending permlinks took: " << obj.sending_cache_time.load().count() << " us"<< std::endl
           __shortcut(blocks)
           __shortcut(transactions)
           __shortcut(operations)
@@ -153,44 +139,35 @@ using chain::reindex_notification;
 
       struct cached_data_t
       {
-        account_cache_t _account_cache;
-        int             _next_account_id;
-
         permlink_cache_t _permlink_cache;
         int             _next_permlink_id;
 
-        account_data_container_t accounts;
         permlink_data_container_t permlinks;
 
         block_data_container_t blocks;
         transaction_data_container_t transactions;
         transaction_multisig_data_container_t transactions_multisig;
         operation_data_container_t operations;
-        account_operation_data_container_t account_operations;
 
         size_t total_size;
 
-        explicit cached_data_t(const size_t reservation_size) : _next_account_id{ 0 }, _next_permlink_id{ 0 }, total_size{ 0ul }
+        explicit cached_data_t(const size_t reservation_size) : _next_permlink_id{ 0 }, total_size{ 0ul }
         {
-          accounts.reserve(reservation_size);
           permlinks.reserve(reservation_size);
           blocks.reserve(reservation_size);
           transactions.reserve(reservation_size);
           transactions_multisig.reserve(reservation_size);
           operations.reserve(reservation_size);
-          account_operations.reserve(reservation_size);
         }
 
         ~cached_data_t()
         {
           ilog(
-          "accounts: ${a} permlinks: ${p} blocks: ${b} trx: ${t} operations: ${o} account_operation_data: ${aod} total size: ${ts}...",
-          ("a", accounts.size() )
+          "permlinks: ${p} blocks: ${b} trx: ${t} operations: ${o} total size: ${ts}...",
           ("p", permlinks.size() )
           ("b", blocks.size() )
           ("t", transactions.size() )
           ("o", operations.size() )
-          ("aod", account_operations.size() )
           ("ts", total_size )
           );
         }
@@ -404,27 +381,6 @@ using chain::reindex_notification;
               }
           };
 
-      struct hive_accounts
-      {
-        typedef account_data_container_t container_t;
-
-        static const char TABLE[];
-        static const char COLS[];
-
-        struct data2sql_tuple : public data2_sql_tuple_base
-        {
-          using data2_sql_tuple_base::data2_sql_tuple_base;
-
-          std::string operator()(typename container_t::const_reference data)
-          {
-            return std::to_string(data.id) + ',' + escape(data.name);
-          }
-        };
-      };
-
-      const char hive_accounts::TABLE[] = "hive_accounts";
-      const char hive_accounts::COLS[] = "id, name";
-
       struct hive_permlink_data
       {
         typedef permlink_data_container_t container_t;
@@ -559,53 +515,25 @@ using chain::reindex_notification;
       const char hive_operations::TABLE[] = "hive_operations";
       const char hive_operations::COLS[] = "id, block_num, trx_in_block, op_pos, op_type_id, body"; //, permlink_ids";
 
-      struct hive_account_operations
-      {
-        typedef account_operation_data_container_t container_t;
-
-        static const char TABLE[];
-        static const char COLS[];
-
-        struct data2sql_tuple : public data2_sql_tuple_base
-        {
-          using data2_sql_tuple_base::data2_sql_tuple_base;
-
-          std::string operator()(typename container_t::const_reference data) const
-          {
-            return std::to_string(data.operation_id) + ',' + std::to_string(data.account_id) + ',' +
-              std::to_string(data.operation_seq_no);
-          }
-        };
-      };
-
-      const char hive_account_operations::TABLE[] = "hive_account_operations";
-      const char hive_account_operations::COLS[] = "operation_id, account_id, account_op_seq_no";
-
-      using account_data_container_t_writer = table_data_writer<hive_accounts>;
       using permlink_data_container_t_writer = table_data_writer<hive_permlink_data>;
       using block_data_container_t_writer = table_data_writer<hive_blocks>;
       using transaction_data_container_t_writer = table_data_writer<hive_transactions>;
       using transaction_multisig_data_container_t_writer = table_data_writer<hive_transactions_multisig>;
       using operation_data_container_t_writer = table_data_writer<hive_operations>;
-      using account_operation_data_container_t_writer = table_data_writer<hive_account_operations>;
 
       /**
-       * @brief Collects new identifiers (accounts or permlinks) defined by given operation.
+       * @brief Collects new identifiers (permlinks) defined by given operation.
        * 
       */
       struct new_ids_collector
       {
         typedef void result_type;
 
-        new_ids_collector(account_cache_t* known_accounts, int* next_account_id,
+        new_ids_collector(
           permlink_cache_t* permlink_cache, int* next_permlink_id,
-          account_data_container_t* newAccounts,
           permlink_data_container_t* newPermlinks) :
-          _known_accounts(known_accounts),
           _known_permlinks(permlink_cache),
-          _next_account_id(*next_account_id),
           _next_permlink_id(*next_permlink_id),
-          _new_accounts(newAccounts),
           _new_permlinks(newPermlinks),
           _processed_operation(nullptr)
         {
@@ -627,40 +555,6 @@ using chain::reindex_notification;
         template< typename T >
         void operator()(const T& v) { }
 
-        void operator()(const hive::protocol::account_create_operation& op)
-        {
-          on_new_account(op.new_account_name);
-        }
-
-        void operator()(const hive::protocol::account_create_with_delegation_operation& op)
-        {
-          on_new_account(op.new_account_name);
-        }
-
-        void operator()(const hive::protocol::pow_operation& op)
-        {
-          if(_known_accounts->find(op.get_worker_account()) == _known_accounts->end())
-            on_new_account(op.get_worker_account());
-        }
-        
-        void operator()(const hive::protocol::pow2_operation& op)
-        {
-          flat_set<hive::protocol::account_name_type> newAccounts;
-          hive::protocol::operation packed_op(op);
-          hive::app::operation_get_impacted_accounts(packed_op, newAccounts);
-
-          for(const auto& account_id : newAccounts)
-          {
-            if(_known_accounts->find(account_id) == _known_accounts->end())
-              on_new_account(account_id);
-          }
-        }
-
-        void operator()(const hive::protocol::create_claimed_account_operation& op)
-        {
-          on_new_account(op.new_account_name);
-        }
-
         void operator()(const hive::protocol::comment_operation& op)
         {
           auto ii = _known_permlinks->emplace(op.permlink, _next_permlink_id + 1);
@@ -673,23 +567,10 @@ using chain::reindex_notification;
         }
 
       private:
-        void on_new_account(const hive::protocol::account_name_type& name)
-        {
-          ++_next_account_id;
-          auto ii = _known_accounts->emplace(std::string(name), account_info(_next_account_id, 0));
-          _new_accounts->emplace_back(_next_account_id, std::string(name));
-
-          FC_ASSERT(ii.second, "Already found account `${a}' at processing operation: `{o}.", ("a", name)("o", get_operation_name(*_processed_operation)));
-        }
-
-      private:
-        account_cache_t* _known_accounts;
         permlink_cache_t* _known_permlinks;
 
-        int& _next_account_id;
         int& _next_permlink_id;
 
-        account_data_container_t* _new_accounts;
         permlink_data_container_t* _new_permlinks;
 
         const hive::protocol::operation* _processed_operation;
@@ -863,13 +744,11 @@ using chain::reindex_notification;
           boost::signals2::connection _on_starting_reindex;
           boost::signals2::connection _on_finished_reindex;
 
-          std::unique_ptr<account_data_container_t_writer> _account_writer;
           std::unique_ptr<permlink_data_container_t_writer> _permlink_writer;
           std::unique_ptr<block_data_container_t_writer> _block_writer;
           std::unique_ptr<transaction_data_container_t_writer> _transaction_writer;
           std::unique_ptr<transaction_multisig_data_container_t_writer> _transaction_multisig_writer;
           std::unique_ptr<operation_data_container_t_writer> _operation_writer;
-          std::unique_ptr<account_operation_data_container_t_writer> _account_operation_writer;
 
           postgress_connection_holder connection;
           std::string db_url;
@@ -903,7 +782,7 @@ using chain::reindex_notification;
             /// Since hive_operation_types table is actually immutable after initial fill (writing very limited amount of data), don't mess with its indexes
             /// to let working ON CONFLICT DO NOTHING clause during subsequent init tries.
             std::vector<std::string> table_names = { "hive_blocks", "hive_transactions", "hive_transactions_multisig",
-                                                     "hive_permlink_data", "hive_operations", "hive_accounts", "hive_account_operations" };
+                                                     "hive_permlink_data", "hive_operations" };
 
             ilog("${mode} ${objects_name}...", ("objects_name", objects_name )("mode", ( mode ? "Creating" : "Dropping" ) ) );
 
@@ -985,46 +864,17 @@ using chain::reindex_notification;
             if(freshDb)
             {
               connection.exec_single_in_transaction(PSQL::get_all_type_definitions());
-              import_all_builtin_accounts();
             }
 
             switch_db_items( false/*mode*/ );
           }
 
-          void import_all_builtin_accounts()
-          {
-            const auto& accounts = chain_db.get_index<hive::chain::account_index, hive::chain::by_id>();
-
-            auto* data = currently_caching_data.get(); 
-
-            int& next_account_id = data->_next_account_id;
-            auto& known_accounts = data->_account_cache;
-            auto& new_accounts = data->accounts;
-
-            for(const auto& account : accounts)
-            {
-              auto ii = known_accounts.emplace(std::string(account.name), account_info(next_account_id + 1, 0));
-              if(ii.second)
-              {
-                ++next_account_id;
-                ilog("Importing builtin account: `${a}' with id: ${i}", ("a", account.name)("i", next_account_id));
-                new_accounts.emplace_back(next_account_id, std::string(account.name));
-              }
-              else
-              {
-                ilog("Builtin account: `${a}' already exists.", ("a", account.name));
-              }
-            }
-          }
-
           void load_initial_db_data()
           {
-            ilog("Loading operation's last id and account/permlink caches...");
+            ilog("Loading operation's last id and permlink caches...");
 
             auto* data = currently_caching_data.get();
-            auto& account_cache = data->_account_cache;
 
-            int next_account_id = 0;
             op_sequence_id = 0;
             psql_block_number = 0;
 
@@ -1062,33 +912,6 @@ using chain::reindex_notification;
 
             sequence_loader.trigger(data_processor::data_chunk_ptr());
 
-            data_processor account_cache_loader(db_url, "Account cache loader",
-              [&account_cache, &next_account_id](const data_chunk_ptr&, transaction& tx) -> data_processing_status
-              {
-                data_processing_status processingStatus;
-                pqxx::result data = tx.exec("SELECT ai.name, ai.id, ai.operation_count FROM account_operation_count_info_view ai;");
-                for(auto recordI = data.begin(); recordI != data.end(); ++recordI)
-                {
-                  const auto& record = *recordI;
-
-                  const char* name = record["name"].c_str();
-                  int account_id = record["id"].as<int>();
-                  unsigned int operation_count = record["operation_count"].as<int>();
-
-                  if(account_id > next_account_id)
-                    next_account_id = account_id;
-
-                  account_cache.emplace(std::string(name), account_info(account_id, operation_count));
-
-                  ++processingStatus.first;
-                }
-
-                return processingStatus;
-              }
-            );
-
-            account_cache_loader.trigger(data_processor::data_chunk_ptr());
-
             auto& permlink_cache = data->_permlink_cache;
             int next_permlink_id = 0;
 
@@ -1117,37 +940,31 @@ using chain::reindex_notification;
 
             permlink_cache_loader.trigger(data_chunk_ptr());
 
-            account_cache_loader.join();
             permlink_cache_loader.join();
             sequence_loader.join();
             block_loader.join();
 
-            data->_next_account_id = next_account_id + 1;
             data->_next_permlink_id = next_permlink_id + 1;
 
-            ilog("Loaded ${a} cached accounts and ${p} cached permlink data", ("a", account_cache.size())("p", permlink_cache.size()));
-            ilog("Next account id: ${a},  next permlink id: ${p}, next operation id: ${s} psql block number: ${pbn}.",
-              ("a", data->_next_account_id)("p", data->_next_permlink_id)("s", op_sequence_id + 1)("pbn", psql_block_number));
+            ilog("Loaded ${p} cached permlink data", ("p", permlink_cache.size()));
+            ilog("Next permlink id: ${p}, next operation id: ${s} psql block number: ${pbn}.",
+             ("p", data->_next_permlink_id)("s", op_sequence_id + 1)("pbn", psql_block_number));
           }
 
-          void trigger_data_flush(account_data_container_t& data);
           void trigger_data_flush(permlink_data_container_t& data);
           void trigger_data_flush(block_data_container_t& data);
           void trigger_data_flush(transaction_data_container_t& data);
           void trigger_data_flush(transaction_multisig_data_container_t& data);
           void trigger_data_flush(operation_data_container_t& data);
-          void trigger_data_flush(account_operation_data_container_t& data);
 
           void init_data_processors();
           void join_data_processors()
           {
-            _account_writer->join();
             _permlink_writer->join();
             _block_writer->join();
             _transaction_writer->join();
             _transaction_multisig_writer->join();
             _operation_writer->join();
-            _account_operation_writer->join();
           }
 
           void switch_to_single_transaction_controller();
@@ -1156,7 +973,6 @@ using chain::reindex_notification;
 
           void process_cached_data();
           void collect_new_ids(const hive::protocol::operation& op);
-          void collect_impacted_accounts(int64_t operation_id, const hive::protocol::operation& op);
 
           bool skip_reversible_block(uint32_t block);
 
@@ -1174,48 +990,40 @@ using chain::reindex_notification;
 void sql_serializer_plugin_impl::init_data_processors()
 {
   const auto& mainCache = *currently_caching_data.get();
-  _account_writer = std::make_unique<account_data_container_t_writer>(db_url, mainCache, "Account data writer");
   _permlink_writer = std::make_unique<permlink_data_container_t_writer>(db_url, mainCache, "Permlink data writer");
   _block_writer = std::make_unique<block_data_container_t_writer>(db_url, mainCache, "Block data writer");
   _transaction_writer = std::make_unique<transaction_data_container_t_writer>(db_url, mainCache, "Transaction data writer");
   _transaction_multisig_writer = std::make_unique<transaction_multisig_data_container_t_writer>(db_url, mainCache, "Transaction multisig data writer");
   _operation_writer = std::make_unique<operation_data_container_t_writer>(db_url, mainCache, "Operation data writer");
-  _account_operation_writer = std::make_unique<account_operation_data_container_t_writer>(db_url, mainCache, "Account operation data writer");
 }
 
 void sql_serializer_plugin_impl::switch_to_single_transaction_controller()
 {
   auto single_tx_controler = build_single_transaction_controller(db_url);
-  
-  _account_writer->register_transaction_controler(single_tx_controler);
+
   _permlink_writer->register_transaction_controler(single_tx_controler);
   _block_writer->register_transaction_controler(single_tx_controler);
   _transaction_writer->register_transaction_controler(single_tx_controler);
   _transaction_multisig_writer->register_transaction_controler(single_tx_controler);
   _operation_writer->register_transaction_controler(single_tx_controler);
-  _account_operation_writer->register_transaction_controler(single_tx_controler);
 }
 
 void sql_serializer_plugin_impl::switch_to_concurrent_transaction_controller()
 {
-  _account_writer->restore_transaction_controller();
   _permlink_writer->restore_transaction_controller();
   _block_writer->restore_transaction_controller();
   _transaction_writer->restore_transaction_controller();
   _transaction_multisig_writer->restore_transaction_controller();
   _operation_writer->restore_transaction_controller();
-  _account_operation_writer->restore_transaction_controller();
 }
 
 void sql_serializer_plugin_impl::wait_for_data_processing_finish()
 {
-  _account_writer->complete_data_processing();
   _permlink_writer->complete_data_processing();
   _block_writer->complete_data_processing();
   _transaction_writer->complete_data_processing();
   _transaction_multisig_writer->complete_data_processing();
   _operation_writer->complete_data_processing();
-  _account_operation_writer->complete_data_processing();
 }
 
 void sql_serializer_plugin_impl::connect_signals()
@@ -1283,8 +1091,6 @@ void sql_serializer_plugin_impl::on_pre_apply_operation(const operation_notifica
     is_virtual && note.trx_in_block < 0 ? block_vops++ : note.op_in_trx,
     note.op
   );
-
-  collect_impacted_accounts(op_sequence_id, note.op);
 
 }
 
@@ -1389,11 +1195,6 @@ void sql_serializer_plugin_impl::on_post_reindex(const reindex_notification& not
   massive_sync = false;
 }
 
-void sql_serializer_plugin_impl::trigger_data_flush(account_data_container_t& data)
-{
-  _account_writer->trigger(std::move(data), massive_sync == false);
-}
-
 void sql_serializer_plugin_impl::trigger_data_flush(permlink_data_container_t& data)
 {
   _permlink_writer->trigger(std::move(data), massive_sync == false);
@@ -1419,58 +1220,25 @@ void sql_serializer_plugin_impl::trigger_data_flush(operation_data_container_t& 
   _operation_writer->trigger(std::move(data), massive_sync == false);
 }
 
-void sql_serializer_plugin_impl::trigger_data_flush(account_operation_data_container_t& data)
-{
-  _account_operation_writer->trigger(std::move(data), massive_sync == false);
-}
-
 void sql_serializer_plugin_impl::process_cached_data()
 {  
   auto* data = currently_caching_data.get();
 
-  trigger_data_flush(data->accounts);
   trigger_data_flush(data->permlinks);
   trigger_data_flush(data->blocks);
   trigger_data_flush(data->operations);
 
   trigger_data_flush(data->transactions);
   trigger_data_flush(data->transactions_multisig);
-  trigger_data_flush(data->account_operations);
 }
 
 void sql_serializer_plugin_impl::collect_new_ids(const hive::protocol::operation& op)
 {
   auto* data = currently_caching_data.get();
-  auto* account_cache = &data->_account_cache;
   auto* permlink_cache = &data->_permlink_cache;
 
-  new_ids_collector collector(account_cache, &data->_next_account_id, permlink_cache, &data->_next_permlink_id,
-    &data->accounts, &data->permlinks);
+  new_ids_collector collector(permlink_cache, &data->_next_permlink_id, &data->permlinks);
   op.visit(collector);
-}
-
-void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id, const hive::protocol::operation& op)
-{
-  flat_set<hive::protocol::account_name_type> impacted;
-  hive::app::operation_get_impacted_accounts(op, impacted);
-
-  impacted.erase(hive::protocol::account_name_type());
-
-  auto* data = currently_caching_data.get();
-  auto* account_cache = &data->_account_cache;
-  auto* account_operations = &data->account_operations;
-
-  for(const auto& name : impacted)
-  {
-    auto accountI = account_cache->find(name);
-    FC_ASSERT(accountI != account_cache->end(), "Missing account: `${a}' at processing operation: `${o}'", ("a", name)("o", get_operation_name(op)));
-
-    account_info& aInfo = accountI->second;
-
-    account_operations->emplace_back(operation_id, aInfo._id, aInfo._operation_count);
-
-    ++aInfo._operation_count;
-  }
 }
 
 bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
