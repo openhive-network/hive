@@ -11,7 +11,6 @@ Add this to your `config.ini`, with proper data
 ```
 plugin = sql_serializer
 psql-url = dbname=block_log user=postgres password=pass hostaddr=127.0.0.1 port=5432
-psql-path-to-schema = /home/user/hive/hive/schema.sql.norm
 psql-index-threshold = 1000000
 ```
 
