@@ -646,7 +646,7 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
   const auto& vote_idx = _db.get_index<comment_vote_index>().indices().get<by_comment_voter>();
 
   auto vote_itr = vote_idx.lower_bound( comment.get_id() );
-  while( vote_itr != vote_idx.end() && vote_itr->comment == comment.get_id() )
+  while( vote_itr != vote_idx.end() && vote_itr->get_comment() == comment.get_id() )
   {
     const auto& cur_vote = *vote_itr;
     ++vote_itr;
@@ -1749,22 +1749,22 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
     {
-      c.net_rshares -= itr->rshares;
+      c.net_rshares -= itr->get_rshares();
       c.net_rshares += rshares;
       c.abs_rshares += abs_rshares;
 
       /// TODO: figure out how to handle remove a vote (rshares == 0 )
-      if( rshares > 0 && itr->rshares < 0 )
+      if( rshares > 0 && itr->get_rshares() < 0 )
         c.net_votes += 2;
-      else if( rshares > 0 && itr->rshares == 0 )
+      else if( rshares > 0 && itr->get_rshares() == 0 )
         c.net_votes += 1;
-      else if( rshares == 0 && itr->rshares < 0 )
+      else if( rshares == 0 && itr->get_rshares() < 0 )
         c.net_votes += 1;
-      else if( rshares == 0 && itr->rshares > 0 )
+      else if( rshares == 0 && itr->get_rshares() > 0 )
         c.net_votes -= 1;
-      else if( rshares < 0 && itr->rshares == 0 )
+      else if( rshares < 0 && itr->get_rshares() == 0 )
         c.net_votes -= 1;
-      else if( rshares < 0 && itr->rshares > 0 )
+      else if( rshares < 0 && itr->get_rshares() > 0 )
         c.net_votes -= 2;
     });
 
@@ -1795,7 +1795,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
     _db.modify( *comment_cashout, [&]( comment_cashout_object& cc )
     {
-      cc.total_vote_weight -= itr->weight;
+      cc.total_vote_weight -= itr->get_weight();
     });
 
     effective_comment_vote_operation vop(o.voter, o.author, o.permlink);
@@ -2148,22 +2148,22 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
     {
-      c.net_rshares -= itr->rshares;
+      c.net_rshares -= itr->get_rshares();
       c.net_rshares += rshares;
       c.abs_rshares += abs_rshares;
 
       /// TODO: figure out how to handle remove a vote (rshares == 0 )
-      if( rshares > 0 && itr->rshares < 0 )
+      if( rshares > 0 && itr->get_rshares() < 0 )
         c.net_votes += 2;
-      else if( rshares > 0 && itr->rshares == 0 )
+      else if( rshares > 0 && itr->get_rshares() == 0 )
         c.net_votes += 1;
-      else if( rshares == 0 && itr->rshares < 0 )
+      else if( rshares == 0 && itr->get_rshares() < 0 )
         c.net_votes += 1;
-      else if( rshares == 0 && itr->rshares > 0 )
+      else if( rshares == 0 && itr->get_rshares() > 0 )
         c.net_votes -= 1;
-      else if( rshares < 0 && itr->rshares == 0 )
+      else if( rshares < 0 && itr->get_rshares() == 0 )
         c.net_votes -= 1;
-      else if( rshares < 0 && itr->rshares > 0 )
+      else if( rshares < 0 && itr->get_rshares() > 0 )
         c.net_votes -= 2;
     });
 

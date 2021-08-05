@@ -455,7 +455,7 @@ struct curation_rewards_handler
 
       auto& cvo = db.get< comment_vote_object, by_comment_voter >( boost::make_tuple( comment_id, test_object.get_account_id( voters[ vote_counter ] ) ) );
 
-      curve_printers[ comment_idx ].curve_items.emplace_back( curve_printer::curve_item{ db.head_block_time(), cvo.weight, 0, voters[ vote_counter ] } );
+      curve_printers[ comment_idx ].curve_items.emplace_back( curve_printer::curve_item{ db.head_block_time(), cvo.get_weight(), 0, voters[ vote_counter ] } );
 
       ++vote_counter;
     }

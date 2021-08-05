@@ -2734,10 +2734,10 @@ share_type database::pay_curators( const comment_object& comment, const comment_
   {
     bool operator()( const comment_vote_object* obj, const comment_vote_object* obj2 ) const
     {
-      if( obj->weight == obj2->weight )
-        return obj->voter < obj2->voter;
+      if( obj->get_weight() == obj2->get_weight() )
+        return obj->get_voter() < obj2->get_voter();
       else
-        return obj->weight > obj2->weight;
+        return obj->get_weight() > obj2->get_weight();
     }
   };
 
@@ -2758,7 +2758,7 @@ share_type database::pay_curators( const comment_object& comment, const comment_
       auto itr = cvidx.lower_bound( comment.get_id() );
 
       std::set< const comment_vote_object*, cmp > proxy_set;
-      while( itr != cvidx.end() && itr->comment == comment.get_id() )
+      while( itr != cvidx.end() && itr->get_comment() == comment.get_id() )
       {
         proxy_set.insert( &( *itr ) );
         ++itr;
@@ -2767,12 +2767,12 @@ share_type database::pay_curators( const comment_object& comment, const comment_
       const auto& comment_author_name = get_account( comment_cashout.author_id ).name;
       for( auto& item : proxy_set )
       { try {
-        uint128_t weight( item->weight );
+        uint128_t weight( item->get_weight() );
         auto claim = ( ( max_rewards.value * weight ) / total_weight ).to_uint64();
         if( claim > 0 ) // min_amt is non-zero satoshis
         {
           unclaimed_rewards -= claim;
-          const auto& voter = get( item->voter );
+          const auto& voter = get( item->get_voter() );
           operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.permlink ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
           create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
             [&]( const asset& reward )
@@ -2959,7 +2959,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
     const auto& vote_idx = get_index< comment_vote_index >().indices().get< by_comment_voter >();
     auto vote_itr = vote_idx.lower_bound( comment.get_id() );
-    while( vote_itr != vote_idx.end() && vote_itr->comment == comment.get_id() )
+    while( vote_itr != vote_idx.end() && vote_itr->get_comment() == comment.get_id() )
     {
       const auto& cur_vote = *vote_itr;
       ++vote_itr;

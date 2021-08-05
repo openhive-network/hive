@@ -778,15 +778,15 @@ namespace detail
     chain::comment_id_type cid( comment.get_id() );
     auto itr = idx.lower_bound( cid );
 
-    while( itr != idx.end() && itr->comment == cid )
+    while( itr != idx.end() && itr->get_comment() == cid )
     {
-      const auto& vo = _db.get( itr->voter );
+      const auto& vo = _db.get( itr->get_voter() );
       tags::vote_state vstate;
       vstate.voter = vo.name;
-      vstate.weight = itr->weight;
-      vstate.rshares = itr->rshares;
-      vstate.percent = itr->vote_percent;
-      vstate.time = itr->last_update;
+      vstate.weight = itr->get_weight();
+      vstate.rshares = itr->get_rshares();
+      vstate.percent = itr->get_vote_percent();
+      vstate.time = itr->get_last_update();
 
       if( _follow_api )
       {
