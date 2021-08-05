@@ -297,19 +297,6 @@ namespace helpers
   using hive::chain::shared_string;
 
   template <>
-  class index_statistic_provider<hive::chain::comment_index>
-  {
-  public:
-    typedef hive::chain::comment_index IndexType;
-    index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
-    {
-      index_statistic_info info;
-      gather_index_static_data(index, &info);
-      return info;
-    }
-  };
-
-  template <>
   class index_statistic_provider<hive::chain::comment_cashout_index>
   {
   public:
