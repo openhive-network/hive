@@ -223,8 +223,10 @@ namespace hive { namespace protocol {
   struct effective_comment_vote_operation : public virtual_operation
   {
     effective_comment_vote_operation() = default;
-    effective_comment_vote_operation(const account_name_type& _voter, const account_name_type& _author, const string& _permlink) :
-      voter(_voter), author(_author), permlink(_permlink) {}
+    effective_comment_vote_operation(const account_name_type& _voter, const account_name_type& _author,
+      const string& _permlink, uint64_t _weight, int64_t _rshares, uint64_t _total_vote_weight)
+    : voter(_voter), author(_author), permlink(_permlink), weight(_weight), rshares(_rshares),
+      total_vote_weight(_total_vote_weight) {}
 
     account_name_type voter;
     account_name_type author;
