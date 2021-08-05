@@ -1744,6 +1744,15 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
   auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
 
+  if( itr == comment_vote_idx.end() )
+  {
+    FC_ASSERT( o.weight != 0, "Vote weight cannot be 0." );
+  }
+  else
+  {
+    FC_ASSERT( itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES, "Voter has used the maximum number of vote changes on this comment." );
+    FC_ASSERT( itr->get_vote_percent() != o.weight, "Your current vote on this comment is identical to this vote." );
+  }
 
   _db.modify( voter, [&]( account_object& a )
   {
@@ -1844,7 +1853,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   if( itr == comment_vote_idx.end() ) // new vote
   {
-    FC_ASSERT( o.weight != 0, "Vote weight cannot be 0." );
     auto old_vote_rshares = comment_cashout->vote_rshares;
 
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
@@ -1946,9 +1954,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   else // edit of existing vote
   {
-    FC_ASSERT( itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES, "Voter has used the maximum number of vote changes on this comment." );
-    FC_ASSERT( itr->get_vote_percent() != o.weight, "Your current vote on this comment is identical to this vote." );
-
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
     {
       c.net_rshares -= itr->get_rshares();
