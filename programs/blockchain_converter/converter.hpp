@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <mutex>
 #include <string>
 #include <queue>
 #include <set>
@@ -50,6 +51,8 @@ namespace hive { namespace converter {
     boost::lockfree::stack< sig_stack_out_type > shared_signatures_stack_out; // pair< trx index in block, converted signature >
 
     std::atomic_bool signers_exit;
+
+    std::mutex second_auth_mutex;
 
   public:
     /// Used in convert_signed_block to specify that expiration time of the transaction should not be altered (automatically deduct expiration time of the transaction using timestamp of the signed block)
