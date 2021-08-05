@@ -1439,9 +1439,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   auto _now = _db.head_block_time();
 
-  const auto& comment_vote_idx = _db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
-  auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
-
   int64_t elapsed_seconds = _now.sec_since_epoch() - voter.voting_manabar.last_update_time;
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
@@ -1451,14 +1448,14 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   int64_t current_power     = std::min( int64_t(voter.voting_manabar.current_mana) + regenerated_power, int64_t(HIVE_100_PERCENT) );
   FC_ASSERT( current_power > 0, "Account currently does not have voting power." );
 
-  int64_t  abs_weight    = abs(o.weight);
+  int64_t abs_weight = abs(o.weight);
   // Less rounding error would occur if we did the division last, but we need to maintain backward
   // compatibility with the previous implementation which was replaced in #1285
-  int64_t  used_power  = ((current_power * abs_weight) / HIVE_100_PERCENT) * (60*60*24);
+  int64_t used_power = ((current_power * abs_weight) / HIVE_100_PERCENT) * (60*60*24);
 
   const dynamic_global_property_object& dgpo = _db.get_dynamic_global_properties();
 
-  // The second multiplication is rounded up as of HF 259
+  // The second multiplication is rounded up as of HF14#259
   int64_t max_vote_denom = dgpo.vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS;
   FC_ASSERT( max_vote_denom > 0 );
 
@@ -1472,7 +1469,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   FC_ASSERT( used_power <= current_power, "Account does not have enough power to vote." );
 
-  int64_t abs_rshares    = ((uint128_t( _db.get_effective_vesting_shares( voter, VESTS_SYMBOL ).amount.value ) * used_power) / (HIVE_100_PERCENT)).to_uint64();
+  int64_t abs_rshares = ((uint128_t( _db.get_effective_vesting_shares( voter, VESTS_SYMBOL ).amount.value ) * used_power) / (HIVE_100_PERCENT)).to_uint64();
   if( !_db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 ) abs_rshares = 1;
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) )
@@ -1484,7 +1481,8 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     FC_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || abs_rshares == 1, "Voting weight is too small, please accumulate more voting power or Hive Power." );
   }
 
-
+  const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
+  auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
 
   if( itr == comment_vote_idx.end() )
   {
@@ -1904,8 +1902,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
       a.last_vote_time = _now;
     });
 
-    /// if the current net_rshares is less than 0, the post is getting 0 rewards so it is not factored into total rshares^2
-    fc::uint128_t old_rshares = std::max(comment_cashout->net_rshares.value, int64_t(0));
     const auto& root = _db.get( comment.get_root_id() );
     const comment_cashout_object* root_cashout = _db.find_comment_cashout( root );
 
@@ -1930,12 +1926,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         c.children_abs_rshares += abs_rshares;
       });
     }
-
-    fc::uint128_t new_rshares = std::max( comment_cashout->net_rshares.value, int64_t(0) );
-
-    /// calculate rshares2 value
-    new_rshares = util::evaluate_reward_curve( new_rshares );
-    old_rshares = util::evaluate_reward_curve( old_rshares );
 
     uint64_t max_vote_weight = 0;
 
@@ -2062,8 +2052,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
       a.last_vote_time = _now;
     });
 
-    /// if the current net_rshares is less than 0, the post is getting 0 rewards so it is not factored into total rshares^2
-    fc::uint128_t old_rshares = std::max( comment_cashout->net_rshares.value, int64_t( 0 ) );
     const auto& root = _db.get( comment.get_root_id() );
     const comment_cashout_object* root_cashout = _db.find_comment_cashout( root );
 
@@ -2097,12 +2085,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         c.children_abs_rshares += abs_rshares;
       });
     }
-
-    fc::uint128_t new_rshares = std::max( comment_cashout->net_rshares.value, int64_t(0));
-
-    /// calculate rshares2 value
-    new_rshares = util::evaluate_reward_curve( new_rshares );
-    old_rshares = util::evaluate_reward_curve( old_rshares );
 
     _db.modify( *itr, [&]( comment_vote_object& cv )
     {
