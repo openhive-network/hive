@@ -30,8 +30,8 @@ private:
   std::condition_variable* _notifier;
 };
 
-data_processor::data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor) :
-  _description(std::move(description)),
+data_processor::data_processor(const std::string& psqlUrl, const std::string& description, const data_processing_fn& dataProcessor) :
+  _description(description),
   _cancel(false),
   _continue(true),
   _initialized(false),
