@@ -1475,12 +1475,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   int64_t abs_rshares    = ((uint128_t( _db.get_effective_vesting_shares( voter, VESTS_SYMBOL ).amount.value ) * used_power) / (HIVE_100_PERCENT)).to_uint64();
   if( !_db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 ) abs_rshares = 1;
 
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20__1764 ) )
-  {
-    abs_rshares -= HIVE_VOTE_DUST_THRESHOLD;
-    abs_rshares = std::max( int64_t(0), abs_rshares );
-  }
-  else if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) )
   {
     FC_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || o.weight == 0, "Voting weight is too small, please accumulate more voting power or Hive Power." );
   }
