@@ -1436,7 +1436,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   if( !comment_cashout || ( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && _db.calculate_discussion_payout_time( *comment_cashout ) == fc::time_point_sec::maximum() ) )
   {
-    return;
+    return; // comment already paid
   }
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
@@ -1490,16 +1490,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
 
 
-
-  // Lazily delete vote
-  if( itr != comment_vote_idx.end() && itr->num_changes == -1 )
-  {
-    if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) )
-      FC_ASSERT( false, "Cannot vote again on a comment after payout." );
-
-    _db.remove( *itr );
-    itr = comment_vote_idx.end();
-  }
 
   if( itr == comment_vote_idx.end() )
   {
@@ -1849,16 +1839,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
   auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
-
-  // Lazily delete vote
-  if( itr != comment_vote_idx.end() && itr->num_changes == -1 )
-  {
-    FC_TODO( "This looks suspicious. We might not be deleting vote objects that we should be on nodes that are configured to clear votes" );
-    FC_ASSERT( false, "Cannot vote again on a comment after payout." );
-
-    _db.remove( *itr );
-    itr = comment_vote_idx.end();
-  }
 
   auto now = _db.head_block_time();
   FC_ASSERT( ( now - voter.last_vote_time ).to_seconds() >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );

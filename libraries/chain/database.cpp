@@ -978,7 +978,7 @@ const comment_object& database::get_comment( const comment_cashout_object& comme
 
 void database::remove_old_comments()
 {
-  const auto& idx = get_index< comment_cashout_index >().indices().get< by_cashout_time >();
+  const auto& idx = get_index< comment_cashout_index, by_cashout_time >();
   auto itr = idx.find( fc::time_point_sec::maximum() );
 
   while( itr != idx.end() )
@@ -2960,23 +2960,13 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       push_virtual_operation( comment_payout_update_operation( get_account(comment_cashout.author_id).name, to_string( comment_cashout.permlink ) ) );
     }
 
-    const auto& vote_idx = get_index< comment_vote_index >().indices().get< by_comment_voter >();
+    const auto& vote_idx = get_index< comment_vote_index, by_comment_voter >();
     auto vote_itr = vote_idx.lower_bound( comment.get_id() );
     while( vote_itr != vote_idx.end() && vote_itr->get_comment() == comment.get_id() )
     {
       const auto& cur_vote = *vote_itr;
       ++vote_itr;
-      if( !has_hardfork( HIVE_HARDFORK_0_12__177 ) || calculate_discussion_payout_time( comment_cashout ) != fc::time_point_sec::maximum() )
-      {
-        modify( cur_vote, [&]( comment_vote_object& cvo )
-        {
-          cvo.num_changes = -1;
-        });
-      }
-      else
-      {
-        remove( cur_vote );
-      }
+      remove( cur_vote );
     }
 
     return claimed_reward;
