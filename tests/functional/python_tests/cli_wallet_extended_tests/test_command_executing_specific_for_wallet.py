@@ -1,5 +1,6 @@
 from test_tools import Account, logger, World, Asset
 import os.path
+from utilities import send_and_assert_result, send_with_args_and_assert_result
 
 def test_wallet(wallet):
 
@@ -8,54 +9,31 @@ def test_wallet(wallet):
     internal_path = 'generated_during_test_command_executing_specific_for_wallet/test_wallet/InitNodeWallet0/'
     wallet_content_file_name = 'test_wallet.json'
 
-    response = wallet.api.save_wallet_file(wallet_content_file_name)
-    assert response['result'] == None
+    send_with_args_and_assert_result(wallet.api.save_wallet_file, wallet_content_file_name, None)
 
     assert os.path.isfile(internal_path + wallet_content_file_name)
 
-    response = wallet.api.save_wallet_file(internal_path + wallet_content_file_name)
+    send_with_args_and_assert_result(wallet.api.save_wallet_file, internal_path + wallet_content_file_name, None)
 
-    assert response['result'] == None
+    send_and_assert_result(wallet.api.is_new, False)
 
-    response = wallet.api.is_new()
+    send_and_assert_result(wallet.api.is_locked, False)
 
-    assert response['result'] == False
+    send_with_args_and_assert_result(wallet.api.set_password, pswd, None)
 
-    response = wallet.api.is_locked()
+    send_and_assert_result(wallet.api.is_locked, True)
 
-    assert response['result'] == False
+    send_with_args_and_assert_result(wallet.api.unlock, pswd, None)
 
-    response = wallet.api.set_password(pswd)
+    send_and_assert_result(wallet.api.is_locked, False)
 
-    assert response['result'] == None
+    send_and_assert_result(wallet.api.lock, None)
 
-    response = wallet.api.is_locked()
+    send_and_assert_result(wallet.api.is_locked, True)
 
-    assert response['result'] == True
+    send_with_args_and_assert_result(wallet.api.unlock, pswd, None)
 
-    response = wallet.api.unlock(pswd)
-
-    assert response['result'] == None
-
-    response = wallet.api.is_locked()
-
-    assert response['result'] == False
-
-    response = wallet.api.lock()
-
-    assert response['result'] == None
-
-    response = wallet.api.is_locked()
-
-    assert response['result'] == True
-
-    response = wallet.api.unlock(pswd)
-
-    assert response['result'] == None
-
-    response = wallet.api.is_locked()
-
-    assert response['result'] == False
+    send_and_assert_result(wallet.api.is_locked, False)
 
     response = wallet.api.list_keys()
 
@@ -84,9 +62,7 @@ def test_wallet(wallet):
     assert _result[0] == 'TST5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB'
     assert _result[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
 
-    response = wallet.api.get_private_key('TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4')
-
-    assert response['result'] == '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n'
+    send_with_args_and_assert_result(wallet.api.get_private_key, 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4', '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n')
 
     response = wallet.api.gethelp('find_proposals')
 
@@ -123,9 +99,7 @@ def test_wallet(wallet):
     _post_reward_fund = _result['post_reward_fund']
     assert _post_reward_fund['reward_balance'] != Asset.Test(0)
 
-    response = wallet.api.normalize_brain_key('     mango apple banana CHERRY ')
-
-    assert response['result'] == 'MANGO APPLE BANANA CHERRY'
+    send_with_args_and_assert_result(wallet.api.normalize_brain_key, '     mango apple banana CHERRY ', 'MANGO APPLE BANANA CHERRY')
 
     response = wallet.api.suggest_brain_key()
 
