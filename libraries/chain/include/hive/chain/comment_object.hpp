@@ -143,18 +143,15 @@ namespace hive { namespace chain {
       uint64_t          total_vote_weight = 0; /// the total weight of voting rewards, used to calculate pro-rata share of curation payouts
 
       uint16_t          reward_weight = 0;
+      uint16_t          percent_hbd = HIVE_100_PERCENT; /// the percent of HBD to key, unkept amounts will be received as VESTS
+      int32_t           net_votes = 0;
 
       /** tracks the total payout this comment has received over time, measured in HBD */
       HBD_asset         total_payout_value = asset(0, HBD_SYMBOL);
       HBD_asset         curator_payout_value = asset(0, HBD_SYMBOL);
       HBD_asset         beneficiary_payout_value = asset( 0, HBD_SYMBOL );
 
-      share_type        author_rewards = 0;
-
-      int32_t           net_votes = 0;
-
       HBD_asset         max_accepted_payout = asset( 1000000000, HBD_SYMBOL );       /// HBD value of the maximum payout this post will receive
-      uint16_t          percent_hbd = HIVE_100_PERCENT; /// the percent of HBD to key, unkept amounts will be received as VESTS
       bool              allow_votes   = true;      /// allows a post to receive votes;
       bool              allow_curation_rewards = true;
 
@@ -280,7 +277,7 @@ FC_REFLECT( hive::chain::comment_cashout_object,
           (net_rshares)(abs_rshares)(vote_rshares)(children_abs_rshares)
           (children)(created)(cashout_time)(max_cashout_time)
           (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(beneficiary_payout_value)
-          (author_rewards)(net_votes)
+          (net_votes)
           (max_accepted_payout)(percent_hbd)(allow_votes)(allow_curation_rewards)
           (beneficiaries)
 #ifdef HIVE_ENABLE_SMT
