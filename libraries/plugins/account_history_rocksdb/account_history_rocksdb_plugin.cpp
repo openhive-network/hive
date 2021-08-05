@@ -1938,10 +1938,10 @@ void account_history_rocksdb_plugin::impl::on_post_reindex(const hive::chain::re
 
 std::string get_asset_amount(const asset& amount)
 {
-   std::string asset_with_amount_string = legacy_asset::from_asset(amount).to_string();
-   size_t space_pos = asset_with_amount_string.find(' ');
-   assert(space_pos != std::string::npos);
-   return asset_with_amount_string.substr(0, space_pos);
+  std::string asset_with_amount_string = legacy_asset::from_asset(amount).to_string();
+  size_t space_pos = asset_with_amount_string.find(' ');
+  assert(space_pos != std::string::npos);
+  return asset_with_amount_string.substr(0, space_pos);
 }
 
 void account_history_rocksdb_plugin::impl::printReport(uint32_t blockNo, const char* detailText) const
@@ -1995,9 +1995,9 @@ void account_history_rocksdb_plugin::impl::importData(unsigned int blockLimit)
       }
 
       if(blockNo % 1000 == 0)
-        {
+      {
         printReport(blockNo, "Executing data import has ");
-        }
+      }
     }
 
     auto impacted = getImpactedAccounts( op );
@@ -2020,8 +2020,7 @@ void account_history_rocksdb_plugin::impl::importData(unsigned int blockLimit)
     importOperation( obj, impacted );
 
     return true;
-  }
-  );
+  });
 
   flushWriteBuffer();
 
@@ -2320,7 +2319,6 @@ account_history_rocksdb_plugin::account_history_rocksdb_plugin()
 
 account_history_rocksdb_plugin::~account_history_rocksdb_plugin()
 {
-
 }
 
 void account_history_rocksdb_plugin::set_program_options(
