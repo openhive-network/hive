@@ -1,6 +1,7 @@
 from test_tools import Account, logger, World, Asset
 import dateutil.parser as dp
 import datetime
+from utilities import send_with_args_and_assert_result
 
 def test_transaction(wallet):
     wallet.api.create_account('initminer', 'carol', '{}')
@@ -48,9 +49,7 @@ def test_transaction(wallet):
     _val = t_in_seconds - _before_seconds
     assert _val == 30 or _val == 31
 
-    response = wallet.api.set_transaction_expiration(678)
-
-    assert response['result'] == None
+    send_with_args_and_assert_result(wallet.api.set_transaction_expiration, 678, None)
 
     _time = datetime.datetime.utcnow()
     _before_seconds = (int)(_time.timestamp())
