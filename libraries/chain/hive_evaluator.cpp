@@ -1497,20 +1497,20 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     }
   }
 
+  _db.modify( voter, [&]( account_object& a )
+  {
+    a.voting_manabar.current_mana = current_power - used_power;
+    a.last_vote_time = _now;
+    a.voting_manabar.last_update_time = a.last_vote_time.sec_since_epoch();
+  } );
+
+  /// if the current net_rshares is less than 0, the post is getting 0 rewards so it is not factored into total rshares^2
+  fc::uint128_t old_rshares = std::max( comment_cashout->net_rshares.value, int64_t( 0 ) );
+
   if( itr == comment_vote_idx.end() )
   {
     FC_ASSERT( o.weight != 0, "Vote weight cannot be 0." );
 
-
-    _db.modify( voter, [&]( account_object& a )
-    {
-      a.voting_manabar.current_mana = current_power - used_power;
-      a.last_vote_time = _now;
-      a.voting_manabar.last_update_time = a.last_vote_time.sec_since_epoch();
-    });
-
-    /// if the current net_rshares is less than 0, the post is getting 0 rewards so it is not factored into total rshares^2
-    fc::uint128_t old_rshares = std::max(comment_cashout->net_rshares.value, int64_t(0));
     const auto& root = _db.get( comment.get_root_id() );
     const comment_cashout_object* root_cashout = _db.find_comment_cashout( root );
     auto old_root_abs_rshares = root_cashout ? root_cashout->children_abs_rshares.value : 0;
@@ -1676,14 +1676,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     if( _db.has_hardfork( HIVE_HARDFORK_0_6__112 ) )
       FC_ASSERT( itr->get_vote_percent() != o.weight, "You have already voted in a similar way." );
 
-    _db.modify( voter, [&]( account_object& a ){
-      a.voting_manabar.current_mana = current_power - used_power;
-      a.last_vote_time = _now;
-      a.voting_manabar.last_update_time = a.last_vote_time.sec_since_epoch();
-    });
-
-    /// if the current net_rshares is less than 0, the post is getting 0 rewards so it is not factored into total rshares^2
-    fc::uint128_t old_rshares = std::max(comment_cashout->net_rshares.value, int64_t(0));
     const auto& root = _db.get( comment.get_root_id() );
     const comment_cashout_object* root_cashout = _db.find_comment_cashout( root );
     auto old_root_abs_rshares = root_cashout ? root_cashout->children_abs_rshares.value : 0;
@@ -1859,42 +1851,41 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     abs_rshares = (int64_t) ( ( uint128_t( abs_rshares ) * cashout_delta ) / HIVE_UPVOTE_LOCKOUT_SECONDS ).to_uint64();
   }
 
-  if( itr == comment_vote_idx.end() )
+  _db.modify( voter, [&]( account_object& a )
   {
-    FC_ASSERT( o.weight != 0, "Vote weight cannot be 0." );
-    /// this is the rshares voting for or against the post
-
-    int64_t rshares = o.weight < 0 ? -abs_rshares : abs_rshares;
-
-    _db.modify( voter, [&]( account_object& a )
+    if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) && dgpo.downvote_pool_percent > 0 && o.weight < 0 )
     {
-      if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) && dgpo.downvote_pool_percent > 0 && o.weight < 0 )
+      if( used_mana.to_int64() > a.downvote_manabar.current_mana )
       {
-        if( used_mana.to_int64() > a.downvote_manabar.current_mana )
-        {
-          /* used mana is always less than downvote_mana + voting_mana because the amount used
-            * is a fraction of max( downvote_mana, voting_mana ). If more mana is consumed than
-            * there is downvote_mana, then it is because voting_mana is greater, and used_mana
-            * is strictly smaller than voting_mana. This is the same reason why a check is not
-            * required when using voting mana on its own as an upvote.
-            */
-          auto remainder = used_mana.to_int64() - a.downvote_manabar.current_mana;
-          a.downvote_manabar.use_mana( a.downvote_manabar.current_mana );
-          a.voting_manabar.use_mana( remainder );
-        }
-        else
-        {
-          a.downvote_manabar.use_mana( used_mana.to_int64() );
-        }
+        /* used mana is always less than downvote_mana + voting_mana because the amount used
+          * is a fraction of max( downvote_mana, voting_mana ). If more mana is consumed than
+          * there is downvote_mana, then it is because voting_mana is greater, and used_mana
+          * is strictly smaller than voting_mana. This is the same reason why a check is not
+          * required when using voting mana on its own as an upvote.
+          */
+        auto remainder = used_mana.to_int64() - a.downvote_manabar.current_mana;
+        a.downvote_manabar.use_mana( a.downvote_manabar.current_mana );
+        a.voting_manabar.use_mana( remainder );
       }
       else
       {
-        a.voting_manabar.use_mana( used_mana.to_int64() );
+        a.downvote_manabar.use_mana( used_mana.to_int64() );
       }
+    }
+    else
+    {
+      a.voting_manabar.use_mana( used_mana.to_int64() );
+    }
 
-      a.last_vote_time = _now;
-    });
+    a.last_vote_time = _now;
+  } );
 
+  /// this is the rshares voting for or against the post
+  int64_t rshares = o.weight < 0 ? -abs_rshares : abs_rshares;
+
+  if( itr == comment_vote_idx.end() ) // new vote
+  {
+    FC_ASSERT( o.weight != 0, "Vote weight cannot be 0." );
     const auto& root = _db.get( comment.get_root_id() );
     const comment_cashout_object* root_cashout = _db.find_comment_cashout( root );
 
@@ -2013,37 +2004,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   {
     FC_ASSERT( itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES, "Voter has used the maximum number of vote changes on this comment." );
     FC_ASSERT( itr->get_vote_percent() != o.weight, "Your current vote on this comment is identical to this vote." );
-
-    int64_t rshares = o.weight < 0 ? -abs_rshares : abs_rshares;
-
-    _db.modify( voter, [&]( account_object& a )
-    {
-      if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) && dgpo.downvote_pool_percent > 0 && o.weight < 0 )
-      {
-        if( used_mana.to_int64() > a.downvote_manabar.current_mana )
-        {
-          /* used mana is always less than downvote_mana + voting_mana because the amount used
-            * is a fraction of max( downvote_mana, voting_mana ). If more mana is consumed than
-            * there is downvote_mana, then it is because voting_mana is greater, and used_mana
-            * is strictly smaller than voting_mana. This is the same reason why a check is not
-            * required when using voting mana on its own as an upvote.
-            */
-          auto remainder = used_mana.to_int64() - a.downvote_manabar.current_mana;
-          a.downvote_manabar.use_mana( a.downvote_manabar.current_mana );
-          a.voting_manabar.use_mana( remainder );
-        }
-        else
-        {
-          a.downvote_manabar.use_mana( used_mana.to_int64() );
-        }
-      }
-      else
-      {
-        a.voting_manabar.use_mana( used_mana.to_int64() );
-      }
-
-      a.last_vote_time = _now;
-    });
 
     const auto& root = _db.get( comment.get_root_id() );
     const comment_cashout_object* root_cashout = _db.find_comment_cashout( root );
