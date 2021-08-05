@@ -646,8 +646,6 @@ using chain::reindex_notification;
           hive::chain::database& chain_db;
           const sql_serializer_plugin& main_plugin;
 
-          fc::optional<fc::string> path_to_schema;
-
           uint32_t last_skipped_block = 0;
           uint32_t psql_block_number = 0;
           uint32_t psql_index_threshold = 0;
@@ -715,21 +713,6 @@ using chain::reindex_notification;
               ilog("Switching indexes and constraints isn't allowed: psql block number: `${pbn}` psql index threshold: `${pit}` head block number: `${hbn}` ...",
               ("pbn", psql_block_number)("pit", psql_index_threshold)("hbn", head_block_number));
             }
-          }
-
-          void recreate_db()
-          {
-            FC_ASSERT(path_to_schema.valid());
-            std::vector<fc::string> querries;
-            fc::string line;
-
-            std::ifstream file{*path_to_schema};
-            while(std::getline(file, line)) querries.push_back(line);
-            file.close();
-
-            for(const fc::string& q : querries) 
-              if(!connection.exec_single_in_transaction(q)) 
-                wlog("Failed to execute query from ${schema_path}:\n${query}", ("schema_path", *path_to_schema)("query", q));
           }
 
           void init_database(bool freshDb, uint32_t max_block_number )
@@ -1087,7 +1070,6 @@ bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
       void sql_serializer_plugin::set_program_options(appbase::options_description &cli, appbase::options_description &cfg)
       {
         cfg.add_options()("psql-url", boost::program_options::value<string>(), "postgres connection string")
-                         ("psql-path-to-schema", "if set and replay starts from 0 block, executes script")
                          ("psql-index-threshold", appbase::bpo::value<uint32_t>()->default_value( 1'000'000 ), "indexes/constraints will be recreated if `psql_block_number + psql_index_threshold >= head_block_number`");
       }
 
@@ -1101,9 +1083,6 @@ bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
         my = std::make_unique<detail::sql_serializer_plugin_impl>(options["psql-url"].as<fc::string>(), db, *this);
 
         // settings
-        if (options.count("psql-path-to-schema"))
-          my->path_to_schema = options["psql-path-to-schema"].as<fc::string>();
-
         my->psql_index_threshold = options["psql-index-threshold"].as<uint32_t>();
 
         my->currently_caching_data = std::make_unique<detail::cached_data_t>( default_reservation_size );
