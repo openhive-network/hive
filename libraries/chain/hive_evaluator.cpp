@@ -1539,7 +1539,8 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
     auto old_vote_rshares = comment_cashout->vote_rshares;
 
-    _db.modify( *comment_cashout, [&]( comment_cashout_object& c ){
+    _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
+    {
       c.net_rshares += rshares;
       c.abs_rshares += abs_rshares;
       if( rshares > 0 )
@@ -1548,8 +1549,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
         c.net_votes++;
       else
         c.net_votes--;
-      if( !_db.has_hardfork( HIVE_HARDFORK_0_6__114 ) && c.net_rshares == -c.abs_rshares )
-        FC_ASSERT( c.net_votes < 0, "Comment has negative net votes?" );
     });
 
     if( root_cashout )
