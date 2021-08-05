@@ -670,37 +670,24 @@ using chain::reindex_notification;
 
           void switch_db_items( bool mode, const std::string& function_name, const std::string& objects_name ) const
           {
-            /// Since hive_operation_types table is actually immutable after initial fill (writing very limited amount of data), don't mess with its indexes
-            /// to let working ON CONFLICT DO NOTHING clause during subsequent init tries.
-            std::vector<std::string> table_names = { "hive_blocks", "hive_transactions", "hive_transactions_multisig", "hive_operations" };
-
             ilog("${mode} ${objects_name}...", ("objects_name", objects_name )("mode", ( mode ? "Creating" : "Dropping" ) ) );
 
-            std::list< data_processor > processors;
+            std::string query = std::string("SELECT ") + function_name + "();";
+            std::string description = "Query processor: `" + query + "'";
+            data_processor processor( db_url, description, [query, &objects_name, mode](const data_chunk_ptr&, transaction& tx) -> data_processing_status
+                          {
+                            ilog("Attempting to execute query: `${query}`...", ("query", query ) );
+                            const auto start_time = fc::time_point::now();
+                            tx.exec( query );
+                            ilog(
+                              "${mode} of ${mod_type} done in ${time} ms",
+                              ("mode", (mode ? "Creating" : "Saving and dropping")) ("mod_type", objects_name) ("time", (fc::time_point::now() - start_time).count() / 1000.0 )
+                            );
+                            return data_processing_status();
+                          } );
 
-            for( const auto& table_name : table_names )
-            {
-              std::string query = std::string("SELECT ") + function_name + "( '" + table_name + "' );";
-              std::string description = "Query processor: `" + query + "'";
-              processors.emplace_back( db_url, description, [query, &table_name , &objects_name, mode](const data_chunk_ptr&, transaction& tx) -> data_processing_status
-                            {
-                              ilog("Attempting to execute query: `${query}`...", ("query", query ) );
-                              const auto start_time = fc::time_point::now();
-                              tx.exec( query );
-                              ilog(
-                                "${mode} of ${mod_type} for `${table}` done in ${time} ms", 
-                                ("mode", (mode ? "Creating" : "Saving and dropping")) ("mod_type", objects_name) ("table", table_name) ("time", (fc::time_point::now() - start_time).count() / 1000.0 ) 
-                              );
-                              return data_processing_status();
-                            } );
-
-              processors.back().trigger(data_processor::data_chunk_ptr());
-            }
-
-            for( auto& item : processors )
-            {
-              item.join();
-            }
+            processor.trigger(data_processor::data_chunk_ptr());
+            processor.join();
 
             ilog("The ${objects_name} have been ${mode}...", ("objects_name", objects_name )("mode", ( mode ? "created" : "dropped" ) ) );
           }
@@ -714,13 +701,13 @@ using chain::reindex_notification;
 
               if(create)
               {
-                switch_db_items(create, "restore_indexes_constraints", "indexes/constraints");
-                switch_db_items(create, "restore_foreign_keys", "foreign keys");
+                switch_db_items(create, "hive.restore_indexes_constraints", "indexes/constraints");
+                switch_db_items(create, "hive.restore_foreign_keys", "foreign keys");
               }
               else
               {
-                switch_db_items(create, "save_and_drop_indexes_foreign_keys", "foreign keys");
-                switch_db_items(create, "save_and_drop_indexes_constraints", "indexes/constraints");
+                switch_db_items(create, "hive.save_and_drop_indexes_foreign_keys", "foreign keys");
+                switch_db_items(create, "hive.save_and_drop_indexes_constraints", "indexes/constraints");
               }
             }
             else
