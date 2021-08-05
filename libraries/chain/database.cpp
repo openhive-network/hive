@@ -3094,12 +3094,8 @@ void database::process_comment_cashout()
       }
     }
 
-    if( has_hardfork( HIVE_HARDFORK_0_19__876 ) )
-    {
-      if( current->cashout_time == fc::time_point_sec::maximum() )
-        remove( *current );
-    }
-
+    if( has_hardfork( HIVE_HARDFORK_0_19 ) )
+      remove( *current );
     current = cidx.begin();
   }
 
