@@ -699,13 +699,11 @@ using chain::reindex_notification;
 
               if(create)
               {
-                switch_db_items(create, "hive.restore_indexes_constraints", "indexes/constraints");
-                switch_db_items(create, "hive.restore_foreign_keys", "foreign keys");
+                switch_db_items(create, "hive.enable_indexes_of_irreversible", "enable indexes" );
               }
               else
               {
-                switch_db_items(create, "hive.save_and_drop_indexes_foreign_keys", "foreign keys");
-                switch_db_items(create, "hive.save_and_drop_indexes_constraints", "indexes/constraints");
+                switch_db_items(create, "hive.disable_indexes_of_irreversible", "disable indexes" );
               }
             }
             else
