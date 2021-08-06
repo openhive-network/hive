@@ -1,6 +1,3 @@
-from fixtures import empty_paths as paths, executable
-
-
 def test_manually_set_path_priority(paths, executable):
     paths.set_path_of(executable.name, 'path_set_manually')
     paths.parse_command_line_arguments([executable.argument, 'path_set_from_command_line_arguments'])

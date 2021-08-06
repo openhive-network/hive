@@ -1,6 +1,5 @@
 import pytest
 
-from fixtures import empty_paths as paths
 from test_tools.paths_to_executables import NotSupported
 
 

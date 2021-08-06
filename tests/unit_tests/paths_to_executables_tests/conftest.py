@@ -4,7 +4,7 @@ from test_tools.paths_to_executables import _PathsToExecutables
 
 
 @pytest.fixture
-def empty_paths():
+def paths():
     """Returns PathsToExecutables object without any value from current environment.
 
     Doesn't matter if user has e.g. set environment variable searched by this object or

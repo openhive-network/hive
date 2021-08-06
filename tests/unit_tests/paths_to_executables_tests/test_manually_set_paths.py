@@ -1,6 +1,3 @@
-from fixtures import empty_paths as paths, executables
-
-
 def test_paths_set_manually(paths, executables):
     for executable in executables:
         paths.set_path_of(executable.name, executable.path)

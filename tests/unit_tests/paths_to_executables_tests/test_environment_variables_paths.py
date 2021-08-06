@@ -1,6 +1,3 @@
-from fixtures import empty_paths as paths, executables
-
-
 def test_environment_variables_paths(paths, executables):
     for executable in executables:
         paths.set_environment_variables({executable.environment_variable: executable.path})
