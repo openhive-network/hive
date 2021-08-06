@@ -1394,11 +1394,19 @@ void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName,
 
 void state_snapshot_plugin::impl::process_explicit_snapshot_requests(const hive::chain::open_args& openArgs)
   {
-  if(_do_immediate_load)
-    load_snapshot(_snapshot_name, openArgs);
+    if(_do_immediate_load)
+    {
+      hive::notify_hived_status("loading snapshot");
+      load_snapshot(_snapshot_name, openArgs);
+      hive::notify_hived_status("finished loading snapshot");
+    }
 
-  if(_do_immediate_dump)
-    prepare_snapshot(_snapshot_name);
+    if(_do_immediate_dump)
+    {
+      hive::notify_hived_status("dumping snapshot");
+      prepare_snapshot(_snapshot_name);
+      hive::notify_hived_status("finished dumping snapshot");
+    }
   }
 
 state_snapshot_plugin::state_snapshot_plugin()
