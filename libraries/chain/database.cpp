@@ -6093,6 +6093,10 @@ void database::apply_hardfork( uint32_t hardfork )
             c.cashout_time = std::max( calculate_discussion_payout_time( c ), itr->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
           });
         }
+
+        // Remove all cashout extras - the data won't be used after HF17
+        auto& comment_cashout_ex_idx = get_mutable_index< comment_cashout_ex_index >();
+        comment_cashout_ex_idx.clear();
       }
       break;
     case HIVE_HARDFORK_0_18:
