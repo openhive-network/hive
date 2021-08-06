@@ -1,0 +1,14 @@
+image: docker:stable
+
+stages:
+  - lint
+
+run-pylint:
+  stage: lint
+  script:
+    - apk update
+    - apk add py3-pip
+    - pip3 install pylint==2.8.2 pytest
+    - find . -type f -name "*.py" | xargs pylint
+  tags:
+    - public-runner-docker
