@@ -4,6 +4,8 @@
 
 #include <hive/plugins/sql_serializer/sql_serializer_objects.hpp>
 
+#include <hive/plugins/sql_serializer/end_massive_sync_processor.hpp>
+
 #include <hive/chain/util/impacted.hpp>
 
 #include <hive/protocol/config.hpp>
@@ -177,19 +179,21 @@ using chain::reindex_notification;
       class container_data_writer
       {
       public:
-        container_data_writer(std::string psqlUrl, const cached_data_t& mainCache, std::string description) : _mainCache(mainCache)
+        container_data_writer(std::string psqlUrl, const cached_data_t& mainCache, std::string description, std::shared_ptr< trigger_synchronous_masive_sync_call > _api_trigger ) : _mainCache(mainCache)
 
         {
-          _processor = std::make_unique<data_processor>(psqlUrl, description, flush_data);
+          _processor = std::make_unique<data_processor>(psqlUrl, description, flush_data, _api_trigger);
         }
 
-        void trigger(DataContainer&& data, bool wait_for_data_completion)
+        void trigger(DataContainer&& data, bool wait_for_data_completion, uint32_t last_block_num)
         {
           if(data.empty() == false)
           {
-            _processor->trigger(std::make_unique<chunk>(_mainCache, std::move(data)));
+            _processor->trigger(std::make_unique<chunk>(_mainCache, std::move(data)), last_block_num);
             if(wait_for_data_completion)
               _processor->complete_data_processing();
+          } else {
+            _processor->only_report_batch_finished( last_block_num );
           }
 
           FC_ASSERT(data.empty());
@@ -197,7 +201,7 @@ using chain::reindex_notification;
 
         void register_transaction_controler(transaction_controller_ptr tx_controller)
         {
-          FC_ASSERT(_prev_tx_controller == nullptr);
+          FC_ASSERT(_prev_tx_controller == nullptr, );
           _prev_tx_controller = _processor->register_transaction_controler(std::move(tx_controller));
           FC_ASSERT(_prev_tx_controller != nullptr);
         }
@@ -389,7 +393,7 @@ using chain::reindex_notification;
         };
       };
 
-      const char hive_blocks::TABLE[] = "hive_blocks";
+      const char hive_blocks::TABLE[] = "hive.blocks";
       const char hive_blocks::COLS[] = "num, hash, prev, created_at";
 
       struct hive_transactions
@@ -411,7 +415,7 @@ using chain::reindex_notification;
         };
       };
 
-      const char hive_transactions::TABLE[] = "hive_transactions";
+      const char hive_transactions::TABLE[] = "hive.transactions";
       const char hive_transactions::COLS[] = "block_num, trx_hash, trx_in_block, ref_block_num, ref_block_prefix, expiration, signature";
 
       struct hive_transactions_multisig
@@ -432,7 +436,7 @@ using chain::reindex_notification;
         };
       };
 
-      const char hive_transactions_multisig::TABLE[] = "hive_transactions_multisig";
+      const char hive_transactions_multisig::TABLE[] = "hive.transactions_multisig";
       const char hive_transactions_multisig::COLS[] = "trx_hash, signature";
 
       struct hive_operations
@@ -460,7 +464,7 @@ using chain::reindex_notification;
         };
       };
 
-      const char hive_operations::TABLE[] = "hive_operations";
+      const char hive_operations::TABLE[] = "hive.operations";
       const char hive_operations::COLS[] = "id, block_num, trx_in_block, op_pos, op_type_id, body";
 
       using block_data_container_t_writer = table_data_writer<hive_blocks>;
@@ -640,11 +644,14 @@ using chain::reindex_notification;
           std::unique_ptr<transaction_data_container_t_writer> _transaction_writer;
           std::unique_ptr<transaction_multisig_data_container_t_writer> _transaction_multisig_writer;
           std::unique_ptr<operation_data_container_t_writer> _operation_writer;
+          std::unique_ptr<end_massive_sync_processor> _end_massive_sync_processor;
 
           postgress_connection_holder connection;
           std::string db_url;
           hive::chain::database& chain_db;
           const sql_serializer_plugin& main_plugin;
+
+          uint32_t _last_block_num = 0;
 
           uint32_t last_skipped_block = 0;
           uint32_t psql_block_number = 0;
@@ -682,9 +689,9 @@ using chain::reindex_notification;
                               ("mode", (mode ? "Creating" : "Saving and dropping")) ("mod_type", objects_name) ("time", (fc::time_point::now() - start_time).count() / 1000.0 )
                             );
                             return data_processing_status();
-                          } );
+                          } , nullptr);
 
-            processor.trigger(data_processor::data_chunk_ptr());
+            processor.trigger(data_processor::data_chunk_ptr(), 0);
             processor.join();
 
             ilog("The ${objects_name} have been ${mode}...", ("objects_name", objects_name )("mode", ( mode ? "created" : "dropped" ) ) );
@@ -717,6 +724,8 @@ using chain::reindex_notification;
           {
             head_block_number = max_block_number;
 
+            FC_ASSERT( is_database_correct(), "Database is in invalid state" );
+
             load_initial_db_data();
 
             if(freshDb)
@@ -725,6 +734,28 @@ using chain::reindex_notification;
             }
 
             switch_db_items( false/*mode*/ );
+          }
+
+          bool is_database_correct() {
+            ilog( "Checking correctness of database..." );
+
+            bool is_extension_created = false;
+            data_processor db_checker(
+                  db_url
+                , "Check correctness"
+                , [&is_extension_created](const data_chunk_ptr&, transaction& tx) -> data_processing_status {
+                    data_processing_status processingStatus;
+                    pqxx::result data = tx.exec("select 1 as _result from pg_extension where extname='hive_fork_manager';");
+                    is_extension_created = !data.empty();
+                    return data_processing_status();
+                }
+              , nullptr
+              );
+
+            db_checker.trigger(data_processor::data_chunk_ptr(), 0);
+            db_checker.join();
+
+            return is_extension_created;
           }
 
           void load_initial_db_data()
@@ -738,24 +769,26 @@ using chain::reindex_notification;
               [this](const data_chunk_ptr&, transaction& tx) -> data_processing_status
               {
                 data_processing_status processingStatus;
-                pqxx::result data = tx.exec("SELECT hb.num AS _max_block FROM hive_blocks hb ORDER BY hb.num DESC LIMIT 1;");
+                pqxx::result data = tx.exec("SELECT hb.num AS _max_block FROM hive.blocks hb ORDER BY hb.num DESC LIMIT 1;");
                 if( !data.empty() )
                 {
                   FC_ASSERT( data.size() == 1 );
                   const auto& record = data[0];
                   psql_block_number = record["_max_block"].as<uint64_t>();
+                  _last_block_num = psql_block_number;
                 }
                 return data_processing_status();
               }
+              , nullptr
             );
 
-            block_loader.trigger(data_processor::data_chunk_ptr());
+            block_loader.trigger(data_processor::data_chunk_ptr(), 0);
 
             data_processor sequence_loader(db_url, "Sequence loader",
               [this](const data_chunk_ptr&, transaction& tx) -> data_processing_status
               {
                 data_processing_status processingStatus;
-                pqxx::result data = tx.exec("SELECT ho.id AS _max FROM hive_operations ho ORDER BY ho.id DESC LIMIT 1;");
+                pqxx::result data = tx.exec("SELECT ho.id AS _max FROM hive.operations ho ORDER BY ho.id DESC LIMIT 1;");
                 if( !data.empty() )
                 {
                   FC_ASSERT( data.size() == 1 );
@@ -764,9 +797,10 @@ using chain::reindex_notification;
                 }
                 return data_processing_status();
               }
+              , nullptr
             );
 
-            sequence_loader.trigger(data_processor::data_chunk_ptr());
+            sequence_loader.trigger(data_processor::data_chunk_ptr(), 0);
 
             sequence_loader.join();
             block_loader.join();
@@ -787,6 +821,7 @@ using chain::reindex_notification;
             _transaction_writer->join();
             _transaction_multisig_writer->join();
             _operation_writer->join();
+            _end_massive_sync_processor->join();
           }
 
           void switch_to_single_transaction_controller();
@@ -806,15 +841,23 @@ using chain::reindex_notification;
 
             ilog("Done, cleanup complete");
           }
+
+          void commit_massive_sync( int block_num );
         };
 
 void sql_serializer_plugin_impl::init_data_processors()
 {
   const auto& mainCache = *currently_caching_data.get();
-  _block_writer = std::make_unique<block_data_container_t_writer>(db_url, mainCache, "Block data writer");
-  _transaction_writer = std::make_unique<transaction_data_container_t_writer>(db_url, mainCache, "Transaction data writer");
-  _transaction_multisig_writer = std::make_unique<transaction_multisig_data_container_t_writer>(db_url, mainCache, "Transaction multisig data writer");
-  _operation_writer = std::make_unique<operation_data_container_t_writer>(db_url, mainCache, "Operation data writer");
+  _end_massive_sync_processor = std::make_unique< end_massive_sync_processor >( db_url );
+  constexpr auto NUMBER_OF_PROCESSORS_THREADS = 4;
+  auto execute_end_massive_sync_callback = [this](trigger_synchronous_masive_sync_call::BLOCK_NUM _block_num ){
+    _end_massive_sync_processor->trigger_block_number( _block_num );
+  };
+  auto api_trigger = std::make_shared< trigger_synchronous_masive_sync_call >( NUMBER_OF_PROCESSORS_THREADS, execute_end_massive_sync_callback );
+  _block_writer = std::make_unique<block_data_container_t_writer>(db_url, mainCache, "Block data writer", api_trigger);
+  _transaction_writer = std::make_unique<transaction_data_container_t_writer>(db_url, mainCache, "Transaction data writer", api_trigger);
+  _transaction_multisig_writer = std::make_unique<transaction_multisig_data_container_t_writer>(db_url, mainCache, "Transaction multisig data writer", api_trigger);
+  _operation_writer = std::make_unique<operation_data_container_t_writer>(db_url, mainCache, "Operation data writer", api_trigger);
 }
 
 void sql_serializer_plugin_impl::switch_to_single_transaction_controller()
@@ -841,6 +884,7 @@ void sql_serializer_plugin_impl::wait_for_data_processing_finish()
   _transaction_writer->complete_data_processing();
   _transaction_multisig_writer->complete_data_processing();
   _operation_writer->complete_data_processing();
+  _end_massive_sync_processor->complete_data_processing();
 }
 
 void sql_serializer_plugin_impl::connect_signals()
@@ -924,6 +968,7 @@ void sql_serializer_plugin_impl::on_post_apply_block(const block_notification& n
     note.block.timestamp,
     note.prev_block_id);
   block_vops = 0;
+  _last_block_num = note.block_num;
 
   if(note.block_num % blocks_per_commit == 0)
   {
@@ -1012,22 +1057,22 @@ void sql_serializer_plugin_impl::on_post_reindex(const reindex_notification& not
 
 void sql_serializer_plugin_impl::trigger_data_flush(block_data_container_t& data)
 {
-  _block_writer->trigger(std::move(data), massive_sync == false);
+  _block_writer->trigger(std::move(data), massive_sync == false, _last_block_num);
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(transaction_data_container_t& data)
 {
-  _transaction_writer->trigger(std::move(data), massive_sync == false);
+  _transaction_writer->trigger(std::move(data), massive_sync == false, _last_block_num);
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(transaction_multisig_data_container_t& data)
 {
-  _transaction_multisig_writer->trigger(std::move(data), massive_sync == false);
+  _transaction_multisig_writer->trigger(std::move(data), massive_sync == false, _last_block_num);
 }
 
 void sql_serializer_plugin_impl::trigger_data_flush(operation_data_container_t& data)
 {
-  _operation_writer->trigger(std::move(data), massive_sync == false);
+  _operation_writer->trigger(std::move(data), massive_sync == false, _last_block_num);
 }
 
 void sql_serializer_plugin_impl::process_cached_data()
@@ -1057,6 +1102,10 @@ bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
   }
 
   return false;
+}
+
+void sql_serializer_plugin_impl::commit_massive_sync(int block_num) {
+
 }
 
       } // namespace detail
@@ -1103,7 +1152,6 @@ bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
 
         ilog("Done. Connection closed");
       }
-
       
     } // namespace sql_serializer
   }    // namespace plugins

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/plugins/sql_serializer/transaction_controllers.hpp>
+#include <hive/plugins/sql_serializer/trigger_synchronous_masive_sync_call.hpp>
 
 #include <fc/optional.hpp>
 
@@ -36,7 +37,7 @@ public:
   typedef std::pair<size_t, bool> data_processing_status;
   typedef std::function<data_processing_status(const data_chunk_ptr& dataPtr, transaction& openedTx)> data_processing_fn;
 
-  data_processor(const std::string& psqlUrl, const std::string& description, const data_processing_fn& dataProcessor);
+  data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor, std::shared_ptr< trigger_synchronous_masive_sync_call > api_trigger );
   ~data_processor();
 
   data_processor(data_processor&&) = delete;
@@ -47,7 +48,9 @@ public:
 
   transaction_controller_ptr register_transaction_controler(transaction_controller_ptr controller);
 
-  void trigger(data_chunk_ptr dataPtr);
+  void trigger(data_chunk_ptr dataPtr, uint32_t last_blocknum);
+  //where there the chunk is empty, only confirms that the bunch of blocks was processed by the processor
+  void only_report_batch_finished( uint32_t _block_num );
   /// Allows to hold execution of calling thread, until data processing thread will consume data and starts awaiting for another trigger call.
   void complete_data_processing();
   void cancel();
@@ -67,9 +70,12 @@ public:
     std::condition_variable _cv;
     std::condition_variable _data_processing_finished_cv;
     fc::optional<data_chunk_ptr> _dataPtr;
+    uint32_t _last_block_num = 0;
     transaction_controller_ptr _txController;
 
     size_t _total_processed_records;
+
+    std::shared_ptr< trigger_synchronous_masive_sync_call > _api_trigger;
 };
 
 }}} /// hive::plugins::sql_serializer
