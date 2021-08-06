@@ -84,14 +84,13 @@ ALTER TABLE hive_transactions_multisig ADD CONSTRAINT hive_transactions_multisig
 DROP VIEW IF EXISTS account_operation_count_info_view CASCADE;
 CREATE OR REPLACE VIEW account_operation_count_info_view
 AS
-SELECT ha.id, ha.name, COALESCE( T.operation_count, 0 ) operation_count
-FROM hive_accounts ha
-LEFT JOIN
-(
-SELECT ao.account_id account_id, COUNT(ao.account_op_seq_no) operation_count
-FROM hive_account_operations ao
-GROUP BY ao.account_id
-)T ON ha.id = T.account_id
+SELECT ha.id, ha.name,
+       COALESCE((SELECT ao.account_op_seq_no 
+                 FROM hive_account_operations ao 
+                 WHERE ao.account_id = ha.id
+                 ORDER BY ao.account_op_seq_no DESC
+                 LIMIT 1), 0::BIGINT) AS operation_count
+  FROM hive_accounts ha
 ;
 
 INSERT INTO hive_permlink_data VALUES(0, '');
