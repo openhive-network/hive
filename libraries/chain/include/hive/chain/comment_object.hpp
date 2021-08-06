@@ -170,6 +170,27 @@ namespace hive { namespace chain {
 #endif
   };
 
+  /*
+    Similar to `comment_cashout_object` - extra members needed for payout calculation pre HF17.
+
+    Objects of this class are no longer produced after HF17. It also means related indexes are
+    no longer taking space.
+  */
+  class comment_cashout_ex_object : public object< comment_cashout_ex_object_type, comment_cashout_ex_object >
+  {
+    CHAINBASE_OBJECT( comment_cashout_ex_object );
+    public:
+    template< typename Allocator >
+    comment_cashout_ex_object( allocator< Allocator > a, uint64_t _id,
+      const comment_object& _comment )
+      : id( _comment.get_id() ) //note that it is possible because relation is 1->{0,1} so we can share id
+    {}
+
+    //returns id of associated comment
+    comment_id_type get_comment_id() const { return comment_object::id_type( id ); }
+    CHAINBASE_UNPACK_CONSTRUCTOR(comment_cashout_ex_object);
+  };
+
   /**
     * This index maintains the set of voter/comment pairs that have been used, voters cannot
     * vote on the same comment more than once per payout period.
@@ -283,6 +304,16 @@ namespace hive { namespace chain {
     allocator< comment_cashout_object >
   > comment_cashout_index;
 
+  /// This is empty after HF17
+  typedef multi_index_container<
+    comment_cashout_ex_object,
+    indexed_by<
+      ordered_unique< tag< by_id >,
+        const_mem_fun< comment_cashout_ex_object, comment_cashout_ex_object::id_type, &comment_cashout_ex_object::get_id > >
+    >,
+    allocator< comment_cashout_ex_object >
+  > comment_cashout_ex_index;
+
 } } // hive::chain
 
 FC_REFLECT( hive::chain::comment_object,
@@ -307,6 +338,12 @@ FC_REFLECT( hive::chain::comment_cashout_object,
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_cashout_object, hive::chain::comment_cashout_index )
+
+FC_REFLECT( hive::chain::comment_cashout_ex_object,
+           (id)
+          )
+
+CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_cashout_ex_object, hive::chain::comment_cashout_ex_index )
 
 FC_REFLECT( hive::chain::comment_vote_object,
           (id)(voter)(comment)(weight)(rshares)(vote_percent)(last_update)(num_changes)

@@ -859,6 +859,8 @@ void comment_evaluator::do_apply( const comment_operation& o )
       cashout_time = fc::time_point_sec::maximum();
 
     _db.create< comment_cashout_object >( new_comment, auth, o.permlink, _now, cashout_time, reward_weight );
+    if( !_db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
+      _db.create< comment_cashout_ex_object >( new_comment );
 
     if( parent )
     {
