@@ -90,6 +90,7 @@ int main( int argc, char** argv )
     bpo::options_description options;
 
     hive::utilities::set_logging_program_options( options );
+    hive::utilities::notifications::add_program_options(options);
     options.add_options()
       ("backtrace", bpo::value< string >()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" );
 
@@ -117,8 +118,8 @@ int main( int argc, char** argv )
         hive::plugins::webserver::webserver_plugin >
         ( argc, argv );
 
-    if( !initialized )
-      return 0;
+    if( !initialized ) return 0;
+    else hive::notify_hived_status("starting");
 
     const auto& chainPlugin = theApp.get_plugin<hive::plugins::chain::chain_plugin>();
     auto chainId = chainPlugin.db().get_chain_id();

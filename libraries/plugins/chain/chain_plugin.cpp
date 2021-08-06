@@ -5,6 +5,7 @@
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/statsd/utility.hpp>
 
+#include <hive/utilities/notifications.hpp>
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/utilities/database_configuration.hpp>
 
@@ -252,6 +253,7 @@ void chain_plugin_impl::start_write_processing()
 {
   write_processor_thread = std::make_shared< std::thread >( [&]()
   {
+    hive::notify_hived_status("syncing");
     ilog("Write processing thread started.");
 
     const fc::microseconds block_wait_max_time = fc::seconds(10*HIVE_BLOCK_INTERVAL);
@@ -363,6 +365,7 @@ void chain_plugin_impl::start_write_processing()
 
 void chain_plugin_impl::stop_write_processing()
 {
+  hive::notify_hived_status("finished syncing");
   running = false;
 
   if( write_processor_thread )
@@ -377,7 +380,9 @@ void chain_plugin_impl::stop_write_processing()
 
 bool chain_plugin_impl::start_replay_processing()
 {
+  hive::notify_hived_status("replaying");
   bool replay_is_last_operation = replay_blockchain();
+  hive::notify_hived_status("finished replaying");
 
   if( replay_is_last_operation )
   {
@@ -544,6 +549,7 @@ void chain_plugin_impl::open()
     wlog( "If you know what you are doing you can skip this check and force open the database using `--force-open`." );
     wlog( "WARNING: THIS MAY CORRUPT YOUR DATABASE. FORCE OPEN AT YOUR OWN RISK." );
     wlog( " Error: ${e}", ("e", e) );
+    hive::notify_hived_status("exitting with open database error");
     exit(EXIT_FAILURE);
   }
 }
@@ -684,7 +690,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   my->replay              = options.at( "replay-blockchain").as<bool>() || my->force_replay;
   my->resync              = options.at( "resync-blockchain").as<bool>();
   my->stop_replay_at      = options.count( "stop-replay-at-block" ) ? options.at( "stop-replay-at-block" ).as<uint32_t>() : 0;
-  my->exit_before_sync   = options.count( "exit-before-sync" ) ? options.at( "exit-before-sync" ).as<bool>() : false;
+  my->exit_before_sync    = options.count( "exit-before-sync" ) ? options.at( "exit-before-sync" ).as<bool>() : false;
   my->benchmark_interval  =
     options.count( "set-benchmark-interval" ) ? options.at( "set-benchmark-interval" ).as<uint32_t>() : 0;
   my->check_locks         = options.at( "check-locks" ).as< bool >();
