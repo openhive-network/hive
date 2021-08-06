@@ -24,6 +24,7 @@
 #include <chrono>
 #include <memory>
 #include <iostream>
+#include <mutex>
 
 namespace hive { namespace plugins { namespace chain {
 
@@ -73,7 +74,11 @@ class chain_plugin_impl
 {
   public:
     chain_plugin_impl() : write_queue( 64 ) {}
-    ~chain_plugin_impl() { stop_write_processing(); }
+    ~chain_plugin_impl() 
+    {
+      stop_write_processing();
+      if(dumper_post_apply_block.connected()) dumper_post_apply_block.disconnect();
+    }
 
     void register_snapshot_provider(state_snapshot_provider& provider)
       {
@@ -94,6 +99,7 @@ class chain_plugin_impl
     void work( synchronization_type& on_sync );
 
     void write_default_database_config( bfs::path& p );
+    void setup_benchmark_dumper();
 
     uint64_t                         shared_memory_size = 0;
     uint16_t                         shared_file_full_threshold = 0;
@@ -137,6 +143,7 @@ class chain_plugin_impl
     hive::utilities::benchmark_dumper   dumper;
     hive::chain::open_args              db_open_args;
     get_indexes_memory_details_type     get_indexes_memory_details;
+    boost::signals2::connection         dumper_post_apply_block;
 
     state_snapshot_provider*            snapshot_provider = nullptr;
     bool                                is_p2p_enabled = true;
@@ -436,9 +443,6 @@ void chain_plugin_impl::initial_settings()
   get_indexes_memory_details = [ this, &abstract_index_cntr ]
     (index_memory_details_cntr_t& index_memory_details_cntr, bool onlyStaticInfo)
   {
-    if( dump_memory_details == false )
-      return;
-
     for (auto idx : abstract_index_cntr)
     {
       auto info = idx->get_statistics(onlyStaticInfo);
@@ -466,41 +470,6 @@ void chain_plugin_impl::initial_settings()
   db_open_args.database_cfg = database_config;
   db_open_args.replay_in_memory = replay_in_memory;
   db_open_args.replay_memory_indices = replay_memory_indices;
-
-  auto benchmark_lambda = [ this ] ( uint32_t current_block_number,
-    const chainbase::database::abstract_index_cntr_t& abstract_index_cntr )
-  {
-    if( current_block_number == 0 ) // initial call
-    {
-      typedef hive::utilities::benchmark_dumper::database_object_sizeof_cntr_t database_object_sizeof_cntr_t;
-      auto get_database_objects_sizeofs = [ this, &abstract_index_cntr ]
-        (database_object_sizeof_cntr_t& database_object_sizeof_cntr)
-      {
-        if ( dump_memory_details == false)
-          return;
-
-        for (auto idx : abstract_index_cntr)
-        {
-          auto info = idx->get_statistics(true);
-          database_object_sizeof_cntr.emplace_back(std::move(info._value_type_name), info._item_sizeof);
-        }
-      };
-
-      dumper.initialize( get_database_objects_sizeofs, BENCHMARK_FILE_NAME );
-      return;
-    }
-
-    const hive::utilities::benchmark_dumper::measurement& measure =
-      dumper.measure( current_block_number, get_indexes_memory_details );
-    ilog( "Performance report at block ${n}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
-      ("n", current_block_number)
-      ("rt", measure.real_ms)
-      ("ct", measure.cpu_ms)
-      ("cm", measure.current_mem)
-      ("pm", measure.peak_mem) );
-  };
-
-  db_open_args.benchmark = hive::chain::TBenchmark( benchmark_interval, benchmark_lambda );
 }
 
 bool chain_plugin_impl::check_data_consistency()
@@ -541,7 +510,10 @@ void chain_plugin_impl::open()
     db.open( db_open_args );
 
     if( dump_memory_details )
+    {
+      setup_benchmark_dumper();
       dumper.dump( true, get_indexes_memory_details );
+    }
   }
   catch( const fc::exception& e )
   {
@@ -564,7 +536,7 @@ bool chain_plugin_impl::replay_blockchain()
 
     if( benchmark_interval > 0 )
     {
-      const hive::utilities::benchmark_dumper::measurement& total_data = dumper.dump( true, get_indexes_memory_details );
+      const hive::utilities::benchmark_dumper::measurement& total_data = dumper.dump( dump_memory_details, get_indexes_memory_details );
       ilog( "Performance report (total). Blocks: ${b}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
           ("b", total_data.block_number)
           ("rt", total_data.real_ms)
@@ -612,6 +584,29 @@ void chain_plugin_impl::write_default_database_config( bfs::path &p )
 {
   ilog( "writing database configuration: ${p}", ("p", p.string()) );
   fc::json::save_to_file( hive::utilities::default_database_configuration(), p );
+}
+
+void chain_plugin_impl::setup_benchmark_dumper()
+{
+  static std::mutex mtx;
+  std::lock_guard<std::mutex> _{mtx};
+
+  if(!this->dumper.is_initialized())
+  {
+    typedef hive::utilities::benchmark_dumper::database_object_sizeof_cntr_t database_object_sizeof_cntr_t;
+    const auto abstract_index_cntr = this->db.get_abstract_index_cntr();
+    auto get_database_objects_sizeofs = [ this, &abstract_index_cntr ]
+      (database_object_sizeof_cntr_t& database_object_sizeof_cntr)
+    {
+      database_object_sizeof_cntr.reserve(abstract_index_cntr.size());
+      for (auto idx : abstract_index_cntr)
+      {
+        auto info = idx->get_statistics(true);
+        database_object_sizeof_cntr.emplace_back(std::move(info._value_type_name), info._item_sizeof);
+      }
+    };
+    this->dumper.initialize( get_database_objects_sizeofs, (this->dump_memory_details ? BENCHMARK_FILE_NAME : "") );
+  }
 }
 
 } // detail
@@ -740,6 +735,28 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     }
   }
 #endif
+
+  if(my->benchmark_interval > 0)
+  {
+    my->dumper_post_apply_block = db().add_post_apply_block_handler([&](const hive::chain::block_notification& note) noexcept {
+      if(!this->my->dumper.is_initialized()) this->my->setup_benchmark_dumper();
+      const uint32_t current_block_number = note.block_num;
+      if( my->benchmark_interval && ( current_block_number % my->benchmark_interval == 0 ) )
+      {
+        const hive::utilities::benchmark_dumper::measurement& measure =
+          my->dumper.measure( current_block_number, my->get_indexes_memory_details );
+
+        ilog( "Performance report at block ${n}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
+          ("n", current_block_number)
+          ("rt", measure.real_ms)
+          ("ct", measure.cpu_ms)
+          ("cm", measure.current_mem)
+          ("pm", measure.peak_mem) );
+
+        hive::notify("hived_benchmark", "multiindex_stats", fc::variant{measure});
+      }
+    }, *this, 0);
+  }
 }
 
 void chain_plugin::plugin_startup()
