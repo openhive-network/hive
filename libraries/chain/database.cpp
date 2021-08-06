@@ -956,7 +956,7 @@ const comment_cashout_object* database::find_comment_cashout( const comment_obje
 
 const comment_cashout_object* database::find_comment_cashout( comment_id_type comment_id ) const
 {
-  const auto& idx = get_index< comment_cashout_index >().indices().get< by_id >();
+  const auto& idx = get_index< comment_cashout_index, by_id >();
   comment_cashout_object::id_type ccid( comment_id );
   auto found = idx.find( ccid );
 
@@ -964,6 +964,24 @@ const comment_cashout_object* database::find_comment_cashout( comment_id_type co
     return nullptr;
   else
     return &( *found );
+}
+
+const comment_cashout_ex_object* database::find_comment_cashout_ex( const comment_object& comment ) const
+{
+  return find_comment_cashout_ex( comment.get_id() );
+}
+
+const comment_cashout_ex_object* database::find_comment_cashout_ex( comment_id_type comment_id ) const
+{
+  if( has_hardfork( HIVE_HARDFORK_0_17 ) )
+    return nullptr;
+
+  const auto& idx = get_index< comment_cashout_ex_index, by_id >();
+  comment_cashout_ex_object::id_type ccid( comment_id );
+  auto found = idx.find( ccid );
+
+  FC_ASSERT( found != idx.end() );
+  return &( *found );
 }
 
 const comment_object& database::get_comment( const comment_cashout_object& comment_cashout ) const
@@ -2920,6 +2938,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
     if( !has_hardfork( HIVE_HARDFORK_0_19 ) ) // paid comment is removed after HF19, so no point in modification
     {
+      const auto* comment_cashout_ex = find_comment_cashout_ex( comment );
       modify( comment_cashout, [&]( comment_cashout_object& c )
       {
         /**
@@ -2940,14 +2959,19 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         }
         else if( comment.is_root() )
         {
-          if( has_hardfork( HIVE_HARDFORK_0_12__177 ) && c.last_payout == fc::time_point_sec::min() )
+          if( has_hardfork( HIVE_HARDFORK_0_12__177 ) && !comment_cashout_ex->was_paid() )
             c.cashout_time = head_block_time() + HIVE_SECOND_CASHOUT_WINDOW;
           else
             c.cashout_time = fc::time_point_sec::maximum();
         }
-
-        c.last_payout = head_block_time();
       } );
+      if( comment_cashout_ex )
+      {
+        modify( *comment_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
+        {
+          c_ex.on_payout( head_block_time() );
+        } );
+      }
     }
 
     if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || calculate_discussion_payout_time( comment_cashout ) == fc::time_point_sec::maximum() )
@@ -5958,10 +5982,11 @@ void database::apply_hardfork( uint32_t hardfork )
           // All posts with a payout get their cashout time set to +30 days. This hardfork takes place within 30 days
           // initial payout so we don't have to handle the case of posts that should be frozen that aren't
           const comment_object& comment = get_comment( *itr );
+          const comment_cashout_ex_object* c_ex = find_comment_cashout_ex( comment );
           if( comment.is_root() )
           {
-            // Post has not been paid out and has no votes (cashout_time == 0 === net_rshares == 0, under current semmantics)
-            if( itr->last_payout == fc::time_point_sec::min() && itr->cashout_time == fc::time_point_sec::maximum() )
+            // Post has not been paid out and has no votes (cashout_time == 0 === net_rshares == 0, under current semantics)
+            if( !c_ex->was_paid() && itr->cashout_time == fc::time_point_sec::maximum() )
             {
               modify( *itr, [&]( comment_cashout_object & c )
               {
@@ -5969,11 +5994,11 @@ void database::apply_hardfork( uint32_t hardfork )
               });
             }
             // Has been paid out, needs to be on second cashout window
-            else if( itr->last_payout > fc::time_point_sec() )
+            else if( c_ex->was_paid() )
             {
               modify( *itr, [&]( comment_cashout_object& c )
               {
-                c.cashout_time = c.last_payout + HIVE_SECOND_CASHOUT_WINDOW;
+                c.cashout_time = c_ex->get_last_payout() + HIVE_SECOND_CASHOUT_WINDOW;
               });
             }
           }

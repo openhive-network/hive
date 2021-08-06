@@ -376,7 +376,7 @@ struct api_comment_object
       author_rewards          = 0; // since HF19 it was always 0 or cc did not exist
       net_votes               = cc->net_votes;
       active                  = cc->active;
-      last_payout             = cc->last_payout;
+      last_payout             = time_point_sec::min(); // since HF17 it is the only value possible
       children                = cc->children;
       net_rshares             = cc->net_rshares;
       abs_rshares             = cc->abs_rshares;
