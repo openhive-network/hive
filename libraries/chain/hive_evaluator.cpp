@@ -1167,21 +1167,10 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
 
   if( o.vesting_shares.amount < 0 )
   {
-    // TODO: Update this to a HF 20 check
-#ifndef IS_TEST_NET
-    if( _db.head_block_num() > 23847548 )
-    {
-#endif
-      FC_ASSERT( false, "Cannot withdraw negative VESTS. account: ${account}, vests:${vests}",
-        ("account", o.account)("vests", o.vesting_shares) );
-#ifndef IS_TEST_NET
-    }
-#endif
-
-    // else, no-op
+    FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_20 ), "Cannot withdraw negative VESTS. account: ${account}, vests:${vests}",
+      ("account", o.account)("vests", o.vesting_shares) );
     return;
   }
-
 
   FC_ASSERT( account.vesting_shares >= asset( 0, VESTS_SYMBOL ), "Account does not have sufficient Hive Power for withdraw." );
   FC_ASSERT( static_cast<asset>(account.vesting_shares) - account.delegated_vesting_shares >= o.vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
