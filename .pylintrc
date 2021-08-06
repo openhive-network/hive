@@ -66,6 +66,9 @@ confidence=
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
 disable=print-statement,
+        missing-module-docstring,
+        missing-class-docstring,
+        missing-function-docstring,
         parameter-unpacking,
         unpacking-in-except,
         old-raise-syntax,
