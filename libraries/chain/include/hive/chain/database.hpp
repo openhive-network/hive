@@ -93,7 +93,6 @@ namespace chain {
     uint32_t stop_replay_at = 0;
     bool exit_after_replay = false;
     bool force_replay = false;
-    TBenchmark benchmark = TBenchmark(0, [](uint32_t, const chainbase::database::abstract_index_cntr_t&) {});
     };
 
   /**
