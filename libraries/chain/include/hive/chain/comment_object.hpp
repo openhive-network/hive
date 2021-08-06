@@ -93,8 +93,7 @@ namespace hive { namespace chain {
   /*
     Helper class related to `comment_object` - members needed for payout calculation.
 
-    Objects of this class can be removed, it depends on `cashout_time`
-    when `cashout_time == fc::time_point_sec::maximum()`
+    After HF19 objects of this class are removed at the end of comment cashout process.
   */
   class comment_cashout_object : public object< comment_cashout_object_type, comment_cashout_object >
   {
@@ -104,9 +103,9 @@ namespace hive { namespace chain {
       comment_cashout_object( allocator< Allocator > a, uint64_t _id,
         const comment_object& _comment, const account_object& _author, const std::string& _permlink,
         const time_point_sec& _creation_time, const time_point_sec& _cashout_time, uint16_t _reward_weight = 0 )
-        : id( _comment.get_id() ), //note that it is possible because relation is 1->{0,1} so we can share id
+      : id( _comment.get_id() ), //note that it is possible because relation is 1->{0,1} so we can share id
         author_id( _author.get_id() ), permlink( a ), active( _creation_time ),
-        last_payout( time_point_sec::min() ), created( _creation_time ), cashout_time( _cashout_time ),
+        created( _creation_time ), cashout_time( _cashout_time ),
         max_cashout_time( time_point_sec::maximum() ), reward_weight( _reward_weight ), beneficiaries( a )
 #ifdef HIVE_ENABLE_SMT
         , allowed_vote_assets( a )
@@ -126,7 +125,6 @@ namespace hive { namespace chain {
       shared_string     permlink;
 
       time_point_sec    active; ///< the last time this post was "touched" by voting or reply
-      time_point_sec    last_payout;
 
       /// index on pending_payout for "things happning now... needs moderation"
       /// TRENDING = UNCLAIMED + PENDING
@@ -180,15 +178,30 @@ namespace hive { namespace chain {
   {
     CHAINBASE_OBJECT( comment_cashout_ex_object );
     public:
-    template< typename Allocator >
-    comment_cashout_ex_object( allocator< Allocator > a, uint64_t _id,
-      const comment_object& _comment )
-      : id( _comment.get_id() ) //note that it is possible because relation is 1->{0,1} so we can share id
-    {}
+      template< typename Allocator >
+      comment_cashout_ex_object( allocator< Allocator > a, uint64_t _id,
+        const comment_object& _comment )
+      : id( _comment.get_id() ), //note that it is possible because relation is 1->{0,1} so we can share id
+        last_payout( time_point_sec::min() )
+      {}
 
-    //returns id of associated comment
-    comment_id_type get_comment_id() const { return comment_object::id_type( id ); }
-    CHAINBASE_UNPACK_CONSTRUCTOR(comment_cashout_ex_object);
+      //returns id of associated comment
+      comment_id_type get_comment_id() const { return comment_object::id_type( id ); }
+
+      //returns time of previous payout (or min if comment was not yet cashed out)
+      time_point_sec get_last_payout() const { return last_payout; }
+      //tells if associated comment was paid
+      bool was_paid() const { return last_payout > time_point_sec::min(); }
+      //sets payout time for associated comment
+      void on_payout( time_point_sec payout_time )
+      {
+        last_payout = payout_time;
+      }
+
+    private:
+      time_point_sec    last_payout;
+
+      CHAINBASE_UNPACK_CONSTRUCTOR(comment_cashout_ex_object);
   };
 
   /**
@@ -205,7 +218,7 @@ namespace hive { namespace chain {
       comment_vote_object( allocator< Allocator > a, uint64_t _id,
         const account_object& _voter, const comment_object& _comment,
         const time_point_sec& _creation_time, int16_t _vote_percent, uint64_t _weight, int64_t _rshares )
-        : id( _id ), voter( _voter.get_id() ), comment( _comment.get_id() ), weight( _weight ),
+      : id( _id ), voter( _voter.get_id() ), comment( _comment.get_id() ), weight( _weight ),
         rshares( _rshares ), vote_percent( _vote_percent ), last_update( _creation_time )
       {}
 
@@ -325,7 +338,7 @@ CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_object, hive::chain::comment_inde
 
 FC_REFLECT( hive::chain::comment_cashout_object,
           (id)(author_id)(permlink)
-          (active)(last_payout)
+          (active)
           (net_rshares)(abs_rshares)(vote_rshares)(children_abs_rshares)
           (children)(created)(cashout_time)(max_cashout_time)
           (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(beneficiary_payout_value)
@@ -341,6 +354,7 @@ CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_cashout_object, hive::chain::comm
 
 FC_REFLECT( hive::chain::comment_cashout_ex_object,
            (id)
+           (last_payout)
           )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_cashout_ex_object, hive::chain::comment_cashout_ex_index )

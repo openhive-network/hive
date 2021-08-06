@@ -891,7 +891,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
       if( _db.has_hardfork( HIVE_HARDFORK_0_14__306 ) )
         FC_ASSERT( _db.calculate_discussion_payout_time( comment ) != fc::time_point_sec::maximum(), "The comment is archived." );
       else if( _db.has_hardfork( HIVE_HARDFORK_0_10 ) )
-        FC_ASSERT( comment_cashout->last_payout == fc::time_point_sec::min(), "Can only edit during the first 24 hours." );
+        FC_ASSERT( !_db.find_comment_cashout_ex( comment )->was_paid(), "Can only edit during the first 24 hours." );
     }
 
     if( !parent )
@@ -1414,7 +1414,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   const auto& comment = _db.get_comment( o.author, o.permlink );
   const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
 
-  const auto& voter   = _db.get_account( o.voter );
+  const auto& voter = _db.get_account( o.voter );
 
   FC_ASSERT( voter.can_vote, "Voter has declined their voting rights." );
 
@@ -1505,12 +1505,13 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     FC_ASSERT( root_cashout );
     _db.modify( *root_cashout, [&]( comment_cashout_object& c )
     {
+      const auto* c_ex = _db.find_comment_cashout_ex( root );
       auto old_root_abs_rshares = c.children_abs_rshares.value;
       c.children_abs_rshares += abs_rshares;
 
-      if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && c.last_payout > fc::time_point_sec::min() )
+      if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && c_ex->was_paid() )
       {
-        c.cashout_time = c.last_payout + HIVE_SECOND_CASHOUT_WINDOW;
+        c.cashout_time = c_ex->get_last_payout() + HIVE_SECOND_CASHOUT_WINDOW;
       }
       else
       {
@@ -1584,9 +1585,14 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     **/
     uint64_t vote_weight = 0;
     {
-      bool curation_reward_eligible = rshares > 0 && (comment_cashout->last_payout == fc::time_point_sec()) && comment_cashout->allow_curation_rewards;
-      if( curation_reward_eligible && _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-        curation_reward_eligible = _db.get_curation_rewards_percent() > 0;
+      bool curation_reward_eligible = rshares > 0 && comment_cashout->allow_curation_rewards;
+      if( curation_reward_eligible )
+      {
+        if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
+          curation_reward_eligible = _db.get_curation_rewards_percent() > 0;
+        else
+          curation_reward_eligible = !_db.find_comment_cashout_ex( comment )->was_paid();
+      }
 
       if( curation_reward_eligible )
       {

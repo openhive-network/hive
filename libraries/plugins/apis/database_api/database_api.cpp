@@ -26,7 +26,7 @@ api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_objec
   author_rewards = 0; // since HF19 author_rewards was either default 0 or cc did not exist
   net_votes = cc.net_votes;
   active = cc.active;
-  last_payout = cc.last_payout;
+  last_payout = time_point_sec::min(); // since HF17 there is only one payout and cc does not exist afterwards
   net_rshares = cc.net_rshares;
   abs_rshares = cc.abs_rshares;
   vote_rshares = cc.vote_rshares;

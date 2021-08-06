@@ -294,6 +294,8 @@ namespace chain {
 
       const comment_cashout_object* find_comment_cashout( const comment_object& comment ) const;
       const comment_cashout_object* find_comment_cashout( comment_id_type comment_id ) const;
+      const comment_cashout_ex_object* find_comment_cashout_ex( const comment_object& comment ) const;
+      const comment_cashout_ex_object* find_comment_cashout_ex( comment_id_type comment_id ) const;
       const comment_object& get_comment( const comment_cashout_object& comment_cashout ) const;
       void remove_old_comments();
 
