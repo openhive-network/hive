@@ -1,5 +1,5 @@
 #include <hive/protocol/asset.hpp>
-#include <fc/misc_utilities.hpp>
+#include <hive/protocol/misc_utilities.hpp>
 
 #include <fc/io/json.hpp>
 
@@ -546,7 +546,7 @@ namespace fc {
 
   void to_variant( const hive::protocol::asset& var, fc::variant& vo )
   {
-    if( fc::dynamic_serializer::legacy_enabled )
+    if( hive::protocol::dynamic_serializer::legacy_enabled )
       to_variant( hive::protocol::legacy_asset( var ), vo );
     else
     {
@@ -569,7 +569,7 @@ namespace fc {
   {
     try
     {
-      if( fc::dynamic_serializer::legacy_enabled )
+      if( hive::protocol::dynamic_serializer::legacy_enabled )
       {
         hive::protocol::legacy_asset a;
         from_variant( var, a );

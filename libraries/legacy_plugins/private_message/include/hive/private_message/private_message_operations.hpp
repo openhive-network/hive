@@ -39,6 +39,16 @@ namespace fc
       return extended_serialization_functor< private_message_plugin_operation >().serialize( v, s );
     }
   };
+
+  template<>
+  struct variant_creator_functor< private_message_plugin_operation >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      return extended_variant_creator_functor< private_message_plugin_operation >().create( v );
+    }
+  };
 }
 
 FC_REFLECT( hive::private_message::private_message_operation, (from)(to)(from_memo_key)(to_memo_key)(sent_time)(checksum)(encrypted_message) )

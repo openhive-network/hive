@@ -171,6 +171,16 @@ namespace fc
       return extended_serialization_functor< update_proposal_extension >().serialize( v, s );
     }
   };
+
+  template<>
+  struct variant_creator_functor< update_proposal_extension >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      return extended_variant_creator_functor< update_proposal_extension >().create( v );
+    }
+  };
 }
 
 FC_REFLECT_TYPENAME( hive::protocol::update_proposal_extension )
