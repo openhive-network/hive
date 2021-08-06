@@ -44,7 +44,7 @@ add_library( appbase
              ${HEADERS}
            )
 
-target_link_libraries( appbase ${Boost_LIBRARIES})
+target_link_libraries( appbase hive_utilities ${Boost_LIBRARIES})
 
 target_include_directories( appbase
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" ${Boost_INCLUDE_DIR})
