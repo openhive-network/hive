@@ -173,13 +173,6 @@ void database::initialize_state_independent_data(const open_args& args)
     _block_log.open(args.data_dir / "block_log");
   });
 
-  if(args.benchmark.first)
-  {
-    args.benchmark.second(0, get_abstract_index_cntr());
-    auto last_block_num = _block_log.head()->block_num();
-    args.benchmark.second(last_block_num, get_abstract_index_cntr());
-  }
-
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
 
@@ -294,10 +287,6 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
   uint32_t last_block_num = _block_log.head()->block_num();
   if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
     last_block_num = args.stop_replay_at;
-  if( args.benchmark.first > 0 )
-  {
-    args.benchmark.second( 0, get_abstract_index_cntr() );
-  }
 
   bool rat = fc::enable_record_assert_trip;
   bool as = fc::enable_assert_stacktrace;
@@ -309,9 +298,6 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
     uint32_t cur_block_num = block.block_num();
 
     apply_block( block, skip_flags );
-
-    if( (args.benchmark.first > 0) && (cur_block_num % args.benchmark.first == 0) )
-      args.benchmark.second( cur_block_num, get_abstract_index_cntr() );
 
     if( !appbase::app().is_interrupt_request() )
     {
@@ -434,8 +420,6 @@ uint32_t database::reindex( const open_args& args )
         note.last_block_number = start_block->block_num();
       }
 
-      if( (args.benchmark.first > 0) && (note.last_block_number % args.benchmark.first == 0) )
-        args.benchmark.second( note.last_block_number, get_abstract_index_cntr() );
       set_revision( head_block_num() );
 
       //get_index< account_index >().indices().print_stats();
