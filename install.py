@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -31,7 +32,7 @@ def install():
     if destination.exists():
         print(f'You have already installed {package_name}.')
         check_paths_to_executables()
-        exit(0)
+        sys.exit(0)
 
     source = this_script_directory / 'package/test_tools/'
     destination.symlink_to(source)

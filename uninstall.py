@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -13,7 +14,7 @@ def uninstall():
 
     if not destination.exists():
         print(f'{package_name} aren\'t installed.')
-        exit(0)
+        sys.exit(0)
 
     destination.unlink()
     print(f'You have successfully uninstalled {package_name}.')
