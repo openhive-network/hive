@@ -3,6 +3,7 @@
 
 #include <hive/protocol/authority.hpp>
 #include <hive/protocol/base.hpp>
+#include <hive/protocol/misc_utilities.hpp>
 
 #include <fc/variant.hpp>
 
@@ -78,7 +79,7 @@ struct get_legacy_static_variant_name
   typedef void result_type;
   template< typename T > void operator()( const T& v )const
   {
-    name = fc::trim_legacy_typename_namespace( fc::get_typename< T >::name() );
+    name = hive::protocol::trim_legacy_typename_namespace( fc::get_typename< T >::name() );
   }
 };
 
@@ -117,6 +118,25 @@ struct extended_serialization_functor
     s.visit( fc::to_static_variant( ar[1] ) );
 
     return true;
+  }
+};
+
+template< typename static_variant >
+struct extended_variant_creator_functor
+{
+  template<typename T>
+  fc::variant create( const T& v ) const
+  {
+    if( hive::protocol::dynamic_serializer::legacy_enabled )
+    {
+      auto name = hive::protocol::trim_legacy_typename_namespace( fc::get_typename< T >::name() );
+      return variants( { variant( name ), variant( v ) } );
+    }
+    else
+    {
+      auto name = trim_typename_namespace( fc::get_typename< T >::name() );
+      return mutable_variant_object( "type", name )( "value", v );
+    }
   }
 };
 

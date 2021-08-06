@@ -13,7 +13,6 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <fc/exception/exception.hpp>
-#include <fc/misc_utilities.hpp>
 
 namespace fc {
 
@@ -23,6 +22,17 @@ struct serialization_functor
   bool operator()( const fc::variant& v, static_variant& s ) const
   {
     return false;
+  }
+};
+
+template< typename static_variant >
+struct variant_creator_functor
+{
+  template<typename T>
+  variant operator()( const T& v ) const
+  {
+    auto name = trim_typename_namespace( fc::get_typename< T >::name() );
+    return mutable_variant_object( "type", name )( "value", v );
   }
 };
 
@@ -381,6 +391,7 @@ struct visitor {
     typedef Result result_type;
 };
 
+   template< typename static_variant >
    struct from_static_variant
    {
       variant& var;
@@ -389,16 +400,7 @@ struct visitor {
       typedef void result_type;
       template<typename T> void operator()( const T& v )const
       {
-        if( dynamic_serializer::legacy_enabled )
-        {
-          auto name = trim_legacy_typename_namespace( fc::get_typename< T >::name() );
-          var = variants( { variant( name ), variant( v ) } );
-        }
-        else
-        {
-          auto name = trim_typename_namespace( fc::get_typename< T >::name() );
-          var = mutable_variant_object( "type", name )( "value", v );
-        }
+        var = variant_creator_functor< static_variant >()( v );
       }
    };
 
@@ -416,7 +418,7 @@ struct visitor {
 
    template<typename... T> void to_variant( const fc::static_variant<T...>& s, fc::variant& v )
    {
-      s.visit( from_static_variant( v ) );
+      s.visit( from_static_variant< fc::static_variant<T...> >( v ) );
    }
 
    struct get_static_variant_name

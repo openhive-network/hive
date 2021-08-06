@@ -56,6 +56,16 @@ namespace fc
       return extended_serialization_functor< follow_plugin_operation >().serialize( v, s );
     }
   };
+
+  template<>
+  struct variant_creator_functor< follow_plugin_operation >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      return extended_variant_creator_functor< follow_plugin_operation >().create( v );
+    }
+  };
 }
 
 FC_REFLECT( hive::plugins::follow::follow_operation, (follower)(following)(what) )

@@ -150,6 +150,15 @@ namespace fc
     }
   };
 
+  template<>
+  struct variant_creator_functor< operation >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      return extended_variant_creator_functor< operation >().create( v );
+    }
+  };
 }
 /*namespace fc {
     void to_variant( const hive::protocol::operation& var,  fc::variant& vo );
