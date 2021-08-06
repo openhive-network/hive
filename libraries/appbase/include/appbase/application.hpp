@@ -3,6 +3,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/core/demangle.hpp>
 #include <boost/asio.hpp>
+#include <hive/utilities/notifications.hpp>
 #include <boost/throw_exception.hpp>
 
 #include <iostream>
@@ -142,6 +143,7 @@ namespace appbase {
 
       void generate_interrupt_request()
       {
+        hive::notify_hived_status("exitting");
         _is_interrupt_request = true;
       }
 
