@@ -95,7 +95,6 @@ namespace chain {
     bool exit_after_replay = false;
     bool force_replay = false;
     bool validate_during_replay = false;
-    TBenchmark benchmark = TBenchmark(0, [](uint32_t, const chainbase::database::abstract_index_cntr_t&) {});
     };
 
   /**

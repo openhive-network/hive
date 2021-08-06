@@ -89,6 +89,8 @@ public:
   typedef std::function<void(index_memory_details_cntr_t&, bool)> get_indexes_memory_details_t;
   typedef std::function<void(database_object_sizeof_cntr_t&)> get_database_objects_sizeofs_t;
 
+  bool is_initialized() const { return _init_sys_time != fc::time_point{}; }
+
   void initialize(get_database_objects_sizeofs_t get_database_objects_sizeofs,
               const char* file_name)
   {
@@ -101,6 +103,7 @@ public:
 
   const measurement& measure(uint32_t block_number, get_indexes_memory_details_t get_indexes_memory_details)
   {
+    validate_is_initialized();
     uint64_t current_virtual = 0;
     uint64_t peak_virtual = 0;
     read_mem(_pid, &current_virtual, &peak_virtual);
@@ -115,7 +118,6 @@ public:
             current_virtual,
             peak_virtual );
     get_indexes_memory_details(data.index_memory_details_cntr, true);
-    _all_data.measurements.push_back( data );
   
     _last_sys_time = current_sys_time;
     _last_cpu_time = current_cpu_time;
@@ -128,12 +130,17 @@ public:
       peak_virtual );
 
     dump(false, get_indexes_memory_details);
-  
+
+    // no sense to store data that will not be dumped to file
+    if(   _all_data.measurements.empty() || is_file_available() ) _all_data.measurements.push_back( data );
+    else  _all_data.measurements[0] = data;
+
     return _all_data.measurements.back();
   }
 
   const measurement& dump(bool finalMeasure, get_indexes_memory_details_t get_indexes_memory_details)
   {
+    validate_is_initialized();
     if(finalMeasure)
     {
       /// Collect index data including dynamic container sizes, what can be time consuming
@@ -150,15 +157,19 @@ public:
         }
       );
     }
-    const fc::path path(_file_name);
-    try
+
+    if(is_file_available()) 
     {
-      fc::json::save_to_file(_all_data, path);
+      const fc::path path(_file_name);
+      try
+      {
+        fc::json::save_to_file(_all_data, path);
       }
-    catch ( const fc::exception& except )
-    {
-      elog( "error writing benchmark data to file ${filename}: ${error}",
-          ( "filename", path )("error", except.to_detail_string() ) );
+      catch ( const fc::exception& except )
+      {
+        elog( "error writing benchmark data to file ${filename}: ${error}",
+            ( "filename", path )("error", except.to_detail_string() ) );
+      }
     }
 
     return _all_data.total_measurement;
@@ -166,9 +177,11 @@ public:
 
 private:
   bool read_mem(pid_t pid, uint64_t* current_virtual, uint64_t* peak_virtual);
+  bool is_file_available() const { return !_file_name.empty(); }
+  void validate_is_initialized() const { FC_ASSERT( is_initialized(), "dumper is not initialized, first call initialize()" ); }
 
 private:
-  const char*    _file_name = nullptr;
+  fc::string     _file_name{};
   fc::time_point _init_sys_time;
   fc::time_point _last_sys_time;
   clock_t        _init_cpu_time = 0;
