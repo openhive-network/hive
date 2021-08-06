@@ -216,6 +216,14 @@ void webserver_plugin_impl::start_webserver()
         }
         ilog( "start listening for ws requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *ws_endpoint ) ) );
 
+        hive::notify( "webserver_configuration",
+      // {
+          "type", "WS",
+          "listening_address", ws_endpoint->address().to_string(),
+          "listening_port", ws_endpoint->port()
+      // }
+      );
+
         ws_server.start_accept();
 
         ws_ios.run();
@@ -246,6 +254,14 @@ void webserver_plugin_impl::start_webserver()
         http_server.start_accept();
         update_http_endpoint();
         ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
+
+        hive::notify( "webserver_configuration",
+        // {
+            "type", "HTTP",
+            "listening_address", http_endpoint->address().to_string(),
+            "listening_port", http_endpoint->port()
+        // }
+        );
 
         http_ios.run();
         ilog( "http io service exit" );
