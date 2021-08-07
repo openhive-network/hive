@@ -1509,7 +1509,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       auto old_root_abs_rshares = c_ex->get_children_abs_rshares();
       _db.modify( *c_ex, [&]( comment_cashout_ex_object& c2 )
       {
-        c2.on_vote( abs_rshares );
+        c2.add_abs_rshares( abs_rshares );
       } );
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && c_ex->was_paid() )
@@ -1533,11 +1533,16 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
             new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
           avg_cashout_sec = ( cur_cashout_time_sec * old_root_abs_rshares + new_cashout_time_sec * abs_rshares ) / c_ex->get_children_abs_rshares();
         }
-        c.cashout_time = fc::time_point_sec( std::min( uint32_t( avg_cashout_sec.to_uint64() ), c.max_cashout_time.sec_since_epoch() ) );
+        c.cashout_time = fc::time_point_sec( std::min( uint32_t( avg_cashout_sec.to_uint64() ), c_ex->get_max_cashout_time().sec_since_epoch() ) );
       }
 
-      if( c.max_cashout_time == fc::time_point_sec::maximum() )
-        c.max_cashout_time = _now + fc::seconds( HIVE_MAX_CASHOUT_WINDOW_SECONDS );
+      if( c_ex->get_max_cashout_time() == fc::time_point_sec::maximum() )
+      {
+        _db.modify( *c_ex, [&]( comment_cashout_ex_object& c2 )
+        {
+          c2.set_max_cashout_time( _now + fc::seconds( HIVE_MAX_CASHOUT_WINDOW_SECONDS ) );
+        } );
+      }
     } );
   }
 

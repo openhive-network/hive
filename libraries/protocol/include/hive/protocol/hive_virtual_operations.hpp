@@ -44,8 +44,8 @@ namespace hive { namespace protocol {
   struct comment_reward_operation : public virtual_operation
   {
     comment_reward_operation() = default;
-    comment_reward_operation( const account_name_type& a, const string& pl, const asset& p, share_type ar,
-                              const asset& tpv, const asset& cpv, const asset& bpv )
+    comment_reward_operation( const account_name_type& a, const string& pl, const HBD_asset& p, share_type ar,
+                              const HBD_asset& tpv, const HBD_asset& cpv, const HBD_asset& bpv )
       : author(a), permlink(pl), payout(p), author_rewards(ar),
         total_payout_value( tpv ), curator_payout_value( cpv ), beneficiary_payout_value( bpv ) {}
 

@@ -2728,18 +2728,6 @@ void database::process_vesting_withdrawals()
   }
 }
 
-void database::adjust_total_payout( const comment_cashout_object& cur, const asset& hbd_created, const asset& curator_hbd_value, const asset& beneficiary_value )
-{
-  modify( cur, [&]( comment_cashout_object& c )
-  {
-    // input assets should be in HBD
-    c.total_payout_value += hbd_created;
-    c.curator_payout_value += curator_hbd_value;
-    c.beneficiary_payout_value += beneficiary_value;
-  } );
-  /// TODO: potentially modify author's total payout numbers as well
-}
-
 /**
   *  This method will iterate through all comment_vote_objects and give them
   *  (max_rewards * weight) / c.total_vote_weight.
@@ -2820,7 +2808,8 @@ void fill_comment_reward_context_local_state( util::comment_reward_context& ctx,
   ctx.max_hbd = comment_cashout.max_accepted_payout;
 }
 
-share_type database::cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment, const comment_cashout_object& comment_cashout, bool forward_curation_remainder )
+share_type database::cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment,
+  const comment_cashout_object& comment_cashout, const comment_cashout_ex_object* comment_cashout_ex, bool forward_curation_remainder )
 {
   try
   {
@@ -2914,13 +2903,23 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             vop.get< author_reward_operation >().vesting_payout = vesting_payout;
             pre_push_virtual_operation( vop );
           } );
-
-        adjust_total_payout( comment_cashout, hbd_payout.first + to_hbd( hbd_payout.second + asset( vesting_hive, HIVE_SYMBOL ) ), to_hbd( asset( curation_tokens, HIVE_SYMBOL ) ), to_hbd( asset( total_beneficiary, HIVE_SYMBOL ) ) );
-
         post_push_virtual_operation( vop );
-        vop = comment_reward_operation( comment_author, to_string( comment_cashout.permlink ), to_hbd( asset( claimed_reward, HIVE_SYMBOL ) ), author_tokens,
-                                        comment_cashout.total_payout_value, comment_cashout.curator_payout_value, comment_cashout.beneficiary_payout_value
-        );
+
+        asset payout = hbd_payout.first + to_hbd( hbd_payout.second + asset( vesting_hive, HIVE_SYMBOL ) );
+        asset curator_payout = to_hbd( asset( curation_tokens, HIVE_SYMBOL ) );
+        asset beneficiary_payout = to_hbd( asset( total_beneficiary, HIVE_SYMBOL ) );
+        if( !has_hardfork( HIVE_HARDFORK_0_19 ) )
+        {
+          modify( *comment_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
+          {
+            c_ex.add_payout_values( payout, curator_payout, beneficiary_payout );
+            payout = c_ex.get_total_payout();
+            curator_payout = c_ex.get_curator_payout();
+            beneficiary_payout = c_ex.get_beneficiary_payout();
+          } );
+        }
+        vop = comment_reward_operation( comment_author, to_string( comment_cashout.permlink ),
+          to_hbd( asset( claimed_reward, HIVE_SYMBOL ) ), author_tokens, payout, curator_payout, beneficiary_payout );
         pre_push_virtual_operation( vop );
         post_push_virtual_operation( vop );
 
@@ -2938,7 +2937,6 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
     if( !has_hardfork( HIVE_HARDFORK_0_19 ) ) // paid comment is removed after HF19, so no point in modification
     {
-      const auto* comment_cashout_ex = find_comment_cashout_ex( comment );
       modify( comment_cashout, [&]( comment_cashout_object& c )
       {
         /**
@@ -2950,7 +2948,6 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         c.abs_rshares = 0;
         c.vote_rshares = 0;
         c.total_vote_weight = 0;
-        c.max_cashout_time = fc::time_point_sec::maximum();
 
         if( has_hardfork( HIVE_HARDFORK_0_17__769 ) )
         {
@@ -3052,6 +3049,7 @@ void database::process_comment_cashout()
     current = cidx.begin();
   }
 
+  bool forward_curation_remainder = !has_hardfork( HIVE_HARDFORK_0_20__1877 );
   /*
     * Payout all comments
     *
@@ -3075,9 +3073,8 @@ void database::process_comment_cashout()
       ctx.total_reward_shares2 = funds[ fund_id ].recent_claims;
       ctx.total_reward_fund_hive = funds[ fund_id ].reward_balance;
 
-      bool forward_curation_remainder = !has_hardfork( HIVE_HARDFORK_0_20__1877 );
-
-      funds[ fund_id ].hive_awarded += cashout_comment_helper( ctx, _comment, *current, forward_curation_remainder );
+      funds[ fund_id ].hive_awarded += cashout_comment_helper( ctx, _comment, *current,
+        find_comment_cashout_ex( _comment ), forward_curation_remainder );
     }
     else
     {
@@ -3090,7 +3087,7 @@ void database::process_comment_cashout()
 
         const comment_cashout_object* current = find_comment_cashout( comment );
         FC_ASSERT( current );
-        auto reward = cashout_comment_helper( ctx, comment, *current );
+        auto reward = cashout_comment_helper( ctx, comment, *current, find_comment_cashout_ex( comment ) );
 
         if( reward > 0 )
         {
