@@ -1051,6 +1051,8 @@ using chain::reindex_notification;
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT ai.name, ai.id, ai.operation_count FROM account_operation_count_info_view ai;");
+                size_t size = data.size();
+
                 for(auto recordI = data.begin(); recordI != data.end(); ++recordI)
                 {
                   const auto& record = *recordI;
@@ -1065,6 +1067,9 @@ using chain::reindex_notification;
                   account_cache.emplace(std::string(name), account_info(account_id, operation_count));
 
                   ++processingStatus.first;
+
+                  if(processingStatus.first % 1000 == 0)
+                    ilog("Loaded ${cnt}/${size} accounts...", ("cnt", processingStatus.first)(size));
                 }
 
                 return processingStatus;
@@ -1081,6 +1086,8 @@ using chain::reindex_notification;
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT pd.permlink, pd.id FROM hive_permlink_data pd;");
+                size_t size = data.size();
+
                 for(auto recordI = data.begin(); recordI != data.end(); ++recordI)
                 {
                   const auto& record = *recordI;
@@ -1093,6 +1100,10 @@ using chain::reindex_notification;
 
                   permlink_cache.emplace(std::string(permlink), permlink_id);
                   ++processingStatus.first;
+
+                  if(processingStatus.first % 1000 == 0)
+                    ilog("Loaded ${cnt}/${size} permlinks...", ("cnt", processingStatus.first)(size));
+
                 }
 
                 return processingStatus;
@@ -1294,7 +1305,7 @@ void sql_serializer_plugin_impl::on_post_apply_block(const block_notification& n
     process_cached_data();
   }
 
-  if(note.block_num % 100'000 == 0)
+  if(note.block_num % 1'000 == 0)
   {
     log_statistics();
   }
