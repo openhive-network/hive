@@ -106,7 +106,7 @@ namespace hive { namespace chain {
       : id( _comment.get_id() ), //note that it is possible because relation is 1->{0,1} so we can share id
         author_id( _author.get_id() ), permlink( a ), active( _creation_time ),
         created( _creation_time ), cashout_time( _cashout_time ),
-        max_cashout_time( time_point_sec::maximum() ), reward_weight( _reward_weight ), beneficiaries( a )
+        reward_weight( _reward_weight ), beneficiaries( a )
 #ifdef HIVE_ENABLE_SMT
         , allowed_vote_assets( a )
 #endif
@@ -125,6 +125,7 @@ namespace hive { namespace chain {
       shared_string     permlink;
 
       time_point_sec    active; ///< the last time this post was "touched" by voting or reply
+      int32_t           net_votes = 0;
 
       /// index on pending_payout for "things happning now... needs moderation"
       /// TRENDING = UNCLAIMED + PENDING
@@ -138,17 +139,10 @@ namespace hive { namespace chain {
       time_point_sec    created;
     public:
       time_point_sec    cashout_time; /// 24 hours from the weighted average of vote time
-      time_point_sec    max_cashout_time;
-      uint64_t          total_vote_weight = 0; /// the total weight of voting rewards, used to calculate pro-rata share of curation payouts
-
       uint16_t          reward_weight = 0;
       uint16_t          percent_hbd = HIVE_100_PERCENT; /// the percent of HBD to key, unkept amounts will be received as VESTS
-      int32_t           net_votes = 0;
 
-      /** tracks the total payout this comment has received over time, measured in HBD */
-      HBD_asset         total_payout_value = asset(0, HBD_SYMBOL);
-      HBD_asset         curator_payout_value = asset(0, HBD_SYMBOL);
-      HBD_asset         beneficiary_payout_value = asset( 0, HBD_SYMBOL );
+      uint64_t          total_vote_weight = 0; /// the total weight of voting rewards, used to calculate pro-rata share of curation payouts
 
       HBD_asset         max_accepted_payout = asset( 1000000000, HBD_SYMBOL );       /// HBD value of the maximum payout this post will receive
       bool              allow_votes   = true;      /// allows a post to receive votes;
@@ -180,7 +174,7 @@ namespace hive { namespace chain {
       comment_cashout_ex_object( allocator< Allocator > a, uint64_t _id,
         const comment_object& _comment )
       : id( _comment.get_id() ), //note that it is possible because relation is 1->{0,1} so we can share id
-        last_payout( time_point_sec::min() )
+        last_payout( time_point_sec::min() ), max_cashout_time( time_point_sec::maximum() )
       {}
 
       //returns id of associated comment
@@ -194,21 +188,49 @@ namespace hive { namespace chain {
       //returns accumulated abs_rshares value for discussion
       int64_t get_children_abs_rshares() const { return children_abs_rshares.value; }
 
+      //returns maximum time to next cashout (up to HF17 actual cashout time depended on whole discussion)
+      time_point_sec get_max_cashout_time() const { return max_cashout_time; }
+
+      //returns accumulated value of payouts across potentially multiple cashout windows
+      const HBD_asset& get_total_payout() const { return total_payout_value; }
+      //returns accumulated value of payouts to curators
+      const HBD_asset& get_curator_payout() const { return curator_payout_value; }
+      //returns accumulated value of payouts to beneficiaries
+      const HBD_asset& get_beneficiary_payout() const { return beneficiary_payout_value; }
+
       //accumulates abs_rshares value from new vote in discussion
-      void on_vote( int64_t abs_rshares )
+      void add_abs_rshares( int64_t abs_rshares )
       {
         children_abs_rshares += abs_rshares;
       }
-      //sets payout time for associated comment and resets other fields on payout
+      //limits maximum cashout time
+      void set_max_cashout_time( time_point_sec new_max )
+      {
+        max_cashout_time = new_max;
+      }
+      //accumulates payout values (on successful payout)
+      void add_payout_values( const HBD_asset& payout, const HBD_asset& curator_payout, const HBD_asset& beneficiary_payout )
+      {
+        total_payout_value += payout;
+        curator_payout_value += curator_payout;
+        beneficiary_payout_value += beneficiary_payout;
+      }
+      //sets payout time for associated comment and resets some fields on payout
       void on_payout( time_point_sec payout_time )
       {
         last_payout = payout_time;
         children_abs_rshares = 0;
+        max_cashout_time = time_point_sec::maximum();
       }
 
     private:
       time_point_sec    last_payout;
       share_type        children_abs_rshares; /// used to calculate cashout time of a discussion
+      time_point_sec    max_cashout_time;
+
+      HBD_asset         total_payout_value;
+      HBD_asset         curator_payout_value;
+      HBD_asset         beneficiary_payout_value;
 
       CHAINBASE_UNPACK_CONSTRUCTOR(comment_cashout_ex_object);
   };
@@ -349,8 +371,8 @@ FC_REFLECT( hive::chain::comment_cashout_object,
           (id)(author_id)(permlink)
           (active)
           (net_rshares)(abs_rshares)(vote_rshares)
-          (children)(created)(cashout_time)(max_cashout_time)
-          (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(beneficiary_payout_value)
+          (children)(created)(cashout_time)
+          (total_vote_weight)(reward_weight)
           (net_votes)
           (max_accepted_payout)(percent_hbd)(allow_votes)(allow_curation_rewards)
           (beneficiaries)
@@ -365,6 +387,8 @@ FC_REFLECT( hive::chain::comment_cashout_ex_object,
            (id)
            (last_payout)
            (children_abs_rshares)
+           (max_cashout_time)
+           (total_payout_value)(curator_payout_value)(beneficiary_payout_value)
           )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_cashout_ex_object, hive::chain::comment_cashout_ex_index )

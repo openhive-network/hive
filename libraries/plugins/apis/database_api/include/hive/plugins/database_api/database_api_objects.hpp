@@ -371,8 +371,8 @@ struct api_comment_object
     {
       total_vote_weight       = cc->total_vote_weight;
       reward_weight           = cc->reward_weight;
-      total_payout_value      = cc->total_payout_value;
-      curator_payout_value    = cc->curator_payout_value;
+      total_payout_value      = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
+      curator_payout_value    = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
       author_rewards          = 0; // since HF19 it was always 0 or cc did not exist
       net_votes               = cc->net_votes;
       active                  = cc->active;
@@ -385,7 +385,7 @@ struct api_comment_object
       created                 = cc->get_creation_time();
       last_update             = active;
       cashout_time            = cc->cashout_time;
-      max_cashout_time        = cc->max_cashout_time;
+      max_cashout_time        = time_point_sec::maximum(); // since HF17 it is the only possible value
       max_accepted_payout     = cc->max_accepted_payout;
       percent_hbd             = cc->percent_hbd;
       allow_votes             = cc->allow_votes;

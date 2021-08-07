@@ -467,8 +467,6 @@ namespace chain {
 
       asset create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance=false );
 
-      void adjust_total_payout( const comment_cashout_object& a, const asset& hbd, const asset& curator_hbd_value, const asset& beneficiary_value );
-
       void adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_hbd );
 
       void adjust_balance( const account_object& a, const asset& delta );
@@ -519,7 +517,9 @@ namespace chain {
       void clear_witness_votes( const account_object& a );
       void process_vesting_withdrawals();
       share_type pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout, share_type& max_rewards );
-      share_type cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment, const comment_cashout_object& comment_cashout, bool forward_curation_remainder = true );
+      share_type cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment,
+        const comment_cashout_object& comment_cashout, const comment_cashout_ex_object* comment_cashout_ex,
+        bool forward_curation_remainder = true );
       void process_comment_cashout();
       void process_funds();
       void process_conversions();
