@@ -973,7 +973,7 @@ const comment_cashout_ex_object* database::find_comment_cashout_ex( const commen
 
 const comment_cashout_ex_object* database::find_comment_cashout_ex( comment_id_type comment_id ) const
 {
-  if( has_hardfork( HIVE_HARDFORK_0_17 ) )
+  if( has_hardfork( HIVE_HARDFORK_0_19 ) )
     return nullptr;
 
   const auto& idx = get_index< comment_cashout_ex_index, by_id >();
@@ -2947,7 +2947,6 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         */
         if( c.net_rshares > 0 )
           c.net_rshares = 0;
-        c.children_abs_rshares = 0;
         c.abs_rshares = 0;
         c.vote_rshares = 0;
         c.total_vote_weight = 0;
@@ -2965,13 +2964,10 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             c.cashout_time = fc::time_point_sec::maximum();
         }
       } );
-      if( comment_cashout_ex )
+      modify( *comment_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
       {
-        modify( *comment_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
-        {
-          c_ex.on_payout( head_block_time() );
-        } );
-      }
+        c_ex.on_payout( head_block_time() );
+      } );
     }
 
     if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || calculate_discussion_payout_time( comment_cashout ) == fc::time_point_sec::maximum() )
@@ -6118,16 +6114,16 @@ void database::apply_hardfork( uint32_t hardfork )
             c.cashout_time = std::max( calculate_discussion_payout_time( c ), itr->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
           });
         }
-
-        // Remove all cashout extras - the data won't be used after HF17
-        auto& comment_cashout_ex_idx = get_mutable_index< comment_cashout_ex_index >();
-        comment_cashout_ex_idx.clear();
       }
       break;
     case HIVE_HARDFORK_0_18:
       break;
     case HIVE_HARDFORK_0_19:
       {
+        // Remove all cashout extras
+        auto& comment_cashout_ex_idx = get_mutable_index< comment_cashout_ex_index >();
+        comment_cashout_ex_idx.clear();
+
         modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
         {
           gpo.vote_power_reserve_rate = HIVE_REDUCED_VOTE_POWER_RATE;

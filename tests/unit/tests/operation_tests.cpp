@@ -971,7 +971,6 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       BOOST_TEST_MESSAGE( "--- Test nested voting on nested comments" );
 
-      old_abs_rshares = new_alice_comment_cashout->children_abs_rshares.value;
       int64_t regenerated_power = (HIVE_100_PERCENT * ( db->head_block_time() - db->get_account( "alice").last_vote_time ).to_seconds() ) / HIVE_VOTING_MANA_REGENERATION_SECONDS;
       int64_t used_power = ( get_voting_power( db->get_account( "alice" ) ) + regenerated_power + max_vote_denom - 1 ) / max_vote_denom;
 

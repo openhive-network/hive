@@ -132,8 +132,6 @@ namespace hive { namespace chain {
       share_type        abs_rshares; /// this is used to track the total abs(weight) of votes for the purpose of calculating cashout_time
       share_type        vote_rshares; /// Total positive rshares from all votes. Used to calculate delta weights. Needed to handle vote changing and removal.
 
-      share_type        children_abs_rshares; /// this is used to calculate cashout time of a discussion (not used after HF17).
-
       uint32_t          children = 0; ///< used to track the total number of children, grandchildren, etc...
 
     private:
@@ -169,10 +167,10 @@ namespace hive { namespace chain {
   };
 
   /*
-    Similar to `comment_cashout_object` - extra members needed for payout calculation pre HF17.
+    Similar to `comment_cashout_object` - extra members needed for payout calculation pre HF19.
 
-    Objects of this class are no longer produced after HF17. It also means related indexes are
-    no longer taking space.
+    Objects of this class are no longer produced after HF19. It also means related indexes are
+    no longer taking space. For the most part it is only used up to HF17, with exception of last_payout
   */
   class comment_cashout_ex_object : public object< comment_cashout_ex_object_type, comment_cashout_ex_object >
   {
@@ -192,14 +190,25 @@ namespace hive { namespace chain {
       time_point_sec get_last_payout() const { return last_payout; }
       //tells if associated comment was paid
       bool was_paid() const { return last_payout > time_point_sec::min(); }
-      //sets payout time for associated comment
+
+      //returns accumulated abs_rshares value for discussion
+      int64_t get_children_abs_rshares() const { return children_abs_rshares.value; }
+
+      //accumulates abs_rshares value from new vote in discussion
+      void on_vote( int64_t abs_rshares )
+      {
+        children_abs_rshares += abs_rshares;
+      }
+      //sets payout time for associated comment and resets other fields on payout
       void on_payout( time_point_sec payout_time )
       {
         last_payout = payout_time;
+        children_abs_rshares = 0;
       }
 
     private:
       time_point_sec    last_payout;
+      share_type        children_abs_rshares; /// used to calculate cashout time of a discussion
 
       CHAINBASE_UNPACK_CONSTRUCTOR(comment_cashout_ex_object);
   };
@@ -317,7 +326,7 @@ namespace hive { namespace chain {
     allocator< comment_cashout_object >
   > comment_cashout_index;
 
-  /// This is empty after HF17
+  /// This is empty after HF19
   typedef multi_index_container<
     comment_cashout_ex_object,
     indexed_by<
@@ -339,7 +348,7 @@ CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_object, hive::chain::comment_inde
 FC_REFLECT( hive::chain::comment_cashout_object,
           (id)(author_id)(permlink)
           (active)
-          (net_rshares)(abs_rshares)(vote_rshares)(children_abs_rshares)
+          (net_rshares)(abs_rshares)(vote_rshares)
           (children)(created)(cashout_time)(max_cashout_time)
           (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(beneficiary_payout_value)
           (net_votes)
@@ -355,6 +364,7 @@ CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_cashout_object, hive::chain::comm
 FC_REFLECT( hive::chain::comment_cashout_ex_object,
            (id)
            (last_payout)
+           (children_abs_rshares)
           )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::comment_cashout_ex_object, hive::chain::comment_cashout_ex_index )

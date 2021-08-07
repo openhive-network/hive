@@ -26,11 +26,11 @@ api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_objec
   author_rewards = 0; // since HF19 author_rewards was either default 0 or cc did not exist
   net_votes = cc.net_votes;
   active = cc.active;
-  last_payout = time_point_sec::min(); // since HF17 there is only one payout and cc does not exist afterwards
+  last_payout = time_point_sec::min(); // since HF17 there is only one payout and cc does not exist after HF19
   net_rshares = cc.net_rshares;
   abs_rshares = cc.abs_rshares;
   vote_rshares = cc.vote_rshares;
-  children_abs_rshares = cc.children_abs_rshares;
+  children_abs_rshares = 0; // value not accumulated after HF17
   cashout_time = cc.cashout_time;
   max_cashout_time = cc.max_cashout_time;
   max_accepted_payout = cc.max_accepted_payout;

@@ -859,7 +859,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
       cashout_time = fc::time_point_sec::maximum();
 
     _db.create< comment_cashout_object >( new_comment, auth, o.permlink, _now, cashout_time, reward_weight );
-    if( !_db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
+    if( !_db.has_hardfork( HIVE_HARDFORK_0_19 ) )
       _db.create< comment_cashout_ex_object >( new_comment );
 
     if( parent )
@@ -1506,8 +1506,11 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     _db.modify( *root_cashout, [&]( comment_cashout_object& c )
     {
       const auto* c_ex = _db.find_comment_cashout_ex( root );
-      auto old_root_abs_rshares = c.children_abs_rshares.value;
-      c.children_abs_rshares += abs_rshares;
+      auto old_root_abs_rshares = c_ex->get_children_abs_rshares();
+      _db.modify( *c_ex, [&]( comment_cashout_ex_object& c2 )
+      {
+        c2.on_vote( abs_rshares );
+      } );
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && c_ex->was_paid() )
       {
@@ -1528,7 +1531,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
             new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
           else
             new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
-          avg_cashout_sec = ( cur_cashout_time_sec * old_root_abs_rshares + new_cashout_time_sec * abs_rshares ) / c.children_abs_rshares.value;
+          avg_cashout_sec = ( cur_cashout_time_sec * old_root_abs_rshares + new_cashout_time_sec * abs_rshares ) / c_ex->get_children_abs_rshares();
         }
         c.cashout_time = fc::time_point_sec( std::min( uint32_t( avg_cashout_sec.to_uint64() ), c.max_cashout_time.sec_since_epoch() ) );
       }
@@ -1585,14 +1588,12 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     **/
     uint64_t vote_weight = 0;
     {
+      const auto* comment_cashout_ex = _db.find_comment_cashout_ex( comment );
       bool curation_reward_eligible = rshares > 0 && comment_cashout->allow_curation_rewards;
-      if( curation_reward_eligible )
-      {
-        if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-          curation_reward_eligible = _db.get_curation_rewards_percent() > 0;
-        else
-          curation_reward_eligible = !_db.find_comment_cashout_ex( comment )->was_paid();
-      }
+      if( curation_reward_eligible && comment_cashout_ex )
+        curation_reward_eligible = !comment_cashout_ex->was_paid();
+      if( curation_reward_eligible && _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
+        curation_reward_eligible = _db.get_curation_rewards_percent() > 0;
 
       if( curation_reward_eligible )
       {

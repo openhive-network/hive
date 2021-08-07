@@ -376,12 +376,12 @@ struct api_comment_object
       author_rewards          = 0; // since HF19 it was always 0 or cc did not exist
       net_votes               = cc->net_votes;
       active                  = cc->active;
-      last_payout             = time_point_sec::min(); // since HF17 it is the only value possible
+      last_payout             = time_point_sec::min(); // since HF19 it is the only value possible
       children                = cc->children;
       net_rshares             = cc->net_rshares;
       abs_rshares             = cc->abs_rshares;
       vote_rshares            = cc->vote_rshares;
-      children_abs_rshares    = cc->children_abs_rshares;
+      children_abs_rshares    = 0; // value not accumulated after HF17
       created                 = cc->get_creation_time();
       last_update             = active;
       cashout_time            = cc->cashout_time;
