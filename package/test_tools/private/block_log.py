@@ -24,9 +24,9 @@ class BlockLog:
             if block_log_index_path.exists():
                 shutil.copy(block_log_index_path, destination)
             else:
-                self.__warn_about_missing_index()
+                self.__warn_about_missing_index(block_log_index_path)
 
-    def __warn_about_missing_index(self):
+    def __warn_about_missing_index(self, block_log_index_path):
         if self.__owner is not None:
             hint_for_excluding_index = 'node.get_block_log(include_index=False)'
         else:
