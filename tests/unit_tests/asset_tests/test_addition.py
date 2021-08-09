@@ -9,7 +9,7 @@ def test_addition_of_same_tokens():
 
     assert first == second == Asset.Hive(2)  # Addends aren't modified
     assert result == Asset.Hive(4)
-    assert type(result) == Asset.Hive
+    assert isinstance(result, Asset.Hive)
 
 
 def test_addition_of_different_tokens():

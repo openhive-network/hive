@@ -61,13 +61,13 @@ class AssetBase:
         return self
 
     def __assert_same_operands_type(self, other, error):
-        if type(self) != type(other):
+        if type(self) is not type(other):
             raise RuntimeError(error)
 
     def __eq__(self, other):
         if isinstance(other, str):
             return str(self) == other
-        elif type(self) == type(other):
+        elif type(self) is type(other):
             return self.amount == other.amount
 
         raise TypeError(f'Assets can\'t be compared with objects of type {type(other)}')
