@@ -108,8 +108,6 @@ def assert_that_transaction_for_test_has_effect(node):
     assert response['result']['accounts'][0]['name'] == 'alice'
 
 
-# TODO: This function can be moved to Node class, but
-#       first we need to learn how it really works.
 def generate_blocks(node, number_of_blocks):
     node.api.debug_node.debug_generate_blocks(
         debug_key=Account('initminer').private_key,

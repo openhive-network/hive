@@ -357,11 +357,10 @@ class Node:
 
         self.__set_unset_endpoints()
 
-        # TODO: Remove below code when statsd support will be implemented.
-        #       This is temporary workaround, for stderr parsing solution.
-        #       When node is restarted, old stderr is parsed first, because
-        #       new logs are at the bottom. Parser reads wrong informations.
-        #       This workaround removes old logs.
+        # This is temporary workaround, for stderr parsing solution.
+        # When node is restarted, old stderr is parsed first, because
+        # new logs are at the bottom. Parser reads wrong informations.
+        # This workaround removes old logs.
         self.__process.workaround_stderr_parsing_problem()
         # ------------------------- End of workaround -------------------------
 
