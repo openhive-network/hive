@@ -3,8 +3,6 @@ from shutil import rmtree
 
 from test_tools import constants, logger
 from test_tools.wallet import Wallet
-from test_tools.private.children_names import ChildrenNames
-from test_tools.private.node import Node
 from test_tools.private.nodes_creator import NodesCreator
 
 

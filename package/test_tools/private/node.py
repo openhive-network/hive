@@ -5,9 +5,8 @@ from pathlib import Path
 import shutil
 import signal
 import subprocess
-import time
 
-from test_tools import Account, constants, logger, paths_to_executables
+from test_tools import constants, logger, paths_to_executables
 from test_tools.exceptions import CommunicationError, NodeIsNotRunning, NodeProcessRunFailedError
 from test_tools.node_api.node_apis import Apis
 from test_tools.node_configs.default import create_default_config

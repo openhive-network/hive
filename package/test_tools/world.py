@@ -3,8 +3,6 @@ from pathlib import Path
 from test_tools import constants
 from test_tools.network import Network
 from test_tools.wallet import Wallet
-from test_tools.private.children_names import ChildrenNames
-from test_tools.private.node import Node
 from test_tools.private.nodes_creator import NodesCreator
 from test_tools.private.remote_node import RemoteNode
 

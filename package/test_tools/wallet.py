@@ -1,11 +1,9 @@
 from pathlib import Path
 import re
 import subprocess
-import time
 
 from test_tools import Account, communication, logger, paths_to_executables
 from test_tools.exceptions import CommunicationError
-from test_tools.private.asset import AssetBase
 from test_tools.private.wait_for import wait_for
 
 

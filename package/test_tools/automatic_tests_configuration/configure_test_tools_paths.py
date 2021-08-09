@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 
-from test_tools import logger, World
+from test_tools import logger
 
 
 def get_preferred_directory(request):
