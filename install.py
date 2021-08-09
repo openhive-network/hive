@@ -9,7 +9,7 @@ def check_paths_to_executables():
     from test_tools import paths_to_executables
     paths = paths_to_executables.get_paths_in_use()
 
-    if any([path is None for executable, path in paths.items()]):
+    if any(path is None for executable, path in paths.items()):
         print('\nSome paths to executables are missing:')
         for executable, path in paths.items():
             print(f'{executable}: {path if path is not None else "not set"}')

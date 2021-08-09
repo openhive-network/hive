@@ -20,4 +20,4 @@ def test_if_all_nodes_in_network_are_closed(world):
     nodes = world.nodes()
 
     assert len(nodes) == 4
-    assert all([not node.is_running() for node in nodes])
+    assert all(not node.is_running() for node in nodes)

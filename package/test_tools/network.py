@@ -77,7 +77,7 @@ class Network(NodesCreator):
             raise Exception('Unable to connect empty network')
 
         if not self.is_running:
-            if any([node.is_able_to_produce_blocks() for node in self._nodes]):
+            if any(node.is_able_to_produce_blocks() for node in self._nodes):
                 network.__connect_with_network = self
             else:
                 self.__connect_with_network = network

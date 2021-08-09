@@ -60,9 +60,9 @@ def check_if_files_are_removed(world,
 
     world.close()
 
-    assert all([important_files_are_removed(node) == remove_important_files for node in network.nodes()])
-    assert all([unneeded_files_are_removed(node) == remove_unneeded_files for node in network.nodes()])
+    assert all(important_files_are_removed(node) == remove_important_files for node in network.nodes())
+    assert all(unneeded_files_are_removed(node) == remove_unneeded_files for node in network.nodes())
 
     for network in world.networks():
-        assert all([important_files_are_removed(node) == remove_important_files for node in network.nodes()])
-        assert all([unneeded_files_are_removed(node) == remove_unneeded_files for node in network.nodes()])
+        assert all(important_files_are_removed(node) == remove_important_files for node in network.nodes())
+        assert all(unneeded_files_are_removed(node) == remove_unneeded_files for node in network.nodes())

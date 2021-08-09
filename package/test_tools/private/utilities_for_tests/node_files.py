@@ -5,7 +5,7 @@ def important_files_are_removed(node):
         'stderr.txt',
     ]
 
-    return all([not node.directory.joinpath(path).exists() for path in paths_of_important_files])
+    return all(not node.directory.joinpath(path).exists() for path in paths_of_important_files)
 
 
 def unneeded_files_are_removed(node):
@@ -14,4 +14,4 @@ def unneeded_files_are_removed(node):
         'p2p/peers.json',
     ]
 
-    return all([not node.directory.joinpath(path).exists() for path in paths_of_unneeded_files])
+    return all(not node.directory.joinpath(path).exists() for path in paths_of_unneeded_files)

@@ -32,7 +32,7 @@ class _PathsToExecutables:
         self.set_installed_executables()
 
     def __is_supported(self, executable_name):
-        return any([executable_name == executable.name for executable in self.supported_executables])
+        return any(executable_name == executable.name for executable in self.supported_executables)
 
     def get_configuration_hint(self):
         return (
