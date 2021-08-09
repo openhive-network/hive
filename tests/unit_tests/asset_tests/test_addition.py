@@ -13,11 +13,8 @@ def test_addition_of_same_tokens():
 
 
 def test_addition_of_different_tokens():
-    first = Asset.Hive(2)
-    second = Asset.Test(2)
-
     with pytest.raises(RuntimeError):
-        first + second
+        _ = Asset.Hive(2) + Asset.Test(2)
 
 
 def test_addition_and_assignment_of_same_tokens():
