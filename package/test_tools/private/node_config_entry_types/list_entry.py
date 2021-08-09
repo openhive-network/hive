@@ -1,4 +1,4 @@
-from test_tools.exceptions import NotSupported
+from test_tools.exceptions import NotSupported, ParseError
 from test_tools.private.node_config_entry_types.config_entry import ConfigEntry
 
 
@@ -32,7 +32,9 @@ class List(ConfigEntry):
     def parse_from_text(self, text):
         import re
         match_result = re.match(fr'^\s*{re.escape(self.__begin)}(.*){re.escape(self.__end)}\s*$', text)
-        # TODO: Raise if can't match
+
+        if not match_result:
+            raise ParseError(f'Line "{text}" doesn\'t match excepted format.')
 
         for item_text in match_result[1].split(self.__separator):
             item = self.__item_type()

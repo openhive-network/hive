@@ -17,3 +17,6 @@ class NodeProcessRunFailedError(Exception):
 
 class NotSupported(Exception):
     pass
+
+class ParseError(Exception):
+    pass
