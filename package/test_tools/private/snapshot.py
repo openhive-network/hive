@@ -51,7 +51,8 @@ class Snapshot:
             return False
 
         for mine, others in zip(my_files, others_files):
-            if filecmp.cmp(mine, others, shallow=False) == False:
+            files_are_same = filecmp.cmp(mine, others, shallow=False)
+            if not files_are_same:
                 return False
 
         return True
