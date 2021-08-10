@@ -531,7 +531,6 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_REQUIRE( bob_comment_cashout->net_rshares.value == 0 );
     BOOST_REQUIRE( bob_comment_cashout->abs_rshares.value == 0 );
     BOOST_REQUIRE( bob_comment_cashout->cashout_time == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
-    BOOST_REQUIRE( bob_comment.get_root_id() == alice_comment.get_id() );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test Sam posting a comment on Bob's comment" );
@@ -561,7 +560,6 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_REQUIRE( sam_comment_cashout->net_rshares.value == 0 );
     BOOST_REQUIRE( sam_comment_cashout->abs_rshares.value == 0 );
     BOOST_REQUIRE( sam_comment_cashout->cashout_time == sam_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
-    BOOST_REQUIRE( sam_comment.get_root_id() == alice_comment.get_id() );
     validate_database();
 
     generate_blocks( 60 * 5 / HIVE_BLOCK_INTERVAL + 1 );
