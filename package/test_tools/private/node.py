@@ -228,10 +228,10 @@ class Node:
         wait_for(self.__is_live, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} live (to start produce or receive blocks)')
 
-    def _send(self, method, params=None, jsonrpc='2.0', id=1):
+    def _send(self, method, params=None, jsonrpc='2.0', id_=1):
         message = {
             'jsonrpc': jsonrpc,
-            'id': id,
+            'id': id_,
             'method': method,
         }
 

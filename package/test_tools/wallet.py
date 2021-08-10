@@ -42,11 +42,11 @@ class Wallet:
             if transaction is not None:
                 return self.sign_transaction(transaction, broadcast=broadcast)
 
-        def __send(self, method, jsonrpc='2.0', id=0, **params):
+        def __send(self, method, jsonrpc='2.0', id_=0, **params):
             if 'broadcast' in params:
                 self.__handle_broadcast_parameter(params)
 
-            response = self.__wallet.send(method, *list(params.values()), jsonrpc=jsonrpc, id=id)
+            response = self.__wallet.send(method, *list(params.values()), jsonrpc=jsonrpc, id_=id_)
 
             if self.__is_transaction_build_in_progress():
                 self.__transaction_builder.append_operation(response)
@@ -262,8 +262,8 @@ class Wallet:
         def get_transaction(self, trx_id):
             return self.__send('get_transaction', trx_id=trx_id)
 
-        def get_withdraw_routes(self, account, type):
-            return self.__send('get_withdraw_routes', account=account, type=type)
+        def get_withdraw_routes(self, account, type_):
+            return self.__send('get_withdraw_routes', account=account, type=type_)
 
         def get_witness(self, owner_account):
             return self.__send('get_witness', owner_account=owner_account)
@@ -391,16 +391,16 @@ class Wallet:
             return self.__send('update_account', accountname=accountname, json_meta=json_meta, owner=owner,
                                active=active, posting=posting, memo=memo, broadcast=broadcast)
 
-        def update_account_auth_account(self, account_name, type, auth_account, weight, broadcast=None):
-            return self.__send('update_account_auth_account', account_name=account_name, type=type,
+        def update_account_auth_account(self, account_name, type_, auth_account, weight, broadcast=None):
+            return self.__send('update_account_auth_account', account_name=account_name, type=type_,
                                auth_account=auth_account, weight=weight, broadcast=broadcast)
 
-        def update_account_auth_key(self, account_name, type, key, weight, broadcast=None):
-            return self.__send('update_account_auth_key', account_name=account_name, type=type, key=key, weight=weight,
+        def update_account_auth_key(self, account_name, type_, key, weight, broadcast=None):
+            return self.__send('update_account_auth_key', account_name=account_name, type=type_, key=key, weight=weight,
                                broadcast=broadcast)
 
-        def update_account_auth_threshold(self, account_name, type, threshold, broadcast=None):
-            return self.__send('update_account_auth_threshold', account_name=account_name, type=type,
+        def update_account_auth_threshold(self, account_name, type_, threshold, broadcast=None):
+            return self.__send('update_account_auth_threshold', account_name=account_name, type=type_,
                                threshold=threshold, broadcast=broadcast)
 
         def update_account_memo_key(self, account_name, key, broadcast=None):
@@ -582,11 +582,11 @@ class Wallet:
     def set_http_server_port(self, port):
         self.http_server_port = port
 
-    def send(self, method, *params, jsonrpc='2.0', id=0):
+    def send(self, method, *params, jsonrpc='2.0', id_=0):
         endpoint = f'http://127.0.0.1:{self.http_server_port}'
         message = {
             'jsonrpc': jsonrpc,
-            'id': id,
+            'id': id_,
             'method': method,
             'params': list(params)
         }

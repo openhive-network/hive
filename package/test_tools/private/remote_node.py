@@ -7,10 +7,10 @@ class RemoteNode:
         self.api = Apis(self)
         self.__endpoint = endpoint
 
-    def _send(self, method, params=None, jsonrpc='2.0', id=1):
+    def _send(self, method, params=None, jsonrpc='2.0', id_=1):
         message = {
             'jsonrpc': jsonrpc,
-            'id': id,
+            'id': id_,
             'method': method,
         }
 
