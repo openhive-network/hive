@@ -292,11 +292,11 @@ class-const-naming-style=UPPER_CASE
 #class-const-rgx=
 
 # Naming style matching correct class names.
-class-naming-style=PascalCase
+#class-naming-style=PascalCase
 
 # Regular expression matching correct class names. Overrides class-naming-
 # style.
-#class-rgx=
+class-rgx=_{0,2}[A-Z][A-Za-z0-9]+
 
 # Naming style matching correct constant names.
 const-naming-style=UPPER_CASE
