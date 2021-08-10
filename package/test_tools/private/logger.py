@@ -95,5 +95,8 @@ class Logger:
         logging.exception(message)
 
     def getLogger(self, name):
+        # pylint: disable=invalid-name
+        # This method has to have same name as wrapped function
+        # https://docs.python.org/3/library/logging.html#logging.getLogger
         self.__ensure_initialization()
         return logging.getLogger(name)
