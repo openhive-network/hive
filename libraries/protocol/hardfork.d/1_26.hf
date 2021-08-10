@@ -1,9 +1,13 @@
 #ifndef HIVE_HARDFORK_1_26
 #define HIVE_HARDFORK_1_26 26
-#define HIVE_SMT_HARDFORK HIVE_HARDFORK_1_26
 
-#define HIVE_HARDFORK_1_26_TIME 1640952000 //  Thursday, 31 December 2021 12:00:00 GMT
+long next_hf_time();
+
+#define HIVE_HARDFORK_1_26_TIME next_hf_time()
 
 #define HIVE_HARDFORK_1_26_VERSION hardfork_version( 1, 26 )
+
+//no more 3s limit on votes
+#define HIVE_HARDFORK_1_26_NO_VOTE_LIMIT (HIVE_HARDFORK_1_26)
 
 #endif

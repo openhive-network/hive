@@ -13,7 +13,7 @@
 #include <set>
 
 #if defined(IS_TEST_NET) && defined(HIVE_ENABLE_SMT)
-#define HIVE_NUM_HARDFORKS 26
+#define HIVE_NUM_HARDFORKS 27
 #else
-#define HIVE_NUM_HARDFORKS 25
+#define HIVE_NUM_HARDFORKS 26
 #endif
